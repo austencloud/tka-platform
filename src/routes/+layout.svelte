@@ -5,6 +5,7 @@
   import { onMount, setContext } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { registerCacheClearShortcut } from "$lib/shared/utils/cache-buster";
+  import { initI18n } from "$lib/shared/i18n/i18n.svelte.js";
   import "../app.css";
   // Import modern view transitions CSS
   import "$lib/shared/transitions/view-transitions.css";
@@ -35,6 +36,9 @@
   }
 
   onMount(() => {
+    // ⚡ CRITICAL: Initialize i18n and set HTML dir attribute
+    initI18n();
+
     // ⚡ CRITICAL: Set up viewport height IMMEDIATELY for fast render
     updateViewportHeight();
 

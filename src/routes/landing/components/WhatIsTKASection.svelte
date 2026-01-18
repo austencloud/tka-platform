@@ -15,7 +15,7 @@
         <div class="icon">
           <i class="fas fa-music" aria-hidden="true"></i>
         </div>
-        <h3>Music Has Sheet Music</h3>
+        <h3>Musicians Have Sheet Music</h3>
         <p>
           Musicians read, write, and share compositions through standard
           notation.

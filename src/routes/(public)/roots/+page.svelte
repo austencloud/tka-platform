@@ -34,12 +34,9 @@
     noelYeeVTG: "https://noelyee.com/instruction/vulcan-tech-gospel",
     drexVTG: "https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained",
     flowArtsInstituteVTG: "https://flowartsinstitute.com/tag/vulcan-tech-gospel/",
-    // CAPs sources
-    drexCAPs: "https://drexfactor.com/reference/math_caps",
-    drexMath: "https://drexfactor.com/weirdscience/2014/05/06/mathematical_approach_classifying_poi_patterns_introduction_and_basics",
-    homeOfPoi: "https://www.homeofpoi.com/us/lessons/teach/POI/Poi-terminology/Poi-terminology",
-    // Notation reference
-    labanotation: "https://www.britannica.com/art/labanotation",
+    // Siteswap sources
+    siteswapTutorial: "https://www.juggle.org/siteswap-tutorial/",
+    siteswapWiki: "https://en.wikipedia.org/wiki/Siteswap",
   };
 </script>
 
@@ -47,11 +44,11 @@
   <title>The Roots of TKA | Standing on Shoulders</title>
   <meta
     name="description"
-    content="TKA builds on decades of flow arts theory. Learn about Vulcan Tech Gospel (VTG), Continuous Assembly Patterns (CAPs), and how LOOPs evolved from these foundations."
+    content="TKA synthesizes juggling notation, music theory, and flow arts vocabulary into a visual notation system for dual wielded props. Learn about the influences behind The Kinetic Alphabet."
   />
   <meta
     name="keywords"
-    content="flow arts theory, VTG, Vulcan Tech Gospel, CAPs, Continuous Assembly Patterns, poi theory, tech poi, Drex, flow arts notation history, LOOPs"
+    content="flow arts theory, VTG, Vulcan Tech Gospel, Siteswap, juggling notation, music theory, flow arts notation, dual wielded props, TKA influences"
   />
 </svelte:head>
 
@@ -69,19 +66,17 @@
 
       <div class="header-content">
         <h1>Standing on Shoulders</h1>
-        <p class="subtitle">The roots of <a href={backHref}>The Kinetic Alphabet</a> and its place in flow arts theory</p>
+        <p class="subtitle">The influences behind <a href={backHref}>The Kinetic Alphabet</a></p>
       </div>
     </header>
 
     <!-- Intro -->
     <section class="intro-section">
       <p>
-        The Kinetic Alphabet grows from decades of work by flow artists
-        who wrestled with the same question: <span class="emphasis">how do we write this down?</span>
+        The Kinetic Alphabet synthesizes ideas from three sources: <span class="emphasis">juggling notation, music theory, and flow arts vocabulary</span>.
       </p>
       <p>
-        This page acknowledges the people and systems that came before,
-        explains where TKA diverges, and makes the case for why those differences matter.
+        This page explains where the ideas came from and how they combined into something new.
       </p>
     </section>
 
@@ -96,11 +91,10 @@
 
       <div class="section-content">
         <p>
-          <strong>Vulcan Tech Gospel</strong> is the most ambitious attempt to create a
-          unified theory for poi movement. Created by
+          <strong>Vulcan Tech Gospel</strong> is an ambitious unified theory for poi movement. Created by
           <a href={externalLinks.noelYeeVTG} target="_blank" rel="noopener noreferrer">Noel Yee</a>
-          and collaborators at the Vulcan Lofts in Oakland, CA, it established foundational
-          concepts that TKA still uses today:
+          and collaborators at the Vulcan Lofts in Oakland, CA, it established the vocabulary
+          flow artists use to talk about movement:
         </p>
 
         <ul class="concept-list">
@@ -126,169 +120,69 @@
         </div>
 
         <p>
-          TKA adopts much of VTG's vocabulary directly. When we say "pro" and "anti,"
-          we're speaking VTG. The timing and direction relationships that define
-          TKA's letter types come from this foundation.
-        </p>
-
-        <h3>What VTG didn't solve</h3>
-
-        <p>
-          VTG provides vocabulary and classification, but not a notation system.
-          What's the difference?
-        </p>
-
-        <p>
-          A <strong>notation system</strong> (like
-          <a href={externalLinks.labanotation} target="_blank" rel="noopener noreferrer">Labanotation</a>
-          for dance or sheet music for musicians) lets you write down a specific sequence
-          that someone else can read and reproduce. It records movements in a written form
-          with standardized symbols for timing, direction, and body position.
-        </p>
-
-        <p>
-          VTG gives you the words to describe and categorize patterns.
-          TKA gives you the symbols to write them down.
+          TKA adopts VTG's vocabulary directly. When we say "pro" and "anti," we're speaking VTG.
+          The timing and direction relationships that define TKA's letter types come from this foundation.
         </p>
       </div>
     </article>
 
-    <!-- CAPs Section -->
+    <!-- Siteswap Section -->
     <article class="content-section">
       <div class="section-header">
         <div class="icon-wrapper" style="--accent: #ec4899;">
           <i class="fas fa-circle-nodes" aria-hidden="true"></i>
         </div>
-        <h2>Continuous Assembly Patterns (CAPs)</h2>
+        <h2>Siteswap Notation</h2>
       </div>
 
       <div class="section-content">
         <p>
-          <strong>CAPs</strong> - Continuous Assembly Patterns - were coined by
-          <strong>Damien (Zaltymbunk)</strong> around Burning Man 2007 and later formalized
-          mathematically by <strong>Ben Drexler (Drex)</strong> in his extensive documentation.
-        </p>
-
-        <p>
-          The core idea: take fractional pieces of poi moves and assemble them into
-          repeating patterns. The classic C-CAP is 180° of extension followed by
-          180° of antispin - creating that kidney-bean shape many spinners recognize.
+          <strong>Siteswap</strong> is a notation system for juggling. It represents sequences
+          as strings of numbers, where each number describes one discrete action.
         </p>
 
         <div class="external-links">
-          <a href={externalLinks.drexCAPs} target="_blank" rel="noopener noreferrer" class="resource-link">
+          <a href={externalLinks.siteswapTutorial} target="_blank" rel="noopener noreferrer" class="resource-link">
             <i class="fas fa-external-link-alt" aria-hidden="true"></i>
-            The Math of CAPs - DrexFactor
+            Siteswap Tutorial - Juggle.org
           </a>
-          <a href={externalLinks.drexMath} target="_blank" rel="noopener noreferrer" class="resource-link">
+          <a href={externalLinks.siteswapWiki} target="_blank" rel="noopener noreferrer" class="resource-link">
             <i class="fas fa-external-link-alt" aria-hidden="true"></i>
-            A Mathematical Approach to Classifying Poi Patterns - DrexFactor
-          </a>
-          <a href={externalLinks.homeOfPoi} target="_blank" rel="noopener noreferrer" class="resource-link">
-            <i class="fas fa-external-link-alt" aria-hidden="true"></i>
-            Poi Terminology - Home of Poi
+            Siteswap - Wikipedia
           </a>
         </div>
 
         <p>
-          Drex's mathematical notation uses <strong>Theta</strong> (rotation frequencies) and
-          <strong>Rho</strong> (arm/poi radii) to describe patterns precisely. It's rigorous,
-          elegant, and captures the two-circle model of poi spinning beautifully.
-        </p>
-
-        <h3>What CAPs didn't solve</h3>
-
-        <p>
-          CAPs are fundamentally poi-specific. The two-circle model (shoulder to hand to poi tip)
-          doesn't translate cleanly to staff, fans, buugeng, or other props. CAPs also describe
-          existing patterns rather than generate new ones. They're analytical, not generative.
+          Siteswap showed that complex sequences could be broken into discrete units and
+          documented with simple symbols. TKA applies this to flow arts - one pictograph per beat.
         </p>
       </div>
     </article>
 
-    <!-- LOOPs Section -->
+    <!-- Music Theory Section -->
     <article class="content-section highlight">
       <div class="section-header">
         <div class="icon-wrapper" style="--accent: #6366f1;">
-          <i class="fas fa-infinity" aria-hidden="true"></i>
+          <i class="fas fa-music" aria-hidden="true"></i>
         </div>
-        <h2>LOOPs: A Different Approach</h2>
+        <h2>Music Theory</h2>
       </div>
 
       <div class="section-content">
         <p>
-          <strong>LOOPs</strong> - Linked Orbital Offset Patterns - take a different path.
-          Instead of circle math, LOOPs use <strong>grid transformations</strong>.
+          Music theory provided two core ideas: letters as symbolic representation and
+          rhythmic structure.
         </p>
 
         <p>
-          The idea: start with any sequence and apply geometric operations to generate
-          variations that flow seamlessly back to the beginning.
-        </p>
-
-        <div class="comparison-table">
-          <div class="comparison-row header">
-            <div class="comparison-cell"></div>
-            <div class="comparison-cell">CAPs</div>
-            <div class="comparison-cell">LOOPs</div>
-          </div>
-          <div class="comparison-row">
-            <div class="comparison-cell label">Foundation</div>
-            <div class="comparison-cell">Two-circle model (poi)</div>
-            <div class="comparison-cell">Grid positions (any prop)</div>
-          </div>
-          <div class="comparison-row">
-            <div class="comparison-cell label">Approach</div>
-            <div class="comparison-cell">Combine fractional moves</div>
-            <div class="comparison-cell">Transform entire beats</div>
-          </div>
-          <div class="comparison-row">
-            <div class="comparison-cell label">Props</div>
-            <div class="comparison-cell">Poi-specific</div>
-            <div class="comparison-cell">Staff, fans, buugeng, etc.</div>
-          </div>
-          <div class="comparison-row">
-            <div class="comparison-cell label">Purpose</div>
-            <div class="comparison-cell">Describe patterns</div>
-            <div class="comparison-cell">Generate patterns</div>
-          </div>
-          <div class="comparison-row">
-            <div class="comparison-cell label">Combinations</div>
-            <div class="comparison-cell">Limited</div>
-            <div class="comparison-cell">4 components → 13+ types</div>
-          </div>
-        </div>
-
-        <h3>The Four LOOP Components</h3>
-
-        <ul class="loop-components">
-          <li>
-            <strong style="color: #36c3ff;">Rotated</strong> -
-            Rotate positions 90° or 180° around the grid center
-          </li>
-          <li>
-            <strong style="color: #6F2DA8;">Mirrored</strong> -
-            Flip left-to-right, like a mirror image
-          </li>
-          <li>
-            <strong style="color: #26e600;">Swapped</strong> -
-            Exchange which hand does what
-          </li>
-          <li>
-            <strong style="color: #eb7d00;">Inverted</strong> -
-            Transform motions to their opposites (pro ↔ anti)
-          </li>
-        </ul>
-
-        <p>
-          These four operations can be combined freely. Rotated + Swapped.
-          Mirrored + Inverted. All four together. Each combination produces
-          sequences with different characteristics, all loopable.
+          Sheet music documents what notes to play, not how to feel while playing them.
+          Musicians figure out the execution. TKA works the same way - pictographs document
+          what your hands and props are doing. You figure out the performance.
         </p>
 
         <p>
-          This is where TKA becomes <strong>generative</strong> - not just documenting
-          what you know, but showing you patterns you've never tried.
+          Using letters (A-Z, Greek alphabet) as shorthand came directly from musical notation.
+          During rehearsal, saying "A" is faster than describing the full movement.
         </p>
       </div>
     </article>
@@ -299,72 +193,29 @@
         <div class="icon-wrapper" style="--accent: #22c55e;">
           <i class="fas fa-bridge" aria-hidden="true"></i>
         </div>
-        <h2>Why This Matters</h2>
+        <h2>The Synthesis</h2>
       </div>
 
       <div class="section-content">
         <p>
-          TKA isn't trying to replace VTG or CAPs. They solve different problems.
+          TKA combines these three influences:
         </p>
 
         <ul class="matters-list">
           <li>
-            <strong>VTG</strong> gives us vocabulary to talk about movement.
+            <strong>VTG</strong> - vocabulary for timing, direction, and motion types
           </li>
           <li>
-            <strong>CAPs</strong> give poi spinners a mathematical framework for understanding pattern structure.
+            <strong>Siteswap</strong> - discrete unit documentation
           </li>
           <li>
-            <strong>TKA</strong> gives everyone a way to write it down - and
-            <strong>LOOPs</strong> give everyone a way to discover new patterns algorithmically.
+            <strong>Music theory</strong> - letters and rhythmic structure
           </li>
         </ul>
 
         <p>
-          The notation is open. The concepts are documented. We're not competing
-          with the work that came before - we're building the next layer on top of it.
-        </p>
-      </div>
-    </article>
-
-    <!-- Acknowledgments -->
-    <article class="content-section acknowledgments">
-      <div class="section-header">
-        <div class="icon-wrapper" style="--accent: #8b5cf6;">
-          <i class="fas fa-heart" aria-hidden="true"></i>
-        </div>
-        <h2>Acknowledgments</h2>
-      </div>
-
-      <div class="section-content">
-        <p>TKA exists because others did the hard work first:</p>
-
-        <ul class="thanks-list">
-          <li>
-            <strong>Ben Drexler (Drex)</strong> - For the mathematical rigor of CAPs documentation
-            and years of tech poi education through DrexFactor.
-          </li>
-          <li>
-            <strong>Damien (Zaltymbunk)</strong> - For coining CAPs and contributing the
-            foundational math.
-          </li>
-          <li>
-            <strong>The VTG contributors</strong> - For establishing the vocabulary we all
-            use to discuss timing, direction, and motion types.
-          </li>
-          <li>
-            <strong>Home of Poi community</strong> - For being the place where these
-            ideas were debated, refined, and preserved.
-          </li>
-          <li>
-            <strong>Every flow artist</strong> who taught, documented, or shared what they learned.
-          </li>
-        </ul>
-
-        <p class="closing">
-          If you're one of these people and you have thoughts, critiques, or want to
-          collaborate - reach out. TKA is meant to serve the community, and that
-          means being open to feedback from those who laid the groundwork.
+          The result is a visual notation system for static dual wielded props - staff, fans,
+          buugeng, clubs, hoops, and anything you can hold two of.
         </p>
       </div>
     </article>
@@ -513,19 +364,6 @@
     border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
   }
 
-  .content-section.acknowledgments {
-    background: linear-gradient(
-      135deg,
-      rgba(139, 92, 246, 0.08) 0%,
-      rgba(139, 92, 246, 0.02) 100%
-    );
-    border-color: rgba(139, 92, 246, 0.25);
-  }
-
-  .content-section.acknowledgments:hover {
-    border-color: rgba(139, 92, 246, 0.4);
-  }
-
   .section-header {
     display: flex;
     align-items: center;
@@ -588,18 +426,14 @@
 
   /* Lists */
   .concept-list,
-  .loop-components,
-  .matters-list,
-  .thanks-list {
+  .matters-list {
     list-style: none;
     padding: 0;
     margin: 1.5rem 0;
   }
 
   .concept-list li,
-  .loop-components li,
-  .matters-list li,
-  .thanks-list li {
+  .matters-list li {
     position: relative;
     padding-left: 1.5rem;
     margin-bottom: 0.75rem;
@@ -607,9 +441,7 @@
   }
 
   .concept-list li::before,
-  .loop-components li::before,
-  .matters-list li::before,
-  .thanks-list li::before {
+  .matters-list li::before {
     content: "→";
     position: absolute;
     left: 0;
@@ -659,53 +491,6 @@
 
   .resource-link:hover i {
     transform: translateX(2px);
-  }
-
-  /* Comparison table */
-  .comparison-table {
-    margin: 1.5rem 0;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    overflow: hidden;
-  }
-
-  .comparison-row {
-    display: grid;
-    grid-template-columns: 120px 1fr 1fr;
-  }
-
-  .comparison-row.header {
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  .comparison-row:not(:last-child) {
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .comparison-cell {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  .comparison-cell:not(:last-child) {
-    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .comparison-cell.label {
-    font-weight: 600;
-    color: var(--theme-text, #ffffff);
-    background: rgba(255, 255, 255, 0.02);
-  }
-
-  .comparison-row.header .comparison-cell {
-    font-weight: 600;
-    color: var(--theme-text, #ffffff);
-    text-align: center;
-  }
-
-  .comparison-row.header .comparison-cell:first-child {
-    text-align: left;
   }
 
   /* Closing */
@@ -814,15 +599,6 @@
       flex-direction: column;
       align-items: flex-start;
       gap: 0.75rem;
-    }
-
-    .comparison-row {
-      grid-template-columns: 100px 1fr 1fr;
-    }
-
-    .comparison-cell {
-      padding: 0.5rem 0.75rem;
-      font-size: 0.8125rem;
     }
 
     .cta-card {

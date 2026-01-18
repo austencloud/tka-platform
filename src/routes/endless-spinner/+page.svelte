@@ -548,6 +548,11 @@
     playbackController.togglePlayback();
   }
 
+  function handleProgressBarSeek(targetStep: number) {
+    if (!animationState) return;
+    animationState.setCurrentStep(targetStep);
+  }
+
   async function handleRetry() {
     animationError = false;
     animationReady = false;
@@ -621,10 +626,16 @@
               letter={currentLetter}
               stepData={currentStepData}
               sequenceData={animationState.sequenceData}
+              currentStep={animationState.currentStep}
               isPlaying={animationState.isPlaying}
               trailSettings={animationSettings.trail}
               bluePropType={PropType.STAFF}
               redPropType={PropType.STAFF}
+              word={currentSequence?.word || currentSequence?.name || ""}
+              wordHeaderVisible={true}
+              progressBarVariant="minimal"
+              previewDarkMode={true}
+              onProgressBarSeek={handleProgressBarSeek}
             />
           {:else if animationError}
             <div class="state-message error" role="alert">
@@ -778,11 +789,9 @@
 
   .canvas-container {
     width: clamp(320px, 50vw, 520px);
-    aspect-ratio: 1;
+    /* Let AnimatorCanvas size itself naturally (includes header + square canvas) */
     background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 24px;
-    overflow: hidden;
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.05),
       0 20px 60px rgba(0, 0, 0, 0.5),

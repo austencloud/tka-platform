@@ -5,7 +5,11 @@
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
   import { ANIMATED_BACKGROUNDS } from "$lib/shared/background/shared/config/animated-backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
-  import { getPublicThemeIndex, savePublicThemeIndex, getNextThemeIndex } from "$lib/shared/background/shared/config/public-page-theme";
+  import {
+    getPublicThemeIndex,
+    savePublicThemeIndex,
+    getNextThemeIndex,
+  } from "$lib/shared/background/shared/config/public-page-theme";
   import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
 
   // Position pictograph light/dark mode (default to light to show existing images)
@@ -13,29 +17,19 @@
 
   const sections = [
     {
-      id: "origin",
+      id: "what",
       icon: "fa-seedling",
-      title: "The Origin",
+      title: "What Is TKA",
       color: "#22c55e",
       content: [
-        "The seed that planted this idea was a real problem. I was creating choreography with my circus troupe and needed a way to remember and communicate sequences. After using an early version to build an act, I became obsessed with exploring its limits.",
-        "It began as an experiment in notation and quickly grew into an obsession as the system expanded in scale. Once it passed a tipping point and I realized it was covering new ground, I threw myself into its development.",
-      ],
-    },
-    {
-      id: "what",
-      icon: "fa-music",
-      title: "What TKA Does",
-      color: "#6366f1",
-      content: [
-        "The Kinetic Alphabet brings something novel to flow arts. Previous attempts to document spin have created collections of knowledge that form the backbone of TKA's notation system. But flow arts still needs a way to describe patterns that expands beyond videos scattered across the Internet.",
-        "Sheet music tells musicians what notes to play. It says nothing about how to feel while playing. Actors memorize their lines so they can act. TKA works the same way: it handles what your hands and props are doing so your mind has bandwidth for everything else.",
+        "The Kinetic Alphabet brings something novel to flow arts. Previous attempts to document flow arts patterns created valuable knowledge collections. TKA builds on that foundation.",
+        "Flow arts still needs a way to describe patterns that expands beyond videos scattered across the Internet. Sheet music tells musicians what notes to play. Actors memorize their lines so they can act. TKA works the same way: it documents the physical movements so you can reference them later.",
       ],
     },
     {
       id: "notation",
       icon: "fa-diagram-project",
-      title: "The Notation System",
+      title: "How It Works",
       color: "#14b8a6",
       content: [
         "Every beat of movement becomes a pictograph showing where your hands are and how they move on a grid. The visual approach means you can read a sequence immediately without memorizing terminology. Positions describe where your hands are relative to each other: across from each other, at the same point, forming a right angle.",
@@ -49,8 +43,8 @@
       color: "#ec4899",
       content: [
         "Flow arts is a very young art form. Many practitioners find it hard to collaborate with others due to physical distance or foundational differences in technique. Especially in the US, where TKA got its start, flow arts is a heavily solo-influenced art form.",
-        "The Kinetic Alphabet does not rely on English terminology, instead embracing symbols and pictures for its communication, making it shareable with people from any cultural background and across any distance. It has a physical form making it recordable with pen and paper and a digital form which streamlines the process significantly.",
-        "TKA handles the technical complexity of hand paths and prop relationships. That leaves mental bandwidth for the parts of performance that can't be notated. Expression, presence, how you move through space.",
+        "The Kinetic Alphabet does not rely on English terminology, instead embracing symbols and pictures for its communication, making it shareable across languages and distances. It exists in both physical form (pen and paper) and digital form.",
+        "With documented patterns, choreographers can build on each other's work instead of recreating from scratch. You can archive your own material and revisit it months later.",
       ],
     },
     {
@@ -60,27 +54,8 @@
       color: "#f59e0b",
       content: [
         "The Kinetic Alphabet is designed for flow arts teachers, choreographers, and spinners. For beginners and veterans alike, TKA bridges theory and performance. It exists to make synchronized group choreography more achievable, and it is also a tool for self-directed progression.",
-        "Because it allows for performers to keep track of their individual parts, it opens the door to people who struggle with memory and executive function to be able to engage with complex and intricate choreography. It is split into multiple levels of increasing complexity and density, so a beginner can learn at their own pace on the level that suits them, or it can be used as a structured curriculum for exploring movement.",
-        "It's also for performers who care more about expression than drilling patterns. TKA handles the technical groundwork so you can focus on being a performer. Learn the notation, then forget it so you can perform.",
-      ],
-    },
-    {
-      id: "educators",
-      icon: "fa-chalkboard-user",
-      title: "For Educators",
-      color: "#a855f7",
-      content: [
-        "TKA changes how you teach. Instead of demonstrating the same sequence 50 times, show them the pictograph. Share notated sequences with students anywhere in the world. The visual system works across languages.",
-        "Students who internalize the pictographs and vocabulary gain building blocks for thinking about movement, and mental bandwidth to focus on expression.",
-      ],
-    },
-    {
-      id: "ownership",
-      icon: "fa-palette",
-      title: "Creative Ownership",
-      color: "#8b5cf6",
-      content: [
-        "TKA breaks prop movement into building blocks. Once you understand how sequences work, you can build your own. And once your body knows the shapes, your mind is free for everything else.",
+        "By tracking your individual parts, it makes choreography accessible even if you struggle with memory and executive function. It is split into multiple levels of increasing complexity and density, so you can learn at your own pace.",
+        "For those who value theatrical performance more than technical patterns, TKA handles the groundwork so you can focus on expression. Once you internalize its framework, it can be a foundation for expressive creativity.",
       ],
     },
     {
@@ -89,8 +64,10 @@
       title: "The Vision",
       color: "#06b6d4",
       content: [
-        "The goal is greater collaboration and more ambitious live performances. The Kinetic Alphabet has already gained momentum. Flow artists across the world are spreading it in their communities.",
-        "The Kinetic Alphabet isn't meant to define what flow arts should look like. It's meant to handle the technical groundwork so artists can focus on what makes them unique.",
+        "TKA changes how you teach. Instead of demonstrating repeatedly, show them the pictograph. Share notated sequences with students anywhere in the world. The visual system works across languages.",
+        "Once you internalize the pictographs and vocabulary, you gain building blocks for thinking about movement.",
+        "TKA breaks prop movement into building blocks. Once you understand how pictographs work, you can create your own sequences with them and call them yours. The letter system shows you what you've already explored and what's still undiscovered, giving you a fountain of novelty to pull from.",
+        "The goal is greater collaboration and more ambitious live performances. The Kinetic Alphabet has already gained momentum. The movement is growing.",
       ],
     },
   ];
@@ -100,9 +77,13 @@
 
   // Restore saved theme from localStorage (persists across public pages)
   let currentBgIndex = $state(getPublicThemeIndex());
-  let currentBackground = $derived(backgrounds[currentBgIndex]?.type ?? BackgroundType.NIGHT_SKY);
+  let currentBackground = $derived(
+    backgrounds[currentBgIndex]?.type ?? BackgroundType.NIGHT_SKY
+  );
   let currentIcon = $derived(backgrounds[currentBgIndex]?.icon ?? "fa-moon");
-  let currentLabel = $derived(backgrounds[currentBgIndex]?.label ?? "Night Sky");
+  let currentLabel = $derived(
+    backgrounds[currentBgIndex]?.label ?? "Night Sky"
+  );
 
   function cycleBackground() {
     currentBgIndex = getNextThemeIndex(currentBgIndex);
@@ -143,11 +124,6 @@
         <p class="tagline">A notation system for flow arts</p>
       </div>
     </header>
-
-    <!-- Quote callout -->
-    <blockquote class="hero-quote">
-      The Kinetic Alphabet brings something novel to flow arts.
-    </blockquote>
 
     <!-- Content sections -->
     <div class="sections-grid">
@@ -229,6 +205,7 @@
           <i class="fas fa-arrow-right" aria-hidden="true"></i>
         </a>
       </div>
+      <p class="creator-credit">Created by Austen Cloud • 2022–present</p>
     </footer>
   </div>
 
@@ -320,10 +297,17 @@
     max-width: 700px;
     margin: 0 auto 4rem;
     padding: 2rem 2.5rem;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 12%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
     border-radius: 20px;
-    transition: background 0.3s ease, border-color 0.3s ease;
+    transition:
+      background 0.3s ease,
+      border-color 0.3s ease;
   }
 
   /* Sections grid */
@@ -419,7 +403,9 @@
     align-items: center;
     justify-content: center;
     margin-bottom: 0.5rem;
-    transition: filter 0.3s ease, background 0.3s ease;
+    transition:
+      filter 0.3s ease,
+      background 0.3s ease;
   }
 
   .position-image-container img {
@@ -451,13 +437,27 @@
     margin-top: 4rem;
   }
 
+  .creator-credit {
+    text-align: center;
+    margin-top: 2rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+  }
+
   .cta-card {
     text-align: center;
     padding: 3rem 2rem;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
-    border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 15%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
     border-radius: 24px;
-    transition: background 0.3s ease, border-color 0.3s ease;
+    transition:
+      background 0.3s ease,
+      border-color 0.3s ease;
   }
 
   .cta-card h3 {
@@ -488,7 +488,8 @@
   .cta-button:hover {
     background: var(--theme-accent-strong, #818cf8);
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+    box-shadow: 0 12px 32px
+      color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
   }
 
   .cta-button i {
@@ -510,8 +511,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 15%, rgba(0, 0, 0, 0.5));
-    border: 1px solid color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent-strong, #818cf8) 15%,
+      rgba(0, 0, 0, 0.5)
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, transparent);
     border-radius: 50%;
     color: var(--theme-accent-strong, #818cf8);
     font-size: 1.125rem;
@@ -522,8 +528,16 @@
   }
 
   .theme-toggle:hover {
-    background: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, rgba(0, 0, 0, 0.6));
-    border-color: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 40%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent-strong, #818cf8) 25%,
+      rgba(0, 0, 0, 0.6)
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent-strong, #818cf8) 40%,
+      transparent
+    );
     transform: scale(1.05);
   }
 

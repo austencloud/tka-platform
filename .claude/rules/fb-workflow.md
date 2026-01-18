@@ -35,7 +35,9 @@ When running `/fb` without an argument, Claude auto-selects the best item.
 4. **Achievable complexity** - prefer items that can be completed in one session
 5. **Skip incomplete metadata** - avoid items with `--title` or `--description` placeholders
 
-After selecting, announce the choice with brief rationale, then proceed to claim and display it.
+**BE DECISIVE.** Run `list` once, apply criteria, pick the first match, claim it. Do NOT cycle through 3+ items second-guessing yourself.
+
+After selecting, announce the choice with 1-sentence rationale, then immediately claim and display it.
 
 ---
 

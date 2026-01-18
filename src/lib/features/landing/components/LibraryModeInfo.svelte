@@ -14,20 +14,12 @@
     sequence: SequenceData | null;
   } = $props();
 
-  let creatorName = $derived(
-    sequence?.ownerDisplayName || sequence?.author || "Unknown"
-  );
-
   let sequenceName = $derived(sequence?.displayName || null);
 </script>
 
-{#if sequence}
+{#if sequence && sequenceName}
   <div class="library-info" in:fade={{ duration: 200 }}>
-    {#if sequenceName}
-      <span class="sequence-name">{sequenceName}</span>
-      <span class="separator">·</span>
-    {/if}
-    <span class="creator">by {creatorName}</span>
+    <span class="sequence-name">{sequenceName}</span>
   </div>
 {/if}
 
@@ -36,23 +28,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
     font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.6);
     min-height: 24px;
   }
 
   .sequence-name {
     font-weight: 500;
     color: rgba(255, 255, 255, 0.8);
-  }
-
-  .separator {
-    color: rgba(255, 255, 255, 0.3);
-  }
-
-  .creator {
-    font-style: italic;
   }
 
   @media (max-width: 600px) {
