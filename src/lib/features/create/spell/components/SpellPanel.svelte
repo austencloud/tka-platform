@@ -21,6 +21,7 @@ This component orchestrates the UI phases; business logic lives in services.
   import PreferencesPage from "./PreferencesPage.svelte";
   import ResultsPage from "./ResultsPage.svelte";
   import { getVariationState, type ScoredVariation } from "../state/variation-state.svelte";
+  import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 
   // Props
   let {
@@ -222,6 +223,11 @@ This component orchestrates the UI phases; business logic lives in services.
         <p class="sequence-details">
           {currentSequence.steps.length} steps
         </p>
+
+        <!-- Sequence Preview -->
+        <div class="sequence-preview">
+          <AnimatorCanvas sequence={currentSequence} autoPlay={true} loop={true} />
+        </div>
 
         <div class="result-actions">
           <button class="action-button primary" onclick={handleUseThis}>
