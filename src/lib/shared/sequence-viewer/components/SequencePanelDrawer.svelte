@@ -1,0 +1,376 @@
+<!--
+  SequencePanelDrawer.svelte
+
+  Drawer wrapper for SequencePanel that provides:
+  - Drawer UI with proper placement (bottom on mobile, right on desktop)
+  - AnimationExportContext for edit mode
+  - Consistent styling across modes
+
+  Usage:
+    <SequencePanelDrawer
+      isOpen={true}
+      sequence={sequence}
+      mode="browse"
+      isMobile={isMobile}
+      ...props
+    />
+-->
+<script lang="ts">
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+  import type { MediaType, MediaFormat, ExportSettings } from "../domain/types";
+  import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+
+  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import SequencePanel, { type PanelMode, type CreatorInfo } from "./SequencePanel.svelte";
+  import { setAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
+
+  let {
+    // Drawer props
+    isOpen = false,
+    isMobile = false,
+    drawerWidth = "min(600px, 90vw)",
+    isNavVisible = true,
+    respectLayoutMode = false,
+
+    // SequencePanel props
+    sequence,
+    mode = "browse" as PanelMode,
+    variations = [] as SequenceData[],
+    variationIndex = 0,
+    creatorInfo = null as CreatorInfo | null,
+    isOwned = false,
+    isFavorite = false,
+
+    // Edit mode props
+    initialMediaType = "image" as MediaType,
+    showVisibilitySettings = false,
+    isExporting = false,
+    exportProgress = null as VideoExportProgress | null,
+    selectedFormat = "animation" as "animation" | "static" | "performance",
+
+    // Animation context props (edit mode only)
+    animationSequenceData = null as SequenceData | null,
+    isAnimationPlaying = false,
+    animationCurrentBeat = 0,
+    animationSpeed = 1,
+    animationBluePropState = null as any,
+    animationRedPropState = null as any,
+    isCircular = false,
+    exportLoopCount = 1,
+    isAnimationExporting = false,
+    animationExportProgress = null as VideoExportProgress | null,
+    animationServicesReady = false,
+    animationLoading = false,
+    playbackMode = "continuous" as "continuous" | "step",
+    stepPlaybackPauseMs = 300,
+    stepPlaybackStepSize = 1 as 1 | 0.5,
+    blueMotionVisible = true,
+    redMotionVisible = true,
+    isSideBySideLayout = false,
+
+    // Callbacks
+    onClose,
+    onOpenChange,
+    onVariationSelect,
+    onFavorite,
+    onFork,
+    onEdit,
+    onDelete,
+    onInviteCollaborators,
+    onAction,
+    onExport,
+    onSaveToLibrary,
+    onFormatChange,
+    onCancelExport,
+
+    // Animation callbacks (edit mode only)
+    onPlaybackToggle,
+    onSpeedChange,
+    onStepHalfBeatForward,
+    onStepHalfBeatBackward,
+    onStepFullBeatForward,
+    onStepFullBeatBackward,
+    onLoopCountChange,
+    onCanvasReady,
+    onExportVideo,
+    onPlaybackModeChange,
+    onStepPlaybackPauseMsChange,
+    onStepPlaybackStepSizeChange,
+    onToggleBlue,
+    onToggleRed,
+  }: {
+    // Drawer props
+    isOpen?: boolean;
+    isMobile?: boolean;
+    drawerWidth?: string;
+    isNavVisible?: boolean;
+    respectLayoutMode?: boolean;
+
+    // SequencePanel props
+    sequence: SequenceData;
+    mode?: PanelMode;
+    variations?: SequenceData[];
+    variationIndex?: number;
+    creatorInfo?: CreatorInfo | null;
+    isOwned?: boolean;
+    isFavorite?: boolean;
+
+    // Edit mode props
+    initialMediaType?: MediaType;
+    showVisibilitySettings?: boolean;
+    isExporting?: boolean;
+    exportProgress?: VideoExportProgress | null;
+    selectedFormat?: "animation" | "static" | "performance";
+
+    // Animation context props
+    animationSequenceData?: SequenceData | null;
+    isAnimationPlaying?: boolean;
+    animationCurrentBeat?: number;
+    animationSpeed?: number;
+    animationBluePropState?: any;
+    animationRedPropState?: any;
+    isCircular?: boolean;
+    exportLoopCount?: number;
+    isAnimationExporting?: boolean;
+    animationExportProgress?: VideoExportProgress | null;
+    animationServicesReady?: boolean;
+    animationLoading?: boolean;
+    playbackMode?: "continuous" | "step";
+    stepPlaybackPauseMs?: number;
+    stepPlaybackStepSize?: 1 | 0.5;
+    blueMotionVisible?: boolean;
+    redMotionVisible?: boolean;
+    isSideBySideLayout?: boolean;
+
+    // Callbacks
+    onClose?: () => void;
+    onOpenChange?: (open: boolean) => void;
+    onVariationSelect?: (index: number, sequence: SequenceData) => void;
+    onFavorite?: () => void;
+    onFork?: () => void;
+    onEdit?: () => void;
+    onDelete?: () => void;
+    onInviteCollaborators?: (video: CollaborativeVideo) => void;
+    onAction?: (action: string, sequence: SequenceData) => void;
+    onExport?: (format: MediaFormat, settings: ExportSettings) => void;
+    onSaveToLibrary?: () => void;
+    onFormatChange?: (format: "animation" | "static" | "performance") => void;
+    onCancelExport?: () => void;
+
+    // Animation callbacks
+    onPlaybackToggle?: () => void;
+    onSpeedChange?: (speed: number) => void;
+    onStepHalfBeatForward?: () => void;
+    onStepHalfBeatBackward?: () => void;
+    onStepFullBeatForward?: () => void;
+    onStepFullBeatBackward?: () => void;
+    onLoopCountChange?: (count: number) => void;
+    onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
+    onExportVideo?: () => void;
+    onPlaybackModeChange?: (mode: "continuous" | "step") => void;
+    onStepPlaybackPauseMsChange?: (ms: number) => void;
+    onStepPlaybackStepSizeChange?: (size: 1 | 0.5) => void;
+    onToggleBlue?: () => void;
+    onToggleRed?: () => void;
+  } = $props();
+
+  // Set animation export context for edit mode
+  $effect(() => {
+    if (mode === "edit" && isOpen) {
+      setAnimationExportContext({
+        sequenceData: animationSequenceData,
+        isPlaying: isAnimationPlaying,
+        currentBeat: animationCurrentBeat,
+        speed: animationSpeed,
+        bluePropState: animationBluePropState,
+        redPropState: animationRedPropState,
+        isCircular,
+        exportLoopCount,
+        isExporting: isAnimationExporting,
+        exportProgress: animationExportProgress,
+        animationServicesReady,
+        animationLoading,
+        playbackMode,
+        stepPlaybackPauseMs,
+        stepPlaybackStepSize,
+        blueMotionVisible,
+        redMotionVisible,
+        isSideBySideLayout,
+        onPlaybackToggle,
+        onSpeedChange,
+        onStepHalfBeatForward,
+        onStepHalfBeatBackward,
+        onStepFullBeatForward,
+        onStepFullBeatBackward,
+        onLoopCountChange,
+        onCanvasReady,
+        onCancelExport,
+        onExportVideo,
+        onPlaybackModeChange,
+        onStepPlaybackPauseMsChange,
+        onStepPlaybackStepSizeChange,
+        onToggleBlue,
+        onToggleRed,
+      });
+    }
+  });
+
+  function handleOpenChange(open: boolean) {
+    if (!open && isOpen) {
+      onClose?.();
+    }
+    onOpenChange?.(open);
+  }
+
+  // Single unified drawer class for all modes
+  const drawerClass = "sequence-panel-drawer";
+</script>
+
+<div
+  style:--sheet-width={respectLayoutMode ? undefined : drawerWidth}
+  style:--drawer-width={respectLayoutMode ? undefined : drawerWidth}
+  class:nav-visible={isMobile && isNavVisible}
+>
+  <Drawer
+    {isOpen}
+    placement={isMobile ? "bottom" : "right"}
+    {respectLayoutMode}
+    class="{drawerClass} {isMobile && isNavVisible ? 'with-nav-offset' : ''}"
+    showHandle={false}
+    closeOnBackdrop={false}
+    backdropClass={!isMobile ? "transparent-backdrop" : isMobile && isNavVisible ? "nav-offset-backdrop" : ""}
+    trapFocus={isMobile && !isNavVisible}
+    setInertOnSiblings={isMobile && !isNavVisible}
+    onOpenChange={handleOpenChange}
+  >
+    {#if sequence}
+      <div class="drawer-content-wrapper">
+        <SequencePanel
+          {sequence}
+          {mode}
+          {variations}
+          {variationIndex}
+          {creatorInfo}
+          {isOwned}
+          {isFavorite}
+          {initialMediaType}
+          {showVisibilitySettings}
+          {isExporting}
+          {exportProgress}
+          {selectedFormat}
+          onClose={onClose}
+          {onVariationSelect}
+          {onFavorite}
+          {onFork}
+          {onEdit}
+          {onDelete}
+          {onInviteCollaborators}
+          {onAction}
+          {onExport}
+          {onSaveToLibrary}
+          {onFormatChange}
+          {onCancelExport}
+        />
+      </div>
+    {/if}
+  </Drawer>
+</div>
+
+<style>
+  .drawer-content-wrapper {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Desktop right drawer styling (without side-by-side layout) */
+  :global(.sequence-panel-drawer.drawer-content[data-placement="right"]:not(.side-by-side-layout)) {
+    width: var(--sheet-width, min(600px, 90vw));
+    transition:
+      transform 350ms cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 350ms cubic-bezier(0.32, 0.72, 0, 1),
+      width 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+    top: 0 !important;
+    height: 100vh !important;
+    background: color-mix(in srgb, var(--theme-panel-bg) 70%, transparent) !important;
+    backdrop-filter: blur(20px) !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: -2px 0 16px var(--theme-shadow) !important;
+  }
+
+  /* Desktop right drawer with side-by-side layout - use tracked panel dimensions */
+  :global(.sequence-panel-drawer.drawer-content[data-placement="right"].side-by-side-layout) {
+    background: color-mix(in srgb, var(--theme-panel-bg) 70%, transparent) !important;
+    backdrop-filter: blur(20px) !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: -2px 0 16px var(--theme-shadow) !important;
+    /* Let Drawer.css handle positioning via --create-panel-* variables */
+  }
+
+  /* Subtle vertical grip indicator on left edge */
+  :global(.sequence-panel-drawer.drawer-content[data-placement="right"]::before) {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: var(--min-touch-target, 48px);
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      var(--theme-stroke-strong) 10%,
+      var(--theme-stroke-strong) 90%,
+      transparent 100%
+    );
+    border-radius: 2px;
+    opacity: 0.6;
+    transition: opacity var(--duration-normal) ease;
+  }
+
+  :global(.sequence-panel-drawer.drawer-content[data-placement="right"]:hover::before) {
+    opacity: 1;
+  }
+
+  /* Transparent backdrop for desktop */
+  :global(.drawer-overlay.transparent-backdrop) {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    pointer-events: none !important;
+  }
+
+  /* Mobile full-height bottom sheet */
+  :global(.sequence-panel-drawer.drawer-content[data-placement="bottom"]) {
+    max-height: 100vh !important;
+    height: 100vh !important;
+    border-top-left-radius: 16px !important;
+    border-top-right-radius: 16px !important;
+  }
+
+  /* Mobile: Offset when bottom navigation visible */
+  :global(.sequence-panel-drawer.with-nav-offset.drawer-content[data-placement="bottom"]) {
+    bottom: var(--primary-nav-height, 64px) !important;
+    max-height: calc(100vh - var(--primary-nav-height, 64px)) !important;
+    height: calc(100vh - var(--primary-nav-height, 64px)) !important;
+  }
+
+  /* Mobile: Offset backdrop for nav clicks */
+  :global(.drawer-overlay.nav-offset-backdrop) {
+    inset: unset !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: var(--primary-nav-height, 64px) !important;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    :global(.sequence-panel-drawer.drawer-content) {
+      transition: none !important;
+    }
+  }
+</style>
