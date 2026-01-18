@@ -23,6 +23,22 @@ Users may use vague or incorrect terminology. Here's the actual structure:
 
 ---
 
+## Auto-Selection (when no ID provided)
+
+When running `/fb` without an argument, Claude auto-selects the best item.
+
+**Selection priority:**
+
+1. **Bugs first** - bugs affect current users, features can wait
+2. **Higher priority** - high > medium > low > unset
+3. **Clear scope** - items with clear titles/descriptions over vague ones
+4. **Achievable complexity** - prefer items that can be completed in one session
+5. **Skip incomplete metadata** - avoid items with `--title` or `--description` placeholders
+
+After selecting, announce the choice with brief rationale, then proceed to claim and display it.
+
+---
+
 ## Display Feedback First
 
 When running `/fb`, start your response with raw feedback details:

@@ -14,7 +14,7 @@ This project follows a **2026+ AI-assisted development approach**:
 
 ## NEVER Create Utility Files or Hooks
 
-**This is a service-based architecture using Inversify dependency injection. ALL logic must live in injectable services.**
+**This is a service-based architecture using ITI (Isomorphic Type-safe IoC). ALL logic must live in services.**
 
 ### What NOT to create:
 
@@ -26,20 +26,47 @@ This project follows a **2026+ AI-assisted development approach**:
 ### What to create instead:
 
 1. **Interface** in `services/contracts/IServiceName.ts`
-2. **Implementation** in `services/implementations/ServiceName.ts` with `@injectable()` decorator
-3. **Type symbol** in `inversify/types/*.types.ts`
-4. **Binding** in `inversify/modules/*.module.ts`
+2. **Implementation** in `services/implementations/ServiceName.ts`
+3. **Register in container** in `src/lib/shared/di/containers/{feature}-container.ts`
+
+### Service Pattern Example:
+
+```typescript
+// services/contracts/IMyService.ts
+export interface IMyService {
+  doThing(): void;
+}
+
+// services/implementations/MyService.ts
+import type { IMyService } from '../contracts/IMyService';
+
+export class MyService implements IMyService {
+  constructor(private dependency: IDependency) {}
+  doThing(): void { /* ... */ }
+}
+
+// In the container file:
+import { createContainer } from "iti";
+import { MyService } from "./services/implementations/MyService";
+
+export const myContainer = createContainer()
+  .add({ myService: () => new MyService(someDep) });
+
+// Usage:
+import { container } from "$shared/di";
+const myService = container.items.myService;
+```
 
 ### Why:
 
-- Dependency injection enables testing, mocking, and swapping implementations
-- Services are discoverable via the DI container
-- Follows the established architecture pattern
-- Keeps all business logic in injectable, traceable units
+- ITI provides type-safe dependency injection
+- Container manages service lifecycles and dependencies
+- Interfaces allow swapping implementations
+- Keeps all business logic in traceable, testable units
 
 ### If you think you need a utility:
 
-You actually need a service. Create an interface, implement it with `@injectable()`, register it in the container, and inject it where needed.
+You actually need a service. Create an interface, implement it as a class, and register it in the appropriate container.
 
 ---
 
@@ -97,7 +124,7 @@ You actually need a service. Create an interface, implement it with `@injectable
 ## State Management
 
 - Use **context + runes** for shared state, not stores
-- Services resolved via inversify DI container
+- Services resolved via ITI container (`container.items.serviceName`)
 - Settings persisted to Firebase with optimistic local updates
 
 ---

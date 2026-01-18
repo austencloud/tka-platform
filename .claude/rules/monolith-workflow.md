@@ -27,9 +27,20 @@ Every extraction MUST follow this structure:
 ```
 1. Interface:      services/contracts/I{Name}.ts
 2. Implementation: services/implementations/{Name}.ts
-3. DI Type:        src/lib/shared/inversify/types.ts
-4. DI Module:      src/lib/shared/inversify/modules/{feature}.module.ts
-5. Resolution:     resolve<I{Name}>(TYPES.I{Name})
+3. Container:      Register in src/lib/shared/di/containers/{feature}-container.ts
+4. Usage:          import { container } from "$shared/di"; container.items.serviceName
+```
+
+**ITI Container Registration:**
+```typescript
+// In the container file:
+import { createContainer } from "iti";
+import { MyService } from "./services/implementations/MyService";
+
+export function createMyContainer(deps: MyContainerDeps) {
+  return createContainer()
+    .add({ myService: () => new MyService(deps.someDep) });
+}
 ```
 
 ### Service Naming (no "Service" suffix):
@@ -60,10 +71,10 @@ When a component has significant CSS, extract child components that take markup 
 
 | FORBIDDEN | CORRECT ALTERNATIVE |
 |-----------|---------------------|
-| `use*.ts` hooks | DI service with interface |
-| `*Utils.ts` | DI service |
+| `use*.ts` hooks | Service class registered in ITI container |
+| `*Utils.ts` | Service class registered in ITI container |
 | `*.css` standalone | Extract component with markup + CSS |
-| Loose function files | DI service |
+| Loose function files | Service class registered in ITI container |
 
 ---
 

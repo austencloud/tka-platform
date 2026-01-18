@@ -10,7 +10,7 @@ Work on a feedback item from the queue.
 
 ## Usage
 
-- `/fb` - List available feedback items
+- `/fb` - Auto-select and claim the best feedback item
 - `/fb <id>` - Claim and work on a specific feedback item
 
 ## Arguments
@@ -23,7 +23,15 @@ $ARGUMENTS - Optional feedback ID (first 8+ characters)
 
 Run `node scripts/fetch-feedback.js list` to show the feedback queue.
 
-Present the unclaimed items and ask which one the user wants to work on.
+**Auto-select the best item using this priority:**
+
+1. **Bugs first** - bugs affect current users, features can wait
+2. **Higher priority** - high > medium > low > unset
+3. **Clear scope** - items with clear titles/descriptions over vague ones
+4. **Achievable complexity** - prefer items that can be completed in one session
+5. **Skip incomplete metadata** - avoid items with `--title` or `--description` placeholders
+
+After selecting, announce your choice with a brief rationale, then proceed to claim it. Do NOT ask which item to work on.
 
 ### If argument provided (feedback ID):
 

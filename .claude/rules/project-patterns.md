@@ -3,7 +3,7 @@
 ## Tech Stack Overview
 
 - TKA Scribe is a Svelte 5 + TypeScript application
-- Uses inversify for dependency injection
+- Uses ITI (Isomorphic Type-safe IoC) for dependency injection
 - Firebase for persistence and auth
 - Focus on animation and interactive pictograph rendering
 
@@ -45,13 +45,21 @@ const moduleLoaders = {
 }
 ```
 
-### Step 3: Add DI module if needed
+### Step 3: Add ITI container if needed
 
-If your module has injectable services:
+If your module has services, create a container:
 
 ```typescript
-// src/lib/shared/inversify/modules/yourmodule.module.ts
-// Then register in loadFeatureModule() in di.ts
+// src/lib/shared/di/containers/yourmodule-container.ts
+import { createContainer } from "iti";
+import { YourService } from "$lib/features/your-module/services/implementations/YourService";
+
+export function createYourModuleContainer(deps: YourModuleDeps) {
+  return createContainer()
+    .add({ yourService: () => new YourService(deps.someDep) });
+}
+
+// Then add to the composition root in src/lib/shared/di/index.ts
 ```
 
 ### Navigation is automatic

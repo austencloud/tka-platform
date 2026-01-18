@@ -32,7 +32,7 @@ Each dimension is graded A+ through F. The goal is A+ across all dimensions.
 **What to check:**
 - Does each file do one thing? (see `code-style.md`)
 - Are services properly extracted? (see `/monolith` command)
-- Is DI used correctly? (inversify patterns)
+- Are services registered in ITI containers? (see `src/lib/shared/di/`)
 - No barrel exports?
 
 ### 2. Code Quality (A+ = passes all project rules)

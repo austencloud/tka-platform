@@ -14,9 +14,16 @@
 
 ## /fb Command
 
-**Show the feedback first, then discuss.**
+**Auto-select, then show the feedback, then discuss.**
 
-When running `/fb`, immediately display what was claimed so the user knows exactly what we're working on. Include:
+When running `/fb` without an ID, auto-select the best item using:
+1. Bugs first (affect current users)
+2. Higher priority items
+3. Clear scope over vague descriptions
+4. Achievable complexity
+5. Skip items with `--title` or `--description` placeholders
+
+After selecting, display what was claimed:
 
 - **Title** and **ID**
 - **Type** (bug/feature/enhancement) and **Priority**
