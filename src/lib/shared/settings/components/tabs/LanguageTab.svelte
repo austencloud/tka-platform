@@ -35,6 +35,18 @@
   // State
   let isVisible = $state(false);
   let currentLocale = $derived(getReactiveLocale());
+  let previousLocale = $state<string>(currentLocale);
+  let localeChanged = $state(false);
+
+  // Track locale changes for screen reader announcement
+  $effect(() => {
+    if (currentLocale !== previousLocale) {
+      localeChanged = true;
+      previousLocale = currentLocale;
+      // Reset after announcement
+      setTimeout(() => (localeChanged = false), 3000);
+    }
+  });
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
@@ -106,6 +118,13 @@
       </p>
     </div>
   </section>
+
+  <!-- Screen reader announcement for locale changes -->
+  <div role="status" aria-live="polite" class="sr-only">
+    {#if localeChanged}
+      {t("settings_language_changed_to")} {languageNames[currentLocale]?.native}
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -278,5 +297,18 @@
 
   .info-card a:hover {
     text-decoration: underline;
+  }
+
+  /* Screen reader only - visually hidden but announced */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 </style>

@@ -30,8 +30,25 @@ export const locales = [
   "it",
 ] as const;
 
-export type Locale = (typeof locales)[number];
-export const baseLocale: Locale = "en";
+// Regional locale variants that fall back to base locales
+// e.g., es-MX → es → en
+export const regionalLocales = [
+  "es-MX", // Spanish (Mexico) → es
+  "es-AR", // Spanish (Argentina) → es
+  "pt-BR", // Portuguese (Brazil) → pt
+  "pt-PT", // Portuguese (Portugal) → pt
+  "zh-CN", // Chinese (Simplified) → zh
+  "zh-TW", // Chinese (Traditional) → zh
+  "fr-CA", // French (Canada) → fr
+] as const;
+
+export type BaseLocale = (typeof locales)[number];
+export type RegionalLocale = (typeof regionalLocales)[number];
+export type Locale = BaseLocale | RegionalLocale;
+export const baseLocale: BaseLocale = "en";
+
+// RTL locales that require right-to-left text direction
+export const rtlLocales: ReadonlyArray<Locale> = ["ar"] as const;
 
 type Messages = Record<string, string>;
 
@@ -76,10 +93,34 @@ function getInitialLocale(): Locale {
 }
 
 /**
- * Check if a string is a valid locale
+ * Check if a string is a valid locale (base or regional)
  */
 export function isLocale(value: string): value is Locale {
-  return locales.includes(value.toLowerCase() as Locale);
+  const lowerValue = value.toLowerCase();
+  return (
+    locales.includes(lowerValue as BaseLocale) ||
+    regionalLocales.includes(lowerValue as RegionalLocale)
+  );
+}
+
+/**
+ * Get the base locale from a regional locale
+ * e.g., es-MX → es, pt-BR → pt, en → en
+ */
+export function getBaseLocale(locale: Locale): BaseLocale {
+  // If already a base locale, return as-is
+  if (locales.includes(locale as BaseLocale)) {
+    return locale as BaseLocale;
+  }
+
+  // Extract base from regional locale (es-MX → es)
+  const base = locale.split("-")[0]?.toLowerCase();
+  if (base && locales.includes(base as BaseLocale)) {
+    return base as BaseLocale;
+  }
+
+  // Fallback to English
+  return baseLocale;
 }
 
 /**
@@ -90,8 +131,30 @@ export function getLocale(): Locale {
 }
 
 /**
+ * Get the text direction for a locale
+ * @returns "rtl" for Arabic, "ltr" for all others
+ */
+export function getLocaleDirection(locale: Locale = currentLocale): "ltr" | "rtl" {
+  return rtlLocales.includes(locale) ? "rtl" : "ltr";
+}
+
+/**
+ * Update the HTML dir attribute to match current locale
+ * Automatically called by setLocale()
+ */
+function updateHtmlDirection(): void {
+  if (typeof document !== "undefined") {
+    const direction = getLocaleDirection();
+    document.documentElement.setAttribute("dir", direction);
+  }
+}
+
+/**
  * Set the locale and load messages
  * Does NOT reload the page - UI updates reactively
+ *
+ * For regional locales (e.g., es-MX), automatically loads the base locale (es)
+ * to enable the fallback chain: es-MX → es → en
  */
 export async function setLocale(locale: Locale): Promise<void> {
   if (!isLocale(locale)) {
@@ -104,7 +167,18 @@ export async function setLocale(locale: Locale): Promise<void> {
     document.cookie = `${LOCALE_COOKIE_NAME}=${locale}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}`;
   }
 
-  // Load messages if not cached
+  // For regional locales, ensure base locale is loaded first
+  const base = getBaseLocale(locale);
+  if (base !== locale && !localeCache.has(base)) {
+    try {
+      const baseMessages = await loadLocaleMessages(base);
+      localeCache.set(base, baseMessages);
+    } catch (error) {
+      console.error(`Failed to load base locale ${base}:`, error);
+    }
+  }
+
+  // Load regional locale messages if not cached
   if (!localeCache.has(locale)) {
     try {
       const loadedMessages = await loadLocaleMessages(locale);
@@ -119,13 +193,21 @@ export async function setLocale(locale: Locale): Promise<void> {
   // Update reactive state
   currentLocale = locale;
   messages = localeCache.get(locale) || (enMessages as Messages);
+
+  // Update HTML dir attribute for RTL support
+  updateHtmlDirection();
 }
 
 /**
  * Dynamically import locale messages
+ *
+ * For regional locales (e.g., es-MX), attempts to load a regional override file.
+ * If the file doesn't exist, falls back to the base locale file.
+ * The translation fallback chain handles missing keys.
  */
 async function loadLocaleMessages(locale: Locale): Promise<Messages> {
-  switch (locale) {
+  // Base locales - always have full translation files
+  switch (locale as BaseLocale) {
     case "en":
       return enMessages as Messages;
     case "es":
@@ -148,9 +230,24 @@ async function loadLocaleMessages(locale: Locale): Promise<Messages> {
       return (await import("../../../../messages/ru.json")).default as Messages;
     case "it":
       return (await import("../../../../messages/it.json")).default as Messages;
-    default:
-      return enMessages as Messages;
   }
+
+  // Regional locales - attempt to load override file, fall back to base
+  if (regionalLocales.includes(locale as RegionalLocale)) {
+    try {
+      // Try to load regional override file (e.g., messages/es-MX.json)
+      // This file only needs to contain keys that differ from the base locale
+      const regionalMessages = await import(`../../../../messages/${locale}.json`);
+      return regionalMessages.default as Messages;
+    } catch {
+      // No regional override file - use base locale
+      const base = getBaseLocale(locale);
+      return loadLocaleMessages(base);
+    }
+  }
+
+  // Unknown locale - fall back to English
+  return enMessages as Messages;
 }
 
 /**
@@ -158,6 +255,13 @@ async function loadLocaleMessages(locale: Locale): Promise<Messages> {
  *
  * Type-safe: Only accepts valid keys from messages/en.json
  * IDE autocomplete shows all available translation keys
+ *
+ * Implements fallback chain for regional locales:
+ * - Regional locale (e.g., es-MX) → Base locale (es) → English (en)
+ *
+ * @param params - MUST be trusted values only (numbers, system strings, IDs).
+ *                 NEVER pass unsanitized user input - XSS risk if rendered in HTML.
+ *                 Current usage is safe (module IDs, Firebase Auth usernames).
  *
  * @example
  * t("app_name") // "TKA Scribe"
@@ -167,10 +271,24 @@ async function loadLocaleMessages(locale: Locale): Promise<Messages> {
 export function t(key: TranslationKey, params?: Record<string, string | number>): string {
   let text = messages[key];
 
+  // Fallback chain: regional → base → English
+  if (!text) {
+    // Try base locale if current is regional
+    const base = getBaseLocale(currentLocale);
+    if (base !== currentLocale && localeCache.has(base)) {
+      text = localeCache.get(base)?.[key];
+    }
+
+    // Try English as final fallback
+    if (!text && currentLocale !== "en") {
+      text = (enMessages as Messages)[key];
+    }
+  }
+
   if (!text) {
     // Development warning for missing keys
     if (import.meta.env.DEV) {
-      console.warn(`Missing translation key: ${key}`);
+      console.warn(`Missing translation key: ${key} (locale: ${currentLocale})`);
     }
     return key;
   }
@@ -191,14 +309,77 @@ export function t(key: TranslationKey, params?: Record<string, string | number>)
  */
 export async function initI18n(): Promise<void> {
   const initialLocale = getInitialLocale();
+
+  // Set HTML dir attribute even for default locale
+  updateHtmlDirection();
+
   if (initialLocale !== "en") {
     await setLocale(initialLocale);
   }
+
+  // Preload likely next locales during idle time
+  preloadBrowserLocales();
+}
+
+/**
+ * Preload locales from browser language preferences during idle time
+ * Makes locale switching instant if user switches to a browser language
+ *
+ * Uses requestIdleCallback to avoid blocking critical rendering
+ */
+function preloadBrowserLocales(): void {
+  if (typeof window === "undefined" || !("requestIdleCallback" in window)) {
+    return; // SSR or old browser
+  }
+
+  // Get browser languages (excluding current locale)
+  const browserLocales = (navigator.languages || [])
+    .map((lang) => lang.split("-")[0]?.toLowerCase())
+    .filter((lang): lang is string => Boolean(lang))
+    .filter((lang) => isLocale(lang) && lang !== currentLocale)
+    .slice(0, 3); // Only preload top 3
+
+  if (browserLocales.length === 0) {
+    return; // No additional locales to preload
+  }
+
+  // Preload during idle time
+  window.requestIdleCallback(
+    async () => {
+      for (const locale of browserLocales) {
+        // Skip if already cached
+        if (localeCache.has(locale as Locale)) {
+          continue;
+        }
+
+        try {
+          const messages = await loadLocaleMessages(locale as Locale);
+          localeCache.set(locale as Locale, messages);
+
+          if (import.meta.env.DEV) {
+            console.log(`✅ Preloaded locale: ${locale}`);
+          }
+        } catch (error) {
+          // Silent failure - preloading is optimization, not critical
+          if (import.meta.env.DEV) {
+            console.warn(`Failed to preload locale ${locale}:`, error);
+          }
+        }
+      }
+    },
+    { timeout: 2000 } // Give up if idle doesn't happen within 2 seconds
+  );
 }
 
 /**
  * Translate with dynamic key (bypasses type checking)
  * Use only for computed keys like `module_${id}`
+ *
+ * Implements fallback chain for regional locales:
+ * - Regional locale (e.g., es-MX) → Base locale (es) → English (en)
+ *
+ * @param params - MUST be trusted values only (numbers, system strings, IDs).
+ *                 NEVER pass unsanitized user input - XSS risk if rendered in HTML.
  *
  * @example
  * tDynamic(`module_${moduleId}`) // For dynamic key construction
@@ -206,9 +387,23 @@ export async function initI18n(): Promise<void> {
 export function tDynamic(key: string, params?: Record<string, string | number>): string {
   let text = messages[key];
 
+  // Fallback chain: regional → base → English
+  if (!text) {
+    // Try base locale if current is regional
+    const base = getBaseLocale(currentLocale);
+    if (base !== currentLocale && localeCache.has(base)) {
+      text = localeCache.get(base)?.[key];
+    }
+
+    // Try English as final fallback
+    if (!text && currentLocale !== "en") {
+      text = (enMessages as Messages)[key];
+    }
+  }
+
   if (!text) {
     if (import.meta.env.DEV) {
-      console.warn(`Missing translation key: ${key}`);
+      console.warn(`Missing translation key: ${key} (locale: ${currentLocale})`);
     }
     return key;
   }

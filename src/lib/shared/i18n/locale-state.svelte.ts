@@ -9,6 +9,7 @@ import {
   getLocale,
   setLocale,
   initI18n,
+  getLocaleDirection,
   type Locale,
 } from "./i18n.svelte.js";
 
@@ -34,4 +35,4 @@ export function initLocaleState(): void {
 }
 
 // Re-export for any other usages
-export { getLocale, setLocale, initI18n, type Locale };
+export { getLocale, setLocale, initI18n, getLocaleDirection, type Locale };
