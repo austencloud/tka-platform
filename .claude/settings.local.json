@@ -273,7 +273,20 @@
       "WebFetch(domain:www.homeofpoi.com)",
       "WebFetch(domain:noelyee.weebly.com)",
       "Bash(corepack enable:*)",
-      "Bash(corepack prepare:*)"
+      "Bash(corepack prepare:*)",
+      "mcp__tka-pictograph__get_term_definition",
+      "mcp__tka-pictograph__compare_letters",
+      "mcp__tka-pictograph__get_position_info",
+      "Bash(do node -e \"try{JSON.parse\\(require\\(''fs''\\).readFileSync\\(''$f''\\)\\);console.log\\(''VALID: $f''\\)}catch\\(e\\){console.log\\(''INVALID: $f - ''+e.message\\)}\")",
+      "Bash(Get-ChildItem -Recurse -Filter \"*DurationPreviewWorkspace*\")"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "playwright",
+    "fetch",
+    "memory",
+    "time",
+    "filesystem",
+    "tka-pictograph"
+  ]
 }

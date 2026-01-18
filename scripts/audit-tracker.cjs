@@ -34,6 +34,10 @@ const SHARED_DIR = path.join(__dirname, "..", "src", "lib", "shared");
 const STALE_DAYS = 30;
 const STALE_MS = STALE_DAYS * 24 * 60 * 60 * 1000;
 
+// Size thresholds for "too large to audit as one unit"
+const MAX_FILES_FOR_SINGLE_AUDIT = 30;
+const MAX_SUBFEATURES_FOR_SINGLE_AUDIT = 3;
+
 // Claim expiry: 4 hours
 const CLAIM_EXPIRY_MS = 4 * 60 * 60 * 1000;
 
@@ -82,6 +86,74 @@ function writeAuditData(data) {
 }
 
 /**
+ * Count .svelte and .ts files in a directory recursively
+ */
+function countCodeFiles(dir) {
+  let count = 0;
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory() && !entry.name.startsWith('.')) {
+        count += countCodeFiles(fullPath);
+      } else if (entry.isFile() && (entry.name.endsWith('.svelte') || entry.name.endsWith('.ts'))) {
+        count++;
+      }
+    }
+  } catch (err) {
+    // Directory doesn't exist or not accessible
+  }
+  return count;
+}
+
+/**
+ * Detect sub-features within a module directory
+ * A sub-feature is a directory that contains code files and isn't just "components" or "services"
+ */
+function detectSubFeatures(modPath) {
+  const subFeatures = [];
+  const IGNORE_DIRS = ['components', 'services', 'state', 'domain', 'types', 'utils', 'styles', 'contracts', 'implementations'];
+
+  try {
+    const entries = fs.readdirSync(modPath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+      if (IGNORE_DIRS.includes(entry.name)) continue;
+
+      const subPath = path.join(modPath, entry.name);
+      const fileCount = countCodeFiles(subPath);
+
+      // Only consider as sub-feature if it has significant code
+      if (fileCount >= 5) {
+        subFeatures.push({
+          name: entry.name,
+          path: subPath,
+          fileCount
+        });
+      }
+    }
+  } catch (err) {
+    // Directory doesn't exist
+  }
+
+  return subFeatures;
+}
+
+/**
+ * Check if a module is too large to audit as a single unit
+ */
+function isModuleTooLarge(modPath) {
+  const fileCount = countCodeFiles(modPath);
+  const subFeatures = detectSubFeatures(modPath);
+
+  return {
+    tooLarge: fileCount > MAX_FILES_FOR_SINGLE_AUDIT || subFeatures.length > MAX_SUBFEATURES_FOR_SINGLE_AUDIT,
+    fileCount,
+    subFeatures
+  };
+}
+
+/**
  * Auto-discover auditable targets from the codebase
  */
 function discoverTargets() {
@@ -96,12 +168,29 @@ function discoverTargets() {
 
     for (const mod of modules) {
       const modPath = path.join(SRC_DIR, mod);
+      const sizeInfo = isModuleTooLarge(modPath);
+
       targets.push({
         path: `features/${mod}`,
         type: "module",
         name: formatName(mod),
         fsPath: modPath,
+        fileCount: sizeInfo.fileCount,
+        tooLarge: sizeInfo.tooLarge,
+        subFeatureCount: sizeInfo.subFeatures.length,
       });
+
+      // Add sub-features as separate auditable targets
+      for (const subFeature of sizeInfo.subFeatures) {
+        targets.push({
+          path: `features/${mod}/${subFeature.name}`,
+          type: "feature",
+          name: `${formatName(mod)} > ${formatName(subFeature.name)}`,
+          parent: `features/${mod}`,
+          fsPath: subFeature.path,
+          fileCount: subFeature.fileCount,
+        });
+      }
 
       // Look for tabs within the module
       const tabsDir = path.join(modPath, "tabs");
@@ -121,9 +210,9 @@ function discoverTargets() {
         }
       }
 
-      // Look for components directory
+      // Look for components directory (only if not already discovered as sub-feature)
       const componentsDir = path.join(modPath, "components");
-      if (fs.existsSync(componentsDir)) {
+      if (fs.existsSync(componentsDir) && !sizeInfo.subFeatures.some(sf => sf.name === 'components')) {
         targets.push({
           path: `features/${mod}/components`,
           type: "components",
@@ -265,15 +354,23 @@ function showQueue() {
   console.log("─".repeat(80));
 
   // Never audited (highest priority)
-  if (neverAudited.length > 0) {
-    console.log(`\n  🆕 NEVER AUDITED (${neverAudited.length}):\n`);
-    neverAudited.slice(0, 10).forEach((item, idx) => {
+  // Prefer sub-features over large parent modules
+  const neverAuditedFiltered = neverAudited.filter(item => {
+    // If it's a large module with sub-features, skip it (audit sub-features instead)
+    if (item.target.tooLarge) return false;
+    return true;
+  });
+
+  if (neverAuditedFiltered.length > 0) {
+    console.log(`\n  🆕 NEVER AUDITED (${neverAuditedFiltered.length}):\n`);
+    neverAuditedFiltered.slice(0, 10).forEach((item, idx) => {
+      const fileInfo = item.target.fileCount ? ` (${item.target.fileCount} files)` : '';
       console.log(
-        `     ${(idx + 1).toString().padStart(2)}. [${item.target.type.padEnd(10)}] ${item.target.name}`
+        `     ${(idx + 1).toString().padStart(2)}. [${item.target.type.padEnd(10)}] ${item.target.name}${fileInfo}`
       );
     });
-    if (neverAudited.length > 10) {
-      console.log(`     ... and ${neverAudited.length - 10} more`);
+    if (neverAuditedFiltered.length > 10) {
+      console.log(`     ... and ${neverAuditedFiltered.length - 10} more`);
     }
   }
 
@@ -305,12 +402,16 @@ function showQueue() {
   console.log(`     Needs re-audit:  ${needsReaudit.length}`);
   console.log(`     Healthy (A/A+):  ${healthy.length}`);
 
-  // Top recommendation
-  if (prioritized.length > 0 && prioritized[0].priority > 0) {
-    const top = prioritized[0];
+  // Top recommendation - prefer sub-features over large modules
+  const recommendable = prioritized.filter(p => !p.target.tooLarge && p.priority > 0);
+  if (recommendable.length > 0) {
+    const top = recommendable[0];
     console.log("\n  🎯 TOP RECOMMENDATION:");
     console.log(`     ${top.target.name}`);
     console.log(`     Path: src/lib/${top.target.path}`);
+    if (top.target.fileCount) {
+      console.log(`     Files: ${top.target.fileCount}`);
+    }
     if (top.audit) {
       console.log(`     Last audit: ${top.audit.lastAuditedAt.split("T")[0]}`);
       console.log(`     Grade: ${top.audit.overallGrade || "Unknown"}`);
@@ -590,13 +691,39 @@ function recordAudit(targetPath, gradesStr, notes) {
 /**
  * Claim a target for auditing (with atomic locking)
  */
-function claimTarget(targetPath) {
+function claimTarget(targetPath, forceFlag = false) {
   const allTargets = discoverTargets();
 
   const target = allTargets.find((t) => t.path === targetPath);
   if (!target) {
     console.log(`\n  ❌ Target not found: ${targetPath}`);
     console.log("  Run: node scripts/audit-tracker.cjs targets\n");
+    return;
+  }
+
+  // Check if module is too large to audit as a single unit
+  if (target.tooLarge && !forceFlag) {
+    console.log("\n" + "=".repeat(80));
+    console.log(`\n  ⚠️  MODULE TOO LARGE FOR SINGLE AUDIT\n`);
+    console.log("─".repeat(80));
+    console.log(`  Target: ${target.name}`);
+    console.log(`  Files: ${target.fileCount}`);
+    console.log(`  Sub-features: ${target.subFeatureCount}`);
+    console.log(`\n  This module has too many files (>${MAX_FILES_FOR_SINGLE_AUDIT}) or sub-features`);
+    console.log(`  (>${MAX_SUBFEATURES_FOR_SINGLE_AUDIT}) to meaningfully audit as one unit.`);
+    console.log(`\n  📁 AUDIT THESE SUB-FEATURES INSTEAD:\n`);
+
+    // Show sub-features
+    const subTargets = allTargets.filter(t => t.parent === targetPath);
+    subTargets.forEach((sub, idx) => {
+      const fileInfo = sub.fileCount ? ` (${sub.fileCount} files)` : '';
+      console.log(`     ${idx + 1}. ${sub.name}${fileInfo}`);
+      console.log(`        node scripts/audit-tracker.cjs claim "${sub.path}"`);
+    });
+
+    console.log(`\n  To force audit of the entire module (not recommended):`);
+    console.log(`     node scripts/audit-tracker.cjs claim "${targetPath}" --force`);
+    console.log("\n" + "=".repeat(80) + "\n");
     return;
   }
 
@@ -825,7 +952,8 @@ function main() {
       console.log("\n  Usage: node scripts/audit-tracker.cjs claim <target>\n");
       return;
     }
-    claimTarget(args[1]);
+    const forceFlag = args.includes("--force");
+    claimTarget(args[1], forceFlag);
   } else if (args[0] === "release") {
     if (!args[1]) {
       console.log("\n  Usage: node scripts/audit-tracker.cjs release <target>\n");

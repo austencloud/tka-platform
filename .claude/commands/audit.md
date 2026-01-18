@@ -30,6 +30,19 @@ Read `.claude/rules/auditing.md` for the complete 8-dimension audit protocol.
 
 If user provides a target (e.g., `/audit features/compose`), skip proposal and begin immediately after claiming.
 
+### Large Module Protection
+
+**Modules with >30 files or >3 sub-features cannot be audited as a single unit.** The script will refuse and show sub-features to audit instead.
+
+Example: `features/create` (521 files, 6 sub-features) → audit `features/create/assemble`, `features/create/generate`, etc. instead.
+
+If the claim command shows "MODULE TOO LARGE FOR SINGLE AUDIT":
+1. Pick one of the listed sub-features
+2. Claim and audit that sub-feature
+3. Repeat for other sub-features as needed
+
+This ensures audits are thorough and meaningful - you can't claim to have audited 500+ files in one pass.
+
 ### The Audit Process
 
 1. **Claim the target**: `node scripts/audit-tracker.cjs claim "<target>"`
@@ -64,6 +77,9 @@ node scripts/audit-tracker.cjs stats
 # Claim a target (prevents parallel agent conflicts)
 node scripts/audit-tracker.cjs claim features/compose
 
+# Force claim a large module (not recommended - prefer sub-features)
+node scripts/audit-tracker.cjs claim features/create --force
+
 # Record audit results (order: Arch, Code, Svelte5, A11y, UX, UI, Perf, Security)
 node scripts/audit-tracker.cjs record features/compose --grades "A+,A,A,B,A,A,A+,A"
 
@@ -85,8 +101,10 @@ After recording an audit:
 
 - **Always claim before auditing** to prevent conflicts with parallel agents
 - **Claims use file locking** to prevent race conditions between parallel agents
+- **Large modules (>30 files or >3 sub-features) must be audited as sub-features** - the script will refuse to claim them
 - Grade order for `--grades` flag: Architecture, Code Quality, Svelte 5, Accessibility, UX States, UI Consistency, Performance, Security
 - Targets are auto-discovered from `src/lib/features/` and `src/lib/shared/`
+- Sub-features are auto-discovered within large modules (e.g., `create/assemble`, `create/generate`)
 - Audits older than 30 days are flagged as stale
 - Claims expire after 4 hours if not released
 - The goal is **A+ across all dimensions**
