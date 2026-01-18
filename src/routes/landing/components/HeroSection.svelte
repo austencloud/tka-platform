@@ -12,8 +12,7 @@
   <div class="hero-content">
     <div class="hero-text-panel">
       <h1>The Kinetic Alphabet</h1>
-      <p class="tagline">Create and share flow arts choreography</p>
-
+      <p class="tagline">Create, record, and share flow arts choreography</p>
     </div>
 
     <HeroInstallFlow />

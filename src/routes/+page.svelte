@@ -25,11 +25,11 @@
 
 <svelte:head>
   {#if siteMode === "app"}
-    <title>TKA Scribe - Create and share flow arts choreography</title>
+    <title>TKA Scribe - Create, record, and share flow arts choreography</title>
   {:else}
     <title
-      >TKA - The Kinetic Alphabet | Flow Arts Notation for Staff,
-      Clubs, Fans, Hoops & More</title
+      >TKA - The Kinetic Alphabet | Flow Arts Notation for Staff, Clubs, Fans,
+      Hoops & More</title
     >
   {/if}
   <meta

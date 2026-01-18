@@ -37,8 +37,8 @@
 
     <div class="capabilities">
       <p>
-        Document sequences precisely. Share choreography by link or paper.
-        Learn from a global community. Animate to see movements in motion.
+        Document the technical. Share across languages. Learn from a global
+        community. Free your mind for everything else.
       </p>
     </div>
 
