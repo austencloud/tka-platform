@@ -200,17 +200,28 @@ export function getTypeExplanation(type: number): string {
     return `Invalid type number ${type}. Types range from 1-6.`;
   }
 
-  return `## Type ${t.type}: ${t.name}
+  let explanation = `## Type ${t.type}: ${t.name}
 
 **Definition:** ${t.description}
 
-**Motion pattern:**
-- Blue hand: ${t.motionPattern.blue}
-- Red hand: ${t.motionPattern.red}
+**Motion pattern:** ${t.motionPattern.blue === t.motionPattern.red ? `Both hands ${t.motionPattern.blue}` : `Blue: ${t.motionPattern.blue}, Red: ${t.motionPattern.red}`}
 
 **Letters (${t.letterCount}):** ${t.letters}
 
 **Key fact:** ${t.keyFact}`;
+
+  // Add rotation pattern if present (Type 1)
+  if (t.rotationPattern) {
+    explanation += `\n\n**Organization:** ${t.rotationPattern.description}\n`;
+    for (const group of t.rotationPattern.groups) {
+      explanation += `\n- **${group.letters}**: ${group.pattern}`;
+    }
+    if (t.rotationPattern.note) {
+      explanation += `\n\n*Note: ${t.rotationPattern.note}*`;
+    }
+  }
+
+  return explanation;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
