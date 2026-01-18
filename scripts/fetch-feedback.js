@@ -10,16 +10,26 @@
  *   4. Agent resolves when all subtasks complete
  *   5. When moving to in-review/completed, add resolution notes to explain what was done
  *
- * Concurrency Safety:
- *   - Claims use Firestore transactions to prevent race conditions
- *   - Two agents running simultaneously cannot claim the same item
+ * Concurrency Safety (Race Condition Prevention):
+ *   - Each script invocation gets a unique SESSION_ID
+ *   - Each claim attempt generates a unique claimToken (UUID)
+ *   - Claims use Firestore transactions for atomic read-check-write
+ *   - Post-claim verification re-reads the document to confirm ownership
+ *   - Even if two transactions both "succeed", only one claimToken persists
+ *   - The losing agent sees a clear "Lost claim race" message and retries with next item
+ *   - Tokens are visible in `list` output for debugging concurrent claims
  */
 
 import admin from "firebase-admin";
 import { readFileSync } from "fs";
 import { execSync } from "child_process";
 import { existsSync, mkdirSync } from "fs";
+import { randomUUID } from "crypto";
 import config from "../config/feedback.config.js";
+
+// Generate a unique session ID for this script invocation
+// This allows us to distinguish between different agents/sessions
+const SESSION_ID = randomUUID();
 
 // Load service account key
 const serviceAccount = JSON.parse(
@@ -303,13 +313,25 @@ async function downloadFeedbackImages(feedbackId, imageUrls) {
  * Atomically claim a feedback item using Firestore transaction
  * Prevents race conditions when multiple agents try to claim simultaneously
  *
+ * Uses a unique claim token per attempt - even if two agents run the exact
+ * same transaction code, only one will successfully write their token.
+ * Post-claim verification ensures we actually own the claim.
+ *
  * @param {string} docId - The document ID to claim
  * @param {boolean} isReclaim - Whether this is reclaiming a stale item
  * @returns {Object|null} - The claimed item data, or null if claim failed
  */
 async function atomicClaim(docId, isReclaim = false) {
+  // Generate a unique token for THIS specific claim attempt
+  // This is the key to preventing race conditions - even if two transactions
+  // both "succeed", only one will have written their token
+  const claimToken = randomUUID();
+  const shortToken = claimToken.substring(0, 8);
+
   try {
     const docRef = db.collection("feedback").doc(docId);
+
+    console.log(`  🔒 Attempting claim [${shortToken}] on ${docId.substring(0, 8)}...`);
 
     const result = await db.runTransaction(async (transaction) => {
       const doc = await transaction.get(docRef);
@@ -323,7 +345,8 @@ async function atomicClaim(docId, isReclaim = false) {
       // Check if still claimable
       if (data.status === "in-progress" && !isReclaim) {
         // Another agent claimed it between our query and this transaction
-        throw new Error("Already claimed by another agent");
+        const otherToken = data.claimToken?.substring(0, 8) || "unknown";
+        throw new Error(`Already claimed by another agent [${otherToken}]`);
       }
 
       // For reclaims, verify it's still stale
@@ -332,7 +355,8 @@ async function atomicClaim(docId, isReclaim = false) {
           ? Date.now() - data.claimedAt.toDate().getTime()
           : 0;
         if (claimAge < STALE_CLAIM_MS) {
-          throw new Error("Item is no longer stale");
+          const otherToken = data.claimToken?.substring(0, 8) || "unknown";
+          throw new Error(`Item is no longer stale (claimed by [${otherToken}])`);
         }
       }
 
@@ -341,16 +365,34 @@ async function atomicClaim(docId, isReclaim = false) {
         throw new Error("Item is no longer claimable");
       }
 
-      // Perform atomic update
+      // Perform atomic update with our unique claim token
       transaction.update(docRef, {
         status: "in-progress",
         claimedAt: admin.firestore.FieldValue.serverTimestamp(),
-        claimedBy: ADMIN_USER_ID, // Track who claimed it
+        claimedBy: ADMIN_USER_ID,
+        claimToken: claimToken, // Unique token for THIS claim attempt
+        claimSession: SESSION_ID, // Session ID for this script invocation
       });
 
       return { id: doc.id, ...data };
     });
 
+    // POST-CLAIM VERIFICATION: Re-read to confirm we own the claim
+    // This is the definitive check - even if two transactions both "commit",
+    // only one will have their token persisted
+    // Add 100ms delay to allow Firestore write propagation (eventual consistency)
+    await new Promise(resolve => setTimeout(resolve, 100));
+    const verifyDoc = await docRef.get();
+    const verifyData = verifyDoc.data();
+
+    if (verifyData.claimToken !== claimToken) {
+      // Another agent won the race - their token is in the document
+      const winnerToken = verifyData.claimToken?.substring(0, 8) || "unknown";
+      console.log(`  ❌ Lost claim race [${shortToken}] to [${winnerToken}]`);
+      return null;
+    }
+
+    console.log(`  ✅ Claim successful [${shortToken}]`);
     return result;
   } catch (error) {
     if (
@@ -431,6 +473,7 @@ async function listAllFeedback() {
         const claimedAt = item.claimedAt?.toDate?.()
           ? item.claimedAt.toDate().toLocaleString()
           : "Unknown";
+        const claimToken = item.claimToken?.substring(0, 8) || "no-token";
         const isStale =
           item.claimedAt?.toDate?.() &&
           Date.now() - item.claimedAt.toDate().getTime() > STALE_CLAIM_MS;
@@ -438,7 +481,7 @@ async function listAllFeedback() {
           `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}`
         );
         console.log(
-          `       └─ Claimed: ${claimedAt}${isStale ? " ⚠️ STALE" : ""}`
+          `       └─ Token: [${claimToken}] | Claimed: ${claimedAt}${isStale ? " ⚠️ STALE" : ""}`
         );
       });
     }
@@ -615,7 +658,11 @@ async function claimNextFeedback(priorityFilter = null) {
     if (!claimedItem) {
       // Claim failed (item was claimed by another agent)
       console.log("\n  🔄 Retrying with next available item...\n");
-      // Recursively try the next item
+      // Add random delay (50-500ms) to desynchronize parallel agents
+      // This prevents two agents from querying in lockstep and selecting the same items repeatedly
+      const delayMs = 50 + Math.floor(Math.random() * 450);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      // Recursively try the next item (will re-query, not use stale list)
       return claimNextFeedback(priorityFilter);
     }
 
@@ -756,6 +803,38 @@ async function updateFeedbackTitle(docId, title) {
 }
 
 /**
+ * Update description
+ */
+async function updateFeedbackDescription(docId, description) {
+  try {
+    const docRef = db.collection("feedback").doc(docId);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      console.log(`\n  ❌ Feedback not found: ${docId}\n`);
+      return null;
+    }
+
+    await docRef.update({
+      description: description,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log("\n" + "=".repeat(70));
+    console.log(`\n  ✅ DESCRIPTION UPDATED\n`);
+    console.log("─".repeat(70));
+    console.log(`  ID: ${docId}`);
+    console.log(`  New Description: ${description.substring(0, 100)}${description.length > 100 ? '...' : ''}`);
+    console.log("\n" + "=".repeat(70) + "\n");
+
+    return { id: docId, description };
+  } catch (error) {
+    console.error("\n  Error updating description:", error.message);
+    throw error;
+  }
+}
+
+/**
  * Update resolution notes
  */
 async function updateResolutionNotes(docId, notes) {
@@ -837,9 +916,12 @@ async function updateFeedbackById(docId, status, resolutionNotes, userFacingNote
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    // Clear claimedAt when archiving, completing, or moving to review
+    // Clear claim fields when archiving, completing, or moving to review
     if (["archived", "completed", "in-review"].includes(normalizedStatus)) {
       updateData.claimedAt = admin.firestore.FieldValue.delete();
+      updateData.claimedBy = admin.firestore.FieldValue.delete();
+      updateData.claimToken = admin.firestore.FieldValue.delete();
+      updateData.claimSession = admin.firestore.FieldValue.delete();
     }
     if (normalizedStatus === "archived") {
       updateData.resolvedAt = admin.firestore.FieldValue.serverTimestamp();
@@ -1613,9 +1695,14 @@ async function unclaimFeedback(docId) {
       return null;
     }
 
+    const releasedToken = item.claimToken?.substring(0, 8) || "none";
+
     await docRef.update({
       status: "new",
       claimedAt: admin.firestore.FieldValue.delete(),
+      claimedBy: admin.firestore.FieldValue.delete(),
+      claimToken: admin.firestore.FieldValue.delete(),
+      claimSession: admin.firestore.FieldValue.delete(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -1624,6 +1711,7 @@ async function unclaimFeedback(docId) {
     console.log("─".repeat(70));
     console.log(`  ID: ${docId}`);
     console.log(`  Title: ${item.title || "No title"}`);
+    console.log(`  Released Token: [${releasedToken}]`);
     console.log(`  Status: new (back in queue)`);
     console.log("\n" + "=".repeat(70) + "\n");
 
@@ -1636,9 +1724,11 @@ async function unclaimFeedback(docId) {
 
 /**
  * Claim a specific feedback item by ID
+ * Uses atomicClaim for race-safe claiming
  */
 async function claimSpecificFeedback(docId) {
   try {
+    // First check if item exists and is claimable (quick check before transaction)
     const docRef = db.collection("feedback").doc(docId);
     const doc = await docRef.get();
 
@@ -1654,7 +1744,8 @@ async function claimSpecificFeedback(docId) {
       const claimedAt = item.claimedAt?.toDate?.()
         ? item.claimedAt.toDate().toLocaleString()
         : "Unknown";
-      console.log(`\n  ⚠️  Item already in-progress (claimed: ${claimedAt})`);
+      const claimToken = item.claimToken?.substring(0, 8) || "unknown";
+      console.log(`\n  ⚠️  Item already in-progress (claimed: ${claimedAt}, token: [${claimToken}])`);
       console.log(
         `  Use 'unclaim ${docId}' first if you want to reclaim it.\n`
       );
@@ -1669,38 +1760,41 @@ async function claimSpecificFeedback(docId) {
       return null;
     }
 
-    await docRef.update({
-      status: "in-progress",
-      claimedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    // Use atomicClaim for race-safe claiming
+    const claimedItem = await atomicClaim(docId, false);
 
-    // Output the claimed item details (reuse display logic)
-    const createdAt = item.createdAt?.toDate?.()
-      ? item.createdAt.toDate().toLocaleString()
+    if (!claimedItem) {
+      console.log(`\n  ❌ Failed to claim item (another agent may have claimed it first)\n`);
+      return null;
+    }
+
+    // Output the claimed item details
+    const createdAt = claimedItem.createdAt?.toDate?.()
+      ? claimedItem.createdAt.toDate().toLocaleString()
       : "Unknown date";
 
     console.log("\n" + "=".repeat(70));
     console.log(`\n  🎯 CLAIMED FEEDBACK\n`);
     console.log("─".repeat(70));
     console.log(`  ID: ${docId}`);
-    console.log(`  Type: ${item.type || "N/A"}`);
-    console.log(`  Priority: ${item.priority || "N/A"}`);
+    console.log(`  Type: ${claimedItem.type || "N/A"}`);
+    console.log(`  Priority: ${claimedItem.priority || "N/A"}`);
     console.log(
-      `  User: ${item.userDisplayName || item.userEmail || "Anonymous"}`
+      `  User: ${claimedItem.userDisplayName || claimedItem.userEmail || "Anonymous"}`
     );
     console.log(`  Created: ${createdAt}`);
     console.log("─".repeat(70));
-    console.log(`  Title: ${item.title || "No title"}`);
+    console.log(`  Title: ${claimedItem.title || "No title"}`);
     console.log("─".repeat(70));
     console.log(`  Description:\n`);
-    console.log(`  ${item.description || "No description"}`);
+    console.log(`  ${claimedItem.description || "No description"}`);
     console.log("─".repeat(70));
-    console.log(`  Module: ${item.capturedModule || "Unknown"}`);
-    console.log(`  Tab: ${item.capturedTab || "Unknown"}`);
+    console.log(`  Module: ${claimedItem.capturedModule || "Unknown"}`);
+    console.log(`  Tab: ${claimedItem.capturedTab || "Unknown"}`);
 
-    if (item.resolutionNotes) {
+    if (claimedItem.resolutionNotes) {
       console.log("─".repeat(70));
-      console.log(`  Previous Notes: ${item.resolutionNotes}`);
+      console.log(`  Previous Notes: ${claimedItem.resolutionNotes}`);
     }
 
     console.log("\n" + "=".repeat(70));
@@ -1708,7 +1802,7 @@ async function claimSpecificFeedback(docId) {
       `\n  To resolve: node scripts/fetch-feedback.js ${docId} in-review "Your resolution notes"\n`
     );
 
-    return { id: docId, ...item };
+    return { id: docId, ...claimedItem };
   } catch (error) {
     console.error("\n  Error claiming feedback:", error.message);
     throw error;
@@ -2169,6 +2263,9 @@ async function main() {
     } else if (args[1] === "title") {
       // Update title: <id> title "new title"
       await updateFeedbackTitle(args[0], args[2]);
+    } else if (args[1] === "description") {
+      // Update description: <id> description "new description"
+      await updateFeedbackDescription(args[0], args[2]);
     } else if (args[1] === "priority") {
       // Update priority: <id> priority <low|medium|high>
       await updateFeedbackPriority(args[0], args[2]);
