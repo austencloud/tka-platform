@@ -25,13 +25,20 @@ Run `node scripts/fetch-feedback.js list` to show the feedback queue.
 
 **Auto-select the best item using this priority:**
 
-1. **Bugs first** - bugs affect current users, features can wait
-2. **Higher priority** - high > medium > low > unset
-3. **Clear scope** - items with clear titles/descriptions over vague ones
-4. **Achievable complexity** - prefer items that can be completed in one session
-5. **Skip incomplete metadata** - avoid items with `--title` or `--description` placeholders
+1. **ONLY select from "new" (unclaimed) items** - never select in-progress items for auto-selection
+2. **Bugs first** - bugs affect current users, features can wait
+3. **Higher priority** - high > medium > low > unset
+4. **Clear scope** - items with clear titles/descriptions over vague ones
+5. **Achievable complexity** - prefer items that can be completed in one session
+6. **Skip incomplete metadata** - avoid items with `--title` or `--description` placeholders
 
-After selecting, announce your choice with a brief rationale, then proceed to claim it. Do NOT ask which item to work on.
+**BE DECISIVE.** Apply these criteria once and pick the first item that matches from the "🆕 UNCLAIMED" section. Do NOT:
+- Cycle through multiple items looking for the "perfect" one
+- Second-guess your selection
+- Check the details of 3+ items before deciding
+- Ask which item to work on
+
+After selecting, announce your choice with a 1-sentence rationale, then immediately claim it.
 
 ### If argument provided (feedback ID):
 
