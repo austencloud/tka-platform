@@ -29,10 +29,14 @@
         <i class="fas fa-font" aria-hidden="true"></i> Letter Details
       {:else if context?.type === "term"}
         <i class="fas fa-book" aria-hidden="true"></i> Term Definition
+      {:else if context?.type === "termWithVisuals"}
+        <i class="fas fa-book" aria-hidden="true"></i> Term Examples
       {:else if context?.type === "comparison"}
         <i class="fas fa-balance-scale" aria-hidden="true"></i> Comparison
-      {:else if context?.type === "position"}
-        <i class="fas fa-crosshairs" aria-hidden="true"></i> Position Info
+      {:else if context?.type === "positionExamples"}
+        <i class="fas fa-crosshairs" aria-hidden="true"></i> Position Examples
+      {:else if context?.type === "motionExamples"}
+        <i class="fas fa-arrows-alt" aria-hidden="true"></i> Motion Examples
       {:else if context?.type === "list" || context?.type === "typeList"}
         <i class="fas fa-layer-group" aria-hidden="true"></i> Letter Type
       {:else}
@@ -152,40 +156,79 @@
     {:else if context?.type === "comparison" && context.comparison}
       <!-- Comparison Context -->
       <div class="comparison-context">
-        <!-- Pictograph for first letter -->
-        {#if pictographBase64}
-          <div class="pictograph-display">
-            <img
-              src="data:image/png;base64,{pictographBase64}"
-              alt="Pictograph for comparison"
-            />
+        <!-- Side-by-side pictographs -->
+        {#if pictographGallery.size > 0}
+          {@const base641 = pictographGallery.get(context.comparison.letter1)}
+          {@const base642 = pictographGallery.get(context.comparison.letter2)}
+
+          <div class="comparison-gallery">
+            {#if base641 && base642}
+              <div class="comparison-row">
+                <div class="comparison-item">
+                  <img
+                    src="data:image/png;base64,{base641}"
+                    alt="Pictograph for {context.comparison.letter1}"
+                  />
+                  <div class="comparison-info">
+                    <span class="letter-display">{context.comparison.letter1}</span>
+                    <span class="type-badge">Type {context.comparison.letter1Data.type}</span>
+                    <span class="type-name">{context.comparison.letter1Data.typeName}</span>
+                  </div>
+                </div>
+
+                <span class="vs-badge">vs</span>
+
+                <div class="comparison-item">
+                  <img
+                    src="data:image/png;base64,{base642}"
+                    alt="Pictograph for {context.comparison.letter2}"
+                  />
+                  <div class="comparison-info">
+                    <span class="letter-display">{context.comparison.letter2}</span>
+                    <span class="type-badge">Type {context.comparison.letter2Data.type}</span>
+                    <span class="type-name">{context.comparison.letter2Data.typeName}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Motion comparison -->
+              <div class="info-section">
+                <h4>Motion Comparison</h4>
+                <div class="motion-comparison-grid">
+                  <div class="motion-compare-item">
+                    <div class="motion-compare-header">{context.comparison.letter1}</div>
+                    <div class="motion-detail">
+                      <span class="color-dot blue"></span>
+                      Blue: {context.comparison.letter1Data.blueMotion}
+                    </div>
+                    <div class="motion-detail">
+                      <span class="color-dot red"></span>
+                      Red: {context.comparison.letter1Data.redMotion}
+                    </div>
+                  </div>
+
+                  <div class="motion-compare-item">
+                    <div class="motion-compare-header">{context.comparison.letter2}</div>
+                    <div class="motion-detail">
+                      <span class="color-dot blue"></span>
+                      Blue: {context.comparison.letter2Data.blueMotion}
+                    </div>
+                    <div class="motion-detail">
+                      <span class="color-dot red"></span>
+                      Red: {context.comparison.letter2Data.redMotion}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {/if}
           </div>
         {/if}
-
-        <div class="comparison-header">
-          <div class="compare-item">
-            <span class="letter-display">{context.comparison.letter1}</span>
-            <span class="type-name">{context.comparison.type1}</span>
+        {#if pictographGallery.size === 0}
+          <div class="gallery-loading">
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            <span>Loading pictographs...</span>
           </div>
-          <span class="vs-badge">vs</span>
-          <div class="compare-item">
-            <span class="letter-display">{context.comparison.letter2}</span>
-            <span class="type-name">{context.comparison.type2}</span>
-          </div>
-        </div>
-      </div>
-    {:else if context?.type === "position" && context.position}
-      <!-- Position Context -->
-      <div class="position-context">
-        <div class="info-card">
-          <div class="position-display">{context.position.name}</div>
-          <div class="angle-display">{context.position.angleDegrees}</div>
-        </div>
-
-        <div class="info-section">
-          <h4>Description</h4>
-          <p class="definition-text">{context.position.description}</p>
-        </div>
+        {/if}
       </div>
     {:else if context?.type === "typeList" && context.typeList}
       <!-- Type List Context with Gallery -->
@@ -203,14 +246,22 @@
         <div class="info-section">
           <h4>Motion Pattern</h4>
           <div class="motion-pattern">
-            <div class="pattern-item">
-              <span class="color-dot blue"></span>
-              <span>{context.typeList.motionPattern.blueMotion}</span>
-            </div>
-            <div class="pattern-item">
-              <span class="color-dot red"></span>
-              <span>{context.typeList.motionPattern.redMotion}</span>
-            </div>
+            {#if context.typeList.motionPattern.blueMotion === context.typeList.motionPattern.redMotion}
+              <!-- Both hands do the same motion -->
+              <div class="pattern-unified">
+                Both hands {context.typeList.motionPattern.blueMotion}
+              </div>
+            {:else}
+              <!-- Hands do different motions -->
+              <div class="pattern-item">
+                <span class="color-dot blue"></span>
+                <span>{context.typeList.motionPattern.blueMotion}</span>
+              </div>
+              <div class="pattern-item">
+                <span class="color-dot red"></span>
+                <span>{context.typeList.motionPattern.redMotion}</span>
+              </div>
+            {/if}
           </div>
         </div>
 
@@ -227,7 +278,6 @@
                       src="data:image/png;base64,{base64}"
                       alt="Pictograph for letter {letter}"
                     />
-                    <span class="gallery-letter">{letter}</span>
                   </div>
                 {/if}
               {/each}
@@ -243,6 +293,130 @@
           </div>
         {/if}
 
+      </div>
+    {:else if context?.type === "positionExamples" && context.positionExamples}
+      <!-- Position Examples Context -->
+      <div class="position-examples-context">
+        <!-- Position Header -->
+        <div class="info-card">
+          <div class="position-display">{context.positionExamples.position}</div>
+          <p class="definition-text">{context.positionExamples.definition}</p>
+        </div>
+
+        <!-- Pictograph Gallery -->
+        {#if pictographGallery.size > 0}
+          <div class="info-section">
+            <h4>Examples</h4>
+            <div class="pictograph-gallery">
+              {#each context.positionExamples.examples as example}
+                {@const base64 = pictographGallery.get(example.letter)}
+                {#if base64}
+                  <div class="gallery-item">
+                    <img
+                      src="data:image/png;base64,{base64}"
+                      alt="Pictograph for {example.letter}"
+                    />
+                    <div class="gallery-info">
+                      <span class="gallery-letter">{example.letter}</span>
+                      <span class="gallery-positions">
+                        {example.startPosition} → {example.endPosition}
+                      </span>
+                    </div>
+                  </div>
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {:else if context.positionExamples.examples.length > 0}
+          <div class="info-section">
+            <h4>Examples</h4>
+            <div class="gallery-loading">
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              <span>Loading pictographs...</span>
+            </div>
+          </div>
+        {/if}
+      </div>
+    {:else if context?.type === "motionExamples" && context.motionExamples}
+      <!-- Motion Examples Context -->
+      <div class="motion-examples-context">
+        <!-- Motion Header -->
+        <div class="info-card">
+          <div class="motion-display">{context.motionExamples.motionType}</div>
+          <p class="definition-text">{context.motionExamples.definition}</p>
+        </div>
+
+        <!-- Pictograph Gallery -->
+        {#if pictographGallery.size > 0}
+          <div class="info-section">
+            <h4>Examples</h4>
+            <div class="pictograph-gallery">
+              {#each context.motionExamples.examples as example}
+                {@const base64 = pictographGallery.get(example.letter)}
+                {#if base64}
+                  <div class="gallery-item">
+                    <img
+                      src="data:image/png;base64,{base64}"
+                      alt="Pictograph for {example.letter}"
+                    />
+                    <div class="gallery-info">
+                      <span class="gallery-letter">{example.letter}</span>
+                      <span class="gallery-motions">
+                        Blue: {example.blueMotion} | Red: {example.redMotion}
+                      </span>
+                    </div>
+                  </div>
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {:else if context.motionExamples.examples.length > 0}
+          <div class="info-section">
+            <h4>Examples</h4>
+            <div class="gallery-loading">
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              <span>Loading pictographs...</span>
+            </div>
+          </div>
+        {/if}
+      </div>
+    {:else if context?.type === "termWithVisuals" && context.termWithVisuals}
+      <!-- Term With Visuals Context -->
+      <div class="term-visuals-context">
+        <!-- Term Header -->
+        <div class="info-card">
+          <div class="term-display">{context.termWithVisuals.term}</div>
+          <p class="definition-text">{context.termWithVisuals.definition}</p>
+        </div>
+
+        <!-- Pictograph Gallery -->
+        {#if pictographGallery.size > 0}
+          <div class="info-section">
+            <h4>Examples</h4>
+            <div class="pictograph-gallery">
+              {#each context.termWithVisuals.examples as example}
+                {@const base64 = pictographGallery.get(example.letter)}
+                {#if base64}
+                  <div class="gallery-item">
+                    <img
+                      src="data:image/png;base64,{base64}"
+                      alt="Pictograph for {example.letter}"
+                    />
+                    <span class="gallery-letter">{example.letter}</span>
+                  </div>
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {:else if context.termWithVisuals.examples.length > 0}
+          <div class="info-section">
+            <h4>Examples</h4>
+            <div class="gallery-loading">
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              <span>Loading pictographs...</span>
+            </div>
+          </div>
+        {/if}
       </div>
     {:else if context?.type === "list"}
       <!-- Legacy list context fallback -->
@@ -475,6 +649,13 @@
     text-transform: capitalize;
   }
 
+  .motion-display {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--theme-text, #ffffff);
+    text-transform: capitalize;
+  }
+
   .definition-text {
     font-size: 14px;
     line-height: 1.6;
@@ -509,7 +690,13 @@
   }
 
   /* Comparison Context */
-  .comparison-header {
+  .comparison-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .comparison-row {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -517,33 +704,79 @@
     padding: 16px;
   }
 
-  .compare-item {
+  .comparison-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    max-width: 200px;
+  }
+
+  .comparison-item img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    padding: 8px;
+  }
+
+  .comparison-info {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    width: 100%;
   }
 
   .vs-badge {
-    padding: 6px 12px;
+    padding: 8px 16px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-radius: 6px;
-    font-size: 12px;
+    border-radius: 8px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    flex-shrink: 0;
   }
 
-  /* Position Context */
+  .motion-comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .motion-compare-item {
+    padding: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .motion-compare-header {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+    text-align: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .motion-detail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--theme-text, #ffffff);
+  }
+
+  /* Position Display (used in position examples) */
   .position-display {
     font-size: 24px;
     font-weight: 700;
     color: var(--theme-text, #ffffff);
-  }
-
-  .angle-display {
-    font-size: 16px;
-    color: var(--theme-accent, #6366f1);
-    margin-top: 4px;
+    text-transform: capitalize;
   }
 
   /* List Context (legacy) */
@@ -585,6 +818,13 @@
     color: var(--theme-text, #ffffff);
   }
 
+  .pattern-unified {
+    font-size: 13px;
+    color: var(--theme-text, #ffffff);
+    text-align: center;
+    width: 100%;
+  }
+
   /* Pictograph Gallery - optimized for 22 items */
   .pictograph-gallery {
     display: grid;
@@ -619,6 +859,21 @@
     font-size: 12px;
     font-weight: 600;
     color: var(--theme-text, #ffffff);
+  }
+
+  .gallery-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .gallery-positions,
+  .gallery-motions {
+    font-size: 11px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    text-align: center;
   }
 
   .gallery-loading {

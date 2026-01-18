@@ -137,7 +137,16 @@ const DOMAIN_TERMS = [
 	'dual-dash'
 ]
 
-export type QuestionType = 'letter' | 'term' | 'comparison' | 'how-to' | 'list' | 'complex'
+export type QuestionType =
+	| 'letter'
+	| 'term'
+	| 'comparison'
+	| 'how-to'
+	| 'list'
+	| 'type-list'
+	| 'position'
+	| 'motion'
+	| 'complex'
 
 export interface QuestionMatch {
 	/** Type of question */
@@ -230,6 +239,113 @@ const PATTERNS: PatternDefinition[] = [
 	{
 		regex: /^explain (alpha|beta|gamma|pro|anti|shift|dash|static|orientation|position|grid|motion|LOOP|reversal|skew|turn|pictograph)$/i,
 		type: 'term',
+		complexity: 1,
+		extractSubject: (m) => m[1].toLowerCase()
+	},
+
+	// ─────────────────────────────────────────────────────────────────
+	// Type questions (visual-first)
+	// ─────────────────────────────────────────────────────────────────
+	{
+		regex: /^tell me about type ([1-6])(?: letters)?\??$/i,
+		type: 'type-list',
+		complexity: 1,
+		extractSubject: (m) => m[1]
+	},
+	{
+		regex: /^what (?:is|are) type ([1-6])(?: letters)?\??$/i,
+		type: 'type-list',
+		complexity: 1,
+		extractSubject: (m) => m[1]
+	},
+	{
+		regex: /^show me type ([1-6])(?: letters)?\??$/i,
+		type: 'type-list',
+		complexity: 1,
+		extractSubject: (m) => m[1]
+	},
+	{
+		regex: /^(?:tell me about|what (?:is|are)|show me) (dual-shift|cross-shift|dual-dash) letters\??$/i,
+		type: 'type-list',
+		complexity: 1,
+		extractSubject: (m) => {
+			// Convert type name to type number
+			const typeMap: Record<string, string> = {
+				'dual-shift': '1',
+				shift: '2',
+				'cross-shift': '3',
+				dash: '4',
+				'dual-dash': '5',
+				static: '6'
+			}
+			return typeMap[m[1].toLowerCase()] || '1'
+		}
+	},
+
+	// ─────────────────────────────────────────────────────────────────
+	// Position questions (visual-first)
+	// ─────────────────────────────────────────────────────────────────
+	{
+		regex: /^what is (alpha|beta|gamma|zeta|eta)(?: position)?\??$/i,
+		type: 'position',
+		complexity: 1,
+		extractSubject: (m) => m[1].toLowerCase()
+	},
+	{
+		regex: /^(alpha|beta|gamma|zeta|eta) position\??$/i,
+		type: 'position',
+		complexity: 1,
+		extractSubject: (m) => m[1].toLowerCase()
+	},
+	{
+		regex: /^define (alpha|beta|gamma|zeta|eta)\??$/i,
+		type: 'position',
+		complexity: 1,
+		extractSubject: (m) => m[1].toLowerCase()
+	},
+	{
+		regex: /^tell me about (alpha|beta|gamma|zeta|eta)\??$/i,
+		type: 'position',
+		complexity: 1,
+		extractSubject: (m) => m[1].toLowerCase()
+	},
+	{
+		regex: /^show me (alpha|beta|gamma|zeta|eta)\??$/i,
+		type: 'position',
+		complexity: 1,
+		extractSubject: (m) => m[1].toLowerCase()
+	},
+
+	// ─────────────────────────────────────────────────────────────────
+	// Motion questions (visual-first)
+	// ─────────────────────────────────────────────────────────────────
+	{
+		regex: /^what is (shift|dash|static)(?: motion)?\??$/i,
+		type: 'motion',
+		complexity: 1,
+		extractSubject: (m) => m[1].toLowerCase()
+	},
+	{
+		regex: /^(shift|dash|static) motion\??$/i,
+		type: 'motion',
+		complexity: 1,
+		extractSubject: (m) => m[1].toLowerCase()
+	},
+	{
+		regex: /^define (shift|dash|static)\??$/i,
+		type: 'motion',
+		complexity: 1,
+		extractSubject: (m) => m[1].toLowerCase()
+	},
+	{
+		regex: /^tell me about (shift|dash|static)\??$/i,
+		type: 'motion',
+		complexity: 1,
+		extractSubject: (m) => m[1].toLowerCase()
+	},
+	{
+		regex: /^what is (pro|anti|prospin|antispin)\??$/i,
+		type: 'motion',
 		complexity: 1,
 		extractSubject: (m) => m[1].toLowerCase()
 	},

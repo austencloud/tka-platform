@@ -542,19 +542,26 @@
 
     // Check the latest assistant message for tool results
     const lastMessage = chatMessages[chatMessages.length - 1];
+
     if (lastMessage?.role === "assistant" && lastMessage.parts) {
       for (const part of lastMessage.parts) {
-        if (part.type === "tool-invocation") {
-          // Access the toolInvocation object - state is on the invocation, not the part
-          const invocation = part.toolInvocation;
-          if (invocation?.state === "result") {
-            const toolName = invocation.toolName;
-            const result = invocation.result as Record<string, unknown> | undefined;
+        // AI SDK uses part.type like "tool-{toolName}" for tool calls
+        const isToolPart = typeof part.type === "string" && part.type.startsWith("tool-");
+
+        if (isToolPart) {
+          // Extract tool name from type ("tool-compare_letters" -> "compare_letters")
+          const toolName = part.type.replace(/^tool-/, '');
+          const toolState = part.state;
+          const result = part.output as Record<string, unknown> | undefined;
+          const args = part.input as Record<string, unknown> | undefined;
+
+          // Only process when tool execution is complete
+          if (toolState === "output-available" || toolState === "result" || toolState === "done" || (result && !toolState)) {
 
             if (toolName === "get_letter_explanation" && result) {
               // Result is now { explanation, contextData } or a string (error case)
               const contextData = (result as { contextData?: Record<string, unknown> })?.contextData;
-              const letter = invocation.args?.letter as string | undefined;
+              const letter = args?.letter as string | undefined;
 
               if (contextData && letter) {
                 // Use structured data from tool result
@@ -586,44 +593,141 @@
                 fetchPictograph(letter, 0);
               }
             } else if (toolName === "get_term_definition" && result) {
-              const term = invocation.args?.term as string | undefined;
-              if (term) {
+              // Check if this has visual examples (new enhanced format)
+              const contextData = (result as { contextData?: Record<string, unknown> })?.contextData;
+
+              if (contextData && contextData.type === "termWithVisuals") {
+                // Enhanced term with visual examples
+                const examples = contextData.examples as Array<{ letter: string; variation: number }> | undefined;
+
                 currentContext = {
-                  type: "term",
-                  term: {
-                    term: term,
-                    definition: (result.definition as string) || "",
-                    examples: (result.examples as string[]) || [],
-                    relatedTerms: (result.relatedTerms as string[]) || [],
-                  },
+                  type: "termWithVisuals",
+                  term: (contextData.term as string) || "",
+                  definition: (contextData.definition as string) || "",
+                  examples: examples || [],
                 };
+
+                // Fetch pictographs for examples
+                if (examples && examples.length > 0) {
+                  fetchPictographGallery(examples.map(ex => ex.letter));
+                }
+              } else {
+                // Original text-only term definition
+                const term = args?.term as string | undefined;
+                if (term) {
+                  currentContext = {
+                    type: "term",
+                    term: {
+                      term: term,
+                      definition: (result.definition as string) || "",
+                      examples: (result.examples as string[]) || [],
+                      relatedTerms: (result.relatedTerms as string[]) || [],
+                    },
+                  };
+                }
+              }
+            } else if (toolName === "show_position_examples" && result) {
+              // New position examples tool
+              const contextData = (result as { contextData?: Record<string, unknown> })?.contextData;
+
+              if (contextData && contextData.type === "positionExamples") {
+                const position = contextData.position as string;
+                const definition = contextData.definition as string;
+                const examples = contextData.examples as Array<{
+                  letter: string;
+                  variation: number;
+                  startPosition: string;
+                  endPosition: string;
+                }>;
+
+                currentContext = {
+                  type: "positionExamples",
+                  position,
+                  definition,
+                  examples,
+                };
+
+                // Fetch pictographs for all examples
+                if (examples && examples.length > 0) {
+                  fetchPictographGallery(examples.map(ex => ex.letter));
+                }
+              }
+            } else if (toolName === "show_motion_examples" && result) {
+              // New motion examples tool
+              const contextData = (result as { contextData?: Record<string, unknown> })?.contextData;
+
+              if (contextData && contextData.type === "motionExamples") {
+                const motionType = contextData.motionType as string;
+                const definition = contextData.definition as string;
+                const examples = contextData.examples as Array<{
+                  letter: string;
+                  variation: number;
+                  blueMotion: string;
+                  redMotion: string;
+                }>;
+
+                currentContext = {
+                  type: "motionExamples",
+                  motionType,
+                  definition,
+                  examples,
+                };
+
+                // Fetch pictographs for all examples
+                if (examples && examples.length > 0) {
+                  fetchPictographGallery(examples.map(ex => ex.letter));
+                }
               }
             } else if (toolName === "compare_letters" && result) {
-              const letter1 = invocation.args?.letter1 as string | undefined;
-              const letter2 = invocation.args?.letter2 as string | undefined;
-              if (letter1 && letter2) {
+              // Check for new enhanced comparison format with contextData
+              const contextData = (result as { contextData?: Record<string, unknown> })?.contextData;
+
+              if (contextData && contextData.type === "comparison") {
+                const letter1 = contextData.letter1 as string;
+                const letter2 = contextData.letter2 as string;
+                const letter1Data = contextData.letter1Data as {
+                  letter: string;
+                  type: number;
+                  typeName: string;
+                  blueMotion: string;
+                  redMotion: string;
+                };
+                const letter2Data = contextData.letter2Data as {
+                  letter: string;
+                  type: number;
+                  typeName: string;
+                  blueMotion: string;
+                  redMotion: string;
+                };
+
                 currentContext = {
                   type: "comparison",
                   comparison: {
                     letter1,
                     letter2,
-                    type1: (result.letter1Type as string) || "",
-                    type2: (result.letter2Type as string) || "",
+                    letter1Data,
+                    letter2Data,
                   },
                 };
-                fetchPictograph(letter1, 0);
-              }
-            } else if (toolName === "get_position_info" && result) {
-              const position = invocation.args?.position as string | undefined;
-              if (position) {
-                currentContext = {
-                  type: "position",
-                  position: {
-                    name: position,
-                    angleDegrees: (result.angleDegrees as string) || "",
-                    description: (result.description as string) || "",
-                  },
-                };
+
+                // Fetch BOTH pictographs as a gallery
+                fetchPictographGallery([letter1, letter2]);
+              } else {
+                // Fallback to old format (shouldn't happen with updated tool)
+                const letter1 = args?.letter1 as string | undefined;
+                const letter2 = args?.letter2 as string | undefined;
+                if (letter1 && letter2) {
+                  currentContext = {
+                    type: "comparison",
+                    comparison: {
+                      letter1,
+                      letter2,
+                      letter1Data: { letter: letter1, type: 0, typeName: "", blueMotion: "", redMotion: "" },
+                      letter2Data: { letter: letter2, type: 0, typeName: "", blueMotion: "", redMotion: "" },
+                    },
+                  };
+                  fetchPictographGallery([letter1, letter2]);
+                }
               }
             } else if (toolName === "list_letters_by_type" && result) {
               // Result is { explanation, contextData } for type list

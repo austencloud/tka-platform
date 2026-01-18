@@ -52,17 +52,20 @@ export interface TermContext {
 export interface ComparisonContext {
   letter1: string;
   letter2: string;
-  type1: string;
-  type2: string;
-}
-
-/**
- * Position context data
- */
-export interface PositionContext {
-  name: string;
-  angleDegrees: string;
-  description: string;
+  letter1Data: {
+    letter: string;
+    type: number;
+    typeName: string;
+    blueMotion: string;
+    redMotion: string;
+  };
+  letter2Data: {
+    letter: string;
+    type: number;
+    typeName: string;
+    blueMotion: string;
+    redMotion: string;
+  };
 }
 
 /**
@@ -81,15 +84,66 @@ export interface TypeListContext {
 }
 
 /**
+ * Position examples context data (visual examples for a position)
+ */
+export interface PositionExamplesContext {
+  position: string;
+  definition: string;
+  examples: Array<{
+    letter: string;
+    variation: number;
+    startPosition: string;
+    endPosition: string;
+  }>;
+}
+
+/**
+ * Motion examples context data (visual examples for a motion type)
+ */
+export interface MotionExamplesContext {
+  motionType: string;
+  definition: string;
+  examples: Array<{
+    letter: string;
+    variation: number;
+    blueMotion: string;
+    redMotion: string;
+  }>;
+}
+
+/**
+ * Term with visual examples context data
+ */
+export interface TermWithVisualsContext {
+  term: string;
+  definition: string;
+  examples: Array<{
+    letter: string;
+    variation: number;
+  }>;
+}
+
+/**
  * Context data returned by the TIKA API
  */
 export interface ContextData {
-  type: "letter" | "term" | "comparison" | "list" | "position" | "typeList" | null;
+  type:
+    | "letter"
+    | "term"
+    | "comparison"
+    | "list"
+    | "typeList"
+    | "positionExamples"
+    | "motionExamples"
+    | "termWithVisuals"
+    | null;
   letter?: LetterContext;
   term?: TermContext;
   comparison?: ComparisonContext;
-  position?: PositionContext;
   typeList?: TypeListContext;
+  positionExamples?: PositionExamplesContext;
+  motionExamples?: MotionExamplesContext;
+  termWithVisuals?: TermWithVisualsContext;
 }
 
 /**

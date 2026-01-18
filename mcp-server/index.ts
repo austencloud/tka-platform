@@ -509,7 +509,7 @@ server.tool(
 
 ## Overview
 
-TKA is a notation system for flow arts (poi, staff, etc.) that encodes hand positions and movements into letters. Each "pictograph" represents one beat of motion showing:
+TKA is a notation system for flow arts with dual wielded props (staff, fans, clubs, etc.) that encodes hand positions and movements into letters. Each "pictograph" represents one beat of motion showing:
 - Two props (blue and red) at specific grid positions
 - Motion arrows showing how each hand moves
 - Start and end positions (Alpha, Beta, or Gamma)

@@ -26,7 +26,9 @@ import {
 	getVTGMapping,
 	getAlphabetOverview,
 	getCommonAnswer,
-	getTypeNamingOrigin
+	getTypeNamingOrigin,
+	POSITION_DEFINITIONS,
+	MOTION_TYPE_DEFINITIONS
 } from '$lib/features/learn/ai/canonical-responses'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -260,7 +262,17 @@ ${variations.slice(0, 5).map((v, i) => `[${i}] ${v.startPosition} → ${v.endPos
 	}
 }
 
-function executeGetTermDefinition(term: string): string {
+interface TermDefinitionResult {
+	explanation: string
+	contextData?: {
+		type: 'termWithVisuals'
+		term: string
+		definition: string
+		examples: PictographExample[]
+	}
+}
+
+function executeGetTermDefinition(term: string): TermDefinitionResult | string {
 	ensureDataLoaded()
 
 	const normalizedTerm = term.toLowerCase().trim()
@@ -274,7 +286,7 @@ function executeGetTermDefinition(term: string): string {
 		return `Term "${term}" not found.${possibleMatches.length > 0 ? ` Did you mean: ${possibleMatches.join(', ')}?` : ''}`
 	}
 
-	return `# ${term.charAt(0).toUpperCase() + term.slice(1)}
+	const explanation = `# ${term.charAt(0).toUpperCase() + term.slice(1)}
 
 **Definition:** ${entry.definition}
 
@@ -284,9 +296,57 @@ ${entry.examples.map(e => `- ${e}`).join('\n')}
 **Related terms:** ${entry.relatedTerms.join(', ')}
 
 **Category:** ${entry.category}`
+
+	// Check if this term has visual examples available
+	let visualExamples: PictographExample[] = []
+
+	if (isPositionTerm(normalizedTerm)) {
+		visualExamples = getPositionExamples(normalizedTerm, 3)
+	} else if (isMotionTerm(normalizedTerm)) {
+		visualExamples = getMotionExamples(normalizedTerm)
+	}
+
+	// If we have visual examples, return enriched result
+	if (visualExamples.length > 0) {
+		return {
+			explanation,
+			contextData: {
+				type: 'termWithVisuals',
+				term: normalizedTerm,
+				definition: entry.definition,
+				examples: visualExamples
+			}
+		}
+	}
+
+	// Otherwise return just the text explanation
+	return explanation
 }
 
-function executeCompareLetters(letter1: string, letter2: string): string {
+interface ComparisonResult {
+	explanation: string
+	contextData: {
+		type: 'comparison'
+		letter1: string
+		letter2: string
+		letter1Data: {
+			letter: string
+			type: number
+			typeName: string
+			blueMotion: string
+			redMotion: string
+		}
+		letter2Data: {
+			letter: string
+			type: number
+			typeName: string
+			blueMotion: string
+			redMotion: string
+		}
+	}
+}
+
+function executeCompareLetters(letter1: string, letter2: string): ComparisonResult | string {
 	ensureDataLoaded()
 
 	const var1 = allPictographs.filter((p) => p.letter === letter1)
@@ -310,7 +370,7 @@ function executeCompareLetters(letter1: string, letter2: string): string {
 	const typeDef1 = TYPE_DEFINITIONS[typeNum1]
 	const typeDef2 = TYPE_DEFINITIONS[typeNum2]
 
-	let result = `# Comparison: ${letter1} vs ${letter2}
+	let explanation = `# Comparison: ${letter1} vs ${letter2}
 
 ## At a Glance
 | Property | ${letter1} | ${letter2} |
@@ -326,10 +386,141 @@ function executeCompareLetters(letter1: string, letter2: string): string {
 
 	// If different types, include canonical type comparison (bulletproof accuracy)
 	if (typeNum1 !== typeNum2 && typeNum1 > 0 && typeNum2 > 0) {
-		result += `\n\n${getTypeComparison(typeNum1, typeNum2)}`
+		explanation += `\n\n${getTypeComparison(typeNum1, typeNum2)}`
 	}
 
-	return result
+	return {
+		explanation,
+		contextData: {
+			type: 'comparison',
+			letter1,
+			letter2,
+			letter1Data: {
+				letter: letter1,
+				type: typeNum1,
+				typeName: typeDef1?.name || 'Unknown',
+				blueMotion: rep1.blueMotion.motionType,
+				redMotion: rep1.redMotion.motionType
+			},
+			letter2Data: {
+				letter: letter2,
+				type: typeNum2,
+				typeName: typeDef2?.name || 'Unknown',
+				blueMotion: rep2.blueMotion.motionType,
+				redMotion: rep2.redMotion.motionType
+			}
+		}
+	}
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Helper Functions for Visual Examples
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface PictographExample {
+	letter: string
+	variation: number
+	startPosition: string
+	endPosition: string
+	blueMotion?: string
+	redMotion?: string
+}
+
+/**
+ * Get pictograph examples demonstrating a specific position.
+ * Searches for pictographs where either start or end position matches.
+ */
+function getPositionExamples(position: string, count: number = 3): PictographExample[] {
+	ensureDataLoaded()
+
+	const normalizedPosition = position.toLowerCase().trim()
+
+	// Find pictographs that start or end with this position
+	const matches = allPictographs.filter(p =>
+		p.startPosition.toLowerCase().includes(normalizedPosition) ||
+		p.endPosition.toLowerCase().includes(normalizedPosition)
+	)
+
+	// Get diverse examples (different letters)
+	const examples: PictographExample[] = []
+	const seenLetters = new Set<string>()
+
+	for (const match of matches) {
+		if (examples.length >= count) break
+		if (seenLetters.has(match.letter)) continue
+
+		examples.push({
+			letter: match.letter,
+			variation: 0,
+			startPosition: match.startPosition,
+			endPosition: match.endPosition
+		})
+		seenLetters.add(match.letter)
+	}
+
+	return examples
+}
+
+/**
+ * Get pictograph examples demonstrating a specific motion type.
+ * Can filter by hand color (blue, red, or both).
+ */
+function getMotionExamples(motionType: string, hand: 'blue' | 'red' | 'both' = 'both'): PictographExample[] {
+	ensureDataLoaded()
+
+	const normalizedMotion = motionType.toLowerCase().trim()
+
+	let matches: PictographData[] = []
+
+	if (hand === 'blue' || hand === 'both') {
+		matches = allPictographs.filter(p =>
+			p.blueMotion.motionType.toLowerCase() === normalizedMotion
+		)
+	}
+
+	if (hand === 'red' || hand === 'both') {
+		const redMatches = allPictographs.filter(p =>
+			p.redMotion.motionType.toLowerCase() === normalizedMotion
+		)
+		matches = hand === 'both' ? [...matches, ...redMatches] : redMatches
+	}
+
+	// Get diverse examples (max 4)
+	const examples: PictographExample[] = []
+	const seenLetters = new Set<string>()
+
+	for (const match of matches) {
+		if (examples.length >= 4) break
+		if (seenLetters.has(match.letter)) continue
+
+		examples.push({
+			letter: match.letter,
+			variation: 0,
+			startPosition: match.startPosition,
+			endPosition: match.endPosition,
+			blueMotion: match.blueMotion.motionType,
+			redMotion: match.redMotion.motionType
+		})
+		seenLetters.add(match.letter)
+	}
+
+	return examples
+}
+
+/**
+ * Check if a term is a position name.
+ */
+function isPositionTerm(term: string): boolean {
+	const normalized = term.toLowerCase().trim()
+	return Object.keys(POSITION_DEFINITIONS).includes(normalized)
+}
+
+/**
+ * Check if a term is a motion type.
+ */
+function isMotionTerm(term: string): boolean {
+	const normalized = term.toLowerCase().trim()
+	return Object.keys(MOTION_TYPE_DEFINITIONS).includes(normalized)
 }
 
 interface TypeListResult {
@@ -392,7 +583,7 @@ function executeListLettersByType(type: number): TypeListResult | string {
 // Define tools using JSON Schema to avoid Zod 3/4 compatibility issues
 const tikaTools = {
 	get_letter_explanation: tool({
-		description: 'Get a comprehensive explanation of a TKA letter including its type, motion characteristics, and variations. Use this when asked about a specific letter.',
+		description: 'MANDATORY for ANY question about a specific letter (A-Z, Greek letters). Returns pictograph data and detailed explanation. ALWAYS use this for "What is X?", "Tell me about X", "Explain X" where X is a letter.',
 		inputSchema: jsonSchema<{ letter: string; variation?: number }>({
 			type: 'object',
 			properties: {
@@ -430,7 +621,7 @@ const tikaTools = {
 	}),
 
 	list_letters_by_type: tool({
-		description: 'List all letters of a specific type (1-6). Use this when asked about letter types or which letters are in a type.',
+		description: 'MANDATORY for questions about letter types ("Type X letters", "Tell me about Type X", "What are Type X letters"). Returns visual gallery of example letters. ALWAYS use this instead of describing types in text.',
 		inputSchema: jsonSchema<{ type: number }>({
 			type: 'object',
 			properties: {
@@ -439,18 +630,6 @@ const tikaTools = {
 			required: ['type']
 		}),
 		execute: async ({ type }) => executeListLettersByType(type)
-	}),
-
-	get_position_info: tool({
-		description: 'Get canonical information about a TKA position (alpha, beta, gamma, zeta, eta, tau, terra). ALWAYS use this for position questions.',
-		inputSchema: jsonSchema<{ position: string }>({
-			type: 'object',
-			properties: {
-				position: { type: 'string', description: 'Position name (alpha, beta, gamma, zeta, eta, tau, terra)' }
-			},
-			required: ['position']
-		}),
-		execute: async ({ position }) => getPositionExplanation(position)
 	}),
 
 	compare_positions: tool({
@@ -467,7 +646,7 @@ const tikaTools = {
 	}),
 
 	compare_types: tool({
-		description: 'Compare two letter types (1-6). ALWAYS use this tool when asked about differences between types. Returns canonical, verified comparison.',
+		description: 'MANDATORY for comparing letter types ("Type X vs Type Y", "How do Type X and Type Y differ", "Difference between Type X and Type Y"). ALWAYS use this instead of explaining differences in text.',
 		inputSchema: jsonSchema<{ type1: number; type2: number }>({
 			type: 'object',
 			properties: {
@@ -477,18 +656,6 @@ const tikaTools = {
 			required: ['type1', 'type2']
 		}),
 		execute: async ({ type1, type2 }) => getTypeComparison(type1, type2)
-	}),
-
-	get_motion_type: tool({
-		description: 'Get canonical definition of a motion type (static, shift, dash). ALWAYS use this for motion type questions.',
-		inputSchema: jsonSchema<{ motion_type: string }>({
-			type: 'object',
-			properties: {
-				motion_type: { type: 'string', description: 'Motion type name (static, shift, dash)' }
-			},
-			required: ['motion_type']
-		}),
-		execute: async ({ motion_type }) => getMotionTypeExplanation(motion_type)
 	}),
 
 	compare_motion_types: tool({
@@ -574,6 +741,72 @@ const tikaTools = {
 			required: ['type']
 		}),
 		execute: async ({ type }) => getTypeNamingOrigin(type)
+	}),
+
+	show_position_examples: tool({
+		description: 'MANDATORY for position questions ("What is alpha?", "Tell me about gamma", "Show me beta"). Returns visual pictograph examples. NEVER explain positions in text alone - always show examples.',
+		inputSchema: jsonSchema<{ position: string; count?: number }>({
+			type: 'object',
+			properties: {
+				position: { type: 'string', description: 'Position name (alpha, beta, gamma, zeta, eta)' },
+				count: { type: 'number', default: 3, description: 'Number of examples to show (default 3)' }
+			},
+			required: ['position']
+		}),
+		execute: async ({ position, count = 3 }) => {
+			const positionDef = POSITION_DEFINITIONS[position.toLowerCase()]
+			if (!positionDef) {
+				return `Position "${position}" not recognized. Valid positions: alpha, beta, gamma, zeta, eta`
+			}
+
+			const examples = getPositionExamples(position, count)
+
+			return {
+				position,
+				definition: positionDef.description,
+				gridDescription: positionDef.gridDescription,
+				examples,
+				contextData: {
+					type: 'positionExamples',
+					position,
+					definition: positionDef.description,
+					examples
+				}
+			}
+		}
+	}),
+
+	show_motion_examples: tool({
+		description: 'MANDATORY for motion type questions ("What is shift?", "Tell me about dash", "Show me static motion"). Returns visual pictograph examples. NEVER explain motion types in text alone - always show examples.',
+		inputSchema: jsonSchema<{ motionType: string; hand?: 'blue' | 'red' | 'both' }>({
+			type: 'object',
+			properties: {
+				motionType: { type: 'string', description: 'Motion type (shift, dash, static)' },
+				hand: { type: 'string', enum: ['blue', 'red', 'both'], default: 'both', description: 'Which hand to filter by' }
+			},
+			required: ['motionType']
+		}),
+		execute: async ({ motionType, hand = 'both' }) => {
+			const motionDef = MOTION_TYPE_DEFINITIONS[motionType.toLowerCase()]
+			if (!motionDef) {
+				return `Motion type "${motionType}" not recognized. Valid types: shift, dash, static`
+			}
+
+			const examples = getMotionExamples(motionType, hand)
+
+			return {
+				motionType,
+				definition: motionDef.description,
+				gridMovement: motionDef.gridMovement,
+				examples,
+				contextData: {
+					type: 'motionExamples',
+					motionType,
+					definition: motionDef.description,
+					examples
+				}
+			}
+		}
 	})
 }
 
