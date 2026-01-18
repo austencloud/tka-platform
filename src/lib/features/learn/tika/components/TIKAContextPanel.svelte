@@ -265,6 +265,30 @@
           </div>
         </div>
 
+        <!-- Rotation Pattern (Type 1 specific) -->
+        {#if context.typeList.rotationPattern}
+          <div class="info-section">
+            <h4>Organization Pattern</h4>
+            <p class="pattern-description">{context.typeList.rotationPattern.description}</p>
+
+            <div class="rotation-groups">
+              {#each context.typeList.rotationPattern.groups as group}
+                <div class="rotation-group">
+                  <span class="group-letters">{group.letters}</span>
+                  <span class="group-pattern">{group.pattern}</span>
+                </div>
+              {/each}
+            </div>
+
+            {#if context.typeList.rotationPattern.note}
+              <p class="pattern-note">
+                <i class="fas fa-info-circle" aria-hidden="true"></i>
+                {context.typeList.rotationPattern.note}
+              </p>
+            {/if}
+          </div>
+        {/if}
+
         <!-- Pictograph Gallery -->
         {#if pictographGallery.size > 0}
           <div class="info-section">
@@ -823,6 +847,63 @@
     color: var(--theme-text, #ffffff);
     text-align: center;
     width: 100%;
+  }
+
+  /* Rotation Pattern (Type 1) */
+  .pattern-description {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.8));
+    margin: 0 0 12px 0;
+  }
+
+  .rotation-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .rotation-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+  }
+
+  .group-letters {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+    font-family: monospace;
+    letter-spacing: 0.05em;
+  }
+
+  .group-pattern {
+    font-size: 12px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+  }
+
+  .pattern-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .pattern-note i {
+    color: var(--theme-accent, #6366f1);
+    margin-top: 2px;
+    flex-shrink: 0;
   }
 
   /* Pictograph Gallery - optimized for 22 items */
