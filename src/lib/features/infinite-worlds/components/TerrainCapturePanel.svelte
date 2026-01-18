@@ -10,9 +10,9 @@
    * Much simpler than the fence post method!
    */
 
-  import { MapboxTerrainLoader } from "../../endless-world/terrain/services/implementations/MapboxTerrainLoader";
-  import { MapboxSatelliteLoader } from "../../endless-world/terrain/services/implementations/MapboxSatelliteLoader";
-  import type { GeoBounds, HeightmapData } from "../../endless-world/terrain/terrain-types";
+  import { MapboxTerrainLoader } from "../terrain/MapboxTerrainLoader";
+  import { MapboxSatelliteLoader } from "../terrain/MapboxSatelliteLoader";
+  import type { GeoBounds, HeightmapData } from "../terrain/terrain-types";
 
   interface Props {
     /** Current center coordinates */

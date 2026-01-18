@@ -53,6 +53,8 @@
   import { VegetationManager } from "../rendering/instanced-vegetation";
   import { AtmosphereManager } from "../rendering/atmosphere";
   import { WaterManager } from "../rendering/water";
+  import type { RealmConfig } from "../core/realm-config";
+  import { getDefaultRealmConfig } from "../core/realm-definitions";
 
   // Import Hannon's Camp terrain data
   import hannonsTerrainData from "../data/hannons-camp-terrain.json";
@@ -75,22 +77,25 @@
   // ============================================================================
 
   interface Props {
-    /** World seed (optional - generates random if not provided) */
+    /** Realm configuration (defines terrain, physics, features, spawn) */
+    realmConfig?: RealmConfig;
+    /** World seed (optional - overrides realmConfig.terrain.seed if provided) */
     seed?: number;
-    /** View distance in world units */
-    viewDistance?: number;
     /** Show debug info overlay */
     showDebug?: boolean;
-    /** Auto-load Hannon's Camp terrain on mount */
+    /** Auto-load Hannon's Camp terrain on mount (legacy - prefer realmConfig) */
     autoLoadHannons?: boolean;
   }
 
   let {
+    realmConfig,
     seed,
-    viewDistance = 256,
     showDebug = false,
     autoLoadHannons = false,
   }: Props = $props();
+
+  // Use provided realm config or default
+  const activeConfig = realmConfig ?? getDefaultRealmConfig();
 
   // ============================================================================
   // STATE
@@ -130,8 +135,8 @@
   let zoneBoundary = $state<Array<{ x: number; z: number }>>([]);
   let isInsideZone = $state(false);
 
-  // World
-  const worldSeed = seed ?? generateWorldSeed();
+  // World - use provided seed, then config seed, then generate random
+  const worldSeed = seed ?? activeConfig.terrain.seed ?? generateWorldSeed();
   const worldSeedEncoded = encodeSeed(worldSeed);
   const worldNoise = new SeededNoise(worldSeed);
 
@@ -164,20 +169,21 @@
     // Add lighting to scene
     setupLighting();
 
-    // Initialize physics
+    // Initialize physics with realm-configured gravity
     physicsState = createPhysicsWorldState();
-    await initPhysicsWorld(physicsState, { x: 0, y: -20, z: 0 });
+    await initPhysicsWorld(physicsState, { x: 0, y: -activeConfig.physics.gravity, z: 0 });
 
     // Create terrain physics manager
     terrainPhysics = new TerrainPhysicsManager(physicsState);
 
-    // Create player controller (starts high, will fall to terrain)
+    // Create player controller at realm spawn position
+    const spawnPos = activeConfig.spawn.position;
     playerController = createPlayerController(physicsState, {
-      position: { x: 0, y: 50, z: 0 },
+      position: { x: spawnPos[0], y: spawnPos[1], z: spawnPos[2] },
     });
 
-    // Create local player entity
-    createPlayerEntity("local-player", true, 0, 50, 0);
+    // Create local player entity at spawn
+    createPlayerEntity("local-player", true, spawnPos[0], spawnPos[1], spawnPos[2]);
 
     // Initialize vegetation manager (GPU instanced rendering with GLTF models)
     vegetationManager = new VegetationManager(rendererState.scene, { useGLTFModels: true });
@@ -196,11 +202,11 @@
     });
     waterManager.create();
 
-    // Initialize chunk manager
+    // Initialize chunk manager with realm configuration
     chunkManager = new ChunkManager(worldSeed, {
-      chunkSize: 32,
-      viewDistance,
-      lodDistances: [32, 64, 128, 256],
+      chunkSize: activeConfig.chunks.size,
+      viewDistance: activeConfig.chunks.viewDistance,
+      lodDistances: activeConfig.chunks.lodDistances,
       maxConcurrentLoads: 4,
       resolution: 33,
     });
@@ -212,19 +218,20 @@
 
         // Create terrain collider for physics
         const chunk = state.entity.chunk;
+        const chunkSize = activeConfig.chunks.size;
         if (chunk && terrainPhysics) {
           terrainPhysics.addChunkCollider(
             chunk.chunkX,
             chunk.chunkZ,
-            32, // chunkSize
+            chunkSize,
             state.meshData
           );
         }
 
         // Add vegetation (trees, rocks, grass)
         if (chunk && vegetationManager && state.meshData.vegetation.length > 0) {
-          const chunkWorldX = chunk.chunkX * 32;
-          const chunkWorldZ = chunk.chunkZ * 32;
+          const chunkWorldX = chunk.chunkX * chunkSize;
+          const chunkWorldZ = chunk.chunkZ * chunkSize;
           vegetationManager.addChunkVegetation(
             key,
             chunkWorldX,
@@ -260,8 +267,8 @@
     lastTime = performance.now();
     animate(lastTime);
 
-    // Auto-load Hannon's Camp if requested
-    if (autoLoadHannons) {
+    // Auto-load terrain based on realm config or legacy prop
+    if (activeConfig.terrain.type === "real-terrain" || autoLoadHannons) {
       // Small delay to ensure chunk manager is ready
       setTimeout(() => loadHannonsCamp(), 100);
     }
@@ -364,9 +371,9 @@
     const chunk = state.entity.chunk;
     if (chunk) {
       mesh.position.set(
-        chunk.chunkX * 32,
+        chunk.chunkX * activeConfig.chunks.size,
         0,
-        chunk.chunkZ * 32
+        chunk.chunkZ * activeConfig.chunks.size
       );
     }
 
@@ -561,7 +568,10 @@
 
   {#if !isLocked}
     <div class="controls-overlay">
-      <h2>Infinite Worlds</h2>
+      <h2>{activeConfig.name}</h2>
+      {#if activeConfig.description}
+        <p class="description">{activeConfig.description}</p>
+      {/if}
       <p class="seed">Seed: <code>{worldSeedEncoded}</code></p>
       <div class="instructions">
         <p><strong>Click</strong> to start exploring</p>
@@ -571,19 +581,21 @@
         <p><strong>Space</strong> to jump</p>
         <p><strong>ESC</strong> to release cursor</p>
       </div>
-      <div class="terrain-buttons">
-        {#if !hannonsLoaded}
-          <button class="terrain-btn hannons" onclick={loadHannonsCamp}>
-            <i class="fas fa-campground" aria-hidden="true"></i>
-            Load Hannon's Camp
-          </button>
-        {:else}
-          <button class="terrain-btn clear" onclick={clearHannonsCamp}>
-            <i class="fas fa-times" aria-hidden="true"></i>
-            Clear Real Terrain
-          </button>
-        {/if}
-      </div>
+      {#if activeConfig.terrain.type === "procedural"}
+        <div class="terrain-buttons">
+          {#if !hannonsLoaded}
+            <button class="terrain-btn hannons" onclick={loadHannonsCamp}>
+              <i class="fas fa-campground" aria-hidden="true"></i>
+              Load Hannon's Camp
+            </button>
+          {:else}
+            <button class="terrain-btn clear" onclick={clearHannonsCamp}>
+              <i class="fas fa-times" aria-hidden="true"></i>
+              Clear Real Terrain
+            </button>
+          {/if}
+        </div>
+      {/if}
     </div>
   {/if}
 
@@ -731,6 +743,13 @@
     font-size: 28px;
     font-weight: 600;
     color: #60a5fa;
+  }
+
+  .controls-overlay .description {
+    margin: 0 0 8px 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    font-style: italic;
   }
 
   .controls-overlay .seed {

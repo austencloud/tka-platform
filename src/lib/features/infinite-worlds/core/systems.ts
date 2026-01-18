@@ -502,7 +502,7 @@ export function lodSystem(ctx: SystemContext): void {
 // ============================================================================
 
 /**
- * Run all systems in order
+ * Run all systems in order (core systems only)
  */
 export function runSystems(ctx: SystemContext): void {
   inputSystem(ctx);
@@ -512,3 +512,13 @@ export function runSystems(ctx: SystemContext): void {
   renderSyncSystem(ctx);
   lodSystem(ctx);
 }
+
+// Extended system pipeline with placement systems is available via:
+// - placementSystem() from ../placement/PlacementSystem
+// - selectionSystem() from ../placement/SelectionSystem
+// - transformGizmoSystem() from ../placement/TransformGizmoSystem
+// - boundarySystem() from ../placement/BoundarySystem
+// - persistenceSystem() from ../placement/PersistenceSystem
+//
+// These should be called after renderSyncSystem() and before lodSystem()
+// when placement features are enabled in the realm config.

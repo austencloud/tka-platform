@@ -146,6 +146,80 @@ export interface SpatialComponent {
 }
 
 // ============================================================================
+// OBJECT PLACEMENT COMPONENTS
+// ============================================================================
+
+/**
+ * Placeable object component - marks entities that can be placed in the world
+ */
+export interface PlaceableObjectComponent {
+  objectType: string;
+  modelKey: string;
+  sceneId: string;
+  label?: string;
+  locked: boolean;
+  createdAt: number;
+  lastModified: number;
+  userId: string;
+}
+
+/**
+ * Selectable component - entities that can be clicked/selected
+ */
+export interface SelectableComponent {
+  isSelected: boolean;
+  isHovered: boolean;
+  selectionPriority: number;
+}
+
+/**
+ * Ghost preview component - translucent preview before placement
+ */
+export interface GhostPreviewComponent {
+  sourceModelKey: string;
+  opacity: number;
+  isValid: boolean;
+}
+
+/**
+ * Transform gizmo component - enables translate/rotate/scale controls
+ */
+export interface TransformGizmoComponent {
+  mode: "translate" | "rotate" | "scale";
+  isActive: boolean;
+}
+
+/**
+ * Persistent component - entities that save/load to storage
+ */
+export interface PersistentComponent {
+  storageKey: string;
+  isDirty: boolean;
+  lastSaved: number;
+}
+
+// ============================================================================
+// BOUNDARY EDITING COMPONENTS
+// ============================================================================
+
+/**
+ * Boundary point component - single point in a boundary polygon
+ */
+export interface BoundaryPointComponent {
+  index: number;
+  boundaryId: string;
+}
+
+/**
+ * Boundary polygon component - closed polygon shape
+ */
+export interface BoundaryPolygonComponent {
+  boundaryId: string;
+  isClosed: boolean;
+  pointCount: number;
+}
+
+// ============================================================================
 // ENTITY TYPE
 // ============================================================================
 
@@ -176,6 +250,17 @@ export interface Entity {
   player?: PlayerComponent;
   camera?: CameraComponent;
   input?: InputComponent;
+
+  // Object placement
+  placeableObject?: PlaceableObjectComponent;
+  selectable?: SelectableComponent;
+  ghostPreview?: GhostPreviewComponent;
+  transformGizmo?: TransformGizmoComponent;
+  persistent?: PersistentComponent;
+
+  // Boundary editing
+  boundaryPoint?: BoundaryPointComponent;
+  boundaryPolygon?: BoundaryPolygonComponent;
 
   // Tags (presence = true)
   isActive?: true;
@@ -235,6 +320,45 @@ export const dynamicBodies = world.with("physicsBody", "transform", "velocity");
  * Entities needing LOD updates
  */
 export const withLOD = world.with("lod", "transform", "mesh");
+
+// ============================================================================
+// OBJECT PLACEMENT ARCHETYPES
+// ============================================================================
+
+/**
+ * All placed objects in the world
+ */
+export const placedObjects = world.with("placeableObject", "transform", "mesh");
+
+/**
+ * All selectable objects
+ */
+export const selectableObjects = world.with("selectable", "transform", "mesh");
+
+/**
+ * Currently selected object (has transform gizmo)
+ */
+export const selectedObject = world.with("selectable", "transformGizmo");
+
+/**
+ * Ghost preview entities
+ */
+export const ghostEntities = world.with("ghostPreview", "mesh");
+
+/**
+ * Entities that need persistence
+ */
+export const persistentEntities = world.with("persistent", "placeableObject");
+
+/**
+ * Boundary marker points
+ */
+export const boundaryPoints = world.with("boundaryPoint", "transform");
+
+/**
+ * Boundary polygon shapes
+ */
+export const boundaryPolygons = world.with("boundaryPolygon");
 
 // ============================================================================
 // ENTITY FACTORIES

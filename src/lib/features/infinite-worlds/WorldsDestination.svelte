@@ -6,10 +6,11 @@
 	 * - Unified camera controller integration
 	 * - Multiplayer exploration (future)
 	 *
-	 * For now, wraps the existing InfiniteWorldsModule.
+	 * Uses InfiniteWorldsModule with PROCEDURAL_WORLD_CONFIG.
 	 */
 
 	import InfiniteWorldsModule from "./components/InfiniteWorldsModule.svelte";
+	import { PROCEDURAL_WORLD_CONFIG } from "./core/realm-definitions";
 </script>
 
-<InfiniteWorldsModule />
+<InfiniteWorldsModule realmConfig={PROCEDURAL_WORLD_CONFIG} />
