@@ -49,7 +49,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true,
     sections: DISCOVER_TABS,
   },
-  // Community module retired - Creators moved to Discover, Challenges to Dashboard
+  {
+    id: "community",
+    label: "Community",
+    icon: '<i class="fas fa-globe" style="color: #14b8a6;" aria-hidden="true"></i>',
+    color: "#14b8a6", // Teal - global/community
+    description: "Explore the global TKA community map",
+    isMain: true,
+    sections: [], // Single-tab module - no sub-tabs
+  },
   {
     id: "learn",
     label: "Learn",

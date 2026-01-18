@@ -750,6 +750,28 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // USER LOCATIONS (Global Community Map)
+    // ============================================================================
+
+    // User location sharing for the global TKA community map
+    // Users can share their coordinates to appear on the map
+    // Privacy controlled by visibility field (public/private)
+    match /userLocations/{userId} {
+      // Anyone can read public locations (for the community map)
+      // Users can read their own location regardless of visibility
+      // Admins can read any location
+      allow read: if resource.data.visibility == 'public'
+        || isOwner(userId)
+        || isAdmin();
+
+      // Only the user can create or update their own location
+      allow create, update: if isOwner(userId);
+
+      // Users can delete their own location, admins can delete any
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // ============================================================================
     // EXPLICIT DENY FOR UNMATCHED PATHS
     // Any collection not explicitly defined above is denied by default
     // ============================================================================

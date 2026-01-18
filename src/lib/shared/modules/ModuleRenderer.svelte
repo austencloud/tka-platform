@@ -46,7 +46,8 @@
     // library module retired - backwards compat redirects to discover
     library: () =>
       import("../../features/discover/shared/components/DiscoverModule.svelte"),
-    // community module retired - creators moved to discover, challenges to dashboard
+    community: () =>
+      import("../../features/community/Community.svelte"),
     learn: () => import("../../features/learn/LearnTab.svelte"),
     premium: () => import("../../features/premium/PremiumModule.svelte"),
     // "animate" is a backwards-compat alias - deep links and old bookmarks may use it
