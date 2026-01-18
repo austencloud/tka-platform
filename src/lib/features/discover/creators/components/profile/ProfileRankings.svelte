@@ -91,7 +91,7 @@
     margin: 0 0 12px 0;
     font-size: var(--font-size-sm);
     font-weight: 600;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -128,7 +128,7 @@
 
   .rank-label {
     font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-top: 2px;
@@ -139,7 +139,7 @@
     align-items: center;
     justify-content: center;
     padding: 16px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     font-size: var(--font-size-sm);
   }
 

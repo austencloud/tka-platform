@@ -322,7 +322,7 @@
 
   .sequence-card:hover {
     background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong, var(--theme-stroke-strong));
+    border-color: var(--theme-stroke-strong);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px var(--theme-shadow);
   }
@@ -363,7 +363,7 @@
     align-items: center;
     gap: 6px;
     font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
   }
 
   .meta-item i {
@@ -392,7 +392,7 @@
 
   .user-list-card:hover {
     background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong, var(--theme-stroke-strong));
+    border-color: var(--theme-stroke-strong);
     transform: translateX(4px);
   }
 
@@ -420,7 +420,7 @@
   .user-list-username {
     margin: 2px 0 0 0;
     font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -437,7 +437,7 @@
     align-items: center;
     gap: 4px;
     font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
   }
 
   .user-list-stat i {
@@ -453,7 +453,7 @@
 
   .user-list-card:hover .user-list-arrow {
     transform: translateX(4px);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
   }
 
   .user-profile-achievements-grid {
@@ -526,7 +526,7 @@
     margin: 0 0 8px 0;
     font-size: var(--font-size-compact);
     line-height: 1.4;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
   }
 
   .achievement-meta {

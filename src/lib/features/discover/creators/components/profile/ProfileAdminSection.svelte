@@ -327,13 +327,11 @@
 
 <!-- Confirmation Modal -->
 {#if confirmAction}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="modal-backdrop"
     onclick={() => (confirmAction = null)}
     onkeydown={(e) => e.key === "Escape" && (confirmAction = null)}
-    role="button"
-    tabindex="0"
-    aria-label="Close confirmation dialog"
   >
     <div
       class="modal"
@@ -372,8 +370,8 @@
   .admin-section {
     margin-top: 24px;
     padding: 20px;
-    background: rgba(239, 68, 68, 0.05);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error) 5%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error) 20%, transparent);
     border-radius: 12px;
   }
 
@@ -384,7 +382,7 @@
     margin: 0 0 16px 0;
     font-size: var(--font-size-base);
     font-weight: 600;
-    color: #fca5a5;
+    color: var(--semantic-error);
   }
 
   .error-banner {
@@ -393,9 +391,9 @@
     gap: 8px;
     padding: 10px 14px;
     margin-bottom: 16px;
-    background: rgba(239, 68, 68, 0.15);
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
     border-radius: 8px;
-    color: #fca5a5;
+    color: var(--semantic-error);
     font-size: var(--font-size-compact);
   }
 
@@ -405,7 +403,12 @@
     border: none;
     color: inherit;
     cursor: pointer;
-    padding: 4px;
+    padding: 12px;
+    min-width: 48px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .control-group {
@@ -487,28 +490,28 @@
   }
 
   .action-btn.danger:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #fca5a5;
+    background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+    color: var(--semantic-error);
   }
 
   .action-btn.success:hover:not(:disabled) {
-    background: rgba(34, 197, 94, 0.1);
-    border-color: rgba(34, 197, 94, 0.3);
-    color: #86efac;
+    background: color-mix(in srgb, var(--semantic-success) 10%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 30%, transparent);
+    color: var(--semantic-success);
   }
 
   /* Destructive action - more severe than danger */
   .action-btn.destructive {
-    background: rgba(220, 38, 38, 0.15);
-    border-color: rgba(220, 38, 38, 0.4);
-    color: #f87171;
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 40%, transparent);
+    color: var(--semantic-error);
   }
 
   .action-btn.destructive:hover:not(:disabled) {
-    background: rgba(220, 38, 38, 0.25);
-    border-color: rgba(220, 38, 38, 0.6);
-    color: #fca5a5;
+    background: color-mix(in srgb, var(--semantic-error) 25%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 60%, transparent);
+    color: var(--semantic-error);
   }
 
   .action-btn:disabled {
@@ -570,13 +573,13 @@
   }
 
   .modal-btn.confirm {
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid rgba(239, 68, 68, 0.4);
-    color: #fca5a5;
+    background: color-mix(in srgb, var(--semantic-error) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error) 40%, transparent);
+    color: var(--semantic-error);
   }
 
   .modal-btn.confirm:hover {
-    background: rgba(239, 68, 68, 0.3);
+    background: color-mix(in srgb, var(--semantic-error) 30%, transparent);
   }
 
   .modal-btn:disabled {

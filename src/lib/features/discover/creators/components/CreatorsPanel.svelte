@@ -477,7 +477,7 @@
   .username {
     margin: 2px 0 0 0;
     font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -540,7 +540,7 @@
   .follow-button.following {
     background: transparent;
     border-color: color-mix(in srgb, var(--card-accent) 30%, transparent);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
   }
 
   .follow-button.following:hover {

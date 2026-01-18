@@ -122,14 +122,14 @@
   .username {
     margin: 0;
     font-size: var(--font-size-base);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
   }
 
   .bio {
     margin: 8px 0 0 0;
     font-size: var(--font-size-sm);
     line-height: 1.5;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     text-align: center;
     max-width: 400px;
   }
@@ -157,7 +157,7 @@
   .follow-button.following {
     background: var(--theme-card-bg);
     border-color: var(--theme-stroke);
-    color: var(--theme-text, var(--theme-text));
+    color: var(--theme-text);
   }
 
   .follow-button.following:hover {

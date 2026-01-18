@@ -85,7 +85,6 @@
   .stat-card:hover {
     background: var(--theme-card-hover-bg);
     border-color: var(--theme-stroke-strong);
-    transform: translateY(-2px);
   }
 
   .stat-icon {
@@ -151,7 +150,8 @@
     }
 
     .stat-card:hover {
-      transform: none;
+      background: var(--theme-card-bg);
+      border-color: var(--theme-stroke);
     }
   }
 </style>

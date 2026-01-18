@@ -42,7 +42,7 @@
     width: var(--avatar-size, 64px);
     height: var(--avatar-size, 64px);
     background: var(--theme-card-bg);
-    border: 2px solid var(--theme-stroke, var(--theme-stroke));
+    border: 2px solid var(--theme-stroke);
     overflow: hidden;
   }
 

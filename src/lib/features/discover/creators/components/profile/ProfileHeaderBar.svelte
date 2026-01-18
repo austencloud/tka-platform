@@ -14,16 +14,18 @@
     display: flex;
     align-items: center;
     padding: 16px 20px;
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
+    border-bottom: 1px solid var(--theme-stroke);
   }
 
   .back-btn {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
+    padding: 12px 16px;
+    min-height: 48px;
+    min-width: 48px;
     background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
+    border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     color: var(--theme-text, white);
     font-size: var(--font-size-sm);
