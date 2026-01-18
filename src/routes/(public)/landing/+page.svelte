@@ -6,12 +6,6 @@
 
   import HeroSection from "../../landing/components/HeroSection.svelte";
   import WhatIsTKASection from "../../landing/components/WhatIsTKASection.svelte";
-  import FeaturesSection from "../../landing/components/FeaturesSection.svelte";
-  import NotationSection from "../../landing/components/NotationSection.svelte";
-  import LOOPsSection from "../../landing/components/LOOPsSection.svelte";
-  import PropsSection from "../../landing/components/PropsSection.svelte";
-  import EducatorsSection from "../../landing/components/EducatorsSection.svelte";
-  import FAQSection from "../../landing/components/FAQSection.svelte";
   import LandingFooter from "../../landing/components/LandingFooter.svelte";
   import LandingBackgroundPicker from "../../landing/components/LandingBackgroundPicker.svelte";
 
@@ -62,12 +56,6 @@
     <HeroSection />
     <main id="main-content">
       <WhatIsTKASection />
-      <FeaturesSection />
-      <NotationSection />
-      <LOOPsSection />
-      <PropsSection />
-      <EducatorsSection />
-      <FAQSection />
     </main>
     <LandingFooter />
   </div>

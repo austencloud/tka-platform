@@ -29,13 +29,33 @@
       ],
     },
     {
+      id: "notation",
+      icon: "fa-diagram-project",
+      title: "The Notation System",
+      color: "#14b8a6",
+      content: [
+        "Every beat of movement becomes a pictograph showing where your hands are and how they move on a grid. Hand positions use Greek letters: Alpha (α) for hands across from each other, Beta (β) for hands at the same point, and Gamma (γ) for hands forming a right angle.",
+        "Pictographs capture motion types (prospin, antispin, float, dash, static), direction (clockwise or counter-clockwise), and rotation variations. The visual approach means you can read a sequence immediately without memorizing terminology first. The letter system is optional for those who want to verbalize and reference sequences by name.",
+      ],
+    },
+    {
+      id: "loops",
+      icon: "fa-rotate",
+      title: "LOOPs: Algorithmic Composition",
+      color: "#f97316",
+      content: [
+        "LOOPs (Linked Orbital Offset Patterns) are transformations that generate circular sequences automatically. Start with one beat, apply a LOOP, and get a full circular sequence. This is where TKA starts creating patterns for you — not just documenting what you know, but showing you patterns you've never tried.",
+        "LOOP types include Rotated (90° or 180° around the grid), Mirrored (vertical reflection), Swapped (exchange hand roles), Inverted (opposite motion types), and combinations that stack multiple transformations together.",
+      ],
+    },
+    {
       id: "why",
       icon: "fa-globe",
       title: "Why This Matters",
       color: "#ec4899",
       content: [
         "Flow arts is a very young art form. Many practitioners find it hard to collaborate with others due to physical distance or foundational differences in technique. Especially in the US, flow arts is a heavily solo-influenced art form.",
-        "The Kinetic Alphabet does not rely on English terminology, instead embracing symbols and pictures for its communication, making it shareable with people from any cultural background and across any distance. It has a physical form making it recordable with pen and paper and a digital form which amplifies and streamlines the process significantly.",
+        "The Kinetic Alphabet does not rely on English terminology, instead embracing symbols and pictures for its communication, making it shareable with people from any cultural background and across any distance. It has a physical form making it recordable with pen and paper and a digital form which streamlines the process significantly.",
       ],
     },
     {
@@ -44,8 +64,18 @@
       title: "Who It's For",
       color: "#f59e0b",
       content: [
-        "The Kinetic Alphabet is designed to be an effective tool for flow arts teachers, choreographers, and practitioners of all levels. It bridges the gap between understanding theory and performing choreography. It exists to make synchronized group choreography more achievable, and it is also a tool for self-directed progression.",
+        "The Kinetic Alphabet is designed for flow arts teachers, choreographers, and spinners — whether you're just starting out or have been at it for years. It helps you go from theory to performance. It exists to make synchronized group choreography more achievable, and it is also a tool for self-directed progression.",
         "Because it allows for performers to keep track of their individual parts, it opens the door to people who struggle with memory and executive function to be able to engage with complex and intricate choreography. It is split into multiple levels of increasing complexity and density, so a beginner can learn at their own pace on the level that suits them, or it can be used as a structured curriculum for exploring movement.",
+      ],
+    },
+    {
+      id: "educators",
+      icon: "fa-chalkboard-user",
+      title: "For Educators",
+      color: "#a855f7",
+      content: [
+        "TKA changes how you teach. Instead of demonstrating the same move 50 times, show them the pictograph. Progress from Grid basics to advanced LOOPs with a structured curriculum.",
+        "Assign sequences, track completion, and give visual feedback. Share notated sequences with students anywhere in the world — the visual system communicates across languages and distances.",
       ],
     },
     {
@@ -65,6 +95,29 @@
       content: [
         "I hope to influence the field toward greater collaboration and a higher standard for professional performances. The Kinetic Alphabet has already gained momentum. I've heard from flow artists across the world who are spreading it in their own communities.",
       ],
+    },
+  ];
+
+  const faqs = [
+    {
+      question: "What is The Kinetic Alphabet?",
+      answer:
+        "The Kinetic Alphabet (TKA) is a notation system for flow arts. It uses pictographs to document choreography visually, allowing flow artists to share and learn sequences without relying solely on video or verbal descriptions.",
+    },
+    {
+      question: "How is this different from other notation systems?",
+      answer:
+        "TKA builds on ideas from Vulcan Tech Gospel (VTG) and extends them into a comprehensive pictograph-based system. The visual approach means you can read a sequence immediately without memorizing terminology first.",
+    },
+    {
+      question: "Do I need to memorize the letter system?",
+      answer:
+        "No. The pictographs are immediately readable without memorization. The letter system is optional and provides a way to verbalize and reference sequences by name once you want to go deeper.",
+    },
+    {
+      question: "Can I use this for teaching?",
+      answer:
+        "Yes. Educators use TKA to create visual curriculum, assign sequences for students to learn, and provide feedback. The pictographs communicate more precisely than verbal descriptions alone.",
     },
   ];
 
@@ -140,6 +193,19 @@
         </article>
       {/each}
     </div>
+
+    <!-- FAQ -->
+    <section class="faq-section">
+      <h2>Questions</h2>
+      <div class="faq-list">
+        {#each faqs as faq}
+          <details class="faq-item">
+            <summary>{faq.question}</summary>
+            <p>{faq.answer}</p>
+          </details>
+        {/each}
+      </div>
+    </section>
 
     <!-- CTA -->
     <footer class="about-footer">
@@ -305,6 +371,71 @@
 
   .card-content p:last-child {
     margin-bottom: 0;
+  }
+
+  /* FAQ Section */
+  .faq-section {
+    margin-top: 4rem;
+  }
+
+  .faq-section h2 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .faq-item {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .faq-item summary {
+    padding: 1.25rem 1.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 1rem;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s ease;
+  }
+
+  .faq-item summary:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
+  }
+
+  .faq-item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-item summary::after {
+    content: "+";
+    font-size: 1.5rem;
+    color: var(--theme-accent-strong, #818cf8);
+    font-weight: 300;
+    transition: transform 0.2s ease;
+  }
+
+  .faq-item[open] summary::after {
+    content: "−";
+  }
+
+  .faq-item p {
+    padding: 0 1.5rem 1.25rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.6;
   }
 
   /* Footer CTA */

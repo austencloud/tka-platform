@@ -42,10 +42,16 @@
       </p>
     </div>
 
-    <blockquote>
-      Instead of relying on video or verbal descriptions, TKA lets you hand someone
-      a page or send them a link. Every movement has a name, a symbol, and a visual.
-    </blockquote>
+    <div class="learn-more">
+      <a href="/about" class="link-card">
+        <strong>About TKA</strong>
+        <span>Learn how the system works</span>
+      </a>
+      <a href="/roots" class="link-card">
+        <strong>Roots</strong>
+        <span>History and notation fundamentals</span>
+      </a>
+    </div>
   </div>
 </section>
 
@@ -139,14 +145,53 @@
     line-height: 1.7;
   }
 
-  blockquote {
+  .learn-more {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .link-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 20px 32px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border-left: 4px solid var(--theme-accent, #6366f1);
-    padding: 24px 32px;
-    border-radius: 0 12px 12px 0;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    max-width: 800px;
-    margin: 0 auto;
-    line-height: 1.6;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color var(--duration-normal, 0.2s) ease,
+                background var(--duration-normal, 0.2s) ease;
+    min-width: 200px;
+    text-align: center;
+  }
+
+  .link-card:hover {
+    border-color: var(--theme-accent, #6366f1);
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
+  }
+
+  .link-card strong {
+    font-size: 1.125rem;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .link-card span {
+    font-size: 0.875rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  @media (max-width: 480px) {
+    .learn-more {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .link-card {
+      width: 100%;
+      max-width: 280px;
+    }
   }
 </style>
