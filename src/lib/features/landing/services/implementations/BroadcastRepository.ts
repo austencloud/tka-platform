@@ -203,10 +203,6 @@ export class BroadcastRepository implements IBroadcastRepository {
       // serverTime + offset = client time at the moment server responded
       this.serverTimeOffset = before + estimatedLatency - serverTimeResponse.serverTime;
 
-      console.log(
-        `[BroadcastRepository] Server time offset: ${this.serverTimeOffset}ms (RTT: ${roundTrip}ms)`
-      );
-
       return this.serverTimeOffset;
     } catch (error) {
       console.error("[BroadcastRepository] Error calculating time offset:", error);

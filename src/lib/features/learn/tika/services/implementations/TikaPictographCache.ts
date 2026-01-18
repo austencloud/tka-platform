@@ -84,9 +84,6 @@ export class TikaPictographCache implements ITikaPictographCache {
             this.memoryCache.set(entry.key, entry.base64);
           }
           this.hasLoadedFromIDB = true;
-          console.log(
-            `[TikaPictographCache] Loaded ${entries.length} pictographs from IndexedDB`
-          );
           resolve();
         };
       });

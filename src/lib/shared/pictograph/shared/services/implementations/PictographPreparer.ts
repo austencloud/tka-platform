@@ -90,12 +90,6 @@ export class PictographPreparer implements IPictographPreparer {
       const prepared = await preparePromise;
       this.prepareCache.set(cacheKey, prepared);
 
-      // Log cache stats periodically
-      if ((this.cacheHits + this.cacheMisses) % 100 === 0) {
-        const hitRate = ((this.cacheHits / (this.cacheHits + this.cacheMisses)) * 100).toFixed(0);
-        console.log(`[Preparer] Cache: ${this.cacheHits} hits, ${this.cacheMisses} misses (${hitRate}% hit rate)`);
-      }
-
       return { ...pictograph, _prepared: prepared };
     } finally {
       this.pendingPrepares.delete(cacheKey);
@@ -147,8 +141,8 @@ export class PictographPreparer implements IPictographPreparer {
       blue?.endLocation ?? "",
       blue?.rotationDirection ?? "",
       blue?.turns ?? 0,
-      // Prop type: explicit option > global settings > motion's embedded type
-      options?.bluePropType ?? globalSettings.bluePropType ?? blue?.propType ?? "",
+      // Prop type: explicit option > motion's embedded type > global settings
+      options?.bluePropType ?? blue?.propType ?? globalSettings.bluePropType ?? "",
       // Blue manual adjustments (for admin arrow positioning via WASD)
       blue?.arrowPlacementData?.manualAdjustmentX ?? 0,
       blue?.arrowPlacementData?.manualAdjustmentY ?? 0,
@@ -158,8 +152,8 @@ export class PictographPreparer implements IPictographPreparer {
       red?.endLocation ?? "",
       red?.rotationDirection ?? "",
       red?.turns ?? 0,
-      // Prop type: explicit option > global settings > motion's embedded type
-      options?.redPropType ?? globalSettings.redPropType ?? red?.propType ?? "",
+      // Prop type: explicit option > motion's embedded type > global settings
+      options?.redPropType ?? red?.propType ?? globalSettings.redPropType ?? "",
       // Red manual adjustments (for admin arrow positioning via WASD)
       red?.arrowPlacementData?.manualAdjustmentX ?? 0,
       red?.arrowPlacementData?.manualAdjustmentY ?? 0,
@@ -274,7 +268,13 @@ export class PictographPreparer implements IPictographPreparer {
           ];
         }
 
-        // No explicit prop type provided - fall back to global settings
+        // If motion already has a propType set (cat-dog mode / mixed props),
+        // use it instead of falling back to global settings
+        if (motion.propType !== undefined) {
+          return [color, motion] as [string, MotionData];
+        }
+
+        // No explicit prop type on motion - fall back to global settings
         const settingsPropType =
           color === "blue" ? settings.bluePropType : settings.redPropType;
         if (settingsPropType) {
@@ -292,11 +292,7 @@ export class PictographPreparer implements IPictographPreparer {
    * Call this when global adjustments change to force re-calculation of all pictographs.
    */
   clearCache(): void {
-    const size = this.prepareCache.size;
     this.prepareCache.clear();
     this.pendingPrepares.clear();
-    if (size > 0) {
-      console.log(`[Preparer] Cache cleared (${size} entries)`);
-    }
   }
 }

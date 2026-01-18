@@ -139,7 +139,6 @@ export function createTreeSilhouetteImageLoader() {
       }
 
       ready = true;
-      console.log(`[TreeSilhouetteImageLoader] Loaded ${imageCache.size} tree images`);
     })();
 
     return loadPromise;

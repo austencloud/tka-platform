@@ -393,7 +393,6 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
   }
 
   private async doLoadManifest(): Promise<number> {
-    const startTime = performance.now();
     try {
       // Build direct URL to manifest (public read)
       const encodedPath = encodeURIComponent(MANIFEST_PATH);
@@ -402,7 +401,6 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
       const response = await fetch(manifestUrl);
       if (!response.ok) {
         // Manifest doesn't exist yet - that's OK, will be created on first upload
-        console.log("[CloudThumbnailCache] No manifest found, will use local-first approach");
         manifestLoaded = true;
         return 0;
       }
@@ -421,9 +419,6 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
       // Persist the merged set
       persistKnownExists();
       manifestLoaded = true;
-
-      const elapsed = performance.now() - startTime;
-      console.log(`[CloudThumbnailCache] Loaded manifest: ${manifest.keys.length} thumbnails (${added} new) in ${elapsed.toFixed(0)}ms`);
 
       return exists.size;
     } catch (error) {

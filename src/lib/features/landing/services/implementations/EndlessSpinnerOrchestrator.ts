@@ -335,9 +335,6 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
       // Instead, we load sequences on-demand and cache them
 
       this.ready = true;
-      console.log(
-        `[EndlessSpinner] Initialized with ${this.circularSequences.length} sequences available`
-      );
     } catch (error) {
       console.error("[EndlessSpinner] Failed to initialize:", error);
       throw error;
@@ -378,8 +375,6 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
       }
       this.sequenceIndex.get(key)!.push(fullSequence);
     }
-
-    console.log(`[EndlessSpinner] Indexed ${this.sequenceIndex.size} unique start states`);
   }
 
   async getNextSequence(endState: EndState): Promise<SequenceData | null> {
@@ -490,9 +485,6 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
         );
 
         if (result) {
-          console.log(
-            `[EndlessSpinner] ✅ Seamless transition: "${fullSequence.word}" (beat ${stepIndex + 1} → ${endState.position})`
-          );
           return result;
         }
       }
@@ -518,9 +510,6 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
       // (stepIndex is 0-based, shiftStartPosition expects 1-based beat number)
       // The next beat (stepIndex + 2) becomes the new beat 1
       const targetStepNumber = stepIndex + 2;
-      console.log(
-        `[EndlessSpinner] Step 1: Rotating sequence "${sequence.word}" - beat ${targetStepNumber} becomes new beat 1`
-      );
       const rotated = this.sequenceTransformer.shiftStartPosition(sequence, targetStepNumber);
 
       // Step 2: Position rotation - match exact variant
@@ -532,9 +521,6 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
           rotated,
           rotationSteps,
           "both"
-        );
-        console.log(
-          `[EndlessSpinner] Step 2: Rotated positions by ${rotationSteps * 45}° (${stepEndPosition} → ${targetEndState.position})`
         );
       }
 
@@ -577,10 +563,6 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
           };
 
           finalSequence = { ...positionMatched, startPosition: adjustedStartPos };
-
-          console.log(
-            `[EndlessSpinner] Step 3: Adjusted orientations blue=${targetEndState.blueOrientation}, red=${targetEndState.redOrientation}`
-          );
         }
       }
 

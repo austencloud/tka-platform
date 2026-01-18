@@ -695,7 +695,4 @@ if (browser && typeof window !== "undefined") {
   }).runCacheBenchmark = runCacheBenchmark;
   (window as unknown as { runQuickBenchmark: typeof runQuickBenchmark }).runQuickBenchmark = runQuickBenchmark;
   (window as unknown as { runVisibilityChangeBenchmark: typeof runVisibilityChangeBenchmark }).runVisibilityChangeBenchmark = runVisibilityChangeBenchmark;
-  console.log("[CacheBenchmark] Utility loaded.");
-  console.log("  - window.runCacheBenchmark(n)           - Standard cache benchmark");
-  console.log("  - window.runVisibilityChangeBenchmark(n) - Visibility change benchmark");
 }

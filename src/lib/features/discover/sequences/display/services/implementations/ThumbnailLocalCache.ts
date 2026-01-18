@@ -268,14 +268,6 @@ export class ThumbnailLocalCache implements IThumbnailLocalCache {
 
       // Count successful deletions
       const successfulDeletes = deleteResults.filter((r) => r.success);
-      const freedBytes = successfulDeletes.reduce((sum, r) => sum + r.size, 0);
-
-      if (successfulDeletes.length > 0) {
-        console.log(
-          `[ThumbnailLocalCache] Pruned ${successfulDeletes.length} entries (freed ${(freedBytes / 1024 / 1024).toFixed(1)} MB)`
-        );
-      }
-
       return successfulDeletes.length;
     } catch (error) {
       console.warn("[ThumbnailLocalCache] prune failed:", error);

@@ -95,12 +95,7 @@ export function createTreeGenerator(
     resetSeed();
     placementResolver.resetSeed();
 
-    // Debug: Log which pattern is being used
     const pattern = patternProvider.getCurrentPattern();
-    console.log(
-      `[TreeGenerator] Creating trees with pattern: "${pattern.name}" (${pattern.id})`
-    );
-    console.log(`[TreeGenerator] Enabled types:`, enabledTypes);
 
     // Track placed trees for collision detection
     const placedTrees: PlacedTree[] = [];
@@ -187,13 +182,6 @@ export function createTreeGenerator(
         placedTrees.push({ x: finalX, layer: layerIndex });
       });
     });
-
-    // Debug: Log tree type distribution
-    const typeCounts: Record<string, number> = {};
-    for (const tree of trees) {
-      typeCounts[tree.type] = (typeCounts[tree.type] || 0) + 1;
-    }
-    console.log(`[TreeGenerator] Generated ${trees.length} trees:`, typeCounts);
 
     // Sort by layer first (far layers draw first), then by height within layer
     return trees.sort((a, b) => {

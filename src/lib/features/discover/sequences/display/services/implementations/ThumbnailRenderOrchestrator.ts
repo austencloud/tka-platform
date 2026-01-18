@@ -45,7 +45,6 @@ async function getStaticManifest(): Promise<Set<string>> {
       }
       const data = await response.json() as { keys: string[] };
       staticManifest = new Set(data.keys);
-      console.log(`[Static] Loaded manifest: ${staticManifest.size} thumbnails`);
       return staticManifest;
     } catch {
       staticManifest = new Set();
@@ -197,10 +196,18 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
 
       // Log the error but don't throw - return a failed result gracefully
       // This prevents unhandled promise rejections for corrupt/orphaned sequences
-      console.warn(
-        `[ThumbnailRenderOrchestrator] Failed to render "${key.inputs.sequenceName}":`,
-        err.message
-      );
+      // Use debug level for orphaned sequences (data issue, not bug) to reduce console noise
+      const isOrphanedSequence = err.message.includes("ORPHANED_SEQUENCE");
+      if (isOrphanedSequence) {
+        console.debug(
+          `[ThumbnailRenderOrchestrator] Orphaned sequence "${key.inputs.sequenceName}" - has no beat data`
+        );
+      } else {
+        console.warn(
+          `[ThumbnailRenderOrchestrator] Failed to render "${key.inputs.sequenceName}":`,
+          err.message
+        );
+      }
       this.metrics?.endRequest(requestId, "failed");
       request.onStatusChange?.({ state: "error", error: err });
 

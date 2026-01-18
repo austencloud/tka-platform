@@ -196,7 +196,6 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     await assetLoader.initialize();
 
     this.initialized = true;
-    console.log("[Canvas2D] Initialized with SVG assets");
   }
 
   async renderPictograph(

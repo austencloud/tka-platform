@@ -388,7 +388,6 @@
     /* Smooth deselection animation - morphs back from selected state */
     transform: scale(1);
     box-shadow: none;
-    border: 3px solid transparent;
     background: transparent;
     transition:
       transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),

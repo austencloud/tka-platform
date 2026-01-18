@@ -122,7 +122,6 @@ export class PublicSequencesLoader implements IDiscoverLoader {
       }
     });
 
-    console.log(`[PublicSequencesLoader] Loaded ${sequences.length} public sequences`);
     return sequences;
   }
 

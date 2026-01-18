@@ -86,9 +86,6 @@ export function createTreeSilhouetteSystem() {
     // Start image preloading in the background
     if (!renderer.areImagesLoaded()) {
       renderer.preloadImages().then(() => {
-        console.log(
-          "[TreeSilhouetteSystem] Images loaded, re-rendering with image-based trees"
-        );
         // Re-render with images now that they're loaded
         if (cachedDimensions) {
           renderToCache(cachedDimensions);
@@ -200,10 +197,22 @@ export function createTreeSilhouetteSystem() {
   // ===================
 
   /**
+   * Check if dimensions have changed (prevents unnecessary regeneration).
+   */
+  function dimensionsChanged(dimensions: Dimensions): boolean {
+    if (!cachedDimensions) return true;
+    return (
+      cachedDimensions.width !== dimensions.width ||
+      cachedDimensions.height !== dimensions.height
+    );
+  }
+
+  /**
    * Draw all tree layers at once (backwards compatibility).
    */
   function draw(ctx: CanvasRenderingContext2D, dimensions: Dimensions): void {
-    if (!layerCanvases[0] || !cachedDimensions) {
+    // Only initialize if cache doesn't exist OR dimensions changed
+    if (!layerCanvases[0] || dimensionsChanged(dimensions)) {
       initialize(dimensions);
     }
 
@@ -224,7 +233,8 @@ export function createTreeSilhouetteSystem() {
     dimensions: Dimensions,
     layer: number
   ): void {
-    if (!layerCanvases[0] || !cachedDimensions) {
+    // Only initialize if cache doesn't exist OR dimensions changed
+    if (!layerCanvases[0] || dimensionsChanged(dimensions)) {
       initialize(dimensions);
     }
 
@@ -242,6 +252,10 @@ export function createTreeSilhouetteSystem() {
     _oldDimensions: Dimensions,
     newDimensions: Dimensions
   ): void {
+    // Skip if dimensions haven't actually changed
+    if (!dimensionsChanged(newDimensions)) {
+      return;
+    }
     initialize(newDimensions);
   }
 

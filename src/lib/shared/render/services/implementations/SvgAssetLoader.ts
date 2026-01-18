@@ -88,7 +88,6 @@ export class SvgAssetLoader {
     };
 
     this.initialized = true;
-    console.log("[SvgAssetLoader] Initialized with grid assets");
 
     // Pre-warm letter cache in background (non-blocking)
     this.preWarmLetterCache();
@@ -99,8 +98,6 @@ export class SvgAssetLoader {
    * Runs in background - doesn't block initialization.
    */
   private async preWarmLetterCache(): Promise<void> {
-    const start = performance.now();
-
     // Get unique letter paths (Type3/Type5 use Type2/Type4 base letters)
     const allLetters = Object.values(Letter);
     const uniquePaths = new Set(allLetters.map((letter) => getLetterImagePath(letter)));
@@ -108,7 +105,6 @@ export class SvgAssetLoader {
     // Load all letters in parallel (limit concurrency to avoid overwhelming browser)
     const BATCH_SIZE = 10;
     const paths = Array.from(uniquePaths);
-    let loaded = 0;
 
     for (let i = 0; i < paths.length; i += BATCH_SIZE) {
       const batch = paths.slice(i, i + BATCH_SIZE);
@@ -116,16 +112,12 @@ export class SvgAssetLoader {
         batch.map(async (path) => {
           try {
             await this.getLetterAsset(path);
-            loaded++;
           } catch {
             // Ignore failures - letter will be loaded on-demand if needed
           }
         })
       );
     }
-
-    const elapsed = performance.now() - start;
-    console.log(`[SvgAssetLoader] Pre-warmed ${loaded}/${paths.length} letters in ${elapsed.toFixed(0)}ms`);
   }
 
   /**

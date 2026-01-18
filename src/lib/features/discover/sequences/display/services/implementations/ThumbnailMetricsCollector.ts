@@ -223,11 +223,6 @@ export class ThumbnailMetricsCollector implements IThumbnailMetricsCollector {
       };
       window.addEventListener("keydown", this.keyboardHandler);
     }
-
-    console.log(
-      "[ThumbnailMetrics] Started logging (every %ds, or press Ctrl+Shift+T)",
-      intervalMs / 1000
-    );
   }
 
   stopLogging(): void {

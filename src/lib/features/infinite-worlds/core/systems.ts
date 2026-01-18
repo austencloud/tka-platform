@@ -223,9 +223,10 @@ export function cameraSystem(ctx: SystemContext): void {
     if (!entity.camera) continue;
 
     // Update rotation (same for both modes)
-    // Look delta is already in radians
-    entity.camera.yaw -= lookDelta.yaw;
-    entity.camera.pitch -= lookDelta.pitch;
+    // Provider already applies sign convention via -= in handleMouseMove
+    // So we ADD here to avoid double-negative
+    entity.camera.yaw += lookDelta.yaw;
+    entity.camera.pitch += lookDelta.pitch;
 
     // Clamp pitch to prevent flipping
     entity.camera.pitch = Math.max(

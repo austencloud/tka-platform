@@ -198,7 +198,6 @@ export class WebGLDirectRenderer implements IDirectRenderer {
     }
 
     this.initialized = true;
-    console.log(`[WebGL] Initialized with ${this.atlasEntries.size} atlas entries`);
   }
 
   /**

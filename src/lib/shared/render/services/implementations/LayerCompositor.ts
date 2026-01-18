@@ -95,9 +95,9 @@ const BOX_GRID_POINTS = {
   },
 };
 
-// Grid point color (matches GridSvg.svelte #d0d0d0 in light mode)
-const GRID_POINT_COLOR_LIGHT = "#d0d0d0";
-const GRID_POINT_COLOR_DARK = "#ffffff";
+// Grid point colors - match Canvas2DDirectRenderer for consistency
+const GRID_POINT_COLOR_LIGHT = "#000000"; // Black in light mode
+const GRID_POINT_COLOR_DARK = "#ffffff";  // White in dark mode
 
 // LRU cache size limits
 const BASE_CACHE_LIMIT = 2000;

@@ -431,5 +431,4 @@ function printBenchmarkSummary(comparison: BenchmarkComparison): void {
 // Expose globally for console access
 if (browser && typeof window !== "undefined") {
   (window as unknown as { benchmarkRenderers: typeof benchmarkRenderers }).benchmarkRenderers = benchmarkRenderers;
-  console.log("[Benchmark] Utility loaded. Run: window.benchmarkRenderers()");
 }

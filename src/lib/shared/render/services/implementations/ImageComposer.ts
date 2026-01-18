@@ -74,7 +74,6 @@ export class ImageComposer implements IImageComposer {
    */
   setCompositionalCaching(enabled: boolean): void {
     this.useCompositionalCaching = enabled && !!this.layerCompositor;
-    console.log(`[ImageComposer] Compositional caching: ${this.useCompositionalCaching ? "enabled" : "disabled"}`);
   }
 
   /**

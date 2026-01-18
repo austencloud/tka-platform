@@ -23,6 +23,5 @@ export const globalAdjustmentVersion = {
    */
   increment() {
     _version++;
-    console.log(`[GlobalAdjustmentVersion] Version incremented to ${_version}`);
   },
 };

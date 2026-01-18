@@ -107,6 +107,11 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
       throw new Error(`Sequence not found: ${sequenceName}`);
     }
 
+    // Check if loaded sequence actually has steps (guards against orphaned data)
+    if (!loadedSequence.steps || loadedSequence.steps.length === 0) {
+      throw new Error(`ORPHANED_SEQUENCE: "${sequenceName}" exists in index but has no beat data`);
+    }
+
     return loadedSequence;
   }
 

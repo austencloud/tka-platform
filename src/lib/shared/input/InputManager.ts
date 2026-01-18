@@ -295,7 +295,6 @@ export class InputManager {
 	 */
 	setContext(context: InputContext) {
 		if (context !== this.context) {
-			console.log(`[InputManager] Context changed: ${this.context} -> ${context}`);
 			this.context = context;
 		}
 	}

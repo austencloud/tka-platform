@@ -869,7 +869,6 @@
     flex-direction: row;
     width: 100%;
     height: var(--cell-size);
-    gap: 1px;
   }
 
   /* Individual cell in timeline row - pixel-based width from duration */
