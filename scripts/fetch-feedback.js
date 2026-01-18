@@ -1610,6 +1610,7 @@ QUEUE COMMANDS
   low | medium | high    Claim next item with specific priority only
   claim <id>             Claim a specific item by ID
   unclaim <id>           Release a claimed item back to "new" status
+  mine                   Show YOUR in-progress items (for resuming after compact)
   list                   List all feedback grouped by status
   stats                  Show queue statistics summary
   search <query>         Search feedback by keyword in title/description
@@ -2114,6 +2115,57 @@ async function addFeedback(args) {
   }
 }
 
+/**
+ * Show only items claimed by the current user (ADMIN_USER_ID)
+ */
+async function showMyProgress() {
+  try {
+    const snapshot = await db
+      .collection("feedback")
+      .where("status", "==", "in-progress")
+      .where("claimedBy", "==", ADMIN_USER_ID)
+      .get();
+
+    if (snapshot.empty) {
+      console.log("\n" + "=".repeat(70));
+      console.log("\n  ✨ You have no items in progress\n");
+      console.log("=".repeat(70) + "\n");
+      return [];
+    }
+
+    const items = snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => {
+        const timeA = a.claimedAt?.toDate?.()?.getTime() || 0;
+        const timeB = b.claimedAt?.toDate?.()?.getTime() || 0;
+        return timeA - timeB; // Oldest first
+      });
+
+    console.log("\n" + "=".repeat(70));
+    console.log(`\n  📋 YOUR IN-PROGRESS ITEMS (${items.length})\n`);
+    console.log("─".repeat(70));
+
+    items.forEach((item, idx) => {
+      const claimedAt = item.claimedAt?.toDate?.()
+        ? item.claimedAt.toDate().toLocaleString()
+        : "Unknown";
+      const title = (item.title || "No title").substring(0, 60);
+      const token = item.claimToken?.substring(0, 8) || "no-token";
+
+      console.log(`\n  ${idx + 1}. ${item.id.substring(0, 8)}... | ${item.type || "N/A"}`);
+      console.log(`     ${title}${item.title?.length > 60 ? "..." : ""}`);
+      console.log(`     Claimed: ${claimedAt} | Token: [${token}]`);
+    });
+
+    console.log("\n" + "=".repeat(70) + "\n");
+
+    return items;
+  } catch (error) {
+    console.error("\n  Error fetching your progress:", error.message);
+    throw error;
+  }
+}
+
 // Parse command line arguments
 const args = process.argv.slice(2);
 
@@ -2135,6 +2187,9 @@ async function main() {
   } else if (args[0] === "stats") {
     // Show queue statistics
     await showStats();
+  } else if (args[0] === "mine" || args[0] === "my-progress") {
+    // Show only your in-progress items
+    await showMyProgress();
   } else if (args[0] === "search") {
     // Search: search <query>
     if (!args[1]) {

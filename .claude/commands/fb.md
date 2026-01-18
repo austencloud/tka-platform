@@ -21,6 +21,31 @@ $ARGUMENTS - Optional feedback ID (first 8+ characters)
 
 ### If no argument provided:
 
+**STEP 1: Check for your in-progress items**
+
+Run this command to check if you have any claimed items:
+```bash
+node scripts/fetch-feedback.js mine
+```
+
+**If items are found**, use AskUserQuestion tool to present options:
+
+Question: "I found [N] item(s) you were working on. What would you like to do?"
+
+Options:
+1. "Resume [ID]: [Title]" (description: Continue working on this item)
+2. "Unclaim it and start fresh" (description: Release this item and claim something new)
+
+**If user chooses resume:** Run `node scripts/fetch-feedback.js <id>` to display and continue with that item.
+
+**If user chooses unclaim:** Run `node scripts/fetch-feedback.js unclaim <id>` then proceed to STEP 2.
+
+**If no in-progress items found:** Proceed directly to STEP 2.
+
+---
+
+**STEP 2: Auto-select a new item**
+
 Run `node scripts/fetch-feedback.js list` to show the feedback queue.
 
 **Auto-select the best item using this priority:**
