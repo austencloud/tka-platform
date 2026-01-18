@@ -16,6 +16,8 @@ import type { StepData } from "$lib/features/create/shared/domain/models/StepDat
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IWordSequenceGenerator } from "../contracts/IWordSequenceGenerator";
 import type { ILetterTransitionGraph } from "../contracts/ILetterTransitionGraph";
+import type { IStartPositionValidator } from "../contracts/IStartPositionValidator";
+import type { IOrientationContinuityValidator } from "../contracts/IOrientationContinuityValidator";
 import type {
   SpellGenerationOptions,
   SpellResult,
@@ -36,7 +38,9 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
     private letterQueryHandler: ILetterQueryHandler,
     private stepConverter: IStepConverter,
     private orientationCalculator: IOrientationCalculator,
-    private sequenceExtender: ISequenceExtender
+    private sequenceExtender: ISequenceExtender,
+    private startPositionValidator: IStartPositionValidator,
+    private orientationContinuityValidator: IOrientationContinuityValidator
   ) {}
 
   async generateFromWord(
@@ -394,40 +398,33 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
   }
 
   /**
-   * Select a start position that works for the first letter
+   * Select a start position that works for the first letter.
+   * Uses StartPositionValidator to ensure only static (Type 6) pictographs are used.
    */
   private async selectStartPosition(
     firstLetter: Letter,
     gridMode: GridMode
   ): Promise<PictographData | null> {
-    const startGroup = this.transitionGraph.getStartPositionGroup(firstLetter);
-    if (!startGroup) return null;
+    try {
+      // Get valid start positions using the validator
+      // This ensures only Type 6 (static) letters are used
+      const validStartPositions =
+        await this.startPositionValidator.getValidStartPositions(
+          firstLetter,
+          gridMode
+        );
 
-    // Get all pictograph variations
-    const allPictographs =
-      await this.letterQueryHandler.getAllPictographVariations(gridMode);
+      if (validStartPositions.length === 0) {
+        return null;
+      }
 
-    // Find a static start position that ends at the required group
-    // Start positions are pictographs where startPosition === endPosition
-    const startPositions = allPictographs.filter((p) => {
-      const endPos = this.getEndPosition(p);
-      const endGroup = this.positionToGroup(endPos);
-      return endGroup === startGroup && this.isStartPositionPictograph(p);
-    });
-
-    if (startPositions.length > 0) {
       // Return random start position
-      const randomIndex = Math.floor(Math.random() * startPositions.length);
-      return startPositions[randomIndex] ?? null;
+      const randomIndex = Math.floor(Math.random() * validStartPositions.length);
+      return validStartPositions[randomIndex] ?? null;
+    } catch (error) {
+      console.error("Error selecting start position:", error);
+      return null;
     }
-
-    // Fallback: return any pictograph that ends at the right group
-    const fallback = allPictographs.find((p) => {
-      const endPos = this.getEndPosition(p);
-      return this.positionToGroup(endPos) === startGroup;
-    });
-
-    return fallback ?? null;
   }
 
   /**

@@ -12,7 +12,13 @@ import { browser } from "$app/environment";
 // Types
 // ============================================================================
 
-export type WizardPhase = "setup" | "generating" | "wizard" | "browsing";
+/**
+ * New wizard phases for preference-first flow:
+ * - "preferences": User sets all preferences upfront (word, grid, constraints)
+ * - "generating": Constraint-based exploration in progress
+ * - "results": Shows matching variations with options to pick best or browse all
+ */
+export type WizardPhase = "preferences" | "generating" | "results";
 
 export interface FunnelFilters {
   /** Beat count filter - null means "Any" */
@@ -71,12 +77,8 @@ export const FUNNEL_STEPS: FunnelStepDefinition[] = [
     question: "Prop reversals?",
     filterKey: "maxReversals",
   },
-  {
-    id: "flow",
-    title: "Flow",
-    question: "Rotation continuity?",
-    filterKey: "highContinuity",
-  },
+  // Note: "Flow" step removed - HandPathDirectionService doesn't exist yet
+  // Will be added back after implementing hand path direction analysis
 ];
 
 // ============================================================================

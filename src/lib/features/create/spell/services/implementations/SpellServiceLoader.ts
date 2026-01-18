@@ -12,6 +12,8 @@ import type { IWordSequenceGenerator } from "../contracts/IWordSequenceGenerator
 import type { IVariationExplorer } from "../contracts/IVariationExplorer";
 import type { IVariationDeduplicator } from "../contracts/IVariationDeduplicator";
 import type { IVariationScorer } from "../contracts/IVariationScorer";
+import type { IVariationConstraintBuilder } from "../contracts/IVariationConstraintBuilder";
+import type { IRandomSequenceGenerator } from "../contracts/IRandomSequenceGenerator";
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 
 export class SpellServiceLoader implements ISpellServiceLoader {
@@ -21,6 +23,8 @@ export class SpellServiceLoader implements ISpellServiceLoader {
   private variationExplorer: IVariationExplorer | null = null;
   private variationDeduplicator: IVariationDeduplicator | null = null;
   private variationScorer: IVariationScorer | null = null;
+  private variationConstraintBuilder: IVariationConstraintBuilder | null = null;
+  private randomSequenceGenerator: IRandomSequenceGenerator | null = null;
 
   async getWordGenerator(): Promise<IWordSequenceGenerator> {
     if (!this.wordGenerator) {
@@ -65,5 +69,19 @@ export class SpellServiceLoader implements ISpellServiceLoader {
       this.variationScorer = container.items.variationScorer as IVariationScorer;
     }
     return this.variationScorer;
+  }
+
+  async getVariationConstraintBuilder(): Promise<IVariationConstraintBuilder> {
+    if (!this.variationConstraintBuilder) {
+      this.variationConstraintBuilder = container.items.variationConstraintBuilder as IVariationConstraintBuilder;
+    }
+    return this.variationConstraintBuilder;
+  }
+
+  async getRandomSequenceGenerator(): Promise<IRandomSequenceGenerator> {
+    if (!this.randomSequenceGenerator) {
+      this.randomSequenceGenerator = container.items.randomSequenceGenerator as IRandomSequenceGenerator;
+    }
+    return this.randomSequenceGenerator;
   }
 }

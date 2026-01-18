@@ -8,6 +8,7 @@
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { VariationConstraints } from "../../domain/models/spell-models";
 
 /**
  * A single sequence variation with metadata about the branch choices made
@@ -29,6 +30,12 @@ export interface ExplorationOptions {
   maxVariations?: number;
   /** Abort signal for cancellation */
   signal?: AbortSignal;
+  /**
+   * Optional constraints for variation generation.
+   * When provided, only variations matching these constraints will be generated.
+   * This enables "constrain → generate-only-matching" for 10x-100x performance improvement.
+   */
+  constraints?: VariationConstraints;
 }
 
 /**

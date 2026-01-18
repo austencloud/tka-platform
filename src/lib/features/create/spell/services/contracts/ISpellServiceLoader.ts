@@ -10,6 +10,8 @@ import type { IWordSequenceGenerator } from "./IWordSequenceGenerator";
 import type { IVariationExplorer } from "./IVariationExplorer";
 import type { IVariationDeduplicator } from "./IVariationDeduplicator";
 import type { IVariationScorer } from "./IVariationScorer";
+import type { IVariationConstraintBuilder } from "./IVariationConstraintBuilder";
+import type { IRandomSequenceGenerator } from "./IRandomSequenceGenerator";
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 
 export interface ISpellServiceLoader {
@@ -49,4 +51,16 @@ export interface ISpellServiceLoader {
    * @returns Promise resolving to the variation scorer
    */
   getVariationScorer(): Promise<IVariationScorer>;
+
+  /**
+   * Get the variation constraint builder service
+   * @returns Promise resolving to the variation constraint builder
+   */
+  getVariationConstraintBuilder(): Promise<IVariationConstraintBuilder>;
+
+  /**
+   * Get the random sequence generator service
+   * @returns Promise resolving to the random sequence generator
+   */
+  getRandomSequenceGenerator(): Promise<IRandomSequenceGenerator>;
 }

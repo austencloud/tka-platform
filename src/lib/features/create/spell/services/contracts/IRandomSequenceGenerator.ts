@@ -1,0 +1,46 @@
+/**
+ * Random Sequence Generator Interface
+ *
+ * Generates a single random valid sequence using constraint-based random walks.
+ * Much faster than exhaustive exploration - returns first valid sequence found.
+ */
+
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
+import type { VariationConstraints } from "../../domain/models/spell-models";
+
+export interface RandomSequenceGenerationOptions {
+  /** Grid mode to use */
+  gridMode: GridMode;
+  /** Optional constraints to respect during generation */
+  constraints?: VariationConstraints;
+  /** Optional abort signal to cancel generation */
+  signal?: AbortSignal;
+  /** Max attempts before giving up (default: 100) */
+  maxAttempts?: number;
+}
+
+export interface IRandomSequenceGenerator {
+  /**
+   * Generate a single random valid sequence for the given letters.
+   *
+   * Algorithm:
+   * 1. Pick random valid start position (Type 6 static letter)
+   * 2. For each letter, randomly pick a variation that:
+   *    - Matches grid mode
+   *    - Respects constraints (motion type, reversals, etc.)
+   *    - Has valid orientation continuity from previous beat
+   * 3. Backtrack if no valid options found
+   * 4. Apply LOOP extension if makeCircular constraint is true
+   * 5. Return first complete valid sequence
+   *
+   * @param letters - Expanded letters (including bridge letters)
+   * @param options - Generation options (gridMode, constraints, signal)
+   * @returns Promise resolving to SequenceData or null if no valid sequence found
+   */
+  generateRandomSequence(
+    letters: Letter[],
+    options: RandomSequenceGenerationOptions
+  ): Promise<SequenceData | null>;
+}

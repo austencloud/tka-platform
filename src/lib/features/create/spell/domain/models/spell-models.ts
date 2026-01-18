@@ -30,16 +30,37 @@ export interface LetterSource {
  * User preferences for sequence generation
  */
 export interface SpellPreferences {
-  /** Try to minimize prop reversals in the generated sequence */
-  minimizeReversals: boolean;
-  /** Prefer continuous prop movement (same rotation direction) */
-  preferContinuous: boolean;
-  /** Favor or avoid certain motion types: null = no preference, 'dash' = favor dashes, 'no-dash' = avoid dashes */
-  favorMotionType: "dash" | "no-dash" | null;
+  /** Target step count (exact length), or null for any length */
+  targetStepCount: number | null;
+  /** Motion type filter: 'dash' = only dash motions, 'no-dash' = no dash motions, null = any */
+  motionTypeFilter: "dash" | "no-dash" | null;
+  /** Maximum allowed reversals: 0 = none, 1-2 = few, null = any */
+  maxReversals: number | null;
+  /** Prefer high continuity (same rotation direction) */
+  highContinuity: boolean;
   /** Generate a circular (LOOP) sequence that returns to start */
   makeCircular: boolean;
   /** Selected LOOP type when makeCircular is true (null = show options after generation) */
   selectedLOOPType: LOOPType | null;
+}
+
+/**
+ * Constraints for variation exploration.
+ * Used to filter and prune variations during generation rather than after.
+ */
+export interface VariationConstraints {
+  /** Exact step count to target, or null for any */
+  targetStepCount: number | null;
+  /** Motion type filter: 'dash' only, 'no-dash' excluded, or null for any */
+  motionTypeFilter: "dash" | "no-dash" | null;
+  /** Maximum allowed reversals: 0 = none, 1-2 = few, null = any */
+  maxReversals: number | null;
+  /** Minimum continuity score (0-1), or null for any */
+  minContinuityScore: number | null;
+  /** Allowed letter types (1-6), or null for all types */
+  allowedLetterTypes: number[] | null;
+  /** Whether sequence must be circular (return to start) */
+  requiresCircular: boolean;
 }
 
 /**

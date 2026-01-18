@@ -107,9 +107,16 @@ export class VariationExplorationOrchestrator implements IVariationExplorationOr
     const explorer = await this.serviceLoader.getVariationExplorer();
     const deduplicator = await this.serviceLoader.getVariationDeduplicator();
     const scorer = await this.serviceLoader.getVariationScorer();
+    const constraintBuilder = await this.serviceLoader.getVariationConstraintBuilder();
 
     // Reset deduplicator for new exploration
     deduplicator.reset();
+
+    // Build constraints from preferences for efficient exploration
+    const constraints = constraintBuilder.buildConstraints(
+      preferences,
+      expandedLetters
+    );
 
     let totalExplored = 0;
     let uniqueCount = 0;
@@ -118,6 +125,7 @@ export class VariationExplorationOrchestrator implements IVariationExplorationOr
       const variationGenerator = explorer.exploreVariations(expandedLetters, {
         gridMode,
         signal,
+        constraints, // Pass constraints for "constrain → generate-only-matching" flow
       });
 
       for await (const variation of variationGenerator) {

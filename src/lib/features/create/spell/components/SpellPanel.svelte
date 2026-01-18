@@ -1,11 +1,10 @@
 <!--
-SpellPanel.svelte - Word-to-Sequence Generation Panel (Funnel Wizard)
+SpellPanel.svelte - Word-to-Sequence Generation Panel (Preferences-First Flow)
 
-New UX flow:
-1. SETUP: Word input + Grid mode + Loop toggle → Generate All
-2. GENERATING: Progress bar while finding all variations
-3. WIZARD: Step-by-step filter (length → motion → reversals → flow)
-4. BROWSING: Manual selection from filtered variations
+New UX flow (preferences-first):
+1. PREFERENCES: Collect ALL preferences upfront (word, grid, length, motion, reversals, loop)
+2. GENERATING: Progress bar while exploring constrained variations
+3. RESULTS: Show count, best variation, and three actions (Pick Best / Browse All / Adjust Preferences)
 
 This component orchestrates the UI phases; business logic lives in services.
 -->
@@ -14,12 +13,13 @@ This component orchestrates the UI phases; business logic lives in services.
   import type { SpellTabState } from "../state/spell-tab-state.svelte";
   import { container } from "$lib/shared/di";
   import type { IVariationExplorationOrchestrator } from "../services/contracts/IVariationExplorationOrchestrator";
+  import type { IRandomSequenceGenerator } from "../services/contracts/IRandomSequenceGenerator";
+  import type { ISpellServiceLoader } from "../services/contracts/ISpellServiceLoader";
   import { UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import WordInput from "./WordInput.svelte";
-  import QuickGreekBar from "./QuickGreekBar.svelte";
-  import FunnelWizard from "./FunnelWizard.svelte";
-  import VariationGrid from "./VariationGrid.svelte";
+  import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
+  import PreferencesPage from "./PreferencesPage.svelte";
+  import ResultsPage from "./ResultsPage.svelte";
   import { getVariationState, type ScoredVariation } from "../state/variation-state.svelte";
 
   // Props
@@ -34,137 +34,126 @@ This component orchestrates the UI phases; business logic lives in services.
   } = $props();
 
   // Lazy-resolved services
-  let explorationOrchestrator: IVariationExplorationOrchestrator | null = null;
+  let orchestrator: IVariationExplorationOrchestrator | null = null;
+  let serviceLoader: ISpellServiceLoader | null = null;
+  let randomGenerator: IRandomSequenceGenerator | null = null;
 
-  function getExplorationOrchestrator(): IVariationExplorationOrchestrator {
-    if (!explorationOrchestrator) {
-      explorationOrchestrator = container.items.variationExplorationOrchestrator as IVariationExplorationOrchestrator;
+  function getServiceLoader(): ISpellServiceLoader {
+    if (!serviceLoader) {
+      serviceLoader = container.items.spellServiceLoader as ISpellServiceLoader;
     }
-    return explorationOrchestrator;
+    return serviceLoader;
   }
 
-  // Variation state (for generation progress)
-  const variationState = getVariationState();
+  function getOrchestrator(): IVariationExplorationOrchestrator {
+    if (!orchestrator) {
+      orchestrator = container.items.variationExplorationOrchestrator as IVariationExplorationOrchestrator;
+    }
+    return orchestrator;
+  }
 
-  // All collected variations (for wizard)
-  let allVariations = $state<ScoredVariation[]>([]);
+  async function getRandomGenerator(): Promise<IRandomSequenceGenerator> {
+    if (!randomGenerator) {
+      const loader = getServiceLoader();
+      randomGenerator = await loader.getRandomSequenceGenerator();
+    }
+    return randomGenerator;
+  }
 
-  // Filtered variations (after wizard filtering)
-  let filteredVariations = $state<ScoredVariation[]>([]);
+  // Current generated sequence
+  let currentSequence = $state<SequenceData | null>(null);
 
   // ============================================================================
-  // SETUP PHASE
+  // PREFERENCES PHASE
   // ============================================================================
 
-  function handleLetterInsert(letter: string) {
-    spellState.insertLetter(letter);
+  function handleWordChange(value: string) {
+    spellState.setInputWord(value);
   }
 
   function handleGridModeChange(mode: GridMode) {
     spellState.setGridMode(mode);
   }
 
+  function handlePreferenceChange<K extends keyof typeof spellState.preferences>(
+    key: K,
+    value: (typeof spellState.preferences)[K]
+  ) {
+    spellState.updatePreference(key, value);
+  }
+
   // ============================================================================
   // GENERATION PHASE
   // ============================================================================
 
-  async function handleGenerateAll() {
+  async function handleGenerate() {
     if (!spellState.inputWord.trim()) return;
 
     spellState.setWizardPhase("generating");
     spellState.setGenerating(true);
     spellState.clearError();
-    allVariations = [];
+    currentSequence = null;
 
     try {
-      const orchestrator = getExplorationOrchestrator();
+      const orch = getOrchestrator();
+      const generator = await getRandomGenerator();
 
       // Parse word to get expanded letters
-      const parseResult = await orchestrator.parseWord(spellState.inputWord);
+      const parseResult = await orch.parseWord(spellState.inputWord);
       if (!parseResult.success || !parseResult.expandedLetters) {
         spellState.setError(parseResult.error || "Could not parse word");
-        spellState.setWizardPhase("setup");
+        spellState.setWizardPhase("preferences");
         return;
       }
 
       spellState.setExpandedWord(parseResult.expandedWord || spellState.inputWord);
 
-      // Estimate total variations
-      const estimatedTotal = await orchestrator.estimateVariationCount(
-        parseResult.expandedLetters,
-        spellState.selectedGridMode
-      );
-
-      // Start exploration with progress tracking
-      const abortSignal = variationState.startExploration(estimatedTotal);
-      orchestrator.resetDeduplicator();
-
-      // Collect all variations
-      const collected: ScoredVariation[] = [];
-
-      const result = await orchestrator.exploreVariations(
-        parseResult.expandedLetters,
+      // Build constraints from preferences
+      const loader = getServiceLoader();
+      const constraintBuilder = await loader.getVariationConstraintBuilder();
+      const constraints = constraintBuilder.buildConstraints(
         spellState.preferences,
-        spellState.selectedGridMode,
-        {
-          onVariationFound: (variation) => {
-            collected.push(variation);
-            variationState.addVariation(variation);
-          },
-          onProgress: (count) => {
-            variationState.updateProgress(count);
-          },
-        },
-        abortSignal
+        parseResult.expandedLetters
       );
 
-      variationState.completeExploration();
+      // Generate ONE random valid sequence
+      const sequence = await generator.generateRandomSequence(
+        parseResult.expandedLetters,
+        {
+          gridMode: spellState.selectedGridMode,
+          constraints,
+        }
+      );
 
-      if (result.error) {
-        spellState.setError(result.error);
-        spellState.setWizardPhase("setup");
+      if (!sequence) {
+        spellState.setError("Could not generate a valid sequence. Try different settings.");
+        spellState.setWizardPhase("preferences");
         return;
       }
 
-      // Store all variations and move to wizard phase
-      allVariations = collected;
+      // Success! Show the result
+      currentSequence = sequence;
       spellState.markHasGeneratedOnce();
+      spellState.setWizardPhase("results");
 
-      if (collected.length === 0) {
-        spellState.setError("No valid variations found for this word.");
-        spellState.setWizardPhase("setup");
-      } else if (collected.length === 1) {
-        // Only one variation - skip wizard, select it directly
-        handleVariationComplete(collected[0]!);
-      } else {
-        spellState.setWizardPhase("wizard");
-      }
     } catch (error) {
-      console.error("Failed to explore variations:", error);
-      if (error instanceof Error && error.name !== "AbortError") {
-        spellState.setError(error.message);
-      }
-      spellState.setWizardPhase("setup");
+      console.error("Failed to generate sequence:", error);
+      spellState.setError(error instanceof Error ? error.message : "Generation failed");
+      spellState.setWizardPhase("preferences");
     } finally {
       spellState.setGenerating(false);
     }
   }
 
-  function handleCancelExploration() {
-    variationState.cancelExploration();
-    spellState.setWizardPhase("setup");
-    spellState.setGenerating(false);
-  }
-
   // ============================================================================
-  // WIZARD PHASE
+  // RESULTS PHASE
   // ============================================================================
 
-  function handleVariationComplete(variation: ScoredVariation) {
-    if (!sequenceState) return;
+  function handleUseThis() {
+    if (!sequenceState || !currentSequence) return;
 
     sequenceState.setCurrentSequence({
-      ...variation.sequence,
+      ...currentSequence,
       name: spellState.inputWord,
       word: spellState.expandedWord || spellState.inputWord,
     });
@@ -173,35 +162,19 @@ This component orchestrates the UI phases; business logic lives in services.
       word: spellState.inputWord,
     });
 
-    // Reset to setup for next generation
-    spellState.setWizardPhase("setup");
+    // Reset to preferences for next generation
+    currentSequence = null;
+    spellState.setWizardPhase("preferences");
   }
 
-  function handleBrowseVariations(filtered: ScoredVariation[]) {
-    filteredVariations = filtered;
-    spellState.setWizardPhase("browsing");
+  function handleGenerateAnother() {
+    // Generate a new random sequence with same settings
+    handleGenerate();
   }
 
-  function handleBackToSetup() {
-    spellState.setWizardPhase("setup");
-    allVariations = [];
-    filteredVariations = [];
-  }
-
-  // ============================================================================
-  // BROWSING PHASE
-  // ============================================================================
-
-  function handleVariationSelect(variationId: string) {
-    const variation = filteredVariations.find((v) => v.id === variationId);
-    if (!variation) return;
-
-    variationState.selectVariation(variationId);
-    handleVariationComplete(variation);
-  }
-
-  function handleBackToWizard() {
-    spellState.setWizardPhase("wizard");
+  function handleAdjustPreferences() {
+    // Go back to preferences (keep word and settings for refinement)
+    spellState.setWizardPhase("preferences");
   }
 
   // ============================================================================
@@ -210,182 +183,62 @@ This component orchestrates the UI phases; business logic lives in services.
 
   function handleClear() {
     spellState.clearSpellState();
-    variationState.reset();
-    allVariations = [];
-    filteredVariations = [];
+    currentSequence = null;
     if (sequenceState) {
       sequenceState.clearSequenceCompletely();
     }
   }
-
-  // Progress percentage for generation phase
-  const progressPercent = $derived(() => {
-    const { totalExplored, estimatedTotal } = variationState.progress;
-    if (estimatedTotal === 0) return 0;
-    return Math.min(100, Math.round((totalExplored / estimatedTotal) * 100));
-  });
 </script>
 
 <div class="spell-panel" data-is-desktop={isDesktop}>
-  {#if spellState.wizardPhase === "setup"}
-    <!-- SETUP PHASE -->
-    <div class="spell-panel-scroll">
-      <h2 class="spell-title">Turn words into sequences</h2>
-
-      <!-- Word Input -->
-      <div class="input-section">
-        <WordInput
-          value={spellState.inputWord}
-          onInput={(value) => spellState.setInputWord(value)}
-          disabled={spellState.isGenerating}
-        />
-      </div>
-
-      <!-- Quick Greek Letters -->
-      <div class="greek-bar-section">
-        <QuickGreekBar onSelect={handleLetterInsert} />
-      </div>
-
-      <!-- Grid Mode Selector -->
-      <div class="setup-option">
-        <span class="option-label">Grid Mode</span>
-        <div class="mode-chips" role="radiogroup" aria-label="Grid mode">
-          <button
-            class="mode-chip"
-            class:active={spellState.selectedGridMode === GridMode.DIAMOND}
-            onclick={() => handleGridModeChange(GridMode.DIAMOND)}
-            role="radio"
-            aria-checked={spellState.selectedGridMode === GridMode.DIAMOND}
-          >
-            <i class="fas fa-gem" aria-hidden="true"></i>
-            Diamond
-          </button>
-          <button
-            class="mode-chip"
-            class:active={spellState.selectedGridMode === GridMode.BOX}
-            onclick={() => handleGridModeChange(GridMode.BOX)}
-            role="radio"
-            aria-checked={spellState.selectedGridMode === GridMode.BOX}
-          >
-            <i class="fas fa-square" aria-hidden="true"></i>
-            Box
-          </button>
-        </div>
-      </div>
-
-      <!-- Make Loopable Toggle -->
-      <div class="setup-option">
-        <button
-          class="loop-toggle"
-          class:active={spellState.preferences.makeCircular}
-          onclick={() =>
-            spellState.updatePreference(
-              "makeCircular",
-              !spellState.preferences.makeCircular
-            )}
-          aria-pressed={spellState.preferences.makeCircular}
-        >
-          <span class="loop-icon" aria-hidden="true">
-            {#if spellState.preferences.makeCircular}
-              <i class="fas fa-check-circle"></i>
-            {:else}
-              <i class="fas fa-circle"></i>
-            {/if}
-          </span>
-          <span class="loop-label">Make it loop back to start</span>
-        </button>
-      </div>
-
-      <!-- Error Display -->
-      {#if spellState.error}
-        <div class="error-message">
-          {spellState.error}
-        </div>
-      {/if}
-    </div>
-
-    <!-- Sticky Generate Button -->
-    <div class="button-area">
-      <button
-        class="generate-button"
-        onclick={handleGenerateAll}
-        disabled={!spellState.canGenerate}
-      >
-        <i class="fas fa-search" aria-hidden="true"></i>
-        Find All Variations
-      </button>
-    </div>
+  {#if spellState.wizardPhase === "preferences"}
+    <!-- PREFERENCES PHASE -->
+    <PreferencesPage
+      word={spellState.inputWord}
+      onWordChange={handleWordChange}
+      gridMode={spellState.selectedGridMode}
+      onGridModeChange={handleGridModeChange}
+      preferences={spellState.preferences}
+      onPreferenceChange={handlePreferenceChange}
+      onGenerate={handleGenerate}
+      estimatedCount={null}
+      isEstimating={false}
+    />
 
   {:else if spellState.wizardPhase === "generating"}
     <!-- GENERATING PHASE -->
     <div class="generation-phase">
       <div class="progress-content">
-        <h3 class="progress-title">Finding all possibilities...</h3>
+        <div class="spinner" aria-label="Generating sequence"></div>
+        <h3 class="progress-title">Generating your sequence...</h3>
+      </div>
+    </div>
 
-        <div class="progress-stats">
-          <span class="count">{variationState.stats.totalUnique}</span>
-          <span class="label">unique variations found</span>
-        </div>
-
-        <div class="progress-bar-container">
-          <div
-            class="progress-bar"
-            style="width: {progressPercent()}%"
-            role="progressbar"
-            aria-valuenow={progressPercent()}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          ></div>
-        </div>
-
-        <p class="progress-hint">
-          Exploring {variationState.progress.totalExplored} paths...
+  {:else if spellState.wizardPhase === "results"}
+    <!-- RESULTS PHASE -->
+    {#if currentSequence}
+      <div class="results-simple">
+        <h3>✨ Here's your sequence</h3>
+        <p class="sequence-details">
+          {currentSequence.steps.length} steps
         </p>
 
-        <button class="cancel-button" onclick={handleCancelExploration}>
-          Cancel
-        </button>
+        <div class="result-actions">
+          <button class="action-button primary" onclick={handleUseThis}>
+            <i class="fas fa-check" aria-hidden="true"></i>
+            Use This
+          </button>
+          <button class="action-button secondary" onclick={handleGenerateAnother}>
+            <i class="fas fa-sync-alt" aria-hidden="true"></i>
+            Generate Another
+          </button>
+          <button class="action-button secondary" onclick={handleAdjustPreferences}>
+            <i class="fas fa-sliders-h" aria-hidden="true"></i>
+            Refine...
+          </button>
+        </div>
       </div>
-    </div>
-
-  {:else if spellState.wizardPhase === "wizard"}
-    <!-- WIZARD PHASE -->
-    <FunnelWizard
-      variations={allVariations}
-      onComplete={handleVariationComplete}
-      onBrowse={handleBrowseVariations}
-      onBack={handleBackToSetup}
-    />
-
-  {:else if spellState.wizardPhase === "browsing"}
-    <!-- BROWSING PHASE -->
-    <div class="browsing-phase">
-      <div class="browsing-header">
-        <button class="back-button" onclick={handleBackToWizard}>
-          <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          Back to Filter
-        </button>
-        <h3 class="browsing-title">
-          {filteredVariations.length} Variations
-        </h3>
-      </div>
-
-      <div class="variation-grid-container">
-        <VariationGrid
-          variations={filteredVariations}
-          progress={{ ...variationState.progress, isExploring: false }}
-          stats={{ ...variationState.stats, totalUnique: filteredVariations.length, totalFiltered: filteredVariations.length }}
-          selectedVariationId={variationState.selectedVariationId}
-          sortBy={variationState.sortBy}
-          sortDescending={variationState.sortDescending}
-          filters={variationState.filters}
-          onSelect={handleVariationSelect}
-          onToggleFilter={(key) => variationState.toggleFilter(key)}
-          onSetSortBy={(option) => variationState.setSortBy(option)}
-          onCancel={() => {}}
-        />
-      </div>
-    </div>
+    {/if}
   {/if}
 </div>
 
@@ -622,59 +475,87 @@ This component orchestrates the UI phases; business logic lives in services.
     color: var(--theme-text, #ffffff);
   }
 
-  .progress-stats {
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-top-color: var(--theme-accent, #6366f1);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Results Simple */
+  .results-simple {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    gap: var(--settings-spacing-lg, 24px);
+    padding: var(--settings-spacing-lg, 24px);
+    text-align: center;
   }
 
-  .progress-stats .count {
-    font-size: 48px;
-    font-weight: 700;
-    color: var(--theme-accent, #6366f1);
-    line-height: 1;
-  }
-
-  .progress-stats .label {
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-  }
-
-  .progress-bar-container {
-    width: 100%;
-    height: 8px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .progress-bar {
-    height: 100%;
-    background: var(--theme-accent, #6366f1);
-    transition: width var(--duration-emphasis) ease;
-  }
-
-  .progress-hint {
+  .results-simple h3 {
     margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-xl, 24px);
+    font-weight: 700;
+    color: var(--theme-text, #ffffff);
   }
 
-  .cancel-button {
-    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 16px);
-    min-height: 48px;
-    background: transparent;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--settings-radius-sm, 8px);
+  .sequence-details {
+    margin: 0;
+    font-size: var(--font-size-md, 16px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-min, 14px);
+  }
+
+  .result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--settings-spacing-sm, 8px);
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .action-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--settings-spacing-sm, 8px);
+    min-height: 56px;
+    padding: var(--settings-spacing-md, 16px);
+    border: none;
+    border-radius: var(--settings-radius-md, 12px);
+    font-size: var(--font-size-md, 16px);
+    font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
   }
 
-  .cancel-button:hover {
-    border-color: var(--semantic-error, #ef4444);
-    color: var(--semantic-error, #ef4444);
+  .action-button.primary {
+    background: var(--theme-accent, #6366f1);
+    color: white;
+  }
+
+  .action-button.primary:hover {
+    background: var(--theme-accent-hover, #4f46e5);
+    transform: translateY(-2px);
+  }
+
+  .action-button.secondary {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .action-button.secondary:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   /* Browsing phase */

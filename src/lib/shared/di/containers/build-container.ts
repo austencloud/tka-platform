@@ -122,6 +122,11 @@ import { SpellServiceLoader } from "$lib/features/create/spell/services/implemen
 import { SpellGenerationOrchestrator } from "$lib/features/create/spell/services/implementations/SpellGenerationOrchestrator";
 import { VariationExplorationOrchestrator } from "$lib/features/create/spell/services/implementations/VariationExplorationOrchestrator";
 import { LOOPSelectionCoordinator } from "$lib/features/create/spell/services/implementations/LOOPSelectionCoordinator";
+import { StartPositionValidator } from "$lib/features/create/spell/services/implementations/StartPositionValidator";
+import { OrientationContinuityValidator } from "$lib/features/create/spell/services/implementations/OrientationContinuityValidator";
+import { LetterTypeClassifier } from "$lib/features/create/spell/services/implementations/LetterTypeClassifier";
+import { VariationConstraintBuilder } from "$lib/features/create/spell/services/implementations/VariationConstraintBuilder";
+import { RandomSequenceGenerator } from "$lib/features/create/spell/services/implementations/RandomSequenceGenerator";
 
 // === Type Imports for Dependencies from Other Containers ===
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
@@ -535,13 +540,28 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           ),
 
         // Spell services
+        // Validation services (no dependencies or simple dependencies)
+        letterTypeClassifier: () => new LetterTypeClassifier(),
+        orientationContinuityValidator: () =>
+          new OrientationContinuityValidator(),
+        startPositionValidator: () =>
+          new StartPositionValidator(
+            ctx.letterTransitionGraph,
+            deps.letterQueryHandler
+          ),
+        variationConstraintBuilder: () =>
+          new VariationConstraintBuilder(ctx.letterTypeClassifier),
+
+        // Generation services
         wordSequenceGenerator: () =>
           new WordSequenceGenerator(
             ctx.letterTransitionGraph,
             deps.letterQueryHandler,
             ctx.stepConverter,
             deps.orientationCalculator,
-            ctx.sequenceExtender
+            ctx.sequenceExtender,
+            ctx.startPositionValidator,
+            ctx.orientationContinuityValidator
           ),
         variationExplorer: () =>
           new VariationExplorer(
@@ -553,8 +573,18 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         spellServiceLoader: () => new SpellServiceLoader(),
       }))
 
-      // === Layer 4.6: Services needing spellServiceLoader ===
+      // === Layer 4.6: Services needing Layer 4.5 validators and spellServiceLoader ===
       .add((ctx) => ({
+        // Random sequence generator needs validators from Layer 4.5
+        randomSequenceGenerator: () =>
+          new RandomSequenceGenerator(
+            deps.letterQueryHandler,
+            ctx.startPositionValidator,
+            ctx.orientationContinuityValidator,
+            deps.orientationCalculator,
+            ctx.sequenceExtender,
+            ctx.stepConverter
+          ),
         spellGenerationOrchestrator: () =>
           new SpellGenerationOrchestrator(ctx.spellServiceLoader),
         variationExplorationOrchestrator: () =>

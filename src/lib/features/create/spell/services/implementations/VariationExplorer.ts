@@ -20,8 +20,10 @@ import type {
   ExplorationOptions,
 } from "../contracts/IVariationExplorer";
 import type { ILetterTransitionGraph } from "../contracts/ILetterTransitionGraph";
+import type { VariationConstraints } from "../../domain/models/spell-models";
 import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
+import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 /** Default maximum variations (Infinity = no limit, user can cancel) */
 const DEFAULT_MAX_VARIATIONS = Infinity;
@@ -45,7 +47,7 @@ export class VariationExplorer implements IVariationExplorer {
     if (letters.length === 0) return;
 
     const maxVariations = options.maxVariations ?? DEFAULT_MAX_VARIATIONS;
-    const { gridMode, signal } = options;
+    const { gridMode, signal, constraints } = options;
     let yieldedCount = 0;
 
     // Ensure transition graph is initialized
@@ -85,7 +87,8 @@ export class VariationExplorer implements IVariationExplorer {
         allPictographs,
         gridMode,
         [startIdx],
-        signal
+        signal,
+        constraints
       )) {
         yield variation;
         yieldedCount++;
@@ -168,7 +171,8 @@ export class VariationExplorer implements IVariationExplorer {
     allPictographs: PictographData[],
     gridMode: GridMode,
     branchPath: number[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    constraints?: VariationConstraints
   ): AsyncGenerator<SequenceVariation, void, unknown> {
     // Build the sequence by exploring all pictograph choices at each letter
     for await (const result of this.exploreLetterSequence(
@@ -179,7 +183,8 @@ export class VariationExplorer implements IVariationExplorer {
       allPictographs,
       gridMode,
       branchPath,
-      signal
+      signal,
+      constraints
     )) {
       yield result;
     }
@@ -196,10 +201,30 @@ export class VariationExplorer implements IVariationExplorer {
     allPictographs: PictographData[],
     gridMode: GridMode,
     branchPath: number[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    constraints?: VariationConstraints
   ): AsyncGenerator<SequenceVariation, void, unknown> {
     // Check for cancellation
     if (signal?.aborted) return;
+
+    // CONSTRAINT: Early termination if target step count reached
+    if (constraints?.targetStepCount && letterIndex >= constraints.targetStepCount) {
+      // Reached target depth, yield the sequence
+      const sequence = this.buildSequenceData(
+        lastPictograph,
+        steps,
+        gridMode
+      );
+
+      // Final validation before yielding
+      if (this.meetsConstraints(sequence, constraints)) {
+        yield {
+          sequence,
+          branchPath: [...branchPath],
+        };
+      }
+      return;
+    }
 
     // Base case: all letters processed, yield the complete sequence
     if (letterIndex >= letters.length) {
@@ -209,10 +234,13 @@ export class VariationExplorer implements IVariationExplorer {
         gridMode
       );
 
-      yield {
-        sequence,
-        branchPath: [...branchPath],
-      };
+      // Final validation before yielding
+      if (!constraints || this.meetsConstraints(sequence, constraints)) {
+        yield {
+          sequence,
+          branchPath: [...branchPath],
+        };
+      }
       return;
     }
 
@@ -220,9 +248,14 @@ export class VariationExplorer implements IVariationExplorer {
     const requiredStartPosition = lastPictograph.endPosition;
 
     // Get all valid pictograph options for this letter
-    const options = allPictographs.filter(
+    let options = allPictographs.filter(
       (p) => p.letter === letter && p.startPosition === requiredStartPosition
     );
+
+    // CONSTRAINT: Filter by motion type if specified
+    if (constraints?.motionTypeFilter) {
+      options = this.filterByMotionType(options, constraints.motionTypeFilter);
+    }
 
     if (options.length === 0) {
       // No valid options - this path is a dead end
@@ -249,7 +282,8 @@ export class VariationExplorer implements IVariationExplorer {
         allPictographs,
         gridMode,
         [...branchPath, optIdx],
-        signal
+        signal,
+        constraints
       )) {
         yield result;
       }
@@ -343,5 +377,79 @@ export class VariationExplorer implements IVariationExplorer {
    */
   private isStaticPictograph(pictograph: PictographData): boolean {
     return pictograph.startPosition === pictograph.endPosition;
+  }
+
+  /**
+   * Filter pictographs by motion type constraint.
+   * 'dash' = only dash motions, 'no-dash' = exclude dash motions
+   */
+  private filterByMotionType(
+    pictographs: PictographData[],
+    filter: "dash" | "no-dash"
+  ): PictographData[] {
+    return pictographs.filter((p) => {
+      const hasDash = this.hasDashMotion(p);
+      return filter === "dash" ? hasDash : !hasDash;
+    });
+  }
+
+  /**
+   * Check if a pictograph contains dash motion type.
+   */
+  private hasDashMotion(pictograph: PictographData): boolean {
+    const blueMotion = pictograph.motions.blue;
+    const redMotion = pictograph.motions.red;
+
+    return (
+      blueMotion?.motionType === MotionType.DASH ||
+      redMotion?.motionType === MotionType.DASH
+    );
+  }
+
+  /**
+   * Check if a complete sequence meets all constraints.
+   * Final validation before yielding a variation.
+   */
+  private meetsConstraints(
+    sequence: SequenceData,
+    constraints: VariationConstraints
+  ): boolean {
+    // Step count constraint
+    if (
+      constraints.targetStepCount !== null &&
+      sequence.steps.length !== constraints.targetStepCount
+    ) {
+      return false;
+    }
+
+    // Reversal constraint (basic check - can be enhanced)
+    if (constraints.maxReversals !== null) {
+      const reversalCount = this.countReversals(sequence);
+      if (reversalCount > constraints.maxReversals) {
+        return false;
+      }
+    }
+
+    // Circular requirement
+    if (constraints.requiresCircular && !sequence.isCircular) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Count reversals in a sequence (basic implementation).
+   * This is a simplified check - the full reversal detection happens later.
+   */
+  private countReversals(sequence: SequenceData): number {
+    let count = 0;
+
+    for (const step of sequence.steps) {
+      if (step.blueReversal) count++;
+      if (step.redReversal) count++;
+    }
+
+    return count;
   }
 }

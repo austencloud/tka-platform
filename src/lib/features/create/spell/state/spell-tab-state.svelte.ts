@@ -89,8 +89,8 @@ export function createSpellTabState(
   };
   let hasGeneratedOnce = $state(getInitialHasGenerated());
 
-  // Funnel wizard state
-  let wizardPhase = $state<WizardPhase>("setup");
+  // Wizard state (preferences-first flow)
+  let wizardPhase = $state<WizardPhase>("preferences");
 
   // Grid mode selection (persisted)
   const getInitialGridMode = (): GridMode => {
@@ -346,7 +346,7 @@ export function createSpellTabState(
     loopAnalysis = null;
     circularizationOptions = [];
     directLoopUnavailableReason = null;
-    wizardPhase = "setup";
+    wizardPhase = "preferences";
   }
 
   function setWizardPhase(phase: WizardPhase) {
