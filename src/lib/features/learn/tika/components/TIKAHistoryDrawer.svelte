@@ -8,6 +8,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import TIKAHistoryItem from "./TIKAHistoryItem.svelte";
   import type { TIKASessionPreview } from "../domain/models/tika-conversation-models";
   import type { ITIKASessionRepository } from "../services/contracts/ITIKASessionRepository";
@@ -106,18 +107,7 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div class="history-drawer" role="dialog" aria-label="Chat History">
-  <!-- Header -->
-  <header class="drawer-header">
-    <h2>Chat History</h2>
-    <button
-      class="close-btn"
-      onclick={onClose}
-      title="Close history"
-      aria-label="Close history"
-    >
-      <i class="fas fa-times" aria-hidden="true"></i>
-    </button>
-  </header>
+  <DrawerHeader title="Chat History" {onClose} />
 
   <!-- New Chat Button -->
   <div class="new-chat-section">
@@ -181,46 +171,6 @@
     height: 100%;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  /* Header */
-  .drawer-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .drawer-header h2 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--theme-text, #ffffff);
-  }
-
-  .close-btn {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    border-radius: 6px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .close-btn:hover {
-    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .close-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
   }
 
   /* New Chat Section */

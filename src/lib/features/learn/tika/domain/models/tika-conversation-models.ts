@@ -115,3 +115,29 @@ function truncateText(text: string, maxLength: number): string {
   if (cleaned.length <= maxLength) return cleaned;
   return cleaned.slice(0, maxLength - 1) + "…";
 }
+
+/**
+ * Recursively remove undefined values from an object.
+ * Firestore doesn't accept undefined, so we strip them out.
+ */
+export function sanitizeForFirestore<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeForFirestore) as T;
+  }
+
+  if (typeof obj === "object") {
+    const cleaned: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      if (value !== undefined) {
+        cleaned[key] = sanitizeForFirestore(value);
+      }
+    }
+    return cleaned as T;
+  }
+
+  return obj;
+}

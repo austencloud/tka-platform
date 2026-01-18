@@ -90,12 +90,17 @@
       })
     : null;
 
+  // Derived reactive bindings for chat state
+  // These ensure Svelte 5 properly tracks reactivity from the Chat class
+  // IMPORTANT: Must be defined AFTER chat initialization
+  const chatMessages = $derived(chat?.messages ?? []);
+  const chatStatus = $derived(chat?.status ?? "ready");
+
   // Persist messages to sessionStorage when they change
   $effect(() => {
-    const currentMessages = chat?.messages ?? [];
-    if (browser && currentMessages.length > 0) {
+    if (browser && chatMessages.length > 0) {
       try {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(currentMessages));
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(chatMessages));
       } catch (e) {
         console.warn("[TIKA] Failed to persist messages:", e);
       }
@@ -104,13 +109,11 @@
 
   // Auto-save to Firebase (debounced) when messages change
   $effect(() => {
-    const currentMessages = chat?.messages ?? [];
-
     // Skip if not authenticated or no repository
     if (!isAuthenticated || !sessionRepository) return;
 
     // Skip if below minimum message threshold
-    if (currentMessages.length < TIKA_LIMITS.MIN_MESSAGES_FOR_SAVE) return;
+    if (chatMessages.length < TIKA_LIMITS.MIN_MESSAGES_FOR_SAVE) return;
 
     // Clear existing timeout
     if (autoSaveTimeout) {
@@ -122,7 +125,7 @@
       try {
         const session = await sessionRepository.saveSession(
           currentSessionId ?? undefined,
-          currentMessages
+          chatMessages
         );
         // Update session ID if this was a new session
         if (!currentSessionId) {
@@ -294,13 +297,12 @@
 
   // Start a new conversation
   async function handleNewChat() {
-    const currentMessages = chat?.messages ?? [];
     // Save current session if it has messages
-    if (isAuthenticated && sessionRepository && currentMessages.length >= TIKA_LIMITS.MIN_MESSAGES_FOR_SAVE) {
+    if (isAuthenticated && sessionRepository && chatMessages.length >= TIKA_LIMITS.MIN_MESSAGES_FOR_SAVE) {
       try {
         await sessionRepository.saveSession(
           currentSessionId ?? undefined,
-          currentMessages
+          chatMessages
         );
       } catch (error) {
         console.error("[TIKA] Failed to save session before new chat:", error);
@@ -362,21 +364,20 @@
 
   // Generate conversation data for AI review (returns string for CopyForAIButton)
   function generateCopyForAI(): string {
-    const currentMessages = chat?.messages ?? [];
-    if (currentMessages.length === 0) return "";
+    if (chatMessages.length === 0) return "";
 
     // Format conversation for AI review
     const lines: string[] = [
       "# TIKA Conversation for Review",
       "",
       `**Date:** ${new Date().toLocaleString()}`,
-      `**Messages:** ${currentMessages.length}`,
+      `**Messages:** ${chatMessages.length}`,
       "",
       "---",
       "",
     ];
 
-    for (const message of currentMessages) {
+    for (const message of chatMessages) {
       if (message.role === "user") {
         lines.push(`## User Question`);
         lines.push("");
@@ -500,11 +501,10 @@
   // Watch for tool results that might update context
   // The AI SDK handles tool calls internally, but we can observe messages for context
   $effect(() => {
-    const currentMessages = chat?.messages ?? [];
-    if (currentMessages.length === 0) return;
+    if (chatMessages.length === 0) return;
 
     // Check the latest assistant message for tool results
-    const lastMessage = currentMessages[currentMessages.length - 1];
+    const lastMessage = chatMessages[chatMessages.length - 1];
     if (lastMessage?.role === "assistant" && lastMessage.parts) {
       for (const part of lastMessage.parts) {
         if (part.type === "tool-invocation") {
@@ -650,8 +650,8 @@
       <!-- Conversation Panel (Left) -->
       <div class="conversation-panel">
         <TIKAConversation
-          messages={chat?.messages ?? []}
-          status={chat?.status ?? "ready"}
+          messages={chatMessages}
+          status={chatStatus}
           onSubmit={handleSubmit}
           onStop={handleStop}
           onNewChat={isAuthenticated ? handleNewChat : undefined}

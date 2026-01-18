@@ -393,7 +393,7 @@ function executeListLettersByType(type: number): TypeListResult | string {
 const tikaTools = {
 	get_letter_explanation: tool({
 		description: 'Get a comprehensive explanation of a TKA letter including its type, motion characteristics, and variations. Use this when asked about a specific letter.',
-		parameters: jsonSchema<{ letter: string; variation?: number }>({
+		inputSchema: jsonSchema<{ letter: string; variation?: number }>({
 			type: 'object',
 			properties: {
 				letter: { type: 'string', description: 'The letter to explain (A-Z or Greek)' },
@@ -406,7 +406,7 @@ const tikaTools = {
 
 	get_term_definition: tool({
 		description: 'Get the definition of a TKA domain term like alpha, pro, shift, static, beta, gamma, etc. Use this when asked what a term means.',
-		parameters: jsonSchema<{ term: string }>({
+		inputSchema: jsonSchema<{ term: string }>({
 			type: 'object',
 			properties: {
 				term: { type: 'string', description: 'The term to define' }
@@ -418,7 +418,7 @@ const tikaTools = {
 
 	compare_letters: tool({
 		description: 'Compare two TKA letters side by side, explaining their differences. Use this when asked to compare or contrast letters.',
-		parameters: jsonSchema<{ letter1: string; letter2: string }>({
+		inputSchema: jsonSchema<{ letter1: string; letter2: string }>({
 			type: 'object',
 			properties: {
 				letter1: { type: 'string', description: 'First letter to compare' },
@@ -431,7 +431,7 @@ const tikaTools = {
 
 	list_letters_by_type: tool({
 		description: 'List all letters of a specific type (1-6). Use this when asked about letter types or which letters are in a type.',
-		parameters: jsonSchema<{ type: number }>({
+		inputSchema: jsonSchema<{ type: number }>({
 			type: 'object',
 			properties: {
 				type: { type: 'number', minimum: 1, maximum: 6, description: 'Letter type 1-6: 1=Dual-Shift, 2=Shift, 3=Cross-Shift, 4=Dash, 5=Dual-Dash, 6=Static' }
@@ -443,7 +443,7 @@ const tikaTools = {
 
 	get_position_info: tool({
 		description: 'Get canonical information about a TKA position (alpha, beta, gamma, zeta, eta, tau, terra). ALWAYS use this for position questions.',
-		parameters: jsonSchema<{ position: string }>({
+		inputSchema: jsonSchema<{ position: string }>({
 			type: 'object',
 			properties: {
 				position: { type: 'string', description: 'Position name (alpha, beta, gamma, zeta, eta, tau, terra)' }
@@ -455,7 +455,7 @@ const tikaTools = {
 
 	compare_positions: tool({
 		description: 'Compare two TKA positions (alpha, beta, gamma, etc). Use when asked about differences between positions.',
-		parameters: jsonSchema<{ position1: string; position2: string }>({
+		inputSchema: jsonSchema<{ position1: string; position2: string }>({
 			type: 'object',
 			properties: {
 				position1: { type: 'string', description: 'First position name' },
@@ -468,7 +468,7 @@ const tikaTools = {
 
 	compare_types: tool({
 		description: 'Compare two letter types (1-6). ALWAYS use this tool when asked about differences between types. Returns canonical, verified comparison.',
-		parameters: jsonSchema<{ type1: number; type2: number }>({
+		inputSchema: jsonSchema<{ type1: number; type2: number }>({
 			type: 'object',
 			properties: {
 				type1: { type: 'number', minimum: 1, maximum: 6, description: 'First type number (1-6)' },
@@ -481,7 +481,7 @@ const tikaTools = {
 
 	get_motion_type: tool({
 		description: 'Get canonical definition of a motion type (static, shift, dash). ALWAYS use this for motion type questions.',
-		parameters: jsonSchema<{ motion_type: string }>({
+		inputSchema: jsonSchema<{ motion_type: string }>({
 			type: 'object',
 			properties: {
 				motion_type: { type: 'string', description: 'Motion type name (static, shift, dash)' }
@@ -493,7 +493,7 @@ const tikaTools = {
 
 	compare_motion_types: tool({
 		description: 'Compare two motion types (static, shift, dash). Use when asked about differences between motion types.',
-		parameters: jsonSchema<{ motion1: string; motion2: string }>({
+		inputSchema: jsonSchema<{ motion1: string; motion2: string }>({
 			type: 'object',
 			properties: {
 				motion1: { type: 'string', description: 'First motion type' },
@@ -506,7 +506,7 @@ const tikaTools = {
 
 	get_rotation_info: tool({
 		description: 'Get canonical definition of a rotation direction (pro, anti, prospin, antispin, cw, ccw). ALWAYS use this for rotation questions.',
-		parameters: jsonSchema<{ rotation: string }>({
+		inputSchema: jsonSchema<{ rotation: string }>({
 			type: 'object',
 			properties: {
 				rotation: { type: 'string', description: 'Rotation type (pro, anti, prospin, antispin, cw, ccw)' }
@@ -518,7 +518,7 @@ const tikaTools = {
 
 	get_grid_mode: tool({
 		description: 'Get canonical definition of a grid mode (diamond, box, skewed). ALWAYS use this for grid mode questions.',
-		parameters: jsonSchema<{ mode: string }>({
+		inputSchema: jsonSchema<{ mode: string }>({
 			type: 'object',
 			properties: {
 				mode: { type: 'string', description: 'Grid mode (diamond, box, skewed)' }
@@ -530,7 +530,7 @@ const tikaTools = {
 
 	get_vtg_mapping: tool({
 		description: 'Get the TKA letters that correspond to a VTG (Vulcan Tech Gospel) term. Use for VTG-to-TKA translation.',
-		parameters: jsonSchema<{ vtg_term: string }>({
+		inputSchema: jsonSchema<{ vtg_term: string }>({
 			type: 'object',
 			properties: {
 				vtg_term: { type: 'string', description: 'VTG term (split-same, tog-same, split-opp, tog-opp, quarter-same, quarter-opp)' }
@@ -542,7 +542,7 @@ const tikaTools = {
 
 	get_alphabet_overview: tool({
 		description: 'Get a complete overview of the TKA alphabet - all 6 types, letter counts, and organization. ALWAYS use this when asked "what is TKA" or for alphabet overviews.',
-		parameters: jsonSchema<Record<string, never>>({
+		inputSchema: jsonSchema<Record<string, never>>({
 			type: 'object',
 			properties: {}
 		}),
@@ -551,7 +551,7 @@ const tikaTools = {
 
 	answer_common_question: tool({
 		description: 'Get canonical answer to common TKA questions. Use for: "what is TKA", "what is a pictograph", "what is a sequence", "what is a loop", "why cross-shift".',
-		parameters: jsonSchema<{ question: string }>({
+		inputSchema: jsonSchema<{ question: string }>({
 			type: 'object',
 			properties: {
 				question: { type: 'string', description: 'The question topic (tka, pictograph, sequence, loop, why cross-shift)' }
@@ -566,7 +566,7 @@ const tikaTools = {
 
 	get_type_naming_origin: tool({
 		description: 'Explain why a letter type has its name (e.g., why "Cross-Shift" not "Dash-Shift"). ALWAYS use this for "why is it called X" questions about type names.',
-		parameters: jsonSchema<{ type: number }>({
+		inputSchema: jsonSchema<{ type: number }>({
 			type: 'object',
 			properties: {
 				type: { type: 'number', minimum: 1, maximum: 6, description: 'The type number (1-6)' }

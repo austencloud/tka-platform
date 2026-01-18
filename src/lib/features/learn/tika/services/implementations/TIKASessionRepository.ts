@@ -23,12 +23,13 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import type { UIMessage } from "ai";
 import type { ITIKASessionRepository } from "../contracts/ITIKASessionRepository";
-import type {
-  TIKASession,
-  TIKASessionPreview,
-  TIKASessionQueryOptions,
+import {
+  createTIKASession,
+  sanitizeForFirestore,
+  type TIKASession,
+  type TIKASessionPreview,
+  type TIKASessionQueryOptions,
 } from "../../domain/models/tika-conversation-models";
-import { createTIKASession } from "../../domain/models/tika-conversation-models";
 import {
   getUserTIKAConversationsPath,
   getUserTIKAConversationPath,
@@ -131,11 +132,14 @@ export class TIKASessionRepository implements ITIKASessionRepository {
     }
 
     try {
-      await setDoc(docRef, {
-        ...session,
-        createdAt,
-        updatedAt: serverTimestamp(),
-      });
+      await setDoc(
+        docRef,
+        sanitizeForFirestore({
+          ...session,
+          createdAt,
+          updatedAt: serverTimestamp(),
+        })
+      );
 
       return session;
     } catch (error) {
