@@ -1,28 +1,26 @@
 <script lang="ts">
   /**
-   * Share Hub Coordinator Component
+   * SequenceDrawerHost
    *
-   * Unified coordinator for Share Hub panel with integrated animation playback.
-   * Handles export orchestration for all formats and animation lifecycle.
+   * Hosts the SequenceDrawer in Create module, providing animation state and export coordination.
+   * This is the "host" that owns state and provides context to the drawer.
    *
    * Flow:
-   * 1. User opens Share Hub (single entry point)
+   * 1. User opens sequence drawer (single entry point)
    * 2. Selects format (Animation | Static | Performance)
    * 3. If Animation: initializes playback services, shows live preview
    * 4. Clicks Export button
    * 5. If sequence not saved, show SaveToLibraryPanel
    * 6. After save (or if already saved), proceed with export
    *
-   * Animation Architecture:
-   * - ShareHubCoordinator OWNS animation state (unidirectional data flow)
-   * - AnimationExportView is a PURE VIEW receiving state as props
+   * Architecture:
+   * - SequenceDrawerHost OWNS animation state (unidirectional data flow)
+   * - SequenceDrawer receives state as props via AnimationExportContext
    * - Services lazy-loaded when Animation format selected
-   *
-   * Domain: Create module - Share Hub Coordination
    */
 
   import { onMount, onDestroy } from "svelte";
-  import SequencePanelDrawer from "$lib/shared/sequence-viewer/components/SequencePanelDrawer.svelte";
+  import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
   import type { ExportSettings } from "$lib/shared/share-hub/domain/models/ExportSettings";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
@@ -347,7 +345,6 @@
       const currentHash = getSequenceHash(currentSequence);
       if (currentHash !== lastSequenceHash && lastSequenceHash !== null) {
         // Sequence content changed - sync to animation
-        console.log('[ShareHubCoordinator] Syncing sequence changes to animation');
         playbackController.updateSequenceData(currentSequence);
         animationPanelState.setSequenceData(currentSequence);
       }
@@ -695,7 +692,7 @@
 </script>
 
 {#if currentSequence}
-  <SequencePanelDrawer
+  <SequenceDrawer
     isOpen={panelState.isShareHubPanelOpen}
     sequence={currentSequence}
     mode="edit"

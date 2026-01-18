@@ -78,15 +78,16 @@
 	let lastSequenceId = $state<string | null>(null);
 
 	// Derived: effective state from context or internal
-	const isPlaying = $derived(useContext ? ctx!.state.isPlaying : animState?.isPlaying ?? false);
-	const currentStep = $derived(useContext ? ctx!.state.currentStep : animState?.currentStep ?? 0);
-	const bluePropState = $derived(useContext ? ctx!.state.bluePropState : animState?.bluePropState);
-	const redPropState = $derived(useContext ? ctx!.state.redPropState : animState?.redPropState);
-	const sequenceData = $derived(useContext ? ctx!.state.sequenceData ?? sequence : animState?.sequenceData ?? sequence);
-	const playbackMode = $derived(useContext ? ctx!.state.playbackMode : "continuous" as const);
-	const stepSize = $derived(useContext ? ctx!.state.stepPlaybackStepSize : 1 as const);
-	const isExporting = $derived(useContext ? ctx!.state.isExporting : false);
-	const exportProgress = $derived(useContext ? ctx!.state.exportProgress : null);
+	// Use optional chaining to handle potential timing issues where ctx might not be ready
+	const isPlaying = $derived(useContext ? ctx?.state?.isPlaying ?? false : animState?.isPlaying ?? false);
+	const currentStep = $derived(useContext ? ctx?.state?.currentStep ?? 0 : animState?.currentStep ?? 0);
+	const bluePropState = $derived(useContext ? ctx?.state?.bluePropState : animState?.bluePropState);
+	const redPropState = $derived(useContext ? ctx?.state?.redPropState : animState?.redPropState);
+	const sequenceData = $derived(useContext ? ctx?.state?.sequenceData ?? sequence : animState?.sequenceData ?? sequence);
+	const playbackMode = $derived(useContext ? ctx?.state?.playbackMode ?? "continuous" : "continuous" as const);
+	const stepSize = $derived(useContext ? ctx?.state?.stepPlaybackStepSize ?? 1 : 1 as const);
+	const isExporting = $derived(useContext ? ctx?.state?.isExporting ?? false : false);
+	const exportProgress = $derived(useContext ? ctx?.state?.exportProgress ?? null : null);
 
 	// Derived: current beat data for canvas
 	const stepData = $derived.by(() => {
@@ -177,25 +178,25 @@
 
 	// Action handlers - delegate to context or controller
 	function togglePlayback() {
-		useContext ? ctx!.actions.onPlaybackToggle() : controller?.togglePlayback();
+		useContext ? ctx?.actions?.onPlaybackToggle() : controller?.togglePlayback();
 	}
 
 	function handleBpmChange(newBpm: number) {
 		bpm = newBpm;
 		const speed = newBpm / DEFAULT_BPM;
-		useContext ? ctx!.actions.onSpeedChange(speed) : controller?.setSpeed(speed);
+		useContext ? ctx?.actions?.onSpeedChange(speed) : controller?.setSpeed(speed);
 	}
 
 	function handleCanvasReady(canvas: HTMLCanvasElement | null) {
 		onCanvasReady?.(canvas);
-		if (useContext) ctx!.actions.onCanvasReady(canvas);
+		if (useContext) ctx?.actions?.onCanvasReady(canvas);
 	}
 
 	// Step handlers
-	const stepHalfBack = () => useContext ? ctx!.actions.onStepHalfBeatBackward() : controller?.stepHalfBeatBackward();
-	const stepHalfFwd = () => useContext ? ctx!.actions.onStepHalfBeatForward() : controller?.stepHalfBeatForward();
-	const stepFullBack = () => useContext ? ctx!.actions.onStepFullBeatBackward() : controller?.stepFullBeatBackward();
-	const stepFullFwd = () => useContext ? ctx!.actions.onStepFullBeatForward() : controller?.stepFullBeatForward();
+	const stepHalfBack = () => useContext ? ctx?.actions?.onStepHalfBeatBackward() : controller?.stepHalfBeatBackward();
+	const stepHalfFwd = () => useContext ? ctx?.actions?.onStepHalfBeatForward() : controller?.stepHalfBeatForward();
+	const stepFullBack = () => useContext ? ctx?.actions?.onStepFullBeatBackward() : controller?.stepFullBeatBackward();
+	const stepFullFwd = () => useContext ? ctx?.actions?.onStepFullBeatForward() : controller?.stepFullBeatForward();
 	const setPlaybackMode = (m: "continuous" | "step") => ctx?.actions.onPlaybackModeChange(m);
 	const setStepSize = (s: 0.5 | 1) => ctx?.actions.onStepPlaybackStepSizeChange(s);
 	const cancelExport = () => ctx?.actions.onCancelExport();

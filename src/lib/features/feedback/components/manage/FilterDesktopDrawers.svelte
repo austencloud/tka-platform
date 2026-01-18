@@ -5,6 +5,7 @@
   import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
   import type { FilterBarUIState } from "../../state/filter-bar-ui-state.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import {
     STATUS_CONFIG,
     PRIORITY_CONFIG,
@@ -77,20 +78,12 @@
   class="filter-drawer"
 >
   <div class="drawer-panel">
-    <header class="drawer-header">
-      <h2 class="drawer-title">
-        <i class="fas fa-tasks" aria-hidden="true"></i>
-        Filter by Status
-      </h2>
-      <button
-        type="button"
-        class="drawer-close"
-        onclick={() => uiState.closeStatusDrawer()}
-        aria-label="Close panel"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    </header>
+    <DrawerHeader
+      title="Filter by Status"
+      icon="fa-tasks"
+      iconColor="var(--semantic-success)"
+      onClose={() => uiState.closeStatusDrawer()}
+    />
     <div class="filter-drawer-content">
       <FilterOptionGrid
         options={statusOptions}
@@ -112,20 +105,12 @@
   class="filter-drawer"
 >
   <div class="drawer-panel">
-    <header class="drawer-header">
-      <h2 class="drawer-title">
-        <i class="fas fa-flag" aria-hidden="true"></i>
-        Filter by Priority
-      </h2>
-      <button
-        type="button"
-        class="drawer-close"
-        onclick={() => uiState.closePriorityDrawer()}
-        aria-label="Close panel"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    </header>
+    <DrawerHeader
+      title="Filter by Priority"
+      icon="fa-flag"
+      iconColor="var(--semantic-success)"
+      onClose={() => uiState.closePriorityDrawer()}
+    />
     <div class="filter-drawer-content">
       <FilterOptionGrid
         options={priorityOptions}
@@ -147,53 +132,6 @@
       --theme-panel-bg,
       linear-gradient(180deg, #1e1e24 0%, #16161a 100%)
     );
-  }
-
-  .drawer-header {
-    display: flex;
-    align-items: center;
-    gap: 13px;
-    padding: 21px;
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
-  }
-
-  .drawer-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--theme-text);
-  }
-
-  .drawer-title i {
-    color: var(--semantic-success, var(--semantic-success));
-  }
-
-  .drawer-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    margin-left: auto;
-    margin-right: calc(-1 * 13px);
-    background: none;
-    border: none;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    cursor: pointer;
-    border-radius: 12px;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .drawer-close:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text);
-  }
-
-  .drawer-close:active {
-    transform: scale(0.95);
   }
 
   .filter-drawer-content {

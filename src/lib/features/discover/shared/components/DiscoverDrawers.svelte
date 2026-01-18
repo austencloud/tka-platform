@@ -2,9 +2,10 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
 
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import SequencePanelDrawer from "$lib/shared/sequence-viewer/components/SequencePanelDrawer.svelte";
+  import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
   import InviteCollaboratorsPanel from "$lib/shared/video-collaboration/components/InviteCollaboratorsPanel.svelte";
   import ViewPresetsSheet from "../../sequences/filtering/components/ViewPresetsSheet.svelte";
   import SortJumpSheet from "../../sequences/navigation/components/SortJumpSheet.svelte";
@@ -139,16 +140,7 @@
       if (!open) sequencePanelManager.close();
     }}
   >
-    <div class="drawer-header">
-      <h2>View Presets</h2>
-      <button
-        class="drawer-close-btn"
-        onclick={() => sequencePanelManager.close()}
-        aria-label="Close"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    </div>
+    <DrawerHeader title="View Presets" onClose={() => sequencePanelManager.close()} />
     <ViewPresetsSheet
       currentFilter={currentFilter.type as FilterPreset}
       onFilterChange={(preset) => {
@@ -168,16 +160,7 @@
       if (!open) sequencePanelManager.close();
     }}
   >
-    <div class="drawer-header">
-      <h2>Sort & Navigate</h2>
-      <button
-        class="drawer-close-btn"
-        onclick={() => sequencePanelManager.close()}
-        aria-label="Close"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    </div>
+    <DrawerHeader title="Sort & Navigate" onClose={() => sequencePanelManager.close()} />
     <SortJumpSheet
       {currentSortMethod}
       {availableSections}
@@ -208,16 +191,7 @@
       }
     }}
   >
-    <div class="drawer-header">
-      <h2>Browse & Filter</h2>
-      <button
-        class="drawer-close-btn"
-        onclick={() => sequencePanelManager.close()}
-        aria-label="Close"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    </div>
+    <DrawerHeader title="Browse & Filter" onClose={() => sequencePanelManager.close()} />
     <div class="bento-filter-wrapper">
       <BentoFilterPanel
         {currentFilter}
@@ -243,16 +217,7 @@
       if (!open) isLetterSheetOpen = false;
     }}
   >
-    <div class="drawer-header">
-      <h2>Select Letter</h2>
-      <button
-        class="drawer-close-btn"
-        onclick={() => (isLetterSheetOpen = false)}
-        aria-label="Close"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    </div>
+    <DrawerHeader title="Select Letter" onClose={() => (isLetterSheetOpen = false)} />
     <div class="sheet-content">
       <LetterSelectionSheet
         {currentLetter}
@@ -274,16 +239,7 @@
       if (!open) isOptionsSheetOpen = false;
     }}
   >
-    <div class="drawer-header">
-      <h2>Position Options</h2>
-      <button
-        class="drawer-close-btn"
-        onclick={() => (isOptionsSheetOpen = false)}
-        aria-label="Close"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    </div>
+    <DrawerHeader title="Position Options" onClose={() => (isOptionsSheetOpen = false)} />
     <div class="sheet-content options-sheet-content">
       <PositionOptionsSheet
         {startPosition}
@@ -297,9 +253,9 @@
 </div>
 
 <!-- Detail Panel (Unified for Both Mobile & Desktop) -->
-<!-- Uses SequencePanelDrawer with mode="browse" -->
+<!-- Uses SequenceDrawer with mode="browse" -->
 {#if sequencePanelManager.activeSequence}
-  <SequencePanelDrawer
+  <SequenceDrawer
     isOpen={sequencePanelManager.isDetailOpen}
     sequence={sequencePanelManager.activeSequence}
     mode="browse"
@@ -372,58 +328,6 @@
   .sheet-content {
     padding: 16px 20px 24px;
     background: var(--theme-panel-bg);
-  }
-
-  /* Drawer Headers */
-  :global(.drawer-content) .drawer-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
-    flex-shrink: 0;
-  }
-
-  :global(.drawer-content) .drawer-header h2 {
-    font-size: var(--font-size-xl);
-    font-weight: 600;
-    color: color-mix(in srgb, var(--theme-text, white) 95%, transparent);
-    margin: 0;
-  }
-
-  :global(.drawer-content) .drawer-close-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--min-touch-target); /* WCAG AAA touch target */
-    height: var(--min-touch-target);
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke-strong, var(--theme-stroke-strong));
-    border-radius: 50%;
-    color: var(--theme-text-dim);
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  :global(.drawer-content) .drawer-close-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text, white);
-  }
-
-  :global(.drawer-content) .drawer-close-btn:active {
-    transform: scale(0.95);
-  }
-
-  /* Mobile drawer header adjustments */
-  @media (max-width: 768px) {
-    :global(.drawer-content) .drawer-header {
-      padding: 16px 20px;
-    }
-
-    :global(.drawer-content) .drawer-header h2 {
-      font-size: var(--font-size-lg);
-    }
   }
 
   /* Style the filters drawer - 2026 solid color design */

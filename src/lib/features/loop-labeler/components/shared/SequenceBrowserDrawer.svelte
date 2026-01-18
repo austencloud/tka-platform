@@ -9,6 +9,7 @@
   import type { SequenceEntry } from "../../domain/models/sequence-models";
   import type { LabeledSequence } from "../../domain/models/label-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
 
   type FilterMode = "all" | "unlabeled" | "labeled" | "unknown";
@@ -98,12 +99,7 @@
   class="sequence-browser-drawer"
 >
   <div class="drawer-content">
-    <div class="drawer-header">
-      <h2 class="drawer-title">Browse Sequences</h2>
-      <button class="close-btn" onclick={() => (isOpen = false)}>
-        <FontAwesomeIcon icon="xmark" size="1.2em" />
-      </button>
-    </div>
+    <DrawerHeader title="Browse Sequences" onClose={() => (isOpen = false)} />
 
     <!-- Search -->
     <div class="drawer-search">
@@ -208,41 +204,6 @@
     flex-direction: column;
     height: 100%;
     background: var(--background);
-  }
-
-  .drawer-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-lg) var(--spacing-xl);
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
-    flex-shrink: 0;
-  }
-
-  .drawer-title {
-    margin: 0;
-    font-size: var(--font-size-lg);
-    font-weight: 700;
-    color: var(--foreground);
-  }
-
-  .close-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--min-touch-target); /* WCAG AAA touch target */
-    height: var(--min-touch-target);
-    background: transparent;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    border-radius: 8px;
-    transition: var(--transition-fast);
-  }
-
-  .close-btn:hover {
-    background: var(--surface-color);
-    color: var(--foreground);
   }
 
   .drawer-search {

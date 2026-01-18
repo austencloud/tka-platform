@@ -1,5 +1,6 @@
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import { releaseNotesDrawerState } from "../state/release-notes-drawer-state.svelte";
   import { versionService } from "$lib/features/feedback/services/implementations/VersionManager";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
@@ -77,15 +78,11 @@
   class="release-notes-drawer"
 >
   <div class="drawer-content-wrapper">
-    <header class="drawer-header">
-      <div class="header-content">
-        <i class="fas fa-gift" aria-hidden="true"></i>
-        <h2>What's New in v{__APP_VERSION__}</h2>
-      </div>
-      <button class="close-btn" onclick={handleClose} aria-label="Close">
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    </header>
+    <DrawerHeader
+      title="What's New in v{__APP_VERSION__}"
+      icon="fa-gift"
+      onClose={handleClose}
+    />
 
     <div class="drawer-body">
       {#if isLoading}
@@ -174,51 +171,6 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-  }
-
-  .drawer-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--theme-stroke);
-  }
-
-  .header-content {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .header-content i {
-    font-size: var(--font-size-xl);
-    color: var(--theme-accent);
-  }
-
-  .header-content h2 {
-    margin: 0;
-    font-size: var(--font-size-lg);
-    font-weight: 600;
-    color: var(--theme-text);
-  }
-
-  .close-btn {
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    cursor: pointer;
-    transition: all var(--duration-normal);
-  }
-
-  .close-btn:hover {
-    background: var(--theme-card-bg);
-    color: var(--theme-text, var(--theme-text));
   }
 
   .drawer-body {

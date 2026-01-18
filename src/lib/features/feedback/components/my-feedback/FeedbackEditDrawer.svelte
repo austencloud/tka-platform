@@ -1,6 +1,7 @@
 <!-- FeedbackEditDrawer - Drawer for editing user's own feedback -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import type {
     FeedbackItem,
     FeedbackType,
@@ -123,17 +124,10 @@
     class="edit-drawer-content"
     style="--active-type-color: {currentTypeConfig.color}"
   >
-    <header class="drawer-header">
-      <h2>{appendMode ? "Add Notes" : "Edit Feedback"}</h2>
-      <button
-        type="button"
-        class="close-btn"
-        onclick={handleCancel}
-        aria-label="Close"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    </header>
+    <DrawerHeader
+      title={appendMode ? "Add Notes" : "Edit Feedback"}
+      onClose={handleCancel}
+    />
 
     <div class="edit-form">
       {#if appendMode}
@@ -322,39 +316,6 @@
     .edit-drawer-content {
     overflow-y: auto;
     max-height: calc(85vh - 40px);
-  }
-
-  .drawer-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
-
-  .drawer-header h2 {
-    margin: 0;
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--theme-text);
-  }
-
-  .close-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px; /* WCAG AAA touch target */
-    height: 48px;
-    background: var(--theme-card-hover-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: 8px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .close-btn:hover {
-    background: var(--theme-stroke);
-    color: var(--theme-text, var(--theme-text));
   }
 
   .edit-form {

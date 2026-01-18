@@ -1,13 +1,16 @@
 <!--
-  SequencePanelDrawer.svelte
+  SequenceDrawer.svelte
 
-  Drawer wrapper for SequencePanel that provides:
+  Unified drawer for viewing sequences in both browse and edit modes.
+
+  Features:
   - Drawer UI with proper placement (bottom on mobile, right on desktop)
   - AnimationExportContext for edit mode
   - Consistent styling across modes
+  - Respects layout mode for Create module integration
 
   Usage:
-    <SequencePanelDrawer
+    <SequenceDrawer
       isOpen={true}
       sequence={sequence}
       mode="browse"

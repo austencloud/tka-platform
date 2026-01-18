@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import DiscoverLayout from "./DiscoverLayout.svelte";
-  import SequenceDrawers from "./SequenceDrawers.svelte";
+  import DiscoverDrawers from "./DiscoverDrawers.svelte";
   import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
   import SequenceDisplayPanel from "../../sequences/display/components/SequenceDisplayPanel.svelte";
 
@@ -72,8 +72,8 @@
   {/snippet}
 </DiscoverLayout>
 
-<!-- Drawers -->
-<SequenceDrawers
+<!-- Discover Drawers (filters, detail panel, etc.) -->
+<DiscoverDrawers
   {isMobile}
   {drawerWidth}
   isNavVisible={_isUIVisible}
