@@ -66,10 +66,7 @@
   // Whether sequence loops seamlessly (affects trail clearing behavior)
   let isSeamlesslyLoopable = $derived.by(() => {
     if (!playbackController) return false;
-    const value = playbackController.isSeamlesslyLoopable;
-    // DEBUG
-    console.log('[SingleRenderer] isSeamlesslyLoopable from controller:', value);
-    return value;
+    return playbackController.isSeamlesslyLoopable;
   });
 
   // Initialize services

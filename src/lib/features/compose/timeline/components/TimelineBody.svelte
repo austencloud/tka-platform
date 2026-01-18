@@ -111,7 +111,6 @@
   // Svelte action to attach non-passive wheel listener for Alt+Wheel vertical zoom
   function wheelHandler(node: HTMLElement) {
     function handleWheel(e: WheelEvent) {
-      console.log('[wheelHandler] alt:', e.altKey, 'callback:', !!verticalZoomCallback);
       if (e.altKey && verticalZoomCallback) {
         e.preventDefault();
         e.stopPropagation();

@@ -142,8 +142,6 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
       // Just update prop states at current position
       this.updatePropStatesFromEngine();
     }
-
-    console.log(`[AnimationPlaybackController] Updated sequence data, new totalDuration: ${this.totalDuration}`);
   }
 
   togglePlayback(): void {
