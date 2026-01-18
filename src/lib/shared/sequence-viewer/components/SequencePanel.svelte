@@ -228,9 +228,14 @@
     });
   });
 
+  // Derived: can share (full sequence loaded or edit mode)
+  const canShare = $derived(
+    mode === "edit" || !isLoadingFullSequence
+  );
+
   // Share handlers
   async function handleCopyImage() {
-    if (isShareCopying || !imageSharer) return;
+    if (isShareCopying || !imageSharer || !canShare) return;
 
     isShareCopying = true;
     shareSuccess = false;
@@ -249,7 +254,7 @@
   }
 
   async function handleDownloadImage() {
-    if (!imageSharer) return;
+    if (!imageSharer || !canShare) return;
     hapticService?.trigger("selection");
     const result = await imageSharer.downloadImage(effectiveSequence, userName);
     if (result.success) {
@@ -260,7 +265,7 @@
   }
 
   async function handleNativeShare() {
-    if (!imageSharer) return;
+    if (!imageSharer || !canShare) return;
     hapticService?.trigger("selection");
     const result = await imageSharer.nativeShare(effectiveSequence, userName);
     if (result.success) {
@@ -339,9 +344,7 @@
       {/if}
     </div>
 
-    <h2 class="panel-title">
-      {mode === "browse" ? "Sequence Details" : "Share & Export"}
-    </h2>
+    <h2 class="panel-title">Sequence Details</h2>
 
     <div class="header-right">
       {#if mode === "browse"}
@@ -402,7 +405,7 @@
       sequence={effectiveSequence}
       {initialMediaType}
       controlsLevel={mode === "edit" ? "full" : "standard"}
-      showVisibilitySettings={mode === "edit" || showVisibilitySettings}
+      showVisibilitySettings={true}
       onMediaTypeChange={handleMediaTypeChange}
     />
   </div>
@@ -412,6 +415,7 @@
     isCopying={isShareCopying}
     copySuccess={shareSuccess}
     canNativeShare={imageSharer?.canNativeShare() ?? false}
+    disabled={!canShare}
     onCopy={handleCopyImage}
     onDownload={handleDownloadImage}
     onNativeShare={handleNativeShare}

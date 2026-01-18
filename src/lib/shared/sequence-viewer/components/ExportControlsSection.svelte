@@ -86,57 +86,6 @@
   }
 </script>
 
-<div class="export-controls-section">
-  <!-- Action Row: Settings + Export -->
-  <div class="action-row">
-    <!-- Settings Button -->
-    <button
-      class="settings-btn"
-      onclick={openSettings}
-      aria-label="Open {formatLabel} settings"
-    >
-      <i class="fas fa-cog" aria-hidden="true"></i>
-    </button>
-
-    <!-- Export Button -->
-    <div class="export-btn-container">
-      {#if isExporting && progressText}
-        <div class="progress-overlay">
-          <div class="progress-bar-container">
-            <div
-              class="progress-bar"
-              style="width: {(exportProgress?.progress ?? 0) * 100}%"
-            ></div>
-          </div>
-          <span class="progress-text">{progressText}</span>
-        </div>
-      {:else}
-        <ExportButton
-          label={buttonLabel}
-          loading={isExporting}
-          onclick={handleExport}
-        />
-      {/if}
-    </div>
-  </div>
-
-  <!-- Settings Panel Overlay -->
-  {#if settingsPanelOpen}
-    <SettingsPanel
-      isOpen={settingsPanelOpen}
-      title={settingsTitle}
-      onClose={closeSettings}
-    >
-      {#if selectedFormat === "animation"}
-        <AnimationSettings />
-      {:else if selectedFormat === "static"}
-        <StaticSettingsPanel />
-      {:else if selectedFormat === "performance"}
-        <PerformanceSettingsPanel />
-      {/if}
-    </SettingsPanel>
-  {/if}
-</div>
 
 <style>
   .export-controls-section {

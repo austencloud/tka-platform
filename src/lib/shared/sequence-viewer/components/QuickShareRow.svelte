@@ -15,6 +15,7 @@
     copySuccess?: boolean;
     canNativeShare?: boolean;
     compact?: boolean;
+    disabled?: boolean;
     onCopy?: () => void;
     onDownload?: () => void;
     onNativeShare?: () => void;
@@ -25,20 +26,21 @@
     copySuccess = false,
     canNativeShare = false,
     compact = false,
+    disabled = false,
     onCopy = () => {},
     onDownload = () => {},
     onNativeShare = () => {},
   }: Props = $props();
 </script>
 
-<div class="quick-share-row" class:compact>
+<div class="quick-share-row" class:compact class:disabled>
   <!-- Copy - Primary action -->
   <button
     type="button"
     class="share-btn primary"
     class:success={copySuccess}
     onclick={onCopy}
-    disabled={isCopying}
+    disabled={isCopying || disabled}
     aria-label="Copy image to clipboard"
   >
     {#if isCopying}
@@ -48,7 +50,7 @@
     {:else}
       <i class="fas fa-copy" aria-hidden="true"></i>
     {/if}
-    <span>{copySuccess ? "Copied!" : "Copy"}</span>
+    <span>{copySuccess ? "Copied!" : disabled ? "Loading..." : "Copy"}</span>
   </button>
 
   <!-- Download -->
@@ -56,6 +58,7 @@
     type="button"
     class="share-btn"
     onclick={onDownload}
+    disabled={disabled}
     aria-label="Download image"
   >
     <i class="fas fa-download" aria-hidden="true"></i>
@@ -68,6 +71,7 @@
       type="button"
       class="share-btn"
       onclick={onNativeShare}
+      disabled={disabled}
       aria-label="Share externally"
     >
       <i class="fas fa-share-alt" aria-hidden="true"></i>

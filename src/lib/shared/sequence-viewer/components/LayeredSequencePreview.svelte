@@ -280,6 +280,8 @@
       rows = rws;
 
       // Render base image (without text overlays)
+      // Don't pass prop type overrides - let each motion's embedded propType be used,
+      // falling back to global settings when not set (handled by PictographPreparer)
       const blob = await renderer.renderSequenceToBlob(sequence, {
         stepSize: 240,
         format: "PNG",
@@ -290,9 +292,6 @@
         addDifficultyLevel: false, // We overlay this
         addUserInfo: false, // We overlay this
         addReversalSymbols: true,
-        propTypeOverride: catDogModeEnabled ? undefined : (bluePropType ?? undefined),
-        bluePropTypeOverride: catDogModeEnabled ? bluePropType : undefined,
-        redPropTypeOverride: catDogModeEnabled ? redPropType : undefined,
         visibilityOverrides: {
           darkMode,
         },
