@@ -9,6 +9,89 @@
   import type { UIMessage } from "ai";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
 
+  // Simple markdown to HTML converter for TIKA responses
+  function parseMarkdown(md: string): string {
+    if (!md) return "";
+
+    // First, extract and process tables BEFORE any other transformation
+    // Tables need their structure preserved
+    const tableBlocks: string[] = [];
+    let processed = md.replace(
+      /\|[^\n]+\|\n\|[-:\s|]+\|\n(\|[^\n]+\|\n?)*/g,
+      (tableMatch) => {
+        const lines = tableMatch.trim().split('\n');
+        if (lines.length < 2) return tableMatch;
+
+        // Parse header row
+        const headerCells = lines[0].split('|').slice(1, -1).map(c => c.trim());
+        // Skip separator row (line[1])
+        // Parse data rows
+        const dataRows = lines.slice(2).map(row =>
+          row.split('|').slice(1, -1).map(c => c.trim())
+        );
+
+        let tableHtml = '<table><thead><tr>';
+        tableHtml += headerCells.map(h => `<th>${escapeHtml(h)}</th>`).join('');
+        tableHtml += '</tr></thead><tbody>';
+        for (const row of dataRows) {
+          tableHtml += '<tr>' + row.map(c => `<td>${escapeHtml(c)}</td>`).join('') + '</tr>';
+        }
+        tableHtml += '</tbody></table>';
+
+        const placeholder = `__TABLE_${tableBlocks.length}__`;
+        tableBlocks.push(tableHtml);
+        return placeholder;
+      }
+    );
+
+    // Now escape HTML and process markdown
+    processed = escapeHtml(processed)
+      // Headers (## before # to prevent double-matching)
+      .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+      .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+      // Bold
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Lists - wrap consecutive li items in ul
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      // Paragraphs
+      .replace(/\n\n+/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+
+    // Restore tables
+    for (let i = 0; i < tableBlocks.length; i++) {
+      processed = processed.replace(`__TABLE_${i}__`, tableBlocks[i]);
+    }
+
+    // Wrap consecutive <li> in <ul>
+    processed = processed.replace(/(<li>.*?<\/li>(?:<br>)?)+/g, (match) => {
+      const items = match.replace(/<br>/g, '');
+      return '<ul>' + items + '</ul>';
+    });
+
+    // Wrap in paragraph if not already structured
+    if (processed && !processed.startsWith('<')) {
+      processed = '<p>' + processed + '</p>';
+    }
+
+    // Clean up empty paragraphs and stray br
+    processed = processed
+      .replace(/<p><\/p>/g, '')
+      .replace(/<p><br>/g, '<p>')
+      .replace(/<br><\/p>/g, '</p>')
+      .replace(/<p>(\s*<(?:h[1-4]|ul|table))/g, '$1')
+      .replace(/(<\/(?:h[1-4]|ul|table)>)\s*<\/p>/g, '$1');
+
+    return processed;
+  }
+
+  function escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
   // Props - using AI SDK types
   let {
     messages = [],
@@ -83,20 +166,80 @@
       .join("");
   }
 
-  // Get tool invocations from message parts
-  function getToolsFromParts(parts: UIMessage["parts"]) {
+  // Normalized tool info for display
+  interface ToolInfo {
+    name: string;
+    args: Record<string, unknown>;
+    isPending: boolean;
+  }
+
+  // Get tool invocations from message parts, normalizing both formats
+  function getToolsFromParts(parts: UIMessage["parts"]): ToolInfo[] {
     if (!parts) return [];
-    return parts.filter(
-      (part) => part.type === "tool-invocation"
-    ) as Array<{
-      type: "tool-invocation";
-      toolInvocation: {
-        toolName: string;
-        args: Record<string, unknown>;
-        state: "partial-call" | "call" | "result";
-        result?: unknown;
-      };
-    }>;
+    const tools: ToolInfo[] = [];
+
+    for (const part of parts) {
+      // Old format: tool-invocation
+      if (part.type === "tool-invocation") {
+        const inv = (part as { toolInvocation?: { toolName: string; args: Record<string, unknown>; state: string } }).toolInvocation;
+        if (inv) {
+          tools.push({
+            name: inv.toolName,
+            args: inv.args,
+            isPending: inv.state !== "result"
+          });
+        }
+      }
+      // New format: type is "tool-{toolName}"
+      else if (part.type.startsWith("tool-")) {
+        const toolName = part.type.replace("tool-", "");
+        const toolPart = part as { input?: Record<string, unknown>; state?: string };
+        tools.push({
+          name: toolName,
+          args: toolPart.input || {},
+          isPending: toolPart.state !== "output-available"
+        });
+      }
+    }
+
+    return tools;
+  }
+
+  // Get the first tool output from parts (for rendering when no text response)
+  function getToolOutputFromParts(parts: UIMessage["parts"]): string | null {
+    if (!parts) return null;
+    for (const part of parts) {
+      // Check for new AI SDK format: type is "tool-{toolName}"
+      if (part.type.startsWith("tool-") && part.type !== "tool-invocation") {
+        const toolPart = part as { output?: unknown; state?: string };
+        if (toolPart.state === "output-available" && toolPart.output) {
+          return extractExplanation(toolPart.output);
+        }
+      }
+      // Check for old format
+      if (part.type === "tool-invocation") {
+        const inv = (part as { toolInvocation?: { state: string; result?: unknown } }).toolInvocation;
+        if (inv?.state === "result" && inv.result) {
+          return extractExplanation(inv.result);
+        }
+      }
+    }
+    return null;
+  }
+
+  // Extract explanation from tool output, handling various structures
+  function extractExplanation(output: unknown): string {
+    if (typeof output === "string") return output;
+    if (output && typeof output === "object") {
+      const obj = output as Record<string, unknown>;
+      // Check for explanation field (canonical response format)
+      if (typeof obj.explanation === "string") {
+        return obj.explanation;
+      }
+      // Fallback to JSON
+      return JSON.stringify(output, null, 2);
+    }
+    return String(output);
   }
 
   // Check if a message is still streaming (last assistant message with streaming status)
@@ -221,6 +364,11 @@
                     <span class="streaming-cursor"></span>
                   {/if}
                 </p>
+              {:else if getToolOutputFromParts(message.parts)}
+                <!-- Tool output as response (when model doesn't generate text) -->
+                <div class="tool-response markdown-content">
+                  {@html parseMarkdown(getToolOutputFromParts(message.parts) || "")}
+                </div>
               {:else if isMessageStreaming(message, index)}
                 <!-- Still waiting for text to stream -->
                 <div class="typing-indicator">
@@ -239,16 +387,16 @@
                       <i class="fas fa-wrench" aria-hidden="true"></i>
                       Tools called ({tools.length})
                     </div>
-                    {#each tools as toolPart}
-                      <div class="tool-item" class:pending={toolPart.toolInvocation.state !== "result"}>
+                    {#each tools as tool}
+                      <div class="tool-item" class:pending={tool.isPending}>
                         <span class="tool-name">
-                          {formatToolName(toolPart.toolInvocation.toolName)}
-                          {#if toolPart.toolInvocation.state !== "result"}
+                          {formatToolName(tool.name)}
+                          {#if tool.isPending}
                             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
                           {/if}
                         </span>
                         <span class="tool-input">
-                          {JSON.stringify(toolPart.toolInvocation.args)}
+                          {JSON.stringify(tool.args)}
                         </span>
                       </div>
                     {/each}
@@ -535,6 +683,90 @@
     line-height: 1.5;
     color: var(--theme-text, #ffffff);
     white-space: pre-wrap;
+  }
+
+  /* Markdown content styling */
+  .markdown-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .markdown-content :global(h1),
+  .markdown-content :global(h2) {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 12px 0 8px 0;
+    color: var(--theme-accent, #6366f1);
+  }
+
+  .markdown-content :global(h1:first-child),
+  .markdown-content :global(h2:first-child) {
+    margin-top: 0;
+  }
+
+  .markdown-content :global(h3),
+  .markdown-content :global(h4) {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 10px 0 6px 0;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .markdown-content :global(p) {
+    margin: 0 0 8px 0;
+  }
+
+  .markdown-content :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .markdown-content :global(strong) {
+    color: var(--theme-text, #ffffff);
+    font-weight: 600;
+  }
+
+  .markdown-content :global(ul),
+  .markdown-content :global(ol) {
+    margin: 4px 0 8px 0;
+    padding-left: 20px;
+  }
+
+  .markdown-content :global(li) {
+    margin: 2px 0;
+  }
+
+  /* Table styling */
+  .markdown-content :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 13px;
+  }
+
+  .markdown-content :global(th),
+  .markdown-content :global(td) {
+    padding: 6px 10px;
+    text-align: left;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+  }
+
+  .markdown-content :global(th) {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    font-weight: 600;
+    color: var(--theme-accent, #6366f1);
+  }
+
+  .markdown-content :global(tr:nth-child(even)) {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
+  }
+
+  .markdown-content :global(code) {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 13px;
   }
 
   /* Streaming cursor */

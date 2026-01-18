@@ -235,10 +235,6 @@
 
     // Step 2: Fetch missing letters in batches
     if (lettersToFetch.length > 0) {
-      console.log(
-        `[TIKA] Cache hit: ${newGallery.size}/${letters.length}, fetching ${lettersToFetch.length} pictographs`
-      );
-
       for (let i = 0; i < lettersToFetch.length; i += BATCH_SIZE) {
         const batch = lettersToFetch.slice(i, i + BATCH_SIZE);
 
@@ -362,6 +358,21 @@
       .join("");
   }
 
+  // Extract explanation from tool output, handling canonical response format
+  function extractToolExplanation(output: unknown): string {
+    if (typeof output === "string") return output;
+    if (output && typeof output === "object") {
+      const obj = output as Record<string, unknown>;
+      // Check for explanation field (canonical response format)
+      if (typeof obj.explanation === "string") {
+        return obj.explanation;
+      }
+      // Fallback to JSON
+      return JSON.stringify(output, null, 2);
+    }
+    return String(output);
+  }
+
   // Generate conversation data for AI review (returns string for CopyForAIButton)
   function generateCopyForAI(): string {
     if (chatMessages.length === 0) return "";
@@ -398,27 +409,53 @@
             lines.push("");
           }
 
-          // Extract tool calls
-          const toolParts = message.parts.filter(
-            (p) => p.type === "tool-invocation"
-          );
-          if (toolParts.length > 0) {
-            lines.push("### Tools Called");
-            lines.push("");
-            for (const part of toolParts) {
-              const inv = (
-                part as {
-                  type: "tool-invocation";
-                  toolInvocation: {
-                    toolName: string;
-                    args: Record<string, unknown>;
-                    state: string;
-                  };
-                }
-              ).toolInvocation;
-              lines.push(`- **${inv.toolName}**: \`${JSON.stringify(inv.args)}\``);
+          // Extract tool output (new AI SDK format: type is "tool-{toolName}")
+          let hasToolOutput = false;
+          for (const part of message.parts) {
+            if (part.type.startsWith("tool-") && part.type !== "tool-invocation") {
+              const toolPart = part as { output?: unknown; state?: string; input?: Record<string, unknown> };
+              if (toolPart.state === "output-available" && toolPart.output) {
+                hasToolOutput = true;
+                // Extract explanation field if present (canonical response format)
+                const output = extractToolExplanation(toolPart.output);
+                lines.push(output);
+                lines.push("");
+              }
             }
-            lines.push("");
+          }
+
+          // Extract tool calls (old format)
+          if (!hasToolOutput) {
+            const toolParts = message.parts.filter(
+              (p) => p.type === "tool-invocation"
+            );
+            if (toolParts.length > 0) {
+              lines.push("### Tools Called");
+              lines.push("");
+              for (const part of toolParts) {
+                const inv = (
+                  part as {
+                    type: "tool-invocation";
+                    toolInvocation: {
+                      toolName: string;
+                      args: Record<string, unknown>;
+                      state: string;
+                      result?: unknown;
+                    };
+                  }
+                ).toolInvocation;
+                lines.push(`- **${inv.toolName}**: \`${JSON.stringify(inv.args)}\``);
+                // Include result if available
+                if (inv.state === "result" && inv.result) {
+                  const result = inv.result as Record<string, unknown>;
+                  if (typeof result.explanation === "string") {
+                    lines.push("");
+                    lines.push(result.explanation);
+                  }
+                }
+              }
+              lines.push("");
+            }
           }
         } else {
           // Fallback: extract text from parts
