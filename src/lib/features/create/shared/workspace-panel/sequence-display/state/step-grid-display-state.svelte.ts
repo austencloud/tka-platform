@@ -46,6 +46,10 @@ export function createStepGridDisplayState() {
   let isWaitingForSequentialAnimation = $state<boolean>(false);
   let isClearingForGeneration = $state<boolean>(false);
 
+  // Animation generation counter - used to cancel previous animations when a new one starts
+  // Each new animation increments this, and running animations check if they're still current
+  let animationGeneration = 0;
+
   // Animation timing configuration
   let animationTiming = $state<AnimationTiming>({
     ...DEFAULT_ANIMATION_TIMING,
@@ -88,18 +92,36 @@ export function createStepGridDisplayState() {
     steps: readonly StepData[],
     dispatchEvent: (event: CustomEvent) => void
   ): Promise<void> {
+    // Increment generation to cancel any previous running animation
+    const thisGeneration = ++animationGeneration;
     const stepCount = steps.length;
+
+    console.log(`[SeqAnim] Starting generation ${thisGeneration} with ${stepCount} steps`);
 
     // Small delay to ensure DOM has updated
     await new Promise((resolve) =>
       setTimeout(resolve, animationTiming.sequentialDelay / 6)
     );
 
+    // Check if this animation was superseded by a newer one
+    if (thisGeneration !== animationGeneration) {
+      console.log(`[SeqAnim] Generation ${thisGeneration} aborted (superseded)`);
+      return; // Abort - a newer animation has started
+    }
+
     // Trigger steps sequentially
     for (let i = 0; i < stepCount; i++) {
+      // Check if this animation was superseded by a newer one
+      if (thisGeneration !== animationGeneration) {
+        console.log(`[SeqAnim] Generation ${thisGeneration} aborted at step ${i}`);
+        return; // Abort - a newer animation has started
+      }
+
+      console.log(`[SeqAnim] Adding step ${i} to stepsToAnimate. Set before: [${[...stepsToAnimate].join(',')}]`);
       // Add this beat to stepsToAnimate to trigger its animation
       stepsToAnimate.add(i);
       stepsToAnimate = new Set(stepsToAnimate); // Trigger reactivity
+      console.log(`[SeqAnim] Set after: [${[...stepsToAnimate].join(',')}]`);
 
       // Dispatch event with the letter from this beat
       const beat = steps[i];
@@ -124,6 +146,11 @@ export function createStepGridDisplayState() {
       );
     }
 
+    // Only proceed if this animation is still current
+    if (thisGeneration !== animationGeneration) {
+      return; // Abort - a newer animation has started
+    }
+
     // Dispatch completion event
     const completeEvent = new CustomEvent("sequential-animation-complete", {
       detail: { totalSteps: stepCount },
@@ -133,7 +160,10 @@ export function createStepGridDisplayState() {
 
     // Clear animation state after all steps have animated
     setTimeout(() => {
-      cleanupAnimation();
+      // Only cleanup if this animation is still current
+      if (thisGeneration === animationGeneration) {
+        cleanupAnimation();
+      }
     }, animationTiming.cleanupDelay);
   }
 
@@ -141,10 +171,16 @@ export function createStepGridDisplayState() {
    * Trigger all-at-once animation
    */
   function triggerAllAtOnceAnimation() {
+    // Increment generation to cancel any previous running animation
+    const thisGeneration = ++animationGeneration;
+
     // All steps already set to animate via shouldAnimateAllSteps
     // Just clean up after animation duration
     setTimeout(() => {
-      cleanupAnimation();
+      // Only cleanup if this animation is still current
+      if (thisGeneration === animationGeneration) {
+        cleanupAnimation();
+      }
     }, animationTiming.cleanupDelay);
   }
 
@@ -191,11 +227,15 @@ export function createStepGridDisplayState() {
    * Check if a beat should animate
    */
   function shouldBeatAnimate(stepIndex: number): boolean {
-    return (
-      shouldAnimateAllSteps ||
-      stepIndex === newlyAddedStepIndex ||
-      stepsToAnimate.has(stepIndex)
-    );
+    const inSet = stepsToAnimate.has(stepIndex);
+    const result = shouldAnimateAllSteps || stepIndex === newlyAddedStepIndex || inSet;
+
+    // DEBUG: Log when checking animation state
+    if (inSet || result) {
+      console.log(`[shouldBeatAnimate ${stepIndex}] allSteps=${shouldAnimateAllSteps}, newlyAdded=${newlyAddedStepIndex}, inSet=${inSet} => ${result}`);
+    }
+
+    return result;
   }
 
   /**

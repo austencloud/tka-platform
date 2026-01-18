@@ -165,8 +165,8 @@
 
   // Grid mode from sequence
   const gridMode = $derived.by(() => {
-    if (sequence.startPosition?.gridMode) {
-      return sequence.startPosition.gridMode;
+    if (sequence.gridMode) {
+      return sequence.gridMode;
     }
     return GridMode.DIAMOND;
   });

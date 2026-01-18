@@ -253,8 +253,12 @@
             // Single beat added (Construct mode)
             displayState.handleSingleBeatAddition(currentStepCount - 1);
           } else {
-            // Steps replaced - trigger full animation
-            triggerFullAnimation();
+            // Steps replaced - trigger full animation with delay
+            // Delay ensures StepCell onMount callbacks complete before animation starts,
+            // preventing the HMR guard from incorrectly blocking animations
+            setTimeout(() => {
+              triggerFullAnimation();
+            }, 10);
           }
         }
       } else if (beatCountDiff === 0) {
@@ -271,11 +275,19 @@
           // NO animation needed - steps will update in place
         } else {
           // Beat IDs changed - full sequence replacement (Generate mode)
-          triggerFullAnimation();
+          // Delay ensures StepCell onMount callbacks complete before animation starts,
+          // preventing the HMR guard from incorrectly blocking animations
+          setTimeout(() => {
+            triggerFullAnimation();
+          }, 10);
         }
       } else {
         // Full sequence replacement (Generate mode)
-        triggerFullAnimation();
+        // Delay ensures StepCell onMount callbacks complete before animation starts,
+        // preventing the HMR guard from incorrectly blocking animations
+        setTimeout(() => {
+          triggerFullAnimation();
+        }, 10);
       }
     } else if (currentStepCount > previousStepCount) {
       const stepsAdded = currentStepCount - previousStepCount;
@@ -475,14 +487,12 @@
           removingStepIndex !== null &&
           !isDeleting &&
           index > removingStepIndex}
-        {@const shouldAnimateBeat = displayState.shouldBeatAnimate(index)}
-        {@const shouldHideBeat = displayState.shouldBeatBeHidden(index)}
         {@const musicalPosition = getDurationDisplay(index)}
         <div
           class="beat-container"
           class:deleting={isDeleting}
           class:sliding={shouldSlide}
-          class:hidden-for-sequential={shouldHideBeat}
+          class:hidden-for-sequential={displayState.shouldBeatBeHidden(index)}
           style:grid-row={gridRow}
           style:grid-column={gridCol}
           style:animation-delay={shouldSlide
@@ -495,7 +505,7 @@
             onClick={() => handleStepClick(beat.stepNumber)}
             onDelete={() => onStepDelete?.(beat.stepNumber)}
             onLongPress={onStepLongPress}
-            shouldAnimate={shouldAnimateBeat}
+            shouldAnimate={displayState.shouldBeatAnimate(index)}
             isSelected={selectedStepNumber === beat.stepNumber}
             isPracticeStep={practiceStepNumber === beat.stepNumber}
             {activeMode}
@@ -566,14 +576,12 @@
                   removingStepIndex !== null &&
                   !isDeleting &&
                   stepIndex > removingStepIndex}
-                {@const shouldAnimateBeat = displayState.shouldBeatAnimate(stepIndex)}
-                {@const shouldHideBeat = displayState.shouldBeatBeHidden(stepIndex)}
                 {@const musicalPosition = getDurationDisplay(stepIndex)}
                 <div
                   class="timeline-cell beat-container"
                   class:deleting={isDeleting}
                   class:sliding={shouldSlide}
-                  class:hidden-for-sequential={shouldHideBeat}
+                  class:hidden-for-sequential={displayState.shouldBeatBeHidden(stepIndex)}
                   class:timeline-selected={selectedStepNumber === beat.stepNumber}
                   class:timeline-practice={practiceStepNumber === beat.stepNumber}
                   style:--duration-multiplier={getTimelineWidthMultiplier(duration)}
@@ -587,7 +595,7 @@
                     onClick={() => handleStepClick(beat.stepNumber)}
                     onDelete={() => onStepDelete?.(beat.stepNumber)}
                     onLongPress={onStepLongPress}
-                    shouldAnimate={shouldAnimateBeat}
+                    shouldAnimate={displayState.shouldBeatAnimate(stepIndex)}
                     isSelected={selectedStepNumber === beat.stepNumber}
                     isPracticeStep={practiceStepNumber === beat.stepNumber}
                     {activeMode}
@@ -662,14 +670,12 @@
             removingStepIndex !== null &&
             !isDeleting &&
             index > removingStepIndex}
-          {@const shouldAnimateBeat = displayState.shouldBeatAnimate(index)}
-          {@const shouldHideBeat = displayState.shouldBeatBeHidden(index)}
           {@const musicalPosition = getDurationDisplay(index)}
           <div
             class="beat-container"
             class:deleting={isDeleting}
             class:sliding={shouldSlide}
-            class:hidden-for-sequential={shouldHideBeat}
+            class:hidden-for-sequential={displayState.shouldBeatBeHidden(index)}
             style:grid-row={gridRow}
             style:grid-column={gridCol}
             style:animation-delay={shouldSlide
@@ -682,7 +688,7 @@
               onClick={() => handleStepClick(beat.stepNumber)}
               onDelete={() => onStepDelete?.(beat.stepNumber)}
               onLongPress={onStepLongPress}
-              shouldAnimate={shouldAnimateBeat}
+              shouldAnimate={displayState.shouldBeatAnimate(index)}
               isSelected={selectedStepNumber === beat.stepNumber}
               isPracticeStep={practiceStepNumber === beat.stepNumber}
               {activeMode}

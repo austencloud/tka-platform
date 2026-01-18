@@ -77,11 +77,6 @@
   // Track previous beat ID for change detection
   let previousBeatId = "";
 
-  // HMR detection: track if this is a fresh mount with existing data
-  // If beat already has data on first mount and we're not explicitly told to animate,
-  // skip the animation (likely HMR scenario)
-  let isInitialMount = true;
-
   // Long-press detection
   const LONG_PRESS_DURATION = 500; // ms
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -113,9 +108,16 @@
   // Reset hasAnimated ONLY when the beat data itself changes (different beat loaded)
   // This prevents re-animating all steps when only one beat should animate
   $effect(() => {
-    if (beat.id !== previousBeatId) {
+    const newId = beat.id;
+    const oldId = previousBeatId;
+
+    // DEBUG: Always log when this effect runs to trace beat ID changes
+    console.log(`[StepCell ${index}] $effect: beat.id=${newId?.slice(0,8)}, previousBeatId=${oldId?.slice(0,8)}, changed=${newId !== oldId}, hasAnimated=${hasAnimated}`);
+
+    if (newId !== oldId) {
+      console.log(`[StepCell ${index}] Beat ID CHANGED! Resetting hasAnimated from ${hasAnimated} to false`);
       hasAnimated = false;
-      previousBeatId = beat.id;
+      previousBeatId = newId;
     }
   });
 
@@ -144,24 +146,22 @@
   });
 
   const shouldAnimateIn = $derived.by(() => {
-    // Skip animation on HMR: if this is initial mount with pre-existing non-blank data
-    // and we're told to animate, it's likely HMR preserving parent state but resetting child
-    // The parent should re-trigger animation explicitly through proper channels
-    if (isInitialMount && !beat.isBlank && shouldAnimate) {
-      // Will be set to false in onMount, at which point we'll have hasAnimated = true
-      return false;
+    // Animate when:
+    // 1. shouldAnimate prop is true (parent says this step should animate)
+    // 2. hasAnimated is false (haven't animated yet)
+    // 3. beat is not blank
+    const result = shouldAnimate && !hasAnimated && !beat.isBlank;
+
+    // DEBUG: Log animation state for each cell
+    if (shouldAnimate || result) {
+      console.log(`[StepCell ${index}] shouldAnimate=${shouldAnimate}, hasAnimated=${hasAnimated}, isBlank=${beat.isBlank} => shouldAnimateIn=${result}`);
     }
-    return shouldAnimate && !hasAnimated && !beat.isBlank;
+
+    return result;
   });
 
   // Steps should be invisible ONLY if they're waiting to animate
   const isVisible = $derived.by(() => {
-    // HMR case: if initial mount with existing data and told to animate,
-    // show it immediately (don't hide waiting for animation)
-    if (isInitialMount && !beat.isBlank && shouldAnimate) {
-      return true;
-    }
-
     // If it should animate but hasn't yet, hide it (will become visible via animation)
     // This applies to ALL steps, including start position during generation
     if (shouldAnimate && !hasAnimated) return false;
@@ -178,17 +178,20 @@
   });
 
   function handleAnimationEnd() {
-    hasAnimated = true;
+    // Only mark as animated if we're currently supposed to be animating.
+    // This prevents stale animationend events from old animations (when cell is reused)
+    // from incorrectly setting hasAnimated=true before the new animation starts.
+    if (shouldAnimateIn) {
+      console.log(`[StepCell ${index}] Animation ended, setting hasAnimated=true`);
+      hasAnimated = true;
+    } else {
+      console.log(`[StepCell ${index}] Animation ended but shouldAnimateIn=false, ignoring stale event`);
+    }
   }
 
   // Listen for animation changes from the AnimationSelector
   onMount(() => {
-    // Handle HMR case: if we mounted with existing data and animation was requested,
-    // mark as already animated to prevent re-animation
-    if (isInitialMount && !beat.isBlank && shouldAnimate) {
-      hasAnimated = true;
-    }
-    isInitialMount = false;
+    console.log(`[StepCell ${index}] Mounted. shouldAnimate=${shouldAnimate}, hasAnimated=${hasAnimated}, beat.id=${beat.id?.slice(0,8)}`);
 
     const handleAnimationChange = (event: CustomEvent) => {
       currentAnimationName = event.detail.animation;

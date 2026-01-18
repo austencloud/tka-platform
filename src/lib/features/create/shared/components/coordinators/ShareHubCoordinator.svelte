@@ -22,7 +22,7 @@
    */
 
   import { onMount, onDestroy } from "svelte";
-  import ShareHubDrawer from "$lib/shared/share-hub/components/ShareHubDrawer.svelte";
+  import SequencePanelDrawer from "$lib/shared/sequence-viewer/components/SequencePanelDrawer.svelte";
   import type { ExportSettings } from "$lib/shared/share-hub/domain/models/ExportSettings";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
@@ -694,45 +694,52 @@
 
 </script>
 
-<ShareHubDrawer
-  isOpen={panelState.isShareHubPanelOpen}
-  sequence={currentSequence}
-  {isMobile}
-  onClose={handleClose}
-  onExport={handleExport}
-  animationSequenceData={animationPanelState.sequenceData}
-  isAnimationPlaying={isPlayingLocal}
-  animationCurrentBeat={animationPanelState.currentStep}
-  animationSpeed={animationPanelState.speed}
-  animationBluePropState={animationPanelState.bluePropState}
-  animationRedPropState={animationPanelState.redPropState}
-  {isCircular}
-  {exportLoopCount}
-  isAnimationExporting={isExporting && selectedFormat === "animation"}
-  animationExportProgress={exportProgress}
-  {animationServicesReady}
-  {animationLoading}
-  {selectedFormat}
-  playbackMode={playbackModeLocal}
-  stepPlaybackPauseMs={stepPlaybackPauseMsLocal}
-  stepPlaybackStepSize={stepPlaybackStepSizeLocal}
-  {blueMotionVisible}
-  {redMotionVisible}
-  {isSideBySideLayout}
-  onPlaybackToggle={handlePlaybackToggle}
-  onSpeedChange={handleSpeedChange}
-  onStepHalfBeatForward={handleStepHalfBeatForward}
-  onStepHalfBeatBackward={handleStepHalfBeatBackward}
-  onStepFullBeatForward={handleStepFullBeatForward}
-  onStepFullBeatBackward={handleStepFullBeatBackward}
-  onLoopCountChange={handleLoopCountChange}
-  onCanvasReady={handleCanvasReady}
-  onCancelExport={handleCancelExport}
-  onExportVideo={handleExportVideo}
-  onFormatChange={handleFormatChange}
-  onPlaybackModeChange={handlePlaybackModeChange}
-  onStepPlaybackPauseMsChange={handleStepPlaybackPauseMsChange}
-  onStepPlaybackStepSizeChange={handleStepPlaybackStepSizeChange}
-  onToggleBlue={handleToggleBlueMotion}
-  onToggleRed={handleToggleRedMotion}
-/>
+{#if currentSequence}
+  <SequencePanelDrawer
+    isOpen={panelState.isShareHubPanelOpen}
+    sequence={currentSequence}
+    mode="edit"
+    {isMobile}
+    respectLayoutMode={true}
+    {selectedFormat}
+    isExporting={isExporting}
+    exportProgress={exportProgress}
+    showVisibilitySettings={true}
+    onClose={handleClose}
+    onExport={(format, settings) => handleExport("single", settings)}
+    onFormatChange={handleFormatChange}
+    onCancelExport={handleCancelExport}
+    animationSequenceData={animationPanelState.sequenceData}
+    isAnimationPlaying={isPlayingLocal}
+    animationCurrentBeat={animationPanelState.currentStep}
+    animationSpeed={animationPanelState.speed}
+    animationBluePropState={animationPanelState.bluePropState}
+    animationRedPropState={animationPanelState.redPropState}
+    {isCircular}
+    {exportLoopCount}
+    isAnimationExporting={isExporting && selectedFormat === "animation"}
+    animationExportProgress={exportProgress}
+    {animationServicesReady}
+    {animationLoading}
+    playbackMode={playbackModeLocal}
+    stepPlaybackPauseMs={stepPlaybackPauseMsLocal}
+    stepPlaybackStepSize={stepPlaybackStepSizeLocal}
+    {blueMotionVisible}
+    {redMotionVisible}
+    {isSideBySideLayout}
+    onPlaybackToggle={handlePlaybackToggle}
+    onSpeedChange={handleSpeedChange}
+    onStepHalfBeatForward={handleStepHalfBeatForward}
+    onStepHalfBeatBackward={handleStepHalfBeatBackward}
+    onStepFullBeatForward={handleStepFullBeatForward}
+    onStepFullBeatBackward={handleStepFullBeatBackward}
+    onLoopCountChange={handleLoopCountChange}
+    onCanvasReady={handleCanvasReady}
+    onExportVideo={handleExportVideo}
+    onPlaybackModeChange={handlePlaybackModeChange}
+    onStepPlaybackPauseMsChange={handleStepPlaybackPauseMsChange}
+    onStepPlaybackStepSizeChange={handleStepPlaybackStepSizeChange}
+    onToggleBlue={handleToggleBlueMotion}
+    onToggleRed={handleToggleRedMotion}
+  />
+{/if}
