@@ -753,6 +753,8 @@ server.tool(
         showNonRadialPoints: prefs.showNonRadialPoints,
         showBlueMotion: prefs.showBlueMotion,
         showRedMotion: prefs.showRedMotion,
+        bluePropType: prefs.bluePropType,
+        redPropType: prefs.redPropType,
       };
 
       // Render using standalone Node.js renderer

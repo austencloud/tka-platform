@@ -38,11 +38,13 @@ const __dirname = dirname(__filename);
 const VIEWBOX_SIZE = 950;
 const CENTER = VIEWBOX_SIZE / 2; // 475
 
-// Colors (matching the real renderer)
-const BLUE_COLOR = "#2E77AE";
-const RED_COLOR = "#ED1C24";
-const BLUE_COLOR_LIGHT = "#1a4a6e";
-const RED_COLOR_LIGHT = "#a31018";
+// Colors (matching svg-color-utils.ts MOTION_COLOR_MAP - the actual prop rendering colors)
+// These are the colors used when rendering props/arrows in the main app
+const BLUE_COLOR = "#3575E2";  // Dark mode blue - bright on dark backgrounds
+const RED_COLOR = "#ED1C24";   // Dark mode red - standard red works well
+// Light mode variants (from MOTION_COLOR_MAP in svg-color-utils.ts)
+const BLUE_COLOR_LIGHT = "#3D44B8";  // Light mode blue - more vibrant on light backgrounds
+const RED_COLOR_LIGHT = "#DC2626";   // Light mode red - Tailwind Red 600
 
 // Glyph positioning (matching real renderer)
 const TKA_GLYPH_X = 50;
@@ -170,6 +172,9 @@ export interface RenderVisibilityOptions {
   showNonRadialPoints?: boolean;
   showBlueMotion?: boolean;
   showRedMotion?: boolean;
+  // Prop type options (null = use default staff)
+  bluePropType?: string | null;
+  redPropType?: string | null;
 }
 
 // ============================================================================
@@ -249,6 +254,8 @@ export class StandaloneRenderer {
       showGrid = true,
       showBlueMotion = true,
       showRedMotion = true,
+      bluePropType = null,
+      redPropType = null,
     } = options;
 
     const gridMode = this.parseGridMode(input.gridMode);
@@ -266,11 +273,11 @@ export class StandaloneRenderer {
 
     // 3. Props (using CORRECT placement logic with beta offset)
     if (showBlueMotion) {
-      const blueProp = this.renderProp(input, input.blueMotion, gridMode, darkMode);
+      const blueProp = this.renderProp(input, input.blueMotion, gridMode, darkMode, bluePropType);
       if (blueProp) svgParts.push(blueProp);
     }
     if (showRedMotion) {
-      const redProp = this.renderProp(input, input.redMotion, gridMode, darkMode);
+      const redProp = this.renderProp(input, input.redMotion, gridMode, darkMode, redPropType);
       if (redProp) svgParts.push(redProp);
     }
 
@@ -345,7 +352,7 @@ ${svgParts.join("\n")}
       //
       // Solution: Add explicit fill to circles without fill attribute
       const gridColor = darkMode ? "#d0d0d0" : "#000000";
-      const opacity = darkMode ? "0.85" : "0.7";
+      const opacity = darkMode ? "0.85" : "1.0"; // Solid black in light mode
 
       // Add fill attribute to circles that don't have one
       // The regex matches <circle that is NOT followed by fill= before the >
@@ -413,7 +420,8 @@ ${svgParts.join("\n")}
     pictograph: PictographInput,
     motion: MotionInput,
     gridMode: GridMode,
-    darkMode: boolean
+    darkMode: boolean,
+    propType: string | null = null
   ): string {
     // Get the end location and orientation
     const endLocation = motion.endLocation.toLowerCase() as GridLocation;
@@ -427,12 +435,20 @@ ${svgParts.join("\n")}
     const finalX = placement.x + betaOffset.x;
     const finalY = placement.y + betaOffset.y;
 
-    // Load the prop SVG
-    const propPath = join(this.projectRoot, "static/images/props/staff.svg");
+    // Determine prop file name - use provided prop type or default to staff
+    const propFileName = propType ? `${propType}.svg` : "staff.svg";
+    const propPath = join(this.projectRoot, "static/images/props", propFileName);
     if (!existsSync(propPath)) {
       console.error("[Renderer] Prop file not found:", propPath);
       return "";
     }
+
+    // HAND PROP SPECIAL LOGIC (matching PropPlacer.ts and PropSvg.svelte):
+    // 1. Hands should NEVER rotate - always use 0 degrees orientation
+    // 2. Red hands are always mirrored (scaleX(-1)) to show left/right anatomically
+    const isHand = propType === "hand";
+    const isRedHand = isHand && motion.color === "red";
+    const rotation = isHand ? 0 : placement.rotation;
 
     try {
       let propSvg = readFileSync(propPath, "utf-8");
@@ -467,8 +483,9 @@ ${svgParts.join("\n")}
 
       // Canvas2D renderer draws props at their FULL viewBox dimensions
       // within the 950x950 scene - NO additional scaling
-      // Transform: translate to position → rotate → translate by -center
-      return `<g transform="translate(${finalX}, ${finalY}) rotate(${placement.rotation}) translate(${-centerX}, ${-centerY})">
+      // Transform: translate to position → rotate → mirror (if red hand) → translate by -center
+      const mirrorTransform = isRedHand ? " scale(-1, 1)" : "";
+      return `<g transform="translate(${finalX}, ${finalY}) rotate(${rotation})${mirrorTransform} translate(${-centerX}, ${-centerY})">
   ${innerContent}
 </g>`;
     } catch (error) {
