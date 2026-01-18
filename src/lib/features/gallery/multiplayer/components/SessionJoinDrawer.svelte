@@ -9,6 +9,7 @@
 	 */
 
 	import { onMount } from 'svelte';
+	import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
 	import type {
 		PublicSessionInfo,
 		CreateSessionOptions,
@@ -153,13 +154,7 @@
 
 	<!-- Drawer -->
 	<div class="drawer" role="dialog" aria-label="Multiplayer Session">
-		<!-- Header -->
-		<header class="drawer-header">
-			<h2>Multiplayer Gallery</h2>
-			<button class="close-button" onclick={onClose} aria-label="Close">
-				<i class="fas fa-times" aria-hidden="true"></i>
-			</button>
-		</header>
+		<DrawerHeader title="Multiplayer Gallery" {onClose} />
 
 		<!-- Leave session button if in session -->
 		{#if isInSession}
@@ -349,34 +344,6 @@
 		flex-direction: column;
 		box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
 		pointer-events: auto;
-	}
-
-	.drawer-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 16px 20px;
-		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-	}
-
-	.drawer-header h2 {
-		margin: 0;
-		font-size: 18px;
-		font-weight: 600;
-		color: var(--theme-text, white);
-	}
-
-	.close-button {
-		background: none;
-		border: none;
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-		font-size: 18px;
-		cursor: pointer;
-		padding: 4px 8px;
-	}
-
-	.close-button:hover {
-		color: var(--theme-text, white);
 	}
 
 	.in-session-banner {

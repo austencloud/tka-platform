@@ -377,8 +377,8 @@
         {cameraMode}
         primaryAvatar={performerStates[0]}
         {visiblePlanes}
-        {showGrid}
-        {showLabels}
+        showGrid={showGrid && !locomotionMode}
+        showLabels={showLabels && !locomotionMode}
         {gridMode}
         {cameraPreset}
         customCameraPosition={effectiveCameraPosition}
@@ -455,11 +455,13 @@
           isPlaying={activeState?.isPlaying ?? false}
         />
 
-        <!-- Locomotion Controller (WASD + third-person camera) -->
+        <!-- Locomotion Controller (WASD + camera control, V to toggle 1st/3rd person) -->
         {#if locomotionMode && activeState}
           <LocomotionController
             avatarState={activeState}
             enabled={locomotionMode}
+            {cameraMode}
+            onCameraModeChange={(mode) => cameraMode = mode}
             onPointerLockChange={(locked) => (isPointerLocked = locked)}
           />
         {/if}
@@ -526,16 +528,28 @@
         {/snippet}
       </SceneOverlayControls>
 
-      <!-- Locomotion Hint (shown when in locomotion mode but pointer not locked) -->
-      {#if locomotionMode && !isPointerLocked}
-        <div class="locomotion-hint">
-          <div class="hint-content">
-            <i class="fas fa-mouse-pointer" aria-hidden="true"></i>
-            <span>Click to enter game mode</span>
+      <!-- Locomotion Status (shown when in locomotion mode) -->
+      {#if locomotionMode}
+        <div class="locomotion-status">
+          <div class="mode-indicator">
+            {#if cameraMode === CameraMode.FIRST_PERSON}
+              <i class="fas fa-eye" aria-hidden="true"></i>
+              <span>1st Person</span>
+            {:else}
+              <i class="fas fa-user" aria-hidden="true"></i>
+              <span>3rd Person</span>
+            {/if}
           </div>
-          <div class="hint-controls">
+          {#if !isPointerLocked}
+            <div class="click-prompt">
+              <i class="fas fa-mouse-pointer" aria-hidden="true"></i>
+              <span>Click to control</span>
+            </div>
+          {/if}
+          <div class="controls-hint">
             <kbd>WASD</kbd> Move
             <kbd>Mouse</kbd> Look
+            <kbd>V</kbd> Toggle View
             <kbd>Esc</kbd> Exit
           </div>
         </div>
@@ -730,8 +744,8 @@
     outline-offset: 2px;
   }
 
-  /* Locomotion Hint Overlay */
-  .locomotion-hint {
+  /* Locomotion Status Overlay */
+  .locomotion-status {
     position: absolute;
     bottom: 100px;
     left: 50%;
@@ -749,22 +763,35 @@
     backdrop-filter: blur(8px);
     pointer-events: none;
     z-index: 50;
-    animation: locomotion-pulse 2s ease-in-out infinite;
   }
 
-  .hint-content {
+  .mode-indicator {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 1rem;
   }
 
-  .hint-content i {
+  .mode-indicator i {
     font-size: 1.25rem;
     color: #64b5f6;
   }
 
-  .hint-controls {
+  .click-prompt {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    animation: locomotion-pulse 2s ease-in-out infinite;
+  }
+
+  .click-prompt i {
+    font-size: 1rem;
+    color: #fbbf24;
+  }
+
+  .controls-hint {
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -772,7 +799,7 @@
     color: rgba(255, 255, 255, 0.7);
   }
 
-  .hint-controls kbd {
+  .controls-hint kbd {
     padding: 0.2rem 0.5rem;
     background: rgba(255, 255, 255, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -792,7 +819,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .locomotion-hint {
+    .click-prompt {
       animation: none;
     }
   }

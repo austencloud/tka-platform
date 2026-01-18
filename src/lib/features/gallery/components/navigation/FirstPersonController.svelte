@@ -3,10 +3,18 @@
    * FirstPersonController
    *
    * FPS-style camera and movement controller for the gallery.
-   * - Desktop: WASD/Arrow keys for movement, mouse for looking (with pointer lock)
-   * - Mobile: Virtual joystick for movement, drag to look
+   * Uses shared 3D primitives for input and camera handling.
    *
-   * Uses room-based wall collision for realistic movement restriction.
+   * Shared primitives used:
+   * - AdaptiveInputProvider: Unified keyboard/touch/pointer lock input
+   * - CameraController: Camera rotation with behaviors
+   * - VirtualJoystick: Touch movement control
+   *
+   * Gallery-specific features:
+   * - Wall collision (WallCollider)
+   * - Tap-to-walk (floor raycasting)
+   * - Room graph navigation
+   * - Multiplayer sync callbacks
    */
 
   import { T, useTask } from "@threlte/core";
@@ -16,7 +24,6 @@
   import {
     PLAYER_EYE_HEIGHT,
     PLAYER_MOVE_SPEED,
-    MOUSE_SENSITIVITY,
     LOOK_ANGLE_LIMIT,
     SPRINT_MULTIPLIER,
   } from "../../domain/constants/gallery-dimensions";
@@ -24,18 +31,30 @@
   import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
   import { getWallsForRooms, findDeepestCollision, resolveCollision } from "../../domain/models/WallCollider";
   import { getRoomWithNeighbors, findRoomAtPointWithHint } from "../../domain/models/RoomGraph";
-  import TouchControls from "./TouchControls.svelte";
+
+  // Shared 3D primitives
+  import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
+  import { AdaptiveInputProvider } from "$lib/shared/3d/input/InputProviderFactory";
+  import { CameraController } from "$lib/shared/3d/camera/CameraController";
+  import { FirstPersonLook } from "$lib/shared/3d/camera/behaviors/FirstPersonLook";
+  import { ThirdPersonOrbit } from "$lib/shared/3d/camera/behaviors/ThirdPersonOrbit";
+  import { CameraDamping } from "$lib/shared/3d/camera/behaviors/CameraDamping";
+  import { CameraConstraints } from "$lib/shared/3d/camera/behaviors/CameraConstraints";
+  import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
+
+  // Gallery-specific
   import TapIndicator from "./TapIndicator.svelte";
 
-  // Touch look sensitivity (lower than mouse for smoother feel)
-  const TOUCH_SENSITIVITY = 0.004;
-
   // Walk-to-point settings
-  const WALK_TO_SPEED = PLAYER_MOVE_SPEED * 0.8; // Slightly slower for tap-to-walk
-  const WALK_TO_ARRIVAL_THRESHOLD = 30; // Stop when within this distance
+  const WALK_TO_SPEED = PLAYER_MOVE_SPEED * 0.8;
+  const WALK_TO_ARRIVAL_THRESHOLD = 30;
 
   // Collision settings
   const MAX_COLLISION_ITERATIONS = 4;
+
+  // Third person camera settings
+  const THIRD_PERSON_DISTANCE = 5;
+  const THIRD_PERSON_HEIGHT = 2;
 
   interface Props {
     /** Gallery layout with collision world */
@@ -62,7 +81,28 @@
     mouseSensitivity?: number;
   }
 
-  let { layout, position, currentRoomId, onPositionChange, onRoomChange, onRotationChange, onLocomotionChange, enabled = true, initialYaw = Math.PI, fov = 75, mouseSensitivity = 1.0 }: Props = $props();
+  let {
+    layout,
+    position,
+    currentRoomId,
+    onPositionChange,
+    onRoomChange,
+    onRotationChange,
+    onLocomotionChange,
+    enabled = true,
+    initialYaw = Math.PI,
+    fov = 75,
+    mouseSensitivity = 1.0,
+  }: Props = $props();
+
+  // Shared input capabilities
+  const inputCaps = getInputCapabilities();
+
+  // Unified input provider
+  let inputProvider: AdaptiveInputProvider | null = null;
+
+  // Camera controller with behaviors
+  let cameraController: CameraController | null = null;
 
   // Camera reference
   let camera = $state<PerspectiveCamera | undefined>(undefined);
@@ -72,80 +112,58 @@
     cameraPreferences.getModeForDestination("gallery")
   );
 
-  // Third person camera settings
-  const THIRD_PERSON_DISTANCE = 5; // meters behind player
-  const THIRD_PERSON_HEIGHT = 2; // meters above player eye height
+  // Show touch UI when needed
+  let showTouchUI = $state(false);
 
-  // Look angles (radians)
-  // Start facing down the hallway (+Z direction) by default
-  let yaw = $state(Math.PI); // Horizontal rotation - initialized to face +Z
-  let pitch = $state(0); // Vertical rotation (clamped)
-  let hasInitializedYaw = false;
-
-  // Movement input state (from keyboard or touch)
-  let moveInput = $state({ x: 0, z: 0 });
-
-  // Touch input state (separate from keyboard)
-  let touchMoveInput = $state({ x: 0, z: 0 });
-  let isTouchDevice = $state(false);
-
-  // Walk-to-point state
+  // Walk-to-point state (Gallery-specific)
   let walkToTarget: Vector3 | null = $state(null);
   let isWalkingToTarget = $state(false);
   let indicatorFadeTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Camera transition state
-  let transitionState = $state<{
-    isActive: boolean;
-    progress: number;
-    startPosition: { x: number; y: number; z: number };
-    targetPosition: { x: number; y: number; z: number };
-    startRotation: { yaw: number; pitch: number };
-    targetRotation: { yaw: number; pitch: number };
-  } | null>(null);
+  // Touch joystick input (for combining with walk-to-target logic)
+  let joystickInput = $state({ x: 0, z: 0 });
 
-  // Raycaster for tap-to-walk
+  // Raycaster for tap-to-walk (Gallery-specific)
   const raycaster = new Raycaster();
-  const floorPlane = new Plane(new Vector3(0, 1, 0), 0); // Y-up plane at y=0
+  const floorPlane = new Plane(new Vector3(0, 1, 0), 0);
 
-  // Touch control handlers
-  function handleTouchMove(x: number, z: number) {
-    touchMoveInput = { x, z };
+  // Track initialization
+  let initialized = false;
+
+  // Handle joystick input from VirtualJoystick
+  function handleJoystickInput(x: number, y: number) {
+    joystickInput = { x, z: y };
     // Cancel walk-to if user starts using joystick
-    if (x !== 0 || z !== 0) {
-      if (indicatorFadeTimeout) {
-        clearTimeout(indicatorFadeTimeout);
-        indicatorFadeTimeout = null;
-      }
-      walkToTarget = null;
-      isWalkingToTarget = false;
+    if (x !== 0 || y !== 0) {
+      cancelWalkTo();
     }
   }
 
-  function handleTouchLook(deltaX: number, deltaY: number) {
-    yaw -= deltaX * TOUCH_SENSITIVITY;
-    pitch -= deltaY * TOUCH_SENSITIVITY;
-    pitch = Math.max(-LOOK_ANGLE_LIMIT, Math.min(LOOK_ANGLE_LIMIT, pitch));
+  // Cancel walk-to-target
+  function cancelWalkTo() {
+    if (indicatorFadeTimeout) {
+      clearTimeout(indicatorFadeTimeout);
+      indicatorFadeTimeout = null;
+    }
+    walkToTarget = null;
+    isWalkingToTarget = false;
   }
 
-  function handleTouchTap(screenX: number, screenY: number) {
-    if (!camera) return;
+  // Handle tap for tap-to-walk (Gallery-specific)
+  function handleTap(e: PointerEvent) {
+    if (!enabled || !camera || !showTouchUI) return;
 
-    // Convert screen coordinates to normalized device coordinates (-1 to 1)
+    // Only handle taps, not drags
+    // This is called from pointerup, so we check if it was a quick tap
     const ndc = new Vector2(
-      (screenX / window.innerWidth) * 2 - 1,
-      -(screenY / window.innerHeight) * 2 + 1
+      (e.clientX / window.innerWidth) * 2 - 1,
+      -(e.clientY / window.innerHeight) * 2 + 1
     );
 
-    // Set up raycaster from camera through tap point
     raycaster.setFromCamera(ndc, camera);
-
-    // Find intersection with floor plane
     const intersectionPoint = new Vector3();
-    const ray = raycaster.ray;
 
-    if (ray.intersectPlane(floorPlane, intersectionPoint)) {
-      // Check if tap point is in a valid room
+    if (raycaster.ray.intersectPlane(floorPlane, intersectionPoint)) {
       const tapPoint = { x: intersectionPoint.x, z: intersectionPoint.z };
       const targetRoom = findRoomAtPointWithHint(
         layout.roomGraph,
@@ -154,398 +172,59 @@
       );
 
       if (targetRoom) {
-        // Clear any pending fade timeout from previous tap
-        if (indicatorFadeTimeout) {
-          clearTimeout(indicatorFadeTimeout);
-          indicatorFadeTimeout = null;
-        }
-
+        cancelWalkTo();
         walkToTarget = intersectionPoint;
         isWalkingToTarget = true;
       }
     }
   }
 
-  // Camera transition helpers
-  function calculateCameraPosition(mode: CameraMode): { x: number; y: number; z: number } {
-    if (mode === CameraMode.FIRST_PERSON) {
-      return {
-        x: position.x,
-        y: PLAYER_EYE_HEIGHT,
-        z: position.z
-      };
-    } else {
-      // Third person: orbit behind player
-      const offsetX = -Math.sin(yaw) * THIRD_PERSON_DISTANCE;
-      const offsetZ = -Math.cos(yaw) * THIRD_PERSON_DISTANCE;
-
-      return {
-        x: position.x + offsetX,
-        y: position.y + THIRD_PERSON_HEIGHT,
-        z: position.z + offsetZ
-      };
-    }
-  }
-
-  function cubicBezier(t: number): number {
-    // Ease in-out cubic: (0.4, 0.0, 0.2, 1.0)
-    return t < 0.5
-      ? 4 * t * t * t
-      : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  }
-
-  function lerpVector3(
-    start: { x: number; y: number; z: number },
-    end: { x: number; y: number; z: number },
-    t: number
-  ): { x: number; y: number; z: number } {
-    return {
-      x: start.x + (end.x - start.x) * t,
-      y: start.y + (end.y - start.y) * t,
-      z: start.z + (end.z - start.z) * t
-    };
-  }
-
-  function slerpRotation(
-    start: { yaw: number; pitch: number },
-    end: { yaw: number; pitch: number },
-    t: number
-  ): { yaw: number; pitch: number } {
-    // Simple linear interpolation for angles (good enough for small changes)
-    return {
-      yaw: start.yaw + (end.yaw - start.yaw) * t,
-      pitch: start.pitch + (end.pitch - start.pitch) * t
-    };
-  }
-
-  function startCameraTransition(newMode: CameraMode) {
-    if (!camera) return;
-
-    const current = {
-      x: camera.position.x,
-      y: camera.position.y,
-      z: camera.position.z
-    };
-    const target = calculateCameraPosition(newMode);
-
-    transitionState = {
-      isActive: true,
-      progress: 0,
-      startPosition: current,
-      targetPosition: target,
-      startRotation: { yaw, pitch },
-      targetRotation: { yaw, pitch } // Rotation stays the same
-    };
-  }
-
-  function updateTransition(deltaTime: number) {
-    if (!transitionState?.isActive || !camera) return;
-
-    transitionState.progress += deltaTime / 0.3; // var(--duration-emphasis) transition
-
-    if (transitionState.progress >= 1) {
-      transitionState.isActive = false;
-      transitionState.progress = 1;
-    }
-
-    // Use cubic bezier easing
-    const t = cubicBezier(Math.min(1, transitionState.progress));
-
-    // Interpolate position
-    const pos = lerpVector3(
-      transitionState.startPosition,
-      transitionState.targetPosition,
-      t
-    );
-    camera.position.set(pos.x, pos.y, pos.z);
-
-    // Interpolate rotation (though it doesn't change for our use case)
-    const rot = slerpRotation(
-      transitionState.startRotation,
-      transitionState.targetRotation,
-      t
-    );
-    yaw = rot.yaw;
-    pitch = rot.pitch;
-  }
-
-  // Initialize yaw from prop on first render
-  $effect(() => {
-    if (!hasInitializedYaw && initialYaw !== undefined) {
-      yaw = initialYaw;
-      hasInitializedYaw = true;
-    }
-  });
-
-  // Pointer lock state
-  let isPointerLocked = $state(false);
-
-  // WASD key tracking
-  let keys = $state({
-    forward: false,
-    left: false,
-    backward: false,
-    right: false,
-    sprint: false,
-  });
-
-  // Key mapping
-  function getKeyMapping(key: string): keyof typeof keys | null {
-    const lowerKey = key.toLowerCase();
-    switch (lowerKey) {
-      case "w":
-      case "arrowup":
-        return "forward";
-      case "a":
-      case "arrowleft":
-        return "left";
-      case "s":
-      case "arrowdown":
-        return "backward";
-      case "d":
-      case "arrowright":
-        return "right";
-      case "shift":
-        return "sprint";
-      default:
-        return null;
-    }
-  }
-
-  // Keyboard handlers
+  // V key handler for camera mode toggle
   function handleKeyDown(e: KeyboardEvent) {
     if (!enabled) return;
-    if (
-      e.target instanceof HTMLInputElement ||
-      e.target instanceof HTMLTextAreaElement
-    ) {
-      return;
-    }
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-    const mapping = getKeyMapping(e.key);
-    if (mapping) {
-      keys[mapping] = true;
-      e.preventDefault();
-    }
-
-    // V key toggles camera mode
     if (e.key.toLowerCase() === "v") {
       cameraMode = cameraPreferences.toggleMode("gallery");
-      startCameraTransition(cameraMode);
       e.preventDefault();
     }
+  }
 
-    // Escape releases pointer lock
-    if (e.key === "Escape" && isPointerLocked) {
-      document.exitPointerLock();
+  // Tap detection state
+  let tapStartTime = 0;
+  let tapStartPos = { x: 0, y: 0 };
+  const TAP_MAX_DURATION = 300;
+  const TAP_MAX_DISTANCE = 15;
+
+  function handlePointerDown(e: PointerEvent) {
+    tapStartTime = performance.now();
+    tapStartPos = { x: e.clientX, y: e.clientY };
+  }
+
+  function handlePointerUp(e: PointerEvent) {
+    const duration = performance.now() - tapStartTime;
+    const distance = Math.sqrt(
+      Math.pow(e.clientX - tapStartPos.x, 2) +
+      Math.pow(e.clientY - tapStartPos.y, 2)
+    );
+
+    // Check if this was a tap (quick, didn't move much)
+    if (duration < TAP_MAX_DURATION && distance < TAP_MAX_DISTANCE) {
+      handleTap(e);
     }
   }
 
-  function handleKeyUp(e: KeyboardEvent) {
-    const mapping = getKeyMapping(e.key);
-    if (mapping) {
-      keys[mapping] = false;
-    }
-  }
-
-  // Mouse look handler (only when pointer locked)
-  function handleMouseMove(e: MouseEvent) {
-    if (!isPointerLocked || !enabled) return;
-
-    const sensitivity = MOUSE_SENSITIVITY * mouseSensitivity;
-    yaw -= e.movementX * sensitivity;
-    pitch -= e.movementY * sensitivity;
-
-    // Clamp pitch to prevent flipping
-    pitch = Math.max(-LOOK_ANGLE_LIMIT, Math.min(LOOK_ANGLE_LIMIT, pitch));
-  }
-
-  // Pointer lock handlers
-  function handlePointerLockChange() {
-    isPointerLocked = document.pointerLockElement !== null;
-    if (!isPointerLocked) {
-      // Release all keys when pointer unlocks
-      keys = { forward: false, left: false, backward: false, right: false, sprint: false };
-    }
-  }
-
-  // Click to request pointer lock (desktop only - touch devices use drag-to-look)
-  function handleCanvasClick(e: MouseEvent) {
-    console.log('[FirstPersonController] Click - enabled:', enabled, 'isPointerLocked:', isPointerLocked, 'isTouchDevice:', isTouchDevice);
-    if (!enabled || isPointerLocked || isTouchDevice) {
-      console.log('[FirstPersonController] Pointer lock BLOCKED');
-      return;
-    }
-
-    const canvas = e.target as HTMLCanvasElement;
-    if (canvas?.tagName === "CANVAS") {
-      console.log('[FirstPersonController] Requesting pointer lock');
-      canvas.requestPointerLock();
-    }
-  }
-
-  // Window blur releases keys
-  function handleBlur() {
-    keys = { forward: false, left: false, backward: false, right: false, sprint: false };
-  }
-
-  // Update move input from key state or touch input
-  // x: -1 (left) to 1 (right)
-  // z: -1 (back) to 1 (forward)
-  $effect(() => {
-    // Keyboard input
-    const keyX = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-    const keyZ = (keys.forward ? 1 : 0) - (keys.backward ? 1 : 0);
-
-    // Combine keyboard and touch (touch takes priority if active)
-    moveInput = {
-      x: touchMoveInput.x !== 0 ? touchMoveInput.x : keyX,
-      z: touchMoveInput.z !== 0 ? touchMoveInput.z : keyZ,
-    };
-  });
-
-  // Reusable vectors to avoid allocations
+  // Reusable vectors
   const forward = new Vector3();
   const right = new Vector3();
 
-  // Movement update loop
-  useTask((delta) => {
-    if (!enabled || !camera) return;
-
-    // Update camera transition first
-    updateTransition(delta);
-
-    let newX = position.x;
-    let newZ = position.z;
-    let moved = false;
-
-    // Calculate base speed with sprint multiplier
-    const sprintMultiplier = keys.sprint ? SPRINT_MULTIPLIER : 1;
-
-    // Handle walk-to-target (tap to walk)
-    if (isWalkingToTarget && walkToTarget) {
-      const dx = walkToTarget.x - position.x;
-      const dz = walkToTarget.z - position.z;
-      const distance = Math.sqrt(dx * dx + dz * dz);
-
-      if (distance < WALK_TO_ARRIVAL_THRESHOLD) {
-        // Arrived at destination - start fade out animation
-        isWalkingToTarget = false;
-        // Clear target after fade animation completes (500ms)
-        indicatorFadeTimeout = setTimeout(() => {
-          walkToTarget = null;
-          indicatorFadeTimeout = null;
-        }, 500);
-      } else {
-        // Move towards target (sprint applies here too)
-        const speed = WALK_TO_SPEED * sprintMultiplier * delta;
-        const moveDistance = Math.min(speed, distance);
-        newX += (dx / distance) * moveDistance;
-        newZ += (dz / distance) * moveDistance;
-        moved = true;
-      }
-    }
-    // Handle keyboard/joystick input (only if not walking to target)
-    else if (moveInput.x !== 0 || moveInput.z !== 0) {
-      // Get camera's actual forward direction (where it's looking)
-      camera.getWorldDirection(forward);
-      forward.y = 0; // Keep movement on XZ plane
-      forward.normalize();
-
-      // Right vector is perpendicular to forward (cross with up)
-      right.crossVectors(forward, new Vector3(0, 1, 0)).normalize();
-
-      // Calculate movement in world space with sprint
-      const speed = PLAYER_MOVE_SPEED * sprintMultiplier * delta;
-
-      // Forward/backward (W/S)
-      newX += forward.x * moveInput.z * speed;
-      newZ += forward.z * moveInput.z * speed;
-
-      // Strafe left/right (A/D)
-      newX += right.x * moveInput.x * speed;
-      newZ += right.z * moveInput.x * speed;
-      moved = true;
-    }
-
-    // Only update position if we moved
-    if (moved) {
-      // Get walls from current room and adjacent rooms for collision
-      const relevantRooms = getRoomWithNeighbors(layout.roomGraph, currentRoomId);
-      const roomIds = relevantRooms.map((r) => r.room.id);
-      const walls = getWallsForRooms(layout.collisionWorld, roomIds);
-
-      // Resolve wall collisions iteratively
-      let resolvedPos = { x: newX, z: newZ };
-      for (let i = 0; i < MAX_COLLISION_ITERATIONS; i++) {
-        const collision = findDeepestCollision(
-          resolvedPos,
-          layout.collisionWorld.playerRadius,
-          walls
-        );
-
-        if (!collision) break;
-
-        resolvedPos = resolveCollision(resolvedPos, collision);
-      }
-
-      // Determine which room the player is now in
-      const roomNode = findRoomAtPointWithHint(
-        layout.roomGraph,
-        resolvedPos,
-        currentRoomId
-      );
-
-      if (roomNode && roomNode.room.id !== currentRoomId) {
-        onRoomChange(roomNode.room.id);
-      }
-
-      // Emit position change
-      onPositionChange({
-        x: resolvedPos.x,
-        y: PLAYER_EYE_HEIGHT,
-        z: resolvedPos.z,
-      });
-
-      // Emit locomotion state for multiplayer avatar animation
-      const speed = PLAYER_MOVE_SPEED * sprintMultiplier;
-      emitLocomotion(true, moveInput.x, moveInput.z, speed);
-    } else {
-      // Not moving - emit idle state
-      emitLocomotion(false, 0, 0, 0);
-    }
-
-    // Apply third-person camera mode (if not transitioning)
-    if (cameraMode === CameraMode.THIRD_PERSON && !transitionState?.isActive) {
-      const thirdPersonPos = calculateCameraPosition(CameraMode.THIRD_PERSON);
-      camera.position.set(thirdPersonPos.x, thirdPersonPos.y, thirdPersonPos.z);
-
-      // Look at player
-      camera.lookAt(position.x, position.y + PLAYER_EYE_HEIGHT, position.z);
-    }
-  });
-
-  // Update camera rotation and emit rotation changes
-  $effect(() => {
-    if (camera && cameraMode === CameraMode.FIRST_PERSON) {
-      camera.rotation.order = "YXZ";
-      camera.rotation.y = yaw;
-      camera.rotation.x = pitch;
-    }
-    // Emit rotation change for multiplayer sync
-    onRotationChange?.({ yaw, pitch });
-  });
-
-  // Track last locomotion state to detect changes
+  // Track last locomotion state
   let lastLocomotionState = { isMoving: false, moveDirection: 0, moveSpeed: 0 };
 
-  // Emit locomotion changes for multiplayer avatar animation
   function emitLocomotion(isMoving: boolean, moveX: number, moveZ: number, speed: number) {
-    // Calculate move direction as angle (0 = forward, PI/2 = right)
     const moveDirection = isMoving ? Math.atan2(moveX, moveZ) : 0;
     const normalizedSpeed = isMoving ? Math.min(1, speed / PLAYER_MOVE_SPEED) : 0;
 
-    // Only emit if state changed significantly
     const changed =
       lastLocomotionState.isMoving !== isMoving ||
       Math.abs(lastLocomotionState.moveDirection - moveDirection) > 0.1 ||
@@ -558,32 +237,204 @@
   }
 
   onMount(() => {
-    // Detect touch device
-    isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    console.log('[FirstPersonController] onMount - isTouchDevice:', isTouchDevice, 'maxTouchPoints:', navigator.maxTouchPoints);
+    if (!enabled) return;
 
+    // Initialize input capabilities
+    inputCaps.init();
+
+    // Get canvas for input provider
+    const canvas = document.querySelector("canvas");
+    if (!canvas) return;
+
+    // Create unified input provider
+    inputProvider = new AdaptiveInputProvider(inputCaps, canvas, {
+      lookSensitivity: 0.002 * mouseSensitivity,
+      movementDeadzone: 0.15,
+      inertiaDecay: 0.92,
+    });
+    inputProvider.enable();
+
+    // Create camera controller
+    cameraController = new CameraController({
+      initialYaw: initialYaw,
+      initialPitch: 0,
+      initialDistance: THIRD_PERSON_DISTANCE,
+    });
+
+    // Add first-person look behavior (for 1st person mode)
+    cameraController.addBehavior(new FirstPersonLook({
+      sensitivity: 1.0,
+      maxPitch: LOOK_ANGLE_LIMIT,
+      minPitch: -LOOK_ANGLE_LIMIT,
+    }));
+
+    // Add constraints
+    cameraController.addBehavior(new CameraConstraints({
+      maxPitch: LOOK_ANGLE_LIMIT,
+      minPitch: -LOOK_ANGLE_LIMIT,
+    }));
+
+    // Add damping for smooth camera
+    cameraController.addBehavior(new CameraDamping({
+      positionSmoothTime: 0.08,
+      rotationSmoothTime: 0.05,
+    }));
+
+    initialized = true;
+    showTouchUI = inputCaps.shouldShowTouchUI();
+
+    // V key for camera mode toggle
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("blur", handleBlur);
-    document.addEventListener("pointerlockchange", handlePointerLockChange);
-    document.addEventListener("click", handleCanvasClick);
+
+    // Tap detection for tap-to-walk (only on touch)
+    if (showTouchUI) {
+      window.addEventListener("pointerdown", handlePointerDown);
+      window.addEventListener("pointerup", handlePointerUp);
+    }
+  });
+
+  // Game loop
+  useTask((delta) => {
+    if (!enabled || !inputProvider || !cameraController || !camera) return;
+
+    // Update input provider (handles inertia, etc.)
+    inputProvider.update(delta);
+
+    // Update touch UI visibility
+    showTouchUI = inputCaps.shouldShowTouchUI();
+
+    // Get input from unified provider
+    const lookDelta = inputProvider.getLookDelta();
+    const moveInput = inputProvider.getMovementInput();
+    const isSprinting = inputProvider.isSprintHeld();
+
+    // Update camera rotation
+    cameraController.update(delta, lookDelta);
+
+    // Get camera angles for movement and multiplayer sync
+    const yaw = cameraController.getYaw();
+    const pitch = cameraController.getPitch();
+
+    // Emit rotation for multiplayer
+    onRotationChange?.({ yaw, pitch });
+
+    // Calculate movement
+    let newX = position.x;
+    let newZ = position.z;
+    let moved = false;
+    const sprintMultiplier = isSprinting ? SPRINT_MULTIPLIER : 1;
+
+    // Handle walk-to-target (Gallery-specific tap-to-walk)
+    if (isWalkingToTarget && walkToTarget) {
+      const dx = walkToTarget.x - position.x;
+      const dz = walkToTarget.z - position.z;
+      const distance = Math.sqrt(dx * dx + dz * dz);
+
+      if (distance < WALK_TO_ARRIVAL_THRESHOLD) {
+        isWalkingToTarget = false;
+        indicatorFadeTimeout = setTimeout(() => {
+          walkToTarget = null;
+          indicatorFadeTimeout = null;
+        }, 500);
+      } else {
+        const speed = WALK_TO_SPEED * sprintMultiplier * delta;
+        const moveDistance = Math.min(speed, distance);
+        newX += (dx / distance) * moveDistance;
+        newZ += (dz / distance) * moveDistance;
+        moved = true;
+      }
+    }
+    // Handle keyboard/joystick/gamepad input
+    else {
+      // Combine provider input with joystick input (joystick takes priority on touch)
+      const inputX = showTouchUI && joystickInput.x !== 0 ? joystickInput.x : moveInput.strafe;
+      const inputZ = showTouchUI && joystickInput.z !== 0 ? joystickInput.z : moveInput.forward;
+
+      if (inputX !== 0 || inputZ !== 0) {
+        // Calculate forward/right vectors from camera yaw
+        forward.set(-Math.sin(yaw), 0, -Math.cos(yaw));
+        right.set(Math.cos(yaw), 0, -Math.sin(yaw));
+
+        const speed = PLAYER_MOVE_SPEED * sprintMultiplier * delta;
+
+        // Forward/backward
+        newX += forward.x * inputZ * speed;
+        newZ += forward.z * inputZ * speed;
+
+        // Strafe left/right
+        newX += right.x * inputX * speed;
+        newZ += right.z * inputX * speed;
+        moved = true;
+      }
+    }
+
+    // Apply wall collision (Gallery-specific)
+    if (moved) {
+      const relevantRooms = getRoomWithNeighbors(layout.roomGraph, currentRoomId);
+      const roomIds = relevantRooms.map((r) => r.room.id);
+      const walls = getWallsForRooms(layout.collisionWorld, roomIds);
+
+      let resolvedPos = { x: newX, z: newZ };
+      for (let i = 0; i < MAX_COLLISION_ITERATIONS; i++) {
+        const collision = findDeepestCollision(
+          resolvedPos,
+          layout.collisionWorld.playerRadius,
+          walls
+        );
+        if (!collision) break;
+        resolvedPos = resolveCollision(resolvedPos, collision);
+      }
+
+      // Check room change (Gallery-specific)
+      const roomNode = findRoomAtPointWithHint(layout.roomGraph, resolvedPos, currentRoomId);
+      if (roomNode && roomNode.room.id !== currentRoomId) {
+        onRoomChange(roomNode.room.id);
+      }
+
+      onPositionChange({
+        x: resolvedPos.x,
+        y: PLAYER_EYE_HEIGHT,
+        z: resolvedPos.z,
+      });
+
+      // Emit locomotion for multiplayer
+      const inputX = showTouchUI && joystickInput.x !== 0 ? joystickInput.x : moveInput.strafe;
+      const inputZ = showTouchUI && joystickInput.z !== 0 ? joystickInput.z : moveInput.forward;
+      emitLocomotion(true, inputX, inputZ, PLAYER_MOVE_SPEED * sprintMultiplier);
+    } else {
+      emitLocomotion(false, 0, 0, 0);
+    }
+
+    // Apply camera based on mode
+    if (cameraMode === CameraMode.FIRST_PERSON) {
+      camera.position.set(position.x, PLAYER_EYE_HEIGHT, position.z);
+      camera.rotation.order = "YXZ";
+      camera.rotation.y = yaw;
+      camera.rotation.x = pitch;
+    } else {
+      // Third person: orbit behind player
+      const offsetX = -Math.sin(yaw) * THIRD_PERSON_DISTANCE;
+      const offsetZ = -Math.cos(yaw) * THIRD_PERSON_DISTANCE;
+      camera.position.set(
+        position.x + offsetX,
+        position.y + THIRD_PERSON_HEIGHT,
+        position.z + offsetZ
+      );
+      camera.lookAt(position.x, position.y + PLAYER_EYE_HEIGHT, position.z);
+    }
   });
 
   onDestroy(() => {
+    inputProvider?.dispose();
+    inputProvider = null;
+    cameraController = null;
+    inputCaps.destroy();
+    initialized = false;
+
     window.removeEventListener("keydown", handleKeyDown);
-    window.removeEventListener("keyup", handleKeyUp);
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("blur", handleBlur);
-    document.removeEventListener("pointerlockchange", handlePointerLockChange);
-    document.removeEventListener("click", handleCanvasClick);
+    window.removeEventListener("pointerdown", handlePointerDown);
+    window.removeEventListener("pointerup", handlePointerUp);
 
-    // Release pointer lock on unmount
-    if (document.pointerLockElement) {
-      document.exitPointerLock();
-    }
-
-    // Clear any pending fade timeout
     if (indicatorFadeTimeout) {
       clearTimeout(indicatorFadeTimeout);
     }
@@ -600,20 +451,54 @@
   far={5000}
 />
 
-<!-- Mobile touch controls (rendered outside 3D scene via portal) -->
-{#if isTouchDevice}
-  <TouchControls
-    onMove={handleTouchMove}
-    onLook={handleTouchLook}
-    onTap={handleTouchTap}
+<!-- Touch controls using shared VirtualJoystick -->
+{#if enabled && showTouchUI}
+  <VirtualJoystick
+    onInput={handleJoystickInput}
     {enabled}
+    left={24}
+    bottom={24}
+    size={120}
   />
+
+  <!-- Touch look hint -->
+  <div class="touch-look-hint">
+    <span>Drag to look around</span>
+  </div>
 {/if}
 
-<!-- Tap-to-walk destination indicator -->
+<!-- Tap-to-walk destination indicator (Gallery-specific) -->
 {#if walkToTarget}
   <TapIndicator
     position={{ x: walkToTarget.x, z: walkToTarget.z }}
     active={isWalkingToTarget}
   />
 {/if}
+
+<style>
+  .touch-look-hint {
+    position: fixed;
+    top: 50%;
+    right: 20%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    font-weight: 500;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    animation: fadeInOut 4s ease-in-out;
+    z-index: 100;
+  }
+
+  @keyframes fadeInOut {
+    0%, 100% { opacity: 0; }
+    15%, 85% { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .touch-look-hint {
+      animation: none;
+      opacity: 0.6;
+    }
+  }
+</style>

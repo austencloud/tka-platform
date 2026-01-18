@@ -3,9 +3,17 @@
    * RapierFirstPersonController
    *
    * Physics-based FPS controller using Rapier character controller.
-   * More realistic movement with slopes, auto-step, and proper collision.
+   * Uses shared 3D primitives for input and camera handling.
    *
-   * Similar to FirstPersonController but uses Rapier physics instead of raycasting.
+   * Shared primitives used:
+   * - AdaptiveInputProvider: Unified keyboard/touch/pointer lock input
+   * - CameraController: Camera rotation with behaviors
+   * - VirtualJoystick: Touch movement control
+   *
+   * Gallery-specific features:
+   * - Rapier physics for movement/collision
+   * - Room graph navigation
+   * - Multiplayer sync callbacks
    */
 
   import { T, useTask } from "@threlte/core";
@@ -15,7 +23,6 @@
   import {
     PLAYER_EYE_HEIGHT,
     PLAYER_MOVE_SPEED,
-    MOUSE_SENSITIVITY,
     LOOK_ANGLE_LIMIT,
     SPRINT_MULTIPLIER,
   } from "../../domain/constants/gallery-dimensions";
@@ -38,11 +45,24 @@
     createGalleryFloorCollider,
     removeColliders,
   } from "../../services/implementations/GalleryPhysicsColliderGenerator";
-  import TouchControls from "./TouchControls.svelte";
   import type RAPIER from "@dimforge/rapier3d-compat";
 
-  // Touch look sensitivity
-  const TOUCH_SENSITIVITY = 0.004;
+  // Shared 3D primitives
+  import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
+  import { AdaptiveInputProvider } from "$lib/shared/3d/input/InputProviderFactory";
+  import { CameraController } from "$lib/shared/3d/camera/CameraController";
+  import { FirstPersonLook } from "$lib/shared/3d/camera/behaviors/FirstPersonLook";
+  import { CameraDamping } from "$lib/shared/3d/camera/behaviors/CameraDamping";
+  import { CameraConstraints } from "$lib/shared/3d/camera/behaviors/CameraConstraints";
+  import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
+
+  // Third person camera settings
+  const THIRD_PERSON_DISTANCE = 5;
+  const THIRD_PERSON_HEIGHT = 2;
+
+  // Gravity constants
+  const GRAVITY = 20;
+  const TERMINAL_VELOCITY = -50;
 
   interface Props {
     /** Gallery layout (used for room detection) */
@@ -69,7 +89,28 @@
     mouseSensitivity?: number;
   }
 
-  let { layout, position, currentRoomId, onPositionChange, onRoomChange, onRotationChange, onLocomotionChange, enabled = true, initialYaw = Math.PI, fov = 75, mouseSensitivity = 1.0 }: Props = $props();
+  let {
+    layout,
+    position,
+    currentRoomId,
+    onPositionChange,
+    onRoomChange,
+    onRotationChange,
+    onLocomotionChange,
+    enabled = true,
+    initialYaw = Math.PI,
+    fov = 75,
+    mouseSensitivity = 1.0,
+  }: Props = $props();
+
+  // Shared input capabilities
+  const inputCaps = getInputCapabilities();
+
+  // Unified input provider
+  let inputProvider: AdaptiveInputProvider | null = null;
+
+  // Camera controller with behaviors
+  let cameraController: CameraController | null = null;
 
   // Camera reference
   let camera = $state<PerspectiveCamera | undefined>(undefined);
@@ -80,55 +121,92 @@
   let wallColliders: RAPIER.Collider[] = [];
   let floorCollider: RAPIER.Collider | null = null;
 
-  // Look angles (radians)
-  let yaw = $state(Math.PI);
-  let pitch = $state(0);
-  let hasInitializedYaw = false;
-
-  // Movement input state
-  let moveInput = $state({ x: 0, z: 0 });
-  let touchMoveInput = $state({ x: 0, z: 0 });
-  let isTouchDevice = $state(false);
-
   // Camera mode (1st person <-> 3rd person with V key)
   let cameraMode = $state<CameraMode>(
     cameraPreferences.getModeForDestination("gallery")
   );
 
-  // Third person camera settings
-  const THIRD_PERSON_DISTANCE = 5; // meters behind player
-  const THIRD_PERSON_HEIGHT = 2; // meters above player eye height
+  // Show touch UI when needed
+  let showTouchUI = $state(false);
 
-  // Camera transition state
-  let transitionState = $state<{
-    isActive: boolean;
-    progress: number;
-    startPosition: { x: number; y: number; z: number };
-    targetPosition: { x: number; y: number; z: number };
-    startRotation: { yaw: number; pitch: number };
-    targetRotation: { yaw: number; pitch: number };
-  } | null>(null);
+  // Touch joystick input
+  let joystickInput = $state({ x: 0, z: 0 });
 
-  // Pointer lock state
-  let isPointerLocked = $state(false);
+  // Vertical velocity for gravity
+  let verticalVelocity = $state(0);
 
-  // Key tracking
-  let keys = $state({
-    forward: false,
-    left: false,
-    backward: false,
-    right: false,
-    sprint: false,
-  });
+  // Track initialization
+  let initialized = false;
+
+  // Handle joystick input from VirtualJoystick
+  function handleJoystickInput(x: number, y: number) {
+    joystickInput = { x, z: y };
+  }
+
+  // V key handler for camera mode toggle
+  function handleKeyDown(e: KeyboardEvent) {
+    if (!enabled) return;
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+    if (e.key.toLowerCase() === "v") {
+      cameraMode = cameraPreferences.toggleMode("gallery");
+      e.preventDefault();
+    }
+  }
+
+  // Reusable vectors
+  const forward = new Vector3();
+  const right = new Vector3();
+  const moveDirection = new Vector3();
 
   // Initialize physics
   onMount(async () => {
+    // Initialize input capabilities
+    inputCaps.init();
+
+    // Get canvas for input provider
+    const canvas = document.querySelector("canvas");
+    if (!canvas) return;
+
+    // Create unified input provider
+    inputProvider = new AdaptiveInputProvider(inputCaps, canvas, {
+      lookSensitivity: 0.002 * mouseSensitivity,
+      movementDeadzone: 0.15,
+      inertiaDecay: 0.92,
+    });
+    inputProvider.enable();
+
+    // Create camera controller
+    cameraController = new CameraController({
+      initialYaw: initialYaw,
+      initialPitch: 0,
+      initialDistance: THIRD_PERSON_DISTANCE,
+    });
+
+    // Add first-person look behavior
+    cameraController.addBehavior(new FirstPersonLook({
+      sensitivity: 1.0,
+      maxPitch: LOOK_ANGLE_LIMIT,
+      minPitch: -LOOK_ANGLE_LIMIT,
+    }));
+
+    // Add constraints
+    cameraController.addBehavior(new CameraConstraints({
+      maxPitch: LOOK_ANGLE_LIMIT,
+      minPitch: -LOOK_ANGLE_LIMIT,
+    }));
+
+    // Add damping for smooth camera
+    cameraController.addBehavior(new CameraDamping({
+      positionSmoothTime: 0.08,
+      rotationSmoothTime: 0.05,
+    }));
+
     // Create physics world
     physicsState = createPhysicsWorldState();
-    await initPhysicsWorld(physicsState, { x: 0, y: -20, z: 0 }); // Standard gravity
+    await initPhysicsWorld(physicsState, { x: 0, y: -20, z: 0 });
 
     // Create player controller
-    // Convert eye height to capsule center position (eye height - offset)
     const capsuleCenterY = position.y - (PLAYER_EYE_HEIGHT - 0.85);
     playerController = createPlayerController(physicsState, {
       position: { x: position.x, y: capsuleCenterY, z: position.z },
@@ -136,7 +214,6 @@
 
     // Create colliders from gallery layout
     if (physicsState.rapier && physicsState.world) {
-      // Create floor
       const floor = createGalleryFloorCollider(
         physicsState,
         layout.floorSize.width,
@@ -146,330 +223,66 @@
         floorCollider = floor;
       }
 
-      // Create all wall colliders from the collision world
       wallColliders = createGalleryWallColliders(
         physicsState,
         layout.collisionWorld
       );
     }
 
-    // Detect touch device
-    isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    initialized = true;
+    showTouchUI = inputCaps.shouldShowTouchUI();
 
+    // V key for camera mode toggle
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("blur", handleBlur);
-    document.addEventListener("pointerlockchange", handlePointerLockChange);
-    document.addEventListener("click", handleCanvasClick);
   });
 
-  onDestroy(() => {
-    window.removeEventListener("keydown", handleKeyDown);
-    window.removeEventListener("keyup", handleKeyUp);
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("blur", handleBlur);
-    document.removeEventListener("pointerlockchange", handlePointerLockChange);
-    document.removeEventListener("click", handleCanvasClick);
-
-    if (document.pointerLockElement) {
-      document.exitPointerLock();
-    }
-
-    // Clean up colliders
-    if (physicsState) {
-      if (wallColliders.length > 0) {
-        removeColliders(physicsState, wallColliders);
-        wallColliders = [];
-      }
-
-      if (floorCollider && physicsState.world) {
-        physicsState.world.removeCollider(floorCollider, true);
-        floorCollider = null;
-      }
-    }
-
-    if (physicsState && playerController) {
-      disposePlayerController(physicsState, playerController);
-    }
-
-    if (physicsState) {
-      disposePhysicsWorld(physicsState);
-    }
-  });
-
-  // Initialize yaw from prop
-  $effect(() => {
-    if (!hasInitializedYaw && initialYaw !== undefined) {
-      yaw = initialYaw;
-      hasInitializedYaw = true;
-    }
-  });
-
-  // Touch control handlers
-  function handleTouchMove(x: number, z: number) {
-    touchMoveInput = { x, z };
-  }
-
-  function handleTouchLook(deltaX: number, deltaY: number) {
-    yaw -= deltaX * TOUCH_SENSITIVITY;
-    pitch -= deltaY * TOUCH_SENSITIVITY;
-    pitch = Math.max(-LOOK_ANGLE_LIMIT, Math.min(LOOK_ANGLE_LIMIT, pitch));
-  }
-
-  function handleTouchTap(_screenX: number, _screenY: number) {
-    // Future: tap-to-walk implementation
-  }
-
-  // Camera transition helpers
-  function calculateCameraPosition(mode: CameraMode): { x: number; y: number; z: number } {
-    if (mode === CameraMode.FIRST_PERSON) {
-      return {
-        x: position.x,
-        y: PLAYER_EYE_HEIGHT,
-        z: position.z
-      };
-    } else {
-      // Third person: orbit behind player
-      const offsetX = -Math.sin(yaw) * THIRD_PERSON_DISTANCE;
-      const offsetZ = -Math.cos(yaw) * THIRD_PERSON_DISTANCE;
-
-      return {
-        x: position.x + offsetX,
-        y: position.y + THIRD_PERSON_HEIGHT,
-        z: position.z + offsetZ
-      };
-    }
-  }
-
-  function cubicBezier(t: number): number {
-    // Ease in-out cubic: (0.4, 0.0, 0.2, 1.0)
-    return t < 0.5
-      ? 4 * t * t * t
-      : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  }
-
-  function lerpVector3(
-    start: { x: number; y: number; z: number },
-    end: { x: number; y: number; z: number },
-    t: number
-  ): { x: number; y: number; z: number } {
-    return {
-      x: start.x + (end.x - start.x) * t,
-      y: start.y + (end.y - start.y) * t,
-      z: start.z + (end.z - start.z) * t
-    };
-  }
-
-  function slerpRotation(
-    start: { yaw: number; pitch: number },
-    end: { yaw: number; pitch: number },
-    t: number
-  ): { yaw: number; pitch: number } {
-    // Simple linear interpolation for angles (good enough for small changes)
-    return {
-      yaw: start.yaw + (end.yaw - start.yaw) * t,
-      pitch: start.pitch + (end.pitch - start.pitch) * t
-    };
-  }
-
-  function startCameraTransition(newMode: CameraMode) {
-    if (!camera) return;
-
-    const current = {
-      x: camera.position.x,
-      y: camera.position.y,
-      z: camera.position.z
-    };
-    const target = calculateCameraPosition(newMode);
-
-    transitionState = {
-      isActive: true,
-      progress: 0,
-      startPosition: current,
-      targetPosition: target,
-      startRotation: { yaw, pitch },
-      targetRotation: { yaw, pitch } // Rotation stays the same
-    };
-  }
-
-  function updateTransition(deltaTime: number) {
-    if (!transitionState?.isActive || !camera) return;
-
-    transitionState.progress += deltaTime / 0.3; // 300ms transition
-
-    if (transitionState.progress >= 1) {
-      transitionState.isActive = false;
-      transitionState.progress = 1;
-    }
-
-    // Use cubic bezier easing
-    const t = cubicBezier(Math.min(1, transitionState.progress));
-
-    // Interpolate position
-    const pos = lerpVector3(
-      transitionState.startPosition,
-      transitionState.targetPosition,
-      t
-    );
-    camera.position.set(pos.x, pos.y, pos.z);
-
-    // Interpolate rotation (though it doesn't change for our use case)
-    const rot = slerpRotation(
-      transitionState.startRotation,
-      transitionState.targetRotation,
-      t
-    );
-    yaw = rot.yaw;
-    pitch = rot.pitch;
-  }
-
-  // Key mapping
-  function getKeyMapping(key: string): keyof typeof keys | null {
-    const lowerKey = key.toLowerCase();
-    switch (lowerKey) {
-      case "w":
-      case "arrowup":
-        return "forward";
-      case "a":
-      case "arrowleft":
-        return "left";
-      case "s":
-      case "arrowdown":
-        return "backward";
-      case "d":
-      case "arrowright":
-        return "right";
-      case "shift":
-        return "sprint";
-      default:
-        return null;
-    }
-  }
-
-  // Keyboard handlers
-  function handleKeyDown(e: KeyboardEvent) {
-    if (!enabled) return;
-    if (
-      e.target instanceof HTMLInputElement ||
-      e.target instanceof HTMLTextAreaElement
-    ) {
-      return;
-    }
-
-    const mapping = getKeyMapping(e.key);
-    if (mapping) {
-      keys[mapping] = true;
-      e.preventDefault();
-    }
-
-    // V key toggles camera mode
-    if (e.key.toLowerCase() === "v") {
-      cameraMode = cameraPreferences.toggleMode("gallery");
-      startCameraTransition(cameraMode);
-      e.preventDefault();
-    }
-
-    if (e.key === "Escape" && isPointerLocked) {
-      document.exitPointerLock();
-    }
-  }
-
-  function handleKeyUp(e: KeyboardEvent) {
-    const mapping = getKeyMapping(e.key);
-    if (mapping) {
-      keys[mapping] = false;
-    }
-  }
-
-  // Mouse look handler
-  function handleMouseMove(e: MouseEvent) {
-    if (!isPointerLocked || !enabled) return;
-
-    const sensitivity = MOUSE_SENSITIVITY * mouseSensitivity;
-    yaw -= e.movementX * sensitivity;
-    pitch -= e.movementY * sensitivity;
-    pitch = Math.max(-LOOK_ANGLE_LIMIT, Math.min(LOOK_ANGLE_LIMIT, pitch));
-  }
-
-  // Pointer lock handlers
-  function handlePointerLockChange() {
-    isPointerLocked = document.pointerLockElement !== null;
-    if (!isPointerLocked) {
-      keys = { forward: false, left: false, backward: false, right: false, sprint: false };
-    }
-  }
-
-  // Click to request pointer lock (desktop only - touch devices use drag-to-look)
-  function handleCanvasClick(e: MouseEvent) {
-    console.log('[RapierFirstPersonController] Click - enabled:', enabled, 'isPointerLocked:', isPointerLocked, 'isTouchDevice:', isTouchDevice);
-    if (!enabled || isPointerLocked || isTouchDevice) {
-      console.log('[RapierFirstPersonController] Pointer lock BLOCKED');
-      return;
-    }
-
-    const canvas = e.target as HTMLCanvasElement;
-    if (canvas?.tagName === "CANVAS") {
-      console.log('[RapierFirstPersonController] Requesting pointer lock');
-      canvas.requestPointerLock();
-    }
-  }
-
-  function handleBlur() {
-    keys = { forward: false, left: false, backward: false, right: false, sprint: false };
-  }
-
-  // Update move input from key state or touch input
-  $effect(() => {
-    const keyX = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-    const keyZ = (keys.forward ? 1 : 0) - (keys.backward ? 1 : 0);
-
-    moveInput = {
-      x: touchMoveInput.x !== 0 ? touchMoveInput.x : keyX,
-      z: touchMoveInput.z !== 0 ? touchMoveInput.z : keyZ,
-    };
-  });
-
-  // Reusable vectors
-  const forward = new Vector3();
-  const right = new Vector3();
-  const moveDirection = new Vector3();
-
-  // Persistent vertical velocity for gravity
-  let verticalVelocity = $state(0);
-
-  // Gravity constants
-  const GRAVITY = 20; // m/s²
-  const TERMINAL_VELOCITY = -50; // Max fall speed
-
-  // Movement update loop
+  // Game loop
   useTask((delta) => {
-    if (!enabled || !camera || !physicsState || !playerController) return;
+    if (!enabled || !inputProvider || !cameraController || !camera || !physicsState || !playerController) return;
 
-    // Update camera transition first
-    updateTransition(delta);
+    // Update input provider
+    inputProvider.update(delta);
 
+    // Update touch UI visibility
+    showTouchUI = inputCaps.shouldShowTouchUI();
+
+    // Get input from unified provider
+    const lookDelta = inputProvider.getLookDelta();
+    const moveInput = inputProvider.getMovementInput();
+    const isSprinting = inputProvider.isSprintHeld();
+
+    // Update camera rotation
+    cameraController.update(delta, lookDelta);
+
+    // Get camera angles
+    const yaw = cameraController.getYaw();
+    const pitch = cameraController.getPitch();
+
+    // Emit rotation for multiplayer
+    onRotationChange?.({ yaw, pitch });
+
+    // Calculate movement direction
     let moved = false;
     moveDirection.set(0, 0, 0);
 
-    if (moveInput.x !== 0 || moveInput.z !== 0) {
-      // Get camera's forward direction
-      camera.getWorldDirection(forward);
-      forward.y = 0;
-      forward.normalize();
+    // Combine provider input with joystick input
+    const inputX = showTouchUI && joystickInput.x !== 0 ? joystickInput.x : moveInput.strafe;
+    const inputZ = showTouchUI && joystickInput.z !== 0 ? joystickInput.z : moveInput.forward;
 
-      // Right vector
-      right.crossVectors(forward, new Vector3(0, 1, 0)).normalize();
+    if (inputX !== 0 || inputZ !== 0) {
+      // Calculate forward/right from camera yaw
+      forward.set(-Math.sin(yaw), 0, -Math.cos(yaw));
+      right.set(Math.cos(yaw), 0, -Math.sin(yaw));
 
-      // Calculate horizontal movement direction
-      moveDirection.addScaledVector(forward, moveInput.z);
-      moveDirection.addScaledVector(right, moveInput.x);
+      // Build movement direction
+      moveDirection.addScaledVector(forward, inputZ);
+      moveDirection.addScaledVector(right, inputX);
 
       if (moveDirection.lengthSq() > 0) {
         moveDirection.normalize();
 
         // Apply speed
-        const sprintMultiplier = keys.sprint ? SPRINT_MULTIPLIER : 1;
+        const sprintMultiplier = isSprinting ? SPRINT_MULTIPLIER : 1;
         const speed = PLAYER_MOVE_SPEED * sprintMultiplier;
         moveDirection.multiplyScalar(speed * delta);
 
@@ -485,20 +298,15 @@
       verticalVelocity = 0;
     }
 
-    // Compute desired movement (horizontal + vertical)
+    // Compute desired movement
     const desiredMovement = {
       x: moveDirection.x,
       y: verticalVelocity * delta,
       z: moveDirection.z,
     };
 
-    // Move the player using physics controller
-    movePlayer(
-      physicsState,
-      playerController,
-      desiredMovement,
-      delta
-    );
+    // Move using physics controller
+    movePlayer(physicsState, playerController, desiredMovement, delta);
 
     // Step physics simulation
     if (physicsState.world) {
@@ -523,39 +331,69 @@
     // Emit position change
     onPositionChange({
       x: newPos.x,
-      y: newPos.y + PLAYER_EYE_HEIGHT - 0.85, // Adjust for capsule offset
+      y: newPos.y + PLAYER_EYE_HEIGHT - 0.85,
       z: newPos.z,
     });
 
-    // Emit locomotion state (only if horizontally moved)
-    if (moved && (moveInput.x !== 0 || moveInput.z !== 0)) {
-      const sprintMultiplier = keys.sprint ? SPRINT_MULTIPLIER : 1;
+    // Emit locomotion for multiplayer
+    if (moved && (inputX !== 0 || inputZ !== 0)) {
+      const sprintMultiplier = isSprinting ? SPRINT_MULTIPLIER : 1;
       const speed = PLAYER_MOVE_SPEED * sprintMultiplier;
-      const direction = Math.atan2(moveInput.x, moveInput.z);
+      const direction = Math.atan2(inputX, inputZ);
       const normalizedSpeed = Math.min(1, speed / PLAYER_MOVE_SPEED);
       onLocomotionChange?.({ isMoving: true, moveDirection: direction, moveSpeed: normalizedSpeed });
     } else {
       onLocomotionChange?.({ isMoving: false, moveDirection: 0, moveSpeed: 0 });
     }
 
-    // Apply third-person camera mode (if not transitioning)
-    if (cameraMode === CameraMode.THIRD_PERSON && !transitionState?.isActive) {
-      const thirdPersonPos = calculateCameraPosition(CameraMode.THIRD_PERSON);
-      camera.position.set(thirdPersonPos.x, thirdPersonPos.y, thirdPersonPos.z);
-
-      // Look at player
+    // Apply camera based on mode
+    if (cameraMode === CameraMode.FIRST_PERSON) {
+      camera.position.set(position.x, PLAYER_EYE_HEIGHT, position.z);
+      camera.rotation.order = "YXZ";
+      camera.rotation.y = yaw;
+      camera.rotation.x = pitch;
+    } else {
+      // Third person: orbit behind player
+      const offsetX = -Math.sin(yaw) * THIRD_PERSON_DISTANCE;
+      const offsetZ = -Math.cos(yaw) * THIRD_PERSON_DISTANCE;
+      camera.position.set(
+        position.x + offsetX,
+        position.y + THIRD_PERSON_HEIGHT,
+        position.z + offsetZ
+      );
       camera.lookAt(position.x, position.y + PLAYER_EYE_HEIGHT, position.z);
     }
   });
 
-  // Update camera rotation
-  $effect(() => {
-    if (camera && cameraMode === CameraMode.FIRST_PERSON) {
-      camera.rotation.order = "YXZ";
-      camera.rotation.y = yaw;
-      camera.rotation.x = pitch;
+  onDestroy(() => {
+    inputProvider?.dispose();
+    inputProvider = null;
+    cameraController = null;
+    inputCaps.destroy();
+    initialized = false;
+
+    window.removeEventListener("keydown", handleKeyDown);
+
+    // Clean up colliders
+    if (physicsState) {
+      if (wallColliders.length > 0) {
+        removeColliders(physicsState, wallColliders);
+        wallColliders = [];
+      }
+
+      if (floorCollider && physicsState.world) {
+        physicsState.world.removeCollider(floorCollider, true);
+        floorCollider = null;
+      }
     }
-    onRotationChange?.({ yaw, pitch });
+
+    if (physicsState && playerController) {
+      disposePlayerController(physicsState, playerController);
+    }
+
+    if (physicsState) {
+      disposePhysicsWorld(physicsState);
+    }
   });
 </script>
 
@@ -568,11 +406,46 @@
   far={5000}
 />
 
-{#if isTouchDevice}
-  <TouchControls
-    onMove={handleTouchMove}
-    onLook={handleTouchLook}
-    onTap={handleTouchTap}
+<!-- Touch controls using shared VirtualJoystick -->
+{#if enabled && showTouchUI}
+  <VirtualJoystick
+    onInput={handleJoystickInput}
     {enabled}
+    left={24}
+    bottom={24}
+    size={120}
   />
+
+  <!-- Touch look hint -->
+  <div class="touch-look-hint">
+    <span>Drag to look around</span>
+  </div>
 {/if}
+
+<style>
+  .touch-look-hint {
+    position: fixed;
+    top: 50%;
+    right: 20%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    font-weight: 500;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    animation: fadeInOut 4s ease-in-out;
+    z-index: 100;
+  }
+
+  @keyframes fadeInOut {
+    0%, 100% { opacity: 0; }
+    15%, 85% { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .touch-look-hint {
+      animation: none;
+      opacity: 0.6;
+    }
+  }
+</style>

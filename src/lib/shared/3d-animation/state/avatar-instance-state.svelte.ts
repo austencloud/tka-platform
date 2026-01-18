@@ -323,10 +323,10 @@ export function createAvatarInstanceState(
     const cos = Math.cos(cameraAngle);
 
     // World-space direction (rotated by camera yaw)
-    // X is negated because in our coordinate system, screen-right is -X in world space
-    // At yaw=0: forward (+Z local) → +Z world, right (D key) → -X world
-    const worldX = -moveInput.x * cos + moveInput.z * sin;
-    const worldZ = moveInput.x * sin + moveInput.z * cos;
+    // Standard camera-relative movement transformation:
+    // Input X (strafe) and Z (forward) are rotated by camera yaw
+    const worldX = moveInput.x * cos + moveInput.z * sin;
+    const worldZ = -moveInput.x * sin + moveInput.z * cos;
 
     // Normalize for consistent speed when moving diagonally
     const length = Math.sqrt(worldX * worldX + worldZ * worldZ);
