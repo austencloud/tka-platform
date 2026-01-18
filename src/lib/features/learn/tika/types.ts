@@ -81,6 +81,14 @@ export interface TypeListContext {
     blueMotion: string;
     redMotion: string;
   };
+  rotationPattern?: {
+    description: string;
+    groups: Array<{
+      letters: string;
+      pattern: string;
+    }>;
+    note?: string;
+  };
 }
 
 /**

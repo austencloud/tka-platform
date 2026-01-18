@@ -570,7 +570,8 @@ function executeListLettersByType(type: number): TypeListResult | string {
 			motionPattern: {
 				blueMotion: canonicalDef.motionPattern.blue,
 				redMotion: canonicalDef.motionPattern.red
-			}
+			},
+			...(canonicalDef.rotationPattern && { rotationPattern: canonicalDef.rotationPattern })
 		}
 	}
 }
