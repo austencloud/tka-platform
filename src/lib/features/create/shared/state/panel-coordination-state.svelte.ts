@@ -104,7 +104,7 @@ export interface PanelCoordinationState {
   set isAnimationPanelOpen(value: boolean);
   get isAnimating(): boolean;
 
-  openAnimationPanel(): void;
+  openAnimationPanel(selectionState?: { clearSelection: () => void }): void;
   closeAnimationPanel(): void;
   setAnimating(animating: boolean): void;
 
@@ -460,8 +460,10 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       return isAnimating;
     },
 
-    openAnimationPanel() {
+    openAnimationPanel(selectionState?: { clearSelection: () => void }) {
       closeAllPanels();
+      // Clear beat editor selection when opening animation panel
+      selectionState?.clearSelection();
       isAnimationPanelOpen = true;
     },
 
