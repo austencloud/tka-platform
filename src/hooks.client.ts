@@ -10,17 +10,14 @@ import { browser, dev } from "$app/environment";
 
 // Always expose cache benchmark utility globally (in both dev and prod for testing)
 if (browser) {
-  console.log("[hooks.client] browser=", browser, "dev=", dev);
   import("$lib/shared/render/utils/cache-benchmark")
     .then((module) => {
-      console.log("[hooks.client] Cache benchmark utility loaded. Run: window.runCacheBenchmark()");
       // Explicitly expose on window
       (window as unknown as { runCacheBenchmark: typeof module.runCacheBenchmark }).runCacheBenchmark = module.runCacheBenchmark;
     })
-    .catch((err) => {
-      console.error("[hooks.client] Failed to load cache benchmark:", err);
+    .catch(() => {
+      // Cache benchmark not available - expected in some builds
     });
-
 }
 
 if (browser && !dev) {

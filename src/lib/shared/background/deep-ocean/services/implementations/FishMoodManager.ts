@@ -187,7 +187,6 @@ export class FishMoodManager implements IFishMoodManager {
     // Tired overrides most moods when energy is very low
     if (energy < MOOD_THRESHOLDS.tiredEnergy && currentMood !== "alert") {
       if (currentMood !== "tired") {
-        console.log(`⚡ TIRED OVERRIDE: energy ${energy.toFixed(2)} < threshold, changing ${currentMood} → tired`);
         this.setMood(fish, "tired");
         // Trigger tired wobble
         fish.wobbleType = "tired_drift";

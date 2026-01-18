@@ -561,13 +561,9 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     const svgCache = getSvgImageCache();
     const scale = canvasSize / VIEWBOX_SIZE;
 
-    console.log(`[Canvas2D] drawProps called - propPositions keys: ${Object.keys(propPositions)}, propAssets keys: ${Object.keys(propAssets)}`);
-
     for (const color of ["blue", "red"]) {
       const position = propPositions[color];
       const assets = propAssets[color];
-
-      console.log(`[Canvas2D] ${color} prop - hasPosition: ${!!position}, hasAssets: ${!!assets}, hasImageSrc: ${!!assets?.imageSrc}`);
 
       if (!position || !assets?.imageSrc) continue;
 
@@ -659,8 +655,6 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       const shouldMirror = arrowMirroring[color] ?? false;
 
       if (!position || !assets?.imageSrc) continue;
-
-      console.log(`[Canvas2D] ${color} arrow final position: x=${position.x}, y=${position.y}, rotation=${position.rotation}`);
 
       try {
         // Get dimensions from the viewBox object
@@ -779,18 +773,14 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
 
     try {
       const letterPath = getLetterImagePath(letter);
-      console.log(`[Canvas2D] Loading letter ${letter} from path: ${letterPath}`);
 
       // Load letter asset (image + dimensions) from cache
       // This fetches and parses the SVG once, then caches both
       const assetLoader = getSvgAssetLoader();
       const letterAsset = await assetLoader.getLetterAsset(letterPath);
 
-      console.log(`[Canvas2D] Letter asset loaded:`, letterAsset !== null ? 'YES' : 'NO');
-
       if (letterAsset) {
         const { image: letterImg, dimensions: letterDimensions } = letterAsset;
-        console.log(`[Canvas2D] Drawing letter at (${x}, ${y}) with dimensions ${letterDimensions.width}x${letterDimensions.height}`);
 
         // Draw at viewBox dimensions scaled to canvas (matching TKAGlyph.svelte)
         const drawWidth = letterDimensions.width * TKA_GLYPH_SCALE * scale;

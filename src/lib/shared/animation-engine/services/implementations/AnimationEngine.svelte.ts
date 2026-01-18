@@ -585,7 +585,6 @@ export class AnimationEngine {
     if (props.sequenceData && this.orchestrator) {
       const newHash = this.getSequenceContentHash(props.sequenceData);
       if (newHash !== this.lastSequenceContentHash) {
-        console.log('[AnimationEngine] Sequence content changed, re-initializing orchestrator');
         this.orchestrator.initializeWithDomainData(props.sequenceData);
         this.lastSequenceContentHash = newHash;
       }
@@ -664,10 +663,6 @@ export class AnimationEngine {
 
     // Update trail capturer with prop type and loopability changes
     if (this.trailCapturer && this.settingsLoaded) {
-      // DEBUG: Log what we're passing
-      if (props.isSeamlesslyLoopable !== undefined) {
-        console.log('[AnimationEngine] Passing isSeamlesslyLoopable to TrailCapturer:', props.isSeamlesslyLoopable);
-      }
       this.trailCapturer.updateConfig({
         bluePropType: this.state.currentBluePropType,
         redPropType: this.state.currentRedPropType,

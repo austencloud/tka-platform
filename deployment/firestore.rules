@@ -388,6 +388,14 @@ service cloud.firestore {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
+
+      // -------------------------------------------------------------------------
+      // TIKA CONVERSATIONS (AI Learning Assistant)
+      // -------------------------------------------------------------------------
+      match /tikaConversations/{conversationId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
     }
 
     // ============================================================================

@@ -71,7 +71,6 @@ export function createInputCapabilities() {
 			}
 
 			notifyChange();
-			console.log(`[InputCapabilities] Pointer type changed to: ${newType}`);
 		}
 	}
 
@@ -83,7 +82,6 @@ export function createInputCapabilities() {
 		if (locked !== caps.isPointerLocked) {
 			caps = { ...caps, isPointerLocked: locked };
 			notifyChange();
-			console.log(`[InputCapabilities] Pointer lock: ${locked}`);
 		}
 	}
 
@@ -111,12 +109,10 @@ export function createInputCapabilities() {
 		window.addEventListener("gamepadconnected", () => {
 			caps = { ...caps, hasGamepad: true };
 			notifyChange();
-			console.log("[InputCapabilities] Gamepad connected");
 		});
 		window.addEventListener("gamepaddisconnected", () => {
 			caps = { ...caps, hasGamepad: false };
 			notifyChange();
-			console.log("[InputCapabilities] Gamepad disconnected");
 		});
 
 		// Check for existing gamepads

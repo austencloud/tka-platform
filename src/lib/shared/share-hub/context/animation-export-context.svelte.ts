@@ -5,7 +5,7 @@
  * Eliminates prop drilling through 5+ component layers.
  *
  * Usage:
- * - Provider: Call setAnimationExportContext() in SequencePanelDrawer (edit mode)
+ * - Provider: Call setAnimationExportContext() in SequenceDrawer (edit mode)
  * - Consumer: Call getAnimationExportContext() in leaf components
  */
 
@@ -175,7 +175,7 @@ export function tryGetAnimationExportContext(): AnimationExportContext | null {
 
 /**
  * Helper to create context from flat props (for backward compatibility)
- * Use this in SequencePanelDrawer to convert props to context
+ * Use this in SequenceDrawer to convert props to context
  */
 export function createAnimationExportContext(props: {
   // State props

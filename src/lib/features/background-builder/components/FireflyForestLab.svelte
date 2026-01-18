@@ -161,7 +161,6 @@
 
   function handleDeleteTreesByImage(imageFilename: string) {
     const removed = previewController.removeTreesByImage(imageFilename);
-    console.log(`[TreeDelete] Removed ${removed} trees using ${imageFilename}`);
     if (removed > 0) {
       refreshSceneTrees();
     }

@@ -55,8 +55,6 @@ export class InputManager {
 		// Wire up event handlers
 		this.setupPointerHandling();
 		this.setupKeyboardHandling();
-
-		console.log("[InputManager] Initialized with context:", this.context);
 	}
 
 	private setupPointerHandling() {

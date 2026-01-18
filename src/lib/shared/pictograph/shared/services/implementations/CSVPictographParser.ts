@@ -89,17 +89,6 @@ export class CSVPictographParser implements ICSVPictographParser {
     const blueSkewSteps = row.blueSkewSteps ? parseInt(row.blueSkewSteps, 10) : null;
     const blueSkewDir = mapSkewDir(row.blueSkewDir);
 
-    // DEBUG: Log first skewed row to verify parsing (only once)
-    if (blueSkewSteps && blueSkewSteps > 0 && !(globalThis as Record<string, unknown>).__skewDebugLogged) {
-      (globalThis as Record<string, unknown>).__skewDebugLogged = true;
-      console.log('[CSVParser] First blue skew data:', {
-        letter: row.letter,
-        rawSkewDir: row.blueSkewDir,
-        parsedSkewDir: blueSkewDir,
-        skewSteps: blueSkewSteps,
-      });
-    }
-
     // Create final blue motion with calculated end orientation
     const blueMotion = createMotionData({
       motionType: this.enumMapper.mapMotionType(row.blueMotionType),
