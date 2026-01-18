@@ -100,7 +100,7 @@ export function createCameraPreferences() {
  */
 const DESTINATION_DEFAULTS: Record<string, CameraMode> = {
 	stage: CameraMode.THIRD_PERSON,
-	// gallery and endless-world use globalDefault (first-person)
+	// gallery and worlds use globalDefault (first-person)
 };
 
 /**

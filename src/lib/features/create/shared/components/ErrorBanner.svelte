@@ -70,6 +70,11 @@
     opacity: 0.9;
   }
 
+  .error-banner button:focus-visible {
+    outline: 2px solid var(--destructive-foreground, #ffffff);
+    outline-offset: 2px;
+  }
+
   .retry {
     background: transparent;
     color: var(--destructive);

@@ -93,8 +93,9 @@ Receives pre-calculated data, just renders it.
     transition: transform var(--duration-instant) ease;
   }
 
-  .option-card:focus {
-    outline: none;
+  .option-card:focus-visible {
+    outline: 2px solid var(--theme-accent, #3b82f6);
+    outline-offset: 2px;
     filter: brightness(1.05);
   }
 </style>

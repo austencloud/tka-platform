@@ -2,7 +2,7 @@
 AnimationDetailPanel.svelte
 
 Detail drawer for viewing and managing saved animations.
-Adapted from SequenceDetailContent for animations.
+Adapted from SequencePanel for animations.
 
 Features:
 - Large preview area
