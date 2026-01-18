@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import { turnPatternState } from "../../state/turn-pattern-state.svelte.ts";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
@@ -144,12 +145,7 @@
     backdropClass="turn-pattern-backdrop"
   >
     <div class="turn-pattern-drawer-content">
-      <header class="drawer-header">
-        <h2>Turn Patterns</h2>
-        <button class="close-btn" onclick={handleClose} aria-label="Close">
-          <i class="fas fa-times" aria-hidden="true"></i>
-        </button>
-      </header>
+      <DrawerHeader title="Turn Patterns" onClose={handleClose} />
 
       <!-- Mode tabs -->
       <div class="mode-tabs">
@@ -511,34 +507,6 @@
     height: 100%;
     background: var(--theme-panel-bg);
     color: var(--theme-text);
-  }
-
-  .drawer-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px;
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
-  }
-
-  .drawer-header h2 {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-  }
-
-  .close-btn {
-    background: transparent;
-    border: none;
-    color: var(--theme-text-muted, var(--theme-text-dim));
-    font-size: 1.1rem;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-  }
-
-  .close-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
   }
 
   .mode-tabs {

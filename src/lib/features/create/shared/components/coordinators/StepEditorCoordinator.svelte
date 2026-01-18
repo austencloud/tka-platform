@@ -257,7 +257,6 @@
     const updatedSteps = [...(currentSequence.steps ?? [])];
     updatedSteps[stepIndex] = updatedStepData;
 
-    console.log("[StepEditorCoordinator] Updating sequence with new beat data");
     activeSequenceState.setCurrentSequence({
       ...currentSequence,
       steps: updatedSteps,

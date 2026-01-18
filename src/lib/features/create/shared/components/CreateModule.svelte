@@ -60,7 +60,7 @@
   import SequenceActionsCoordinator from "./coordinators/SequenceActionsCoordinator.svelte";
   import StepEditorCoordinator from "./coordinators/StepEditorCoordinator.svelte";
   import VideoRecordCoordinator from "./coordinators/VideoRecordCoordinator.svelte";
-  import ShareHubCoordinator from "./coordinators/ShareHubCoordinator.svelte";
+  import SequenceDrawerHost from "./coordinators/SequenceDrawerHost.svelte";
   import SaveToLibraryPanel from "./SaveToLibraryPanel.svelte";
   import { SessionManager } from "../services/SessionManager.svelte";
   import { Autosaver } from "../services/Autosaver";
@@ -607,8 +607,8 @@
   <!-- Video Record Coordinator -->
   <VideoRecordCoordinator />
 
-  <!-- Share Hub Coordinator -->
-  <ShareHubCoordinator />
+  <!-- Sequence Drawer Host (provides animation state + context) -->
+  <SequenceDrawerHost />
 
   <!-- Sequence Actions Coordinator -->
   <SequenceActionsCoordinator />

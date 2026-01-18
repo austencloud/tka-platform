@@ -473,6 +473,7 @@
             {activeMode}
             onLongPress={onStepLongPress}
             onDelete={() => onStepDelete?.(0)}
+            animationEpoch={displayState.animationEpoch}
           />
         </div>
       {/if}
@@ -511,6 +512,7 @@
             {activeMode}
             highlightStyle={highlightedSteps?.get(beat.stepNumber) ?? null}
             {musicalPosition}
+            animationEpoch={displayState.animationEpoch}
           />
         </div>
       {/each}
@@ -560,6 +562,7 @@
                 onLongPress={onStepLongPress}
                 onDelete={() => onStepDelete?.(0)}
                 isTimelineMode={true}
+                animationEpoch={displayState.animationEpoch}
               />
             </div>
           </div>
@@ -603,6 +606,7 @@
                     {musicalPosition}
                     isTimelineMode={true}
                     widthMultiplier={duration}
+                    animationEpoch={displayState.animationEpoch}
                   />
                 </div>
               {/each}
@@ -656,6 +660,7 @@
               {activeMode}
               onLongPress={onStepLongPress}
               onDelete={() => onStepDelete?.(0)}
+              animationEpoch={displayState.animationEpoch}
             />
           </div>
         {/if}
@@ -694,6 +699,7 @@
               {activeMode}
               highlightStyle={highlightedSteps?.get(beat.stepNumber) ?? null}
               {musicalPosition}
+              animationEpoch={displayState.animationEpoch}
             />
           </div>
         {/each}

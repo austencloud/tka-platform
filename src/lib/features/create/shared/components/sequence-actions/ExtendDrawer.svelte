@@ -12,6 +12,7 @@
 -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import LOOPPicker from "$lib/shared/components/loop-picker/LOOPPicker.svelte";
   import BridgePictographGrid from "$lib/shared/components/loop-picker/BridgePictographGrid.svelte";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -112,21 +113,11 @@
     backdropClass="extend-backdrop"
   >
     <div class="extend-drawer-content">
-      <header class="drawer-header">
-        <div class="header-info">
-          <h2>{headerTitle}</h2>
-          <span class="subtitle">{headerSubtitle()}</span>
-        </div>
-
-        <button
-          class="close-btn"
-          onclick={handleClose}
-          disabled={isApplying}
-          aria-label="Close"
-        >
-          <i class="fas fa-times" aria-hidden="true"></i>
-        </button>
-      </header>
+      <DrawerHeader
+        title={headerTitle}
+        subtitle={headerSubtitle()}
+        onClose={handleClose}
+      />
 
       {#if !analysis || (!isDirectlyLoopable && circularizationOptions.length === 0)}
         <!-- No options at all -->
@@ -192,61 +183,6 @@
     width: 100%;
     background: var(--theme-panel-bg);
     color: var(--theme-text);
-  }
-
-  .drawer-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 16px;
-    border-bottom: 1px solid var(--theme-stroke);
-    flex-shrink: 0;
-  }
-
-  .header-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .drawer-header h2 {
-    margin: 0;
-    font-size: var(--font-size-lg, 1.1rem);
-    font-weight: 600;
-  }
-
-  .subtitle {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim);
-  }
-
-  .close-btn {
-    background: transparent;
-    border: none;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-lg, 1.1rem);
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: var(--radius-sm, 4px);
-    min-width: 36px;
-    min-height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .close-btn:hover:not(:disabled) {
-    background: var(--theme-hover-bg);
-  }
-
-  .close-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .close-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
   }
 
   .no-options {

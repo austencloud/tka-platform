@@ -50,6 +50,11 @@ export function createStepGridDisplayState() {
   // Each new animation increments this, and running animations check if they're still current
   let animationGeneration = 0;
 
+  // Animation epoch - increments each time a NEW sequence animation starts
+  // This is exposed to components so they can reset hasAnimated when a new epoch begins
+  // (even if beat.id stays the same across generations)
+  let animationEpoch = $state(0);
+
   // Animation timing configuration
   let animationTiming = $state<AnimationTiming>({
     ...DEFAULT_ANIMATION_TIMING,
@@ -67,6 +72,10 @@ export function createStepGridDisplayState() {
    * Called BEFORE new sequence is set
    */
   function prepareSequenceAnimation(_beatCount: number, mode: AnimationMode) {
+    // Increment epoch to signal all StepCells to reset their hasAnimated state
+    // This is critical when beat IDs are reused across generations (e.g., beat-5, beat-6)
+    animationEpoch++;
+
     // Set animation state IMMEDIATELY so steps render invisible
     isPreparingFullAnimation = true;
     shouldAnimateStartPosition = true;
@@ -96,8 +105,6 @@ export function createStepGridDisplayState() {
     const thisGeneration = ++animationGeneration;
     const stepCount = steps.length;
 
-    console.log(`[SeqAnim] Starting generation ${thisGeneration} with ${stepCount} steps`);
-
     // Small delay to ensure DOM has updated
     await new Promise((resolve) =>
       setTimeout(resolve, animationTiming.sequentialDelay / 6)
@@ -105,7 +112,6 @@ export function createStepGridDisplayState() {
 
     // Check if this animation was superseded by a newer one
     if (thisGeneration !== animationGeneration) {
-      console.log(`[SeqAnim] Generation ${thisGeneration} aborted (superseded)`);
       return; // Abort - a newer animation has started
     }
 
@@ -113,15 +119,12 @@ export function createStepGridDisplayState() {
     for (let i = 0; i < stepCount; i++) {
       // Check if this animation was superseded by a newer one
       if (thisGeneration !== animationGeneration) {
-        console.log(`[SeqAnim] Generation ${thisGeneration} aborted at step ${i}`);
         return; // Abort - a newer animation has started
       }
 
-      console.log(`[SeqAnim] Adding step ${i} to stepsToAnimate. Set before: [${[...stepsToAnimate].join(',')}]`);
       // Add this beat to stepsToAnimate to trigger its animation
       stepsToAnimate.add(i);
       stepsToAnimate = new Set(stepsToAnimate); // Trigger reactivity
-      console.log(`[SeqAnim] Set after: [${[...stepsToAnimate].join(',')}]`);
 
       // Dispatch event with the letter from this beat
       const beat = steps[i];
@@ -227,15 +230,7 @@ export function createStepGridDisplayState() {
    * Check if a beat should animate
    */
   function shouldBeatAnimate(stepIndex: number): boolean {
-    const inSet = stepsToAnimate.has(stepIndex);
-    const result = shouldAnimateAllSteps || stepIndex === newlyAddedStepIndex || inSet;
-
-    // DEBUG: Log when checking animation state
-    if (inSet || result) {
-      console.log(`[shouldBeatAnimate ${stepIndex}] allSteps=${shouldAnimateAllSteps}, newlyAdded=${newlyAddedStepIndex}, inSet=${inSet} => ${result}`);
-    }
-
-    return result;
+    return shouldAnimateAllSteps || stepIndex === newlyAddedStepIndex || stepsToAnimate.has(stepIndex);
   }
 
   /**
@@ -280,6 +275,9 @@ export function createStepGridDisplayState() {
     },
     get animationTiming() {
       return animationTiming;
+    },
+    get animationEpoch() {
+      return animationEpoch;
     },
 
     // Actions

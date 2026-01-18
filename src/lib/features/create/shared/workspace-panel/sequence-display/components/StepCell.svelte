@@ -25,6 +25,9 @@
     isTimelineMode = false,
     // Width multiplier for expanded timeline cells (1 = normal, 2 = double width, etc.)
     widthMultiplier = 1,
+    // Animation epoch - increments when a new sequence animation starts
+    // Used to reset hasAnimated even when beat.id stays the same
+    animationEpoch = 0,
   } = $props<{
     beat: StepData;
     index?: number;
@@ -44,6 +47,8 @@
     isTimelineMode?: boolean;
     // Width multiplier for expanded timeline cells (1 = normal, 2 = double width, etc.)
     widthMultiplier?: number;
+    // Animation epoch - increments when a new sequence animation starts
+    animationEpoch?: number;
   }>();
 
   // Services
@@ -76,6 +81,8 @@
   let currentAnimationName = $state("gentleBloom");
   // Track previous beat ID for change detection
   let previousBeatId = "";
+  // Track previous animation epoch to reset hasAnimated when a new animation starts
+  let previousAnimationEpoch = animationEpoch;
 
   // Long-press detection
   const LONG_PRESS_DURATION = 500; // ms
@@ -105,17 +112,22 @@
   // Track previous signature for change detection
   let previousSignature = "";
 
+  // Reset hasAnimated when a new animation epoch starts
+  // This is critical for when beat IDs are reused across generations (e.g., beat-5, beat-6)
+  $effect(() => {
+    if (animationEpoch !== previousAnimationEpoch) {
+      hasAnimated = false;
+      previousAnimationEpoch = animationEpoch;
+    }
+  });
+
   // Reset hasAnimated ONLY when the beat data itself changes (different beat loaded)
   // This prevents re-animating all steps when only one beat should animate
   $effect(() => {
     const newId = beat.id;
     const oldId = previousBeatId;
 
-    // DEBUG: Always log when this effect runs to trace beat ID changes
-    console.log(`[StepCell ${index}] $effect: beat.id=${newId?.slice(0,8)}, previousBeatId=${oldId?.slice(0,8)}, changed=${newId !== oldId}, hasAnimated=${hasAnimated}`);
-
     if (newId !== oldId) {
-      console.log(`[StepCell ${index}] Beat ID CHANGED! Resetting hasAnimated from ${hasAnimated} to false`);
       hasAnimated = false;
       previousBeatId = newId;
     }
@@ -150,14 +162,7 @@
     // 1. shouldAnimate prop is true (parent says this step should animate)
     // 2. hasAnimated is false (haven't animated yet)
     // 3. beat is not blank
-    const result = shouldAnimate && !hasAnimated && !beat.isBlank;
-
-    // DEBUG: Log animation state for each cell
-    if (shouldAnimate || result) {
-      console.log(`[StepCell ${index}] shouldAnimate=${shouldAnimate}, hasAnimated=${hasAnimated}, isBlank=${beat.isBlank} => shouldAnimateIn=${result}`);
-    }
-
-    return result;
+    return shouldAnimate && !hasAnimated && !beat.isBlank;
   });
 
   // Steps should be invisible ONLY if they're waiting to animate
@@ -182,17 +187,12 @@
     // This prevents stale animationend events from old animations (when cell is reused)
     // from incorrectly setting hasAnimated=true before the new animation starts.
     if (shouldAnimateIn) {
-      console.log(`[StepCell ${index}] Animation ended, setting hasAnimated=true`);
       hasAnimated = true;
-    } else {
-      console.log(`[StepCell ${index}] Animation ended but shouldAnimateIn=false, ignoring stale event`);
     }
   }
 
   // Listen for animation changes from the AnimationSelector
   onMount(() => {
-    console.log(`[StepCell ${index}] Mounted. shouldAnimate=${shouldAnimate}, hasAnimated=${hasAnimated}, beat.id=${beat.id?.slice(0,8)}`);
-
     const handleAnimationChange = (event: CustomEvent) => {
       currentAnimationName = event.detail.animation;
     };
