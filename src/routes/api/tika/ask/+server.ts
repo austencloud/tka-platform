@@ -7,12 +7,27 @@
 
 import type { RequestHandler } from '@sveltejs/kit'
 import { createAnthropic } from '@ai-sdk/anthropic'
-import { streamText, tool, convertToCoreMessages, type UIMessage, jsonSchema } from 'ai'
+import { streamText, tool, convertToModelMessages, type UIMessage, jsonSchema } from 'ai'
 import { ANTHROPIC_API_KEY } from '$env/static/private'
 import fs from 'fs'
 import path from 'path'
 import { buildSystemPrompt } from '$lib/features/learn/ai/system-prompts'
 import { deriveUserOverlay } from '$lib/features/learn/ai/knowledge-graph'
+import {
+	getTypeComparison,
+	getTypeExplanation,
+	TYPE_DEFINITIONS,
+	getPositionExplanation,
+	getPositionComparison,
+	getMotionTypeExplanation,
+	getMotionTypeComparison,
+	getRotationExplanation,
+	getGridModeExplanation,
+	getVTGMapping,
+	getAlphabetOverview,
+	getCommonAnswer,
+	getTypeNamingOrigin
+} from '$lib/features/learn/ai/canonical-responses'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types & Data Loading
@@ -282,8 +297,8 @@ function executeCompareLetters(letter1: string, letter2: string): string {
 
 	const type1 = LETTER_TO_TYPE[letter1]
 	const type2 = LETTER_TO_TYPE[letter2]
-	const typeNum1 = type1?.type || '?'
-	const typeNum2 = type2?.type || '?'
+	const typeNum1 = parseInt(type1?.type || '0')
+	const typeNum2 = parseInt(type2?.type || '0')
 	const rep1 = var1[0]
 	const rep2 = var2[0]
 
@@ -291,19 +306,30 @@ function executeCompareLetters(letter1: string, letter2: string): string {
 		return `Cannot compare - missing variation data for one or both letters.`
 	}
 
-	return `# Comparison: ${letter1} vs ${letter2}
+	// Use canonical type definitions for accurate descriptions
+	const typeDef1 = TYPE_DEFINITIONS[typeNum1]
+	const typeDef2 = TYPE_DEFINITIONS[typeNum2]
+
+	let result = `# Comparison: ${letter1} vs ${letter2}
 
 ## At a Glance
 | Property | ${letter1} | ${letter2} |
 |----------|------------|------------|
-| Type | ${typeNum1} (${letterTypes[typeNum1]?.name || '?'}) | ${typeNum2} (${letterTypes[typeNum2]?.name || '?'}) |
+| Type | ${typeNum1} (${typeDef1?.name || '?'}) | ${typeNum2} (${typeDef2?.name || '?'}) |
 | Blue motion | ${rep1.blueMotion.motionType} | ${rep2.blueMotion.motionType} |
 | Red motion | ${rep1.redMotion.motionType} | ${rep2.redMotion.motionType} |
 | Variations | ${var1.length} | ${var2.length} |
 
-## Type Descriptions
-- **${letter1}:** ${letterTypes[typeNum1]?.description || 'Type ' + typeNum1}
-- **${letter2}:** ${letterTypes[typeNum2]?.description || 'Type ' + typeNum2}`
+## Letter Details
+- **${letter1}:** ${typeDef1?.description || 'Type ' + typeNum1}
+- **${letter2}:** ${typeDef2?.description || 'Type ' + typeNum2}`
+
+	// If different types, include canonical type comparison (bulletproof accuracy)
+	if (typeNum1 !== typeNum2 && typeNum1 > 0 && typeNum2 > 0) {
+		result += `\n\n${getTypeComparison(typeNum1, typeNum2)}`
+	}
+
+	return result
 }
 
 interface TypeListResult {
@@ -325,132 +351,39 @@ interface TypeListResult {
 function executeListLettersByType(type: number): TypeListResult | string {
 	ensureDataLoaded()
 
-	const typeKey = type.toString()
-	const typeInfo = letterTypes[typeKey]
-
-	if (!typeInfo) {
+	// Use canonical response for the explanation - no LLM generation
+	const canonicalDef = TYPE_DEFINITIONS[type]
+	if (!canonicalDef) {
 		return `Invalid type ${type}. Valid types are 1-6.`
 	}
 
-	const letterCounts = typeInfo.letters.map(letter => {
-		const count = allPictographs.filter(p => p.letter === letter).length
-		return { letter, count }
-	})
+	const typeKey = type.toString()
+	const typeInfo = letterTypes[typeKey]
 
-	// Show all letters of this type as pictographs
-	const exampleLetters = typeInfo.letters
+	// Build explanation from canonical source (human-verified, not LLM-generated)
+	const explanation = getTypeExplanation(type)
 
-	const explanation = `# Type ${type}: ${typeInfo.name}
-
-**Description:** ${typeInfo.description}
-
-**Motion Pattern:**
-- Blue hand: ${typeInfo.motionPattern.blueMotion}
-- Red hand: ${typeInfo.motionPattern.redMotion}
-${typeInfo.motionPattern.note ? `- Note: ${typeInfo.motionPattern.note}` : ''}
-
-**Characteristics:**
-${typeInfo.characteristics.map(c => `- ${c}`).join('\n')}
-
-**Letters (${typeInfo.letters.length} total):**
-${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)`).join('\n')}
-
-**All Letters:** Pictographs shown in context panel.`
+	// Get letter variations from dataframe for context
+	const letters = canonicalDef.letters.split(', ').flatMap(l => l.includes('through') ? TKA_LETTER_TYPES[typeKey]?.letters || [] : [l.trim()])
+	const exampleLetters = typeInfo?.letters || letters
 
 	return {
 		explanation,
 		contextData: {
 			type: 'typeList',
 			typeNumber: type,
-			typeName: typeInfo.name,
-			description: typeInfo.description,
+			typeName: canonicalDef.name,
+			description: canonicalDef.description,
 			exampleLetters,
-			allLetters: typeInfo.letters,
+			allLetters: exampleLetters,
 			motionPattern: {
-				blueMotion: typeInfo.motionPattern.blueMotion,
-				redMotion: typeInfo.motionPattern.redMotion
+				blueMotion: canonicalDef.motionPattern.blue,
+				redMotion: canonicalDef.motionPattern.red
 			}
 		}
 	}
 }
 
-function executeGetPositionInfo(position: string): string {
-	const normalizedPos = position.toLowerCase().trim()
-
-	const positions: Record<string, {
-		name: string
-		angleDegrees: string
-		description: string
-		gridDescription: string
-		examples: string[]
-		level: number
-	}> = {
-		alpha: {
-			name: 'Alpha (α)',
-			angleDegrees: '180°',
-			description: 'Hands are at opposite grid points, forming a straight line through the center.',
-			gridDescription: 'Examples: N/S, E/W, NE/SW, NW/SE.',
-			examples: ['alpha1: N and S', 'alpha3: E and W', 'alpha5: NE and SW'],
-			level: 1
-		},
-		beta: {
-			name: 'Beta (β)',
-			angleDegrees: '0°',
-			description: 'Both hands are at the same grid point.',
-			gridDescription: 'Both props share a single location.',
-			examples: ['beta1: Both at N', 'beta5: Both at NE'],
-			level: 1
-		},
-		gamma: {
-			name: 'Gamma (γ)',
-			angleDegrees: '90°',
-			description: 'Hands form a right angle, on adjacent grid points.',
-			gridDescription: 'One hand is 90° away from the other.',
-			examples: ['gamma1: N and E', 'gamma5: N and NW'],
-			level: 1
-		},
-		zeta: {
-			name: 'Zeta (ζ)',
-			angleDegrees: '~135°',
-			description: 'Hands form an obtuse angle. Level 4 (skewed grid).',
-			gridDescription: 'One cardinal, one intercardinal point.',
-			examples: ['N and SE', 'E and NW'],
-			level: 4
-		},
-		eta: {
-			name: 'Eta (η)',
-			angleDegrees: '~45°',
-			description: 'Hands form an acute angle. Level 4 (skewed grid).',
-			gridDescription: 'One cardinal, one intercardinal point.',
-			examples: ['N and NE', 'E and SE'],
-			level: 4
-		}
-	}
-
-	const posInfo = positions[normalizedPos]
-	if (!posInfo) {
-		return `Position "${position}" not recognized. Available: ${Object.keys(positions).join(', ')}`
-	}
-
-	ensureDataLoaded()
-	const startCount = allPictographs.filter(p => p.startPosition.toLowerCase().startsWith(normalizedPos)).length
-	const endCount = allPictographs.filter(p => p.endPosition.toLowerCase().startsWith(normalizedPos)).length
-
-	return `# ${posInfo.name}
-
-**Angle:** ${posInfo.angleDegrees} between hands
-
-**Description:** ${posInfo.description}
-
-**Grid:** ${posInfo.gridDescription}
-
-**Examples:**
-${posInfo.examples.map(e => `- ${e}`).join('\n')}
-
-**Level:** ${posInfo.level}
-
-**Usage:** ${startCount} start positions, ${endCount} end positions`
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AI SDK Tools Definition
@@ -509,15 +442,138 @@ const tikaTools = {
 	}),
 
 	get_position_info: tool({
-		description: 'Get information about a TKA position (alpha, beta, gamma, zeta, eta). Use this when asked about positions or hand placements.',
+		description: 'Get canonical information about a TKA position (alpha, beta, gamma, zeta, eta, tau, terra). ALWAYS use this for position questions.',
 		parameters: jsonSchema<{ position: string }>({
 			type: 'object',
 			properties: {
-				position: { type: 'string', description: 'Position name (alpha, beta, gamma, zeta, eta)' }
+				position: { type: 'string', description: 'Position name (alpha, beta, gamma, zeta, eta, tau, terra)' }
 			},
 			required: ['position']
 		}),
-		execute: async ({ position }) => executeGetPositionInfo(position)
+		execute: async ({ position }) => getPositionExplanation(position)
+	}),
+
+	compare_positions: tool({
+		description: 'Compare two TKA positions (alpha, beta, gamma, etc). Use when asked about differences between positions.',
+		parameters: jsonSchema<{ position1: string; position2: string }>({
+			type: 'object',
+			properties: {
+				position1: { type: 'string', description: 'First position name' },
+				position2: { type: 'string', description: 'Second position name' }
+			},
+			required: ['position1', 'position2']
+		}),
+		execute: async ({ position1, position2 }) => getPositionComparison(position1, position2)
+	}),
+
+	compare_types: tool({
+		description: 'Compare two letter types (1-6). ALWAYS use this tool when asked about differences between types. Returns canonical, verified comparison.',
+		parameters: jsonSchema<{ type1: number; type2: number }>({
+			type: 'object',
+			properties: {
+				type1: { type: 'number', minimum: 1, maximum: 6, description: 'First type number (1-6)' },
+				type2: { type: 'number', minimum: 1, maximum: 6, description: 'Second type number (1-6)' }
+			},
+			required: ['type1', 'type2']
+		}),
+		execute: async ({ type1, type2 }) => getTypeComparison(type1, type2)
+	}),
+
+	get_motion_type: tool({
+		description: 'Get canonical definition of a motion type (static, shift, dash). ALWAYS use this for motion type questions.',
+		parameters: jsonSchema<{ motion_type: string }>({
+			type: 'object',
+			properties: {
+				motion_type: { type: 'string', description: 'Motion type name (static, shift, dash)' }
+			},
+			required: ['motion_type']
+		}),
+		execute: async ({ motion_type }) => getMotionTypeExplanation(motion_type)
+	}),
+
+	compare_motion_types: tool({
+		description: 'Compare two motion types (static, shift, dash). Use when asked about differences between motion types.',
+		parameters: jsonSchema<{ motion1: string; motion2: string }>({
+			type: 'object',
+			properties: {
+				motion1: { type: 'string', description: 'First motion type' },
+				motion2: { type: 'string', description: 'Second motion type' }
+			},
+			required: ['motion1', 'motion2']
+		}),
+		execute: async ({ motion1, motion2 }) => getMotionTypeComparison(motion1, motion2)
+	}),
+
+	get_rotation_info: tool({
+		description: 'Get canonical definition of a rotation direction (pro, anti, prospin, antispin, cw, ccw). ALWAYS use this for rotation questions.',
+		parameters: jsonSchema<{ rotation: string }>({
+			type: 'object',
+			properties: {
+				rotation: { type: 'string', description: 'Rotation type (pro, anti, prospin, antispin, cw, ccw)' }
+			},
+			required: ['rotation']
+		}),
+		execute: async ({ rotation }) => getRotationExplanation(rotation)
+	}),
+
+	get_grid_mode: tool({
+		description: 'Get canonical definition of a grid mode (diamond, box, skewed). ALWAYS use this for grid mode questions.',
+		parameters: jsonSchema<{ mode: string }>({
+			type: 'object',
+			properties: {
+				mode: { type: 'string', description: 'Grid mode (diamond, box, skewed)' }
+			},
+			required: ['mode']
+		}),
+		execute: async ({ mode }) => getGridModeExplanation(mode)
+	}),
+
+	get_vtg_mapping: tool({
+		description: 'Get the TKA letters that correspond to a VTG (Vulcan Tech Gospel) term. Use for VTG-to-TKA translation.',
+		parameters: jsonSchema<{ vtg_term: string }>({
+			type: 'object',
+			properties: {
+				vtg_term: { type: 'string', description: 'VTG term (split-same, tog-same, split-opp, tog-opp, quarter-same, quarter-opp)' }
+			},
+			required: ['vtg_term']
+		}),
+		execute: async ({ vtg_term }) => getVTGMapping(vtg_term)
+	}),
+
+	get_alphabet_overview: tool({
+		description: 'Get a complete overview of the TKA alphabet - all 6 types, letter counts, and organization. ALWAYS use this when asked "what is TKA" or for alphabet overviews.',
+		parameters: jsonSchema<Record<string, never>>({
+			type: 'object',
+			properties: {}
+		}),
+		execute: async () => getAlphabetOverview()
+	}),
+
+	answer_common_question: tool({
+		description: 'Get canonical answer to common TKA questions. Use for: "what is TKA", "what is a pictograph", "what is a sequence", "what is a loop", "why cross-shift".',
+		parameters: jsonSchema<{ question: string }>({
+			type: 'object',
+			properties: {
+				question: { type: 'string', description: 'The question topic (tka, pictograph, sequence, loop, why cross-shift)' }
+			},
+			required: ['question']
+		}),
+		execute: async ({ question }) => {
+			const answer = getCommonAnswer(question)
+			return answer || `No canonical answer found for "${question}". Use other tools to construct a response.`
+		}
+	}),
+
+	get_type_naming_origin: tool({
+		description: 'Explain why a letter type has its name (e.g., why "Cross-Shift" not "Dash-Shift"). ALWAYS use this for "why is it called X" questions about type names.',
+		parameters: jsonSchema<{ type: number }>({
+			type: 'object',
+			properties: {
+				type: { type: 'number', minimum: 1, maximum: 6, description: 'The type number (1-6)' }
+			},
+			required: ['type']
+		}),
+		execute: async ({ type }) => getTypeNamingOrigin(type)
 	})
 }
 
@@ -582,7 +638,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		const result = streamText({
 			model: anthropic('claude-sonnet-4-20250514'),
 			system: systemPrompt,
-			messages: convertToCoreMessages(messages),
+			messages: await convertToModelMessages(messages),
 			tools: tikaTools,
 			maxSteps: 5, // Allow up to 5 tool calls
 			experimental_telemetry: {
@@ -591,7 +647,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		})
 
 		// Return streaming response
-		return result.toDataStreamResponse()
+		return result.toUIMessageStreamResponse()
 
 	} catch (error) {
 		console.error('[TIKA API] Error:', error)

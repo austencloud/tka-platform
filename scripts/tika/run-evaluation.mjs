@@ -1,34 +1,48 @@
 /**
  * TIKA Evaluation Runner
  *
- * Runs scenarios through TIKA and evaluates responses.
+ * Runs scenarios through TIKA and evaluates responses using the streaming API.
+ * Flags low-scoring responses for Opus review.
  *
  * Usage:
  *   node scripts/tika/run-evaluation.mjs              # Run all scenarios
  *   node scripts/tika/run-evaluation.mjs --dry-run   # Preview only
  *   node scripts/tika/run-evaluation.mjs --limit 5   # Run first 5 only
+ *   node scripts/tika/run-evaluation.mjs --category misconception-correction  # Run one category
+ *   node scripts/tika/run-evaluation.mjs --opus      # Enable Opus review for failed items
  */
 
 import fs from 'fs';
 import path from 'path';
+import { callTikaStreaming, getLevelConcepts } from './lib/stream-client.mjs';
+import { evaluateResponse, summarizeEvaluations } from './lib/evaluator.mjs';
 
-const TIKA_API_URL = 'http://localhost:5173/api/tika/ask';
 const SCENARIOS_FILE = path.join(process.cwd(), 'scripts/tika/scenarios.json');
 const REPORTS_DIR = path.join(process.cwd(), 'scripts/tika/reports');
 
 // Ensure reports directory exists
 if (!fs.existsSync(REPORTS_DIR)) {
-  fs.mkdirSync(REPORTS_DIR, { recursive: true });
+	fs.mkdirSync(REPORTS_DIR, { recursive: true });
 }
 
 // Parse args
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
+const opusReview = args.includes('--opus');
 const limitIdx = args.indexOf('--limit');
 const limit = limitIdx >= 0 ? parseInt(args[limitIdx + 1]) : null;
+const categoryIdx = args.indexOf('--category');
+const categoryFilter = categoryIdx >= 0 ? args[categoryIdx + 1] : null;
 
 // Load scenarios
-const allScenarios = JSON.parse(fs.readFileSync(SCENARIOS_FILE, 'utf-8'));
+let allScenarios = JSON.parse(fs.readFileSync(SCENARIOS_FILE, 'utf-8'));
+
+// Apply category filter
+if (categoryFilter) {
+	allScenarios = allScenarios.filter((s) => s.category === categoryFilter);
+}
+
+// Apply limit
 const scenarios = limit ? allScenarios.slice(0, limit) : allScenarios;
 
 console.log('');
@@ -36,98 +50,35 @@ console.log('═'.repeat(60));
 console.log('  TIKA EVALUATION RUN');
 console.log('═'.repeat(60));
 console.log(`  Scenarios: ${scenarios.length}${limit ? ` (limited from ${allScenarios.length})` : ''}`);
+if (categoryFilter) console.log(`  Category: ${categoryFilter}`);
 console.log(`  Mode: ${dryRun ? 'DRY RUN (preview only)' : 'LIVE'}`);
+console.log(`  Opus Review: ${opusReview ? 'ENABLED' : 'disabled'}`);
 console.log(`  Time: ${new Date().toISOString()}`);
 console.log('═'.repeat(60));
 console.log('');
 
 if (dryRun) {
-  console.log('SCENARIOS TO RUN:\n');
-  scenarios.forEach((s, i) => {
-    console.log(`${i + 1}. [${s.category}] ${s.name}`);
-    console.log(`   Level: ${s.userLevel}, Difficulty: ${s.difficulty}`);
-    console.log(`   Q: "${s.question}"`);
-    console.log(`   Must include: ${s.criteria.mustInclude.join(', ')}`);
-    console.log(`   Must NOT include: ${s.criteria.mustNotInclude.join(', ') || 'None'}`);
-    console.log('');
-  });
-  process.exit(0);
-}
+	console.log('SCENARIOS TO RUN:\n');
 
-// Get concepts for level
-function getLevelConcepts(level) {
-  const concepts = {
-    1: ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8'],
-    2: ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '2.1', '2.2', '2.3'],
-    3: ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '2.1', '2.2', '2.3', '3.1', '3.2', '3.3'],
-    4: ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '2.1', '2.2', '2.3', '3.1', '3.2', '3.3', '4.1', '4.2', '4.3', '4.4', '4.5']
-  };
-  return concepts[level] || concepts[1];
-}
+	// Group by category
+	const byCategory = {};
+	scenarios.forEach((s) => {
+		if (!byCategory[s.category]) byCategory[s.category] = [];
+		byCategory[s.category].push(s);
+	});
 
-// Call TIKA API
-async function callTika(question, userLevel) {
-  const response = await fetch(TIKA_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      question,
-      userId: 'evaluation-runner',
-      completedConcepts: getLevelConcepts(userLevel),
-      language: 'en'
-    })
-  });
+	for (const [category, items] of Object.entries(byCategory)) {
+		console.log(`\n${category} (${items.length}):`);
+		items.forEach((s, i) => {
+			console.log(`  ${i + 1}. [L${s.userLevel}] ${s.name}`);
+			console.log(`     Q: "${s.question}"`);
+			console.log(`     Must include: ${s.criteria.mustInclude.join(', ') || 'None'}`);
+			console.log(`     Must NOT include: ${s.criteria.mustNotInclude.join(', ') || 'None'}`);
+		});
+	}
 
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-
-  return response.json();
-}
-
-// Check response against criteria
-function evaluateResponse(scenario, response) {
-  const issues = [];
-  const text = response.explanation.toLowerCase();
-
-  // Check mustInclude
-  for (const term of scenario.criteria.mustInclude) {
-    if (!text.includes(term.toLowerCase())) {
-      issues.push({
-        type: 'missing-term',
-        severity: 'error',
-        message: `Missing required term: "${term}"`
-      });
-    }
-  }
-
-  // Check mustNotInclude
-  for (const term of scenario.criteria.mustNotInclude) {
-    if (text.includes(term.toLowerCase())) {
-      issues.push({
-        type: 'forbidden-term',
-        severity: 'error',
-        message: `Contains forbidden term: "${term}"`
-      });
-    }
-  }
-
-  // Check expected tools
-  const calledTools = response.toolsCalled?.map(t => t.name) || [];
-  for (const tool of scenario.criteria.expectedTools) {
-    if (!calledTools.includes(tool)) {
-      issues.push({
-        type: 'missing-tool',
-        severity: 'warning',
-        message: `Expected tool not called: "${tool}"`
-      });
-    }
-  }
-
-  return {
-    passed: issues.filter(i => i.severity === 'error').length === 0,
-    issues
-  };
+	console.log('\n');
+	process.exit(0);
 }
 
 // Run evaluation
@@ -135,135 +86,248 @@ const results = [];
 let passed = 0;
 let failed = 0;
 let totalLatency = 0;
+const flaggedForOpus = [];
 
 for (let i = 0; i < scenarios.length; i++) {
-  const scenario = scenarios[i];
-  console.log(`[${i + 1}/${scenarios.length}] ${scenario.name}`);
+	const scenario = scenarios[i];
+	console.log(`[${i + 1}/${scenarios.length}] ${scenario.name}`);
 
-  try {
-    const response = await callTika(scenario.question, scenario.userLevel);
-    const evaluation = evaluateResponse(scenario, response);
+	try {
+		const completedConcepts = getLevelConcepts(scenario.userLevel);
+		const response = await callTikaStreaming(scenario.question, scenario.userLevel, completedConcepts);
+		const evaluation = evaluateResponse(scenario, response);
 
-    results.push({
-      scenarioId: scenario.id,
-      scenario,
-      response: {
-        explanation: response.explanation,
-        toolsCalled: response.toolsCalled || [],
-        latencyMs: response.latencyMs
-      },
-      evaluation,
-      timestamp: new Date().toISOString()
-    });
+		const result = {
+			scenarioId: scenario.id,
+			scenario,
+			response: {
+				explanation: response.explanation,
+				toolsCalled: response.toolsCalled || [],
+				latencyMs: response.latencyMs
+			},
+			evaluation,
+			timestamp: new Date().toISOString()
+		};
 
-    totalLatency += response.latencyMs;
+		results.push(result);
+		totalLatency += response.latencyMs;
 
-    if (evaluation.passed) {
-      passed++;
-      console.log(`   ✓ PASSED (${response.latencyMs}ms)`);
-    } else {
-      failed++;
-      console.log(`   ✗ FAILED (${response.latencyMs}ms)`);
-      evaluation.issues.forEach(issue => {
-        console.log(`     - ${issue.message}`);
-      });
-    }
-  } catch (error) {
-    failed++;
-    results.push({
-      scenarioId: scenario.id,
-      scenario,
-      response: null,
-      evaluation: { passed: false, issues: [{ type: 'api-error', severity: 'error', message: error.message }] },
-      timestamp: new Date().toISOString()
-    });
-    console.log(`   ✗ ERROR: ${error.message}`);
-  }
+		if (evaluation.passed) {
+			passed++;
+			console.log(`   ✓ PASSED (score: ${evaluation.overall}, ${response.latencyMs}ms)`);
+		} else {
+			failed++;
+			console.log(`   ✗ FAILED (score: ${evaluation.overall}, ${response.latencyMs}ms)`);
+			evaluation.issues.forEach((issue) => {
+				const icon = issue.severity === 'error' ? '✗' : '⚠';
+				console.log(`     ${icon} ${issue.message}`);
+			});
 
-  // Small delay between requests
-  await new Promise(r => setTimeout(r, 500));
+			// Flag for Opus review if enabled and score is low
+			if (opusReview && evaluation.overall < 70) {
+				flaggedForOpus.push(result);
+				console.log(`     → Flagged for Opus review`);
+			}
+		}
+	} catch (error) {
+		failed++;
+		results.push({
+			scenarioId: scenario.id,
+			scenario,
+			response: null,
+			evaluation: {
+				passed: false,
+				overall: 0,
+				scores: { termAccuracy: 0, levelAppropriate: 0, toolUsage: 0, conciseness: 0 },
+				issues: [{ type: 'api-error', severity: 'error', message: error.message }],
+				recommendation: 'fix-required'
+			},
+			timestamp: new Date().toISOString()
+		});
+		console.log(`   ✗ ERROR: ${error.message}`);
+	}
+
+	// Small delay between requests
+	await new Promise((r) => setTimeout(r, 500));
 }
 
 // Summary
+const passRate = Math.round((passed / scenarios.length) * 100);
+const avgLatency = Math.round(totalLatency / scenarios.length);
+
 console.log('');
 console.log('═'.repeat(60));
 console.log('  SUMMARY');
 console.log('═'.repeat(60));
 console.log(`  Total:      ${scenarios.length}`);
-console.log(`  Passed:     ${passed} (${Math.round(passed / scenarios.length * 100)}%)`);
-console.log(`  Failed:     ${failed} (${Math.round(failed / scenarios.length * 100)}%)`);
-console.log(`  Avg Time:   ${Math.round(totalLatency / scenarios.length)}ms`);
+console.log(`  Passed:     ${passed} (${passRate}%)`);
+console.log(`  Failed:     ${failed} (${100 - passRate}%)`);
+console.log(`  Avg Time:   ${avgLatency}ms`);
 console.log('═'.repeat(60));
 console.log('');
 
-// Categorize failures
-const failedResults = results.filter(r => !r.evaluation.passed);
-if (failedResults.length > 0) {
-  console.log('FAILED SCENARIOS:\n');
+// Generate summary statistics
+const evaluationData = results.map((r) => ({ evaluation: r.evaluation, scenario: r.scenario }));
+const summary = summarizeEvaluations(evaluationData);
 
-  const byCategory = {};
-  for (const result of failedResults) {
-    const cat = result.scenario.category;
-    if (!byCategory[cat]) byCategory[cat] = [];
-    byCategory[cat].push(result);
-  }
+// Category breakdown
+console.log('SCORES BY CATEGORY:\n');
+for (const [category, data] of Object.entries(summary.byCategory)) {
+	const status = data.passRate >= 80 ? '✓' : data.passRate >= 60 ? '⚠' : '✗';
+	console.log(`  ${status} ${category}: ${data.passRate}% pass (avg: ${data.avgScore})`);
+}
+console.log('');
 
-  for (const [category, items] of Object.entries(byCategory)) {
-    console.log(`  ${category}:`);
-    for (const item of items) {
-      console.log(`    - ${item.scenario.name}`);
-      item.evaluation.issues.forEach(issue => {
-        console.log(`      ${issue.type}: ${issue.message}`);
-      });
-    }
-    console.log('');
-  }
+// Difficulty breakdown
+console.log('SCORES BY DIFFICULTY:\n');
+for (const [difficulty, data] of Object.entries(summary.byDifficulty)) {
+	const status = data.passRate >= 80 ? '✓' : data.passRate >= 60 ? '⚠' : '✗';
+	console.log(`  ${status} ${difficulty}: ${data.passRate}% pass (avg: ${data.avgScore})`);
+}
+console.log('');
+
+// Common issues
+if (Object.keys(summary.commonMissingTerms).length > 0) {
+	console.log('MOST FREQUENTLY MISSING TERMS:');
+	const topMissing = Object.entries(summary.commonMissingTerms).slice(0, 5);
+	topMissing.forEach(([term, count]) => {
+		console.log(`  - "${term}" (${count} times)`);
+	});
+	console.log('');
+}
+
+if (Object.keys(summary.commonForbiddenTerms).length > 0) {
+	console.log('MOST FREQUENTLY USED FORBIDDEN TERMS:');
+	const topForbidden = Object.entries(summary.commonForbiddenTerms).slice(0, 5);
+	topForbidden.forEach(([term, count]) => {
+		console.log(`  - "${term}" (${count} times)`);
+	});
+	console.log('');
+}
+
+// Run Opus review for flagged items
+if (opusReview && flaggedForOpus.length > 0) {
+	console.log('═'.repeat(60));
+	console.log(`  OPUS REVIEW (${flaggedForOpus.length} items)`);
+	console.log('═'.repeat(60));
+	console.log('');
+
+	try {
+		// Dynamic import for TypeScript module
+		const { reviewWithOpus } = await import('./opus-reviewer.ts');
+
+		for (const result of flaggedForOpus) {
+			console.log(`Reviewing: ${result.scenario.name}...`);
+
+			// Adapt scenario format for Opus reviewer
+			const opusScenario = {
+				id: result.scenario.id,
+				name: { en: result.scenario.name },
+				category: result.scenario.category,
+				userLevel: result.scenario.userLevel,
+				question: { en: result.scenario.question },
+				criteria: {
+					mustInclude: result.scenario.criteria.mustInclude,
+					mustNotInclude: result.scenario.criteria.mustNotInclude,
+					expectedTools: result.scenario.criteria.expectedTools,
+					keyFacts: result.scenario.criteria.keyFacts.map((f) => ({ en: f })),
+					commonMistakes: result.scenario.criteria.commonMistakes?.map((m) => ({ en: m }))
+				},
+				difficulty: result.scenario.difficulty
+			};
+
+			const opusReviewResult = await reviewWithOpus(opusScenario, result.response);
+			result.opusReview = opusReviewResult.result;
+
+			console.log(`  → Recommendation: ${opusReviewResult.result.recommendation}`);
+			console.log(`  → Score: ${opusReviewResult.result.overallScore}/10`);
+			if (opusReviewResult.result.suggestedRewrite) {
+				console.log(`  → Has suggested rewrite`);
+			}
+			console.log('');
+		}
+	} catch (error) {
+		console.error('Failed to run Opus review:', error.message);
+		console.log('Skipping Opus review...\n');
+	}
 }
 
 // Save full report
-const reportFile = path.join(REPORTS_DIR, `eval-${Date.now()}.json`);
+const timestamp = Date.now();
+const reportFile = path.join(REPORTS_DIR, `eval-${timestamp}.json`);
 const report = {
-  runId: `eval-${Date.now()}`,
-  startedAt: new Date().toISOString(),
-  summary: {
-    total: scenarios.length,
-    passed,
-    failed,
-    passRate: Math.round(passed / scenarios.length * 100),
-    averageLatencyMs: Math.round(totalLatency / scenarios.length)
-  },
-  results
+	runId: `eval-${timestamp}`,
+	startedAt: new Date().toISOString(),
+	config: {
+		categoryFilter,
+		limit,
+		opusReview
+	},
+	summary: {
+		total: scenarios.length,
+		passed,
+		failed,
+		passRate,
+		averageLatencyMs: avgLatency,
+		averageScores: summary.averageScores,
+		byCategory: summary.byCategory,
+		byDifficulty: summary.byDifficulty
+	},
+	issues: {
+		commonMissingTerms: summary.commonMissingTerms,
+		commonForbiddenTerms: summary.commonForbiddenTerms,
+		commonMissingTools: summary.commonMissingTools
+	},
+	results
 };
 
 fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
 console.log(`Full report saved to: ${reportFile}`);
 
 // Also save a human-readable summary for flagged items
-const flaggedFile = path.join(REPORTS_DIR, `flagged-${Date.now()}.md`);
-let flaggedContent = `# TIKA Evaluation - Flagged Items\n\n`;
-flaggedContent += `**Run:** ${report.runId}\n`;
-flaggedContent += `**Date:** ${new Date().toLocaleString()}\n`;
-flaggedContent += `**Pass Rate:** ${report.summary.passRate}%\n\n`;
-flaggedContent += `---\n\n`;
+const failedResults = results.filter((r) => !r.evaluation.passed);
+if (failedResults.length > 0) {
+	const flaggedFile = path.join(REPORTS_DIR, `flagged-${timestamp}.md`);
+	let flaggedContent = `# TIKA Evaluation - Flagged Items\n\n`;
+	flaggedContent += `**Run:** ${report.runId}\n`;
+	flaggedContent += `**Date:** ${new Date().toLocaleString()}\n`;
+	flaggedContent += `**Pass Rate:** ${passRate}%\n\n`;
+	flaggedContent += `---\n\n`;
 
-for (const result of failedResults) {
-  flaggedContent += `## ${result.scenario.name}\n\n`;
-  flaggedContent += `**ID:** ${result.scenarioId}\n`;
-  flaggedContent += `**Category:** ${result.scenario.category}\n`;
-  flaggedContent += `**Difficulty:** ${result.scenario.difficulty}\n\n`;
-  flaggedContent += `### Question\n\n> ${result.scenario.question}\n\n`;
-  flaggedContent += `### TIKA's Response\n\n${result.response?.explanation || 'No response'}\n\n`;
-  flaggedContent += `### Issues Found\n\n`;
-  for (const issue of result.evaluation.issues) {
-    flaggedContent += `- **${issue.type}**: ${issue.message}\n`;
-  }
-  flaggedContent += `\n### Expected Key Facts\n\n`;
-  for (const fact of result.scenario.criteria.keyFacts) {
-    flaggedContent += `- ${fact}\n`;
-  }
-  flaggedContent += `\n---\n\n`;
+	for (const result of failedResults) {
+		flaggedContent += `## ${result.scenario.name}\n\n`;
+		flaggedContent += `**ID:** ${result.scenarioId}\n`;
+		flaggedContent += `**Category:** ${result.scenario.category}\n`;
+		flaggedContent += `**Difficulty:** ${result.scenario.difficulty}\n`;
+		flaggedContent += `**Score:** ${result.evaluation.overall}/100\n\n`;
+		flaggedContent += `### Question\n\n> ${result.scenario.question}\n\n`;
+		flaggedContent += `### TIKA's Response\n\n${result.response?.explanation || 'No response'}\n\n`;
+		flaggedContent += `### Issues Found\n\n`;
+		for (const issue of result.evaluation.issues) {
+			const icon = issue.severity === 'error' ? '❌' : '⚠️';
+			flaggedContent += `- ${icon} **${issue.type}**: ${issue.message}\n`;
+		}
+		flaggedContent += `\n### Expected Key Facts\n\n`;
+		for (const fact of result.scenario.criteria.keyFacts) {
+			flaggedContent += `- ${fact}\n`;
+		}
+
+		// Include Opus review if available
+		if (result.opusReview) {
+			flaggedContent += `\n### Opus Review\n\n`;
+			flaggedContent += `**Recommendation:** ${result.opusReview.recommendation}\n`;
+			flaggedContent += `**Score:** ${result.opusReview.overallScore}/10\n\n`;
+			flaggedContent += `${result.opusReview.opusNotes}\n`;
+			if (result.opusReview.suggestedRewrite) {
+				flaggedContent += `\n**Suggested Rewrite:**\n\n${result.opusReview.suggestedRewrite}\n`;
+			}
+		}
+
+		flaggedContent += `\n---\n\n`;
+	}
+
+	fs.writeFileSync(flaggedFile, flaggedContent);
+	console.log(`Flagged items saved to: ${flaggedFile}`);
 }
 
-fs.writeFileSync(flaggedFile, flaggedContent);
-console.log(`Flagged items saved to: ${flaggedFile}`);
 console.log('');

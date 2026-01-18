@@ -1,0 +1,3846 @@
+{
+  "runId": "eval-1768644169285",
+  "startedAt": "2026-01-17T10:02:49.285Z",
+  "config": {
+    "categoryFilter": null,
+    "limit": null,
+    "opusReview": false
+  },
+  "summary": {
+    "total": 35,
+    "passed": 32,
+    "failed": 3,
+    "passRate": 91,
+    "averageLatencyMs": 8944,
+    "averageScores": {
+      "termAccuracy": 97,
+      "levelAppropriate": 99,
+      "toolUsage": 83,
+      "conciseness": 94
+    },
+    "byCategory": {
+      "letter-explanation": {
+        "total": 6,
+        "passed": 6,
+        "avgScore": 100,
+        "passRate": 100
+      },
+      "term-definition": {
+        "total": 7,
+        "passed": 6,
+        "avgScore": 93,
+        "passRate": 86
+      },
+      "letter-comparison": {
+        "total": 4,
+        "passed": 4,
+        "avgScore": 100,
+        "passRate": 100
+      },
+      "misconception-correction": {
+        "total": 4,
+        "passed": 3,
+        "avgScore": 85,
+        "passRate": 75
+      },
+      "concept-question": {
+        "total": 7,
+        "passed": 7,
+        "avgScore": 99,
+        "passRate": 100
+      },
+      "edge-case": {
+        "total": 3,
+        "passed": 2,
+        "avgScore": 93,
+        "passRate": 67
+      },
+      "beginner-orientation": {
+        "total": 2,
+        "passed": 2,
+        "avgScore": 88,
+        "passRate": 100
+      },
+      "engagement": {
+        "total": 2,
+        "passed": 2,
+        "avgScore": 96,
+        "passRate": 100
+      }
+    },
+    "byDifficulty": {
+      "easy": {
+        "total": 20,
+        "passed": 19,
+        "avgScore": 96,
+        "passRate": 95
+      },
+      "medium": {
+        "total": 11,
+        "passed": 9,
+        "avgScore": 95,
+        "passRate": 82
+      },
+      "hard": {
+        "total": 4,
+        "passed": 4,
+        "avgScore": 90,
+        "passRate": 100
+      }
+    }
+  },
+  "issues": {
+    "commonMissingTerms": {
+      "same point": 1,
+      "later": 1
+    },
+    "commonForbiddenTerms": {
+      "0 degrees": 1,
+      "Type A": 1
+    },
+    "commonMissingTools": {
+      "get_position_info": 3,
+      "list_letters_by_type": 2,
+      "get_letter_explanation": 2,
+      "get_term_definition": 1,
+      "get_alphabet_info": 1
+    }
+  },
+  "results": [
+    {
+      "scenarioId": "letter-type1-basic",
+      "scenario": {
+        "id": "letter-type1-basic",
+        "name": "Type 1 Letter Explanation (A)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "What is the letter A in TKA?",
+        "criteria": {
+          "mustInclude": [
+            "Type 1",
+            "dual-shift",
+            "shift",
+            "both hands"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "A is a Type 1 (Dual-Shift) letter",
+            "Both hands shift (move to adjacent points)"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Letter A is a **Type 1 Dual-Shift** letter in TKA.\n\n**Motion Pattern:**\n- Both hands shift (move to adjacent grid points)\n- Both hands rotate pro (prospin)\n\n**Position Pattern:**\n- Starts in alpha position (hands at opposite grid points)\n- Ends in alpha position\n- Specifically: alpha3 → alpha5 in the default variation\n\n**What happens in one beat:**\n- Blue hand moves from west to north\n- Red hand moves from east to south\n- Both props rotate clockwise (pro direction)\n\nLetter A has 8 total variations, representing all possible ways to perform this alpha-to-alpha, dual-pro-shift motion around the grid. It's part of the alpha-beta group within Type 1 letters, meaning it stays within alpha and beta positions.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01SZmyMitmE6hvpBfgDAkPQW",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "A"
+            },
+            "result": {
+              "explanation": "# Letter: A\n\n## Type Information\n**Type 1: Dual-Shift**\n\nBoth hands shift (move to adjacent grid points). This is the most common letter type.\n\n**Characteristics:**\n- Both hands move 90 degrees on the grid\n- Creates smooth, flowing transitions\n- 22 letters - the largest type\n\n## Motion Pattern\n- **Blue hand:** pro (cw)\n- **Red hand:** pro (cw)\n\n## Variation 0 Details\n- **Start position:** alpha3\n- **End position:** alpha5\n- **Blue motion:** w → n\n- **Red motion:** e → s\n\n## All Variations (8 total)\n[0] alpha3 → alpha5\n[1] alpha5 → alpha7\n[2] alpha7 → alpha1\n[3] alpha1 → alpha3\n[4] alpha7 → alpha5\n... and 3 more",
+              "contextData": {
+                "type": "letter",
+                "letter": "A",
+                "letterType": 1,
+                "typeName": "Dual-Shift",
+                "startPosition": "alpha3",
+                "endPosition": "alpha5",
+                "blueMotion": {
+                  "motionType": "pro",
+                  "startLoc": "w",
+                  "endLoc": "n",
+                  "propRotDir": "cw"
+                },
+                "redMotion": {
+                  "motionType": "pro",
+                  "startLoc": "e",
+                  "endLoc": "s",
+                  "propRotDir": "cw"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 8540
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 4,
+            "total": 4
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 712,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:57:26.958Z"
+    },
+    {
+      "scenarioId": "letter-type2-basic",
+      "scenario": {
+        "id": "letter-type2-basic",
+        "name": "Type 2 Letter Explanation (W)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "Can you explain what letter W means?",
+        "criteria": {
+          "mustInclude": [
+            "Type 2",
+            "shift",
+            "static",
+            "one hand"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "W is a Type 2 (Shift) letter",
+            "One hand shifts while the other stays static"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Letter W is a **Type 2 Shift** letter. In Type 2 letters, one hand shifts to an adjacent grid point while the other hand remains static.\n\n**Motion Pattern:**\n- Blue hand: static (stays at the same grid point)\n- Red hand: shifts with pro rotation\n\n**Position Transition:**\nW transitions from gamma to alpha position. It starts in gamma (hands at adjacent grid points forming a right angle) and ends in alpha (hands at opposite grid points).\n\n**Specific Example (Variation 0):**\n- Start: gamma position with blue hand at north, red hand at east\n- End: alpha position with blue hand still at north, red hand moved to south\n- The red hand shifts from east to south with pro rotation\n\nW has 16 total variations, each starting from a different gamma configuration and ending in the corresponding alpha position. The blue hand always stays static while the red hand performs the shifting motion with pro rotation.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01Hy4zEscHemGymuCZLwwBtZ",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "W"
+            },
+            "result": {
+              "explanation": "# Letter: W\n\n## Type Information\n**Type 2: Shift**\n\nOne hand shifts while the other stays static. Creates asymmetric movements.\n\n**Characteristics:**\n- One hand moves, one stays in place\n- Often used for transitions between symmetric and asymmetric positions\n- Uses Greek letters for most of this type\n\n## Motion Pattern\n- **Blue hand:** static\n- **Red hand:** pro (cw)\n\n## Variation 0 Details\n- **Start position:** gamma3\n- **End position:** alpha5\n- **Blue motion:** n → n\n- **Red motion:** e → s\n\n## All Variations (16 total)\n[0] gamma3 → alpha5\n[1] gamma5 → alpha7\n[2] gamma7 → alpha1\n[3] gamma1 → alpha3\n[4] gamma15 → alpha5\n... and 11 more",
+              "contextData": {
+                "type": "letter",
+                "letter": "W",
+                "letterType": 2,
+                "typeName": "Shift",
+                "startPosition": "gamma3",
+                "endPosition": "alpha5",
+                "blueMotion": {
+                  "motionType": "static",
+                  "startLoc": "n",
+                  "endLoc": "n",
+                  "propRotDir": "noRotation"
+                },
+                "redMotion": {
+                  "motionType": "pro",
+                  "startLoc": "e",
+                  "endLoc": "s",
+                  "propRotDir": "cw"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 9762
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 95
+        },
+        "overall": 99,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 4,
+            "total": 4
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 95,
+            "issues": [],
+            "length": 906,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:57:37.228Z"
+    },
+    {
+      "scenarioId": "letter-type3-naming",
+      "scenario": {
+        "id": "letter-type3-naming",
+        "name": "Type 3 Letter with Dash Suffix (Sigma dash)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "What is Sigma dash?",
+        "criteria": {
+          "mustInclude": [
+            "Type 3",
+            "Cross-Shift"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "Sigma dash (Σ-) is a Type 3 letter",
+            "The dash suffix indicates Type 3 (Cross-Shift)",
+            "One hand shifts, one hand dashes"
+          ],
+          "commonMistakes": [
+            "Confusing dash in the name with dash motion type"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "Sigma dash (Σ-) is a **Type 3 Cross-Shift** letter. \n\nIn this letter:\n- One hand **shifts** (moves to an adjacent grid point)\n- One hand **dashes** (moves to the opposite grid point)\n\n**Motion pattern:**\n- Blue hand: dashes from east to west\n- Red hand: shifts from east to south with pro rotation\n\n**Position transition:** The hands move from beta position (same grid point) to gamma position (adjacent grid points forming a right angle).\n\n**Important note:** \"Sigma dash\" refers to the letter name Σ-, not to a letter that uses dash motion. The \"-\" suffix is part of the naming convention for Type 3 Cross-Shift letters.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01J9J9uJaiCjWb6xZXaycd7h",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "Σ-"
+            },
+            "result": {
+              "explanation": "# Letter: Σ-\n\n## Type Information\n**Type 3: Cross-Shift**\n\nOne hand shifts and one hand dashes. Also called 'dash letters' due to the '-' suffix in their names.\n\n**Characteristics:**\n- Combines shift (90 degree) and dash (180 degree) motions\n- Named with a '-' suffix (e.g., 'W-', 'Sigma-')\n- IMPORTANT: 'Sigma dash' means the letter Sigma- (Type 3), not a letter with dash motion\n\n## Motion Pattern\n- **Blue hand:** dash\n- **Red hand:** pro (cw)\n\n## Variation 0 Details\n- **Start position:** beta3\n- **End position:** gamma13\n- **Blue motion:** e → w\n- **Red motion:** e → s\n\n## All Variations (16 total)\n[0] beta3 → gamma13\n[1] beta5 → gamma15\n[2] beta7 → gamma9\n[3] beta1 → gamma11\n[4] beta7 → gamma5\n... and 11 more",
+              "contextData": {
+                "type": "letter",
+                "letter": "Σ-",
+                "letterType": 3,
+                "typeName": "Cross-Shift",
+                "startPosition": "beta3",
+                "endPosition": "gamma13",
+                "blueMotion": {
+                  "motionType": "dash",
+                  "startLoc": "e",
+                  "endLoc": "w",
+                  "propRotDir": "noRotation"
+                },
+                "redMotion": {
+                  "motionType": "pro",
+                  "startLoc": "e",
+                  "endLoc": "s",
+                  "propRotDir": "cw"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 7331
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 622,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:57:45.064Z"
+    },
+    {
+      "scenarioId": "letter-type4-phi",
+      "scenario": {
+        "id": "letter-type4-phi",
+        "name": "Type 4 Letter Explanation (Phi)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "What is Phi?",
+        "criteria": {
+          "mustInclude": [
+            "Type 4",
+            "dash",
+            "static"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "Phi (Φ) is a Type 4 (Dash) letter",
+            "One hand dashes while the other stays static"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Φ (Phi) is a Type 4 Dash letter in TKA.\n\n**Motion Pattern:**\n- Blue hand: static (remains at its current grid point)\n- Red hand: dash (moves to the opposite grid point)\n\n**Position Transitions:**\nPhi transitions from beta position to alpha position. In the standard variation, it moves from beta3 to alpha7.\n\n**Type 4 Characteristics:**\nType 4 letters are called \"Dash\" letters because one hand performs a dash motion while the other stays static. There are only 3 letters in this type: Φ (Phi), Ψ (Psi), and Λ (Lambda).\n\nThe dash motion creates a dramatic position change, as the moving hand travels across the entire grid to reach the opposite point.",
+        "toolsCalled": [
+          {
+            "id": "toolu_011z7X6g6VDNXSW5W9ML4hHb",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "Phi"
+            },
+            "result": "Letter \"Phi\" not found in the TKA alphabet."
+          },
+          {
+            "id": "toolu_01Vw1PYv2ABsvVa8SQZ1Hq2g",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "Φ"
+            },
+            "result": {
+              "explanation": "# Letter: Φ\n\n## Type Information\n**Type 4: Dash**\n\nOne hand dashes (moves to opposite point) while the other stays static.\n\n**Characteristics:**\n- Creates dramatic position changes\n- Uses Greek letters Phi, Psi, Lambda\n- Only 3 letters in this type\n\n## Motion Pattern\n- **Blue hand:** static\n- **Red hand:** dash\n\n## Variation 0 Details\n- **Start position:** beta3\n- **End position:** alpha7\n- **Blue motion:** e → e\n- **Red motion:** e → w\n\n## All Variations (8 total)\n[0] beta3 → alpha7\n[1] beta1 → alpha5\n[2] beta7 → alpha3\n[3] beta5 → alpha1\n[4] beta3 → alpha3\n... and 3 more",
+              "contextData": {
+                "type": "letter",
+                "letter": "Φ",
+                "letterType": 4,
+                "typeName": "Dash",
+                "startPosition": "beta3",
+                "endPosition": "alpha7",
+                "blueMotion": {
+                  "motionType": "static",
+                  "startLoc": "e",
+                  "endLoc": "e",
+                  "propRotDir": "noRotation"
+                },
+                "redMotion": {
+                  "motionType": "dash",
+                  "startLoc": "e",
+                  "endLoc": "w",
+                  "propRotDir": "noRotation"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 9769
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_letter_explanation",
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 652,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:57:55.339Z"
+    },
+    {
+      "scenarioId": "letter-type5-phi-dash",
+      "scenario": {
+        "id": "letter-type5-phi-dash",
+        "name": "Type 5 Letter Explanation (Phi dash)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "Tell me about Phi dash.",
+        "criteria": {
+          "mustInclude": [
+            "Type 5",
+            "Dual-Dash",
+            "both hands"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "Phi dash (Φ-) is a Type 5 (Dual-Dash) letter",
+            "Both hands dash (move to opposite points)"
+          ],
+          "commonMistakes": [
+            "Confusing Type 5 with Type 1 because both have 'both hands moving'"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "Phi dash (Φ-) is a Type 5 Dual-Dash letter. In Type 5 letters, both hands dash simultaneously - each hand moves to the opposite grid point.\n\n**Motion Pattern:**\n- Blue hand: dashes from west to east\n- Red hand: dashes from east to west\n- Both hands move at the same time\n\n**Position Pattern:**\nPhi dash maintains alpha position throughout - the hands start at opposite points and end at opposite points. The specific variation shown starts at alpha3 (blue west, red east) and ends at alpha7 (blue east, red west).\n\n**Type 5 Characteristics:**\n- Only 3 letters total: Φ-, Ψ-, Λ-\n- Both hands always dash\n- Creates symmetric, dramatic movements\n- Uses the \"-\" suffix naming convention (like Type 3 letters)\n\nThe letter has 4 variations total, covering all possible alpha-to-alpha dash combinations.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01MaXGiUMh2bMXp8viZXMiW2",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "Φ-"
+            },
+            "result": {
+              "explanation": "# Letter: Φ-\n\n## Type Information\n**Type 5: Dual-Dash**\n\nBoth hands dash simultaneously (both move to opposite points).\n\n**Characteristics:**\n- Both hands move 180 degrees\n- Creates dramatic, symmetric movements\n- Named with '-' suffix like Type 3\n- Only 3 letters in this type\n\n## Motion Pattern\n- **Blue hand:** dash\n- **Red hand:** dash\n\n## Variation 0 Details\n- **Start position:** alpha3\n- **End position:** alpha7\n- **Blue motion:** w → e\n- **Red motion:** e → w\n\n## All Variations (4 total)\n[0] alpha3 → alpha7\n[1] alpha1 → alpha5\n[2] alpha7 → alpha3\n[3] alpha5 → alpha1",
+              "contextData": {
+                "type": "letter",
+                "letter": "Φ-",
+                "letterType": 5,
+                "typeName": "Dual-Dash",
+                "startPosition": "alpha3",
+                "endPosition": "alpha7",
+                "blueMotion": {
+                  "motionType": "dash",
+                  "startLoc": "w",
+                  "endLoc": "e",
+                  "propRotDir": "noRotation"
+                },
+                "redMotion": {
+                  "motionType": "dash",
+                  "startLoc": "e",
+                  "endLoc": "w",
+                  "propRotDir": "noRotation"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 8890
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 796,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:58:04.731Z"
+    },
+    {
+      "scenarioId": "letter-type6-alpha",
+      "scenario": {
+        "id": "letter-type6-alpha",
+        "name": "Type 6 Letter Explanation (lowercase alpha)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "What is lowercase alpha as a TKA letter?",
+        "criteria": {
+          "mustInclude": [
+            "Type 6",
+            "static",
+            "both hands"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "Lowercase alpha (α) is a Type 6 (Static) letter",
+            "Both hands stay stationary"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "Lowercase alpha (α) is a Type 6 Static letter in TKA.\n\n**Key characteristics:**\n- Both hands remain stationary at their current grid points\n- No hand movement occurs during this beat\n- The hands maintain an alpha position (opposite grid points)\n- Props may still rotate, but the hands don't change location\n\n**Motion pattern:**\n- Blue hand: static\n- Red hand: static\n\n**Variations:** Alpha has 4 variations, each starting and ending at different alpha positions on the grid (alpha1, alpha3, alpha5, alpha7).\n\nAlpha serves as a \"breathing space\" in sequences - a moment where the hands pause while maintaining the alpha position relationship.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01448BoKoJLzUr3eX8GmBWoC",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "α"
+            },
+            "result": {
+              "explanation": "# Letter: α\n\n## Type Information\n**Type 6: Static**\n\nBoth hands remain stationary. The props may still rotate, but hands don't change position.\n\n**Characteristics:**\n- No hand movement\n- Focus is entirely on prop rotation\n- Uses lowercase Greek letters\n- Good for 'breathing space' in sequences\n\n## Motion Pattern\n- **Blue hand:** static\n- **Red hand:** static\n\n## Variation 0 Details\n- **Start position:** alpha3\n- **End position:** alpha3\n- **Blue motion:** w → w\n- **Red motion:** e → e\n\n## All Variations (4 total)\n[0] alpha3 → alpha3\n[1] alpha5 → alpha5\n[2] alpha1 → alpha1\n[3] alpha7 → alpha7",
+              "contextData": {
+                "type": "letter",
+                "letter": "α",
+                "letterType": 6,
+                "typeName": "Static",
+                "startPosition": "alpha3",
+                "endPosition": "alpha3",
+                "blueMotion": {
+                  "motionType": "static",
+                  "startLoc": "w",
+                  "endLoc": "w",
+                  "propRotDir": "noRotation"
+                },
+                "redMotion": {
+                  "motionType": "static",
+                  "startLoc": "e",
+                  "endLoc": "e",
+                  "propRotDir": "noRotation"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 7398
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 641,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:58:12.638Z"
+    },
+    {
+      "scenarioId": "term-alpha-position",
+      "scenario": {
+        "id": "term-alpha-position",
+        "name": "Alpha Position Definition",
+        "category": "term-definition",
+        "userLevel": 1,
+        "question": "What does alpha mean?",
+        "criteria": {
+          "mustInclude": [
+            "position",
+            "opposite"
+          ],
+          "mustNotInclude": [
+            "180 degrees",
+            "perpendicular",
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition",
+            "get_position_info"
+          ],
+          "keyFacts": [
+            "Alpha is a position type",
+            "Hands are at opposite grid points"
+          ],
+          "commonMistakes": [
+            "Using 180 degrees instead of opposite points"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Alpha is a position where the two hands are at opposite grid points. \n\nIn the TKA grid system, alpha means your hands are positioned at points directly across from each other - for example, one hand at North and the other at South, or one hand at East and the other at West.\n\nAlpha is one of the three fundamental position types in TKA, along with beta (hands at the same grid point) and gamma (hands at adjacent grid points forming a right angle).",
+        "toolsCalled": [
+          {
+            "id": "toolu_01V6yegtnEGQMBZrxE44htdj",
+            "name": "get_term_definition",
+            "input": {
+              "term": "alpha"
+            },
+            "result": "# Alpha\n\n**Definition:** A position where the two hands are at opposite grid points (180 degrees apart).\n\n**Examples:**\n- alpha1: hands at N and S\n- alpha3: hands at E and W\n\n**Related terms:** beta, gamma, position\n\n**Category:** position"
+          }
+        ],
+        "latencyMs": 5979
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 50,
+          "conciseness": 100
+        },
+        "overall": 93,
+        "issues": [
+          {
+            "type": "missing-tool",
+            "severity": "warning",
+            "message": "Expected tool not called: \"get_position_info\""
+          }
+        ],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 50,
+            "issues": [
+              {
+                "type": "missing-tool",
+                "severity": "warning",
+                "message": "Expected tool not called: \"get_position_info\""
+              }
+            ],
+            "found": 1,
+            "total": 2,
+            "called": [
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 448,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:58:19.129Z"
+    },
+    {
+      "scenarioId": "term-beta-position",
+      "scenario": {
+        "id": "term-beta-position",
+        "name": "Beta Position Definition",
+        "category": "term-definition",
+        "userLevel": 1,
+        "question": "What is beta in TKA?",
+        "criteria": {
+          "mustInclude": [
+            "position",
+            "same point"
+          ],
+          "mustNotInclude": [
+            "0 degrees",
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition",
+            "get_position_info"
+          ],
+          "keyFacts": [
+            "Beta is a position type",
+            "Both hands are at the same grid point"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Beta is a position in TKA where both hands are at the same grid point. This means the hands are at 0 degrees apart from each other.\n\nExamples of beta positions include:\n- beta1: both hands at N (north)\n- beta5: both hands at NE (northeast)\n\nBeta is one of the three fundamental position types in TKA, along with alpha (hands at opposite grid points) and gamma (hands at adjacent grid points forming a right angle).",
+        "toolsCalled": [
+          {
+            "id": "toolu_01EvvRSJVX9UARmGrANQEY7t",
+            "name": "get_term_definition",
+            "input": {
+              "term": "beta"
+            },
+            "result": "# Beta\n\n**Definition:** A position where both hands are at the same grid point (0 degrees apart).\n\n**Examples:**\n- beta1: both hands at N\n- beta5: both hands at NE\n\n**Related terms:** alpha, gamma, position\n\n**Category:** position"
+          }
+        ],
+        "latencyMs": 6222
+      },
+      "evaluation": {
+        "passed": false,
+        "scores": {
+          "termAccuracy": 50,
+          "levelAppropriate": 75,
+          "toolUsage": 50,
+          "conciseness": 100
+        },
+        "overall": 66,
+        "issues": [
+          {
+            "type": "missing-term",
+            "severity": "error",
+            "message": "Missing required term: \"same point\""
+          },
+          {
+            "type": "forbidden-term",
+            "severity": "error",
+            "message": "Contains forbidden term: \"0 degrees\""
+          },
+          {
+            "type": "missing-tool",
+            "severity": "warning",
+            "message": "Expected tool not called: \"get_position_info\""
+          }
+        ],
+        "recommendation": "fix-required",
+        "details": {
+          "termAccuracy": {
+            "score": 50,
+            "issues": [
+              {
+                "type": "missing-term",
+                "severity": "error",
+                "message": "Missing required term: \"same point\""
+              }
+            ],
+            "found": 1,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 75,
+            "issues": [
+              {
+                "type": "forbidden-term",
+                "severity": "error",
+                "message": "Contains forbidden term: \"0 degrees\""
+              }
+            ],
+            "violations": 1
+          },
+          "toolUsage": {
+            "score": 50,
+            "issues": [
+              {
+                "type": "missing-tool",
+                "severity": "warning",
+                "message": "Expected tool not called: \"get_position_info\""
+              }
+            ],
+            "found": 1,
+            "total": 2,
+            "called": [
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 414,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:58:25.859Z"
+    },
+    {
+      "scenarioId": "term-gamma-position",
+      "scenario": {
+        "id": "term-gamma-position",
+        "name": "Gamma Position Definition",
+        "category": "term-definition",
+        "userLevel": 1,
+        "question": "What is gamma?",
+        "criteria": {
+          "mustInclude": [
+            "position",
+            "right angle"
+          ],
+          "mustNotInclude": [
+            "90 degrees",
+            "perpendicular",
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition",
+            "get_position_info"
+          ],
+          "keyFacts": [
+            "Gamma is a position type",
+            "Hands form a right angle on the grid"
+          ],
+          "commonMistakes": [
+            "Using perpendicular instead of right angle"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Gamma is a position where the hands form a right angle by being placed at adjacent grid points.\n\nIn gamma position, your hands are positioned at two grid points that are next to each other on the grid, creating a right angle between them. For example, one hand might be at the North point while the other is at the East point, or one at North and the other at Northwest.\n\nThis is one of the three fundamental position types in TKA:\n- **Alpha:** Hands at opposite grid points\n- **Beta:** Hands at the same grid point  \n- **Gamma:** Hands at adjacent grid points (right angle)",
+        "toolsCalled": [
+          {
+            "id": "toolu_018cob4BE9MJX5MHrHJXb8aV",
+            "name": "get_term_definition",
+            "input": {
+              "term": "gamma"
+            },
+            "result": "# Gamma\n\n**Definition:** A position where the hands form a right angle (90 degrees apart on adjacent grid points).\n\n**Examples:**\n- gamma1: hands at N and E\n- gamma5: hands at N and NW\n\n**Related terms:** alpha, beta, position\n\n**Category:** position"
+          }
+        ],
+        "latencyMs": 6732
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 50,
+          "conciseness": 100
+        },
+        "overall": 93,
+        "issues": [
+          {
+            "type": "missing-tool",
+            "severity": "warning",
+            "message": "Expected tool not called: \"get_position_info\""
+          }
+        ],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 50,
+            "issues": [
+              {
+                "type": "missing-tool",
+                "severity": "warning",
+                "message": "Expected tool not called: \"get_position_info\""
+              }
+            ],
+            "found": 1,
+            "total": 2,
+            "called": [
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 574,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:58:33.101Z"
+    },
+    {
+      "scenarioId": "term-shift-motion",
+      "scenario": {
+        "id": "term-shift-motion",
+        "name": "Shift Motion Definition",
+        "category": "term-definition",
+        "userLevel": 1,
+        "question": "What does shift mean?",
+        "criteria": {
+          "mustInclude": [
+            "motion",
+            "adjacent"
+          ],
+          "mustNotInclude": [
+            "90 degrees",
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition"
+          ],
+          "keyFacts": [
+            "Shift is a motion type",
+            "Hand moves to an adjacent grid point"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "**Shift** is a motion type where the hand moves to an adjacent grid point.\n\nAdjacent grid points are connected by 90-degree movements on the grid. For example:\n- Moving from North to East is a shift\n- Moving from Northeast to North is a shift\n- Moving from South to Southwest is a shift\n\nShift is one of three motion types in TKA:\n- **Shift:** Move to adjacent grid point\n- **Dash:** Move to opposite grid point  \n- **Static:** Remain at current grid point\n\nType 1 (Dual-Shift) and Type 2 (Shift) letters use shift motions.",
+        "toolsCalled": [
+          {
+            "id": "toolu_013ob1pSsXHhXf9taQM1tLrv",
+            "name": "get_term_definition",
+            "input": {
+              "term": "shift"
+            },
+            "result": "# Shift\n\n**Definition:** A motion type where the hand moves to an adjacent grid point (90 degree movement).\n\n**Examples:**\n- N to E is a shift\n- NE to N is a shift\n- Type 1 and Type 2 letters use shift\n\n**Related terms:** static, dash, motion\n\n**Category:** motion"
+          }
+        ],
+        "latencyMs": 5925
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 523,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:58:39.532Z"
+    },
+    {
+      "scenarioId": "term-dash-motion",
+      "scenario": {
+        "id": "term-dash-motion",
+        "name": "Dash Motion Definition",
+        "category": "term-definition",
+        "userLevel": 1,
+        "question": "What is a dash in TKA?",
+        "criteria": {
+          "mustInclude": [
+            "motion",
+            "opposite"
+          ],
+          "mustNotInclude": [
+            "180 degrees",
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition"
+          ],
+          "keyFacts": [
+            "Dash is a motion type",
+            "Hand moves to the opposite grid point"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "A **dash** is a motion type where the hand moves to the opposite grid point. \n\nFor example:\n- From North to South\n- From Northeast to Southwest  \n- From East to West\n\nDash is one of the three motion types in TKA:\n- **Static:** Hand stays at the same grid point\n- **Shift:** Hand moves to an adjacent grid point\n- **Dash:** Hand moves to the opposite grid point\n\nLetters that use dash motions include:\n- **Type 4 (Dash):** One hand dashes, one hand stays static\n- **Type 5 (Dual-Dash):** Both hands dash",
+        "toolsCalled": [
+          {
+            "id": "toolu_01R36cYiDXWuXxDTpCZtVpgw",
+            "name": "get_term_definition",
+            "input": {
+              "term": "dash"
+            },
+            "result": "# Dash\n\n**Definition:** A motion type where the hand moves to the opposite grid point (180 degree movement).\n\n**Examples:**\n- N to S is a dash\n- NE to SW is a dash\n- Type 4 and Type 5 letters use dash\n\n**Related terms:** static, shift, motion\n\n**Category:** motion"
+          }
+        ],
+        "latencyMs": 6455
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 502,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:58:46.490Z"
+    },
+    {
+      "scenarioId": "term-pro-rotation",
+      "scenario": {
+        "id": "term-pro-rotation",
+        "name": "Pro Rotation Definition",
+        "category": "term-definition",
+        "userLevel": 1,
+        "question": "What's pro rotation?",
+        "criteria": {
+          "mustInclude": [
+            "rotation",
+            "prop",
+            "same direction"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition"
+          ],
+          "keyFacts": [
+            "Pro (prospin) is a rotation direction",
+            "The prop rotates with the hand's path direction"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Pro rotation (also called \"prospin\") is when the prop rotates in the same direction as the hand's travel.\n\nFor example, if your hand moves clockwise around a circular path, the prop also rotates clockwise. It's similar to how a wheel rolls forward - the wheel's rotation matches its direction of travel.\n\nThe opposite is anti rotation, where the prop spins against the direction of hand movement.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01AbzttiLG7AG7VMBTqAxss5",
+            "name": "get_term_definition",
+            "input": {
+              "term": "pro"
+            },
+            "result": "# Pro\n\n**Definition:** A rotation direction where the prop spins WITH the direction of hand travel. Also called 'prospin'.\n\n**Examples:**\n- If hand moves clockwise, prop rotates clockwise\n- Like a wheel rolling forward\n\n**Related terms:** anti, rotation, spin\n\n**Category:** rotation"
+          }
+        ],
+        "latencyMs": 6285
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 396,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:58:53.287Z"
+    },
+    {
+      "scenarioId": "term-anti-rotation",
+      "scenario": {
+        "id": "term-anti-rotation",
+        "name": "Anti Rotation Definition",
+        "category": "term-definition",
+        "userLevel": 1,
+        "question": "Explain antispin.",
+        "criteria": {
+          "mustInclude": [
+            "rotation",
+            "prop",
+            "opposite",
+            "against"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition"
+          ],
+          "keyFacts": [
+            "Anti (antispin) is a rotation direction",
+            "The prop rotates against the hand's path direction"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "**Antispin** (also called \"anti\") is a rotation direction where the prop spins against the direction of hand travel.\n\n**How it works:**\n- If your hand moves clockwise, the prop rotates counter-clockwise\n- If your hand moves counter-clockwise, the prop rotates clockwise\n\n**Visual result:** Antispin creates \"petal\" patterns as the prop moves.\n\n**Contrast with prospin:** In prospin, the prop rotates in the same direction as hand travel. In antispin, they rotate in opposite directions.\n\nIn TKA notation, antispin is one of the two fundamental rotation types that can be applied to any letter's motion.",
+        "toolsCalled": [
+          {
+            "id": "toolu_017NbSnMtjJdaBh4FfwzkwUt",
+            "name": "get_term_definition",
+            "input": {
+              "term": "antispin"
+            },
+            "result": "Term \"antispin\" not found. Did you mean: anti?"
+          },
+          {
+            "id": "toolu_01R92vH7U1xzhNMYEMdTSnqt",
+            "name": "get_term_definition",
+            "input": {
+              "term": "anti"
+            },
+            "result": "# Anti\n\n**Definition:** A rotation direction where the prop spins AGAINST the direction of hand travel. Also called 'antispin'.\n\n**Examples:**\n- If hand moves clockwise, prop rotates counter-clockwise\n- Creates 'petal' patterns\n\n**Related terms:** pro, rotation, spin\n\n**Category:** rotation"
+          }
+        ],
+        "latencyMs": 14272
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 4,
+            "total": 4
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_term_definition",
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 602,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:59:08.065Z"
+    },
+    {
+      "scenarioId": "compare-type1-type3",
+      "scenario": {
+        "id": "compare-type1-type3",
+        "name": "Compare Type 1 and Type 3",
+        "category": "letter-comparison",
+        "userLevel": 1,
+        "question": "What's the difference between Type 1 and Type 3 letters?",
+        "criteria": {
+          "mustInclude": [
+            "Type 1",
+            "Type 3",
+            "shift"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "list_letters_by_type"
+          ],
+          "keyFacts": [
+            "Type 1: Both hands shift",
+            "Type 3: One hand shifts, one dashes",
+            "Both types have both hands moving"
+          ],
+          "commonMistakes": [
+            "Saying Type 1 has both hands moving as the distinguishing feature"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "The key difference between Type 1 and Type 3 letters is their motion pattern:\n\n**Type 1 (Dual-Shift):**\n- Both hands shift (move to adjacent grid points)\n- 22 letters: A through V\n- Both hands make the same type of motion\n\n**Type 3 (Cross-Shift):**\n- One hand shifts, one hand dashes (moves to opposite grid point)\n- 8 letters: W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-\n- Each hand makes a different type of motion\n- Named with the \"-\" suffix\n\nThe fundamental distinction is that Type 1 has both hands performing shift motions, while Type 3 combines different motion types - one shift and one dash. This creates different movement patterns and transitions between positions.\n\nBoth types have both hands moving, but Type 1 uses uniform motion (both shift) while Type 3 uses mixed motion (shift + dash).",
+        "toolsCalled": [
+          {
+            "id": "toolu_01PrQGBUaEbz59gLKZV8Faq8",
+            "name": "list_letters_by_type",
+            "input": {
+              "type": 1
+            },
+            "result": {
+              "explanation": "# Type 1: Dual-Shift\n\n**Description:** Both hands shift (move to adjacent grid points). This is the most common letter type.\n\n**Motion Pattern:**\n- Blue hand: shift\n- Red hand: shift\n\n\n**Characteristics:**\n- Both hands move 90 degrees on the grid\n- Creates smooth, flowing transitions\n- 22 letters - the largest type\n\n**Letters (22 total):**\n- **A** (8 variations)\n- **B** (8 variations)\n- **C** (16 variations)\n- **D** (8 variations)\n- **E** (8 variations)\n- **F** (16 variations)\n- **G** (8 variations)\n- **H** (8 variations)\n- **I** (16 variations)\n- **J** (8 variations)\n- **K** (8 variations)\n- **L** (16 variations)\n- **M** (8 variations)\n- **N** (8 variations)\n- **O** (16 variations)\n- **P** (8 variations)\n- **Q** (8 variations)\n- **R** (16 variations)\n- **S** (16 variations)\n- **T** (16 variations)\n- **U** (16 variations)\n- **V** (16 variations)\n\n**All Letters:** Pictographs shown in context panel.",
+              "contextData": {
+                "type": "typeList",
+                "typeNumber": 1,
+                "typeName": "Dual-Shift",
+                "description": "Both hands shift (move to adjacent grid points). This is the most common letter type.",
+                "exampleLetters": [
+                  "A",
+                  "B",
+                  "C",
+                  "D",
+                  "E",
+                  "F",
+                  "G",
+                  "H",
+                  "I",
+                  "J",
+                  "K",
+                  "L",
+                  "M",
+                  "N",
+                  "O",
+                  "P",
+                  "Q",
+                  "R",
+                  "S",
+                  "T",
+                  "U",
+                  "V"
+                ],
+                "allLetters": [
+                  "A",
+                  "B",
+                  "C",
+                  "D",
+                  "E",
+                  "F",
+                  "G",
+                  "H",
+                  "I",
+                  "J",
+                  "K",
+                  "L",
+                  "M",
+                  "N",
+                  "O",
+                  "P",
+                  "Q",
+                  "R",
+                  "S",
+                  "T",
+                  "U",
+                  "V"
+                ],
+                "motionPattern": {
+                  "blueMotion": "shift",
+                  "redMotion": "shift"
+                }
+              }
+            }
+          },
+          {
+            "id": "toolu_014cquXocELyCi2tWE4MPLMi",
+            "name": "list_letters_by_type",
+            "input": {
+              "type": 3
+            },
+            "result": {
+              "explanation": "# Type 3: Cross-Shift\n\n**Description:** One hand shifts and one hand dashes. Also called 'dash letters' due to the '-' suffix in their names.\n\n**Motion Pattern:**\n- Blue hand: shift OR dash\n- Red hand: dash OR shift\n- Note: One hand shifts, one dashes\n\n**Characteristics:**\n- Combines shift (90 degree) and dash (180 degree) motions\n- Named with a '-' suffix (e.g., 'W-', 'Sigma-')\n- IMPORTANT: 'Sigma dash' means the letter Sigma- (Type 3), not a letter with dash motion\n\n**Letters (8 total):**\n- **W-** (16 variations)\n- **X-** (16 variations)\n- **Y-** (16 variations)\n- **Z-** (16 variations)\n- **Σ-** (16 variations)\n- **Δ-** (16 variations)\n- **Θ-** (16 variations)\n- **Ω-** (16 variations)\n\n**All Letters:** Pictographs shown in context panel.",
+              "contextData": {
+                "type": "typeList",
+                "typeNumber": 3,
+                "typeName": "Cross-Shift",
+                "description": "One hand shifts and one hand dashes. Also called 'dash letters' due to the '-' suffix in their names.",
+                "exampleLetters": [
+                  "W-",
+                  "X-",
+                  "Y-",
+                  "Z-",
+                  "Σ-",
+                  "Δ-",
+                  "Θ-",
+                  "Ω-"
+                ],
+                "allLetters": [
+                  "W-",
+                  "X-",
+                  "Y-",
+                  "Z-",
+                  "Σ-",
+                  "Δ-",
+                  "Θ-",
+                  "Ω-"
+                ],
+                "motionPattern": {
+                  "blueMotion": "shift OR dash",
+                  "redMotion": "dash OR shift"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 15044
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "list_letters_by_type",
+              "list_letters_by_type"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 790,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:59:23.617Z"
+    },
+    {
+      "scenarioId": "compare-alpha-beta",
+      "scenario": {
+        "id": "compare-alpha-beta",
+        "name": "Compare Alpha and Beta Positions",
+        "category": "letter-comparison",
+        "userLevel": 1,
+        "question": "How are alpha and beta different?",
+        "criteria": {
+          "mustInclude": [
+            "position",
+            "opposite",
+            "same"
+          ],
+          "mustNotInclude": [
+            "degrees",
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_position_info"
+          ],
+          "keyFacts": [
+            "Alpha: Hands at opposite points",
+            "Beta: Hands at the same point"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Alpha and beta positions differ in hand placement:\n\n**Alpha (α):** Hands are at opposite grid points. The hands form a straight line through the center of the grid. Examples include one hand at North while the other is at South, or one at Northeast while the other is at Southwest.\n\n**Beta (β):** Both hands are at the same grid point. Both props occupy the same location on the grid. Examples include both hands at North, or both hands at Northeast.\n\nThe key difference is spatial relationship: alpha positions have maximum separation between hands (opposite points), while beta positions have zero separation (same point).",
+        "toolsCalled": [
+          {
+            "id": "toolu_01FHbBY5hU8DD36yhdYBR95b",
+            "name": "get_position_info",
+            "input": {
+              "position": "alpha"
+            },
+            "result": "# Alpha (α)\n\n**Angle:** 180° between hands\n\n**Description:** Hands are at opposite grid points, forming a straight line through the center.\n\n**Grid:** Examples: N/S, E/W, NE/SW, NW/SE.\n\n**Examples:**\n- alpha1: N and S\n- alpha3: E and W\n- alpha5: NE and SW\n\n**Level:** 1\n\n**Usage:** 144 start positions, 144 end positions"
+          },
+          {
+            "id": "toolu_012sByLJBfWv1qjs68xmgPVh",
+            "name": "get_position_info",
+            "input": {
+              "position": "beta"
+            },
+            "result": "# Beta (β)\n\n**Angle:** 0° between hands\n\n**Description:** Both hands are at the same grid point.\n\n**Grid:** Both props share a single location.\n\n**Examples:**\n- beta1: Both at N\n- beta5: Both at NE\n\n**Level:** 1\n\n**Usage:** 144 start positions, 144 end positions"
+          }
+        ],
+        "latencyMs": 7542
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_position_info",
+              "get_position_info"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 624,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:59:31.672Z"
+    },
+    {
+      "scenarioId": "compare-shift-dash-motion",
+      "scenario": {
+        "id": "compare-shift-dash-motion",
+        "name": "Compare Shift and Dash Motions",
+        "category": "letter-comparison",
+        "userLevel": 1,
+        "question": "What's the difference between shift and dash?",
+        "criteria": {
+          "mustInclude": [
+            "motion",
+            "adjacent",
+            "opposite"
+          ],
+          "mustNotInclude": [
+            "degrees",
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition"
+          ],
+          "keyFacts": [
+            "Shift: Hand moves to adjacent grid point",
+            "Dash: Hand moves to opposite grid point"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "The difference between shift and dash is the distance the hand moves on the grid:\n\n**Shift:** The hand moves to an adjacent grid point. This means moving from one grid point to a neighboring point that is directly connected to it.\n\n**Dash:** The hand moves to the opposite grid point. This means moving from one grid point to the point directly across from it on the grid.\n\n**Examples:**\n- Moving from North to East = shift (adjacent points)\n- Moving from North to South = dash (opposite points)\n- Moving from Northeast to Northwest = shift (adjacent points)\n- Moving from Northeast to Southwest = dash (opposite points)\n\n**In TKA letters:**\n- Types 1 and 2 use shift motions\n- Types 4 and 5 use dash motions\n- Type 3 combines both (one hand shifts, one hand dashes)",
+        "toolsCalled": [
+          {
+            "id": "toolu_01AdgpacBHrnB4D6DPtLQ2rc",
+            "name": "get_term_definition",
+            "input": {
+              "term": "shift"
+            },
+            "result": "# Shift\n\n**Definition:** A motion type where the hand moves to an adjacent grid point (90 degree movement).\n\n**Examples:**\n- N to E is a shift\n- NE to N is a shift\n- Type 1 and Type 2 letters use shift\n\n**Related terms:** static, dash, motion\n\n**Category:** motion"
+          },
+          {
+            "id": "toolu_01R1spKkAGBgYNLk5yHMwRFr",
+            "name": "get_term_definition",
+            "input": {
+              "term": "dash"
+            },
+            "result": "# Dash\n\n**Definition:** A motion type where the hand moves to the opposite grid point (180 degree movement).\n\n**Examples:**\n- N to S is a dash\n- NE to SW is a dash\n- Type 4 and Type 5 letters use dash\n\n**Related terms:** static, shift, motion\n\n**Category:** motion"
+          }
+        ],
+        "latencyMs": 14004
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_term_definition",
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 766,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:59:46.185Z"
+    },
+    {
+      "scenarioId": "compare-pro-anti",
+      "scenario": {
+        "id": "compare-pro-anti",
+        "name": "Compare Pro and Anti Rotation",
+        "category": "letter-comparison",
+        "userLevel": 1,
+        "question": "Pro vs anti - what's different?",
+        "criteria": {
+          "mustInclude": [
+            "rotation",
+            "prop",
+            "direction"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition"
+          ],
+          "keyFacts": [
+            "Pro: Prop rotates with the hand path",
+            "Anti: Prop rotates against the hand path"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Pro and anti describe opposite rotation directions relative to hand movement:\n\n**Pro (prospin):** The prop rotates in the same direction as the hand travels. If your hand moves clockwise around the grid, the prop also rotates clockwise. This creates a rolling motion, like a wheel rolling forward.\n\n**Anti (antispin):** The prop rotates opposite to the hand's travel direction. If your hand moves clockwise, the prop rotates counter-clockwise. This creates petal-like patterns.\n\nThe key difference is the relationship between hand movement and prop rotation - pro maintains the same direction for both, while anti reverses the prop's rotation relative to the hand's path.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01T2RxFRYatSEQKd4VbE6FHC",
+            "name": "get_term_definition",
+            "input": {
+              "term": "pro"
+            },
+            "result": "# Pro\n\n**Definition:** A rotation direction where the prop spins WITH the direction of hand travel. Also called 'prospin'.\n\n**Examples:**\n- If hand moves clockwise, prop rotates clockwise\n- Like a wheel rolling forward\n\n**Related terms:** anti, rotation, spin\n\n**Category:** rotation"
+          },
+          {
+            "id": "toolu_01GQZwgsnpkXjVURbjGPyXNQ",
+            "name": "get_term_definition",
+            "input": {
+              "term": "anti"
+            },
+            "result": "# Anti\n\n**Definition:** A rotation direction where the prop spins AGAINST the direction of hand travel. Also called 'antispin'.\n\n**Examples:**\n- If hand moves clockwise, prop rotates counter-clockwise\n- Creates 'petal' patterns\n\n**Related terms:** pro, rotation, spin\n\n**Category:** rotation"
+          }
+        ],
+        "latencyMs": 10948
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_term_definition",
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 671,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:59:57.646Z"
+    },
+    {
+      "scenarioId": "misconception-type1-both-move",
+      "scenario": {
+        "id": "misconception-type1-both-move",
+        "name": "Misconception: Type 1 = Both Hands Move",
+        "category": "misconception-correction",
+        "userLevel": 1,
+        "question": "Type 1 is when both hands move, right?",
+        "criteria": {
+          "mustInclude": [
+            "shift"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "list_letters_by_type"
+          ],
+          "keyFacts": [
+            "MUST correct this misconception",
+            "Type 1 is when both hands SHIFT",
+            "Types 3 and 5 also have both hands moving"
+          ],
+          "commonMistakes": [
+            "Agreeing that Type 1 = both hands move"
+          ]
+        },
+        "difficulty": "hard"
+      },
+      "response": {
+        "explanation": "No, that's incorrect. Type 1 is when both hands **shift**.\n\nMultiple letter types have both hands moving:\n- **Type 1:** Both hands shift\n- **Type 3:** Both hands move (one shifts, one dashes)  \n- **Type 5:** Both hands dash\n\nWhat distinguishes Type 1 is the specific motion type: both hands shift to adjacent grid points. Simply saying \"both hands move\" doesn't capture what makes Type 1 unique.",
+        "toolsCalled": [],
+        "latencyMs": 4047
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 0,
+          "conciseness": 100
+        },
+        "overall": 85,
+        "issues": [
+          {
+            "type": "missing-tool",
+            "severity": "warning",
+            "message": "Expected tool not called: \"list_letters_by_type\""
+          }
+        ],
+        "recommendation": "good",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 0,
+            "issues": [
+              {
+                "type": "missing-tool",
+                "severity": "warning",
+                "message": "Expected tool not called: \"list_letters_by_type\""
+              }
+            ],
+            "found": 0,
+            "total": 1,
+            "called": []
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 395,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:00:02.198Z"
+    },
+    {
+      "scenarioId": "misconception-type-letters",
+      "scenario": {
+        "id": "misconception-type-letters",
+        "name": "Misconception: Types are Lettered",
+        "category": "misconception-correction",
+        "userLevel": 1,
+        "question": "Is A a Type A letter?",
+        "criteria": {
+          "mustInclude": [
+            "Type 1",
+            "numbered"
+          ],
+          "mustNotInclude": [
+            "Type A"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "MUST correct: Types are numbered 1-6, not lettered",
+            "A is a Type 1 letter"
+          ],
+          "commonMistakes": [
+            "Accepting Type A terminology"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "No, A is not a \"Type A\" letter. The correct terminology is that **A is a Type 1 letter**.\n\nThe 6 letter types in TKA are numbered 1-6, not lettered:\n\n- **Type 1:** Dual-Shift (both hands shift) - includes letters A through V\n- **Type 2:** Shift (one shifts, one static)\n- **Type 3:** Cross-Shift (one shifts, one dashes)\n- **Type 4:** Dash (one dashes, one static)\n- **Type 5:** Dual-Dash (both hands dash)\n- **Type 6:** Static (both hands stationary)\n\nLetter A specifically is a Type 1 Dual-Shift letter where both hands shift between grid points.",
+        "toolsCalled": [],
+        "latencyMs": 4462
+      },
+      "evaluation": {
+        "passed": false,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 75,
+          "toolUsage": 0,
+          "conciseness": 100
+        },
+        "overall": 76,
+        "issues": [
+          {
+            "type": "forbidden-term",
+            "severity": "error",
+            "message": "Contains forbidden term: \"Type A\""
+          },
+          {
+            "type": "missing-tool",
+            "severity": "warning",
+            "message": "Expected tool not called: \"get_letter_explanation\""
+          }
+        ],
+        "recommendation": "fix-required",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 75,
+            "issues": [
+              {
+                "type": "forbidden-term",
+                "severity": "error",
+                "message": "Contains forbidden term: \"Type A\""
+              }
+            ],
+            "violations": 1
+          },
+          "toolUsage": {
+            "score": 0,
+            "issues": [
+              {
+                "type": "missing-tool",
+                "severity": "warning",
+                "message": "Expected tool not called: \"get_letter_explanation\""
+              }
+            ],
+            "found": 0,
+            "total": 1,
+            "called": []
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 548,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:00:07.170Z"
+    },
+    {
+      "scenarioId": "misconception-dash-name-vs-motion",
+      "scenario": {
+        "id": "misconception-dash-name-vs-motion",
+        "name": "Misconception: W-dash means W with Dash Motion",
+        "category": "misconception-correction",
+        "userLevel": 1,
+        "question": "Is W dash the letter W but with a dash motion?",
+        "criteria": {
+          "mustInclude": [
+            "Type 3",
+            "naming",
+            "convention"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation",
+            "list_letters_by_type"
+          ],
+          "keyFacts": [
+            "MUST correct this misconception",
+            "W- is a separate letter (Type 3)",
+            "The dash suffix is a naming convention, not a modifier"
+          ],
+          "commonMistakes": [
+            "Agreeing that W- is W with dash motion"
+          ]
+        },
+        "difficulty": "hard"
+      },
+      "response": {
+        "explanation": "No, \"W dash\" (W-) is not the letter W with a dash motion added. This is a common misconception about the \"-\" suffix.The \"-\" suffix in \"W-\" (W dash) is a naming convention that indicates a different letter type entirely:\n\n- **W** is a Type 2 (Shift) letter: one hand shifts, one hand stays static\n- **W-** is a Type 3 (Cross-Shift) letter: one hand shifts, one hand dashes\n\nBoth letters have the red hand performing a pro shift motion, but the blue hand behaves completely differently:\n- In W: blue hand remains static\n- In W-: blue hand performs a dash motion\n\nSo W- is not W \"with dash added\" - it's a separate letter with its own distinct motion pattern where both hands move (one shifting, one dashing).",
+        "toolsCalled": [
+          {
+            "id": "toolu_013jjMi67kKLv7jywXpUsu3Q",
+            "name": "compare_letters",
+            "input": {
+              "letter1": "W",
+              "letter2": "W-"
+            },
+            "result": "# Comparison: W vs W-\n\n## At a Glance\n| Property | W | W- |\n|----------|------------|------------|\n| Type | 2 (Shift) | 3 (Cross-Shift) |\n| Blue motion | static | dash |\n| Red motion | pro | pro |\n| Variations | 16 | 16 |\n\n## Type Descriptions\n- **W:** One hand shifts while the other stays static. Creates asymmetric movements.\n- **W-:** One hand shifts and one hand dashes. Also called 'dash letters' due to the '-' suffix in their names."
+          }
+        ],
+        "latencyMs": 11125
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 0,
+          "conciseness": 100
+        },
+        "overall": 85,
+        "issues": [
+          {
+            "type": "missing-tool",
+            "severity": "warning",
+            "message": "Expected tool not called: \"get_letter_explanation\""
+          },
+          {
+            "type": "missing-tool",
+            "severity": "warning",
+            "message": "Expected tool not called: \"list_letters_by_type\""
+          }
+        ],
+        "recommendation": "good",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 0,
+            "issues": [
+              {
+                "type": "missing-tool",
+                "severity": "warning",
+                "message": "Expected tool not called: \"get_letter_explanation\""
+              },
+              {
+                "type": "missing-tool",
+                "severity": "warning",
+                "message": "Expected tool not called: \"list_letters_by_type\""
+              }
+            ],
+            "found": 0,
+            "total": 2,
+            "called": [
+              "compare_letters"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 706,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:00:18.806Z"
+    },
+    {
+      "scenarioId": "misconception-position-equals-letter",
+      "scenario": {
+        "id": "misconception-position-equals-letter",
+        "name": "Misconception: Alpha is a Letter",
+        "category": "misconception-correction",
+        "userLevel": 1,
+        "question": "How do I do the alpha letter?",
+        "criteria": {
+          "mustInclude": [
+            "position",
+            "Type 6"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition",
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "Should clarify alpha has two meanings",
+            "Alpha (position): Hands at opposite points",
+            "α (lowercase letter): A Type 6 static letter"
+          ],
+          "commonMistakes": [
+            "Not distinguishing between alpha as position vs letter"
+          ]
+        },
+        "difficulty": "hard"
+      },
+      "response": {
+        "explanation": "The alpha letter (α) is a Type 6 Static letter where both hands remain stationary at opposite grid points.\n\n**How to perform it:**\n1. Position your hands at opposite grid points (alpha position)\n2. Keep both hands stationary - they don't move during this beat\n3. The props may continue rotating from momentum, but no new rotation is generated\n\n**Key details:**\n- Both hands stay static (no movement)\n- Maintains alpha position (hands at opposite points on the grid)\n- This variation starts and ends with blue hand at west, red hand at east\n- Duration is one beat\n\nThe alpha letter provides a moment of stillness in sequences while maintaining the alpha hand relationship. It's useful for creating breathing space or transitions between more complex movements.",
+        "toolsCalled": [
+          {
+            "id": "toolu_016uAjL8WphUSdT1kmkMg5nb",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "α"
+            },
+            "result": {
+              "explanation": "# Letter: α\n\n## Type Information\n**Type 6: Static**\n\nBoth hands remain stationary. The props may still rotate, but hands don't change position.\n\n**Characteristics:**\n- No hand movement\n- Focus is entirely on prop rotation\n- Uses lowercase Greek letters\n- Good for 'breathing space' in sequences\n\n## Motion Pattern\n- **Blue hand:** static\n- **Red hand:** static\n\n## Variation 0 Details\n- **Start position:** alpha3\n- **End position:** alpha3\n- **Blue motion:** w → w\n- **Red motion:** e → e\n\n## All Variations (4 total)\n[0] alpha3 → alpha3\n[1] alpha5 → alpha5\n[2] alpha1 → alpha1\n[3] alpha7 → alpha7",
+              "contextData": {
+                "type": "letter",
+                "letter": "α",
+                "letterType": 6,
+                "typeName": "Static",
+                "startPosition": "alpha3",
+                "endPosition": "alpha3",
+                "blueMotion": {
+                  "motionType": "static",
+                  "startLoc": "w",
+                  "endLoc": "w",
+                  "propRotDir": "noRotation"
+                },
+                "redMotion": {
+                  "motionType": "static",
+                  "startLoc": "e",
+                  "endLoc": "e",
+                  "propRotDir": "noRotation"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 12518
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 50,
+          "conciseness": 100
+        },
+        "overall": 93,
+        "issues": [
+          {
+            "type": "missing-tool",
+            "severity": "warning",
+            "message": "Expected tool not called: \"get_term_definition\""
+          }
+        ],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 50,
+            "issues": [
+              {
+                "type": "missing-tool",
+                "severity": "warning",
+                "message": "Expected tool not called: \"get_term_definition\""
+              }
+            ],
+            "found": 1,
+            "total": 2,
+            "called": [
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 759,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:00:31.834Z"
+    },
+    {
+      "scenarioId": "level1-no-turns",
+      "scenario": {
+        "id": "level1-no-turns",
+        "name": "Level 1: Should Not Mention Turns",
+        "category": "concept-question",
+        "userLevel": 1,
+        "question": "How do I make a sequence loop?",
+        "criteria": {
+          "mustInclude": [
+            "position",
+            "start",
+            "end"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "90",
+            "180",
+            "skew"
+          ],
+          "expectedTools": [],
+          "keyFacts": [
+            "Explain LOOP concept at Level 1",
+            "Focus on positions, not turns"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "In TKA, you make a sequence loop by using the **LOOP** command. Here's how it works:\n\n**Basic syntax:**\n```\nLOOP [sequence]\n```\n\n**What it does:**\n- Takes the sequence inside the brackets\n- Repeats it continuously \n- The end position of the last letter becomes the start position for the first letter on the next repetition\n\n**Example:**\n```\nLOOP [ABC]\n```\nThis repeats the sequence A-B-C indefinitely, where after completing C, it immediately starts A again from C's end position.\n\n**Key points:**\n- The sequence must be \"loopable\" - meaning the end position of the last letter should work as a valid start position for the first letter\n- Not all sequences can loop cleanly due to position mismatches\n- LOOP creates continuous repetition, so you read it as an ongoing cycle rather than a finite sequence\n\nThe LOOP command is essential for notating repeating patterns, which are common in flow arts where movements cycle continuously.",
+        "toolsCalled": [],
+        "latencyMs": 7988
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 93
+        },
+        "overall": 99,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 0,
+            "total": 0,
+            "called": []
+          },
+          "conciseness": {
+            "score": 93,
+            "issues": [],
+            "length": 934,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:00:40.327Z"
+    },
+    {
+      "scenarioId": "level2-turns",
+      "scenario": {
+        "id": "level2-turns",
+        "name": "Level 2: Turns Explanation",
+        "category": "concept-question",
+        "userLevel": 2,
+        "question": "How do turns work in TKA?",
+        "criteria": {
+          "mustInclude": [
+            "turn",
+            "rotation",
+            "prop"
+          ],
+          "mustNotInclude": [
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition"
+          ],
+          "keyFacts": [
+            "Turns describe prop rotation amounts",
+            "Available at Level 2+"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "Turns in TKA represent the number of full prop rotations that occur during one beat of motion.\n\n**Turn Values:**\n- **0 turns:** The prop doesn't rotate at all\n- **0.5 turns:** The prop makes a half rotation (180°)\n- **1 turn:** The prop completes one full rotation (360°)\n- **1.5 turns:** One and a half rotations\n- **2 turns:** Two full rotations\n\n**Key Mechanics:**\n- Each turn is a 180° rotation increment\n- Whole-number turns (1, 2, 3) maintain the prop's original orientation\n- Half-number turns (0.5, 1.5, 2.5) swap the prop's orientation from in to out or vice versa\n\n**Orientation Swapping:**\nWhen a prop has a half-number of turns, its orientation flips:\n- If it started \"in\" (toward the body), it ends \"out\" (away from the body)\n- If it started \"out\", it ends \"in\"\n\n**Turn Variations:**\nMost TKA letters have multiple variations with different turn numbers. For example, letter A might have:\n- Variation 0: A with 1 turn\n- Variation 1: A with 1.5 turns\n- Variation 2: A with 2 turns\n\nThe turn number determines how many times the prop spins while the hands execute their motion pattern from start position to end position.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01FjCAPkLnHJqaYA5tF8S73x",
+            "name": "get_term_definition",
+            "input": {
+              "term": "turn"
+            },
+            "result": "Term \"turn\" not found. Did you mean: turns?"
+          },
+          {
+            "id": "toolu_01JaoGxCaSP1FbQwKRhAB7P9",
+            "name": "get_term_definition",
+            "input": {
+              "term": "turns"
+            },
+            "result": "# Turns\n\n**Definition:** The number of full prop rotations during a beat. Common values are 0, 0.5, 1, 1.5, 2.\n\n**Examples:**\n- 0 turns = prop doesn't rotate\n- 1 turn = full 360 degree rotation\n\n**Related terms:** rotation, spin, beat\n\n**Category:** motion"
+          }
+        ],
+        "latencyMs": 16067
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 83
+        },
+        "overall": 97,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_term_definition",
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 83,
+            "issues": [],
+            "length": 1132,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:00:56.907Z"
+    },
+    {
+      "scenarioId": "level3-quarter-turns",
+      "scenario": {
+        "id": "level3-quarter-turns",
+        "name": "Level 3: Quarter Turns",
+        "category": "concept-question",
+        "userLevel": 3,
+        "question": "What are quarter turns?",
+        "criteria": {
+          "mustInclude": [
+            "quarter",
+            "turn",
+            "rotation"
+          ],
+          "mustNotInclude": [
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition"
+          ],
+          "keyFacts": [
+            "Quarter turns are fractional rotations",
+            "Available at Level 3+"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "Quarter turns are 90° rotation units used in TKA to describe prop orientation changes. They represent one-fourth of a complete 360° rotation.\n\n**Key facts:**\n- Quarter turns enable non-radial orientations (clock and counter)\n- They expand beyond the basic radial orientations (in/out) from earlier levels\n- Each quarter turn rotates the prop 90° from its current orientation\n\n**The four quarter-turn orientations:**\n- **In:** Prop points toward center (0°)\n- **Clock:** Prop points clockwise from radial (90°) \n- **Out:** Prop points away from center (180°)\n- **Counter:** Prop points counterclockwise from radial (270°)\n\n**Usage:** Quarter turns allow TKA to encode more precise prop orientations, giving letters additional variations beyond the basic in/out orientations you learned in earlier levels.\n\nThis expanded orientation system is what defines Level 3 of TKA - you can now read and write letters that specify exact 90° increments of prop rotation.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01LCpmCcAQy8tpS4LM7RKh3q",
+            "name": "get_term_definition",
+            "input": {
+              "term": "quarter turn"
+            },
+            "result": "Term \"quarter turn\" not found."
+          }
+        ],
+        "latencyMs": 10659
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 92
+        },
+        "overall": 99,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 92,
+            "issues": [],
+            "length": 957,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:01:08.071Z"
+    },
+    {
+      "scenarioId": "edge-greek-letter-confusion",
+      "scenario": {
+        "id": "edge-greek-letter-confusion",
+        "name": "Edge: Greek Letters as Positions vs Letters",
+        "category": "edge-case",
+        "userLevel": 1,
+        "question": "What's the difference between alpha the position and alpha the letter?",
+        "criteria": {
+          "mustInclude": [
+            "position",
+            "letter",
+            "Type 6"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_position_info",
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "Alpha (position): Hands at opposite points",
+            "α (letter): Type 6 static letter, lowercase"
+          ]
+        },
+        "difficulty": "hard"
+      },
+      "response": {
+        "explanation": "**Alpha the position** and **alpha the letter (α)** are completely different concepts:\n\n## Alpha Position\nAlpha is a **position type** that describes where your hands are relative to each other. In alpha position, your hands are at **opposite grid points** - they form a straight line through the center. Examples include:\n- North and South\n- East and West  \n- Northeast and Southwest\n\n## Alpha Letter (α)\nAlpha (α) is a **Type 6 Static letter** - a specific movement notation. It means both hands stay stationary at their current alpha position for one beat while the props may rotate.\n\n## Key Differences\n\n| Aspect | Alpha Position | Alpha Letter (α) |\n|--------|---------------|------------------|\n| **What it describes** | Hand placement | One beat of motion |\n| **Symbol** | Written as \"alpha\" | Written as \"α\" |\n| **Function** | Describes spatial relationship | Encodes a movement |\n| **Duration** | Ongoing state | One beat |\n\n**Example:** You could perform the alpha letter (α) while in alpha position - your hands would stay at opposite grid points for that beat. But you could also be in alpha position while performing other letters like A, B, or C.\n\nThe position describes **where** your hands are; the letter describes **what movement** happens during one beat.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01PsAwHnh9Kc9Lkytqy5JVnW",
+            "name": "get_position_info",
+            "input": {
+              "position": "alpha"
+            },
+            "result": "# Alpha (α)\n\n**Angle:** 180° between hands\n\n**Description:** Hands are at opposite grid points, forming a straight line through the center.\n\n**Grid:** Examples: N/S, E/W, NE/SW, NW/SE.\n\n**Examples:**\n- alpha1: N and S\n- alpha3: E and W\n- alpha5: NE and SW\n\n**Level:** 1\n\n**Usage:** 144 start positions, 144 end positions"
+          },
+          {
+            "id": "toolu_01SuzScmav2y74hsiU1ZUBH4",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "α"
+            },
+            "result": {
+              "explanation": "# Letter: α\n\n## Type Information\n**Type 6: Static**\n\nBoth hands remain stationary. The props may still rotate, but hands don't change position.\n\n**Characteristics:**\n- No hand movement\n- Focus is entirely on prop rotation\n- Uses lowercase Greek letters\n- Good for 'breathing space' in sequences\n\n## Motion Pattern\n- **Blue hand:** static\n- **Red hand:** static\n\n## Variation 0 Details\n- **Start position:** alpha3\n- **End position:** alpha3\n- **Blue motion:** w → w\n- **Red motion:** e → e\n\n## All Variations (4 total)\n[0] alpha3 → alpha3\n[1] alpha5 → alpha5\n[2] alpha1 → alpha1\n[3] alpha7 → alpha7",
+              "contextData": {
+                "type": "letter",
+                "letter": "α",
+                "letterType": 6,
+                "typeName": "Static",
+                "startPosition": "alpha3",
+                "endPosition": "alpha3",
+                "blueMotion": {
+                  "motionType": "static",
+                  "startLoc": "w",
+                  "endLoc": "w",
+                  "propRotDir": "noRotation"
+                },
+                "redMotion": {
+                  "motionType": "static",
+                  "startLoc": "e",
+                  "endLoc": "e",
+                  "propRotDir": "noRotation"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 12096
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 76
+        },
+        "overall": 96,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2,
+            "called": [
+              "get_position_info",
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 76,
+            "issues": [],
+            "length": 1274,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:01:20.677Z"
+    },
+    {
+      "scenarioId": "edge-vague-question",
+      "scenario": {
+        "id": "edge-vague-question",
+        "name": "Edge: Vague Question",
+        "category": "edge-case",
+        "userLevel": 1,
+        "question": "Tell me stuff.",
+        "criteria": {
+          "mustInclude": [],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [],
+          "keyFacts": [
+            "Should ask for clarification or offer topics",
+            "Should not dump advanced concepts"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "I'm TIKA, your reference assistant for The Kinetic Alphabet (TKA). I can help you with:\n\n**Letter Information:**\n- Explain any TKA letter (A-Z, Greek letters) - their type, motion patterns, and variations\n- Compare two letters to show their differences\n- List all letters of a specific type (1-6)\n\n**Definitions:**\n- Define TKA terms like alpha, beta, gamma, static, shift, dash, pro, anti, etc.\n- Explain position types and motion patterns\n\n**System Knowledge:**\n- How the 6 letter types work\n- Grid positions and hand placements\n- Rotation directions and prop movement\n\nWhat would you like to know about TKA? You can ask me to:\n- \"Explain letter A\"\n- \"What does gamma mean?\"\n- \"Compare letters B and D\"\n- \"List all Type 1 letters\"\n- \"What is alpha position?\"\n\nJust ask about any specific letter, term, or concept you want to understand.",
+        "toolsCalled": [],
+        "latencyMs": 6810
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 98
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 0,
+            "total": 0
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 0,
+            "total": 0,
+            "called": []
+          },
+          "conciseness": {
+            "score": 98,
+            "issues": [],
+            "length": 838,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:01:28.002Z"
+    },
+    {
+      "scenarioId": "edge-advanced-at-level1",
+      "scenario": {
+        "id": "edge-advanced-at-level1",
+        "name": "Edge: Advanced Topic at Level 1",
+        "category": "edge-case",
+        "userLevel": 1,
+        "question": "Explain skews.",
+        "criteria": {
+          "mustInclude": [
+            "level",
+            "later"
+          ],
+          "mustNotInclude": [
+            "skew mode",
+            "diamond",
+            "box"
+          ],
+          "expectedTools": [],
+          "keyFacts": [
+            "Should indicate this is an advanced topic",
+            "Should redirect to level-appropriate content"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "I cannot explain skews because they are a Level 2 concept, and you are currently at Level 1 (Base Letters). \n\nAt Level 1, you're learning the foundational concepts:\n- Grid points and positions (alpha, beta, gamma)\n- Motion types (static, shift, dash)\n- Rotation directions (pro, anti)\n- The 6 letter types\n- Basic sequences and LOOPs\n\nSkews are introduced in Level 2 along with turns and more advanced movement concepts. You'll need to complete Level 1 before moving on to skews and other Level 2 topics.\n\nIs there a Level 1 concept I can help explain instead?",
+        "toolsCalled": [],
+        "latencyMs": 5118
+      },
+      "evaluation": {
+        "passed": false,
+        "scores": {
+          "termAccuracy": 50,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 83,
+        "issues": [
+          {
+            "type": "missing-term",
+            "severity": "error",
+            "message": "Missing required term: \"later\""
+          }
+        ],
+        "recommendation": "fix-required",
+        "details": {
+          "termAccuracy": {
+            "score": 50,
+            "issues": [
+              {
+                "type": "missing-term",
+                "severity": "error",
+                "message": "Missing required term: \"later\""
+              }
+            ],
+            "found": 1,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 0,
+            "total": 0,
+            "called": []
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 560,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:01:33.621Z"
+    },
+    {
+      "scenarioId": "beginner-what-is-tka",
+      "scenario": {
+        "id": "beginner-what-is-tka",
+        "name": "Beginner: What is TKA?",
+        "category": "beginner-orientation",
+        "userLevel": 1,
+        "question": "What is TKA?",
+        "criteria": {
+          "mustInclude": [
+            "notation",
+            "movement"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_alphabet_info"
+          ],
+          "keyFacts": [
+            "TKA is a notation system",
+            "Used for flow arts like poi and staff",
+            "Describes hand and prop movements"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "The Kinetic Alphabet (TKA) is a notation system that encodes flow arts movements (poi, staff, hoops, etc.) into readable symbols. Each \"letter\" represents one beat of motion - where the hands start, where they end, how they move, and how the props rotate.\n\n**Why it matters:** Before TKA, flow artists could only share movements through video. TKA provides a written language - you can write down a sequence, share it, and another spinner can read and perform it.\n\n## Core Components\n\n**Grid System:** Hand positions are mapped to points on a 3x3 grid around the spinner's body.\n\n**Letters:** 41 letters (A-Z plus Greek letters) that encode specific hand movements and prop rotations.\n\n**Motion Types:**\n- **Static:** Hand remains at its current grid point\n- **Shift:** Hand moves to an adjacent grid point  \n- **Dash:** Hand moves to the opposite grid point\n\n**Positions:** How hands relate to each other:\n- **Alpha:** Hands at opposite grid points\n- **Beta:** Hands at the same grid point\n- **Gamma:** Hands form a right angle\n\n**Rotation:** Props can spin **pro** (same direction as hand travel) or **anti** (opposite direction).\n\n**Letter Types:** The 41 letters are organized into 6 types based on motion patterns:\n1. **Dual-Shift:** Both hands shift (A-V)\n2. **Shift:** One shifts, one static (W, X, Y, Z, Σ, Δ, Θ, Ω)\n3. **Cross-Shift:** One shifts, one dashes (W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-)\n4. **Dash:** One dashes, one static (Φ, Ψ, Λ)\n5. **Dual-Dash:** Both hands dash (Φ-, Ψ-, Λ-)\n6. **Static:** Both hands stationary (α, β, γ)\n\nThis systematic approach allows any flow arts movement to be written, shared, and reproduced accurately.",
+        "toolsCalled": [],
+        "latencyMs": 8455
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 0,
+          "conciseness": 58
+        },
+        "overall": 79,
+        "issues": [
+          {
+            "type": "missing-tool",
+            "severity": "warning",
+            "message": "Expected tool not called: \"get_alphabet_info\""
+          },
+          {
+            "type": "too-long",
+            "severity": "warning",
+            "message": "Response too verbose (1645 chars, ideal: <800)"
+          }
+        ],
+        "recommendation": "acceptable",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 0,
+            "issues": [
+              {
+                "type": "missing-tool",
+                "severity": "warning",
+                "message": "Expected tool not called: \"get_alphabet_info\""
+              }
+            ],
+            "found": 0,
+            "total": 1,
+            "called": []
+          },
+          "conciseness": {
+            "score": 58,
+            "issues": [
+              {
+                "type": "too-long",
+                "severity": "warning",
+                "message": "Response too verbose (1645 chars, ideal: <800)"
+              }
+            ],
+            "length": 1645,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:01:42.587Z"
+    },
+    {
+      "scenarioId": "beginner-how-to-start",
+      "scenario": {
+        "id": "beginner-how-to-start",
+        "name": "Beginner: How to Start",
+        "category": "beginner-orientation",
+        "userLevel": 1,
+        "question": "I'm new to TKA. Where do I start?",
+        "criteria": {
+          "mustInclude": [
+            "position",
+            "motion"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [],
+          "keyFacts": [
+            "Should suggest starting with positions",
+            "Should mention the 3 motion types",
+            "Should keep it simple"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Welcome to TKA! Here's where to start:\n\n## Foundation: The Grid System\n\nTKA uses a 3x3 grid to describe hand positions. The key positions are:\n- **Alpha:** Hands at opposite grid points (like top-left and bottom-right)\n- **Beta:** Hands at the same grid point \n- **Gamma:** Hands at adjacent grid points forming a right angle\n\n## Basic Motion Types\n\nEach hand can perform one of three motions per beat:\n- **Static:** Hand stays at its current grid point\n- **Shift:** Hand moves to an adjacent grid point\n- **Dash:** Hand moves to the opposite grid point\n\n## Rotation Types\n\nProps can spin in two ways:\n- **Pro (prospin):** Prop rotates in the same direction as hand movement\n- **Anti (antispin):** Prop rotates opposite to hand movement direction\n\n## The 6 Letter Types\n\nLetters are organized by what both hands do:\n1. **Dual-Shift (A-V):** Both hands shift\n2. **Shift (W,X,Y,Z,Σ,Δ,Θ,Ω):** One shifts, one static\n3. **Cross-Shift (W-,X-,Y-,Z-,Σ-,Δ-,Θ-,Ω-):** One shifts, one dashes\n4. **Dash (Φ,Ψ,Λ):** One dashes, one static\n5. **Dual-Dash (Φ-,Ψ-,Λ-):** Both hands dash\n6. **Static (α,β,γ):** Both hands stationary\n\nStart with Type 1 letters (A-V) - they're the most common and encode fundamental poi movements. Each letter represents exactly one beat of motion.\n\nWould you like me to explain any specific letter or concept in more detail?",
+        "toolsCalled": [],
+        "latencyMs": 8391
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 73
+        },
+        "overall": 96,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 0,
+            "total": 0,
+            "called": []
+          },
+          "conciseness": {
+            "score": 73,
+            "issues": [],
+            "length": 1340,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:01:51.493Z"
+    },
+    {
+      "scenarioId": "engagement-why-learn",
+      "scenario": {
+        "id": "engagement-why-learn",
+        "name": "Engagement: Why Learn TKA?",
+        "category": "engagement",
+        "userLevel": 1,
+        "question": "Why should I learn TKA? Is it worth it?",
+        "criteria": {
+          "mustInclude": [
+            "share",
+            "sequence"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [],
+          "keyFacts": [
+            "TKA enables sharing sequences",
+            "Written notation for movements",
+            "Creates a common language"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "TKA provides practical benefits for flow artists:\n\n**Documentation and Memory**\n- Write down sequences instead of relying on video or memory\n- Record your own creations systematically\n- Build a personal library of movements you can reference\n\n**Communication and Learning**\n- Share sequences with other spinners through text\n- Learn movements from written descriptions\n- Discuss techniques using precise terminology instead of vague descriptions\n\n**Analysis and Development**\n- Break down complex movements into component beats\n- Understand the structural patterns in flow arts\n- Identify transitions between different hand positions and motions\n\n**Systematic Understanding**\n- See how movements relate to each other within the grid system\n- Recognize patterns across different props (poi, staff, hoops)\n- Build vocabulary for the fundamental elements of flow arts\n\n**Whether it's \"worth it\" depends on your goals:**\n- If you spin casually and don't need to document or share sequences, TKA may be unnecessary\n- If you teach, create content, or want to analyze movement systematically, TKA provides tools that don't exist elsewhere\n- If you're interested in the underlying structure of flow arts, TKA reveals patterns that aren't obvious from just spinning\n\nTKA is the only standardized notation system for flow arts movements. No other system provides this level of precision for encoding hand positions, motions, and prop rotations into readable symbols.",
+        "toolsCalled": [],
+        "latencyMs": 8903
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 67
+        },
+        "overall": 95,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 0,
+            "total": 0,
+            "called": []
+          },
+          "conciseness": {
+            "score": 67,
+            "issues": [],
+            "length": 1456,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:02:00.908Z"
+    },
+    {
+      "scenarioId": "engagement-practical-use",
+      "scenario": {
+        "id": "engagement-practical-use",
+        "name": "Engagement: Practical Use",
+        "category": "engagement",
+        "userLevel": 1,
+        "question": "What can I actually do with TKA once I learn it?",
+        "criteria": {
+          "mustInclude": [
+            "sequence",
+            "create"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [],
+          "keyFacts": [
+            "Create and document sequences",
+            "Share with other practitioners",
+            "Analyze and learn from others' work"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "TKA enables several practical applications once you learn it:\n\n**Documentation and Practice**\n- Write down sequences you create or learn, building a personal library of movements\n- Practice from written notation without needing video references\n- Analyze your own spinning by breaking it into component letters\n\n**Communication and Sharing**\n- Share sequences with other spinners through text (forums, messages, social media)\n- Receive sequences from others and perform them accurately\n- Collaborate on sequence development remotely\n\n**Learning and Teaching**\n- Learn new movements from written descriptions\n- Teach others by providing clear, unambiguous notation\n- Break complex movements into learnable components\n\n**Analysis and Development**\n- Understand the structure of movements you already know\n- Systematically explore variations by changing individual letters\n- Identify patterns and transitions between different movement types\n\n**Cross-Platform Compatibility**\n- Apply sequences across different props (poi, staff, hoops) where mechanically possible\n- Understand how movements translate between prop types\n\nThe key advantage is that TKA provides a written language for flow arts - similar to how musical notation allows musicians to share, learn, and develop music without always needing audio recordings. You can communicate precise movement information through text alone.",
+        "toolsCalled": [],
+        "latencyMs": 9332
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 71
+        },
+        "overall": 96,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 0,
+            "total": 0,
+            "called": []
+          },
+          "conciseness": {
+            "score": 71,
+            "issues": [],
+            "length": 1386,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:02:10.751Z"
+    },
+    {
+      "scenarioId": "grid-diamond-mode",
+      "scenario": {
+        "id": "grid-diamond-mode",
+        "name": "Grid: Diamond Mode",
+        "category": "concept-question",
+        "userLevel": 1,
+        "question": "What is diamond mode?",
+        "criteria": {
+          "mustInclude": [
+            "grid",
+            "cardinal",
+            "north",
+            "south",
+            "east",
+            "west"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition"
+          ],
+          "keyFacts": [
+            "Diamond mode uses cardinal points",
+            "N, E, S, W positions"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Diamond mode is the default grid configuration in TKA where hands are positioned only on the cardinal points: North, East, South, and West.\n\nIn diamond mode:\n- Hands occupy the four main compass directions\n- This creates the standard diamond-shaped grid pattern\n- Most basic TKA positions use diamond mode (like alpha1 with hands at North/South)\n\nDiamond mode contrasts with box mode, where hands can be placed on intercardinal points (NE, SE, SW, NW) as well as cardinal points.",
+        "toolsCalled": [
+          {
+            "id": "toolu_011EZEfwZXGk44RTMYXDsidt",
+            "name": "get_term_definition",
+            "input": {
+              "term": "diamond"
+            },
+            "result": "# Diamond\n\n**Definition:** A grid mode where hands are placed only on cardinal points (N, E, S, W). The default grid mode.\n\n**Examples:**\n- Standard positions like alpha1 (N/S) use diamond mode\n\n**Related terms:** box, skewed, grid\n\n**Category:** grid"
+          }
+        ],
+        "latencyMs": 8301
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 6,
+            "total": 6
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 479,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:02:19.555Z"
+    },
+    {
+      "scenarioId": "grid-box-mode",
+      "scenario": {
+        "id": "grid-box-mode",
+        "name": "Grid: Box Mode",
+        "category": "concept-question",
+        "userLevel": 1,
+        "question": "What is box mode?",
+        "criteria": {
+          "mustInclude": [
+            "grid",
+            "corner",
+            "intercardinal"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition"
+          ],
+          "keyFacts": [
+            "Box mode uses intercardinal points",
+            "NE, SE, SW, NW positions"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Box mode is a grid configuration where hands are placed only on the intercardinal points of the grid - the corners at northeast (NE), southeast (SE), southwest (SW), and northwest (NW).\n\nThis contrasts with diamond mode, where hands are placed on the cardinal points (north, south, east, west). The box and diamond modes represent the two primary ways to orient the grid system in TKA notation.\n\nIn box mode, all positions (alpha, beta, gamma) use only these four corner points as valid hand placements.",
+        "toolsCalled": [
+          {
+            "id": "toolu_013EpwfRwgDqesUehvWtYhL1",
+            "name": "get_term_definition",
+            "input": {
+              "term": "box"
+            },
+            "result": "# Box\n\n**Definition:** A grid mode where hands are placed only on intercardinal points (NE, SE, SW, NW).\n\n**Examples:**\n- Position beta5 (both hands at NE) uses box mode\n\n**Related terms:** diamond, skewed, grid\n\n**Category:** grid"
+          }
+        ],
+        "latencyMs": 8795
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 503,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:02:28.857Z"
+    },
+    {
+      "scenarioId": "all-types-overview",
+      "scenario": {
+        "id": "all-types-overview",
+        "name": "Overview: All Six Types",
+        "category": "concept-question",
+        "userLevel": 1,
+        "question": "What are the 6 types of letters in TKA?",
+        "criteria": {
+          "mustInclude": [
+            "Type 1",
+            "Type 2",
+            "Type 3",
+            "Type 4",
+            "Type 5",
+            "Type 6"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "list_letters_by_type"
+          ],
+          "keyFacts": [
+            "Type 1: Dual-Shift",
+            "Type 2: Shift",
+            "Type 3: Cross-Shift",
+            "Type 4: Dash",
+            "Type 5: Dual-Dash",
+            "Type 6: Static"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "The 6 types of TKA letters are organized by their motion patterns:\n\n## Type 1: Dual-Shift\n**Motion:** Both hands shift (move to adjacent grid points)\n**Letters:** A-V (22 letters total)\n**Description:** The most common type, where both hands move to adjacent grid points.\n\n## Type 2: Shift  \n**Motion:** One hand shifts, one hand static\n**Letters:** W, X, Y, Z, Σ, Δ, Θ, Ω (8 letters)\n**Description:** Creates asymmetric movements with one hand moving and one stationary.\n\n## Type 3: Cross-Shift\n**Motion:** One hand shifts, one hand dashes\n**Letters:** W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω- (8 letters)\n**Description:** Combines shift and dash motions. Named with \"-\" suffix.\n\n## Type 4: Dash\n**Motion:** One hand dashes, one hand static  \n**Letters:** Φ, Ψ, Λ (3 letters)\n**Description:** One hand moves to the opposite grid point while the other stays stationary.\n\n## Type 5: Dual-Dash\n**Motion:** Both hands dash (move to opposite points)\n**Letters:** Φ-, Ψ-, Λ- (3 letters)  \n**Description:** Both hands move to opposite grid points simultaneously.\n\n## Type 6: Static\n**Motion:** Both hands static (no movement)\n**Letters:** α, β, γ (3 letters)\n**Description:** Hands remain stationary while props may still rotate.\n\nThe types systematically cover every possible combination of the three motion types (static, shift, dash) for two hands.",
+        "toolsCalled": [
+          {
+            "id": "toolu_019zB5B16STaEniEe4Row1RK",
+            "name": "list_letters_by_type",
+            "input": {
+              "type": 1
+            },
+            "result": {
+              "explanation": "# Type 1: Dual-Shift\n\n**Description:** Both hands shift (move to adjacent grid points). This is the most common letter type.\n\n**Motion Pattern:**\n- Blue hand: shift\n- Red hand: shift\n\n\n**Characteristics:**\n- Both hands move 90 degrees on the grid\n- Creates smooth, flowing transitions\n- 22 letters - the largest type\n\n**Letters (22 total):**\n- **A** (8 variations)\n- **B** (8 variations)\n- **C** (16 variations)\n- **D** (8 variations)\n- **E** (8 variations)\n- **F** (16 variations)\n- **G** (8 variations)\n- **H** (8 variations)\n- **I** (16 variations)\n- **J** (8 variations)\n- **K** (8 variations)\n- **L** (16 variations)\n- **M** (8 variations)\n- **N** (8 variations)\n- **O** (16 variations)\n- **P** (8 variations)\n- **Q** (8 variations)\n- **R** (16 variations)\n- **S** (16 variations)\n- **T** (16 variations)\n- **U** (16 variations)\n- **V** (16 variations)\n\n**All Letters:** Pictographs shown in context panel.",
+              "contextData": {
+                "type": "typeList",
+                "typeNumber": 1,
+                "typeName": "Dual-Shift",
+                "description": "Both hands shift (move to adjacent grid points). This is the most common letter type.",
+                "exampleLetters": [
+                  "A",
+                  "B",
+                  "C",
+                  "D",
+                  "E",
+                  "F",
+                  "G",
+                  "H",
+                  "I",
+                  "J",
+                  "K",
+                  "L",
+                  "M",
+                  "N",
+                  "O",
+                  "P",
+                  "Q",
+                  "R",
+                  "S",
+                  "T",
+                  "U",
+                  "V"
+                ],
+                "allLetters": [
+                  "A",
+                  "B",
+                  "C",
+                  "D",
+                  "E",
+                  "F",
+                  "G",
+                  "H",
+                  "I",
+                  "J",
+                  "K",
+                  "L",
+                  "M",
+                  "N",
+                  "O",
+                  "P",
+                  "Q",
+                  "R",
+                  "S",
+                  "T",
+                  "U",
+                  "V"
+                ],
+                "motionPattern": {
+                  "blueMotion": "shift",
+                  "redMotion": "shift"
+                }
+              }
+            }
+          },
+          {
+            "id": "toolu_016ybLjrathDx1pEGNSrgm2W",
+            "name": "list_letters_by_type",
+            "input": {
+              "type": 2
+            },
+            "result": {
+              "explanation": "# Type 2: Shift\n\n**Description:** One hand shifts while the other stays static. Creates asymmetric movements.\n\n**Motion Pattern:**\n- Blue hand: static OR shift\n- Red hand: shift OR static\n- Note: Exactly one hand shifts, one is static\n\n**Characteristics:**\n- One hand moves, one stays in place\n- Often used for transitions between symmetric and asymmetric positions\n- Uses Greek letters for most of this type\n\n**Letters (8 total):**\n- **W** (16 variations)\n- **X** (16 variations)\n- **Y** (16 variations)\n- **Z** (16 variations)\n- **Σ** (16 variations)\n- **Δ** (16 variations)\n- **Θ** (16 variations)\n- **Ω** (16 variations)\n\n**All Letters:** Pictographs shown in context panel.",
+              "contextData": {
+                "type": "typeList",
+                "typeNumber": 2,
+                "typeName": "Shift",
+                "description": "One hand shifts while the other stays static. Creates asymmetric movements.",
+                "exampleLetters": [
+                  "W",
+                  "X",
+                  "Y",
+                  "Z",
+                  "Σ",
+                  "Δ",
+                  "Θ",
+                  "Ω"
+                ],
+                "allLetters": [
+                  "W",
+                  "X",
+                  "Y",
+                  "Z",
+                  "Σ",
+                  "Δ",
+                  "Θ",
+                  "Ω"
+                ],
+                "motionPattern": {
+                  "blueMotion": "static OR shift",
+                  "redMotion": "shift OR static"
+                }
+              }
+            }
+          },
+          {
+            "id": "toolu_01X12PrH5pJ3u63UgXWmvaCZ",
+            "name": "list_letters_by_type",
+            "input": {
+              "type": 3
+            },
+            "result": {
+              "explanation": "# Type 3: Cross-Shift\n\n**Description:** One hand shifts and one hand dashes. Also called 'dash letters' due to the '-' suffix in their names.\n\n**Motion Pattern:**\n- Blue hand: shift OR dash\n- Red hand: dash OR shift\n- Note: One hand shifts, one dashes\n\n**Characteristics:**\n- Combines shift (90 degree) and dash (180 degree) motions\n- Named with a '-' suffix (e.g., 'W-', 'Sigma-')\n- IMPORTANT: 'Sigma dash' means the letter Sigma- (Type 3), not a letter with dash motion\n\n**Letters (8 total):**\n- **W-** (16 variations)\n- **X-** (16 variations)\n- **Y-** (16 variations)\n- **Z-** (16 variations)\n- **Σ-** (16 variations)\n- **Δ-** (16 variations)\n- **Θ-** (16 variations)\n- **Ω-** (16 variations)\n\n**All Letters:** Pictographs shown in context panel.",
+              "contextData": {
+                "type": "typeList",
+                "typeNumber": 3,
+                "typeName": "Cross-Shift",
+                "description": "One hand shifts and one hand dashes. Also called 'dash letters' due to the '-' suffix in their names.",
+                "exampleLetters": [
+                  "W-",
+                  "X-",
+                  "Y-",
+                  "Z-",
+                  "Σ-",
+                  "Δ-",
+                  "Θ-",
+                  "Ω-"
+                ],
+                "allLetters": [
+                  "W-",
+                  "X-",
+                  "Y-",
+                  "Z-",
+                  "Σ-",
+                  "Δ-",
+                  "Θ-",
+                  "Ω-"
+                ],
+                "motionPattern": {
+                  "blueMotion": "shift OR dash",
+                  "redMotion": "dash OR shift"
+                }
+              }
+            }
+          },
+          {
+            "id": "toolu_016y6tzNMg89zHFHUrBNjWah",
+            "name": "list_letters_by_type",
+            "input": {
+              "type": 4
+            },
+            "result": {
+              "explanation": "# Type 4: Dash\n\n**Description:** One hand dashes (moves to opposite point) while the other stays static.\n\n**Motion Pattern:**\n- Blue hand: static OR dash\n- Red hand: dash OR static\n- Note: Exactly one hand dashes, one is static\n\n**Characteristics:**\n- Creates dramatic position changes\n- Uses Greek letters Phi, Psi, Lambda\n- Only 3 letters in this type\n\n**Letters (3 total):**\n- **Φ** (8 variations)\n- **Ψ** (8 variations)\n- **Λ** (16 variations)\n\n**All Letters:** Pictographs shown in context panel.",
+              "contextData": {
+                "type": "typeList",
+                "typeNumber": 4,
+                "typeName": "Dash",
+                "description": "One hand dashes (moves to opposite point) while the other stays static.",
+                "exampleLetters": [
+                  "Φ",
+                  "Ψ",
+                  "Λ"
+                ],
+                "allLetters": [
+                  "Φ",
+                  "Ψ",
+                  "Λ"
+                ],
+                "motionPattern": {
+                  "blueMotion": "static OR dash",
+                  "redMotion": "dash OR static"
+                }
+              }
+            }
+          },
+          {
+            "id": "toolu_01Ro1YYnCYCLqaQqYM2RripH",
+            "name": "list_letters_by_type",
+            "input": {
+              "type": 5
+            },
+            "result": {
+              "explanation": "# Type 5: Dual-Dash\n\n**Description:** Both hands dash simultaneously (both move to opposite points).\n\n**Motion Pattern:**\n- Blue hand: dash\n- Red hand: dash\n\n\n**Characteristics:**\n- Both hands move 180 degrees\n- Creates dramatic, symmetric movements\n- Named with '-' suffix like Type 3\n- Only 3 letters in this type\n\n**Letters (3 total):**\n- **Φ-** (4 variations)\n- **Ψ-** (4 variations)\n- **Λ-** (8 variations)\n\n**All Letters:** Pictographs shown in context panel.",
+              "contextData": {
+                "type": "typeList",
+                "typeNumber": 5,
+                "typeName": "Dual-Dash",
+                "description": "Both hands dash simultaneously (both move to opposite points).",
+                "exampleLetters": [
+                  "Φ-",
+                  "Ψ-",
+                  "Λ-"
+                ],
+                "allLetters": [
+                  "Φ-",
+                  "Ψ-",
+                  "Λ-"
+                ],
+                "motionPattern": {
+                  "blueMotion": "dash",
+                  "redMotion": "dash"
+                }
+              }
+            }
+          },
+          {
+            "id": "toolu_01Eco9pygejwizxxoG6LS7Vx",
+            "name": "list_letters_by_type",
+            "input": {
+              "type": 6
+            },
+            "result": {
+              "explanation": "# Type 6: Static\n\n**Description:** Both hands remain stationary. The props may still rotate, but hands don't change position.\n\n**Motion Pattern:**\n- Blue hand: static\n- Red hand: static\n\n\n**Characteristics:**\n- No hand movement\n- Focus is entirely on prop rotation\n- Uses lowercase Greek letters\n- Good for 'breathing space' in sequences\n\n**Letters (3 total):**\n- **α** (4 variations)\n- **β** (4 variations)\n- **γ** (8 variations)\n\n**All Letters:** Pictographs shown in context panel.",
+              "contextData": {
+                "type": "typeList",
+                "typeNumber": 6,
+                "typeName": "Static",
+                "description": "Both hands remain stationary. The props may still rotate, but hands don't change position.",
+                "exampleLetters": [
+                  "α",
+                  "β",
+                  "γ"
+                ],
+                "allLetters": [
+                  "α",
+                  "β",
+                  "γ"
+                ],
+                "motionPattern": {
+                  "blueMotion": "static",
+                  "redMotion": "static"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 11568
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 73
+        },
+        "overall": 96,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 6,
+            "total": 6
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "list_letters_by_type",
+              "list_letters_by_type",
+              "list_letters_by_type",
+              "list_letters_by_type",
+              "list_letters_by_type",
+              "list_letters_by_type"
+            ]
+          },
+          "conciseness": {
+            "score": 73,
+            "issues": [],
+            "length": 1335,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:02:40.938Z"
+    },
+    {
+      "scenarioId": "pictograph-what-is",
+      "scenario": {
+        "id": "pictograph-what-is",
+        "name": "Pictograph: What Is It?",
+        "category": "concept-question",
+        "userLevel": 1,
+        "question": "What is a pictograph?",
+        "criteria": {
+          "mustInclude": [
+            "visual",
+            "beat",
+            "movement"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [],
+          "keyFacts": [
+            "A pictograph is a visual representation of one beat",
+            "Shows hand positions and prop movements"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "A pictograph is a visual representation of one beat of motion in TKA. It shows two props, arrows indicating motion, and position glyphs.\n\nEach TKA letter has multiple pictograph variations that display the same underlying motion pattern from different starting positions. Pictographs can be sequenced together to create choreography - when you read a sequence of pictographs, you perform each beat of motion in order to execute the complete movement pattern.\n\nThe pictograph translates the abstract letter notation into a concrete visual that shows exactly where your hands start, how they move, and where they end up for that beat.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01S3HGfV5XEpb6RxH5X4j87V",
+            "name": "get_term_definition",
+            "input": {
+              "term": "pictograph"
+            },
+            "result": "# Pictograph\n\n**Definition:** A visual representation of one beat of motion in TKA. Shows two props, arrows indicating motion, and position glyphs.\n\n**Examples:**\n- Each letter has multiple pictograph variations\n- Pictographs can be sequenced to create choreography\n\n**Related terms:** beat, sequence, letter\n\n**Category:** general"
+          }
+        ],
+        "latencyMs": 7323
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 0,
+            "total": 0,
+            "called": [
+              "get_term_definition"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 632,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T10:02:48.771Z"
+    }
+  ]
+}

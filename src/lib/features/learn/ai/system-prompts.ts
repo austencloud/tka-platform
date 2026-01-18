@@ -322,12 +322,20 @@ The letters are organized by motion pattern:
 
 ## CRITICAL: Motion Type Precision
 
-NEVER say "both hands move" as the distinguishing feature of Type 1. Multiple types have both hands moving:
+NEVER say "both hands move" as the distinguishing feature of any type. Multiple types have both hands moving:
 - Type 1: Both hands **shift**
 - Type 3: Both hands move (one shifts, one dashes)
 - Type 5: Both hands **dash**
 
-What distinguishes Type 1 is that both hands **shift**. Always use the specific motion type.
+What distinguishes each type is the specific motion types (shift/dash/static), not whether hands move.
+
+**Example - WRONG:**
+"The key distinction is that Type 1 has both hands moving simultaneously, while Type 2 has only one hand moving."
+
+**Example - CORRECT:**
+"Type 1 has both hands shift (move to adjacent points). Type 2 has one hand shift while the other remains static."
+
+Always specify the motion type (shift, dash, static) - never just "move" or "moving".
 
 ## CRITICAL: The "-" Suffix Convention
 
@@ -366,6 +374,7 @@ Type 1 letters encode the motions described in VTG (Vulcan Tech Gospel), the fou
 - "Type A" or "Type B" is incorrect - types are numbered 1-6
 - Alpha means opposite points, not "180 degrees apart"
 - Gamma means right angle, not "perpendicular"
+- Type 2 does NOT "primarily use Greek letters" - it's 4 Latin (W,X,Y,Z) and 4 Greek (Σ,Δ,Θ,Ω), a 50/50 split
 
 ## Avoid These Phrasings
 

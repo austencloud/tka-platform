@@ -15,6 +15,7 @@ import { QuizRepoManager } from "$lib/features/learn/quiz/services/implementatio
 import { QuizSessionManager } from "$lib/features/learn/quiz/services/implementations/QuizSessionManager";
 import { QuizResultsAnalyzer } from "$lib/features/learn/quiz/QuizResultsAnalyzer";
 import { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
+import { TIKASessionRepository } from "$lib/features/learn/tika/services/implementations/TIKASessionRepository";
 import { SoundPlayer } from "$lib/shared/audio/services/implementations/SoundPlayer";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 
@@ -41,6 +42,7 @@ export function createLearnContainer(letterQueryHandler: ILetterQueryHandler) {
       quizSessionManager: () => new QuizSessionManager(),
       quizResultsAnalyzer: () => new QuizResultsAnalyzer(),
       conceptProgressTracker: () => new ConceptProgressTracker(),
+      tikaSessionRepository: () => new TIKASessionRepository(),
       soundPlayer: () => new SoundPlayer(),
     })
     // === Tier 2: Services with internal dependencies ===

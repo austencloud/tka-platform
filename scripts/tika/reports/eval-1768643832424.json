@@ -1,0 +1,618 @@
+{
+  "runId": "eval-1768643832424",
+  "startedAt": "2026-01-17T09:57:12.424Z",
+  "config": {
+    "categoryFilter": null,
+    "limit": 5,
+    "opusReview": false
+  },
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "passRate": 100,
+    "averageLatencyMs": 9040,
+    "averageScores": {
+      "termAccuracy": 100,
+      "levelAppropriate": 100,
+      "toolUsage": 100,
+      "conciseness": 99
+    },
+    "byCategory": {
+      "letter-explanation": {
+        "total": 5,
+        "passed": 5,
+        "avgScore": 100,
+        "passRate": 100
+      }
+    },
+    "byDifficulty": {
+      "easy": {
+        "total": 3,
+        "passed": 3,
+        "avgScore": 100,
+        "passRate": 100
+      },
+      "medium": {
+        "total": 2,
+        "passed": 2,
+        "avgScore": 100,
+        "passRate": 100
+      }
+    }
+  },
+  "issues": {
+    "commonMissingTerms": {},
+    "commonForbiddenTerms": {},
+    "commonMissingTools": {}
+  },
+  "results": [
+    {
+      "scenarioId": "letter-type1-basic",
+      "scenario": {
+        "id": "letter-type1-basic",
+        "name": "Type 1 Letter Explanation (A)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "What is the letter A in TKA?",
+        "criteria": {
+          "mustInclude": [
+            "Type 1",
+            "dual-shift",
+            "shift",
+            "both hands"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "A is a Type 1 (Dual-Shift) letter",
+            "Both hands shift (move to adjacent points)"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Letter A is a **Type 1 Dual-Shift** letter in TKA.\n\n**Motion Pattern:**\n- Both hands shift (move to adjacent grid points)\n- Both hands rotate pro (prospin)\n\n**Position Pattern:**\n- Starts in alpha position (hands at opposite grid points)\n- Ends in alpha position\n- Specifically: alpha3 → alpha5 in the default variation\n\n**What happens in one beat:**\n- Blue hand moves from west to north\n- Red hand moves from east to south\n- Both props rotate clockwise (pro direction)\n\nLetter A has 8 total variations, representing all possible ways to perform this alpha-to-alpha, dual-pro-shift motion around the grid. It's part of the alpha-beta group within Type 1 letters, meaning it stays within alpha and beta positions.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01FkpHN1kuahzJJ2hekTynaX",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "A"
+            },
+            "result": {
+              "explanation": "# Letter: A\n\n## Type Information\n**Type 1: Dual-Shift**\n\nBoth hands shift (move to adjacent grid points). This is the most common letter type.\n\n**Characteristics:**\n- Both hands move 90 degrees on the grid\n- Creates smooth, flowing transitions\n- 22 letters - the largest type\n\n## Motion Pattern\n- **Blue hand:** pro (cw)\n- **Red hand:** pro (cw)\n\n## Variation 0 Details\n- **Start position:** alpha3\n- **End position:** alpha5\n- **Blue motion:** w → n\n- **Red motion:** e → s\n\n## All Variations (8 total)\n[0] alpha3 → alpha5\n[1] alpha5 → alpha7\n[2] alpha7 → alpha1\n[3] alpha1 → alpha3\n[4] alpha7 → alpha5\n... and 3 more",
+              "contextData": {
+                "type": "letter",
+                "letter": "A",
+                "letterType": 1,
+                "typeName": "Dual-Shift",
+                "startPosition": "alpha3",
+                "endPosition": "alpha5",
+                "blueMotion": {
+                  "motionType": "pro",
+                  "startLoc": "w",
+                  "endLoc": "n",
+                  "propRotDir": "cw"
+                },
+                "redMotion": {
+                  "motionType": "pro",
+                  "startLoc": "e",
+                  "endLoc": "s",
+                  "propRotDir": "cw"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 9632
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 4,
+            "total": 4
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 712,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:56:34.323Z"
+    },
+    {
+      "scenarioId": "letter-type2-basic",
+      "scenario": {
+        "id": "letter-type2-basic",
+        "name": "Type 2 Letter Explanation (W)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "Can you explain what letter W means?",
+        "criteria": {
+          "mustInclude": [
+            "Type 2",
+            "shift",
+            "static",
+            "one hand"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "W is a Type 2 (Shift) letter",
+            "One hand shifts while the other stays static"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Letter W is a **Type 2 Shift** letter. In Type 2 letters, one hand shifts to an adjacent grid point while the other hand remains static.\n\n**Motion Pattern:**\n- Blue hand: static (stays at the same grid point)\n- Red hand: shifts with pro rotation\n\n**Position Transition:**\nW transitions from gamma to alpha position. It starts in gamma (hands at adjacent grid points forming a right angle) and ends in alpha (hands at opposite grid points).\n\n**Specific Example (Variation 0):**\n- Start: gamma position with blue hand at north, red hand at east\n- End: alpha position with blue hand still at north, red hand moved to south\n- The red hand shifts from east to south with pro rotation\n\nW has 16 total variations, each starting from a different gamma configuration and ending in the corresponding alpha position. The blue hand always stays static while the red hand performs the shifting motion with pro rotation.",
+        "toolsCalled": [
+          {
+            "id": "toolu_019irb9z8nHLUR2b4uzafHag",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "W"
+            },
+            "result": {
+              "explanation": "# Letter: W\n\n## Type Information\n**Type 2: Shift**\n\nOne hand shifts while the other stays static. Creates asymmetric movements.\n\n**Characteristics:**\n- One hand moves, one stays in place\n- Often used for transitions between symmetric and asymmetric positions\n- Uses Greek letters for most of this type\n\n## Motion Pattern\n- **Blue hand:** static\n- **Red hand:** pro (cw)\n\n## Variation 0 Details\n- **Start position:** gamma3\n- **End position:** alpha5\n- **Blue motion:** n → n\n- **Red motion:** e → s\n\n## All Variations (16 total)\n[0] gamma3 → alpha5\n[1] gamma5 → alpha7\n[2] gamma7 → alpha1\n[3] gamma1 → alpha3\n[4] gamma15 → alpha5\n... and 11 more",
+              "contextData": {
+                "type": "letter",
+                "letter": "W",
+                "letterType": 2,
+                "typeName": "Shift",
+                "startPosition": "gamma3",
+                "endPosition": "alpha5",
+                "blueMotion": {
+                  "motionType": "static",
+                  "startLoc": "n",
+                  "endLoc": "n",
+                  "propRotDir": "noRotation"
+                },
+                "redMotion": {
+                  "motionType": "pro",
+                  "startLoc": "e",
+                  "endLoc": "s",
+                  "propRotDir": "cw"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 9182
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 95
+        },
+        "overall": 99,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 4,
+            "total": 4
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 95,
+            "issues": [],
+            "length": 906,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:56:44.013Z"
+    },
+    {
+      "scenarioId": "letter-type3-naming",
+      "scenario": {
+        "id": "letter-type3-naming",
+        "name": "Type 3 Letter with Dash Suffix (Sigma dash)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "What is Sigma dash?",
+        "criteria": {
+          "mustInclude": [
+            "Type 3",
+            "Cross-Shift"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "Sigma dash (Σ-) is a Type 3 letter",
+            "The dash suffix indicates Type 3 (Cross-Shift)",
+            "One hand shifts, one hand dashes"
+          ],
+          "commonMistakes": [
+            "Confusing dash in the name with dash motion type"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "Sigma dash (Σ-) is a **Type 3 Cross-Shift** letter. \n\nIn this letter:\n- One hand **shifts** (moves to an adjacent grid point)\n- One hand **dashes** (moves to the opposite grid point)\n\n**Motion pattern:**\n- Blue hand: dashes from east to west\n- Red hand: shifts from east to south with pro rotation\n\n**Position transition:** The hands move from beta position (same grid point) to gamma position (adjacent grid points forming a right angle).\n\n**Important note:** \"Sigma dash\" refers to the letter name Σ-, not to a letter that uses dash motion. The \"-\" suffix is part of the naming convention for Type 3 Cross-Shift letters.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01A5ftdKtkusBYWr74yDePcH",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "Σ-"
+            },
+            "result": {
+              "explanation": "# Letter: Σ-\n\n## Type Information\n**Type 3: Cross-Shift**\n\nOne hand shifts and one hand dashes. Also called 'dash letters' due to the '-' suffix in their names.\n\n**Characteristics:**\n- Combines shift (90 degree) and dash (180 degree) motions\n- Named with a '-' suffix (e.g., 'W-', 'Sigma-')\n- IMPORTANT: 'Sigma dash' means the letter Sigma- (Type 3), not a letter with dash motion\n\n## Motion Pattern\n- **Blue hand:** dash\n- **Red hand:** pro (cw)\n\n## Variation 0 Details\n- **Start position:** beta3\n- **End position:** gamma13\n- **Blue motion:** e → w\n- **Red motion:** e → s\n\n## All Variations (16 total)\n[0] beta3 → gamma13\n[1] beta5 → gamma15\n[2] beta7 → gamma9\n[3] beta1 → gamma11\n[4] beta7 → gamma5\n... and 11 more",
+              "contextData": {
+                "type": "letter",
+                "letter": "Σ-",
+                "letterType": 3,
+                "typeName": "Cross-Shift",
+                "startPosition": "beta3",
+                "endPosition": "gamma13",
+                "blueMotion": {
+                  "motionType": "dash",
+                  "startLoc": "e",
+                  "endLoc": "w",
+                  "propRotDir": "noRotation"
+                },
+                "redMotion": {
+                  "motionType": "pro",
+                  "startLoc": "e",
+                  "endLoc": "s",
+                  "propRotDir": "cw"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 7246
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 2,
+            "total": 2
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 622,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:56:51.761Z"
+    },
+    {
+      "scenarioId": "letter-type4-phi",
+      "scenario": {
+        "id": "letter-type4-phi",
+        "name": "Type 4 Letter Explanation (Phi)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "What is Phi?",
+        "criteria": {
+          "mustInclude": [
+            "Type 4",
+            "dash",
+            "static"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "Phi (Φ) is a Type 4 (Dash) letter",
+            "One hand dashes while the other stays static"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Φ (Phi) is a Type 4 Dash letter in TKA.\n\n**Motion Pattern:**\n- Blue hand: static (remains at its current grid point)\n- Red hand: dash (moves to the opposite grid point)\n\n**Position Transitions:**\nPhi transitions from beta position to alpha position. In the standard variation, it moves from beta3 to alpha7.\n\n**Type 4 Characteristics:**\nType 4 letters are called \"Dash\" letters because one hand performs a dash motion while the other stays static. There are only 3 letters in this type: Φ (Phi), Ψ (Psi), and Λ (Lambda).\n\nThe dash motion creates a dramatic position change, as the moving hand travels across the entire grid to reach the opposite point.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01FdPA9GNMC9jjGak9AFU3u2",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "Phi"
+            },
+            "result": "Letter \"Phi\" not found in the TKA alphabet."
+          },
+          {
+            "id": "toolu_01XExmYQNaKg2jSGQDUSriBA",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "Φ"
+            },
+            "result": {
+              "explanation": "# Letter: Φ\n\n## Type Information\n**Type 4: Dash**\n\nOne hand dashes (moves to opposite point) while the other stays static.\n\n**Characteristics:**\n- Creates dramatic position changes\n- Uses Greek letters Phi, Psi, Lambda\n- Only 3 letters in this type\n\n## Motion Pattern\n- **Blue hand:** static\n- **Red hand:** dash\n\n## Variation 0 Details\n- **Start position:** beta3\n- **End position:** alpha7\n- **Blue motion:** e → e\n- **Red motion:** e → w\n\n## All Variations (8 total)\n[0] beta3 → alpha7\n[1] beta1 → alpha5\n[2] beta7 → alpha3\n[3] beta5 → alpha1\n[4] beta3 → alpha3\n... and 3 more",
+              "contextData": {
+                "type": "letter",
+                "letter": "Φ",
+                "letterType": 4,
+                "typeName": "Dash",
+                "startPosition": "beta3",
+                "endPosition": "alpha7",
+                "blueMotion": {
+                  "motionType": "static",
+                  "startLoc": "e",
+                  "endLoc": "e",
+                  "propRotDir": "noRotation"
+                },
+                "redMotion": {
+                  "motionType": "dash",
+                  "startLoc": "e",
+                  "endLoc": "w",
+                  "propRotDir": "noRotation"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 10143
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_letter_explanation",
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 652,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:57:02.407Z"
+    },
+    {
+      "scenarioId": "letter-type5-phi-dash",
+      "scenario": {
+        "id": "letter-type5-phi-dash",
+        "name": "Type 5 Letter Explanation (Phi dash)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "Tell me about Phi dash.",
+        "criteria": {
+          "mustInclude": [
+            "Type 5",
+            "Dual-Dash",
+            "both hands"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "Phi dash (Φ-) is a Type 5 (Dual-Dash) letter",
+            "Both hands dash (move to opposite points)"
+          ],
+          "commonMistakes": [
+            "Confusing Type 5 with Type 1 because both have 'both hands moving'"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "Phi dash (Φ-) is a Type 5 Dual-Dash letter. In Type 5 letters, both hands dash simultaneously - each hand moves to the opposite grid point.\n\n**Motion Pattern:**\n- Blue hand: dashes from west to east\n- Red hand: dashes from east to west\n- Both hands move at the same time\n\n**Position Pattern:**\nPhi dash maintains alpha position throughout - the hands start at opposite points and end at opposite points. The specific variation shown starts at alpha3 (blue west, red east) and ends at alpha7 (blue east, red west).\n\n**Type 5 Characteristics:**\n- Only 3 letters total: Φ-, Ψ-, Λ-\n- Both hands always dash\n- Creates symmetric, dramatic movements\n- Uses the \"-\" suffix naming convention (like Type 3 letters)\n\nThe letter has 4 variations total, covering all possible alpha-to-alpha dash combinations.",
+        "toolsCalled": [
+          {
+            "id": "toolu_01Dr3WY4JbCvKD6qU92vPfED",
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "Φ-"
+            },
+            "result": {
+              "explanation": "# Letter: Φ-\n\n## Type Information\n**Type 5: Dual-Dash**\n\nBoth hands dash simultaneously (both move to opposite points).\n\n**Characteristics:**\n- Both hands move 180 degrees\n- Creates dramatic, symmetric movements\n- Named with '-' suffix like Type 3\n- Only 3 letters in this type\n\n## Motion Pattern\n- **Blue hand:** dash\n- **Red hand:** dash\n\n## Variation 0 Details\n- **Start position:** alpha3\n- **End position:** alpha7\n- **Blue motion:** w → e\n- **Red motion:** e → w\n\n## All Variations (4 total)\n[0] alpha3 → alpha7\n[1] alpha1 → alpha5\n[2] alpha7 → alpha3\n[3] alpha5 → alpha1",
+              "contextData": {
+                "type": "letter",
+                "letter": "Φ-",
+                "letterType": 5,
+                "typeName": "Dual-Dash",
+                "startPosition": "alpha3",
+                "endPosition": "alpha7",
+                "blueMotion": {
+                  "motionType": "dash",
+                  "startLoc": "w",
+                  "endLoc": "e",
+                  "propRotDir": "noRotation"
+                },
+                "redMotion": {
+                  "motionType": "dash",
+                  "startLoc": "e",
+                  "endLoc": "w",
+                  "propRotDir": "noRotation"
+                }
+              }
+            }
+          }
+        ],
+        "latencyMs": 8996
+      },
+      "evaluation": {
+        "passed": true,
+        "scores": {
+          "termAccuracy": 100,
+          "levelAppropriate": 100,
+          "toolUsage": 100,
+          "conciseness": 100
+        },
+        "overall": 100,
+        "issues": [],
+        "recommendation": "excellent",
+        "details": {
+          "termAccuracy": {
+            "score": 100,
+            "issues": [],
+            "found": 3,
+            "total": 3
+          },
+          "levelAppropriate": {
+            "score": 100,
+            "issues": [],
+            "violations": 0
+          },
+          "toolUsage": {
+            "score": 100,
+            "issues": [],
+            "found": 1,
+            "total": 1,
+            "called": [
+              "get_letter_explanation"
+            ]
+          },
+          "conciseness": {
+            "score": 100,
+            "issues": [],
+            "length": 796,
+            "idealRange": {
+              "min": 80,
+              "max": 800
+            }
+          }
+        }
+      },
+      "timestamp": "2026-01-17T09:57:11.909Z"
+    }
+  ]
+}

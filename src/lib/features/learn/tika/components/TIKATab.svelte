@@ -8,22 +8,26 @@
   Uses AI SDK for streaming chat with tool-use architecture.
 -->
 <script lang="ts">
-  import { useChat, type Message } from "@ai-sdk/svelte";
+  import { Chat, type UIMessage } from "@ai-sdk/svelte";
+  import { DefaultChatTransport } from "ai";
   import { browser } from "$app/environment";
   import TIKAConversation from "./TIKAConversation.svelte";
   import TIKAContextPanel from "./TIKAContextPanel.svelte";
   import TIKAQuickReference from "./TIKAQuickReference.svelte";
   import TIKAReviewPanel from "./TIKAReviewPanel.svelte";
-  import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
+  import TIKAHistoryDrawer from "./TIKAHistoryDrawer.svelte";
+  import { getEffectiveUserId, authState } from "$lib/shared/auth/state/authState.svelte";
   import { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
+  import { TIKASessionRepository } from "$lib/features/learn/tika/services/implementations/TIKASessionRepository";
   import { tikaPictographCache } from "$lib/features/learn/tika/services/implementations/TikaPictographCache";
+  import { TIKA_LIMITS } from "$lib/features/learn/tika/data/firestore-paths";
   import type { ContextData } from "../types";
 
   // Persistence key for sessionStorage
   const STORAGE_KEY = "tika-conversation";
 
   // Load persisted messages from sessionStorage
-  function loadPersistedMessages(): Message[] {
+  function loadPersistedMessages(): UIMessage[] {
     if (!browser) return [];
     try {
       const stored = sessionStorage.getItem(STORAGE_KEY);
@@ -39,6 +43,17 @@
   // Mode toggle - conversation vs review
   type TabMode = "conversation" | "review";
   let mode = $state<TabMode>("conversation");
+
+  // Session management state
+  let currentSessionId = $state<string | null>(null);
+  let showHistory = $state(false);
+  let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // Repository instance (initialized lazily when user is authenticated)
+  const sessionRepository = browser ? new TIKASessionRepository() : null;
+
+  // Check if user is authenticated
+  const isAuthenticated = $derived(authState.isAuthenticated);
 
   // Context panel state
   let currentContext = $state<ContextData | null>(null);
@@ -56,31 +71,28 @@
     return Array.from(progress.completedConcepts);
   });
 
-  // Initialize useChat hook from AI SDK with persistence
-  const {
-    messages,
-    status,
-    append,
-    stop,
-    input,
-    setMessages,
-  } = useChat({
-    id: "tika-main",
-    api: "/api/tika/ask",
-    body: {
-      userId,
-      completedConcepts,
-      language: "en",
-    },
-    initialMessages: loadPersistedMessages(),
-    onError: (error: Error) => {
-      console.error("[TIKA] Chat error:", error);
-    },
-  });
+  // Initialize Chat class from AI SDK with persistence
+  const chat = browser
+    ? new Chat({
+        id: "tika-main",
+        transport: new DefaultChatTransport({
+          api: "/api/tika/ask",
+          body: () => ({
+            userId,
+            completedConcepts,
+            language: "en",
+          }),
+        }),
+        messages: loadPersistedMessages(),
+        onError: (error: Error) => {
+          console.error("[TIKA] Chat error:", error);
+        },
+      })
+    : null;
 
   // Persist messages to sessionStorage when they change
   $effect(() => {
-    const currentMessages = $messages;
+    const currentMessages = chat?.messages ?? [];
     if (browser && currentMessages.length > 0) {
       try {
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(currentMessages));
@@ -90,27 +102,65 @@
     }
   });
 
+  // Auto-save to Firebase (debounced) when messages change
+  $effect(() => {
+    const currentMessages = chat?.messages ?? [];
+
+    // Skip if not authenticated or no repository
+    if (!isAuthenticated || !sessionRepository) return;
+
+    // Skip if below minimum message threshold
+    if (currentMessages.length < TIKA_LIMITS.MIN_MESSAGES_FOR_SAVE) return;
+
+    // Clear existing timeout
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+
+    // Debounce the save
+    autoSaveTimeout = setTimeout(async () => {
+      try {
+        const session = await sessionRepository.saveSession(
+          currentSessionId ?? undefined,
+          currentMessages
+        );
+        // Update session ID if this was a new session
+        if (!currentSessionId) {
+          currentSessionId = session.id;
+        }
+      } catch (error) {
+        console.error("[TIKA] Auto-save failed:", error);
+      }
+    }, TIKA_LIMITS.AUTO_SAVE_DEBOUNCE_MS);
+  });
+
+  // Cleanup auto-save timeout on unmount
+  $effect(() => {
+    return () => {
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+      }
+    };
+  });
+
   // Derived - has context to show?
   let hasContext = $derived(currentContext !== null);
 
   // Handle suggestion click from Quick Reference - submit directly
   function handleSuggestionClick(question: string) {
-    // Check store value for status
-    let currentStatus: string = "ready";
-    status.subscribe((s) => (currentStatus = s))();
-    if (currentStatus === "ready") {
-      append({ role: "user", content: question });
+    if (chat?.status === "ready") {
+      chat.sendMessage({ text: question });
     }
   }
 
   // Handle new message submission from conversation component
   function handleSubmit(question: string) {
-    append({ role: "user", content: question });
+    chat?.sendMessage({ text: question });
   }
 
   // Handle stop/abort streaming
   function handleStop() {
-    stop();
+    chat?.stop();
   }
 
   // Generate cache key for pictograph
@@ -242,9 +292,77 @@
     pictographBase64 = null;
   }
 
+  // Start a new conversation
+  async function handleNewChat() {
+    const currentMessages = chat?.messages ?? [];
+    // Save current session if it has messages
+    if (isAuthenticated && sessionRepository && currentMessages.length >= TIKA_LIMITS.MIN_MESSAGES_FOR_SAVE) {
+      try {
+        await sessionRepository.saveSession(
+          currentSessionId ?? undefined,
+          currentMessages
+        );
+      } catch (error) {
+        console.error("[TIKA] Failed to save session before new chat:", error);
+      }
+    }
+
+    // Clear current conversation
+    if (chat) chat.messages = [];
+    currentSessionId = null;
+    currentContext = null;
+    pictographBase64 = null;
+    pictographGallery = new Map();
+
+    // Clear sessionStorage
+    if (browser) {
+      sessionStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  // Load a previous session
+  async function handleLoadSession(sessionId: string) {
+    if (!sessionRepository || !chat) return;
+
+    try {
+      const session = await sessionRepository.getSession(sessionId);
+      if (session) {
+        chat.messages = session.messages as UIMessage[];
+        currentSessionId = session.id;
+        currentContext = null;
+        pictographBase64 = null;
+        pictographGallery = new Map();
+
+        // Update sessionStorage
+        if (browser) {
+          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session.messages));
+        }
+      }
+    } catch (error) {
+      console.error("[TIKA] Failed to load session:", error);
+    }
+  }
+
+  // Open/close history drawer
+  function handleOpenHistory() {
+    showHistory = true;
+  }
+
+  function handleCloseHistory() {
+    showHistory = false;
+  }
+
+  // Helper to extract text from message parts
+  function getTextFromParts(parts: UIMessage["parts"]): string {
+    return parts
+      .filter((p): p is { type: "text"; text: string } => p.type === "text")
+      .map((p) => p.text)
+      .join("");
+  }
+
   // Generate conversation data for AI review (returns string for CopyForAIButton)
   function generateCopyForAI(): string {
-    const currentMessages = $messages;
+    const currentMessages = chat?.messages ?? [];
     if (currentMessages.length === 0) return "";
 
     // Format conversation for AI review
@@ -262,7 +380,7 @@
       if (message.role === "user") {
         lines.push(`## User Question`);
         lines.push("");
-        lines.push(message.content);
+        lines.push(getTextFromParts(message.parts));
         lines.push("");
       } else if (message.role === "assistant") {
         lines.push(`## TIKA Response`);
@@ -301,9 +419,13 @@
             }
             lines.push("");
           }
-        } else if (message.content) {
-          lines.push(message.content);
-          lines.push("");
+        } else {
+          // Fallback: extract text from parts
+          const text = getTextFromParts(message.parts);
+          if (text) {
+            lines.push(text);
+            lines.push("");
+          }
         }
       }
       lines.push("---");
@@ -378,8 +500,7 @@
   // Watch for tool results that might update context
   // The AI SDK handles tool calls internally, but we can observe messages for context
   $effect(() => {
-    // Subscribe to messages store
-    const currentMessages = $messages;
+    const currentMessages = chat?.messages ?? [];
     if (currentMessages.length === 0) return;
 
     // Check the latest assistant message for tool results
@@ -529,10 +650,12 @@
       <!-- Conversation Panel (Left) -->
       <div class="conversation-panel">
         <TIKAConversation
-          messages={$messages}
-          status={$status}
+          messages={chat?.messages ?? []}
+          status={chat?.status ?? "ready"}
           onSubmit={handleSubmit}
           onStop={handleStop}
+          onNewChat={isAuthenticated ? handleNewChat : undefined}
+          onOpenHistory={isAuthenticated ? handleOpenHistory : undefined}
           {generateCopyForAI}
         />
       </div>
@@ -554,10 +677,31 @@
   {:else}
     <TIKAReviewPanel />
   {/if}
+
+  <!-- History Drawer -->
+  {#if showHistory && isAuthenticated && sessionRepository}
+    <div class="history-overlay" role="presentation">
+      <button
+        class="history-backdrop"
+        onclick={handleCloseHistory}
+        aria-label="Close history"
+      ></button>
+      <div class="history-drawer-container">
+        <TIKAHistoryDrawer
+          repository={sessionRepository}
+          {currentSessionId}
+          onNewChat={handleNewChat}
+          onLoadSession={handleLoadSession}
+          onClose={handleCloseHistory}
+        />
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
   .tika-tab {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -664,6 +808,41 @@
     font-size: 1rem;
   }
 
+  /* History Overlay */
+  .history-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .history-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    cursor: pointer;
+    backdrop-filter: blur(2px);
+  }
+
+  .history-drawer-container {
+    position: relative;
+    width: 320px;
+    max-width: 90vw;
+    height: 100%;
+    animation: slideIn var(--duration-normal) ease;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
   /* Reduced Motion */
   @media (prefers-reduced-motion: reduce) {
     .panel-container,
@@ -671,6 +850,10 @@
     .context-panel,
     .mode-btn {
       transition: none;
+    }
+
+    .history-drawer-container {
+      animation: none;
     }
   }
 </style>

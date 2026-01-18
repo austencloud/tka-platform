@@ -15,12 +15,16 @@
     status = "ready",
     onSubmit,
     onStop,
+    onNewChat,
+    onOpenHistory,
     generateCopyForAI,
   }: {
     messages: UIMessage[];
     status: "submitted" | "streaming" | "ready" | "error";
     onSubmit: (question: string) => void;
     onStop: () => void;
+    onNewChat?: () => void;
+    onOpenHistory?: () => void;
     generateCopyForAI?: () => string;
   } = $props();
 
@@ -113,8 +117,28 @@
       <span>TIKA</span>
     </div>
     <div class="header-subtitle">TKA Intelligent Knowledge Assistant</div>
-    {#if messages.length > 0}
-      <div class="header-actions">
+    <div class="header-actions">
+      {#if onNewChat}
+        <button
+          class="header-btn"
+          onclick={onNewChat}
+          title="New conversation"
+          aria-label="Start new conversation"
+        >
+          <i class="fas fa-plus" aria-hidden="true"></i>
+        </button>
+      {/if}
+      {#if onOpenHistory}
+        <button
+          class="header-btn"
+          onclick={onOpenHistory}
+          title="Chat history"
+          aria-label="Open chat history"
+        >
+          <i class="fas fa-history" aria-hidden="true"></i>
+        </button>
+      {/if}
+      {#if messages.length > 0}
         <button
           class="header-btn"
           onclick={() => (showToolDetails = !showToolDetails)}
@@ -123,7 +147,6 @@
           aria-expanded={showToolDetails}
         >
           <i class="fas fa-wrench" aria-hidden="true"></i>
-          {showToolDetails ? "Hide Tools" : "Show Tools"}
         </button>
         {#if generateCopyForAI}
           <CopyForAIButton
@@ -134,8 +157,8 @@
             ariaLabel="Copy conversation for AI review"
           />
         {/if}
-      </div>
-    {/if}
+      {/if}
+    </div>
   </header>
 
   <!-- Chat Messages -->
@@ -180,7 +203,7 @@
           <!-- User Message -->
           <div class="message user-message">
             <div class="message-content">
-              <p>{getTextFromParts(message.parts) || message.content}</p>
+              <p>{getTextFromParts(message.parts)}</p>
             </div>
           </div>
         {:else if message.role === "assistant"}

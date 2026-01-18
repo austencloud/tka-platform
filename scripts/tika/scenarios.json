@@ -43,6 +43,49 @@
     "difficulty": "medium"
   },
   {
+    "id": "letter-type4-phi",
+    "name": "Type 4 Letter Explanation (Phi)",
+    "category": "letter-explanation",
+    "userLevel": 1,
+    "question": "What is Phi?",
+    "criteria": {
+      "mustInclude": ["Type 4", "dash", "static"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["get_letter_explanation"],
+      "keyFacts": ["Phi (Φ) is a Type 4 (Dash) letter", "One hand dashes while the other stays static"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "letter-type5-phi-dash",
+    "name": "Type 5 Letter Explanation (Phi dash)",
+    "category": "letter-explanation",
+    "userLevel": 1,
+    "question": "Tell me about Phi dash.",
+    "criteria": {
+      "mustInclude": ["Type 5", "Dual-Dash", "both hands"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["get_letter_explanation"],
+      "keyFacts": ["Phi dash (Φ-) is a Type 5 (Dual-Dash) letter", "Both hands dash (move to opposite points)"],
+      "commonMistakes": ["Confusing Type 5 with Type 1 because both have 'both hands moving'"]
+    },
+    "difficulty": "medium"
+  },
+  {
+    "id": "letter-type6-alpha",
+    "name": "Type 6 Letter Explanation (lowercase alpha)",
+    "category": "letter-explanation",
+    "userLevel": 1,
+    "question": "What is lowercase alpha as a TKA letter?",
+    "criteria": {
+      "mustInclude": ["Type 6", "static", "both hands"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["get_letter_explanation"],
+      "keyFacts": ["Lowercase alpha (α) is a Type 6 (Static) letter", "Both hands stay stationary"]
+    },
+    "difficulty": "medium"
+  },
+  {
     "id": "term-alpha-position",
     "name": "Alpha Position Definition",
     "category": "term-definition",
@@ -115,6 +158,34 @@
     "difficulty": "easy"
   },
   {
+    "id": "term-pro-rotation",
+    "name": "Pro Rotation Definition",
+    "category": "term-definition",
+    "userLevel": 1,
+    "question": "What's pro rotation?",
+    "criteria": {
+      "mustInclude": ["rotation", "prop", "same direction"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["get_term_definition"],
+      "keyFacts": ["Pro (prospin) is a rotation direction", "The prop rotates with the hand's path direction"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "term-anti-rotation",
+    "name": "Anti Rotation Definition",
+    "category": "term-definition",
+    "userLevel": 1,
+    "question": "Explain antispin.",
+    "criteria": {
+      "mustInclude": ["rotation", "prop", "opposite", "against"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["get_term_definition"],
+      "keyFacts": ["Anti (antispin) is a rotation direction", "The prop rotates against the hand's path direction"]
+    },
+    "difficulty": "easy"
+  },
+  {
     "id": "compare-type1-type3",
     "name": "Compare Type 1 and Type 3",
     "category": "letter-comparison",
@@ -140,6 +211,34 @@
       "mustNotInclude": ["degrees", "turn", "skew"],
       "expectedTools": ["get_position_info"],
       "keyFacts": ["Alpha: Hands at opposite points", "Beta: Hands at the same point"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "compare-shift-dash-motion",
+    "name": "Compare Shift and Dash Motions",
+    "category": "letter-comparison",
+    "userLevel": 1,
+    "question": "What's the difference between shift and dash?",
+    "criteria": {
+      "mustInclude": ["motion", "adjacent", "opposite"],
+      "mustNotInclude": ["degrees", "turn", "skew"],
+      "expectedTools": ["get_term_definition"],
+      "keyFacts": ["Shift: Hand moves to adjacent grid point", "Dash: Hand moves to opposite grid point"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "compare-pro-anti",
+    "name": "Compare Pro and Anti Rotation",
+    "category": "letter-comparison",
+    "userLevel": 1,
+    "question": "Pro vs anti - what's different?",
+    "criteria": {
+      "mustInclude": ["rotation", "prop", "direction"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["get_term_definition"],
+      "keyFacts": ["Pro: Prop rotates with the hand path", "Anti: Prop rotates against the hand path"]
     },
     "difficulty": "easy"
   },
@@ -189,6 +288,21 @@
     "difficulty": "hard"
   },
   {
+    "id": "misconception-position-equals-letter",
+    "name": "Misconception: Alpha is a Letter",
+    "category": "misconception-correction",
+    "userLevel": 1,
+    "question": "How do I do the alpha letter?",
+    "criteria": {
+      "mustInclude": ["position", "Type 6"],
+      "mustNotInclude": ["turn", "skew"],
+      "expectedTools": ["get_term_definition", "get_letter_explanation"],
+      "keyFacts": ["Should clarify alpha has two meanings", "Alpha (position): Hands at opposite points", "α (lowercase letter): A Type 6 static letter"],
+      "commonMistakes": ["Not distinguishing between alpha as position vs letter"]
+    },
+    "difficulty": "hard"
+  },
+  {
     "id": "level1-no-turns",
     "name": "Level 1: Should Not Mention Turns",
     "category": "concept-question",
@@ -199,6 +313,34 @@
       "mustNotInclude": ["turn", "quarter", "90", "180", "skew"],
       "expectedTools": [],
       "keyFacts": ["Explain LOOP concept at Level 1", "Focus on positions, not turns"]
+    },
+    "difficulty": "medium"
+  },
+  {
+    "id": "level2-turns",
+    "name": "Level 2: Turns Explanation",
+    "category": "concept-question",
+    "userLevel": 2,
+    "question": "How do turns work in TKA?",
+    "criteria": {
+      "mustInclude": ["turn", "rotation", "prop"],
+      "mustNotInclude": ["quarter", "skew"],
+      "expectedTools": ["get_term_definition"],
+      "keyFacts": ["Turns describe prop rotation amounts", "Available at Level 2+"]
+    },
+    "difficulty": "medium"
+  },
+  {
+    "id": "level3-quarter-turns",
+    "name": "Level 3: Quarter Turns",
+    "category": "concept-question",
+    "userLevel": 3,
+    "question": "What are quarter turns?",
+    "criteria": {
+      "mustInclude": ["quarter", "turn", "rotation"],
+      "mustNotInclude": ["skew"],
+      "expectedTools": ["get_term_definition"],
+      "keyFacts": ["Quarter turns are fractional rotations", "Available at Level 3+"]
     },
     "difficulty": "medium"
   },
@@ -215,5 +357,145 @@
       "keyFacts": ["Alpha (position): Hands at opposite points", "α (letter): Type 6 static letter, lowercase"]
     },
     "difficulty": "hard"
+  },
+  {
+    "id": "edge-vague-question",
+    "name": "Edge: Vague Question",
+    "category": "edge-case",
+    "userLevel": 1,
+    "question": "Tell me stuff.",
+    "criteria": {
+      "mustInclude": [],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": [],
+      "keyFacts": ["Should ask for clarification or offer topics", "Should not dump advanced concepts"]
+    },
+    "difficulty": "medium"
+  },
+  {
+    "id": "edge-advanced-at-level1",
+    "name": "Edge: Advanced Topic at Level 1",
+    "category": "edge-case",
+    "userLevel": 1,
+    "question": "Explain skews.",
+    "criteria": {
+      "mustInclude": ["level", "later"],
+      "mustNotInclude": ["skew mode", "diamond", "box"],
+      "expectedTools": [],
+      "keyFacts": ["Should indicate this is an advanced topic", "Should redirect to level-appropriate content"]
+    },
+    "difficulty": "medium"
+  },
+  {
+    "id": "beginner-what-is-tka",
+    "name": "Beginner: What is TKA?",
+    "category": "beginner-orientation",
+    "userLevel": 1,
+    "question": "What is TKA?",
+    "criteria": {
+      "mustInclude": ["notation", "movement"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["get_alphabet_info"],
+      "keyFacts": ["TKA is a notation system", "Used for flow arts like poi and staff", "Describes hand and prop movements"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "beginner-how-to-start",
+    "name": "Beginner: How to Start",
+    "category": "beginner-orientation",
+    "userLevel": 1,
+    "question": "I'm new to TKA. Where do I start?",
+    "criteria": {
+      "mustInclude": ["position", "motion"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": [],
+      "keyFacts": ["Should suggest starting with positions", "Should mention the 3 motion types", "Should keep it simple"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "engagement-why-learn",
+    "name": "Engagement: Why Learn TKA?",
+    "category": "engagement",
+    "userLevel": 1,
+    "question": "Why should I learn TKA? Is it worth it?",
+    "criteria": {
+      "mustInclude": ["share", "sequence"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": [],
+      "keyFacts": ["TKA enables sharing sequences", "Written notation for movements", "Creates a common language"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "engagement-practical-use",
+    "name": "Engagement: Practical Use",
+    "category": "engagement",
+    "userLevel": 1,
+    "question": "What can I actually do with TKA once I learn it?",
+    "criteria": {
+      "mustInclude": ["sequence", "create"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": [],
+      "keyFacts": ["Create and document sequences", "Share with other practitioners", "Analyze and learn from others' work"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "grid-diamond-mode",
+    "name": "Grid: Diamond Mode",
+    "category": "concept-question",
+    "userLevel": 1,
+    "question": "What is diamond mode?",
+    "criteria": {
+      "mustInclude": ["grid", "cardinal", "north", "south", "east", "west"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["get_term_definition"],
+      "keyFacts": ["Diamond mode uses cardinal points", "N, E, S, W positions"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "grid-box-mode",
+    "name": "Grid: Box Mode",
+    "category": "concept-question",
+    "userLevel": 1,
+    "question": "What is box mode?",
+    "criteria": {
+      "mustInclude": ["grid", "corner", "intercardinal"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["get_term_definition"],
+      "keyFacts": ["Box mode uses intercardinal points", "NE, SE, SW, NW positions"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "all-types-overview",
+    "name": "Overview: All Six Types",
+    "category": "concept-question",
+    "userLevel": 1,
+    "question": "What are the 6 types of letters in TKA?",
+    "criteria": {
+      "mustInclude": ["Type 1", "Type 2", "Type 3", "Type 4", "Type 5", "Type 6"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["list_letters_by_type"],
+      "keyFacts": ["Type 1: Dual-Shift", "Type 2: Shift", "Type 3: Cross-Shift", "Type 4: Dash", "Type 5: Dual-Dash", "Type 6: Static"]
+    },
+    "difficulty": "medium"
+  },
+  {
+    "id": "pictograph-what-is",
+    "name": "Pictograph: What Is It?",
+    "category": "concept-question",
+    "userLevel": 1,
+    "question": "What is a pictograph?",
+    "criteria": {
+      "mustInclude": ["visual", "beat", "movement"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": [],
+      "keyFacts": ["A pictograph is a visual representation of one beat", "Shows hand positions and prop movements"]
+    },
+    "difficulty": "easy"
   }
 ]
