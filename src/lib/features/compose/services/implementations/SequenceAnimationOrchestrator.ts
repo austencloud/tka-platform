@@ -436,8 +436,9 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       this.animationStateService.updatePropStates(interpolationResult);
     }
 
-    // Return 1-based beat number for UI sync
-    return stepState.currentStepIndex + 1;
+    // Return 1-based beat number WITH fractional progress for smooth UI updates
+    // e.g., beat 2 at 50% progress returns 2.5 (not just 2)
+    return stepState.currentStepIndex + 1 + stepState.stepProgress;
   }
 
   /**

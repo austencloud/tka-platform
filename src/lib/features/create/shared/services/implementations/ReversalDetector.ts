@@ -188,10 +188,27 @@ export class ReversalDetector implements IReversalDetector {
       return null;
     }
 
-    // Use rotationDirection property (current structure) instead of propRotDir (legacy)
-    const rotationDirection = motionData.rotationDirection;
+    // PRIMARY: Use rotationDirection if present
+    if (motionData.rotationDirection) {
+      return motionData.rotationDirection;
+    }
 
-    return rotationDirection || null;
+    // FALLBACK: Derive from motion type when rotationDirection is missing
+    // This handles incomplete CSV data where rotationDirection defaults to null
+    if (motionData.motionType === "static") {
+      return "noRotation";
+    }
+
+    // For other motion types (pro, anti, dash, float), we can't reliably derive
+    // the rotation direction without additional context. Log warning and return
+    // a safe default to avoid treating it as a reversal.
+    console.warn(
+      `Missing rotationDirection for ${color} at step ${beat.stepNumber}. ` +
+        `Motion type: ${motionData.motionType}. Defaulting to 'cw'.`
+    );
+
+    // Safe default: clockwise (most common in TKA sequences)
+    return "cw";
   }
 
   /**

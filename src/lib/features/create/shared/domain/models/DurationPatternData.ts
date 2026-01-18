@@ -130,19 +130,22 @@ export function formatDurationValue(value: DurationValue): string {
 
 /**
  * Format a duration value for compact display (beat grid)
- * - 0.25 → "¼"
- * - 0.5 → "½"
- * - 1.0 → "1"
- * - 1.5 → "1½"
- * - 2.0 → "2"
- * - 4.0 → "4"
+ * - 0.25 → "0.25×"
+ * - 0.5 → "0.5×"
+ * - 1.0 → "" (empty - default duration, not shown)
+ * - 1.25 → "1.25×"
+ * - 1.5 → "1.5×"
+ * - 2.0 → "2×"
+ * - 4.0 → "4×"
  */
 export function formatDurationCompact(value: DurationValue): string {
-  if (value === 0.25) return "¼";
-  if (value === 0.5) return "½";
-  if (value === 0.75) return "¾";
-  if (value === 1.5) return "1½";
-  if (value === 2.5) return "2½";
-  if (Number.isInteger(value)) return String(value);
-  return value.toFixed(1);
+  // Don't show duration for 1 beat (the default/assumption)
+  if (value === 1.0) return "";
+
+  // Format as decimal, remove trailing zeros, add × suffix
+  const formatted = Number.isInteger(value)
+    ? value.toString()
+    : value.toFixed(2).replace(/\.?0+$/, "");
+
+  return `${formatted}×`;
 }

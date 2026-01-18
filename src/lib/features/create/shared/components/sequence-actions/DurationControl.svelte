@@ -1,10 +1,11 @@
 <!--
   DurationControl.svelte
 
-  Controls for adjusting beat duration using the musical subdivision system.
-  Dual controls: fine (±¼) and coarse (±1) stepping.
-  Display uses Unicode fractions for universal understanding.
+  Full-width integrated banner for adjusting beat duration.
+  Dual controls: fine (±0.25) and coarse (±1) stepping.
+  Display uses decimals with × suffix (0.5×, 1×, 1.25×, 2×, etc.).
 
+  Visually integrates with prop control cards via matching padding and border-bottom divider.
   Compact mode: Smaller buttons and tighter spacing for mobile.
 -->
 <script lang="ts">
@@ -89,37 +90,42 @@
 </div>
 
 <style>
+  /* ============================================================================
+     DURATION CONTROL - Full-width integrated banner
+     Visually connects to prop control cards below
+     ============================================================================ */
+
   .duration-control {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    margin-top: 12px;
+    gap: 10px;
+    padding: 14px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    margin: 0 0 12px 0; /* Bottom margin creates separation from prop cards */
   }
 
-  /* Compact mode: tighter layout */
+  /* Compact mode: tighter layout matching prop cards */
   .duration-control.compact {
-    gap: 4px;
+    gap: 6px;
     padding: 8px;
-    border-radius: 10px;
-    margin-top: 6px;
+    margin-bottom: 6px;
   }
 
+  /* Duration label - matches BLUE/RED label styling */
   .duration-label {
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.8);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.75px;
   }
 
   .duration-control.compact .duration-label {
-    font-size: var(--font-size-compact, 12px);
-    letter-spacing: 0.03em;
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
   }
 
   .duration-row {
@@ -147,7 +153,7 @@
   }
 
   /* ============================================================================
-     CONTROL BUTTONS - Neutral theme (not blue/red)
+     CONTROL BUTTONS - Neutral theme matching the integrated design
      ============================================================================ */
 
   .ctrl-btn {
@@ -181,17 +187,17 @@
     cursor: not-allowed;
   }
 
-  /* Coarse buttons (±1) - slightly more prominent */
+  /* Coarse buttons (±1) - neutral styling, no orange accent */
   .ctrl-btn.coarse {
-    background: rgba(var(--theme-accent-rgb, 249, 115, 22), 0.15);
-    border-color: rgba(var(--theme-accent-rgb, 249, 115, 22), 0.3);
-    color: var(--theme-accent, #f97316);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.8);
   }
 
   .ctrl-btn.coarse:hover:not(:disabled) {
-    background: rgba(var(--theme-accent-rgb, 249, 115, 22), 0.25);
-    border-color: rgba(var(--theme-accent-rgb, 249, 115, 22), 0.5);
-    box-shadow: 0 2px 8px rgba(var(--theme-accent-rgb, 249, 115, 22), 0.2);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
   }
 
   /* Fine buttons (±¼) - subtle */

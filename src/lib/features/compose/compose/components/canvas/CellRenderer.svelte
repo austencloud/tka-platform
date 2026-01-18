@@ -29,7 +29,7 @@
     currentStep?: number;
   }
 
-  let { cell, isPlaying, isPreviewing, bpm = 60, currentBeat = 0 }: Props = $props();
+  let { cell, isPlaying, isPreviewing, bpm = 60, currentStep = 0 }: Props = $props();
 
   // Convert BPM to speed multiplier (60 BPM = 1.0x speed)
   const speed = $derived(bpm / 60);

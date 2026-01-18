@@ -134,6 +134,10 @@
     updateCounter;
     return visibilityManager.getVisibility("wordHeader");
   }
+  function getProgressBar() {
+    updateCounter;
+    return visibilityManager.getVisibility("progressBar");
+  }
 
   // Toggle handlers
   function toggleGrid() {
@@ -182,6 +186,11 @@
   function toggleWordHeader() {
     const current = visibilityManager.getVisibility("wordHeader");
     visibilityManager.setVisibility("wordHeader", !current);
+    updateCounter++;
+  }
+  function toggleProgressBar() {
+    const current = visibilityManager.getVisibility("progressBar");
+    visibilityManager.setVisibility("progressBar", !current);
     updateCounter++;
   }
 
@@ -279,6 +288,15 @@
       title="Word header above animation"
     >
       <span>Word</span>
+    </button>
+    <button
+      class="element-btn"
+      class:active={getProgressBar()}
+      onclick={toggleProgressBar}
+      type="button"
+      title="Progress bar in word header"
+    >
+      <span>Progress</span>
     </button>
   </div>
 

@@ -288,6 +288,13 @@
           {onOrientationChange}
         />
       {:else}
+        {#if onDurationChange}
+          <DurationControl
+            duration={displayedStepData?.duration ?? 1}
+            compact={!isSideBySideLayout}
+            onDurationChange={onDurationChange}
+          />
+        {/if}
         <TurnsEditMode
           {hasSelection}
           blueTurns={displayBlueTurns}
@@ -302,13 +309,6 @@
           {onRotationChange}
           {onOpenPropSheet}
         />
-        {#if onDurationChange}
-          <DurationControl
-            duration={displayedStepData?.duration ?? 1}
-            compact={!isSideBySideLayout}
-            onDurationChange={onDurationChange}
-          />
-        {/if}
       {/if}
     </div>
   </div>

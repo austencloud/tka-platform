@@ -64,7 +64,7 @@
     <div class="cell-content">
       {#if shouldRenderAnimation}
         <!-- Live animation rendering -->
-        <CellRenderer {cell} {isPlaying} {isPreviewing} {bpm} {currentBeat} />
+        <CellRenderer {cell} {isPlaying} {isPreviewing} {bpm} {currentStep} />
       {:else}
         <!-- Static preview -->
         <div class="static-preview">
