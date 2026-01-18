@@ -230,6 +230,34 @@ Claude: [takes snapshot, analyzes, clicks around as needed]
 
 ---
 
+## /ai-bust Command
+
+Scans user-facing text for AI writing patterns.
+
+```
+/ai-bust src/routes/landing/+page.svelte
+/ai-bust src/routes/(public)/**/*.svelte
+/ai-bust "Your text to check"
+```
+
+**What it catches:**
+- Em dashes (dead giveaway)
+- Banned openers ("In today's fast-paced world...")
+- Blacklisted words (leverage, seamless, delve, etc.)
+- Hedging phrases ("It's worth noting...")
+- Perfect threes with uniform rhythm
+- Sycophantic openers ("Absolutely!", "Great question!")
+
+**Output:** Line-by-line violations with severity and suggested fixes.
+
+**When to use:**
+- Before publishing landing pages
+- When writing release notes
+- After generating any user-facing copy
+- When something "sounds AI-generated"
+
+---
+
 ## Context Management
 
 When context exceeds **70%**, suggest `/compact` before continuing with new tasks.

@@ -100,6 +100,70 @@ The agent must **run verification itself and include the output as proof**.
 
 ---
 
+## Writing Style: Avoid AI-isms
+
+**When writing user-facing copy, marketing text, documentation, or any prose for this project, avoid these patterns that scream "AI wrote this":**
+
+### Banned Patterns
+
+| Pattern | Example | Why It's Bad |
+|---------|---------|--------------|
+| Em dashes | "for teachers — whether you're starting out" | Dead giveaway. Use commas or periods. |
+| Negative-to-positive flip | "Not to constrain, but to free" | Greeting card energy. Just state what it does. |
+| Redundant emphasis | "Share across the world — communicates across distances" | You said the same thing twice. |
+| Promotional superlatives | "revolutionary", "seamlessly", "effortlessly" | Nobody talks like this. |
+| Vague benefits | "elevate your flow", "unlock potential" | Meaningless. Be specific. |
+| Feature hallucination | Describing features that don't exist yet | Check the actual codebase first. |
+| Lists of "your X, your Y, your Z" | "your body, your character, your vibe" | Do it once max, vary elsewhere. |
+| Perfect threes | "efficient, reliable, and scalable" | AI overuses the Rule of Three with perfect rhythm. Break it: "good, fast, and honestly kind of ugly" |
+| "Whether you're..." summaries | "Whether you're a beginner or expert, there's something for everyone" | No human ends paragraphs this way. |
+| Robotic transitions | "Furthermore", "Moreover", "Additionally" | Just start the sentence. Cut "In conclusion" too. |
+| Hedging phrases | "It's worth noting that...", "It's important to remember..." | Filler. State it directly. |
+| Extended metaphor verbs | "weaving together", "painting a picture", "crafting your..." | Pseudo-literary padding. |
+| Enthusiastic affirmations | "Absolutely!", "Certainly!", "Great question!" | Sycophantic AI tell. |
+
+### Blacklisted Words
+
+These appear statistically more often in AI output. Avoid or use sparingly:
+
+| Category | Words |
+|----------|-------|
+| Nouns | tapestry, landscape, realm, journey, nuances |
+| Adjectives | robust, comprehensive, crucial, pivotal, seamless |
+| Verbs | delve, leverage, harness, unlock, foster, navigate, streamline |
+| Marketing | game-changing, cutting-edge, next-level, empower |
+
+### Banned Openers
+
+Never start paragraphs with:
+- "In today's fast-paced world..."
+- "In an era where..."
+- "In the ever-evolving landscape of..."
+- "In the realm of..."
+
+### Sentence Rhythm
+
+AI writes uniform medium-length sentences. Real writing varies.
+
+Short punches. Then longer explanations when the idea needs room to breathe. Fragments work. Staccato. The lack of variation (called "burstiness") is measurable by detectors.
+
+### The Test
+
+Read it out loud. Does it sound like:
+- A person explaining something to a friend? ✓
+- A press release or landing page template? ✗
+
+### When Writing Copy
+
+1. **State what it does.** Not what it "empowers you to do."
+2. **Be specific.** "Reference a single beat during rehearsal" > "communicate effectively"
+3. **Cut redundancy.** If you said it, don't say it again with different words.
+4. **Check features exist.** Don't describe capabilities the software doesn't have.
+5. **No first person** on pages without a signature. "TKA does X" not "I built X."
+6. **Vary sentence length.** Mix short and long. Break perfect patterns.
+
+---
+
 ## Rules
 
 `.claude/rules/` contains:

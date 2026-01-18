@@ -101,6 +101,8 @@
       "Skill(check)",
       "Skill(changelog)",
       "Skill(prioritizefb)",
+      "Skill(ai-bust)",
+      "SlashCommand(/ai-bust)",
       "WebFetch(domain:zolmeister.com)",
       "WebFetch(domain:www.myexperimentswithcode.com)",
       "Bash(Select-String -Pattern \"mandala|Error:|error:\")",
@@ -278,7 +280,13 @@
       "mcp__tka-pictograph__compare_letters",
       "mcp__tka-pictograph__get_position_info",
       "Bash(do node -e \"try{JSON.parse\\(require\\(''fs''\\).readFileSync\\(''$f''\\)\\);console.log\\(''VALID: $f''\\)}catch\\(e\\){console.log\\(''INVALID: $f - ''+e.message\\)}\")",
-      "Bash(Get-ChildItem -Recurse -Filter \"*DurationPreviewWorkspace*\")"
+      "Bash(Get-ChildItem -Recurse -Filter \"*DurationPreviewWorkspace*\")",
+      "Bash(\"C:\\\\Users\\\\Austen\\\\AppData\\\\Roaming\\\\npm\\\\firebase.cmd\" deploy --only firestore:rules)",
+      "WebFetch(domain:originality.ai)",
+      "WebFetch(domain:www.onlinewritingclub.com)",
+      "WebFetch(domain:walterwrites.ai)",
+      "WebFetch(domain:www.hanalarockwriting.com)",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"Viewer3DModule.svelte\")"
     ]
   },
   "enabledMcpjsonServers": [
