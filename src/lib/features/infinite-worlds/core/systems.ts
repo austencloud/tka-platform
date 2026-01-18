@@ -34,6 +34,8 @@ import type { PerspectiveCamera, Scene, Object3D } from "three";
 import { Vector3, Quaternion, Euler } from "three";
 import { CameraMode } from "$lib/shared/3d-core/camera/types";
 import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
+import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
+import { AdaptiveInputProvider } from "$lib/shared/3d/input/InputProviderFactory";
 
 // ============================================================================
 // SYSTEM CONTEXT
@@ -56,21 +58,43 @@ export interface SystemContext {
 // ============================================================================
 
 /**
- * Keyboard state
+ * Unified input provider (adapts to keyboard, touch, gamepad)
+ */
+let inputProvider: AdaptiveInputProvider | null = null;
+let inputCapabilities = getInputCapabilities();
+
+/**
+ * Keyboard state for V key toggle (still needed for camera mode)
  */
 const keyState: Record<string, boolean> = {};
 
 /**
- * Mouse state
+ * Whether touch UI should be shown
  */
-let mouseDeltaX = 0;
-let mouseDeltaY = 0;
-let isPointerLocked = false;
+let showTouchUI = false;
 
 /**
- * Initialize input listeners
+ * External joystick input (from VirtualJoystick component)
+ */
+let joystickInput = { x: 0, z: 0 };
+
+/**
+ * Initialize input listeners using unified input provider
+ * Works on desktop (pointer lock + keyboard) AND mobile/DevTools (touch/drag)
  */
 export function initInputSystem(canvas: HTMLCanvasElement): () => void {
+  // Initialize InputCapabilities for proper touch/mouse detection
+  inputCapabilities.init();
+
+  // Create unified input provider that adapts to input type
+  inputProvider = new AdaptiveInputProvider(inputCapabilities, canvas, {
+    lookSensitivity: 0.002,
+    movementDeadzone: 0.15,
+    inertiaDecay: 0.92,
+  });
+  inputProvider.enable();
+
+  // V key still handled directly for camera mode toggle
   const handleKeyDown = (e: KeyboardEvent) => {
     keyState[e.code] = true;
 
@@ -95,69 +119,89 @@ export function initInputSystem(canvas: HTMLCanvasElement): () => void {
     keyState[e.code] = false;
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isPointerLocked) {
-      mouseDeltaX += e.movementX;
-      mouseDeltaY += e.movementY;
-    }
-  };
-
-  const handlePointerLockChange = () => {
-    isPointerLocked = document.pointerLockElement === canvas;
-  };
-
-  const handleClick = () => {
-    if (!isPointerLocked) {
-      canvas.requestPointerLock();
-    }
-  };
-
   window.addEventListener("keydown", handleKeyDown);
   window.addEventListener("keyup", handleKeyUp);
-  document.addEventListener("mousemove", handleMouseMove);
-  document.addEventListener("pointerlockchange", handlePointerLockChange);
-  canvas.addEventListener("click", handleClick);
 
   // Return cleanup function
   return () => {
     window.removeEventListener("keydown", handleKeyDown);
     window.removeEventListener("keyup", handleKeyUp);
-    document.removeEventListener("mousemove", handleMouseMove);
-    document.removeEventListener("pointerlockchange", handlePointerLockChange);
-    canvas.removeEventListener("click", handleClick);
+    inputProvider?.dispose();
+    inputProvider = null;
+    inputCapabilities.destroy();
   };
 }
 
 /**
- * Update input component from keyboard state
+ * Update input component from unified input provider
  */
-export function inputSystem(_ctx: SystemContext): void {
+export function inputSystem(ctx: SystemContext): void {
+  if (!inputProvider) return;
+
+  // Update input provider (handles inertia, etc.)
+  inputProvider.update(ctx.deltaTime);
+
+  // Update touch UI visibility
+  showTouchUI = inputCapabilities.shouldShowTouchUI();
+
+  // Get movement input - use joystick on touch, otherwise use keyboard/gamepad
+  const providerMovement = inputProvider.getMovementInput();
+  const movement = showTouchUI && (joystickInput.x !== 0 || joystickInput.z !== 0)
+    ? { forward: joystickInput.z, strafe: joystickInput.x }
+    : providerMovement;
+
   for (const entity of localPlayer.entities) {
     if (!entity.input) continue;
 
-    entity.input.moveForward = keyState["KeyW"] || keyState["ArrowUp"] || false;
-    entity.input.moveBackward = keyState["KeyS"] || keyState["ArrowDown"] || false;
-    entity.input.moveLeft = keyState["KeyA"] || keyState["ArrowLeft"] || false;
-    entity.input.moveRight = keyState["KeyD"] || keyState["ArrowRight"] || false;
-    entity.input.jump = keyState["Space"] || false;
-    entity.input.sprint = keyState["ShiftLeft"] || keyState["ShiftRight"] || false;
+    // Map normalized input to discrete directions
+    // Movement is already normalized (-1 to 1)
+    entity.input.moveForward = movement.forward > 0.3;
+    entity.input.moveBackward = movement.forward < -0.3;
+    entity.input.moveRight = movement.strafe > 0.3;
+    entity.input.moveLeft = movement.strafe < -0.3;
+    entity.input.jump = inputProvider.isJumpPressed();
+    entity.input.sprint = inputProvider.isSprintHeld();
     entity.input.crouch = keyState["ControlLeft"] || keyState["ControlRight"] || false;
     entity.input.interact = keyState["KeyE"] || false;
   }
 }
 
 /**
- * Get and reset mouse delta
+ * Get look delta from unified input provider
  */
 export function consumeMouseDelta(): { x: number; y: number } {
-  const delta = { x: mouseDeltaX, y: mouseDeltaY };
-  mouseDeltaX = 0;
-  mouseDeltaY = 0;
-  return delta;
+  if (!inputProvider) return { x: 0, y: 0 };
+  const lookDelta = inputProvider.getLookDelta();
+  // Convert to expected format (yaw/pitch -> x/y in pixels-like units)
+  return { x: lookDelta.yaw / 0.002, y: lookDelta.pitch / 0.002 };
 }
 
 export function getPointerLocked(): boolean {
-  return isPointerLocked;
+  if (!inputProvider) return false;
+  return inputProvider.getPointerLockProvider().isPointerLocked();
+}
+
+/**
+ * Check if touch UI should be shown
+ */
+export function getShouldShowTouchUI(): boolean {
+  return showTouchUI;
+}
+
+/**
+ * Get the input provider for external use (e.g., touch joystick integration)
+ */
+export function getInputProvider(): AdaptiveInputProvider | null {
+  return inputProvider;
+}
+
+/**
+ * Set joystick input from VirtualJoystick component
+ * @param x Horizontal input (-1 to 1, positive = right)
+ * @param z Vertical input (-1 to 1, positive = forward)
+ */
+export function setJoystickInput(x: number, z: number): void {
+  joystickInput = { x, z };
 }
 
 // ============================================================================
@@ -167,19 +211,21 @@ export function getPointerLocked(): boolean {
 const MOUSE_SENSITIVITY = 0.002;
 
 /**
- * Update camera rotation from mouse input
+ * Update camera rotation from input (pointer lock, touch, or gamepad)
  */
 export function cameraSystem(ctx: SystemContext): void {
-  if (!isPointerLocked) return;
+  if (!inputProvider) return;
 
-  const delta = consumeMouseDelta();
+  // Get look delta from unified input provider
+  const lookDelta = inputProvider.getLookDelta();
 
   for (const entity of localPlayer.entities) {
     if (!entity.camera) continue;
 
     // Update rotation (same for both modes)
-    entity.camera.yaw -= delta.x * MOUSE_SENSITIVITY;
-    entity.camera.pitch -= delta.y * MOUSE_SENSITIVITY;
+    // Look delta is already in radians
+    entity.camera.yaw -= lookDelta.yaw;
+    entity.camera.pitch -= lookDelta.pitch;
 
     // Clamp pitch to prevent flipping
     entity.camera.pitch = Math.max(

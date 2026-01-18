@@ -46,8 +46,11 @@
     initInputSystem,
     runSystems,
     getPointerLocked,
+    getShouldShowTouchUI,
+    setJoystickInput,
     type SystemContext,
   } from "../core/systems";
+  import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
   import { generateWorldSeed, encodeSeed, SeededNoise, getBiome } from "../generation/seed-generator";
   import { type ImportedTerrainData, isPointInPolygon } from "../generation/real-terrain-zone";
   import { VegetationManager } from "../rendering/instanced-vegetation";
@@ -129,6 +132,7 @@
   let playerPos = $state({ x: 0, y: 0, z: 0 });
   let rendererType = $state("Unknown");
   let isLocked = $state(false);
+  let showTouchUI = $state(false);
   let currentBiome = $state("forest");
   let hannonsLoaded = $state(false);
   let zoneBounds = $state<{ minX: number; maxX: number; minZ: number; maxZ: number } | null>(null);
@@ -418,6 +422,11 @@
     waterManager?.setVisible(visible);
   }
 
+  function handleJoystickInput(x: number, y: number): void {
+    // y is forward/back in joystick space, mapped to z
+    setJoystickInput(x, y);
+  }
+
   function handleToggleFog(enabled: boolean): void {
     if (!rendererState) return;
 
@@ -525,8 +534,9 @@
       }
     }
 
-    // Check pointer lock
+    // Check pointer lock and touch UI state
     isLocked = getPointerLocked();
+    showTouchUI = getShouldShowTouchUI();
 
     // Run ECS systems
     if (rendererState && camera && physicsState) {
@@ -566,7 +576,7 @@
 <div class="infinite-worlds" bind:this={container}>
   <canvas bind:this={canvas}></canvas>
 
-  {#if !isLocked}
+  {#if !isLocked && !showTouchUI}
     <div class="controls-overlay">
       <h2>{activeConfig.name}</h2>
       {#if activeConfig.description}
@@ -596,6 +606,22 @@
           {/if}
         </div>
       {/if}
+    </div>
+  {/if}
+
+  <!-- Touch controls using shared VirtualJoystick -->
+  {#if showTouchUI}
+    <VirtualJoystick
+      onInput={handleJoystickInput}
+      enabled={true}
+      left={24}
+      bottom={24}
+      size={120}
+    />
+
+    <!-- Touch look hint -->
+    <div class="touch-look-hint">
+      <span>Drag to look around</span>
     </div>
   {/if}
 
@@ -922,5 +948,32 @@
     width: 100%;
     height: 180px;
     display: block;
+  }
+
+  /* Touch controls */
+  .touch-look-hint {
+    position: fixed;
+    top: 50%;
+    right: 20%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    font-weight: 500;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    animation: fadeInOut 4s ease-in-out;
+    z-index: 100;
+  }
+
+  @keyframes fadeInOut {
+    0%, 100% { opacity: 0; }
+    15%, 85% { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .touch-look-hint {
+      animation: none;
+      opacity: 0.6;
+    }
   }
 </style>
