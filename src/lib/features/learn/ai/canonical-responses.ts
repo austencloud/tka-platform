@@ -23,6 +23,14 @@ export interface TypeDefinition {
   letterCount: number;
   letters: string;
   keyFact: string;
+  rotationPattern?: {
+    description: string;
+    groups: Array<{
+      letters: string;
+      pattern: string;
+    }>;
+    note?: string;
+  };
 }
 
 export const TYPE_DEFINITIONS: Record<number, TypeDefinition> = {
@@ -37,6 +45,19 @@ export const TYPE_DEFINITIONS: Record<number, TypeDefinition> = {
     letterCount: 22,
     letters: "A through V",
     keyFact: "The largest type. Both hands shift - this is what defines it, not just that both move.",
+    rotationPattern: {
+      description: "Type 1 letters follow the 'pattern of three' based on prop rotation: pro, anti, hybrid.",
+      groups: [
+        { letters: "ABC", pattern: "pro, anti, hybrid" },
+        { letters: "DEF", pattern: "pro, anti, hybrid" },
+        { letters: "GHI", pattern: "pro, anti, hybrid" },
+        { letters: "JKL", pattern: "pro, anti, hybrid" },
+        { letters: "MNO", pattern: "pro, anti, hybrid" },
+        { letters: "PQR", pattern: "pro, anti, hybrid" },
+        { letters: "STUV", pattern: "pro, anti, hybrid, hybrid" }
+      ],
+      note: "STUV breaks the pattern with two hybrids (U and V) instead of ending at the first hybrid."
+    }
   },
   2: {
     type: 2,
