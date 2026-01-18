@@ -4,6 +4,7 @@ Shows BOTH continuity options vertically with clear active/inactive states
 -->
 <script lang="ts">
   import { PropContinuity } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import ToggleCard from "./ToggleCard.svelte";
 
   let {
@@ -27,15 +28,15 @@ Shows BOTH continuity options vertically with clear active/inactive states
 </script>
 
 <ToggleCard
-  title="Continuity"
+  title={t("generator_continuity")}
   option1={{
     value: PropContinuity.CONTINUOUS,
-    label: "Continuous",
+    label: t("generator_continuity_continuous"),
     icon: "link",
   }}
   option2={{
     value: PropContinuity.RANDOM,
-    label: "Reversals",
+    label: t("generator_continuity_reversals"),
     icon: "left-right",
   }}
   activeOption={currentContinuity}

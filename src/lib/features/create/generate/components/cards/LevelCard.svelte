@@ -7,6 +7,7 @@ Uses stepper pattern for space-efficient level selection
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isBrightBackground } from "../../shared/domain/card-colors";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import StepperCard from "./StepperCard/StepperCard.svelte";
 
   let {
@@ -32,7 +33,7 @@ Uses stepper pattern for space-efficient level selection
     { name: string; number: number; color: string; textColor: string }
   > = {
     [DifficultyLevel.BEGINNER]: {
-      name: "No Turns",
+      name: t("generator_level_no_turns"),
       number: 1,
       color: `radial-gradient(ellipse at top left,
         rgb(186, 230, 253) 0%,
@@ -42,7 +43,7 @@ Uses stepper pattern for space-efficient level selection
       textColor: "black",
     },
     [DifficultyLevel.INTERMEDIATE]: {
-      name: "Whole Turns",
+      name: t("generator_level_whole_turns"),
       number: 2,
       color: `radial-gradient(ellipse at top left,
         rgb(226, 232, 240) 0%,
@@ -52,7 +53,7 @@ Uses stepper pattern for space-efficient level selection
       textColor: "white",
     },
     [DifficultyLevel.ADVANCED]: {
-      name: "Half Turns",
+      name: t("generator_level_half_turns"),
       number: 3,
       color: `radial-gradient(ellipse at top left,
         rgb(254, 240, 138) 0%,
@@ -64,7 +65,7 @@ Uses stepper pattern for space-efficient level selection
       textColor: "black",
     },
     [DifficultyLevel.SKEWED]: {
-      name: "Skewed",
+      name: t("generator_level_skewed"),
       number: 4,
       color: `radial-gradient(ellipse at top left,
         rgb(255, 180, 180) 0%,
@@ -83,7 +84,7 @@ Uses stepper pattern for space-efficient level selection
     { name: string; number: number; color: string; textColor: string }
   > = {
     [DifficultyLevel.BEGINNER]: {
-      name: "No Turns",
+      name: t("generator_level_no_turns"),
       number: 1,
       // Slightly darker baby blue - still light but with a touch more depth
       color: `radial-gradient(ellipse at top left,
@@ -94,7 +95,7 @@ Uses stepper pattern for space-efficient level selection
       textColor: "black",
     },
     [DifficultyLevel.INTERMEDIATE]: {
-      name: "Whole Turns",
+      name: t("generator_level_whole_turns"),
       number: 2,
       // Rich cool slate - not too dark
       color: `radial-gradient(ellipse at top left,
@@ -105,7 +106,7 @@ Uses stepper pattern for space-efficient level selection
       textColor: "white",
     },
     [DifficultyLevel.ADVANCED]: {
-      name: "Half Turns",
+      name: t("generator_level_half_turns"),
       number: 3,
       // Rich gold - stays in gold family, doesn't drift to orange
       color: `radial-gradient(ellipse at top left,
@@ -118,7 +119,7 @@ Uses stepper pattern for space-efficient level selection
       textColor: "black",
     },
     [DifficultyLevel.SKEWED]: {
-      name: "Skewed",
+      name: t("generator_level_skewed"),
       number: 4,
       // Rich red - deeper red for bright backgrounds
       color: `radial-gradient(ellipse at top left,
@@ -195,7 +196,7 @@ Uses stepper pattern for space-efficient level selection
 </script>
 
 <StepperCard
-  title="Level"
+  title={t("generator_level")}
   currentValue={currentLevelNumber}
   minValue={1}
   maxValue={4}

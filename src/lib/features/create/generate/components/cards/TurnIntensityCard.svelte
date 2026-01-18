@@ -6,6 +6,7 @@ Uses stepper pattern for direct increment/decrement interaction
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isBrightBackground } from "../../shared/domain/card-colors";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import StepperCard from "./StepperCard/StepperCard.svelte";
 
   let {
@@ -142,7 +143,7 @@ Uses stepper pattern for direct increment/decrement interaction
 </script>
 
 <StepperCard
-  title="Turn Intensity"
+  title={t("generator_turn_intensity")}
   currentValue={currentIntensity}
   {minValue}
   {maxValue}

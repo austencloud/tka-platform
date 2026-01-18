@@ -4,6 +4,7 @@ Shows BOTH Freeform and Circular options vertically with clear active/inactive s
 -->
 <script lang="ts">
   import { GenerationMode } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import ToggleCard from "./ToggleCard.svelte";
 
   let {
@@ -27,15 +28,15 @@ Shows BOTH Freeform and Circular options vertically with clear active/inactive s
 </script>
 
 <ToggleCard
-  title="Mode"
+  title={t("generator_mode")}
   option1={{
     value: GenerationMode.CIRCULAR,
-    label: "LOOP",
+    label: t("generator_mode_loop"),
     icon: "arrows-rotate",
   }}
   option2={{
     value: GenerationMode.FREEFORM,
-    label: "Freeform",
+    label: t("generator_mode_freeform"),
     icon: "bullseye",
   }}
   activeOption={currentMode}

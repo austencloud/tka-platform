@@ -11,6 +11,7 @@ Always opens selector panel when clicked
   } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { container } from "$lib/shared/di";
   import { onMount, getContext } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import BaseCard from "./BaseCard.svelte";
 
@@ -58,9 +59,26 @@ Always opens selector panel when clicked
     );
   }
 
-  // Format LOOP type display using user-friendly labels
+  // Format LOOP type display using user-friendly translated labels
   const loopTypeDisplay = $derived(
-    LOOP_TYPE_LABELS[currentLOOPType as LOOPType] || currentLOOPType
+    (() => {
+      const typeMap: Record<LOOPType, string> = {
+        [LOOPType.STRICT_ROTATED]: t("generator_loop_rotated"),
+        [LOOPType.STRICT_MIRRORED]: t("generator_loop_mirrored"),
+        [LOOPType.STRICT_SWAPPED]: t("generator_loop_swapped"),
+        [LOOPType.STRICT_INVERTED]: t("generator_loop_inverted"),
+        [LOOPType.SWAPPED_INVERTED]: t("generator_loop_swapped_inverted"),
+        [LOOPType.MIRRORED_SWAPPED]: t("generator_loop_mirrored_swapped"),
+        [LOOPType.ROTATED_INVERTED]: t("generator_loop_rotated_inverted"),
+        [LOOPType.MIRRORED_INVERTED]: t("generator_loop_mirrored_inverted"),
+        [LOOPType.ROTATED_SWAPPED]: t("generator_loop_rotated_swapped"),
+        [LOOPType.MIRRORED_ROTATED]: t("generator_loop_mirrored_rotated"),
+        [LOOPType.MIRRORED_INVERTED_ROTATED]: t("generator_loop_mir_comp_rot"),
+        [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: t("generator_loop_all_four"),
+        [LOOPType.REWOUND]: t("generator_loop_rewound"),
+      };
+      return typeMap[currentLOOPType] || currentLOOPType;
+    })()
   );
 </script>
 
@@ -70,7 +88,7 @@ Always opens selector panel when clicked
   style="grid-column: span {gridColumnSpan}; --card-index: {cardIndex};"
 >
   <BaseCard
-    title="LOOP Type"
+    title={t("generator_loop_type")}
     currentValue={loopTypeDisplay}
     color="transparent"
     {shadowColor}

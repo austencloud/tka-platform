@@ -6,6 +6,7 @@ Integrates the "Generate New" button into the card grid layout so it scales with
   import { container } from "$lib/shared/di";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { UIGenerationConfig } from "../../state/generate-config.svelte";
   import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
@@ -47,11 +48,11 @@ Integrates the "Generate New" button into the card grid layout so it scales with
   onclick={handleClick}
   disabled={isGenerating}
   type="button"
-  aria-label={isGenerating ? "Generating..." : "Generate"}
+  aria-label={isGenerating ? t("generator_button_generating") : t("generator_button")}
 >
   <div class="button-content">
     <FontAwesomeIcon icon="dice" style="solid" />
-    <span>{isGenerating ? "Generating..." : "Generate"}</span>
+    <span>{isGenerating ? t("generator_button_generating") : t("generator_button")}</span>
   </div>
 </button>
 

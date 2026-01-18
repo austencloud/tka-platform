@@ -8,6 +8,7 @@ Opens sheet with start/end position selection (multi-select with presets)
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { container } from "$lib/shared/di";
   import { onMount, getContext } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import BaseCard from "./BaseCard.svelte";
   import {
@@ -103,7 +104,7 @@ Opens sheet with start/end position selection (multi-select with presets)
 
     if (blocked.length === 0) {
       // No blocked = Any
-      startDisplay = "Any";
+      startDisplay = t("generator_start_end_any");
     } else {
       // Check if it matches a preset
       const preset = detectPresetFromBlocked(blocked, gridMode);
@@ -130,7 +131,7 @@ Opens sheet with start/end position selection (multi-select with presets)
 
 <div class="start-end-card-wrapper" class:resetting={isResetting}>
   <BaseCard
-    title="Start/End"
+    title={t("generator_start_end")}
     currentValue={displayValue}
     {color}
     {shadowColor}

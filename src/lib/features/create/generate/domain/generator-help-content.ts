@@ -57,12 +57,12 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     color: "#6366f1",
     shortDesc: "Number of moves",
     fullDesc:
-      "Sets how many steps (individual moves) your generated sequence will have. Each beat is one pictograph showing a single movement.",
+      "Sets how many steps (individual moves) your generated sequence will have. Each step is one pictograph showing a single movement.",
     bullets: [
       "Freeform mode: 1-64 steps",
       "LOOP mode: 2-64 steps (must be even for symmetry)",
     ],
-    tip: "Shorter sequences (4-8 steps) are easier to learn and memorize.",
+    tip: "Shorter sequences are easier to learn and memorize.",
   },
   {
     id: "generation-mode",

@@ -4,6 +4,7 @@ Shows BOTH slice size options vertically with clear active/inactive states
 -->
 <script lang="ts">
   import { SliceSize } from "../../circular/domain/models/circular-models";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import ToggleCard from "./ToggleCard.svelte";
 
   let {
@@ -27,15 +28,15 @@ Shows BOTH slice size options vertically with clear active/inactive states
 </script>
 
 <ToggleCard
-  title="Slice"
+  title={t("generator_slice")}
   option1={{
     value: SliceSize.QUARTERED,
-    label: "Quartered",
+    label: t("generator_slice_quartered"),
     icon: "circle-quarter-custom",
   }}
   option2={{
     value: SliceSize.HALVED,
-    label: "Halved",
+    label: t("generator_slice_halved"),
     icon: "circle-half-stroke",
   }}
   activeOption={currentSliceSize}

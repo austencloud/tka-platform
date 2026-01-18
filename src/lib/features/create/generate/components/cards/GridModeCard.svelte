@@ -4,6 +4,7 @@ Shows BOTH grid mode options vertically with clear active/inactive states
 -->
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import ToggleCard from "./ToggleCard.svelte";
 
   let {
@@ -27,9 +28,9 @@ Shows BOTH grid mode options vertically with clear active/inactive states
 </script>
 
 <ToggleCard
-  title="Grid"
-  option1={{ value: GridMode.DIAMOND, label: "Diamond", icon: "gem" }}
-  option2={{ value: GridMode.BOX, label: "Box", icon: "square" }}
+  title={t("generator_grid")}
+  option1={{ value: GridMode.DIAMOND, label: t("generator_grid_diamond"), icon: "gem" }}
+  option2={{ value: GridMode.BOX, label: t("generator_grid_box"), icon: "square" }}
   activeOption={currentMode}
   onToggle={onModeChange}
   {color}
