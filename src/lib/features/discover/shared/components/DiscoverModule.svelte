@@ -4,6 +4,8 @@
   import { container } from "$lib/shared/di";
     import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { onMount, setContext, untrack } from "svelte";
+  import { fly } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ErrorBanner from "../../../create/shared/components/ErrorBanner.svelte";
 
@@ -36,6 +38,13 @@
   // Note: Library tab removed - now integrated into Sequences via scope toggle (Community / My Library)
   type DiscoverModuleType = "sequences" | "collections" | "creators";
 
+  // Tab order for determining slide direction (left-to-right in bottom nav)
+  const TAB_ORDER: DiscoverModuleType[] = ["sequences", "collections", "creators"];
+
+  // Transition configuration
+  const SLIDE_DISTANCE = 30; // pixels
+  const SLIDE_DURATION = 200; // ms
+
   // ============================================================================
   // STATE MANAGEMENT (Shared Coordination)
   // ============================================================================
@@ -51,6 +60,10 @@
   let error = $state<string | null>(null);
   let activeTab = $state<DiscoverModuleType>("sequences");
   let showAnimator = $state<boolean>(false);
+
+  // Slide direction for tab transitions (1 = right, -1 = left)
+  let slideDirection = $state<1 | -1>(1);
+  let previousTab = $state<DiscoverModuleType | null>(null);
 
   // Services
   let deviceDetector: IDeviceDetector | null = null;
@@ -109,6 +122,14 @@
       discoverNavigationState.navigateTo({ tab: discoverTab, view: "list" });
     }
 
+    // Calculate slide direction based on tab order
+    if (previousTab !== null && newTab !== previousTab) {
+      const oldIndex = TAB_ORDER.indexOf(previousTab);
+      const newIndex = TAB_ORDER.indexOf(newTab);
+      slideDirection = newIndex > oldIndex ? 1 : -1;
+    }
+
+    previousTab = activeTab;
     activeTab = newTab;
   });
 
@@ -419,38 +440,51 @@
 
 <!-- Main layout - shows immediately with skeletons while data loads -->
 <div class="explore-content">
-  <!-- Tab Content - Bottom navigation controls the active tab -->
-  <!-- Note: We keep all tabs mounted but hidden to preserve state and avoid refetching -->
+  <!-- Tab Content - uses {#key} with directional slide transitions (like Learn module) -->
   <div class="explore-tab-content">
-    <div class="tab-panel" class:hidden={activeTab !== "sequences"}>
-      <DiscoverSequencesTab
-        {isMobile}
-        {isUIVisible}
-        {showDesktopSidebar}
-        {drawerWidth}
-        {galleryState}
-        {error}
-        isAnimationPanelOpen={showAnimator}
-        onSequenceAction={(action, sequence) =>
-          eventHandlerService?.handleSequenceAction(action, sequence) ??
-          Promise.resolve()}
-        onDetailPanelAction={(action, sequence) =>
-          eventHandlerService?.handleDetailPanelAction(action, sequence) ??
-          Promise.resolve()}
-        onCloseDetailPanel={() => eventHandlerService?.handleCloseDetailPanel()}
-        onContainerScroll={handleContainerScroll}
-      />
-    </div>
-    <div class="tab-panel" class:hidden={activeTab !== "collections"}>
-      <CollectionsDiscoverPanel />
-    </div>
-    <div class="tab-panel" class:hidden={activeTab !== "creators"}>
-      {#if creatorsViewState.currentView === "user-profile" && creatorsViewState.viewingUserId}
-        <UserProfilePanel userId={creatorsViewState.viewingUserId} />
-      {:else}
-        <CreatorsPanel />
-      {/if}
-    </div>
+    {#key activeTab}
+      <div
+        class="tab-panel"
+        in:fly={{
+          x: slideDirection * SLIDE_DISTANCE,
+          duration: SLIDE_DURATION,
+          easing: cubicOut,
+        }}
+        out:fly={{
+          x: -slideDirection * SLIDE_DISTANCE,
+          duration: SLIDE_DURATION,
+          easing: cubicOut,
+        }}
+      >
+        {#if activeTab === "sequences"}
+          <DiscoverSequencesTab
+            {isMobile}
+            {isUIVisible}
+            {showDesktopSidebar}
+            {drawerWidth}
+            {galleryState}
+            {error}
+            isAnimationPanelOpen={showAnimator}
+            onSequenceAction={(action, sequence) =>
+              eventHandlerService?.handleSequenceAction(action, sequence) ??
+              Promise.resolve()}
+            onDetailPanelAction={(action, sequence) =>
+              eventHandlerService?.handleDetailPanelAction(action, sequence) ??
+              Promise.resolve()}
+            onCloseDetailPanel={() => eventHandlerService?.handleCloseDetailPanel()}
+            onContainerScroll={handleContainerScroll}
+          />
+        {:else if activeTab === "collections"}
+          <CollectionsDiscoverPanel />
+        {:else if activeTab === "creators"}
+          {#if creatorsViewState.currentView === "user-profile" && creatorsViewState.viewingUserId}
+            <UserProfilePanel userId={creatorsViewState.viewingUserId} />
+          {:else}
+            <CreatorsPanel />
+          {/if}
+        {/if}
+      </div>
+    {/key}
   </div>
 </div>
 
@@ -471,19 +505,9 @@
 
   .tab-panel {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-  }
-
-  .tab-panel.hidden {
-    visibility: hidden;
-    pointer-events: none;
   }
 </style>

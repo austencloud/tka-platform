@@ -36,7 +36,6 @@ import { OptimizedDiscoverer } from "$lib/features/discover/shared/services/impl
 // Sequence detail services
 import { SequenceDetailLoader } from "$lib/features/discover/sequences/display/services/implementations/SequenceDetailLoader";
 import { VideoCountManager } from "$lib/features/discover/sequences/display/services/implementations/VideoCountManager";
-import { SequenceImageSharer } from "$lib/features/discover/sequences/display/services/implementations/SequenceImageSharer";
 import { ClaudeCodeCopier } from "$lib/features/discover/sequences/display/services/implementations/ClaudeCodeCopier";
 
 // External dependency types
@@ -183,11 +182,11 @@ export function createDiscoverContainer(deps: DiscoverContainerDeps) {
       ),
   }));
 
-  // Tier 7: Sequence detail services (for SequenceDetailContent decomposition)
+  // Tier 7: Sequence detail services (for SequencePanel)
+  // Note: sequenceImageSharer moved to share-container for unified access
   const tier7 = tier6.add((ctx) => ({
     sequenceDetailLoader: () => new SequenceDetailLoader(ctx.discoverLoader),
     videoCountManager: () => new VideoCountManager(deps.collaborativeVideoManager),
-    sequenceImageSharer: () => new SequenceImageSharer(deps.sequenceRenderer),
   }));
 
   // Tier 8: Services depending on tier 7

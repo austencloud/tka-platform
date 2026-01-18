@@ -4,7 +4,7 @@
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import SequenceDetailContent from "../../sequences/display/components/SequenceDetailContent.svelte";
+  import SequencePanelDrawer from "$lib/shared/sequence-viewer/components/SequencePanelDrawer.svelte";
   import InviteCollaboratorsPanel from "$lib/shared/video-collaboration/components/InviteCollaboratorsPanel.svelte";
   import ViewPresetsSheet from "../../sequences/filtering/components/ViewPresetsSheet.svelte";
   import SortJumpSheet from "../../sequences/navigation/components/SortJumpSheet.svelte";
@@ -297,49 +297,28 @@
 </div>
 
 <!-- Detail Panel (Unified for Both Mobile & Desktop) -->
-<!-- When expanded, use wider width to show horizontal animation controls -->
-<div
-  style:--drawer-width={sequencePanelManager.isDetailExpanded ? "min(900px, 85vw)" : drawerWidth}
-  class:nav-visible={isMobile && isNavVisible}
->
-  <Drawer
+<!-- Uses SequencePanelDrawer with mode="browse" -->
+{#if sequencePanelManager.activeSequence}
+  <SequencePanelDrawer
     isOpen={sequencePanelManager.isDetailOpen}
-    placement={isMobile ? "bottom" : "right"}
-    class="detail-drawer {isMobile && isNavVisible ? 'with-nav-offset' : ''}"
-    showHandle={false}
-    closeOnBackdrop={false}
-    backdropClass={!isMobile
-      ? "transparent-backdrop"
-      : isMobile && isNavVisible
-        ? "nav-offset-backdrop"
-        : ""}
-    trapFocus={isMobile && !isNavVisible}
-    setInertOnSiblings={isMobile && !isNavVisible}
-    onOpenChange={(open) => {
-      // Only close if drawer is actually closing AND we're not in a panel transition
-      if (!open && sequencePanelManager.isDetailOpen) {
-        handleCloseInvitePanel();
-        onCloseDetailPanel();
-      }
+    sequence={sequencePanelManager.activeSequence}
+    mode="browse"
+    {isMobile}
+    drawerWidth={sequencePanelManager.isDetailExpanded ? "min(900px, 85vw)" : drawerWidth}
+    {isNavVisible}
+    variations={sequencePanelManager.activeVariations}
+    variationIndex={sequencePanelManager.variationIndex}
+    onClose={() => {
+      handleCloseInvitePanel();
+      onCloseDetailPanel();
     }}
-  >
-    {#if sequencePanelManager.activeSequence}
-      <div class="detail-content-wrapper">
-        <SequenceDetailContent
-          sequence={sequencePanelManager.activeSequence}
-          variations={sequencePanelManager.activeVariations}
-          variationIndex={sequencePanelManager.variationIndex}
-          onClose={onCloseDetailPanel}
-          onAction={onDetailPanelAction}
-          onInviteCollaborators={handleInviteCollaborators}
-          onVariationSelect={(index, seq) => {
-            sequencePanelManager.setVariationIndex(index);
-          }}
-        />
-      </div>
-    {/if}
-  </Drawer>
-</div>
+    onAction={onDetailPanelAction}
+    onInviteCollaborators={handleInviteCollaborators}
+    onVariationSelect={(index, seq) => {
+      sequencePanelManager.setVariationIndex(index);
+    }}
+  />
+{/if}
 
 <!-- Invite Collaborators Panel -->
 {#if inviteVideo}
@@ -356,71 +335,6 @@
 {/if}
 
 <style>
-  /* Style the detail drawer with dynamic width and integrated appearance */
-  :global(.detail-drawer.drawer-content[data-placement="right"]) {
-    width: var(--drawer-width, min(600px, 90vw));
-    /* Animate both transform (slide) and width changes for cohesive motion */
-    transition:
-      transform 350ms cubic-bezier(0.32, 0.72, 0, 1),
-      opacity 350ms cubic-bezier(0.32, 0.72, 0, 1),
-      width 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
-    /* Overlay full content area - covers the gallery controls header */
-    top: 0 !important;
-    height: 100vh !important;
-    /* Integrated, native feel - transparent background, no hard edges */
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg) 70%,
-      transparent
-    ) !important;
-    backdrop-filter: blur(20px) !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: -2px 0 16px var(--theme-shadow) !important;
-  }
-
-  /* Subtle vertical grip indicator on left edge for swipe affordance */
-  :global(.detail-drawer.drawer-content[data-placement="right"]::before) {
-    content: "";
-    position: absolute;
-    left: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 4px;
-    height: var(--min-touch-target);
-    background: linear-gradient(
-      to bottom,
-      transparent 0%,
-      var(--theme-stroke-strong) 10%,
-      var(--theme-stroke-strong) 90%,
-      transparent 100%
-    );
-    border-radius: 2px;
-    opacity: 0.6;
-    transition: opacity var(--duration-normal) ease;
-  }
-
-  :global(.detail-drawer.drawer-content[data-placement="right"]:hover::before) {
-    opacity: 1;
-  }
-
-  /* Detail drawer close button - let SequenceDetailContent handle styling */
-
-  /* Transparent backdrop for desktop - allows clicking through to grid */
-  :global(.drawer-overlay.transparent-backdrop) {
-    background: transparent !important;
-    backdrop-filter: none !important;
-    pointer-events: none !important;
-  }
-
-  /* Detail content wrapper - absolute positioning for true crossfade */
-  .detail-content-wrapper {
-    position: absolute;
-    inset: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-
   /* Bento filter wrapper - scrollable container for filter panel */
   .bento-filter-wrapper {
     flex: 1;
@@ -593,32 +507,6 @@
       var(--theme-text, white) 40%,
       transparent
     ) !important;
-  }
-
-  /* Mobile: Make detail drawer full-height bottom sheet */
-  :global(.detail-drawer.drawer-content[data-placement="bottom"]) {
-    max-height: 100vh !important;
-    height: 100vh !important;
-    border-top-left-radius: 16px !important;
-    border-top-right-radius: 16px !important;
-  }
-
-  /* Mobile: Offset detail drawer when bottom navigation is visible */
-  :global(
-    .detail-drawer.with-nav-offset.drawer-content[data-placement="bottom"]
-  ) {
-    bottom: var(--primary-nav-height, 64px) !important;
-    max-height: calc(100vh - var(--primary-nav-height, 64px)) !important;
-    height: calc(100vh - var(--primary-nav-height, 64px)) !important;
-  }
-
-  /* Mobile: Offset backdrop when bottom navigation is visible - allows nav clicks */
-  :global(.drawer-overlay.nav-offset-backdrop) {
-    inset: unset !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: var(--primary-nav-height, 64px) !important;
   }
 
   /* Mobile: Make filters drawer full-height bottom sheet with solid color */

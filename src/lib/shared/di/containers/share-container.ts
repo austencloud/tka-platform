@@ -18,6 +18,7 @@ import { FirebaseVideoUploader } from "$lib/shared/share/services/implementation
 import { RecordingPersister } from "$lib/shared/video-record/services/implementations/RecordingPersister";
 import { CollaborativeVideoManager } from "$lib/shared/video-collaboration/services/implementations/CollaborativeVideoManager";
 import { CloudThumbnailCache } from "$lib/features/discover/sequences/display/services/implementations/CloudThumbnailCache";
+import { SequenceImageSharer } from "$lib/shared/share/services/implementations/SequenceImageSharer";
 
 /**
  * Create the share container with external dependencies
@@ -39,6 +40,7 @@ export function createShareContainer(sequenceRenderer: ISequenceRenderer) {
   // Layer 2: Services that depend on external dependencies
   const withSharer = baseContainer.add({
     sharer: () => new Sharer(sequenceRenderer),
+    sequenceImageSharer: () => new SequenceImageSharer(sequenceRenderer),
   });
 
   // Layer 3: Services that depend on sharer
