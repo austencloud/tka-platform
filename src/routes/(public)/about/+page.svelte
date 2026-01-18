@@ -6,6 +6,10 @@
   import { ANIMATED_BACKGROUNDS } from "$lib/shared/background/shared/config/animated-backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import { getPublicThemeIndex, savePublicThemeIndex, getNextThemeIndex } from "$lib/shared/background/shared/config/public-page-theme";
+  import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
+
+  // Position pictograph light/dark mode (default to light to show existing images)
+  let positionLightsOn = $state(true);
 
   const sections = [
     {
@@ -14,8 +18,8 @@
       title: "The Origin",
       color: "#22c55e",
       content: [
-        "The seed that planted this idea was a real problem. I was creating choreography with my circus troupe and needed an effective way to remember and communicate sequences. After using an early version to build an act, I became obsessed with exploring its limits.",
-        "It began as an experiment in notation and quickly grew into an obsession as the system expanded in scale. Once it passed a tipping point and I realized it was covering new ground, I shifted my focus passionately toward its development.",
+        "The seed that planted this idea was a real problem. I was creating choreography with my circus troupe and needed a way to remember and communicate sequences. After using an early version to build an act, I became obsessed with exploring its limits.",
+        "It began as an experiment in notation and quickly grew into an obsession as the system expanded in scale. Once it passed a tipping point and I realized it was covering new ground, I threw myself into its development.",
       ],
     },
     {
@@ -24,7 +28,7 @@
       title: "What TKA Does",
       color: "#6366f1",
       content: [
-        "The Kinetic Alphabet brings something novel to flow arts. Previous attempts to document spin have created valuable collections of knowledge that form the backbone of TKA's notation system. But flow arts still needs a way to describe patterns that expands beyond videos scattered across the Internet.",
+        "The Kinetic Alphabet brings something novel to flow arts. Previous attempts to document spin have created collections of knowledge that form the backbone of TKA's notation system. But flow arts still needs a way to describe patterns that expands beyond videos scattered across the Internet.",
         "Sheet music tells musicians what notes to play. It says nothing about how to feel while playing. Actors memorize their lines so they can act. TKA works the same way: it handles what your hands and props are doing so your mind has bandwidth for everything else.",
       ],
     },
@@ -39,16 +43,6 @@
       ],
     },
     {
-      id: "loops",
-      icon: "fa-rotate",
-      title: "LOOPs: Algorithmic Composition",
-      color: "#f97316",
-      content: [
-        "LOOPs (Linked Orbital Offset Patterns) build on the CAPs system that came before. They're transformations that generate circular sequences automatically. Start with one beat, apply a LOOP, and get a full circular sequence. TKA starts creating patterns for you, not just documenting what you already know.",
-        "LOOPs give you the sequence. The rest is yours.",
-      ],
-    },
-    {
       id: "why",
       icon: "fa-globe",
       title: "Why This Matters",
@@ -56,7 +50,7 @@
       content: [
         "Flow arts is a very young art form. Many practitioners find it hard to collaborate with others due to physical distance or foundational differences in technique. Especially in the US, where TKA got its start, flow arts is a heavily solo-influenced art form.",
         "The Kinetic Alphabet does not rely on English terminology, instead embracing symbols and pictures for its communication, making it shareable with people from any cultural background and across any distance. It has a physical form making it recordable with pen and paper and a digital form which streamlines the process significantly.",
-        "TKA handles the technical complexity of hand paths and prop relationships. That leaves mental bandwidth for the parts of performance that can't be notated. Your body. Your presence. How you move through space.",
+        "TKA handles the technical complexity of hand paths and prop relationships. That leaves mental bandwidth for the parts of performance that can't be notated. Expression, presence, how you move through space.",
       ],
     },
     {
@@ -65,9 +59,9 @@
       title: "Who It's For",
       color: "#f59e0b",
       content: [
-        "The Kinetic Alphabet is designed for flow arts teachers, choreographers, and spinners. Whether you're just starting out or have been at it for years, it helps you go from theory to performance. It exists to make synchronized group choreography more achievable, and it is also a tool for self-directed progression.",
+        "The Kinetic Alphabet is designed for flow arts teachers, choreographers, and spinners. For beginners and veterans alike, TKA bridges theory and performance. It exists to make synchronized group choreography more achievable, and it is also a tool for self-directed progression.",
         "Because it allows for performers to keep track of their individual parts, it opens the door to people who struggle with memory and executive function to be able to engage with complex and intricate choreography. It is split into multiple levels of increasing complexity and density, so a beginner can learn at their own pace on the level that suits them, or it can be used as a structured curriculum for exploring movement.",
-        "It's also for performers who care more about expression than drilling patterns. TKA handles the technical groundwork so you can focus on being a performer. Master the vocabulary, free the performance.",
+        "It's also for performers who care more about expression than drilling patterns. TKA handles the technical groundwork so you can focus on being a performer. Learn the notation, then forget it so you can perform.",
       ],
     },
     {
@@ -95,7 +89,7 @@
       title: "The Vision",
       color: "#06b6d4",
       content: [
-        "The goal is greater collaboration and a higher standard for professional performances. The Kinetic Alphabet has already gained momentum. Flow artists across the world are spreading it in their communities.",
+        "The goal is greater collaboration and more ambitious live performances. The Kinetic Alphabet has already gained momentum. Flow artists across the world are spreading it in their communities.",
         "The Kinetic Alphabet isn't meant to define what flow arts should look like. It's meant to handle the technical groundwork so artists can focus on what makes them unique.",
       ],
     },
@@ -160,15 +154,66 @@
       {#each sections as section}
         <article class="section-card" style="--accent: {section.color}">
           <div class="card-header">
-            <div class="icon-wrapper">
-              <i class="fas {section.icon}" aria-hidden="true"></i>
+            <div class="card-header-left">
+              <div class="icon-wrapper">
+                <i class="fas {section.icon}" aria-hidden="true"></i>
+              </div>
+              <h2>{section.title}</h2>
             </div>
-            <h2>{section.title}</h2>
+            {#if section.id === "notation"}
+              <LightsToggleButton
+                lightsOn={positionLightsOn}
+                onToggle={() => (positionLightsOn = !positionLightsOn)}
+                size="small"
+              />
+            {/if}
           </div>
           <div class="card-content">
-            {#each section.content as paragraph}
-              <p>{paragraph}</p>
-            {/each}
+            {#if section.id === "notation"}
+              <!-- First paragraph -->
+              <p>{section.content[0]}</p>
+
+              <!-- Position pictographs -->
+              <div class="position-grid" class:dark-mode={!positionLightsOn}>
+                <div class="position-item">
+                  <div class="position-image-container">
+                    <img
+                      src="/images/position_images/alpha.png"
+                      alt="Alpha position: hands at opposite points on the grid"
+                    />
+                  </div>
+                  <span class="position-name">Alpha</span>
+                  <span class="position-desc">Opposite points</span>
+                </div>
+                <div class="position-item">
+                  <div class="position-image-container">
+                    <img
+                      src="/images/position_images/beta.png"
+                      alt="Beta position: hands at the same point on the grid"
+                    />
+                  </div>
+                  <span class="position-name">Beta</span>
+                  <span class="position-desc">Same point</span>
+                </div>
+                <div class="position-item">
+                  <div class="position-image-container">
+                    <img
+                      src="/images/position_images/gamma.png"
+                      alt="Gamma position: hands forming a right angle on the grid"
+                    />
+                  </div>
+                  <span class="position-name">Gamma</span>
+                  <span class="position-desc">Right angle</span>
+                </div>
+              </div>
+
+              <!-- Second paragraph -->
+              <p>{section.content[1]}</p>
+            {:else}
+              {#each section.content as paragraph}
+                <p>{paragraph}</p>
+              {/each}
+            {/if}
           </div>
         </article>
       {/each}
@@ -304,8 +349,15 @@
   .card-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 1rem;
     margin-bottom: 1.25rem;
+  }
+
+  .card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
   }
 
   .icon-wrapper {
@@ -338,6 +390,60 @@
 
   .card-content p:last-child {
     margin-bottom: 0;
+  }
+
+  /* Position pictographs grid */
+  .position-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .position-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .position-image-container {
+    width: 100%;
+    max-width: 160px;
+    aspect-ratio: 1;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    transition: filter 0.3s ease, background 0.3s ease;
+  }
+
+  .position-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  /* Dark mode - invert the images */
+  .position-grid.dark-mode .position-image-container {
+    background: #1a1a2e;
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  .position-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--theme-text, #ffffff);
+    margin-bottom: 0.125rem;
+  }
+
+  .position-desc {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   /* Footer CTA */
@@ -436,6 +542,11 @@
     }
 
     .card-header {
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .card-header-left {
       flex-direction: column;
       align-items: flex-start;
       gap: 0.75rem;
@@ -455,6 +566,30 @@
       right: 16px;
       width: 44px;
       height: 44px;
+    }
+
+    /* Position grid responsive */
+    .position-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+    }
+
+    .position-image-container {
+      max-width: 100px;
+    }
+
+    .position-name {
+      font-size: 0.875rem;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .position-image-container {
+      max-width: 80px;
+    }
+
+    .position-desc {
+      font-size: 11px;
     }
   }
 

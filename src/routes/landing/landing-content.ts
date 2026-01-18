@@ -22,7 +22,7 @@ export const FEATURES: FeatureCard[] = [
     icon: "✏️",
     title: "Create",
     description:
-      "Build sequences by hand or let the app generate them for you.",
+      "Build sequences by hand or let the app generate them.",
     color: "#6366f1",
   },
   {

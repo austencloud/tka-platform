@@ -283,7 +283,7 @@
         <p>
           These four operations can be combined freely. Rotated + Swapped.
           Mirrored + Inverted. All four together. Each combination produces
-          sequences with different characteristics, all seamlessly loopable.
+          sequences with different characteristics, all loopable.
         </p>
 
         <p>

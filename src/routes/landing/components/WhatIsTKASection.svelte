@@ -37,8 +37,8 @@
 
     <div class="capabilities">
       <p>
-        Document the technical. Share across languages. Learn from a global
-        community. Free your mind for everything else.
+        Document the technical, share across languages, learn from a global
+        community. Then free your mind for everything else.
       </p>
     </div>
 

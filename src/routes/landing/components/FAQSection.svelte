@@ -8,7 +8,7 @@
     {
       question: "How is this different from other notation systems?",
       answer:
-        "TKA builds on ideas from Vulcan Tech Gospel (VTG) and extends them into a comprehensive pictograph-based system. The visual approach means you can read a sequence immediately without memorizing terminology first.",
+        "TKA builds on ideas from Vulcan Tech Gospel (VTG) and extends them into a visual pictograph-based system. The visual approach means you can read a sequence immediately without memorizing terminology first.",
     },
     {
       question: "Do I need to memorize the letter system?",
