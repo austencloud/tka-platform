@@ -150,11 +150,17 @@
 		void motionLoader;
 
 		if (useContext || !controller || !motionLoader) return;
-		// Use id + ownerId to uniquely identify sequences (different creators can have same word)
-		// Fall back to word + steps length as last resort for local sequences without ownerId
+
+		// Create content hash to detect edits (same ID, different content)
+		// Include steps data to detect any beat modifications
+		const stepsHash = sequence?.steps?.map(s =>
+			`${s.letter}:${s.duration}:${s.startPosition?.letter || ''}`
+		).join('|') ?? '';
+
 		const seqId = sequence?.id
-			? `${sequence.id}:${sequence.ownerId ?? "local"}`
-			: `${sequence?.word ?? ""}:${sequence?.steps?.length ?? 0}`;
+			? `${sequence.id}:${sequence.ownerId ?? "local"}:${stepsHash}`
+			: `${sequence?.word ?? ""}:${stepsHash}`;
+
 		if (seqId === lastSequenceId) return;
 
 		untrack(async () => {
