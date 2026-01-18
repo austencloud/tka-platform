@@ -223,6 +223,45 @@ async function notifyUserFeedbackResolved(
 }
 
 /**
+ * Resolve a partial document ID to a full document ID.
+ * Queries all feedback documents and finds ones that start with the partial ID.
+ * @param {string} partialId - The partial ID (6+ characters)
+ * @returns {Promise<string|null>} - The full document ID, or null if not found/ambiguous
+ */
+async function resolvePartialId(partialId) {
+  if (!partialId || partialId.length < 6) {
+    return null;
+  }
+  // If it looks like a full ID (20 chars), just return it
+  if (partialId.length >= 20) {
+    return partialId;
+  }
+  try {
+    const snapshot = await db.collection("feedback").get();
+    const matches = snapshot.docs.filter((doc) => doc.id.startsWith(partialId));
+    if (matches.length === 0) {
+      console.log(`  ❌ No feedback found starting with "${partialId}"`);
+      return null;
+    }
+    if (matches.length > 1) {
+      console.log(`  ⚠️  Multiple matches for "${partialId}":`);
+      matches.forEach((doc) => {
+        const data = doc.data();
+        console.log(
+          `     ${doc.id} - ${data.title || data.description?.substring(0, 40) || "No title"}`
+        );
+      });
+      console.log(`  💡 Use more characters to be specific`);
+      return null;
+    }
+    return matches[0].id;
+  } catch (error) {
+    console.error(`  ❌ Error resolving partial ID: ${error.message}`);
+    return null;
+  }
+}
+
+/**
  * Download images from Firebase Storage for a feedback item
  * Returns array of local file paths
  */
@@ -2094,97 +2133,114 @@ async function main() {
     console.log(
       "\n======================================================================\n"
     );
-  } else if (args[1] === "defer") {
-    // Defer: <id> defer "YYYY-MM-DD" "Reason"
-    if (!args[2]) {
-      console.log(
-        '\n  Usage: node scripts/fetch-feedback.js.js <id> defer "YYYY-MM-DD" "Reason"\n'
-      );
-      console.log(
-        '  Example: node scripts/fetch-feedback.js.js abc123 defer "2026-03-15" "Revisit after Q1"\n'
-      );
-      return;
-    }
-    await deferFeedback(args[0], args[2], args[3]);
-  } else if (args[1] === "internal-only") {
-    // Internal-only: <id> internal-only true/false
-    if (!args[2]) {
-      console.log(
-        "\n  Usage: node scripts/fetch-feedback.js.js <id> internal-only true/false\n"
-      );
-      console.log(
-        "  Example: node scripts/fetch-feedback.js.js abc123 internal-only true\n"
-      );
-      return;
-    }
-    await setInternalOnly(args[0], args[2]);
-  } else if (args[1] === "title") {
-    // Update title: <id> title "new title"
-    await updateFeedbackTitle(args[0], args[2]);
-  } else if (args[1] === "priority") {
-    // Update priority: <id> priority <low|medium|high>
-    await updateFeedbackPriority(args[0], args[2]);
-  } else if (args[1] === "resolution") {
-    // Update resolution notes: <id> resolution "resolution notes"
-    await updateResolutionNotes(args[0], args[2]);
-  } else if (args[1] === "subtask") {
-    // Subtask commands: <id> subtask <command> [args...]
-    const docId = args[0];
-    const subCommand = args[2];
-
-    if (subCommand === "add") {
-      // <id> subtask add "title" "description" [dependsOn...]
-      const title = args[3];
-      const description = args[4];
-      const dependsOn = args.slice(5); // Remaining args are dependency IDs
-      if (!title || !description) {
-        console.log(
-          '\n  Usage: node scripts/fetch-feedback.js.js <id> subtask add "title" "description" [dependsOn...]\n'
-        );
-        return;
-      }
-      await addSubtask(docId, title, description, dependsOn);
-    } else if (subCommand === "list") {
-      // <id> subtask list
-      await listSubtasks(docId);
-    } else if (subCommand) {
-      // <id> subtask <subtaskId> <status>
-      // e.g., <id> subtask 1 completed
-      const subtaskId = subCommand;
-      const status = args[3];
-      if (!status) {
-        console.log(
-          "\n  Usage: node scripts/fetch-feedback.js.js <id> subtask <subtaskId> <status>\n"
-        );
-        console.log("  Valid statuses: pending, in-progress, completed\n");
-        return;
-      }
-      await updateSubtaskStatus(docId, subtaskId, status);
-    } else {
-      console.log("\n  Subtask commands:");
-      console.log('    <id> subtask add "title" "description" [dependsOn...]');
-      console.log("    <id> subtask list");
-      console.log("    <id> subtask <subtaskId> <status>\n");
-    }
-  } else if (args[1]) {
-    // Update: <id> <status> ["notes"] [--user-notes "notes"]
-    // Parse --user-notes flag if present
-    const userNotesIndex = args.indexOf("--user-notes");
-    let userFacingNotes = null;
-    let resolutionNotes = args[2];
-
-    if (userNotesIndex !== -1 && args[userNotesIndex + 1]) {
-      userFacingNotes = args[userNotesIndex + 1];
-      // If --user-notes comes before the resolution notes, adjust
-      if (userNotesIndex === 2) {
-        resolutionNotes = null;
-      }
-    }
-
-    await updateFeedbackById(args[0], args[1], resolutionNotes, userFacingNotes);
   } else {
-    // View specific item by ID
-    await getFeedbackById(args[0]);
+    // All remaining commands use args[0] as a document ID
+    // Resolve partial ID to full ID before proceeding
+    const resolvedId = await resolvePartialId(args[0]);
+    if (!resolvedId) {
+      return;
+    }
+    args[0] = resolvedId;
+
+    if (args[1] === "defer") {
+      // Defer: <id> defer "YYYY-MM-DD" "Reason"
+      if (!args[2]) {
+        console.log(
+          '\n  Usage: node scripts/fetch-feedback.js <id> defer "YYYY-MM-DD" "Reason"\n'
+        );
+        console.log(
+          '  Example: node scripts/fetch-feedback.js abc123 defer "2026-03-15" "Revisit after Q1"\n'
+        );
+        return;
+      }
+      await deferFeedback(args[0], args[2], args[3]);
+    } else if (args[1] === "internal-only") {
+      // Internal-only: <id> internal-only true/false
+      if (!args[2]) {
+        console.log(
+          "\n  Usage: node scripts/fetch-feedback.js <id> internal-only true/false\n"
+        );
+        console.log(
+          "  Example: node scripts/fetch-feedback.js abc123 internal-only true\n"
+        );
+        return;
+      }
+      await setInternalOnly(args[0], args[2]);
+    } else if (args[1] === "title") {
+      // Update title: <id> title "new title"
+      await updateFeedbackTitle(args[0], args[2]);
+    } else if (args[1] === "priority") {
+      // Update priority: <id> priority <low|medium|high>
+      await updateFeedbackPriority(args[0], args[2]);
+    } else if (args[1] === "resolution") {
+      // Update resolution notes: <id> resolution "resolution notes"
+      await updateResolutionNotes(args[0], args[2]);
+    } else if (args[1] === "subtask") {
+      // Subtask commands: <id> subtask <command> [args...]
+      const docId = args[0];
+      const subCommand = args[2];
+
+      if (subCommand === "add") {
+        // <id> subtask add "title" "description" [dependsOn...]
+        const title = args[3];
+        const description = args[4];
+        const dependsOn = args.slice(5); // Remaining args are dependency IDs
+        if (!title || !description) {
+          console.log(
+            '\n  Usage: node scripts/fetch-feedback.js <id> subtask add "title" "description" [dependsOn...]\n'
+          );
+          return;
+        }
+        await addSubtask(docId, title, description, dependsOn);
+      } else if (subCommand === "list") {
+        // <id> subtask list
+        await listSubtasks(docId);
+      } else if (subCommand) {
+        // <id> subtask <subtaskId> <status>
+        // e.g., <id> subtask 1 completed
+        const subtaskId = subCommand;
+        const status = args[3];
+        if (!status) {
+          console.log(
+            "\n  Usage: node scripts/fetch-feedback.js <id> subtask <subtaskId> <status>\n"
+          );
+          console.log("  Valid statuses: pending, in-progress, completed\n");
+          return;
+        }
+        await updateSubtaskStatus(docId, subtaskId, status);
+      } else {
+        console.log("\n  Subtask commands:");
+        console.log(
+          '    <id> subtask add "title" "description" [dependsOn...]'
+        );
+        console.log("    <id> subtask list");
+        console.log("    <id> subtask <subtaskId> <status>\n");
+      }
+    } else if (args[1]) {
+      // Update: <id> <status> ["notes"] [--user-notes "notes"]
+      // Parse --user-notes flag if present
+      const userNotesIndex = args.indexOf("--user-notes");
+      let userFacingNotes = null;
+      let resolutionNotes = args[2];
+
+      if (userNotesIndex !== -1 && args[userNotesIndex + 1]) {
+        userFacingNotes = args[userNotesIndex + 1];
+        // If --user-notes comes before the resolution notes, adjust
+        if (userNotesIndex === 2) {
+          resolutionNotes = null;
+        }
+      }
+
+      await updateFeedbackById(
+        args[0],
+        args[1],
+        resolutionNotes,
+        userFacingNotes
+      );
+    } else {
+      // View specific item by ID
+      await getFeedbackById(args[0]);
+    }
   }
 }
 
