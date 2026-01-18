@@ -37,6 +37,7 @@ Last audit: 2025-12-27
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
   import ProgressOverlay from "./layers/ProgressOverlay.svelte";
+  import SegmentedSequenceProgressBar from "./layers/SegmentedSequenceProgressBar.svelte";
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
   import { getAnimationVisibilityManager } from "../state/animation-visibility-state.svelte";
   import { onMount, onDestroy, untrack } from "svelte";
@@ -71,6 +72,10 @@ Last audit: 2025-12-27
     hideStepNumbers = false,
     // Whether sequence returns to start position - controls trail clearing on loop
     isSeamlesslyLoopable = undefined,
+    // Progress bar visual variant
+    progressBarVariant = "gradient-labeled",
+    // Progress bar seek callback
+    onProgressBarSeek = null,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -94,6 +99,8 @@ Last audit: 2025-12-27
     hideTkaGlyph?: boolean;
     hideStepNumbers?: boolean;
     isSeamlesslyLoopable?: boolean;
+    progressBarVariant?: "minimal" | "raised" | "rounded" | "neon" | "gradient" | "labeled" | "gradient-labeled";
+    onProgressBarSeek?: ((targetStep: number) => void) | null;
   } = $props();
 
   // Container element
@@ -111,6 +118,7 @@ Last audit: 2025-12-27
   let beatPositionVisible = $state(visibilityManager.getVisibility("beatPosition"));
   let globalDarkMode = $state(visibilityManager.isDarkMode());
   let wordHeaderVisible = $state(visibilityManager.getVisibility("wordHeader"));
+  let progressBarVisible = $state(visibilityManager.getVisibility("progressBar"));
 
   // Effective dark mode: use preview override if provided, otherwise global
   const darkModeEnabled = $derived(
@@ -128,6 +136,7 @@ Last audit: 2025-12-27
     beatPositionVisible = visibilityManager.getVisibility("beatPosition");
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
+    progressBarVisible = visibilityManager.getVisibility("progressBar");
   }
 
   visibilityManager.registerObserver(handleVisibilityChange);
@@ -261,6 +270,17 @@ Last audit: 2025-12-27
         {preRenderedFramesReady}
       />
     </div>
+
+    <!-- Progress bar BELOW the canvas (full width) -->
+    <SegmentedSequenceProgressBar
+      steps={sequenceData?.steps ?? []}
+      currentStep={currentStep}
+      visible={progressBarVisible}
+      darkMode={darkModeEnabled}
+      variant={progressBarVariant}
+      showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
+      onSeek={onProgressBarSeek}
+    />
   </div>
 </div>
 

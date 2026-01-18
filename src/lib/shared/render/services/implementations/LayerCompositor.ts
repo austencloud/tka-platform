@@ -44,6 +44,15 @@ import { container } from "../../../di";
 import type { ITurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
 import type { Letter } from "../../../foundation/domain/models/Letter";
 import { GridMode } from "../../../pictograph/grid/domain/enums/grid-enums";
+import { TurnColorInterpreter } from "../../../pictograph/tka-glyph/services/implementations/TurnColorInterpreter";
+import {
+  parseTurnsTuple,
+  shouldDisplayTurn,
+  getTurnNumberImagePath,
+  getTurnNumberWidth,
+} from "../../../pictograph/tka-glyph/utils/turn-tuple-parser";
+import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn-position-calculator";
+import { isDashLetter } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
 
 // Constants matching Canvas2DDirectRenderer
 const VIEWBOX_SIZE = 950;
@@ -55,6 +64,17 @@ const BEAT_NUMBER_FONT_SIZE = 100;
 const BEAT_NUMBER_START_FONT_SIZE = 80;
 const BLUE_COLOR = "#2E77AE";
 const RED_COLOR = "#ED1C24";
+const TURN_NUMBER_HEIGHT = 45;
+const DOT_PADDING = 10;
+const DOT_SIZE = 25;
+
+// Dash constants (from Dash.svelte)
+const DASH_WIDTH = 70;
+const DASH_HEIGHT = 20;
+const DASH_GAP = 10;
+const DASH_RADIUS = 9.5;
+const DASH_FILL_DARK = "#231f20"; // Near black - for light mode
+const DASH_FILL_LIGHT = "#ffffff"; // White - for dark mode (inverted)
 
 // Grid point positions (from diamond_grid.svg, viewBox 0 0 950 950)
 // These are the TOGGLEABLE points - hand points and layer 2 points
@@ -107,6 +127,7 @@ const REVERSAL_CACHE_LIMIT = 10; // Only 4 states per size
 
 export class LayerCompositor implements ILayerCompositor {
   private keyDeriver = new LayerKeyDeriver();
+  private turnColorInterpreter = new TurnColorInterpreter();
 
   // Layer caches (LRU maps)
   private baseCache = new Map<string, HTMLCanvasElement>();
@@ -533,19 +554,25 @@ export class LayerCompositor implements ILayerCompositor {
 
     const scale = options.size / VIEWBOX_SIZE;
 
-    // Draw letter glyph
+    // Draw letter glyph and capture dimensions
+    let letterDimensions = { width: 100, height: 100 };
     if (pictograph.letter) {
-      await this.drawTKAGlyph(ctx, pictograph.letter as Letter, options.size, options.darkMode);
+      letterDimensions = await this.drawTKAGlyph(ctx, pictograph.letter as Letter, options.size, options.darkMode);
+
+      // Draw dash for Type 3/5 letters (e.g., "X-", "Φ-")
+      if (isDashLetter(pictograph.letter)) {
+        this.drawDash(ctx, letterDimensions, scale, options.darkMode);
+      }
     }
 
     // Draw turns column (to the right of letter)
     if (pictograph.motions) {
-      await this.drawTurnsColumn(ctx, pictograph, scale, options.darkMode);
+      await this.drawTurnsColumn(ctx, pictograph, letterDimensions, scale, options.darkMode);
     }
 
     // Draw direction dot
     if (pictograph.letter && pictograph.motions) {
-      this.drawDirectionDot(ctx, pictograph, scale, options.darkMode);
+      this.drawDirectionDot(ctx, pictograph, letterDimensions, scale, options.darkMode);
     }
 
     return canvas;
@@ -758,24 +785,201 @@ export class LayerCompositor implements ILayerCompositor {
     return { width: 100, height: 100 };
   }
 
+  /**
+   * Draw the dash suffix for Type 3/5 letters (e.g., "X-", "Φ-")
+   * Positioned to the right of the letter, vertically centered
+   */
+  private drawDash(
+    ctx: CanvasRenderingContext2D,
+    letterDimensions: { width: number; height: number },
+    scale: number,
+    darkMode: boolean
+  ): void {
+    const TKA_GLYPH_SCALE = 1.0; // Match TKAGlyph.svelte
+    const baseX = TKA_GLYPH_X * scale;
+    const baseY = TKA_GLYPH_Y * scale;
+
+    // Calculate dash position (to the right of letter, vertically centered)
+    const letterWidth = letterDimensions.width * TKA_GLYPH_SCALE * scale;
+    const letterHeight = letterDimensions.height * TKA_GLYPH_SCALE * scale;
+    const dashWidth = DASH_WIDTH * scale;
+    const dashHeight = DASH_HEIGHT * scale;
+    const dashGap = DASH_GAP * scale;
+    const dashRadius = DASH_RADIUS * scale;
+
+    const dashX = baseX + letterWidth + dashGap;
+    const dashY = baseY + (letterHeight - dashHeight) / 2;
+
+    // Draw rounded rectangle
+    ctx.save();
+    ctx.fillStyle = darkMode ? DASH_FILL_LIGHT : DASH_FILL_DARK;
+    ctx.beginPath();
+    ctx.roundRect(dashX, dashY, dashWidth, dashHeight, dashRadius);
+    ctx.fill();
+    ctx.restore();
+  }
+
   private async drawTurnsColumn(
     ctx: CanvasRenderingContext2D,
     pictograph: PreparedPictographData,
+    letterDimensions: { width: number; height: number },
     scale: number,
     darkMode: boolean
   ): Promise<void> {
-    // Simplified - full implementation would match Canvas2DDirectRenderer
-    // For now, this is a placeholder that will be filled in during integration
+    // Generate turnsTuple using the same service as SVG
+    const turnsTuple = this.getTurnsTuple(pictograph);
+
+    // Parse the tuple
+    const parsed = parseTurnsTuple(turnsTuple);
+    const showTop = shouldDisplayTurn(parsed.top);
+    const showBottom = shouldDisplayTurn(parsed.bottom);
+
+    if (!showTop && !showBottom) return;
+
+    // Get turn colors (based on letter type)
+    const turnColors = this.turnColorInterpreter.interpretTurnColors(
+      pictograph.letter,
+      pictograph
+    );
+
+    // Check if letter has a dash
+    const hasDash = isDashLetter(pictograph.letter);
+
+    // Calculate positions using the same function as SVG
+    const positions = calculateTurnPositions(letterDimensions, TURN_NUMBER_HEIGHT, hasDash);
+
+    // Calculate column width (max of top and bottom)
+    const columnWidth = Math.max(
+      getTurnNumberWidth(parsed.top),
+      getTurnNumberWidth(parsed.bottom)
+    );
+
+    // Base position (same as TKA glyph)
+    const baseX = TKA_GLYPH_X * scale;
+    const baseY = TKA_GLYPH_Y * scale;
+
+    const { getSvgAssetLoader } = await import("./SvgAssetLoader");
+    const assetLoader = getSvgAssetLoader();
+
+    // Draw top turn number
+    if (showTop) {
+      const topPath = getTurnNumberImagePath(parsed.top);
+      if (topPath) {
+        try {
+          const topImg = await assetLoader.getTurnNumberImage(parsed.top);
+          if (topImg) {
+            const drawX = baseX + positions.top.x * scale;
+            const drawY = baseY + positions.top.y * scale;
+            const drawWidth = columnWidth * scale;
+            const drawHeight = TURN_NUMBER_HEIGHT * scale;
+
+            // Draw with color tint
+            this.drawColoredImage(ctx, topImg, drawX, drawY, drawWidth, drawHeight, turnColors.top);
+          }
+        } catch (error) {
+          console.warn("[LayerCompositor] Failed to load top turn number:", error);
+        }
+      }
+    }
+
+    // Draw bottom turn number
+    if (showBottom) {
+      const bottomPath = getTurnNumberImagePath(parsed.bottom);
+      if (bottomPath) {
+        try {
+          const bottomImg = await assetLoader.getTurnNumberImage(parsed.bottom);
+          if (bottomImg) {
+            const drawX = baseX + positions.bottom.x * scale;
+            const drawY = baseY + positions.bottom.y * scale;
+            const drawWidth = columnWidth * scale;
+            const drawHeight = TURN_NUMBER_HEIGHT * scale;
+
+            // Draw with color tint
+            this.drawColoredImage(ctx, bottomImg, drawX, drawY, drawWidth, drawHeight, turnColors.bottom);
+          }
+        } catch (error) {
+          console.warn("[LayerCompositor] Failed to load bottom turn number:", error);
+        }
+      }
+    }
   }
 
   private drawDirectionDot(
     ctx: CanvasRenderingContext2D,
     pictograph: PreparedPictographData,
+    letterDimensions: { width: number; height: number },
     scale: number,
     darkMode: boolean
   ): void {
-    // Simplified - full implementation would match Canvas2DDirectRenderer
-    // For now, this is a placeholder that will be filled in during integration
+    // Generate turnsTuple to get direction
+    const turnsTuple = this.getTurnsTuple(pictograph);
+    const parsed = parseTurnsTuple(turnsTuple);
+    const direction = parsed.direction;
+
+    // Only draw for "s" (same) or "o" (opp)
+    if (direction !== "s" && direction !== "o") return;
+
+    // Base position (same as TKA glyph)
+    const baseX = TKA_GLYPH_X * scale;
+    const baseY = TKA_GLYPH_Y * scale;
+
+    // Calculate dot position relative to letter
+    // X: centered on letter
+    const dotCenterX = letterDimensions.width / 2;
+
+    let dotY: number;
+    if (direction === "s") {
+      // SAME: above letter
+      dotY = -DOT_PADDING - DOT_SIZE;
+    } else {
+      // OPP: below letter
+      dotY = letterDimensions.height + DOT_PADDING;
+    }
+
+    // Draw the dot
+    const drawX = baseX + (dotCenterX - DOT_SIZE / 2) * scale;
+    const drawY = baseY + dotY * scale;
+    const radius = (DOT_SIZE / 2) * scale;
+
+    ctx.fillStyle = darkMode ? "#ffffff" : "#231f20";
+    ctx.beginPath();
+    ctx.arc(drawX + radius, drawY + radius, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /**
+   * Draw an image with a color tint (for turn numbers)
+   */
+  private drawColoredImage(
+    ctx: CanvasRenderingContext2D,
+    img: HTMLImageElement,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color: string
+  ): void {
+    // Create offscreen canvas to apply color
+    const offscreen = document.createElement("canvas");
+    offscreen.width = width;
+    offscreen.height = height;
+    const offCtx = offscreen.getContext("2d");
+
+    if (!offCtx) {
+      ctx.drawImage(img, x, y, width, height);
+      return;
+    }
+
+    // Draw image
+    offCtx.drawImage(img, 0, 0, width, height);
+
+    // Apply color using composite operation
+    offCtx.globalCompositeOperation = "source-in";
+    offCtx.fillStyle = color;
+    offCtx.fillRect(0, 0, width, height);
+
+    // Draw to main canvas
+    ctx.drawImage(offscreen, x, y);
   }
 
   private getTurnsTuple(pictograph: PreparedPictographData): string {

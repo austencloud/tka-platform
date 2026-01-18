@@ -64,10 +64,12 @@ export interface MotionData {
 /**
  * Factory function to create MotionData with sensible defaults
  *
- * IMPORTANT: PropType is per-motion, NOT global
- * - Each motion has its own propType field that gets respected
- * - settings.propType can be used as a default when creating NEW motions
- * - This allows mixed prop types in a single pictograph (e.g., red hand + blue staff)
+ * IMPORTANT: PropType is a VIEWER PREFERENCE, not sequence data
+ * - motion.propType is stored but ALWAYS overridden by global settings during render
+ * - Exception: PropType.HAND (Assembly mode) is never overridden
+ * - All pictographs in a sequence MUST use the same global prop settings
+ * - Blue vs red CAN differ (catDogMode), but all blues must match, all reds must match
+ * - When global prop settings change, ALL pictographs re-render with new props
  */
 export function createMotionData(data: Partial<MotionData> = {}): MotionData {
   return {

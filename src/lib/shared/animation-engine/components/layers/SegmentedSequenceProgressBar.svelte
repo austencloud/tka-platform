@@ -1,0 +1,541 @@
+<!--
+SegmentedSequenceProgressBar.svelte
+
+Duration-aware segmented progress indicator for animation sequences.
+Each beat is a visual segment proportional to its duration.
+Interactive: click/drag to scrub through the sequence.
+
+Design variants supported:
+- minimal: Flat segments with subtle borders
+- raised: 3D appearance with shadows
+- rounded: Pill-shaped segments with gaps
+- neon: Glowing segments with bright colors
+- gradient: Smooth gradient fills
+- labeled: Shows beat numbers/letters
+-->
+<script lang="ts">
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import { slide } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+
+  let {
+    steps = [],
+    currentStep = 0,
+    visible = true,
+    darkMode = false,
+    onSeek = null,
+    variant = "minimal",
+    showLabels = false,
+  }: {
+    /** Array of step data (for durations and labels) */
+    steps?: readonly StepData[];
+    /** Current position in sequence (float, e.g., 2.5 = beat 3, 50% through) */
+    currentStep?: number;
+    /** Whether the progress bar should be visible */
+    visible?: boolean;
+    /** Dark mode override */
+    darkMode?: boolean;
+    /** Callback when user clicks/drags to seek */
+    onSeek?: ((targetStep: number) => void) | null;
+    /** Visual style variant */
+    variant?: "minimal" | "raised" | "rounded" | "neon" | "gradient" | "labeled" | "gradient-labeled";
+    /** Show beat numbers above segments */
+    showLabels?: boolean;
+  } = $props();
+
+  /**
+   * Segment data with calculated widths
+   */
+  interface Segment {
+    index: number;
+    duration: number;
+    widthPercent: number;
+    cumulativeStart: number; // Where this segment starts in total duration
+    label: string;
+  }
+
+  /**
+   * Calculate segment data from steps
+   */
+  const segments = $derived.by((): Segment[] => {
+    if (steps.length === 0) return [];
+
+    const totalDuration = steps.reduce((sum, step) => sum + (step.duration ?? 1), 0);
+    let cumulativeStart = 0;
+
+    return steps.map((step, index) => {
+      const duration = step.duration ?? 1;
+      const widthPercent = (duration / totalDuration) * 100;
+      const segment: Segment = {
+        index,
+        duration,
+        widthPercent,
+        cumulativeStart,
+        label: step.letter?.toString() ?? `${index + 1}`,
+      };
+      cumulativeStart += duration;
+      return segment;
+    });
+  });
+
+  /**
+   * Current segment index (which beat we're on)
+   */
+  const currentSegmentIndex = $derived(
+    currentStep < 1 ? -1 : Math.floor(currentStep - 1)
+  );
+
+  /**
+   * Overall progress as percentage (0-100) across entire bar
+   * This moves at CONSTANT VISUAL SPEED regardless of beat durations
+   *
+   * IMPORTANT: currentStep is 1-based (1.0 = beat 1, 2.0 = beat 2)
+   * Must convert to 0-based for progress calculation
+   * Shows progress even when paused by clamping to valid range
+   */
+  const overallProgressPercent = $derived.by(() => {
+    if (steps.length === 0) return 0;
+    // Clamp currentStep to valid range [0, steps.length]
+    const clampedStep = Math.max(0, Math.min(steps.length, currentStep));
+    // Calculate progress (0-100%)
+    return (clampedStep / steps.length) * 100;
+  });
+
+  /**
+   * Calculate which beat was clicked based on mouse position
+   */
+  function calculateTargetStep(event: PointerEvent, container: HTMLElement): number {
+    const rect = container.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const clickPercent = clickX / rect.width;
+
+    // Find which segment was clicked
+    let cumulativePercent = 0;
+    for (const segment of segments) {
+      const segmentEndPercent = cumulativePercent + segment.widthPercent / 100;
+      if (clickPercent <= segmentEndPercent) {
+        // Calculate position within this segment
+        const progressInSegment =
+          (clickPercent - cumulativePercent) / (segment.widthPercent / 100);
+        // Return 1-based beat number (beat 1 = index 0)
+        return segment.index + 1 + progressInSegment;
+      }
+      cumulativePercent = segmentEndPercent;
+    }
+
+    // Clicked past the end - return last beat
+    return steps.length;
+  }
+
+  let containerRef: HTMLElement | undefined = $state();
+  let isDragging = $state(false);
+
+  function handlePointerDown(event: PointerEvent) {
+    if (!containerRef || !onSeek) return;
+
+    isDragging = true;
+    containerRef.setPointerCapture(event.pointerId);
+
+    const targetStep = calculateTargetStep(event, containerRef);
+    onSeek(targetStep);
+  }
+
+  function handlePointerMove(event: PointerEvent) {
+    if (!isDragging || !containerRef || !onSeek) return;
+
+    const targetStep = calculateTargetStep(event, containerRef);
+    onSeek(targetStep);
+  }
+
+  function handlePointerUp(event: PointerEvent) {
+    if (!containerRef) return;
+
+    isDragging = false;
+    containerRef.releasePointerCapture(event.pointerId);
+  }
+
+  /**
+   * Keyboard navigation
+   */
+  function handleKeyDown(event: KeyboardEvent) {
+    if (!onSeek) return;
+
+    switch (event.key) {
+      case "ArrowLeft":
+        event.preventDefault();
+        onSeek(Math.max(0, currentStep - 0.5));
+        break;
+      case "ArrowRight":
+        event.preventDefault();
+        onSeek(Math.min(steps.length, currentStep + 0.5));
+        break;
+      case "Home":
+        event.preventDefault();
+        onSeek(0);
+        break;
+      case "End":
+        event.preventDefault();
+        onSeek(steps.length);
+        break;
+    }
+  }
+
+  /**
+   * ARIA label for screen readers
+   */
+  const ariaLabel = $derived.by(() => {
+    if (steps.length === 0) return "Sequence progress: no sequence loaded";
+    const currentBeat = Math.floor(currentStep);
+    const progress = Math.round((currentStep / steps.length) * 100);
+    return `Sequence progress: beat ${currentBeat} of ${steps.length}, ${progress}% complete`;
+  });
+</script>
+
+{#if visible && steps.length > 0}
+  <div
+    class="segmented-progress-container"
+    class:dark-mode={darkMode}
+    class:interactive={onSeek !== null}
+    class:dragging={isDragging}
+    data-variant={variant}
+    role="slider"
+    aria-label={ariaLabel}
+    aria-valuenow={Math.round((currentStep / steps.length) * 100)}
+    aria-valuemin={0}
+    aria-valuemax={100}
+    tabindex={onSeek ? 0 : -1}
+    bind:this={containerRef}
+    onpointerdown={handlePointerDown}
+    onpointermove={handlePointerMove}
+    onpointerup={handlePointerUp}
+    onkeydown={handleKeyDown}
+    transition:slide={{ duration: 300, easing: cubicOut }}
+  >
+    {#if showLabels}
+      <div class="labels-row">
+        {#each segments as segment}
+          <div
+            class="label"
+            class:active={segment.index === currentSegmentIndex}
+            style="width: {segment.widthPercent}%"
+          >
+            {segment.label}
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    <div class="segments-track">
+      <!-- White segment dividers (always visible) -->
+      <div class="segments-background">
+        {#each segments as segment}
+          <div class="segment segment-white" style="width: {segment.widthPercent}%"></div>
+        {/each}
+      </div>
+
+      <!-- Continuous progress fill (moves at constant visual speed) -->
+      <div class="progress-fill" style="width: {overallProgressPercent}%"></div>
+    </div>
+  </div>
+{/if}
+
+<style>
+  /* Container */
+  .segmented-progress-container {
+    width: 100%;
+    padding: clamp(6px, 3cqw, 12px) 0;
+    box-sizing: border-box;
+    background: linear-gradient(
+      to bottom,
+      rgba(248, 248, 248, 0.98),
+      rgba(240, 240, 240, 0.98)
+    );
+    transition: background 150ms ease-out;
+  }
+
+  .segmented-progress-container.dark-mode {
+    background: linear-gradient(
+      to bottom,
+      rgba(15, 15, 20, 0.98),
+      rgba(10, 10, 15, 0.98)
+    );
+  }
+
+  .segmented-progress-container.interactive {
+    cursor: pointer;
+  }
+
+  .segmented-progress-container.dragging {
+    cursor: grabbing;
+  }
+
+  .segmented-progress-container:focus-visible {
+    outline: 2px solid var(--theme-accent, #3b82f6);
+    outline-offset: 2px;
+  }
+
+  /* Labels row */
+  .labels-row {
+    display: flex;
+    width: 100%;
+    margin-bottom: 4px;
+    font-size: clamp(9px, 2cqw, 11px);
+    font-weight: 600;
+  }
+
+  .label {
+    text-align: center;
+    color: rgba(0, 0, 0, 0.4);
+    transition: color 0.2s ease;
+  }
+
+  .dark-mode .label {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .label.active {
+    color: rgba(0, 0, 0, 0.8);
+  }
+
+  .dark-mode .label.active {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  /* Segments track container */
+  .segments-track {
+    position: relative;
+    width: 100%;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  .dark-mode .segments-track {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* White segment dividers (always visible, unfilled area) */
+  .segments-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    gap: 0;
+    pointer-events: none;
+    z-index: 2; /* Above progress fill */
+  }
+
+  .segment {
+    height: 100%;
+  }
+
+  .segment-white {
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .segment-white:last-child {
+    border-right: none;
+  }
+
+  .dark-mode .segment-white {
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  /* Continuous progress fill (moves smoothly left to right) */
+  .progress-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, #3b82f6 100%);
+    transition: background 150ms ease-out;
+    z-index: 1; /* Below white dividers, above track */
+  }
+
+  .dark-mode .progress-fill {
+    background: linear-gradient(90deg, #00b8b8 0%, #00e5e5 50%, #00b8b8 100%);
+  }
+
+  /* ========================================
+     VARIANT: MINIMAL (default)
+     ======================================== */
+  /* Borders are now default - no variant-specific overrides needed */
+
+  /* ========================================
+     VARIANT: RAISED (3D with shadows)
+     ======================================== */
+  [data-variant="raised"] .segments-track {
+    height: 8px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark-mode [data-variant="raised"] .segments-track {
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  [data-variant="raised"] .segment {
+    border-right: 1px solid rgba(0, 0, 0, 0.2);
+  }
+
+  .dark-mode [data-variant="raised"] .segment {
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  [data-variant="raised"] .progress-fill {
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.4);
+  }
+
+  .dark-mode [data-variant="raised"] .progress-fill {
+    box-shadow: 0 1px 3px rgba(0, 184, 184, 0.5);
+  }
+
+  /* ========================================
+     VARIANT: ROUNDED (pill-shaped with gaps)
+     ======================================== */
+  [data-variant="rounded"] .segments-track {
+    height: 6px;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  [data-variant="rounded"] .segments-background {
+    gap: 3px;
+  }
+
+  [data-variant="rounded"] .progress-fill {
+    border-radius: 999px;
+  }
+
+  /* ========================================
+     VARIANT: NEON (glowing progress)
+     ======================================== */
+  [data-variant="neon"] .segments-track {
+    height: 5px;
+    background: rgba(59, 130, 246, 0.15);
+    border-radius: 2px;
+  }
+
+  .dark-mode [data-variant="neon"] .segments-track {
+    background: rgba(0, 184, 184, 0.15);
+  }
+
+  [data-variant="neon"] .segments-background {
+    gap: 2px;
+  }
+
+  [data-variant="neon"] .progress-fill {
+    box-shadow:
+      0 0 8px rgba(59, 130, 246, 0.8),
+      0 0 12px rgba(59, 130, 246, 0.4);
+    animation: neonPulse 1s ease-in-out infinite;
+  }
+
+  .dark-mode [data-variant="neon"] .progress-fill {
+    box-shadow:
+      0 0 8px rgba(0, 184, 184, 0.8),
+      0 0 16px rgba(0, 184, 184, 0.5);
+  }
+
+  @keyframes neonPulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
+
+  /* ========================================
+     VARIANT: GRADIENT (colorful gradient fill)
+     ======================================== */
+  [data-variant="gradient"] .progress-fill {
+    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+  }
+
+  .dark-mode [data-variant="gradient"] .progress-fill {
+    background: linear-gradient(90deg, #00b8b8 0%, #00e5e5 50%, #00b8b8 100%);
+  }
+
+  /* ========================================
+     VARIANT: LABELED (with beat markers and clear dividers)
+     ======================================== */
+  [data-variant="labeled"] .segments-track {
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  [data-variant="labeled"] .segment {
+    border-right: 2px solid rgba(0, 0, 0, 0.5);
+    position: relative;
+  }
+
+  .dark-mode [data-variant="labeled"] .segment {
+    border-right: 2px solid rgba(255, 255, 255, 0.5);
+  }
+
+  /* Make segment dividers visible even over progress fill */
+  [data-variant="labeled"] .segments-background::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: inherit;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* ========================================
+     VARIANT: GRADIENT-LABELED (gradient + labels + dividers)
+     ======================================== */
+  [data-variant="gradient-labeled"] .segments-track {
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  [data-variant="gradient-labeled"] .segment {
+    border-right: 2px solid rgba(0, 0, 0, 0.5);
+    position: relative;
+  }
+
+  .dark-mode [data-variant="gradient-labeled"] .segment {
+    border-right: 2px solid rgba(255, 255, 255, 0.5);
+  }
+
+  [data-variant="gradient-labeled"] .progress-fill {
+    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+  }
+
+  .dark-mode [data-variant="gradient-labeled"] .progress-fill {
+    background: linear-gradient(90deg, #00b8b8 0%, #00e5e5 50%, #00b8b8 100%);
+  }
+
+  /* Make segment dividers visible over gradient */
+  [data-variant="gradient-labeled"] .segments-background::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: inherit;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* Accessibility: respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .segment,
+    .progress-fill,
+    .label,
+    .segmented-progress-container {
+      transition: none;
+      animation: none;
+    }
+  }
+</style>

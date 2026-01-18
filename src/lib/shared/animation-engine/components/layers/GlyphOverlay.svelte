@@ -230,18 +230,10 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
     filter: invert(0.9);
   }
 
-  .glyph-overlay.dark-mode :global(.turns-column) {
-    filter: drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white);
-  }
-
   /* Fallback: Global .dark class only applies when NOT controlled by prop */
   /* data-controlled attribute marks prop-controlled instances */
   :global(:root.dark) .glyph-overlay:not([data-controlled]) :global(.tka-glyph) {
     filter: invert(0.9);
-  }
-
-  :global(:root.dark) .glyph-overlay:not([data-controlled]) :global(.turns-column) {
-    filter: drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white);
   }
 
   /* Accessibility: reduced motion users get instant transitions */

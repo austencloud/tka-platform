@@ -101,6 +101,14 @@ const DOT_SIZE = 25;
 // Turn number height (from TurnsColumn.svelte)
 const TURN_NUMBER_HEIGHT = 45;
 
+// Dash constants (from Dash.svelte)
+const DASH_WIDTH = 70;
+const DASH_HEIGHT = 20;
+const DASH_GAP = 10;
+const DASH_RADIUS = 9.5;
+const DASH_FILL_DARK = "#231f20"; // Near black - for light mode
+const DASH_FILL_LIGHT = "#ffffff"; // White - for dark mode
+
 // Colors
 const BLUE_COLOR = "#2E77AE";
 const RED_COLOR = "#ED1C24";
@@ -339,6 +347,11 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
         isDarkMode
       );
       glyphTime = performance.now() - glyphStart;
+
+      // Draw dash for Type 3/5 letters (e.g., "X-", "Φ-")
+      if (isDashLetter(preparedPictograph.letter)) {
+        this.drawDash(ctx, letterDimensions, scale, isDarkMode);
+      }
     }
 
     // 6. Draw turn numbers (TurnsColumn - to the RIGHT of letter)
@@ -806,6 +819,40 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
 
     // Fallback to text rendering
     return this.drawTKAGlyphText(ctx, String(letter), size, isDarkMode);
+  }
+
+  /**
+   * Draw the dash suffix for Type 3/5 letters (e.g., "X-", "Φ-")
+   * Positioned to the right of the letter, vertically centered
+   */
+  private drawDash(
+    ctx: CanvasRenderingContext2D,
+    letterDimensions: { width: number; height: number },
+    scale: number,
+    isDarkMode: boolean
+  ): void {
+    const TKA_GLYPH_SCALE = 1.0;
+    const baseX = TKA_GLYPH_X * scale;
+    const baseY = TKA_GLYPH_Y * scale;
+
+    // Calculate dash position (to the right of letter, vertically centered)
+    const letterWidth = letterDimensions.width * TKA_GLYPH_SCALE * scale;
+    const letterHeight = letterDimensions.height * TKA_GLYPH_SCALE * scale;
+    const dashWidth = DASH_WIDTH * scale;
+    const dashHeight = DASH_HEIGHT * scale;
+    const dashGap = DASH_GAP * scale;
+    const dashRadius = DASH_RADIUS * scale;
+
+    const dashX = baseX + letterWidth + dashGap;
+    const dashY = baseY + (letterHeight - dashHeight) / 2;
+
+    // Draw rounded rectangle
+    ctx.save();
+    ctx.fillStyle = isDarkMode ? DASH_FILL_LIGHT : DASH_FILL_DARK;
+    ctx.beginPath();
+    ctx.roundRect(dashX, dashY, dashWidth, dashHeight, dashRadius);
+    ctx.fill();
+    ctx.restore();
   }
 
   /**

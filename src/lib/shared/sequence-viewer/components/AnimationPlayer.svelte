@@ -143,7 +143,12 @@
 	});
 
 	// Watch sequence changes (standalone mode)
+	// IMPORTANT: Explicitly track controller and motionLoader so effect re-runs when they're set
 	$effect(() => {
+		// Track dependencies to ensure effect re-runs when controller/motionLoader are set
+		void controller;
+		void motionLoader;
+
 		if (useContext || !controller || !motionLoader) return;
 		// Use id + ownerId to uniquely identify sequences (different creators can have same word)
 		// Fall back to word + steps length as last resort for local sequences without ownerId
@@ -229,6 +234,7 @@
 						{previewDarkMode}
 						{bluePropType}
 						{redPropType}
+				progressBarVariant="minimal"
 					/>
 
 					{#if isExporting && exportProgress}
@@ -280,6 +286,7 @@
 					{previewDarkMode}
 					{bluePropType}
 					{redPropType}
+					progressBarVariant="minimal"
 				/>
 
 				{#if isExporting && exportProgress}

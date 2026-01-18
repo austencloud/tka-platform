@@ -121,6 +121,8 @@ Supports letter highlighting during animation playback.
     // activeStepNumber is 1-indexed, modulo to wrap around
     return (activeStepNumber! - 1) % parsedLetters.length;
   });
+
+
 </script>
 
 {#if visible && displayText}
@@ -160,10 +162,8 @@ Supports letter highlighting during animation playback.
   .word-header {
     width: 100%;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    /* Scale padding with container width for constrained contexts */
-    padding: clamp(6px, 3cqw, 12px) clamp(8px, 4cqw, 16px);
+    flex-direction: column;
+    align-items: stretch;
     box-sizing: border-box;
     flex-shrink: 0;
     /* Light mode: subtle gray background matching image export */
@@ -195,6 +195,8 @@ Supports letter highlighting during animation playback.
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    /* Padding for word text */
+    padding: clamp(6px, 3cqw, 12px) clamp(8px, 4cqw, 16px);
   }
 
   /* Dark mode: dark background with light text (via prop) */

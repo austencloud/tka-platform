@@ -141,8 +141,8 @@ export class PictographPreparer implements IPictographPreparer {
       blue?.endLocation ?? "",
       blue?.rotationDirection ?? "",
       blue?.turns ?? 0,
-      // Prop type: explicit option > motion's embedded type > global settings
-      options?.bluePropType ?? blue?.propType ?? globalSettings.bluePropType ?? "",
+      // Prop type: explicit option > global settings (viewer preference)
+      options?.bluePropType ?? globalSettings.bluePropType ?? "",
       // Blue manual adjustments (for admin arrow positioning via WASD)
       blue?.arrowPlacementData?.manualAdjustmentX ?? 0,
       blue?.arrowPlacementData?.manualAdjustmentY ?? 0,
@@ -152,8 +152,8 @@ export class PictographPreparer implements IPictographPreparer {
       red?.endLocation ?? "",
       red?.rotationDirection ?? "",
       red?.turns ?? 0,
-      // Prop type: explicit option > motion's embedded type > global settings
-      options?.redPropType ?? red?.propType ?? globalSettings.redPropType ?? "",
+      // Prop type: explicit option > global settings (viewer preference)
+      options?.redPropType ?? globalSettings.redPropType ?? "",
       // Red manual adjustments (for admin arrow positioning via WASD)
       red?.arrowPlacementData?.manualAdjustmentX ?? 0,
       red?.arrowPlacementData?.manualAdjustmentY ?? 0,
@@ -268,13 +268,10 @@ export class PictographPreparer implements IPictographPreparer {
           ];
         }
 
-        // If motion already has a propType set (cat-dog mode / mixed props),
-        // use it instead of falling back to global settings
-        if (motion.propType !== undefined) {
-          return [color, motion] as [string, MotionData];
-        }
-
-        // No explicit prop type on motion - fall back to global settings
+        // ALWAYS use global settings (viewer preference)
+        // PropType is NOT sequence data - it's a viewer preference
+        // All pictographs in a sequence MUST use the same global prop settings
+        // (Blue vs red CAN differ via catDogMode, but all blues must match, all reds must match)
         const settingsPropType =
           color === "blue" ? settings.bluePropType : settings.redPropType;
         if (settingsPropType) {

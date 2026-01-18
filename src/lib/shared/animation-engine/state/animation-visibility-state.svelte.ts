@@ -32,6 +32,7 @@ interface AnimationVisibilitySettings {
   playbackMode: PlaybackMode; // Continuous flow vs step-by-step
   speed: number; // Speed multiplier (1.0 = 60 BPM, range 0.1-3.0)
   wordHeader: boolean; // Word/sequence name header at top
+  progressBar: boolean; // Segmented progress bar in word header
 
   // Global Effects (applies to pictograph, animation, and image export)
   // Dark Mode: dark background, inverted grid, white text/outlines
@@ -83,13 +84,14 @@ export class AnimationVisibilityStateManager {
     return {
       // Animation-specific defaults
       gridMode: "diamond", // Default to diamond grid
-      stepNumbers: true,
-      beatPosition: true, // Show beat position by default
+      stepNumbers: false, // Hide beat numbers by default (user requested removal)
+      beatPosition: false, // Hide beat position by default (replaced by progress bar)
       props: true,
       trailStyle: "on", // Trails enabled by default (hardcoded vivid style)
       playbackMode: "continuous", // Default to continuous playback
       speed: 1.0, // Default to 60 BPM
       wordHeader: true, // Show word/sequence name by default
+      progressBar: true, // Show progress bar by default
 
       // Global effects
       darkMode: false, // Dark Mode disabled by default
@@ -122,6 +124,9 @@ export class AnimationVisibilityStateManager {
         if (parsed.trailStyle === "subtle" || parsed.trailStyle === "vivid") {
           parsed.trailStyle = "on";
         }
+
+        // Force beatPosition to false (replaced by progress bar)
+        parsed.beatPosition = false;
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
 
