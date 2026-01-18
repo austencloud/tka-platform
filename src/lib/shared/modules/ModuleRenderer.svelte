@@ -73,6 +73,9 @@
     // ML Training module for prop detection model training
     "ml-training": () =>
       import("../../features/train/ml-training/components/MLTrainingModule.svelte"),
+    // Prop Tracking Lab - Skel2TKA proof of concept (video → notation)
+    "prop-tracking-lab": () =>
+      import("../../features/train/prop-tracking-lab/components/PropTrackingLabModule.svelte"),
     // compose module
     compose: () => import("../../features/compose/ComposeModule.svelte"),
     // settings module - accessed via gear icon in sidebar footer

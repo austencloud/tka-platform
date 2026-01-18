@@ -75,14 +75,14 @@ export interface UserFeatureOverrides {
  * This keeps hardcoded config minimal - the database is the source of truth
  * for everything beyond these essentials.
  */
-const CORE_USER_MODULES: ModuleId[] = ["dashboard", "create", "discover"];
+const CORE_USER_MODULES: ModuleId[] = ["dashboard", "create", "discover", "settings"];
 
 /**
  * Get the default role for a feature
  * Used by FeatureFlagService to determine minimum role requirements
  *
  * Logic:
- * 1. Core modules (dashboard, create, discover) → "user"
+ * 1. Core modules (dashboard, create, discover, settings) → "user"
  * 2. Tabs → inherit from parent module
  * 3. Everything else → "admin" (secure by default)
  *

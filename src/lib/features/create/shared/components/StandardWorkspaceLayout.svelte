@@ -13,7 +13,6 @@
   import ButtonPanel from "../workspace-panel/shared/components/ButtonPanel.svelte";
   import CreationWorkspaceArea from "./CreationWorkspaceArea.svelte";
   import CreationToolPanelSlot from "./CreationToolPanelSlot.svelte";
-  import HelpButtonDiscovery from "$lib/features/create/generate/components/help/HelpButtonDiscovery.svelte";
   import type { createCreateModuleState as CreateModuleStateType } from "../state/create-module-state.svelte";
   import type { PanelCoordinationState } from "../state/panel-coordination-state.svelte";
   import type { IToolPanelMethods } from "../types/create-module-types";
@@ -184,17 +183,6 @@
           onSpotlight={handleSpotlight}
         />
       </div>
-    {/if}
-
-    <!-- Help button discovery overlay - only on generator tab -->
-    {#if isGeneratorTab}
-      <HelpButtonDiscovery
-        buttonSize={44}
-        desktopTop={12}
-        desktopRight={12}
-        mobileBottom={20}
-        mobileRight={20}
-      />
     {/if}
   </div>
 
