@@ -149,7 +149,12 @@
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
     if (e.key.toLowerCase() === "v") {
-      cameraMode = cameraPreferences.toggleMode("gallery");
+      // Gallery only supports 1st/3rd person (no orbit view)
+      const newMode = cameraMode === CameraMode.FIRST_PERSON
+        ? CameraMode.THIRD_PERSON
+        : CameraMode.FIRST_PERSON;
+      cameraPreferences.setModeForDestination("gallery", newMode);
+      cameraMode = newMode;
       e.preventDefault();
     }
   }

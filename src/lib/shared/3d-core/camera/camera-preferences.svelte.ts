@@ -2,12 +2,13 @@
  * Camera Preferences - Per-destination camera mode preferences
  *
  * Manages camera mode preferences with localStorage persistence.
- * Different destinations can have different default modes:
- * - Stage defaults to 3rd person (see formations)
- * - Gallery/Worlds default to 1st person (immersion)
+ * Different destinations have different default modes:
+ * - Stage: Orbit (director's view for choreography)
+ * - Gallery: Third-person (see your avatar exploring)
+ * - Worlds: First-person (immersive exploration)
  */
 
-import { CameraMode } from "./types";
+import { CameraMode, getNextCameraMode } from "./types";
 
 const STORAGE_KEY = "tka-camera-preferences";
 
@@ -44,16 +45,21 @@ export function createCameraPreferences() {
 	}
 
 	/**
-	 * Toggle camera mode for a destination
+	 * Cycle to next camera mode for a destination.
+	 * Order: Orbit → Third Person → First Person → Orbit
 	 */
-	function toggleMode(destinationId: string): CameraMode {
+	function cycleMode(destinationId: string): CameraMode {
 		const currentMode = getModeForDestination(destinationId);
-		const newMode =
-			currentMode === CameraMode.FIRST_PERSON
-				? CameraMode.THIRD_PERSON
-				: CameraMode.FIRST_PERSON;
+		const newMode = getNextCameraMode(currentMode);
 		setModeForDestination(destinationId, newMode);
 		return newMode;
+	}
+
+	/**
+	 * @deprecated Use cycleMode instead for the full three-mode cycle
+	 */
+	function toggleMode(destinationId: string): CameraMode {
+		return cycleMode(destinationId);
 	}
 
 	/**
@@ -88,19 +94,22 @@ export function createCameraPreferences() {
 		getModeForDestination,
 		setModeForDestination,
 		setGlobalDefault,
-		toggleMode,
+		cycleMode,
+		toggleMode, // deprecated, use cycleMode
 		reset,
 	};
 }
 
 /**
- * Built-in defaults per destination (see docs/DESTINATIONS-VISION.md)
- * - Stage: 3rd person (director's view for choreography)
- * - Gallery/Worlds: 1st person (immersive exploration)
+ * Built-in defaults per destination
+ * - Stage: Orbit (director's view for choreography, mouse-drag camera)
+ * - Gallery: Third-person (see your avatar exploring the space)
+ * - Worlds: First-person (immersive exploration)
  */
 const DESTINATION_DEFAULTS: Record<string, CameraMode> = {
-	stage: CameraMode.THIRD_PERSON,
-	// gallery and worlds use globalDefault (first-person)
+	stage: CameraMode.ORBIT,
+	gallery: CameraMode.THIRD_PERSON,
+	// worlds uses globalDefault (first-person)
 };
 
 /**

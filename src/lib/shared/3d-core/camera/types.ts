@@ -1,13 +1,44 @@
 /**
  * Camera Types - Unified camera system for all 3D destinations
  *
- * Defines camera modes, state, and configuration for switching between
- * first-person and third-person perspectives across all 3D experiences.
+ * Three modes available in every 3D context:
+ * - ORBIT: View/director mode. Mouse drag rotates around subject. No movement.
+ * - THIRD_PERSON: Game mode. Camera behind avatar. WASD moves avatar.
+ * - FIRST_PERSON: Game mode. Camera is avatar's eyes. WASD moves avatar.
+ *
+ * Controls (consistent everywhere):
+ * - V: Cycle modes (Orbit → Third → First → Orbit)
+ * - Click: Enter pointer lock (for mouse look in game modes)
+ * - ESC: Exit pointer lock AND return to Orbit mode
+ * - WASD: Move avatar (only in Third/First person modes)
  */
 
 export enum CameraMode {
+	ORBIT = "orbit",
 	FIRST_PERSON = "first_person",
 	THIRD_PERSON = "third_person",
+}
+
+/**
+ * Cycle to the next camera mode.
+ * Order: Orbit → Third Person → First Person → Orbit
+ */
+export function getNextCameraMode(current: CameraMode): CameraMode {
+	switch (current) {
+		case CameraMode.ORBIT:
+			return CameraMode.THIRD_PERSON;
+		case CameraMode.THIRD_PERSON:
+			return CameraMode.FIRST_PERSON;
+		case CameraMode.FIRST_PERSON:
+			return CameraMode.ORBIT;
+	}
+}
+
+/**
+ * Check if a mode allows WASD movement
+ */
+export function isGameMode(mode: CameraMode): boolean {
+	return mode === CameraMode.THIRD_PERSON || mode === CameraMode.FIRST_PERSON;
 }
 
 export interface Vector3 {

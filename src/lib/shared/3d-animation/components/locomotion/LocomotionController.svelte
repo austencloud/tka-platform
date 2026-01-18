@@ -2,36 +2,18 @@
   /**
    * LocomotionController
    *
-   * Unified locomotion controller using the new 3D primitives.
-   * Works on desktop (pointer lock) AND mobile/DevTools (touch/drag).
-   *
-   * Features:
-   * - Automatic input detection via InputCapabilities
-   * - Keyboard + pointer lock on desktop
-   * - Touch joystick + drag-to-look on mobile
-   * - Gamepad support when connected
-   * - Inertia for smooth camera stopping
-   *
-   * This fixes the mobile/DevTools bug where pointer lock would silently fail.
+   * WASD movement + mouse look with first/third person toggle.
+   * - WASD: Move the avatar
+   * - Mouse: Look around (when pointer locked)
+   * - V: Toggle between first-person and third-person
+   * - ESC: Exit pointer lock
+   * - Click: Enter pointer lock
    */
   import { onMount, onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
 
-  // New 3D primitives
-  import { AdaptiveInputProvider } from "$lib/shared/3d/input/InputProviderFactory";
-  import { CameraController } from "$lib/shared/3d/camera/CameraController";
-  import { ThirdPersonOrbit } from "$lib/shared/3d/camera/behaviors/ThirdPersonOrbit";
-  import { FirstPersonLook } from "$lib/shared/3d/camera/behaviors/FirstPersonLook";
-  import { CameraDamping } from "$lib/shared/3d/camera/behaviors/CameraDamping";
-  import { CameraConstraints } from "$lib/shared/3d/camera/behaviors/CameraConstraints";
-  import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
-  import { CameraMode } from "$lib/shared/3d-core/camera/types";
-  import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
+  type CameraView = "first-person" | "third-person";
 
-  // Touch UI
-  import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
-
-  // Minimal interface for avatar state compatibility
   interface LocomotionState {
     position: { x: number; y?: number; z: number };
     facingAngle: number;
@@ -41,84 +23,101 @@
   }
 
   interface Props {
-    /** Avatar state with locomotion methods */
     avatarState: LocomotionState;
-    /** Whether locomotion is enabled */
     enabled?: boolean;
-    /** Distance of camera from avatar */
-    cameraDistance?: number;
-    /** Height of camera above avatar */
-    cameraHeight?: number;
-    /** Current camera mode (first/third person) */
-    cameraMode?: CameraMode;
-    /** Callback when camera mode changes */
-    onCameraModeChange?: (mode: CameraMode) => void;
-    /** Callback when pointer lock state changes */
+    initialView?: CameraView;
     onPointerLockChange?: (locked: boolean) => void;
+    onViewChange?: (view: CameraView) => void;
   }
 
   let {
     avatarState,
     enabled = true,
-    cameraDistance = 8,
-    cameraHeight = 3,
-    cameraMode = CameraMode.THIRD_PERSON,
-    onCameraModeChange,
+    initialView = "third-person",
     onPointerLockChange,
+    onViewChange,
   }: Props = $props();
 
   const { renderer, camera } = useThrelte();
-  const inputCaps = getInputCapabilities();
 
-  // Input provider (adapts to current input type)
-  let inputProvider: AdaptiveInputProvider | null = null;
+  // Camera view mode
+  let cameraView = $state<CameraView>(initialView);
 
-  // Camera controller with behaviors
-  let cameraController: CameraController | null = null;
-  let orbitBehavior: ThirdPersonOrbit | null = null;
-  let firstPersonBehavior: FirstPersonLook | null = null;
-  let constraintsBehavior: CameraConstraints | null = null;
+  // Third-person camera settings
+  const THIRD_PERSON = {
+    distance: 250,
+    height: 120,
+    lookAtHeight: 40,
+  };
 
-  // Show touch UI when needed
-  let showTouchUI = $state(false);
+  // First-person camera settings
+  const FIRST_PERSON = {
+    height: 85, // Eye level (avatar is ~100 units tall)
+    forwardOffset: 5, // Slightly in front of avatar center
+  };
 
-  // Track if we've ever initialized (for cleanup)
-  let initialized = false;
+  const LOOK_SENSITIVITY = 0.002;
 
-  // Internal camera mode state (tracks prop, allows local changes)
-  let currentCameraMode = $state(cameraMode);
+  // Camera state
+  let yaw = $state(0);
+  let pitch = $state(0.3);
+  let isPointerLocked = $state(false);
 
-  /**
-   * Apply the appropriate camera behavior based on current mode
-   */
-  function updateCameraBehavior() {
-    if (!cameraController) return;
+  // Movement keys
+  const keys = new Set<string>();
 
-    // Remove current behaviors
-    if (orbitBehavior) cameraController.removeBehavior(orbitBehavior);
-    if (firstPersonBehavior) cameraController.removeBehavior(firstPersonBehavior);
+  function toggleCameraView() {
+    cameraView = cameraView === "first-person" ? "third-person" : "first-person";
+    onViewChange?.(cameraView);
+  }
 
-    // Add appropriate behavior
-    if (currentCameraMode === CameraMode.FIRST_PERSON) {
-      if (firstPersonBehavior) cameraController.addBehavior(firstPersonBehavior);
-    } else {
-      if (orbitBehavior) cameraController.addBehavior(orbitBehavior);
+  function handleKeyDown(e: KeyboardEvent) {
+    if (!enabled) return;
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+    // V key toggles camera view
+    if (e.code === "KeyV") {
+      e.preventDefault();
+      toggleCameraView();
+      return;
+    }
+
+    keys.add(e.code);
+
+    // Prevent scrolling
+    if (["KeyW", "KeyA", "KeyS", "KeyD", "Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+      e.preventDefault();
     }
   }
 
-  /**
-   * Handle V key to toggle camera mode
-   */
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.code === 'KeyV' && enabled) {
-      const newMode = currentCameraMode === CameraMode.FIRST_PERSON
-        ? CameraMode.THIRD_PERSON
-        : CameraMode.FIRST_PERSON;
-      currentCameraMode = newMode;
-      cameraPreferences.setModeForDestination('stage', newMode);
-      onCameraModeChange?.(newMode);
-      updateCameraBehavior();
-    }
+  function handleKeyUp(e: KeyboardEvent) {
+    keys.delete(e.code);
+  }
+
+  function handleMouseMove(e: MouseEvent) {
+    if (!enabled || !isPointerLocked) return;
+
+    yaw -= e.movementX * LOOK_SENSITIVITY;
+    pitch += e.movementY * LOOK_SENSITIVITY;
+
+    // Clamp pitch (more restricted in first-person)
+    const maxPitch = cameraView === "first-person" ? 1.4 : 1.2;
+    const minPitch = cameraView === "first-person" ? -1.4 : -0.3;
+    pitch = Math.max(minPitch, Math.min(maxPitch, pitch));
+  }
+
+  function handlePointerLockChange() {
+    isPointerLocked = document.pointerLockElement === renderer.domElement;
+    onPointerLockChange?.(isPointerLocked);
+  }
+
+  function handleCanvasClick() {
+    if (!enabled) return;
+    renderer.domElement.requestPointerLock();
+  }
+
+  function handleBlur() {
+    keys.clear();
   }
 
   onMount(() => {
@@ -126,197 +125,166 @@
 
     const canvas = renderer.domElement;
 
-    // Initialize input capabilities
-    inputCaps.init();
-
-    // Create adaptive input provider
-    inputProvider = new AdaptiveInputProvider(inputCaps, canvas, {
-      lookSensitivity: 0.002,
-      movementDeadzone: 0.15,
-      inertiaDecay: 0.92,
-    });
-    inputProvider.enable();
-
-    // Create camera controller
-    cameraController = new CameraController({
-      initialYaw: 0,
-      initialPitch: 0.3,
-      initialDistance: cameraDistance,
-    });
-
-    // Create BOTH behaviors (but only add the active one)
-    orbitBehavior = new ThirdPersonOrbit({
-      distance: cameraDistance,
-      heightOffset: cameraHeight,
-      maxPitch: Math.PI / 2.5,
-      minPitch: -0.3,
-      scaleByDistance: false,
-    });
-
-    firstPersonBehavior = new FirstPersonLook({
-      eyeHeight: 1.7,
-      maxPitch: Math.PI / 2.2,
-      minPitch: -Math.PI / 2.2,
-      sensitivity: 1.0,
-    });
-
-    // Constraints apply to both modes
-    constraintsBehavior = new CameraConstraints({
-      maxPitch: Math.PI / 2.5,
-      minPitch: -0.3,
-    });
-    cameraController.addBehavior(constraintsBehavior);
-
-    // Damping for smooth camera
-    cameraController.addBehavior(new CameraDamping({
-      positionSmoothTime: 0.1,
-      rotationSmoothTime: 0.08,
-    }));
-
-    // Add the active camera behavior
-    updateCameraBehavior();
-
-    // Listen for V key
-    window.addEventListener('keydown', handleKeyDown);
-
-    initialized = true;
-
-    // Update touch UI state based on input capabilities
-    updateTouchUI();
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("pointerlockchange", handlePointerLockChange);
+    canvas.addEventListener("click", handleCanvasClick);
   });
 
-  function updateTouchUI() {
-    showTouchUI = inputCaps.shouldShowTouchUI();
-  }
+  onDestroy(() => {
+    const canvas = renderer.domElement;
 
-  // Handle joystick input (from VirtualJoystick)
-  function handleJoystickInput(x: number, y: number) {
-    if (!enabled) return;
-    // Convert joystick to movement input
-    // y is forward/back, x is strafe
-    avatarState.setMoveInput({ x, z: y });
-  }
+    window.removeEventListener("keydown", handleKeyDown);
+    window.removeEventListener("keyup", handleKeyUp);
+    window.removeEventListener("blur", handleBlur);
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("pointerlockchange", handlePointerLockChange);
+    canvas?.removeEventListener("click", handleCanvasClick);
+
+    if (document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+  });
 
   // Game loop
   useTask((delta) => {
-    if (!enabled || !inputProvider || !cameraController) return;
+    if (!enabled) return;
 
-    // Update input provider (for inertia, etc.)
-    inputProvider.update(delta);
+    // Movement from keys
+    const forward = (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) -
+                   (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
+    const strafe = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) -
+                  (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
 
-    // Update touch UI visibility
-    updateTouchUI();
-
-    // Get input
-    const lookDelta = inputProvider.getLookDelta();
-    const moveInput = inputProvider.getMovementInput();
-
-    // Update camera target to follow avatar
-    cameraController.setTarget({
-      x: avatarState.position.x,
-      y: avatarState.position.y ?? 0,
-      z: avatarState.position.z,
-    });
+    avatarState.setMoveInput({ x: strafe, z: forward });
+    avatarState.updateMovement(delta, yaw);
 
     // Update camera
-    cameraController.update(delta, lookDelta);
-
-    // Apply camera to Three.js camera
     if (camera.current) {
-      cameraController.applyToCamera(camera.current);
-    }
+      const target = avatarState.position;
+      const targetY = target.y ?? 0;
 
-    // Get camera yaw for movement direction
-    const cameraAngle = cameraController.getYaw();
+      // Ensure far plane is large enough
+      if ("far" in camera.current && camera.current.far < 10000) {
+        camera.current.far = 10000;
+        camera.current.updateProjectionMatrix();
+      }
 
-    // Set movement input from keyboard/gamepad (touch handled by joystick)
-    if (!showTouchUI) {
-      avatarState.setMoveInput({ x: moveInput.strafe, z: moveInput.forward });
-    }
+      if (cameraView === "first-person") {
+        // First-person: camera at eye level, looking forward
+        const camX = target.x + Math.sin(yaw) * FIRST_PERSON.forwardOffset;
+        const camY = targetY + FIRST_PERSON.height;
+        const camZ = target.z + Math.cos(yaw) * FIRST_PERSON.forwardOffset;
 
-    // Update avatar movement
-    avatarState.updateMovement(delta, cameraAngle);
+        camera.current.position.set(camX, camY, camZ);
 
-    // Notify parent about pointer lock state
-    const pointerLockProvider = inputProvider.getPointerLockProvider();
-    onPointerLockChange?.(pointerLockProvider.isPointerLocked());
-  });
+        // Look in the direction we're facing
+        const lookDistance = 100;
+        const lookX = camX + Math.sin(yaw) * lookDistance * Math.cos(pitch);
+        const lookY = camY - Math.sin(pitch) * lookDistance;
+        const lookZ = camZ + Math.cos(yaw) * lookDistance * Math.cos(pitch);
 
-  // Cleanup
-  onDestroy(() => {
-    window.removeEventListener('keydown', handleKeyDown);
-    if (inputProvider) {
-      inputProvider.dispose();
-      inputProvider = null;
-    }
-    inputCaps.destroy();
-    cameraController = null;
-    initialized = false;
-  });
+        camera.current.lookAt(lookX, lookY, lookZ);
+      } else {
+        // Third-person: camera behind and above avatar
+        const cosPitch = Math.cos(pitch);
+        const camX = target.x - Math.sin(yaw) * THIRD_PERSON.distance * cosPitch;
+        const camY = targetY + THIRD_PERSON.height + Math.sin(pitch) * THIRD_PERSON.distance * 0.5;
+        const camZ = target.z - Math.cos(yaw) * THIRD_PERSON.distance * cosPitch;
 
-  // Re-initialize when enabled changes
-  $effect(() => {
-    if (enabled && !initialized && typeof window !== "undefined") {
-      // Re-mount
-      onMount(() => {});
-    } else if (!enabled && initialized) {
-      // Disable input
-      inputProvider?.disable();
-    } else if (enabled && initialized) {
-      // Re-enable input
-      inputProvider?.enable();
-    }
-  });
-
-  // Sync external cameraMode prop changes
-  $effect(() => {
-    if (cameraMode !== currentCameraMode) {
-      currentCameraMode = cameraMode;
-      updateCameraBehavior();
+        camera.current.position.set(camX, camY, camZ);
+        camera.current.lookAt(target.x, targetY + THIRD_PERSON.lookAtHeight, target.z);
+      }
     }
   });
 </script>
 
-<!-- Touch controls (virtual joystick + drag hint) -->
-{#if enabled && showTouchUI}
-  <VirtualJoystick
-    onInput={handleJoystickInput}
-    {enabled}
-    left={24}
-    bottom={24}
-    size={120}
-  />
+<!-- Controls hint -->
+{#if enabled && !isPointerLocked}
+  <div class="lock-hint">
+    <span>Click to look around</span>
+    <div class="controls">
+      <kbd>WASD</kbd> Move
+      <kbd>Mouse</kbd> Look
+      <kbd>V</kbd> Toggle View
+      <kbd>Esc</kbd> Exit
+    </div>
+  </div>
+{/if}
 
-  <!-- Touch look hint -->
-  <div class="touch-look-hint">
-    <span>Drag right side to look around</span>
+<!-- Camera mode indicator (when pointer locked) -->
+{#if enabled && isPointerLocked}
+  <div class="mode-indicator">
+    <i class="fas" class:fa-eye={cameraView === "first-person"} class:fa-user={cameraView === "third-person"}></i>
+    <span>{cameraView === "first-person" ? "1st Person" : "3rd Person"}</span>
+    <span class="hint">V to switch</span>
   </div>
 {/if}
 
 <style>
-  .touch-look-hint {
+  .lock-hint {
     position: fixed;
-    top: 50%;
-    right: 20%;
-    transform: translateY(-50%);
-    color: rgba(255, 255, 255, 0.6);
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    color: white;
     font-size: 14px;
-    font-weight: 500;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
     pointer-events: none;
-    animation: fadeInOut 4s ease-in-out;
-    z-index: 100;
+    z-index: 50;
   }
 
-  @keyframes fadeInOut {
-    0%, 100% { opacity: 0; }
-    15%, 85% { opacity: 1; }
+  .controls {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .touch-look-hint {
-      animation: none;
-      opacity: 0.6;
-    }
+  .controls kbd {
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 11px;
+  }
+
+  .mode-indicator {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  .mode-indicator i {
+    font-size: 14px;
+    opacity: 0.9;
+  }
+
+  .mode-indicator .hint {
+    margin-left: 0.5rem;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
   }
 </style>

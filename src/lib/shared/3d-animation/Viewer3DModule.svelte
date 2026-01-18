@@ -32,16 +32,14 @@
   import { keyboardShortcutState } from "$lib/shared/keyboard/state/keyboard-shortcut-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
-  // Locomotion system
-  import LocomotionController from "./components/locomotion/LocomotionController.svelte";
+  // Unified camera system (handles orbit, third-person, first-person)
+  import UnifiedCameraController from "$lib/shared/3d-core/camera/UnifiedCameraController.svelte";
+  import { CameraMode, isGameMode } from "$lib/shared/3d-core/camera/types";
+  import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
 
   // Effects system
   import EffectsLayer from "./effects/EffectsLayer.svelte";
   import { getEffectsConfigState } from "./effects/state/effects-config-state.svelte";
-
-  // Camera mode switching
-  import { CameraMode } from "$lib/shared/3d-core/camera/types";
-  import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
 
   // Camera choreography
   import { createCameraChoreographyState } from "./state/camera-choreography-state.svelte";
@@ -112,14 +110,11 @@
   let speed = $state(1);
   let showFigure = $state(true);
   let avatarId = $state<AvatarId>(initialAvatarId);
-  let locomotionMode = $state(false); // WASD movement + third-person camera
-  let isPointerLocked = $state(false); // Pointer lock state for locomotion hint
+  // Camera mode from preferences (orbit, third-person, first-person)
+  let cameraMode = $state<CameraMode>(cameraPreferences.getModeForDestination("stage"));
+  // Derived: whether we're in a "game" mode (WASD movement enabled)
+  const inGameMode = $derived(isGameMode(cameraMode));
   let isDraggingPerformer = $state(false); // True when any performer is being dragged
-
-  // Camera mode (orbit <-> 1st person with V key)
-  let cameraMode = $state<CameraMode>(
-    cameraPreferences.getModeForDestination("stage")
-  );
 
   // Camera choreography state
   const cameraChoreography = createCameraChoreographyState();
@@ -280,12 +275,7 @@
     performerManager?.setSpeed(speed);
   });
 
-  // Reset pointer lock state when exiting locomotion mode
-  $effect(() => {
-    if (!locomotionMode) {
-      isPointerLocked = false;
-    }
-  });
+  // Note: Pointer lock is now managed by UnifiedCameraController
 
   // Update formation transitions (runs every frame during transitions)
   $effect(() => {
@@ -377,8 +367,8 @@
         {cameraMode}
         primaryAvatar={performerStates[0]}
         {visiblePlanes}
-        showGrid={showGrid && !locomotionMode}
-        showLabels={showLabels && !locomotionMode}
+        showGrid={showGrid && !inGameMode}
+        showLabels={showLabels && !inGameMode}
         {gridMode}
         {cameraPreset}
         customCameraPosition={effectiveCameraPosition}
@@ -390,7 +380,7 @@
         bloomThreshold={effectsConfig.bloom.threshold}
         backgroundType={settingsService.settings.backgroundType}
         {avatarPositions}
-        disableCamera={locomotionMode}
+        disableCamera={inGameMode}
         onMeshClick={handleMeshClick}
         onPointerUp={handlePointerUp}
         onDrag={handleDrag}
@@ -455,14 +445,13 @@
           isPlaying={activeState?.isPlaying ?? false}
         />
 
-        <!-- Locomotion Controller (WASD + camera control, V to toggle 1st/3rd person) -->
-        {#if locomotionMode && activeState}
-          <LocomotionController
+        <!-- Unified Camera Controller (orbit, third-person, first-person) -->
+        {#if activeState}
+          <UnifiedCameraController
+            destinationId="stage"
             avatarState={activeState}
-            enabled={locomotionMode}
-            {cameraMode}
-            onCameraModeChange={(mode) => cameraMode = mode}
-            onPointerLockChange={(locked) => (isPointerLocked = locked)}
+            enabled={true}
+            onModeChange={(mode) => (cameraMode = mode)}
           />
         {/if}
       </Scene3D>
@@ -503,15 +492,19 @@
       >
         {#snippet trailing()}
           <button
-            class="locomotion-btn"
-            class:active={locomotionMode}
-            onclick={() => (locomotionMode = !locomotionMode)}
-            aria-label={locomotionMode ? "Exit walk mode" : "Enter walk mode"}
-            title={locomotionMode
-              ? "Exit walk mode (WASD)"
-              : "Enter walk mode (WASD)"}
+            class="mode-toggle-btn"
+            class:game-mode={inGameMode}
+            onclick={() => (cameraMode = cameraPreferences.cycleMode("stage"))}
+            aria-label={`Camera: ${cameraMode === CameraMode.ORBIT ? "Orbit" : cameraMode === CameraMode.THIRD_PERSON ? "3rd Person" : "1st Person"}`}
+            title={`${cameraMode === CameraMode.ORBIT ? "Orbit" : cameraMode === CameraMode.THIRD_PERSON ? "3rd Person" : "1st Person"} (V to cycle)`}
           >
-            <i class="fas fa-person-walking" aria-hidden="true"></i>
+            {#if cameraMode === CameraMode.ORBIT}
+              <i class="fas fa-arrows-rotate" aria-hidden="true"></i>
+            {:else if cameraMode === CameraMode.THIRD_PERSON}
+              <i class="fas fa-user" aria-hidden="true"></i>
+            {:else}
+              <i class="fas fa-eye" aria-hidden="true"></i>
+            {/if}
           </button>
           <button
             class="toggle-panel-btn"
@@ -528,32 +521,7 @@
         {/snippet}
       </SceneOverlayControls>
 
-      <!-- Locomotion Status (shown when in locomotion mode) -->
-      {#if locomotionMode}
-        <div class="locomotion-status">
-          <div class="mode-indicator">
-            {#if cameraMode === CameraMode.FIRST_PERSON}
-              <i class="fas fa-eye" aria-hidden="true"></i>
-              <span>1st Person</span>
-            {:else}
-              <i class="fas fa-user" aria-hidden="true"></i>
-              <span>3rd Person</span>
-            {/if}
-          </div>
-          {#if !isPointerLocked}
-            <div class="click-prompt">
-              <i class="fas fa-mouse-pointer" aria-hidden="true"></i>
-              <span>Click to control</span>
-            </div>
-          {/if}
-          <div class="controls-hint">
-            <kbd>WASD</kbd> Move
-            <kbd>Mouse</kbd> Look
-            <kbd>V</kbd> Toggle View
-            <kbd>Esc</kbd> Exit
-          </div>
-        </div>
-      {/if}
+      <!-- Note: Locomotion hint is now in the LocomotionController component -->
     </main>
 
     <!-- Side Panel -->
@@ -623,7 +591,7 @@
     goToStep={(i) => activeState?.goToStep(i)}
     {setCameraPreset}
     toggleCameraMode={() => {
-      cameraMode = cameraPreferences.toggleMode("stage");
+      cameraMode = cameraPreferences.cycleMode("stage");
     }}
     {showGrid}
     setShowGrid={(v) => (showGrid = v)}
@@ -704,7 +672,7 @@
   }
 
   .toggle-panel-btn,
-  .locomotion-btn {
+  .mode-toggle-btn {
     width: 48px;
     height: 48px;
     display: flex;
@@ -724,104 +692,24 @@
   }
 
   .toggle-panel-btn:hover,
-  .locomotion-btn:hover {
+  .mode-toggle-btn:hover {
     background: var(--theme-card-hover-bg);
     color: white;
   }
 
-  .locomotion-btn.active {
+  .mode-toggle-btn.game-mode {
     background: #3b82f6;
     color: white;
   }
 
-  .locomotion-btn.active:hover {
+  .mode-toggle-btn.game-mode:hover {
     background: #2563eb;
   }
 
   .toggle-panel-btn:focus-visible,
-  .locomotion-btn:focus-visible {
+  .mode-toggle-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #8b5cf6);
     outline-offset: 2px;
-  }
-
-  /* Locomotion Status Overlay */
-  .locomotion-status {
-    position: absolute;
-    bottom: 100px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem 1.5rem;
-    background: rgba(0, 0, 0, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-    color: white;
-    font-size: 14px;
-    backdrop-filter: blur(8px);
-    pointer-events: none;
-    z-index: 50;
-  }
-
-  .mode-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-    font-size: 1rem;
-  }
-
-  .mode-indicator i {
-    font-size: 1.25rem;
-    color: #64b5f6;
-  }
-
-  .click-prompt {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 500;
-    animation: locomotion-pulse 2s ease-in-out infinite;
-  }
-
-  .click-prompt i {
-    font-size: 1rem;
-    color: #fbbf24;
-  }
-
-  .controls-hint {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  .controls-hint kbd {
-    padding: 0.2rem 0.5rem;
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    font-family: inherit;
-    font-size: 11px;
-  }
-
-  @keyframes locomotion-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.7;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .click-prompt {
-      animation: none;
-    }
   }
 
   @media (max-width: 1024px) {

@@ -11,6 +11,8 @@
   import { onDestroy } from "svelte";
   import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
   import { Vector3, Raycaster, MathUtils, type PerspectiveCamera, type Object3D } from "three";
+  import { CameraMode } from "$lib/shared/3d-core/camera/types";
+  import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
 
   interface Props {
     /** Starting position [x, y, z] */
@@ -47,9 +49,24 @@
 
   const { renderer, scene } = useThrelte();
 
+  // Camera mode (1st person <-> 3rd person with V key)
+  let cameraMode = $state<CameraMode>(
+    cameraPreferences.getModeForDestination("gallery")
+  );
+
+  // Third person camera settings
+  const THIRD_PERSON_DISTANCE = 5;
+  const THIRD_PERSON_HEIGHT = 2;
+
+  // Track player position separately for third-person
+  let playerPosition = $state(new Vector3(...spawnPosition));
+  let playerYaw = $state(0);
+  let playerPitch = $state(0);
+
   // Camera reference
   let camera: PerspectiveCamera | null = null;
   let controls: PointerLockControls | null = null;
+  let isLocked = $state(false);
 
   // Movement state
   let keys = $state({
@@ -113,6 +130,14 @@
         break;
       case "Space":
         keys.jump = true;
+        break;
+      case "KeyV":
+        // Toggle between 1st and 3rd person (gallery doesn't have orbit)
+        const newMode = cameraMode === CameraMode.FIRST_PERSON
+          ? CameraMode.THIRD_PERSON
+          : CameraMode.FIRST_PERSON;
+        cameraPreferences.setModeForDestination("gallery", newMode);
+        cameraMode = newMode;
         break;
     }
   }
@@ -298,6 +323,10 @@
 
     controls = new PointerLockControls(camera, renderer.domElement);
 
+    // Track lock state
+    controls.addEventListener("lock", () => { isLocked = true; });
+    controls.addEventListener("unlock", () => { isLocked = false; });
+
     // Add click listener to lock pointer
     renderer.domElement.addEventListener("click", handleClick);
   }
@@ -343,10 +372,21 @@
   useTask((delta) => {
     if (!controls || !controls.isLocked || !camera) return;
 
+    // Track yaw from camera for third-person
+    playerYaw = camera.rotation.y;
+    playerPitch = camera.rotation.x;
+
     // === 1. PUSH-BACK FROM WALLS ===
-    const pushBack = getWallPushBack(camera.position);
+    // Use playerPosition for physics (updated from camera in first person)
+    if (cameraMode === CameraMode.FIRST_PERSON) {
+      playerPosition.copy(camera.position);
+    }
+    const pushBack = getWallPushBack(playerPosition);
     if (pushBack) {
-      camera.position.add(pushBack);
+      playerPosition.add(pushBack);
+      if (cameraMode === CameraMode.FIRST_PERSON) {
+        camera.position.add(pushBack);
+      }
     }
 
     // === 2. CROUCH HEIGHT TRANSITION ===
@@ -368,7 +408,10 @@
     verticalVelocity = Math.max(verticalVelocity, -30); // Terminal velocity
 
     // === 5. APPLY VERTICAL MOVEMENT ===
-    camera.position.y += verticalVelocity * delta;
+    playerPosition.y += verticalVelocity * delta;
+    if (cameraMode === CameraMode.FIRST_PERSON) {
+      camera.position.y = playerPosition.y;
+    }
 
     // === 6. CEILING COLLISION ===
     if (verticalVelocity > 0 && checkCeilingCollision()) {
@@ -407,7 +450,7 @@
       const moveDir = moveVector.clone().normalize();
       const moveDistance = moveVector.length();
 
-      const wallNormal = checkWallCollision(camera.position, moveDir, moveDistance);
+      const wallNormal = checkWallCollision(playerPosition, moveDir, moveDistance);
 
       if (wallNormal) {
         // Wall detected - slide along it instead of stopping
@@ -415,25 +458,34 @@
 
         if (slideMove.length() > 0.001) {
           const slideDir = slideMove.clone().normalize();
-          const slideNormal = checkWallCollision(camera.position, slideDir, slideMove.length());
+          const slideNormal = checkWallCollision(playerPosition, slideDir, slideMove.length());
 
           if (!slideNormal) {
-            camera.position.add(slideMove);
+            playerPosition.add(slideMove);
+            if (cameraMode === CameraMode.FIRST_PERSON) {
+              camera.position.add(slideMove);
+            }
           }
         }
       } else {
-        camera.position.add(moveVector);
+        playerPosition.add(moveVector);
+        if (cameraMode === CameraMode.FIRST_PERSON) {
+          camera.position.add(moveVector);
+        }
       }
     }
 
     // === 8. FLOOR COLLISION & GROUND CHECK ===
-    const floorY = getFloorHeight(camera.position);
+    const floorY = getFloorHeight(playerPosition);
     if (floorY !== null) {
-      const feetY = camera.position.y - currentHeight;
+      const feetY = playerPosition.y - currentHeight;
 
       if (feetY <= floorY) {
         // We're at or below floor level - snap to floor
-        camera.position.y = floorY + currentHeight;
+        playerPosition.y = floorY + currentHeight;
+        if (cameraMode === CameraMode.FIRST_PERSON) {
+          camera.position.y = playerPosition.y;
+        }
 
         if (verticalVelocity < 0) {
           verticalVelocity = 0;
@@ -450,6 +502,19 @@
       // No floor found - in the air (or void)
       isGrounded = false;
     }
+
+    // === 9. CAMERA POSITIONING FOR THIRD PERSON ===
+    if (cameraMode === CameraMode.THIRD_PERSON) {
+      // Position camera behind and above player
+      const offsetX = -Math.sin(playerYaw) * THIRD_PERSON_DISTANCE;
+      const offsetZ = -Math.cos(playerYaw) * THIRD_PERSON_DISTANCE;
+      camera.position.set(
+        playerPosition.x + offsetX,
+        playerPosition.y + THIRD_PERSON_HEIGHT,
+        playerPosition.z + offsetZ
+      );
+      camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z);
+    }
   });
 </script>
 
@@ -461,3 +526,43 @@
   far={1000}
   oncreate={(ref) => setupControls(ref)}
 />
+
+<!-- Mode indicator (when pointer locked) -->
+{#if isLocked}
+  <div class="mode-indicator">
+    <i class="fas" class:fa-eye={cameraMode === CameraMode.FIRST_PERSON} class:fa-user={cameraMode === CameraMode.THIRD_PERSON}></i>
+    <span>{cameraMode === CameraMode.FIRST_PERSON ? "1st Person" : "3rd Person"}</span>
+    <span class="hint">V to switch</span>
+  </div>
+{/if}
+
+<style>
+  .mode-indicator {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  .mode-indicator i {
+    font-size: 14px;
+    opacity: 0.9;
+  }
+
+  .mode-indicator .hint {
+    margin-left: 0.5rem;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+</style>
