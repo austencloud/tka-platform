@@ -12,8 +12,41 @@ import { getCreateModuleRef } from "$lib/features/create/shared/state/create-mod
 import { getAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
 import { executeClearSequenceWorkflow } from "$lib/features/create/shared/utils/clearSequenceWorkflow";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
+import { container } from "$lib/shared/di";
 
 const debug = createComponentLogger("CreateShortcuts");
+
+/**
+ * Apply a prop preset from settings by index
+ */
+async function applyPropPreset(presetIndex: number): Promise<void> {
+  const settings = getSettings();
+  const propPresets = settings?.propPresets || [];
+
+  // Check if this preset slot is filled
+  const preset = propPresets[presetIndex];
+  if (!preset) {
+    debug.log(`Preset ${presetIndex} is empty, ignoring`);
+    return;
+  }
+
+  // Trigger haptic feedback
+  const hapticService = container.items.hapticFeedback;
+  hapticService?.trigger("selection");
+
+  // Apply the preset settings
+  await updateSettings({
+    selectedPresetIndex: presetIndex,
+    bluePropType: preset.bluePropType,
+    redPropType: preset.redPropType,
+    catDogMode: preset.catDogMode,
+    blueBuugengFlipped: preset.blueBuugengFlipped ?? false,
+    redBuugengFlipped: preset.redBuugengFlipped ?? false,
+  });
+
+  debug.log(`Applied prop preset ${presetIndex}:`, preset);
+}
 
 export function registerCreateShortcuts(
   service: IKeyboardShortcutManager,
@@ -529,6 +562,28 @@ export function registerCreateShortcuts(
       await sequenceState.rewindSequence();
     },
   });
+
+  // ==================== Prop Presets ====================
+
+  // Alt+1 through Alt+9,0 - Select prop presets
+  for (let i = 0; i < 10; i++) {
+    const displayKey = i === 9 ? "0" : String(i + 1);
+    const presetIndex = i;
+
+    service.register({
+      id: `create.select-preset-${presetIndex}`,
+      label: `Select Prop Preset ${displayKey}`,
+      description: `Apply prop preset ${displayKey}`,
+      key: displayKey,
+      modifiers: ["alt"],
+      context: "create",
+      scope: "sequence-management",
+      priority: "medium",
+      action: async () => {
+        await applyPropPreset(presetIndex);
+      },
+    });
+  }
 
   // ==================== Edit Panel Adjustments ====================
 
