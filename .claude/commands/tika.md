@@ -165,6 +165,45 @@ node scripts/fetch-tika-conversations.cjs stats
 
 ---
 
+## Fix Plan (Required for Grade < A)
+
+After grading, if the response needs improvement, **always present a fix plan** before taking action.
+
+### Fix Plan Format
+
+```
+## Fix Plan → A+
+
+### Root Cause
+[1-2 sentences on WHY this failed]
+
+### Changes Required
+
+1. **[File/Component]**
+   - What: [specific change]
+   - Why: [how it improves the grade]
+
+2. **[File/Component]**
+   - What: [specific change]
+   - Why: [how it improves the grade]
+
+### Expected Outcome
+[What an A+ response would look like for this question]
+
+---
+
+Ready to proceed?
+```
+
+### Rules
+
+- **Always ask for confirmation** before implementing fixes
+- Be specific about files and changes
+- Show what the ideal response would be
+- If it's a systemic issue (affects all responses), note that prominently
+
+---
+
 ## Notes for Human Reviewer
 
 When flagging for human review, be specific:
@@ -174,3 +213,32 @@ When flagging for human review, be specific:
 **Bad:** "Needs work."
 
 The human (Austen) should know exactly what to look for without re-reading the whole conversation.
+
+---
+
+## MANDATORY: End With Multiple Choice
+
+**Every review MUST end with an AskUserQuestion call.**
+
+After presenting your grade and analysis, always use AskUserQuestion to let the user respond with arrow keys instead of typing. This saves time and reduces friction.
+
+### Question Format
+
+Use options appropriate to the situation:
+
+**For passing grades (A/B):**
+- Auto-approve
+- Flag anyway
+- Skip this one
+
+**For failing grades (C/D/F):**
+- Investigate root cause
+- Log as feedback item
+- Skip this one
+
+**For infrastructure issues:**
+- Build the missing feature
+- Log as feedback
+- Skip this review
+
+**Never end a review by just asking "Ready to proceed?" in text.** Always use the AskUserQuestion tool so the user can respond with two arrow key presses.

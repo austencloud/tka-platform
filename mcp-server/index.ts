@@ -23,6 +23,8 @@ import { fileURLToPath } from "url";
 import { exec } from "child_process";
 import { tmpdir } from "os";
 import { getStandaloneRenderer, type RenderVisibilityOptions } from "./src/core/standalone-renderer.js";
+import { buildSequenceFromLetters, parseWordToLetters, type SequenceStep, type SequenceResult } from "./src/core/sequence-builder.js";
+import { renderSequenceToImage } from "./src/core/sequence-renderer.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1388,6 +1390,145 @@ ${posInfo.examples.map(e => `- ${e}`).join("\n")}
     return {
       content: [{ type: "text" as const, text: output }],
     };
+  }
+);
+
+// ============================================================================
+// SEQUENCE GENERATION TOOLS
+// ============================================================================
+
+// Tool: generate_sequence_data
+server.tool(
+  "generate_sequence_data",
+  "Generate a valid TKA sequence from a word (letters). Returns sequence data with all step information.",
+  {
+    word: z.string().describe('The sequence word, e.g., "ABC" or "DEFGH"'),
+    maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
+  },
+  async ({ word, maxAttempts = 100 }) => {
+    ensureDataLoaded();
+
+    // Parse word to individual letters
+    const letters = parseWordToLetters(word.toUpperCase());
+
+    if (letters.length === 0) {
+      return {
+        content: [
+          { type: "text" as const, text: `Cannot generate sequence: no valid letters in "${word}"` },
+        ],
+        isError: true,
+      };
+    }
+
+    // Build the sequence
+    const result = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+
+    if (!result.isValid) {
+      return {
+        content: [
+          { type: "text" as const, text: `Failed to generate sequence for "${word}": ${result.error}` },
+        ],
+        isError: true,
+      };
+    }
+
+    // Return sequence data
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify({
+            word: result.word,
+            steps: result.steps,
+            startPosition: result.startPosition,
+            endPosition: result.endPosition,
+            stepCount: result.steps.length - 1, // Exclude start position
+          }, null, 2),
+        },
+      ],
+    };
+  }
+);
+
+// Tool: generate_sequence_image
+server.tool(
+  "generate_sequence_image",
+  "Generate a composite image showing all beats of a sequence (word card). Returns base64-encoded PNG.",
+  {
+    word: z.string().describe('The sequence word, e.g., "ABC"'),
+    layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
+    cellSize: z.number().optional().default(150).describe("Size of each pictograph cell in pixels"),
+    showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers below each pictograph"),
+    showWord: z.boolean().optional().default(true).describe("Show word header at the top"),
+    darkMode: z.boolean().optional().default(true).describe("Use dark background"),
+    maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
+  },
+  async ({ word, layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100 }) => {
+    ensureDataLoaded();
+
+    // Parse word to individual letters
+    const letters = parseWordToLetters(word.toUpperCase());
+
+    if (letters.length === 0) {
+      return {
+        content: [
+          { type: "text" as const, text: `Cannot generate sequence image: no valid letters in "${word}"` },
+        ],
+        isError: true,
+      };
+    }
+
+    // Build the sequence
+    const result = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+
+    if (!result.isValid) {
+      return {
+        content: [
+          { type: "text" as const, text: `Failed to generate sequence for "${word}": ${result.error}` },
+        ],
+        isError: true,
+      };
+    }
+
+    try {
+      // Render composite image
+      const pngBuffer = await renderSequenceToImage(result.steps, result.word, {
+        layout,
+        cellSize,
+        showStepNumbers,
+        showWord,
+        darkMode,
+        padding: 8,
+      });
+
+      // AUTO-OPEN: Save to temp and open immediately with system viewer
+      const tempPath = saveAndOpenImage(pngBuffer, `seq-${word}`);
+
+      // Convert to base64
+      const base64 = pngBuffer.toString("base64");
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `## Sequence: ${word}\n\n${result.steps.length - 1} beats, ${layout} layout, ${cellSize}px cells`,
+          },
+          {
+            type: "image" as const,
+            data: base64,
+            mimeType: "image/png",
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          { type: "text" as const, text: `Failed to render sequence image: ${errorMessage}` },
+        ],
+        isError: true,
+      };
+    }
   }
 );
 

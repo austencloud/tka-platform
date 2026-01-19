@@ -308,7 +308,10 @@ export function calculateArrowRotation(
   // Handle DASH with no rotation (straight dashes)
   if (normalizedMotionType === MotionType.DASH) {
     const normalizedDir = rotationDirection.toLowerCase();
-    if (normalizedDir === "no_rot" || normalizedDir === "no_rotation") {
+    // Check all variants: "no_rot", "no_rotation", "norotation", "none"
+    const isNoRotation = normalizedDir === "no_rot" || normalizedDir === "no_rotation" ||
+                         normalizedDir === "norotation" || normalizedDir === "none";
+    if (isNoRotation) {
       if (startLocation && endLocation) {
         const startLoc = typeof startLocation === "string" ? startLocation.toLowerCase() : startLocation;
         const endLoc = typeof endLocation === "string" ? endLocation.toLowerCase() : endLocation;
