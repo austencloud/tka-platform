@@ -239,9 +239,12 @@
         MotionColor.BLUE
       );
       redMotionVisible = visibilityManager.getMotionVisibility(MotionColor.RED);
+      console.log("[SequenceDrawerHost] Motion visibility updated - Blue:", blueMotionVisible, "Red:", redMotionVisible);
     };
 
     visibilityManager.registerObserver(updateVisibility, ["motion"]);
+    // Call once immediately to log initial state
+    updateVisibility();
     return () => visibilityManager.unregisterObserver(updateVisibility);
   });
 
@@ -355,6 +358,7 @@
   async function initializeAnimation(seq: SequenceData, sequenceId: string) {
     if (!playbackController || !sequenceService) return;
 
+    console.log("[SequenceDrawerHost] Initializing animation for sequence:", sequenceId);
     animationLoading = true;
     animationPanelState.setLoading(true);
     animationPanelState.setError(null);
@@ -363,6 +367,7 @@
       // Load and hydrate sequence data
       const loadedSequence = await loadSequenceData(seq);
       if (!loadedSequence) throw new Error("Failed to load sequence");
+      console.log("[SequenceDrawerHost] Sequence data loaded, steps:", loadedSequence.steps?.length);
 
       // Initialize playback
       animationPanelState.setShouldLoop(true);
@@ -371,6 +376,9 @@
         animationPanelState
       );
       if (!success) throw new Error("Failed to initialize playback");
+      console.log("[SequenceDrawerHost] Playback initialized successfully");
+      console.log("[SequenceDrawerHost] Blue prop state:", animationPanelState.bluePropState);
+      console.log("[SequenceDrawerHost] Red prop state:", animationPanelState.redPropState);
 
       lastLoadedSequenceId = sequenceId;
       animationPanelState.setSequenceData(loadedSequence);

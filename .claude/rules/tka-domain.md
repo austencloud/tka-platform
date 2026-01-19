@@ -113,6 +113,72 @@ Positions exist independent of props - they describe hand placement only.
 
 ---
 
+## VTG (Vulcan Tech Gospel)
+
+VTG is an older, widely-adopted notation framework for poi/flow arts created by Noel Yee and spinners at the Vulcan Lofts in Oakland, CA. Many flow artists learn VTG before encountering TKA.
+
+### The Downbeat Reference
+
+**VTG is ground-referenced.** The "downbeat" (south / bottom of the circle) is the anchor point for all timing and direction classifications.
+
+- **Together (tog):** Both props pass through the downbeat at the same moment
+- **Split:** Props are 180° out of phase - one at downbeat when the other is at top
+
+### The Four VTG Categories
+
+| VTG Term | Abbreviation | Timing | Direction |
+|----------|--------------|--------|-----------|
+| **Split-Same** | SS | Props 180° out of phase | Both rotating same way |
+| **Together-Same** | TS, tog-same | Props in sync | Both rotating same way |
+| **Split-Opposite** | SO, split-opp | Props 180° out of phase | Rotating opposite ways |
+| **Together-Opposite** | TO, tog-opp | Props in sync | Rotating opposite ways |
+
+### VTG Classification: Fixed vs Orientation-Dependent
+
+**Letters that stay in the same position have fixed VTG timing:**
+- **A, B, C** (alpha→alpha): always **split** - hands stay at opposite points
+- **G, H, I** (beta→beta): always **tog** - hands stay together
+
+**Letters that transition between positions are orientation-dependent:**
+- **D, E, F** (beta→alpha) and **J, K, L** (alpha→beta) can be split OR tog depending on which variation you view
+
+Example with letter D:
+- **Variation 0** (starts at east): timing = **split**
+- **Variation 1** (starts at south): timing = **tog**
+
+For these transitional letters, the VTG classification depends on where the hands are relative to the downbeat (south). TKA stores `timing` and `direction` **per variation** for these letters.
+
+### TKA vs VTG: Different Reference Systems
+
+| Aspect | VTG | TKA |
+|--------|-----|-----|
+| Reference point | Ground (south/downbeat) | Center of grid |
+| Position names | tog = together, split = apart | Alpha = opposite, beta = same |
+| Classification | Fixed per pattern | Varies by orientation |
+
+### Mapping VTG Terms to TKA
+
+- **"tog" (together)** ≈ hands at or passing through the **same point** (relates to beta)
+- **"split"** ≈ hands at **opposite points** (relates to alpha)
+- **"same direction"** ≈ hands moving the same way relative to downbeat
+- **"opposite direction"** ≈ hands moving toward/away from each other at downbeat
+
+**Note:** These are conceptual mappings, not exact equivalences. VTG describes prop phase relationships; TKA describes hand positions on a grid.
+
+### Teaching Order: VTG vs TKA
+
+VTG pedagogy starts with **tog-same** (hands together) because it feels grounded for beginners.
+
+TKA's alphabetical order starts with **split-same** (A, B, C = alpha→alpha) because it's the first position pattern in the systematic organization.
+
+This means:
+- VTG would start with G, H, I (tog-same)
+- TKA starts with A, B, C (split-same)
+
+Neither is "wrong" - they're different design philosophies (pedagogical vs systematic).
+
+---
+
 ## Explaining Pictographs to Users
 
 Assume zero domain knowledge. Use precise terminology:

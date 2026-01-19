@@ -515,9 +515,13 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     },
 
     openShareHubPanel(format?: "animation" | "static") {
+      const wasOpen = isShareHubPanelOpen;
       closeAllPanels();
-      // Increment viewId to force component remount on reopen
-      shareHubViewId++;
+      // Increment viewId when transitioning from closed to open
+      // This forces remount after close, ensuring clean state
+      if (!wasOpen) {
+        shareHubViewId++;
+      }
       requestedShareHubFormat = format ?? null;
       isShareHubPanelOpen = true;
     },

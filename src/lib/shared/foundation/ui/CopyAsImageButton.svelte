@@ -1,8 +1,10 @@
 <!--
   Copy As Image Button
 
-  Captures an HTML element as a PNG image and copies it to clipboard.
-  Uses dom-to-image-more for the capture.
+  Captures an HTML element's FULL scrollable content as a PNG image
+  and copies it to clipboard. Uses an off-screen clone technique
+  so the capture is completely non-obtrusive (user sees nothing).
+  Uses dom-to-image-more for the actual rendering.
 -->
 <script lang="ts">
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -73,6 +75,63 @@
     return ariaLabel;
   });
 
+  /**
+   * Capture the full scrollable content by cloning off-screen.
+   * This approach is non-obtrusive - the user sees nothing.
+   */
+  async function captureFullScroll(element: HTMLElement): Promise<Blob> {
+    // Create an off-screen clone
+    const clone = element.cloneNode(true) as HTMLElement;
+
+    // Style it to be invisible but fully expanded
+    Object.assign(clone.style, {
+      position: "fixed",
+      left: "-99999px",
+      top: "0",
+      width: `${element.offsetWidth}px`,
+      height: "auto",
+      maxHeight: "none",
+      overflow: "visible",
+      // Ensure all content is visible
+      visibility: "visible",
+      opacity: "1",
+    });
+
+    // Add to DOM (required for rendering)
+    document.body.appendChild(clone);
+
+    // Wait for images to load in the clone
+    const images = clone.querySelectorAll("img");
+    await Promise.all(
+      Array.from(images).map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete) {
+              resolve();
+            } else {
+              img.onload = () => resolve();
+              img.onerror = () => resolve(); // Don't block on failed images
+            }
+          })
+      )
+    );
+
+    // Small delay to ensure layout is complete
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    try {
+      // Capture the fully expanded clone
+      const blob = await domtoimage.toBlob(clone, {
+        bgcolor: "#12121c",
+        quality: 1.0,
+      });
+      return blob;
+    } finally {
+      // Always clean up the clone
+      document.body.removeChild(clone);
+    }
+  }
+
   async function handleClick() {
     if (isCapturing || disabled || !targetElement) return;
     if (resetTimer) clearTimeout(resetTimer);
@@ -81,15 +140,8 @@
     state = "capturing";
 
     try {
-      // Capture the element as a PNG blob
-      const blob = await domtoimage.toBlob(targetElement, {
-        bgcolor: "#12121c", // Dark background for transparent areas
-        quality: 1.0,
-        style: {
-          // Ensure we capture the full scroll content
-          overflow: "visible",
-        },
-      });
+      // Capture the full scrollable content
+      const blob = await captureFullScroll(targetElement);
 
       // Copy to clipboard using Clipboard API
       if (!navigator.clipboard?.write) {
