@@ -178,46 +178,53 @@
     onToggleRed?: () => void;
   } = $props();
 
-  // Set animation export context for edit mode
-  $effect(() => {
-    if (mode === "edit" && isOpen) {
-      setAnimationExportContext({
-        sequenceData: animationSequenceData,
-        isPlaying: isAnimationPlaying,
-        currentBeat: animationCurrentBeat,
-        speed: animationSpeed,
-        bluePropState: animationBluePropState,
-        redPropState: animationRedPropState,
-        isCircular,
-        exportLoopCount,
-        isExporting: isAnimationExporting,
-        exportProgress: animationExportProgress,
-        animationServicesReady,
-        animationLoading,
-        playbackMode,
-        stepPlaybackPauseMs,
-        stepPlaybackStepSize,
-        blueMotionVisible,
-        redMotionVisible,
-        isSideBySideLayout,
-        onPlaybackToggle,
-        onSpeedChange,
-        onStepHalfBeatForward,
-        onStepHalfBeatBackward,
-        onStepFullBeatForward,
-        onStepFullBeatBackward,
-        onLoopCountChange,
-        onCanvasReady,
-        onCancelExport,
-        onExportVideo,
-        onPlaybackModeChange,
-        onStepPlaybackPauseMsChange,
-        onStepPlaybackStepSizeChange,
-        onToggleBlue,
-        onToggleRed,
-      });
-    }
-  });
+  // Set animation export context synchronously for edit mode
+  // IMPORTANT: setContext must be called during component initialization, not in effects.
+  // Child components (AnimationPlayer) read context on mount, so it must exist immediately.
+  // Using getters allows the context to return current reactive prop values when accessed.
+  if (mode === "edit") {
+    setAnimationExportContext({
+      state: {
+        get sequenceData() { return animationSequenceData; },
+        get isPlaying() { return isAnimationPlaying; },
+        get currentStep() { return animationCurrentBeat; },
+        get speed() { return animationSpeed; },
+        get bluePropState() { return animationBluePropState; },
+        get redPropState() { return animationRedPropState; },
+        get isCircular() { return isCircular; },
+        get exportLoopCount() { return exportLoopCount; },
+        get isExporting() { return isAnimationExporting; },
+        get exportProgress() { return animationExportProgress; },
+        get servicesReady() { return animationServicesReady; },
+        get loading() { return animationLoading; },
+        get playbackMode() { return playbackMode; },
+        get stepPlaybackPauseMs() { return stepPlaybackPauseMs; },
+        get stepPlaybackStepSize() { return stepPlaybackStepSize; },
+        get blueMotionVisible() { return blueMotionVisible; },
+        get redMotionVisible() { return redMotionVisible; },
+        get isSideBySideLayout() { return isSideBySideLayout; },
+        get selectedFormat() { return selectedFormat; },
+      },
+      actions: {
+        onPlaybackToggle: () => onPlaybackToggle?.(),
+        onSpeedChange: (speed: number) => onSpeedChange?.(speed),
+        onStepHalfBeatForward: () => onStepHalfBeatForward?.(),
+        onStepHalfBeatBackward: () => onStepHalfBeatBackward?.(),
+        onStepFullBeatForward: () => onStepFullBeatForward?.(),
+        onStepFullBeatBackward: () => onStepFullBeatBackward?.(),
+        onLoopCountChange: (count: number) => onLoopCountChange?.(count),
+        onCanvasReady: (canvas: HTMLCanvasElement | null) => onCanvasReady?.(canvas),
+        onCancelExport: () => onCancelExport?.(),
+        onExportVideo: () => onExportVideo?.(),
+        onPlaybackModeChange: (m: "continuous" | "step") => onPlaybackModeChange?.(m),
+        onStepPlaybackPauseMsChange: (ms: number) => onStepPlaybackPauseMsChange?.(ms),
+        onStepPlaybackStepSizeChange: (size: 1 | 0.5) => onStepPlaybackStepSizeChange?.(size),
+        onToggleBlue: () => onToggleBlue?.(),
+        onToggleRed: () => onToggleRed?.(),
+        onFormatChange: (format: "animation" | "static" | "performance") => onFormatChange?.(format),
+      },
+    });
+  }
 
   function handleOpenChange(open: boolean) {
     if (!open && isOpen) {

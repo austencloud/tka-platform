@@ -1,9 +1,8 @@
 <!--
 ReversalIndicators.svelte - Reversal Indicator Component
 
-Renders blue and red reversal indicators as large "R" letters stacked vertically.
-Based on the desktop app's ReversalGlyph implementation which shows a column of 2 R's
-colored according to the motion that is reversing between pictographs.
+Renders blue and red reversal indicators as colored dots stacked vertically.
+Color-coded dots indicate which motion (blue/red) is reversing between pictographs.
 -->
 <script lang="ts">
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
@@ -102,34 +101,34 @@ colored according to the motion that is reversing between pictographs.
   // Using percentages of the standard 1000px pictograph dimensions
   const X_POSITION_PERCENT = 5.5; // 5.5% from left edge
   const CENTER_Y_PERCENT = 50; // 50% from top (center)
-  const FONT_SIZE_PERCENT = 7; // Slightly larger than before (was 6%)
-  const R_SPACING_PERCENT = 7; // Fixed spacing between R's as percentage
+  const DOT_RADIUS_PERCENT = 1.5; // Dot radius as percentage
+  const DOT_SPACING_PERCENT = 4.5; // Fixed spacing between dots as percentage (smaller for dots vs Rs)
 
   // Calculate actual positions based on pictograph dimensions
   // Assuming standard SVG viewBox of 1000x1000
-  const X_POSITION = X_POSITION_PERCENT * 10; // Convert to 1000px scale
-  const CENTER_Y = CENTER_Y_PERCENT * 9.7; // Convert to 1000px scale
-  const FONT_SIZE = FONT_SIZE_PERCENT * 10; // Convert to 1000px scale
-  const R_SPACING = R_SPACING_PERCENT * 10; // Convert to 1000px scale
+  const X_POSITION = X_POSITION_PERCENT * 13; // Convert to 1000px scale
+  const CENTER_Y = CENTER_Y_PERCENT * 9.7; // Convert to 1000px scale (adjusted for visual centering)
+  const DOT_RADIUS = DOT_RADIUS_PERCENT * 10; // Convert to 1000px scale
+  const DOT_SPACING = DOT_SPACING_PERCENT * 13; // Convert to 1000px scale
 
-  // Calculate vertical positions when both R's are present (after visibility filtering)
-  const redRY = $derived.by(() => {
+  // Calculate vertical positions when both dots are present (after visibility filtering)
+  const redDotY = $derived.by(() => {
     if (effectiveBlueReversal && effectiveRedReversal) {
       // Both present: stack vertically with fixed spacing around center
-      return CENTER_Y - R_SPACING / 2;
+      return CENTER_Y - DOT_SPACING / 2;
     } else if (effectiveRedReversal) {
-      // Only red: center it properly (accounting for visual centering)
+      // Only red: center it
       return CENTER_Y;
     }
     return CENTER_Y;
   });
 
-  const blueRY = $derived.by(() => {
+  const blueDotY = $derived.by(() => {
     if (effectiveBlueReversal && effectiveRedReversal) {
       // Both present: blue below red with fixed spacing
-      return CENTER_Y + R_SPACING / 2;
+      return CENTER_Y + DOT_SPACING / 2;
     } else if (effectiveBlueReversal) {
-      // Only blue: center it properly (accounting for visual centering)
+      // Only blue: center it
       return CENTER_Y;
     }
     return CENTER_Y;
@@ -152,32 +151,20 @@ colored according to the motion that is reversing between pictographs.
       : {}}
   >
     {#if effectiveRedReversal}
-      <text
-        x={X_POSITION}
-        y={redRY}
-        font-family="Georgia, serif"
-        font-size={FONT_SIZE}
-        font-weight="bold"
+      <circle
+        cx={X_POSITION}
+        cy={redDotY}
+        r={DOT_RADIUS}
         fill={RED_COLOR}
-        dominant-baseline="middle"
-        text-anchor="start"
-      >
-        R
-      </text>
+      />
     {/if}
     {#if effectiveBlueReversal}
-      <text
-        x={X_POSITION}
-        y={blueRY}
-        font-family="Georgia, serif"
-        font-size={FONT_SIZE}
-        font-weight="bold"
+      <circle
+        cx={X_POSITION}
+        cy={blueDotY}
+        r={DOT_RADIUS}
         fill={BLUE_COLOR}
-        dominant-baseline="middle"
-        text-anchor="start"
-      >
-        R
-      </text>
+      />
     {/if}
   </g>
 {/if}

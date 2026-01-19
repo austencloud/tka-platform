@@ -113,6 +113,42 @@ Positions exist independent of props - they describe hand placement only.
 
 ---
 
+## Compound Letters
+
+Compound letters are pairs that complete each other to create circular (LOOP) motion. When you spin continuously, you don't do D or J separately - you do DJ as a compound unit.
+
+### Type 1 β↔α Compounds (Dual-Shift)
+
+| Compound | Components | Mnemonic | Style |
+|----------|------------|----------|-------|
+| DJ | D (β→α) + J (α→β) | "Disco Jam" | Pro/Pro (isolation) |
+| EK | E (β→α) + K (α→β) | "Exploding Kitten" | Anti/Anti |
+| FL | F (β→α) + L (α→β) | "Fruity Loops" | Hybrid (anti/pro) |
+
+### Gamma Internal Compounds (γ→γ)
+
+| Compound | Components | Mnemonic |
+|----------|------------|----------|
+| MP | M + P | "Magic Potion" |
+| NQ | N + Q | "Never Quit" |
+| OR | O + R | "Open Road" |
+
+### Type 4 Dash Compounds
+
+| Compound | Components |
+|----------|------------|
+| ΦΨ | Φ (β→α) + Ψ (α→β) |
+
+### Why Compounds Matter
+
+- D alone is β→α (half a cycle)
+- J alone is α→β (half a cycle)
+- DJ together = β→α→β (complete cycle)
+- In continuous motion, you're always doing the compound
+- VTG timing (split vs tog) applies to the compound unit, not individual letters
+
+---
+
 ## VTG (Vulcan Tech Gospel)
 
 VTG is an older, widely-adopted notation framework for poi/flow arts created by Noel Yee and spinners at the Vulcan Lofts in Oakland, CA. Many flow artists learn VTG before encountering TKA.
@@ -136,17 +172,17 @@ VTG is an older, widely-adopted notation framework for poi/flow arts created by 
 ### VTG Classification: Fixed vs Orientation-Dependent
 
 **Letters that stay in the same position have fixed VTG timing:**
-- **A, B, C** (alpha→alpha): always **split** - hands stay at opposite points
-- **G, H, I** (beta→beta): always **tog** - hands stay together
+- **A, B, C** (alpha→alpha): always **split-same** - hands stay at opposite points
+- **G, H, I** (beta→beta): always **tog-same** - hands stay together
 
-**Letters that transition between positions are orientation-dependent:**
-- **D, E, F** (beta→alpha) and **J, K, L** (alpha→beta) can be split OR tog depending on which variation you view
+**Compound letters vary by variation:**
+- **DJ, EK, FL** can be split-opp OR tog-opp depending on which variation
 
-Example with letter D:
-- **Variation 0** (starts at east): timing = **split**
-- **Variation 1** (starts at south): timing = **tog**
+The VTG classification applies to the **compound**, not individual letters:
+- DJ east-start variation → **split-opp**
+- DJ south-start variation → **tog-opp**
 
-For these transitional letters, the VTG classification depends on where the hands are relative to the downbeat (south). TKA stores `timing` and `direction` **per variation** for these letters.
+This is because VTG timing depends on where the hands are relative to the downbeat (south) at any given moment. TKA stores `timing` and `direction` per variation to track this.
 
 ### TKA vs VTG: Different Reference Systems
 
@@ -158,12 +194,13 @@ For these transitional letters, the VTG classification depends on where the hand
 
 ### Mapping VTG Terms to TKA
 
-- **"tog" (together)** ≈ hands at or passing through the **same point** (relates to beta)
-- **"split"** ≈ hands at **opposite points** (relates to alpha)
-- **"same direction"** ≈ hands moving the same way relative to downbeat
-- **"opposite direction"** ≈ hands moving toward/away from each other at downbeat
+**These are exact equivalences:**
+- **Tog (together)** = **Beta** (hands at same point)
+- **Split** = **Alpha** (hands at opposite points)
 
-**Note:** These are conceptual mappings, not exact equivalences. VTG describes prop phase relationships; TKA describes hand positions on a grid.
+**Direction is described differently** because TKA doesn't reference the downbeat:
+- VTG uses "same direction" / "opposite direction" relative to the downbeat
+- TKA tracks timing and direction per variation for compound letters
 
 ### Teaching Order: VTG vs TKA
 

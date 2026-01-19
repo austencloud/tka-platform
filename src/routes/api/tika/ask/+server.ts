@@ -984,11 +984,11 @@ const tikaTools = {
 	}),
 
 	answer_common_question: tool({
-		description: 'Get canonical answer to common TKA questions. Use for: "what is TKA", "what is a pictograph", "what is a sequence", "what is a loop", "why cross-shift".',
+		description: 'Get canonical answer to common TKA questions. Use for: "what is TKA", "what is VTG", "what is a pictograph", "what is a sequence", "what is a loop", "why cross-shift".',
 		inputSchema: jsonSchema<{ question: string }>({
 			type: 'object',
 			properties: {
-				question: { type: 'string', description: 'The question topic (tka, pictograph, sequence, loop, why cross-shift)' }
+				question: { type: 'string', description: 'The question topic (tka, vtg, pictograph, sequence, loop, why cross-shift)' }
 			},
 			required: ['question']
 		}),

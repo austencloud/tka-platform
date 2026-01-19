@@ -149,12 +149,14 @@
     return calculateTimelineRows(steps, TIMELINE_ROW_CAPACITY, false);
   });
 
-  // Timeline mode: calculate unit size independently from grid cell size
-  // With start position in its own column, total width = start (1 unit) + row (4 units) = 5 units
+  // Timeline mode: calculate unit size based on FULL row capacity (5 columns)
+  // This keeps pictograph size consistent as you add beats - no jarring size changes
+  // The timeline-container will center itself using CSS margin: auto as content grows
   const timelineUnitSize = $derived(() => {
     if (!isTimelineMode) return 0;
     const hasStart = startPosition && !startPosition.isBlank;
-    // Total columns = start column (if present) + row capacity
+    // Always size for full capacity: start column (if present) + row capacity
+    // This ensures cells stay the same size whether you have 1 beat or 5 beats
     const totalUnits = hasStart ? TIMELINE_ROW_CAPACITY + 1 : TIMELINE_ROW_CAPACITY;
     return calculateTimelineUnitSize(containerWidth, totalUnits);
   });
@@ -823,7 +825,9 @@
     display: flex;
     flex-direction: row;
     gap: 1px;
-    width: calc(100% - var(--timeline-padding, 16px)); /* Breathing room on each side */
+    /* Use fit-content so container only takes space it needs, then margin: auto centers it */
+    width: fit-content;
+    max-width: calc(100% - var(--timeline-padding, 16px)); /* Breathing room on each side */
     margin: auto;
     padding: 0;
     opacity: 1;
