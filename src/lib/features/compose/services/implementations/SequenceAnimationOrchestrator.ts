@@ -75,7 +75,10 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
         }));
 
       if (steps.length === 0) {
-        throw new Error("No steps found in sequence data");
+        // Don't throw - return false to indicate initialization failed
+        // This is expected for sequences without motion data
+        console.warn("SequenceAnimationOrchestrator: No steps found in sequence data");
+        return false;
       }
 
       // Validate steps using focused service

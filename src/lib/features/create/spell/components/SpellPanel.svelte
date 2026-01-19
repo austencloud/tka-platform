@@ -21,8 +21,6 @@ This component orchestrates the UI phases; business logic lives in services.
   import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import PreferencesPage from "./PreferencesPage.svelte";
-  import ResultsPage from "./ResultsPage.svelte";
-  import { getVariationState, type ScoredVariation } from "../state/variation-state.svelte";
   import SpellResultsView from "./SpellResultsView.svelte";
   import { loadSpellState, saveSpellState } from "../state/spell-persistence.svelte";
 

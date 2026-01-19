@@ -334,6 +334,7 @@ export default defineConfig({
           },
           {
             // Network-first for API calls (ensures fresh data)
+            // IMPORTANT: Only cache status 200 - opaque responses (status 0) cause Cache.put() errors
             urlPattern: /^https:\/\/.*\.googleapis\.com\/.*$/i,
             handler: "NetworkFirst",
             options: {
@@ -344,7 +345,7 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 5, // 5 minutes
               },
               cacheableResponse: {
-                statuses: [0, 200],
+                statuses: [200],
               },
             },
           },

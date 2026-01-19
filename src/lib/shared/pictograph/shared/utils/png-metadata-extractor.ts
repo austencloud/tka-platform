@@ -46,7 +46,8 @@ export class PngMetadataExtractor {
         | undefined;
       return sequence ?? [parsed];
     } catch (error) {
-      console.error("Error extracting PNG metadata:", error);
+      // Don't log at error level - this is expected for sequences without PNG metadata
+      // (e.g., user-generated sequences only stored in IndexedDB/Firestore)
       throw error;
     }
   }

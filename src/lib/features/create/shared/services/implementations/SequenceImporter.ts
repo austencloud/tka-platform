@@ -42,11 +42,9 @@ export class SequenceImporter implements ISequenceImporter {
       const sequence = this.convertPngMetadata(id, pngMetadata);
       return sequence;
     } catch (error) {
-      console.error(`Failed to load PNG metadata for ${id}:`, error);
-      // No fallback - let the error bubble up
-      throw new Error(
-        `No PNG metadata found for sequence ${id}. Please ensure the sequence has a valid PNG thumbnail with embedded metadata.`
-      );
+      // Don't log at error level - this is expected for user-generated sequences
+      // that don't have PNG metadata (stored only in IndexedDB/Firestore)
+      throw error;
     }
   }
 

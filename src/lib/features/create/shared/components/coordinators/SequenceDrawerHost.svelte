@@ -377,8 +377,6 @@
       );
       if (!success) throw new Error("Failed to initialize playback");
       console.log("[SequenceDrawerHost] Playback initialized successfully");
-      console.log("[SequenceDrawerHost] Blue prop state:", animationPanelState.bluePropState);
-      console.log("[SequenceDrawerHost] Red prop state:", animationPanelState.redPropState);
 
       lastLoadedSequenceId = sequenceId;
       animationPanelState.setSequenceData(loadedSequence);
@@ -388,10 +386,10 @@
         playbackController?.togglePlayback();
       }, ANIMATION_AUTO_START_DELAY_MS);
     } catch (err) {
-      console.error("❌ Failed to initialize animation:", err);
-      animationPanelState.setError(
-        err instanceof Error ? err.message : "Failed to load animation"
-      );
+      // Use warn instead of error - animation init failures are expected for sequences
+      // without full motion data (user-generated sequences, test sequences, etc.)
+      console.warn("[SequenceDrawerHost] Animation not available for this sequence");
+      animationPanelState.setError("Animation data not available for this sequence");
     } finally {
       animationLoading = false;
       animationPanelState.setLoading(false);

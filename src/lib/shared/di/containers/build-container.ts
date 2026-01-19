@@ -115,13 +115,8 @@ import { DurationPatternManager } from "$lib/features/create/shared/services/imp
 // === Spell Tab Services ===
 import { LetterTransitionGraph } from "$lib/features/create/spell/services/implementations/LetterTransitionGraph";
 import { WordSequenceGenerator } from "$lib/features/create/spell/services/implementations/WordSequenceGenerator";
-import { VariationExplorer } from "$lib/features/create/spell/services/implementations/VariationExplorer";
-import { VariationDeduplicator } from "$lib/features/create/spell/services/implementations/VariationDeduplicator";
-import { VariationScorer } from "$lib/features/create/spell/services/implementations/VariationScorer";
 import { SpellServiceLoader } from "$lib/features/create/spell/services/implementations/SpellServiceLoader";
-import { SpellGenerationOrchestrator } from "$lib/features/create/spell/services/implementations/SpellGenerationOrchestrator";
 import { VariationExplorationOrchestrator } from "$lib/features/create/spell/services/implementations/VariationExplorationOrchestrator";
-import { LOOPSelectionCoordinator } from "$lib/features/create/spell/services/implementations/LOOPSelectionCoordinator";
 import { StartPositionValidator } from "$lib/features/create/spell/services/implementations/StartPositionValidator";
 import { OrientationContinuityValidator } from "$lib/features/create/spell/services/implementations/OrientationContinuityValidator";
 import { LetterTypeClassifier } from "$lib/features/create/spell/services/implementations/LetterTypeClassifier";
@@ -235,9 +230,6 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         turnPatternManager: () => new TurnPatternManager(),
         durationPatternManager: () => new DurationPatternManager(),
 
-        // Spell - no deps
-        variationScorer: () => new VariationScorer(),
-
         // Generation - no deps (moved from Layer 4)
         loopTypeResolver: () => new LOOPTypeResolver(),
         rotatedEndPositionSelector: () => new RotatedEndPositionSelector(),
@@ -324,13 +316,6 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           }
           return letterTransitionGraphInstance;
         },
-
-        // Variation deduplicator - needs deps
-        variationDeduplicator: () =>
-          new VariationDeduplicator(
-            deps.gridPositionDeriver,
-            deps.motionQueryHandler
-          ),
 
         // LOOP executors needing only external deps - moved from Layer 3.5 due to references
         mirroredInvertedLOOPExecutor: () =>
@@ -565,13 +550,6 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.startPositionValidator,
             ctx.orientationContinuityValidator
           ),
-        variationExplorer: () =>
-          new VariationExplorer(
-            ctx.letterTransitionGraph,
-            deps.letterQueryHandler,
-            ctx.stepConverter,
-            deps.orientationCalculator
-          ),
       }))
 
       // === Layer 4.6: Services needing Layer 4.5 validators and spellServiceLoader ===
@@ -586,12 +564,8 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.sequenceExtender,
             ctx.stepConverter
           ),
-        spellGenerationOrchestrator: () =>
-          new SpellGenerationOrchestrator(ctx.spellServiceLoader),
         variationExplorationOrchestrator: () =>
           new VariationExplorationOrchestrator(ctx.spellServiceLoader),
-        loopSelectionCoordinator: () =>
-          new LOOPSelectionCoordinator(ctx.spellServiceLoader),
         // ExtensionFlowCoordinator needs sequenceExtender
         extensionFlowCoordinator: () =>
           new ExtensionFlowCoordinator(ctx.sequenceExtender),
