@@ -68,6 +68,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: LEARN_TABS,
   },
   {
+    id: "TIKA",
+    label: "TIKA",
+    icon: '<i class="fas fa-brain" style="color: #6366f1;" aria-hidden="true"></i>',
+    color: "#6366f1", // Indigo - AI/assistant
+    description: "AI tutor for learning TKA",
+    isMain: true,
+    sections: [], // Single-tab module
+  },
+  {
     id: "premium",
     label: "Go Premium",
     icon: '<i class="fas fa-crown" style="color: #fbbf24;" aria-hidden="true"></i>',

@@ -1,0 +1,333 @@
+<!--
+  Inline Gallery Component
+
+  Renders multiple pictographs in a grid or row layout within a message bubble.
+  Fetches images progressively from cache/API.
+  Uses container queries for intelligent sizing based on item count.
+-->
+<script lang="ts">
+  import type { InlineGallery } from "../types";
+  import { tikaPictographCache } from "../services/implementations/TikaPictographCache";
+
+  // Props - itemSize is optional; when not provided, uses responsive sizing
+  let {
+    gallery,
+    itemSize,
+  }: {
+    gallery: InlineGallery;
+    itemSize?: number;
+  } = $props();
+
+  // Calculate optimal API size based on item count (for image generation quality)
+  const apiItemSize = $derived(() => {
+    if (itemSize) return itemSize;
+    const count = gallery.items.length;
+    if (count <= 2) return 280; // Comparison: high quality
+    if (count <= 4) return 200; // Small gallery
+    return 150; // Large gallery
+  });
+
+  // State - map of letter -> base64 images
+  let images = $state<Map<string, string>>(new Map());
+  let loading = $state(true);
+  let loadedCount = $state(0);
+
+  // Generate cache key
+  function getCacheKey(letter: string, variation: number, size: number): string {
+    return `${letter}-${variation}-${size}`;
+  }
+
+  // Fetch all gallery images
+  $effect(() => {
+    fetchGalleryImages();
+  });
+
+  async function fetchGalleryImages() {
+    loading = true;
+    loadedCount = 0;
+    const newImages = new Map<string, string>();
+    const itemsToFetch: Array<{ letter: string; variation: number }> = [];
+    const fetchSize = apiItemSize();
+
+    // Step 1: Check cache for all items
+    for (const item of gallery.items) {
+      const variation = item.variation ?? 0;
+      const cacheKey = getCacheKey(item.letter, variation, fetchSize);
+      const cached = await tikaPictographCache.get(cacheKey);
+
+      if (cached) {
+        newImages.set(item.letter, `data:image/png;base64,${cached}`);
+        loadedCount++;
+      } else {
+        itemsToFetch.push({ letter: item.letter, variation });
+      }
+    }
+
+    // Update images immediately with cached results
+    images = new Map(newImages);
+
+    // Step 2: Fetch missing items in batches
+    const BATCH_SIZE = 4;
+
+    for (let i = 0; i < itemsToFetch.length; i += BATCH_SIZE) {
+      const batch = itemsToFetch.slice(i, i + BATCH_SIZE);
+
+      const batchPromises = batch.map(async ({ letter, variation }) => {
+        try {
+          const response = await fetch("/api/tika/pictograph", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              letter,
+              variation,
+              options: {
+                darkMode: true,
+                size: fetchSize,
+                showTKA: true,
+                showGrid: true,
+              },
+            }),
+          });
+
+          if (!response.ok) return null;
+
+          const data = await response.json();
+          const base64 = data.imageBase64 as string;
+
+          // Cache for future use
+          const cacheKey = getCacheKey(letter, variation, fetchSize);
+          await tikaPictographCache.set(cacheKey, base64);
+
+          return { letter, imageUrl: `data:image/png;base64,${base64}` };
+        } catch (e) {
+          console.error(`[InlineGallery] Error fetching ${letter}:`, e);
+          return null;
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+
+      // Update images after each batch
+      for (const result of batchResults) {
+        if (result) {
+          newImages.set(result.letter, result.imageUrl);
+          loadedCount++;
+        }
+      }
+
+      images = new Map(newImages);
+    }
+
+    loading = false;
+  }
+</script>
+
+<figure
+  class="inline-gallery"
+  class:row={gallery.layout === "row"}
+  class:grid={gallery.layout === "grid"}
+  class:responsive={!itemSize}
+  class:comparison={!itemSize && gallery.items.length <= 2}
+  class:small-gallery={!itemSize && gallery.items.length > 2 && gallery.items.length <= 4}
+  class:large-gallery={!itemSize && gallery.items.length > 4}
+>
+  <div class="gallery-items" style={itemSize ? `--item-size: ${itemSize}px` : undefined}>
+    {#each gallery.items as item}
+      {@const imageUrl = images.get(item.letter)}
+      <div class="gallery-item">
+        {#if imageUrl}
+          <img src={imageUrl} alt="Letter {item.letter}" />
+        {:else}
+          <div class="placeholder">
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          </div>
+        {/if}
+        {#if item.label}
+          <span class="item-label {item.label}">{item.label}</span>
+        {/if}
+      </div>
+    {/each}
+  </div>
+
+  {#if gallery.caption}
+    <figcaption class="gallery-caption">{gallery.caption}</figcaption>
+  {/if}
+
+  {#if loading && loadedCount < gallery.items.length}
+    <div class="loading-indicator">
+      Loading {loadedCount}/{gallery.items.length}
+    </div>
+  {/if}
+</figure>
+
+<style>
+  .inline-gallery {
+    margin: 12px 0;
+    padding: 0;
+    width: 100%;
+  }
+
+  /* Row layout - horizontal scrollable */
+  .inline-gallery.row .gallery-items {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  /* Grid layout - responsive grid */
+  .inline-gallery.grid .gallery-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(var(--item-size, 100px), 1fr));
+    gap: 8px;
+    max-width: 100%;
+  }
+
+  .gallery-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    transition: border-color var(--duration-fast, 0.15s) ease;
+  }
+
+  .gallery-item:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .gallery-item img {
+    width: var(--item-size, 100px);
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+
+  .placeholder {
+    width: var(--item-size, 100px);
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    font-size: 16px;
+  }
+
+  /* ========================================
+     Responsive sizing (when no explicit itemSize)
+     Uses larger sizes to fill available space
+     ======================================== */
+
+  /* Comparison: 2 items - BIG side by side */
+  .inline-gallery.comparison .gallery-items {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .inline-gallery.comparison .gallery-item img,
+  .inline-gallery.comparison .placeholder {
+    width: clamp(180px, 45vw, 320px);
+  }
+
+  /* Small gallery: 3-4 items - large */
+  .inline-gallery.small-gallery .gallery-items {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .inline-gallery.small-gallery .gallery-item img,
+  .inline-gallery.small-gallery .placeholder {
+    width: clamp(140px, 35vw, 240px);
+  }
+
+  /* Large gallery: 5+ items - medium grid */
+  .inline-gallery.large-gallery .gallery-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(clamp(120px, 25vw, 180px), 1fr));
+    gap: 12px;
+  }
+
+  .inline-gallery.large-gallery .gallery-item img,
+  .inline-gallery.large-gallery .placeholder {
+    width: 100%;
+  }
+
+  .item-label {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .item-label.pro {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+  }
+
+  .item-label.anti {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+  }
+
+  .item-label.hybrid {
+    background: rgba(168, 85, 247, 0.2);
+    color: #a855f7;
+    border: 1px solid rgba(168, 85, 247, 0.4);
+  }
+
+  /* Default label */
+  .item-label:not(.pro):not(.anti):not(.hybrid) {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+  }
+
+  .gallery-caption {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    text-align: center;
+    font-style: italic;
+  }
+
+  .loading-indicator {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    text-align: center;
+  }
+
+  /* Mobile adjustments */
+  @media (max-width: 480px) {
+    .inline-gallery.grid .gallery-items {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .gallery-item img,
+    .placeholder {
+      width: 100%;
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .placeholder i {
+      animation: none;
+    }
+
+    .gallery-item {
+      transition: none;
+    }
+  }
+</style>

@@ -27,7 +27,9 @@ export type ModuleId =
   | "dashboard"
   | "create"
   | "discover"
+  | "community" // Global TKA community map
   | "learn"
+  | "TIKA" // TIKA AI tutor (acronym - The Intelligent Kinetic Assistant)
   | "premium"
   | "compose"
   | "train"

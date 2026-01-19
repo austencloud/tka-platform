@@ -1,0 +1,214 @@
+<!--
+  Inline Sequence Player Component
+
+  Renders an animated TKA sequence within a message bubble.
+  Uses the real animation engine (AnimatorCanvas) with proper SequenceData.
+  Generates the sequence client-side using WordSequenceGenerator.
+-->
+<script lang="ts">
+  import { onMount, untrack } from "svelte";
+  import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import { container } from "$lib/shared/di";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { ISequenceMotionLoader } from "$lib/shared/sequence-viewer/services/contracts/ISequenceMotionLoader";
+  import type { IWordSequenceGenerator } from "$lib/features/create/spell/services/contracts/IWordSequenceGenerator";
+  import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import type { InlineSequencePlayer } from "../types";
+
+  // Props
+  let {
+    sequence,
+  }: {
+    sequence: InlineSequencePlayer;
+  } = $props();
+
+  // Services (resolved from DI container)
+  let controller = $state<IAnimationPlaybackController | null>(null);
+  let motionLoader = $state<ISequenceMotionLoader | null>(null);
+  let sequenceGenerator = $state<IWordSequenceGenerator | null>(null);
+
+  // State
+  const animState = createAnimationPanelState();
+  let loading = $state(true);
+  let error = $state<string | null>(null);
+  let generatedSequence = $state<SequenceData | null>(null);
+  let lastWord = $state<string | null>(null);
+
+  // Derived state for AnimatorCanvas
+  const stepData = $derived.by(() => {
+    const seq = animState.sequenceData;
+    if (!seq) return null;
+
+    // Beat 0 = start position
+    if (animState.currentStep < 1) {
+      return seq.startPosition ?? null;
+    }
+
+    // Beat 1+ = steps array (convert 1-based to 0-based index)
+    const stepIndex = Math.floor(animState.currentStep) - 1;
+    const clamped = Math.min(stepIndex, seq.steps.length - 1);
+    return seq.steps[clamped] ?? null;
+  });
+
+  const letter = $derived(stepData?.letter ?? null);
+
+  // Initialize services on mount
+  onMount(() => {
+    try {
+      motionLoader = container.items.sequenceMotionLoader;
+      controller = container.items.animationPlaybackController;
+      sequenceGenerator = container.items.wordSequenceGenerator;
+      loading = false;
+    } catch (err) {
+      console.error("[InlineSequencePlayer] Failed to initialize:", err);
+      error = "Failed to load animation services";
+      loading = false;
+    }
+
+    return () => {
+      controller?.dispose();
+      animState.dispose();
+    };
+  });
+
+  // Watch word changes and generate sequence
+  $effect(() => {
+    // Read reactive dependencies
+    const currentController = controller;
+    const currentMotionLoader = motionLoader;
+    const currentGenerator = sequenceGenerator;
+    const currentWord = sequence.word;
+
+    if (!currentController || !currentMotionLoader || !currentGenerator) return;
+    if (currentWord === lastWord) return;
+
+    untrack(async () => {
+      lastWord = currentWord;
+      animState.reset();
+      error = null;
+      loading = true;
+
+      try {
+        // Generate sequence from word using WordSequenceGenerator
+        const result = await currentGenerator!.generateFromWord({
+          word: currentWord,
+          preferences: {
+            makeCircular: false,
+          },
+        });
+
+        if (!result.success || !result.sequence) {
+          error = result.error || "Failed to generate sequence";
+          loading = false;
+          return;
+        }
+
+        generatedSequence = result.sequence;
+
+        // Load motion data (enriches with full motion details)
+        const fullSeq = await currentMotionLoader!.ensureMotionData(result.sequence);
+        if (!fullSeq) {
+          error = "Failed to load sequence motion data";
+          loading = false;
+          return;
+        }
+
+        // Initialize playback
+        const ok = currentController!.initialize(fullSeq, animState);
+        if (!ok) {
+          error = "Failed to initialize playback";
+          loading = false;
+          return;
+        }
+
+        loading = false;
+
+        // Auto-play after a brief delay
+        setTimeout(() => currentController?.togglePlayback(), 300);
+      } catch (err) {
+        console.error("[InlineSequencePlayer] Generation error:", err);
+        error = err instanceof Error ? err.message : "Animation error";
+        loading = false;
+      }
+    });
+  });
+</script>
+
+<figure class="inline-sequence-player">
+  {#if loading}
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+      <span>Generating "{sequence.word}"...</span>
+    </div>
+  {:else if error}
+    <div class="error-state">
+      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+      <span>{error}</span>
+    </div>
+  {:else}
+    <div class="animation-wrapper">
+      <AnimatorCanvas
+        blueProp={animState.bluePropState}
+        redProp={animState.redPropState}
+        gridVisible={true}
+        gridMode={generatedSequence?.gridMode}
+        {letter}
+        {stepData}
+        sequenceData={animState.sequenceData}
+        currentStep={animState.currentStep}
+        isPlaying={animState.isPlaying}
+        word={sequence.word}
+        progressBarVariant="gradient-labeled"
+      />
+    </div>
+  {/if}
+</figure>
+
+<style>
+  .inline-sequence-player {
+    margin: 12px 0;
+    padding: 0;
+    width: 100%;
+  }
+
+  .animation-wrapper {
+    width: 100%;
+    /* Square aspect ratio for the animation canvas */
+    aspect-ratio: 1;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .loading-state,
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px;
+    min-height: 200px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: 14px;
+  }
+
+  .loading-state i,
+  .error-state i {
+    font-size: 24px;
+  }
+
+  .error-state {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .loading-state i {
+      animation: none;
+    }
+  }
+</style>

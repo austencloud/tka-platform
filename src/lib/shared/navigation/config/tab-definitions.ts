@@ -47,6 +47,7 @@ export const CREATE_TABS: Section[] = [
 ];
 
 // Learn tabs configuration
+// Note: TIKA moved to standalone module (src/lib/features/tika/)
 export const LEARN_TABS: Section[] = [
   {
     id: "concepts",
@@ -71,14 +72,6 @@ export const LEARN_TABS: Section[] = [
     description: "Browse all letters and pictographs",
     color: "#a78bfa",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
-  {
-    id: "tika",
-    label: "TIKA",
-    icon: '<i class="fas fa-robot" aria-hidden="true"></i>',
-    description: "AI tutor for TKA knowledge",
-    color: "#6366f1",
-    gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
 ];
 
