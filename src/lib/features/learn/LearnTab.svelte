@@ -19,7 +19,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
   import ConceptDetailView from "./components/ConceptDetailView.svelte";
   import CodexTab from "./codex/components/CodexTab.svelte";
   import QuizTab from "./quiz/components/QuizTab.svelte";
-  import TIKATab from "./tika/components/TIKATab.svelte";
+  import TIKATab from "$lib/features/tika/TIKAModule.svelte";
   import type { LearnConcept } from "./domain/types";
   import { getConceptById } from "./domain/concepts";
   import {
