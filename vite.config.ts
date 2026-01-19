@@ -441,6 +441,9 @@ export default defineConfig({
     external: [
       "pdfjs-dist",
       "page-flip",
+      // MCP server has native dependencies that can't be bundled
+      /mcp-server/,
+      "@resvg/resvg-js",
     ],
     // Include svelte condition for threlte packages, but node/module first for SSR
     resolve: {

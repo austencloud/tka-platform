@@ -4,6 +4,7 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
+  "packageManager": "pnpm@10.28.0",
   "description": "TKA Scribe - Browser-based sequence editor for flow arts",
   "scripts": {
     "pictograph": "tsx scripts/pictograph-cli.ts",
@@ -142,7 +143,6 @@
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
   },
-  "packageManager": "npm@10.9.2",
   "prettier": {
     "semi": true,
     "trailingComma": "es5",
