@@ -539,8 +539,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.loopExecutorSelector
           ),
 
-        // Spell services
-        // Validation services (no dependencies or simple dependencies)
+        // Spell services - Layer 4.5a: Validators (no same-layer deps)
         letterTypeClassifier: () => new LetterTypeClassifier(),
         orientationContinuityValidator: () =>
           new OrientationContinuityValidator(),
@@ -551,8 +550,11 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           ),
         variationConstraintBuilder: () =>
           new VariationConstraintBuilder(ctx.letterTypeClassifier),
+        spellServiceLoader: () => new SpellServiceLoader(),
+      }))
 
-        // Generation services
+      // Layer 4.5b: Spell generation services (need validators from Layer 4.5a)
+      .add((ctx) => ({
         wordSequenceGenerator: () =>
           new WordSequenceGenerator(
             ctx.letterTransitionGraph,
@@ -570,7 +572,6 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.stepConverter,
             deps.orientationCalculator
           ),
-        spellServiceLoader: () => new SpellServiceLoader(),
       }))
 
       // === Layer 4.6: Services needing Layer 4.5 validators and spellServiceLoader ===

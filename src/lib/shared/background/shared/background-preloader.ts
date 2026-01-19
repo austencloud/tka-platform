@@ -124,8 +124,9 @@ export function preloadBackgroundFromStorage(): void {
       const settings = JSON.parse(stored) as {
         backgroundType?: BackgroundType;
       };
+      // Default to SOLID_COLOR to match SettingsState defaults
       const backgroundType = (settings.backgroundType ??
-        BackgroundType.NIGHT_SKY) as BackgroundType;
+        BackgroundType.SOLID_COLOR) as BackgroundType;
       updateBodyBackground(backgroundType);
     }
   } catch (error) {
