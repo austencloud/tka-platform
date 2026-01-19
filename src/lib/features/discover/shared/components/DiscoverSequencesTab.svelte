@@ -282,25 +282,28 @@
 
 <!-- Detail Panel -->
 {#if sequencePanelManager.activeSequence}
-  <SequenceDrawer
-    isOpen={sequencePanelManager.isDetailOpen}
-    sequence={sequencePanelManager.activeSequence}
-    mode="browse"
-    {isMobile}
-    drawerWidth={sequencePanelManager.isDetailExpanded ? "min(900px, 85vw)" : drawerWidth}
-    isNavVisible={isUIVisible}
-    variations={sequencePanelManager.activeVariations}
-    variationIndex={sequencePanelManager.variationIndex}
-    onClose={() => {
-      handleCloseInvitePanel();
-      onCloseDetailPanel();
-    }}
-    onAction={onDetailPanelAction}
-    onInviteCollaborators={handleInviteCollaborators}
-    onVariationSelect={(index, _seq) => {
-      sequencePanelManager.setVariationIndex(index);
-    }}
-  />
+  <!-- Key forces remount when viewId changes, ensuring fresh animation state on reopen -->
+  {#key sequencePanelManager.viewId}
+    <SequenceDrawer
+      isOpen={sequencePanelManager.isDetailOpen}
+      sequence={sequencePanelManager.activeSequence}
+      mode="browse"
+      {isMobile}
+      drawerWidth={sequencePanelManager.isDetailExpanded ? "min(900px, 85vw)" : drawerWidth}
+      isNavVisible={isUIVisible}
+      variations={sequencePanelManager.activeVariations}
+      variationIndex={sequencePanelManager.variationIndex}
+      onClose={() => {
+        handleCloseInvitePanel();
+        onCloseDetailPanel();
+      }}
+      onAction={onDetailPanelAction}
+      onInviteCollaborators={handleInviteCollaborators}
+      onVariationSelect={(index, _seq) => {
+        sequencePanelManager.setVariationIndex(index);
+      }}
+    />
+  {/key}
 {/if}
 
 <!-- Invite Collaborators Panel -->

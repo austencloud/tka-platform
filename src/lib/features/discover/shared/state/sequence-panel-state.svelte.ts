@@ -41,6 +41,11 @@ class SequencePanelManager {
   // Current variation index within the variations array
   variationIndex = $state(0);
 
+  // Unique ID that increments each time detail panel opens.
+  // Used as a key to force component remount on reopen, ensuring
+  // animation state reinitializes even when reopening the same sequence.
+  viewId = $state(0);
+
   // Track if we're in a panel transition (prevents grid jumping)
   private isTransitioning = $state(false);
 
@@ -73,6 +78,9 @@ class SequencePanelManager {
 
   openDetail(sequence: SequenceData, variations?: SequenceData[]) {
     debug.log("🔵 PANEL: openDetail() called");
+    // Increment viewId to force component remount on reopen.
+    // This ensures animation state reinitializes even when reopening the same sequence.
+    this.viewId++;
     this.activeSequence = sequence;
     this.activeVariations = variations ?? [sequence];
     // Find the index of this sequence in variations
