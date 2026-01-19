@@ -40,6 +40,7 @@ import type { WizardPhase } from "./funnel-state.svelte";
 
 const HAS_GENERATED_STORAGE_KEY = "spell-has-generated-once";
 const GRID_MODE_STORAGE_KEY = "spell-grid-mode";
+const INPUT_WORD_STORAGE_KEY = "spell-input-word";
 
 /**
  * Creates spell tab state for spell-specific concerns
@@ -68,7 +69,15 @@ export function createSpellTabState(
   let isInitialized = $state(false);
 
   // Spell-specific state
-  let inputWord = $state("");
+  const getInitialInputWord = (): string => {
+    if (!browser) return "";
+    try {
+      return localStorage.getItem(INPUT_WORD_STORAGE_KEY) || "";
+    } catch {
+      return "";
+    }
+  };
+  let inputWord = $state(getInitialInputWord());
   let expandedWord = $state("");
   let letterSources = $state<LetterSource[]>([]);
   let isGenerating = $state(false);
@@ -271,6 +280,14 @@ export function createSpellTabState(
 
   function setInputWord(word: string) {
     inputWord = word;
+    // Persist to localStorage
+    if (browser) {
+      try {
+        localStorage.setItem(INPUT_WORD_STORAGE_KEY, word);
+      } catch {
+        // Ignore storage errors
+      }
+    }
     // Clear previous generation results when input changes
     if (expandedWord) {
       expandedWord = "";
@@ -347,6 +364,14 @@ export function createSpellTabState(
     circularizationOptions = [];
     directLoopUnavailableReason = null;
     wizardPhase = "preferences";
+    // Clear persisted input word
+    if (browser) {
+      try {
+        localStorage.removeItem(INPUT_WORD_STORAGE_KEY);
+      } catch {
+        // Ignore storage errors
+      }
+    }
   }
 
   function setWizardPhase(phase: WizardPhase) {
@@ -370,6 +395,14 @@ export function createSpellTabState(
    */
   function insertLetter(letter: string) {
     inputWord = inputWord + letter;
+    // Persist to localStorage
+    if (browser) {
+      try {
+        localStorage.setItem(INPUT_WORD_STORAGE_KEY, inputWord);
+      } catch {
+        // Ignore storage errors
+      }
+    }
   }
 
   // ============================================================================

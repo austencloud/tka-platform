@@ -18,6 +18,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
+  MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createStepData } from "$lib/features/create/shared/domain/factories/createStepData";
 import { createStartPositionData } from "$lib/features/create/shared/domain/factories/createStartPositionData";
@@ -99,7 +100,7 @@ export class StepConverter implements IStepConverter {
   private ensureMotionsWithGridMode(
     pictograph: PictographData,
     gridMode: GridMode
-  ): { blue: MotionData; red: MotionData } {
+  ): Record<string, MotionData> {
     // Create default motion for missing motion data
     const defaultMotion: MotionData = createMotionData({
       motionType: MotionType.STATIC,
@@ -112,12 +113,16 @@ export class StepConverter implements IStepConverter {
       gridMode: gridMode,
     });
 
+    // Access motions using MotionColor enum values
+    const blueMotion = pictograph.motions[MotionColor.BLUE];
+    const redMotion = pictograph.motions[MotionColor.RED];
+
     return {
-      blue: pictograph.motions.blue
-        ? { ...pictograph.motions.blue, gridMode }
+      [MotionColor.BLUE]: blueMotion
+        ? { ...blueMotion, gridMode }
         : defaultMotion,
-      red: pictograph.motions.red
-        ? { ...pictograph.motions.red, gridMode }
+      [MotionColor.RED]: redMotion
+        ? { ...redMotion, gridMode }
         : defaultMotion,
     };
   }

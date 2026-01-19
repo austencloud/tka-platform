@@ -22,6 +22,7 @@ import type { IOrientationCalculator } from "$lib/shared/pictograph/orientation/
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 interface RandomWalkState {
   steps: StepData[];
@@ -100,23 +101,16 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       gridMode
     );
 
-    console.log(`[RandomSequenceGenerator] Total pictographs available: ${allPictographs.length}`);
-
     // Get the first letter of the word
     const firstLetter = letters[0];
     if (!firstLetter) return null;
-
-    console.log(`[RandomSequenceGenerator] Generating for word starting with: ${firstLetter}`);
 
     // Step 1: Pick a random variation of the first letter
     const firstLetterVariations = allPictographs.filter(
       (p) => p.letter === firstLetter
     );
 
-    console.log(`[RandomSequenceGenerator] Found ${firstLetterVariations.length} variations of letter ${firstLetter}`);
-
     if (firstLetterVariations.length === 0) {
-      console.warn(`[RandomSequenceGenerator] No variations found for letter ${firstLetter}`);
       return null;
     }
 
@@ -125,9 +119,9 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
 
     // Step 2: Get where that variation starts (e.g., "alpha3")
     const requiredStartPosition = firstLetterVariation.startPosition;
-    console.log(`[RandomSequenceGenerator] First letter ${firstLetter} starts at: ${requiredStartPosition}`);
 
-    // Step 3: Find Type 6 static letters at that position
+    // Step 3: Validate that a Type 6 static letter exists at that position
+    // (The start position will be derived, not stored as a beat)
     const validStartPositions = allPictographs.filter((p) => {
       return (
         this.startPositionValidator.isValidStartPosition(p) &&
@@ -136,8 +130,6 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       );
     });
 
-    console.log(`[RandomSequenceGenerator] Found ${validStartPositions.length} Type 6 static letters at ${requiredStartPosition}`);
-
     if (validStartPositions.length === 0) {
       console.warn(
         `[RandomSequenceGenerator] No Type 6 static letter found at position ${requiredStartPosition} for letter ${firstLetter}`
@@ -145,28 +137,18 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       return null;
     }
 
-    // Step 4: Randomly pick a static start position
-    const startPictograph = this.pickRandom(validStartPositions);
-    if (!startPictograph) return null;
-
-    // Convert start position to step (beat 1)
-    const startStep = this.stepConverter.convertToStep(
-      startPictograph,
+    // Step 4: Convert first letter variation to beat 1
+    // (Start position will be derived from beat 1's startPosition)
+    const firstLetterStep = this.stepConverter.convertToStep(
+      firstLetterVariation,
       1,
       gridMode
     );
 
-    // Convert first letter variation to step (beat 2)
-    const firstLetterStep = this.stepConverter.convertToStep(
-      firstLetterVariation,
-      2,
-      gridMode
-    );
-
-    // Initialize walk state with both start position and first letter
+    // Initialize walk state with first letter only
     const state: RandomWalkState = {
-      steps: [startStep, firstLetterStep],
-      pictographs: [startPictograph, firstLetterVariation],
+      steps: [firstLetterStep],
+      pictographs: [firstLetterVariation],
       letterIndex: 1, // Start from second letter (index 1) since first is already placed
     };
 
@@ -185,6 +167,9 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       );
 
       if (!success) {
+        console.warn(
+          `[RandomSequenceGenerator] Failed at letter ${state.letterIndex}/${letters.length}: ${letters[state.letterIndex]}`
+        );
         return null; // Failed to find valid next step
       }
 
@@ -193,7 +178,6 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
 
     // Build final sequence
     const sequence = this.buildSequence(state.steps, gridMode);
-    console.log(`[RandomSequenceGenerator] ✅ Successfully generated sequence with ${sequence.steps.length} steps`);
 
     // Apply LOOP extension if circular is required
     if (constraints?.requiresCircular && !sequence.isCircular) {
@@ -222,12 +206,12 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
 
     // Get all variations for this letter
     const variations = allPictographs.filter((p) => p.letter === letter);
-    console.log(`[RandomSequenceGenerator] Letter ${letter} at position ${state.letterIndex}: ${variations.length} total variations`);
 
     // Filter by position continuity and constraints
+    const lastEndPosition = lastPictograph.endPosition;
+
     let validOptions = variations.filter((pictograph) => {
       // Check position continuity: next beat must start where last beat ended
-      const lastEndPosition = lastPictograph.endPosition;
       const nextStartPosition = pictograph.startPosition;
 
       if (lastEndPosition !== nextStartPosition) {
@@ -238,10 +222,15 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       return this.meetsConstraints(pictograph, constraints);
     });
 
-    console.log(`[RandomSequenceGenerator] Letter ${letter}: ${validOptions.length} valid options after filtering`);
-
     if (validOptions.length === 0) {
-      console.warn(`[RandomSequenceGenerator] No valid options for letter ${letter} at position ${state.letterIndex} - path blocked`);
+      console.warn(
+        `[RandomSequenceGenerator] No valid options for ${letter}.`,
+        `\n  Last beat: ${lastPictograph.letter} ended at: ${lastEndPosition}`,
+        `\n  Need ${letter} starting at: ${lastEndPosition}`,
+        `\n  Total ${letter} variations: ${variations.length}`,
+        `\n  After position filter: ${validOptions.length}`,
+        `\n  Available ${letter} start positions:`, variations.map(v => v.startPosition).join(', ')
+      );
       return false; // No valid options - this path is blocked
     }
 
@@ -332,15 +321,23 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       };
     });
 
-    return {
+    // Extract word from step letters (all beats are actual letters now)
+    const word = stepsWithOrientations
+      .map((step) => step.letter || "")
+      .filter((letter) => letter)
+      .join("");
+
+    return createSequenceData({
       steps: stepsWithOrientations,
+      name: word,
+      word: word,
       gridMode,
       isCircular: false,
       metadata: {
         generatedAt: new Date().toISOString(),
         generationMethod: "random-walk",
       },
-    };
+    });
   }
 
   private async applyCircularExtension(

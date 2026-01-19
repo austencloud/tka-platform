@@ -9,6 +9,7 @@ New UX flow (preferences-first):
 This component orchestrates the UI phases; business logic lives in services.
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
   import type { SpellTabState } from "../state/spell-tab-state.svelte";
   import { container } from "$lib/shared/di";
@@ -18,10 +19,12 @@ This component orchestrates the UI phases; business logic lives in services.
   import { UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
+  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import PreferencesPage from "./PreferencesPage.svelte";
   import ResultsPage from "./ResultsPage.svelte";
   import { getVariationState, type ScoredVariation } from "../state/variation-state.svelte";
-  import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import SpellResultsView from "./SpellResultsView.svelte";
+  import { loadSpellState, saveSpellState } from "../state/spell-persistence.svelte";
 
   // Props
   let {
@@ -64,6 +67,65 @@ This component orchestrates the UI phases; business logic lives in services.
   // Current generated sequence
   let currentSequence = $state<SequenceData | null>(null);
 
+  // Load persisted state on mount
+  onMount(() => {
+    const persisted = loadSpellState();
+    if (persisted.currentSequence) {
+      // Derive start position if missing
+      const sequenceWithStart = deriveStartPosition(persisted.currentSequence);
+      currentSequence = sequenceWithStart;
+      spellState.setWizardPhase(persisted.wizardPhase);
+      spellState.setInputWord(persisted.inputWord);
+      spellState.setExpandedWord(persisted.expandedWord);
+    }
+  });
+
+  // Auto-save state when sequence or phase changes
+  $effect(() => {
+    const seq = currentSequence;
+    const phase = spellState.wizardPhase;
+    const word = spellState.inputWord;
+    const expanded = spellState.expandedWord;
+    const prefs = spellState.preferences;
+    const hasGenerated = spellState.hasGeneratedOnce;
+
+    saveSpellState({
+      currentSequence: seq,
+      wizardPhase: phase,
+      inputWord: word,
+      expandedWord: expanded,
+      preferences: prefs,
+      hasGeneratedOnce: hasGenerated,
+    });
+  });
+
+  /**
+   * Derive start position from first step if missing
+   */
+  function deriveStartPosition(sequence: SequenceData): SequenceData {
+    if (sequence.startPosition || !sequence.steps?.length) {
+      return sequence;
+    }
+
+    const firstStep = sequence.steps[0];
+    if (!firstStep) return sequence;
+
+    // Create start position from first step's starting state
+    const startPosition: StartPositionData = {
+      blueStartPosition: firstStep.blueStartPosition,
+      redStartPosition: firstStep.redStartPosition,
+      blueStartOrientation: firstStep.blueMotion?.startOrientation ?? 0,
+      redStartOrientation: firstStep.redMotion?.startOrientation ?? 0,
+      letter: firstStep.letter,
+      gridMode: sequence.gridMode,
+    };
+
+    return {
+      ...sequence,
+      startPosition,
+    };
+  }
+
   // ============================================================================
   // PREFERENCES PHASE
   // ============================================================================
@@ -99,7 +161,7 @@ This component orchestrates the UI phases; business logic lives in services.
       const orch = getOrchestrator();
       const generator = await getRandomGenerator();
 
-      // Parse word to get expanded letters
+      // Parse word WITH bridge letters (needed for incompatible transitions like B→O)
       const parseResult = await orch.parseWord(spellState.inputWord);
       if (!parseResult.success || !parseResult.expandedLetters) {
         spellState.setError(parseResult.error || "Could not parse word");
@@ -107,6 +169,7 @@ This component orchestrates the UI phases; business logic lives in services.
         return;
       }
 
+      const letters = parseResult.expandedLetters;
       spellState.setExpandedWord(parseResult.expandedWord || spellState.inputWord);
 
       // Build constraints from preferences
@@ -114,12 +177,17 @@ This component orchestrates the UI phases; business logic lives in services.
       const constraintBuilder = await loader.getVariationConstraintBuilder();
       const constraints = constraintBuilder.buildConstraints(
         spellState.preferences,
-        parseResult.expandedLetters
+        letters
       );
+
+      console.log("[SpellPanel] Input word:", spellState.inputWord);
+      console.log("[SpellPanel] Expanded word:", parseResult.expandedWord);
+      console.log("[SpellPanel] Expanded letters:", letters);
+      console.log("[SpellPanel] Constraints:", constraints);
 
       // Generate ONE random valid sequence
       const sequence = await generator.generateRandomSequence(
-        parseResult.expandedLetters,
+        letters,
         {
           gridMode: spellState.selectedGridMode,
           constraints,
@@ -133,7 +201,13 @@ This component orchestrates the UI phases; business logic lives in services.
       }
 
       // Success! Show the result
-      currentSequence = sequence;
+      console.log("[SpellPanel] Generated sequence:", sequence);
+      console.log("[SpellPanel] Sequence steps:", sequence.steps);
+      console.log("[SpellPanel] First step:", sequence.steps[0]);
+
+      // Derive start position if missing
+      const sequenceWithStart = deriveStartPosition(sequence);
+      currentSequence = sequenceWithStart;
       spellState.markHasGeneratedOnce();
       spellState.setWizardPhase("results");
 
@@ -188,6 +262,15 @@ This component orchestrates the UI phases; business logic lives in services.
     if (sequenceState) {
       sequenceState.clearSequenceCompletely();
     }
+    // Clear persisted state
+    saveSpellState({
+      currentSequence: null,
+      wizardPhase: "preferences",
+      inputWord: "",
+      expandedWord: "",
+      preferences: spellState.preferences,
+      hasGeneratedOnce: false,
+    });
   }
 </script>
 
@@ -226,7 +309,10 @@ This component orchestrates the UI phases; business logic lives in services.
 
         <!-- Sequence Preview -->
         <div class="sequence-preview">
-          <AnimatorCanvas sequence={currentSequence} autoPlay={true} loop={true} />
+          <SpellResultsView
+            sequence={currentSequence}
+            autoPlayOnMount={true}
+          />
         </div>
 
         <div class="result-actions">
@@ -521,12 +607,18 @@ This component orchestrates the UI phases; business logic lives in services.
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
   }
 
+  .sequence-preview {
+    width: 100%;
+    flex: 1;
+    min-height: 600px;
+  }
+
   .result-actions {
     display: flex;
     flex-direction: column;
     gap: var(--settings-spacing-sm, 8px);
     width: 100%;
-    max-width: 400px;
+    max-width: 600px;
   }
 
   .action-button {

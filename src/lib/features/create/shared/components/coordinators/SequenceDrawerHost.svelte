@@ -461,6 +461,8 @@
   });
 
   // Sync panel open/close with URL
+  // Use a mounted flag to prevent reset during initial mount when state is settling
+  let hasMounted = false;
   let previousIsOpen = panelState.isShareHubPanelOpen;
   $effect(() => {
     const isOpen = panelState.isShareHubPanelOpen;
@@ -472,11 +474,21 @@
           isPlaying: animationPanelState.isPlaying,
           currentStep: animationPanelState.currentStep,
         });
-      } else if (!isOpen && previousIsOpen) {
+      } else if (!isOpen && previousIsOpen && hasMounted) {
+        // Only reset when panel actually closes (not during initial mount)
         urlManager.clearUrlState();
+        // Reset loaded sequence tracking so reopening triggers full reinitialization
+        lastLoadedSequenceId = null;
+        lastSequenceHash = null;
+        // Reset animation state to start
+        animationPanelState.reset();
       }
     }
     previousIsOpen = isOpen;
+    // Set mounted flag after first effect run
+    if (!hasMounted) {
+      hasMounted = true;
+    }
   });
 
   // Sync animation state changes to URL (without pushing new history)
@@ -692,7 +704,9 @@
 </script>
 
 {#if currentSequence}
-  <SequenceDrawer
+  <!-- Key forces remount when viewId changes, ensuring fresh animation state on reopen -->
+  {#key panelState.shareHubViewId}
+    <SequenceDrawer
     isOpen={panelState.isShareHubPanelOpen}
     sequence={currentSequence}
     mode="edit"
@@ -739,4 +753,5 @@
     onToggleBlue={handleToggleBlueMotion}
     onToggleRed={handleToggleRedMotion}
   />
+  {/key}
 {/if}

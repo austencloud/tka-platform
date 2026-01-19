@@ -30,6 +30,7 @@ import {
   type GridPosition,
 } from "../../../../shared/pictograph/grid/domain/enums/grid-enums";
 import { createPersistenceHelper } from "../../../../shared/state/utils/persistent-state";
+import { getCreateModuleStateRef } from "./create-module-state-ref.svelte";
 
 /**
  * Target hand for transforms - which hand(s) to apply operations to
@@ -104,7 +105,7 @@ export interface PanelCoordinationState {
   set isAnimationPanelOpen(value: boolean);
   get isAnimating(): boolean;
 
-  openAnimationPanel(selectionState?: { clearSelection: () => void }): void;
+  openAnimationPanel(): void;
   closeAnimationPanel(): void;
   setAnimating(animating: boolean): void;
 
@@ -116,6 +117,8 @@ export interface PanelCoordinationState {
   // Share Hub Panel State (Multi-format sharing)
   get isShareHubPanelOpen(): boolean;
   get requestedShareHubFormat(): "animation" | "static" | null;
+  /** View ID that increments on each open - use with {#key} to force component remount */
+  get shareHubViewId(): number;
 
   openShareHubPanel(format?: "animation" | "static"): void;
   closeShareHubPanel(): void;
@@ -275,6 +278,8 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   // Share Hub panel state (Multi-format sharing - persisted)
   let isShareHubPanelOpen = $state(shareHubPanelPersistence.load());
   let requestedShareHubFormat = $state<"animation" | "static" | null>(null);
+  // View ID increments on each open - forces component remount to reinitialize animation
+  let shareHubViewId = $state(0);
 
   // Save to Library panel state
   let isSaveToLibraryPanelOpen = $state(false);
@@ -460,10 +465,13 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       return isAnimating;
     },
 
-    openAnimationPanel(selectionState?: { clearSelection: () => void }) {
+    openAnimationPanel() {
       closeAllPanels();
       // Clear beat editor selection when opening animation panel
-      selectionState?.clearSelection();
+      const moduleState = getCreateModuleStateRef();
+      if (moduleState?.sequenceState) {
+        moduleState.sequenceState.clearSelection();
+      }
       isAnimationPanelOpen = true;
     },
 
@@ -502,9 +510,14 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     get requestedShareHubFormat() {
       return requestedShareHubFormat;
     },
+    get shareHubViewId() {
+      return shareHubViewId;
+    },
 
     openShareHubPanel(format?: "animation" | "static") {
       closeAllPanels();
+      // Increment viewId to force component remount on reopen
+      shareHubViewId++;
       requestedShareHubFormat = format ?? null;
       isShareHubPanelOpen = true;
     },
