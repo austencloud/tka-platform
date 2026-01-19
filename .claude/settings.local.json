@@ -287,7 +287,10 @@
       "WebFetch(domain:walterwrites.ai)",
       "WebFetch(domain:www.hanalarockwriting.com)",
       "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"Viewer3DModule.svelte\")",
-      "mcp__tka-pictograph__set_preferences"
+      "mcp__tka-pictograph__set_preferences",
+      "WebFetch(domain:sdk.vercel.ai)",
+      "Bash(cmd.exe /c \"cd /d F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE && npm install @ai-sdk/openai 2>&1\")",
+      "WebFetch(domain:docs.nvidia.com)"
     ]
   },
   "enabledMcpjsonServers": [
