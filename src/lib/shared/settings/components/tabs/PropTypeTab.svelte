@@ -168,8 +168,8 @@
     propPresets = newPresets;
     selectedPresetIndex = index;
 
-    const presetsToStore = newPresets.filter((p): p is PropPreset => p !== null);
-    onUpdate?.({ key: "propPresets", value: presetsToStore });
+    // Store full array with nulls to preserve slot indices
+    onUpdate?.({ key: "propPresets", value: newPresets });
     onUpdate?.({ key: "selectedPresetIndex", value: index });
   }
 
@@ -185,8 +185,8 @@
       onUpdate?.({ key: "selectedPresetIndex", value: -1 });
     }
 
-    const presetsToStore = newPresets.filter((p): p is PropPreset => p !== null);
-    onUpdate?.({ key: "propPresets", value: presetsToStore });
+    // Store full array with nulls to preserve slot indices
+    onUpdate?.({ key: "propPresets", value: newPresets });
   }
 
   function updateCurrentPreset() {
@@ -204,8 +204,8 @@
     newPresets[selectedPresetIndex] = updatedPreset;
     propPresets = newPresets;
 
-    const presetsToStore = newPresets.filter((p): p is PropPreset => p !== null);
-    onUpdate?.({ key: "propPresets", value: presetsToStore });
+    // Store full array with nulls to preserve slot indices
+    onUpdate?.({ key: "propPresets", value: newPresets });
   }
 
   // CatDog mode

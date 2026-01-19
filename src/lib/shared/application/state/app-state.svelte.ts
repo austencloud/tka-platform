@@ -43,15 +43,15 @@ import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 // Default prop presets for new users (10 commonly-used configurations)
 const DEFAULT_PROP_PRESETS: PropPreset[] = [
   { bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false },
-  { bluePropType: PropType.CLUB, redPropType: PropType.CLUB, catDogMode: false },
   { bluePropType: PropType.FAN, redPropType: PropType.FAN, catDogMode: false },
+  { bluePropType: PropType.CLUB, redPropType: PropType.CLUB, catDogMode: false },
   { bluePropType: PropType.BUUGENG, redPropType: PropType.BUUGENG, catDogMode: false },
-  { bluePropType: PropType.HAND, redPropType: PropType.HAND, catDogMode: false },
-  { bluePropType: PropType.TRIAD, redPropType: PropType.TRIAD, catDogMode: false },
   { bluePropType: PropType.MINIHOOP, redPropType: PropType.MINIHOOP, catDogMode: false },
-  { bluePropType: PropType.POI, redPropType: PropType.POI, catDogMode: false },
-  { bluePropType: PropType.TRIQUETRA, redPropType: PropType.TRIQUETRA, catDogMode: false },
-  { bluePropType: PropType.SWORD, redPropType: PropType.SWORD, catDogMode: false },
+  { bluePropType: PropType.TRIAD, redPropType: PropType.TRIAD, catDogMode: false },
+  { bluePropType: PropType.DOUBLESTAR, redPropType: PropType.DOUBLESTAR, catDogMode: false },
+  { bluePropType: PropType.BIGDOUBLESTAR, redPropType: PropType.BIGDOUBLESTAR, catDogMode: false },
+  { bluePropType: PropType.QUIAD, redPropType: PropType.QUIAD, catDogMode: false },
+  { bluePropType: PropType.STAFF, redPropType: PropType.FAN, catDogMode: true },
 ];
 
 // Default settings returned when services aren't initialized

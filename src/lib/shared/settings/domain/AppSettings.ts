@@ -34,7 +34,7 @@ export interface AppSettings {
   catDogMode?: boolean; // Whether CatDog Mode is enabled in prop type settings
   blueBuugengFlipped?: boolean; // Flip buugeng for blue hand (asymmetric prop)
   redBuugengFlipped?: boolean; // Flip buugeng for red hand (asymmetric prop)
-  propPresets?: PropPreset[]; // Up to 10 saved prop configurations
+  propPresets?: (PropPreset | null)[]; // Up to 10 saved prop configurations (nulls preserve slot indices)
   selectedPresetIndex?: number; // Index of currently active preset (0-9)
   backupFrequency?: string;
   enableFades?: boolean;

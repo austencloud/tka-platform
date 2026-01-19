@@ -115,11 +115,13 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   dashboard: true,
   create: true,
   discover: true,
+  community: false, // Global TKA community map (unreleased)
   feedback: true,
   premium: true, // Premium upsell shown to non-premium users
   // inbox module retired - messages/notifications accessible via Dashboard widget drawer
   // Unreleased modules
   learn: false,
+  TIKA: false, // TIKA AI tutor (admin-only for now)
   compose: false,
   train: false,
   "ml-training": false,
@@ -134,5 +136,4 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   "poi-lab": false, // Poi Lab internal tool (poi physics constraints)
   "background-builder": false, // Background builder internal tool
   "infinite-worlds": false, // Infinite worlds procedural generation (admin-only)
-  museum: false, // Museum navigator - walkable 3D gallery (admin-only)
 };
