@@ -89,16 +89,23 @@ Design variants supported:
    * Overall progress as percentage (0-100) across entire bar
    * This moves at CONSTANT VISUAL SPEED regardless of beat durations
    *
-   * IMPORTANT: currentStep is 1-based (1.0 = beat 1, 2.0 = beat 2)
-   * Must convert to 0-based for progress calculation
-   * Shows progress even when paused by clamping to valid range
+   * IMPORTANT: currentStep is 1-based (1.0 = beat 1 starting, 2.0 = beat 2 starting)
+   * - currentStep = 0: at start position, before any animation (0% progress)
+   * - currentStep = 1.0: beat 1 just starting (0% progress)
+   * - currentStep = 1.5: beat 1 halfway through (~16.7% for 3-beat sequence)
+   * - currentStep = 2.0: beat 2 just starting (~33.3% for 3-beat sequence)
+   *
+   * Formula: (currentStep - 1) / totalSteps converts to 0-based progress
    */
   const overallProgressPercent = $derived.by(() => {
     if (steps.length === 0) return 0;
-    // Clamp currentStep to valid range [0, steps.length]
-    const clampedStep = Math.max(0, Math.min(steps.length, currentStep));
+    // Convert 1-based beat number to 0-based progress
+    // currentStep=0 or 1 means at/before beat 1 start = 0% progress
+    const zeroBasedProgress = currentStep <= 0 ? 0 : currentStep - 1;
+    // Clamp to valid range [0, totalSteps]
+    const clampedProgress = Math.max(0, Math.min(steps.length, zeroBasedProgress));
     // Calculate progress (0-100%)
-    return (clampedStep / steps.length) * 100;
+    return (clampedProgress / steps.length) * 100;
   });
 
   /**
@@ -182,11 +189,14 @@ Design variants supported:
 
   /**
    * ARIA label for screen readers
+   * currentStep is 1-based: 1.5 means beat 1, halfway through
    */
   const ariaLabel = $derived.by(() => {
     if (steps.length === 0) return "Sequence progress: no sequence loaded";
-    const currentBeat = Math.floor(currentStep);
-    const progress = Math.round((currentStep / steps.length) * 100);
+    // currentStep is 1-based, so Math.floor gives the current beat number
+    const currentBeat = currentStep <= 0 ? 0 : Math.floor(currentStep);
+    // Use the same 0-based progress calculation as overallProgressPercent
+    const progress = Math.round(overallProgressPercent);
     return `Sequence progress: beat ${currentBeat} of ${steps.length}, ${progress}% complete`;
   });
 </script>
@@ -200,7 +210,7 @@ Design variants supported:
     data-variant={variant}
     role="slider"
     aria-label={ariaLabel}
-    aria-valuenow={Math.round((currentStep / steps.length) * 100)}
+    aria-valuenow={Math.round(overallProgressPercent)}
     aria-valuemin={0}
     aria-valuemax={100}
     tabindex={onSeek ? 0 : -1}

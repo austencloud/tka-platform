@@ -31,11 +31,19 @@ Design:
   /**
    * Progress within current loop (0-1)
    * Wraps using modulo so progress resets on each loop iteration
+   *
+   * IMPORTANT: currentStep is 1-based (1.0 = beat 1 starting, 2.0 = beat 2 starting)
+   * - currentStep = 0 or 1: at/before beat 1 start = 0% progress
+   * - currentStep = 2.0: beat 2 just starting (33% for 3-beat sequence)
+   *
+   * Formula: (currentStep - 1) / totalSteps converts to 0-based progress
    */
   const progress = $derived.by(() => {
     if (totalSteps <= 0) return 0;
-    // Use modulo to wrap progress on loop (e.g., step 5 of 4-step sequence = 25% progress)
-    const normalizedStep = currentStep % totalSteps;
+    // Convert 1-based beat number to 0-based progress before modulo
+    const zeroBasedStep = currentStep <= 0 ? 0 : currentStep - 1;
+    // Use modulo to wrap progress on loop
+    const normalizedStep = zeroBasedStep % totalSteps;
     return Math.max(0, Math.min(1, normalizedStep / totalSteps));
   });
 
@@ -46,10 +54,13 @@ Design:
 
   /**
    * Format for screen readers
+   * currentStep is 1-based: 1.5 means beat 1, halfway through
    */
   const ariaLabel = $derived.by(() => {
     if (totalSteps <= 0) return "Sequence progress: no sequence loaded";
-    const step = Math.floor(currentStep % totalSteps) + 1; // 1-indexed for humans
+    // Convert to 0-based, modulo for looping, then back to 1-based for display
+    const zeroBasedStep = currentStep <= 0 ? 0 : currentStep - 1;
+    const step = Math.floor(zeroBasedStep % totalSteps) + 1;
     return `Sequence progress: step ${step} of ${totalSteps}`;
   });
 </script>
