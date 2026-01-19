@@ -12,6 +12,8 @@ export interface Toast {
   type: ToastType;
   duration: number;
   timestamp: number;
+  /** Optional image URL (data URL or http) for thumbnail preview */
+  imageUrl?: string;
 }
 
 // Reactive toast queue
@@ -19,31 +21,45 @@ export const toastQueue = $state<Toast[]>([]);
 
 let toastIdCounter = 0;
 
+export interface ShowToastOptions {
+  message: string;
+  type?: ToastType;
+  duration?: number;
+  imageUrl?: string;
+}
+
 /**
  * Show a toast notification
  */
 export function showToast(
-  message: string,
+  messageOrOptions: string | ShowToastOptions,
   type: ToastType = "info",
   duration: number = 3000
 ): string {
   const id = `toast_${++toastIdCounter}_${Date.now()}`;
 
+  // Handle both string and options object
+  const options: ShowToastOptions =
+    typeof messageOrOptions === "string"
+      ? { message: messageOrOptions, type, duration }
+      : messageOrOptions;
+
   const toast: Toast = {
     id,
-    message,
-    type,
-    duration,
+    message: options.message,
+    type: options.type ?? "info",
+    duration: options.duration ?? 3000,
     timestamp: Date.now(),
+    imageUrl: options.imageUrl,
   };
 
   toastQueue.push(toast);
 
   // Auto-remove after duration
-  if (duration > 0) {
+  if (toast.duration > 0) {
     setTimeout(() => {
       removeToast(id);
-    }, duration);
+    }, toast.duration);
   }
 
   return id;
@@ -76,4 +92,7 @@ export const toast = {
     showToast(message, "warning", duration),
   error: (message: string, duration?: number) =>
     showToast(message, "error", duration),
+  /** Show a success toast with an image thumbnail */
+  image: (message: string, imageUrl: string, duration: number = 4000) =>
+    showToast({ message, type: "success", imageUrl, duration }),
 };

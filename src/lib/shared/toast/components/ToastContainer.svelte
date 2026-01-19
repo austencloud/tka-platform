@@ -51,18 +51,30 @@
       {@const config = getConfig(toast.type)}
       <div
         class="toast"
+        class:has-image={toast.imageUrl}
         style="--toast-color: {config.color}; --toast-bg: {config.bg}"
         role="alert"
       >
-        <i class="fas {config.icon} toast-icon" aria-hidden="true"></i>
-        <span class="toast-message">{toast.message}</span>
-        <button
-          class="toast-close"
-          onclick={() => removeToast(toast.id)}
-          aria-label="Dismiss"
-        >
-          <i class="fas fa-times" aria-hidden="true"></i>
-        </button>
+        {#if toast.imageUrl}
+          <img
+            src={toast.imageUrl}
+            alt="Captured preview"
+            class="toast-thumbnail"
+          />
+        {/if}
+        <div class="toast-content">
+          <div class="toast-header">
+            <i class="fas {config.icon} toast-icon" aria-hidden="true"></i>
+            <span class="toast-message">{toast.message}</span>
+            <button
+              class="toast-close"
+              onclick={() => removeToast(toast.id)}
+              aria-label="Dismiss"
+            >
+              <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
       </div>
     {/each}
   </div>
@@ -92,6 +104,41 @@
     box-shadow: 0 4px 20px var(--theme-shadow, var(--theme-shadow));
     animation: slideIn var(--duration-normal) ease-out;
     pointer-events: auto;
+  }
+
+  /* Toast with image - vertical layout */
+  .toast.has-image {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px;
+    max-width: 280px;
+  }
+
+  .toast-thumbnail {
+    width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    margin-bottom: 8px;
+  }
+
+  .toast-content {
+    display: contents;
+  }
+
+  .has-image .toast-content {
+    display: block;
+  }
+
+  .toast-header {
+    display: contents;
+  }
+
+  .has-image .toast-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   @keyframes slideIn {
