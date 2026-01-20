@@ -463,23 +463,6 @@
       animation: none;
     }
     /* Disable local keyframe animations */
-    [style*="fadeInOut"] {
-      animation: none;
-    }
-    [style*="letterPopIntense"] {
-      animation: none;
-    }
-    [style*="letterFadeSubtle"] {
-      animation: none;
-    }
-    [style*="letterGlowOnly"] {
-      animation: none;
-    }
-    [style*="letterMinimal"] {
-      animation: none;
-    }
-    [style*="letterWave"] {
-      animation: none;
-    }
+
   }
 </style>

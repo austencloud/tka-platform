@@ -14,6 +14,7 @@
   import { onMount } from "svelte";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import { getVideoCache } from "$lib/shared/video";
+  import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
 
   // Video cache for instant playback
   const videoCache = getVideoCache();
@@ -111,11 +112,16 @@
   let curationIndex = $state(0);
   let curationSaving = $state(false);
 
-  // Quick performers (pinned for fast access)
-  const QUICK_PERFORMERS: UserProfile[] = [
+  // Quick performers (pinned for fast access, stored in Firestore)
+  const DEFAULT_QUICK_PERFORMERS: UserProfile[] = [
     { id: "PBp3GSBO6igCKPwJyLZNmVEmamI3", displayName: "Austen" },
     { id: "40ovmSoxdRNouOIeQrhDFSwkDEX2", displayName: "Skylar" },
   ];
+  let quickPerformers = $state<UserProfile[]>([...DEFAULT_QUICK_PERFORMERS]);
+  let showAddPerformer = $state(false);
+
+  // Keyboard shortcut letters for performers (dynamic based on list)
+  const PERFORMER_KEYS = 'asdfgh';
 
   // === SEQUENCE LINKING ===
   let linkingMode = $state(false);
@@ -317,7 +323,7 @@
   function handleCurationKeydown(e: KeyboardEvent) {
     if (!curationMode || curationSaving) return;
 
-    // Number keys 1-5 for categories
+    // Number keys 1-N for categories (dynamic based on categories.length)
     const num = parseInt(e.key);
     if (num >= 1 && num <= categories.length) {
       e.preventDefault();
@@ -325,15 +331,11 @@
       return;
     }
 
-    // Letter shortcuts for quick performers
-    if (e.key.toLowerCase() === "a") {
+    // Letter shortcuts for quick performers (A, S, D, F, G, H...)
+    const letterIndex = PERFORMER_KEYS.indexOf(e.key.toLowerCase());
+    if (letterIndex >= 0 && letterIndex < quickPerformers.length) {
       e.preventDefault();
-      setCurationPerformer(QUICK_PERFORMERS[0]); // Austen
-      return;
-    }
-    if (e.key.toLowerCase() === "s") {
-      e.preventDefault();
-      setCurationPerformer(QUICK_PERFORMERS[1]); // Skylar
+      setCurationPerformer(quickPerformers[letterIndex]);
       return;
     }
 
@@ -648,6 +650,58 @@
     showAddCategory = false;
   }
 
+  // === QUICK PERFORMERS FIRESTORE ===
+
+  async function loadQuickPerformers() {
+    try {
+      const { doc, getDoc } = await import("firebase/firestore");
+      const db = await getFirestoreInstance();
+
+      const docRef = doc(db, "config", "quickPerformers");
+      const snapshot = await getDoc(docRef);
+
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data.performers && Array.isArray(data.performers)) {
+          quickPerformers = data.performers;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load quick performers, using defaults:", e);
+    }
+  }
+
+  async function saveQuickPerformers() {
+    try {
+      const { doc, setDoc } = await import("firebase/firestore");
+      const db = await getFirestoreInstance();
+
+      await setDoc(doc(db, "config", "quickPerformers"), {
+        performers: quickPerformers.map(p => ({ id: p.id, displayName: p.displayName })),
+        updatedAt: new Date(),
+      });
+    } catch (e) {
+      console.error("Failed to save quick performers:", e);
+    }
+  }
+
+  async function addQuickPerformer(user: { uid: string; displayName: string }) {
+    // Don't add duplicates
+    if (quickPerformers.some(p => p.id === user.uid)) {
+      showAddPerformer = false;
+      return;
+    }
+
+    quickPerformers = [...quickPerformers, { id: user.uid, displayName: user.displayName }];
+    await saveQuickPerformers();
+    showAddPerformer = false;
+  }
+
+  async function removeQuickPerformer(id: string) {
+    quickPerformers = quickPerformers.filter(p => p.id !== id);
+    await saveQuickPerformers();
+  }
+
   async function searchUsers(query: string) {
     if (!query.trim() || query.length < 2) {
       userProfiles = [];
@@ -830,8 +884,8 @@
   }
 
   onMount(async () => {
-    // Load categories first (for filter dropdowns)
-    await loadCategories();
+    // Load categories and quick performers (for filter dropdowns and curation)
+    await Promise.all([loadCategories(), loadQuickPerformers()]);
 
     await loadVideos();
 
@@ -1466,7 +1520,7 @@
     <div class="curation-actions">
       <!-- Category buttons -->
       <div class="action-section">
-        <span class="section-label">Category (1-5)</span>
+        <span class="section-label">Category</span>
         <div class="action-buttons">
           {#each categories as cat, i}
             <button
@@ -1480,25 +1534,92 @@
               {cat.label}
             </button>
           {/each}
+          {#if !showAddCategory}
+            <button
+              class="action-btn add-btn"
+              type="button"
+              onclick={() => showAddCategory = true}
+              title="Add category"
+            >
+              <i class="fas fa-plus" aria-hidden="true"></i>
+            </button>
+          {/if}
         </div>
+        {#if showAddCategory}
+          <div class="add-category-inline">
+            <input
+              type="text"
+              placeholder="Category name..."
+              bind:value={newCategoryLabel}
+              onkeydown={(e) => e.key === "Enter" && addCategory()}
+            />
+            <input
+              type="color"
+              bind:value={newCategoryColor}
+              title="Category color"
+            />
+            <button class="save-btn" onclick={addCategory} disabled={!newCategoryLabel.trim()}>
+              Add
+            </button>
+            <button class="cancel-btn" onclick={() => showAddCategory = false}>
+              Cancel
+            </button>
+          </div>
+        {/if}
       </div>
 
       <!-- Performer buttons -->
       <div class="action-section">
         <span class="section-label">Performer</span>
         <div class="action-buttons">
-          {#each QUICK_PERFORMERS as performer, i}
+          {#each quickPerformers as performer, i}
             <button
               class="action-btn performer-action"
               class:active={currentCurationVideo.performerId === performer.id}
               onclick={() => setCurationPerformer(performer)}
               disabled={curationSaving}
             >
-              <span class="key-hint">{i === 0 ? "A" : "S"}</span>
+              <span class="key-hint">{PERFORMER_KEYS[i]?.toUpperCase() || ''}</span>
               {performer.displayName}
+              <button
+                class="remove-performer-btn"
+                type="button"
+                onclick={(e) => { e.stopPropagation(); removeQuickPerformer(performer.id); }}
+                title="Remove performer"
+              >
+                <i class="fas fa-times" aria-hidden="true"></i>
+              </button>
             </button>
           {/each}
+          {#if !showAddPerformer}
+            <button
+              class="action-btn add-btn"
+              type="button"
+              onclick={() => showAddPerformer = true}
+              title="Add performer"
+            >
+              <i class="fas fa-plus" aria-hidden="true"></i>
+            </button>
+          {/if}
         </div>
+        {#if showAddPerformer}
+          <div class="add-performer-inline">
+            <UserSearchInput
+              onSelect={(user) => addQuickPerformer(user)}
+              placeholder="Search user..."
+              autofocus={true}
+              inlineResults={true}
+              excludeUserIds={quickPerformers.map(p => p.id)}
+            />
+            <button
+              class="cancel-add-btn"
+              type="button"
+              onclick={() => showAddPerformer = false}
+            >
+              Cancel
+            </button>
+          </div>
+        {/if}
       </div>
 
       <!-- Skip button -->
@@ -2666,7 +2787,7 @@
     position: fixed;
     inset: 0;
     z-index: 2000;
-    background: var(--theme-panel-bg, #0a0a12);
+    background: #0a0a12; /* Solid, no transparency */
     display: flex;
     flex-direction: column;
     padding: 16px;
@@ -2970,6 +3091,134 @@
     width: 16px;
     height: 16px;
     border-width: 2px;
+  }
+
+  /* Add/Remove buttons for curation */
+  .action-btn.add-btn {
+    min-width: 48px;
+    padding: 12px;
+    background: transparent;
+    border-style: dashed;
+  }
+
+  .action-btn.add-btn:hover {
+    border-style: solid;
+    border-color: var(--theme-accent);
+    color: var(--theme-accent);
+  }
+
+  .performer-action {
+    position: relative;
+  }
+
+  .remove-performer-btn {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(239, 68, 68, 0.8);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .performer-action:hover .remove-performer-btn {
+    opacity: 1;
+  }
+
+  .remove-performer-btn:hover {
+    background: #ef4444;
+  }
+
+  /* Inline add forms for curation */
+  .add-performer-inline,
+  .add-category-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    max-width: 300px;
+  }
+
+  .add-category-inline {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .add-category-inline input[type="text"] {
+    flex: 1;
+    min-width: 120px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--theme-stroke);
+    background: var(--theme-panel-bg);
+    color: var(--theme-text);
+    font-size: 13px;
+  }
+
+  .add-category-inline input[type="color"] {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    border: 1px solid var(--theme-stroke);
+    cursor: pointer;
+    padding: 2px;
+  }
+
+  .add-category-inline .save-btn,
+  .add-category-inline .cancel-btn {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .add-category-inline .save-btn {
+    background: var(--theme-accent);
+    color: white;
+  }
+
+  .add-category-inline .save-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .add-category-inline .cancel-btn {
+    background: transparent;
+    color: var(--theme-text-dim);
+    border: 1px solid var(--theme-stroke);
+  }
+
+  .add-performer-inline .cancel-add-btn {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--theme-stroke);
+    background: transparent;
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .add-performer-inline .cancel-add-btn:hover {
+    border-color: var(--theme-text-dim);
+    color: var(--theme-text);
   }
 
   @media (max-width: 600px) {

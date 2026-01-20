@@ -7,6 +7,7 @@
 import { createContainer } from "iti";
 import { LeaderboardManager } from "$lib/shared/community/services/implementations/LeaderboardManager";
 import { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
+import { UserSearcher } from "$lib/shared/user-search/services/implementations/UserSearcher";
 import { FollowingFeedProvider } from "$lib/features/dashboard/services/implementations/FollowingFeedProvider";
 import { LocationProvider } from "$lib/features/community/services/implementations/LocationProvider";
 import { UserLocationRepository } from "$lib/features/community/services/implementations/UserLocationRepository";
@@ -18,6 +19,7 @@ export const communityContainer = createContainer()
   .add({
     leaderboardManager: () => new LeaderboardManager(),
     userRepository: () => new UserRepository(),
+    userSearcher: () => new UserSearcher(),
     followingFeedProvider: () => new FollowingFeedProvider(),
     locationProvider: () => new LocationProvider(),
     userLocationRepository: () => new UserLocationRepository(),

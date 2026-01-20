@@ -53,11 +53,21 @@
   }
 
   // Check if static file exists
+  // Note: HEAD requests don't work reliably in Vite dev (returns 200 for non-existent files)
+  // Instead, we fetch the file and check Content-Type to verify it's actually an image
   async function checkStaticFile(key: PictographFileKey): Promise<string | null> {
     const path = getStaticPictographPath(key);
     try {
-      const response = await fetch(path, { method: "HEAD" });
-      return response.ok ? path : null;
+      const response = await fetch(path, { method: "GET" });
+      if (!response.ok) return null;
+
+      // Verify it's actually an image (not an HTML error page)
+      const contentType = response.headers.get("Content-Type");
+      if (!contentType?.startsWith("image/")) {
+        return null;
+      }
+
+      return path;
     } catch {
       return null;
     }

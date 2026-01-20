@@ -2,7 +2,7 @@
 # Optimized for maximum performance and caching
 
 [build]
-  command = "corepack enable && pnpm install && pnpm run build"
+  command = "npm install && npm run build"
   publish = "build"
   functions = "netlify/functions"
 
@@ -16,7 +16,7 @@
 
 # Production (main/release branch) - Public release with limited modules
 [context.production]
-  command = "corepack enable && pnpm install && pnpm run build"
+  command = "npm install && npm run build"
   [context.production.environment]
     PUBLIC_ENVIRONMENT = "production"
     # Publicly released modules
@@ -37,7 +37,7 @@
 
 # Develop branch - Full feature preview for testing
 [context.develop]
-  command = "corepack enable && pnpm install && pnpm run build"
+  command = "npm install && npm run build"
   [context.develop.environment]
     PUBLIC_ENVIRONMENT = "development"
     # All modules enabled in dev
@@ -57,7 +57,7 @@
 
 # Deploy previews (PRs) - Same as develop
 [context.deploy-preview]
-  command = "corepack enable && pnpm install && pnpm run build"
+  command = "npm install && npm run build"
   [context.deploy-preview.environment]
     PUBLIC_ENVIRONMENT = "development"
     PUBLIC_ENABLE_CREATE_MODULE = "true"
@@ -75,7 +75,7 @@
 
 # Branch deploys (any other branch) - Same as develop
 [context.branch-deploy]
-  command = "corepack enable && pnpm install && pnpm run build"
+  command = "npm install && npm run build"
   [context.branch-deploy.environment]
     PUBLIC_ENVIRONMENT = "development"
     PUBLIC_ENABLE_CREATE_MODULE = "true"
