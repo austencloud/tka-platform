@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * MatrixRow
-   * A single row in the permission matrix
+   * A single row in the permission matrix (for tabs)
    */
 
   import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/FeatureFlag";
@@ -11,7 +11,6 @@
 
   interface Props {
     flag: FeatureFlagConfig;
-    indent?: boolean;
     parentRole?: UserRole;
     saving?: boolean;
     toggleLocked?: boolean;
@@ -22,7 +21,6 @@
 
   let {
     flag,
-    indent = false,
     parentRole,
     saving = false,
     toggleLocked = false,
@@ -58,18 +56,13 @@
   }
 </script>
 
-<div class="matrix-row" class:indent class:saving class:disabled={!flag.enabled}>
+<div class="matrix-row" class:saving class:disabled={!flag.enabled}>
   <!-- Feature info -->
   <div class="feature-cell">
     <div class="feature-icon" style="background: {style.color}18; color: {style.color}">
       <i class="fas {style.icon}" aria-hidden="true"></i>
     </div>
-    <div class="feature-info">
-      <span class="feature-name">{flag.name}</span>
-      {#if indent}
-        <span class="feature-type">Tab</span>
-      {/if}
-    </div>
+    <span class="feature-name">{flag.name}</span>
   </div>
 
   <!-- Role cells -->
@@ -136,11 +129,12 @@
 <style>
   .matrix-row {
     display: grid;
+    /* 6 columns: name | USER | PREM | TEST | ADMIN | toggle */
     grid-template-columns: 1fr repeat(4, 60px) 56px;
     gap: 4px;
     align-items: center;
     min-height: 48px;
-    padding: 6px 0;
+    padding: 6px 12px;
     border-radius: 8px;
     position: relative;
     transition: background var(--duration-fast) ease;
@@ -155,16 +149,6 @@
 
   .matrix-row:hover {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-  }
-
-  .matrix-row.indent {
-    padding-left: 20px;
-  }
-
-  .matrix-row.indent .feature-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 11px;
   }
 
   .matrix-row.disabled {
@@ -183,21 +167,14 @@
   }
 
   .feature-icon {
-    width: 34px;
-    height: 34px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    font-size: 13px;
+    border-radius: 6px;
+    font-size: 12px;
     flex-shrink: 0;
-  }
-
-  .feature-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
   }
 
   .feature-name {
@@ -207,17 +184,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .feature-type {
-    font-size: var(--font-size-compact, 12px);
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    flex-shrink: 0;
   }
 
   .role-cell {

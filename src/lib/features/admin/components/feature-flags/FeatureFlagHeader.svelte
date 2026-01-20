@@ -45,7 +45,7 @@
     </div>
   </div>
 
-  <div class="stats-bar">
+  <div class="stats-bar themed-scrollbar">
     <div class="stat">
       <span class="stat-value">{stats.total}</span>
       <span class="stat-label">{t("admin_features")}</span>

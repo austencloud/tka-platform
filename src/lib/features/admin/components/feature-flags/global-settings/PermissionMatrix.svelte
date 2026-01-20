@@ -16,6 +16,7 @@
   } from "../shared/feature-utils";
   import AdminSearchBox from "$lib/shared/admin/components/AdminSearchBox.svelte";
   import MatrixRow from "./MatrixRow.svelte";
+  import ModuleQuickBar from "./ModuleQuickBar.svelte";
 
   interface Props {
     onError: (message: string) => void;
@@ -25,25 +26,6 @@
 
   let searchQuery = $state("");
   let savingFlags = $state<Set<string>>(new Set());
-  let expandedModules = $state<Set<string>>(new Set());
-
-  function toggleModule(moduleId: string) {
-    const newSet = new Set(expandedModules);
-    if (newSet.has(moduleId)) {
-      newSet.delete(moduleId);
-    } else {
-      newSet.add(moduleId);
-    }
-    expandedModules = newSet;
-  }
-
-  function expandAll() {
-    expandedModules = new Set(filteredModules().map(m => m.module.id));
-  }
-
-  function collapseAll() {
-    expandedModules = new Set();
-  }
 
   // Get flags from service
   const featureFlags = $derived(featureFlagService.featureConfigs);
@@ -99,25 +81,18 @@
   function handleEnabledToggle(flag: FeatureFlagConfig) {
     updateFlag(flag, { enabled: !flag.enabled });
   }
+
+  // Core modules that cannot be disabled
+  const coreModuleIds = ["module:admin", "module:settings", "module:dashboard"];
 </script>
 
 <div class="permission-matrix">
   <div class="matrix-header">
     <div class="header-content">
       <h3>Permission Matrix</h3>
-      <p>Click role cells to change minimum required role. Toggle to enable/disable globally.</p>
+      <p>Use chips above to toggle modules. Click role cells below to set minimum access level for tabs.</p>
     </div>
     <div class="header-actions">
-      <div class="expand-controls">
-        <button type="button" class="expand-btn" onclick={expandAll} title="Expand all modules">
-          <i class="fas fa-expand-alt" aria-hidden="true"></i>
-          <span>Expand</span>
-        </button>
-        <button type="button" class="expand-btn" onclick={collapseAll} title="Collapse all modules">
-          <i class="fas fa-compress-alt" aria-hidden="true"></i>
-          <span>Collapse</span>
-        </button>
-      </div>
       <div class="search-box">
         <AdminSearchBox
           value={searchQuery}
@@ -128,10 +103,17 @@
     </div>
   </div>
 
-  <div class="matrix-container">
+  <!-- Quick toggle bar for modules (excludes core modules that can't be disabled) -->
+  <ModuleQuickBar
+    modules={filteredModules().map(m => m.module).filter(m => !coreModuleIds.includes(m.id))}
+    {savingFlags}
+    onToggle={handleEnabledToggle}
+  />
+
+  <div class="matrix-container themed-scrollbar">
     <!-- Role headers -->
     <div class="matrix-row header-row">
-      <div class="feature-cell header-cell">Feature</div>
+      <div class="feature-cell header-cell">Tab</div>
       {#each ROLE_HIERARCHY as role}
         <div class="role-cell header-cell" style="--role-color: {getRoleColor(role)}">
           <i class="fas {ROLE_DISPLAY[role].icon}" aria-hidden="true"></i>
@@ -141,52 +123,24 @@
       <div class="toggle-cell header-cell">Enabled</div>
     </div>
 
-    <!-- Modules -->
+    <!-- Modules with their tabs (always expanded) -->
     {#each filteredModules() as { module, tabs }}
       {@const moduleStyle = getFeatureIconAndColor(module.id)}
-      {@const isExpanded = expandedModules.has(module.id)}
       {@const hasTabs = tabs.length > 0}
 
-      <div class="module-group" style="--module-color: {moduleStyle.color}">
-        <div class="module-header" class:expanded={isExpanded}>
-          {#if hasTabs}
-            <button
-              type="button"
-              class="expand-toggle"
-              onclick={() => toggleModule(module.id)}
-              aria-expanded={isExpanded}
-              aria-label="{isExpanded ? 'Collapse' : 'Expand'} {module.name}"
-            >
-              <i class="fas fa-chevron-right" class:rotated={isExpanded} aria-hidden="true"></i>
-            </button>
-          {:else}
-            <div class="expand-placeholder"></div>
-          {/if}
-
-          <div class="module-row-content">
-            <MatrixRow
-              flag={module}
-              saving={savingFlags.has(module.id)}
-              toggleLocked={module.id === "module:admin"}
-              toggleLockedReason="Cannot disable admin module while using it"
-              onRoleClick={(role) => handleRoleClick(module, role)}
-              onToggle={() => handleEnabledToggle(module)}
-            />
+      {#if hasTabs}
+        <div class="module-group" class:disabled={!module.enabled} style="--module-color: {moduleStyle.color}">
+          <div class="module-header">
+            <div class="module-icon" style="background: {moduleStyle.color}25; color: {moduleStyle.color}">
+              <i class="fas {moduleStyle.icon}" aria-hidden="true"></i>
+            </div>
+            <span class="module-name">{module.name}</span>
           </div>
 
-          {#if hasTabs}
-            <span class="tab-count" title="{tabs.length} tab{tabs.length === 1 ? '' : 's'}">
-              {tabs.length}
-            </span>
-          {/if}
-        </div>
-
-        {#if isExpanded && hasTabs}
           <div class="tabs-container">
             {#each tabs as tab}
               <MatrixRow
                 flag={tab}
-                indent
                 parentRole={module.minimumRole}
                 saving={savingFlags.has(tab.id)}
                 toggleLocked={tab.id === "tab:admin:flags"}
@@ -196,8 +150,8 @@
               />
             {/each}
           </div>
-        {/if}
-      </div>
+        </div>
+      {/if}
     {/each}
 
     <!-- Capabilities section -->
@@ -269,69 +223,24 @@
     }
   }
 
-  .expand-controls {
-    display: flex;
-    gap: 6px;
-  }
-
-  .expand-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 6px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .expand-btn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
-    color: var(--theme-text, #ffffff);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-  }
-
-  .expand-btn i {
-    font-size: 11px;
-  }
-
   .search-box {
-    min-width: 240px;
+    min-width: 280px;
+  }
+
+  /* Override AdminSearchBox to match pill style */
+  .search-box :global(.admin-search-box) {
+    border-radius: 24px;
+    min-height: var(--min-touch-target, 48px);
+  }
+
+  .search-box :global(.search-input) {
+    border-radius: 24px;
   }
 
   .matrix-container {
     flex: 1;
     overflow: auto;
     padding: 12px;
-
-    /* Styled scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
-
-  .matrix-container::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  .matrix-container::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-    border-radius: 4px;
-  }
-
-  .matrix-container::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
-
-  .matrix-container::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
-    background-clip: padding-box;
   }
 
   @media (min-width: 600px) {
@@ -342,6 +251,7 @@
 
   .matrix-row {
     display: grid;
+    /* 6 columns: name | USER | PREM | TEST | ADMIN | toggle */
     grid-template-columns: 1fr repeat(4, 60px) 56px;
     gap: 4px;
     align-items: center;
@@ -420,106 +330,46 @@
     color: #f59e0b;
   }
 
-  /* Collapsible module groups */
+  /* Module groups */
   .module-group {
-    border-radius: 10px;
-    margin-bottom: 4px;
+    border-radius: 12px;
+    margin-bottom: 12px;
     overflow: hidden;
     border-left: 3px solid var(--module-color, var(--theme-stroke));
-    background: color-mix(in srgb, var(--module-color) 3%, transparent);
+    background: color-mix(in srgb, var(--module-color) 8%, rgba(0, 0, 0, 0.4));
+  }
+
+  .module-group.disabled {
+    opacity: 0.5;
   }
 
   .module-header {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 2px 0 2px 4px;
-    transition: background var(--duration-fast) ease;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--module-color) 20%, transparent);
+    background: color-mix(in srgb, var(--module-color) 12%, transparent);
   }
 
-  .module-header:hover {
-    background: color-mix(in srgb, var(--module-color) 6%, transparent);
-  }
-
-  .module-header.expanded {
-    border-bottom: 1px solid color-mix(in srgb, var(--module-color) 15%, transparent);
-  }
-
-  .expand-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .module-header .module-icon {
     width: 28px;
     height: 28px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--module-color, var(--theme-text-dim));
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    flex-shrink: 0;
-  }
-
-  .expand-toggle:hover {
-    background: color-mix(in srgb, var(--module-color) 15%, transparent);
-  }
-
-  .expand-toggle i {
-    font-size: 11px;
-    transition: transform var(--duration-normal) ease;
-  }
-
-  .expand-toggle i.rotated {
-    transform: rotate(90deg);
-  }
-
-  .expand-placeholder {
-    width: 28px;
-    flex-shrink: 0;
-  }
-
-  .module-row-content {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .tab-count {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 24px;
-    height: 20px;
-    padding: 0 6px;
-    margin-right: 8px;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--module-color) 20%, transparent);
-    color: var(--module-color);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
+    border-radius: 6px;
+    font-size: 13px;
     flex-shrink: 0;
+  }
+
+  .module-header .module-name {
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
   }
 
   .tabs-container {
-    padding: 4px 0 8px 32px;
-    background: color-mix(in srgb, var(--module-color) 2%, transparent);
-    animation: slideDown var(--duration-fast) ease-out;
-  }
-
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .tabs-container {
-      animation: none;
-    }
+    padding: 8px 4px 12px 4px;
   }
 </style>

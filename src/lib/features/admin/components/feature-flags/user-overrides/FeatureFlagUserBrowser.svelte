@@ -183,7 +183,7 @@
   </div>
 
   <!-- Content area -->
-  <div class="browser-content">
+  <div class="browser-content themed-scrollbar">
     {#if isLoading}
       <div class="loading-state">
         <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
