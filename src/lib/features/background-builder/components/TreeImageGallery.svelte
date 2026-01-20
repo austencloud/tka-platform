@@ -87,7 +87,7 @@
   </div>
 
   <!-- Image Grid -->
-  <div class="gallery-scroll">
+  <div class="gallery-scroll themed-scrollbar">
     {#if displayedImages.length === 0}
       <div class="empty-state">
         No trees in scene. Go to Preview and click Regenerate.
@@ -168,14 +168,7 @@
     flex: 1;
     overflow-y: auto;
     padding: 16px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
-
-  .gallery-scroll::-webkit-scrollbar { width: 8px; }
-  .gallery-scroll::-webkit-scrollbar-track { background: var(--scrollbar-track, transparent); }
-  .gallery-scroll::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)); border-radius: 4px; }
-  .gallery-scroll::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35)); }
 
   .image-grid {
     display: grid;

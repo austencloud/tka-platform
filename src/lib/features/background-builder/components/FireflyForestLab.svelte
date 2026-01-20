@@ -183,7 +183,7 @@
 </script>
 
 <div class="firefly-forest-lab">
-  <div class="controls">
+  <div class="controls themed-scrollbar-accent">
     <div class="header">
       <h2>Firefly Forest Lab</h2>
       <span class="badge">Classic</span>
@@ -259,14 +259,7 @@
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-accent) var(--scrollbar-track);
   }
-
-  .controls::-webkit-scrollbar { width: 8px; }
-  .controls::-webkit-scrollbar-track { background: var(--scrollbar-track, transparent); border-radius: 4px; }
-  .controls::-webkit-scrollbar-thumb { background: var(--scrollbar-accent, rgba(255, 255, 255, 0.2)); border-radius: 4px; }
-  .controls::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-accent-hover, rgba(255, 255, 255, 0.35)); }
 
   .header {
     display: flex;

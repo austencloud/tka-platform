@@ -181,7 +181,7 @@
 </script>
 
 <div class="pride-lab">
-  <div class="controls">
+  <div class="controls themed-scrollbar-accent">
     <div class="header">
       <h2>Pride Lab</h2>
       <span class="badge">Pride</span>
@@ -298,28 +298,6 @@
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     overflow-y: auto;
-
-    /* Themed scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-accent) var(--scrollbar-track);
-  }
-
-  .controls::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .controls::-webkit-scrollbar-track {
-    background: var(--scrollbar-track, transparent);
-    border-radius: 4px;
-  }
-
-  .controls::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-accent, rgba(255, 255, 255, 0.2));
-    border-radius: 4px;
-  }
-
-  .controls::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-accent-hover, rgba(255, 255, 255, 0.35));
   }
 
   .header {
