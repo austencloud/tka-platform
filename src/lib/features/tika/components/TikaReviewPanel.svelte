@@ -1,23 +1,20 @@
 <!--
-  TIKA Review Panel
+  TIKA Review Panel - Unified Review Workflow
 
-  Two sources of review items:
-  1. Flagged conversations from Firestore (user-flagged)
-  2. Failed evaluation scenarios from file-based reports
+  Single source of truth for reviewing Tika conversations.
+  Replaces the old dual-source (Firestore + file-based evaluations) approach.
 
-  Allows Austen to:
-  - Browse flagged conversations
-  - Browse failed scenarios
-  - See what went wrong
-  - Approve/reject responses
-  - Add corrections
+  Workflow:
+  - Conversations are flagged by users → status: "pending"
+  - /tika command claims and reviews → status: "claimed" → "approved" | "in-review" | "needs-correction"
+  - Human reviews AI's assessment → can approve, request correction, or archive
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { TikaSessionRepository } from '../services/implementations/TikaSessionRepository';
 	import { authState } from '$lib/shared/auth/state/authState.svelte';
-	import type { TikaSession } from '../domain/models/tika-conversation-models';
+	import type { TikaSession, ReviewStatus } from '../domain/models/tika-conversation-models';
 
 	// Props
 	let { onBack, onLoadSession }: {
@@ -25,244 +22,201 @@
 		onLoadSession?: (sessionId: string) => void;
 	} = $props();
 
-	// Repository for flagged conversations
+	// Repository
 	const sessionRepository = browser ? new TikaSessionRepository() : null;
 
-	interface Issue {
-		type: string;
-		severity: string;
-		message: string;
-	}
-
-	interface Resolution {
-		resolvedAt: string;
-		resolvedBy: string;
-		notes: string;
-		correctedResponse?: string;
-	}
-
-	interface FlaggedItem {
-		id: string;
-		scenarioId: string;
-		scenarioName: string;
-		category: string;
-		difficulty: string;
-		userLevel: number;
-		question: string;
-		tikaResponse: string;
-		toolsCalled: string[];
-		issues: Issue[];
-		expectedKeyFacts: string[];
-		timestamp: string;
-		status: 'pending' | 'approved' | 'rejected' | 'needs-rewrite';
-		resolution?: Resolution;
-	}
-
-	interface Summary {
-		total: number;
-		pending: number;
-		resolved: number;
-		passRate: number;
-		runId: string;
-		runDate: string;
-	}
-
-	// Source toggle: conversations (Firestore) vs evaluations (file-based)
-	type ReviewSource = 'conversations' | 'evaluations';
-	let source = $state<ReviewSource>('conversations');
-
-	// Flagged conversations state
-	let flaggedConversations = $state<TikaSession[]>([]);
-	let loadingConversations = $state(true);
-	let conversationsError = $state<string | null>(null);
-	let selectedConversation = $state<TikaSession | null>(null);
-
-	// Evaluation items state (existing)
-	let items = $state<FlaggedItem[]>([]);
-	let summary = $state<Summary | null>(null);
+	// State
+	let sessions = $state<TikaSession[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
-	let selectedItem = $state<FlaggedItem | null>(null);
-	let filter = $state<'all' | 'pending' | 'resolved'>('pending');
+	let selectedSession = $state<TikaSession | null>(null);
+
+	// Filter state - which status tabs to show
+	type FilterTab = 'pending' | 'in-review' | 'completed' | 'all';
+	let activeTab = $state<FilterTab>('pending');
+
+	// Notes input state
+	let notesInput = $state('');
+	let savingNotes = $state(false);
 
 	// Check if user is authenticated
 	const isAuthenticated = $derived(authState.isAuthenticated);
 
-	// Resolution form state
-	let resolutionNotes = $state('');
-	let correctedResponse = $state('');
-	let saving = $state(false);
-	let copySuccess = $state(false);
+	// Filter sessions by active tab
+	const filteredSessions = $derived(() => {
+		if (activeTab === 'all') return sessions;
+		if (activeTab === 'pending') {
+			return sessions.filter(s => s.reviewStatus === 'pending');
+		}
+		if (activeTab === 'in-review') {
+			return sessions.filter(s =>
+				s.reviewStatus === 'claimed' ||
+				s.reviewStatus === 'in-review' ||
+				s.reviewStatus === 'needs-correction'
+			);
+		}
+		if (activeTab === 'completed') {
+			return sessions.filter(s =>
+				s.reviewStatus === 'approved' ||
+				s.reviewStatus === 'archived'
+			);
+		}
+		return sessions;
+	});
 
-	// Derived
-	let filteredItems = $derived(
-		items.filter((item) => {
-			if (filter === 'all') return true;
-			if (filter === 'pending') return item.status === 'pending';
-			return item.status !== 'pending';
-		})
-	);
+	// Count by status for tab badges
+	const statusCounts = $derived(() => {
+		const pending = sessions.filter(s => s.reviewStatus === 'pending').length;
+		const inReview = sessions.filter(s =>
+			s.reviewStatus === 'claimed' ||
+			s.reviewStatus === 'in-review' ||
+			s.reviewStatus === 'needs-correction'
+		).length;
+		const completed = sessions.filter(s =>
+			s.reviewStatus === 'approved' ||
+			s.reviewStatus === 'archived'
+		).length;
+		return { pending, inReview, completed };
+	});
 
-	// Load flagged conversations from Firestore
-	async function loadFlaggedConversations() {
+	// Load sessions from Firestore
+	async function loadSessions() {
 		if (!sessionRepository || !isAuthenticated) {
-			loadingConversations = false;
+			loading = false;
 			return;
 		}
 
-		loadingConversations = true;
-		conversationsError = null;
+		loading = true;
+		error = null;
 
 		try {
-			flaggedConversations = await sessionRepository.getFlaggedSessions();
+			// Get all flagged sessions (they all have review status)
+			sessions = await sessionRepository.getReviewQueue();
 		} catch (e) {
-			console.error('[TikaReviewPanel] Failed to load flagged conversations:', e);
-			conversationsError = 'Failed to load flagged conversations';
+			console.error('[TikaReviewPanel] Failed to load sessions:', e);
+			error = 'Failed to load review queue';
 		} finally {
-			loadingConversations = false;
+			loading = false;
 		}
 	}
 
-	// Unflag a conversation
-	async function unflagConversation(sessionId: string) {
+	// Get status indicator info
+	function getStatusInfo(status: ReviewStatus | undefined): {
+		color: string;
+		icon: string;
+		label: string;
+	} {
+		switch (status) {
+			case 'pending':
+				return { color: '#f59e0b', icon: 'fa-flag', label: 'Pending' };
+			case 'claimed':
+				return { color: '#3b82f6', icon: 'fa-robot', label: 'Claimed by AI' };
+			case 'in-review':
+				return { color: '#8b5cf6', icon: 'fa-user-check', label: 'In Review' };
+			case 'approved':
+				return { color: '#22c55e', icon: 'fa-check-circle', label: 'Approved' };
+			case 'needs-correction':
+				return { color: '#ef4444', icon: 'fa-exclamation-circle', label: 'Needs Fix' };
+			case 'archived':
+				return { color: '#64748b', icon: 'fa-archive', label: 'Archived' };
+			default:
+				return { color: '#64748b', icon: 'fa-question', label: 'Unknown' };
+		}
+	}
+
+	// Format relative time
+	function formatRelativeTime(date: Date | undefined): string {
+		if (!date) return 'Unknown';
+		const now = new Date();
+		const diff = now.getTime() - date.getTime();
+		const hours = Math.floor(diff / (1000 * 60 * 60));
+		if (hours < 1) return 'Just now';
+		if (hours < 24) return `${hours}h ago`;
+		const days = Math.floor(hours / 24);
+		if (days < 7) return `${days}d ago`;
+		return date.toLocaleDateString();
+	}
+
+	// Save notes for a session
+	async function saveNotes() {
+		if (!sessionRepository || !selectedSession || !notesInput.trim()) return;
+
+		savingNotes = true;
+		try {
+			await sessionRepository.addReviewNotes(selectedSession.id, notesInput);
+			// Update local state
+			const idx = sessions.findIndex(s => s.id === selectedSession!.id);
+			if (idx >= 0) {
+				sessions[idx] = {
+					...sessions[idx],
+					reviewMetadata: {
+						...sessions[idx].reviewMetadata,
+						notes: notesInput,
+					}
+				};
+				selectedSession = sessions[idx];
+			}
+		} catch (e) {
+			console.error('[TikaReviewPanel] Failed to save notes:', e);
+		} finally {
+			savingNotes = false;
+		}
+	}
+
+	// Archive a session
+	async function archiveSession(sessionId: string) {
 		if (!sessionRepository) return;
 
 		try {
-			await sessionRepository.flagForReview(sessionId, false);
-			// Remove from local list
-			flaggedConversations = flaggedConversations.filter(c => c.id !== sessionId);
-			if (selectedConversation?.id === sessionId) {
-				selectedConversation = null;
+			await sessionRepository.archiveReview(sessionId);
+			// Update local state
+			const idx = sessions.findIndex(s => s.id === sessionId);
+			if (idx >= 0) {
+				sessions[idx] = { ...sessions[idx], reviewStatus: 'archived' };
+			}
+			if (selectedSession?.id === sessionId) {
+				selectedSession = sessions[idx];
 			}
 		} catch (e) {
-			console.error('[TikaReviewPanel] Failed to unflag conversation:', e);
+			console.error('[TikaReviewPanel] Failed to archive session:', e);
 		}
 	}
 
-	// Open a flagged conversation in the chat
-	function openConversation(session: TikaSession) {
+	// Approve a session (after human review)
+	async function approveSession(sessionId: string) {
+		if (!sessionRepository) return;
+
+		try {
+			await sessionRepository.updateReviewStatus(sessionId, 'approved');
+			// Update local state
+			const idx = sessions.findIndex(s => s.id === sessionId);
+			if (idx >= 0) {
+				sessions[idx] = { ...sessions[idx], reviewStatus: 'approved' };
+			}
+			if (selectedSession?.id === sessionId) {
+				selectedSession = sessions[idx];
+			}
+		} catch (e) {
+			console.error('[TikaReviewPanel] Failed to approve session:', e);
+		}
+	}
+
+	// Open conversation in chat
+	function openInChat(session: TikaSession) {
 		if (onLoadSession) {
 			onLoadSession(session.id);
 			onBack?.();
 		}
 	}
 
-	// Load evaluation items (existing)
-	async function loadItems() {
-		loading = true;
-		error = null;
-
-		try {
-			const response = await fetch('/api/tika/flagged');
-			const data = await response.json();
-
-			if (data.error) {
-				error = data.error;
-			} else {
-				items = data.items;
-				summary = data.summary;
-			}
-		} catch (e) {
-			error = 'Failed to load flagged items';
-		} finally {
-			loading = false;
-		}
-	}
-
-	// Resolve an item
-	async function resolveItem(status: 'approved' | 'rejected' | 'needs-rewrite') {
-		if (!selectedItem) return;
-
-		saving = true;
-
-		try {
-			const response = await fetch('/api/tika/flagged', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					itemId: selectedItem.id,
-					status,
-					notes: resolutionNotes,
-					correctedResponse: correctedResponse || undefined
-				})
-			});
-
-			const data = await response.json();
-
-			if (data.success) {
-				// Update local state
-				const idx = items.findIndex((i) => i.id === selectedItem!.id);
-				if (idx >= 0) {
-					items[idx] = {
-						...items[idx],
-						status,
-						resolution: data.resolution
-					};
-				}
-
-				// Clear form and selection
-				selectedItem = null;
-				resolutionNotes = '';
-				correctedResponse = '';
-
-				// Reload to get fresh data
-				await loadItems();
-			}
-		} catch (e) {
-			console.error('Failed to save resolution:', e);
-		} finally {
-			saving = false;
-		}
-	}
-
-	// Copy item to clipboard for discussion
-	async function copyForDiscussion() {
-		if (!selectedItem) return;
-
-		const text = `## Tika Review Item
-
-**Scenario:** ${selectedItem.scenarioName}
-**Category:** ${selectedItem.category}
-**Level:** ${selectedItem.userLevel}
-
-### Question
-> ${selectedItem.question}
-
-### Tika's Response
-${selectedItem.tikaResponse}
-
-### Issues Found
-${selectedItem.issues.map((i) => `- ${i.type}: ${i.message}`).join('\n')}
-
-### Expected Key Facts
-${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
-`;
-
-		try {
-			await navigator.clipboard.writeText(text);
-			copySuccess = true;
-			setTimeout(() => (copySuccess = false), 2000);
-		} catch (e) {
-			console.error('Failed to copy:', e);
-		}
-	}
-
-	// Category badge color
-	function getCategoryColor(category: string): string {
-		const colors: Record<string, string> = {
-			'letter-explanation': '#3b82f6',
-			'term-definition': '#10b981',
-			'letter-comparison': '#8b5cf6',
-			'misconception-correction': '#ef4444',
-			'concept-question': '#f59e0b',
-			'edge-case': '#6366f1'
-		};
-		return colors[category] || '#64748b';
+	// Handle session selection
+	function selectSession(session: TikaSession) {
+		selectedSession = session;
+		notesInput = session.reviewMetadata?.notes || '';
 	}
 
 	onMount(() => {
-		loadFlaggedConversations();
-		loadItems();
+		loadSessions();
 	});
 </script>
 
@@ -275,190 +229,253 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		{/if}
 		<div class="header-content">
 			<h2>Tika Review</h2>
-			<!-- Source tabs -->
-			<div class="source-tabs">
-				<button
-					class:active={source === 'conversations'}
-					onclick={() => (source = 'conversations')}
-				>
-					<i class="fas fa-comments" aria-hidden="true"></i>
-					Flagged ({flaggedConversations.length})
-				</button>
-				<button
-					class:active={source === 'evaluations'}
-					onclick={() => (source = 'evaluations')}
-				>
-					<i class="fas fa-flask" aria-hidden="true"></i>
-					Evals ({items.length})
-				</button>
-			</div>
 		</div>
-
-		<div class="header-actions">
-			{#if source === 'evaluations'}
-				<div class="filter-tabs">
-					<button class:active={filter === 'pending'} onclick={() => (filter = 'pending')}>
-						Pending
-					</button>
-					<button class:active={filter === 'all'} onclick={() => (filter = 'all')}> All </button>
-					<button class:active={filter === 'resolved'} onclick={() => (filter = 'resolved')}>
-						Resolved
-					</button>
-				</div>
-			{/if}
-			<button
-				class="refresh-btn"
-				onclick={() => source === 'conversations' ? loadFlaggedConversations() : loadItems()}
-				disabled={source === 'conversations' ? loadingConversations : loading}
-			>
-				<i class="fas fa-sync-alt" class:spinning={source === 'conversations' ? loadingConversations : loading}></i>
-			</button>
-		</div>
+		<button
+			class="refresh-btn"
+			onclick={loadSessions}
+			disabled={loading}
+			title="Refresh"
+		>
+			<i class="fas fa-sync-alt" class:spinning={loading}></i>
+		</button>
 	</header>
 
+	<!-- Status Filter Tabs -->
+	<nav class="status-tabs">
+		<button
+			class:active={activeTab === 'pending'}
+			onclick={() => (activeTab = 'pending')}
+		>
+			<span class="tab-icon" style="color: #f59e0b">
+				<i class="fas fa-flag" aria-hidden="true"></i>
+			</span>
+			Pending
+			{#if statusCounts().pending > 0}
+				<span class="badge pending">{statusCounts().pending}</span>
+			{/if}
+		</button>
+		<button
+			class:active={activeTab === 'in-review'}
+			onclick={() => (activeTab = 'in-review')}
+		>
+			<span class="tab-icon" style="color: #8b5cf6">
+				<i class="fas fa-user-check" aria-hidden="true"></i>
+			</span>
+			In Review
+			{#if statusCounts().inReview > 0}
+				<span class="badge in-review">{statusCounts().inReview}</span>
+			{/if}
+		</button>
+		<button
+			class:active={activeTab === 'completed'}
+			onclick={() => (activeTab = 'completed')}
+		>
+			<span class="tab-icon" style="color: #22c55e">
+				<i class="fas fa-check-circle" aria-hidden="true"></i>
+			</span>
+			Completed
+			{#if statusCounts().completed > 0}
+				<span class="badge completed">{statusCounts().completed}</span>
+			{/if}
+		</button>
+		<button
+			class:active={activeTab === 'all'}
+			onclick={() => (activeTab = 'all')}
+		>
+			<span class="tab-icon" style="color: #64748b">
+				<i class="fas fa-list" aria-hidden="true"></i>
+			</span>
+			All
+		</button>
+	</nav>
+
 	<div class="content-area">
-		<!-- Item List -->
-		<div class="item-list">
-			{#if source === 'conversations'}
-				<!-- Flagged Conversations List -->
-				{#if loadingConversations}
-					<div class="loading-state">
-						<i class="fas fa-spinner fa-spin"></i>
-						<span>Loading flagged conversations...</span>
-					</div>
-				{:else if conversationsError}
-					<div class="error-state">
-						<i class="fas fa-exclamation-triangle"></i>
-						<span>{conversationsError}</span>
-						<button onclick={loadFlaggedConversations}>Retry</button>
-					</div>
-				{:else if !isAuthenticated}
-					<div class="empty-state">
-						<i class="fas fa-lock"></i>
-						<span>Sign in to see flagged conversations</span>
-					</div>
-				{:else if flaggedConversations.length === 0}
-					<div class="empty-state">
-						<i class="fas fa-flag"></i>
-						<span>No flagged conversations</span>
-						<p class="empty-hint">Flag conversations from the chat header to review them here</p>
-					</div>
-				{:else}
-					{#each flaggedConversations as conversation (conversation.id)}
-						<button
-							class="item-card conversation-card"
-							class:selected={selectedConversation?.id === conversation.id}
-							onclick={() => (selectedConversation = conversation)}
-						>
-							<div class="item-header">
-								<span class="category-badge" style="background: #f59e0b">
-									<i class="fas fa-flag" aria-hidden="true"></i> Flagged
-								</span>
-								<span class="difficulty">{conversation.messageCount} msgs</span>
-							</div>
-							<h3>{conversation.title}</h3>
-							<p class="question">{conversation.lastUserMessage}</p>
-							<div class="timestamp">
-								<i class="fas fa-clock" aria-hidden="true"></i>
-								{conversation.flaggedAt ? new Date(conversation.flaggedAt).toLocaleDateString() : 'Unknown'}
-							</div>
-						</button>
-					{/each}
-				{/if}
+		<!-- Session List -->
+		<div class="session-list">
+			{#if loading}
+				<div class="state-message">
+					<i class="fas fa-spinner fa-spin"></i>
+					<span>Loading...</span>
+				</div>
+			{:else if error}
+				<div class="state-message error">
+					<i class="fas fa-exclamation-triangle"></i>
+					<span>{error}</span>
+					<button onclick={loadSessions}>Retry</button>
+				</div>
+			{:else if !isAuthenticated}
+				<div class="state-message">
+					<i class="fas fa-lock"></i>
+					<span>Sign in to access review queue</span>
+				</div>
+			{:else if filteredSessions().length === 0}
+				<div class="state-message">
+					<i class="fas fa-inbox"></i>
+					<span>No conversations in this view</span>
+					{#if activeTab === 'pending'}
+						<p class="hint">Flag conversations from the chat to review them here</p>
+					{/if}
+				</div>
 			{:else}
-				<!-- Evaluation Items List (existing) -->
-				{#if loading}
-					<div class="loading-state">
-						<i class="fas fa-spinner fa-spin"></i>
-						<span>Loading evaluation items...</span>
-					</div>
-				{:else if error}
-					<div class="error-state">
-						<i class="fas fa-exclamation-triangle"></i>
-						<span>{error}</span>
-						<button onclick={loadItems}>Retry</button>
-					</div>
-				{:else if filteredItems.length === 0}
-					<div class="empty-state">
-						<i class="fas fa-check-circle"></i>
-						<span>No {filter === 'pending' ? 'pending' : ''} evaluation items</span>
-					</div>
-				{:else}
-					{#each filteredItems as item (item.id)}
-						<button
-							class="item-card"
-							class:selected={selectedItem?.id === item.id}
-							class:pending={item.status === 'pending'}
-							onclick={() => {
-								selectedItem = item;
-								resolutionNotes = '';
-								correctedResponse = '';
-							}}
-						>
-							<div class="item-header">
-								<span class="category-badge" style="background: {getCategoryColor(item.category)}">
-									{item.category.replace('-', ' ')}
+				{#each filteredSessions() as session (session.id)}
+					{@const statusInfo = getStatusInfo(session.reviewStatus)}
+					<button
+						class="session-card"
+						class:selected={selectedSession?.id === session.id}
+						onclick={() => selectSession(session)}
+					>
+						<div class="card-header">
+							<span class="status-badge" style="background: {statusInfo.color}">
+								<i class="fas {statusInfo.icon}" aria-hidden="true"></i>
+								{statusInfo.label}
+							</span>
+							{#if session.reviewMetadata?.grade}
+								<span class="grade-badge" class:good={session.reviewMetadata.grade.startsWith('A') || session.reviewMetadata.grade.startsWith('B')}>
+									{session.reviewMetadata.grade}
+									{#if session.reviewMetadata.confidence}
+										<span class="confidence">({session.reviewMetadata.confidence}%)</span>
+									{/if}
 								</span>
-								<span class="difficulty">{item.difficulty}</span>
-							</div>
-							<h3>{item.scenarioName}</h3>
-							<p class="question">{item.question}</p>
-							<div class="issue-count">
-								<i class="fas fa-exclamation-circle"></i>
-								{item.issues.length} issue{item.issues.length !== 1 ? 's' : ''}
+							{/if}
 						</div>
-						{#if item.status !== 'pending'}
-							<div class="resolution-badge">
-								<i class="fas fa-check"></i> Resolved
-							</div>
-						{/if}
+						<h3>{session.title}</h3>
+						<p class="preview">{session.lastUserMessage}</p>
+						<div class="card-footer">
+							<span class="meta">
+								<i class="fas fa-comments" aria-hidden="true"></i>
+								{session.messageCount}
+							</span>
+							<span class="meta">
+								<i class="fas fa-clock" aria-hidden="true"></i>
+								{formatRelativeTime(session.flaggedAt)}
+							</span>
+							{#if session.reviewMetadata?.claimedBy === 'claude-tika'}
+								<span class="meta claimed">
+									<i class="fas fa-robot" aria-hidden="true"></i>
+									AI reviewed
+								</span>
+							{/if}
+						</div>
 					</button>
 				{/each}
-				{/if}
 			{/if}
 		</div>
 
 		<!-- Detail Panel -->
-		{#if source === 'conversations' && selectedConversation}
-			<!-- Conversation Detail Panel -->
+		{#if selectedSession}
+			{@const statusInfo = getStatusInfo(selectedSession.reviewStatus)}
 			<div class="detail-panel">
 				<div class="detail-header">
-					<h3>{selectedConversation.title}</h3>
+					<div class="detail-title-row">
+						<h3>{selectedSession.title}</h3>
+						<span class="status-indicator" style="background: {statusInfo.color}">
+							<i class="fas {statusInfo.icon}" aria-hidden="true"></i>
+							{statusInfo.label}
+						</span>
+					</div>
 					<div class="detail-actions">
 						<button
-							class="action-btn-small open-btn"
-							onclick={() => openConversation(selectedConversation)}
+							class="action-btn primary"
+							onclick={() => openInChat(selectedSession)}
 							title="Open in chat"
 						>
 							<i class="fas fa-external-link-alt" aria-hidden="true"></i>
 							Open
 						</button>
-						<button
-							class="action-btn-small unflag-btn"
-							onclick={() => unflagConversation(selectedConversation.id)}
-							title="Remove from review"
-						>
-							<i class="fas fa-flag-checkered" aria-hidden="true"></i>
-							Done
-						</button>
+						{#if selectedSession.reviewStatus === 'in-review' || selectedSession.reviewStatus === 'needs-correction'}
+							<button
+								class="action-btn success"
+								onclick={() => approveSession(selectedSession.id)}
+								title="Approve"
+							>
+								<i class="fas fa-check" aria-hidden="true"></i>
+								Approve
+							</button>
+						{/if}
+						{#if selectedSession.reviewStatus !== 'archived'}
+							<button
+								class="action-btn neutral"
+								onclick={() => archiveSession(selectedSession.id)}
+								title="Archive"
+							>
+								<i class="fas fa-archive" aria-hidden="true"></i>
+								Archive
+							</button>
+						{/if}
 					</div>
 				</div>
 
 				<div class="detail-content">
+					<!-- Review Info Section -->
+					{#if selectedSession.reviewMetadata?.grade}
+						<section class="detail-section review-summary">
+							<h4>AI Review Summary</h4>
+							<div class="review-grade">
+								<span class="big-grade" class:good={selectedSession.reviewMetadata.grade.startsWith('A') || selectedSession.reviewMetadata.grade.startsWith('B')}>
+									{selectedSession.reviewMetadata.grade}
+								</span>
+								{#if selectedSession.reviewMetadata.confidence}
+									<span class="confidence-label">
+										{selectedSession.reviewMetadata.confidence}% confidence
+									</span>
+								{/if}
+							</div>
+							{#if selectedSession.reviewMetadata.aiNotes}
+								<div class="ai-notes">
+									<p>{selectedSession.reviewMetadata.aiNotes}</p>
+								</div>
+							{/if}
+							{#if selectedSession.reviewMetadata.correctedResponse}
+								<div class="corrected-response">
+									<h5>Suggested Correction</h5>
+									<div class="response-text">{selectedSession.reviewMetadata.correctedResponse}</div>
+								</div>
+							{/if}
+						</section>
+					{/if}
+
+					<!-- Human Notes Section -->
+					<section class="detail-section">
+						<h4>Notes</h4>
+						{#if selectedSession.reviewStatus === 'pending' || selectedSession.reviewStatus === 'in-review'}
+							<div class="notes-input">
+								<textarea
+									bind:value={notesInput}
+									placeholder="Add context or notes before review..."
+									rows="3"
+								></textarea>
+								<button
+									class="save-notes-btn"
+									onclick={saveNotes}
+									disabled={savingNotes || !notesInput.trim()}
+								>
+									{savingNotes ? 'Saving...' : 'Save Notes'}
+								</button>
+							</div>
+						{:else if selectedSession.reviewMetadata?.notes}
+							<div class="notes-display">
+								<p>{selectedSession.reviewMetadata.notes}</p>
+							</div>
+						{:else}
+							<p class="no-notes">No notes added</p>
+						{/if}
+					</section>
+
+					<!-- Conversation Preview -->
 					<section class="detail-section">
 						<h4>Conversation</h4>
-						<div class="conversation-messages">
-							{#each selectedConversation.messages as message}
-								<div class="message-preview" class:user={message.role === 'user'} class:assistant={message.role === 'assistant'}>
-									<span class="role-label">{message.role === 'user' ? 'You' : 'Tika'}</span>
-									<div class="message-text">
+						<div class="conversation-preview">
+							{#each selectedSession.messages as message}
+								<div class="message" class:user={message.role === 'user'} class:assistant={message.role === 'assistant'}>
+									<span class="role">{message.role === 'user' ? 'User' : 'Tika'}</span>
+									<div class="content">
 										{#if message.parts}
 											{@const textPart = message.parts.find(p => p.type === 'text')}
 											{#if textPart && 'text' in textPart}
-												{textPart.text.slice(0, 500)}{textPart.text.length > 500 ? '...' : ''}
+												{textPart.text.slice(0, 800)}{textPart.text.length > 800 ? '...' : ''}
 											{/if}
 										{:else if message.content}
-											{message.content.slice(0, 500)}{message.content.length > 500 ? '...' : ''}
+											{message.content.slice(0, 800)}{message.content.length > 800 ? '...' : ''}
 										{/if}
 									</div>
 								</div>
@@ -466,140 +483,37 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 						</div>
 					</section>
 
-					<section class="detail-section">
-						<h4>Info</h4>
-						<p><strong>Messages:</strong> {selectedConversation.messageCount}</p>
-						<p><strong>Created:</strong> {new Date(selectedConversation.createdAt).toLocaleString()}</p>
-						<p><strong>Flagged:</strong> {selectedConversation.flaggedAt ? new Date(selectedConversation.flaggedAt).toLocaleString() : 'Unknown'}</p>
-					</section>
-				</div>
-			</div>
-		{:else if source === 'evaluations' && selectedItem}
-			<div class="detail-panel">
-				<div class="detail-header">
-					<h3>{selectedItem.scenarioName}</h3>
-					<button class="copy-btn" class:success={copySuccess} onclick={copyForDiscussion} title="Copy for discussion">
-						<i class="fas" class:fa-copy={!copySuccess} class:fa-check={copySuccess}></i>
-					</button>
-				</div>
-
-				<!-- Scrollable content area -->
-				<div class="detail-content">
-					<section class="detail-section">
-						<h4>Question</h4>
-						<blockquote>{selectedItem.question}</blockquote>
-					</section>
-
-					<section class="detail-section">
-						<h4>Tika's Response</h4>
-						<div class="response-text">{selectedItem.tikaResponse}</div>
-					</section>
-
-					<section class="detail-section issues">
-						<h4>Issues Found</h4>
-						<ul>
-							{#each selectedItem.issues as issue}
-								<li class="issue-item" class:error={issue.severity === 'error'}>
-									<strong>{issue.type}:</strong>
-									{issue.message}
-								</li>
-							{/each}
-						</ul>
-					</section>
-
-					<section class="detail-section">
-						<h4>Expected Key Facts</h4>
-						<ul>
-							{#each selectedItem.expectedKeyFacts as fact}
-								<li>{fact}</li>
-							{/each}
-						</ul>
-					</section>
-
-					{#if selectedItem.toolsCalled.length > 0}
-						<section class="detail-section">
-							<h4>Tools Called</h4>
-							<div class="tools-list">
-								{#each selectedItem.toolsCalled as tool}
-									<span class="tool-badge">{tool}</span>
-								{/each}
-							</div>
-						</section>
-					{/if}
-				</div>
-
-				<!-- Resolution Form - fixed at bottom -->
-				{#if selectedItem.status === 'pending'}
-					<div class="resolution-footer">
-						<section class="resolution-form">
-							<h4>Resolution</h4>
-
-							<label>
-								<span>Notes</span>
-								<textarea
-									bind:value={resolutionNotes}
-									placeholder="What's wrong with this response? How should it be fixed?"
-									rows="2"
-								></textarea>
-							</label>
-
-							<label>
-								<span>Corrected Response (optional)</span>
-								<textarea
-									bind:value={correctedResponse}
-									placeholder="Write the ideal response..."
-									rows="2"
-								></textarea>
-							</label>
-
-							<div class="resolution-actions">
-								<button
-									class="approve-btn"
-									onclick={() => resolveItem('approved')}
-									disabled={saving}
-								>
-									<i class="fas fa-check"></i> Approve
-								</button>
-								<button
-									class="rewrite-btn"
-									onclick={() => resolveItem('needs-rewrite')}
-									disabled={saving || !correctedResponse}
-								>
-									<i class="fas fa-pen"></i> Use Correction
-								</button>
-								<button
-									class="reject-btn"
-									onclick={() => resolveItem('rejected')}
-									disabled={saving}
-								>
-									<i class="fas fa-times"></i> Reject
-								</button>
-							</div>
-						</section>
-					</div>
-				{:else if selectedItem.resolution}
-					<div class="resolution-footer">
-						<section class="resolution-display">
-							<h4>Resolution</h4>
-							<p><strong>Status:</strong> {selectedItem.status}</p>
-							<p><strong>Resolved:</strong> {new Date(selectedItem.resolution.resolvedAt).toLocaleString()}</p>
-							{#if selectedItem.resolution.notes}
-								<p><strong>Notes:</strong> {selectedItem.resolution.notes}</p>
+					<!-- Metadata -->
+					<section class="detail-section metadata">
+						<h4>Details</h4>
+						<dl>
+							<dt>Session ID</dt>
+							<dd><code>{selectedSession.id}</code></dd>
+							<dt>Created</dt>
+							<dd>{selectedSession.createdAt.toLocaleString()}</dd>
+							<dt>Flagged</dt>
+							<dd>{selectedSession.flaggedAt?.toLocaleString() || 'Unknown'}</dd>
+							{#if selectedSession.reviewMetadata?.claimedAt}
+								<dt>Claimed</dt>
+								<dd>
+									{selectedSession.reviewMetadata.claimedAt.toLocaleString()}
+									{#if selectedSession.reviewMetadata.claimedBy}
+										by {selectedSession.reviewMetadata.claimedBy}
+									{/if}
+								</dd>
 							{/if}
-							{#if selectedItem.resolution.correctedResponse}
-								<div class="corrected-response">
-									<strong>Corrected Response:</strong>
-									<div class="response-text">{selectedItem.resolution.correctedResponse}</div>
-								</div>
+							{#if selectedSession.reviewMetadata?.reviewedAt}
+								<dt>Reviewed</dt>
+								<dd>{selectedSession.reviewMetadata.reviewedAt.toLocaleString()}</dd>
 							{/if}
-						</section>
-					</div>
-				{/if}
+						</dl>
+					</section>
+				</div>
 			</div>
 		{:else}
 			<div class="no-selection">
-				<i class="fas fa-mouse-pointer"></i>
-				<span>Select an item to review</span>
+				<i class="fas fa-hand-pointer"></i>
+				<span>Select a conversation to review</span>
 			</div>
 		{/if}
 	</div>
@@ -614,6 +528,7 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
 	}
 
+	/* Header */
 	.panel-header {
 		display: flex;
 		align-items: center;
@@ -636,19 +551,13 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		color: #ffffff;
 		font-size: 16px;
 		cursor: pointer;
-		transition: all var(--duration-normal, 0.3s) ease;
+		transition: all 0.2s ease;
 		flex-shrink: 0;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 	}
 
 	.back-btn:hover {
 		background: linear-gradient(135deg, rgba(120, 120, 140, 0.95), rgba(90, 90, 110, 0.95));
 		transform: scale(1.05);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-	}
-
-	.back-btn:active {
-		transform: scale(0.95);
 	}
 
 	.back-btn:focus-visible {
@@ -657,9 +566,7 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 	}
 
 	.header-content {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
+		flex: 1;
 	}
 
 	h2 {
@@ -668,76 +575,15 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		font-weight: 600;
 	}
 
-	.stats {
-		display: flex;
-		gap: 0.75rem;
-	}
-
-	.stat {
-		padding: 0.25rem 0.5rem;
-		border-radius: 4px;
-		font-size: 0.75rem;
-		font-weight: 500;
-	}
-
-	.stat.pass-rate {
-		background: rgba(34, 197, 94, 0.2);
-		color: #4ade80;
-	}
-
-	.stat.pending {
-		background: rgba(245, 158, 11, 0.2);
-		color: #fbbf24;
-	}
-
-	.stat.resolved {
-		background: rgba(59, 130, 246, 0.2);
-		color: #60a5fa;
-	}
-
-	.header-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-	}
-
-	.filter-tabs {
-		display: flex;
-		gap: 0.25rem;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		padding: 0.25rem;
-		border-radius: 6px;
-	}
-
-	.filter-tabs button {
-		padding: 0.375rem 0.75rem;
-		border: none;
-		background: transparent;
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-		font-size: 0.875rem;
-		cursor: pointer;
-		border-radius: 4px;
-		transition: all var(--duration-fast) ease;
-	}
-
-	.filter-tabs button:hover {
-		color: var(--theme-text, #fff);
-	}
-
-	.filter-tabs button.active {
-		background: var(--theme-accent, #6366f1);
-		color: white;
-	}
-
 	.refresh-btn {
-		width: 36px;
-		height: 36px;
+		width: 40px;
+		height: 40px;
 		border: none;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-		border-radius: 6px;
+		border-radius: 8px;
 		cursor: pointer;
-		transition: all var(--duration-fast) ease;
+		transition: all 0.2s ease;
 	}
 
 	.refresh-btn:hover {
@@ -750,80 +596,139 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 	}
 
 	@keyframes spin {
-		from {
-			transform: rotate(0deg);
-		}
-		to {
-			transform: rotate(360deg);
-		}
+		from { transform: rotate(0deg); }
+		to { transform: rotate(360deg); }
 	}
 
+	/* Status Tabs */
+	.status-tabs {
+		display: flex;
+		padding: 8px 16px;
+		gap: 4px;
+		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		background: rgba(15, 20, 30, 0.6);
+	}
+
+	.status-tabs button {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 16px;
+		border: none;
+		background: transparent;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+		font-size: 14px;
+		border-radius: 8px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.status-tabs button:hover {
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		color: var(--theme-text, #fff);
+	}
+
+	.status-tabs button.active {
+		background: var(--theme-accent, #6366f1);
+		color: white;
+	}
+
+	.tab-icon {
+		font-size: 12px;
+	}
+
+	.badge {
+		padding: 2px 8px;
+		border-radius: 10px;
+		font-size: 12px;
+		font-weight: 600;
+	}
+
+	.badge.pending { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+	.badge.in-review { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+	.badge.completed { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+
+	/* Content Area */
 	.content-area {
 		display: flex;
 		flex: 1;
 		overflow: hidden;
 	}
 
-	.item-list {
-		width: 320px;
+	/* Session List */
+	.session-list {
+		width: 340px;
 		min-width: 280px;
 		border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		overflow-y: auto;
-		padding: 0.75rem;
+		padding: 12px;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 8px;
 	}
 
-	.item-card {
+	.session-card {
 		display: block;
 		width: 100%;
 		text-align: left;
-		padding: 0.75rem;
+		padding: 12px;
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border-radius: 8px;
+		border-radius: 10px;
 		cursor: pointer;
-		transition: all var(--duration-fast) ease;
+		transition: all 0.2s ease;
 	}
 
-	.item-card:hover {
+	.session-card:hover {
 		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+		background: rgba(255, 255, 255, 0.06);
 	}
 
-	.item-card.selected {
+	.session-card.selected {
 		border-color: var(--theme-accent, #6366f1);
 		background: rgba(99, 102, 241, 0.1);
 	}
 
-	.item-card.pending {
-		border-left: 3px solid #f59e0b;
-	}
-
-	.item-header {
+	.card-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 0.5rem;
+		margin-bottom: 8px;
 	}
 
-	.category-badge {
-		padding: 0.125rem 0.5rem;
-		border-radius: 4px;
-		font-size: 0.625rem;
+	.status-badge {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 10px;
+		border-radius: 6px;
+		font-size: 11px;
 		font-weight: 600;
-		text-transform: uppercase;
 		color: white;
 	}
 
-	.difficulty {
-		font-size: 0.75rem;
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+	.grade-badge {
+		padding: 4px 8px;
+		border-radius: 6px;
+		font-size: 12px;
+		font-weight: 700;
+		background: rgba(239, 68, 68, 0.2);
+		color: #fca5a5;
 	}
 
-	.item-card h3 {
-		margin: 0 0 0.375rem;
-		font-size: 0.875rem;
+	.grade-badge.good {
+		background: rgba(34, 197, 94, 0.2);
+		color: #4ade80;
+	}
+
+	.grade-badge .confidence {
+		font-weight: 400;
+		opacity: 0.8;
+	}
+
+	.session-card h3 {
+		margin: 0 0 6px;
+		font-size: 14px;
 		font-weight: 500;
 		color: var(--theme-text, #fff);
 		white-space: nowrap;
@@ -831,9 +736,9 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		text-overflow: ellipsis;
 	}
 
-	.item-card .question {
+	.session-card .preview {
 		margin: 0;
-		font-size: 0.75rem;
+		font-size: 13px;
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
@@ -841,32 +746,43 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		overflow: hidden;
 	}
 
-	.issue-count {
-		margin-top: 0.5rem;
-		font-size: 0.75rem;
-		color: #ef4444;
+	.card-footer {
+		display: flex;
+		gap: 12px;
+		margin-top: 10px;
 	}
 
-	.resolution-badge {
-		margin-top: 0.5rem;
-		font-size: 0.75rem;
-		color: #4ade80;
+	.meta {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 12px;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
 	}
 
+	.meta.claimed {
+		color: #60a5fa;
+	}
+
+	/* Detail Panel */
 	.detail-panel {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
-		min-height: 0;
 	}
 
 	.detail-header {
+		padding: 16px;
+		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		flex-shrink: 0;
+	}
+
+	.detail-title-row {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 1rem 1rem 0.5rem;
-		flex-shrink: 0;
+		margin-bottom: 12px;
 	}
 
 	.detail-header h3 {
@@ -875,245 +791,298 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		font-weight: 600;
 	}
 
-	.detail-content {
-		flex: 1;
-		overflow-y: auto;
-		padding: 0.5rem 1rem 1rem;
-		min-height: 0;
-	}
-
-	.resolution-footer {
-		flex-shrink: 0;
-		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		padding: 0.75rem;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
-	}
-
-	.copy-btn {
-		width: 36px;
-		height: 36px;
-		border: none;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-		border-radius: 6px;
-		cursor: pointer;
-		transition: all var(--duration-fast) ease;
-	}
-
-	.copy-btn:hover {
-		background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		color: var(--theme-text, #fff);
-	}
-
-	.copy-btn.success {
-		background: rgba(34, 197, 94, 0.2);
-		color: #4ade80;
-	}
-
-	.detail-section {
-		margin-bottom: 1.25rem;
-	}
-
-	.detail-section h4 {
-		margin: 0 0 0.5rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	blockquote {
-		margin: 0;
-		padding: 0.75rem 1rem;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border-left: 3px solid var(--theme-accent, #6366f1);
-		border-radius: 0 6px 6px 0;
-		font-size: 0.9375rem;
-		font-style: italic;
-	}
-
-	.response-text {
-		padding: 0.75rem;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border-radius: 6px;
-		font-size: 0.875rem;
-		line-height: 1.5;
-		white-space: pre-wrap;
-	}
-
-	.issues ul {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-	}
-
-	.issue-item {
-		padding: 0.5rem 0.75rem;
-		background: rgba(245, 158, 11, 0.1);
-		border-radius: 6px;
-		margin-bottom: 0.5rem;
-		font-size: 0.875rem;
-	}
-
-	.issue-item.error {
-		background: rgba(239, 68, 68, 0.1);
-		color: #fca5a5;
-	}
-
-	.tools-list {
+	.status-indicator {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 0.375rem;
-	}
-
-	.tool-badge {
-		padding: 0.25rem 0.5rem;
-		background: rgba(99, 102, 241, 0.2);
-		color: #a5b4fc;
-		border-radius: 4px;
-		font-size: 0.75rem;
-		font-family: monospace;
-	}
-
-	.resolution-form {
-		padding: 0.5rem;
-		background: transparent;
-	}
-
-	.resolution-form h4 {
-		margin: 0 0 0.5rem;
-		font-size: 0.75rem;
-		font-weight: 600;
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.resolution-form label {
-		display: block;
-		margin-bottom: 0.5rem;
-	}
-
-	.resolution-form label span {
-		display: block;
-		margin-bottom: 0.25rem;
-		font-size: 0.75rem;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 12px;
+		border-radius: 8px;
+		font-size: 13px;
 		font-weight: 500;
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+		color: white;
 	}
 
-	.resolution-form textarea {
-		width: 100%;
-		padding: 0.5rem;
-		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 6px;
-		color: var(--theme-text, #fff);
-		font-size: 0.8125rem;
-		resize: none;
-	}
-
-	.resolution-form textarea:focus {
-		outline: none;
-		border-color: var(--theme-accent, #6366f1);
-	}
-
-	.resolution-actions {
+	.detail-actions {
 		display: flex;
-		gap: 0.5rem;
-		margin-top: 0.75rem;
+		gap: 8px;
 	}
 
-	.resolution-actions button {
-		flex: 1;
-		padding: 0.5rem 0.75rem;
+	.action-btn {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 10px 16px;
 		border: none;
-		border-radius: 6px;
-		font-size: 0.8125rem;
+		border-radius: 8px;
+		font-size: 14px;
 		font-weight: 500;
 		cursor: pointer;
-		transition: all var(--duration-fast) ease;
+		transition: all 0.2s ease;
 	}
 
-	.approve-btn {
+	.action-btn.primary {
+		background: var(--theme-accent, #6366f1);
+		color: white;
+	}
+
+	.action-btn.primary:hover {
+		background: #4f46e5;
+	}
+
+	.action-btn.success {
 		background: #22c55e;
 		color: white;
 	}
 
-	.approve-btn:hover {
+	.action-btn.success:hover {
 		background: #16a34a;
 	}
 
-	.rewrite-btn {
-		background: #6366f1;
-		color: white;
+	.action-btn.neutral {
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 	}
 
-	.rewrite-btn:hover:not(:disabled) {
+	.action-btn.neutral:hover {
+		background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		color: var(--theme-text, #fff);
+	}
+
+	.detail-content {
+		flex: 1;
+		overflow-y: auto;
+		padding: 16px;
+	}
+
+	.detail-section {
+		margin-bottom: 24px;
+	}
+
+	.detail-section h4 {
+		margin: 0 0 12px;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.detail-section h5 {
+		margin: 12px 0 8px;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+	}
+
+	/* Review Summary */
+	.review-summary {
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border-radius: 12px;
+		padding: 16px;
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+	}
+
+	.review-grade {
+		display: flex;
+		align-items: baseline;
+		gap: 12px;
+		margin-bottom: 12px;
+	}
+
+	.big-grade {
+		font-size: 2rem;
+		font-weight: 700;
+		color: #fca5a5;
+	}
+
+	.big-grade.good {
+		color: #4ade80;
+	}
+
+	.confidence-label {
+		font-size: 14px;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+	}
+
+	.ai-notes {
+		padding: 12px;
+		background: rgba(0, 0, 0, 0.2);
+		border-radius: 8px;
+	}
+
+	.ai-notes p {
+		margin: 0;
+		font-size: 14px;
+		line-height: 1.5;
+	}
+
+	.corrected-response {
+		margin-top: 16px;
+	}
+
+	.response-text {
+		padding: 12px;
+		background: rgba(0, 0, 0, 0.2);
+		border-radius: 8px;
+		font-size: 14px;
+		line-height: 1.5;
+		white-space: pre-wrap;
+	}
+
+	/* Notes */
+	.notes-input {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.notes-input textarea {
+		width: 100%;
+		padding: 12px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 8px;
+		color: var(--theme-text, #fff);
+		font-size: 14px;
+		resize: none;
+	}
+
+	.notes-input textarea:focus {
+		outline: none;
+		border-color: var(--theme-accent, #6366f1);
+	}
+
+	.save-notes-btn {
+		align-self: flex-end;
+		padding: 8px 16px;
+		background: var(--theme-accent, #6366f1);
+		color: white;
+		border: none;
+		border-radius: 6px;
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.save-notes-btn:hover:not(:disabled) {
 		background: #4f46e5;
 	}
 
-	.reject-btn {
-		background: #64748b;
-		color: white;
-	}
-
-	.reject-btn:hover {
-		background: #475569;
-	}
-
-	button:disabled {
+	.save-notes-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
 
-	.resolution-display {
-		padding: 1rem;
-		background: rgba(34, 197, 94, 0.1);
+	.notes-display {
+		padding: 12px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		border-radius: 8px;
-		border: 1px solid rgba(34, 197, 94, 0.3);
 	}
 
-	.resolution-display p {
-		margin: 0 0 0.5rem;
-		font-size: 0.875rem;
+	.notes-display p {
+		margin: 0;
+		font-size: 14px;
+		line-height: 1.5;
 	}
 
-	.corrected-response {
-		margin-top: 0.75rem;
+	.no-notes {
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+		font-style: italic;
+		font-size: 14px;
 	}
 
-	.no-selection,
-	.loading-state,
-	.error-state,
-	.empty-state {
+	/* Conversation Preview */
+	.conversation-preview {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		max-height: 400px;
+		overflow-y: auto;
+	}
+
+	.message {
+		padding: 12px;
+		border-radius: 10px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+	}
+
+	.message.user {
+		border-left: 3px solid var(--theme-accent, #6366f1);
+	}
+
+	.message.assistant {
+		border-left: 3px solid #22c55e;
+	}
+
+	.message .role {
+		display: block;
+		font-size: 11px;
+		font-weight: 600;
+		text-transform: uppercase;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+		margin-bottom: 6px;
+	}
+
+	.message .content {
+		font-size: 14px;
+		line-height: 1.5;
+		white-space: pre-wrap;
+		word-break: break-word;
+	}
+
+	/* Metadata */
+	.metadata dl {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 8px 16px;
+		margin: 0;
+	}
+
+	.metadata dt {
+		font-size: 13px;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+	}
+
+	.metadata dd {
+		margin: 0;
+		font-size: 13px;
+	}
+
+	.metadata code {
+		font-family: monospace;
+		font-size: 12px;
+		padding: 2px 6px;
+		background: rgba(0, 0, 0, 0.2);
+		border-radius: 4px;
+	}
+
+	/* State Messages */
+	.state-message {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		flex: 1;
-		gap: 0.75rem;
+		gap: 12px;
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
 		text-align: center;
-		padding: 2rem;
+		padding: 32px;
 	}
 
-	.no-selection i,
-	.loading-state i,
-	.error-state i,
-	.empty-state i {
+	.state-message i {
 		font-size: 2rem;
 		opacity: 0.5;
 	}
 
-	.error-state {
+	.state-message.error {
 		color: #ef4444;
 	}
 
-	.error-state button {
-		margin-top: 0.5rem;
-		padding: 0.5rem 1rem;
+	.state-message button {
+		margin-top: 8px;
+		padding: 8px 16px;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		color: var(--theme-text, #fff);
@@ -1121,154 +1090,54 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		cursor: pointer;
 	}
 
-	/* Mobile responsive */
+	.hint {
+		font-size: 13px;
+		opacity: 0.7;
+		margin-top: 4px;
+	}
+
+	.no-selection {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		flex: 1;
+		gap: 12px;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+	}
+
+	.no-selection i {
+		font-size: 2.5rem;
+		opacity: 0.4;
+	}
+
+	/* Mobile */
 	@media (max-width: 768px) {
 		.content-area {
 			flex-direction: column;
 		}
 
-		.item-list {
+		.session-list {
 			width: 100%;
 			max-height: 40vh;
 			border-right: none;
 			border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		}
 
-		.detail-panel {
-			min-height: 0;
+		.status-tabs {
+			overflow-x: auto;
+			padding: 8px;
+		}
+
+		.status-tabs button {
+			padding: 8px 12px;
+			font-size: 13px;
 		}
 	}
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    .spinning {
-      animation: none;
-    }
-  }
-
-	/* Source tabs */
-	.source-tabs {
-		display: flex;
-		gap: 0.25rem;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		padding: 0.25rem;
-		border-radius: 6px;
-		margin-left: 1rem;
-	}
-
-	.source-tabs button {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.375rem 0.75rem;
-		border: none;
-		background: transparent;
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-		font-size: 0.875rem;
-		cursor: pointer;
-		border-radius: 4px;
-		transition: all var(--duration-fast) ease;
-	}
-
-	.source-tabs button:hover {
-		color: var(--theme-text, #fff);
-	}
-
-	.source-tabs button.active {
-		background: var(--theme-accent, #6366f1);
-		color: white;
-	}
-
-	.source-tabs button i {
-		font-size: 0.75rem;
-	}
-
-	/* Conversation card styles */
-	.conversation-card .timestamp {
-		margin-top: 0.5rem;
-		font-size: 0.75rem;
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-	}
-
-	.empty-hint {
-		margin-top: 0.5rem;
-		font-size: 0.75rem;
-		opacity: 0.7;
-	}
-
-	/* Conversation detail panel */
-	.detail-actions {
-		display: flex;
-		gap: 0.5rem;
-	}
-
-	.action-btn-small {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		padding: 0.5rem 0.75rem;
-		border: none;
-		border-radius: 6px;
-		font-size: 0.8125rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all var(--duration-fast) ease;
-	}
-
-	.open-btn {
-		background: var(--theme-accent, #6366f1);
-		color: white;
-	}
-
-	.open-btn:hover {
-		background: #4f46e5;
-	}
-
-	.unflag-btn {
-		background: #22c55e;
-		color: white;
-	}
-
-	.unflag-btn:hover {
-		background: #16a34a;
-	}
-
-	/* Conversation messages preview */
-	.conversation-messages {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-		max-height: 400px;
-		overflow-y: auto;
-	}
-
-	.message-preview {
-		padding: 0.75rem;
-		border-radius: 8px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-	}
-
-	.message-preview.user {
-		border-left: 3px solid var(--theme-accent, #6366f1);
-	}
-
-	.message-preview.assistant {
-		border-left: 3px solid #22c55e;
-	}
-
-	.role-label {
-		display: block;
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-		margin-bottom: 0.375rem;
-	}
-
-	.message-text {
-		font-size: 0.875rem;
-		line-height: 1.5;
-		white-space: pre-wrap;
-		word-break: break-word;
+	@media (prefers-reduced-motion: reduce) {
+		.spinning {
+			animation: none;
+		}
 	}
 </style>

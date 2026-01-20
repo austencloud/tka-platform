@@ -33,7 +33,23 @@ export class Animation3DPersister implements IAnimation3DPersister {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return {};
-      return JSON.parse(stored);
+      const state = JSON.parse(stored);
+
+      // Migration: Clear legacy camera positions (pre-meter scale)
+      // Old positions were 200-800 units, new positions are 1-10 meters
+      if (state.cameraPosition) {
+        const maxCoord = Math.max(...state.cameraPosition.map(Math.abs));
+        if (maxCoord > 20) {
+          // Legacy position detected, clear it
+          console.log('[Animation3DPersister] Clearing legacy camera position:', state.cameraPosition);
+          delete state.cameraPosition;
+          delete state.cameraTarget;
+          // Persist the cleaned state
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+      }
+
+      return state;
     } catch (e) {
       console.warn("Failed to load 3D animator state:", e);
       return {};

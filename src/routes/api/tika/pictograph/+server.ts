@@ -4,11 +4,15 @@
  * Generates pictograph images for the Tika learning assistant.
  * Uses the same StandaloneRenderer as the MCP server.
  *
+ * NOTE: This API only works in development mode. In production (static build),
+ * pictographs are served from pre-rendered static files or Firebase Storage.
+ *
  * NOTE: If renderer changes don't take effect, restart the dev server.
  * The mcp-server module is externalized and cached by Node.js.
  */
 
 import { json, type RequestHandler } from '@sveltejs/kit'
+import { dev } from '$app/environment'
 import fs from 'fs'
 import path from 'path'
 
@@ -101,6 +105,11 @@ function getPictographsForMode(gridMode: 'diamond' | 'box'): PictographData[] {
 }
 
 export const POST: RequestHandler = async ({ request }) => {
+	// This API only works in development - production uses pre-rendered static files
+	if (!dev) {
+		return json({ error: 'Pictograph API is only available in development mode' }, { status: 503 })
+	}
+
 	try {
 		const { letter, variation = 0, gridMode = 'diamond', options = {} } = await request.json()
 
@@ -134,9 +143,10 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ error: 'Variation not found' }, { status: 404 })
 		}
 
-		// Dynamic import of MCP server's standalone renderer
-		// This runs server-side so Node.js modules work
-		const { getStandaloneRenderer } = await import('../../../../../mcp-server/src/core/standalone-renderer.js')
+		// Dynamic import of MCP server's standalone renderer (dev only)
+		// Uses Function constructor to prevent Vite from analyzing the import path
+		const importPath = '../../../../../mcp-server/src/core/standalone-renderer.js'
+		const { getStandaloneRenderer } = await (new Function('path', 'return import(path)')(importPath) as Promise<{ getStandaloneRenderer: () => any }>)
 
 		// Convert CSV row to renderer input format
 		const pictographInput = {
@@ -221,6 +231,11 @@ export const POST: RequestHandler = async ({ request }) => {
 
 // GET endpoint for simple letter lookups - returns PNG directly
 export const GET: RequestHandler = async ({ url }) => {
+	// This API only works in development - production uses pre-rendered static files
+	if (!dev) {
+		return json({ error: 'Pictograph API is only available in development mode' }, { status: 503 })
+	}
+
 	const letter = url.searchParams.get('letter')
 	const variation = parseInt(url.searchParams.get('variation') || '0', 10)
 	const darkMode = url.searchParams.get('darkMode') !== 'false'
@@ -231,6 +246,8 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	ensureDataLoaded()
 
+	// Use combined pictographs for GET (legacy behavior)
+	const allPictographs = [...diamondPictographs, ...boxPictographs]
 	const variations = allPictographs.filter((p) => p.letter === letter)
 
 	if (variations.length === 0) {
@@ -252,7 +269,9 @@ export const GET: RequestHandler = async ({ url }) => {
 	}
 
 	try {
-		const { getStandaloneRenderer } = await import('../../../../../mcp-server/src/core/standalone-renderer.js')
+		// Dynamic import (dev only) - uses Function constructor to prevent Vite analysis
+		const importPath = '../../../../../mcp-server/src/core/standalone-renderer.js'
+		const { getStandaloneRenderer } = await (new Function('path', 'return import(path)')(importPath) as Promise<{ getStandaloneRenderer: () => any }>)
 
 		const pictographInput = {
 			letter: csvRow.letter,

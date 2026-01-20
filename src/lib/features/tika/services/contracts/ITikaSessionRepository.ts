@@ -9,6 +9,9 @@ import type {
   TikaSession,
   TikaSessionPreview,
   TikaSessionQueryOptions,
+  ReviewQueueQueryOptions,
+  ReviewResult,
+  ReviewStatus,
 } from "../../domain/models/tika-conversation-models";
 
 export interface ITikaSessionRepository {
@@ -62,4 +65,51 @@ export interface ITikaSessionRepository {
    * @returns Array of flagged sessions
    */
   getFlaggedSessions(): Promise<TikaSession[]>;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // REVIEW WORKFLOW METHODS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Get sessions in the review queue by status
+   * @param options - Filter by status and limit
+   * @returns Array of sessions matching the query
+   */
+  getReviewQueue(options?: ReviewQueueQueryOptions): Promise<TikaSession[]>;
+
+  /**
+   * Atomically claim a session for review (prevents duplicate reviews)
+   * @param sessionId - The session ID to claim
+   * @param claimedBy - Who is claiming: "claude-tika" or user ID
+   * @returns The claimed session, or null if already claimed
+   */
+  claimForReview(sessionId: string, claimedBy: string): Promise<TikaSession | null>;
+
+  /**
+   * Submit review results for a session
+   * @param sessionId - The session ID
+   * @param result - The review result (grade, notes, etc.)
+   * @returns The updated session
+   */
+  submitReview(sessionId: string, result: ReviewResult): Promise<TikaSession>;
+
+  /**
+   * Add human notes to a session before review
+   * @param sessionId - The session ID
+   * @param notes - Human-added context notes
+   */
+  addReviewNotes(sessionId: string, notes: string): Promise<void>;
+
+  /**
+   * Update the review status of a session
+   * @param sessionId - The session ID
+   * @param status - The new status
+   */
+  updateReviewStatus(sessionId: string, status: ReviewStatus): Promise<void>;
+
+  /**
+   * Archive a reviewed session
+   * @param sessionId - The session ID to archive
+   */
+  archiveReview(sessionId: string): Promise<void>;
 }

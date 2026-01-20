@@ -201,3 +201,32 @@ The user runs their dev server via VS Code on port 5173. The `npm run dev` scrip
 - `npm run build` - check compilation
 - `npm run check` - TypeScript errors
 - `curl localhost:5173/path` - test the user's running server
+
+---
+
+## CRITICAL: Never Run Unbounded System Searches
+
+**On January 19, 2026, Claude ran a command that searched the ENTIRE Windows filesystem looking for Python processes. This consumed 67+ million characters of output and nearly exhausted the entire context window in a single command.**
+
+### The Mistake
+
+```bash
+# NEVER DO THIS - Git Bash's find searched the entire system
+tasklist /FI "..." | find /c "python"
+```
+
+Git Bash interpreted `find` as the Unix `find` command and searched every directory on the system.
+
+### Rules:
+
+1. **NEVER run `find` without an explicit, narrow path** - always specify the exact directory
+2. **NEVER run system process queries through Git Bash** - use PowerShell or cmd.exe directly
+3. **When checking if something is running, ASK THE USER** - "Is Instaloader still running?" takes 2 seconds
+4. **Scope all searches narrowly** - if you need to search, search ONE directory, not the system
+5. **When in doubt, don't run the command** - ask the user instead
+
+### The Cost
+
+One bad command can consume the ENTIRE context budget. There is no recovery. The session becomes unusable.
+
+**If you're uncertain about a command's scope, DO NOT RUN IT. Ask the user.**

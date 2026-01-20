@@ -18,7 +18,7 @@ import {
   limit as firestoreLimit,
   onSnapshot,
   serverTimestamp,
-  collectionGroup,
+  runTransaction,
   type Unsubscribe,
   type DocumentData,
 } from "firebase/firestore";
@@ -32,6 +32,10 @@ import {
   type TikaSession,
   type TikaSessionPreview,
   type TikaSessionQueryOptions,
+  type ReviewQueueQueryOptions,
+  type ReviewResult,
+  type ReviewStatus,
+  type ReviewMetadata,
 } from "../../domain/models/tika-conversation-models";
 import {
   getUserTikaConversationsPath,
@@ -92,6 +96,26 @@ export class TikaSessionRepository implements ITikaSessionRepository {
       messages: data.messages || [],
       flaggedForReview: data.flaggedForReview || false,
       flaggedAt: data.flaggedAt ? this.toDate(data.flaggedAt) : undefined,
+      reviewStatus: data.reviewStatus,
+      reviewMetadata: data.reviewMetadata
+        ? this.mapReviewMetadata(data.reviewMetadata)
+        : undefined,
+    };
+  }
+
+  /**
+   * Map Firestore review metadata, converting timestamps
+   */
+  private mapReviewMetadata(data: DocumentData): ReviewMetadata {
+    return {
+      claimedAt: data.claimedAt ? this.toDate(data.claimedAt) : undefined,
+      claimedBy: data.claimedBy,
+      grade: data.grade,
+      confidence: data.confidence,
+      notes: data.notes,
+      aiNotes: data.aiNotes,
+      correctedResponse: data.correctedResponse,
+      reviewedAt: data.reviewedAt ? this.toDate(data.reviewedAt) : undefined,
     };
   }
 
@@ -108,6 +132,10 @@ export class TikaSessionRepository implements ITikaSessionRepository {
       lastUserMessage: data.lastUserMessage || "",
       flaggedForReview: data.flaggedForReview || false,
       flaggedAt: data.flaggedAt ? this.toDate(data.flaggedAt) : undefined,
+      reviewStatus: data.reviewStatus,
+      reviewMetadata: data.reviewMetadata
+        ? this.mapReviewMetadata(data.reviewMetadata)
+        : undefined,
     };
   }
 
@@ -298,11 +326,16 @@ export class TikaSessionRepository implements ITikaSessionRepository {
         await updateDoc(docRef, {
           flaggedForReview: true,
           flaggedAt: serverTimestamp(),
+          reviewStatus: "pending",
+          // Clear any previous review metadata when re-flagging
+          reviewMetadata: null,
         });
       } else {
         await updateDoc(docRef, {
           flaggedForReview: false,
           flaggedAt: null,
+          reviewStatus: null,
+          reviewMetadata: null,
         });
       }
     } catch (error) {
@@ -338,6 +371,241 @@ export class TikaSessionRepository implements ITikaSessionRepository {
     } catch (error) {
       console.error("[TikaSessionRepository] Failed to get flagged sessions:", error);
       throw new TikaSessionError("Failed to load flagged conversations", "NETWORK");
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // REVIEW WORKFLOW METHODS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  async getReviewQueue(options?: ReviewQueueQueryOptions): Promise<TikaSession[]> {
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+
+    const collectionRef = collection(
+      firestore,
+      getUserTikaConversationsPath(userId)
+    );
+
+    // Build query constraints
+    const constraints = [];
+
+    // Filter by status(es)
+    if (options?.status) {
+      const statuses = Array.isArray(options.status) ? options.status : [options.status];
+      if (statuses.length === 1) {
+        constraints.push(where("reviewStatus", "==", statuses[0]));
+      } else {
+        constraints.push(where("reviewStatus", "in", statuses));
+      }
+    } else {
+      // Default: get all items that have a review status (i.e., flagged items)
+      constraints.push(where("flaggedForReview", "==", true));
+    }
+
+    constraints.push(orderBy("flaggedAt", "desc"));
+
+    if (options?.limit) {
+      constraints.push(firestoreLimit(options.limit));
+    }
+
+    const q = query(collectionRef, ...constraints);
+
+    try {
+      const snapshot = await getDocs(q);
+      const sessions: TikaSession[] = [];
+
+      snapshot.forEach((docSnap) => {
+        sessions.push(this.mapDocToSession(docSnap.data(), docSnap.id));
+      });
+
+      return sessions;
+    } catch (error) {
+      console.error("[TikaSessionRepository] Failed to get review queue:", error);
+      throw new TikaSessionError("Failed to load review queue", "NETWORK");
+    }
+  }
+
+  async claimForReview(sessionId: string, claimedBy: string): Promise<TikaSession | null> {
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+
+    const docRef = doc(
+      firestore,
+      getUserTikaConversationPath(userId, sessionId)
+    );
+
+    try {
+      // Use transaction for atomic claim
+      const result = await runTransaction(firestore, async (transaction) => {
+        const docSnap = await transaction.get(docRef);
+
+        if (!docSnap.exists()) {
+          throw new TikaSessionError("Session not found", "NOT_FOUND");
+        }
+
+        const data = docSnap.data();
+
+        // Check if already claimed by someone else
+        if (data.reviewStatus === "claimed" && data.reviewMetadata?.claimedBy !== claimedBy) {
+          // Already claimed by another reviewer
+          return null;
+        }
+
+        // Claim it
+        const reviewMetadata = {
+          ...data.reviewMetadata,
+          claimedAt: serverTimestamp(),
+          claimedBy,
+        };
+
+        transaction.update(docRef, {
+          reviewStatus: "claimed",
+          reviewMetadata: sanitizeForFirestore(reviewMetadata),
+        });
+
+        return this.mapDocToSession(
+          {
+            ...data,
+            reviewStatus: "claimed",
+            reviewMetadata: { ...reviewMetadata, claimedAt: new Date() },
+          },
+          sessionId
+        );
+      });
+
+      return result;
+    } catch (error) {
+      if (error instanceof TikaSessionError) throw error;
+      console.error("[TikaSessionRepository] Failed to claim session:", error);
+      throw new TikaSessionError("Failed to claim session for review", "NETWORK");
+    }
+  }
+
+  async submitReview(sessionId: string, result: ReviewResult): Promise<TikaSession> {
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+
+    const docRef = doc(
+      firestore,
+      getUserTikaConversationPath(userId, sessionId)
+    );
+
+    try {
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        throw new TikaSessionError("Session not found", "NOT_FOUND");
+      }
+
+      const data = docSnap.data();
+      const existingMetadata = data.reviewMetadata || {};
+
+      // Determine final status based on review result
+      let newStatus: ReviewStatus;
+      if (result.autoApprove) {
+        newStatus = "approved";
+      } else if (result.correctedResponse) {
+        newStatus = "needs-correction";
+      } else {
+        newStatus = "in-review"; // Needs human review
+      }
+
+      const updatedMetadata: ReviewMetadata = {
+        ...existingMetadata,
+        grade: result.grade,
+        confidence: result.confidence,
+        aiNotes: result.notes,
+        correctedResponse: result.correctedResponse,
+        reviewedAt: new Date(),
+      };
+
+      await updateDoc(docRef, {
+        reviewStatus: newStatus,
+        reviewMetadata: sanitizeForFirestore(updatedMetadata),
+      });
+
+      return this.mapDocToSession(
+        {
+          ...data,
+          reviewStatus: newStatus,
+          reviewMetadata: updatedMetadata,
+        },
+        sessionId
+      );
+    } catch (error) {
+      if (error instanceof TikaSessionError) throw error;
+      console.error("[TikaSessionRepository] Failed to submit review:", error);
+      throw new TikaSessionError("Failed to submit review", "NETWORK");
+    }
+  }
+
+  async addReviewNotes(sessionId: string, notes: string): Promise<void> {
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+
+    const docRef = doc(
+      firestore,
+      getUserTikaConversationPath(userId, sessionId)
+    );
+
+    try {
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        throw new TikaSessionError("Session not found", "NOT_FOUND");
+      }
+
+      const data = docSnap.data();
+      const existingMetadata = data.reviewMetadata || {};
+
+      await updateDoc(docRef, {
+        reviewMetadata: sanitizeForFirestore({
+          ...existingMetadata,
+          notes,
+        }),
+      });
+    } catch (error) {
+      if (error instanceof TikaSessionError) throw error;
+      console.error("[TikaSessionRepository] Failed to add review notes:", error);
+      throw new TikaSessionError("Failed to add review notes", "NETWORK");
+    }
+  }
+
+  async updateReviewStatus(sessionId: string, status: ReviewStatus): Promise<void> {
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+
+    const docRef = doc(
+      firestore,
+      getUserTikaConversationPath(userId, sessionId)
+    );
+
+    try {
+      await updateDoc(docRef, {
+        reviewStatus: status,
+      });
+    } catch (error) {
+      console.error("[TikaSessionRepository] Failed to update review status:", error);
+      throw new TikaSessionError("Failed to update review status", "NETWORK");
+    }
+  }
+
+  async archiveReview(sessionId: string): Promise<void> {
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+
+    const docRef = doc(
+      firestore,
+      getUserTikaConversationPath(userId, sessionId)
+    );
+
+    try {
+      await updateDoc(docRef, {
+        reviewStatus: "archived",
+        flaggedForReview: false,
+      });
+    } catch (error) {
+      console.error("[TikaSessionRepository] Failed to archive review:", error);
+      throw new TikaSessionError("Failed to archive review", "NETWORK");
     }
   }
 }

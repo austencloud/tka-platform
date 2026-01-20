@@ -180,6 +180,11 @@
     customCameraTarget ?? ([0, 0, 0] as [number, number, number])
   );
 
+  // DEBUG: Log camera position
+  $effect(() => {
+    console.log('[Scene3D] Camera position:', cameraPosition, 'Target:', cameraTarget, 'Preset:', cameraPreset, 'Custom:', customCameraPosition);
+  });
+
   // Track if we should use custom position (set to false when preset changes)
   let useCustom = $state(false);
 
@@ -278,9 +283,9 @@
     <!-- Perspective Camera (disabled when locomotion mode provides its own) -->
     {#if !disableCamera}
       {#if cameraMode === CameraMode.FIRST_PERSON && primaryAvatar}
-        <!-- First-person camera following primary avatar -->
-        {@const eyeHeight = 160}
-        {@const forwardOffset = 50}
+        <!-- First-person camera following primary avatar (in meters) -->
+        {@const eyeHeight = SCALE.EYE_HEIGHT}
+        {@const forwardOffset = 0.25}
         {@const eyeX = primaryAvatar.position.x + Math.sin(primaryAvatar.facingAngle) * forwardOffset}
         {@const eyeY = primaryAvatar.position.y + eyeHeight}
         {@const eyeZ = primaryAvatar.position.z + Math.cos(primaryAvatar.facingAngle) * forwardOffset}
@@ -289,9 +294,9 @@
           bind:ref={cameraRef}
           makeDefault
           position={[eyeX, eyeY, eyeZ]}
-          fov={75}
-          near={1}
-          far={6000}
+          fov={SCALE.DEFAULT_FOV}
+          near={SCALE.NEAR_CLIP}
+          far={SCALE.FAR_CLIP}
         />
 
         <!-- Update camera rotation to match avatar facing -->
@@ -311,8 +316,8 @@
           makeDefault
           position={cameraPosition}
           fov={65}
-          near={1}
-          far={6000}
+          near={SCALE.NEAR_CLIP}
+          far={SCALE.FAR_CLIP}
         >
           <!-- Orbit controls attached to camera (disabled during object dragging) -->
           <OrbitControls
@@ -320,8 +325,8 @@
             enabled={!disableOrbitControls}
             enableDamping
             dampingFactor={0.05}
-            minDistance={200}
-            maxDistance={1500}
+            minDistance={1.0}
+            maxDistance={10.0}
             target={cameraTarget}
             onchange={handleCameraChange}
           />
@@ -334,14 +339,14 @@
 
     <!-- Directional light for depth (reduced for night environments) -->
     <T.DirectionalLight
-      position={[200, 300, 200]}
+      position={[2, 3, 2]}
       intensity={mainLightIntensity}
       color={mainLightColor}
     />
 
     <!-- Additional fill light from opposite side -->
     <T.DirectionalLight
-      position={[-100, 100, -100]}
+      position={[-1, 1, -1]}
       intensity={fillLightIntensity}
       color={fillLightColor}
     />

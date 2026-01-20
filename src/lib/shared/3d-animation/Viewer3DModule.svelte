@@ -34,11 +34,12 @@
 
   // Unified camera system (handles orbit, third-person, first-person)
   import UnifiedCameraController from "$lib/shared/3d-core/camera/UnifiedCameraController.svelte";
-  import { CameraMode, isGameMode } from "$lib/shared/3d-core/camera/types";
+  import { CameraMode, isGameMode, type PhysicsProvider } from "$lib/shared/3d-core/camera/types";
   import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
 
-  // NOTE: Stage does NOT use Rapier physics - it uses the legacy unit system (~300 units for grid)
-  // Rapier physics is only for Infinite Worlds which uses the meter scale system
+  // Physics system (Stage now uses meters + Rapier for unified collision with Infinite Worlds)
+  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d-core/physics/types";
+  import { SCALE } from "$lib/shared/3d-core/scale/scale-constants";
 
   // Effects system
   import EffectsLayer from "./effects/EffectsLayer.svelte";
@@ -84,6 +85,11 @@
   // Services - initialized asynchronously
   let persistenceService: IAnimation3DPersister | null = $state(null);
   let servicesReady = $state(false);
+
+  // Physics state (Rapier)
+  let physicsState: PhysicsWorldState | null = $state(null);
+  let playerController: PlayerControllerState | null = $state(null);
+  let physicsProvider: PhysicsProvider | null = $state(null);
 
   // Performer management (extracted to dedicated state factory)
   let performerManager = $state<PerformerManager | null>(null);
@@ -233,6 +239,39 @@
     const sequenceConverter = container.items.sequenceConverter;
     persistenceService = container.items.animation3DPersister;
 
+    // Initialize Rapier physics (Stage now uses meters, unified with Infinite Worlds)
+    const { createPhysicsWorldState, initPhysicsWorld } = await import(
+      "$lib/shared/3d-core/physics/rapier-world"
+    );
+    const { createPlayerController } = await import(
+      "$lib/shared/3d-core/physics/player-controller"
+    );
+    const { createRapierPhysicsProvider } = await import(
+      "$lib/shared/3d-core/physics/RapierPhysicsProvider"
+    );
+
+    physicsState = createPhysicsWorldState();
+    await initPhysicsWorld(physicsState, { x: 0, y: SCALE.GRAVITY, z: 0 });
+
+    // Ground plane collider (100m x 100m at Y=0 for large play area)
+    if (physicsState.rapier && physicsState.world) {
+      const RAPIER = physicsState.rapier;
+      const groundColliderDesc = RAPIER.ColliderDesc.cuboid(50, 0.1, 50)
+        .setTranslation(0, -0.1, 0);
+      physicsState.world.createCollider(groundColliderDesc);
+      console.log('[Viewer3DModule] Ground collider created at Y=-0.1, size 100x100m');
+    }
+
+    // Player controller starting just above ground
+    playerController = createPlayerController(physicsState, {
+      position: { x: 0, y: 1, z: 0 },
+    });
+    console.log('[Viewer3DModule] Player controller created at Y=1');
+
+    // Create physics provider for UnifiedCameraController
+    physicsProvider = createRapierPhysicsProvider(physicsState, playerController);
+    console.log('[Viewer3DModule] Physics provider created:', physicsProvider);
+
     // Create performer manager with resolved dependencies
     performerManager = createPerformerManager({
       propInterpolator,
@@ -282,6 +321,29 @@
   });
 
   // Note: Pointer lock is now managed by UnifiedCameraController
+
+  // Physics simulation step loop
+  $effect(() => {
+    if (!physicsState?.world) return;
+
+    let animationId: number;
+    let lastTime = performance.now();
+
+    function step() {
+      const now = performance.now();
+      const deltaTime = Math.min((now - lastTime) / 1000, 0.05); // Cap at 50ms
+      lastTime = now;
+
+      if (physicsState?.world) {
+        physicsState.world.timestep = deltaTime;
+        physicsState.world.step();
+      }
+      animationId = requestAnimationFrame(step);
+    }
+    step();
+
+    return () => cancelAnimationFrame(animationId);
+  });
 
   // Update formation transitions (runs every frame during transitions)
   $effect(() => {
@@ -357,6 +419,10 @@
 
   onDestroy(() => {
     performerManager?.destroy();
+    // Clean up Rapier physics
+    if (physicsState?.world) {
+      physicsState.world.free();
+    }
   });
 </script>
 
@@ -463,11 +529,11 @@
         />
 
         <!-- Unified Camera Controller (orbit, third-person, first-person) -->
-        <!-- Stage uses kinematic movement (no physics) - different unit scale than Infinite Worlds -->
         {#if activeState}
           <UnifiedCameraController
             destinationId="stage"
             avatarState={activeState}
+            {physicsProvider}
             enabled={true}
             onModeChange={(mode) => (cameraMode = mode)}
           />

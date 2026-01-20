@@ -8,6 +8,52 @@
 import type { UIMessage } from "ai";
 
 /**
+ * Review workflow statuses
+ * - pending: Flagged, waiting for review
+ * - claimed: /tika command is currently reviewing
+ * - in-review: Human reviewing AI's assessment
+ * - approved: Passed review
+ * - needs-correction: Needs prompt/system improvement
+ * - archived: Historical record
+ */
+export type ReviewStatus =
+  | "pending"
+  | "claimed"
+  | "in-review"
+  | "approved"
+  | "needs-correction"
+  | "archived";
+
+/**
+ * Metadata captured during the review process
+ */
+export interface ReviewMetadata {
+  /** When this was claimed for review */
+  claimedAt?: Date;
+
+  /** Who claimed it: "claude-tika" or a user ID */
+  claimedBy?: string;
+
+  /** Letter grade from review (A+, A, B, C, D, F) */
+  grade?: string;
+
+  /** Confidence score 0-100 */
+  confidence?: number;
+
+  /** Human-added notes before review */
+  notes?: string;
+
+  /** Claude's analysis from /tika command */
+  aiNotes?: string;
+
+  /** If response needed correction, the ideal response */
+  correctedResponse?: string;
+
+  /** When the review was completed */
+  reviewedAt?: Date;
+}
+
+/**
  * Full Tika session data stored in Firestore
  */
 export interface TikaSession {
@@ -40,6 +86,12 @@ export interface TikaSession {
 
   /** When the session was flagged for review */
   flaggedAt?: Date;
+
+  /** Review workflow status */
+  reviewStatus?: ReviewStatus;
+
+  /** Review metadata (notes, grade, claim info) */
+  reviewMetadata?: ReviewMetadata;
 }
 
 /**
@@ -55,6 +107,8 @@ export interface TikaSessionPreview {
   lastUserMessage: string;
   flaggedForReview?: boolean;
   flaggedAt?: Date;
+  reviewStatus?: ReviewStatus;
+  reviewMetadata?: ReviewMetadata;
 }
 
 /**
@@ -66,6 +120,37 @@ export interface TikaSessionQueryOptions {
 
   /** Sort direction (default: desc by updatedAt) */
   sortDirection?: "asc" | "desc";
+}
+
+/**
+ * Options for querying review queue
+ */
+export interface ReviewQueueQueryOptions {
+  /** Filter by review status */
+  status?: ReviewStatus | ReviewStatus[];
+
+  /** Maximum number of sessions to return */
+  limit?: number;
+}
+
+/**
+ * Result from a review submission
+ */
+export interface ReviewResult {
+  /** The grade assigned (A+, A, B, C, D, F) */
+  grade: string;
+
+  /** Confidence score 0-100 */
+  confidence: number;
+
+  /** Notes from the reviewer */
+  notes?: string;
+
+  /** Corrected response if needed */
+  correctedResponse?: string;
+
+  /** Whether to auto-approve (based on grade/confidence) */
+  autoApprove: boolean;
 }
 
 /**

@@ -434,6 +434,11 @@ export default defineConfig({
     // 2026: Works with Svelte 5
 
     rollupOptions: {
+      // Externalize server-only modules that can't be bundled
+      external: [
+        "@resvg/resvg-js",
+        /mcp-server/,
+      ],
       output: {
         // Strategic chunking for your actual dependencies
         manualChunks: (id) => {
