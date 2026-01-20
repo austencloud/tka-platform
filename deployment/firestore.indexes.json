@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "tikaConversations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "flaggedForReview", "order": "ASCENDING" },
+        { "fieldPath": "flaggedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "achievements",
       "queryScope": "COLLECTION",
       "fields": [

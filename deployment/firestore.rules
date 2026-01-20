@@ -223,8 +223,10 @@ service cloud.firestore {
 
       // Allow updates for:
       // 1. Owner updating their own profile
-      // 2. Authenticated users incrementing/decrementing followerCount (for follow/unfollow)
+      // 2. Admins updating any user's profile (role changes, moderation)
+      // 3. Authenticated users incrementing/decrementing followerCount (for follow/unfollow)
       allow update: if isOwner(userId)
+        || isAdmin()
         || (isAuthenticated()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount'])
             && request.resource.data.followerCount == resource.data.followerCount + 1)
@@ -769,6 +771,24 @@ service cloud.firestore {
 
       // Users can delete their own location, admins can delete any
       allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // ============================================================================
+    // SHOWCASE VIDEOS (Landing Page Video Curation)
+    // ============================================================================
+
+    // Showcase videos - uploaded from Instagram, curated for landing page
+    // Authenticated users can read (admin module is access-controlled client-side)
+    // Public can read approved videos (for landing page display)
+    // Only admins can write
+    match /showcaseVideos/{videoId} {
+      // Allow read for:
+      // 1. Any authenticated user (for admin curation UI)
+      // 2. Unauthenticated users for approved videos (landing page)
+      allow read: if isAuthenticated() || resource.data.approved == true;
+
+      // Only admins can create/update/delete
+      allow create, update, delete: if isAdmin();
     }
 
     // ============================================================================

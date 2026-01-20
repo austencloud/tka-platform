@@ -6,36 +6,12 @@
       "args": ["/c", "npx", "-y", "@playwright/mcp@latest"],
       "env": {}
     },
-    "fetch": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-fetch"],
-      "env": {}
-    },
     "memory": {
       "command": "cmd",
       "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-memory"],
       "env": {}
     },
-    "time": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-time"],
-      "env": {}
-    },
-    "filesystem": {
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "C:\\Users\\auste\\Documents",
-        "C:\\_CA-CODE",
-        "C:\\_TKA-STUDIO",
-        "F:\\_THE KINETIC ALPHABET\\_TKA-STUDIO"
-      ],
-      "env": {}
-    },
-    "tka-pictograph": {
+    "tka-domain": {
       "command": "cmd",
       "args": [
         "/c",

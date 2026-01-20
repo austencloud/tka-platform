@@ -264,10 +264,16 @@ export default defineConfig({
         disableDevLogs: true,
         // Cache strategies for different asset types
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,webp}"],
-        // Exclude large files from precaching (they'll use runtime caching instead)
+        // Exclude files from precaching that shouldn't be cached
         globIgnores: [
           "**/data/*.json", // sequence-index.json is 8MB+
           "**/chunks/*.js", // Exclude ALL immutable chunks from precache - they're cached by browser anyway
+          // Dev/utility HTML pages - cause Cache.put() errors when precached
+          "render-pictograph.html",
+          "render-compare.html",
+          "icon-preview.html",
+          "legacy-sw.js", // Old SW shouldn't be cached by new SW
+          "google*.html", // Google site verification files
         ],
         // Disable the size limit check entirely - immutable chunks don't need precaching
         maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
@@ -285,9 +291,12 @@ export default defineConfig({
               ]
             : undefined,
         runtimeCaching: [
+          // ============================================================
+          // NETWORK-ONLY: Resources that must never be cached
+          // (Order matters: more specific patterns first)
+          // ============================================================
           {
             // 🔥 Firebase auth/config APIs - bypass service worker entirely
-            // These are dynamic and must never be cached or intercepted
             urlPattern: /^https:\/\/firebase\.googleapis\.com\/.*/i,
             handler: "NetworkOnly",
           },
@@ -302,25 +311,54 @@ export default defineConfig({
             handler: "NetworkOnly",
           },
           {
-            // Cache Google Fonts
+            // 🧠 MediaPipe models from Google Storage - large binary files, no CORS
+            // These return opaque responses and would cause Cache.put() errors
+            urlPattern: /^https:\/\/storage\.googleapis\.com\/mediapipe.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            // 📦 CDN resources (jsdelivr, unpkg, cdnjs) - often return opaque responses
+            // Let the browser cache these natively instead of fighting with service worker
+            urlPattern: /^https:\/\/(cdn\.jsdelivr\.net|unpkg\.com|cdnjs\.cloudflare\.com)\/.*/i,
+            handler: "NetworkOnly",
+          },
+          // ============================================================
+          // CACHEABLE: Resources with proper CORS that we want to cache
+          // ============================================================
+          {
+            // Cache Google Fonts CSS
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: "CacheFirst",
+            handler: "StaleWhileRevalidate",
             options: {
-              cacheName: "google-fonts-cache",
+              cacheName: "google-fonts-stylesheets",
               expiration: {
                 maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 1 week
+              },
+              cacheableResponse: {
+                statuses: [0, 200], // Include 0 for opaque responses (fonts work offline)
+              },
+            },
+          },
+          {
+            // Cache Google Font files (gstatic.com has proper CORS)
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-webfonts",
+              expiration: {
+                maxEntries: 30,
                 maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
               },
               cacheableResponse: {
-                statuses: [0, 200],
+                statuses: [0, 200], // Include 0 for opaque responses
               },
             },
           },
           {
             // Cache static assets from Firebase Storage (thumbnails, images)
-            // IMPORTANT: Only cache status 200 (not 0/opaque) to allow CORS requests
             urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
-            handler: "CacheFirst",
+            handler: "StaleWhileRevalidate", // Changed from CacheFirst - safer for cross-origin
             options: {
               cacheName: "firebase-storage-cache",
               expiration: {
@@ -328,13 +366,12 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               },
               cacheableResponse: {
-                statuses: [200], // Only cache successful CORS responses
+                statuses: [0, 200], // Include 0 - Firebase Storage may return opaque
               },
             },
           },
           {
-            // Network-first for API calls (ensures fresh data)
-            // IMPORTANT: Only cache status 200 - opaque responses (status 0) cause Cache.put() errors
+            // Network-first for other googleapis.com APIs
             urlPattern: /^https:\/\/.*\.googleapis\.com\/.*$/i,
             handler: "NetworkFirst",
             options: {
@@ -345,9 +382,17 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 5, // 5 minutes
               },
               cacheableResponse: {
-                statuses: [200],
+                statuses: [200], // Only cache successful CORS responses for APIs
               },
             },
+          },
+          // ============================================================
+          // CATCH-ALL: Any other cross-origin request - don't cache
+          // ============================================================
+          {
+            // 🛡️ Catch-all for remaining cross-origin requests
+            urlPattern: /^https?:\/\/(?!localhost)/i,
+            handler: "NetworkOnly",
           },
         ],
       },
