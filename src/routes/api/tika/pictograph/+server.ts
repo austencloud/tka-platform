@@ -16,6 +16,9 @@ import { dev } from '$app/environment'
 import fs from 'fs'
 import path from 'path'
 
+// Get absolute path to mcp-server renderer using process.cwd() (more reliable in Vite SSR)
+const MCP_RENDERER_PATH = path.join(process.cwd(), 'mcp-server', 'dist', 'src', 'core', 'standalone-renderer.js')
+
 // Types for pictograph data (matches MCP server)
 interface MotionData {
 	color: string
@@ -144,9 +147,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		// Dynamic import of MCP server's standalone renderer (dev only)
-		// Uses Function constructor to prevent Vite from analyzing the import path
-		const importPath = '../../../../../mcp-server/src/core/standalone-renderer.js'
-		const { getStandaloneRenderer } = await (new Function('path', 'return import(path)')(importPath) as Promise<{ getStandaloneRenderer: () => any }>)
+		// Uses file:// URL with absolute path to bypass Vite's module resolution
+		const rendererUrl = `file://${MCP_RENDERER_PATH.replace(/\\/g, '/')}`
+		const { getStandaloneRenderer } = await import(/* @vite-ignore */ rendererUrl)
 
 		// Convert CSV row to renderer input format
 		const pictographInput = {
@@ -269,9 +272,9 @@ export const GET: RequestHandler = async ({ url }) => {
 	}
 
 	try {
-		// Dynamic import (dev only) - uses Function constructor to prevent Vite analysis
-		const importPath = '../../../../../mcp-server/src/core/standalone-renderer.js'
-		const { getStandaloneRenderer } = await (new Function('path', 'return import(path)')(importPath) as Promise<{ getStandaloneRenderer: () => any }>)
+		// Dynamic import (dev only) - uses file:// URL with absolute path
+		const rendererUrl = `file://${MCP_RENDERER_PATH.replace(/\\/g, '/')}`
+		const { getStandaloneRenderer } = await import(/* @vite-ignore */ rendererUrl)
 
 		const pictographInput = {
 			letter: csvRow.letter,

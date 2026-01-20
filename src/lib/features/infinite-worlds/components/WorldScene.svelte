@@ -47,6 +47,8 @@
     showDebug?: boolean;
     /** Auto-load Hannon's Camp terrain on mount (legacy - prefer realmConfig) */
     autoLoadHannons?: boolean;
+    /** Enable stage mode - flat performance area with grid planes */
+    stageMode?: boolean;
   }
 
   let {
@@ -54,6 +56,7 @@
     seed,
     showDebug = false,
     autoLoadHannons = false,
+    stageMode = false,
   }: Props = $props();
 
   // Use provided realm config or default
@@ -148,6 +151,7 @@
       {worldSeed}
       {worldNoise}
       {autoLoadHannons}
+      {stageMode}
       bind:physicsState
       bind:terrainPhysics
       bind:playerController

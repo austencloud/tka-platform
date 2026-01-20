@@ -74,6 +74,19 @@ export interface PhysicsConfig {
 }
 
 /**
+ * Stage zone configuration
+ * Defines a flat circular area for performances
+ */
+export interface StageZoneConfig {
+  /** Enable stage zone flattening */
+  enabled: boolean;
+  /** Radius of the flat area in meters */
+  radius: number;
+  /** Width of the blend transition in meters */
+  blendWidth: number;
+}
+
+/**
  * Complete realm configuration
  */
 export interface RealmConfig {
@@ -98,6 +111,9 @@ export interface RealmConfig {
 
   /** Physics settings */
   physics: PhysicsConfig;
+
+  /** Stage zone configuration (optional flat performance area) */
+  stageZone?: StageZoneConfig;
 }
 
 // ============================================================================

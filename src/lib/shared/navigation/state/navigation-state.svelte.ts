@@ -35,6 +35,7 @@ function tryResolveService<T>(serviceName: string): T | null {
 // Import configurations from separated files
 import {
   CREATE_TABS,
+  DEFAULT_CREATE_TAB,
   LEARN_TABS,
   DISCOVER_TABS,
   LIBRARY_TABS,
@@ -275,16 +276,22 @@ export function createNavigationState() {
               // Also remember this tab for the module
               lastTabByModule[urlModule as ModuleId] = urlTab;
             } else {
-              // URL tab not valid - use remembered or first tab
+              // URL tab not valid - use remembered or default tab
               const remembered = lastTabByModule[urlModule as ModuleId];
-              const firstTab = urlModuleDefinition.sections[0]?.id || "";
-              activeTab = remembered || firstTab;
+              const defaultTab =
+                urlModule === "create"
+                  ? DEFAULT_CREATE_TAB
+                  : urlModuleDefinition.sections[0]?.id || "";
+              activeTab = remembered || defaultTab;
             }
           } else if (urlModuleDefinition.sections.length > 0) {
-            // Module has tabs but URL doesn't specify one - use remembered or first
+            // Module has tabs but URL doesn't specify one - use remembered or default
             const remembered = lastTabByModule[urlModule as ModuleId];
-            const firstTab = urlModuleDefinition.sections[0]?.id || "";
-            activeTab = remembered || firstTab;
+            const defaultTab =
+              urlModule === "create"
+                ? DEFAULT_CREATE_TAB
+                : urlModuleDefinition.sections[0]?.id || "";
+            activeTab = remembered || defaultTab;
           } else {
             // Module has no tabs
             activeTab = "";
@@ -391,15 +398,17 @@ export function createNavigationState() {
         ) {
           nextTab = targetTab;
         } else {
-          // Otherwise fall back to remembered or first tab
+          // Otherwise fall back to remembered or default tab
           const remembered = lastTabByModule[moduleId];
-          const firstSection = moduleDefinition.sections[0];
-          const fallbackTab = firstSection ? firstSection.id : "";
+          const defaultTab =
+            moduleId === "create"
+              ? DEFAULT_CREATE_TAB
+              : moduleDefinition.sections[0]?.id || "";
           nextTab =
             remembered &&
             moduleDefinition.sections.some((tab) => tab.id === remembered)
               ? remembered
-              : fallbackTab;
+              : defaultTab;
         }
 
         lastTabByModule = {

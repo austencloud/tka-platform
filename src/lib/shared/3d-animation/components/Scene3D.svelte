@@ -35,7 +35,7 @@
   import { CameraMode } from "$lib/shared/3d-core/camera/types";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import { getCameraLayers } from "$lib/shared/3d-core/layers/layer-constants";
-  import { SCALE } from "$lib/shared/3d-core/scale/scale-constants";
+  import { SCALE, STAGE } from "$lib/shared/3d-core/scale/scale-constants";
 
   // Enable Threlte layers plugin for layer inheritance through component tree
   layers();
@@ -163,14 +163,9 @@
   const mainLightColor = $derived(isNightEnvironment ? "#6688cc" : "#ffffff");
   const fillLightColor = $derived(isNightEnvironment ? "#334477" : "#ffffff");
 
-  // Camera position based on preset (in meters)
+  // Camera position presets (from centralized STAGE constants)
   // Grid ~1.1m, performers ~1.7m tall - camera at ~4m gives good overview
-  const cameraPositions = {
-    front: [0, 0, 4] as [number, number, number], // Looking at Wall plane
-    top: [0, 4, 0] as [number, number, number], // Looking at Floor plane
-    side: [4, 0, 0] as [number, number, number], // Looking at Wheel plane
-    perspective: [2.75, 2.25, 2.75] as [number, number, number], // Angled view
-  };
+  const cameraPositions = STAGE.CAMERA_PRESETS;
 
   // Use custom position if provided, otherwise use preset
   let cameraPosition = $derived(
@@ -280,7 +275,7 @@
       {#if cameraMode === CameraMode.FIRST_PERSON && primaryAvatar}
         <!-- First-person camera following primary avatar (in meters) -->
         {@const eyeHeight = SCALE.EYE_HEIGHT}
-        {@const forwardOffset = 0.25}
+        {@const forwardOffset = STAGE.FIRST_PERSON_FORWARD_OFFSET}
         {@const eyeX = primaryAvatar.position.x + Math.sin(primaryAvatar.facingAngle) * forwardOffset}
         {@const eyeY = primaryAvatar.position.y + eyeHeight}
         {@const eyeZ = primaryAvatar.position.z + Math.cos(primaryAvatar.facingAngle) * forwardOffset}
@@ -320,8 +315,8 @@
             enabled={!disableOrbitControls}
             enableDamping
             dampingFactor={0.05}
-            minDistance={1.0}
-            maxDistance={10.0}
+            minDistance={STAGE.ORBIT_MIN_DISTANCE}
+            maxDistance={STAGE.ORBIT_MAX_DISTANCE}
             target={cameraTarget}
             onchange={handleCameraChange}
           />

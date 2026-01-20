@@ -58,6 +58,61 @@ export const HANNONS_CAMP_CONFIG: RealmConfig = {
 };
 
 // ============================================================================
+// PERFORMANCE STAGE
+// ============================================================================
+
+/**
+ * Performance Stage
+ *
+ * Stage area surrounded by forest. The stage is a flat circular
+ * area at the world origin, with forest terrain blending in beyond.
+ * Users can perform sequences on the stage grid, then walk away
+ * into the procedural forest terrain.
+ */
+export const PERFORMANCE_STAGE_CONFIG: RealmConfig = {
+  id: "performance-stage",
+  name: "Performance Stage",
+  description: "Stage area surrounded by forest",
+
+  terrain: {
+    type: "procedural",
+    seed: 42,  // Forest seed
+  },
+
+  chunks: {
+    size: 32,
+    viewDistance: 256,
+    lodDistances: [32, 64, 128, 256],
+  },
+
+  features: {
+    objectPlacement: false,
+    boundaryEditing: false,
+    satelliteImagery: false,
+  },
+
+  spawn: {
+    position: [0, 0, 0],  // Center of stage
+    yaw: 0,
+  },
+
+  physics: {
+    walkSpeed: 3.5,
+    runSpeed: 7,
+    flySpeed: 50,
+    gravity: 9.81,
+    jumpForce: 5,
+    playerHeight: 1.7,
+  },
+
+  stageZone: {
+    enabled: true,
+    radius: 15,      // 15m flat stage area
+    blendWidth: 10,  // 10m transition to forest
+  },
+};
+
+// ============================================================================
 // PROCEDURAL WORLD
 // ============================================================================
 
@@ -161,6 +216,7 @@ export const FLAT_TESTING_CONFIG: RealmConfig = {
  */
 export const REALM_CONFIGS: Record<string, RealmConfig> = {
   "hannons-camp": HANNONS_CAMP_CONFIG,
+  "performance-stage": PERFORMANCE_STAGE_CONFIG,
   procedural: PROCEDURAL_WORLD_CONFIG,
   "flat-testing": FLAT_TESTING_CONFIG,
 };

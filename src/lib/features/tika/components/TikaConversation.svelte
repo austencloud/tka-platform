@@ -554,6 +554,28 @@
         </button>
       {/if}
 
+      <!-- Copy as image - always visible when there are messages -->
+      {#if messages.length > 0}
+        <button
+          class="action-btn copy-image-btn"
+          onclick={async () => {
+            if (!chatContainer) return;
+            const domtoimage = await import("dom-to-image-more");
+            const blob = await domtoimage.default.toBlob(chatContainer, {
+              bgcolor: "#12121c",
+              quality: 1.0,
+            });
+            await navigator.clipboard.write([
+              new ClipboardItem({ "image/png": blob }),
+            ]);
+          }}
+          title="Copy as image"
+          aria-label="Copy conversation as image"
+        >
+          <i class="fas fa-camera" aria-hidden="true"></i>
+        </button>
+      {/if}
+
       <!-- Secondary Actions: In overflow menu -->
       <TikaActionMenu
         actions={[
@@ -583,23 +605,6 @@
                   onClick: () => {
                     const data = generateCopyForAI();
                     navigator.clipboard.writeText(data);
-                  },
-                },
-                {
-                  id: "copy-image",
-                  label: "Copy as image",
-                  icon: "fa-camera",
-                  onClick: async () => {
-                    if (!chatContainer) return;
-                    // Import dom-to-image-more dynamically
-                    const domtoimage = await import("dom-to-image-more");
-                    const blob = await domtoimage.default.toBlob(chatContainer, {
-                      bgcolor: "#12121c",
-                      quality: 1.0,
-                    });
-                    await navigator.clipboard.write([
-                      new ClipboardItem({ "image/png": blob }),
-                    ]);
                   },
                 },
               ]
@@ -1095,6 +1100,18 @@
   .flag-btn.flagged:hover {
     background: linear-gradient(135deg, rgba(245, 158, 11, 1), rgba(217, 119, 6, 1));
     box-shadow: 0 4px 14px rgba(245, 158, 11, 0.5);
+  }
+
+  /* Copy as image button - purple/violet for media actions */
+  .copy-image-btn {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.9), rgba(139, 92, 246, 0.9));
+    border-color: rgba(168, 85, 247, 0.3);
+    box-shadow: 0 2px 8px rgba(168, 85, 247, 0.25);
+  }
+
+  .copy-image-btn:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 1), rgba(139, 92, 246, 1));
+    box-shadow: 0 4px 14px rgba(168, 85, 247, 0.4);
   }
 
   /* Responsive: hide subtitle on very narrow screens */

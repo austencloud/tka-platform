@@ -251,8 +251,8 @@
     const sequenceConverter = container.items.sequenceConverter;
     persistenceService = container.items.animation3DPersister;
 
-    // Initialize Rapier physics (Stage now uses meters, unified with Infinite Worlds)
-    const { createPhysicsWorldState, initPhysicsWorld } = await import(
+    // Initialize Rapier physics (Stage uses meters, unified with Infinite Worlds)
+    const { createPhysicsWorldState, initPhysicsWorld, createStageGround } = await import(
       "$lib/shared/3d-core/physics/rapier-world"
     );
     const { createPlayerController } = await import(
@@ -265,13 +265,8 @@
     physicsState = createPhysicsWorldState();
     await initPhysicsWorld(physicsState, { x: 0, y: SCALE.GRAVITY, z: 0 });
 
-    // Ground plane collider (100m x 100m at Y=0 for large play area)
-    if (physicsState.rapier && physicsState.world) {
-      const RAPIER = physicsState.rapier;
-      const groundColliderDesc = RAPIER.ColliderDesc.cuboid(50, 0.1, 50)
-        .setTranslation(0, -0.1, 0);
-      physicsState.world.createCollider(groundColliderDesc);
-    }
+    // Create Stage ground plane (100m x 100m flat surface)
+    createStageGround(physicsState);
 
     // Player controller starting just above ground
     playerController = createPlayerController(physicsState, {

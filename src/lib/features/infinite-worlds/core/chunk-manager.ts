@@ -11,12 +11,43 @@
  * - Seamless LOD transitions
  */
 
-import {
-  world,
-  withChunk,
-  createChunkEntity,
-  type Entity,
-} from "./ecs-world";
+// Plain chunk entity (no ECS dependency)
+export interface ChunkEntity {
+  chunk: {
+    chunkX: number;
+    chunkY: number;
+    chunkZ: number;
+    lod: number;
+    seed: number;
+    generated: boolean;
+    lastAccessTime: number;
+  };
+  mesh?: {
+    object3D: import("three").Object3D;
+    visible: boolean;
+    castShadow: boolean;
+    receiveShadow: boolean;
+  };
+}
+
+function createChunkEntity(
+  chunkX: number,
+  chunkY: number,
+  chunkZ: number,
+  seed: number
+): ChunkEntity {
+  return {
+    chunk: {
+      chunkX,
+      chunkY,
+      chunkZ,
+      lod: 0,
+      seed,
+      generated: false,
+      lastAccessTime: Date.now(),
+    },
+  };
+}
 import { Octree } from "../spatial/octree";
 import type {
   ChunkResultMessage,
@@ -25,6 +56,8 @@ import type {
   LoadRealZoneMessage,
   ClearRealZoneMessage,
   RealZoneLoadedMessage,
+  SetStageZoneMessage,
+  ClearStageZoneMessage,
 } from "../workers/chunk-generator.worker";
 import {
   type RealTerrainZone,
@@ -53,7 +86,7 @@ export interface ChunkManagerConfig {
  * Chunk state
  */
 export interface ChunkState {
-  entity: Entity;
+  entity: ChunkEntity;
   meshData: ChunkMeshData | null;
   loadState: "pending" | "loading" | "loaded" | "unloading";
   priority: number;
@@ -96,6 +129,13 @@ export class ChunkManager {
 
   // Real terrain zone
   private realTerrainZone: RealTerrainZone | null = null;
+
+  // Stage zone (flat performance area)
+  private stageZone: {
+    center: { x: number; z: number };
+    radius: number;
+    blendWidth: number;
+  } | null = null;
 
   // Callbacks
   public onChunkLoaded?: (chunkKey: ChunkKey, state: ChunkState) => void;
@@ -345,10 +385,7 @@ export class ChunkManager {
   private unloadChunk(key: ChunkKey, state: ChunkState): void {
     state.loadState = "unloading";
 
-    // Remove from ECS
-    if (state.entity) {
-      world.remove(state.entity);
-    }
+    // Entity is just a plain object now - no ECS cleanup needed
 
     // Remove from octree
     const [chunkX, , chunkZ] = this.parseChunkKey(key);
@@ -581,6 +618,108 @@ export class ChunkManager {
     this.processQueue();
   }
 
+  // ==========================================================================
+  // STAGE ZONE
+  // ==========================================================================
+
+  /**
+   * Set a stage zone - a flat circular area for performances
+   * Terrain within radius is flattened, with smooth blending to surrounding terrain
+   */
+  setStageZone(center: { x: number; z: number }, radius: number, blendWidth: number): void {
+    this.stageZone = { center, radius, blendWidth };
+
+    console.log(`[ChunkManager] Setting stage zone: center=(${center.x}, ${center.z}), radius=${radius}m, blend=${blendWidth}m`);
+
+    const message: SetStageZoneMessage = {
+      type: "set-stage-zone",
+      center,
+      radius,
+      blendWidth,
+    };
+
+    // Send to all workers
+    for (const worker of this.workers) {
+      worker.postMessage(message);
+    }
+
+    // Regenerate affected chunks
+    this.regenerateChunksInStageZone(center, radius + blendWidth);
+  }
+
+  /**
+   * Clear the stage zone
+   */
+  clearStageZone(): void {
+    if (!this.stageZone) return;
+
+    const prevZone = this.stageZone;
+    this.stageZone = null;
+
+    console.log(`[ChunkManager] Clearing stage zone`);
+
+    const message: ClearStageZoneMessage = {
+      type: "clear-stage-zone",
+    };
+
+    // Send to all workers
+    for (const worker of this.workers) {
+      worker.postMessage(message);
+    }
+
+    // Regenerate previously affected chunks
+    this.regenerateChunksInStageZone(prevZone.center, prevZone.radius + prevZone.blendWidth);
+  }
+
+  /**
+   * Check if a stage zone is set
+   */
+  hasStageZone(): boolean {
+    return this.stageZone !== null;
+  }
+
+  /**
+   * Regenerate chunks that overlap with the stage zone
+   */
+  private regenerateChunksInStageZone(center: { x: number; z: number }, totalRadius: number): void {
+    const { chunkSize } = this.config;
+
+    // Find chunks that intersect the stage zone area
+    const chunksToRegenerate: ChunkKey[] = [];
+
+    for (const [key, state] of this.chunks) {
+      if (state.loadState !== "loaded") continue;
+
+      const [chunkX, , chunkZ] = this.parseChunkKey(key);
+      const chunkCenterX = (chunkX + 0.5) * chunkSize;
+      const chunkCenterZ = (chunkZ + 0.5) * chunkSize;
+
+      // Check if chunk center is within total radius + chunk diagonal
+      const dx = chunkCenterX - center.x;
+      const dz = chunkCenterZ - center.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      const chunkDiagonal = chunkSize * Math.SQRT2;
+
+      if (dist < totalRadius + chunkDiagonal) {
+        chunksToRegenerate.push(key);
+      }
+    }
+
+    console.log(`[ChunkManager] Regenerating ${chunksToRegenerate.length} chunks in stage zone`);
+
+    // Unload and re-queue these chunks
+    for (const key of chunksToRegenerate) {
+      const state = this.chunks.get(key);
+      if (state) {
+        state.loadState = "pending";
+        state.meshData = null;
+        this.loadQueue.push(key);
+      }
+    }
+
+    this.processQueue();
+  }
+
   /**
    * Dispose all resources
    */
@@ -591,12 +730,7 @@ export class ChunkManager {
     }
     this.workers = [];
 
-    // Clear chunks
-    for (const [key, state] of this.chunks) {
-      if (state.entity) {
-        world.remove(state.entity);
-      }
-    }
+    // Clear chunks (plain objects, no ECS cleanup needed)
     this.chunks.clear();
 
     // Clear octree

@@ -81,6 +81,103 @@ export const SCALE = {
 } as const;
 
 /**
+ * Stage-specific constants
+ *
+ * These apply to the Stage (Viewer3DModule) where performers
+ * demonstrate TKA sequences on a bounded grid.
+ */
+export const STAGE = {
+	// ─────────────────────────────────────────────────────────────────
+	// Ground Plane (physics collider)
+	// ─────────────────────────────────────────────────────────────────
+
+	/** Half-extent of ground plane (50m = 100m x 100m total) */
+	GROUND_HALF_SIZE: 50,
+
+	/** Ground plane thickness */
+	GROUND_THICKNESS: 0.1,
+
+	// ─────────────────────────────────────────────────────────────────
+	// Performer Layout
+	// ─────────────────────────────────────────────────────────────────
+
+	/** Spacing between performers in a formation */
+	PERFORMER_SPACING: 2.0,
+
+	/** Maximum performers supported */
+	MAX_PERFORMERS: 4,
+
+	/** Offset behind grid plane where avatar stands (facing the grid) */
+	AVATAR_GRID_OFFSET: 0.3,
+
+	// ─────────────────────────────────────────────────────────────────
+	// Camera Presets (meters from origin)
+	// ─────────────────────────────────────────────────────────────────
+
+	CAMERA_PRESETS: {
+		/** Looking at Wall plane from front */
+		front: [0, 0, 4] as [number, number, number],
+		/** Looking at Floor plane from above */
+		top: [0, 4, 0] as [number, number, number],
+		/** Looking at Wheel plane from side */
+		side: [4, 0, 0] as [number, number, number],
+		/** Angled isometric view */
+		perspective: [2.75, 2.25, 2.75] as [number, number, number],
+	},
+
+	// ─────────────────────────────────────────────────────────────────
+	// Orbit Controls
+	// ─────────────────────────────────────────────────────────────────
+
+	/** Minimum orbit distance */
+	ORBIT_MIN_DISTANCE: 1.0,
+
+	/** Maximum orbit distance */
+	ORBIT_MAX_DISTANCE: 10.0,
+
+	// ─────────────────────────────────────────────────────────────────
+	// First Person Camera
+	// ─────────────────────────────────────────────────────────────────
+
+	/** Forward offset from avatar center (see past nose) */
+	FIRST_PERSON_FORWARD_OFFSET: 0.25,
+} as const;
+
+/**
+ * Infinite Worlds constants
+ *
+ * These apply to the procedural terrain exploration mode.
+ */
+export const WORLDS = {
+	// ─────────────────────────────────────────────────────────────────
+	// Chunk System
+	// ─────────────────────────────────────────────────────────────────
+
+	/** Default chunk size in meters */
+	CHUNK_SIZE: 64,
+
+	/** Default view distance in meters */
+	VIEW_DISTANCE: 256,
+
+	/** LOD distance thresholds */
+	LOD_DISTANCES: [32, 64, 128, 256] as readonly number[],
+
+	// ─────────────────────────────────────────────────────────────────
+	// Water
+	// ─────────────────────────────────────────────────────────────────
+
+	/** Default water level (Y coordinate) */
+	WATER_LEVEL: 5,
+
+	// ─────────────────────────────────────────────────────────────────
+	// Spawn
+	// ─────────────────────────────────────────────────────────────────
+
+	/** Default spawn height (high enough to drop onto terrain) */
+	SPAWN_HEIGHT: 50,
+} as const;
+
+/**
  * Legacy conversion factors - DEPRECATED
  *
  * The Stage has been fully converted to meters.

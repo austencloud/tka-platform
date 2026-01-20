@@ -11,8 +11,10 @@
     "paths": {
       "$lib/*": ["../src/lib/*"]
     },
-    "noEmit": true
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationDir": "./dist"
   },
-  "include": ["index.ts", "NodePictographRenderer.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["index.ts", "src/**/*.ts"],
+  "exclude": ["node_modules"]
 }

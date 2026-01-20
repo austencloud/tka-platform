@@ -12,6 +12,12 @@
   const externalUrl = detector.getOpenInBrowserUrl();
   const currentUrl = typeof window !== "undefined" ? window.location.href : "";
 
+  // Check if running as installed PWA
+  const isInstalledPWA =
+    typeof window !== "undefined" &&
+    (window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as { standalone?: boolean }).standalone === true);
+
   function handleOpenInBrowser() {
     if (canOpenExternal) {
       window.location.href = externalUrl;
@@ -41,7 +47,7 @@
   }
 </script>
 
-{#if isInAppBrowser && !dismissed}
+{#if isInAppBrowser && !dismissed && !isInstalledPWA}
   <div class="in-app-browser-prompt" role="alertdialog" aria-labelledby="iab-title" aria-describedby="iab-desc">
     <div class="prompt-content">
       <button class="dismiss-button" onclick={handleDismiss} aria-label="Dismiss">
@@ -49,25 +55,20 @@
       </button>
 
       <div class="icon-container">
-        <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+        <i class="fas fa-mobile-alt" aria-hidden="true"></i>
       </div>
 
-      <h2 id="iab-title">Open in Your Browser</h2>
+      <h2 id="iab-title">Open in TKA Scribe</h2>
 
       <p id="iab-desc">
-        {browserName ? `${browserName}'s` : "This app's"} built-in browser has limited features.
-        For the best experience with sign-in and all features, open this page in
-        {#if detector.canOpenInExternalBrowser()}
-          Chrome.
-        {:else}
-          Safari or Chrome.
-        {/if}
+        {browserName ? `${browserName}'s` : "This"} built-in browser doesn't support sign-in.
+        Open this link in the TKA Scribe app, or install it for the best experience.
       </p>
 
       <div class="actions">
         {#if canOpenExternal}
           <button class="primary-button" onclick={handleOpenInBrowser}>
-            <i class="fab fa-chrome" aria-hidden="true"></i>
+            <i class="fas fa-external-link-alt" aria-hidden="true"></i>
             Open in Chrome
           </button>
         {:else}
@@ -91,7 +92,7 @@
       </div>
 
       <button class="continue-anyway" onclick={handleDismiss}>
-        Continue anyway (some features may not work)
+        Continue anyway (sign-in may not work)
       </button>
     </div>
   </div>

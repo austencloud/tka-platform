@@ -69,6 +69,9 @@
     worldNoise: SeededNoise;
     autoLoadHannons: boolean;
 
+    /** Enable stage mode - flat performance area with grid planes */
+    stageMode?: boolean;
+
     // Bindable state (passed up to parent)
     physicsState: PhysicsWorldState | null;
     terrainPhysics: TerrainPhysicsManager | null;
@@ -108,6 +111,7 @@
     worldSeed,
     worldNoise,
     autoLoadHannons,
+    stageMode = false,
 
     physicsState = $bindable(),
     terrainPhysics = $bindable(),
@@ -145,8 +149,12 @@
   // Get Threlte context
   const { scene, camera, renderer } = useThrelte();
 
-  // Grid plane set - just floor plane for open world
+  // Grid plane sets
+  // Stage mode: all three planes (wall, wheel, floor)
+  // Open world: just floor plane
+  const stagePlaneSet = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]);
   const floorPlaneSet = new Set([Plane.FLOOR]);
+  const activePlaneSet = $derived(stageMode ? stagePlaneSet : floorPlaneSet);
 
   // ============================================================================
   // INITIALIZATION
@@ -186,7 +194,8 @@
     // Initialize atmosphere
     atmosphereManager = new AtmosphereManager(scene);
     atmosphereManager.createSky();
-    atmosphereManager.setFog("plains");
+    // Use forest fog for stage mode, otherwise use plains
+    atmosphereManager.setFog(stageMode ? "forest" : "plains");
 
     // Initialize water
     waterManager = new WaterManager(scene, {
@@ -260,6 +269,16 @@
     };
 
     isInitialized = true;
+
+    // Initialize stage zone if configured
+    if (stageMode && activeConfig.stageZone?.enabled && chunkManager) {
+      chunkManager.setStageZone(
+        { x: 0, z: 0 },  // Stage at origin
+        activeConfig.stageZone.radius,
+        activeConfig.stageZone.blendWidth
+      );
+      console.log(`[WorldSceneContent] Initialized stage zone: radius=${activeConfig.stageZone.radius}m, blend=${activeConfig.stageZone.blendWidth}m`);
+    }
 
     // Auto-load terrain if configured
     if (activeConfig.terrain.type === "real-terrain" || autoLoadHannons) {
@@ -516,6 +535,6 @@
   <Grid3D
     centerPosition={playerPosition}
     facingAngle={playerYaw}
-    visiblePlanes={floorPlaneSet}
+    visiblePlanes={activePlaneSet}
   />
 {/if}

@@ -5,17 +5,20 @@
  * All performers face the same direction (toward camera).
  */
 
+import { STAGE } from "$lib/shared/3d-core/scale/scale-constants";
+
 export interface PerformerPosition {
   x: number;
   z: number;
 }
 
 // All values in meters (1 unit = 1 meter)
-const GRID_SPACING = 2.0; // 2 meters between performers
+// Uses centralized STAGE constants for consistency
+const GRID_SPACING = STAGE.PERFORMER_SPACING;
 
 // Offset to position avatar behind the wall plane (facing it)
-// ~30cm behind the grid plane
-export const WALL_OFFSET = -0.3;
+// ~30cm behind the grid plane (negative because avatar is BEHIND the grid)
+export const WALL_OFFSET = -STAGE.AVATAR_GRID_OFFSET;
 
 /**
  * Default 2x2 grid positions (all facing same direction)
@@ -77,9 +80,9 @@ export function getPerformerPosition(
 /**
  * Grid spacing constant for external use
  */
-export const PERFORMER_GRID_SPACING = GRID_SPACING;
+export const PERFORMER_GRID_SPACING = STAGE.PERFORMER_SPACING;
 
 /**
  * Maximum supported performers
  */
-export const MAX_PERFORMERS = 4;
+export const MAX_PERFORMERS = STAGE.MAX_PERFORMERS;

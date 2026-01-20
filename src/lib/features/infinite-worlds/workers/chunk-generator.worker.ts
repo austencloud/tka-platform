@@ -25,6 +25,13 @@ import {
 // Real terrain zone (loaded once, used for all chunks)
 let realTerrainZone: RealTerrainZone | null = null;
 
+// Stage zone - flat performance area
+let stageZone: {
+  center: { x: number; z: number };
+  radius: number;
+  blendWidth: number;
+} | null = null;
+
 // ============================================================================
 // MESSAGE TYPES
 // ============================================================================
@@ -95,7 +102,18 @@ export interface VegetationData {
   scale: number;
 }
 
-export type WorkerMessage = GenerateChunkMessage | LoadRealZoneMessage | ClearRealZoneMessage;
+export interface SetStageZoneMessage {
+  type: "set-stage-zone";
+  center: { x: number; z: number };
+  radius: number;  // Flat area radius (e.g., 15m)
+  blendWidth: number;  // Transition width (e.g., 10m)
+}
+
+export interface ClearStageZoneMessage {
+  type: "clear-stage-zone";
+}
+
+export type WorkerMessage = GenerateChunkMessage | LoadRealZoneMessage | ClearRealZoneMessage | SetStageZoneMessage | ClearStageZoneMessage;
 export type WorkerResponse = ChunkResultMessage | RealZoneLoadedMessage;
 
 // ============================================================================
@@ -145,9 +163,27 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
       const proceduralHeight = getTerrainHeight(noise, worldX, worldZ);
 
       // Blend with real terrain if zone is loaded and chunk intersects
-      const height = usesRealTerrain
+      let height = usesRealTerrain
         ? getBlendedHeight(realTerrainZone, worldX, worldZ, proceduralHeight, 30)
         : proceduralHeight;
+
+      // Apply stage zone flattening
+      if (stageZone) {
+        const dx = worldX - stageZone.center.x;
+        const dz = worldZ - stageZone.center.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+
+        if (dist < stageZone.radius) {
+          // Inside stage: completely flat at Y=0
+          height = 0;
+        } else if (dist < stageZone.radius + stageZone.blendWidth) {
+          // Transition zone: blend from 0 to procedural
+          const t = (dist - stageZone.radius) / stageZone.blendWidth;
+          // Use smoothstep for a nicer transition
+          const smooth = t * t * (3 - 2 * t);
+          height = smooth * height;
+        }
+      }
 
       vertices[idx] = x * step;
       vertices[idx + 1] = height;
@@ -247,6 +283,18 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
       for (let x = 0; x < chunkSize; x += vegStep) {
         const worldX = originX + x;
         const worldZ = originZ + z;
+
+        // Skip vegetation in stage zone
+        if (stageZone) {
+          const dx = worldX - stageZone.center.x;
+          const dz = worldZ - stageZone.center.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          // No vegetation within stage radius + half blend width
+          if (dist < stageZone.radius + stageZone.blendWidth * 0.5) {
+            continue;
+          }
+        }
+
         const height = getTerrainHeight(noise, worldX, worldZ);
         const localBiome = getBiome(noise, worldX, worldZ);
         const density = getVegetationDensity(noise, worldX, worldZ);
@@ -460,6 +508,22 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
       const name = realTerrainZone?.name ?? "none";
       realTerrainZone = null;
       console.log(`[ChunkWorker] Cleared real terrain zone: ${name}`);
+      break;
+    }
+
+    case "set-stage-zone": {
+      stageZone = {
+        center: msg.center,
+        radius: msg.radius,
+        blendWidth: msg.blendWidth,
+      };
+      console.log(`[ChunkWorker] Set stage zone: center=(${msg.center.x}, ${msg.center.z}), radius=${msg.radius}m, blend=${msg.blendWidth}m`);
+      break;
+    }
+
+    case "clear-stage-zone": {
+      stageZone = null;
+      console.log(`[ChunkWorker] Cleared stage zone`);
       break;
     }
   }

@@ -254,6 +254,33 @@ export function checkGrounded(
 }
 
 // ============================================================================
+// STAGE-SPECIFIC HELPERS
+// ============================================================================
+
+import { STAGE } from "../scale/scale-constants";
+
+/**
+ * Create a flat ground plane for the Stage
+ *
+ * Creates a 100m x 100m ground collider at Y=0 (just below surface).
+ * This provides a flat floor for performer physics.
+ */
+export function createStageGround(state: PhysicsWorldState): void {
+	if (!state.rapier || !state.world) return;
+
+	const RAPIER = state.rapier;
+
+	// Ground is a thin box at Y = -thickness/2 so the TOP surface is at Y=0
+	const groundColliderDesc = RAPIER.ColliderDesc.cuboid(
+		STAGE.GROUND_HALF_SIZE, // 50m = 100m total width
+		STAGE.GROUND_THICKNESS, // 0.1m thick
+		STAGE.GROUND_HALF_SIZE, // 50m = 100m total depth
+	).setTranslation(0, -STAGE.GROUND_THICKNESS, 0);
+
+	state.world.createCollider(groundColliderDesc);
+}
+
+// ============================================================================
 // CLEANUP
 // ============================================================================
 
