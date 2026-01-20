@@ -6,6 +6,7 @@
 
   import HeroSection from "../../landing/components/HeroSection.svelte";
   import WhatIsTKASection from "../../landing/components/WhatIsTKASection.svelte";
+  import ShowcaseSection from "../../landing/components/ShowcaseSection.svelte";
   import LandingFooter from "../../landing/components/LandingFooter.svelte";
   import LandingBackgroundPicker from "../../landing/components/LandingBackgroundPicker.svelte";
 
@@ -56,6 +57,7 @@
     <HeroSection />
     <main id="main-content">
       <WhatIsTKASection />
+      <ShowcaseSection />
     </main>
     <LandingFooter />
   </div>

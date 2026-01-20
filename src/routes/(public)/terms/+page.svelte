@@ -70,7 +70,7 @@
         <h2>2. Description of Service</h2>
         <p>
           TKA Scribe is an educational platform that provides tools for
-          learning, creating, and sharing kinetic alphabet sequences. The
+          learning, creating, and sharing TKA (The Kinetic Alphabet) sequences. The
           service includes sequence building tools, learning modules, and
           community features.
         </p>

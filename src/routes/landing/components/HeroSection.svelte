@@ -93,13 +93,6 @@
     font-weight: 500;
   }
 
-  .subtitle {
-    font-size: 1.125rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
   .hero-visual {
     margin-top: clamp(24px, 5vw, 48px);
   }

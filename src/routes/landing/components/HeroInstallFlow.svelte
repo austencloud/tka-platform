@@ -162,8 +162,8 @@
   {:else}
     <!-- Desktop - just open in browser -->
     <a href={APP_DOMAIN} class="btn btn-primary">
-      <i class="fas fa-rocket" aria-hidden="true"></i>
-      <span>Launch App</span>
+      <i class="fas fa-play-circle" aria-hidden="true"></i>
+      <span>Start exploring</span>
       <span class="arrow">→</span>
     </a>
   {/if}
