@@ -468,8 +468,14 @@
     transform: scale(1.02);
   }
 
-  /* Override global focus-visible outline - selection styling is sufficient */
+  /* Subtle focus indicator for keyboard navigation */
   .step-cell:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.4);
+    outline-offset: 2px;
+  }
+
+  /* Selected cells already have gold border - no additional outline needed */
+  .step-cell.selected:focus-visible {
     outline: none;
   }
 

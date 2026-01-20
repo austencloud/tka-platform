@@ -1020,74 +1020,12 @@
     }
   }
 
-  /* ============================================
-     EXPANDED CELL GLYPH OVERLAY
-     Positions glyphs at corners of expanded timeline cells
-     to visually communicate the cell's expanded duration
-     ============================================ */
-
-  .timeline-cell.timeline-expanded {
-    position: relative;
-  }
-
-  .expanded-glyph-overlay {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 2;
-  }
-
-  /* Step number - top-left corner */
-  .expanded-step-number {
-    position: absolute;
-    top: 4px;
-    left: 6px;
-    font-family: Georgia, serif;
-    font-weight: bold;
-    font-size: clamp(14px, 3.5cqw, 20px);
-    color: white;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  }
-
-  /* TKA letter - bottom-left corner */
-  .expanded-tka-letter {
-    position: absolute;
-    bottom: 4px;
-    left: 6px;
-    font-family: Georgia, serif;
-    font-weight: bold;
-    font-size: clamp(16px, 4cqw, 24px);
-    color: #00b8b8;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  }
-
-  /* Duration indicator - top-right corner */
-  .expanded-duration {
-    position: absolute;
-    top: 4px;
-    right: 6px;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-    font-weight: 600;
-    font-size: clamp(12px, 3cqw, 16px);
-    color: rgba(255, 255, 255, 0.7);
-    background: rgba(0, 0, 0, 0.3);
-    padding: 2px 6px;
-    border-radius: 4px;
-  }
-
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
     .deleting {
       animation: none;
     }
     .sliding {
-      animation: none;
-    }
-    /* Disable local keyframe animations */
-    [style*="fadeOutDisintegrate"] {
-      animation: none;
-    }
-    [style*="slideIntoPlace"] {
       animation: none;
     }
   }

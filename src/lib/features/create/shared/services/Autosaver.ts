@@ -20,6 +20,7 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
+import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import {
   createDraftSequence,
   type DraftSequence,
@@ -52,7 +53,7 @@ export class Autosaver {
 
     const firestore = await getFirestoreInstance();
     const draftRef = doc(firestore, `users/${user.uid}/drafts/${sessionId}`);
-    await setDoc(draftRef, draft, { merge: true });
+    await trackWrite(() => setDoc(draftRef, draft, { merge: true }));
 
     this.isDirty = false;
   }
@@ -82,7 +83,7 @@ export class Autosaver {
 
     const firestore = await getFirestoreInstance();
     const draftRef = doc(firestore, `users/${user.uid}/drafts/${sessionId}`);
-    await deleteDoc(draftRef);
+    await trackWrite(() => deleteDoc(draftRef));
   }
 
   /**

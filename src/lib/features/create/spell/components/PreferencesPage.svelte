@@ -25,7 +25,6 @@ New "preferences-first" flow:
     estimatedCount = null,
     isEstimating = false,
     showGreekBar = true,
-    showLetterPalette = false,
   }: {
     word: string;
     onWordChange: (word: string) => void;
@@ -40,7 +39,6 @@ New "preferences-first" flow:
     estimatedCount?: number | null;
     isEstimating?: boolean;
     showGreekBar?: boolean;
-    showLetterPalette?: boolean;
   } = $props();
 
   // Grid mode options

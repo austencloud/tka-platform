@@ -10,8 +10,10 @@ import { container } from "$lib/shared/di";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { IArrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
 
 export type TransformId = "mirror" | "flip" | "invert" | "rotate" | "swap" | "rewind";
 
@@ -66,6 +68,56 @@ function hasRotation(motion: MotionData): boolean {
  */
 function hasMovement(motion: MotionData): boolean {
   return motion.startLocation !== motion.endLocation;
+}
+
+/**
+ * Enhance a motion for invert demos by adding turns=1 if it has rotation direction.
+ * This makes the rotation visible so the invert effect can be demonstrated.
+ */
+function enhanceMotionForInvert(motion: MotionData): MotionData {
+  if (!hasRotation(motion) || motion.turns > 0) {
+    return motion; // Already has turns or no rotation - no change needed
+  }
+  // Add 1 turn to make rotation visible
+  return createMotionData({
+    ...motion,
+    turns: 1,
+  });
+}
+
+/**
+ * Enhance a pictograph for invert demos by adding turns to motions with rotation.
+ * Also recalculates arrow placement to match the new turn values.
+ */
+async function enhancePictographForInvert(pictograph: PictographData): Promise<PictographData> {
+  const blue = pictograph.motions?.blue;
+  const red = pictograph.motions?.red;
+
+  // Check if any motion needs enhancement
+  const blueNeedsEnhancement = blue && hasRotation(blue) && blue.turns === 0;
+  const redNeedsEnhancement = red && hasRotation(red) && red.turns === 0;
+
+  if (!blueNeedsEnhancement && !redNeedsEnhancement) {
+    return pictograph; // No enhancement needed
+  }
+
+  // Create enhanced pictograph with turns=1 for rotating motions
+  const enhancedPictograph: PictographData = {
+    ...pictograph,
+    motions: {
+      blue: blue ? enhanceMotionForInvert(blue) : undefined,
+      red: red ? enhanceMotionForInvert(red) : undefined,
+    },
+  };
+
+  // Recalculate arrow placement for the enhanced pictograph
+  try {
+    const arrowOrchestrator = container.items.arrowPositioningOrchestrator as IArrowPositioningOrchestrator;
+    return await arrowOrchestrator.calculateAllArrowPoints(enhancedPictograph);
+  } catch (error) {
+    console.warn("Failed to recalculate arrow placement for invert demo:", error);
+    return enhancedPictograph; // Return without recalculated placement as fallback
+  }
 }
 
 /**
@@ -149,15 +201,25 @@ export async function getRandomPictographForTransform(
   const allPictographs = await loadAllPictographs();
   const suitable = filterForTransform(allPictographs, transformId);
 
+  let selected: PictographData | null = null;
+
   if (suitable.length === 0) {
     // Fallback to any pictograph if no suitable ones found
     if (allPictographs.length === 0) return null;
     const randomIndex = Math.floor(Math.random() * allPictographs.length);
-    return allPictographs[randomIndex] ?? null;
+    selected = allPictographs[randomIndex] ?? null;
+  } else {
+    const randomIndex = Math.floor(Math.random() * suitable.length);
+    selected = suitable[randomIndex] ?? null;
   }
 
-  const randomIndex = Math.floor(Math.random() * suitable.length);
-  return suitable[randomIndex] ?? null;
+  // For invert demos, enhance the pictograph by adding turns to motions with rotation
+  // This ensures dash motions with rotation direction show visible rotation
+  if (selected && transformId === "invert") {
+    selected = await enhancePictographForInvert(selected);
+  }
+
+  return selected;
 }
 
 /**

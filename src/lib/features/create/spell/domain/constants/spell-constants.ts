@@ -16,11 +16,12 @@ export const MAX_WORD_LENGTH = 10;
  * Default preferences for spell generation
  */
 export const DEFAULT_SPELL_PREFERENCES: SpellPreferences = {
-  minimizeReversals: true,
-  preferContinuous: true,
-  favorMotionType: null,
+  targetStepCount: null,
+  motionTypeFilter: null,
+  maxReversals: null,
+  highContinuity: true,
   makeCircular: false,
-  selectedLOOPType: null, // null = show options after generation
+  selectedLOOPType: null,
 };
 
 /**

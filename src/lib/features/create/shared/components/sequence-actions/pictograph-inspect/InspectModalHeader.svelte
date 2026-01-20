@@ -128,47 +128,9 @@
     gap: 8px;
   }
 
-  .copy-all-btn,
-  .copy-json-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 600;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .copy-all-btn {
-    background: linear-gradient(135deg, #06b6d4, #0891b2);
-    color: white;
-  }
-
-  .copy-all-btn:hover {
-    background: linear-gradient(135deg, #22d3ee, #06b6d4);
-    transform: translateY(-1px);
-  }
-
-  .copy-all-btn:disabled,
-  .copy-json-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  .copy-json-btn {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.8);
-    border: 1px solid var(--theme-stroke-strong);
-  }
-
-  .copy-json-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-  }
+  /* Note: .copy-all-btn and .copy-json-btn styles removed as they're
+     passed to child component and won't be applied due to Svelte scoping.
+     The CopyForAIButton component handles its own styling. */
 
   .close-btn {
     width: 40px;
