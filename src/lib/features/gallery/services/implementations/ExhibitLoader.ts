@@ -78,6 +78,26 @@ export class ExhibitLoader implements IExhibitLoader {
     return exhibits;
   }
 
+  async loadExhibitsForModel(options: ExhibitLoadOptions): Promise<Exhibit[]> {
+    // Load sequences without slot assignments
+    // Slots will be assigned later when the 3D model reports its painting positions
+    const sequences = await this.loadSequences(options);
+
+    // Create exhibits with placeholder slot IDs
+    // These will be matched to model slots in GalleryModule
+    const exhibits: Exhibit[] = sequences.map((sequence, index) => ({
+      id: `exhibit-${sequence.id}`,
+      slotId: `pending_${index}`, // Will be reassigned when model slots load
+      sequence,
+      thumbnailUrl: sequence.thumbnails?.[0] ?? null,
+      showAvatar: false,
+      avatarPosition: { x: 0, y: 0, z: 0 }, // Will be set from model slot
+      avatarFacing: 0,
+    }));
+
+    return exhibits;
+  }
+
   async preloadThumbnails(exhibitIds: string[]): Promise<void> {
     // Thumbnail preloading will use the existing CloudThumbnailCache pattern
     // For now, this is a no-op placeholder

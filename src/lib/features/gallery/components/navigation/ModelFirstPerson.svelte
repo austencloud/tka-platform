@@ -13,6 +13,7 @@
   import { Vector3, Raycaster, MathUtils, type PerspectiveCamera, type Object3D } from "three";
   import { CameraMode } from "$lib/shared/3d-core/camera/types";
   import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
+  import { SCALE } from "$lib/shared/3d-core/scale/scale-constants";
 
   interface Props {
     /** Starting position [x, y, z] */
@@ -36,15 +37,15 @@
   }
 
   let {
-    spawnPosition = [0, 1.7, 5],
-    moveSpeed = 5,
-    playerHeight = 1.7,
-    collisionRadius = 0.3,
+    spawnPosition = [0, SCALE.EYE_HEIGHT, 5],
+    moveSpeed = SCALE.WALK_SPEED,
+    playerHeight = SCALE.PLAYER_HEIGHT,
+    collisionRadius = SCALE.PLAYER_RADIUS,
     maxStepHeight = 0.5,
-    sprintMultiplier = 2.0,
+    sprintMultiplier = SCALE.SPRINT_MULTIPLIER,
     crouchHeight = 1.0,
-    jumpForce = 8.0,
-    gravity = 20.0,
+    jumpForce = SCALE.JUMP_VELOCITY,
+    gravity = Math.abs(SCALE.GRAVITY) * 2, // Amplified for game feel
   }: Props = $props();
 
   const { renderer, scene } = useThrelte();
@@ -405,7 +406,7 @@
 
     // === 4. APPLY GRAVITY ===
     verticalVelocity -= gravity * delta;
-    verticalVelocity = Math.max(verticalVelocity, -30); // Terminal velocity
+    verticalVelocity = Math.max(verticalVelocity, SCALE.TERMINAL_VELOCITY);
 
     // === 5. APPLY VERTICAL MOVEMENT ===
     playerPosition.y += verticalVelocity * delta;
@@ -521,9 +522,9 @@
 <T.PerspectiveCamera
   makeDefault
   position={spawnPosition}
-  fov={75}
-  near={0.1}
-  far={1000}
+  fov={SCALE.DEFAULT_FOV}
+  near={SCALE.NEAR_CLIP}
+  far={SCALE.FAR_CLIP}
   oncreate={(ref) => setupControls(ref)}
 />
 

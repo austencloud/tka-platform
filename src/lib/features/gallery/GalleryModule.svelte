@@ -4,25 +4,25 @@
    *
    * Main entry point for the 3D virtual gallery experience.
    * Walk through a museum displaying your sequences as art.
-   * Supports multiplayer sessions where users can explore together.
+   * Uses a model-based approach - loads a GLB museum model.
    */
 
   import { onMount, onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
-  import type { IPropStateInterpolator } from "$lib/shared/3d-animation/services/contracts/IPropStateInterpolator";
-  import type { ISequenceConverter } from "$lib/shared/3d-animation/services/contracts/ISequenceConverter";
   import { createGalleryState } from "./state/gallery-state.svelte";
   import { createGallerySettings } from "./state/gallery-settings.svelte";
   import { createMultiplayerState, type MultiplayerStateInstance } from "./multiplayer/state/multiplayer-state.svelte";
   import GalleryScene from "./components/GalleryScene.svelte";
   import GalleryHUD from "./components/GalleryHUD.svelte";
 
+  // Museum model path
+  const MUSEUM_MODEL_PATH = "/models/art-gallery.glb";
+
   // Create gallery state and settings
   const galleryState = createGalleryState();
   const gallerySettings = createGallerySettings();
 
-  // Multiplayer state (initialized after services are resolved)
-  // The outer variable needs $state for reactivity when assigned; inner object has its own reactive getters
+  // Multiplayer state
   let multiplayerState = $state<MultiplayerStateInstance | null>(null);
 
   // Current rotation and locomotion for position syncing
@@ -32,24 +32,12 @@
   // Track pointer lock for HUD
   let isNavigating = $state(false);
 
-  // 3D avatar services (loaded async)
-  let avatarServiceDeps = $state<{
-    propInterpolator: IPropStateInterpolator;
-    sequenceConverter: ISequenceConverter;
-  } | null>(null);
-
   // Initialize gallery on mount
   onMount(async () => {
     galleryState.setLoading(true);
 
     try {
-      // Get 3D animation services from ITI container
-      const propInterpolator = container.items.propStateInterpolator;
-      const sequenceConverter = container.items.sequenceConverter;
-      avatarServiceDeps = { propInterpolator, sequenceConverter };
-
       // Get gallery services from ITI container
-      const layoutGenerator = container.items.galleryLayoutGenerator;
       const exhibitLoader = container.items.exhibitLoader;
 
       // Get multiplayer services from ITI container
@@ -59,17 +47,22 @@
       // Initialize multiplayer state
       multiplayerState = createMultiplayerState(sessionManager, positionSyncer);
 
-      // Generate fixed grand museum layout
-      const layout = layoutGenerator.generate({
-        exhibitCount: 100, // Layout is fixed size, this is ignored
-        layoutType: "mansion",
+      // Create a minimal layout for model-based galleries
+      // The model itself provides the visual environment, we just need exhibit data
+      galleryState.setLayout({
+        id: "model-gallery",
+        name: "Art Gallery",
+        modelPath: MUSEUM_MODEL_PATH,
+        exhibitSlots: [], // Will be populated by Museum3D via setModelSlots
+        spawnPoint: { x: 0, y: 1.7, z: 5 },
+        floorSize: { width: 20, depth: 20 }, // 20x20 meters
       });
-      galleryState.setLayout(layout);
 
-      // Load MANY exhibits to fill the grand gallery
-      const exhibits = await exhibitLoader.loadExhibits(layout, {
+      // Load exhibits from user's library
+      // For model-based galleries, we load sequences and assign them to model slots
+      const exhibits = await exhibitLoader.loadExhibitsForModel({
         source: "user_library",
-        limit: 100, // Load up to 100 sequences
+        limit: 50,
       });
       galleryState.setExhibits(exhibits);
 
@@ -90,7 +83,7 @@
 
   // Handle keyboard shortcuts
   function handleKeyDown(e: KeyboardEvent) {
-    // Toggle light/dark mode with 'T' key (L is taken by global dark mode toggle)
+    // Toggle light/dark mode with 'T' key
     if (e.key.toLowerCase() === "t") {
       galleryState.toggleLights();
     }
@@ -147,7 +140,7 @@
       await multiplayerState.createSession({
         name,
         visibility,
-        layoutId: 'mansion'
+        layoutId: 'model-gallery'
       });
     } catch (error) {
       console.error('[GalleryModule] Failed to create session:', error);
@@ -218,11 +211,10 @@
   <GalleryScene
     {galleryState}
     {gallerySettings}
-    {avatarServiceDeps}
     {multiplayerState}
     onRotationChange={handleRotationChange}
     onLocomotionChange={handleLocomotionChange}
-    museumModelPath="/models/art-gallery.glb"
+    museumModelPath={MUSEUM_MODEL_PATH}
   />
   <GalleryHUD
     {galleryState}

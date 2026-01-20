@@ -178,8 +178,8 @@ export const MULTIPLAYER_CONFIG = {
 	/** Interpolation speed factor (higher = snappier, lower = smoother) */
 	INTERPOLATION_SPEED: 10,
 
-	/** Distance threshold for "nearby" players */
-	NEARBY_DISTANCE: 500,
+	/** Distance threshold for "nearby" players (meters) */
+	NEARBY_DISTANCE: 10,
 
 	/** Firebase paths */
 	PATHS: {

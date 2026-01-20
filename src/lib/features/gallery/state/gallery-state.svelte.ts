@@ -2,15 +2,13 @@
  * Gallery State
  *
  * Reactive state management for the 3D gallery experience.
+ * Simplified for model-based galleries.
  */
 
 import type { GalleryLayout } from "../domain/models/GalleryLayout";
 import type { Exhibit, GalleryContentSource } from "../domain/models/Exhibit";
 import type { ModelSlot } from "../services/implementations/MuseumModelLoader";
-import {
-  PLAYER_EYE_HEIGHT,
-  AVATAR_DEACTIVATION_DISTANCE,
-} from "../domain/constants/gallery-dimensions";
+import { PLAYER_EYE_HEIGHT, AVATAR_DEACTIVATION_DISTANCE } from "../domain/constants/gallery-dimensions";
 
 export interface GalleryStateData {
   /** Current gallery layout */
@@ -19,8 +17,6 @@ export interface GalleryStateData {
   exhibits: readonly Exhibit[];
   /** Player position in 3D space */
   playerPosition: { x: number; y: number; z: number };
-  /** ID of the room the player is currently in */
-  currentRoomId: string | null;
   /** Currently focused exhibit (near the player) */
   focusedExhibitId: string | null;
   /** Loading state */
@@ -33,10 +29,8 @@ export interface GalleryStateData {
   sourceUserId: string | null;
   /** Whether gallery lights are on (affects lighting + thumbnail mode) */
   lightsOn: boolean;
-  /** Exhibit slots extracted from loaded 3D model (replaces procedural slots) */
+  /** Exhibit slots extracted from loaded 3D model */
   modelSlots: readonly ModelSlot[];
-  /** Whether to use model-based rendering instead of procedural */
-  useModelRendering: boolean;
 }
 
 /**
@@ -47,17 +41,13 @@ export function createGalleryState() {
   let layout = $state<GalleryLayout | null>(null);
   let exhibits = $state<readonly Exhibit[]>([]);
   let playerPosition = $state({ x: 0, y: PLAYER_EYE_HEIGHT, z: 0 });
-  let currentRoomId = $state<string | null>(null);
   let focusedExhibitId = $state<string | null>(null);
   let isLoading = $state(false);
   let error = $state<string | null>(null);
   let contentSource = $state<GalleryContentSource>("user_library");
   let sourceUserId = $state<string | null>(null);
-  let lightsOn = $state(true); // Lights on by default
-
-  // Model-based rendering state
+  let lightsOn = $state(true);
   let modelSlots = $state<readonly ModelSlot[]>([]);
-  let useModelRendering = $state(false);
 
   // Derived: Get focused exhibit
   const focusedExhibit = $derived(
@@ -75,56 +65,23 @@ export function createGalleryState() {
 
   return {
     // State getters
-    get layout() {
-      return layout;
-    },
-    get exhibits() {
-      return exhibits;
-    },
-    get playerPosition() {
-      return playerPosition;
-    },
-    get focusedExhibitId() {
-      return focusedExhibitId;
-    },
-    get focusedExhibit() {
-      return focusedExhibit;
-    },
-    get nearbyExhibits() {
-      return nearbyExhibits;
-    },
-    get isLoading() {
-      return isLoading;
-    },
-    get error() {
-      return error;
-    },
-    get contentSource() {
-      return contentSource;
-    },
-    get sourceUserId() {
-      return sourceUserId;
-    },
-    get lightsOn() {
-      return lightsOn;
-    },
-    get currentRoomId() {
-      return currentRoomId;
-    },
-    get modelSlots() {
-      return modelSlots;
-    },
-    get useModelRendering() {
-      return useModelRendering;
-    },
+    get layout() { return layout; },
+    get exhibits() { return exhibits; },
+    get playerPosition() { return playerPosition; },
+    get focusedExhibitId() { return focusedExhibitId; },
+    get focusedExhibit() { return focusedExhibit; },
+    get nearbyExhibits() { return nearbyExhibits; },
+    get isLoading() { return isLoading; },
+    get error() { return error; },
+    get contentSource() { return contentSource; },
+    get sourceUserId() { return sourceUserId; },
+    get lightsOn() { return lightsOn; },
+    get modelSlots() { return modelSlots; },
 
     // State setters
     setLayout(newLayout: GalleryLayout) {
       layout = newLayout;
-      // Set player at spawn point
       playerPosition = { ...newLayout.spawnPoint };
-      // Set initial room
-      currentRoomId = newLayout.spawnRoomId;
     },
 
     setExhibits(newExhibits: readonly Exhibit[]) {
@@ -133,7 +90,6 @@ export function createGalleryState() {
 
     setPlayerPosition(pos: { x: number; y: number; z: number }) {
       playerPosition = pos;
-      // Update focused exhibit based on proximity
       this.updateFocusedExhibit();
     },
 
@@ -162,30 +118,16 @@ export function createGalleryState() {
       lightsOn = !lightsOn;
     },
 
-    setCurrentRoomId(roomId: string) {
-      currentRoomId = roomId;
-    },
-
     /**
      * Set exhibit slots from a loaded 3D model.
-     * This enables model-based rendering and replaces procedural slots.
      */
     setModelSlots(slots: readonly ModelSlot[]) {
       modelSlots = slots;
-      useModelRendering = slots.length > 0;
-    },
-
-    /**
-     * Toggle between model-based and procedural rendering.
-     * Useful for A/B testing during migration.
-     */
-    setUseModelRendering(use: boolean) {
-      useModelRendering = use;
     },
 
     // Actions
     updateFocusedExhibit() {
-      const FOCUS_DISTANCE = 200;
+      const FOCUS_DISTANCE = 5.0; // 5 meters - realistic gallery viewing distance
       let closest: Exhibit | null = null;
       let closestDist = Infinity;
 
@@ -207,7 +149,6 @@ export function createGalleryState() {
       layout = null;
       exhibits = [];
       playerPosition = { x: 0, y: PLAYER_EYE_HEIGHT, z: 0 };
-      currentRoomId = null;
       focusedExhibitId = null;
       isLoading = false;
       error = null;
@@ -215,10 +156,8 @@ export function createGalleryState() {
       sourceUserId = null;
       lightsOn = true;
       modelSlots = [];
-      useModelRendering = false;
     },
   };
 }
 
-// Export type for consumers
 export type GalleryState = ReturnType<typeof createGalleryState>;

@@ -20,6 +20,14 @@ export interface IExhibitLoader {
   ): Promise<Exhibit[]>;
 
   /**
+   * Load sequences for model-based galleries.
+   * Returns exhibits without slot assignments - slots come from the 3D model.
+   * @param options - Loading options (source, user ID, etc.)
+   * @returns Array of exhibits (slotId will be assigned later from model)
+   */
+  loadExhibitsForModel(options: ExhibitLoadOptions): Promise<Exhibit[]>;
+
+  /**
    * Preload thumbnails for nearby exhibits
    * @param exhibitIds - IDs of exhibits to preload
    */

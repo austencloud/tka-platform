@@ -1,8 +1,8 @@
 /**
  * Gallery Dimension Constants
  *
- * All measurements in scene units (1 unit = 0.5 cm at TKA scale)
- * Reference: Avatar height ~340 units (~170 cm / 5'7")
+ * All measurements in METERS (unified scale: 1 unit = 1 meter)
+ * Reference: Avatar height ~1.7m (5'7")
  */
 
 // ============================================================================
@@ -10,10 +10,10 @@
 // ============================================================================
 
 /** Wall height - GRAND museum ceiling (~5m / 16ft) */
-export const WALL_HEIGHT = 1000;
+export const WALL_HEIGHT = 5.0;
 
 /** Wall thickness */
-export const WALL_THICKNESS = 20;
+export const WALL_THICKNESS = 0.1;
 
 /** Wall color (legacy - use WALL_COLOR_MAIN for luxury style) */
 export const WALL_COLOR = "#4a1c1c";
@@ -22,64 +22,64 @@ export const WALL_COLOR = "#4a1c1c";
 // EXHIBIT FRAME DIMENSIONS
 // ============================================================================
 
-/** Frame width (outer) - larger for grand museum */
-export const FRAME_WIDTH = 240;
+/** Frame width (outer) - larger for grand museum (~1.2m) */
+export const FRAME_WIDTH = 1.2;
 
-/** Frame height (outer) - larger for grand museum */
-export const FRAME_HEIGHT = 240;
+/** Frame height (outer) - larger for grand museum (~1.2m) */
+export const FRAME_HEIGHT = 1.2;
 
 /** Frame depth (how far it protrudes from wall) */
-export const FRAME_DEPTH = 8;
+export const FRAME_DEPTH = 0.04;
 
 /** Frame border thickness */
-export const FRAME_BORDER = 12;
+export const FRAME_BORDER = 0.06;
 
 /** Frame color (gold/brass) */
 export const FRAME_COLOR = "#b8860b";
 
-/** Center height of frame from floor - eye level for grand halls */
-export const FRAME_CENTER_Y = 340;
+/** Center height of frame from floor - eye level for grand halls (~1.7m) */
+export const FRAME_CENTER_Y = 1.7;
 
 // ============================================================================
 // EXHIBIT SPACING
 // ============================================================================
 
-/** Horizontal spacing between exhibit centers along a wall */
-export const EXHIBIT_SPACING = 400;
+/** Horizontal spacing between exhibit centers along a wall (~2m) */
+export const EXHIBIT_SPACING = 2.0;
 
-/** Distance from wall for avatar to stand */
-export const AVATAR_OFFSET_FROM_WALL = 180;
+/** Distance from wall for avatar to stand (~0.9m) */
+export const AVATAR_OFFSET_FROM_WALL = 0.9;
 
-/** Horizontal offset of avatar from frame center */
-export const AVATAR_OFFSET_X = 160;
+/** Horizontal offset of avatar from frame center (~0.8m) */
+export const AVATAR_OFFSET_X = 0.8;
 
 /** Distance from wall for animation screen */
-export const ANIMATION_SCREEN_OFFSET = 5;
+export const ANIMATION_SCREEN_OFFSET = 0.025;
 
 // ============================================================================
 // HALLWAY LAYOUT
 // ============================================================================
 
-/** Width of hallway corridor */
-export const HALLWAY_WIDTH = 600;
+/** Width of hallway corridor (~3m) */
+export const HALLWAY_WIDTH = 3.0;
 
-/** Buffer space at start and end of hallway */
-export const HALLWAY_BUFFER = 300;
+/** Buffer space at start and end of hallway (~1.5m) */
+export const HALLWAY_BUFFER = 1.5;
 
-/** Player spawn distance from first exhibit */
-export const SPAWN_DISTANCE = 200;
+/** Player spawn distance from first exhibit (~1m) */
+export const SPAWN_DISTANCE = 1.0;
 
 // ============================================================================
 // PLAYER / CAMERA
 // ============================================================================
 
-/** Player eye height from floor */
-export const PLAYER_EYE_HEIGHT = 320;
+/** Player eye height from floor (~1.6m) */
+export const PLAYER_EYE_HEIGHT = 1.6;
 
-/** Player movement speed (units per second) - faster for huge museum */
-export const PLAYER_MOVE_SPEED = 500;
+/** Player movement speed (meters per second) */
+export const PLAYER_MOVE_SPEED = 2.5;
 
-/** Sprint multiplier when holding shift - faster for exploration */
+/** Sprint multiplier when holding shift */
 export const SPRINT_MULTIPLIER = 2.2;
 
 /** Mouse sensitivity for looking around */
@@ -92,11 +92,11 @@ export const LOOK_ANGLE_LIMIT = Math.PI * 0.45;
 // LOD (Level of Detail)
 // ============================================================================
 
-/** Distance at which avatars become active - larger for epic museum */
-export const AVATAR_ACTIVATION_DISTANCE = 1000;
+/** Distance at which avatars become active (~5m) */
+export const AVATAR_ACTIVATION_DISTANCE = 5.0;
 
-/** Distance at which avatars are deactivated - larger for epic museum */
-export const AVATAR_DEACTIVATION_DISTANCE = 1400;
+/** Distance at which avatars are deactivated (~7m) */
+export const AVATAR_DEACTIVATION_DISTANCE = 7.0;
 
 // ============================================================================
 // FLOOR
@@ -124,36 +124,36 @@ export const WALL_COLOR_UPPER = "#9e5555";
 /** Trim/molding color (antique gold) */
 export const TRIM_COLOR = "#c9a227";
 
-/** Crown molding height - larger for grand ceilings */
-export const CROWN_MOLDING_HEIGHT = 50;
+/** Crown molding height (~0.25m) */
+export const CROWN_MOLDING_HEIGHT = 0.25;
 
-/** Crown molding depth (protrusion from wall) - more substantial */
-export const CROWN_MOLDING_DEPTH = 25;
+/** Crown molding depth (protrusion from wall) (~0.125m) */
+export const CROWN_MOLDING_DEPTH = 0.125;
 
-/** Chair rail height from floor */
-export const CHAIR_RAIL_HEIGHT = 200;
+/** Chair rail height from floor (~1m) */
+export const CHAIR_RAIL_HEIGHT = 1.0;
 
-/** Chair rail thickness */
-export const CHAIR_RAIL_SIZE = 12;
+/** Chair rail thickness (~0.06m) */
+export const CHAIR_RAIL_SIZE = 0.06;
 
-/** Baseboard height */
-export const BASEBOARD_HEIGHT = 25;
+/** Baseboard height (~0.125m) */
+export const BASEBOARD_HEIGHT = 0.125;
 
-/** Baseboard depth */
-export const BASEBOARD_DEPTH = 10;
+/** Baseboard depth (~0.05m) */
+export const BASEBOARD_DEPTH = 0.05;
 
 // ============================================================================
 // TORCH SCONCES
 // ============================================================================
 
-/** Torch sconce height from floor - higher for grand walls */
-export const TORCH_HEIGHT = 380;
+/** Torch sconce height from floor (~1.9m) */
+export const TORCH_HEIGHT = 1.9;
 
-/** Torch spacing along walls (units between torches) - more spread out */
-export const TORCH_SPACING = 500;
+/** Torch spacing along walls (~2.5m) */
+export const TORCH_SPACING = 2.5;
 
-/** Torch offset from wall surface */
-export const TORCH_WALL_OFFSET = 30;
+/** Torch offset from wall surface (~0.15m) */
+export const TORCH_WALL_OFFSET = 0.15;
 
 // ============================================================================
 // LIGHTING
