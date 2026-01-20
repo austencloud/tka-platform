@@ -3,11 +3,21 @@
 
   Renders a sequence broken down into individual pictographs with step labels.
   Shows each beat (including start position) as a static pictograph.
-  Fetches images progressively from cache/API.
+
+  Loading priority (production-ready):
+  1. Static files in /static/pictographs/ (instant, works in production)
+  2. IndexedDB cache (fast, browser-persisted)
+  3. API generation (dev only, saves to static for future)
 -->
 <script lang="ts">
   import type { InlineStepGrid } from "../types";
+  import { dev } from "$app/environment";
   import { tikaPictographCache } from "../services/implementations/TikaPictographCache";
+  import {
+    getStaticPictographPath,
+    saveStaticPictograph,
+    type PictographFileKey,
+  } from "../services/implementations/StaticPictographWriter";
 
   // Props
   let {
@@ -19,14 +29,35 @@
   // API size for image generation (consistent quality)
   const apiItemSize = 180;
 
-  // State - map of stepNumber -> base64 images
+  // State - map of stepNumber -> image URLs (static path or base64)
   let images = $state<Map<number, string>>(new Map());
   let loading = $state(true);
   let loadedCount = $state(0);
 
-  // Generate cache key
+  // Generate cache key (includes grid mode)
   function getCacheKey(letter: string, variation: number, size: number): string {
-    return `${letter}-${variation}-${size}`;
+    const gridMode = stepGrid.gridMode ?? "diamond";
+    return `${letter}-${variation}-${size}-${gridMode}`;
+  }
+
+  // Build static file key
+  function buildStaticKey(letter: string, variation: number): PictographFileKey {
+    return {
+      letter,
+      variation,
+      gridMode: (stepGrid.gridMode ?? "diamond") as "diamond" | "box",
+    };
+  }
+
+  // Check if static file exists
+  async function checkStaticFile(key: PictographFileKey): Promise<string | null> {
+    const path = getStaticPictographPath(key);
+    try {
+      const response = await fetch(path, { method: "HEAD" });
+      return response.ok ? path : null;
+    } catch {
+      return null;
+    }
   }
 
   // Fetch all step images
@@ -40,27 +71,49 @@
     const newImages = new Map<number, string>();
     const stepsToFetch: Array<{ stepNumber: number; letter: string; variation: number }> = [];
 
-    // Step 1: Check cache for all steps
+    // Step 1: Check static files first, then IndexedDB cache
     for (const step of stepGrid.steps) {
+      const staticKey = buildStaticKey(step.letter, step.variation);
+
+      // Priority 1: Static file
+      const staticPath = await checkStaticFile(staticKey);
+      if (staticPath) {
+        newImages.set(step.stepNumber, staticPath);
+        loadedCount++;
+        continue;
+      }
+
+      // Priority 2: IndexedDB cache
       const cacheKey = getCacheKey(step.letter, step.variation, apiItemSize);
       const cached = await tikaPictographCache.get(cacheKey);
-
       if (cached) {
         newImages.set(step.stepNumber, `data:image/png;base64,${cached}`);
         loadedCount++;
-      } else {
-        stepsToFetch.push({
-          stepNumber: step.stepNumber,
-          letter: step.letter,
-          variation: step.variation,
-        });
+        continue;
       }
+
+      // Priority 3: Need to fetch from API
+      stepsToFetch.push({
+        stepNumber: step.stepNumber,
+        letter: step.letter,
+        variation: step.variation,
+      });
     }
 
-    // Update images immediately with cached results
+    // Update images immediately with cached/static results
     images = new Map(newImages);
 
-    // Step 2: Fetch missing steps in batches
+    // In production, if items are missing, they simply won't load
+    if (!dev && stepsToFetch.length > 0) {
+      console.warn(
+        `[InlineStepGrid] Missing ${stepsToFetch.length} pictographs in production:`,
+        stepsToFetch.map((s) => `${s.letter}-${s.variation}`)
+      );
+      loading = false;
+      return;
+    }
+
+    // Step 2: Fetch missing steps from API (dev only) and save to static
     const BATCH_SIZE = 4;
 
     for (let i = 0; i < stepsToFetch.length; i += BATCH_SIZE) {
@@ -74,6 +127,7 @@
             body: JSON.stringify({
               letter,
               variation,
+              gridMode: stepGrid.gridMode ?? "diamond",
               options: {
                 darkMode: true,
                 size: apiItemSize,
@@ -88,7 +142,14 @@
           const data = await response.json();
           const base64 = data.imageBase64 as string;
 
-          // Cache for future use
+          // Save to static directory for production (dev only)
+          const staticKey = buildStaticKey(letter, variation);
+          const saved = await saveStaticPictograph(staticKey, base64);
+          if (saved) {
+            console.log(`[InlineStepGrid] Saved to static: ${letter}-${variation}`);
+          }
+
+          // Also cache in IndexedDB for this session
           const cacheKey = getCacheKey(letter, variation, apiItemSize);
           await tikaPictographCache.set(cacheKey, base64);
 

@@ -372,6 +372,15 @@ function preloadBrowserLocales(): void {
 }
 
 /**
+ * Options for tDynamic translation
+ */
+interface TDynamicOptions {
+  params?: Record<string, string | number>;
+  /** Suppress warning for missing keys (useful for admin-only modules) */
+  silent?: boolean;
+}
+
+/**
  * Translate with dynamic key (bypasses type checking)
  * Use only for computed keys like `module_${id}`
  *
@@ -380,11 +389,32 @@ function preloadBrowserLocales(): void {
  *
  * @param params - MUST be trusted values only (numbers, system strings, IDs).
  *                 NEVER pass unsanitized user input - XSS risk if rendered in HTML.
+ * @param options.silent - If true, suppresses missing key warnings (for admin-only modules)
  *
  * @example
  * tDynamic(`module_${moduleId}`) // For dynamic key construction
+ * tDynamic(`tab_admin_${tabId}`, { silent: true }) // Suppress warning for admin modules
  */
-export function tDynamic(key: string, params?: Record<string, string | number>): string {
+export function tDynamic(
+  key: string,
+  paramsOrOptions?: Record<string, string | number> | TDynamicOptions
+): string {
+  // Handle both legacy (params only) and new (options object) signatures
+  let params: Record<string, string | number> | undefined;
+  let silent = false;
+
+  if (paramsOrOptions) {
+    if ('silent' in paramsOrOptions || 'params' in paramsOrOptions) {
+      // New options format
+      const opts = paramsOrOptions as TDynamicOptions;
+      params = opts.params;
+      silent = opts.silent ?? false;
+    } else {
+      // Legacy params format
+      params = paramsOrOptions as Record<string, string | number>;
+    }
+  }
+
   let text = messages[key];
 
   // Fallback chain: regional → base → English
@@ -402,7 +432,7 @@ export function tDynamic(key: string, params?: Record<string, string | number>):
   }
 
   if (!text) {
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV && !silent) {
       console.warn(`Missing translation key: ${key} (locale: ${currentLocale})`);
     }
     return key;

@@ -191,6 +191,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Experimental skewed positions development (temporary)",
     isMain: true, // Visibility controlled by getModuleDefinitions() based on admin status
     sections: SKEWLAB_TABS,
+    adminOnly: true,
   },
   {
     id: "poi-lab",
@@ -200,6 +201,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Explore poi constraints with VTG terminology",
     isMain: true, // Visibility controlled by getModuleDefinitions() based on admin status
     sections: [], // Tabs handled internally
+    adminOnly: true,
   },
   {
     id: "realm",
@@ -209,6 +211,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Unified 3D destination hub - Stage, Gallery, Infinite Worlds, and more",
     isMain: true, // Visibility controlled by feature flags (admin-only)
     sections: [], // Uses destination picker instead of tabs
+    adminOnly: true,
   },
   {
     id: "mandala",
@@ -218,6 +221,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Create kaleidoscope art with TKA elements",
     isMain: true, // Visibility controlled by feature flags (admin-only for now)
     sections: [], // Single-tab creative studio
+    adminOnly: true,
   },
   {
     id: "background-builder",
@@ -227,6 +231,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Design and iterate on deep ocean background elements",
     isMain: true, // Admin-only for development
     sections: [], // Tab switching handled internally
+    adminOnly: true,
   },
   {
     id: "landing-preview",
@@ -236,6 +241,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Preview and iterate on landing page designs",
     isMain: true, // Admin-only for development
     sections: LANDING_PAGE_TABS,
+    adminOnly: true,
   },
   {
     id: "settings",

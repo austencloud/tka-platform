@@ -192,6 +192,12 @@ export interface InlinePictograph {
   letter: string;
   variation?: number;
   label?: string;
+  /**
+   * Grid mode for looking up variations.
+   * "diamond" uses cardinal directions (N/S/E/W), "box" uses diagonals (NE/SW/NW/SE).
+   * Defaults to "diamond" if not specified.
+   */
+  gridMode?: "diamond" | "box";
 }
 
 /**
@@ -261,6 +267,12 @@ export interface InlineStepGrid {
   word: string;
   steps: StepGridItem[];
   caption?: string;
+  /**
+   * Grid mode for looking up variations.
+   * "diamond" uses cardinal directions (N/S/E/W), "box" uses diagonals (NE/SW/NW/SE).
+   * Defaults to "diamond" if not specified.
+   */
+  gridMode?: "diamond" | "box";
 }
 
 /**

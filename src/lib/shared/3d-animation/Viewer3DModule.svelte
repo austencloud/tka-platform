@@ -154,13 +154,25 @@
 
   // Avatar positions for per-avatar grid planes (full 3D position + facing angle)
   // Grid planes rotate with avatar's body orientation for body-relative coordinate system
+  //
+  // NOTE: Grid center is at Y=0 (shoulder/solar plexus level). The avatar model is positioned
+  // so its shoulders are at world Y=0, and its feet are at groundY (negative value).
+  // The performer.position.y represents the avatar's ground level in world coords, but
+  // for grid purposes we use Y=0 since that's where the grid center should be.
   const avatarPositions = $derived.by(() => {
     return performerStates.map((p: { position: { x: number; y: number; z: number }; facingAngle: number }) => ({
       x: p.position.x,
-      y: p.position.y,
+      y: 0, // Grid center is at shoulder level (Y=0)
       z: p.position.z,
       facingAngle: p.facingAngle,
     }));
+  });
+
+  // Staff positions match grid center - staffs move ON the grid
+  const getStaffAvatarPosition = (performer: { position: { x: number; y: number; z: number } }) => ({
+    x: performer.position.x,
+    y: 0, // Staffs are at grid center (shoulder level, Y=0)
+    z: performer.position.z,
   });
 
   // Effective camera position (choreography overrides orbit controls when enabled)
@@ -259,18 +271,15 @@
       const groundColliderDesc = RAPIER.ColliderDesc.cuboid(50, 0.1, 50)
         .setTranslation(0, -0.1, 0);
       physicsState.world.createCollider(groundColliderDesc);
-      console.log('[Viewer3DModule] Ground collider created at Y=-0.1, size 100x100m');
     }
 
     // Player controller starting just above ground
     playerController = createPlayerController(physicsState, {
       position: { x: 0, y: 1, z: 0 },
     });
-    console.log('[Viewer3DModule] Player controller created at Y=1');
 
     // Create physics provider for UnifiedCameraController
     physicsProvider = createRapierPhysicsProvider(physicsState, playerController);
-    console.log('[Viewer3DModule] Physics provider created:', physicsProvider);
 
     // Create performer manager with resolved dependencies
     performerManager = createPerformerManager({
@@ -324,7 +333,7 @@
 
   // Physics simulation step loop
   $effect(() => {
-    if (!physicsState?.world) return;
+    if (!physicsState?.world || !playerController) return;
 
     let animationId: number;
     let lastTime = performance.now();
@@ -466,12 +475,13 @@
             isDragging={isDraggingPerformer && activePerformerIndex === i}
           >
             {#snippet children()}
-              <!-- Props rotate with avatar (pivot at avatar position, offset forward to grid) -->
+              <!-- Props rotate with avatar (pivot at grid center, offset forward from avatar) -->
+              <!-- Uses getStaffAvatarPosition to ensure staffs align with grid planes -->
               {#if performer.showBlue && performer.bluePropState}
                 <Staff3D
                   propState={performer.bluePropState}
                   color="blue"
-                  avatarPosition={performer.position}
+                  avatarPosition={getStaffAvatarPosition(performer)}
                   facingAngle={performer.facingAngle}
                   gridOffset={-WALL_OFFSET}
                   isActivePlayer={activePerformerIndex === i}
@@ -481,7 +491,7 @@
                 <Staff3D
                   propState={performer.redPropState}
                   color="red"
-                  avatarPosition={performer.position}
+                  avatarPosition={getStaffAvatarPosition(performer)}
                   facingAngle={performer.facingAngle}
                   gridOffset={-WALL_OFFSET}
                   isActivePlayer={activePerformerIndex === i}

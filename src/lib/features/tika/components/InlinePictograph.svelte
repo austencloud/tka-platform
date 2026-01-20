@@ -2,12 +2,23 @@
   Inline Pictograph Component
 
   Renders a single pictograph image inline within a message bubble.
-  Fetches from cache first, then API if needed.
+
+  Loading priority (production-ready):
+  1. Static files in /static/pictographs/ (instant, works in production)
+  2. IndexedDB cache (fast, browser-persisted)
+  3. API generation (dev only, saves to static for future)
+
   Uses responsive sizing when no explicit size is provided.
 -->
 <script lang="ts">
   import type { InlinePictograph } from "../types";
+  import { dev } from "$app/environment";
   import { tikaPictographCache } from "../services/implementations/TikaPictographCache";
+  import {
+    getStaticPictographPath,
+    saveStaticPictograph,
+    type PictographFileKey,
+  } from "../services/implementations/StaticPictographWriter";
 
   // Props - size is optional; when not provided, uses responsive CSS sizing
   let {
@@ -26,9 +37,30 @@
   let loading = $state(true);
   let error = $state(false);
 
-  // Generate cache key
+  // Generate cache key (includes grid mode for uniqueness)
   function getCacheKey(letter: string, variation: number, imageSize: number): string {
-    return `${letter}-${variation}-${imageSize}`;
+    const gridMode = pictograph.gridMode ?? "diamond";
+    return `${letter}-${variation}-${imageSize}-${gridMode}`;
+  }
+
+  // Build static file key
+  function buildStaticKey(letter: string, variation: number): PictographFileKey {
+    return {
+      letter,
+      variation,
+      gridMode: (pictograph.gridMode ?? "diamond") as "diamond" | "box",
+    };
+  }
+
+  // Check if static file exists
+  async function checkStaticFile(key: PictographFileKey): Promise<string | null> {
+    const path = getStaticPictographPath(key);
+    try {
+      const response = await fetch(path, { method: "HEAD" });
+      return response.ok ? path : null;
+    } catch {
+      return null;
+    }
   }
 
   // Fetch pictograph on mount or when pictograph changes
@@ -42,13 +74,30 @@
     imageUrl = null;
 
     const variation = pictograph.variation ?? 0;
-    const cacheKey = getCacheKey(pictograph.letter, variation, apiSize);
+    const staticKey = buildStaticKey(pictograph.letter, variation);
 
     try {
-      // Check cache first
+      // Priority 1: Static file (instant, works in production)
+      const staticPath = await checkStaticFile(staticKey);
+      if (staticPath) {
+        imageUrl = staticPath;
+        loading = false;
+        return;
+      }
+
+      // Priority 2: IndexedDB cache
+      const cacheKey = getCacheKey(pictograph.letter, variation, apiSize);
       const cached = await tikaPictographCache.get(cacheKey);
       if (cached) {
         imageUrl = `data:image/png;base64,${cached}`;
+        loading = false;
+        return;
+      }
+
+      // Priority 3: API (dev only)
+      if (!dev) {
+        console.warn(`[InlinePictograph] Missing pictograph in production: ${pictograph.letter}-${variation}`);
+        error = true;
         loading = false;
         return;
       }
@@ -60,6 +109,7 @@
         body: JSON.stringify({
           letter: pictograph.letter,
           variation,
+          gridMode: pictograph.gridMode ?? "diamond",
           options: {
             darkMode: true,
             size: apiSize,
@@ -76,7 +126,13 @@
       const data = await response.json();
       const base64 = data.imageBase64 as string;
 
-      // Cache for future use
+      // Save to static directory for production (dev only)
+      const saved = await saveStaticPictograph(staticKey, base64);
+      if (saved) {
+        console.log(`[InlinePictograph] Saved to static: ${pictograph.letter}-${variation}`);
+      }
+
+      // Also cache in IndexedDB for this session
       await tikaPictographCache.set(cacheKey, base64);
 
       imageUrl = `data:image/png;base64,${base64}`;

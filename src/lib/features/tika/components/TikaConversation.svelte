@@ -25,6 +25,7 @@
     InlineQuiz as InlineQuizType,
     ModelOption
   } from "../types";
+  import type { ReviewStatus, ReviewMetadata } from "../domain/models/tika-conversation-models";
 
   // Simple markdown to HTML converter for TIKA responses
   // Returns both HTML and extracted link references for footnote-style display
@@ -171,6 +172,8 @@
     sessionId,
     isFlagged = false,
     onFlagForReview,
+    reviewStatus,
+    reviewMetadata,
   }: {
     messages: UIMessage[];
     status: "submitted" | "streaming" | "ready" | "error";
@@ -186,7 +189,49 @@
     sessionId?: string | null;
     isFlagged?: boolean;
     onFlagForReview?: (flagged: boolean) => void;
+    reviewStatus?: ReviewStatus;
+    reviewMetadata?: ReviewMetadata;
   } = $props();
+
+  // Derived: review badge display
+  const reviewBadge = $derived(() => {
+    if (!reviewStatus || reviewStatus === "pending") return null;
+
+    switch (reviewStatus) {
+      case "approved":
+        return {
+          label: reviewMetadata?.grade ? `Reviewed: ${reviewMetadata.grade}` : "Approved",
+          icon: "fa-check-circle",
+          color: "green",
+        };
+      case "needs-correction":
+        return {
+          label: "Needs Correction",
+          icon: "fa-exclamation-circle",
+          color: "red",
+        };
+      case "claimed":
+        return {
+          label: "Being Reviewed",
+          icon: "fa-spinner fa-spin",
+          color: "blue",
+        };
+      case "in-review":
+        return {
+          label: "In Review",
+          icon: "fa-eye",
+          color: "purple",
+        };
+      case "archived":
+        return {
+          label: reviewMetadata?.grade ? `Archived: ${reviewMetadata.grade}` : "Archived",
+          icon: "fa-archive",
+          color: "gray",
+        };
+      default:
+        return null;
+    }
+  });
 
   // Local state
   let inputValue = $state("");
@@ -452,6 +497,18 @@
           <span class="title-subtitle">TKA Intelligent Knowledge Assistant</span>
         </div>
       </div>
+      <!-- Review Status Badge -->
+      {#if reviewBadge()}
+        {@const badge = reviewBadge()}
+        <button
+          class="review-badge review-badge-{badge.color}"
+          title={reviewMetadata?.aiNotes || `Status: ${reviewStatus}`}
+          aria-label={`Review status: ${badge.label}`}
+        >
+          <i class="fas {badge.icon}" aria-hidden="true"></i>
+          <span>{badge.label}</span>
+        </button>
+      {/if}
     </div>
     <div class="header-actions">
       <!-- Primary Actions: Always visible -->
@@ -808,7 +865,76 @@
   .header-left {
     display: flex;
     align-items: center;
+    gap: 12px;
     min-width: 0;
+  }
+
+  /* Review Status Badge */
+  .review-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid;
+    cursor: help;
+    transition: all var(--duration-normal, 0.3s) ease;
+  }
+
+  .review-badge i {
+    font-size: 12px;
+  }
+
+  .review-badge-green {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.4);
+    color: #22c55e;
+  }
+
+  .review-badge-green:hover {
+    background: rgba(34, 197, 94, 0.25);
+  }
+
+  .review-badge-red {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+  }
+
+  .review-badge-red:hover {
+    background: rgba(239, 68, 68, 0.25);
+  }
+
+  .review-badge-blue {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #3b82f6;
+  }
+
+  .review-badge-blue:hover {
+    background: rgba(59, 130, 246, 0.25);
+  }
+
+  .review-badge-purple {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: rgba(168, 85, 247, 0.4);
+    color: #a855f7;
+  }
+
+  .review-badge-purple:hover {
+    background: rgba(168, 85, 247, 0.25);
+  }
+
+  .review-badge-gray {
+    background: rgba(156, 163, 175, 0.15);
+    border-color: rgba(156, 163, 175, 0.4);
+    color: #9ca3af;
+  }
+
+  .review-badge-gray:hover {
+    background: rgba(156, 163, 175, 0.25);
   }
 
   .header-title {

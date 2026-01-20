@@ -23,7 +23,7 @@
       color: "#22c55e",
       content: [
         "The Kinetic Alphabet brings something novel to flow arts. Previous attempts to document flow arts patterns created valuable knowledge collections. TKA builds on that foundation.",
-        "Flow arts still needs a way to describe patterns that expands beyond videos scattered across the Internet. Sheet music tells musicians what notes to play. Actors memorize their lines so they can act. TKA works the same way: it documents the physical movements so you can reference them later.",
+        "Flow arts needs a way to describe patterns that expands beyond videos across the Internet. Sheet music tells musicians what notes to play. Actors memorize their lines so they can act. TKA works the same way: it documents the physical movements so you can reliably reproduce them later.",
       ],
     },
     {

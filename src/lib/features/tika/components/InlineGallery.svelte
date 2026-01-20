@@ -2,12 +2,23 @@
   Inline Gallery Component
 
   Renders multiple pictographs in a grid or row layout within a message bubble.
-  Fetches images progressively from cache/API.
+
+  Loading priority (production-ready):
+  1. Static files in /static/pictographs/ (instant, works in production)
+  2. IndexedDB cache (fast, browser-persisted)
+  3. API generation (dev only, saves to static for future)
+
   Uses container queries for intelligent sizing based on item count.
 -->
 <script lang="ts">
   import type { InlineGallery } from "../types";
+  import { dev } from "$app/environment";
   import { tikaPictographCache } from "../services/implementations/TikaPictographCache";
+  import {
+    getStaticPictographPath,
+    saveStaticPictograph,
+    type PictographFileKey,
+  } from "../services/implementations/StaticPictographWriter";
 
   // Props - itemSize is optional; when not provided, uses responsive sizing
   let {
@@ -58,6 +69,32 @@
     return base;
   }
 
+  /**
+   * Build static file key for a pictograph.
+   */
+  function buildStaticKey(letter: string, variation: number): PictographFileKey {
+    const context = gallery.renderContext;
+    return {
+      letter,
+      variation,
+      gridMode: (gallery.gridMode ?? "diamond") as "diamond" | "box",
+      propType: context?.propType,
+    };
+  }
+
+  /**
+   * Check if a static pictograph file exists (HEAD request).
+   */
+  async function checkStaticFile(key: PictographFileKey): Promise<string | null> {
+    const path = getStaticPictographPath(key);
+    try {
+      const response = await fetch(path, { method: "HEAD" });
+      return response.ok ? path : null;
+    } catch {
+      return null;
+    }
+  }
+
   async function fetchGalleryImages() {
     loading = true;
     loadedCount = 0;
@@ -66,24 +103,47 @@
     const fetchSize = apiItemSize();
     const context = gallery.renderContext;
 
-    // Step 1: Check cache for all items
+    // Step 1: Check static files first (production path), then IndexedDB cache
     for (const item of gallery.items) {
       const variation = item.variation ?? 0;
+      const staticKey = buildStaticKey(item.letter, variation);
+
+      // Priority 1: Static file (instant, works in production)
+      const staticPath = await checkStaticFile(staticKey);
+      if (staticPath) {
+        newImages.set(getImageKey(item.letter, variation), staticPath);
+        loadedCount++;
+        continue;
+      }
+
+      // Priority 2: IndexedDB cache
       const cacheKey = buildCacheKey(item.letter, variation, fetchSize);
       const cached = await tikaPictographCache.get(cacheKey);
-
       if (cached) {
         newImages.set(getImageKey(item.letter, variation), `data:image/png;base64,${cached}`);
         loadedCount++;
-      } else {
-        itemsToFetch.push({ letter: item.letter, variation });
+        continue;
       }
+
+      // Priority 3: Need to fetch from API
+      itemsToFetch.push({ letter: item.letter, variation });
     }
 
-    // Update images immediately with cached results
+    // Update images immediately with cached/static results
     images = new Map(newImages);
 
-    // Step 2: Fetch missing items in batches
+    // In production, if items are missing, they simply won't load
+    // (the API doesn't exist in production builds)
+    if (!dev && itemsToFetch.length > 0) {
+      console.warn(
+        `[InlineGallery] Missing ${itemsToFetch.length} pictographs in production:`,
+        itemsToFetch.map((i) => `${i.letter}-${i.variation}`)
+      );
+      loading = false;
+      return;
+    }
+
+    // Step 2: Fetch missing items from API (dev only) and save to static
     const BATCH_SIZE = 4;
 
     for (let i = 0; i < itemsToFetch.length; i += BATCH_SIZE) {
@@ -101,12 +161,10 @@
 
           // Apply render context for position-first teaching
           if (context) {
-            // Use hand props instead of staffs for teaching positions
             if (context.propType) {
               options.bluePropType = context.propType;
               options.redPropType = context.propType;
             }
-            // Hide arrows when teaching positions (no motion to show)
             if (context.hideArrows) {
               options.showBlueMotion = false;
               options.showRedMotion = false;
@@ -129,7 +187,14 @@
           const data = await response.json();
           const base64 = data.imageBase64 as string;
 
-          // Cache for future use (with context-aware key)
+          // Save to static directory for production (dev only)
+          const staticKey = buildStaticKey(letter, variation);
+          const saved = await saveStaticPictograph(staticKey, base64);
+          if (saved) {
+            console.log(`[InlineGallery] Saved to static: ${letter}-${variation}`);
+          }
+
+          // Also cache in IndexedDB for this session
           const cacheKey = buildCacheKey(letter, variation, fetchSize);
           await tikaPictographCache.set(cacheKey, base64);
 

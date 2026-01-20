@@ -8,9 +8,9 @@ allowed-tools: Bash Read Edit Write Glob Grep Task WebFetch mcp__tka-pictograph_
 **Args:** `$ARGUMENTS`
 
 Subcommands:
-- `review` - Pull and review pending conversations
-- `approve <id>` - Force approve a specific conversation
-- `reject <id> "reason"` - Reject with feedback
+- `review` - Pull and review pending conversations from Firestore
+- `approve <id> "Grade: notes"` - Approve a conversation with grade
+- `flag <id> "reason"` - Flag for human review
 - `stats` - Show quality metrics
 - (no args) - Same as `review`
 
@@ -99,33 +99,77 @@ If you're unsure about domain rules, read the source:
    node scripts/fetch-tika-conversations.cjs --status pending --limit 5
    ```
 
-2. **For each conversation:**
+2. **Pick the first unclaimed conversation and claim it:**
+   ```bash
+   node scripts/fetch-tika-conversations.cjs <session-id> claim
+   ```
+
+3. **Read the full conversation:**
+   ```bash
+   node scripts/fetch-tika-conversations.cjs <session-id>
+   ```
+
+4. **For each conversation:**
    - Read the user's question
    - Read TIKA's response
    - **Verify domain facts using MCP tools**
    - Grade using the rubric above
    - Decide: auto-approve or flag
 
-3. **Auto-approve if:**
+5. **Auto-approve if:**
    - Grade ≥ B
    - Confidence ≥ 85%
    - No red flags detected
    ```bash
-   node scripts/fetch-tika-conversations.cjs <id> approve "Auto-approved: [brief reason]"
+   node scripts/fetch-tika-conversations.cjs <id> approve "A (95%): Accurate, natural tone"
    ```
 
-4. **Flag for human review if:**
+6. **Flag for human review if:**
    - Grade < B, OR
    - Confidence < 85%, OR
    - Red flags detected
    ```bash
-   node scripts/fetch-tika-conversations.cjs <id> flag "[Grade]: [specific issues]"
+   node scripts/fetch-tika-conversations.cjs <id> flag "C: Robotic tone, uses 'Let me break this down'"
    ```
 
-5. **Report summary** after processing batch
+7. **Report summary** after processing batch
 
 ### For `stats`:
 ```bash
+node scripts/fetch-tika-conversations.cjs stats
+```
+
+---
+
+## CLI Commands Reference
+
+```bash
+# List pending conversations
+node scripts/fetch-tika-conversations.cjs
+
+# List by status
+node scripts/fetch-tika-conversations.cjs --status pending
+node scripts/fetch-tika-conversations.cjs --status in-review
+node scripts/fetch-tika-conversations.cjs --status approved
+
+# Show all
+node scripts/fetch-tika-conversations.cjs --all
+
+# View specific conversation
+node scripts/fetch-tika-conversations.cjs <session-id>
+
+# Claim for review (prevents duplicate reviews)
+node scripts/fetch-tika-conversations.cjs <session-id> claim
+
+# Submit review
+node scripts/fetch-tika-conversations.cjs <session-id> approve "A (95%): Notes here"
+node scripts/fetch-tika-conversations.cjs <session-id> approve "B: Minor issues"
+node scripts/fetch-tika-conversations.cjs <session-id> flag "C: Needs work because..."
+
+# Archive completed review
+node scripts/fetch-tika-conversations.cjs <session-id> archive
+
+# Statistics
 node scripts/fetch-tika-conversations.cjs stats
 ```
 
@@ -213,6 +257,37 @@ When flagging for human review, be specific:
 **Bad:** "Needs work."
 
 The human (Austen) should know exactly what to look for without re-reading the whole conversation.
+
+---
+
+## Review Status Flow
+
+```
+┌──────────┐    flag     ┌───────────┐
+│ pending  │────────────►│  claimed  │
+└──────────┘             └───────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              │               │               │
+              ▼               ▼               ▼
+       ┌──────────┐    ┌──────────┐    ┌──────────────────┐
+       │ approved │    │in-review │    │needs-correction  │
+       └──────────┘    └──────────┘    └──────────────────┘
+              │               │               │
+              └───────────────┼───────────────┘
+                              │
+                              ▼
+                       ┌──────────┐
+                       │ archived │
+                       └──────────┘
+```
+
+- **pending**: Flagged by user, waiting for review
+- **claimed**: Being reviewed by /tika command
+- **approved**: Passed review (auto or manual)
+- **in-review**: Needs human attention
+- **needs-correction**: AI identified issues, needs system fix
+- **archived**: Done, historical record
 
 ---
 

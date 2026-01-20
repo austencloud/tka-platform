@@ -180,11 +180,6 @@
     customCameraTarget ?? ([0, 0, 0] as [number, number, number])
   );
 
-  // DEBUG: Log camera position
-  $effect(() => {
-    console.log('[Scene3D] Camera position:', cameraPosition, 'Target:', cameraTarget, 'Preset:', cameraPreset, 'Custom:', customCameraPosition);
-  });
-
   // Track if we should use custom position (set to false when preset changes)
   let useCustom = $state(false);
 

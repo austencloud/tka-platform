@@ -1,5 +1,6 @@
 <script lang="ts">
   import FullscreenPrompt from "$lib/shared/components/FullscreenPrompt.svelte";
+  import InAppBrowserPrompt from "$lib/shared/auth/components/InAppBrowserPrompt.svelte";
   import { container } from "$lib/shared/di";
   import type { Snippet } from "svelte";
   import { onMount, setContext } from "svelte";
@@ -158,6 +159,9 @@
 
   <!-- Fullscreen prompt for extreme constraints -->
   <FullscreenPrompt />
+
+  <!-- Warn users in restricted in-app browsers (Messenger, Instagram, etc.) -->
+  <InAppBrowserPrompt />
 {:else}
   <!-- Brief loading while container sets up -->
   <div class="error-screen">
