@@ -2,11 +2,13 @@
   /**
    * Test Route: Infinite Worlds
    *
-   * Direct access to the infinite worlds prototype for testing.
+   * Direct access to the Threlte-based world scene for testing.
    * Bypasses the main app navigation for quick iteration.
+   *
+   * Now uses the new WorldScene component with full avatar parity.
    */
 
-  import InfiniteWorldsModule from "$lib/features/infinite-worlds/components/InfiniteWorldsModule.svelte";
+  import WorldScene from "$lib/features/infinite-worlds/components/WorldScene.svelte";
   import { onMount } from "svelte";
 
   // Optional: Parse seed from URL query param
@@ -25,7 +27,7 @@
   <title>Infinite Worlds | TKA Scribe</title>
 </svelte:head>
 
-<InfiniteWorldsModule {seed} viewDistance={256} showDebug={true} />
+<WorldScene {seed} showDebug={true} />
 
 <style>
   :global(body) {

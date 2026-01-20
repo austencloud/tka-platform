@@ -5,11 +5,12 @@
 	 * Real terrain from Hannon's Camp America (Kinetic Fire festival site).
 	 * Uses actual elevation data from Mapbox - NOT procedural generation.
 	 *
-	 * Now uses the unified InfiniteWorldsModule with HANNONS_CAMP_CONFIG.
+	 * Now uses Threlte-based WorldScene for full avatar parity with
+	 * Stage and Gallery destinations.
 	 */
 
-	import InfiniteWorldsModule from "./components/InfiniteWorldsModule.svelte";
+	import WorldScene from "./components/WorldScene.svelte";
 	import { HANNONS_CAMP_CONFIG } from "./core/realm-definitions";
 </script>
 
-<InfiniteWorldsModule realmConfig={HANNONS_CAMP_CONFIG} />
+<WorldScene realmConfig={HANNONS_CAMP_CONFIG} />

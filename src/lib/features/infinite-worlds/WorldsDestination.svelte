@@ -2,15 +2,18 @@
 	/**
 	 * Worlds Destination - Wrapper for procedural infinite terrain module
 	 *
-	 * Enhancements planned:
-	 * - Unified camera controller integration
-	 * - Multiplayer exploration (future)
+	 * Now uses Threlte-based WorldScene for full avatar parity with
+	 * Stage and Gallery destinations. Features:
+	 * - Unified camera controller (V to cycle modes)
+	 * - Full Avatar3D with GLTF models
+	 * - Grid planes for reference
+	 * - Physics-based movement with Rapier
 	 *
-	 * Uses InfiniteWorldsModule with PROCEDURAL_WORLD_CONFIG.
+	 * Uses WorldScene with PROCEDURAL_WORLD_CONFIG.
 	 */
 
-	import InfiniteWorldsModule from "./components/InfiniteWorldsModule.svelte";
+	import WorldScene from "./components/WorldScene.svelte";
 	import { PROCEDURAL_WORLD_CONFIG } from "./core/realm-definitions";
 </script>
 
-<InfiniteWorldsModule realmConfig={PROCEDURAL_WORLD_CONFIG} />
+<WorldScene realmConfig={PROCEDURAL_WORLD_CONFIG} />

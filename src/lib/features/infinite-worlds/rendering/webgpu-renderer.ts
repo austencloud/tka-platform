@@ -71,7 +71,7 @@ export async function createRenderer(
 
   const scene = new Scene();
   scene.background = new Color(0x0a0a1a);
-  scene.fog = new Fog(0x0a0a1a, 50, 200);
+  scene.fog = new Fog(0x0a0a1a, 50, 300); // Fog from 50m to 300m for outdoor terrain
 
   const isWebGPU = await checkWebGPUSupport();
 

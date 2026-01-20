@@ -35,7 +35,7 @@ export interface WaterConfig {
 // ============================================================================
 
 const DEFAULT_WATER_CONFIG: WaterConfig = {
-  size: 2000,
+  size: 500, // 500 meters - large ocean surface
   segments: 64,
   color: "#2a8faa",
   opacity: 0.8,

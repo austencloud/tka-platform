@@ -23,19 +23,82 @@ import {
   type Entity,
   type InputComponent,
 } from "./ecs-world";
-import type { PhysicsWorldState } from "../physics/rapier-world";
-import { syncPhysicsToECS, syncECSToPhysics, checkGrounded } from "../physics/rapier-world";
+import type { PhysicsWorldState } from "$lib/shared/3d-core/physics/types";
+import { checkGrounded } from "$lib/shared/3d-core/physics/rapier-world";
 import {
   type PlayerControllerState,
   movePlayer,
   getPlayerPosition,
-} from "../physics/player-controller";
+} from "$lib/shared/3d-core/physics/player-controller";
 import type { PerspectiveCamera, Scene, Object3D } from "three";
 import { Vector3, Quaternion, Euler } from "three";
 import { CameraMode } from "$lib/shared/3d-core/camera/types";
 import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
 import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
+import {
+  initCameraController,
+  disposeCameraController,
+  updateCameraFromEntity,
+  cycleCameraMode,
+  setPointerLocked,
+  isCameraControllerReady,
+} from "./camera-adapter";
 import { AdaptiveInputProvider } from "$lib/shared/3d/input/InputProviderFactory";
+import { SCALE } from "$lib/shared/3d-core/scale/scale-constants";
+
+// ============================================================================
+// ECS-PHYSICS SYNC FUNCTIONS
+// ============================================================================
+
+/**
+ * Sync physics bodies to ECS transforms
+ * Called after physics step to update entity positions
+ */
+export function syncPhysicsToECS(): void {
+  for (const entity of withPhysics.entities) {
+    if (!entity.physicsBody || !entity.transform) continue;
+
+    const body = entity.physicsBody.rigidBody;
+    const translation = body.translation();
+    const rotation = body.rotation();
+
+    // Update transform from physics
+    entity.transform.position[0] = translation.x;
+    entity.transform.position[1] = translation.y;
+    entity.transform.position[2] = translation.z;
+
+    entity.transform.rotation[0] = rotation.x;
+    entity.transform.rotation[1] = rotation.y;
+    entity.transform.rotation[2] = rotation.z;
+    entity.transform.rotation[3] = rotation.w;
+  }
+}
+
+/**
+ * Sync ECS transforms to physics bodies (for kinematic bodies)
+ * Called before physics step to update kinematic positions
+ */
+export function syncECSToPhysics(): void {
+  for (const entity of withPhysics.entities) {
+    if (!entity.physicsBody || !entity.transform) continue;
+    if (entity.physicsBody.bodyType !== "kinematic") continue;
+
+    const body = entity.physicsBody.rigidBody;
+
+    body.setNextKinematicTranslation({
+      x: entity.transform.position[0]!,
+      y: entity.transform.position[1]!,
+      z: entity.transform.position[2]!,
+    });
+
+    body.setNextKinematicRotation({
+      x: entity.transform.rotation[0]!,
+      y: entity.transform.rotation[1]!,
+      z: entity.transform.rotation[2]!,
+      w: entity.transform.rotation[3]!,
+    });
+  }
+}
 
 // ============================================================================
 // SYSTEM CONTEXT
@@ -82,7 +145,9 @@ let joystickInput = { x: 0, z: 0 };
  * Initialize input listeners using unified input provider
  * Works on desktop (pointer lock + keyboard) AND mobile/DevTools (touch/drag)
  */
-export function initInputSystem(canvas: HTMLCanvasElement): () => void {
+export function initInputSystem(canvas: HTMLCanvasElement, camera: PerspectiveCamera): () => void {
+  // Initialize the unified camera controller
+  initCameraController(camera);
   // Initialize InputCapabilities for proper touch/mouse detection
   inputCapabilities.init();
 
@@ -98,17 +163,13 @@ export function initInputSystem(canvas: HTMLCanvasElement): () => void {
   const handleKeyDown = (e: KeyboardEvent) => {
     keyState[e.code] = true;
 
-    // V key toggles camera mode
+    // V key toggles camera mode via unified controller
     if (e.key.toLowerCase() === "v") {
+      const newMode = cycleCameraMode();
+      // Sync to ECS entities
       for (const entity of localPlayer.entities) {
         if (entity.camera) {
-          // Toggle mode
-          entity.camera.mode = entity.camera.mode === CameraMode.FIRST_PERSON
-            ? CameraMode.THIRD_PERSON
-            : CameraMode.FIRST_PERSON;
-
-          // Save preference
-          cameraPreferences.setModeForDestination("worlds", entity.camera.mode);
+          entity.camera.mode = newMode;
         }
       }
       e.preventDefault();
@@ -129,6 +190,7 @@ export function initInputSystem(canvas: HTMLCanvasElement): () => void {
     inputProvider?.dispose();
     inputProvider = null;
     inputCapabilities.destroy();
+    disposeCameraController();
   };
 }
 
@@ -208,33 +270,26 @@ export function setJoystickInput(x: number, z: number): void {
 // CAMERA SYSTEM
 // ============================================================================
 
-const MOUSE_SENSITIVITY = 0.002;
-
 /**
  * Update camera rotation from input (pointer lock, touch, or gamepad)
+ * Now delegates to unified CameraMovementController via camera-adapter
  */
 export function cameraSystem(ctx: SystemContext): void {
-  if (!inputProvider) return;
+  if (!inputProvider || !isCameraControllerReady()) return;
 
   // Get look delta from unified input provider
   const lookDelta = inputProvider.getLookDelta();
 
+  // Update pointer lock state in controller
+  setPointerLocked(inputProvider.getPointerLockProvider().isPointerLocked());
+
   for (const entity of localPlayer.entities) {
     if (!entity.camera) continue;
 
-    // Update rotation (same for both modes)
-    // Provider already applies sign convention via -= in handleMouseMove
-    // So we ADD here to avoid double-negative
-    entity.camera.yaw += lookDelta.yaw;
-    entity.camera.pitch += lookDelta.pitch;
+    // Delegate to unified camera controller
+    updateCameraFromEntity(ctx.deltaTime, entity, lookDelta);
 
-    // Clamp pitch to prevent flipping
-    entity.camera.pitch = Math.max(
-      -Math.PI / 2 + 0.01,
-      Math.min(Math.PI / 2 - 0.01, entity.camera.pitch)
-    );
-
-    // Apply camera position/rotation based on mode
+    // Apply camera position/rotation based on mode (still handled here for ECS sync)
     if (entity.camera.mode === CameraMode.FIRST_PERSON) {
       // First-person: camera at player position
       const euler = new Euler(entity.camera.pitch, entity.camera.yaw, 0, "YXZ");
@@ -260,7 +315,7 @@ export function cameraSystem(ctx: SystemContext): void {
           // Look at player
           ctx.camera.lookAt(
             playerPos.x,
-            playerPos.y + 1.7, // Eye height
+            playerPos.y + SCALE.EYE_HEIGHT,
             playerPos.z
           );
         }
@@ -273,12 +328,13 @@ export function cameraSystem(ctx: SystemContext): void {
 // MOVEMENT SYSTEM
 // ============================================================================
 
-const MOVE_SPEED = 5;
-const SPRINT_MULTIPLIER = 2;
+// Movement constants from unified scale system
+const MOVE_SPEED = SCALE.WALK_SPEED;
+const SPRINT_MULTIPLIER = SCALE.SPRINT_MULTIPLIER;
 const CROUCH_MULTIPLIER = 0.5;
-const JUMP_FORCE = 8;
-const GRAVITY = 25;
-const PLAYER_HEIGHT = 1.7;
+const JUMP_FORCE = SCALE.JUMP_VELOCITY;
+const GRAVITY = Math.abs(SCALE.GRAVITY) * 2.5; // Amplified for game feel
+const PLAYER_HEIGHT = SCALE.PLAYER_HEIGHT;
 const CROUCH_HEIGHT = 1.0;
 
 // Temporary vectors (reuse to avoid GC)
@@ -346,7 +402,7 @@ function movementSystemPhysics(ctx: SystemContext): void {
     // Apply gravity
     if (!pc.isGrounded) {
       verticalVelocity -= GRAVITY * ctx.deltaTime;
-      verticalVelocity = Math.max(verticalVelocity, -50); // Terminal velocity
+      verticalVelocity = Math.max(verticalVelocity, SCALE.TERMINAL_VELOCITY);
     } else if (verticalVelocity < 0) {
       verticalVelocity = 0;
     }

@@ -27,14 +27,14 @@
     createPhysicsWorldState,
     initPhysicsWorld,
     disposePhysicsWorld,
-    type PhysicsWorldState,
-  } from "../physics/rapier-world";
-  import { TerrainPhysicsManager } from "../physics/terrain-collider";
+  } from "$lib/shared/3d-core/physics/rapier-world";
+  import type { PhysicsWorldState } from "$lib/shared/3d-core/physics/types";
+  import { TerrainPhysicsManager } from "$lib/shared/3d-core/physics/terrain-collider";
   import {
     createPlayerController,
     disposePlayerController,
     type PlayerControllerState,
-  } from "../physics/player-controller";
+  } from "$lib/shared/3d-core/physics/player-controller";
   import {
     world,
     createPlayerEntity,
@@ -72,8 +72,16 @@
     Vector3,
     type PerspectiveCamera,
   } from "three";
-  import { teleportPlayer } from "../physics/player-controller";
+  import { teleportPlayer } from "$lib/shared/3d-core/physics/player-controller";
   import DebugPanel from "./DebugPanel.svelte";
+  import {
+    createPlayerAvatarMesh,
+    setAvatarVisibility,
+    updateAvatarTransform,
+    disposePlayerAvatar,
+  } from "../rendering/player-avatar";
+  import { CameraMode } from "$lib/shared/3d-core/camera/types";
+  import type { Group } from "three";
 
   // ============================================================================
   // PROPS
@@ -139,6 +147,10 @@
   let zoneBoundary = $state<Array<{ x: number; z: number }>>([]);
   let isInsideZone = $state(false);
 
+  // Player avatar (visible in third-person mode)
+  let playerAvatar: Group | null = $state(null);
+  let currentCameraMode = $state<CameraMode>(CameraMode.FIRST_PERSON);
+
   // World - use provided seed, then config seed, then generate random
   const worldSeed = seed ?? activeConfig.terrain.seed ?? generateWorldSeed();
   const worldSeedEncoded = encodeSeed(worldSeed);
@@ -188,6 +200,12 @@
 
     // Create local player entity at spawn
     createPlayerEntity("local-player", true, spawnPos[0], spawnPos[1], spawnPos[2]);
+
+    // Create player avatar mesh (visible in third-person mode)
+    playerAvatar = createPlayerAvatarMesh();
+    playerAvatar.position.set(spawnPos[0], spawnPos[1], spawnPos[2]);
+    rendererState.scene.add(playerAvatar);
+    setAvatarVisibility(playerAvatar, currentCameraMode === CameraMode.FIRST_PERSON);
 
     // Initialize vegetation manager (GPU instanced rendering with GLTF models)
     vegetationManager = new VegetationManager(rendererState.scene, { useGLTFModels: true });
@@ -260,8 +278,8 @@
       vegetationManager?.removeChunkVegetation(key);
     };
 
-    // Initialize input
-    cleanupInput = initInputSystem(canvas);
+    // Initialize input (pass camera for unified controller)
+    cleanupInput = initInputSystem(canvas, camera!);
 
     // Handle resize
     const resizeObserver = new ResizeObserver(handleResize);
@@ -310,6 +328,13 @@
     // Dispose physics world
     if (physicsState) {
       disposePhysicsWorld(physicsState);
+    }
+
+    // Dispose player avatar
+    if (playerAvatar && rendererState) {
+      rendererState.scene.remove(playerAvatar);
+      disposePlayerAvatar(playerAvatar);
+      playerAvatar = null;
     }
 
     // Clear ECS world
@@ -550,6 +575,26 @@
       };
 
       runSystems(ctx);
+
+      // Update player avatar position and visibility
+      if (playerAvatar && playerController) {
+        // Get player entity for camera mode
+        const playerEntity = world.entities.find(e => e.player?.isLocal);
+        if (playerEntity?.camera) {
+          const newMode = playerEntity.camera.mode;
+          if (newMode !== currentCameraMode) {
+            currentCameraMode = newMode;
+            setAvatarVisibility(playerAvatar, newMode === CameraMode.FIRST_PERSON);
+          }
+        }
+
+        // Update avatar transform from player controller
+        const pos = playerController.rigidBody?.translation();
+        if (pos) {
+          const yaw = playerEntity?.camera?.yaw ?? 0;
+          updateAvatarTransform(playerAvatar, { x: pos.x, y: pos.y, z: pos.z }, yaw);
+        }
+      }
 
       // Update chunks based on camera position
       chunkManager?.update(

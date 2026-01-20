@@ -120,8 +120,8 @@ export class AtmosphereManager {
       depthWrite: false,
     });
 
-    // Create sky sphere
-    const skyGeometry = new SphereGeometry(900, 32, 32);
+    // Create sky sphere - 500 meter radius for expansive sky
+    const skyGeometry = new SphereGeometry(500, 32, 32);
     this.skyMesh = new Mesh(skyGeometry, this.skyMaterial);
     this.skyMesh.renderOrder = -1000;
 
