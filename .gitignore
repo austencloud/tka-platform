@@ -140,3 +140,14 @@ scripts/screenshot-capture/screenshot-config.local.json
 # Claude Code temporary directories
 tmpclaude-*/
 tmpclaude-*
+
+# Video files (too large for git)
+*.mp4
+*.mov
+*.avi
+*.mkv
+downloads/
+
+# Temporary output files
+stdout.txt
+stderr.txt

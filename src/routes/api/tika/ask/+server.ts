@@ -324,9 +324,35 @@ function getModel(modelKey: string): LanguageModelV1 {
 	return anthropic(MODELS['sonnet-4'].modelId)
 }
 
+// Extended pictograph data that includes grid mode
+interface PictographDataWithMode extends PictographData {
+	gridMode: 'diamond' | 'box'
+}
+
+// Separate storage for diamond and box mode pictographs
+let diamondPictographs: PictographDataWithMode[] = []
+let boxPictographs: PictographDataWithMode[] = []
+
 function loadDataframe(): PictographData[] {
 	try {
-		const csvPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv')
+		// Load diamond mode
+		const diamondPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv')
+		diamondPictographs = loadCsvFile(diamondPath, 'diamond')
+
+		// Load box mode
+		const boxPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'BoxPictographDataframe.csv')
+		boxPictographs = loadCsvFile(boxPath, 'box')
+
+		// Return combined for backwards compatibility
+		return [...diamondPictographs, ...boxPictographs]
+	} catch (error) {
+		console.error('[TIKA API] Failed to load dataframe:', error)
+		return []
+	}
+}
+
+function loadCsvFile(csvPath: string, gridMode: 'diamond' | 'box'): PictographDataWithMode[] {
+	try {
 		const csvContent = fs.readFileSync(csvPath, 'utf-8')
 		const lines = csvContent.trim().split('\n')
 		if (lines.length < 2) return []
@@ -334,7 +360,7 @@ function loadDataframe(): PictographData[] {
 		const headerLine = lines[0]
 		if (!headerLine) return []
 		const headers = headerLine.split(',').map((h) => h.trim())
-		const pictographs: PictographData[] = []
+		const pictographs: PictographDataWithMode[] = []
 
 		for (let i = 1; i < lines.length; i++) {
 			const line = lines[i]
@@ -351,6 +377,7 @@ function loadDataframe(): PictographData[] {
 				endPosition: row['endPosition'] ?? '',
 				timing: row['timing'] ?? '',
 				direction: row['direction'] ?? '',
+				gridMode,
 				blueMotion: {
 					color: 'blue',
 					startLocation: row['blueStartLocation'] ?? '',
@@ -370,7 +397,7 @@ function loadDataframe(): PictographData[] {
 
 		return pictographs
 	} catch (error) {
-		console.error('[TIKA API] Failed to load dataframe:', error)
+		console.error(`[TIKA API] Failed to load ${gridMode} dataframe:`, error)
 		return []
 	}
 }
@@ -665,15 +692,72 @@ interface PictographExample {
 }
 
 /**
- * Get pictograph examples demonstrating a specific position.
- * Searches for pictographs where either start or end position matches.
+ * Get visual examples for a position, separated by grid mode.
+ * Returns examples from both diamond mode (cardinal: N/S/E/W)
+ * and box mode (diagonal: NE/SW/NW/SE).
  */
-function getPositionExamples(position: string, count: number = 3): PictographExample[] {
+interface PositionExamplesByMode {
+	diamond: PictographExample[]
+	box: PictographExample[]
+}
+
+function getPositionExamplesByMode(position: string): PositionExamplesByMode {
 	ensureDataLoaded()
 
 	const normalizedPosition = position.toLowerCase().trim()
+	const staticLetter = POSITION_STATIC_LETTERS[normalizedPosition]
 
-	// Find pictographs that start or end with this position
+	if (!staticLetter) {
+		return { diamond: [], box: [] }
+	}
+
+	// Get diamond mode variations and sort by position number (alpha1, alpha3, etc.)
+	const diamondVariations = diamondPictographs.filter(p => p.letter === staticLetter)
+	const diamond: PictographExample[] = diamondVariations
+		.map((v, i) => ({
+			letter: staticLetter,
+			variation: i,
+			startPosition: v.startPosition,
+			endPosition: v.endPosition
+		}))
+		.sort((a, b) => {
+			// Extract numeric suffix from position (e.g., "alpha3" -> 3)
+			const numA = parseInt(a.startPosition.replace(/\D/g, '')) || 0
+			const numB = parseInt(b.startPosition.replace(/\D/g, '')) || 0
+			return numA - numB
+		})
+
+	// Get box mode variations and sort by position number
+	const boxVariations = boxPictographs.filter(p => p.letter === staticLetter)
+	const box: PictographExample[] = boxVariations
+		.map((v, i) => ({
+			letter: staticLetter,
+			variation: i,
+			startPosition: v.startPosition,
+			endPosition: v.endPosition
+		}))
+		.sort((a, b) => {
+			const numA = parseInt(a.startPosition.replace(/\D/g, '')) || 0
+			const numB = parseInt(b.startPosition.replace(/\D/g, '')) || 0
+			return numA - numB
+		})
+
+	return { diamond, box }
+}
+
+/**
+ * Get pictograph examples demonstrating a specific position.
+ * Legacy function for backwards compatibility - returns diamond mode only.
+ */
+function getPositionExamples(position: string, count: number = 3): PictographExample[] {
+	const { diamond } = getPositionExamplesByMode(position)
+	return diamond.slice(0, count)
+}
+
+// Fallback for positions without static letters (zeta, eta - Level 4)
+function getPositionExamplesFallback(position: string, count: number = 3): PictographExample[] {
+	ensureDataLoaded()
+	const normalizedPosition = position.toLowerCase().trim()
 	const matches = allPictographs.filter(p =>
 		p.startPosition.toLowerCase().includes(normalizedPosition) ||
 		p.endPosition.toLowerCase().includes(normalizedPosition)
@@ -1011,32 +1095,128 @@ const tikaTools = {
 	}),
 
 	show_position_examples: tool({
-		description: 'MANDATORY for position questions ("What is alpha?", "Tell me about gamma", "Show me beta"). Returns visual pictograph examples. NEVER explain positions in text alone - always show examples.',
-		inputSchema: jsonSchema<{ position: string; count?: number }>({
+		description: 'MANDATORY for position questions ("What is alpha?", "Tell me about gamma", "Show me beta"). Returns visual pictograph examples using hand props to teach positions. Shows BOTH diamond mode (common) and box mode variations. NEVER explain positions in text alone - always show examples. Uses beginner-friendly language without jargon.',
+		inputSchema: jsonSchema<{ position: string }>({
 			type: 'object',
 			properties: {
-				position: { type: 'string', description: 'Position name (alpha, beta, gamma, zeta, eta)' },
-				count: { type: 'number', default: 3, description: 'Number of examples to show (default 3)' }
+				position: { type: 'string', description: 'Position name (alpha, beta, gamma, zeta, eta)' }
 			},
 			required: ['position']
 		}),
-		execute: async ({ position, count = 3 }) => {
+		execute: async ({ position }) => {
 			const positionDef = POSITION_DEFINITIONS[position.toLowerCase()]
 			if (!positionDef) {
 				return `Position "${position}" not recognized. Valid positions: alpha, beta, gamma, zeta, eta`
 			}
 
-			const examples = getPositionExamples(position, count)
+			// Get examples from both grid modes
+			const { diamond, box } = getPositionExamplesByMode(position)
+			const staticLetter = POSITION_STATIC_LETTERS[position.toLowerCase()]
 
-			// Return filtered output - no contextData
-			return {
-				explanation: `**${positionDef.name}:** ${positionDef.description}`,
-				inlineGallery: {
-					type: 'inline-gallery' as const,
-					items: examples.map(ex => ({ letter: ex.letter, variation: ex.variation })),
-					layout: 'row' as const,
-					caption: `Examples of ${position} position`
+			if (!staticLetter || (diamond.length === 0 && box.length === 0)) {
+				// Fallback for positions without static letters (zeta, eta - Level 4)
+				return {
+					explanation: `**${positionDef.name}:** ${positionDef.description}
+
+This is an advanced position you'll learn later. For now, focus on the basics: alpha, beta, and gamma.`
 				}
+			}
+
+			// Position-specific context (VTG connection where applicable)
+			// VTG (Vulcan Tech Gospel) is a sister notation system - don't call it "older" or imply it's outdated
+			// TKA positions correspond to VTG timing/direction modes:
+			// - Alpha = split-same (hands apart, same direction)
+			// - Beta = together-same (hands together, same direction)
+			// - Gamma = quarter time
+			const vtgContext: Record<string, string> = {
+				alpha: `If you've learned [VTG (Vulcan Tech Gospel)](https://linktr.ee/vulcantechgospel), alpha corresponds to "split-same" - hands apart, spinning the same direction.`,
+				beta: `If you've learned [VTG (Vulcan Tech Gospel)](https://linktr.ee/vulcantechgospel), beta corresponds to "together-same" - hands together, spinning the same direction.`,
+				gamma: `Gamma creates an L-shape between your hands. In VTG, this corresponds to "quarter time." ([Learn more about VTG](https://linktr.ee/vulcantechgospel))`
+			}
+
+			const vtgMapping = vtgContext[position.toLowerCase()] || null
+
+			// Create render context for hand props
+			const renderContext = {
+				propType: 'hand',
+				purpose: 'position-teaching' as const
+			}
+
+			// Build beginner-friendly explanation that orients them to the system
+			// Someone asking "what is alpha?" doesn't know the system yet
+			// Use formatting to make definitions scannable
+			const positionExplanations: Record<string, string> = {
+				alpha: `## Alpha
+
+**Alpha** is one of the three basic positions in The Kinetic Alphabet.
+
+In TKA, **position** describes where your two hands are relative to each other on the grid:
+
+- **Alpha** - hands at opposite points (across from each other)
+- **Beta** - hands at the same point (together)
+- **Gamma** - hands form a right angle (L-shape)
+
+**Alpha** means your hands are at **opposite grid points**. In the pictographs below, notice how the blue and red hands are always directly across from each other, no matter which way the grid is oriented.`,
+
+				beta: `## Beta
+
+**Beta** is one of the three basic positions in The Kinetic Alphabet.
+
+In TKA, **position** describes where your two hands are relative to each other on the grid:
+
+- **Alpha** - hands at opposite points (across from each other)
+- **Beta** - hands at the same point (together)
+- **Gamma** - hands form a right angle (L-shape)
+
+**Beta** means your hands are at the **same grid point**. In the pictographs below, notice how the blue and red hands overlap at one location.`,
+
+				gamma: `## Gamma
+
+**Gamma** is one of the three basic positions in The Kinetic Alphabet.
+
+In TKA, **position** describes where your two hands are relative to each other on the grid:
+
+- **Alpha** - hands at opposite points (across from each other)
+- **Beta** - hands at the same point (together)
+- **Gamma** - hands form a right angle (L-shape)
+
+**Gamma** means your hands form a **right angle** on the grid. In the pictographs below, notice how the hands are neither opposite nor together - they're 90° apart, like an L-shape.`
+			}
+
+			const explanation = positionExplanations[position.toLowerCase()] ||
+				`**${positionDef.name}:** ${positionDef.description}`
+
+			return {
+				explanation,
+				vtgEquivalent: vtgMapping,
+				inlineGalleries: [
+					{
+						type: 'inline-gallery' as const,
+						items: diamond.map(ex => ({
+							letter: ex.letter,
+							variation: ex.variation,
+							// Show the specific variant (alpha1, alpha3, etc.) - lets them see there are variations
+							// without making memorization feel required
+							label: ex.startPosition
+						})),
+						layout: 'row' as const,
+						gridMode: 'diamond' as const,
+						caption: `Diamond mode (cardinal locations)`,
+						renderContext
+					},
+					{
+						type: 'inline-gallery' as const,
+						items: box.map(ex => ({
+							letter: ex.letter,
+							variation: ex.variation,
+							label: ex.startPosition
+						})),
+						layout: 'row' as const,
+						gridMode: 'box' as const,
+						caption: `Box mode (intercardinal locations)`,
+						renderContext
+					}
+				]
 			}
 		}
 	}),
@@ -1738,6 +1918,27 @@ interface SequenceResult {
 }
 
 const TYPE_6_LETTERS = ['α', 'β', 'γ']
+
+/**
+ * Mapping from position names to their Type 6 static letters.
+ * Type 6 letters show hands in a position without motion arrows -
+ * perfect for teaching what positions mean.
+ */
+const POSITION_STATIC_LETTERS: Record<string, string> = {
+	alpha: 'α',
+	beta: 'β',
+	gamma: 'γ'
+	// zeta and eta are Level 4 (not yet implemented in dataframe)
+}
+
+/**
+ * Get the number of variations available for a Type 6 static letter.
+ * Used to show multiple examples of a position.
+ */
+function getStaticLetterVariationCount(letter: string): number {
+	const variations = allPictographs.filter(p => p.letter === letter)
+	return variations.length
+}
 
 function parseWordToLettersLocal(word: string): string[] {
 	const letters: string[] = []

@@ -3,6 +3,9 @@
  *
  * Generates pictograph images for the Tika learning assistant.
  * Uses the same StandaloneRenderer as the MCP server.
+ *
+ * NOTE: If renderer changes don't take effect, restart the dev server.
+ * The mcp-server module is externalized and cached by Node.js.
  */
 
 import { json, type RequestHandler } from '@sveltejs/kit'
@@ -28,12 +31,12 @@ interface PictographData {
 	redMotion: MotionData
 }
 
-// Cache for loaded pictograph data
-let allPictographs: PictographData[] = []
+// Cache for loaded pictograph data by grid mode
+let diamondPictographs: PictographData[] = []
+let boxPictographs: PictographData[] = []
 
-function loadDataframe(): PictographData[] {
+function loadCsvFile(csvPath: string): PictographData[] {
 	try {
-		const csvPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv')
 		const csvContent = fs.readFileSync(csvPath, 'utf-8')
 		const lines = csvContent.trim().split('\n')
 		if (lines.length < 2) return []
@@ -77,22 +80,29 @@ function loadDataframe(): PictographData[] {
 
 		return pictographs
 	} catch (error) {
-		console.error('[Tika API] Failed to load dataframe:', error)
+		console.error('[Tika API] Failed to load CSV:', csvPath, error)
 		return []
 	}
 }
 
 function ensureDataLoaded() {
-	if (allPictographs.length === 0) {
-		console.log('[Tika API] Loading pictograph dataframe...')
-		allPictographs = loadDataframe()
-		console.log(`[Tika API] Loaded ${allPictographs.length} pictographs`)
+	if (diamondPictographs.length === 0) {
+		console.log('[Tika API] Loading pictograph dataframes...')
+		const diamondPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv')
+		const boxPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'BoxPictographDataframe.csv')
+		diamondPictographs = loadCsvFile(diamondPath)
+		boxPictographs = loadCsvFile(boxPath)
+		console.log(`[Tika API] Loaded ${diamondPictographs.length} diamond + ${boxPictographs.length} box pictographs`)
 	}
+}
+
+function getPictographsForMode(gridMode: 'diamond' | 'box'): PictographData[] {
+	return gridMode === 'box' ? boxPictographs : diamondPictographs
 }
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
-		const { letter, variation = 0, options = {} } = await request.json()
+		const { letter, variation = 0, gridMode = 'diamond', options = {} } = await request.json()
 
 		if (!letter) {
 			return json({ error: 'Missing letter parameter' }, { status: 400 })
@@ -100,17 +110,20 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		ensureDataLoaded()
 
-		// Find variations for this letter
-		const variations = allPictographs.filter((p) => p.letter === letter)
+		// Get pictographs for the specified grid mode
+		const pictographs = getPictographsForMode(gridMode)
+
+		// Find variations for this letter in the specified mode
+		const variations = pictographs.filter((p) => p.letter === letter)
 
 		if (variations.length === 0) {
-			return json({ error: `No pictograph found for letter: ${letter}` }, { status: 404 })
+			return json({ error: `No pictograph found for letter: ${letter} in ${gridMode} mode` }, { status: 404 })
 		}
 
 		if (variation >= variations.length) {
 			return json(
 				{
-					error: `Variation ${variation} not found. Letter ${letter} has ${variations.length} variations (0-${variations.length - 1})`
+					error: `Variation ${variation} not found. Letter ${letter} has ${variations.length} ${gridMode} variations (0-${variations.length - 1})`
 				},
 				{ status: 400 }
 			)
@@ -162,7 +175,10 @@ export const POST: RequestHandler = async ({ request }) => {
 			showGrid: options.showGrid ?? true,
 			showNonRadialPoints: options.showNonRadialPoints ?? false,
 			showBlueMotion: options.showBlueMotion ?? true,
-			showRedMotion: options.showRedMotion ?? true
+			showRedMotion: options.showRedMotion ?? true,
+			// Prop type options for position-first teaching (hand props instead of staffs)
+			bluePropType: options.bluePropType ?? null,
+			redPropType: options.redPropType ?? null
 		}
 
 		// Render to base64

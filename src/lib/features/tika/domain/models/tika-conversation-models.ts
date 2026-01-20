@@ -8,9 +8,9 @@
 import type { UIMessage } from "ai";
 
 /**
- * Full TIKA session data stored in Firestore
+ * Full Tika session data stored in Firestore
  */
-export interface TIKASession {
+export interface TikaSession {
   /** Firestore document ID */
   id: string;
 
@@ -34,25 +34,33 @@ export interface TIKASession {
 
   /** Full AI SDK message array */
   messages: UIMessage[];
+
+  /** Whether this session is flagged for human review */
+  flaggedForReview?: boolean;
+
+  /** When the session was flagged for review */
+  flaggedAt?: Date;
 }
 
 /**
  * Lightweight preview for listing sessions
  * (excludes full message array to reduce Firestore reads)
  */
-export interface TIKASessionPreview {
+export interface TikaSessionPreview {
   id: string;
   title: string;
   createdAt: Date;
   updatedAt: Date;
   messageCount: number;
   lastUserMessage: string;
+  flaggedForReview?: boolean;
+  flaggedAt?: Date;
 }
 
 /**
  * Options for querying sessions
  */
-export interface TIKASessionQueryOptions {
+export interface TikaSessionQueryOptions {
   /** Maximum number of sessions to return */
   limit?: number;
 
@@ -63,11 +71,11 @@ export interface TIKASessionQueryOptions {
 /**
  * Create a new session from messages
  */
-export function createTIKASession(
+export function createTikaSession(
   userId: string,
   messages: UIMessage[],
   existingId?: string
-): TIKASession {
+): TikaSession {
   const now = new Date();
 
   // Extract title from first user message

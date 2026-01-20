@@ -1,0 +1,223 @@
+<!--
+  TikaActionMenu - Overflow menu for secondary Tika actions
+
+  Groups utility actions (refresh, tools, copy, review panel) in a dropdown
+  to keep the header clean while maintaining access to all features.
+-->
+<script lang="ts">
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { container } from "$lib/shared/di";
+  import { onMount } from "svelte";
+
+  interface ActionItem {
+    id: string;
+    label: string;
+    icon: string;
+    onClick: () => void;
+    active?: boolean;
+    danger?: boolean;
+  }
+
+  const {
+    actions = [],
+  } = $props<{
+    actions: ActionItem[];
+  }>();
+
+  let hapticService: IHapticFeedback | null = null;
+  let isOpen = $state(false);
+  let menuRef = $state<HTMLDivElement | null>(null);
+
+  function toggle() {
+    hapticService?.trigger("selection");
+    isOpen = !isOpen;
+  }
+
+  function handleAction(action: ActionItem) {
+    hapticService?.trigger("selection");
+    action.onClick();
+    isOpen = false;
+  }
+
+  function handleClickOutside(event: MouseEvent) {
+    if (menuRef && !menuRef.contains(event.target as Node)) {
+      isOpen = false;
+    }
+  }
+
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  });
+</script>
+
+<div class="action-menu" bind:this={menuRef}>
+  <button
+    class="menu-trigger"
+    class:active={isOpen}
+    onclick={toggle}
+    type="button"
+    aria-label="More actions"
+    aria-expanded={isOpen}
+    aria-haspopup="menu"
+  >
+    <i class="fas fa-ellipsis-v" aria-hidden="true"></i>
+  </button>
+
+  {#if isOpen}
+    <div class="menu-dropdown" role="menu">
+      {#each actions as action (action.id)}
+        <button
+          class="menu-item"
+          class:active={action.active}
+          class:danger={action.danger}
+          onclick={() => handleAction(action)}
+          type="button"
+          role="menuitem"
+        >
+          <i class="fas {action.icon}" aria-hidden="true"></i>
+          <span>{action.label}</span>
+          {#if action.active}
+            <i class="fas fa-check check-icon" aria-hidden="true"></i>
+          {/if}
+        </button>
+      {/each}
+    </div>
+  {/if}
+</div>
+
+<style>
+  .action-menu {
+    position: relative;
+  }
+
+  .menu-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--min-touch-target, 48px);
+    height: var(--min-touch-target, 48px);
+    padding: 0;
+    background: linear-gradient(135deg, rgba(100, 100, 120, 0.85), rgba(70, 70, 90, 0.85));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    color: #ffffff;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all var(--duration-normal, 0.3s) ease;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .menu-trigger:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, rgba(120, 120, 140, 0.95), rgba(90, 90, 110, 0.95));
+  }
+
+  .menu-trigger:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+  }
+
+  .menu-trigger.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(79, 70, 229, 0.9));
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+
+  .menu-trigger:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .menu-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 200px;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 10000;
+    overflow: hidden;
+    animation: slideDown var(--duration-normal, 0.3s) ease;
+    padding: 6px;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .menu-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--duration-normal, 0.3s) ease;
+    text-align: left;
+  }
+
+  .menu-item:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+  }
+
+  .menu-item:active {
+    transform: scale(0.98);
+  }
+
+  .menu-item.active {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-accent, #6366f1);
+  }
+
+  .menu-item.danger {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .menu-item.danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  .menu-item i:first-child {
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+    opacity: 0.8;
+  }
+
+  .menu-item span {
+    flex: 1;
+  }
+
+  .check-icon {
+    color: var(--semantic-success, #22c55e);
+    font-size: 0.875rem;
+    flex-shrink: 0;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .menu-dropdown {
+      animation: none;
+    }
+  }
+</style>

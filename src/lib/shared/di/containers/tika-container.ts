@@ -4,11 +4,11 @@
  * Manages dependencies for the TIKA AI assistant module.
  */
 import { createContainer } from "iti";
-import { TIKASessionRepository } from "$lib/features/tika/services/implementations/TIKASessionRepository";
+import { TikaSessionRepository } from "$lib/features/tika/services/implementations/TikaSessionRepository";
 
 export function createTikaContainer() {
   return createContainer().add({
-    tikaSessionRepository: () => new TIKASessionRepository(),
+    tikaSessionRepository: () => new TikaSessionRepository(),
   });
 }
 

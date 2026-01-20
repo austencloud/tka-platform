@@ -195,6 +195,19 @@ export interface InlinePictograph {
 }
 
 /**
+ * Render context for position-first teaching.
+ * Used to customize how pictographs are rendered for educational purposes.
+ */
+export interface GalleryRenderContext {
+  /** Prop type to use (e.g., 'hand' for position teaching) */
+  propType?: string;
+  /** Hide motion arrows (for teaching positions without motion) */
+  hideArrows?: boolean;
+  /** Purpose of this rendering (for debugging/analytics) */
+  purpose?: "position-teaching" | "motion-teaching" | "general";
+}
+
+/**
  * Inline gallery (multiple pictographs)
  */
 export interface InlineGallery {
@@ -202,6 +215,18 @@ export interface InlineGallery {
   items: Array<{ letter: string; variation?: number; label?: string }>;
   layout: "row" | "grid";
   caption?: string;
+  /**
+   * Grid mode for looking up variations.
+   * "diamond" uses cardinal directions (N/S/E/W), "box" uses diagonals (NE/SW/NW/SE).
+   * Defaults to "diamond" if not specified.
+   */
+  gridMode?: "diamond" | "box";
+  /**
+   * Render context for position-first teaching.
+   * When present, overrides default rendering to show hands instead of staffs,
+   * hide arrows, etc. - used to teach positions before introducing orientations.
+   */
+  renderContext?: GalleryRenderContext;
 }
 
 /**

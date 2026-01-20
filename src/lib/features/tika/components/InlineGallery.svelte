@@ -27,8 +27,13 @@
     return 150; // Large gallery
   });
 
-  // State - map of letter -> base64 images
+  // State - map of "letter-variation" -> base64 images
   let images = $state<Map<string, string>>(new Map());
+
+  // Generate image key for the Map (includes variation to handle multiple variations of same letter)
+  function getImageKey(letter: string, variation: number): string {
+    return `${letter}-${variation}`;
+  }
   let loading = $state(true);
   let loadedCount = $state(0);
 
@@ -42,21 +47,33 @@
     fetchGalleryImages();
   });
 
+  // Build cache key including grid mode and render context
+  function buildCacheKey(letter: string, variation: number, size: number): string {
+    const context = gallery.renderContext;
+    const mode = gallery.gridMode ?? "diamond";
+    const base = `${letter}-${variation}-${size}-${mode}`;
+    if (context?.propType) {
+      return `${base}-${context.propType}`;
+    }
+    return base;
+  }
+
   async function fetchGalleryImages() {
     loading = true;
     loadedCount = 0;
     const newImages = new Map<string, string>();
     const itemsToFetch: Array<{ letter: string; variation: number }> = [];
     const fetchSize = apiItemSize();
+    const context = gallery.renderContext;
 
     // Step 1: Check cache for all items
     for (const item of gallery.items) {
       const variation = item.variation ?? 0;
-      const cacheKey = getCacheKey(item.letter, variation, fetchSize);
+      const cacheKey = buildCacheKey(item.letter, variation, fetchSize);
       const cached = await tikaPictographCache.get(cacheKey);
 
       if (cached) {
-        newImages.set(item.letter, `data:image/png;base64,${cached}`);
+        newImages.set(getImageKey(item.letter, variation), `data:image/png;base64,${cached}`);
         loadedCount++;
       } else {
         itemsToFetch.push({ letter: item.letter, variation });
@@ -74,18 +91,36 @@
 
       const batchPromises = batch.map(async ({ letter, variation }) => {
         try {
+          // Build options, applying renderContext for position-teaching mode
+          const options: Record<string, unknown> = {
+            darkMode: true,
+            size: fetchSize,
+            showTKA: true,
+            showGrid: true,
+          };
+
+          // Apply render context for position-first teaching
+          if (context) {
+            // Use hand props instead of staffs for teaching positions
+            if (context.propType) {
+              options.bluePropType = context.propType;
+              options.redPropType = context.propType;
+            }
+            // Hide arrows when teaching positions (no motion to show)
+            if (context.hideArrows) {
+              options.showBlueMotion = false;
+              options.showRedMotion = false;
+            }
+          }
+
           const response = await fetch("/api/tika/pictograph", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               letter,
               variation,
-              options: {
-                darkMode: true,
-                size: fetchSize,
-                showTKA: true,
-                showGrid: true,
-              },
+              gridMode: gallery.gridMode ?? "diamond",
+              options,
             }),
           });
 
@@ -94,11 +129,11 @@
           const data = await response.json();
           const base64 = data.imageBase64 as string;
 
-          // Cache for future use
-          const cacheKey = getCacheKey(letter, variation, fetchSize);
+          // Cache for future use (with context-aware key)
+          const cacheKey = buildCacheKey(letter, variation, fetchSize);
           await tikaPictographCache.set(cacheKey, base64);
 
-          return { letter, imageUrl: `data:image/png;base64,${base64}` };
+          return { letter, variation, imageUrl: `data:image/png;base64,${base64}` };
         } catch (e) {
           console.error(`[InlineGallery] Error fetching ${letter}:`, e);
           return null;
@@ -110,7 +145,7 @@
       // Update images after each batch
       for (const result of batchResults) {
         if (result) {
-          newImages.set(result.letter, result.imageUrl);
+          newImages.set(getImageKey(result.letter, result.variation), result.imageUrl);
           loadedCount++;
         }
       }
@@ -133,7 +168,7 @@
 >
   <div class="gallery-items" style={itemSize ? `--item-size: ${itemSize}px` : undefined}>
     {#each gallery.items as item}
-      {@const imageUrl = images.get(item.letter)}
+      {@const imageUrl = images.get(getImageKey(item.letter, item.variation ?? 0))}
       <div class="gallery-item">
         {#if imageUrl}
           <img src={imageUrl} alt="Letter {item.letter}" />
@@ -162,7 +197,7 @@
 
 <style>
   .inline-gallery {
-    margin: 12px 0;
+    margin: 8px 0;
     padding: 0;
     width: 100%;
   }
@@ -234,17 +269,28 @@
     width: clamp(180px, 45vw, 320px);
   }
 
-  /* Small gallery: 3-4 items - large */
+  /* Small gallery: 3-4 items - fit all in one row when possible */
   .inline-gallery.small-gallery .gallery-items {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
-    gap: 16px;
+    gap: 8px;
   }
 
   .inline-gallery.small-gallery .gallery-item img,
   .inline-gallery.small-gallery .placeholder {
-    width: clamp(140px, 35vw, 240px);
+    width: clamp(80px, 20vw, 140px);
+  }
+
+  /* On narrow screens, allow wrapping to 2x2 */
+  @media (max-width: 480px) {
+    .inline-gallery.small-gallery .gallery-items {
+      flex-wrap: wrap;
+    }
+    .inline-gallery.small-gallery .gallery-item img,
+    .inline-gallery.small-gallery .placeholder {
+      width: clamp(70px, 40vw, 120px);
+    }
   }
 
   /* Large gallery: 5+ items - medium grid */
@@ -294,7 +340,8 @@
   }
 
   .gallery-caption {
-    margin-top: 8px;
+    margin-top: 4px;
+    margin-bottom: 12px;
     font-size: 12px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     text-align: center;

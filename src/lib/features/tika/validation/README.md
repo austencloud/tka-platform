@@ -1,4 +1,4 @@
-# TIKA Validation Layer
+# Tika Validation Layer
 
 ## Problem
 Testing revealed Haiku ignores system prompt rules - dumps technical data like "alpha3", "8 variations", raw JSON structures. Tweaking prompts is fragile.

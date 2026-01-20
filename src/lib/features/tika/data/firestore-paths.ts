@@ -1,7 +1,7 @@
 /**
- * Firestore Collection Paths for TIKA Module
+ * Firestore Collection Paths for Tika Module
  *
- * Centralized path definitions for TIKA conversation persistence.
+ * Centralized path definitions for Tika conversation persistence.
  */
 
 // ============================================================================
@@ -9,18 +9,18 @@
 // ============================================================================
 
 /**
- * Path to a user's TIKA conversations collection
+ * Path to a user's Tika conversations collection
  * @example "users/abc123/tikaConversations"
  */
-export function getUserTIKAConversationsPath(userId: string): string {
+export function getUserTikaConversationsPath(userId: string): string {
   return `users/${userId}/tikaConversations`;
 }
 
 /**
- * Path to a specific TIKA conversation
+ * Path to a specific Tika conversation
  * @example "users/abc123/tikaConversations/conv456"
  */
-export function getUserTIKAConversationPath(
+export function getUserTikaConversationPath(
   userId: string,
   conversationId: string
 ): string {
@@ -32,15 +32,15 @@ export function getUserTIKAConversationPath(
 // ============================================================================
 
 /**
- * Firestore collection names used by the TIKA module
+ * Firestore collection names used by the Tika module
  */
 export const TIKA_COLLECTIONS = {
-  /** User's TIKA conversations */
+  /** User's Tika conversations */
   CONVERSATIONS: "tikaConversations",
 } as const;
 
 /**
- * Limits for TIKA operations
+ * Limits for Tika operations
  */
 export const TIKA_LIMITS = {
   /** Max conversations per user */

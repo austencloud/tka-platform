@@ -208,3 +208,14 @@ export class TikaPictographCache implements ITikaPictographCache {
  * Singleton instance for use across the app
  */
 export const tikaPictographCache = new TikaPictographCache();
+
+// Expose to window for easy cache clearing from browser console
+// Usage: window.tikaPictographCache.clear() or window.clearTikaCache()
+if (typeof window !== "undefined") {
+  (window as unknown as Record<string, unknown>).tikaPictographCache = tikaPictographCache;
+  (window as unknown as Record<string, unknown>).clearTikaCache = async () => {
+    await tikaPictographCache.clear();
+    console.log("[TikaPictographCache] Cache cleared. Refresh the page to reload images.");
+    return "Cache cleared";
+  };
+}

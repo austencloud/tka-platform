@@ -9,9 +9,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
-  import TIKAHistoryItem from "./TIKAHistoryItem.svelte";
-  import type { TIKASessionPreview } from "../domain/models/tika-conversation-models";
-  import type { ITIKASessionRepository } from "../services/contracts/ITIKASessionRepository";
+  import TikaHistoryItem from "./TikaHistoryItem.svelte";
+  import type { TikaSessionPreview } from "../domain/models/tika-conversation-models";
+  import type { ITikaSessionRepository } from "../services/contracts/ITikaSessionRepository";
 
   let {
     repository,
@@ -20,7 +20,7 @@
     onLoadSession,
     onClose,
   }: {
-    repository: ITIKASessionRepository;
+    repository: ITikaSessionRepository;
     currentSessionId: string | null;
     onNewChat: () => void;
     onLoadSession: (sessionId: string) => void;
@@ -28,7 +28,7 @@
   } = $props();
 
   // State
-  let sessions = $state<TIKASessionPreview[]>([]);
+  let sessions = $state<TikaSessionPreview[]>([]);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
   let deleteConfirmId = $state<string | null>(null);
@@ -133,12 +133,12 @@
       <div class="empty-state">
         <i class="fas fa-comments" aria-hidden="true"></i>
         <span>No conversations yet</span>
-        <p>Start a conversation with TIKA to see it here.</p>
+        <p>Start a conversation with Tika to see it here.</p>
       </div>
     {:else}
       <div class="sessions-list">
         {#each sessions as session (session.id)}
-          <TIKAHistoryItem
+          <TikaHistoryItem
             {session}
             isActive={session.id === currentSessionId}
             onSelect={() => handleSelectSession(session.id)}

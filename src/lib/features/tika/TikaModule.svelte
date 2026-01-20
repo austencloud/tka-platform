@@ -13,12 +13,12 @@
   import { DefaultChatTransport } from "ai";
   import { browser } from "$app/environment";
   import { onMount } from "svelte";
-  import TIKAConversation from "./components/TIKAConversation.svelte";
-  import TIKAReviewPanel from "./components/TIKAReviewPanel.svelte";
-  import TIKAHistoryDrawer from "./components/TIKAHistoryDrawer.svelte";
+  import TikaConversation from "./components/TikaConversation.svelte";
+  import TikaReviewPanel from "./components/TikaReviewPanel.svelte";
+  import TikaHistoryDrawer from "./components/TikaHistoryDrawer.svelte";
   import { getEffectiveUserId, authState } from "$lib/shared/auth/state/authState.svelte";
   import { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
-  import { TIKASessionRepository } from "./services/implementations/TIKASessionRepository";
+  import { TikaSessionRepository } from "./services/implementations/TikaSessionRepository";
   import { TIKA_LIMITS } from "./data/firestore-paths";
   import type { ModelOption } from "./types";
 
@@ -62,10 +62,11 @@
   // Session management state
   let currentSessionId = $state<string | null>(null);
   let showHistory = $state(false);
+  let isFlagged = $state(false);
   let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // Repository instance (initialized lazily when user is authenticated)
-  const sessionRepository = browser ? new TIKASessionRepository() : null;
+  const sessionRepository = browser ? new TikaSessionRepository() : null;
 
   // Check if user is authenticated
   const isAuthenticated = $derived(authState.isAuthenticated);
@@ -222,6 +223,7 @@
     // Clear current conversation
     if (chat) chat.messages = [];
     currentSessionId = null;
+    isFlagged = false;
 
     // Clear sessionStorage
     if (browser) {
@@ -238,6 +240,7 @@
       if (session) {
         chat.messages = session.messages as UIMessage[];
         currentSessionId = session.id;
+        isFlagged = session.flaggedForReview ?? false;
 
         // Update sessionStorage
         if (browser) {
@@ -256,6 +259,18 @@
 
   function handleCloseHistory() {
     showHistory = false;
+  }
+
+  // Flag/unflag conversation for review
+  async function handleFlagForReview(flagged: boolean) {
+    if (!sessionRepository || !currentSessionId) return;
+
+    try {
+      await sessionRepository.flagForReview(currentSessionId, flagged);
+      isFlagged = flagged;
+    } catch (error) {
+      console.error("[TIKA] Failed to flag conversation:", error);
+    }
   }
 
   // Helper to extract text from message parts
@@ -287,7 +302,7 @@
 
     // Format conversation for AI review
     const lines: string[] = [
-      "# TIKA Conversation for Review",
+      "# Tika Conversation for Review",
       "",
       `**Date:** ${new Date().toLocaleString()}`,
       `**Messages:** ${chatMessages.length}`,
@@ -303,7 +318,7 @@
         lines.push(getTextFromParts(message.parts));
         lines.push("");
       } else if (message.role === "assistant") {
-        lines.push(`## TIKA Response`);
+        lines.push(`## Tika Response`);
         lines.push("");
 
         // Extract text content
@@ -387,7 +402,7 @@
   {#if mode === "conversation"}
     <!-- Single-column conversation (inline images in messages) -->
     <div class="conversation-container">
-      <TIKAConversation
+      <TikaConversation
         messages={chatMessages}
         status={chatStatus}
         onSubmit={handleSubmit}
@@ -399,10 +414,16 @@
         {selectedModel}
         {availableModels}
         onModelChange={handleModelChange}
+        sessionId={currentSessionId}
+        {isFlagged}
+        onFlagForReview={isAuthenticated ? handleFlagForReview : undefined}
       />
     </div>
   {:else}
-    <TIKAReviewPanel onBack={() => (mode = "conversation")} />
+    <TikaReviewPanel
+      onBack={() => (mode = "conversation")}
+      onLoadSession={handleLoadSession}
+    />
   {/if}
 
   <!-- History Drawer -->
@@ -414,7 +435,7 @@
         aria-label="Close history"
       ></button>
       <div class="history-drawer-container">
-        <TIKAHistoryDrawer
+        <TikaHistoryDrawer
           repository={sessionRepository}
           {currentSessionId}
           onNewChat={handleNewChat}

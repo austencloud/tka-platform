@@ -14,7 +14,9 @@
   import InlineSequencePlayer from "./InlineSequencePlayer.svelte";
   import InlineStepGrid from "./InlineStepGrid.svelte";
   import InlineQuiz from "./InlineQuiz.svelte";
-  import TIKAModelSwitcher from "./TIKAModelSwitcher.svelte";
+  import TikaModelSwitcher from "./TikaModelSwitcher.svelte";
+  import TikaActionMenu from "./TikaActionMenu.svelte";
+  import { tikaPictographCache } from "../services/implementations/TikaPictographCache";
   import type {
     InlinePictograph as InlinePictographType,
     InlineGallery as InlineGalleryType,
@@ -25,8 +27,10 @@
   } from "../types";
 
   // Simple markdown to HTML converter for TIKA responses
-  function parseMarkdown(md: string): string {
-    if (!md) return "";
+  // Returns both HTML and extracted link references for footnote-style display
+  type ParsedMarkdown = { html: string; links: Array<{ text: string; url: string }> };
+  function parseMarkdown(md: string): ParsedMarkdown {
+    if (!md) return { html: "", links: [] };
 
     // First, extract and process tables BEFORE any other transformation
     // Tables need their structure preserved
@@ -59,19 +63,44 @@
       }
     );
 
+    // Extract links and convert to footnote references
+    // Links become superscript numbers, actual links go in footer index
+    const linkIndex: Array<{ text: string; url: string }> = [];
+    processed = processed.replace(
+      /\[([^\]]+)\]\(([^)]+)\)/g,
+      (_, text, url) => {
+        // Check if this URL already exists in the index
+        const existingIndex = linkIndex.findIndex(l => l.url === url);
+        if (existingIndex >= 0) {
+          // Reuse existing footnote number
+          return `${text}__FOOTNOTE_${existingIndex + 1}__`;
+        }
+        // Add new link to index
+        linkIndex.push({ text, url });
+        return `${text}__FOOTNOTE_${linkIndex.length}__`;
+      }
+    );
+
     // Now escape HTML and process markdown
     processed = escapeHtml(processed)
       // Headers (## before # to prevent double-matching)
       .replace(/^### (.+)$/gm, '<h4>$1</h4>')
       .replace(/^## (.+)$/gm, '<h3>$1</h3>')
       .replace(/^# (.+)$/gm, '<h2>$1</h2>')
-      // Bold
+      // Bold (must come before italic to handle ** before *)
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Italic (single * only - underscore conflicts with __FOOTNOTE__ placeholders)
+      .replace(/\*([^*]+?)\*/g, '<em>$1</em>')
       // Lists - wrap consecutive li items in ul
       .replace(/^- (.+)$/gm, '<li>$1</li>')
       // Paragraphs
       .replace(/\n\n+/g, '</p><p>')
       .replace(/\n/g, '<br>');
+
+    // Convert footnote placeholders to superscript numbers
+    processed = processed.replace(/__FOOTNOTE_(\d+)__/g, (_, num) => {
+      return `<sup class="footnote-ref">${num}</sup>`;
+    });
 
     // Restore tables
     for (let i = 0; i < tableBlocks.length; i++) {
@@ -97,7 +126,7 @@
       .replace(/<p>(\s*<(?:h[1-4]|ul|table))/g, '$1')
       .replace(/(<\/(?:h[1-4]|ul|table)>)\s*<\/p>/g, '$1');
 
-    return processed;
+    return { html: processed, links: linkIndex };
   }
 
   function escapeHtml(str: string): string {
@@ -105,6 +134,25 @@
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
+  }
+
+  // Get parsed content for a message (text or tool output) with link extraction
+  function getMessageParsedContent(parts: UIMessage["parts"]): {
+    textHtml: string | null;
+    toolHtml: string | null;
+    links: Array<{ text: string; url: string }>
+  } {
+    const textContent = getTextFromParts(parts);
+    if (textContent) {
+      const parsed = parseMarkdown(textContent);
+      return { textHtml: parsed.html, toolHtml: null, links: parsed.links };
+    }
+    const toolOutput = getToolOutputFromParts(parts);
+    if (toolOutput) {
+      const parsed = parseMarkdown(toolOutput);
+      return { textHtml: null, toolHtml: parsed.html, links: parsed.links };
+    }
+    return { textHtml: null, toolHtml: null, links: [] };
   }
 
   // Props - using AI SDK types
@@ -120,6 +168,9 @@
     selectedModel = "sonnet-4",
     availableModels = [],
     onModelChange,
+    sessionId,
+    isFlagged = false,
+    onFlagForReview,
   }: {
     messages: UIMessage[];
     status: "submitted" | "streaming" | "ready" | "error";
@@ -132,6 +183,9 @@
     selectedModel?: string;
     availableModels?: ModelOption[];
     onModelChange?: (modelId: string) => void;
+    sessionId?: string | null;
+    isFlagged?: boolean;
+    onFlagForReview?: (flagged: boolean) => void;
   } = $props();
 
   // Local state
@@ -269,6 +323,7 @@
   interface InlineContent {
     pictograph?: InlinePictographType;
     gallery?: InlineGalleryType;
+    galleries?: InlineGalleryType[]; // For multiple galleries (e.g., diamond + box mode)
     sequencePlayer?: InlineSequencePlayerType;
     stepGrid?: InlineStepGridType;
     quiz?: InlineQuizType;
@@ -288,11 +343,24 @@
       }
     }
 
-    // Check for inline gallery
+    // Check for inline gallery (single)
     if (obj.inlineGallery && typeof obj.inlineGallery === "object") {
       const gal = obj.inlineGallery as Record<string, unknown>;
       if (gal.type === "inline-gallery" && Array.isArray(gal.items)) {
         content.gallery = gal as unknown as InlineGalleryType;
+      }
+    }
+
+    // Check for inline galleries (multiple, e.g., diamond + box mode)
+    if (obj.inlineGalleries && Array.isArray(obj.inlineGalleries)) {
+      content.galleries = [];
+      for (const gal of obj.inlineGalleries) {
+        if (gal && typeof gal === "object") {
+          const galObj = gal as Record<string, unknown>;
+          if (galObj.type === "inline-gallery" && Array.isArray(galObj.items)) {
+            content.galleries.push(galObj as unknown as InlineGalleryType);
+          }
+        }
       }
     }
 
@@ -334,7 +402,7 @@
         const toolPart = part as { output?: unknown; state?: string };
         if (toolPart.state === "output-available" && toolPart.output) {
           const content = extractInlineContent(toolPart.output);
-          if (content.pictograph || content.gallery || content.sequencePlayer || content.stepGrid || content.quiz) {
+          if (content.pictograph || content.gallery || content.galleries?.length || content.sequencePlayer || content.stepGrid || content.quiz) {
             allContent.push(content);
           }
         }
@@ -344,7 +412,7 @@
         const inv = (part as { toolInvocation?: { state: string; result?: unknown } }).toolInvocation;
         if (inv?.state === "result" && inv.result) {
           const content = extractInlineContent(inv.result);
-          if (content.pictograph || content.gallery || content.sequencePlayer || content.stepGrid || content.quiz) {
+          if (content.pictograph || content.gallery || content.galleries?.length || content.sequencePlayer || content.stepGrid || content.quiz) {
             allContent.push(content);
           }
         }
@@ -362,6 +430,13 @@
       index === messages.length - 1
     );
   }
+
+  // Clear pictograph cache and refresh - useful when renderer has been updated
+  async function clearPictographCache(): Promise<void> {
+    await tikaPictographCache.clear();
+    // Force page refresh to reload images with new rendering
+    window.location.reload();
+  }
 </script>
 
 <div class="conversation-panel">
@@ -373,14 +448,15 @@
           <i class="fas fa-robot" aria-hidden="true"></i>
         </div>
         <div class="title-text">
-          <span class="title-main">TIKA</span>
+          <span class="title-main">Tika</span>
           <span class="title-subtitle">TKA Intelligent Knowledge Assistant</span>
         </div>
       </div>
     </div>
     <div class="header-actions">
+      <!-- Primary Actions: Always visible -->
       {#if availableModels.length > 1 && onModelChange}
-        <TIKAModelSwitcher
+        <TikaModelSwitcher
           currentModel={selectedModel}
           {availableModels}
           {onModelChange}
@@ -406,41 +482,83 @@
           <i class="fas fa-history" aria-hidden="true"></i>
         </button>
       {/if}
-      {#if messages.length > 0}
+
+      <!-- Flag for Review: Shows when there's a saved session -->
+      {#if sessionId && onFlagForReview}
         <button
-          class="action-btn tools-btn"
-          class:active={showToolDetails}
-          onclick={() => (showToolDetails = !showToolDetails)}
-          title="Toggle tool details"
-          aria-label={showToolDetails ? "Hide tool details" : "Show tool details"}
-          aria-expanded={showToolDetails}
+          class="action-btn flag-btn"
+          class:flagged={isFlagged}
+          onclick={() => onFlagForReview(!isFlagged)}
+          title={isFlagged ? "Remove from review queue" : "Flag for review"}
+          aria-label={isFlagged ? "Remove from review queue" : "Flag conversation for review"}
+          aria-pressed={isFlagged}
         >
-          <i class="fas fa-wrench" aria-hidden="true"></i>
-        </button>
-        {#if generateCopyForAI}
-          <CopyForAIButton
-            getData={generateCopyForAI}
-            variant="icon-only"
-            size="md"
-            idleIcon="fa-copy"
-            ariaLabel="Copy conversation for AI review"
-          />
-          <CopyAsImageButton
-            targetElement={chatContainer}
-            ariaLabel="Copy conversation as image"
-          />
-        {/if}
-      {/if}
-      {#if onOpenReview}
-        <button
-          class="action-btn review-btn"
-          onclick={onOpenReview}
-          title="Review flagged items"
-          aria-label="Open review panel"
-        >
-          <i class="fas fa-clipboard-check" aria-hidden="true"></i>
+          <i class="fas fa-flag" aria-hidden="true"></i>
         </button>
       {/if}
+
+      <!-- Secondary Actions: In overflow menu -->
+      <TikaActionMenu
+        actions={[
+          {
+            id: "refresh",
+            label: "Clear cache & refresh",
+            icon: "fa-sync-alt",
+            onClick: clearPictographCache,
+          },
+          ...(messages.length > 0
+            ? [
+                {
+                  id: "tools",
+                  label: showToolDetails ? "Hide tool details" : "Show tool details",
+                  icon: "fa-wrench",
+                  onClick: () => (showToolDetails = !showToolDetails),
+                  active: showToolDetails,
+                },
+              ]
+            : []),
+          ...(messages.length > 0 && generateCopyForAI
+            ? [
+                {
+                  id: "copy-ai",
+                  label: "Copy for AI review",
+                  icon: "fa-copy",
+                  onClick: () => {
+                    const data = generateCopyForAI();
+                    navigator.clipboard.writeText(data);
+                  },
+                },
+                {
+                  id: "copy-image",
+                  label: "Copy as image",
+                  icon: "fa-camera",
+                  onClick: async () => {
+                    if (!chatContainer) return;
+                    // Import dom-to-image-more dynamically
+                    const domtoimage = await import("dom-to-image-more");
+                    const blob = await domtoimage.default.toBlob(chatContainer, {
+                      bgcolor: "#12121c",
+                      quality: 1.0,
+                    });
+                    await navigator.clipboard.write([
+                      new ClipboardItem({ "image/png": blob }),
+                    ]);
+                  },
+                },
+              ]
+            : []),
+          ...(onOpenReview
+            ? [
+                {
+                  id: "review-panel",
+                  label: "Review panel",
+                  icon: "fa-clipboard-check",
+                  onClick: onOpenReview,
+                },
+              ]
+            : []),
+        ]}
+      />
     </div>
   </header>
 
@@ -452,29 +570,39 @@
         <div class="welcome-icon">
           <i class="fas fa-graduation-cap" aria-hidden="true"></i>
         </div>
-        <h2>Welcome to TIKA</h2>
+        <h2>Welcome to Tika</h2>
         <p>
           I'm your AI tutor for The Kinetic Alphabet. Ask me anything about:
         </p>
         <ul class="suggestion-list">
           <li>
-            <button onclick={() => onSubmit("What is letter A?")} disabled={isLoading}>
-              <i class="fas fa-font" aria-hidden="true"></i> Letters (A-Z, Greek)
-            </button>
-          </li>
-          <li>
             <button onclick={() => onSubmit("What does alpha mean?")} disabled={isLoading}>
-              <i class="fas fa-book" aria-hidden="true"></i> Terms (alpha, pro, shift)
+              <i class="fas fa-crosshairs" aria-hidden="true"></i> What is alpha?
             </button>
           </li>
           <li>
-            <button onclick={() => onSubmit("Compare A and B")} disabled={isLoading}>
-              <i class="fas fa-balance-scale" aria-hidden="true"></i> Letter comparisons
+            <button onclick={() => onSubmit("What does beta mean?")} disabled={isLoading}>
+              <i class="fas fa-crosshairs" aria-hidden="true"></i> What is beta?
+            </button>
+          </li>
+          <li>
+            <button onclick={() => onSubmit("What does gamma mean?")} disabled={isLoading}>
+              <i class="fas fa-crosshairs" aria-hidden="true"></i> What is gamma?
+            </button>
+          </li>
+          <li>
+            <button onclick={() => onSubmit("What is letter A?")} disabled={isLoading}>
+              <i class="fas fa-font" aria-hidden="true"></i> What is letter A?
+            </button>
+          </li>
+          <li>
+            <button onclick={() => onSubmit("What is shift?")} disabled={isLoading}>
+              <i class="fas fa-arrows-alt" aria-hidden="true"></i> What is shift?
             </button>
           </li>
           <li>
             <button onclick={() => onSubmit("What are Type 1 letters?")} disabled={isLoading}>
-              <i class="fas fa-layer-group" aria-hidden="true"></i> Letter types
+              <i class="fas fa-layer-group" aria-hidden="true"></i> Type 1 letters
             </button>
           </li>
         </ul>
@@ -496,73 +624,100 @@
               <i class="fas fa-robot" aria-hidden="true"></i>
             </div>
             <div class="message-content">
-              <!-- Text content -->
-              {#if getTextFromParts(message.parts)}
-                <div class="text-response markdown-content">
-                  {@html parseMarkdown(getTextFromParts(message.parts))}
-                  {#if isMessageStreaming(message, index)}
-                    <span class="streaming-cursor"></span>
-                  {/if}
-                </div>
-              {:else if getToolOutputFromParts(message.parts)}
-                <!-- Tool output as response (when model doesn't generate text) -->
-                <div class="tool-response markdown-content">
-                  {@html parseMarkdown(getToolOutputFromParts(message.parts) || "")}
-                </div>
-              {:else if isMessageStreaming(message, index)}
-                <!-- Still waiting for text to stream -->
-                <div class="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              {/if}
+              <!-- Text content - parse once and store links for rendering at end -->
+              {#if true}
+                {@const parsed = getMessageParsedContent(message.parts)}
+                {#if parsed.textHtml}
+                  <div class="text-response markdown-content">
+                    {@html parsed.textHtml}
+                    {#if isMessageStreaming(message, index)}
+                      <span class="streaming-cursor"></span>
+                    {/if}
+                  </div>
+                {:else if parsed.toolHtml}
+                  <!-- Tool output as response (when model doesn't generate text) -->
+                  <div class="tool-response markdown-content">
+                    {@html parsed.toolHtml}
+                  </div>
+                {:else if isMessageStreaming(message, index)}
+                  <!-- Still waiting for text to stream -->
+                  <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                {/if}
 
-              <!-- Inline Pictographs/Galleries/Sequence Players from tool outputs -->
-              {#if getInlineContentFromParts(message.parts).length > 0}
-                {@const inlineContent = getInlineContentFromParts(message.parts)}
-                <div class="inline-content-container">
-                  {#each inlineContent as content}
-                    {#if content.pictograph}
-                      <InlinePictograph pictograph={content.pictograph} />
-                    {/if}
-                    {#if content.gallery}
-                      <InlineGallery gallery={content.gallery} />
-                    {/if}
-                    {#if content.sequencePlayer}
-                      <InlineSequencePlayer sequence={content.sequencePlayer} />
-                    {/if}
-                    {#if content.stepGrid}
-                      <InlineStepGrid stepGrid={content.stepGrid} />
-                    {/if}
-                    {#if content.quiz}
-                      <InlineQuiz quiz={content.quiz} />
-                    {/if}
-                  {/each}
-                </div>
-              {/if}
+                <!-- Inline Pictographs/Galleries/Sequence Players from tool outputs -->
+                {#if getInlineContentFromParts(message.parts).length > 0}
+                  {@const inlineContent = getInlineContentFromParts(message.parts)}
+                  <div class="inline-content-container">
+                    {#each inlineContent as content}
+                      {#if content.pictograph}
+                        <InlinePictograph pictograph={content.pictograph} />
+                      {/if}
+                      {#if content.gallery}
+                        <InlineGallery gallery={content.gallery} />
+                      {/if}
+                      {#if content.galleries?.length}
+                        {#each content.galleries as gal}
+                          <InlineGallery gallery={gal} />
+                        {/each}
+                      {/if}
+                      {#if content.sequencePlayer}
+                        <InlineSequencePlayer sequence={content.sequencePlayer} />
+                      {/if}
+                      {#if content.stepGrid}
+                        <InlineStepGrid stepGrid={content.stepGrid} />
+                      {/if}
+                      {#if content.quiz}
+                        <InlineQuiz quiz={content.quiz} />
+                      {/if}
+                    {/each}
+                  </div>
+                {/if}
 
-              <!-- Tool Details (if enabled) -->
-              {#if showToolDetails}
-                {@const tools = getToolsFromParts(message.parts)}
-                {#if tools.length > 0}
-                  <div class="tool-details">
-                    <div class="tool-header">
-                      <i class="fas fa-wrench" aria-hidden="true"></i>
-                      Tools called ({tools.length})
-                    </div>
-                    {#each tools as tool}
-                      <div class="tool-item" class:pending={tool.isPending}>
-                        <span class="tool-name">
-                          {formatToolName(tool.name)}
-                          {#if tool.isPending}
-                            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                          {/if}
-                        </span>
-                        <span class="tool-input">
-                          {JSON.stringify(tool.args)}
-                        </span>
+                <!-- Tool Details (if enabled) -->
+                {#if showToolDetails}
+                  {@const tools = getToolsFromParts(message.parts)}
+                  {#if tools.length > 0}
+                    <div class="tool-details">
+                      <div class="tool-header">
+                        <i class="fas fa-wrench" aria-hidden="true"></i>
+                        Tools called ({tools.length})
                       </div>
+                      {#each tools as tool}
+                        <div class="tool-item" class:pending={tool.isPending}>
+                          <span class="tool-name">
+                            {formatToolName(tool.name)}
+                            {#if tool.isPending}
+                              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                            {/if}
+                          </span>
+                          <span class="tool-input">
+                            {JSON.stringify(tool.args)}
+                          </span>
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
+                {/if}
+
+                <!-- Link index at very bottom of message (after all content) -->
+                {#if parsed.links.length > 0}
+                  <div class="link-index">
+                    <span class="link-index-label">References</span>
+                    {#each parsed.links as link, i}
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="link-chip"
+                      >
+                        <span class="link-number">{i + 1}</span>
+                        <span class="link-text">{link.text}</span>
+                        <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+                      </a>
                     {/each}
                   </div>
                 {/if}
@@ -596,7 +751,7 @@
       <textarea
         bind:value={inputValue}
         onkeydown={handleKeydown}
-        placeholder="Ask TIKA about TKA..."
+        placeholder="Ask Tika about TKA..."
         disabled={isLoading}
         rows="1"
       ></textarea>
@@ -791,6 +946,29 @@
   .review-btn:hover {
     background: linear-gradient(135deg, rgba(20, 184, 166, 1), rgba(13, 148, 136, 1));
     box-shadow: 0 4px 14px rgba(20, 184, 166, 0.4);
+  }
+
+  /* Flag button - amber/yellow when not flagged, red when flagged */
+  .flag-btn {
+    background: linear-gradient(135deg, rgba(100, 100, 120, 0.85), rgba(70, 70, 90, 0.85));
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .flag-btn:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9));
+    border-color: rgba(245, 158, 11, 0.3);
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+  }
+
+  .flag-btn.flagged {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95));
+    border-color: rgba(245, 158, 11, 0.4);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+  }
+
+  .flag-btn.flagged:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 1), rgba(217, 119, 6, 1));
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.5);
   }
 
   /* Responsive: hide subtitle on very narrow screens */
@@ -1046,6 +1224,91 @@
     border-radius: 3px;
     font-family: monospace;
     font-size: 13px;
+  }
+
+  /* Footnote references (superscript numbers in text) */
+  .markdown-content :global(.footnote-ref) {
+    font-size: 0.7em;
+    color: var(--theme-accent, #6366f1);
+    font-weight: 600;
+    vertical-align: super;
+    margin-left: 1px;
+    cursor: default;
+  }
+
+  /* Link index container (pill chips at bottom of message) */
+  .link-index {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+  }
+
+  .link-index-label {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+
+  .link-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    /* 48px minimum touch target */
+    min-height: 48px;
+    padding: 10px 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1.5px solid var(--theme-accent, #6366f1);
+    border-radius: 24px;
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    text-decoration: none;
+    font-size: var(--font-size-min, 14px);
+    transition: all 0.15s ease;
+  }
+
+  .link-chip:hover {
+    background: var(--theme-accent, #6366f1);
+    border-color: var(--theme-accent, #6366f1);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  }
+
+  .link-chip .link-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    background: var(--theme-accent, #6366f1);
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .link-chip:hover .link-number {
+    background: white;
+    color: var(--theme-accent, #6366f1);
+  }
+
+  .link-chip .link-text {
+    font-weight: 500;
+  }
+
+  .link-chip i {
+    font-size: 12px;
+    opacity: 0.7;
+    transition: opacity 0.15s ease;
+  }
+
+  .link-chip:hover i {
+    opacity: 1;
   }
 
   /* Streaming cursor */

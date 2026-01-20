@@ -5,7 +5,7 @@
   Shows title, time, message count, and preview text.
 -->
 <script lang="ts">
-  import type { TIKASessionPreview } from "../domain/models/tika-conversation-models";
+  import type { TikaSessionPreview } from "../domain/models/tika-conversation-models";
 
   let {
     session,
@@ -13,7 +13,7 @@
     onSelect,
     onDelete,
   }: {
-    session: TIKASessionPreview;
+    session: TikaSessionPreview;
     isActive?: boolean;
     onSelect: () => void;
     onDelete: () => void;

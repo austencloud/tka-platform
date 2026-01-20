@@ -1,8 +1,12 @@
 <!--
   TIKA Review Panel
 
-  Shows flagged evaluation items for human review.
+  Two sources of review items:
+  1. Flagged conversations from Firestore (user-flagged)
+  2. Failed evaluation scenarios from file-based reports
+
   Allows Austen to:
+  - Browse flagged conversations
   - Browse failed scenarios
   - See what went wrong
   - Approve/reject responses
@@ -10,9 +14,19 @@
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
+	import { TikaSessionRepository } from '../services/implementations/TikaSessionRepository';
+	import { authState } from '$lib/shared/auth/state/authState.svelte';
+	import type { TikaSession } from '../domain/models/tika-conversation-models';
 
 	// Props
-	let { onBack }: { onBack?: () => void } = $props();
+	let { onBack, onLoadSession }: {
+		onBack?: () => void;
+		onLoadSession?: (sessionId: string) => void;
+	} = $props();
+
+	// Repository for flagged conversations
+	const sessionRepository = browser ? new TikaSessionRepository() : null;
 
 	interface Issue {
 		type: string;
@@ -53,13 +67,26 @@
 		runDate: string;
 	}
 
-	// State
+	// Source toggle: conversations (Firestore) vs evaluations (file-based)
+	type ReviewSource = 'conversations' | 'evaluations';
+	let source = $state<ReviewSource>('conversations');
+
+	// Flagged conversations state
+	let flaggedConversations = $state<TikaSession[]>([]);
+	let loadingConversations = $state(true);
+	let conversationsError = $state<string | null>(null);
+	let selectedConversation = $state<TikaSession | null>(null);
+
+	// Evaluation items state (existing)
 	let items = $state<FlaggedItem[]>([]);
 	let summary = $state<Summary | null>(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let selectedItem = $state<FlaggedItem | null>(null);
 	let filter = $state<'all' | 'pending' | 'resolved'>('pending');
+
+	// Check if user is authenticated
+	const isAuthenticated = $derived(authState.isAuthenticated);
 
 	// Resolution form state
 	let resolutionNotes = $state('');
@@ -76,7 +103,51 @@
 		})
 	);
 
-	// Load flagged items
+	// Load flagged conversations from Firestore
+	async function loadFlaggedConversations() {
+		if (!sessionRepository || !isAuthenticated) {
+			loadingConversations = false;
+			return;
+		}
+
+		loadingConversations = true;
+		conversationsError = null;
+
+		try {
+			flaggedConversations = await sessionRepository.getFlaggedSessions();
+		} catch (e) {
+			console.error('[TikaReviewPanel] Failed to load flagged conversations:', e);
+			conversationsError = 'Failed to load flagged conversations';
+		} finally {
+			loadingConversations = false;
+		}
+	}
+
+	// Unflag a conversation
+	async function unflagConversation(sessionId: string) {
+		if (!sessionRepository) return;
+
+		try {
+			await sessionRepository.flagForReview(sessionId, false);
+			// Remove from local list
+			flaggedConversations = flaggedConversations.filter(c => c.id !== sessionId);
+			if (selectedConversation?.id === sessionId) {
+				selectedConversation = null;
+			}
+		} catch (e) {
+			console.error('[TikaReviewPanel] Failed to unflag conversation:', e);
+		}
+	}
+
+	// Open a flagged conversation in the chat
+	function openConversation(session: TikaSession) {
+		if (onLoadSession) {
+			onLoadSession(session.id);
+			onBack?.();
+		}
+	}
+
+	// Load evaluation items (existing)
 	async function loadItems() {
 		loading = true;
 		error = null;
@@ -148,7 +219,7 @@
 	async function copyForDiscussion() {
 		if (!selectedItem) return;
 
-		const text = `## TIKA Review Item
+		const text = `## Tika Review Item
 
 **Scenario:** ${selectedItem.scenarioName}
 **Category:** ${selectedItem.category}
@@ -157,7 +228,7 @@
 ### Question
 > ${selectedItem.question}
 
-### TIKA's Response
+### Tika's Response
 ${selectedItem.tikaResponse}
 
 ### Issues Found
@@ -190,6 +261,7 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 	}
 
 	onMount(() => {
+		loadFlaggedConversations();
 		loadItems();
 	});
 </script>
@@ -202,28 +274,44 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 			</button>
 		{/if}
 		<div class="header-content">
-			<h2>TIKA Review</h2>
-			{#if summary}
-				<div class="stats">
-					<span class="stat pass-rate">{summary.passRate}% pass</span>
-					<span class="stat pending">{summary.pending} pending</span>
-					<span class="stat resolved">{summary.resolved} resolved</span>
-				</div>
-			{/if}
+			<h2>Tika Review</h2>
+			<!-- Source tabs -->
+			<div class="source-tabs">
+				<button
+					class:active={source === 'conversations'}
+					onclick={() => (source = 'conversations')}
+				>
+					<i class="fas fa-comments" aria-hidden="true"></i>
+					Flagged ({flaggedConversations.length})
+				</button>
+				<button
+					class:active={source === 'evaluations'}
+					onclick={() => (source = 'evaluations')}
+				>
+					<i class="fas fa-flask" aria-hidden="true"></i>
+					Evals ({items.length})
+				</button>
+			</div>
 		</div>
 
 		<div class="header-actions">
-			<div class="filter-tabs">
-				<button class:active={filter === 'pending'} onclick={() => (filter = 'pending')}>
-					Pending
-				</button>
-				<button class:active={filter === 'all'} onclick={() => (filter = 'all')}> All </button>
-				<button class:active={filter === 'resolved'} onclick={() => (filter = 'resolved')}>
-					Resolved
-				</button>
-			</div>
-			<button class="refresh-btn" onclick={loadItems} disabled={loading}>
-				<i class="fas fa-sync-alt" class:spinning={loading}></i>
+			{#if source === 'evaluations'}
+				<div class="filter-tabs">
+					<button class:active={filter === 'pending'} onclick={() => (filter = 'pending')}>
+						Pending
+					</button>
+					<button class:active={filter === 'all'} onclick={() => (filter = 'all')}> All </button>
+					<button class:active={filter === 'resolved'} onclick={() => (filter = 'resolved')}>
+						Resolved
+					</button>
+				</div>
+			{/if}
+			<button
+				class="refresh-btn"
+				onclick={() => source === 'conversations' ? loadFlaggedConversations() : loadItems()}
+				disabled={source === 'conversations' ? loadingConversations : loading}
+			>
+				<i class="fas fa-sync-alt" class:spinning={source === 'conversations' ? loadingConversations : loading}></i>
 			</button>
 		</div>
 	</header>
@@ -231,45 +319,93 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 	<div class="content-area">
 		<!-- Item List -->
 		<div class="item-list">
-			{#if loading}
-				<div class="loading-state">
-					<i class="fas fa-spinner fa-spin"></i>
-					<span>Loading flagged items...</span>
-				</div>
-			{:else if error}
-				<div class="error-state">
-					<i class="fas fa-exclamation-triangle"></i>
-					<span>{error}</span>
-					<button onclick={loadItems}>Retry</button>
-				</div>
-			{:else if filteredItems.length === 0}
-				<div class="empty-state">
-					<i class="fas fa-check-circle"></i>
-					<span>No {filter === 'pending' ? 'pending' : ''} items to review</span>
-				</div>
+			{#if source === 'conversations'}
+				<!-- Flagged Conversations List -->
+				{#if loadingConversations}
+					<div class="loading-state">
+						<i class="fas fa-spinner fa-spin"></i>
+						<span>Loading flagged conversations...</span>
+					</div>
+				{:else if conversationsError}
+					<div class="error-state">
+						<i class="fas fa-exclamation-triangle"></i>
+						<span>{conversationsError}</span>
+						<button onclick={loadFlaggedConversations}>Retry</button>
+					</div>
+				{:else if !isAuthenticated}
+					<div class="empty-state">
+						<i class="fas fa-lock"></i>
+						<span>Sign in to see flagged conversations</span>
+					</div>
+				{:else if flaggedConversations.length === 0}
+					<div class="empty-state">
+						<i class="fas fa-flag"></i>
+						<span>No flagged conversations</span>
+						<p class="empty-hint">Flag conversations from the chat header to review them here</p>
+					</div>
+				{:else}
+					{#each flaggedConversations as conversation (conversation.id)}
+						<button
+							class="item-card conversation-card"
+							class:selected={selectedConversation?.id === conversation.id}
+							onclick={() => (selectedConversation = conversation)}
+						>
+							<div class="item-header">
+								<span class="category-badge" style="background: #f59e0b">
+									<i class="fas fa-flag" aria-hidden="true"></i> Flagged
+								</span>
+								<span class="difficulty">{conversation.messageCount} msgs</span>
+							</div>
+							<h3>{conversation.title}</h3>
+							<p class="question">{conversation.lastUserMessage}</p>
+							<div class="timestamp">
+								<i class="fas fa-clock" aria-hidden="true"></i>
+								{conversation.flaggedAt ? new Date(conversation.flaggedAt).toLocaleDateString() : 'Unknown'}
+							</div>
+						</button>
+					{/each}
+				{/if}
 			{:else}
-				{#each filteredItems as item (item.id)}
-					<button
-						class="item-card"
-						class:selected={selectedItem?.id === item.id}
-						class:pending={item.status === 'pending'}
-						onclick={() => {
-							selectedItem = item;
-							resolutionNotes = '';
-							correctedResponse = '';
-						}}
-					>
-						<div class="item-header">
-							<span class="category-badge" style="background: {getCategoryColor(item.category)}">
-								{item.category.replace('-', ' ')}
-							</span>
-							<span class="difficulty">{item.difficulty}</span>
-						</div>
-						<h3>{item.scenarioName}</h3>
-						<p class="question">{item.question}</p>
-						<div class="issue-count">
-							<i class="fas fa-exclamation-circle"></i>
-							{item.issues.length} issue{item.issues.length !== 1 ? 's' : ''}
+				<!-- Evaluation Items List (existing) -->
+				{#if loading}
+					<div class="loading-state">
+						<i class="fas fa-spinner fa-spin"></i>
+						<span>Loading evaluation items...</span>
+					</div>
+				{:else if error}
+					<div class="error-state">
+						<i class="fas fa-exclamation-triangle"></i>
+						<span>{error}</span>
+						<button onclick={loadItems}>Retry</button>
+					</div>
+				{:else if filteredItems.length === 0}
+					<div class="empty-state">
+						<i class="fas fa-check-circle"></i>
+						<span>No {filter === 'pending' ? 'pending' : ''} evaluation items</span>
+					</div>
+				{:else}
+					{#each filteredItems as item (item.id)}
+						<button
+							class="item-card"
+							class:selected={selectedItem?.id === item.id}
+							class:pending={item.status === 'pending'}
+							onclick={() => {
+								selectedItem = item;
+								resolutionNotes = '';
+								correctedResponse = '';
+							}}
+						>
+							<div class="item-header">
+								<span class="category-badge" style="background: {getCategoryColor(item.category)}">
+									{item.category.replace('-', ' ')}
+								</span>
+								<span class="difficulty">{item.difficulty}</span>
+							</div>
+							<h3>{item.scenarioName}</h3>
+							<p class="question">{item.question}</p>
+							<div class="issue-count">
+								<i class="fas fa-exclamation-circle"></i>
+								{item.issues.length} issue{item.issues.length !== 1 ? 's' : ''}
 						</div>
 						{#if item.status !== 'pending'}
 							<div class="resolution-badge">
@@ -278,11 +414,67 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 						{/if}
 					</button>
 				{/each}
+				{/if}
 			{/if}
 		</div>
 
 		<!-- Detail Panel -->
-		{#if selectedItem}
+		{#if source === 'conversations' && selectedConversation}
+			<!-- Conversation Detail Panel -->
+			<div class="detail-panel">
+				<div class="detail-header">
+					<h3>{selectedConversation.title}</h3>
+					<div class="detail-actions">
+						<button
+							class="action-btn-small open-btn"
+							onclick={() => openConversation(selectedConversation)}
+							title="Open in chat"
+						>
+							<i class="fas fa-external-link-alt" aria-hidden="true"></i>
+							Open
+						</button>
+						<button
+							class="action-btn-small unflag-btn"
+							onclick={() => unflagConversation(selectedConversation.id)}
+							title="Remove from review"
+						>
+							<i class="fas fa-flag-checkered" aria-hidden="true"></i>
+							Done
+						</button>
+					</div>
+				</div>
+
+				<div class="detail-content">
+					<section class="detail-section">
+						<h4>Conversation</h4>
+						<div class="conversation-messages">
+							{#each selectedConversation.messages as message}
+								<div class="message-preview" class:user={message.role === 'user'} class:assistant={message.role === 'assistant'}>
+									<span class="role-label">{message.role === 'user' ? 'You' : 'Tika'}</span>
+									<div class="message-text">
+										{#if message.parts}
+											{@const textPart = message.parts.find(p => p.type === 'text')}
+											{#if textPart && 'text' in textPart}
+												{textPart.text.slice(0, 500)}{textPart.text.length > 500 ? '...' : ''}
+											{/if}
+										{:else if message.content}
+											{message.content.slice(0, 500)}{message.content.length > 500 ? '...' : ''}
+										{/if}
+									</div>
+								</div>
+							{/each}
+						</div>
+					</section>
+
+					<section class="detail-section">
+						<h4>Info</h4>
+						<p><strong>Messages:</strong> {selectedConversation.messageCount}</p>
+						<p><strong>Created:</strong> {new Date(selectedConversation.createdAt).toLocaleString()}</p>
+						<p><strong>Flagged:</strong> {selectedConversation.flaggedAt ? new Date(selectedConversation.flaggedAt).toLocaleString() : 'Unknown'}</p>
+					</section>
+				</div>
+			</div>
+		{:else if source === 'evaluations' && selectedItem}
 			<div class="detail-panel">
 				<div class="detail-header">
 					<h3>{selectedItem.scenarioName}</h3>
@@ -299,7 +491,7 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 					</section>
 
 					<section class="detail-section">
-						<h4>TIKA's Response</h4>
+						<h4>Tika's Response</h4>
 						<div class="response-text">{selectedItem.tikaResponse}</div>
 					</section>
 
@@ -953,4 +1145,130 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
       animation: none;
     }
   }
+
+	/* Source tabs */
+	.source-tabs {
+		display: flex;
+		gap: 0.25rem;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		padding: 0.25rem;
+		border-radius: 6px;
+		margin-left: 1rem;
+	}
+
+	.source-tabs button {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.375rem 0.75rem;
+		border: none;
+		background: transparent;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+		font-size: 0.875rem;
+		cursor: pointer;
+		border-radius: 4px;
+		transition: all var(--duration-fast) ease;
+	}
+
+	.source-tabs button:hover {
+		color: var(--theme-text, #fff);
+	}
+
+	.source-tabs button.active {
+		background: var(--theme-accent, #6366f1);
+		color: white;
+	}
+
+	.source-tabs button i {
+		font-size: 0.75rem;
+	}
+
+	/* Conversation card styles */
+	.conversation-card .timestamp {
+		margin-top: 0.5rem;
+		font-size: 0.75rem;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+	}
+
+	.empty-hint {
+		margin-top: 0.5rem;
+		font-size: 0.75rem;
+		opacity: 0.7;
+	}
+
+	/* Conversation detail panel */
+	.detail-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.action-btn-small {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.5rem 0.75rem;
+		border: none;
+		border-radius: 6px;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all var(--duration-fast) ease;
+	}
+
+	.open-btn {
+		background: var(--theme-accent, #6366f1);
+		color: white;
+	}
+
+	.open-btn:hover {
+		background: #4f46e5;
+	}
+
+	.unflag-btn {
+		background: #22c55e;
+		color: white;
+	}
+
+	.unflag-btn:hover {
+		background: #16a34a;
+	}
+
+	/* Conversation messages preview */
+	.conversation-messages {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		max-height: 400px;
+		overflow-y: auto;
+	}
+
+	.message-preview {
+		padding: 0.75rem;
+		border-radius: 8px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+	}
+
+	.message-preview.user {
+		border-left: 3px solid var(--theme-accent, #6366f1);
+	}
+
+	.message-preview.assistant {
+		border-left: 3px solid #22c55e;
+	}
+
+	.role-label {
+		display: block;
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+		margin-bottom: 0.375rem;
+	}
+
+	.message-text {
+		font-size: 0.875rem;
+		line-height: 1.5;
+		white-space: pre-wrap;
+		word-break: break-word;
+	}
 </style>

@@ -37,6 +37,7 @@ const DISPLAY_FIELDS = new Set([
 	'text',
 	'inlinePictograph',
 	'inlineGallery',
+	'inlineGalleries', // Multiple galleries (e.g., diamond + box mode)
 	'inlineSequencePlayer',
 	'inlineStepGrid',
 	'inlineQuiz',
