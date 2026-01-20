@@ -29,16 +29,16 @@
   bottomColor={palette.sky.bottomColor}
 />
 
-<!-- Ground with fallen petals - uses dynamic groundY from user proportions -->
-<GroundPlane color={palette.ground} opacity={0.9} size={3000} />
+<!-- Ground with fallen petals - uses dynamic groundY from user proportions (15m radius) -->
+<GroundPlane color={palette.ground} opacity={0.9} size={15} />
 
-<!-- Falling cherry blossom petals -->
+<!-- Falling cherry blossom petals (area in meters) -->
 <FallingParticles
   type="petals"
   count={120}
-  area={{ width: 700, height: 500, depth: 700 }}
-  speed={18}
+  area={{ width: 3.5, height: 2.5, depth: 3.5 }}
+  speed={0.09}
   colors={palette.petals}
-  sizeRange={[10, 22]}
+  sizeRange={[0.05, 0.11]}
   spin={true}
 />

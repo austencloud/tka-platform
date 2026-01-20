@@ -147,10 +147,10 @@ export function createDefaultCameraState(
     };
   }
 
-  // Fallback defaults (standard perspective view)
+  // Fallback defaults in meters (standard perspective view)
   return {
-    position: { x: 0, y: 200, z: 600 },
-    target: { x: 0, y: 100, z: 0 },
+    position: { x: 0, y: 1.0, z: 3.0 },  // 1m up, 3m back
+    target: { x: 0, y: 0.5, z: 0 },       // Looking at 0.5m height (waist)
     fov: 60,
     isAnimating: false,
     progress: 0,

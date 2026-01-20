@@ -29,16 +29,16 @@
   bottomColor={palette.sky.bottomColor}
 />
 
-<!-- Ocean floor - uses dynamic groundY from user proportions -->
-<GroundPlane color={palette.ground} opacity={0.9} size={3000} />
+<!-- Ocean floor - uses dynamic groundY from user proportions (15m radius) -->
+<GroundPlane color={palette.ground} opacity={0.9} size={15} />
 
-<!-- Rising bubbles -->
+<!-- Rising bubbles (area in meters) -->
 <FallingParticles
   type="bubbles"
   count={80}
-  area={{ width: 600, height: 500, depth: 600 }}
-  speed={15}
+  area={{ width: 3, height: 2.5, depth: 3 }}
+  speed={0.075}
   colors={palette.bubbles}
-  sizeRange={[6, 18]}
+  sizeRange={[0.03, 0.09]}
   spin={false}
 />

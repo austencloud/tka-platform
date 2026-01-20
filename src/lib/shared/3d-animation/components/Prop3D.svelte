@@ -28,8 +28,8 @@
     propState,
     color,
     visible = true,
-    length = 150, // Matches GRID_RADIUS_3D so opposite props touch at center
-    width = 25,
+    length = 0.86, // Staff length in meters (~34 inches)
+    width = 0.025, // Staff width in meters (2.5cm)
   }: Props = $props();
 
   // Color hex values - use hex for Three.js compatibility
@@ -51,7 +51,7 @@
     <T.Group rotation={[0, 0, propState.staffRotationAngle]}>
       <!-- Staff body (elongated box) -->
       <T.Mesh>
-        <T.BoxGeometry args={[length, width, 4]} />
+        <T.BoxGeometry args={[length, width, 0.02]} />
         <T.MeshStandardMaterial
           color={colorHex}
           roughness={0.4}
@@ -80,9 +80,9 @@
       </T.Mesh>
 
       <!-- Center grip indicator -->
-      <T.Mesh position={[0, 0, 2.5]}>
+      <T.Mesh position={[0, 0, 0.015]}>
         <T.CylinderGeometry
-          args={[3, 3, width + 2, 16]}
+          args={[0.018, 0.018, width + 0.01, 16]}
           rotation={[Math.PI / 2, 0, 0]}
         />
         <T.MeshStandardMaterial color="white" roughness={0.5} />
@@ -92,7 +92,7 @@
 
   <!-- Trail indicator (small sphere at prop position for path visualization) -->
   <T.Mesh {position}>
-    <T.SphereGeometry args={[3, 8, 8]} />
+    <T.SphereGeometry args={[0.015, 8, 8]} />
     <T.MeshBasicMaterial color={colorHex} opacity={0.5} transparent />
   </T.Mesh>
 {/if}

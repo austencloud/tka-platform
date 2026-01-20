@@ -79,7 +79,8 @@ export function createCameraChoreographer(): ICameraChoreographer {
       return null;
     }
 
-    const offset = keyframe.followOffset ?? { x: 0, y: 200, z: 400 };
+    // Default follow offset in meters: 1m up, 2m back
+    const offset = keyframe.followOffset ?? { x: 0, y: 1.0, z: 2.0 };
 
     return {
       position: {
@@ -89,7 +90,7 @@ export function createCameraChoreographer(): ICameraChoreographer {
       },
       target: {
         x: performerPos.x,
-        y: performerPos.y + 100, // Look at performer chest height
+        y: performerPos.y + 0.5, // Look at performer chest height (0.5m above position)
         z: performerPos.z,
       },
     };

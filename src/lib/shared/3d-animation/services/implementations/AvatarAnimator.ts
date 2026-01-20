@@ -20,15 +20,16 @@ import type { PropState3D } from "../../domain/models/PropState3D";
 
 /**
  * Default idle pose - arms relaxed at sides
+ * Positions in meters: 0.25m to the side, 0.5m up (waist height)
  */
 function createIdlePose(): BodyPose {
   return {
     leftHand: {
-      targetPosition: new Vector3(-50, 100, 0),
+      targetPosition: new Vector3(-0.25, 0.5, 0),
       weight: 1,
     },
     rightHand: {
-      targetPosition: new Vector3(50, 100, 0),
+      targetPosition: new Vector3(0.25, 0.5, 0),
       weight: 1,
     },
     timestamp: Date.now(),

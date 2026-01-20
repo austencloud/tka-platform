@@ -57,7 +57,7 @@
 
   <!-- Content -->
   {#if !state.isCollapsed}
-    <div class="panel-content" id="effects-panel-content">
+    <div class="panel-content themed-scrollbar" id="effects-panel-content">
       <!-- Trails -->
       <EffectSection
         label="Trails"
@@ -469,21 +469,6 @@
     flex: 1;
     overflow-y: auto;
     padding: 0 1rem;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
-
-  .panel-content::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .panel-content::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  .panel-content::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 2px;
   }
 
   /* Control Row */

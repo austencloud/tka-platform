@@ -9,7 +9,7 @@
    * A humanoid figure with 2-bone IK arms.
    * Based on real-world measurements (default: 6'3" lanky build).
    *
-   * Scale: 1 unit = 0.5 cm (so 34" staff = 173 units)
+   * Scale: 1 unit = 1 meter (so 34" staff = 0.864 meters)
    */
 
   import { T } from "@threlte/core";
@@ -139,7 +139,7 @@
       : new Vector3(
           -figureProps.shoulderX - figureProps.upperArmLength * 0.5,
           figureProps.shoulderY - figureProps.upperArmLength * 0.5,
-          figureProps.figureZ + 40
+          figureProps.figureZ + 0.2
         )
   );
 
@@ -153,7 +153,7 @@
       : new Vector3(
           figureProps.shoulderX + figureProps.upperArmLength * 0.5,
           figureProps.shoulderY - figureProps.upperArmLength * 0.5,
-          figureProps.figureZ + 40
+          figureProps.figureZ + 0.2
         )
   );
 

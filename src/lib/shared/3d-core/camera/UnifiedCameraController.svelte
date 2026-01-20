@@ -12,84 +12,96 @@
    * - Click: Enter pointer lock (for mouse look in game modes)
    * - ESC: Exit pointer lock AND return to Orbit mode
    * - WASD: Move avatar (only in game modes)
+   *
+   * Movement modes:
+   * - Kinematic (default): Uses avatarState.updateMovement() for simple movement
+   * - Physics-based: Uses PhysicsProvider for collision-detected movement (Rapier, etc.)
    */
   import { onMount, onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
-  import { CameraMode, getNextCameraMode, isGameMode } from "./types";
+  import { Vector3 } from "three";
+  import { CameraMode, getNextCameraMode, isGameMode, type PhysicsProvider, type AvatarState } from "./types";
   import { cameraPreferences } from "./camera-preferences.svelte";
-  import { OrbitControls } from "@threlte/extras";
-
-  interface AvatarState {
-    position: { x: number; y?: number; z: number };
-    facingAngle: number;
-    isMoving: boolean;
-    setMoveInput: (input: { x: number; z: number }) => void;
-    updateMovement: (delta: number, cameraAngle: number) => void;
-  }
+  import { SCALE } from "../scale/scale-constants";
 
   interface Props {
     /** Destination ID for preference persistence (e.g., "stage", "gallery") */
     destinationId: string;
-    /** Avatar state for movement and camera following */
+    /** Avatar state for movement and camera following (kinematic mode) */
     avatarState: AvatarState;
+    /** Optional physics provider for physics-based movement (Rapier, etc.) */
+    physicsProvider?: PhysicsProvider | null;
     /** Whether the controller is active */
     enabled?: boolean;
     /** Callback when mode changes */
     onModeChange?: (mode: CameraMode) => void;
+    /** Movement speed (units per second) */
+    moveSpeed?: number;
+    /** Sprint multiplier */
+    sprintMultiplier?: number;
+    /** Jump force (vertical velocity) */
+    jumpForce?: number;
+    /** Gravity (units per second squared) */
+    gravity?: number;
   }
 
   let {
     destinationId,
     avatarState,
+    physicsProvider = null,
     enabled = true,
     onModeChange,
+    moveSpeed = SCALE.WALK_SPEED,
+    sprintMultiplier = SCALE.SPRINT_MULTIPLIER,
+    jumpForce = SCALE.JUMP_VELOCITY,
+    gravity = Math.abs(SCALE.GRAVITY) * 2.5, // Amplified for game feel
   }: Props = $props();
+
+  // Derived: are we using physics-based movement?
+  const usePhysics = $derived(physicsProvider !== null);
 
   const { renderer, camera } = useThrelte();
 
   // Current camera mode (from preferences)
   let mode = $state<CameraMode>(cameraPreferences.getModeForDestination(destinationId));
 
-  // Camera state
+  // Camera state (for game modes - orbit mode uses Scene3D's OrbitControls)
   let yaw = $state(0);
   let pitch = $state(0.3);
   let isPointerLocked = $state(false);
 
-  // Orbit mode state
-  let orbitYaw = $state(0);
-  let orbitPitch = $state(0.4);
-  let orbitDistance = $state(400);
-
   // Movement keys
   const keys = new Set<string>();
 
-  // Camera settings
+  // Vertical velocity (used by BOTH physics and kinematic paths for jumping)
+  let verticalVelocity = 0;
+
+  // Scene bounds (used by kinematic path - physics uses colliders instead)
+  const SCENE_BOUNDS = {
+    minX: -50.0,  // 50 meters (large for exploration)
+    maxX: 50.0,
+    minZ: -50.0,
+    maxZ: 50.0,
+  };
+
+  // Camera settings (all distances/heights in meters)
+  // Orbit mode settings are in Scene3D.svelte's OrbitControls
   const SETTINGS = {
-    lookSensitivity: 0.002,
+    lookSensitivity: SCALE.MOUSE_SENSITIVITY,
     // Third person
     thirdPerson: {
-      distance: 250,
-      height: 120,
-      lookAtHeight: 40,
+      distance: 3.0,        // 3 meters behind avatar
+      height: 2.0,          // 2 meters above ground
+      lookAtHeight: 1.2,    // Look at chest height
       minPitch: -0.3,
       maxPitch: 1.2,
     },
     // First person
     firstPerson: {
-      height: 85,
-      forwardOffset: 5,
+      height: SCALE.EYE_HEIGHT,  // 1.6 meters (eye level)
+      forwardOffset: 0.05,       // 5cm forward offset
       minPitch: -1.4,
       maxPitch: 1.4,
-    },
-    // Orbit
-    orbit: {
-      minDistance: 100,
-      maxDistance: 1000,
-      minPitch: 0.1,
-      maxPitch: 1.5,
-      dragSensitivity: 0.005,
-      zoomSpeed: 0.1,
-      height: 50, // Target height above ground
     },
   };
 
@@ -133,7 +145,7 @@
     if (isGameMode(mode)) {
       keys.add(e.code);
 
-      if (["KeyW", "KeyA", "KeyS", "KeyD", "Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+      if (["KeyW", "KeyA", "KeyS", "KeyD", "Space", "ShiftLeft", "ShiftRight", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
         e.preventDefault();
       }
     }
@@ -146,15 +158,11 @@
   function handleMouseMove(e: MouseEvent) {
     if (!enabled) return;
 
-    if (mode === CameraMode.ORBIT) {
-      // Orbit mode: drag to rotate (no pointer lock needed)
-      if (e.buttons === 1) { // Left mouse button
-        orbitYaw -= e.movementX * SETTINGS.orbit.dragSensitivity;
-        orbitPitch += e.movementY * SETTINGS.orbit.dragSensitivity;
-        orbitPitch = Math.max(SETTINGS.orbit.minPitch, Math.min(SETTINGS.orbit.maxPitch, orbitPitch));
-      }
-    } else if (isPointerLocked) {
-      // Game modes: pointer lock mouse look
+    // Orbit mode: handled by Scene3D's OrbitControls - we don't touch the mouse
+    if (mode === CameraMode.ORBIT) return;
+
+    // Game modes: pointer lock mouse look
+    if (isPointerLocked) {
       yaw -= e.movementX * SETTINGS.lookSensitivity;
       pitch += e.movementY * SETTINGS.lookSensitivity;
 
@@ -164,11 +172,8 @@
   }
 
   function handleWheel(e: WheelEvent) {
-    if (!enabled || mode !== CameraMode.ORBIT) return;
-
-    e.preventDefault();
-    orbitDistance += e.deltaY * SETTINGS.orbit.zoomSpeed;
-    orbitDistance = Math.max(SETTINGS.orbit.minDistance, Math.min(SETTINGS.orbit.maxDistance, orbitDistance));
+    // Orbit mode zoom is handled by Scene3D's OrbitControls
+    // This handler is no longer needed but kept for potential future use
   }
 
   function handlePointerLockChange() {
@@ -235,8 +240,31 @@
   useTask((delta) => {
     if (!enabled || !camera.current) return;
 
-    const target = avatarState.position;
-    const targetY = target.y ?? 0;
+    // ORBIT MODE: Delegate to Scene3D's OrbitControls - don't fight with it!
+    // Scene3D has a proper OrbitControls component that handles orbit mode.
+    // We only handle input and mode switching here, not camera positioning.
+    if (mode === CameraMode.ORBIT) {
+      avatarState.setMoveInput({ x: 0, z: 0 });
+      return; // Let OrbitControls handle the camera
+    }
+
+    // GAME MODES (First-Person, Third-Person): Handle camera and movement
+
+    // Get target position (from physics provider or avatar state)
+    let targetX: number;
+    let targetY: number;
+    let targetZ: number;
+
+    if (usePhysics && physicsProvider) {
+      const pos = physicsProvider.getPlayerPosition();
+      targetX = pos.x;
+      targetY = pos.y;
+      targetZ = pos.z;
+    } else {
+      targetX = avatarState.position.x;
+      targetY = avatarState.position.y ?? 0;
+      targetZ = avatarState.position.z;
+    }
 
     // Ensure far plane is large enough
     if ("far" in camera.current && camera.current.far < 10000) {
@@ -244,33 +272,134 @@
       camera.current.updateProjectionMatrix();
     }
 
-    if (mode === CameraMode.ORBIT) {
-      // Orbit mode: camera rotates around avatar, no movement
-      avatarState.setMoveInput({ x: 0, z: 0 });
+    // Game modes: WASD movement
+    // UNIFIED movement calculation for both Stage (kinematic) and Worlds (physics)
+    // Uses camera matrix to extract forward/right (like Three.js PointerLockControls)
 
-      const camX = target.x + Math.sin(orbitYaw) * orbitDistance * Math.cos(orbitPitch);
-      const camY = targetY + SETTINGS.orbit.height + Math.sin(orbitPitch) * orbitDistance;
-      const camZ = target.z + Math.cos(orbitYaw) * orbitDistance * Math.cos(orbitPitch);
+    const forwardInput = (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) -
+                        (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
+    const strafeInput = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) -
+                       (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
+    const isSprinting = keys.has("ShiftLeft") || keys.has("ShiftRight");
+    const isJumping = keys.has("Space");
+    const hasMovementInput = forwardInput !== 0 || strafeInput !== 0;
 
-      camera.current.position.set(camX, camY, camZ);
-      camera.current.lookAt(target.x, targetY + SETTINGS.orbit.height, target.z);
+    // === UNIFIED DIRECTION CALCULATION ===
+    // Extract forward/right from camera matrix (works regardless of yaw convention)
+    const cam = camera.current;
+    const _forward = new Vector3();
+    const _right = new Vector3();
 
-    } else {
-      // Game modes: WASD movement
-      const forward = (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) -
-                     (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
-      const strafe = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) -
-                    (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
+    // Get right vector from camera's X-axis, then cross with up to get forward
+    // This keeps movement on XZ plane (no flying when looking up/down)
+    _right.setFromMatrixColumn(cam.matrix, 0);
+    _forward.crossVectors(cam.up, _right);
 
-      avatarState.setMoveInput({ x: strafe, z: forward });
-      avatarState.updateMovement(delta, yaw);
+    // Calculate speed
+    const speed = isSprinting ? moveSpeed * sprintMultiplier : moveSpeed;
+
+    // Build movement vector from camera-relative directions
+    let moveX = (_forward.x * forwardInput + _right.x * strafeInput) * speed * delta;
+    let moveZ = (_forward.z * forwardInput + _right.z * strafeInput) * speed * delta;
+
+    // Normalize diagonal movement to prevent faster diagonal speed
+    const moveLen = Math.sqrt(moveX * moveX + moveZ * moveZ);
+    if (moveLen > speed * delta) {
+      const scale = (speed * delta) / moveLen;
+      moveX *= scale;
+      moveZ *= scale;
+    }
+
+    // === APPLY MOVEMENT (differs by physics vs kinematic) ===
+    if (usePhysics && physicsProvider) {
+        // Physics path: handle jumping and gravity
+        if (isJumping && physicsProvider.isGrounded() && verticalVelocity <= 0) {
+          verticalVelocity = jumpForce;
+        }
+        if (!physicsProvider.isGrounded()) {
+          verticalVelocity -= gravity * delta;
+          verticalVelocity = Math.max(verticalVelocity, SCALE.TERMINAL_VELOCITY);
+        } else if (verticalVelocity < 0) {
+          verticalVelocity = 0;
+        }
+
+        // Apply through physics provider (handles collisions)
+        physicsProvider.movePlayer(
+          { x: moveX, y: verticalVelocity * delta, z: moveZ },
+          delta
+        );
+
+        // Read back position from physics
+        const newPos = physicsProvider.getPlayerPosition();
+        targetX = newPos.x;
+        targetY = newPos.y;
+        targetZ = newPos.z;
+
+        // Sync to avatarState
+        avatarState.position.x = targetX;
+        if (avatarState.position.y !== undefined) {
+          avatarState.position.y = targetY;
+        }
+        avatarState.position.z = targetZ;
+      } else {
+        // Kinematic path: same gravity/jumping as physics, just no collision detection
+        const isGrounded = (avatarState.position.y ?? 0) <= 0;
+
+        // Handle jumping (same as physics path)
+        if (isJumping && isGrounded && verticalVelocity <= 0) {
+          verticalVelocity = jumpForce;
+        }
+
+        // Apply gravity (same as physics path)
+        if (!isGrounded) {
+          verticalVelocity -= gravity * delta;
+          verticalVelocity = Math.max(verticalVelocity, SCALE.TERMINAL_VELOCITY);
+        } else if (verticalVelocity < 0) {
+          verticalVelocity = 0;
+        }
+
+        // Apply movement
+        let newX = avatarState.position.x + moveX;
+        let newY = (avatarState.position.y ?? 0) + verticalVelocity * delta;
+        let newZ = avatarState.position.z + moveZ;
+
+        // Clamp to scene bounds (kinematic only - physics uses colliders)
+        newX = Math.max(SCENE_BOUNDS.minX, Math.min(SCENE_BOUNDS.maxX, newX));
+        newZ = Math.max(SCENE_BOUNDS.minZ, Math.min(SCENE_BOUNDS.maxZ, newZ));
+        newY = Math.max(0, newY); // Ground is at y=0
+
+        // Update position
+        avatarState.position.x = newX;
+        if (avatarState.position.y !== undefined) {
+          avatarState.position.y = newY;
+        }
+        avatarState.position.z = newZ;
+
+        // Read back position
+        targetX = avatarState.position.x;
+        targetY = avatarState.position.y ?? 0;
+        targetZ = avatarState.position.z;
+      }
+
+      // === UNIFIED STATE UPDATES ===
+      // Update movement state for walk animation
+      avatarState.setMoveInput({ x: strafeInput, z: forwardInput });
+
+      // Avatar faces camera direction when moving (standard 3rd person convention)
+      if (mode === CameraMode.THIRD_PERSON && hasMovementInput) {
+        const facingAngle = Math.atan2(_forward.x, _forward.z);
+        avatarState.setFacingAngle(facingAngle);
+      }
 
       if (mode === CameraMode.FIRST_PERSON) {
-        // First-person: camera at eye level
+        // First-person: camera IS the avatar's eyes
+        // Avatar always faces where you're looking (you turn your body when you turn your head)
+        avatarState.setFacingAngle(yaw);
+
         const cfg = SETTINGS.firstPerson;
-        const camX = target.x + Math.sin(yaw) * cfg.forwardOffset;
+        const camX = targetX + Math.sin(yaw) * cfg.forwardOffset;
         const camY = targetY + cfg.height;
-        const camZ = target.z + Math.cos(yaw) * cfg.forwardOffset;
+        const camZ = targetZ + Math.cos(yaw) * cfg.forwardOffset;
 
         camera.current.position.set(camX, camY, camZ);
 
@@ -285,14 +414,13 @@
         // Third-person: camera behind avatar
         const cfg = SETTINGS.thirdPerson;
         const cosPitch = Math.cos(pitch);
-        const camX = target.x - Math.sin(yaw) * cfg.distance * cosPitch;
+        const camX = targetX - Math.sin(yaw) * cfg.distance * cosPitch;
         const camY = targetY + cfg.height + Math.sin(pitch) * cfg.distance * 0.5;
-        const camZ = target.z - Math.cos(yaw) * cfg.distance * cosPitch;
+        const camZ = targetZ - Math.cos(yaw) * cfg.distance * cosPitch;
 
         camera.current.position.set(camX, camY, camZ);
-        camera.current.lookAt(target.x, targetY + cfg.lookAtHeight, target.z);
+        camera.current.lookAt(targetX, targetY + cfg.lookAtHeight, targetZ);
       }
-    }
   });
 
   // Mode label for UI
@@ -320,6 +448,10 @@
       {#if isGameMode(mode)}
         <kbd>WASD</kbd> Move
         <kbd>Mouse</kbd> Look
+        {#if usePhysics}
+          <kbd>Shift</kbd> Sprint
+          <kbd>Space</kbd> Jump
+        {/if}
       {:else}
         <kbd>Scroll</kbd> Zoom
       {/if}

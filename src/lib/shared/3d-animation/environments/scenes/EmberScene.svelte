@@ -29,16 +29,16 @@
   bottomColor={palette.sky.bottomColor}
 />
 
-<!-- Volcanic ground - uses dynamic groundY from user proportions -->
-<GroundPlane color={palette.ground} opacity={0.95} size={3000} />
+<!-- Volcanic ground - uses dynamic groundY from user proportions (15m radius) -->
+<GroundPlane color={palette.ground} opacity={0.95} size={15} />
 
-<!-- Rising embers -->
+<!-- Rising embers (area in meters) -->
 <FallingParticles
   type="embers"
   count={100}
-  area={{ width: 600, height: 500, depth: 600 }}
-  speed={30}
+  area={{ width: 3, height: 2.5, depth: 3 }}
+  speed={0.15}
   colors={palette.embers}
-  sizeRange={[4, 10]}
+  sizeRange={[0.02, 0.05]}
   spin={false}
 />

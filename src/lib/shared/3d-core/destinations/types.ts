@@ -27,6 +27,10 @@ export interface Destination {
 
 	// Module loader (lazy-loaded)
 	component: () => Promise<{ default: Component }>;
+
+	// Whether this destination is currently enabled (default: true)
+	// Set to false to hide from destination picker while preserving the code
+	enabled?: boolean;
 }
 
 /**

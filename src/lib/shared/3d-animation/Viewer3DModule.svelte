@@ -37,9 +37,15 @@
   import { CameraMode, isGameMode } from "$lib/shared/3d-core/camera/types";
   import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
 
+  // NOTE: Stage does NOT use Rapier physics - it uses the legacy unit system (~300 units for grid)
+  // Rapier physics is only for Infinite Worlds which uses the meter scale system
+
   // Effects system
   import EffectsLayer from "./effects/EffectsLayer.svelte";
   import { getEffectsConfigState } from "./effects/state/effects-config-state.svelte";
+
+  // First-person viewmodel
+  import ViewmodelStaffs from "./viewmodel/ViewmodelStaffs.svelte";
 
   // Camera choreography
   import { createCameraChoreographyState } from "./state/camera-choreography-state.svelte";
@@ -402,6 +408,7 @@
                   avatarPosition={performer.position}
                   facingAngle={performer.facingAngle}
                   gridOffset={-WALL_OFFSET}
+                  isActivePlayer={activePerformerIndex === i}
                 />
               {/if}
               {#if performer.showRed && performer.redPropState}
@@ -411,6 +418,7 @@
                   avatarPosition={performer.position}
                   facingAngle={performer.facingAngle}
                   gridOffset={-WALL_OFFSET}
+                  isActivePlayer={activePerformerIndex === i}
                 />
               {/if}
 
@@ -445,7 +453,17 @@
           isPlaying={activeState?.isPlaying ?? false}
         />
 
+        <!-- First-person viewmodel staffs (visible only in first-person mode) -->
+        <ViewmodelStaffs
+          bluePropState={activeState?.bluePropState ?? null}
+          redPropState={activeState?.redPropState ?? null}
+          {cameraMode}
+          showBlue={activeState?.showBlue ?? true}
+          showRed={activeState?.showRed ?? true}
+        />
+
         <!-- Unified Camera Controller (orbit, third-person, first-person) -->
+        <!-- Stage uses kinematic movement (no physics) - different unit scale than Infinite Worlds -->
         {#if activeState}
           <UnifiedCameraController
             destinationId="stage"

@@ -66,7 +66,7 @@ export interface Formation {
   /** Position slots for each performer */
   slots: FormationSlot[];
 
-  /** Base spacing between performers (default 400 units) */
+  /** Base spacing between performers (default 2 meters) */
   spacing: number;
 
   /** Formation center offset from origin */
@@ -94,14 +94,14 @@ export interface FormationTransition {
 }
 
 /**
- * Default spacing between performers (matches existing GRID_SPACING)
+ * Default spacing between performers in meters
  */
-export const DEFAULT_FORMATION_SPACING = 400;
+export const DEFAULT_FORMATION_SPACING = 2.0; // 2 meters between performers
 
 /**
- * Wall offset for positioning (performers behind wall plane)
+ * Wall offset for positioning in meters (performers behind wall plane)
  */
-export const FORMATION_WALL_OFFSET = -60;
+export const FORMATION_WALL_OFFSET = -0.3; // 30cm behind wall plane
 
 /**
  * Create a new formation with defaults

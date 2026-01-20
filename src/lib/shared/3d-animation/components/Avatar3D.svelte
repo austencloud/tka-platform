@@ -24,6 +24,10 @@
   import type { PropState3D } from "../domain/models/PropState3D";
   import { cmToUnits } from "../config/avatar-proportions";
   import {
+    LAYER_WORLD,
+    LAYER_PLAYER_BODY,
+  } from "$lib/shared/3d-core/layers/layer-constants";
+  import {
     getAvatarModelPath,
     type AvatarId,
     DEFAULT_AVATAR_ID,
@@ -323,6 +327,20 @@
 
   // Note: Visibility is handled via the {#if visible} in the template
   // No need for customizationService - skeleton visibility is controlled by Svelte rendering
+
+  // Assign avatar to appropriate layer for first-person viewmodel system
+  // Active player's body goes on LAYER_PLAYER_BODY (hidden in first-person)
+  // Other players' bodies stay on LAYER_WORLD (always visible)
+  $effect(() => {
+    if (!cachedRoot) return;
+
+    const targetLayer = isActive ? LAYER_PLAYER_BODY : LAYER_WORLD;
+
+    // Set layer on root and ALL children (Three.js doesn't inherit layers)
+    cachedRoot.traverse((child) => {
+      child.layers.set(targetLayer);
+    });
+  });
 
   onDestroy(() => {
     // Dispose leg animator

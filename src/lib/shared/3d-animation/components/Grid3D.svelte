@@ -102,9 +102,9 @@
       />
     {/if}
 
-    <!-- Center point indicator (always visible) -->
+    <!-- Center point indicator (always visible) - 4cm sphere -->
     <T.Mesh position={[0, 0, 0]}>
-      <T.SphereGeometry args={[8, 32, 32]} />
+      <T.SphereGeometry args={[0.04, 32, 32]} />
       <T.MeshBasicMaterial color="#f59e0b" />
     </T.Mesh>
 
@@ -112,15 +112,15 @@
     <T.Group>
       <!-- X axis (red) - performer's right -->
       <T.ArrowHelper
-        args={[[1, 0, 0], [0, 0, 0], effectiveSize * 1.2, 0xff4444, 15, 8]}
+        args={[[1, 0, 0], [0, 0, 0], effectiveSize * 1.2, 0xff4444, 0.06, 0.03]}
       />
       <!-- Y axis (green) - up/sky -->
       <T.ArrowHelper
-        args={[[0, 1, 0], [0, 0, 0], effectiveSize * 1.2, 0x44ff44, 15, 8]}
+        args={[[0, 1, 0], [0, 0, 0], effectiveSize * 1.2, 0x44ff44, 0.06, 0.03]}
       />
       <!-- Z axis (blue) - toward audience -->
       <T.ArrowHelper
-        args={[[0, 0, 1], [0, 0, 0], effectiveSize * 1.2, 0x4444ff, 15, 8]}
+        args={[[0, 0, 1], [0, 0, 0], effectiveSize * 1.2, 0x4444ff, 0.06, 0.03]}
       />
     </T.Group>
   </T.Group>

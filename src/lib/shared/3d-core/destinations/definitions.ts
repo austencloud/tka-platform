@@ -40,6 +40,7 @@ export const DESTINATIONS: Destination[] = [
 		tags: ["museum", "multiplayer", "social", "exhibits"],
 		component: () =>
 			import("../../../features/gallery/GalleryDestination.svelte"),
+		enabled: false, // Temporarily disabled - focusing on Stage first
 	},
 	{
 		id: "worlds",
@@ -55,6 +56,7 @@ export const DESTINATIONS: Destination[] = [
 		tags: ["procedural", "terrain", "biomes", "exploration"],
 		component: () =>
 			import("../../../features/infinite-worlds/WorldsDestination.svelte"),
+		enabled: false, // Temporarily disabled - focusing on Stage first
 	},
 	{
 		id: "hannons-camp",
@@ -70,6 +72,7 @@ export const DESTINATIONS: Destination[] = [
 		tags: ["real-terrain", "festival", "kinetic-fire", "ohio"],
 		component: () =>
 			import("../../../features/infinite-worlds/HannonsCampDestination.svelte"),
+		enabled: false, // Temporarily disabled - focusing on Stage first
 	},
 	// Future destinations:
 	// {

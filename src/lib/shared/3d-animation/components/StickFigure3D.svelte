@@ -6,8 +6,7 @@
    * Uses 2-bone IK for arm positioning with anatomical constraints.
    * Figure stands forward (toward audience) so arms reach back to wall plane.
    *
-   * Scale: 300 units (staff length) = 120cm real staff
-   *        1 unit = 0.4cm
+   * Scale: 1 unit = 1 meter (unified meters scale)
    */
 
   import { T } from "@threlte/core";
@@ -28,38 +27,37 @@
 
   // ═══════════════════════════════════════════════════════════════════════════
   // REALISTIC HUMAN PROPORTIONS
-  // Scale: 300 units = 120cm (typical contact staff)
-  //        1 unit = 0.4cm
+  // Scale: 1 unit = 1 meter (unified meters scale)
   // ═══════════════════════════════════════════════════════════════════════════
 
   // Arm segments (real human: upper arm ~30cm, forearm ~25cm)
-  const UPPER_ARM_LENGTH = 75; // 30cm = 75 units
-  const FOREARM_LENGTH = 62; // 25cm = 62 units
-  const TOTAL_ARM_LENGTH = UPPER_ARM_LENGTH + FOREARM_LENGTH; // 137 units = 55cm
+  const UPPER_ARM_LENGTH = 0.30; // 30cm = 0.30 meters
+  const FOREARM_LENGTH = 0.25; // 25cm = 0.25 meters
+  const TOTAL_ARM_LENGTH = UPPER_ARM_LENGTH + FOREARM_LENGTH; // 0.55 meters
 
   // Body dimensions
-  const HEAD_RADIUS = 25; // 10cm radius = 20cm diameter head
-  const JOINT_RADIUS = 8; // Smaller, more realistic joints
-  const LIMB_THICKNESS = 8; // Thinner limbs
+  const HEAD_RADIUS = 0.10; // 10cm radius = 20cm diameter head
+  const JOINT_RADIUS = 0.032; // ~3.2cm, realistic joints
+  const LIMB_THICKNESS = 0.032; // ~3.2cm, thinner limbs
 
   // Vertical positions (Y)
   // Figure positioned so shoulders are at a height where arms can work the grid
-  // Real human: shoulder height ~145cm from ground = 362 units
+  // Real human: shoulder height ~145cm from ground
   // We offset so the figure's "center" is roughly at grid center
   const SHOULDER_Y = 0; // Shoulders at grid center height for best reach
-  const HEAD_Y = SHOULDER_Y + 65; // Head above shoulders
-  const HIP_Y = SHOULDER_Y - 100; // Hips below shoulders
-  const KNEE_Y = HIP_Y - 112; // Thigh length ~45cm = 112 units
-  const FOOT_Y = KNEE_Y - 105; // Shin length ~42cm = 105 units
+  const HEAD_Y = SHOULDER_Y + 0.26; // Head above shoulders (~26cm)
+  const HIP_Y = SHOULDER_Y - 0.40; // Hips below shoulders (~40cm)
+  const KNEE_Y = HIP_Y - 0.45; // Thigh length ~45cm
+  const FOOT_Y = KNEE_Y - 0.42; // Shin length ~42cm
 
   // Horizontal positions (width)
-  const SHOULDER_SPREAD = 55; // 22cm each side = 55 units (44cm total width)
-  const HIP_SPREAD = 37; // 15cm each side = 37 units
+  const SHOULDER_SPREAD = 0.22; // 22cm each side (44cm total width)
+  const HIP_SPREAD = 0.15; // 15cm each side (30cm total)
 
   // Figure stands BEHIND the grid (negative Z), facing the audience
   // Arms reach FORWARD to the wall plane (Z = 0)
-  // Distance needed: sqrt(arm² - lateral²) = sqrt(137² - 94²) ≈ 100
-  const FIGURE_Z = -100;
+  // Distance needed: sqrt(arm² - lateral²) = sqrt(0.55² - 0.38²) ≈ 0.40
+  const FIGURE_Z = -0.40;
 
   // Body joint positions (figure stands at Z = FIGURE_Z)
   const headPos: [number, number, number] = [0, HEAD_Y, FIGURE_Z];
@@ -88,7 +86,7 @@
           bluePropState.worldPosition.y,
           bluePropState.worldPosition.z,
         ]
-      : [-SHOULDER_SPREAD - 30, SHOULDER_Y - 50, FIGURE_Z + 60] // Relaxed in front
+      : [-SHOULDER_SPREAD - 0.12, SHOULDER_Y - 0.20, FIGURE_Z + 0.24] // Relaxed in front
   );
 
   const rightHandPos = $derived<[number, number, number]>(
@@ -98,7 +96,7 @@
           redPropState.worldPosition.y,
           redPropState.worldPosition.z,
         ]
-      : [SHOULDER_SPREAD + 30, SHOULDER_Y - 50, FIGURE_Z + 60] // Relaxed in front
+      : [SHOULDER_SPREAD + 0.12, SHOULDER_Y - 0.20, FIGURE_Z + 0.24] // Relaxed in front
   );
 
   // Calculate limb segment for cylinder positioning
@@ -195,13 +193,13 @@
     // Outward component (away from body center)
     const outward = isLeft ? -1 : 1;
 
-    // Weight factors based on hand position
+    // Weight factors based on hand position (in meters)
     const handHeight = hand[1] - shoulder[1];
-    const heightFactor = Math.max(0, Math.min(1, (handHeight + 100) / 200));
+    const heightFactor = Math.max(0, Math.min(1, (handHeight + 0.4) / 0.8));
 
     // How far forward is the hand? (positive when hand is in front of shoulder toward +Z)
     const handForward = hand[2] - shoulder[2];
-    const forwardFactor = Math.max(0, Math.min(1, (handForward + 50) / 150));
+    const forwardFactor = Math.max(0, Math.min(1, (handForward + 0.2) / 0.6));
 
     const hint = new Vector3(
       outward * (0.3 + heightFactor * 0.5), // Outward component
@@ -285,8 +283,8 @@
     </T.Mesh>
 
     <!-- NECK (small connector) -->
-    <T.Mesh position={[0, SHOULDER_Y + 20, FIGURE_Z]}>
-      <T.CylinderGeometry args={[LIMB_THICKNESS, LIMB_THICKNESS, 30, 8]} />
+    <T.Mesh position={[0, SHOULDER_Y + 0.08, FIGURE_Z]}>
+      <T.CylinderGeometry args={[LIMB_THICKNESS, LIMB_THICKNESS, 0.12, 8]} />
       <T.MeshStandardMaterial color={SKIN_COLOR} roughness={0.6} />
     </T.Mesh>
 

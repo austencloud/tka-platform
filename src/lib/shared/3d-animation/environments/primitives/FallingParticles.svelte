@@ -39,13 +39,14 @@
     enabled?: boolean;
   }
 
+  // Default values in meters (1 unit = 1 meter)
   let {
     type = "leaves",
     count = 80,
-    area = { width: 800, height: 600, depth: 800 },
-    speed = 30,
+    area = { width: 4, height: 3, depth: 4 },
+    speed = 0.15,
     colors = ["#d97706", "#dc2626", "#ea580c"],
-    sizeRange = [8, 16],
+    sizeRange = [0.04, 0.08],
     spin = true,
     enabled = true,
   }: Props = $props();
@@ -71,67 +72,67 @@
   let geometry = $state<BufferGeometry | null>(null);
   let material = $state<ShaderMaterial | null>(null);
 
-  // Type-specific behavior
+  // Type-specific behavior (values in meters)
   const typeConfigs = {
     leaves: {
-      gravity: 20,
-      swayAmount: 40,
+      gravity: 0.1,
+      swayAmount: 0.2,
       blending: NormalBlending,
       shape: "diamond",
       pulses: false,
     },
     snow: {
-      gravity: 15,
-      swayAmount: 20,
+      gravity: 0.075,
+      swayAmount: 0.1,
       blending: AdditiveBlending,
       shape: "circle",
       pulses: false,
     },
     petals: {
-      gravity: 12,
-      swayAmount: 50,
+      gravity: 0.06,
+      swayAmount: 0.25,
       blending: NormalBlending,
       shape: "petal",
       pulses: false,
     },
     embers: {
-      gravity: -25, // Rise up
-      swayAmount: 15,
+      gravity: -0.125, // Rise up
+      swayAmount: 0.075,
       blending: AdditiveBlending,
       shape: "circle",
       pulses: false,
     },
     stars: {
-      gravity: 5, // Very slow drift
-      swayAmount: 10,
+      gravity: 0.025, // Very slow drift
+      swayAmount: 0.05,
       blending: AdditiveBlending,
       shape: "star",
       pulses: false,
     },
     bubbles: {
-      gravity: -20, // Rise up
-      swayAmount: 25,
+      gravity: -0.1, // Rise up
+      swayAmount: 0.125,
       blending: AdditiveBlending,
       shape: "circle",
       pulses: false,
     },
     fireflies: {
       gravity: 0, // No gravity - they float freely
-      swayAmount: 30, // Very gentle meandering
+      swayAmount: 0.15, // Very gentle meandering
       blending: AdditiveBlending,
       shape: "glow", // Special glowing shape
       pulses: true, // Pulsing glow effect
     },
     dust: {
-      gravity: 2, // Very slow drift down
-      swayAmount: 60, // Lots of wandering
+      gravity: 0.01, // Very slow drift down
+      swayAmount: 0.3, // Lots of wandering
       blending: AdditiveBlending,
       shape: "circle", // Tiny soft circles
       pulses: false,
     },
     smoke: {
-      gravity: -8, // Rise slowly
-      swayAmount: 40, // Gentle drift
+      gravity: -0.04, // Rise slowly
+      swayAmount: 0.2, // Gentle drift
       blending: AdditiveBlending,
       shape: "circle", // Soft puffs
       pulses: false,
@@ -141,6 +142,9 @@
   const config = $derived(typeConfigs[type]);
 
   // Vertex shader
+  // Point size scaling: size is in meters, we convert to screen pixels
+  // At 1 meter away, 1 meter size = ~1000 pixels (screen-filling)
+  // So a 0.1m leaf at 5m distance = 0.1 * 1000 / 5 = 20 pixels
   const vertexShader = `
     attribute float size;
     attribute float rotation;
@@ -154,7 +158,7 @@
       vColorIndex = colorIndex;
 
       vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-      gl_PointSize = size * (300.0 / -mvPosition.z);
+      gl_PointSize = size * (1000.0 / -mvPosition.z);
       gl_Position = projectionMatrix * mvPosition;
     }
   `;
@@ -222,18 +226,18 @@
     const isFirefly = type === "fireflies";
     const y = isFirefly
       ? (Math.random() - 0.5) * area.height * 0.8 // Throughout area
-      : area.height * 0.4 + Math.random() * 50; // At top
+      : area.height * 0.4 + Math.random() * 0.25; // At top (0.25m variation)
 
-    // Fireflies have very slow random drift, others fall/rise
+    // Fireflies have very slow random drift, others fall/rise (values in m/s)
     const vx = isFirefly
-      ? (Math.random() - 0.5) * 5
-      : (Math.random() - 0.5) * 10;
+      ? (Math.random() - 0.5) * 0.025
+      : (Math.random() - 0.5) * 0.05;
     const vy = isFirefly
-      ? (Math.random() - 0.5) * 3 // Gentle vertical drift
+      ? (Math.random() - 0.5) * 0.015 // Gentle vertical drift
       : -speed * (0.5 + Math.random() * 0.5) * (type === "embers" ? -1 : 1);
     const vz = isFirefly
-      ? (Math.random() - 0.5) * 5
-      : (Math.random() - 0.5) * 10;
+      ? (Math.random() - 0.5) * 0.025
+      : (Math.random() - 0.5) * 0.05;
 
     const baseSize =
       sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0]);
@@ -420,7 +424,7 @@
 
       if (
         p.position.y < -halfHeight ||
-        p.position.y > halfHeight + 100 ||
+        p.position.y > halfHeight + 0.5 || // 0.5m above area
         Math.abs(p.position.x) > halfWidth ||
         Math.abs(p.position.z) > halfDepth
       ) {

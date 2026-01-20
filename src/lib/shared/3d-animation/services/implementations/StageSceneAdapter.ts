@@ -317,9 +317,10 @@ export function createStageSceneAdapter(
 
     try {
       const data = JSON.parse(clip.label) as CameraKeyframe;
+      // Default camera position in meters
       return {
-        position: data.position ?? { x: 0, y: 200, z: 500 },
-        target: data.target ?? { x: 0, y: 100, z: 0 },
+        position: data.position ?? { x: 0, y: 1.0, z: 2.5 },
+        target: data.target ?? { x: 0, y: 0.5, z: 0 },
       };
     } catch {
       // Label is not JSON - might be a simple string

@@ -92,11 +92,11 @@ export interface CameraConfig {
  */
 export interface PhysicsProvider {
 	/**
-	 * Move the player in the specified direction
-	 * @param direction - Normalized movement vector
+	 * Move the player with physics-based collision detection
+	 * @param desiredMovement - Desired movement vector (not normalized, includes deltaTime)
 	 * @param deltaTime - Time since last frame (seconds)
 	 */
-	movePlayer(direction: Vector3, deltaTime: number): void;
+	movePlayer(desiredMovement: Vector3, deltaTime: number): void;
 
 	/**
 	 * Get current player position in world space
@@ -112,6 +112,73 @@ export interface PhysicsProvider {
 	 * Get player velocity (for movement state)
 	 */
 	getVelocity(): Vector3;
+
+	/**
+	 * Teleport the player to a position (bypasses physics)
+	 */
+	teleport?(position: Vector3): void;
+}
+
+/**
+ * Avatar State Interface
+ *
+ * Abstracts avatar/player state for camera controller.
+ * Used for kinematic movement (Stage) when no physics provider is present.
+ */
+export interface AvatarState {
+	position: { x: number; y?: number; z: number };
+	facingAngle: number;
+	isMoving: boolean;
+	setMoveInput: (input: { x: number; z: number }) => void;
+	updateMovement: (delta: number, cameraAngle: number) => void;
+	/** Set facing angle directly (for first-person mode where looking = turning) */
+	setFacingAngle: (angle: number) => void;
+}
+
+/**
+ * Camera Controller Configuration
+ *
+ * Settings for the unified camera controller.
+ */
+export interface UnifiedCameraConfig {
+	// Look sensitivity
+	lookSensitivity?: number;
+
+	// Third person settings
+	thirdPerson?: {
+		distance?: number;
+		height?: number;
+		lookAtHeight?: number;
+		minPitch?: number;
+		maxPitch?: number;
+	};
+
+	// First person settings
+	firstPerson?: {
+		height?: number;
+		forwardOffset?: number;
+		minPitch?: number;
+		maxPitch?: number;
+	};
+
+	// Orbit settings
+	orbit?: {
+		minDistance?: number;
+		maxDistance?: number;
+		minPitch?: number;
+		maxPitch?: number;
+		dragSensitivity?: number;
+		zoomSpeed?: number;
+		height?: number;
+	};
+
+	// Movement settings (for physics-based movement)
+	movement?: {
+		walkSpeed?: number;
+		sprintMultiplier?: number;
+		jumpForce?: number;
+		gravity?: number;
+	};
 }
 
 /**
@@ -125,18 +192,18 @@ export interface CameraPreset {
 }
 
 /**
- * Default camera configuration values
+ * Default camera configuration values (distances/heights in meters)
  */
 export const DEFAULT_CAMERA_CONFIG: CameraConfig = {
 	// First person
-	eyeHeight: 1.7,
+	eyeHeight: 1.6,           // 1.6 meters (eye level)
 	mouseSensitivity: 0.002,
 	lookAngleLimitDown: -Math.PI / 2 + 0.1, // Almost straight down
 	lookAngleLimitUp: Math.PI / 2 - 0.1, // Almost straight up
 
 	// Third person
-	distance: 400,
-	height: 200,
+	distance: 3.0,            // 3 meters behind avatar
+	height: 2.0,              // 2 meters above ground
 	positionDamping: 0.1,
 	minPitch: -0.2,
 	maxPitch: 1.2,

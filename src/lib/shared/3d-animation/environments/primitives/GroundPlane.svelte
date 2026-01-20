@@ -23,10 +23,11 @@
     overrideY?: number;
   }
 
+  // Default values in meters (1 unit = 1 meter)
   let {
     color = "#2d5a27",
     opacity = 0.9,
-    size = 500,
+    size = 25, // 25 meters radius
     segments = 64,
     overrideY,
   }: Props = $props();

@@ -30,9 +30,10 @@
     textureRepeat?: number;
   }
 
+  // Default values in meters (1 unit = 1 meter)
   let {
     color = "#ffffff",
-    size = 500,
+    size = 25, // 25 meters radius
     diffuseMap,
     normalMap,
     roughnessMap,

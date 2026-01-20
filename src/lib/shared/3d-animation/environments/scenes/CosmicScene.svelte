@@ -52,16 +52,16 @@
   bottomColor={palette.sky.bottomColor}
 />
 
-<!-- Asteroid platform - small rocky surface at avatar feet level -->
-<GroundPlane color={palette.asteroid} opacity={1} size={250} />
+<!-- Asteroid platform - small rocky surface at avatar feet level (1.25m radius) -->
+<GroundPlane color={palette.asteroid} opacity={1} size={1.25} />
 
-<!-- Drifting stars - larger and more numerous for cosmic feel -->
+<!-- Drifting stars - larger and more numerous for cosmic feel (area in meters) -->
 <FallingParticles
   type="stars"
   count={200}
-  area={{ width: 1500, height: 1200, depth: 1500 }}
-  speed={5}
+  area={{ width: 7.5, height: 6, depth: 7.5 }}
+  speed={0.025}
   colors={palette.stars}
-  sizeRange={[6, 18]}
+  sizeRange={[0.03, 0.09]}
   spin={false}
 />

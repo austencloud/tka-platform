@@ -78,10 +78,11 @@ export function createCameraChoreographyState() {
    * Create a new empty choreography
    */
   function createNew(name: string) {
+    // Default camera position in meters: 3m back, 1m up; looking at 0.5m height
     const choreography = createCameraChoreography(
       name,
-      { x: 0, y: 200, z: 600 },
-      { x: 0, y: 100, z: 0 }
+      { x: 0, y: 1.0, z: 3.0 },
+      { x: 0, y: 0.5, z: 0 }
     );
     choreographer.loadChoreography(choreography);
     cameraState = choreographer.currentState;

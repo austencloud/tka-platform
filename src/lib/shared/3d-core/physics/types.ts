@@ -126,6 +126,28 @@ export interface GroundCheckResult {
 }
 
 // ============================================================================
+// TERRAIN COLLIDER TYPES
+// ============================================================================
+
+/**
+ * Mesh data required for terrain collider creation
+ * Generic interface that chunk systems can implement
+ */
+export interface TerrainMeshData {
+	vertices: Float32Array;
+	indices: Uint32Array;
+}
+
+/**
+ * Terrain collider for a single chunk
+ */
+export interface TerrainCollider {
+	collider: RAPIER.Collider;
+	chunkX: number;
+	chunkZ: number;
+}
+
+// ============================================================================
 // DEFAULT CONFIGS
 // ============================================================================
 

@@ -4,21 +4,21 @@
  * Real-world measurements (in centimeters) that define the avatar's proportions.
  * All 3D scene units are derived from these measurements.
  *
- * SCALE: 1 unit = 0.5 cm (so a 190cm person = 380 units)
+ * SCALE: 1 unit = 1 meter (so a 190cm person = 1.9 units)
  */
 
-// Conversion: cm to scene units
-export const CM_TO_UNITS = 2; // 1 cm = 2 units, so 1 unit = 0.5 cm
+// Conversion: cm to scene units (meters)
+export const CM_TO_UNITS = 0.01; // 1 cm = 0.01 meters
 export const INCHES_TO_CM = 2.54;
 
 /**
  * Height configurations for different body types
- * Heights are in cm, converted to scene units (1 unit = 0.5 cm)
+ * Heights are in cm, converted to scene units (meters)
  */
 export const BODY_TYPE_HEIGHTS = {
-  masculine: 188, // 6'2" = 188 cm = 376 units
-  feminine: 178, // 5'10" = 178 cm = 356 units
-  androgynous: 183, // 6'0" = 183 cm = 366 units (average)
+  masculine: 188, // 6'2" = 188 cm = 1.88 meters
+  feminine: 178, // 5'10" = 178 cm = 1.78 meters
+  androgynous: 183, // 6'0" = 183 cm = 1.83 meters (average)
 } as const;
 
 /**
@@ -174,8 +174,8 @@ export function deriveSceneProportions(
     ankleY: cmToUnits(-m.torsoLength - m.thighLength - m.shinLength),
     footY: cmToUnits(-m.torsoLength - m.inseam),
 
-    // Figure Z position (behind grid, facing audience)
-    figureZ: -80,
+    // Figure Z position (behind grid, facing audience) in meters
+    figureZ: -0.4, // 40cm behind grid
   };
 }
 

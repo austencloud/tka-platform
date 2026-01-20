@@ -14,27 +14,27 @@ import { Vector3, Euler, Quaternion } from "three";
 import { Plane } from "../enums/Plane";
 
 /**
- * Scale: 1 unit = 0.5 cm
+ * Scale: 1 unit = 1 meter (unified meters scale)
  *
  * Grid radius is calculated as: staffLength * HAND_RADIUS_STAFF_RATIO (0.6)
- * For a 34" staff: 34" * 2.54 cm/in * 2 units/cm * 0.6 = ~104 units
+ * For a 34" staff: 34" * 2.54 cm/in * 0.01 m/cm * 0.6 = ~0.52 meters
  *
  * This matches the handPointRadius calculation in user-proportions.ts
  * to ensure props align with grid point markers.
  */
 
 /**
- * Default grid radius in 3D world units.
+ * Default grid radius in meters.
  * This determines the distance from center to hand points.
- * Matches handPointRadius for default 34" staff (86.4cm * 2 * 0.6 ≈ 104)
+ * Matches handPointRadius for default 34" staff (86.4cm * 0.01 * 0.6 ≈ 0.52m)
  *
  * TODO: This should eventually be passed dynamically based on user proportions
  * rather than hardcoded. For now, it matches the default staff size.
  */
-export const GRID_RADIUS_3D = 104;
+export const GRID_RADIUS_3D = 0.52;
 
 /**
- * Conversion factor from 2D canvas (950x950) to 3D units
+ * Conversion factor from 2D canvas (950x950) to 3D meters
  * ~143px is the 2D hand point radius in canvas coords
  */
 export const CANVAS_TO_3D_SCALE = GRID_RADIUS_3D / 143;

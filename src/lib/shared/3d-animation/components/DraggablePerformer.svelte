@@ -23,15 +23,16 @@
 
   let { position, isActive, isDragging = false, children }: Props = $props();
 
-  // Ring size for selection indicator
-  const RING_RADIUS = 60;
+  // Ring size for selection indicator (meters)
+  const RING_RADIUS = 0.6; // 60cm radius ring around performer
+  const RING_THICKNESS = 0.05; // 5cm thick ring
 </script>
 
 <!-- Selection ring on ground (visible when active or dragging) -->
 {#if isActive || isDragging}
   <T.Group position.x={position.x} position.z={position.z}>
-    <T.Mesh rotation.x={-Math.PI / 2} position.y={1}>
-      <T.RingGeometry args={[RING_RADIUS - 5, RING_RADIUS + 5, 32]} />
+    <T.Mesh rotation.x={-Math.PI / 2} position.y={0.01}>
+      <T.RingGeometry args={[RING_RADIUS - RING_THICKNESS, RING_RADIUS + RING_THICKNESS, 32]} />
       <T.MeshBasicMaterial
         color={isDragging ? "#4caf50" : "#64b5f6"}
         transparent

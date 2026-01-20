@@ -119,9 +119,9 @@
     />
   </T.Mesh>
 
-  <!-- Hand point circle (inner ring) -->
-  <T.Mesh position={[0, 0, 0.5]}>
-    <T.RingGeometry args={[handPointRadius - 1.5, handPointRadius + 1.5, 64]} />
+  <!-- Hand point circle (inner ring) - 1.5cm thickness -->
+  <T.Mesh position={[0, 0, 0.005]}>
+    <T.RingGeometry args={[handPointRadius - 0.015, handPointRadius + 0.015, 64]} />
     <T.MeshBasicMaterial
       {color}
       opacity={0.5}
@@ -130,9 +130,9 @@
     />
   </T.Mesh>
 
-  <!-- Outer point circle -->
-  <T.Mesh position={[0, 0, 0.3]}>
-    <T.RingGeometry args={[outerPointRadius - 1, outerPointRadius + 1, 64]} />
+  <!-- Outer point circle - 1cm thickness -->
+  <T.Mesh position={[0, 0, 0.003]}>
+    <T.RingGeometry args={[outerPointRadius - 0.01, outerPointRadius + 0.01, 64]} />
     <T.MeshBasicMaterial
       {color}
       opacity={0.25}
@@ -142,7 +142,7 @@
   </T.Mesh>
 
   <!-- Center point (largest, white/gold) -->
-  <T.Mesh position={[0, 0, 1]}>
+  <T.Mesh position={[0, 0, 0.01]}>
     <T.SphereGeometry args={[CENTER_POINT_SIZE, 16, 16]} />
     <T.MeshBasicMaterial color="#f59e0b" />
   </T.Mesh>
@@ -160,7 +160,7 @@
     <Text
       text={locationLabels[location]}
       position={[pos[0] * 1.12, pos[1] * 1.12, pos[2] * 1.12]}
-      fontSize={14}
+      fontSize={0.05}
       color="white"
       anchorX="center"
       anchorY="middle"
@@ -180,7 +180,7 @@
     <Text
       text={locationLabels[location]}
       position={[pos[0] * 1.08, pos[1] * 1.08, pos[2] * 1.08]}
-      fontSize={11}
+      fontSize={0.04}
       color="#9ca3af"
       anchorX="center"
       anchorY="middle"
@@ -193,7 +193,7 @@
   <Text
     text={PLANE_LABELS[plane]}
     position={planeLabelPosition}
-    fontSize={16}
+    fontSize={0.06}
     {color}
     anchorX="center"
     anchorY="middle"

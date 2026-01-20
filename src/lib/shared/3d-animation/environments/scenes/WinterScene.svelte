@@ -29,16 +29,16 @@
   bottomColor={palette.sky.bottomColor}
 />
 
-<!-- Snowy ground - uses dynamic groundY from user proportions -->
-<GroundPlane color={palette.ground} opacity={0.95} size={3000} />
+<!-- Snowy ground - uses dynamic groundY from user proportions (15m radius) -->
+<GroundPlane color={palette.ground} opacity={0.95} size={15} />
 
-<!-- Falling snow -->
+<!-- Falling snow (area in meters) -->
 <FallingParticles
   type="snow"
   count={150}
-  area={{ width: 800, height: 600, depth: 800 }}
-  speed={20}
+  area={{ width: 4, height: 3, depth: 4 }}
+  speed={0.1}
   colors={palette.snow}
-  sizeRange={[4, 12]}
+  sizeRange={[0.02, 0.06]}
   spin={false}
 />

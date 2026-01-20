@@ -43,26 +43,29 @@
   // Get scene for fog
   const { scene } = useThrelte();
 
+  // ========================================
+  // All positions and scales in METERS (1 unit = 1 meter)
+  // ========================================
+
   // Campfire position - to the right and forward of performer
-  // Scaled up significantly to match performer size
-  const campfirePosition = { x: 600, z: -450 };
-  const campfireScale = 500;
+  const campfirePosition = { x: 3.0, z: -2.25 };
+  const campfireScale = 2.5;
 
   // Tent position - behind and to the left of performer
-  const tentPosition = { x: -650, z: 500 };
-  const tentScale = 450;
+  const tentPosition = { x: -3.25, z: 2.5 };
+  const tentScale = 2.25;
 
   // Point light and fire emitter heights above campfire
-  const campfireLightHeight = 150;
+  const campfireLightHeight = 0.75;
 
   // Fire dimensions - fire is centered at position, so we need to raise it by half its height
-  const fireScale = 180;
+  const fireScale = 0.9;
   const fireHeight = 2.0; // Base height before scaling
-  const fireHalfHeight = (fireHeight * fireScale) / 2; // 180 units
+  const fireHalfHeight = (fireHeight * fireScale) / 2; // 0.9 meters
   const fireEmitterHeight = fireHalfHeight; // Position fire so bottom touches ground
 
   // Clearing radius - how far the inner ring of trees is from center
-  const clearingRadius = 2000;
+  const clearingRadius = 10;
 
   // Multiple rings of trees to create depth - a true forest clearing feel
   // Ring 1: Inner edge of clearing (sparse, largest trees)
@@ -70,34 +73,35 @@
   // Ring 3: Far background (densest, smaller trees due to distance)
   // Ring 4: Distant backdrop (very dense, smallest)
 
+  // Tree rings in meters
   const treeRings = [
     {
-      radius: 2000,
+      radius: 10,
       count: 16,
-      scaleBase: 280,
-      scaleVariation: 80,
-      radiusJitter: 200,
+      scaleBase: 1.4,
+      scaleVariation: 0.4,
+      radiusJitter: 1.0,
     },
     {
-      radius: 2600,
+      radius: 13,
       count: 24,
-      scaleBase: 250,
-      scaleVariation: 70,
-      radiusJitter: 300,
+      scaleBase: 1.25,
+      scaleVariation: 0.35,
+      radiusJitter: 1.5,
     },
     {
-      radius: 3300,
+      radius: 16.5,
       count: 32,
-      scaleBase: 220,
-      scaleVariation: 60,
-      radiusJitter: 350,
+      scaleBase: 1.1,
+      scaleVariation: 0.3,
+      radiusJitter: 1.75,
     },
     {
-      radius: 4100,
+      radius: 20.5,
       count: 40,
-      scaleBase: 180,
-      scaleVariation: 50,
-      radiusJitter: 400,
+      scaleBase: 0.9,
+      scaleVariation: 0.25,
+      radiusJitter: 2.0,
     },
   ];
 
@@ -128,49 +132,49 @@
       })
   );
 
-  // Rock placements - scattered around the clearing edge
+  // Rock placements - scattered around the clearing edge (meters)
   const rockPlacements: [number, number, number, number][] = Array.from(
     { length: 10 },
     (_, i) => {
       const angle = (i / 10) * Math.PI * 2 + 0.2; // Offset from trees
-      const radius = clearingRadius - 400 + Math.sin(i * 4.1) * 200;
+      const radius = clearingRadius - 2.0 + Math.sin(i * 4.1) * 1.0;
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
-      const scale = 60 + Math.abs(Math.sin(i * 3.2) * 50);
+      const scale = 0.3 + Math.abs(Math.sin(i * 3.2) * 0.25);
       const rotation = Math.sin(i * 2.8) * Math.PI;
       return [x, z, scale, rotation] as [number, number, number, number];
     }
   );
 
-  // Bush placements - scattered around clearing, more near trees
+  // Bush placements - scattered around clearing, more near trees (meters)
   const bushPlacements: [number, number, number, number][] = Array.from(
     { length: 16 },
     (_, i) => {
       const angle = (i / 16) * Math.PI * 2 + 0.15;
-      const radius = clearingRadius - 300 + Math.sin(i * 5.3) * 350;
+      const radius = clearingRadius - 1.5 + Math.sin(i * 5.3) * 1.75;
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
-      const scale = 80 + Math.abs(Math.sin(i * 2.1) * 50);
+      const scale = 0.4 + Math.abs(Math.sin(i * 2.1) * 0.25);
       const rotation = Math.sin(i * 3.4) * Math.PI;
       return [x, z, scale, rotation] as [number, number, number, number];
     }
   );
 
-  // Fallen log placements - scattered naturally on forest floor
+  // Fallen log placements - scattered naturally on forest floor (meters)
   const fallenLogPlacements: [number, number, number, number, boolean][] = [
     // [x, z, scale, rotation, isLarge]
     // Near the clearing edge
-    [1400, 800, 400, Math.PI * 0.3, true],
-    [-1200, 1100, 350, Math.PI * 0.7, true],
-    [900, -1300, 300, Math.PI * 1.2, false],
-    [-1500, -600, 280, Math.PI * 0.1, false],
+    [7.0, 4.0, 2.0, Math.PI * 0.3, true],
+    [-6.0, 5.5, 1.75, Math.PI * 0.7, true],
+    [4.5, -6.5, 1.5, Math.PI * 1.2, false],
+    [-7.5, -3.0, 1.4, Math.PI * 0.1, false],
     // Mid-distance
-    [2200, 400, 320, Math.PI * 0.5, true],
-    [-2000, -1200, 300, Math.PI * 1.4, false],
-    [1800, -1800, 350, Math.PI * 0.9, true],
+    [11.0, 2.0, 1.6, Math.PI * 0.5, true],
+    [-10.0, -6.0, 1.5, Math.PI * 1.4, false],
+    [9.0, -9.0, 1.75, Math.PI * 0.9, true],
     // Between tree rings
-    [2800, 1500, 280, Math.PI * 0.2, false],
-    [-2600, 1800, 300, Math.PI * 1.1, true],
+    [14.0, 7.5, 1.4, Math.PI * 0.2, false],
+    [-13.0, 9.0, 1.5, Math.PI * 1.1, true],
   ];
 
   // Ground level - derived from user proportions
@@ -205,8 +209,8 @@
       leaves: ["#d97706", "#dc2626", "#ea580c", "#92400e"],
       // No fireflies in autumn
       fireflies: null as string[] | null,
-      // Warm amber fog for autumn morning mist
-      fog: { color: "#1a1008", density: 0.00018 },
+      // Warm amber fog for autumn morning mist (density in meters)
+      fog: { color: "#1a1008", density: 0.036 },
       // Smoke colors (gray with warm tint)
       smoke: ["#443322", "#332211", "#221100"],
     },
@@ -223,8 +227,8 @@
       leaves: ["#1a3a1a", "#0d2a15", "#153020", "#0f2518"],
       // Single warm yellow-green like real fireflies
       fireflies: ["#d4e157"],
-      // Cool blue-green fog for mysterious night atmosphere
-      fog: { color: "#0a1210", density: 0.00022 },
+      // Cool blue-green fog for mysterious night atmosphere (density in meters)
+      fog: { color: "#0a1210", density: 0.044 },
       // Night smoke (darker, cooler)
       smoke: ["#222222", "#1a1a1a", "#111111"],
     },
@@ -251,35 +255,35 @@
 />
 
 <!-- Ground plane with PBR forest floor texture -->
-<!-- Large size to cover the entire forest (all tree rings and beyond) -->
+<!-- Large size to cover the entire forest (all tree rings and beyond) - 50 meters -->
 <TexturedGroundPlane
   color={palette.ground}
-  size={10000}
+  size={50}
   diffuseMap={forestFloorTextures.diffuse}
   textureRepeat={40}
 />
 
-<!-- Falling leaves - covers the entire forest -->
+<!-- Falling leaves - covers the entire forest (area in meters) -->
 <!-- In firefly mode, leaves are very subtle (dark colors) -->
 <FallingParticles
   type="leaves"
   count={variant === "firefly" ? 150 : 450}
-  area={{ width: 8000, height: 1000, depth: 8000 }}
-  speed={variant === "firefly" ? 15 : 25}
+  area={{ width: 40, height: 5, depth: 40 }}
+  speed={variant === "firefly" ? 0.075 : 0.125}
   colors={palette.leaves}
-  sizeRange={variant === "firefly" ? [15, 35] : [25, 55]}
+  sizeRange={variant === "firefly" ? [0.075, 0.175] : [0.125, 0.275]}
   spin={true}
 />
 
-<!-- Fireflies - only in firefly variant -->
+<!-- Fireflies - only in firefly variant (area in meters) -->
 {#if palette.fireflies}
   <FallingParticles
     type="fireflies"
     count={60}
-    area={{ width: 1600, height: 400, depth: 1600 }}
-    speed={1}
+    area={{ width: 8, height: 2, depth: 8 }}
+    speed={0.005}
     colors={palette.fireflies}
-    sizeRange={[40, 80]}
+    sizeRange={[0.2, 0.4]}
     spin={false}
   />
 {/if}
@@ -369,17 +373,17 @@
     position.z={campfirePosition.z}
     color="#ff6622"
     intensity={variant === "firefly" ? 50 : 35}
-    distance={4000}
+    distance={20}
     decay={1.2}
   />
   <!-- Secondary fill light (lower, wider spread for ground illumination) -->
   <T.PointLight
     position.x={campfirePosition.x}
-    position.y={groundY + 50}
+    position.y={groundY + 0.25}
     position.z={campfirePosition.z}
     color="#ff4400"
     intensity={variant === "firefly" ? 30 : 20}
-    distance={3000}
+    distance={15}
     decay={1.5}
   />
   <!-- Subtle ambient hemisphere light for overall warmth -->
@@ -388,19 +392,19 @@
     groundColor="#221100"
     intensity={variant === "firefly" ? 0.6 : 0.4}
   />
-  <!-- Campfire smoke - gentle plume rising from fire -->
+  <!-- Campfire smoke - gentle plume rising from fire (meters) -->
   <T.Group
     position.x={campfirePosition.x}
-    position.y={groundY + fireEmitterHeight + 100}
+    position.y={groundY + fireEmitterHeight + 0.5}
     position.z={campfirePosition.z}
   >
     <FallingParticles
       type="smoke"
       count={40}
-      area={{ width: 200, height: 800, depth: 200 }}
-      speed={8}
+      area={{ width: 1, height: 4, depth: 1 }}
+      speed={0.04}
       colors={palette.smoke}
-      sizeRange={[30, 80]}
+      sizeRange={[0.15, 0.4]}
       spin={false}
     />
   </T.Group>

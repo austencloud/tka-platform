@@ -20,7 +20,7 @@
 
   import { Canvas } from "@threlte/core";
   import { T } from "@threlte/core";
-  import { OrbitControls } from "@threlte/extras";
+  import { OrbitControls, layers } from "@threlte/extras";
   import { EffectComposer } from "threlte-postprocessing";
   import * as THREE from "three";
   import Grid3D from "./Grid3D.svelte";
@@ -34,6 +34,10 @@
   import { WALL_OFFSET } from "../utils/performer-positions";
   import { CameraMode } from "$lib/shared/3d-core/camera/types";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
+  import { getCameraLayers } from "$lib/shared/3d-core/layers/layer-constants";
+
+  // Enable Threlte layers plugin for layer inheritance through component tree
+  layers();
 
   /** Avatar position for per-avatar grids */
   interface AvatarGridPosition {
@@ -198,6 +202,28 @@
   // Reference to camera for first-person mode
   let cameraRef = $state<THREE.PerspectiveCamera | undefined>(undefined);
 
+  // Reference to orbit camera for layer configuration
+  let orbitCameraRef = $state<THREE.PerspectiveCamera | undefined>(undefined);
+
+  // Determine if we're in first-person mode
+  const isFirstPerson = $derived(cameraMode === CameraMode.FIRST_PERSON);
+
+  // Camera layers based on mode (first-person hides player body, shows viewmodel)
+  const cameraLayerConfig = $derived(getCameraLayers(isFirstPerson));
+
+  // Apply camera layers when camera or mode changes
+  // Camera.layers determines which object layers the camera can see
+  $effect(() => {
+    const camera = isFirstPerson ? cameraRef : orbitCameraRef;
+    if (!camera) return;
+
+    // Reset layers and enable only the ones we want
+    camera.layers.disableAll();
+    for (const layer of cameraLayerConfig) {
+      camera.layers.enable(layer);
+    }
+  });
+
   // Handle orbit control changes
   function handleCameraChange() {
     if (!onCameraChange || !controlsRef) return;
@@ -280,6 +306,7 @@
       {:else}
         <!-- Existing orbit controls (third-person) -->
         <T.PerspectiveCamera
+          bind:ref={orbitCameraRef}
           makeDefault
           position={cameraPosition}
           fov={65}

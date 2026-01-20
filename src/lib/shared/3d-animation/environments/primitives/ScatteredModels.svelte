@@ -38,13 +38,14 @@
     seed?: number;
   }
 
+  // Default values in meters (1 unit = 1 meter)
   let {
     src,
     count = 10,
-    area = { width: 400, depth: 400 },
+    area = { width: 2, depth: 2 }, // 2m x 2m area
     overrideGroundY,
-    scaleRange = [8, 15],
-    minDistanceFromCenter = 80,
+    scaleRange = [0.04, 0.075], // ~4-7.5cm scale
+    minDistanceFromCenter = 0.4, // 40cm from center
     seed = 12345,
   }: Props = $props();
 

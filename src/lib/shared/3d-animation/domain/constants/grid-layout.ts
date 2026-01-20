@@ -1,7 +1,7 @@
 /**
  * 3D Grid Layout Constants
  *
- * Scale: 1 unit = 0.5 cm
+ * Scale: 1 unit = 1 meter
  *
  * Defines the radii for center, hand, and outer points,
  * and which locations are hand vs layer2 in each mode.
@@ -21,10 +21,10 @@ export const HAND_POINT_RADIUS = DEFAULT_SCENE_DIMENSIONS.handPointRadius;
 // Default: hand radius + half of 34" staff
 export const OUTER_POINT_RADIUS = DEFAULT_SCENE_DIMENSIONS.outerPointRadius;
 
-// Point sizes - scaled proportionally for new grid size
-export const CENTER_POINT_SIZE = 8;
-export const HAND_POINT_SIZE = 5;
-export const OUTER_POINT_SIZE = 16;
+// Point sizes in meters (visual indicators on the grid)
+export const CENTER_POINT_SIZE = 0.04;  // 4cm - largest, at origin
+export const HAND_POINT_SIZE = 0.025;   // 2.5cm - medium, at hand radius
+export const OUTER_POINT_SIZE = 0.018;  // 1.8cm - smallest, at outer radius
 
 /**
  * Grid mode - determines which locations are hand points vs layer2 points

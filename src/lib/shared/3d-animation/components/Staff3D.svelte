@@ -15,6 +15,10 @@
   import { Quaternion, Euler } from "three";
   import type { PropState3D } from "../domain/models/PropState3D";
   import { userProportionsState } from "../state/user-proportions-state.svelte";
+  import {
+    LAYER_WORLD,
+    LAYER_PLAYER_BODY,
+  } from "$lib/shared/3d-core/layers/layer-constants";
 
   interface Props {
     /** Prop state with position and rotation */
@@ -33,6 +37,8 @@
     facingAngle?: number;
     /** Forward offset from avatar to grid center (body-local Z direction) */
     gridOffset?: number;
+    /** Whether this staff belongs to the active player (hidden in first-person) */
+    isActivePlayer?: boolean;
   }
 
   let {
@@ -44,7 +50,13 @@
     avatarPosition = { x: 0, y: 0, z: 0 }, // Avatar's world position (rotation pivot)
     facingAngle = 0,
     gridOffset = 0,
+    isActivePlayer = false,
   }: Props = $props();
+
+  // Layer for first-person viewmodel system
+  // Active player's staffs go on LAYER_PLAYER_BODY (hidden in first-person)
+  // Other players' staffs stay on LAYER_WORLD (always visible)
+  const staffLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 
   // Use user proportions as defaults if not explicitly provided
   const effectiveLength = $derived(length ?? userProportionsState.staffLength);
@@ -124,7 +136,7 @@
 </script>
 
 {#if visible}
-  <T.Group {position} {rotation}>
+  <T.Group {position} {rotation} layers={staffLayer}>
     <!-- Staff CENTER (grip) is at the hand/grid point -->
     <!-- Main staff body - cylinder along Y axis -->
     <T.Mesh>
@@ -191,8 +203,8 @@
   </T.Group>
 
   <!-- Trail indicator (small sphere at prop position for path visualization) -->
-  <T.Mesh {position}>
-    <T.SphereGeometry args={[2, 8, 8]} />
+  <T.Mesh {position} layers={staffLayer}>
+    <T.SphereGeometry args={[0.015, 8, 8]} />
     <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
   </T.Mesh>
 {/if}

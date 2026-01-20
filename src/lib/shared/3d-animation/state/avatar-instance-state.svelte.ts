@@ -16,27 +16,14 @@ import type {
 } from "../services/contracts/ISequenceConverter";
 import type { AvatarId } from "../config/avatar-definitions";
 import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
+import { SCALE } from "$lib/shared/3d-core/scale/scale-constants";
 
 // ============================================
-// Locomotion Constants
+// Position Constants (all in meters)
 // ============================================
 
 /** Default Z position for avatars - same as grid plane so hands are at prop positions */
 const FIGURE_Z = 0;
-
-/** Movement speed in scene units per second */
-const MOVE_SPEED = 150;
-
-/** Rotation speed for smooth turning */
-const ROTATION_SPEED = 8;
-
-/** Scene bounds to keep avatars within visible area */
-const SCENE_BOUNDS = {
-  minX: -400,
-  maxX: 400,
-  minZ: -400,
-  maxZ: 200,
-};
 
 /**
  * Check if a sequence is seamlessly loopable (ends where it starts).
@@ -296,65 +283,24 @@ export function createAvatarInstanceState(
 
   /**
    * Set movement input from WASD keys.
+   * Used by UnifiedCameraController to update animation state.
    * @param input.x - Strafe: -1 (A/left) to 1 (D/right)
    * @param input.z - Forward/back: -1 (S/back) to 1 (W/forward)
    */
   function setMoveInput(input: { x: number; z: number }) {
     moveInput = input;
     isMoving = input.x !== 0 || input.z !== 0;
-    // Sequence continues playing while moving - hands follow props via IK
   }
 
   /**
-   * Update movement each frame.
-   * Movement direction is relative to the camera angle.
-   * Avatar faces where the camera looks (standard 3rd person controls).
-   *
-   * @param delta - Time since last frame in seconds
-   * @param cameraAngle - Camera's Y rotation in radians (for camera-relative movement)
+   * @deprecated Movement is now handled by UnifiedCameraController.
+   * This method exists only for interface compatibility.
+   * Position updates happen directly via avatarState.position.x/z mutation.
    */
-  function updateMovement(delta: number, cameraAngle: number) {
-    if (!isMoving) return;
-
-    // Transform input by camera rotation for camera-relative movement
-    // Standard Y-axis rotation matrix to convert local input to world space
-    // Reference: https://sbcode.net/threejs/follow-cam/
-    const sin = Math.sin(cameraAngle);
-    const cos = Math.cos(cameraAngle);
-
-    // World-space direction (rotated by camera yaw)
-    // Standard camera-relative movement transformation:
-    // Input X (strafe) and Z (forward) are rotated by camera yaw
-    const worldX = moveInput.x * cos + moveInput.z * sin;
-    const worldZ = -moveInput.x * sin + moveInput.z * cos;
-
-    // Normalize for consistent speed when moving diagonally
-    const length = Math.sqrt(worldX * worldX + worldZ * worldZ);
-    const nx = length > 0 ? worldX / length : 0;
-    const nz = length > 0 ? worldZ / length : 0;
-
-    // Avatar faces camera direction (where the camera looks)
-    // This is standard 3rd person behavior - avatar always faces forward relative to camera
-    targetFacingAngle = cameraAngle;
-
-    // Smooth rotation toward target angle
-    let angleDiff = targetFacingAngle - facingAngle;
-    // Normalize to -PI to PI for shortest rotation
-    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-    facingAngle += angleDiff * Math.min(1, ROTATION_SPEED * delta);
-
-    // Apply movement
-    const moveAmount = MOVE_SPEED * delta;
-    let newX = position.x + nx * moveAmount;
-    let newZ = position.z + nz * moveAmount;
-
-    // Clamp to scene bounds
-    newX = Math.max(SCENE_BOUNDS.minX, Math.min(SCENE_BOUNDS.maxX, newX));
-    newZ = Math.max(SCENE_BOUNDS.minZ, Math.min(SCENE_BOUNDS.maxZ, newZ));
-
-    position.x = newX;
-    position.z = newZ;
+  function updateMovement(_delta: number, _cameraAngle: number) {
+    // NO-OP: Movement calculation moved to UnifiedCameraController
+    // for unified behavior across Stage and Infinite Worlds.
+    // Position is now mutated directly by the controller.
   }
 
   /**
@@ -366,7 +312,8 @@ export function createAvatarInstanceState(
   }
 
   /**
-   * Set facing angle (for external mutation, e.g., from formation manager)
+   * Set facing angle directly.
+   * Called by UnifiedCameraController to sync avatar rotation with camera.
    */
   function setFacingAngle(value: number) {
     facingAngle = value;

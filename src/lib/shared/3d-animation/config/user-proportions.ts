@@ -110,8 +110,8 @@ export function calculateSceneDimensions(
   const outerPointRadius = handPointRadius + staffLength / 2;
 
   // Grid size is determined ONLY by staff length
-  // Full staff length + padding for visual comfort
-  const gridSize = staffLength + 50;
+  // Full staff length + padding for visual comfort (25cm = 0.25m)
+  const gridSize = staffLength + 0.25;
 
   // Arm reach for reference/display (kept for backward compatibility)
   const armReachCm = staffLengthCm * HAND_RADIUS_STAFF_RATIO;

@@ -141,12 +141,12 @@ Access URL: `/models/tka-avatar.glb`
 
 ### "Avatar too big/small"
 
-- Use `skeletonService.setHeight(380)` to scale
-- 380 units = ~190cm (our scale: 1 unit = 0.5cm)
+- Use `skeletonService.setHeight(1.9)` to scale
+- 1.9 meters = ~190cm (our scale: 1 unit = 1 meter)
 
 ### "Arms not reaching targets"
 
-- Verify hand point radius (100 units = 50cm)
+- Verify hand point radius (0.5 meters = 50cm)
 - Check IK solver convergence threshold
 
 ## Future Enhancements

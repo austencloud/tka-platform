@@ -10,11 +10,12 @@ export interface PerformerPosition {
   z: number;
 }
 
-const GRID_SPACING = 400; // Units between performers
+// All values in meters (1 unit = 1 meter)
+const GRID_SPACING = 2.0; // 2 meters between performers
 
 // Offset to position avatar behind the wall plane (facing it)
-// 6 inches ≈ 15 cm = 30 units (CM_TO_UNITS = 2)
-export const WALL_OFFSET = -60;
+// ~30cm behind the grid plane
+export const WALL_OFFSET = -0.3;
 
 /**
  * Default 2x2 grid positions (all facing same direction)
