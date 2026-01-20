@@ -35,6 +35,7 @@
   import { CameraMode } from "$lib/shared/3d-core/camera/types";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import { getCameraLayers } from "$lib/shared/3d-core/layers/layer-constants";
+  import { SCALE } from "$lib/shared/3d-core/scale/scale-constants";
 
   // Enable Threlte layers plugin for layer inheritance through component tree
   layers();
@@ -162,13 +163,13 @@
   const mainLightColor = $derived(isNightEnvironment ? "#6688cc" : "#ffffff");
   const fillLightColor = $derived(isNightEnvironment ? "#334477" : "#ffffff");
 
-  // Camera position based on preset
-  // Grid radius is ~300, so camera at ~800 gives good overview with padding
+  // Camera position based on preset (in meters)
+  // Grid ~1.1m, performers ~1.7m tall - camera at ~4m gives good overview
   const cameraPositions = {
-    front: [0, 0, 800] as [number, number, number], // Looking at Wall plane
-    top: [0, 800, 0] as [number, number, number], // Looking at Floor plane
-    side: [800, 0, 0] as [number, number, number], // Looking at Wheel plane
-    perspective: [550, 450, 550] as [number, number, number], // Angled view
+    front: [0, 0, 4] as [number, number, number], // Looking at Wall plane
+    top: [0, 4, 0] as [number, number, number], // Looking at Floor plane
+    side: [4, 0, 0] as [number, number, number], // Looking at Wheel plane
+    perspective: [2.75, 2.25, 2.75] as [number, number, number], // Angled view
   };
 
   // Use custom position if provided, otherwise use preset

@@ -1282,6 +1282,135 @@
     color: white;
   }
 
+  /* Performer selector */
+  .performer-selector {
+    margin-bottom: 16px;
+  }
+
+  .performer-selector .label {
+    display: block;
+    font-size: 12px;
+    color: var(--theme-text-dim);
+    margin-bottom: 8px;
+  }
+
+  .current-performer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 6px;
+  }
+
+  .current-performer span {
+    flex: 1;
+    font-size: 14px;
+  }
+
+  .current-performer .remove-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .current-performer .remove-btn:hover {
+    background: #ef4444;
+    color: white;
+  }
+
+  .assign-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px dashed var(--theme-stroke);
+    background: transparent;
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+
+  .assign-btn:hover {
+    border-color: var(--theme-accent);
+    color: var(--theme-accent);
+  }
+
+  .user-search-popup {
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+  }
+
+  .user-search-popup input {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--theme-stroke);
+    background: var(--theme-panel-bg);
+    color: var(--theme-text);
+    margin-bottom: 8px;
+  }
+
+  .user-results {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+
+  .user-result {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--theme-text);
+    cursor: pointer;
+    text-align: left;
+    font-size: 14px;
+    transition: background 0.15s;
+  }
+
+  .user-result:hover {
+    background: var(--theme-accent);
+  }
+
+  .search-loading,
+  .no-results {
+    padding: 8px;
+    text-align: center;
+    color: var(--theme-text-dim);
+    font-size: 13px;
+  }
+
+  .cancel-search {
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--theme-stroke);
+    background: transparent;
+    color: var(--theme-text-dim);
+    cursor: pointer;
+  }
+
+  .cancel-search:hover {
+    background: var(--theme-card-bg);
+  }
+
   .feature-btn {
     display: flex;
     align-items: center;

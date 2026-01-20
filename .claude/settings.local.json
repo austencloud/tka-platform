@@ -290,15 +290,46 @@
       "mcp__tka-pictograph__set_preferences",
       "WebFetch(domain:sdk.vercel.ai)",
       "Bash(cmd.exe /c \"cd /d F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE && npm install @ai-sdk/openai 2>&1\")",
-      "WebFetch(domain:docs.nvidia.com)"
+      "WebFetch(domain:docs.nvidia.com)",
+      "mcp__tka-pictograph__reset_preferences",
+      "Bash(COREPACK_ENABLE_STRICT=0 node -e \"const {execSync} = require\\(''child_process''\\); try { execSync\\(''pnpm install'', {stdio: ''inherit'', env: {...process.env, COREPACK_ENABLE_STRICT: ''0''}}\\); } catch\\(e\\) { console.error\\(e.message\\); }\")",
+      "Bash(npm.cmd:*)",
+      "Bash(COREPACK_ENABLE_STRICT=0 node:*)",
+      "Bash(npx.cmd npm@latest install:*)",
+      "WebFetch(domain:status.anthropic.com)",
+      "WebFetch(domain:status.claude.com)",
+      "WebFetch(domain:cryingcrocgames.itch.io)",
+      "WebFetch(domain:discourse.threejs.org)",
+      "WebFetch(domain:threlte.xyz)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(start \"https://github.com/jhlee0409/claude-code-history-viewer/releases/download/v1.0.0-beta.4/Claude.Code.History.Viewer_0.4.0_x64-setup.exe\")",
+      "Bash(winget install:*)",
+      "Bash(\"$HOME/.cargo/bin/rustup\" update stable)",
+      "Bash(\"$HOME/.cargo/bin/rustc\" --version)",
+      "Bash(\"$HOME/.cargo/bin/cargo\" --version)",
+      "Bash(PATH=\"$HOME/.cargo/bin:$PATH\" pnpm tauri dev:*)",
+      "Bash(PATH=\"$HOME/.cargo/bin:$PATH\" pnpm exec tauri dev:*)",
+      "Bash(\"$HOME/.cargo/bin/cargo\" tauri dev)",
+      "Bash(\"C:\\\\Users\\\\Austen\\\\.cargo\\\\bin\\\\cargo.exe\" tauri dev)",
+      "Bash(\"C:\\\\Users\\\\Austen\\\\.cargo\\\\bin\\\\cargo.exe\" install tauri-cli)",
+      "Bash(\"C:\\\\Users\\\\Austen\\\\.cargo\\\\bin\\\\rustup.exe\" install 1.85.0)",
+      "Bash(\"C:\\\\Users\\\\Austen\\\\.cargo\\\\bin\\\\rustup.exe\" set profile minimal)",
+      "WebFetch(domain:www.lakera.ai)",
+      "Bash(start \"https://github.com/jhlee0409/claude-code-history-viewer/releases/tag/v1.0.0-beta.4\")",
+      "WebFetch(domain:www.neuralbuddies.com)",
+      "Bash(start \"\" \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\test-beta-hands.png\")",
+      "Bash(start \"\" \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\test-hand-beta-result.png\")",
+      "WebFetch(domain:dustinpfister.github.io)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "playwright",
     "fetch",
     "memory",
     "time",
     "filesystem",
-    "tka-pictograph"
+    "tka-pictograph",
+    "tka-domain"
   ]
 }

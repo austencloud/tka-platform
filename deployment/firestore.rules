@@ -54,6 +54,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Video categories configuration - readable by authenticated users, writable by admins
+    match /config/videoCategories {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // Feature flag audit log - append-only for admins
     match /audit/featureFlags/entries/{entryId} {
       allow read: if isAdmin();
