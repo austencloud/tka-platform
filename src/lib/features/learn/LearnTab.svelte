@@ -19,7 +19,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
   import ConceptDetailView from "./components/ConceptDetailView.svelte";
   import CodexTab from "./codex/components/CodexTab.svelte";
   import QuizTab from "./quiz/components/QuizTab.svelte";
-  import TIKATab from "$lib/features/tika/TIKAModule.svelte";
+  import TikaTab from "$lib/features/tika/TikaModule.svelte";
   import type { LearnConcept } from "./domain/types";
   import { getConceptById } from "./domain/concepts";
   import {
@@ -209,7 +209,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
         {:else if isModeActive("codex")}
           <CodexTab />
         {:else if isModeActive("tika")}
-          <TIKATab />
+          <TikaTab />
         {/if}
       </div>
     {/key}

@@ -18,6 +18,7 @@ import {
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../../../auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import type { AppSettings } from "../../domain/AppSettings";
 import type { ISettingsPersister } from "../contracts/ISettingsPersister";
 
@@ -82,13 +83,15 @@ export class FirebaseSettingsPersister implements ISettingsPersister {
     }
 
     try {
-      await setDoc(
-        docRef,
-        {
-          ...settings,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
+      await trackWrite(() =>
+        setDoc(
+          docRef,
+          {
+            ...settings,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        )
       );
     } catch (error) {
       console.error(
@@ -111,9 +114,11 @@ export class FirebaseSettingsPersister implements ISettingsPersister {
 
     try {
       // Set to empty object with timestamp to preserve document
-      await setDoc(docRef, {
-        clearedAt: serverTimestamp(),
-      });
+      await trackWrite(() =>
+        setDoc(docRef, {
+          clearedAt: serverTimestamp(),
+        })
+      );
     } catch (error) {
       console.error(
         "❌ [FirebaseSettingsPersister] Failed to clear settings:",

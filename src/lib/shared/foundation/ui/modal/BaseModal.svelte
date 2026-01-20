@@ -274,10 +274,10 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
+  }
 
-    /* Custom scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  .modal-body {
+    @apply themed-scrollbar;
   }
 
   /* Fixed-size modals: body expands to fill space */
@@ -291,23 +291,6 @@
   /* Fit-size modals: body sizes to content */
   :global(dialog[data-size="fit"]) .modal-body {
     flex: 0 0 auto;
-  }
-
-  .modal-body::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .modal-body::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  .modal-body::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 3px;
-  }
-
-  .modal-body::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
   }
 
   /* Footer slot */

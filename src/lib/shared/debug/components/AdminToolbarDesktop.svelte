@@ -515,21 +515,10 @@
     height: 40px;
     overflow-x: auto;
     overflow-y: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
-  .quick-access::-webkit-scrollbar {
-    height: 4px;
-  }
-
-  .quick-access::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  .quick-access::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 2px;
+  .quick-access {
+    @apply themed-scrollbar;
   }
 
   .quick-access-label {

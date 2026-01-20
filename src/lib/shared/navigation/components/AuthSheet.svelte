@@ -76,7 +76,7 @@
     <AuthHeader mode={authMode} onClose={handleClose} />
 
     <!-- Content -->
-    <div class="auth-sheet__content">
+    <div class="auth-sheet__content themed-scrollbar">
       <!-- Social Auth Buttons - Compact side-by-side layout -->
       <SocialAuthCompact mode={authMode} onFacebookAuth={handleFacebookAuth} />
 
@@ -143,27 +143,6 @@
     /* Smooth scrolling */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-
-    /* Hide scrollbar but keep functionality */
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
-
-  .auth-sheet__content::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .auth-sheet__content::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  .auth-sheet__content::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 3px;
-  }
-
-  .auth-sheet__content::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
   }
 
   .auth-sheet__divider {

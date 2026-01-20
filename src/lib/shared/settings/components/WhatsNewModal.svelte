@@ -131,7 +131,7 @@
       </header>
 
       <!-- Body -->
-      <div class="modal-body">
+      <div class="modal-body themed-scrollbar">
         <!-- Curated Highlights (optional - only shown if explicitly set during release) -->
         {#if highlights.length > 0}
           <div class="highlights-section">
@@ -354,24 +354,6 @@
     gap: 16px;
   }
 
-  /* Modern scrollbar styling - matches system drawer scrollbars */
-  .modal-body::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .modal-body::-webkit-scrollbar-track {
-    background: var(--scrollbar-track, transparent);
-  }
-
-  .modal-body::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 4px;
-    transition: background var(--duration-normal);
-  }
-
-  .modal-body::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
-  }
 
   /* Highlights Section */
   .highlights-section {

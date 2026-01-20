@@ -111,7 +111,7 @@
   class="admin-two-panel-layout {className}"
   style="--list-width: {listWidth}; --gap: {gap}"
 >
-  <div class="list-panel">{@render list()}</div>
+  <div class="list-panel themed-scrollbar">{@render list()}</div>
 </div>
 
 <Drawer
@@ -144,24 +144,6 @@
     min-width: 0;
     overflow-y: auto;
     overflow-x: hidden;
-  }
-
-  /* Scrollbar styling */
-  .list-panel::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .list-panel::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  .list-panel::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 3px;
-  }
-
-  .list-panel::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
   }
 
   /* Drawer customization - Side drawer (desktop sidebar or landscape mobile) */

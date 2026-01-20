@@ -121,7 +121,7 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   // inbox module retired - messages/notifications accessible via Dashboard widget drawer
   // Unreleased modules
   learn: false,
-  TIKA: false, // TIKA AI tutor (admin-only for now)
+  tika: false, // Tika AI tutor (admin-only for now)
   compose: false,
   train: false,
   "ml-training": false,
@@ -136,4 +136,5 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   "poi-lab": false, // Poi Lab internal tool (poi physics constraints)
   "background-builder": false, // Background builder internal tool
   "infinite-worlds": false, // Infinite worlds procedural generation (admin-only)
+  "landing-preview": false, // Landing page preview/iteration (admin-only)
 };

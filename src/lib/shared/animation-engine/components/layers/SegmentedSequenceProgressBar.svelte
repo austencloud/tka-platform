@@ -380,7 +380,7 @@ Design variants supported:
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
-  .dark-mode [data-variant="raised"] .segments-track {
+  .dark-mode[data-variant="raised"] .segments-track {
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 
@@ -388,7 +388,7 @@ Design variants supported:
     border-right: 1px solid rgba(0, 0, 0, 0.2);
   }
 
-  .dark-mode [data-variant="raised"] .segment {
+  .dark-mode[data-variant="raised"] .segment {
     border-right: 1px solid rgba(255, 255, 255, 0.2);
   }
 
@@ -396,7 +396,7 @@ Design variants supported:
     box-shadow: 0 1px 3px rgba(59, 130, 246, 0.4);
   }
 
-  .dark-mode [data-variant="raised"] .progress-fill {
+  .dark-mode[data-variant="raised"] .progress-fill {
     box-shadow: 0 1px 3px rgba(0, 184, 184, 0.5);
   }
 
@@ -426,7 +426,7 @@ Design variants supported:
     border-radius: 2px;
   }
 
-  .dark-mode [data-variant="neon"] .segments-track {
+  .dark-mode[data-variant="neon"] .segments-track {
     background: rgba(0, 184, 184, 0.15);
   }
 
@@ -441,7 +441,7 @@ Design variants supported:
     animation: neonPulse 1s ease-in-out infinite;
   }
 
-  .dark-mode [data-variant="neon"] .progress-fill {
+  .dark-mode[data-variant="neon"] .progress-fill {
     box-shadow:
       0 0 8px rgba(0, 184, 184, 0.8),
       0 0 16px rgba(0, 184, 184, 0.5);
@@ -464,7 +464,7 @@ Design variants supported:
     background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
   }
 
-  .dark-mode [data-variant="gradient"] .progress-fill {
+  .dark-mode[data-variant="gradient"] .progress-fill {
     background: linear-gradient(90deg, #00b8b8 0%, #00e5e5 50%, #00b8b8 100%);
   }
 
@@ -482,7 +482,7 @@ Design variants supported:
     position: relative;
   }
 
-  .dark-mode [data-variant="labeled"] .segment {
+  .dark-mode[data-variant="labeled"] .segment {
     border-right: 2px solid rgba(255, 255, 255, 0.5);
   }
 
@@ -513,7 +513,7 @@ Design variants supported:
     position: relative;
   }
 
-  .dark-mode [data-variant="gradient-labeled"] .segment {
+  .dark-mode[data-variant="gradient-labeled"] .segment {
     border-right: 2px solid rgba(255, 255, 255, 0.5);
   }
 
@@ -521,7 +521,7 @@ Design variants supported:
     background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
   }
 
-  .dark-mode [data-variant="gradient-labeled"] .progress-fill {
+  .dark-mode[data-variant="gradient-labeled"] .progress-fill {
     background: linear-gradient(90deg, #00b8b8 0%, #00e5e5 50%, #00b8b8 100%);
   }
 

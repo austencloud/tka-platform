@@ -13,7 +13,7 @@
   import { onMount } from "svelte";
   import {
     getSettings,
-    updateSettings,
+    updateSetting,
   } from "$lib/shared/application/state/app-state.svelte";
   import { areServicesInitialized } from "$lib/shared/application/state/services.svelte";
   import IOSSkeletonLoader from "$lib/shared/settings/components/IOSSkeletonLoader.svelte";
@@ -25,6 +25,7 @@
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
+  import type { AppSettings } from "$lib/shared/settings/domain/AppSettings";
 
   // Navigation state - use global activeTab
   import {
@@ -97,13 +98,13 @@
   );
 
   // Adapter for settings updates with instant save
-  async function handleSettingUpdate(event: { key: string; value: unknown }) {
+  // Uses updateSetting (singular) to avoid race conditions when multiple
+  // updates happen in quick succession (e.g., resetToDefaults calls 7+ updates)
+  function handleSettingUpdate(event: { key: string; value: unknown }) {
     try {
-      // Create updated settings object with the change
-      const updatedSettings = { ...settings, [event.key]: event.value };
-
-      // Apply changes immediately - this will trigger reactivity
-      await updateSettings(updatedSettings);
+      // Use updateSetting to directly update the specific key
+      // This avoids race conditions from spreading stale settings objects
+      updateSetting(event.key as keyof AppSettings, event.value as AppSettings[keyof AppSettings]);
 
       // Show success toast briefly
       showToast = true;

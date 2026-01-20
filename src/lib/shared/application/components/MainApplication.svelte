@@ -478,9 +478,5 @@
     .auth-loading-spinner {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="auth-spin"] {
-      animation: none;
-    }
   }
 </style>

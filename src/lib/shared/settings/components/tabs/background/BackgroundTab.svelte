@@ -139,7 +139,7 @@
   }
 </script>
 
-<div class="background-tab" class:visible={isVisible}>
+<div class="background-tab themed-scrollbar" class:visible={isVisible}>
   {#if backgroundSettings.backgroundEnabled}
     <!-- Main Glass Panel -->
     <section class="settings-panel">
@@ -378,25 +378,6 @@
     }
   }
 
-  /* ========================================
-     SCROLLBAR
-     ======================================== */
-  .background-tab::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .background-tab::-webkit-scrollbar-track {
-    background: var(--scrollbar-track, transparent);
-  }
-
-  .background-tab::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-accent);
-    border-radius: 3px;
-  }
-
-  .background-tab::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-accent-hover);
-  }
 
   /* ========================================
      ACCESSIBILITY

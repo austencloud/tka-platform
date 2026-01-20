@@ -35,11 +35,16 @@
 	// Card element refs for IntersectionObserver
 	let cardRefs = $state<Map<string, HTMLElement>>(new Map());
 
-	// Filtered destinations
+	// Filter to only enabled destinations (enabled defaults to true if not specified)
+	const enabledDestinations = $derived(
+		DESTINATIONS.filter((d) => d.enabled !== false),
+	);
+
+	// Filtered destinations (by category)
 	const filteredDestinations = $derived(
 		selectedCategory
-			? DESTINATIONS.filter((d) => d.category === selectedCategory)
-			: DESTINATIONS,
+			? enabledDestinations.filter((d) => d.category === selectedCategory)
+			: enabledDestinations,
 	);
 
 	function handleDestinationClick(destination: Destination) {

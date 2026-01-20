@@ -175,7 +175,7 @@
   }
 </script>
 
-<div class="keyboard-tab">
+<div class="keyboard-tab themed-scrollbar">
   <!-- Search -->
   <div class="search-section">
     <div class="search-wrapper">
@@ -255,20 +255,6 @@
     padding: 0 12px;
     box-sizing: border-box;
     overflow-y: auto; /* Scroll the entire tab content */
-  }
-
-  /* Subtle scrollbar */
-  .keyboard-tab::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .keyboard-tab::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .keyboard-tab::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 2px;
   }
 
   /* Search section - prominent header */

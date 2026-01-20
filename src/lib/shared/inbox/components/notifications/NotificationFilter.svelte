@@ -104,7 +104,7 @@
     <div class="type-filter" transition:slide={{ duration: 200 }}>
       <!-- Desktop: Scrollable chip row -->
       <div
-        class="chip-scroll desktop-only"
+        class="chip-scroll desktop-only themed-scrollbar"
         role="group"
         aria-label="Filter by notification type"
       >
@@ -357,25 +357,6 @@
     overflow-x: auto;
     overflow-y: hidden;
     padding-bottom: 4px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
-
-  .chip-scroll::-webkit-scrollbar {
-    height: 6px;
-  }
-
-  .chip-scroll::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  .chip-scroll::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 3px;
-  }
-
-  .chip-scroll::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
   }
 
   .type-chip {

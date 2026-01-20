@@ -9,7 +9,9 @@
    * Replaces the old tab-based navigation with a scalable destination system.
    */
 
+  import { onMount } from "svelte";
   import { destinationManager } from "$lib/shared/3d-core/destinations/destination-manager.svelte";
+  import { DESTINATIONS } from "$lib/shared/3d-core/destinations/definitions";
   import DestinationPicker from "./components/DestinationPicker.svelte";
   import DestinationRenderer from "./components/DestinationRenderer.svelte";
 
@@ -17,11 +19,27 @@
   const currentDestinationId = $derived(destinationManager.currentDestinationId);
   const isPickerActive = $derived(destinationManager.isPickerActive());
 
+  // Get enabled destinations
+  const enabledDestinations = $derived(
+    DESTINATIONS.filter((d) => d.enabled !== false)
+  );
+
+  // If only one destination is enabled, skip the picker and go straight to it
+  onMount(() => {
+    if (enabledDestinations.length === 1 && isPickerActive) {
+      destinationManager.navigateTo(enabledDestinations[0].id);
+    }
+  });
+
   function handleDestinationSelect(destinationId: string) {
     destinationManager.navigateTo(destinationId);
   }
 
   function handleReturn() {
+    // If only one destination is enabled, don't return to picker (nowhere else to go)
+    if (enabledDestinations.length === 1) {
+      return;
+    }
     destinationManager.returnToPicker();
   }
 </script>

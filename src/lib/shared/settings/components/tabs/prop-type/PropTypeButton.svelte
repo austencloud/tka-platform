@@ -1,7 +1,5 @@
 <script lang="ts">
   import { PropType } from "../../../../pictograph/prop/domain/enums/PropType";
-  import { MotionColor } from "../../../../pictograph/shared/domain/enums/pictograph-enums";
-  import { getMotionColor } from "../../../../utils/svg-color-utils";
   import { getPropTypeDisplayInfo } from "./PropTypeRegistry";
 
   let {
@@ -27,145 +25,12 @@
   // Reactive display info - recalculates when propType changes
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
 
-  let svgContent = $state("");
-  let viewBox = $state("0 0 100 100");
-  let isLoading = $state(true);
-
-  // Reactive loading based on color prop
-  $effect(() => {
-    // Watch both propType and color
-    propType;
-    color;
-    loadAndTransformSvg();
-  });
-
-  async function loadAndTransformSvg() {
-    isLoading = true;
-    try {
-      const response = await fetch(displayInfo.image);
-      if (!response.ok)
-        throw new Error(`Failed to fetch SVG: ${response.status}`);
-
-      let svgText = await response.text();
-
-      // Apply color transformation BEFORE parsing (transform the raw text)
-      const targetColor = color === "red" ? MotionColor.RED : MotionColor.BLUE;
-      svgText = applyColorToSvg(svgText, targetColor);
-
-      // Now parse the transformed SVG
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(svgText, "image/svg+xml");
-      const svgElement = doc.querySelector("svg");
-
-      if (svgElement) {
-        const viewBoxAttr = svgElement.getAttribute("viewBox");
-        if (viewBoxAttr) {
-          viewBox = viewBoxAttr;
-        }
-
-        // Report dimensions for rotation logic
-        const [, , w, h] = viewBoxAttr?.split(" ").map(Number) || [
-          0, 0, 100, 100,
-        ];
-        onImageLoad?.(propType, w || 100, h || 100);
-
-        // Extract inner content from transformed SVG
-        svgContent = svgElement.innerHTML;
-      }
-
-      isLoading = false;
-    } catch (error) {
-      console.error("Failed to load prop SVG:", error);
-      isLoading = false;
+  // Handle image load to report dimensions for rotation logic
+  function handleImageLoad(e: Event) {
+    const img = e.target as HTMLImageElement;
+    if (img.naturalWidth && img.naturalHeight) {
+      onImageLoad?.(propType, img.naturalWidth, img.naturalHeight);
     }
-  }
-
-  function applyColorToSvg(svgText: string, motionColor: MotionColor): string {
-    // Use "dark" mode for prop type buttons (shown on dark card backgrounds)
-    const targetColor = getMotionColor(motionColor, "dark");
-
-    // Accent colors to preserve
-    const ACCENT_COLORS_TO_PRESERVE = ["#c9ac68"];
-
-    // Replace fill attributes
-    let coloredSvg = svgText.replace(
-      /fill="(#[0-9A-Fa-f]{3,6})"/gi,
-      (match, capturedColor) => {
-        const colorLower = capturedColor.toLowerCase();
-        if (
-          ACCENT_COLORS_TO_PRESERVE.some(
-            (accent) => accent.toLowerCase() === colorLower
-          )
-        ) {
-          return match;
-        }
-        return `fill="${targetColor}"`;
-      }
-    );
-
-    // Replace fill in CSS styles
-    coloredSvg = coloredSvg.replace(
-      /fill:\s*(#[0-9A-Fa-f]{3,6})/gi,
-      (match, capturedColor) => {
-        const colorLower = capturedColor.toLowerCase();
-        if (
-          ACCENT_COLORS_TO_PRESERVE.some(
-            (accent) => accent.toLowerCase() === colorLower
-          )
-        ) {
-          return match;
-        }
-        return `fill:${targetColor}`;
-      }
-    );
-
-    // Replace stroke attributes (important for line-based props)
-    coloredSvg = coloredSvg.replace(
-      /stroke="(#[0-9A-Fa-f]{3,6})"/gi,
-      (match, capturedColor) => {
-        const colorLower = capturedColor.toLowerCase();
-        if (
-          ACCENT_COLORS_TO_PRESERVE.some(
-            (accent) => accent.toLowerCase() === colorLower
-          )
-        ) {
-          return match;
-        }
-        return `stroke="${targetColor}"`;
-      }
-    );
-
-    // Replace stroke in CSS styles
-    coloredSvg = coloredSvg.replace(
-      /stroke:\s*(#[0-9A-Fa-f]{3,6})/gi,
-      (match, capturedColor) => {
-        const colorLower = capturedColor.toLowerCase();
-        if (
-          ACCENT_COLORS_TO_PRESERVE.some(
-            (accent) => accent.toLowerCase() === colorLower
-          )
-        ) {
-          return match;
-        }
-        return `stroke:${targetColor}`;
-      }
-    );
-
-    // Make CSS class names unique for each color
-    const colorSuffix = motionColor.toLowerCase();
-    coloredSvg = coloredSvg.replace(/\.st(\d+)/g, `.st$1-${colorSuffix}`);
-    coloredSvg = coloredSvg.replace(
-      /class="st(\d+)"/g,
-      `class="st$1-${colorSuffix}"`
-    );
-
-    // Remove centerPoint circle
-    coloredSvg = coloredSvg.replace(
-      /<circle[^>]*id="centerPoint"[^>]*\/?>/,
-      ""
-    );
-
-    return coloredSvg;
   }
 
   function handleClick() {
@@ -183,6 +48,7 @@
 <button
   class="prop-button"
   class:selected
+  class:color-red={color === "red"}
   onclick={handleClick}
   onkeydown={handleKeydown}
   aria-label={`Select ${displayInfo.label} prop type`}
@@ -190,18 +56,14 @@
   title={`${displayInfo.label} - Click to select this prop type`}
 >
   <div class="prop-image-container">
-    {#if isLoading}
-      <div class="prop-loading">Loading...</div>
-    {:else}
-      <svg
-        class="prop-image"
-        class:rotated={shouldRotate}
-        {viewBox}
-        preserveAspectRatio="xMidYMid meet"
-      >
-        {@html svgContent}
-      </svg>
-    {/if}
+    <img
+      src={displayInfo.image}
+      alt=""
+      class="prop-image"
+      class:rotated={shouldRotate}
+      onload={handleImageLoad}
+      draggable="false"
+    />
   </div>
   <span class="prop-label">{displayInfo.label}</span>
 
@@ -304,11 +166,6 @@
     position: relative;
   }
 
-  .prop-loading {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-  }
-
   .prop-image {
     width: 100%;
     height: 100%;
@@ -317,6 +174,18 @@
     object-fit: contain;
     opacity: 0.9;
     transition: opacity var(--duration-normal) ease;
+    /* Prevent text selection and dragging */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    pointer-events: none;
+    /* Add drop shadow for visibility */
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  }
+
+  /* Apply red color via hue-rotate filter (same as PresetChip) */
+  .prop-button.color-red .prop-image {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) hue-rotate(125deg) saturate(1.2);
   }
 
   /* Rotate image 90 degrees counterclockwise when aspect ratios don't match */

@@ -439,3 +439,64 @@ export const FEEDBACK_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
 ];
+
+// Landing Page tabs configuration (admin-only, for iterating on public pages)
+// These mirror the actual public routes: /landing, /about, /terms, /privacy, /roots
+export const LANDING_PAGE_TABS: Section[] = [
+  {
+    id: "landing",
+    label: "Landing",
+    icon: '<i class="fas fa-rocket" aria-hidden="true"></i>',
+    description: "Main landing page (/landing)",
+    color: "#f472b6",
+    gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
+  },
+  {
+    id: "videos",
+    label: "Videos",
+    icon: '<i class="fas fa-film" aria-hidden="true"></i>',
+    description: "Video gallery layout prototypes",
+    color: "#6366f1",
+    gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
+  },
+  {
+    id: "curator",
+    label: "Curator",
+    icon: '<i class="fas fa-tags" aria-hidden="true"></i>',
+    description: "Tag and curate Instagram videos",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+  },
+  {
+    id: "about",
+    label: "About",
+    icon: '<i class="fas fa-info-circle" aria-hidden="true"></i>',
+    description: "About TKA page (/about)",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
+  {
+    id: "roots",
+    label: "Roots",
+    icon: '<i class="fas fa-seedling" aria-hidden="true"></i>',
+    description: "Origins and history (/roots)",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+  },
+  {
+    id: "terms",
+    label: "Terms",
+    icon: '<i class="fas fa-file-contract" aria-hidden="true"></i>',
+    description: "Terms of service (/terms)",
+    color: "#64748b",
+    gradient: "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)",
+  },
+  {
+    id: "privacy",
+    label: "Privacy",
+    icon: '<i class="fas fa-shield-alt" aria-hidden="true"></i>',
+    description: "Privacy policy (/privacy)",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
+  },
+];

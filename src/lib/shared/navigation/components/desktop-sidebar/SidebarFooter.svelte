@@ -1,10 +1,11 @@
 <!-- Sidebar Footer Component -->
-<!-- Footer with inbox button and version badge -->
+<!-- Footer with inbox button, network status, and version badge -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { releaseNotesDrawerState } from "../../../settings/state/release-notes-drawer-state.svelte";
   import { inboxState } from "../../../inbox/state/inbox-state.svelte";
+  import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
 
   let { isCollapsed } = $props<{
     isCollapsed: boolean;
@@ -67,6 +68,9 @@
       <span class="button-label">Inbox</span>
     {/if}
   </button>
+
+  <!-- Network Status Indicator (between inbox and version) -->
+  <NetworkStatusIndicator variant="desktop" />
 
   <!-- Version Number (below inbox) -->
   <button

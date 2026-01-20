@@ -75,6 +75,25 @@ export class ArrowLocationCalculator implements IArrowLocationCalculator {
       GridLocation.WEST, // S→NW or NW→S crosses through W
     [this.createLocationPairKey([GridLocation.SOUTH, GridLocation.NORTHEAST])]:
       GridLocation.EAST, // S→NE or NE→S crosses through E
+
+    // MINUS SKEW motion combinations (cardinal ↔ adjacent intercardinal)
+    // Arrow placed at the cardinal position (shorter arc, no crossing point)
+    [this.createLocationPairKey([GridLocation.NORTH, GridLocation.NORTHEAST])]:
+      GridLocation.NORTH, // N→NE or NE→N
+    [this.createLocationPairKey([GridLocation.NORTH, GridLocation.NORTHWEST])]:
+      GridLocation.NORTH, // N→NW or NW→N
+    [this.createLocationPairKey([GridLocation.EAST, GridLocation.NORTHEAST])]:
+      GridLocation.EAST, // E→NE or NE→E
+    [this.createLocationPairKey([GridLocation.EAST, GridLocation.SOUTHEAST])]:
+      GridLocation.EAST, // E→SE or SE→E
+    [this.createLocationPairKey([GridLocation.SOUTH, GridLocation.SOUTHEAST])]:
+      GridLocation.SOUTH, // S→SE or SE→S
+    [this.createLocationPairKey([GridLocation.SOUTH, GridLocation.SOUTHWEST])]:
+      GridLocation.SOUTH, // S→SW or SW→S
+    [this.createLocationPairKey([GridLocation.WEST, GridLocation.SOUTHWEST])]:
+      GridLocation.WEST, // W→SW or SW→W
+    [this.createLocationPairKey([GridLocation.WEST, GridLocation.NORTHWEST])]:
+      GridLocation.WEST, // W→NW or NW→W
   };
 
   constructor(private dashLocationService: DashLocationCalculator) {}

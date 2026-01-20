@@ -29,6 +29,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
 import type { ITagManager } from "../contracts/ITagManager";
 import type { IOrientationCycleDetector } from "../../../create/generate/circular/services/contracts/IOrientationCycleDetector";
@@ -200,9 +201,8 @@ export class LibraryRepository implements ILibraryRepository {
     const userDocRef = doc(firestore, `users/${userId}`);
 
     // Use transaction to safely handle read-modify-write
-    const { librarySequence, isNewSequence } = await runTransaction(
-      firestore,
-      async (transaction) => {
+    const { librarySequence, isNewSequence } = await trackWrite(() =>
+      runTransaction(firestore, async (transaction) => {
         // Read existing document within transaction
         const existingDoc = await transaction.get(sequenceDocRef);
         const wasNew = !existingDoc.exists();
@@ -279,7 +279,7 @@ export class LibraryRepository implements ILibraryRepository {
         }
 
         return { librarySequence: libSeq, isNewSequence: wasNew };
-      }
+      })
     );
 
     // Post-transaction: Tag migration (involves async Firestore operations)
@@ -364,10 +364,12 @@ export class LibraryRepository implements ILibraryRepository {
     };
 
     try {
-      await updateDoc(docRef, {
-        ...updates,
-        updatedAt: serverTimestamp(),
-      });
+      await trackWrite(() =>
+        updateDoc(docRef, {
+          ...updates,
+          updatedAt: serverTimestamp(),
+        })
+      );
     } catch (error) {
       console.error("[LibraryRepository] Failed to update sequence:", error);
       toast.error("Failed to update sequence. Please try again.");
@@ -414,7 +416,9 @@ export class LibraryRepository implements ILibraryRepository {
 
     // Delete the sequence
     try {
-      await deleteDoc(doc(firestore, getUserSequencePath(userId, sequenceId)));
+      await trackWrite(() =>
+        deleteDoc(doc(firestore, getUserSequencePath(userId, sequenceId)))
+      );
     } catch (error) {
       console.error("[LibraryRepository] Failed to delete sequence:", error);
       toast.error("Failed to delete sequence. Please try again.");
@@ -775,7 +779,7 @@ export class LibraryRepository implements ILibraryRepository {
     }
 
     try {
-      await batch.commit();
+      await trackWrite(() => batch.commit());
     } catch (error) {
       console.error("[LibraryRepository] Failed to delete sequences:", error);
       toast.error("Failed to delete sequences. Please try again.");
@@ -801,7 +805,7 @@ export class LibraryRepository implements ILibraryRepository {
     }
 
     try {
-      await batch.commit();
+      await trackWrite(() => batch.commit());
     } catch (error) {
       console.error("[LibraryRepository] Failed to move to collection:", error);
       toast.error("Failed to move sequences. Please try again.");
@@ -830,7 +834,7 @@ export class LibraryRepository implements ILibraryRepository {
     }
 
     try {
-      await batch.commit();
+      await trackWrite(() => batch.commit());
     } catch (error) {
       console.error("[LibraryRepository] Failed to add tags:", error);
       toast.error("Failed to add tags. Please try again.");
@@ -890,7 +894,7 @@ export class LibraryRepository implements ILibraryRepository {
 
     // Commit all visibility updates in one batch
     try {
-      await batch.commit();
+      await trackWrite(() => batch.commit());
     } catch (error) {
       console.error("[LibraryRepository] Failed to update visibility:", error);
       toast.error("Failed to update visibility. Please try again.");

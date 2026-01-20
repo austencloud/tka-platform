@@ -2,6 +2,7 @@ import { browser } from "$app/environment";
 import type { ModuleId } from "../../../navigation/domain/types";
 import { featureFlagService } from "../../../auth/services/FeatureFlagService.svelte";
 import { navigationState } from "../../../navigation/state/navigation-state.svelte";
+import { normalizeModuleId } from "../../../navigation/config/module-definitions";
 import { getPersistenceService } from "../services.svelte";
 import {
   getActiveModule,
@@ -57,7 +58,8 @@ export async function revalidateCurrentModule(): Promise<void> {
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
-          const cachedModuleId = parsed.moduleId as ModuleId;
+          // Normalize module ID to handle renamed modules (e.g., "TIKA" -> "tika")
+          const cachedModuleId = normalizeModuleId(parsed.moduleId);
 
           // Restore ANY module the user has access to (not just admin)
           if (
@@ -70,7 +72,14 @@ export async function revalidateCurrentModule(): Promise<void> {
 
             // Sync BOTH ui state and navigation state to ensure nav bar matches content
             syncBothStateSystems(cachedModuleId);
-            // Sync Firestore to match localStorage
+            // Update localStorage if we normalized the value (e.g., "TIKA" -> "tika")
+            if (cachedModuleId !== parsed.moduleId) {
+              localStorage.setItem(
+                LOCAL_STORAGE_KEY,
+                JSON.stringify({ moduleId: cachedModuleId })
+              );
+            }
+            // Sync Firestore to match localStorage (with normalized value)
             const persistence = await getPersistenceService();
             await persistence.saveActiveTab(cachedModuleId);
             return;
@@ -83,24 +92,32 @@ export async function revalidateCurrentModule(): Promise<void> {
       // If localStorage doesn't have a valid module, check Firestore as fallback
       const persistence = await getPersistenceService();
       const savedFromFirestore = await persistence.getActiveTab();
+      // Normalize module ID from Firestore (may have stale data like "TIKA" -> "tika")
+      const normalizedFirestoreModule = savedFromFirestore
+        ? normalizeModuleId(savedFromFirestore)
+        : undefined;
 
       // If Firestore has a module the user can access, restore it
       if (
-        savedFromFirestore &&
-        isModuleAccessible(savedFromFirestore as ModuleId) &&
-        currentModule !== savedFromFirestore
+        normalizedFirestoreModule &&
+        isModuleAccessible(normalizedFirestoreModule) &&
+        currentModule !== normalizedFirestoreModule
       ) {
         // Load feature module BEFORE setting active module to ensure services are available
-        await loadFeatureModule(savedFromFirestore);
+        await loadFeatureModule(normalizedFirestoreModule);
 
         // Sync BOTH ui state and navigation state to ensure nav bar matches content
-        syncBothStateSystems(savedFromFirestore as ModuleId);
-        // Update localStorage to match
+        syncBothStateSystems(normalizedFirestoreModule);
+        // Update localStorage to match (with normalized value)
         if (browser) {
           localStorage.setItem(
             LOCAL_STORAGE_KEY,
-            JSON.stringify({ moduleId: savedFromFirestore })
+            JSON.stringify({ moduleId: normalizedFirestoreModule })
           );
+        }
+        // Also update Firestore if we normalized the value
+        if (normalizedFirestoreModule !== savedFromFirestore) {
+          await persistence.saveActiveTab(normalizedFirestoreModule);
         }
         return;
       }

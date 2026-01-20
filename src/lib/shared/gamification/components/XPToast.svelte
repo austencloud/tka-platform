@@ -182,12 +182,5 @@
     .exiting {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="fadeInUp"] {
-      animation: none;
-    }
-    [style*="fadeOutDown"] {
-      animation: none;
-    }
   }
 </style>

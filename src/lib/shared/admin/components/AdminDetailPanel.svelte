@@ -79,7 +79,7 @@
     </header>
   {/if}
 
-  <div class="detail-content">
+  <div class="detail-content themed-scrollbar">
     {@render children()}
   </div>
 
@@ -172,23 +172,6 @@
     flex: 1;
     overflow-y: auto;
     padding: 24px;
-  }
-
-  .detail-content::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .detail-content::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  .detail-content::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 3px;
-  }
-
-  .detail-content::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
   }
 
   /* Footer */

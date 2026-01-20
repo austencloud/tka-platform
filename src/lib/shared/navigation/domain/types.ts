@@ -29,7 +29,7 @@ export type ModuleId =
   | "discover"
   | "community" // Global TKA community map
   | "learn"
-  | "TIKA" // TIKA AI tutor (acronym - The Intelligent Kinetic Assistant)
+  | "tika" // Tika AI tutor (TKA Intelligent Knowledge Assistant)
   | "premium"
   | "compose"
   | "train"
@@ -45,7 +45,8 @@ export type ModuleId =
   | "skewlab" // Experimental skewed positions (admin-only, temporary)
   | "poi-lab" // Poi physics constraints with VTG terminology (admin-only)
   | "background-builder" // Design and iterate on deep ocean background elements
-  | "infinite-worlds"; // WebGPU + ECS + Rapier procedural world exploration
+  | "infinite-worlds" // WebGPU + ECS + Rapier procedural world exploration
+  | "landing-preview"; // Preview and iterate on landing page designs
 
 /**
  * Module Definition

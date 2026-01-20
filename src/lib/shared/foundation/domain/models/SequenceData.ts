@@ -64,6 +64,12 @@ export interface SequenceData {
   readonly tags: readonly string[];
   readonly metadata: Record<string, unknown>;
 
+  // Equivalence detection fields
+  /** Computed hash identifying the motion pattern (rotation-invariant) */
+  readonly canonicalSignature?: string;
+  /** Beats offset from canonical form (for circular sequences) */
+  readonly canonicalOffset?: number;
+
   // Owner info (populated for public sequences)
   readonly ownerId?: string;
   readonly ownerDisplayName?: string;
@@ -121,6 +127,13 @@ export function createSequenceData(
     }),
     ...(data.difficultyLevel !== undefined && {
       difficultyLevel: data.difficultyLevel,
+    }),
+    // Equivalence detection
+    ...(data.canonicalSignature !== undefined && {
+      canonicalSignature: data.canonicalSignature,
+    }),
+    ...(data.canonicalOffset !== undefined && {
+      canonicalOffset: data.canonicalOffset,
     }),
     // Owner info
     ...(data.ownerId !== undefined && { ownerId: data.ownerId }),

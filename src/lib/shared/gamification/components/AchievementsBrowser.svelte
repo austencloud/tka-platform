@@ -623,17 +623,10 @@
     gap: clamp(6px, 1.5cqi, 8px);
     padding: 0 clamp(12px, 3cqi, 24px) clamp(10px, 2.5cqi, 16px);
     overflow-x: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
-  .category-tabs::-webkit-scrollbar {
-    height: 6px;
-  }
-
-  .category-tabs::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 3px;
+  .category-tabs {
+    @apply themed-scrollbar;
   }
 
   .category-tab {
@@ -709,17 +702,10 @@
     display: flex;
     flex-direction: column;
     gap: clamp(10px, 2.5cqi, 16px);
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
-  .achievements-list::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .achievements-list::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 4px;
+  .achievements-list {
+    @apply themed-scrollbar;
   }
 
   .achievement-card {

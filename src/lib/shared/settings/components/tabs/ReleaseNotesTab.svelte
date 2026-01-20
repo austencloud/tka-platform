@@ -58,7 +58,7 @@
     </div>
   </header>
 
-  <div class="tab-content">
+  <div class="tab-content themed-scrollbar">
     {#if versionState.isLoading && versionState.versions.length === 0}
       <div class="loading-state">
         <div class="skeleton-card"></div>
@@ -133,23 +133,6 @@
     flex: 1;
     overflow-y: auto;
     padding-right: 4px;
-  }
-
-  .tab-content::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .tab-content::-webkit-scrollbar-track {
-    background: var(--scrollbar-track, transparent);
-  }
-
-  .tab-content::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-accent);
-    border-radius: 3px;
-  }
-
-  .tab-content::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-accent-hover);
   }
 
   .versions-list {

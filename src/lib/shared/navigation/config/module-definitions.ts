@@ -5,7 +5,7 @@
  * Separated from state management for cleaner architecture.
  */
 
-import type { ModuleDefinition } from "../domain/types";
+import type { ModuleDefinition, ModuleId } from "../domain/types";
 import {
   CREATE_TABS,
   LEARN_TABS,
@@ -18,7 +18,37 @@ import {
   SETTINGS_TABS,
   REALM_TABS,
   SKEWLAB_TABS,
+  LANDING_PAGE_TABS,
 } from "./tab-definitions";
+
+/**
+ * Migration map for renamed module IDs.
+ * Maps old (invalid) module IDs to their current canonical form.
+ * Used to handle stale data from localStorage/Firestore.
+ */
+const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
+  TIKA: "tika", // Module renamed back to lowercase for cleaner URLs
+};
+
+/**
+ * Normalize a module ID from potentially stale persisted data.
+ * Returns the canonical module ID if valid, or undefined if unknown.
+ */
+export function normalizeModuleId(rawModuleId: string): ModuleId | undefined {
+  // Check if it's a known migration
+  const migrated = MODULE_ID_MIGRATIONS[rawModuleId];
+  if (migrated) {
+    return migrated;
+  }
+
+  // Check if it's already a valid module ID
+  const isValid = MODULE_DEFINITIONS.some((m) => m.id === rawModuleId);
+  if (isValid) {
+    return rawModuleId as ModuleId;
+  }
+
+  return undefined;
+}
 
 // Module definitions for the new navigation system
 export const MODULE_DEFINITIONS: ModuleDefinition[] = [
@@ -68,8 +98,8 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: LEARN_TABS,
   },
   {
-    id: "TIKA",
-    label: "TIKA",
+    id: "tika",
+    label: "Tika",
     icon: '<i class="fas fa-brain" style="color: #6366f1;" aria-hidden="true"></i>',
     color: "#6366f1", // Indigo - AI/assistant
     description: "AI tutor for learning TKA",
@@ -197,6 +227,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Design and iterate on deep ocean background elements",
     isMain: true, // Admin-only for development
     sections: [], // Tab switching handled internally
+  },
+  {
+    id: "landing-preview",
+    label: "Landing Page",
+    icon: '<i class="fas fa-rocket" style="color: #f472b6;" aria-hidden="true"></i>',
+    color: "#f472b6", // Pink - launch/landing
+    description: "Preview and iterate on landing page designs",
+    isMain: true, // Admin-only for development
+    sections: LANDING_PAGE_TABS,
   },
   {
     id: "settings",

@@ -207,7 +207,7 @@
       </div>
 
       <!-- Content -->
-      <div class="shortcuts-help__content">
+      <div class="shortcuts-help__content themed-scrollbar">
         {#if sortedScopes.length === 0}
           <div class="shortcuts-help__empty">No shortcuts available</div>
         {:else}
@@ -327,6 +327,7 @@
     padding: 1.25rem;
   }
 
+
   .shortcuts-help__grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -413,24 +414,6 @@
     font-size: var(--font-size-compact);
     color: var(--theme-text-dim, var(--theme-text-dim));
     text-align: center;
-  }
-
-  /* Scrollbar */
-  .shortcuts-help__content::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .shortcuts-help__content::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .shortcuts-help__content::-webkit-scrollbar-thumb {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent-strong, var(--theme-accent-strong)) 20%,
-      transparent
-    );
-    border-radius: 3px;
   }
 
   /* Responsive */

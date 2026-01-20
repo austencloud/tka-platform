@@ -126,6 +126,32 @@ export function getCanUseApp() {
 }
 
 // ============================================================================
+/**
+ * Update a single setting key-value pair.
+ * This is the preferred method for individual setting updates as it avoids
+ * race conditions when multiple updates happen in quick succession.
+ */
+export function updateSetting<K extends keyof AppSettings>(
+  key: K,
+  value: AppSettings[K]
+): void {
+  // Block updates when viewing another user's settings
+  if (isSettingsPreviewMode()) {
+    console.warn(
+      "Cannot update settings while in preview mode (viewing another user's configuration)"
+    );
+    return;
+  }
+
+  if (!areServicesInitialized()) {
+    console.warn("Settings service not initialized, cannot update setting");
+    return;
+  }
+
+  // Use the singular updateSetting method which directly updates the state
+  void getSettingsServiceSync().updateSetting(key, value);
+}
+
 export async function updateSettings(
   newSettings: Partial<AppSettings>
 ): Promise<void> {

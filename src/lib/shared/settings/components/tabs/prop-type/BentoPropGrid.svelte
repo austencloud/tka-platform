@@ -37,7 +37,8 @@
     },
     {
       name: "Buugengs",
-      props: [PropType.BUUGENG, PropType.BIGBUUGENG, PropType.FRACTALGENG],
+      props: [PropType.BUUGENG, PropType.BIGBUUGENG],
+      // Note: Fractalgeng removed - not commonly used
     },
     {
       name: "Hoops",
@@ -69,7 +70,8 @@
     },
     {
       name: "Singles",
-      props: [PropType.HAND, PropType.SWORD, PropType.QUIAD, PropType.POI],
+      props: [PropType.HAND, PropType.SWORD, PropType.QUIAD],
+      // Note: POI removed until fully implemented
     },
   ];
 

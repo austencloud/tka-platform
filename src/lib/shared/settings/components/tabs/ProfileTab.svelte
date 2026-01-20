@@ -183,7 +183,7 @@
   }
 </script>
 
-<div class="profile-tab" class:visible={isVisible}>
+<div class="profile-tab themed-scrollbar" class:visible={isVisible}>
   {#if isPreviewMode && userPreviewState.data.profile}
     <!-- Preview Mode: Show exact same layout with preview user's data -->
     <div class="profile-content">
@@ -572,25 +572,6 @@
     font-size: var(--font-size-sm);
   }
 
-  /* ========================================
-     SCROLLBAR
-     ======================================== */
-  .profile-tab::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .profile-tab::-webkit-scrollbar-track {
-    background: var(--scrollbar-track, transparent);
-  }
-
-  .profile-tab::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-accent);
-    border-radius: 3px;
-  }
-
-  .profile-tab::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-accent-hover);
-  }
 
   /* ========================================
      ACCESSIBILITY

@@ -444,10 +444,6 @@
     transition: all var(--duration-normal) ease;
   }
 
-  .element-btn i {
-    font-size: 0.85rem;
-  }
-
   .element-btn.active {
     background: var(--theme-accent);
     border-color: var(--theme-accent);

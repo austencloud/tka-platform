@@ -260,9 +260,5 @@ the actual fullscreen state rather than inferring from viewport size.
     .prompt-title {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="glow"] {
-      animation: none;
-    }
   }
 </style>

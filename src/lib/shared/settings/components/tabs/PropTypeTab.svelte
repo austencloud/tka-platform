@@ -24,6 +24,20 @@
 
   const PRESET_COUNT = 10;
 
+  // Default presets for reset functionality
+  const DEFAULT_PRESETS: PropPreset[] = [
+    { bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false },
+    { bluePropType: PropType.CLUB, redPropType: PropType.CLUB, catDogMode: false },
+    { bluePropType: PropType.FAN, redPropType: PropType.FAN, catDogMode: false },
+    { bluePropType: PropType.BUUGENG, redPropType: PropType.BUUGENG, catDogMode: false },
+    { bluePropType: PropType.TRIAD, redPropType: PropType.TRIAD, catDogMode: false },
+    { bluePropType: PropType.MINIHOOP, redPropType: PropType.MINIHOOP, catDogMode: false },
+    { bluePropType: PropType.EIGHTRINGS, redPropType: PropType.EIGHTRINGS, catDogMode: false },
+    { bluePropType: PropType.DOUBLESTAR, redPropType: PropType.DOUBLESTAR, catDogMode: false },
+    { bluePropType: PropType.SWORD, redPropType: PropType.SWORD, catDogMode: false },
+    { bluePropType: PropType.HAND, redPropType: PropType.HAND, catDogMode: false },
+  ];
+
   let { settings, onUpdate } = $props<{
     settings: AppSettings;
     onUpdate?: (event: { key: string; value: unknown }) => void;
@@ -189,6 +203,31 @@
     onUpdate?.({ key: "propPresets", value: newPresets });
   }
 
+  function handleResetToDefaults() {
+    hapticService?.trigger("selection");
+
+    // Copy default presets to avoid mutation
+    propPresets = [...DEFAULT_PRESETS];
+    selectedPresetIndex = 0; // Select first preset (Staff)
+
+    // Apply the first preset's props
+    const firstPreset = DEFAULT_PRESETS[0];
+    selectedBluePropType = firstPreset.bluePropType;
+    selectedRedPropType = firstPreset.redPropType;
+    catDogMode = firstPreset.catDogMode;
+    blueBuugengFlipped = false;
+    redBuugengFlipped = false;
+
+    // Persist all changes
+    onUpdate?.({ key: "propPresets", value: [...DEFAULT_PRESETS] });
+    onUpdate?.({ key: "selectedPresetIndex", value: 0 });
+    onUpdate?.({ key: "bluePropType", value: firstPreset.bluePropType });
+    onUpdate?.({ key: "redPropType", value: firstPreset.redPropType });
+    onUpdate?.({ key: "catDogMode", value: false });
+    onUpdate?.({ key: "blueBuugengFlipped", value: false });
+    onUpdate?.({ key: "redBuugengFlipped", value: false });
+  }
+
   function updateCurrentPreset() {
     if (selectedPresetIndex < 0 || !propPresets[selectedPresetIndex]) return;
 
@@ -316,6 +355,15 @@
         onSaveToSlot={handleSaveToSlot}
         onClearSlot={handleClearSlot}
       />
+      <button
+        type="button"
+        class="reset-defaults-btn"
+        onclick={handleResetToDefaults}
+        aria-label="Reset presets to defaults"
+      >
+        <i class="fas fa-undo" aria-hidden="true"></i>
+        <span>Reset to defaults</span>
+      </button>
     </div>
 
     <!-- CatDog Toggle -->
@@ -623,6 +671,42 @@
     .prop-display {
       margin-top: auto;
     }
+  }
+
+  /* Reset to Defaults Button */
+  .reset-defaults-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: all var(--duration-fast) ease;
+    -webkit-tap-highlight-color: transparent;
+    align-self: flex-start;
+  }
+
+  .reset-defaults-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
+    border-color: var(--theme-accent);
+    color: var(--theme-accent);
+  }
+
+  .reset-defaults-btn:active {
+    transform: scale(0.97);
+  }
+
+  .reset-defaults-btn i {
+    font-size: 11px;
+  }
+
+  .reset-defaults-btn:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 
 </style>

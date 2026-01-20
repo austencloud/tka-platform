@@ -112,6 +112,9 @@ import { RotationDirectionPatternManager } from "$lib/features/create/shared/ser
 import { TurnPatternManager } from "$lib/features/create/shared/services/implementations/TurnPatternManager";
 import { DurationPatternManager } from "$lib/features/create/shared/services/implementations/DurationPatternManager";
 
+// === Equivalence Detection ===
+import { WordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
+
 // === Spell Tab Services ===
 import { LetterTransitionGraph } from "$lib/features/create/spell/services/implementations/LetterTransitionGraph";
 import { WordSequenceGenerator } from "$lib/features/create/spell/services/implementations/WordSequenceGenerator";
@@ -229,6 +232,9 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           new RotationDirectionPatternManager(),
         turnPatternManager: () => new TurnPatternManager(),
         durationPatternManager: () => new DurationPatternManager(),
+
+        // Equivalence detection - no deps
+        wordCyclicEquivalenceDetector: () => new WordCyclicEquivalenceDetector(),
 
         // Generation - no deps (moved from Layer 4)
         loopTypeResolver: () => new LOOPTypeResolver(),

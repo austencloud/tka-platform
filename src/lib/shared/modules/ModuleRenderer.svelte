@@ -89,8 +89,11 @@
     // Background Builder - design and iterate on deep ocean background elements
     "background-builder": () =>
       import("../../features/background-builder/BackgroundBuilder.svelte"),
-    // TIKA module - AI tutor for TKA (standalone module)
-    TIKA: () => import("../../features/tika/TIKAModule.svelte"),
+    // Landing Preview - iterate on landing page designs (admin-only)
+    "landing-preview": () =>
+      import("../../features/landing-preview/LandingPreviewModule.svelte"),
+    // Tika module - AI tutor for TKA (standalone module)
+    tika: () => import("../../features/tika/TikaModule.svelte"),
     // ========================================================================
     // REMOVED: Standalone 3D modules (now accessible via Realm destinations)
     // ========================================================================

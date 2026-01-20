@@ -100,6 +100,8 @@ class SettingsState implements ISettingsState {
   private isSavingToFirebase = false; // Prevent re-entrant saves
   private pendingFirebaseSave: Promise<void> | null = null;
   private onlineHandler: (() => void) | null = null;
+  private firebaseSaveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly FIREBASE_SAVE_DEBOUNCE_MS = 300; // Debounce rapid saves
 
   constructor() {
     // Settings are already loaded from localStorage in the reactive state
@@ -297,6 +299,12 @@ class SettingsState implements ISettingsState {
       this.unsubscribeFirebaseSync = null;
     }
 
+    // Clear any pending debounced save
+    if (this.firebaseSaveDebounceTimer) {
+      clearTimeout(this.firebaseSaveDebounceTimer);
+      this.firebaseSaveDebounceTimer = null;
+    }
+
     // Reset sync state so next sign-in will reinitialize
     this.syncInitialized = false;
     this.firebasePersistence = null;
@@ -409,25 +417,54 @@ class SettingsState implements ISettingsState {
     this.saveSettingsToStorage(settingsState);
 
     // If authenticated, also save to Firebase with offline queue support
+    // Use debouncing to handle rapid successive updates (e.g., resetToDefaults)
     if (auth.currentUser && this.firebasePersistence) {
-      this.saveToFirebaseWithRetry();
+      this.debouncedSaveToFirebase();
     }
+  }
+
+  /**
+   * Debounced Firebase save to handle rapid successive updates
+   * This prevents race conditions when multiple settings are updated quickly
+   * (e.g., handleResetToDefaults calls onUpdate 7+ times in a row)
+   */
+  private debouncedSaveToFirebase(): void {
+    // Clear any existing debounce timer
+    if (this.firebaseSaveDebounceTimer) {
+      clearTimeout(this.firebaseSaveDebounceTimer);
+    }
+
+    // Schedule the Firebase save after debounce period
+    this.firebaseSaveDebounceTimer = setTimeout(() => {
+      this.firebaseSaveDebounceTimer = null;
+      this.saveToFirebaseWithRetry();
+    }, SettingsState.FIREBASE_SAVE_DEBOUNCE_MS);
   }
 
   /**
    * Save to Firebase with retry and offline queue support
    */
   private saveToFirebaseWithRetry(): void {
-    if (!this.firebasePersistence) return;
+    if (!this.firebasePersistence) {
+      debug.warn("Cannot save to Firebase: firebasePersistence not initialized");
+      return;
+    }
 
     // Mark that we're saving to prevent real-time listener from re-applying our own changes
     this.isSavingToFirebase = true;
 
     const settingsToSave = this.getSettingsForPersistence();
+    debug.info("Saving settings to Firebase", {
+      propPresetsCount: settingsToSave.propPresets?.length ?? 0,
+      selectedPresetIndex: settingsToSave.selectedPresetIndex,
+      bluePropType: settingsToSave.bluePropType,
+      redPropType: settingsToSave.redPropType,
+    });
 
     this.pendingFirebaseSave = this.firebasePersistence
       .saveSettings(settingsToSave)
       .then(() => {
+        debug.success("Settings saved to Firebase successfully");
         // Successfully saved - clear local timestamp since Firebase is now in sync
         settingsState._localTimestamp = undefined;
         this.saveSettingsToStorage(settingsState);

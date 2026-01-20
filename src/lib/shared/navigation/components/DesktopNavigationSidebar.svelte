@@ -265,7 +265,7 @@
 
   <!-- Unified Navigation Content Container -->
   <!-- Single container holds both modules and settings tabs - no flexbox recalculation -->
-  <div class="navigation-content" class:tabs-mode={isCollapsed}>
+  <div class="navigation-content themed-scrollbar" class:tabs-mode={isCollapsed}>
     {#if isInSettings}
       <!-- Settings Content with Back Button Header -->
       <div
@@ -481,10 +481,6 @@
     /* Enable container queries for responsive sizing */
     container-type: inline-size;
     container-name: nav-content;
-
-    /* Custom scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   /* Tabs mode - VS Code activity bar layout when sidebar is collapsed */

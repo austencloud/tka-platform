@@ -425,6 +425,10 @@
     overflow-y: auto;
   }
 
+  .search-results:not(.inline) {
+    @apply themed-scrollbar;
+  }
+
   .search-results.fixed-position {
     z-index: 10000;
   }
@@ -527,21 +531,4 @@
     opacity: 0.5;
   }
 
-  /* Scrollbar */
-  .search-results::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .search-results::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
-  }
-
-  .search-results::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-  }
-
-  .search-results::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
 </style>

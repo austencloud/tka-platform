@@ -8,6 +8,7 @@
   import ModuleSwitcherButton from "$lib/shared/navigation/components/buttons/ModuleSwitcherButton.svelte";
   import InboxNavButton from "$lib/shared/navigation/components/buttons/InboxNavButton.svelte";
   import TabOverflowSelector from "$lib/shared/navigation/components/TabOverflowSelector.svelte";
+  import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
   import { shouldHideUIForPanels } from "../../../application/state/animation-visibility-state.svelte";
   import {
     navigationState,
@@ -169,14 +170,20 @@
   class:floating={isDashboard}
   bind:this={navElement}
 >
-  <!-- Module Switcher Button (Left) - now shown even in settings for consistent home/back affordance -->
-  <!-- Long-press opens admin toolbar for admins -->
-  {#if showModuleSwitcher}
-    <ModuleSwitcherButton
-      onClick={onModuleSwitcherTap}
-      onLongPress={handleModuleSwitcherLongPress}
-    />
-  {/if}
+  <!-- Left side: Module Switcher + Network Status -->
+  <div class="left-buttons">
+    <!-- Module Switcher Button - now shown even in settings for consistent home/back affordance -->
+    <!-- Long-press opens admin toolbar for admins -->
+    {#if showModuleSwitcher}
+      <ModuleSwitcherButton
+        onClick={onModuleSwitcherTap}
+        onLongPress={handleModuleSwitcherLongPress}
+      />
+    {/if}
+
+    <!-- Network Status Indicator (mobile) -->
+    <NetworkStatusIndicator variant="mobile" />
+  </div>
 
   <!-- Current Module's Sections - Use overflow selector for modules with >4 tabs -->
   {#if shouldUseOverflowSelector}
@@ -359,6 +366,17 @@
   .sections-overflow.hidden {
     opacity: 0;
     pointer-events: none;
+  }
+
+  /* ============================================================================
+     LEFT BUTTONS CONTAINER (Module Switcher + Network Status)
+     ============================================================================ */
+  .left-buttons {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
   }
 
   /* ============================================================================

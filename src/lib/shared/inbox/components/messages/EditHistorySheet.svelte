@@ -237,11 +237,7 @@
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    /* Disable local keyframe animations */
-    [style*="slide-up"] {
-      animation: none;
-    }
-    [style*="fade-scale-in"] {
+    :global(.history-sheet) {
       animation: none;
     }
   }

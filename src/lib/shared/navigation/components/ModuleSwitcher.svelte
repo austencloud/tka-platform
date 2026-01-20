@@ -131,7 +131,7 @@
     </div>
 
     <!-- Content -->
-    <div class="module-switcher-content">
+    <div class="module-switcher-content themed-scrollbar">
       <!-- Module Selection -->
       <ModuleList
         {currentModule}
@@ -315,23 +315,6 @@
     /* Smooth scrolling */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-
-    /* Thin scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
-
-  .module-switcher-content::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .module-switcher-content::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  .module-switcher-content::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 2px;
   }
 
   /* ============================================================================

@@ -67,7 +67,7 @@
     {/each}
   </div>
 
-  <div class="sequence-list">
+  <div class="sequence-list themed-scrollbar">
     {#each sequences as seq}
       {@const status = getStatus(seq)}
       {@const secondaryLabel = getSecondaryLabel?.(seq) ?? ""}
@@ -216,19 +216,6 @@
     grid-auto-rows: min-content;
     gap: var(--spacing-md);
     align-content: start;
-  }
-
-  .sequence-list::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .sequence-list::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .sequence-list::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke);
-    border-radius: 3px;
   }
 
   .sequence-item {

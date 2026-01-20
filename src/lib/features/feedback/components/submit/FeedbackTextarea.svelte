@@ -333,9 +333,5 @@
     .draft-saved {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="fadeInOut"] {
-      animation: none;
-    }
   }
 </style>
