@@ -485,10 +485,17 @@
       <select id="category-filter" bind:value={filterCategory}>
         <option value="all">All</option>
         <option value="">Uncategorized</option>
-        {#each CATEGORIES as cat}
+        {#each categories as cat}
           <option value={cat.id}>{cat.label}</option>
         {/each}
       </select>
+      <button
+        class="add-btn"
+        onclick={() => showAddCategory = !showAddCategory}
+        title="Add category"
+      >
+        <i class="fas fa-plus" aria-hidden="true"></i>
+      </button>
     </div>
 
     <div class="filter-group">
@@ -497,6 +504,17 @@
         <option value={null}>All</option>
         <option value={true}>Featured only</option>
         <option value={false}>Not featured</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="performer-filter">Performer:</label>
+      <select id="performer-filter" bind:value={filterPerformer}>
+        <option value="all">All</option>
+        <option value="">Unassigned</option>
+        {#each performers as p}
+          <option value={p.id}>{p.name}</option>
+        {/each}
       </select>
     </div>
 
@@ -513,6 +531,29 @@
       Refresh
     </button>
   </div>
+
+  <!-- Add category popup -->
+  {#if showAddCategory}
+    <div class="add-category-popup">
+      <input
+        type="text"
+        placeholder="Category name..."
+        bind:value={newCategoryLabel}
+        onkeydown={(e) => e.key === "Enter" && addCategory()}
+      />
+      <input
+        type="color"
+        bind:value={newCategoryColor}
+        title="Category color"
+      />
+      <button class="save-btn" onclick={addCategory} disabled={!newCategoryLabel.trim()}>
+        Add
+      </button>
+      <button class="cancel-btn" onclick={() => showAddCategory = false}>
+        Cancel
+      </button>
+    </div>
+  {/if}
 
   <!-- Video grid -->
   {#if loading}
@@ -560,9 +601,15 @@
               </div>
             {/if}
             {#if video.category}
-              {@const cat = CATEGORIES.find(c => c.id === video.category)}
+              {@const cat = categories.find(c => c.id === video.category)}
               <div class="category-badge" style="background: {cat?.color || '#666'}">
                 {cat?.label || video.category}
+              </div>
+            {/if}
+            {#if video.performerName}
+              <div class="performer-badge">
+                <i class="fas fa-user" aria-hidden="true"></i>
+                {video.performerName}
               </div>
             {/if}
           </div>
@@ -635,7 +682,7 @@
         <div class="category-selector">
           <span class="label">Category:</span>
           <div class="category-buttons">
-            {#each CATEGORIES as cat}
+            {#each categories as cat}
               <button
                 class="cat-btn"
                 class:active={selectedVideo.category === cat.id}
@@ -646,6 +693,51 @@
               </button>
             {/each}
           </div>
+        </div>
+
+        <!-- Performer assignment -->
+        <div class="performer-selector">
+          <span class="label">Performer:</span>
+          {#if selectedVideo.performerName}
+            <div class="current-performer">
+              <span>{selectedVideo.performerName}</span>
+              <button class="remove-btn" onclick={() => assignPerformer(selectedVideo!, null)} title="Remove performer">
+                <i class="fas fa-times" aria-hidden="true"></i>
+              </button>
+            </div>
+          {:else}
+            <button class="assign-btn" onclick={() => showUserSearch = true}>
+              <i class="fas fa-user-plus" aria-hidden="true"></i>
+              Assign Performer
+            </button>
+          {/if}
+
+          {#if showUserSearch}
+            <div class="user-search-popup">
+              <input
+                type="text"
+                placeholder="Search users..."
+                bind:value={userSearchQuery}
+                oninput={(e) => searchUsers((e.target as HTMLInputElement).value)}
+              />
+              {#if loadingUsers}
+                <div class="search-loading">Searching...</div>
+              {:else if userProfiles.length > 0}
+                <div class="user-results">
+                  {#each userProfiles as user}
+                    <button class="user-result" onclick={() => assignPerformer(selectedVideo!, user)}>
+                      {user.displayName}
+                    </button>
+                  {/each}
+                </div>
+              {:else if userSearchQuery.length >= 2}
+                <div class="no-results">No users found</div>
+              {/if}
+              <button class="cancel-search" onclick={() => { showUserSearch = false; userSearchQuery = ""; userProfiles = []; }}>
+                Cancel
+              </button>
+            </div>
+          {/if}
         </div>
 
         <div class="featured-toggle">
@@ -687,7 +779,7 @@
         <label for="edit-category">Category</label>
         <select id="edit-category" bind:value={editCategory}>
           <option value="">None</option>
-          {#each CATEGORIES as cat}
+          {#each categories as cat}
             <option value={cat.id}>{cat.label}</option>
           {/each}
         </select>
@@ -828,6 +920,78 @@
     border-color: var(--theme-accent);
   }
 
+  .add-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--theme-stroke);
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .add-btn:hover {
+    background: var(--theme-accent);
+    border-color: var(--theme-accent);
+  }
+
+  /* Add category popup */
+  .add-category-popup {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    align-items: center;
+  }
+
+  .add-category-popup input[type="text"] {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--theme-stroke);
+    background: var(--theme-panel-bg);
+    color: var(--theme-text);
+  }
+
+  .add-category-popup input[type="color"] {
+    width: 40px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .add-category-popup .save-btn,
+  .add-category-popup .cancel-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .add-category-popup .save-btn {
+    background: var(--theme-accent);
+    color: white;
+  }
+
+  .add-category-popup .save-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .add-category-popup .cancel-btn {
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    color: var(--theme-text);
+  }
+
   /* Video grid */
   .video-grid {
     display: grid;
@@ -891,6 +1055,25 @@
     font-size: 11px;
     font-weight: 600;
     color: white;
+  }
+
+  .performer-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .performer-badge i {
+    font-size: 10px;
   }
 
   .video-info {
