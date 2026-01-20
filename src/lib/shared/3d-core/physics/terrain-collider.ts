@@ -110,6 +110,69 @@ export class TerrainPhysicsManager {
 	}
 
 	/**
+	 * Create a flat ground plane collider for the stage zone
+	 * This provides immediate collision before terrain chunks load
+	 */
+	addStageGroundCollider(
+		centerX: number,
+		centerZ: number,
+		radius: number,
+		height: number = 5, // Default to 5m above sea level (matches terrain base)
+	): void {
+		if (!this.physicsState.rapier || !this.physicsState.world) {
+			console.warn("[TerrainPhysics] Physics not initialized");
+			return;
+		}
+
+		const RAPIER = this.physicsState.rapier;
+		const key = "stage-ground";
+
+		// Remove existing stage ground if any
+		const existing = this.colliders.get(key);
+		if (existing) {
+			this.physicsState.world.removeCollider(existing.collider, true);
+			this.colliders.delete(key);
+		}
+
+		// Create a large flat cuboid at the specified height
+		// Use a thin box (half-extents: radius, 0.1, radius)
+		const colliderDesc = RAPIER.ColliderDesc.cuboid(radius * 2, 0.1, radius * 2);
+
+		if (!colliderDesc) {
+			console.error("[TerrainPhysics] Failed to create stage ground collider");
+			return;
+		}
+
+		colliderDesc.setFriction(0.8);
+		colliderDesc.setRestitution(0.0);
+		// Position so top surface is at the specified height
+		colliderDesc.setTranslation(centerX, height - 0.1, centerZ);
+
+		const collider = this.physicsState.world.createCollider(colliderDesc);
+
+		this.colliders.set(key, {
+			collider,
+			chunkX: 0,
+			chunkZ: 0,
+		});
+
+		console.log(`[TerrainPhysics] Added stage ground collider at (${centerX}, ${centerZ}) height=${height}m radius=${radius}m`);
+	}
+
+	/**
+	 * Remove the stage ground collider
+	 */
+	removeStageGroundCollider(): void {
+		const key = "stage-ground";
+		const existing = this.colliders.get(key);
+
+		if (existing && this.physicsState.world) {
+			this.physicsState.world.removeCollider(existing.collider, true);
+			this.colliders.delete(key);
+		}
+	}
+
+	/**
 	 * Dispose all colliders
 	 */
 	dispose(): void {

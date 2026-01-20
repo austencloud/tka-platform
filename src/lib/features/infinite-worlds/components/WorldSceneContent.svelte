@@ -172,6 +172,15 @@
     // Create terrain physics manager
     terrainPhysics = new TerrainPhysicsManager(physicsState);
 
+    // Add immediate stage ground collider if in stage mode
+    // This prevents falling through before terrain chunks load
+    if (stageMode && activeConfig.stageZone?.enabled) {
+      terrainPhysics.addStageGroundCollider(
+        0, 0,  // Center at origin
+        activeConfig.stageZone.radius + activeConfig.stageZone.blendWidth
+      );
+    }
+
     // Create player controller at spawn position
     const spawnPos = activeConfig.spawn.position;
     playerController = createPlayerController(physicsState, {

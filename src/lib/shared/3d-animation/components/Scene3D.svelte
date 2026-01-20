@@ -27,7 +27,9 @@
   import ManualRaycaster from "./ManualRaycaster.svelte";
   import BloomEffect from "../effects/post-processing/BloomEffect.svelte";
   import Environment3D from "../environments/components/Environment3D.svelte";
+  import StageTerrain from "./StageTerrain.svelte";
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import type { PhysicsWorldState } from "$lib/shared/3d-core/physics/types";
   import { Plane } from "../domain/enums/Plane";
   import type { GridMode } from "../domain/constants/grid-layout";
   import type { Snippet } from "svelte";
@@ -99,6 +101,12 @@
     isDragging?: boolean;
     /** Children content (props, etc.) */
     children?: Snippet;
+    /** Enable procedural terrain around the stage */
+    enableTerrain?: boolean;
+    /** Physics state for terrain colliders (required if enableTerrain is true) */
+    physicsState?: PhysicsWorldState | null;
+    /** Camera position for terrain chunk streaming */
+    terrainCameraPosition?: { x: number; y: number; z: number };
   }
 
   let {
@@ -125,6 +133,9 @@
     onDrag,
     isDragging = false,
     children,
+    enableTerrain = false,
+    physicsState = null,
+    terrainCameraPosition = { x: 0, y: 0, z: 0 },
   }: Props = $props();
 
   // Handle mesh click from raycaster
@@ -237,8 +248,16 @@
 </script>
 
 {#snippet sceneContent()}
-  <!-- 3D Environment (sky, ground, particles - matches 2D theme) -->
-  <Environment3D {backgroundType} />
+  <!-- Procedural terrain (when enabled, replaces Environment3D) -->
+  {#if enableTerrain}
+    <StageTerrain
+      {physicsState}
+      cameraPosition={terrainCameraPosition}
+    />
+  {:else}
+    <!-- 3D Environment (sky, ground, particles - matches 2D theme) -->
+    <Environment3D {backgroundType} />
+  {/if}
 
   <!-- Grid planes - one per avatar position, rotating with avatar facing -->
   {#if showGrid}

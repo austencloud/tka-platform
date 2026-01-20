@@ -9,6 +9,10 @@ export class GeocodingService implements IGeocodingService {
   constructor(private apiKey: string) {}
 
   async reverseGeocode(lat: number, lng: number): Promise<CityLocation> {
+    if (!this.apiKey) {
+      throw new Error("Location sharing is not available. Google Maps API key not configured.");
+    }
+
     try {
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${this.apiKey}`

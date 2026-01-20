@@ -92,7 +92,7 @@ export const PERFORMANCE_STAGE_CONFIG: RealmConfig = {
   },
 
   spawn: {
-    position: [0, 0, 0],  // Center of stage
+    position: [0, 2, 0],  // Center of stage, slightly elevated
     yaw: 0,
   },
 

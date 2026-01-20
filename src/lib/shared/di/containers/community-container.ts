@@ -12,7 +12,7 @@ import { LocationProvider } from "$lib/features/community/services/implementatio
 import { UserLocationRepository } from "$lib/features/community/services/implementations/UserLocationRepository";
 import { GeocodingService } from "$lib/features/community/services/implementations/GeocodingService";
 import { LocationSharingOrchestrator } from "$lib/features/community/services/implementations/LocationSharingOrchestrator";
-import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
+import { env } from "$env/dynamic/public";
 
 export const communityContainer = createContainer()
   .add({
@@ -21,7 +21,7 @@ export const communityContainer = createContainer()
     followingFeedProvider: () => new FollowingFeedProvider(),
     locationProvider: () => new LocationProvider(),
     userLocationRepository: () => new UserLocationRepository(),
-    geocodingService: () => new GeocodingService(PUBLIC_GOOGLE_MAPS_API_KEY),
+    geocodingService: () => new GeocodingService(env.PUBLIC_GOOGLE_MAPS_API_KEY ?? ""),
   })
   .add((deps) => ({
     locationSharingOrchestrator: () =>

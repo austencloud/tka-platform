@@ -168,20 +168,30 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
         : proceduralHeight;
 
       // Apply stage zone flattening
+      // The stage should be a flat clearing AT terrain level, not below it
       if (stageZone) {
         const dx = worldX - stageZone.center.x;
         const dz = worldZ - stageZone.center.z;
         const dist = Math.sqrt(dx * dx + dz * dz);
 
+        // Sample terrain height at the edge of the stage zone to get reference level
+        // This ensures the stage is at the same height as surrounding terrain base
+        const edgeX = stageZone.center.x + stageZone.radius;
+        const edgeZ = stageZone.center.z;
+        const edgeHeight = getTerrainHeight(noise, edgeX, edgeZ);
+        // Use the minimum of several edge samples to ensure flat ground
+        const edgeHeight2 = getTerrainHeight(noise, stageZone.center.x, stageZone.center.z + stageZone.radius);
+        const stageBaseHeight = Math.min(edgeHeight, edgeHeight2, 5); // Floor at minimum 5m
+
         if (dist < stageZone.radius) {
-          // Inside stage: completely flat at Y=0
-          height = 0;
+          // Inside stage: completely flat at terrain base level
+          height = stageBaseHeight;
         } else if (dist < stageZone.radius + stageZone.blendWidth) {
-          // Transition zone: blend from 0 to procedural
+          // Transition zone: blend from stage height to procedural
           const t = (dist - stageZone.radius) / stageZone.blendWidth;
           // Use smoothstep for a nicer transition
           const smooth = t * t * (3 - 2 * t);
-          height = smooth * height;
+          height = stageBaseHeight + smooth * (height - stageBaseHeight);
         }
       }
 

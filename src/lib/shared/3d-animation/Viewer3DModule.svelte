@@ -122,6 +122,25 @@
   let speed = $state(1);
   let showFigure = $state(true);
   let avatarId = $state<AvatarId>(initialAvatarId);
+
+  // Terrain toggle - when enabled, shows procedural forest terrain around the stage
+  // Default to true for the unified Stage+Forest experience
+  let enableTerrain = $state(true);
+
+  // Stage terrain height - must match StageTerrain.svelte and chunk-generator.worker.ts
+  const STAGE_TERRAIN_HEIGHT = 5;
+
+  // Terrain camera position derived from player controller (for chunk streaming)
+  const terrainCameraPosition = $derived.by(() => {
+    if (!playerController?.rigidBody) return { x: 0, y: 0, z: 0 };
+    const translation = playerController.rigidBody.translation();
+    return {
+      x: translation.x,
+      y: translation.y,
+      z: translation.z,
+    };
+  });
+
   // Camera mode from preferences (orbit, third-person, first-person)
   let cameraMode = $state<CameraMode>(cameraPreferences.getModeForDestination("stage"));
   // Derived: whether we're in a "game" mode (WASD movement enabled)
@@ -269,8 +288,10 @@
     createStageGround(physicsState);
 
     // Player controller starting just above ground
+    // When terrain is enabled, spawn at terrain height; otherwise spawn at Y=1
+    const spawnY = enableTerrain ? STAGE_TERRAIN_HEIGHT + 1 : 1;
     playerController = createPlayerController(physicsState, {
-      position: { x: 0, y: 1, z: 0 },
+      position: { x: 0, y: spawnY, z: 0 },
     });
 
     // Create physics provider for UnifiedCameraController
@@ -461,6 +482,9 @@
         onPointerUp={handlePointerUp}
         onDrag={handleDrag}
         isDragging={isDraggingPerformer}
+        {enableTerrain}
+        {physicsState}
+        {terrainCameraPosition}
       >
         <!-- Dynamic Performer Props & Figures (with drag positioning) -->
         {#each performerStates as performer, i (performer.id)}
@@ -580,6 +604,15 @@
         onShowHelp={() => keyboardShortcutState.openHelp()}
       >
         {#snippet trailing()}
+          <button
+            class="mode-toggle-btn"
+            class:active={enableTerrain}
+            onclick={() => (enableTerrain = !enableTerrain)}
+            aria-label={enableTerrain ? "Hide terrain" : "Show terrain"}
+            title={enableTerrain ? "Hide forest terrain" : "Show forest terrain"}
+          >
+            <i class="fas fa-tree" aria-hidden="true"></i>
+          </button>
           <button
             class="mode-toggle-btn"
             class:game-mode={inGameMode}
@@ -793,6 +826,15 @@
 
   .mode-toggle-btn.game-mode:hover {
     background: #2563eb;
+  }
+
+  .mode-toggle-btn.active {
+    background: #22c55e;
+    color: white;
+  }
+
+  .mode-toggle-btn.active:hover {
+    background: #16a34a;
   }
 
   .toggle-panel-btn:focus-visible,
