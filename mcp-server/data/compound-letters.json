@@ -1,0 +1,88 @@
+{
+  "compounds": {
+    "DJ": {
+      "components": ["D", "J"],
+      "mnemonic": "Disco Jam",
+      "category": "type1-beta-alpha",
+      "description": "D (beta to alpha) + J (alpha to beta) creates a complete cycle",
+      "rotationStyle": "Pro/Pro (isolation)",
+      "transitionPattern": "beta -> alpha -> beta",
+      "vtgNote": "VTG classification varies by variation: east-start = split-opp, south-start = tog-opp"
+    },
+    "EK": {
+      "components": ["E", "K"],
+      "mnemonic": "Exploding Kitten",
+      "category": "type1-beta-alpha",
+      "description": "E (beta to alpha) + K (alpha to beta) creates a complete cycle",
+      "rotationStyle": "Anti/Anti",
+      "transitionPattern": "beta -> alpha -> beta",
+      "vtgNote": "VTG classification varies by variation"
+    },
+    "FL": {
+      "components": ["F", "L"],
+      "mnemonic": "Fruity Loops",
+      "category": "type1-beta-alpha",
+      "description": "F (beta to alpha) + L (alpha to beta) creates a complete cycle",
+      "rotationStyle": "Hybrid (anti/pro)",
+      "transitionPattern": "beta -> alpha -> beta",
+      "vtgNote": "VTG classification varies by variation"
+    },
+    "MP": {
+      "components": ["M", "P"],
+      "mnemonic": "Magic Potion",
+      "category": "gamma-internal",
+      "description": "M + P creates a gamma to gamma cycle",
+      "rotationStyle": "Mixed",
+      "transitionPattern": "gamma -> gamma"
+    },
+    "NQ": {
+      "components": ["N", "Q"],
+      "mnemonic": "Never Quit",
+      "category": "gamma-internal",
+      "description": "N + Q creates a gamma to gamma cycle",
+      "rotationStyle": "Mixed",
+      "transitionPattern": "gamma -> gamma"
+    },
+    "OR": {
+      "components": ["O", "R"],
+      "mnemonic": "Open Road",
+      "category": "gamma-internal",
+      "description": "O + R creates a gamma to gamma cycle",
+      "rotationStyle": "Mixed",
+      "transitionPattern": "gamma -> gamma"
+    },
+    "ΦΨ": {
+      "components": ["Φ", "Ψ"],
+      "mnemonic": null,
+      "category": "type4-dash",
+      "description": "Phi (beta to alpha) + Psi (alpha to beta) dash compound",
+      "rotationStyle": "Dash motions",
+      "transitionPattern": "beta -> alpha -> beta"
+    }
+  },
+  "categories": {
+    "type1-beta-alpha": {
+      "name": "Type 1 Beta-Alpha Compounds",
+      "description": "Dual-shift compounds that cycle between beta and alpha positions",
+      "compounds": ["DJ", "EK", "FL"]
+    },
+    "gamma-internal": {
+      "name": "Gamma Internal Compounds",
+      "description": "Compounds that stay within gamma position (gamma to gamma)",
+      "compounds": ["MP", "NQ", "OR"]
+    },
+    "type4-dash": {
+      "name": "Type 4 Dash Compounds",
+      "description": "Compounds using dash motion letters",
+      "compounds": ["ΦΨ"]
+    }
+  },
+  "whyCompoundsMatter": [
+    "Individual letters like D or J are half-cycles (incomplete motion)",
+    "D alone is beta to alpha - only half the journey",
+    "J alone is alpha to beta - the other half",
+    "DJ together = beta -> alpha -> beta (complete cycle)",
+    "In continuous spinning, you're always doing compound units",
+    "VTG timing (split vs tog) applies to the compound, not individual letters"
+  ]
+}

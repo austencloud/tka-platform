@@ -272,12 +272,13 @@ export class StandaloneRenderer {
     }
 
     // 3. Props (using CORRECT placement logic with beta offset)
+    // Pass BOTH propTypes to each renderProp call so beta offset can detect when both are hands
     if (showBlueMotion) {
-      const blueProp = this.renderProp(input, input.blueMotion, gridMode, darkMode, bluePropType);
+      const blueProp = this.renderProp(input, input.blueMotion, gridMode, darkMode, bluePropType, redPropType);
       if (blueProp) svgParts.push(blueProp);
     }
     if (showRedMotion) {
-      const redProp = this.renderProp(input, input.redMotion, gridMode, darkMode, redPropType);
+      const redProp = this.renderProp(input, input.redMotion, gridMode, darkMode, bluePropType, redPropType);
       if (redProp) svgParts.push(redProp);
     }
 
@@ -383,9 +384,12 @@ ${svgParts.join("\n")}
   private calculateBetaOffsetForProp(
     pictograph: PictographInput,
     motion: MotionInput,
-    gridMode: GridMode
+    gridMode: GridMode,
+    bluePropType: string | null = null,
+    redPropType: string | null = null
   ): { x: number; y: number } {
     // Build input for beta offset calculation
+    // CRITICAL: Pass both prop types so beta-offset can detect when BOTH are hands
     const betaInput: BetaOffsetInput = {
       blueMotion: {
         startLocation: pictograph.blueMotion.startLocation,
@@ -393,6 +397,7 @@ ${svgParts.join("\n")}
         endOrientation: pictograph.blueMotion.endOrientation,
         motionType: pictograph.blueMotion.motionType,
         color: "blue",
+        propType: bluePropType || undefined,
       },
       redMotion: {
         startLocation: pictograph.redMotion.startLocation,
@@ -400,17 +405,21 @@ ${svgParts.join("\n")}
         endOrientation: pictograph.redMotion.endOrientation,
         motionType: pictograph.redMotion.motionType,
         color: "red",
+        propType: redPropType || undefined,
       },
       letter: pictograph.letter,
       gridMode,
     };
 
+    // Target motion gets its own propType for offset direction calculation
+    const targetPropType = motion.color === "blue" ? bluePropType : redPropType;
     const targetMotion: BetaMotionInput = {
       startLocation: motion.startLocation,
       endLocation: motion.endLocation,
       endOrientation: motion.endOrientation,
       motionType: motion.motionType,
       color: motion.color as "blue" | "red",
+      propType: targetPropType || undefined,
     };
 
     return calculateBetaOffset(betaInput, targetMotion);
@@ -421,7 +430,8 @@ ${svgParts.join("\n")}
     motion: MotionInput,
     gridMode: GridMode,
     darkMode: boolean,
-    propType: string | null = null
+    bluePropType: string | null = null,
+    redPropType: string | null = null
   ): string {
     // Get the end location and orientation
     const endLocation = motion.endLocation.toLowerCase() as GridLocation;
@@ -431,12 +441,15 @@ ${svgParts.join("\n")}
     const placement = calculatePropPlacement(endLocation, endOrientation, gridMode);
 
     // Apply beta offset if both props end at the same location
-    const betaOffset = this.calculateBetaOffsetForProp(pictograph, motion, gridMode);
+    // Pass BOTH propTypes so hand props get the special "right on right, left on left" logic
+    const betaOffset = this.calculateBetaOffsetForProp(pictograph, motion, gridMode, bluePropType, redPropType);
     const finalX = placement.x + betaOffset.x;
     const finalY = placement.y + betaOffset.y;
 
     // Determine prop file name - use provided prop type or default to staff
-    const propFileName = propType ? `${propType}.svg` : "staff.svg";
+    // Use the current motion's prop type
+    const currentPropType = motion.color === "blue" ? bluePropType : redPropType;
+    const propFileName = currentPropType ? `${currentPropType}.svg` : "staff.svg";
     const propPath = join(this.projectRoot, "static/images/props", propFileName);
     if (!existsSync(propPath)) {
       console.error("[Renderer] Prop file not found:", propPath);
@@ -446,7 +459,7 @@ ${svgParts.join("\n")}
     // HAND PROP SPECIAL LOGIC (matching PropPlacer.ts and PropSvg.svelte):
     // 1. Hands should NEVER rotate - always use 0 degrees orientation
     // 2. Red hands are always mirrored (scaleX(-1)) to show left/right anatomically
-    const isHand = propType === "hand";
+    const isHand = currentPropType === "hand";
     const isRedHand = isHand && motion.color === "red";
     const rotation = isHand ? 0 : placement.rotation;
 
@@ -847,9 +860,12 @@ ${svgParts.join("\n")}
       let innerContent = innerMatch ? innerMatch[1] : letterSvg;
 
       // Apply dark mode color
+      // Many SVGs don't specify fill color (defaulting to black) - we need to add explicit fill
       if (darkMode) {
         innerContent = innerContent.replace(/#000000/gi, "#e6e6e6");
         innerContent = innerContent.replace(/black/gi, "#e6e6e6");
+        // For paths without explicit fill, add one (handles SVGs that rely on default black)
+        innerContent = innerContent.replace(/<path(?![^>]*fill=)/gi, '<path fill="#e6e6e6" ');
       }
 
       // Render turn numbers (positioned relative to letter)
@@ -887,9 +903,12 @@ ${turnNumbersSvg}
       let innerContent = innerMatch ? innerMatch[1] : vtgSvg;
 
       // Apply dark mode color
+      // Many SVGs don't specify fill color (defaulting to black) - we need to add explicit fill
       if (darkMode) {
         innerContent = innerContent.replace(/#000000/gi, "#e6e6e6");
         innerContent = innerContent.replace(/black/gi, "#e6e6e6");
+        // For paths without explicit fill, add one (handles SVGs that rely on default black)
+        innerContent = innerContent.replace(/<path(?![^>]*fill=)/gi, '<path fill="#e6e6e6" ');
       }
 
       // Position in bottom-right corner

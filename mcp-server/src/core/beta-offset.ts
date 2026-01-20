@@ -33,6 +33,7 @@ export interface BetaMotionInput {
   endOrientation?: string;
   motionType: string;
   color: "blue" | "red";
+  propType?: string;
 }
 
 export interface BetaOffsetInput {
@@ -45,6 +46,11 @@ export interface BetaOffsetInput {
 // Default offset distance in pixels (for staff prop type in diamond mode)
 const BETA_OFFSET_DISTANCE_DIAMOND = 21.11;
 const BETA_OFFSET_DISTANCE_BOX = 14.93;
+
+// Hand-specific offset distance
+// Matches getBetaOffsetSize() from PropClassification.ts: 950/45 = 21.11px
+const HAND_BETA_OFFSET_DISTANCE_DIAMOND = 950 / 45;  // ~21.11px
+const HAND_BETA_OFFSET_DISTANCE_BOX = (950 / 45) / Math.sqrt(2);  // ~14.93px
 
 // ============================================================================
 // DIRECTION MAPS
@@ -284,6 +290,23 @@ export function calculateBetaOffset(
   if (blueEndLoc !== redEndLoc) {
     // Props don't overlap, no offset needed
     return { x: 0, y: 0 };
+  }
+
+  // SPECIAL CASE: Hand props always use "right hand on right, left hand on left"
+  // This matches the behavior in PropPlacer.ts (lines 129-197)
+  const bothAreHands = blueMotion.propType === "hand" && redMotion.propType === "hand";
+  if (bothAreHands) {
+    const distance = gridMode === GridMode.BOX
+      ? HAND_BETA_OFFSET_DISTANCE_BOX
+      : HAND_BETA_OFFSET_DISTANCE_DIAMOND;
+
+    // Blue hand goes LEFT (negative X), Red hand goes RIGHT (positive X)
+    // This creates the "right hand on right, left hand on left" visual
+    if (targetMotion.color === "blue") {
+      return { x: -distance, y: 0 };
+    } else {
+      return { x: distance, y: 0 };
+    }
   }
 
   // Determine if both orientations are radial

@@ -143,7 +143,7 @@ Write-Host ""
 
 # Start the dev server (this blocks - which is what we want)
 try {
-    npm run dev -- --host
+    pnpm run dev -- --host
 } finally {
     # Cleanup
     Write-Status "Shutting down..." "Yellow"

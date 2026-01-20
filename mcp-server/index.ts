@@ -1,17 +1,18 @@
 /**
- * TKA Pictograph MCP Server
+ * TKA Domain MCP Server
  *
- * Exposes pictograph data as MCP tools that Claude can call.
+ * Comprehensive MCP server for The Kinetic Alphabet domain.
+ * Provides pictograph rendering, sequence generation, educational tools,
+ * and domain knowledge queries.
  *
  * Tools:
- * - list_available_letters: List all TKA letters
- * - list_letter_variations: List variations for a letter
- * - get_pictograph_data: Get detailed motion data
- * - search_pictographs: Search by criteria
- * - generate_pictograph_url: Get URL for browser rendering
- * - generate_pictograph: Generate PNG image directly (no browser needed!)
- * - set_preferences: Set visibility preferences for future pictographs
- * - get_preferences: Get current visibility preferences
+ * - Pictograph Generation: generate_pictograph, generate_pictograph_url, generate_sequence_image
+ * - Data Queries: list_available_letters, list_letter_variations, get_pictograph_data, search_pictographs
+ * - Sequences: generate_sequence_data, validate_word
+ * - Educational: get_alphabet_info, get_letter_explanation, get_term_definition, compare_letters
+ * - Compound Letters: get_compound_info, list_compounds
+ * - VTG Classification: get_vtg_classification
+ * - Preferences: set_preferences, get_preferences, reset_preferences
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -221,8 +222,8 @@ function ensureDataLoaded() {
 
 // Create MCP server
 const server = new McpServer({
-  name: "tka-pictograph",
-  version: "1.0.0",
+  name: "tka-domain",
+  version: "2.0.0",
 });
 
 // Tool: list_letter_variations
@@ -1534,7 +1535,7 @@ server.tool(
 
 // Start the server
 async function main() {
-  console.error("[MCP] Starting TKA Pictograph MCP Server...");
+  console.error("[MCP] Starting TKA Domain MCP Server v2.0.0...");
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
