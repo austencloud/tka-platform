@@ -1,22 +1,20 @@
 <script lang="ts">
 	/**
-	 * Stage Destination - Performance stage within explorable forest world
+	 * Stage Destination - Performance stage for 3D sequence viewing
 	 *
-	 * The Stage is now a flat circular area at the center of a procedurally
-	 * generated forest. Users can:
-	 * - Perform sequences on the stage grid (center area)
-	 * - Press V to enter third-person or first-person mode
-	 * - Walk with WASD to explore the surrounding forest
-	 * - Return to the stage area anytime
+	 * Users can:
+	 * - View and animate sequences in 3D space
+	 * - Press V to cycle camera modes (orbit, third-person, first-person)
+	 * - Walk with WASD in game modes
+	 * - Load sequences from the library
 	 *
-	 * Eventually will be enhanced with:
-	 * - Timeline choreography editor
-	 * - Formation system
+	 * Features:
+	 * - Multi-performer support with formations
 	 * - Camera choreography
-	 * - N-performer synchronization
+	 * - Visual effects (trails, bloom)
 	 */
 
-	import StageWorld from "$lib/shared/3d-animation/StageWorld.svelte";
+	import Viewer3DModule from "$lib/shared/3d-animation/Viewer3DModule.svelte";
 </script>
 
-<StageWorld />
+<Viewer3DModule />
