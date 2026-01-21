@@ -21,7 +21,6 @@ import { DeepLinker } from "../../navigation/services/implementations/DeepLinker
 import { LetterDeriver } from "../../navigation/services/implementations/LetterDeriver";
 import { PositionDeriver } from "../../navigation/services/implementations/PositionDeriver";
 import { SequenceViewer } from "../../sequence-viewer/services/implementations/SequenceViewer";
-import { NavigationPersister } from "../../navigation/services/implementations/NavigationPersister";
 import { NavigationValidator } from "../../navigation/services/implementations/NavigationValidator";
 
 // Types for external dependencies
@@ -51,7 +50,6 @@ export function createNavigationContainer(externalDeps: NavigationExternalDeps) 
       moduleSelector: () => new ModuleSelector(),
       sheetRouter: () => new SheetRouter(),
       sequenceEncoder: () => new SequenceEncoder(),
-      navigationPersister: () => new NavigationPersister(),
       navigationValidator: () => new NavigationValidator(),
     })
     // === Services that depend on SequenceEncoder ===

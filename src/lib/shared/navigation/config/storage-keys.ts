@@ -11,9 +11,6 @@ export const CURRENT_MODULE_KEY = "tka-current-module";
 /** localStorage key for active tab within current module */
 export const ACTIVE_TAB_KEY = "tka-active-tab";
 
-/** localStorage key for last active tab per module (JSON object) */
-export const MODULE_LAST_TABS_KEY = "tka-module-last-tabs";
-
 /** localStorage key for last open panel per tab (JSON object, key format: "moduleId:tabId") */
 export const TAB_LAST_PANELS_KEY = "tka-tab-last-panels";
 
