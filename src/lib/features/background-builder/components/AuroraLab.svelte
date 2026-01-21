@@ -354,22 +354,6 @@
     color: #a78bfa;
   }
 
-  .pill.active {
-    background: rgba(139, 92, 246, 0.2);
-    color: #c4b5fd;
-    animation: pulse 2s infinite;
-  }
-
-  .pill.pending {
-    background: rgba(255, 255, 255, 0.05);
-    color: #6b7280;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-  }
-
   .preview {
     position: relative;
     border-radius: 16px;

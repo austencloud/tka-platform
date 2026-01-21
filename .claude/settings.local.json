@@ -323,7 +323,8 @@
       "Bash(instaloader --help:*)",
       "Bash(instaloader:*)",
       "WebFetch(domain:knip.dev)",
-      "Bash(./node_modules/.bin/tsc:*)"
+      "Bash(./node_modules/.bin/tsc:*)",
+      "Bash(Select-Object -First 5)"
     ]
   },
   "enableAllProjectMcpServers": true,

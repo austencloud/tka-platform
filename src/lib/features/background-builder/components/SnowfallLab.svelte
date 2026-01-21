@@ -359,11 +359,6 @@
     animation: pulse 2s infinite;
   }
 
-  .pill.pending {
-    background: rgba(255, 255, 255, 0.05);
-    color: #6b7280;
-  }
-
   @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }

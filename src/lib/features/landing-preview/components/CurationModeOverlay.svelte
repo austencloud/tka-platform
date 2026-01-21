@@ -208,11 +208,14 @@
       <span class="section-label">Performer</span>
       <div class="action-buttons">
         {#each quickPerformers as performer, i}
-          <button
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
             class="action-btn performer-action"
             class:active={currentVideo.performerId === performer.id}
-            onclick={() => onSetPerformer(performer)}
-            disabled={saving}
+            role="button"
+            tabindex="0"
+            onclick={() => !saving && onSetPerformer(performer)}
+            onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && !saving && onSetPerformer(performer)}
           >
             <span class="key-hint">{performerKeys[i]?.toUpperCase() || ''}</span>
             {performer.displayName}
@@ -224,7 +227,7 @@
             >
               <i class="fas fa-times" aria-hidden="true"></i>
             </button>
-          </button>
+          </div>
         {/each}
         {#if !showAddPerformer}
           <button

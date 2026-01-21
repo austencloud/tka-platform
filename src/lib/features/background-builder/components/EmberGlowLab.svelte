@@ -457,22 +457,6 @@
     color: #fbbf24;
   }
 
-  .pill.active {
-    background: rgba(245, 158, 11, 0.2);
-    color: #fbbf24;
-    animation: pulse 2s infinite;
-  }
-
-  .pill.pending {
-    background: rgba(255, 255, 255, 0.05);
-    color: #9ca3af;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-  }
-
   .preview {
     position: relative;
     border-radius: 16px;
@@ -496,10 +480,8 @@
 
   /* Accessibility: Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .action-btn,
-    .pill.active {
+    .action-btn {
       transition: none;
-      animation: none;
     }
   }
 
