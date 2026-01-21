@@ -6,7 +6,7 @@
  */
 
 import type { RequestHandler } from '@sveltejs/kit'
-import { ANTHROPIC_API_KEY, DEEPSEEK_API_KEY } from '$env/static/private'
+import { env } from '$env/dynamic/private'
 
 export interface ModelOption {
   id: string
@@ -21,7 +21,7 @@ export const GET: RequestHandler = async () => {
   const models: ModelOption[] = []
 
   // Sonnet 4 - always first (default)
-  if (ANTHROPIC_API_KEY) {
+  if (env.ANTHROPIC_API_KEY) {
     models.push({
       id: 'sonnet-4',
       name: 'Claude Sonnet 4',
@@ -33,7 +33,7 @@ export const GET: RequestHandler = async () => {
   }
 
   // Deepseek - cost-effective alternative
-  if (DEEPSEEK_API_KEY) {
+  if (env.DEEPSEEK_API_KEY) {
     models.push({
       id: 'deepseek',
       name: 'Deepseek V3',

@@ -300,12 +300,5 @@ Provides a beautiful, unified experience for customizing presets
     .modal-content {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="backdrop-appear"] {
-      animation: none;
-    }
-    [style*="modal-appear"] {
-      animation: none;
-    }
   }
 </style>

@@ -894,42 +894,5 @@
     .practice-wave {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="practiceEnterIntense"] {
-      animation: none;
-    }
-    [style*="practiceGlowIntense"] {
-      animation: none;
-    }
-    [style*="practiceEnterSubtle"] {
-      animation: none;
-    }
-    [style*="practiceEnterGlow"] {
-      animation: none;
-    }
-    [style*="practiceEnterMinimal"] {
-      animation: none;
-    }
-    [style*="practiceEnterWave"] {
-      animation: none;
-    }
-    [style*="practiceRing"] {
-      animation: none;
-    }
-    [style*="gentleBloom"] {
-      animation: none;
-    }
-    [style*="softCascade"] {
-      animation: none;
-    }
-    [style*="springPop"] {
-      animation: none;
-    }
-    [style*="microFade"] {
-      animation: none;
-    }
-    [style*="glassBlur"] {
-      animation: none;
-    }
   }
 </style>

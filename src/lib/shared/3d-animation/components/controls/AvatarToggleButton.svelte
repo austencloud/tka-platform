@@ -171,9 +171,5 @@
     .popover {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="popoverIn"] {
-      animation: none;
-    }
   }
 </style>

@@ -264,9 +264,5 @@ Hides header when card height is below 65px for space optimization
     .toggle-card {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="cardEnter"] {
-      animation: none;
-    }
   }
 </style>

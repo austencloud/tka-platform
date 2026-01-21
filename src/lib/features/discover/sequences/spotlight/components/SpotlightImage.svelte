@@ -433,15 +433,5 @@
     .spinner {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="scaleOutFade"] {
-      animation: none;
-    }
-    [style*="scaleInFade"] {
-      animation: none;
-    }
-    [style*="spinnerFadeIn"] {
-      animation: none;
-    }
   }
 </style>

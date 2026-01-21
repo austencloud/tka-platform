@@ -711,12 +711,5 @@
     .video-player-container {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="slideIn"] {
-      animation: none;
-    }
-    [style*="modalIn"] {
-      animation: none;
-    }
   }
 </style>

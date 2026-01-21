@@ -435,11 +435,4 @@
     }
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    /* Disable local keyframe animations */
-    [style*="pulse-ring"] {
-      animation: none;
-    }
-  }
 </style>

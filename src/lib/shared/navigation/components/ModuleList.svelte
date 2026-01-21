@@ -600,9 +600,5 @@
     .unread-badge {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="badgePop"] {
-      animation: none;
-    }
   }
 </style>

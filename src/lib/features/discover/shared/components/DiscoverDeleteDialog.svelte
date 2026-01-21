@@ -356,9 +356,5 @@ about the sequence being deleted and potential consequences.
     .modal-dialog {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="modalSlideIn"] {
-      animation: none;
-    }
   }
 </style>

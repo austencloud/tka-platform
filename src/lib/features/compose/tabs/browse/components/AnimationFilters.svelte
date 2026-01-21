@@ -466,16 +466,6 @@ Features:
     color: var(--theme-accent);
   }
 
-  .favorites-chip-tag {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
-    color: var(--semantic-error);
-  }
-
-  .favorites-chip-tag i {
-    font-size: 10px;
-  }
-
   .search-chip-tag {
     background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
     border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);

@@ -933,9 +933,5 @@ import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
     .active {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="help-pulse"] {
-      animation: none;
-    }
   }
 </style>

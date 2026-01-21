@@ -26,7 +26,7 @@ const SRC_DIR = path.join(PROJECT_ROOT, "src");
 
 // Files/patterns to skip (external packages, SvelteKit internals, etc.)
 const SKIP_PATTERNS = [
-  /^[^./]/, // bare imports (npm packages)
+  /^[^./$]/, // bare imports (npm packages) - but NOT $lib
   /^\$app\//, // SvelteKit internals
   /^\$env\//, // SvelteKit env
   /^virtual:/, // Vite virtual modules
@@ -112,10 +112,11 @@ function getAllFiles(dir: string, extensions: string[]): string[] {
 
 function globMatch(pattern: string, filePath: string): boolean {
   // Simple glob matching for ** and *
+  // Handle **/ to match "zero or more directories" (including none)
   const regexPattern = pattern
-    .replace(/\*\*/g, "{{DOUBLESTAR}}")
-    .replace(/\*/g, "[^/]*")
-    .replace(/{{DOUBLESTAR}}/g, ".*")
+    .replace(/\*\*\//g, "(?:.*\\/)?") // **/ matches zero or more path segments
+    .replace(/\*\*/g, ".*") // ** at end matches anything
+    .replace(/\*/g, "[^/]*") // * matches filename chars
     .replace(/\//g, "\\/");
 
   const regex = new RegExp(`^${regexPattern}$`);
@@ -390,7 +391,7 @@ function extractDynamicLoaderTargets(
 // ============================================================================
 
 // Debug specific file - set to filename to debug, or empty string to disable
-const DEBUG_FILE = "ConstructTabContent.svelte";
+const DEBUG_FILE = "";
 
 function buildImportGraph(
   files: string[],

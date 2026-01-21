@@ -207,12 +207,5 @@ Always opens selector panel when clicked
     .loop-card-wrapper {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="accentShimmer"] {
-      animation: none;
-    }
-    [style*="cardEnter"] {
-      animation: none;
-    }
   }
 </style>

@@ -188,7 +188,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .letter-overlay,
     .letter-sheet,
     .letter-btn {
       animation: none;

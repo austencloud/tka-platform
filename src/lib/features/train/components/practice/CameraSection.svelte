@@ -443,9 +443,5 @@
     .hit-indicator {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="fadeInOut"] {
-      animation: none;
-    }
   }
 </style>

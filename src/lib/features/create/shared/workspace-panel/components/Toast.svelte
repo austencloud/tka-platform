@@ -119,9 +119,5 @@ Shows at the bottom center of screen, auto-dismisses after 3 seconds
     .toast {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="slide-up"] {
-      animation: none;
-    }
   }
 </style>

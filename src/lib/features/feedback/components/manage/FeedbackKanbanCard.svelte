@@ -682,9 +682,5 @@
     .priority-badge {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="pulse-critical"] {
-      animation: none;
-    }
   }
 </style>

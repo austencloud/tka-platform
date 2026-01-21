@@ -429,15 +429,5 @@ Provides consistent styling and interaction patterns for all generation setting 
     .clickable {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="cardEnter"] {
-      animation: none;
-    }
-    [style*="springBounce"] {
-      animation: none;
-    }
-    [style*="meshGradientFlow"] {
-      animation: none;
-    }
   }
 </style>

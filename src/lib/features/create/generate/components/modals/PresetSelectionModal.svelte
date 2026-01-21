@@ -167,12 +167,5 @@ Displays user-saved presets with delete option and allows loading preset configu
     .modal-content {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="backdrop-appear"] {
-      animation: none;
-    }
-    [style*="modal-appear"] {
-      animation: none;
-    }
   }
 </style>

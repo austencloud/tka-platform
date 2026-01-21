@@ -588,18 +588,5 @@
     .arrow-with-icon {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="celebrate"] {
-      animation: none;
-    }
-    [style*="bounce-arrow"] {
-      animation: none;
-    }
-    [style*="fade-pulse"] {
-      animation: none;
-    }
-    [style*="gentle-pulse"] {
-      animation: none;
-    }
   }
 </style>

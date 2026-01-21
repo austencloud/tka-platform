@@ -145,7 +145,8 @@
 
     // In production, if items are missing, they simply won't load
     // (the API doesn't exist in production builds)
-    if (!dev && itemsToFetch.length > 0) {
+    // Note: dev can be undefined in some contexts, so check explicitly for false
+    if (dev === false && itemsToFetch.length > 0) {
       console.warn(
         `[InlineGallery] Missing ${itemsToFetch.length} pictographs in production:`,
         itemsToFetch.map((i) => `${i.letter}-${i.variation}`)

@@ -324,9 +324,5 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     .stepper-card {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="cardEnter"] {
-      animation: none;
-    }
   }
 </style>

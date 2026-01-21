@@ -422,9 +422,5 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     .help-clickable {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="help-card-pulse"] {
-      animation: none;
-    }
   }
 </style>

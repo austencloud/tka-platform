@@ -104,7 +104,8 @@
     images = new Map(newImages);
 
     // In production, if items are missing, they simply won't load
-    if (!dev && stepsToFetch.length > 0) {
+    // Note: dev can be undefined in some contexts, so check explicitly for false
+    if (dev === false && stepsToFetch.length > 0) {
       console.warn(
         `[InlineStepGrid] Missing ${stepsToFetch.length} pictographs in production:`,
         stepsToFetch.map((s) => `${s.letter}-${s.variation}`)

@@ -941,9 +941,5 @@
     .results-container {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="pulseGrade"] {
-      animation: none;
-    }
   }
 </style>

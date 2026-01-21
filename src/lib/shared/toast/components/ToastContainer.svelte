@@ -209,9 +209,5 @@
     .toast {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="slideIn"] {
-      animation: none;
-    }
   }
 </style>

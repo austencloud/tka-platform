@@ -312,9 +312,5 @@
     .tour-tooltip {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="tooltipIn"] {
-      animation: none;
-    }
   }
 </style>

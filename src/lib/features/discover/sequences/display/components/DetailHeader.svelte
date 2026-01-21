@@ -159,8 +159,8 @@ Displays:
     transform: scale(0.95);
   }
 
-  /* Header button base style */
-  .header-btn {
+  /* Header button base style (global for child component styling) */
+  :global(.header-btn) {
     width: var(--touch-target-min);
     height: var(--touch-target-min);
     display: flex;
@@ -175,33 +175,38 @@ Displays:
     flex-shrink: 0;
   }
 
-  .header-btn svg {
+  :global(.header-btn svg) {
     width: var(--icon-size-md);
     height: var(--icon-size-md);
   }
 
-  .header-btn:hover {
+  :global(.header-btn:hover) {
     background: var(--theme-card-hover-bg);
     border-color: var(--theme-stroke-strong);
     color: var(--theme-text, white);
   }
 
-  .header-btn:active {
+  :global(.header-btn:active) {
     transform: scale(0.95);
   }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .close-button,
-    .collapse-button,
-    .header-btn {
+    .collapse-button {
       transition: none;
-      animation: none;
+    }
+
+    :global(.header-btn) {
+      transition: none;
     }
 
     .close-button:active,
-    .collapse-button:active,
-    .header-btn:active {
+    .collapse-button:active {
+      transform: none;
+    }
+
+    :global(.header-btn:active) {
       transform: none;
     }
   }

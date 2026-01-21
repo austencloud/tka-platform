@@ -196,9 +196,5 @@
     .animate {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="slideInFade"] {
-      animation: none;
-    }
   }
 </style>

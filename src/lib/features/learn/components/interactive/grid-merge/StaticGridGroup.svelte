@@ -255,9 +255,5 @@
     .outer-point {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="highlightPulse"] {
-      animation: none;
-    }
   }
 </style>

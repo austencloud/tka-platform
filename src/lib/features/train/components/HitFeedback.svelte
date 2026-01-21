@@ -326,15 +326,5 @@
     .feedback-popup {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="pulse-combo"] {
-      animation: none;
-    }
-    [style*="pulse-high-combo"] {
-      animation: none;
-    }
-    [style*="popup"] {
-      animation: none;
-    }
   }
 </style>

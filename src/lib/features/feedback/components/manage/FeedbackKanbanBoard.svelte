@@ -617,9 +617,5 @@
     .defer-dialog {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="skeleton-pulse"] {
-      animation: none;
-    }
   }
 </style>

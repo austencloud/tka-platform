@@ -627,11 +627,4 @@
       stroke-dasharray 0.3s ease;
   }
 
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
-  @media (prefers-reduced-motion: reduce) {
-    /* Disable local keyframe animations */
-    [style*="pulse-success"] {
-      animation: none;
-    }
-  }
 </style>

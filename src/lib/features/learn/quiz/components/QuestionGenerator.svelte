@@ -458,12 +458,5 @@
     .incorrect {
       animation: none;
     }
-    /* Disable local keyframe animations */
-    [style*="correctPulse"] {
-      animation: none;
-    }
-    [style*="incorrectShake"] {
-      animation: none;
-    }
   }
 </style>

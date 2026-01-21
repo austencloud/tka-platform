@@ -105,7 +105,8 @@
       }
 
       // Priority 3: API (dev only)
-      if (!dev) {
+      // Note: dev can be undefined in some contexts, so check explicitly for false
+      if (dev === false) {
         console.warn(`[InlinePictograph] Missing pictograph in production: ${pictograph.letter}-${variation}`);
         error = true;
         loading = false;
