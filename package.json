@@ -13,7 +13,7 @@
     "dev:turbo": "vite --host 0.0.0.0 --force",
     "dev:kill": "kill-port 5173 && npm run dev",
     "dev:mobile": "adb reverse tcp:5173 tcp:5173 && vite dev --host",
-    "build": "svelte-kit sync && vite build && node -e \"require('fs').copyFileSync('build/200.html', 'build/index.html')\"",
+    "build": "svelte-kit sync && vite build",
     "build:analyze": "vite-bundle-visualizer",
     "size": "size-limit",
     "size:why": "size-limit --why",

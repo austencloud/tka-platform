@@ -3,8 +3,7 @@
 
 [build]
   command = "npm install && npm run build"
-  publish = "build"
-  functions = "netlify/functions"
+  # adapter-netlify outputs to .netlify directory automatically
 
 [build.environment]
   NODE_VERSION = "22"
@@ -193,37 +192,10 @@
     Cache-Control = "public, max-age=86400"
 
 # ============================================================================
-# CROSS-DOMAIN ROUTING (convenience redirects)
+# CROSS-DOMAIN ROUTING
 # ============================================================================
-# Note: Root (/) is handled by SiteMode detection in the app itself.
-# These redirects help users who manually type /app or /landing on wrong domain.
-
-# tkascribe.com: Redirect /landing to tkaflowarts.com
-[[redirects]]
-  from = "/landing"
-  to = "https://tkaflowarts.com/"
-  status = 301
-  force = true
-  conditions = {Host = ["tkascribe.com", "www.tkascribe.com"]}
-
-# tkaflowarts.com: Redirect /app to tkascribe.com
-[[redirects]]
-  from = "/app"
-  to = "https://tkascribe.com/"
-  status = 301
-  force = true
-  conditions = {Host = ["tkaflowarts.com", "www.tkaflowarts.com"]}
-
-# tkaflowarts.com: Redirect /app/* paths to tkascribe.com
-[[redirects]]
-  from = "/app/*"
-  to = "https://tkascribe.com/:splat"
-  status = 301
-  force = true
-  conditions = {Host = ["tkaflowarts.com", "www.tkaflowarts.com"]}
-
-# ============================================================================
-# SPA ROUTING
-# ============================================================================
-# Redirects are defined in static/_redirects (required by @sveltejs/adapter-netlify)
-# Note: /admin, /sequence, /profile, /auth routes are handled by SvelteKit file-based routing
+# Host-conditional redirects (/landing on tkascribe.com -> tkaflowarts.com, etc.)
+# must be configured in Netlify UI or via separate site configurations since
+# adapter-netlify doesn't support conditional redirects.
+#
+# SvelteKit routing is handled automatically by the adapter.

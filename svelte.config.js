@@ -1,4 +1,4 @@
-import adapter from "@sveltejs/adapter-static";
+import adapter from "@sveltejs/adapter-netlify";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -12,19 +12,16 @@ const config = {
 
   kit: {
     // ============================================================================
-    // ADAPTER (Static SPA for Netlify - no SSR needed)
+    // ADAPTER (Netlify with serverless functions for API routes)
     // ============================================================================
-    // Using adapter-static with fallback for true SPA mode.
-    // This generates a 200.html fallback page that handles all client-side routes.
-    // SSR is disabled in +layout.ts due to InversifyJS compatibility issues.
+    // Using adapter-netlify to enable server-side API routes (+server.ts files).
+    // Pages are still client-rendered (SSR disabled in +layout.ts) but API
+    // endpoints like /api/tika/* are deployed as Netlify Functions.
     adapter: adapter({
-      // Generate 200.html fallback for SPA routing (Netlify uses this for client-side routes)
-      fallback: "200.html",
-      // Output to build directory (Netlify default)
-      pages: "build",
-      assets: "build",
-      // Don't require all routes to be prerendered (we're an SPA)
-      strict: false,
+      // Use Node.js serverless functions (not edge)
+      edge: false,
+      // Single function handles all server routes (simpler deployment)
+      split: false,
     }),
 
     // ============================================================================
