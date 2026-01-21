@@ -13,7 +13,7 @@
 
   import { featureFlagService } from "$lib/shared/auth/services/FeatureFlagService.svelte";
   import FeatureFlagHeader from "./feature-flags/FeatureFlagHeader.svelte";
-  import GlobalSettings from "./feature-flags/global-settings/GlobalSettings.svelte";
+  import PermissionMatrix from "./feature-flags/global-settings/PermissionMatrix.svelte";
   import UserOverrides from "./feature-flags/user-overrides/UserOverrides.svelte";
   import { computeStats } from "./feature-flags/shared/feature-utils";
 
@@ -62,7 +62,7 @@
 
   <div class="content-area">
     {#if viewMode === "global"}
-      <GlobalSettings onError={handleError} />
+      <PermissionMatrix onError={handleError} />
     {:else}
       <UserOverrides onError={handleError} />
     {/if}

@@ -346,8 +346,8 @@
   }
 
   .calendar-panel {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     padding: 1.25rem;
     display: flex;

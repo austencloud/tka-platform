@@ -10,6 +10,7 @@
   import type { Announcement } from "../domain/models/announcement-models";
   import AnnouncementForm from "./announcements/AnnouncementForm.svelte";
   import AnnouncementList from "./announcements/AnnouncementList.svelte";
+  import AdminModal from "$lib/shared/admin/components/AdminModal.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Services
@@ -20,6 +21,10 @@
   let selectedAnnouncement = $state<Announcement | null>(null);
   let isLoading = $state(true);
   let showForm = $state(false);
+
+  // Delete confirmation modal state
+  let showDeleteModal = $state(false);
+  let pendingDeleteId = $state<string | null>(null);
 
   onMount(async () => {
     try {
@@ -54,16 +59,28 @@
     showForm = true;
   }
 
-  async function handleDelete(announcementId: string) {
-    if (!announcementService) return;
-    if (!confirm(t("admin_confirm_delete_announcement"))) return;
+  function handleDeleteRequest(announcementId: string) {
+    pendingDeleteId = announcementId;
+    showDeleteModal = true;
+  }
+
+  async function confirmDelete() {
+    if (!announcementService || !pendingDeleteId) return;
 
     try {
-      await announcementService.deleteAnnouncement(announcementId);
+      await announcementService.deleteAnnouncement(pendingDeleteId);
       await loadAnnouncements();
     } catch (error) {
       console.error("Failed to delete announcement:", error);
+    } finally {
+      showDeleteModal = false;
+      pendingDeleteId = null;
     }
+  }
+
+  function cancelDelete() {
+    showDeleteModal = false;
+    pendingDeleteId = null;
   }
 
   async function handleSave() {
@@ -102,10 +119,22 @@
     <AnnouncementList
       {announcements}
       onEdit={handleEdit}
-      onDelete={handleDelete}
+      onDelete={handleDeleteRequest}
     />
   {/if}
 </div>
+
+{#if showDeleteModal}
+  <AdminModal
+    title={t("admin_delete_announcement")}
+    message={t("admin_confirm_delete_announcement")}
+    variant="danger"
+    confirmLabel={t("action_delete")}
+    cancelLabel={t("action_cancel")}
+    onConfirm={confirmDelete}
+    onCancel={cancelDelete}
+  />
+{/if}
 
 <style>
   .announcement-management {
@@ -146,7 +175,7 @@
   .management-header h2 {
     font-size: var(--font-size-2xl);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text);
     margin: 0;
   }
 
