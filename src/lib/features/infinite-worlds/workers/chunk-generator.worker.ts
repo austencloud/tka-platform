@@ -157,11 +157,6 @@ export type WorkerResponse = ChunkResultMessage | RealZoneLoadedMessage;
 function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   const { chunkX, chunkY, chunkZ, worldSeed, chunkSize, resolution, lod } = msg;
 
-  // Debug: Check if spawn clearing is set for chunks near origin
-  if (chunkX >= -1 && chunkX <= 0 && chunkZ >= -1 && chunkZ <= 0) {
-    console.log(`[ChunkWorker] Generating chunk (${chunkX}, ${chunkZ}) - spawnClearing=${spawnClearing ? 'SET' : 'NULL'}`);
-  }
-
   // Adjust resolution based on LOD
   const effectiveResolution = Math.max(4, Math.floor(resolution / Math.pow(2, lod)));
 
@@ -322,11 +317,102 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     }
   }
 
-  // Generate indices for triangle mesh
-  const quadCount = (effectiveResolution - 1) * (effectiveResolution - 1);
-  const indices = new Uint32Array(quadCount * 6);
+  // ============================================================================
+  // TERRAIN SKIRTS - Hide seams between chunks
+  // ============================================================================
+  // Add vertical "skirt" geometry around chunk edges that drops down.
+  // This hides any gaps caused by LOD differences or floating-point precision.
+  // Industry-standard technique used by Unity Terrain, Unreal, etc.
+
+  const SKIRT_DEPTH = 5; // How far down skirts extend (meters)
+  const skirtVertexCount = effectiveResolution * 4; // 4 edges
+  const totalVertexCount = vertexCount + skirtVertexCount;
+
+  // Create expanded arrays to hold main terrain + skirts
+  const finalVertices = new Float32Array(totalVertexCount * 3);
+  const finalNormals = new Float32Array(totalVertexCount * 3);
+  const finalColors = new Float32Array(totalVertexCount * 3);
+
+  // Copy main terrain data
+  finalVertices.set(vertices);
+  finalNormals.set(normals);
+  finalColors.set(colors);
+
+  // Add skirt vertices (one for each edge vertex, dropped down by SKIRT_DEPTH)
+  let skirtIdx = vertexCount * 3;
+
+  // Bottom edge (z = 0)
+  for (let x = 0; x < effectiveResolution; x++) {
+    const srcIdx = x * 3;
+    finalVertices[skirtIdx] = vertices[srcIdx];
+    finalVertices[skirtIdx + 1] = vertices[srcIdx + 1] - SKIRT_DEPTH;
+    finalVertices[skirtIdx + 2] = vertices[srcIdx + 2];
+    // Use same normal (pointing down-ish for skirts)
+    finalNormals[skirtIdx] = 0;
+    finalNormals[skirtIdx + 1] = -1;
+    finalNormals[skirtIdx + 2] = 0;
+    // Same color
+    finalColors[skirtIdx] = colors[srcIdx];
+    finalColors[skirtIdx + 1] = colors[srcIdx + 1];
+    finalColors[skirtIdx + 2] = colors[srcIdx + 2];
+    skirtIdx += 3;
+  }
+
+  // Top edge (z = effectiveResolution - 1)
+  for (let x = 0; x < effectiveResolution; x++) {
+    const srcIdx = ((effectiveResolution - 1) * effectiveResolution + x) * 3;
+    finalVertices[skirtIdx] = vertices[srcIdx];
+    finalVertices[skirtIdx + 1] = vertices[srcIdx + 1] - SKIRT_DEPTH;
+    finalVertices[skirtIdx + 2] = vertices[srcIdx + 2];
+    finalNormals[skirtIdx] = 0;
+    finalNormals[skirtIdx + 1] = -1;
+    finalNormals[skirtIdx + 2] = 0;
+    finalColors[skirtIdx] = colors[srcIdx];
+    finalColors[skirtIdx + 1] = colors[srcIdx + 1];
+    finalColors[skirtIdx + 2] = colors[srcIdx + 2];
+    skirtIdx += 3;
+  }
+
+  // Left edge (x = 0)
+  for (let z = 0; z < effectiveResolution; z++) {
+    const srcIdx = (z * effectiveResolution) * 3;
+    finalVertices[skirtIdx] = vertices[srcIdx];
+    finalVertices[skirtIdx + 1] = vertices[srcIdx + 1] - SKIRT_DEPTH;
+    finalVertices[skirtIdx + 2] = vertices[srcIdx + 2];
+    finalNormals[skirtIdx] = 0;
+    finalNormals[skirtIdx + 1] = -1;
+    finalNormals[skirtIdx + 2] = 0;
+    finalColors[skirtIdx] = colors[srcIdx];
+    finalColors[skirtIdx + 1] = colors[srcIdx + 1];
+    finalColors[skirtIdx + 2] = colors[srcIdx + 2];
+    skirtIdx += 3;
+  }
+
+  // Right edge (x = effectiveResolution - 1)
+  for (let z = 0; z < effectiveResolution; z++) {
+    const srcIdx = (z * effectiveResolution + effectiveResolution - 1) * 3;
+    finalVertices[skirtIdx] = vertices[srcIdx];
+    finalVertices[skirtIdx + 1] = vertices[srcIdx + 1] - SKIRT_DEPTH;
+    finalVertices[skirtIdx + 2] = vertices[srcIdx + 2];
+    finalNormals[skirtIdx] = 0;
+    finalNormals[skirtIdx + 1] = -1;
+    finalNormals[skirtIdx + 2] = 0;
+    finalColors[skirtIdx] = colors[srcIdx];
+    finalColors[skirtIdx + 1] = colors[srcIdx + 1];
+    finalColors[skirtIdx + 2] = colors[srcIdx + 2];
+    skirtIdx += 3;
+  }
+
+  // ============================================================================
+  // Generate indices for triangle mesh (main terrain + skirts)
+  // ============================================================================
+  const mainQuadCount = (effectiveResolution - 1) * (effectiveResolution - 1);
+  const skirtQuadCount = (effectiveResolution - 1) * 4; // 4 edges
+  const totalQuadCount = mainQuadCount + skirtQuadCount;
+  const indices = new Uint32Array(totalQuadCount * 6);
   let indexIdx = 0;
 
+  // Main terrain indices
   for (let z = 0; z < effectiveResolution - 1; z++) {
     for (let x = 0; x < effectiveResolution - 1; x++) {
       const topLeft = z * effectiveResolution + x;
@@ -343,6 +429,80 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
       indices[indexIdx++] = bottomLeft;
       indices[indexIdx++] = bottomRight;
     }
+  }
+
+  // Skirt indices - connect edge vertices to dropped skirt vertices
+  const skirtStartIdx = vertexCount;
+
+  // Bottom edge skirt (z = 0) - skirt vertices start at skirtStartIdx
+  for (let x = 0; x < effectiveResolution - 1; x++) {
+    const topLeft = x;
+    const topRight = x + 1;
+    const bottomLeft = skirtStartIdx + x;
+    const bottomRight = skirtStartIdx + x + 1;
+
+    // Wind triangles to face outward (down)
+    indices[indexIdx++] = topLeft;
+    indices[indexIdx++] = bottomLeft;
+    indices[indexIdx++] = topRight;
+
+    indices[indexIdx++] = topRight;
+    indices[indexIdx++] = bottomLeft;
+    indices[indexIdx++] = bottomRight;
+  }
+
+  // Top edge skirt (z = max) - skirt vertices at skirtStartIdx + effectiveResolution
+  const topEdgeSkirtStart = skirtStartIdx + effectiveResolution;
+  for (let x = 0; x < effectiveResolution - 1; x++) {
+    const topLeft = (effectiveResolution - 1) * effectiveResolution + x;
+    const topRight = topLeft + 1;
+    const bottomLeft = topEdgeSkirtStart + x;
+    const bottomRight = topEdgeSkirtStart + x + 1;
+
+    // Wind triangles to face outward (up, so reverse winding)
+    indices[indexIdx++] = topLeft;
+    indices[indexIdx++] = topRight;
+    indices[indexIdx++] = bottomLeft;
+
+    indices[indexIdx++] = topRight;
+    indices[indexIdx++] = bottomRight;
+    indices[indexIdx++] = bottomLeft;
+  }
+
+  // Left edge skirt (x = 0) - skirt vertices at skirtStartIdx + effectiveResolution * 2
+  const leftEdgeSkirtStart = skirtStartIdx + effectiveResolution * 2;
+  for (let z = 0; z < effectiveResolution - 1; z++) {
+    const topLeft = z * effectiveResolution;
+    const bottomLeft = (z + 1) * effectiveResolution;
+    const topRight = leftEdgeSkirtStart + z;
+    const bottomRight = leftEdgeSkirtStart + z + 1;
+
+    // Wind triangles to face outward (left, so reverse winding)
+    indices[indexIdx++] = topLeft;
+    indices[indexIdx++] = topRight;
+    indices[indexIdx++] = bottomLeft;
+
+    indices[indexIdx++] = bottomLeft;
+    indices[indexIdx++] = topRight;
+    indices[indexIdx++] = bottomRight;
+  }
+
+  // Right edge skirt (x = max) - skirt vertices at skirtStartIdx + effectiveResolution * 3
+  const rightEdgeSkirtStart = skirtStartIdx + effectiveResolution * 3;
+  for (let z = 0; z < effectiveResolution - 1; z++) {
+    const topLeft = z * effectiveResolution + effectiveResolution - 1;
+    const bottomLeft = (z + 1) * effectiveResolution + effectiveResolution - 1;
+    const topRight = rightEdgeSkirtStart + z;
+    const bottomRight = rightEdgeSkirtStart + z + 1;
+
+    // Wind triangles to face outward (right)
+    indices[indexIdx++] = topLeft;
+    indices[indexIdx++] = bottomLeft;
+    indices[indexIdx++] = topRight;
+
+    indices[indexIdx++] = bottomLeft;
+    indices[indexIdx++] = bottomRight;
+    indices[indexIdx++] = topRight;
   }
 
   // Generate vegetation (LOD 0-2 full density, LOD 3 sparse trees only)
@@ -511,9 +671,9 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     chunkX,
     chunkY,
     chunkZ,
-    vertices,
-    normals,
-    colors,
+    vertices: finalVertices,
+    normals: finalNormals,
+    colors: finalColors,
     indices,
     vegetation,
     biome,

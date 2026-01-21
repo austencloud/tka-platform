@@ -31,6 +31,7 @@
   // Unified camera system
   import UnifiedCameraController from "$lib/shared/3d-core/camera/UnifiedCameraController.svelte";
   import { CameraMode } from "$lib/shared/3d-core/camera/types";
+  import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
 
   // Avatar components
   import Avatar3D from "$lib/shared/3d-animation/components/Avatar3D.svelte";
@@ -165,6 +166,7 @@
   // ============================================================================
 
   let isInitialized = $state(false);
+  let isReadyToRender = $state(false); // True after ground snap - prevents showing underground
   let needsGroundSnap = true; // Snap to ground once terrain loads
   let groundSnapAttempts = 0; // Track attempts to avoid infinite loops
   const MAX_GROUND_SNAP_ATTEMPTS = 300; // ~5 seconds at 60fps
@@ -315,6 +317,10 @@
     };
 
     isInitialized = true;
+
+    // Force FIRST_PERSON mode for infinite-worlds (ORBIT mode doesn't work without OrbitControls)
+    // This ensures the camera starts correctly regardless of saved preferences
+    cameraPreferences.setModeForDestination("infinite-worlds", CameraMode.FIRST_PERSON);
 
     // Place campground objects (spawn clearing was already set above)
     if (activeConfig.spawnClearing?.enabled && activeConfig.spawnClearing.campground.enabled) {
@@ -656,6 +662,7 @@
         if (snapped && pos && pos.y < 500) {
           // Successfully snapped to terrain
           needsGroundSnap = false;
+          isReadyToRender = true; // Now safe to show camera/avatar
         }
       }
     }
@@ -699,8 +706,24 @@
   });
 </script>
 
+<!-- Default camera during loading (orbit view of campground from above) -->
+<!-- Shows nice overhead view while physics/terrain initializes -->
+{#if !isReadyToRender}
+  <T.PerspectiveCamera
+    makeDefault
+    position={[0, 25, 30]}
+    fov={60}
+    near={0.1}
+    far={10000}
+    on:create={({ ref }) => {
+      ref.lookAt(0, 8, 0);
+    }}
+  />
+{/if}
+
 <!-- Unified Camera Controller with physics provider -->
-{#if isInitialized && physicsProvider}
+<!-- Takes over once ground snap is complete and player is at correct position -->
+{#if isInitialized && isReadyToRender && physicsProvider}
   <UnifiedCameraController
     destinationId="infinite-worlds"
     {avatarState}
@@ -714,7 +737,8 @@
 {/if}
 
 <!-- Player Avatar (hidden in first-person mode) -->
-{#if isInitialized && showAvatar}
+<!-- Wait for isReadyToRender to prevent showing avatar at wrong position -->
+{#if isInitialized && isReadyToRender && showAvatar}
   <Avatar3D
     id="infinite-worlds-player"
     bluePropState={null}
@@ -727,7 +751,7 @@
 {/if}
 
 <!-- Grid Planes (optional) -->
-{#if isInitialized && showAvatar && showGridPlanes}
+{#if isInitialized && isReadyToRender && showAvatar && showGridPlanes}
   <Grid3D
     centerPosition={playerPosition}
     facingAngle={playerYaw}
