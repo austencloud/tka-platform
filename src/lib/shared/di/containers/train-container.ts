@@ -18,6 +18,7 @@ import { CameraManager } from "$lib/features/train/services/implementations/Came
 import { VoiceCommandHandler } from "$lib/features/train/services/implementations/VoiceCommandHandler";
 import { PerformanceHistoryTracker } from "$lib/features/train/services/implementations/PerformanceHistoryTracker";
 import { TrainChallengeManager } from "$lib/features/train/services/implementations/TrainChallengeManager";
+import { SessionCompletionProcessor } from "$lib/features/train/services/implementations/SessionCompletionProcessor";
 
 // Contract types for external dependencies
 import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
@@ -33,6 +34,7 @@ import type { ICameraManager } from "$lib/features/train/services/contracts/ICam
 import type { IVoiceCommandHandler } from "$lib/features/train/services/contracts/IVoiceCommandHandler";
 import type { IPerformanceHistoryTracker } from "$lib/features/train/services/contracts/IPerformanceHistoryTracker";
 import type { ITrainChallengeManager } from "$lib/features/train/services/contracts/ITrainChallengeManager";
+import type { ISessionCompletionProcessor } from "$lib/features/train/services/contracts/ISessionCompletionProcessor";
 
 /**
  * Creates the train container with external dependencies.
@@ -53,6 +55,8 @@ export function createTrainContainer(achievementManager: IAchievementManager) {
   let performanceHistoryTrackerInstance: PerformanceHistoryTracker | null =
     null;
   let trainChallengeManagerInstance: TrainChallengeManager | null = null;
+  let sessionCompletionProcessorInstance: SessionCompletionProcessor | null =
+    null;
 
   return createContainer()
     .add({
@@ -141,6 +145,18 @@ export function createTrainContainer(achievementManager: IAchievementManager) {
           );
         }
         return trainChallengeManagerInstance;
+      },
+
+      // SessionCompletionProcessor depends on history, achievements, and challenges
+      sessionCompletionProcessor: (): ISessionCompletionProcessor => {
+        if (!sessionCompletionProcessorInstance) {
+          sessionCompletionProcessorInstance = new SessionCompletionProcessor(
+            ctx.performanceHistoryTracker,
+            achievementManager,
+            ctx.trainChallengeManager
+          );
+        }
+        return sessionCompletionProcessorInstance;
       },
     }));
 }

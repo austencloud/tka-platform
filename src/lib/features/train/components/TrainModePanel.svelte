@@ -18,18 +18,11 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ITrainChallengeManager } from "../services/contracts/ITrainChallengeManager";
-  import type { IPerformanceHistoryTracker } from "../services/contracts/IPerformanceHistoryTracker";
-  import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
-  import type { StoredPerformance } from "../domain/models/TrainDatabaseModels";
-  import { activeChallengeState } from "../state/active-challenge-state.svelte";
-  import {
-    sessionResultToScore,
-    checkChallengeRequirement,
-    calculateSessionXP,
-    type SessionResult,
-  } from "../utils/challenge-completion-detector";
-  import { addNotification } from "$lib/shared/gamification/state/notification-state.svelte";
+  import type {
+    ISessionCompletionProcessor,
+    XPBreakdown,
+    ChallengeProgressResult,
+  } from "../services/contracts/ISessionCompletionProcessor";
   import { getTrainPracticeState } from "../state/train-practice-state.svelte";
   import ModeSettingsSheet from "./practice/ModeSettingsSheet.svelte";
   import SequenceBrowserPanel from "$lib/shared/animation-engine/components/SequenceBrowserPanel.svelte";
@@ -73,33 +66,17 @@
   let detectionService: IPositionDetector | null = $state(null);
   const hapticService = container.items.hapticFeedback;
   let isDetectionReady = $state(false);
-  const challengeService = container.items.trainChallengeManager;
-  const achievementService = container.items.achievementManager;
-  const historyService = container.items.performanceHistoryTracker;
+  const sessionCompletionProcessor = container.items.sessionCompletionProcessor;
 
   // Session tracking
   let sessionStartTime = 0;
   let hasProcessedSession = false;
 
   // Results data for display
-  let sessionXPBreakdown = $state<
-    | {
-        baseXP: number;
-        accuracyBonus: number;
-        comboBonus: number;
-        totalXP: number;
-      }
-    | undefined
-  >(undefined);
-
-  let sessionChallengeProgress = $state<
-    | {
-        challenge: any;
-        currentProgress: number;
-        isComplete: boolean;
-      }
-    | undefined
-  >(undefined);
+  let sessionXPBreakdown = $state<XPBreakdown | undefined>(undefined);
+  let sessionChallengeProgress = $state<ChallengeProgressResult | undefined>(
+    undefined
+  );
 
   // Timing system (using requestAnimationFrame for better performance)
   let stepAnimationFrameId: number | null = null;
@@ -245,193 +222,27 @@
 
   async function processSessionCompletion() {
     const duration = Date.now() - sessionStartTime;
-    const accuracy =
-      trainState.totalSteps > 0
-        ? (trainState.totalHits / trainState.totalSteps) * 100
-        : 0;
 
-    const sessionResult: SessionResult = {
+    const result = await sessionCompletionProcessor.processCompletion({
       totalSteps: trainState.totalSteps,
-      hits: trainState.totalHits,
-      misses: trainState.totalMisses,
+      totalHits: trainState.totalHits,
+      totalMisses: trainState.totalMisses,
       maxCombo: trainState.maxCombo,
-      finalScore: trainState.currentScore,
-      accuracy,
-      mode: practiceMode,
+      currentScore: trainState.currentScore,
+      bpm: trainState.bpm,
+      practiceMode: practiceState.currentMode,
       sequenceId: sequence?.id,
-      bpm: (modeConfig as any)?.bpm, // For timed mode
-      duration,
-    };
+      sequenceName: sequence?.word ?? sequence?.name,
+      sessionDuration: duration,
+    });
 
-    // Award base session XP
-    const xpBreakdown = calculateSessionXP(sessionResult);
-    sessionXPBreakdown = xpBreakdown; // Store for ResultsScreen
-
-    // Determine grade based on accuracy
-    const grade =
-      accuracy >= 95
-        ? "S"
-        : accuracy >= 85
-          ? "A"
-          : accuracy >= 70
-            ? "B"
-            : accuracy >= 55
-              ? "C"
-              : accuracy >= 40
-                ? "D"
-                : "F";
-
-    // Save session to history
-    try {
-      const storedPerformance: StoredPerformance = {
-        id: crypto.randomUUID(),
-        sequenceId: sequence?.id ?? "unknown",
-        sequenceName: sequence?.word ?? sequence?.name ?? "Unknown Sequence",
-        performedAt: new Date(),
-        detectionMethod: "mediapipe",
-        bpm: trainState.bpm,
-        beatResultsJson: "[]", // TODO: Store actual beat results if needed
-        score: {
-          percentage: Math.round(accuracy * 10) / 10,
-          grade: grade as "S" | "A" | "B" | "C" | "D" | "F",
-          perfectHits: trainState.totalHits,
-          goodHits: 0,
-          misses: trainState.totalMisses,
-          maxCombo: trainState.maxCombo,
-          xpEarned: xpBreakdown.totalXP,
-        },
-        metadata: {
-          sessionDuration: duration,
-        },
-      };
-
-      await historyService.savePerformance(storedPerformance);
-    } catch (error) {
-      console.error("Failed to save session to history:", error);
-    }
-
-    try {
-      await achievementService.trackAction("training_session_completed", {
-        accuracy: sessionResult.accuracy,
-        combo: sessionResult.maxCombo,
-        mode: practiceMode,
-      });
-
-      // Track specific achievements
-      if (accuracy === 100) {
-        await achievementService.trackAction("perfect_training_run", {});
-      }
-      if (sessionResult.maxCombo >= 20) {
-        await achievementService.trackAction("training_combo_20", {});
-      }
-      if (
-        practiceMode === PracticeMode.TIMED &&
-        sessionResult.bpm &&
-        sessionResult.bpm >= 150
-      ) {
-        await achievementService.trackAction("timed_150bpm", {});
-      }
-    } catch (error) {
-      console.error("Failed to award session XP:", error);
-    }
-
-    // Process active challenge if exists
-    const activeChallenge = activeChallengeState.activeChallenge;
-    if (activeChallenge) {
-      try {
-        const increment = checkChallengeRequirement(
-          activeChallenge,
-          sessionResult
-        );
-
-        if (increment > 0) {
-          const score = sessionResultToScore(sessionResult);
-          await challengeService.recordProgress(
-            activeChallenge.id,
-            increment,
-            score
-          );
-
-          // Check if challenge is now complete
-          const progress = await challengeService.getUserProgressForChallenge(
-            activeChallenge.id
-          );
-
-          if (
-            progress &&
-            progress.progress >= activeChallenge.requirement.target &&
-            !progress.isCompleted
-          ) {
-            // Complete the challenge
-            const challengeXP = await challengeService.completeChallenge(
-              activeChallenge.id,
-              score
-            );
-
-            // Store challenge completion for ResultsScreen
-            sessionChallengeProgress = {
-              challenge: activeChallenge,
-              currentProgress: progress.progress,
-              isComplete: true,
-            };
-
-            // Show completion notification
-            addNotification({
-              id: `challenge-${activeChallenge.id}-${Date.now()}`,
-              type: "challenge_complete",
-              title: "Challenge Completed!",
-              message: `${activeChallenge.title} - +${challengeXP} XP`,
-              icon: "fa-trophy",
-              timestamp: new Date(),
-              isRead: false,
-              data: {
-                xpGained: challengeXP,
-                challengeTitle: activeChallenge.title,
-              },
-            });
-
-            // Track challenge completion achievement
-            await achievementService.trackAction("train_challenge_completed", {
-              challengeId: activeChallenge.id,
-              difficulty: activeChallenge.difficulty,
-              challengeType: "train",
-            });
-
-            // Clear active challenge
-            activeChallengeState.clearActiveChallenge();
-          } else {
-            // Store challenge progress for ResultsScreen
-            if (progress) {
-              sessionChallengeProgress = {
-                challenge: activeChallenge,
-                currentProgress: progress.progress,
-                isComplete: false,
-              };
-            }
-
-            // Show progress notification
-            if (progress) {
-              addNotification({
-                id: `progress-${activeChallenge.id}-${Date.now()}`,
-                type: "challenge_complete",
-                title: "Challenge Progress",
-                message: `${activeChallenge.title}: ${progress.progress}/${activeChallenge.requirement.target}`,
-                icon: "fa-dumbbell",
-                timestamp: new Date(),
-                isRead: false,
-                data: { challengeTitle: activeChallenge.title },
-              });
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Failed to process challenge progress:", error);
-      }
-    }
+    // Store results for ResultsScreen display
+    sessionXPBreakdown = result.xpBreakdown;
+    sessionChallengeProgress = result.challengeProgress;
   }
 
   function startBeatTimer() {
-    beatDuration = (60 / trainState.bpm) * 1000;
+    stepDuration = (60 / trainState.bpm) * 1000;
     lastBeatTime = performance.now();
     hasCheckedCurrentBeat = false;
 
