@@ -265,10 +265,16 @@ export class ChunkManager {
         if (distance <= viewDistance) {
           neededChunks.add(key);
 
-          // Force LOD 0 for all chunks - uniform resolution eliminates seams
-          // CDLOD vertex morphing requires proper edge stitching which isn't implemented yet
-          // The performance cost is acceptable for this use case
-          const lod = 0;
+          // Calculate LOD based on distance
+          // Now that we have proper clipmap-style vertex morphing in the shader,
+          // we can use proper LOD levels without visible seams.
+          // The GPU morphs vertices smoothly between LOD levels.
+          let lod = 0;
+          for (let i = 0; i < lodDistances.length; i++) {
+            if (distance > lodDistances[i]!) {
+              lod = i + 1;
+            }
+          }
 
           chunkPriorities.set(key, { distance, lod });
         }

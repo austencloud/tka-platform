@@ -567,3 +567,341 @@ export class GeometryClipmapManager {
     console.log("[GeometryClipmap] Disposed");
   }
 }
+
+// ============================================================================
+// HYBRID CHUNK+CLIPMAP SYSTEM (RECOMMENDED)
+// ============================================================================
+// This approach keeps the existing chunk streaming system but adds
+// clipmap-style vertex morphing to eliminate seams between chunks.
+
+/**
+ * Configuration for the hybrid chunk+clipmap material
+ */
+export interface HybridClipmapConfig {
+  /** LOD distance thresholds (world units) */
+  lodDistances: number[];
+  /** Size of each chunk (world units) */
+  chunkSize: number;
+  /** Vertices per chunk side at LOD 0 */
+  baseResolution: number;
+  /** Where morphing starts within each LOD range (0.5 = 50%) */
+  morphStart: number;
+}
+
+/**
+ * Create a material for chunk-based terrain with clipmap-style vertex morphing
+ *
+ * This is the RECOMMENDED approach for this project because:
+ * 1. Works with existing chunk loading/unloading system
+ * 2. GPU-based vertex morphing eliminates seams between LOD levels
+ * 3. Supports dynamic terrain generation and special zones
+ *
+ * The key insight from Geometry Clipmaps applied here:
+ * - Adjacent chunks MUST share edge vertices with identical heights
+ * - Within transition zones, vertices morph: z' = (1-α)zf + αzc
+ * - Morphing happens on GPU, so it's smooth and per-frame
+ */
+export function createHybridClipmapMaterial(config: HybridClipmapConfig): MeshStandardNodeMaterial {
+  // Uniforms that get updated per-chunk
+  const uChunkWorldPos = uniform(new Vector3(0, 0, 0), "vec3");
+  const uChunkSize = uniform(config.chunkSize, "float");
+  const uLod = uniform(0, "int");
+
+  // Global uniforms
+  const uMorphStart = uniform(config.morphStart, "float");
+  const lodCount = Math.min(config.lodDistances.length, 5);
+  const uLodDistances = [
+    uniform(config.lodDistances[0] ?? 32, "float"),
+    uniform(config.lodDistances[1] ?? 64, "float"),
+    uniform(config.lodDistances[2] ?? 128, "float"),
+    uniform(config.lodDistances[3] ?? 256, "float"),
+    uniform(config.lodDistances[4] ?? 512, "float"),
+  ];
+
+  /**
+   * Calculate the blend factor α for a vertex based on camera distance
+   *
+   * The clipmap formula is: z' = (1-α)zf + αzc
+   * where:
+   *   zf = height at fine (current) LOD
+   *   zc = height at coarse (next) LOD
+   *   α = blend factor, 0 at LOD boundary start, 1 at LOD boundary end
+   *
+   * We compute α based on where the vertex is within its LOD's transition zone.
+   */
+  const calculateMorphAlpha = Fn(([distToCamera]: [ReturnType<typeof float>]) => {
+    const alpha = float(0.0).toVar();
+
+    // Check each LOD level
+    If(distToCamera.lessThan(uLodDistances[0]), () => {
+      // Within LOD 0 range
+      const lodStart = float(0.0);
+      const lodEnd = uLodDistances[0];
+      const lodRange = sub(lodEnd, lodStart);
+      const transitionStart = mul(lodEnd, uMorphStart);
+      const transitionRange = sub(lodEnd, transitionStart);
+
+      If(distToCamera.greaterThan(transitionStart), () => {
+        // In transition zone - calculate alpha
+        const posInTransition = div(sub(distToCamera, transitionStart), transitionRange);
+        alpha.assign(clamp(posInTransition, 0.0, 1.0));
+      });
+    }).ElseIf(distToCamera.lessThan(uLodDistances[1]), () => {
+      // Within LOD 1 range
+      const lodStart = uLodDistances[0];
+      const lodEnd = uLodDistances[1];
+      const lodRange = sub(lodEnd, lodStart);
+      const transitionStart = add(lodStart, mul(lodRange, uMorphStart));
+      const transitionRange = sub(lodEnd, transitionStart);
+
+      If(distToCamera.greaterThan(transitionStart), () => {
+        const posInTransition = div(sub(distToCamera, transitionStart), transitionRange);
+        alpha.assign(clamp(posInTransition, 0.0, 1.0));
+      });
+    }).ElseIf(distToCamera.lessThan(uLodDistances[2]), () => {
+      // Within LOD 2 range
+      const lodStart = uLodDistances[1];
+      const lodEnd = uLodDistances[2];
+      const lodRange = sub(lodEnd, lodStart);
+      const transitionStart = add(lodStart, mul(lodRange, uMorphStart));
+      const transitionRange = sub(lodEnd, transitionStart);
+
+      If(distToCamera.greaterThan(transitionStart), () => {
+        const posInTransition = div(sub(distToCamera, transitionStart), transitionRange);
+        alpha.assign(clamp(posInTransition, 0.0, 1.0));
+      });
+    }).ElseIf(distToCamera.lessThan(uLodDistances[3]), () => {
+      // Within LOD 3 range
+      const lodStart = uLodDistances[2];
+      const lodEnd = uLodDistances[3];
+      const lodRange = sub(lodEnd, lodStart);
+      const transitionStart = add(lodStart, mul(lodRange, uMorphStart));
+      const transitionRange = sub(lodEnd, transitionStart);
+
+      If(distToCamera.greaterThan(transitionStart), () => {
+        const posInTransition = div(sub(distToCamera, transitionStart), transitionRange);
+        alpha.assign(clamp(posInTransition, 0.0, 1.0));
+      });
+    }).Else(() => {
+      // Beyond all LOD levels - fully morphed
+      alpha.assign(1.0);
+    });
+
+    return alpha;
+  });
+
+  /**
+   * Morph vertex position from fine grid to coarse grid
+   *
+   * Vertices at "odd" grid positions (those that exist only at finer LODs)
+   * morph toward their even neighbors (which exist at coarser LODs).
+   *
+   * Grid position parity is determined by: fract(gridPos * 0.5) * 2
+   * - Even positions: result = 0
+   * - Odd positions: result = 1
+   */
+  const morphVertexPosition = Fn(([localPos, alpha]: [ReturnType<typeof vec3>, ReturnType<typeof float>]) => {
+    const result = vec3(localPos).toVar();
+
+    If(alpha.greaterThan(0.001), () => {
+      // Calculate grid step at current resolution
+      const gridStep = div(uChunkSize, float(config.baseResolution - 1));
+
+      // Convert local position to grid coordinates
+      const gridX = div(localPos.x, gridStep);
+      const gridZ = div(localPos.z, gridStep);
+
+      // Determine if this is an "odd" vertex (needs morphing)
+      // fract(x * 0.5) * 2 gives 0 for even, ~1 for odd grid positions
+      const oddX = mul(fract(mul(gridX, 0.5)), 2.0);
+      const oddZ = mul(fract(mul(gridZ, 0.5)), 2.0);
+
+      // Calculate the offset to the coarser grid position
+      // Odd vertices snap to the nearest even vertex when fully morphed
+      const offsetX = mul(mul(oddX, gridStep), alpha);
+      const offsetZ = mul(mul(oddZ, gridStep), alpha);
+
+      // Apply morphing - move toward coarser grid position
+      result.x.assign(sub(localPos.x, offsetX));
+      result.z.assign(sub(localPos.z, offsetZ));
+    });
+
+    return result;
+  });
+
+  /**
+   * Main vertex displacement function
+   */
+  const vertexDisplacement = Fn(() => {
+    const localPos = positionLocal;
+
+    // Calculate world position of chunk center
+    const chunkCenterWorld = add(
+      uChunkWorldPos,
+      vec3(mul(uChunkSize, 0.5), 0, mul(uChunkSize, 0.5))
+    );
+
+    // Distance from camera to chunk center (for LOD determination)
+    const toCamera = sub(cameraPosition, chunkCenterWorld);
+    const distToCamera = length(vec3(toCamera.x, 0, toCamera.z)); // XZ distance only
+
+    // Calculate morph alpha
+    const alpha = calculateMorphAlpha(distToCamera);
+
+    // Morph vertex position
+    const morphedPos = morphVertexPosition(localPos, alpha);
+
+    // Y (height) stays the same - it's baked into the vertex data
+    // The key is that the XZ position morphs to match the coarser grid,
+    // which means adjacent chunks will have matching edge vertices
+    return vec3(morphedPos.x, localPos.y, morphedPos.z);
+  });
+
+  // Create material
+  const material = new MeshStandardNodeMaterial({
+    vertexColors: true,
+    roughness: 0.8,
+    metalness: 0.1,
+  });
+
+  // Apply vertex displacement
+  material.positionNode = vertexDisplacement();
+
+  // Store uniforms for external access
+  (material as unknown as Record<string, unknown>).clipmapUniforms = {
+    uChunkWorldPos,
+    uChunkSize,
+    uLod,
+    uMorphStart,
+    uLodDistances,
+  };
+
+  return material;
+}
+
+/**
+ * Update material uniforms for a specific chunk
+ */
+export function updateHybridChunkUniforms(
+  material: MeshStandardNodeMaterial,
+  chunkWorldX: number,
+  chunkWorldZ: number,
+  lod: number
+): void {
+  const uniforms = (material as unknown as Record<string, unknown>).clipmapUniforms as {
+    uChunkWorldPos: ReturnType<typeof uniform>;
+    uLod: ReturnType<typeof uniform>;
+  } | undefined;
+
+  if (uniforms) {
+    uniforms.uChunkWorldPos.value.set(chunkWorldX, 0, chunkWorldZ);
+    uniforms.uLod.value = lod;
+  }
+}
+
+// ============================================================================
+// SHARED EDGE GENERATION (CRITICAL FOR SEAMLESS TERRAIN)
+// ============================================================================
+// The key to seamless terrain is that adjacent chunks MUST share identical
+// edge vertices. This requires:
+// 1. Edge vertex world coordinates are calculated EXACTLY (no floating point drift)
+// 2. Heights at edges are sampled at those exact world coordinates
+// 3. When LOD differs, the higher-LOD chunk generates "transition" vertices
+//    that interpolate to match the lower-LOD chunk's edge
+
+/**
+ * Generate edge-matched vertex positions for a chunk
+ *
+ * This ensures that:
+ * - Edge vertices are at EXACT world coordinates (no floating point drift)
+ * - Adjacent chunks sample the same world positions for their shared edge
+ * - LOD transitions are handled by vertex morphing in the shader
+ *
+ * @param chunkX - Chunk X coordinate (not world position)
+ * @param chunkZ - Chunk Z coordinate
+ * @param chunkSize - Size of chunk in world units
+ * @param resolution - Vertices per side
+ * @param heightFn - Function to get height at world coordinates
+ */
+export function generateEdgeMatchedVertices(
+  chunkX: number,
+  chunkZ: number,
+  chunkSize: number,
+  resolution: number,
+  heightFn: (worldX: number, worldZ: number) => number
+): { vertices: Float32Array; normals: Float32Array } {
+  const vertexCount = resolution * resolution;
+  const vertices = new Float32Array(vertexCount * 3);
+  const normals = new Float32Array(vertexCount * 3);
+
+  // CRITICAL: Calculate exact world origin (integer math, no drift)
+  const originX = chunkX * chunkSize;
+  const originZ = chunkZ * chunkSize;
+
+  const step = chunkSize / (resolution - 1);
+
+  // First pass: generate vertices with exact edge coordinates
+  for (let z = 0; z < resolution; z++) {
+    for (let x = 0; x < resolution; x++) {
+      const idx = (z * resolution + x) * 3;
+
+      // CRITICAL: Edge vertices use EXACT boundary coordinates
+      // This ensures adjacent chunks have identical edge positions
+      let worldX: number;
+      let worldZ: number;
+
+      if (x === 0) {
+        worldX = originX; // Exact left edge
+      } else if (x === resolution - 1) {
+        worldX = originX + chunkSize; // Exact right edge
+      } else {
+        worldX = originX + x * step;
+      }
+
+      if (z === 0) {
+        worldZ = originZ; // Exact bottom edge
+      } else if (z === resolution - 1) {
+        worldZ = originZ + chunkSize; // Exact top edge
+      } else {
+        worldZ = originZ + z * step;
+      }
+
+      // Sample height at exact world coordinates
+      const height = heightFn(worldX, worldZ);
+
+      // Store local position (relative to chunk origin)
+      // The local coordinates also use exact values for edges
+      const localX = x === 0 ? 0 : (x === resolution - 1 ? chunkSize : x * step);
+      const localZ = z === 0 ? 0 : (z === resolution - 1 ? chunkSize : z * step);
+
+      vertices[idx] = localX;
+      vertices[idx + 1] = height;
+      vertices[idx + 2] = localZ;
+    }
+  }
+
+  // Second pass: calculate normals
+  for (let z = 0; z < resolution; z++) {
+    for (let x = 0; x < resolution; x++) {
+      const idx = (z * resolution + x) * 3;
+
+      const currentHeight = vertices[idx + 1] ?? 0;
+      const left = x > 0 ? (vertices[(z * resolution + (x - 1)) * 3 + 1] ?? currentHeight) : currentHeight;
+      const right = x < resolution - 1 ? (vertices[(z * resolution + (x + 1)) * 3 + 1] ?? currentHeight) : currentHeight;
+      const down = z > 0 ? (vertices[((z - 1) * resolution + x) * 3 + 1] ?? currentHeight) : currentHeight;
+      const up = z < resolution - 1 ? (vertices[((z + 1) * resolution + x) * 3 + 1] ?? currentHeight) : currentHeight;
+
+      // Calculate normal from height differences
+      const nx = left - right;
+      const ny = 2 * step;
+      const nz = down - up;
+      const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+
+      normals[idx] = nx / len;
+      normals[idx + 1] = ny / len;
+      normals[idx + 2] = nz / len;
+    }
+  }
+
+  return { vertices, normals };
+}

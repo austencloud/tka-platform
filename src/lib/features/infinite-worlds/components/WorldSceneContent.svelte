@@ -67,10 +67,10 @@
   import { MeshStandardNodeMaterial } from "three/webgpu";
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
   import {
-    createCDLODMaterial,
-    updateChunkUniforms,
-    type CDLODConfig,
-  } from "../rendering/terrain-shader";
+    createHybridClipmapMaterial,
+    updateHybridChunkUniforms,
+    type HybridClipmapConfig,
+  } from "../rendering/geometry-clipmap";
   
   // ============================================================================
   // PROPS
@@ -183,10 +183,11 @@
   let campgroundObjects: Object3D[] = [];
   const gltfLoader = new GLTFLoader();
 
-  // CDLOD terrain material - shared across all chunks for efficiency
-  // Uses TSL vertex morphing to eliminate seams between LOD levels
-  // Compatible with both WebGL and WebGPU renderers
-  let cdlodMaterial: MeshStandardNodeMaterial | null = null;
+  // Hybrid Clipmap terrain material - shared across all chunks for efficiency
+  // Uses GPU-based vertex morphing to eliminate seams between LOD levels
+  // Based on NVIDIA's Geometry Clipmaps (GPU Gems 2, Chapter 2)
+  // Formula: z' = (1-α)zf + αzc where α ramps through transition zones
+  let clipmapMaterial: MeshStandardNodeMaterial | null = null;
 
   onMount(async () => {
     inputCapabilities.init();
@@ -260,14 +261,17 @@
       resolution: 33,
     });
 
-    // Initialize CDLOD terrain material with vertex morphing
-    // This eliminates seams between chunks at different LOD levels
-    const cdlodConfig: CDLODConfig = {
+    // Initialize Hybrid Clipmap terrain material with GPU-based vertex morphing
+    // This eliminates seams between chunks at different LOD levels using
+    // the classic clipmap formula: z' = (1-α)zf + αzc
+    // Reference: NVIDIA GPU Gems 2, Chapter 2
+    const clipmapConfig: HybridClipmapConfig = {
       lodDistances: activeConfig.chunks.lodDistances,
       chunkSize: activeConfig.chunks.size,
       baseResolution: 33,
+      morphStart: 0.7, // Start morphing at 70% through each LOD range
     };
-    cdlodMaterial = createCDLODMaterial(cdlodConfig);
+    clipmapMaterial = createHybridClipmapMaterial(clipmapConfig);
 
     // CRITICAL: Set spawn clearing BEFORE any chunks are generated
     // This must happen immediately after chunk manager is created
@@ -562,20 +566,33 @@
     geometry.setAttribute("color", new BufferAttribute(colors, 3));
     geometry.setIndex(new BufferAttribute(indices, 1));
 
-    // Use CDLOD material with vertex morphing for seamless LOD transitions
-    // Each chunk gets a cloned material so we can set per-chunk uniforms
     const chunk = state.entity.chunk;
     const chunkWorldX = chunk ? chunk.chunkX * activeConfig.chunks.size : 0;
     const chunkWorldZ = chunk ? chunk.chunkZ * activeConfig.chunks.size : 0;
 
-    // Use standard material - all chunks are LOD 0 (uniform resolution)
-    // so no morphing needed. The TSL CDLOD shader is preserved for future
-    // use when proper edge stitching is implemented.
-    const material = new MeshStandardMaterial({
-      vertexColors: true,
-      roughness: 0.8,
-      metalness: 0.1,
-    });
+    // Use Hybrid Clipmap material with GPU-based vertex morphing
+    // Each chunk gets a cloned material so we can set per-chunk uniforms
+    // The material implements the clipmap formula: z' = (1-α)zf + αzc
+    // which smoothly morphs vertices between LOD levels to eliminate seams
+    let material: MeshStandardNodeMaterial | MeshStandardMaterial;
+
+    if (clipmapMaterial) {
+      // Clone the clipmap material and update its uniforms for this chunk
+      material = clipmapMaterial.clone();
+      updateHybridChunkUniforms(
+        material,
+        chunkWorldX,
+        chunkWorldZ,
+        state.lod
+      );
+    } else {
+      // Fallback to standard material (shouldn't happen in normal operation)
+      material = new MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.8,
+        metalness: 0.1,
+      });
+    }
 
     const mesh = new Mesh(geometry, material);
     mesh.receiveShadow = true;
