@@ -155,6 +155,58 @@ const AUDITED_FILES = {
     auditDate: "2026-01-21",
     reason: "A+ audit complete: Extracted shared LabPreviewCanvas component, all Labs use theme variables, loading states, accessibility features. 6/9 Labs refactored to use shared component.",
   },
+  "lib/features/landing-preview/state/VideoEditorController.svelte.ts": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives say leave it. Single-responsibility controller managing video editor state machine. Size is proportional to feature complexity (5 modes, clear internal organization, factory pattern encapsulation). Extraction would add ceremony without benefit.",
+  },
+  "lib/features/create/shared/workspace-panel/sequence-display/components/StepCell.svelte": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives: leave alone. 840 lines but only ~260 script, ~50 markup, ~520 CSS. CSS inflation from 5 entry animations + 5 practice styles + selection/highlight states + a11y overrides. Animation logic already extracted to StepCellAnimationManager. Leaf component with rich visual states - complexity is inherent.",
+  },
+  "lib/features/train/components/challenges/ChallengesPanel.svelte": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives say leave it. 617 of 976 lines are CSS (64%). Script is only 161 lines with clean separation - data from trainChallengesState, logic in trainChallengeManager service. Filter drawer is tightly coupled to parent state; extraction would add prop drilling without benefit.",
+  },
+  "lib/shared/video-record/components/VideoRecordPanel.svelte": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives say leave it. 907 lines but ~45% CSS (must stay with component), ~25% multi-state UI (inherent to recording feature), ~30% cohesive recording logic. Controls bar extraction would create heavy prop drilling for marginal benefit.",
+  },
+  "lib/shared/gamification/components/AchievementsBrowser.svelte": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives say leave it. 174 lines script + 560 lines CSS for container-query responsive design. Services already extracted to DI. Size is inherent complexity of responsive panel, not multiple responsibilities.",
+  },
+  "lib/features/loop-labeler/components/LOOPLabelerModule.svelte": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives: Orchestrator with heavy prior decomposition. All panels extracted, state in separate managers, handlers are thin dispatch. Remaining code is wiring that belongs in the component.",
+  },
+  "lib/features/background-builder/services/implementations/TreeLabRenderer.ts": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives: Single-responsibility rendering service. Algorithms share helpers (seeded random, trunk, gradients). Size comes from verbose math, not mixed concerns. Well-organized with clear section headers.",
+  },
+  "lib/features/skewlab/components/CategoryBrowser.svelte": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives say leave it. Feature browser with filtering + pagination. Dead code removed (150+ lines). Remaining size is inherent complexity of feature UI.",
+  },
+  "lib/shared/coordinators/AnimationSheetCoordinator.svelte": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives say leave it. 711-line coordinator component with zero CSS. Wires 7 services together for animation playback, video export, and URL sync. Complexity is inherent to coordination role. Polling workaround noted but requires state factory fix, not this file.",
+  },
+  "lib/features/compose/timeline/components/TimelineMediaBrowser.svelte": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives say leave it. ~200 lines script, ~475 lines CSS. Pure UI orchestration for media browser drawer. Services already extracted to DI.",
+  },
+  "routes/admin/generate-thumbnails/+page.svelte": {
+    auditDate: "2026-01-21",
+    reason: "Admin tooling - not production code. Legacy transformation + batch processing UI. No extraction needed for dev tools.",
+  },
+  "lib/features/infinite-worlds/core/chunk-manager.ts": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives: single chunk management domain, zone features all modify chunk generation, extraction would create thin wrappers with back-references",
+  },
+  "lib/features/infinite-worlds/workers/chunk-generator.worker.ts": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives: Web Worker isolation prevents DI, single chunk generation domain, procedural pipeline, utilities already extracted to seed-generator.ts",
+  },
   // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
 

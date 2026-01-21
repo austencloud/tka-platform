@@ -53,8 +53,8 @@ This ensures audits are thorough and meaningful - you can't claim to have audite
 4. **Present the scorecard** with grades and prioritized issues
 5. **Immediately record grades** (no confirmation needed):
    `node scripts/audit-tracker.cjs record "<target>" --grades "A+,A,A,B,A,A,A+,A" --notes "..."`
-6. **Present the fix plan** - explain what needs to change and why, so the user understands
-7. **Ask ONE question**: "Ready to bring this to A+?" with options to proceed or defer
+6. **If fixes needed**: Present the fix plan and ask "Ready to bring this to A+?" with options to proceed or defer
+7. **If no fixes needed (A+ across the board)**: Ask "Shall I audit the next feature?"
 
 ### Useful Commands
 

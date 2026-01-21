@@ -356,7 +356,18 @@
       "mcp__game-controller__game_load_sequence",
       "Bash(powershell.exe -Command \"cd ''F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE''; npx svelte-check --threshold error 2>&1 | Select-String -Pattern ''error|game-bridge'' | Select-Object -First 30\")",
       "Bash(powershell.exe -Command \"cd ''F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE''; npx svelte-check --threshold error 2>&1 | Select-String -Pattern ''game-bridge''\")",
-      "Bash(powershell.exe -Command \"cd ''F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE''; npx tsc --noEmit --project tsconfig.json 2>&1 | Select-String -Pattern ''game-bridge'' | Select-Object -First 20\")"
+      "Bash(powershell.exe -Command \"cd ''F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE''; npx tsc --noEmit --project tsconfig.json 2>&1 | Select-String -Pattern ''game-bridge'' | Select-Object -First 20\")",
+      "WebFetch(domain:jeremybouny.fr)",
+      "WebFetch(domain:www.pheelicks.com)",
+      "WebFetch(domain:aggrobird.com)",
+      "Bash(Pine)",
+      "Bash(Spruce \")",
+      "WebFetch(domain:svnte.se)",
+      "Bash(./binaries/ffprobe.exe:*)",
+      "Bash(\"F:\\\\_THE KINETIC ALPHABET\\\\zoom-recorder\\\\binaries\\\\ffmpeg.exe\" -i /c/Users/Austen/.zoom-recorder/ZoomRecorder-1768990878572-screen.mp4)",
+      "WebFetch(domain:blog.maximeheckel.com)",
+      "WebFetch(domain:shinesolutions.com)",
+      "WebFetch(domain:developer.nvidia.com)"
     ]
   },
   "enableAllProjectMcpServers": true,
