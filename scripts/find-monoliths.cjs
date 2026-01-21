@@ -151,6 +151,10 @@ const AUDITED_FILES = {
     auditDate: "2026-01-21",
     reason: "4/4 perspectives say leave it. 560+ lines are scoped CSS. Script is a thin orchestrator delegating to IPromoOrchestrator. Extractions would be pass-through wrappers without benefit.",
   },
+  "lib/features/background-builder/components": {
+    auditDate: "2026-01-21",
+    reason: "A+ audit complete: Extracted shared LabPreviewCanvas component, all Labs use theme variables, loading states, accessibility features. 6/9 Labs refactored to use shared component.",
+  },
   // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
 
