@@ -123,7 +123,7 @@ Only shown when motion has turns > 0 and rotation direction is not NO_ROTATION.
 
   .toggle-label {
     font-weight: 600;
-    color: #666;
+    color: var(--theme-text-dim, #666);
     white-space: nowrap;
     flex: 1;
     text-align: center;
@@ -147,10 +147,11 @@ Only shown when motion has turns > 0 and rotation direction is not NO_ROTATION.
     justify-content: center;
     gap: 4px;
     padding: 4px 10px;
+    min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
     border: 2px solid transparent;
     border-radius: 6px;
-    background: white;
-    color: #666;
+    background: var(--theme-card-bg, white);
+    color: var(--theme-text-dim, #666);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
@@ -211,6 +212,22 @@ Only shown when motion has turns > 0 and rotation direction is not NO_ROTATION.
   .btn-text {
     font-weight: 700;
     letter-spacing: 0.5px;
+  }
+
+  .toggle-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .toggle-btn {
+      transition: none;
+    }
+
+    .toggle-btn:hover:not(.active) {
+      transform: none;
+    }
   }
 
   /* Compact mode - hide text labels on very small screens */

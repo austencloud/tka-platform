@@ -64,13 +64,10 @@
     type Scene,
     type Material,
   } from "three";
-  import { MeshStandardNodeMaterial } from "three/webgpu";
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-  import {
-    createHybridClipmapMaterial,
-    updateHybridChunkUniforms,
-    type HybridClipmapConfig,
-  } from "../rendering/geometry-clipmap";
+  // Geometry Clipmap module preserved for reference. T-junction stitching is now
+  // implemented in the chunk worker (CPU-side), so GPU vertex morphing is not needed.
+  // See: chunk-generator.worker.ts for the stitching implementation.
   
   // ============================================================================
   // PROPS
@@ -183,11 +180,10 @@
   let campgroundObjects: Object3D[] = [];
   const gltfLoader = new GLTFLoader();
 
-  // Hybrid Clipmap terrain material - shared across all chunks for efficiency
-  // Uses GPU-based vertex morphing to eliminate seams between LOD levels
-  // Based on NVIDIA's Geometry Clipmaps (GPU Gems 2, Chapter 2)
-  // Formula: z' = (1-α)zf + αzc where α ramps through transition zones
-  let clipmapMaterial: MeshStandardNodeMaterial | null = null;
+  // NOTE: Clipmap material is disabled until T-junction stitching is implemented.
+  // The GPU vertex morphing only works if adjacent chunks have the same vertex
+  // count at their shared edge, which requires stitching geometry.
+  // For now, LOD 0 + 15m skirts provides seamless terrain.
 
   onMount(async () => {
     inputCapabilities.init();
@@ -261,17 +257,9 @@
       resolution: 33,
     });
 
-    // Initialize Hybrid Clipmap terrain material with GPU-based vertex morphing
-    // This eliminates seams between chunks at different LOD levels using
-    // the classic clipmap formula: z' = (1-α)zf + αzc
-    // Reference: NVIDIA GPU Gems 2, Chapter 2
-    const clipmapConfig: HybridClipmapConfig = {
-      lodDistances: activeConfig.chunks.lodDistances,
-      chunkSize: activeConfig.chunks.size,
-      baseResolution: 33,
-      morphStart: 0.7, // Start morphing at 70% through each LOD range
-    };
-    clipmapMaterial = createHybridClipmapMaterial(clipmapConfig);
+    // T-junction stitching is implemented in the chunk worker (CPU-side).
+    // Edge vertices are adjusted to match coarser neighbor LODs during generation.
+    // No GPU vertex morphing needed - we use standard materials.
 
     // CRITICAL: Set spawn clearing BEFORE any chunks are generated
     // This must happen immediately after chunk manager is created
@@ -570,29 +558,14 @@
     const chunkWorldX = chunk ? chunk.chunkX * activeConfig.chunks.size : 0;
     const chunkWorldZ = chunk ? chunk.chunkZ * activeConfig.chunks.size : 0;
 
-    // Use Hybrid Clipmap material with GPU-based vertex morphing
-    // Each chunk gets a cloned material so we can set per-chunk uniforms
-    // The material implements the clipmap formula: z' = (1-α)zf + αzc
-    // which smoothly morphs vertices between LOD levels to eliminate seams
-    let material: MeshStandardNodeMaterial | MeshStandardMaterial;
-
-    if (clipmapMaterial) {
-      // Clone the clipmap material and update its uniforms for this chunk
-      material = clipmapMaterial.clone();
-      updateHybridChunkUniforms(
-        material,
-        chunkWorldX,
-        chunkWorldZ,
-        state.lod
-      );
-    } else {
-      // Fallback to standard material (shouldn't happen in normal operation)
-      material = new MeshStandardMaterial({
-        vertexColors: true,
-        roughness: 0.8,
-        metalness: 0.1,
-      });
-    }
+    // T-junction stitching handles LOD seams at CPU level during chunk generation.
+    // Edge vertices are adjusted to match coarser neighbors, so we just need a
+    // standard material here - no GPU vertex morphing required.
+    const material = new MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 0.8,
+      metalness: 0.1,
+    });
 
     const mesh = new Mesh(geometry, material);
     mesh.receiveShadow = true;

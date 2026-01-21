@@ -185,6 +185,22 @@ Features:
     cursor: not-allowed;
   }
 
+  .action-button:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .input-wrapper {
+      transition: none;
+    }
+
+    .action-button {
+      transition: none;
+    }
+  }
+
   .input-hint {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));

@@ -176,4 +176,16 @@ Pure presentation component that delegates to deletion services.
       min-height: var(--min-touch-target);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .tool-btn {
+      transition: none;
+    }
+
+    .tool-btn:hover:not(:disabled),
+    .tool-btn:active:not(:disabled) {
+      transform: none;
+    }
+  }
 </style>

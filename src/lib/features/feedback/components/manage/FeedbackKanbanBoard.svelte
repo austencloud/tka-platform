@@ -22,6 +22,34 @@
   const sortingService = container.items.feedbackSorter;
   const storageService = container.items.storageManager;
 
+  // Handle undo keyboard shortcut
+  async function handleUndo() {
+    if (!boardState?.canUndo) return;
+
+    const action = boardState.popUndo();
+    if (!action) return;
+
+    try {
+      await manageState.updateStatus(action.feedbackId, action.previousStatus);
+    } catch (err) {
+      console.error("[FeedbackKanbanBoard] Failed to undo:", err);
+    }
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    // Ctrl+Z or Cmd+Z (but not Ctrl+Shift+Z which is redo)
+    if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+      // Only handle if we're not in an input/textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+        return;
+      }
+
+      e.preventDefault();
+      handleUndo();
+    }
+  }
+
   onMount(() => {
     let resizeObserver: ResizeObserver | null = null;
 
@@ -52,8 +80,12 @@
 
     initializeBoard();
 
+    // Add keyboard listener for undo
+    document.addEventListener("keydown", handleKeydown);
+
     return () => {
       resizeObserver?.disconnect();
+      document.removeEventListener("keydown", handleKeydown);
     };
   });
 

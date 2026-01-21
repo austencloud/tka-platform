@@ -26,6 +26,7 @@ import { tmpdir } from "os";
 import { getStandaloneRenderer, type RenderVisibilityOptions } from "./src/core/standalone-renderer.js";
 import { buildSequenceFromLetters, parseWordToLetters, type SequenceStep, type SequenceResult } from "./src/core/sequence-builder.js";
 import { renderSequenceToImage } from "./src/core/sequence-renderer.js";
+import { calculateOrientations } from "./src/core/orientation-calculator.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -146,6 +147,8 @@ interface MotionData {
   endLocation: string;
   motionType: string;
   rotationDirection: string;
+  startOrientation: string;  // "in" | "out" | "clock" | "counter"
+  endOrientation: string;    // "in" | "out" | "clock" | "counter"
 }
 
 interface PictographData {
@@ -182,6 +185,27 @@ function loadDataframe(): PictographData[] {
         row[header] = values[index] || "";
       });
 
+      // Pre-compute orientations for blue motion
+      // CSV variations are all 0 turns with "in" as default start orientation
+      const blueOrientations = calculateOrientations({
+        motionType: row.blueMotionType,
+        turns: 0,
+        rotationDirection: row.blueRotationDirection || "cw",
+        startLocation: row.blueStartLocation,
+        endLocation: row.blueEndLocation,
+        startOrientation: "in",
+      });
+
+      // Pre-compute orientations for red motion
+      const redOrientations = calculateOrientations({
+        motionType: row.redMotionType,
+        turns: 0,
+        rotationDirection: row.redRotationDirection || "cw",
+        startLocation: row.redStartLocation,
+        endLocation: row.redEndLocation,
+        startOrientation: "in",
+      });
+
       pictographs.push({
         letter: row.letter,
         startPosition: row.startPosition,
@@ -194,6 +218,8 @@ function loadDataframe(): PictographData[] {
           endLocation: row.blueEndLocation,
           motionType: row.blueMotionType,
           rotationDirection: row.blueRotationDirection,
+          startOrientation: blueOrientations.startOrientation,
+          endOrientation: blueOrientations.endOrientation,
         },
         redMotion: {
           color: "red",
@@ -201,6 +227,8 @@ function loadDataframe(): PictographData[] {
           endLocation: row.redEndLocation,
           motionType: row.redMotionType,
           rotationDirection: row.redRotationDirection,
+          startOrientation: redOrientations.startOrientation,
+          endOrientation: redOrientations.endOrientation,
         },
       });
     }
@@ -1459,12 +1487,17 @@ server.tool(
     word: z.string().describe('The sequence word, e.g., "ABC"'),
     layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
     cellSize: z.number().optional().default(150).describe("Size of each pictograph cell in pixels"),
-    showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers below each pictograph"),
+    showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers overlaid on each pictograph"),
     showWord: z.boolean().optional().default(true).describe("Show word header at the top"),
     darkMode: z.boolean().optional().default(true).describe("Use dark background"),
     maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
+    // New visual parity options
+    showDifficulty: z.boolean().optional().default(true).describe("Show difficulty level badge in header"),
+    userName: z.string().optional().describe("Username to show in footer (bottom-left)"),
+    notes: z.string().optional().describe("Notes to show in footer (bottom-center)"),
+    birthday: z.string().optional().describe("Birthday/creation date in ISO format (bottom-right), e.g., '2024-01-15'"),
   },
-  async ({ word, layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100 }) => {
+  async ({ word, layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100, showDifficulty = true, userName, notes, birthday }) => {
     ensureDataLoaded();
 
     // Parse word to individual letters
@@ -1492,7 +1525,10 @@ server.tool(
     }
 
     try {
-      // Render composite image
+      // Parse birthday string to Date if provided
+      const birthdayDate = birthday ? new Date(birthday) : undefined;
+
+      // Render composite image with visual parity features
       const pngBuffer = await renderSequenceToImage(result.steps, result.word, {
         layout,
         cellSize,
@@ -1500,6 +1536,11 @@ server.tool(
         showWord,
         darkMode,
         padding: 8,
+        // Visual parity options
+        showDifficulty,
+        userName,
+        notes,
+        birthday: birthdayDate,
       });
 
       // AUTO-OPEN: Save to temp and open immediately with system viewer

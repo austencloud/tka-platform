@@ -143,4 +143,11 @@
   :global(.mobile-compact) .pattern-desc {
     display: none;
   }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .pattern-item {
+      transition: none;
+    }
+  }
 </style>

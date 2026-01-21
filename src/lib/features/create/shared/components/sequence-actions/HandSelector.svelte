@@ -81,6 +81,7 @@
     align-items: center;
     justify-content: center;
     padding: 14px 12px;
+    min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
     border-radius: 10px;
     border: 1.5px solid transparent;
     cursor: pointer;
@@ -151,5 +152,21 @@
   .hand-label {
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
+  }
+
+  .hand-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .hand-btn {
+      transition: none;
+    }
+
+    .hand-btn:hover {
+      transform: none;
+    }
   }
 </style>

@@ -247,6 +247,11 @@ Displays a single preset with icon, name, summary, and action buttons
     transform: translateY(0);
   }
 
+  .preset-item:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
   .preset-icon {
     font-size: var(--font-size-3xl);
     flex-shrink: 0;
@@ -460,6 +465,27 @@ Displays a single preset with icon, name, summary, and action buttons
   .edit-button:active,
   .delete-button:active {
     transform: translateY(0);
+  }
+
+  .edit-button:focus-visible,
+  .delete-button:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .preset-item,
+    .edit-button,
+    .delete-button {
+      transition: none;
+    }
+
+    .preset-item:hover,
+    .edit-button:hover,
+    .delete-button:hover {
+      transform: none;
+    }
   }
 
   @media (max-width: 768px) {

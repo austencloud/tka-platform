@@ -367,7 +367,14 @@
       "Bash(\"F:\\\\_THE KINETIC ALPHABET\\\\zoom-recorder\\\\binaries\\\\ffmpeg.exe\" -i /c/Users/Austen/.zoom-recorder/ZoomRecorder-1768990878572-screen.mp4)",
       "WebFetch(domain:blog.maximeheckel.com)",
       "WebFetch(domain:shinesolutions.com)",
-      "WebFetch(domain:developer.nvidia.com)"
+      "WebFetch(domain:developer.nvidia.com)",
+      "Bash(svelte-kit sync:*)",
+      "Bash(svelte-check:*)",
+      "WebFetch(domain:mikejsavage.co.uk)",
+      "WebFetch(domain:transvoxel.org)",
+      "WebFetch(domain:blog.nostatic.org)",
+      "mcp__tka-domain__generate_sequence_image",
+      "mcp__tka-domain__generate_sequence_data"
     ]
   },
   "enableAllProjectMcpServers": true,

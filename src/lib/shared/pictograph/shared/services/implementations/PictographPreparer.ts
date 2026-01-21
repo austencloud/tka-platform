@@ -141,6 +141,9 @@ export class PictographPreparer implements IPictographPreparer {
       blue?.endLocation ?? "",
       blue?.rotationDirection ?? "",
       blue?.turns ?? 0,
+      // CRITICAL: Include orientations - prop rotation depends on endOrientation
+      blue?.startOrientation ?? "",
+      blue?.endOrientation ?? "",
       // Prop type: explicit option > global settings (viewer preference)
       options?.bluePropType ?? globalSettings.bluePropType ?? "",
       // Blue manual adjustments (for admin arrow positioning via WASD)
@@ -152,6 +155,9 @@ export class PictographPreparer implements IPictographPreparer {
       red?.endLocation ?? "",
       red?.rotationDirection ?? "",
       red?.turns ?? 0,
+      // CRITICAL: Include orientations - prop rotation depends on endOrientation
+      red?.startOrientation ?? "",
+      red?.endOrientation ?? "",
       // Prop type: explicit option > global settings (viewer preference)
       options?.redPropType ?? globalSettings.redPropType ?? "",
       // Red manual adjustments (for admin arrow positioning via WASD)

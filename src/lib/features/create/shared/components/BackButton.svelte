@@ -107,6 +107,30 @@
     transform: translateX(-2px);
   }
 
+  .back-button:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .back-button {
+      transition: none;
+    }
+
+    .back-button:hover {
+      transform: none;
+    }
+
+    .back-button svg {
+      transition: none;
+    }
+
+    .back-button:hover svg {
+      transform: none;
+    }
+  }
+
   /* Mobile responsive - maintain 48px touch target */
   @media (max-width: 768px) {
     .back-button {

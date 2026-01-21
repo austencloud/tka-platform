@@ -314,4 +314,19 @@
       font-size: var(--font-size-sm);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .panel-button {
+      transition: none;
+    }
+
+    .panel-button:hover {
+      transform: none;
+    }
+
+    .panel-button:active {
+      transform: none;
+    }
+  }
 </style>

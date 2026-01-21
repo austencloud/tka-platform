@@ -78,6 +78,14 @@
     }
 
     if (boardState.draggedItem.status !== status) {
+      // Record for undo BEFORE the update
+      boardState.pushUndo({
+        feedbackId: boardState.draggedItem.id,
+        previousStatus: boardState.draggedItem.status,
+        newStatus: status,
+        timestamp: Date.now(),
+      });
+
       try {
         await manageState.updateStatus(boardState.draggedItem.id, status);
       } catch {

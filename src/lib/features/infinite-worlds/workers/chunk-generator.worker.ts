@@ -51,6 +51,24 @@ let spawnClearing: {
 // MESSAGE TYPES
 // ============================================================================
 
+/**
+ * Neighbor LOD information for T-junction stitching
+ * -1 means no neighbor (edge of loaded area)
+ * >= 0 is the LOD level of that neighbor
+ * Includes diagonals for corner vertex coordination
+ */
+export interface NeighborLODs {
+  north: number; // +Z direction
+  south: number; // -Z direction
+  east: number;  // +X direction
+  west: number;  // -X direction
+  // Diagonals for corner coordination
+  northEast: number;
+  northWest: number;
+  southEast: number;
+  southWest: number;
+}
+
 export interface GenerateChunkMessage {
   type: "generate-chunk";
   id: number;
@@ -59,8 +77,10 @@ export interface GenerateChunkMessage {
   chunkZ: number;
   worldSeed: number;
   chunkSize: number;
-  resolution: number; // Vertices per side
+  resolution: number; // Vertices per side at LOD 0
   lod: number;
+  /** Neighbor LODs for T-junction stitching. If not provided, assumes same LOD. */
+  neighborLODs?: NeighborLODs;
 }
 
 export interface LoadRealZoneMessage {
@@ -154,8 +174,76 @@ export type WorkerResponse = ChunkResultMessage | RealZoneLoadedMessage;
 // CHUNK GENERATION
 // ============================================================================
 
+// ============================================================================
+// T-JUNCTION STITCHING HELPERS
+// ============================================================================
+
+/**
+ * Calculate how many vertices a given LOD level has along an edge
+ * LOD 0 = base resolution, each higher LOD halves it
+ */
+function getEdgeVertexCount(baseResolution: number, lod: number): number {
+  return Math.max(4, Math.floor(baseResolution / Math.pow(2, lod)));
+}
+
+/**
+ * Calculate the interpolated height at a position along an edge when stitching
+ * to a coarser neighbor. The coarser grid has fewer vertices, so we interpolate
+ * between the two coarse vertices that bracket this position.
+ *
+ * This implements the clipmap formula: z' = (1-α)z1 + α*z2
+ *
+ * @param finePosition Position along the edge (0 to fineResolution-1)
+ * @param fineResolution Number of vertices at fine LOD
+ * @param coarseResolution Number of vertices at coarse LOD
+ * @param getCoarseHeight Function to get height at coarse vertex index
+ * @returns Interpolated height that matches the coarser grid
+ */
+function interpolateToCoarseEdge(
+  finePosition: number,
+  fineResolution: number,
+  coarseResolution: number,
+  getCoarseHeight: (coarseIdx: number) => number
+): number {
+  // Map fine position to coarse coordinate space
+  // Fine positions 0...(fineRes-1) map to coarse 0...(coarseRes-1)
+  const fineMaxIdx = fineResolution - 1;
+  const coarseMaxIdx = coarseResolution - 1;
+
+  // Position in 0..1 space along the edge
+  const t = finePosition / fineMaxIdx;
+
+  // Corresponding position in coarse index space
+  const coarseFloat = t * coarseMaxIdx;
+
+  // Find the two coarse vertices that bracket this position
+  const coarseIdx1 = Math.floor(coarseFloat);
+  const coarseIdx2 = Math.min(coarseIdx1 + 1, coarseMaxIdx);
+
+  // Interpolation factor between the two coarse vertices
+  const alpha = coarseFloat - coarseIdx1;
+
+  // Get heights at the coarse vertices
+  const h1 = getCoarseHeight(coarseIdx1);
+  const h2 = getCoarseHeight(coarseIdx2);
+
+  // Interpolate: z' = (1-α)*h1 + α*h2
+  return h1 + alpha * (h2 - h1);
+}
+
+/**
+ * Check if an edge needs stitching to a coarser neighbor
+ * Stitching is needed when neighbor LOD > our LOD (coarser = higher LOD number)
+ */
+function needsStitching(ourLod: number, neighborLod: number): boolean {
+  // -1 means no neighbor, no stitching needed
+  if (neighborLod < 0) return false;
+  // Stitch when neighbor is coarser (higher LOD number)
+  return neighborLod > ourLod;
+}
+
 function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
-  const { chunkX, chunkY, chunkZ, worldSeed, chunkSize, resolution, lod } = msg;
+  const { chunkX, chunkY, chunkZ, worldSeed, chunkSize, resolution, lod, neighborLODs } = msg;
 
   // Adjust resolution based on LOD
   const effectiveResolution = Math.max(4, Math.floor(resolution / Math.pow(2, lod)));
@@ -317,6 +405,208 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     }
   }
 
+  // ============================================================================
+  // T-JUNCTION STITCHING - Adjust edge heights to match coarser neighbors
+  // ============================================================================
+  // When a neighbor has a coarser LOD (higher LOD number), they have fewer
+  // vertices along the shared edge. We adjust our edge vertex heights to
+  // interpolate to what the coarser grid would produce, eliminating seams.
+  //
+  // This implements the GPU Gems 2 Geometry Clipmaps technique:
+  // z' = (1-α)zf + αzc
+  //
+  // We keep skirts as a safety net for any remaining precision issues.
+
+  if (neighborLODs) {
+    // Helper to get height at a world position using the same noise function
+    // This samples at the positions the coarser grid would use
+    const getHeightAtWorldPos = (worldX: number, worldZ: number): number => {
+      // Get procedural height
+      let height = getTerrainHeight(noise, worldX, worldZ);
+
+      // Apply the same zone blending as the main vertex pass
+      if (usesRealTerrain) {
+        height = getBlendedHeight(realTerrainZone, worldX, worldZ, height, 30);
+      }
+
+      if (stageZone && !spawnClearing) {
+        const dx = worldX - stageZone.center.x;
+        const dz = worldZ - stageZone.center.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        const stageHeight = 0;
+        if (dist < stageZone.radius) {
+          height = stageHeight;
+        } else if (dist < stageZone.radius + stageZone.blendWidth) {
+          const t = (dist - stageZone.radius) / stageZone.blendWidth;
+          const smooth = t * t * (3 - 2 * t);
+          const targetHeight = Math.max(height, stageHeight);
+          height = stageHeight + smooth * (targetHeight - stageHeight);
+        }
+      }
+
+      if (spawnClearing) {
+        const dx = worldX - spawnClearing.center.x;
+        const dz = worldZ - spawnClearing.center.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        const microNoise = Math.sin(worldX * 0.5) * Math.cos(worldZ * 0.5) * 0.3;
+        const clearingHeight = spawnClearing.waterLevel + 3 + microNoise;
+        if (dist < spawnClearing.radius) {
+          height = clearingHeight;
+        } else if (dist < spawnClearing.radius + spawnClearing.blendWidth) {
+          const t = (dist - spawnClearing.radius) / spawnClearing.blendWidth;
+          const smooth = t * t * (3 - 2 * t);
+          const targetHeight = Math.max(height, clearingHeight);
+          height = clearingHeight + smooth * (targetHeight - clearingHeight);
+        }
+      }
+
+      return height;
+    };
+
+    // SOUTH EDGE (z = 0) - neighbor is at z-1 (south)
+    if (needsStitching(lod, neighborLODs.south)) {
+      const coarseRes = getEdgeVertexCount(resolution, neighborLODs.south);
+      const coarseStep = chunkSize / (coarseRes - 1);
+
+      // Get coarse height function - samples at positions the coarse neighbor uses
+      // CRITICAL: Use exact boundary coordinates for first/last vertices to avoid floating-point drift
+      const getCoarseHeight = (coarseIdx: number): number => {
+        let worldX: number;
+        if (coarseIdx === 0) {
+          worldX = originX; // Exact boundary
+        } else if (coarseIdx === coarseRes - 1) {
+          worldX = originX + chunkSize; // Exact boundary
+        } else {
+          worldX = originX + coarseIdx * coarseStep;
+        }
+        const worldZ = originZ; // z = 0 edge
+        return getHeightAtWorldPos(worldX, worldZ);
+      };
+
+      // Adjust heights along south edge
+      for (let x = 0; x < effectiveResolution; x++) {
+        const idx = x * 3; // z = 0 row
+        const stitchedHeight = interpolateToCoarseEdge(
+          x, effectiveResolution, coarseRes, getCoarseHeight
+        );
+        vertices[idx + 1] = stitchedHeight;
+      }
+    }
+
+    // NORTH EDGE (z = max) - neighbor is at z+1 (north)
+    if (needsStitching(lod, neighborLODs.north)) {
+      const coarseRes = getEdgeVertexCount(resolution, neighborLODs.north);
+      const coarseStep = chunkSize / (coarseRes - 1);
+
+      // CRITICAL: Use exact boundary coordinates for first/last vertices
+      const getCoarseHeight = (coarseIdx: number): number => {
+        let worldX: number;
+        if (coarseIdx === 0) {
+          worldX = originX; // Exact boundary
+        } else if (coarseIdx === coarseRes - 1) {
+          worldX = originX + chunkSize; // Exact boundary
+        } else {
+          worldX = originX + coarseIdx * coarseStep;
+        }
+        const worldZ = originZ + chunkSize; // z = max edge
+        return getHeightAtWorldPos(worldX, worldZ);
+      };
+
+      for (let x = 0; x < effectiveResolution; x++) {
+        const idx = ((effectiveResolution - 1) * effectiveResolution + x) * 3;
+        const stitchedHeight = interpolateToCoarseEdge(
+          x, effectiveResolution, coarseRes, getCoarseHeight
+        );
+        vertices[idx + 1] = stitchedHeight;
+      }
+    }
+
+    // WEST EDGE (x = 0) - neighbor is at x-1 (west)
+    if (needsStitching(lod, neighborLODs.west)) {
+      const coarseRes = getEdgeVertexCount(resolution, neighborLODs.west);
+      const coarseStep = chunkSize / (coarseRes - 1);
+
+      // CRITICAL: Use exact boundary coordinates for first/last vertices
+      const getCoarseHeight = (coarseIdx: number): number => {
+        const worldX = originX; // x = 0 edge
+        let worldZ: number;
+        if (coarseIdx === 0) {
+          worldZ = originZ; // Exact boundary
+        } else if (coarseIdx === coarseRes - 1) {
+          worldZ = originZ + chunkSize; // Exact boundary
+        } else {
+          worldZ = originZ + coarseIdx * coarseStep;
+        }
+        return getHeightAtWorldPos(worldX, worldZ);
+      };
+
+      for (let z = 0; z < effectiveResolution; z++) {
+        const idx = (z * effectiveResolution) * 3; // x = 0 column
+        const stitchedHeight = interpolateToCoarseEdge(
+          z, effectiveResolution, coarseRes, getCoarseHeight
+        );
+        vertices[idx + 1] = stitchedHeight;
+      }
+    }
+
+    // EAST EDGE (x = max) - neighbor is at x+1 (east)
+    if (needsStitching(lod, neighborLODs.east)) {
+      const coarseRes = getEdgeVertexCount(resolution, neighborLODs.east);
+      const coarseStep = chunkSize / (coarseRes - 1);
+
+      // CRITICAL: Use exact boundary coordinates for first/last vertices
+      const getCoarseHeight = (coarseIdx: number): number => {
+        const worldX = originX + chunkSize; // x = max edge
+        let worldZ: number;
+        if (coarseIdx === 0) {
+          worldZ = originZ; // Exact boundary
+        } else if (coarseIdx === coarseRes - 1) {
+          worldZ = originZ + chunkSize; // Exact boundary
+        } else {
+          worldZ = originZ + coarseIdx * coarseStep;
+        }
+        return getHeightAtWorldPos(worldX, worldZ);
+      };
+
+      for (let z = 0; z < effectiveResolution; z++) {
+        const idx = (z * effectiveResolution + effectiveResolution - 1) * 3;
+        const stitchedHeight = interpolateToCoarseEdge(
+          z, effectiveResolution, coarseRes, getCoarseHeight
+        );
+        vertices[idx + 1] = stitchedHeight;
+      }
+    }
+
+    // ========================================================================
+    // CORNER VERTEX COORDINATION
+    // ========================================================================
+    // Corner vertices are where 4 chunks meet. We ensure deterministic heights
+    // by sampling at the exact corner world coordinates. All 4 chunks sharing
+    // a corner will sample the same world position, guaranteeing agreement.
+    //
+    // Corner positions (in local grid coordinates):
+    //   SW: (0, 0)                   SE: (res-1, 0)
+    //   NW: (0, res-1)               NE: (res-1, res-1)
+
+    const cornerConfigs = [
+      { x: 0, z: 0, name: 'SW' },
+      { x: effectiveResolution - 1, z: 0, name: 'SE' },
+      { x: 0, z: effectiveResolution - 1, name: 'NW' },
+      { x: effectiveResolution - 1, z: effectiveResolution - 1, name: 'NE' },
+    ];
+
+    for (const corner of cornerConfigs) {
+      // Sample height at exact corner world position
+      // This ensures all 4 chunks meeting at this corner get the same height
+      const worldX = corner.x === 0 ? originX : originX + chunkSize;
+      const worldZ = corner.z === 0 ? originZ : originZ + chunkSize;
+      const cornerHeight = getHeightAtWorldPos(worldX, worldZ);
+
+      const idx = (corner.z * effectiveResolution + corner.x) * 3;
+      vertices[idx + 1] = cornerHeight;
+    }
+  }
+
   // Second pass: calculate normals
   for (let z = 0; z < effectiveResolution; z++) {
     for (let x = 0; x < effectiveResolution; x++) {
@@ -348,7 +638,24 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   // This hides any gaps caused by LOD differences or floating-point precision.
   // Industry-standard technique used by Unity Terrain, Unreal, etc.
 
-  const SKIRT_DEPTH = 15; // How far down skirts extend (meters) - increased to hide larger gaps
+  // ADAPTIVE SKIRT DEPTH: Coarser LODs have larger gaps, need deeper skirts.
+  // Also factor in terrain variance - hilly terrain needs deeper skirts.
+  const BASE_SKIRT = 15;
+  const LOD_MULTIPLIER = 1.5;
+
+  // Calculate height variance for this chunk
+  let minH = Infinity;
+  let maxH = -Infinity;
+  for (let i = 1; i < vertices.length; i += 3) {
+    const h = vertices[i]!;
+    if (h < minH) minH = h;
+    if (h > maxH) maxH = h;
+  }
+  const variance = maxH - minH;
+
+  // Adaptive depth: deeper at coarser LODs + proportional to terrain variance
+  const SKIRT_DEPTH = BASE_SKIRT * Math.pow(LOD_MULTIPLIER, lod) + variance * 0.3;
+
   const skirtVertexCount = effectiveResolution * 4; // 4 edges
   const totalVertexCount = vertexCount + skirtVertexCount;
 

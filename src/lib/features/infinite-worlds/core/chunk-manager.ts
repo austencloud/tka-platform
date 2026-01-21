@@ -60,6 +60,7 @@ import type {
   ClearStageZoneMessage,
   SetSpawnClearingMessage,
   ClearSpawnClearingMessage,
+  NeighborLODs,
 } from "../workers/chunk-generator.worker";
 import type { CampgroundConfig } from "./realm-config";
 import {
@@ -129,6 +130,9 @@ export class ChunkManager {
   private pendingCallbacks: Map<number, (result: ChunkMeshData) => void> = new Map();
   private nextRequestId = 0;
   private octree: Octree;
+
+  // Reactive re-stitching: chunks that need regeneration when neighbors load
+  private chunksNeedingRestitch: Set<ChunkKey> = new Set();
 
   // Real terrain zone
   private realTerrainZone: RealTerrainZone | null = null;
@@ -266,13 +270,13 @@ export class ChunkManager {
           neededChunks.add(key);
 
           // Calculate LOD based on distance
-          // Now that we have proper clipmap-style vertex morphing in the shader,
-          // we can use proper LOD levels without visible seams.
-          // The GPU morphs vertices smoothly between LOD levels.
-          let lod = 0;
+          // T-junction stitching is implemented in the worker to handle
+          // different LOD levels at chunk boundaries seamlessly.
+          let lod = lodDistances.length;
           for (let i = 0; i < lodDistances.length; i++) {
-            if (distance > lodDistances[i]!) {
-              lod = i + 1;
+            if (distance < lodDistances[i]!) {
+              lod = i;
+              break;
             }
           }
 
@@ -280,6 +284,10 @@ export class ChunkManager {
         }
       }
     }
+
+    // Enforce max 1 LOD difference between adjacent chunks
+    // This is the single most important fix - makes T-junction stitching reliable
+    this.enforceMaxLODDifference(chunkPriorities);
 
     // Unload chunks that are no longer needed
     for (const [key, state] of this.chunks) {
@@ -306,6 +314,20 @@ export class ChunkManager {
         existing.priority = priority.distance;
         existing.lastAccessTime = Date.now();
       }
+    }
+
+    // Process reactive re-stitching: chunks that need regeneration because
+    // their neighbors loaded after they did (filling in neighborLOD=-1 gaps)
+    if (this.chunksNeedingRestitch.size > 0) {
+      for (const key of this.chunksNeedingRestitch) {
+        const state = this.chunks.get(key);
+        if (state?.loadState === 'loaded') {
+          state.loadState = 'pending';
+          state.meshData = null;
+          this.loadQueue.unshift(key); // High priority
+        }
+      }
+      this.chunksNeedingRestitch.clear();
     }
 
     // Sort load queue by priority (closest first)
@@ -352,12 +374,114 @@ export class ChunkManager {
     }
   }
 
+  /**
+   * Enforce max 1 LOD difference between adjacent chunks.
+   * This is the industry-standard constraint that makes T-junction stitching reliable.
+   * Uses iterative constraint propagation until stable.
+   */
+  private enforceMaxLODDifference(
+    chunkPriorities: Map<ChunkKey, { distance: number; lod: number }>
+  ): void {
+    const MAX_LOD_DIFF = 1;
+    let changed = true;
+    let iterations = 0;
+    const MAX_ITERATIONS = 10;
+
+    while (changed && iterations < MAX_ITERATIONS) {
+      changed = false;
+      iterations++;
+
+      for (const [key, data] of chunkPriorities) {
+        const [cx, , cz] = this.parseChunkKey(key);
+
+        // Check all 8 neighbors (including diagonals)
+        const neighbors: [number, number][] = [
+          [1, 0], [-1, 0], [0, 1], [0, -1], // cardinal
+          [1, 1], [-1, 1], [1, -1], [-1, -1], // diagonal
+        ];
+
+        for (const [dx, dz] of neighbors) {
+          const neighborKey = this.chunkKey(cx + dx, 0, cz + dz);
+          const neighborData = chunkPriorities.get(neighborKey);
+          if (!neighborData) continue;
+
+          // If neighbor LOD is too different, adjust it
+          if (neighborData.lod > data.lod + MAX_LOD_DIFF) {
+            neighborData.lod = data.lod + MAX_LOD_DIFF;
+            changed = true;
+          }
+          if (data.lod > neighborData.lod + MAX_LOD_DIFF) {
+            data.lod = neighborData.lod + MAX_LOD_DIFF;
+            changed = true;
+          }
+        }
+      }
+    }
+
+    if (iterations > 1) {
+      console.log(`[ChunkManager] LOD constraint: converged in ${iterations} iterations`);
+    }
+  }
+
+  /**
+   * Get the LOD of a neighbor chunk (-1 if not loaded or pending)
+   */
+  private getNeighborLOD(chunkX: number, chunkZ: number): number {
+    const key = this.chunkKey(chunkX, 0, chunkZ);
+    const neighbor = this.chunks.get(key);
+    // Return -1 if neighbor doesn't exist or isn't loaded/loading
+    // For loading chunks, use their intended LOD
+    if (!neighbor) return -1;
+    if (neighbor.loadState === "unloading") return -1;
+    return neighbor.lod;
+  }
+
+  /**
+   * Get neighbor LODs for T-junction stitching (includes diagonals for corner coordination)
+   */
+  private getNeighborLODs(chunkX: number, chunkZ: number): NeighborLODs {
+    return {
+      north: this.getNeighborLOD(chunkX, chunkZ + 1), // +Z direction
+      south: this.getNeighborLOD(chunkX, chunkZ - 1), // -Z direction
+      east: this.getNeighborLOD(chunkX + 1, chunkZ),  // +X direction
+      west: this.getNeighborLOD(chunkX - 1, chunkZ),  // -X direction
+      northEast: this.getNeighborLOD(chunkX + 1, chunkZ + 1),
+      northWest: this.getNeighborLOD(chunkX - 1, chunkZ + 1),
+      southEast: this.getNeighborLOD(chunkX + 1, chunkZ - 1),
+      southWest: this.getNeighborLOD(chunkX - 1, chunkZ - 1),
+    };
+  }
+
+  /**
+   * Notify all 8 neighbors that this chunk has loaded.
+   * Neighbors that were generated with neighborLOD=-1 (no neighbor) now need
+   * to re-stitch their edges to match this chunk's LOD.
+   */
+  private notifyNeighborsOfLoad(chunkX: number, chunkZ: number): void {
+    const neighbors: [number, number][] = [
+      [1, 0], [-1, 0], [0, 1], [0, -1], // cardinal
+      [1, 1], [-1, 1], [1, -1], [-1, -1], // diagonal
+    ];
+
+    for (const [dx, dz] of neighbors) {
+      const key = this.chunkKey(chunkX + dx, 0, chunkZ + dz);
+      const state = this.chunks.get(key);
+      // Only mark for restitch if already loaded (not loading or pending)
+      if (state?.loadState === 'loaded') {
+        this.chunksNeedingRestitch.add(key);
+      }
+    }
+  }
+
   private loadChunk(key: ChunkKey, state: ChunkState): void {
     state.loadState = "loading";
     this.activeLoads++;
 
     const [chunkX, chunkY, chunkZ] = this.parseChunkKey(key);
     const requestId = this.nextRequestId++;
+
+    // Get neighbor LODs for T-junction stitching
+    const neighborLODs = this.getNeighborLODs(chunkX, chunkZ);
 
     const message: GenerateChunkMessage = {
       type: "generate-chunk",
@@ -369,6 +493,7 @@ export class ChunkManager {
       chunkSize: this.config.chunkSize,
       resolution: this.config.resolution,
       lod: state.lod,
+      neighborLODs,
     };
 
     // Round-robin worker selection
@@ -387,6 +512,9 @@ export class ChunkManager {
       const worldX = chunkX * this.config.chunkSize + this.config.chunkSize / 2;
       const worldZ = chunkZ * this.config.chunkSize + this.config.chunkSize / 2;
       this.octree.insert(chunkX * 1000000 + chunkZ, { x: worldX, y: 0, z: worldZ });
+
+      // Notify neighbors they may need re-stitching (reactive re-stitch system)
+      this.notifyNeighborsOfLoad(chunkX, chunkZ);
 
       // Notify callback
       this.onChunkLoaded?.(key, state);

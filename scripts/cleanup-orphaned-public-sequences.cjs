@@ -362,8 +362,29 @@ async function syncAllMissingPublicSequences() {
   console.log("✨ Migration complete!");
 }
 
+async function deleteEmptyStepsSequences(noSteps) {
+  console.log(`\nDeleting ${noSteps.length} sequences with no steps...`);
+
+  let deleted = 0;
+  let failed = 0;
+
+  for (const entry of noSteps) {
+    try {
+      await db.collection("publicSequences").doc(entry.id).delete();
+      console.log(`✅ Deleted: "${entry.word}" (${entry.id})`);
+      deleted++;
+    } catch (error) {
+      console.log(`❌ Failed to delete "${entry.word}": ${error.message}`);
+      failed++;
+    }
+  }
+
+  return { deleted, failed };
+}
+
 async function main() {
   const shouldDelete = process.argv.includes("--delete");
+  const cleanEmpty = process.argv.includes("--clean-empty");
   const checkUser = process.argv.find(a => a.startsWith("--user="));
   const syncAll = process.argv.includes("--sync-all");
 
@@ -390,8 +411,30 @@ async function main() {
     console.log(`WITHOUT steps:    ${noSteps.length}`);
     console.log(`Orphaned entries: ${orphans.length}`);
 
+    if (orphans.length === 0 && noSteps.length === 0) {
+      console.log("\n✨ No orphaned entries found!");
+      process.exit(0);
+    }
+
+    // Handle --clean-empty flag to remove sequences with no steps
+    if (cleanEmpty && noSteps.length > 0) {
+      console.log("\n⚠️  Sequences with no steps:");
+      for (const entry of noSteps) {
+        console.log(`  - "${entry.word}" by ${entry.ownerDisplayName}`);
+      }
+
+      const { deleted, failed } = await deleteEmptyStepsSequences(noSteps);
+      console.log("\n" + "=".repeat(60));
+      console.log(`Deleted empty: ${deleted}, Failed: ${failed}`);
+      process.exit(0);
+    }
+
     if (orphans.length === 0) {
       console.log("\n✨ No orphaned entries found!");
+      if (noSteps.length > 0) {
+        console.log(`\n⚠️  ${noSteps.length} sequences have no steps.`);
+        console.log("Run with --clean-empty to remove them from public index.");
+      }
       process.exit(0);
     }
 

@@ -268,8 +268,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: var(--min-touch-target, 48px); /* WCAG AAA touch target */
+    height: var(--min-touch-target, 48px);
     border: none;
     background: var(--theme-card-bg);
     border-radius: 10px;
@@ -285,5 +285,25 @@
 
   .back-button:active {
     transform: scale(0.95);
+  }
+
+  .back-button:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .sequence-container,
+    .content-wrapper,
+    .label-and-beatframe-unit,
+    .step-grid-wrapper,
+    .back-button {
+      transition: none;
+    }
+
+    .back-button:active {
+      transform: none;
+    }
   }
 </style>

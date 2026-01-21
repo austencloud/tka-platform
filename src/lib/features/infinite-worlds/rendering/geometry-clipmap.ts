@@ -77,6 +77,7 @@ import {
   add,
   max,
   abs,
+  fract,
   texture,
   uv,
 } from "three/tsl";

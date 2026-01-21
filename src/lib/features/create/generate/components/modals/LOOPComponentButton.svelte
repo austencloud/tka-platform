@@ -86,6 +86,11 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     transform: translateY(0) scale(0.98);
   }
 
+  .loop-component-button:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
   .loop-component-button.selected {
     background: color-mix(in srgb, var(--component-color) 35%, rgba(30, 30, 50, 0.95));
     border-color: var(--component-color);

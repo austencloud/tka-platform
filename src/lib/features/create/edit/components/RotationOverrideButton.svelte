@@ -207,6 +207,22 @@
     opacity: 1;
   }
 
+  .rotation-override-button:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .rotation-override-button {
+      transition: none;
+    }
+
+    .rotation-override-button:active:not(:disabled) {
+      transform: none;
+    }
+  }
+
   /* Mobile adjustments */
   @media (max-width: 768px) {
     .kbd-hint {

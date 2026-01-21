@@ -540,6 +540,11 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
+  .action-button:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .action-button {
@@ -548,6 +553,10 @@ This component only shows controls - no preview. Same pattern as Generator tab.
 
     .action-button.primary:hover {
       transform: none;
+    }
+
+    .spinner {
+      animation: none;
     }
   }
 </style>

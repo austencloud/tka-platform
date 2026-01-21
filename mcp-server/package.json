@@ -13,6 +13,7 @@
     "@anthropic-ai/sdk": "^0.52.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@resvg/resvg-js": "^2.6.0",
+    "canvas": "^2.11.2",
     "zod": "^3.25.0"
   },
   "devDependencies": {

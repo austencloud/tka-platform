@@ -9,6 +9,16 @@ import type { IStorageManager } from "$lib/shared/foundation/services/contracts/
 
 type KanbanStatus = "new" | "in-progress" | "in-review" | "completed";
 
+/** Represents a status change that can be undone */
+export interface UndoableAction {
+  feedbackId: string;
+  previousStatus: FeedbackStatus;
+  newStatus: FeedbackStatus;
+  timestamp: number;
+}
+
+const MAX_UNDO_HISTORY = 10;
+
 const STORAGE_KEY = "tka-feedback-manage-active-status";
 const _KANBAN_STATUSES: KanbanStatus[] = [
   "new",
@@ -31,6 +41,11 @@ export interface KanbanBoardState {
   deferDate: string;
   deferNotes: string;
   isSubmittingDefer: boolean;
+
+  // Undo support
+  canUndo: boolean;
+  pushUndo(action: UndoableAction): void;
+  popUndo(): UndoableAction | null;
 
   // Actions
   setActiveStatus(status: FeedbackStatus): void;
@@ -100,6 +115,10 @@ export function createKanbanBoardState(
   let deferNotes = $state("");
   let isSubmittingDefer = $state(false);
 
+  // Undo stack for drag operations
+  let undoStack = $state<UndoableAction[]>([]);
+  const canUndo = $derived(undoStack.length > 0);
+
   // Detect column at a screen position
   function getColumnAtPosition(
     x: number,
@@ -145,6 +164,17 @@ export function createKanbanBoardState(
     deferNotes = "";
   }
 
+  function pushUndo(action: UndoableAction) {
+    undoStack = [...undoStack, action].slice(-MAX_UNDO_HISTORY);
+  }
+
+  function popUndo(): UndoableAction | null {
+    if (undoStack.length === 0) return null;
+    const action = undoStack[undoStack.length - 1];
+    undoStack = undoStack.slice(0, -1);
+    return action;
+  }
+
   return {
     get activeStatus() {
       return activeStatus;
@@ -185,6 +215,9 @@ export function createKanbanBoardState(
     get isSubmittingDefer() {
       return isSubmittingDefer;
     },
+    get canUndo() {
+      return canUndo;
+    },
 
     setActiveStatus(status: FeedbackStatus) {
       activeStatus = status;
@@ -220,5 +253,7 @@ export function createKanbanBoardState(
     },
     resetDeferDialog,
     getColumnAtPosition,
+    pushUndo,
+    popUndo,
   };
 }

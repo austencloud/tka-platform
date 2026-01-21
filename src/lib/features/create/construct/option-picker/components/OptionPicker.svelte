@@ -245,11 +245,31 @@ Delegates all rendering to child components.
 
   .error button {
     margin-top: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: var(--primary-color);
+    min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
+    padding: 0.5rem 1.5rem;
+    background: var(--theme-accent, var(--primary-color));
     color: white;
     border: none;
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius, 8px);
     cursor: pointer;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    transition: all var(--duration-normal) ease;
+  }
+
+  .error button:hover {
+    opacity: 0.9;
+  }
+
+  .error button:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .error button {
+      transition: none;
+    }
   }
 </style>

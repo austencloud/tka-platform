@@ -154,7 +154,7 @@ Displays the most frequently used Greek letters for quick insertion.
     align-items: center;
     gap: 4px;
     padding: 8px 12px;
-    min-height: 40px;
+    min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
     background: transparent;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--settings-radius-sm, 8px);

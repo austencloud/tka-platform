@@ -11,6 +11,8 @@ interface MotionData {
   endLocation: string;
   motionType: string;
   rotationDirection: string;
+  startOrientation: string;  // "in" | "out" | "clock" | "counter"
+  endOrientation: string;    // "in" | "out" | "clock" | "counter"
 }
 
 interface PictographData {
@@ -139,11 +141,19 @@ function attemptSequenceBuild(
   const startPosition = firstVariation.startPosition;
 
   // Find a valid start position (Type 6 static letter at the required position)
+  // Must match both position AND orientation continuity with the first letter
   const validStartPositions = allPictographs.filter((p) => {
+    // Must be a Type 6 static letter at the same position
+    if (!TYPE_6_LETTERS.includes(p.letter) ||
+        p.startPosition !== startPosition ||
+        p.endPosition !== startPosition) {
+      return false;
+    }
+    // For orientation continuity: the end orientation of the start position
+    // must match the start orientation of the first letter
     return (
-      TYPE_6_LETTERS.includes(p.letter) &&
-      p.startPosition === startPosition &&
-      p.endPosition === startPosition
+      p.blueMotion.endOrientation === firstVariation.blueMotion.startOrientation &&
+      p.redMotion.endOrientation === firstVariation.redMotion.startOrientation
     );
   });
 
@@ -193,26 +203,43 @@ function attemptSequenceBuild(
   });
 
   // Walk through remaining letters
+  // Track both position AND orientation for continuity
   let currentEndPosition = firstVariation.endPosition;
+  let currentBlueEndOrientation = firstVariation.blueMotion.endOrientation;
+  let currentRedEndOrientation = firstVariation.redMotion.endOrientation;
 
   for (let i = 1; i < letters.length; i++) {
     const letter = letters[i];
     if (!letter) continue;
 
-    // Find variations that start where we currently are
+    // Find variations that start where we currently are (position + orientation)
     const variations = allPictographs.filter(
-      (p) => p.letter === letter && p.startPosition === currentEndPosition
+      (p) => p.letter === letter &&
+             p.startPosition === currentEndPosition &&
+             p.blueMotion.startOrientation === currentBlueEndOrientation &&
+             p.redMotion.startOrientation === currentRedEndOrientation
     );
 
     if (variations.length === 0) {
-      // No valid continuation - this attempt failed
+      // No valid continuation with orientation match - try finding any position match for better error
+      const positionOnlyMatches = allPictographs.filter(
+        (p) => p.letter === letter && p.startPosition === currentEndPosition
+      );
+
+      // Provide detailed error message
+      const errorMsg = positionOnlyMatches.length > 0
+        ? `No valid continuation for letter "${letter}" from position ${currentEndPosition} ` +
+          `with orientations blue=${currentBlueEndOrientation}, red=${currentRedEndOrientation} ` +
+          `(${positionOnlyMatches.length} variations match position but not orientation)`
+        : `No valid continuation for letter "${letter}" from position ${currentEndPosition}`;
+
       return {
         word,
         steps: [],
         startPosition: "",
         endPosition: "",
         isValid: false,
-        error: `No valid continuation for letter "${letter}" from position ${currentEndPosition}`,
+        error: errorMsg,
       };
     }
 
@@ -244,7 +271,10 @@ function attemptSequenceBuild(
       stepNumber: i + 1,
     });
 
+    // Update current position and orientations for next iteration
     currentEndPosition = chosenVariation.endPosition;
+    currentBlueEndOrientation = chosenVariation.blueMotion.endOrientation;
+    currentRedEndOrientation = chosenVariation.redMotion.endOrientation;
   }
 
   return {

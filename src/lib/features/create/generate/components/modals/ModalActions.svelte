@@ -44,6 +44,7 @@ Provides consistent, beautiful button layouts for modal actions
   .action-button {
     flex: 1;
     padding: 12px 20px;
+    min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
     border-radius: 10px;
     font-size: var(--font-size-sm);
     font-weight: 600;
@@ -231,6 +232,27 @@ Provides consistent, beautiful button layouts for modal actions
     opacity: 0.5;
     cursor: not-allowed;
     filter: saturate(0.5);
+  }
+
+  .action-button:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
+  .cancel-button:focus-visible {
+    outline-color: var(--theme-text, white);
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .action-button {
+      transition: none;
+    }
+
+    .cancel-button:hover,
+    .confirm-button:hover:not(:disabled) {
+      transform: none;
+    }
   }
 
   @media (max-width: 640px) {
