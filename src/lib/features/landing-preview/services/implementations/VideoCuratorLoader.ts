@@ -29,6 +29,11 @@ export class VideoCuratorLoader implements IVideoCuratorLoader {
     const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => {
       const data = doc.data();
+      // Migrate legacy single performer to performers array
+      let performers = data.performers || [];
+      if (performers.length === 0 && data.performerId && data.performerName) {
+        performers = [{ id: data.performerId, displayName: data.performerName }];
+      }
       return {
         shortcode: doc.id,
         videoUrl: data.videoUrl,
@@ -42,8 +47,7 @@ export class VideoCuratorLoader implements IVideoCuratorLoader {
         sequenceWord: data.sequenceWord || null,
         title: data.title || null,
         description: data.description || null,
-        performerId: data.performerId || null,
-        performerName: data.performerName || null,
+        performers,
       } as ShowcaseVideo;
     });
   }

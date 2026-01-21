@@ -1,15 +1,14 @@
 /**
  * Interface for persisting video curator data to Firestore
  */
-import type { ShowcaseVideo, VideoCategory, UserProfile } from "../../types";
+import type { VideoCategory, UserProfile, VideoPerformer } from "../../types";
 
 export interface VideoUpdateData {
   title?: string | null;
   category?: string | null;
   tags?: string[];
   featured?: boolean;
-  performerId?: string | null;
-  performerName?: string | null;
+  performers?: VideoPerformer[];
   sequenceId?: string | null;
   sequenceWord?: string | null;
 }

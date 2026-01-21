@@ -378,10 +378,10 @@
     }
   }
 
-  /* Large gallery: 5+ items - medium grid */
+  /* Large gallery: 5+ items - 4 column grid */
   .inline-gallery.large-gallery .gallery-items {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(clamp(120px, 25vw, 180px), 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 12px;
   }
 

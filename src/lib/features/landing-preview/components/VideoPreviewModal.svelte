@@ -17,7 +17,8 @@
     onClose: () => void;
     onSetCategory: (categoryId: string) => void;
     onToggleFeatured: () => void;
-    onAssignPerformer: (user: UserProfile | null) => void;
+    onAddPerformer: (user: UserProfile) => void;
+    onRemovePerformer: (performerId: string) => void;
     onToggleUserSearch: (show: boolean) => void;
     formatDate: (date: Date | null) => string;
     formatFileSize: (bytes: number) => string;
@@ -31,7 +32,8 @@
     onClose,
     onSetCategory,
     onToggleFeatured,
-    onAssignPerformer,
+    onAddPerformer,
+    onRemovePerformer,
     onToggleUserSearch,
     formatDate,
     formatFileSize,
@@ -39,7 +41,7 @@
 
   function handleUserSelect(user: UserSearchResult) {
     // Adapt UserSearchResult to UserProfile format
-    onAssignPerformer({
+    onAddPerformer({
       id: user.uid,
       displayName: user.displayName,
       avatarUrl: user.photoURL,
@@ -103,20 +105,24 @@
 
       <!-- Performer assignment -->
       <div class="performer-selector">
-        <span class="label">Performer:</span>
-        {#if video.performerName}
-          <div class="current-performer">
-            <span>{video.performerName}</span>
-            <button class="remove-btn" onclick={() => onAssignPerformer(null)} title="Remove performer">
-              <i class="fas fa-times" aria-hidden="true"></i>
-            </button>
+        <span class="label">Performers:</span>
+        {#if video.performers.length > 0}
+          <div class="current-performers">
+            {#each video.performers as performer}
+              <div class="performer-chip">
+                <span>{performer.displayName}</span>
+                <button class="remove-btn" onclick={() => onRemovePerformer(performer.id)} title="Remove performer">
+                  <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+              </div>
+            {/each}
           </div>
-        {:else}
-          <button class="assign-btn" onclick={() => onToggleUserSearch(true)}>
-            <i class="fas fa-user-plus" aria-hidden="true"></i>
-            Assign Performer
-          </button>
         {/if}
+
+        <button class="assign-btn" onclick={() => onToggleUserSearch(true)}>
+          <i class="fas fa-user-plus" aria-hidden="true"></i>
+          Add Performer
+        </button>
 
         {#if showUserSearch}
           <div class="user-search-popup">
@@ -125,6 +131,7 @@
               inlineResults={true}
               autofocus={true}
               onSelect={handleUserSelect}
+              excludeUserIds={video.performers.map((p) => p.id)}
             />
             <button class="cancel-search" onclick={() => onToggleUserSearch(false)}>
               Cancel
@@ -288,35 +295,41 @@
     margin-bottom: 16px;
   }
 
-  .current-performer {
+  .current-performers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .performer-chip {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 6px;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 20px;
+    font-size: 13px;
+    color: #a5b4fc;
   }
 
-  .current-performer span {
-    flex: 1;
-    font-size: 14px;
-  }
-
-  .current-performer .remove-btn {
-    width: 24px;
-    height: 24px;
+  .performer-chip .remove-btn {
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     border: none;
-    background: rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.3);
     color: #ef4444;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 10px;
+    transition: all 0.2s;
   }
 
-  .current-performer .remove-btn:hover {
+  .performer-chip .remove-btn:hover {
     background: #ef4444;
     color: white;
   }

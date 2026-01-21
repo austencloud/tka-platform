@@ -392,13 +392,6 @@
     color: var(--theme-text, #ffffff);
   }
 
-  .content-section h3 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin: 2rem 0 1rem 0;
-    color: var(--theme-text, #ffffff);
-  }
-
   .section-content p {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     margin: 0 0 1rem 0;

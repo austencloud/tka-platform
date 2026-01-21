@@ -1,6 +1,6 @@
 {
   "totalFiles": 3477,
-  "reachableFiles": 2833,
+  "reachableFiles": 2846,
   "deadFiles": [
     "src/app-env.d.ts",
     "src/lib/features/admin/components/active-users/UserActivityDetail.svelte",
@@ -398,7 +398,6 @@
     "src/lib/shared/analytics/memory-profiler.ts",
     "src/lib/shared/analytics/performance-budget.ts",
     "src/lib/shared/analytics/runtime-monitor.ts",
-    "src/lib/shared/analytics/web-vitals.ts",
     "src/lib/shared/animation-engine/components/EndlessSpinner.svelte",
     "src/lib/shared/animation-engine/components/layers/SequenceProgressBar.svelte",
     "src/lib/shared/animation-engine/domain/animation-models.ts",
@@ -412,15 +411,11 @@
     "src/lib/shared/application/state/AppState.svelte.ts",
     "src/lib/shared/application/state/auto-sync-state.svelte.ts",
     "src/lib/shared/auth/components/EmailVerificationBanner.svelte",
-    "src/lib/shared/auth/components/InAppBrowserPrompt.svelte",
     "src/lib/shared/auth/components/UserMenu.svelte",
     "src/lib/shared/auth/services/contracts/IImpersonator.ts",
-    "src/lib/shared/auth/services/contracts/IInAppBrowserDetector.ts",
     "src/lib/shared/auth/services/implementations/Impersonator.ts",
-    "src/lib/shared/auth/services/implementations/InAppBrowserDetector.ts",
     "src/lib/shared/auth/state/auth-ui-state.svelte.ts",
     "src/lib/shared/auth/utils/clearFirebaseCache.ts",
-    "src/lib/shared/auth/utils/cookieCleanup.ts",
     "src/lib/shared/auth/utils/role-display-utils.ts",
     "src/lib/shared/background/aurora/domain/models/aurora-models.ts",
     "src/lib/shared/background/aurora/services/AuroraBackgroundSystem.ts",
@@ -467,7 +462,6 @@
     "src/lib/shared/community/components/UserSearch.svelte",
     "src/lib/shared/community/domain/models/community-stats-models.ts",
     "src/lib/shared/components/FullscreenButton.svelte",
-    "src/lib/shared/components/FullscreenPrompt.svelte",
     "src/lib/shared/components/letter-constraints/LetterChip.svelte",
     "src/lib/shared/components/letter-constraints/LetterConstraintsSection.svelte",
     "src/lib/shared/components/orientation-picker/OrientationPickerGrid.svelte",
@@ -484,7 +478,6 @@
     "src/lib/shared/device/domain/constants/device-constants.ts",
     "src/lib/shared/device/services/contracts/device-models.ts",
     "src/lib/shared/device/utils/device-utils.ts",
-    "src/lib/shared/di/browser-container.ts",
     "src/lib/shared/foundation/services/contracts/data/ICSVParser.ts",
     "src/lib/shared/foundation/ui/drawer/useDrawer.svelte.ts",
     "src/lib/shared/foundation/ui/SkeletonLoader.svelte",
@@ -627,7 +620,6 @@
     "src/lib/shared/transitions/view-transition-state.svelte.ts",
     "src/lib/shared/transitions/ViewTransitionCoordinator.svelte",
     "src/lib/shared/types/vendor-prefixed.d.ts",
-    "src/lib/shared/utils/cache-buster.ts",
     "src/lib/shared/utils/clear-gallery-cache.ts",
     "src/lib/shared/utils/hmr-debug.ts",
     "src/lib/shared/utils/idle-callback.ts",
@@ -648,11 +640,6 @@
     "src/lib/shared/video-collaboration/state/sequence-videos-state.svelte.ts",
     "src/lib/shared/video-collaboration/state/user-video-library-state.svelte.ts",
     "src/lib/shared/video-collaboration/utils/thumbnail-extractor.ts",
-    "src/routes/+layout.server.ts",
-    "src/routes/+layout.svelte",
-    "src/routes/+layout.ts",
-    "src/routes/+page.svelte",
-    "src/routes/+page.ts",
     "src/types/global.d.ts"
   ],
   "deadByDirectory": {
@@ -1066,15 +1053,6 @@
       "lib/shared/pictograph/arrow/rendering/services/contracts/IArrowRenderer.ts",
       "lib/shared/pictograph/arrow/state/ArrowState.svelte.ts"
     ],
-    "lib/shared/utils": [
-      "lib/shared/utils/cache-buster.ts",
-      "lib/shared/utils/clear-gallery-cache.ts",
-      "lib/shared/utils/hmr-debug.ts",
-      "lib/shared/utils/idle-callback.ts",
-      "lib/shared/utils/service-resolver.svelte.ts",
-      "lib/shared/utils/swipeGesture.ts",
-      "lib/shared/utils/transitions.ts"
-    ],
     "lib/features/compose/tabs": [
       "lib/features/compose/tabs/setup/ArrangeTab.svelte",
       "lib/features/compose/tabs/setup/components/ModeCard.svelte",
@@ -1115,6 +1093,14 @@
       "lib/shared/background/sakura-drift/services/SakuraSystem.ts",
       "lib/shared/background/sakura-drift/services/SakuraWindSystem.ts"
     ],
+    "lib/shared/utils": [
+      "lib/shared/utils/clear-gallery-cache.ts",
+      "lib/shared/utils/hmr-debug.ts",
+      "lib/shared/utils/idle-callback.ts",
+      "lib/shared/utils/service-resolver.svelte.ts",
+      "lib/shared/utils/swipeGesture.ts",
+      "lib/shared/utils/transitions.ts"
+    ],
     "lib/features/compose/services": [
       "lib/features/compose/services/contracts/ISequenceFramePreRenderer.ts",
       "lib/features/compose/services/implementations/BeatCalculator.ts",
@@ -1135,13 +1121,6 @@
       "lib/shared/admin/components/AdminFormField.svelte",
       "lib/shared/admin/components/AdminListItem.svelte",
       "lib/shared/admin/components/AdminStatCard.svelte"
-    ],
-    "lib/shared/analytics": [
-      "lib/shared/analytics/index.ts",
-      "lib/shared/analytics/memory-profiler.ts",
-      "lib/shared/analytics/performance-budget.ts",
-      "lib/shared/analytics/runtime-monitor.ts",
-      "lib/shared/analytics/web-vitals.ts"
     ],
     "lib/shared/background/deep-ocean": [
       "lib/shared/background/deep-ocean/components/DeepOceanBackgroundCanvas.svelte",
@@ -1178,13 +1157,6 @@
       "lib/shared/sequence-review/components/SequenceBrowserSidebar.svelte",
       "lib/shared/sequence-review/components/SequencePreviewPanel.svelte"
     ],
-    "routes": [
-      "routes/+layout.server.ts",
-      "routes/+layout.svelte",
-      "routes/+layout.ts",
-      "routes/+page.svelte",
-      "routes/+page.ts"
-    ],
     "lib/features/edit/components": [
       "lib/features/edit/components/EditWorkspace.svelte",
       "lib/features/edit/components/EmptyEditState.svelte",
@@ -1209,11 +1181,11 @@
       "lib/shared/3d-animation/services/implementations/AvatarCustomizer.ts",
       "lib/shared/3d-animation/services/implementations/StageSceneAdapter.ts"
     ],
-    "lib/shared/auth/services": [
-      "lib/shared/auth/services/contracts/IImpersonator.ts",
-      "lib/shared/auth/services/contracts/IInAppBrowserDetector.ts",
-      "lib/shared/auth/services/implementations/Impersonator.ts",
-      "lib/shared/auth/services/implementations/InAppBrowserDetector.ts"
+    "lib/shared/analytics": [
+      "lib/shared/analytics/index.ts",
+      "lib/shared/analytics/memory-profiler.ts",
+      "lib/shared/analytics/performance-budget.ts",
+      "lib/shared/analytics/runtime-monitor.ts"
     ],
     "lib/shared/community/challenges": [
       "lib/shared/community/challenges/components/ChallengesPanel.svelte",
@@ -1301,16 +1273,6 @@
       "lib/shared/3d-core/camera/services/implementations/CameraMovementController.ts",
       "lib/shared/3d-core/camera/transitions.ts"
     ],
-    "lib/shared/auth/components": [
-      "lib/shared/auth/components/EmailVerificationBanner.svelte",
-      "lib/shared/auth/components/InAppBrowserPrompt.svelte",
-      "lib/shared/auth/components/UserMenu.svelte"
-    ],
-    "lib/shared/auth/utils": [
-      "lib/shared/auth/utils/clearFirebaseCache.ts",
-      "lib/shared/auth/utils/cookieCleanup.ts",
-      "lib/shared/auth/utils/role-display-utils.ts"
-    ],
     "lib/shared/background/aurora": [
       "lib/shared/background/aurora/domain/models/aurora-models.ts",
       "lib/shared/background/aurora/services/AuroraBackgroundSystem.ts",
@@ -1373,9 +1335,17 @@
       "lib/shared/animation-engine/components/EndlessSpinner.svelte",
       "lib/shared/animation-engine/components/layers/SequenceProgressBar.svelte"
     ],
-    "lib/shared/components": [
-      "lib/shared/components/FullscreenButton.svelte",
-      "lib/shared/components/FullscreenPrompt.svelte"
+    "lib/shared/auth/components": [
+      "lib/shared/auth/components/EmailVerificationBanner.svelte",
+      "lib/shared/auth/components/UserMenu.svelte"
+    ],
+    "lib/shared/auth/services": [
+      "lib/shared/auth/services/contracts/IImpersonator.ts",
+      "lib/shared/auth/services/implementations/Impersonator.ts"
+    ],
+    "lib/shared/auth/utils": [
+      "lib/shared/auth/utils/clearFirebaseCache.ts",
+      "lib/shared/auth/utils/role-display-utils.ts"
     ],
     "lib/shared/components/letter-constraints": [
       "lib/shared/components/letter-constraints/LetterChip.svelte",
@@ -1540,6 +1510,9 @@
     "lib/shared/community/domain": [
       "lib/shared/community/domain/models/community-stats-models.ts"
     ],
+    "lib/shared/components": [
+      "lib/shared/components/FullscreenButton.svelte"
+    ],
     "lib/shared/device/domain": [
       "lib/shared/device/domain/constants/device-constants.ts"
     ],
@@ -1548,9 +1521,6 @@
     ],
     "lib/shared/device/utils": [
       "lib/shared/device/utils/device-utils.ts"
-    ],
-    "lib/shared/di": [
-      "lib/shared/di/browser-container.ts"
     ],
     "lib/shared/foundation/services": [
       "lib/shared/foundation/services/contracts/data/ICSVParser.ts"

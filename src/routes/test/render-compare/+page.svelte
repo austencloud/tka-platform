@@ -1043,61 +1043,62 @@
     color: #51cf66;
   }
 
-  .bulk-grid {
+  /* Bulk grid styles - :global() because Svelte doesn't detect usage inside #each */
+  :global(.bulk-grid) {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     gap: 15px;
   }
 
-  .bulk-item {
+  :global(.bulk-item) {
     background: #0a0a0f;
     border: 1px solid #333;
     border-radius: 8px;
     padding: 12px;
   }
 
-  .bulk-header {
+  :global(.bulk-header) {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
   }
 
-  .bulk-letter {
+  :global(.bulk-letter) {
     font-size: 18px;
     font-weight: bold;
     color: #4c6ef5;
   }
 
-  .bulk-speedup {
+  :global(.bulk-speedup) {
     font-size: 14px;
     color: #51cf66;
     font-weight: bold;
   }
 
-  .bulk-comparison {
+  :global(.bulk-comparison) {
     display: flex;
     gap: 10px;
   }
 
-  .bulk-render {
+  :global(.bulk-render) {
     display: flex;
     flex-direction: column;
     align-items: center;
   }
 
-  .bulk-render img {
+  :global(.bulk-render img) {
     border: 1px solid #444;
     display: block;
   }
 
-  .bulk-label {
+  :global(.bulk-label) {
     font-size: 11px;
     color: #666;
     margin-top: 4px;
   }
 
-  .bulk-info {
+  :global(.bulk-info) {
     font-size: 11px;
     color: #666;
     margin-top: 8px;

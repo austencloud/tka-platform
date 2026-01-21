@@ -358,7 +358,6 @@
 
   /* Reduced Motion */
   @media (prefers-reduced-motion: reduce) {
-    .close-btn,
     .new-chat-btn,
     .confirm-actions button {
       transition: none;

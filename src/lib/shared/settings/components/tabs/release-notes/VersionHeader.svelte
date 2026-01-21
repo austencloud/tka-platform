@@ -90,14 +90,6 @@
     right: 0;
   }
 
-  .copy-button {
-    left: 0;
-  }
-
-  .copy-button :global(.fa-check) {
-    color: var(--semantic-success, var(--semantic-success));
-  }
-
   .version-badge {
     display: inline-flex;
     padding: 8px 20px;

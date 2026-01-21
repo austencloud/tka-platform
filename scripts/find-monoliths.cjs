@@ -127,6 +127,14 @@ const AUDITED_FILES = {
     auditDate: "2026-01-20",
     reason: "Data catalog: 3/3 perspectives say leave it. Pure static scenario data (~150 TikaScenario objects) organized into 17 named category arrays. No logic, no services to extract. Size from comprehensive test coverage, not complexity. Splitting would add overhead with no benefit.",
   },
+  "lib/features/landing-preview/components/VideoCurator.svelte": {
+    auditDate: "2026-01-20",
+    reason: "Orchestrator: 4/4 perspectives say leave it. Already well-decomposed with DI services (videoCuratorLoader, videoCuratorPersister, sequenceMatcher) and child components (CurationModeOverlay, LinkingModeOverlay, VideoFilterBar, VideoPreviewModal, VideoEditModal). Remaining ~500 lines are state variables and event handlers wiring UI to services. Curation/linking modes are specific to this admin tool with no reuse potential.",
+  },
+  "lib/features/tika/components/TikaReviewPanel.svelte": {
+    auditDate: "2026-01-20",
+    reason: "UI-dense review panel: 54% CSS (630 lines), only 226 lines TypeScript. Services already extracted (TikaSessionRepository, TikaSessionFormatter). Thin CRUD operations (5-15 lines each). Size from comprehensive master-detail styling, not logic complexity. 4/4 perspectives say leave it.",
+  },
   // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
 

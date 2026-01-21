@@ -18,6 +18,7 @@
     VideoCategory,
     UserProfile,
     MatchedSequence,
+    VideoPerformer,
   } from "../types";
 
   // Services from DI container
@@ -61,6 +62,7 @@
   // === CURATION MODE STATE ===
   let curationMode = $state(false);
   let curationIndex = $state(0);
+  let curationVideoShortcode = $state<string | null>(null); // Track by shortcode, not index
   let curationSaving = $state(false);
   let showAddPerformer = $state(false);
   const PERFORMER_KEYS = "asdfgh";
@@ -75,7 +77,7 @@
 
   // === DERIVED STATE ===
   const uncuratedVideos = $derived.by(() =>
-    videos.filter((v) => !v.category || !v.performerId)
+    videos.filter((v) => !v.category || v.performers.length === 0)
   );
 
   const unlinkableVideos = $derived.by(() =>
@@ -83,7 +85,14 @@
   );
 
   const currentCurationVideo = $derived.by(() => {
-    if (!curationMode || uncuratedVideos.length === 0) return null;
+    if (!curationMode) return null;
+    // If we have a locked shortcode, find that video (even if it's now "curated")
+    if (curationVideoShortcode) {
+      const lockedVideo = videos.find((v) => v.shortcode === curationVideoShortcode);
+      if (lockedVideo) return lockedVideo;
+    }
+    // Otherwise fall back to index in uncurated list
+    if (uncuratedVideos.length === 0) return null;
     return uncuratedVideos[Math.min(curationIndex, uncuratedVideos.length - 1)] || null;
   });
 
@@ -113,7 +122,7 @@
       result = result.filter((v) => v.featured === filterFeatured);
     }
     if (filterPerformer !== "all") {
-      result = result.filter((v) => v.performerId === filterPerformer);
+      result = result.filter((v) => v.performers.some((p) => p.id === filterPerformer));
     }
     if (filterHasWord === "yes") {
       result = result.filter((v) => v.title && v.title.length > 0);
@@ -127,7 +136,7 @@
           v.shortcode.toLowerCase().includes(query) ||
           v.title?.toLowerCase().includes(query) ||
           v.sequenceWord?.toLowerCase().includes(query) ||
-          v.performerName?.toLowerCase().includes(query) ||
+          v.performers.some((p) => p.displayName.toLowerCase().includes(query)) ||
           v.tags.some((t) => t.toLowerCase().includes(query))
       );
     }
@@ -137,8 +146,8 @@
   const performers = $derived.by(() => {
     const map = new Map<string, string>();
     for (const v of videos) {
-      if (v.performerId && v.performerName) {
-        map.set(v.performerId, v.performerName);
+      for (const p of v.performers) {
+        map.set(p.id, p.displayName);
       }
     }
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
@@ -169,18 +178,34 @@
   function enterCurationMode() {
     curationMode = true;
     curationIndex = 0;
+    // Lock to first uncurated video
+    curationVideoShortcode = uncuratedVideos[0]?.shortcode || null;
   }
 
   function exitCurationMode() {
     curationMode = false;
+    curationVideoShortcode = null;
   }
 
   function nextCurationVideo() {
-    if (curationIndex < uncuratedVideos.length - 1) curationIndex++;
+    // Find current position in uncurated list and move forward
+    const currentIdx = uncuratedVideos.findIndex((v) => v.shortcode === curationVideoShortcode);
+    if (currentIdx < uncuratedVideos.length - 1) {
+      curationIndex = currentIdx + 1;
+      curationVideoShortcode = uncuratedVideos[curationIndex]?.shortcode || null;
+    } else if (uncuratedVideos.length > 0) {
+      // Current video might be curated now, just go to first uncurated
+      curationIndex = 0;
+      curationVideoShortcode = uncuratedVideos[0]?.shortcode || null;
+    }
   }
 
   function prevCurationVideo() {
-    if (curationIndex > 0) curationIndex--;
+    const currentIdx = uncuratedVideos.findIndex((v) => v.shortcode === curationVideoShortcode);
+    if (currentIdx > 0) {
+      curationIndex = currentIdx - 1;
+      curationVideoShortcode = uncuratedVideos[curationIndex]?.shortcode || null;
+    }
   }
 
   async function setCurationCategory(categoryId: string) {
@@ -190,7 +215,7 @@
     try {
       await persister.updateVideo(video.shortcode, { category: categoryId });
       updateLocalVideo(video.shortcode, { category: categoryId });
-      if (video.performerId) setTimeout(() => nextCurationVideo(), 200);
+      // Don't auto-advance - let user control when to move on
     } catch (e) {
       console.error("Failed to set category:", e);
     } finally {
@@ -198,17 +223,25 @@
     }
   }
 
-  async function setCurationPerformer(user: UserProfile) {
+  async function toggleCurationPerformer(user: UserProfile) {
     const video = currentCurationVideo;
     if (!video || curationSaving) return;
     curationSaving = true;
     try {
-      const updates = { performerId: user.id, performerName: user.displayName };
-      await persister.updateVideo(video.shortcode, updates);
-      updateLocalVideo(video.shortcode, updates);
-      if (video.category) setTimeout(() => nextCurationVideo(), 200);
+      const existingIndex = video.performers.findIndex((p) => p.id === user.id);
+      let newPerformers: VideoPerformer[];
+      if (existingIndex >= 0) {
+        // Remove performer if already tagged
+        newPerformers = video.performers.filter((p) => p.id !== user.id);
+      } else {
+        // Add performer
+        newPerformers = [...video.performers, { id: user.id, displayName: user.displayName }];
+      }
+      await persister.updateVideo(video.shortcode, { performers: newPerformers });
+      updateLocalVideo(video.shortcode, { performers: newPerformers });
+      // Don't auto-advance when toggling performers - user may want to add multiple
     } catch (e) {
-      console.error("Failed to set performer:", e);
+      console.error("Failed to toggle performer:", e);
     } finally {
       curationSaving = false;
     }
@@ -390,20 +423,31 @@
     }
   }
 
-  async function assignPerformer(video: ShowcaseVideo, user: UserProfile | null) {
+  async function addPerformerToVideo(video: ShowcaseVideo, user: UserProfile) {
     try {
-      const updates = {
-        performerId: user?.id || null,
-        performerName: user?.displayName || null,
-      };
-      await persister.updateVideo(video.shortcode, updates);
-      updateLocalVideo(video.shortcode, updates);
+      if (video.performers.some((p) => p.id === user.id)) return; // Already tagged
+      const newPerformers = [...video.performers, { id: user.id, displayName: user.displayName }];
+      await persister.updateVideo(video.shortcode, { performers: newPerformers });
+      updateLocalVideo(video.shortcode, { performers: newPerformers });
       if (selectedVideo?.shortcode === video.shortcode) {
-        selectedVideo = { ...selectedVideo, ...updates };
+        selectedVideo = { ...selectedVideo, performers: newPerformers };
       }
       showUserSearch = false;
     } catch (e) {
-      console.error("Failed to assign performer:", e);
+      console.error("Failed to add performer:", e);
+    }
+  }
+
+  async function removePerformerFromVideo(video: ShowcaseVideo, performerId: string) {
+    try {
+      const newPerformers = video.performers.filter((p) => p.id !== performerId);
+      await persister.updateVideo(video.shortcode, { performers: newPerformers });
+      updateLocalVideo(video.shortcode, { performers: newPerformers });
+      if (selectedVideo?.shortcode === video.shortcode) {
+        selectedVideo = { ...selectedVideo, performers: newPerformers };
+      }
+    } catch (e) {
+      console.error("Failed to remove performer:", e);
     }
   }
 
@@ -440,8 +484,17 @@
   }
 
   // === KEYBOARD SHORTCUTS ===
+  function isTypingInInput(): boolean {
+    const active = document.activeElement;
+    if (!active) return false;
+    const tagName = active.tagName.toLowerCase();
+    return tagName === "input" || tagName === "textarea" || (active as HTMLElement).isContentEditable;
+  }
+
   function handleCurationKeydown(e: KeyboardEvent) {
     if (!curationMode || curationSaving) return;
+    // Don't intercept keys when user is typing in an input field
+    if (isTypingInInput()) return;
     const num = parseInt(e.key);
     if (num >= 1 && num <= categories.length) {
       e.preventDefault();
@@ -451,7 +504,7 @@
     const letterIndex = PERFORMER_KEYS.indexOf(e.key.toLowerCase());
     if (letterIndex >= 0 && letterIndex < quickPerformers.length) {
       e.preventDefault();
-      setCurationPerformer(quickPerformers[letterIndex]);
+      toggleCurationPerformer(quickPerformers[letterIndex]);
       return;
     }
     if (e.key === "ArrowLeft" || e.key === "h") {
@@ -470,6 +523,8 @@
 
   function handleLinkingKeydown(e: KeyboardEvent) {
     if (!linkingMode || linkingSaving || linkingSearching) return;
+    // Don't intercept keys when user is typing in an input field
+    if (isTypingInInput()) return;
     const num = parseInt(e.key);
     if (num >= 1 && num <= matchedSequences.length) {
       e.preventDefault();
@@ -669,10 +724,12 @@
                 </div>
               {/if}
             {/if}
-            {#if video.performerName}
+            {#if video.performers.length > 0}
               <div class="performer-badge">
                 <i class="fas fa-user" aria-hidden="true"></i>
-                {video.performerName}
+                {video.performers.length === 1
+                  ? video.performers[0].displayName
+                  : `${video.performers.length} performers`}
               </div>
             {/if}
           </div>
@@ -721,7 +778,8 @@
     onClose={closePreview}
     onSetCategory={(catId) => setCategory(selectedVideo!, catId)}
     onToggleFeatured={() => toggleFeatured(selectedVideo!)}
-    onAssignPerformer={(user) => assignPerformer(selectedVideo!, user)}
+    onAddPerformer={(user) => addPerformerToVideo(selectedVideo!, user)}
+    onRemovePerformer={(performerId) => removePerformerFromVideo(selectedVideo!, performerId)}
     onToggleUserSearch={(show) => (showUserSearch = show)}
     {formatDate}
     {formatFileSize}
@@ -765,7 +823,7 @@
     onPrev={prevCurationVideo}
     onNext={nextCurationVideo}
     onSetCategory={setCurationCategory}
-    onSetPerformer={setCurationPerformer}
+    onTogglePerformer={toggleCurationPerformer}
     onSkip={skipCurationVideo}
     onAddCategory={addCategory}
     onAddPerformer={addQuickPerformer}

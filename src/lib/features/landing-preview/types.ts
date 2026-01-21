@@ -2,6 +2,11 @@
  * Shared types for the landing-preview feature
  */
 
+export interface VideoPerformer {
+  id: string;
+  displayName: string;
+}
+
 export interface ShowcaseVideo {
   shortcode: string;
   videoUrl: string;
@@ -15,8 +20,11 @@ export interface ShowcaseVideo {
   sequenceWord: string | null;
   title: string | null;
   description: string | null;
-  performerId: string | null;
-  performerName: string | null;
+  /** @deprecated Use performers array instead */
+  performerId?: string | null;
+  /** @deprecated Use performers array instead */
+  performerName?: string | null;
+  performers: VideoPerformer[];
 }
 
 export interface VideoCategory {

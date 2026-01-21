@@ -210,7 +210,8 @@
     gap: var(--spacing-xs);
   }
 
-  .action-btn {
+  /* Global for child component styling */
+  :global(.action-btn) {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -224,7 +225,7 @@
     transition: var(--transition-fast);
   }
 
-  .action-btn:hover {
+  :global(.action-btn:hover) {
     background: var(--surface-hover);
     color: var(--foreground);
   }

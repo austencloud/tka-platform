@@ -132,13 +132,6 @@
     outline-offset: -3px;
   }
 
-  /* Dimmed state when modal is open */
-  .help-banner.dimmed {
-    opacity: 0.4;
-    pointer-events: none;
-    transition: opacity var(--duration-normal) ease;
-  }
-
   .help-banner i {
     font-size: var(--font-size-lg, 18px);
   }

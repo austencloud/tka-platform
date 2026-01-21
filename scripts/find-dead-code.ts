@@ -112,12 +112,14 @@ function getAllFiles(dir: string, extensions: string[]): string[] {
 
 function globMatch(pattern: string, filePath: string): boolean {
   // Simple glob matching for ** and *
-  // Handle **/ to match "zero or more directories" (including none)
+  // Use placeholders to avoid double-replacement issues
   const regexPattern = pattern
-    .replace(/\*\*\//g, "(?:.*\\/)?") // **/ matches zero or more path segments
-    .replace(/\*\*/g, ".*") // ** at end matches anything
-    .replace(/\*/g, "[^/]*") // * matches filename chars
-    .replace(/\//g, "\\/");
+    .replace(/\*\*\//g, "{{GLOB_ANY_PATH}}") // **/ = zero or more path segments
+    .replace(/\*\*/g, "{{GLOB_ANY}}") // ** alone = any chars
+    .replace(/\*/g, "[^/]*") // * = any chars except /
+    .replace(/\//g, "\\/")
+    .replace(/{{GLOB_ANY_PATH}}/g, "(?:.*\\/)?") // restore: optional path prefix
+    .replace(/{{GLOB_ANY}}/g, ".*"); // restore: any chars
 
   const regex = new RegExp(`^${regexPattern}$`);
   return regex.test(filePath);
