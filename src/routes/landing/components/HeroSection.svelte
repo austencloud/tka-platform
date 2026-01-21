@@ -1,6 +1,6 @@
 <script lang="ts">
-  import LandingAnimationDemo from "./LandingAnimationDemo.svelte";
   import HeroInstallFlow from "./HeroInstallFlow.svelte";
+  import VideoShowcaseSection from "./VideoShowcaseSection.svelte";
 </script>
 
 <section class="hero">
@@ -10,15 +10,18 @@
   </div>
 
   <div class="hero-content">
-    <div class="hero-text-panel">
-      <h1>The Kinetic Alphabet</h1>
-      <p class="tagline">Create, record, and share flow arts choreography</p>
+    <!-- Left side: Title, tagline, and install -->
+    <div class="hero-text-side">
+      <div class="hero-text-panel">
+        <h1>The Kinetic Alphabet</h1>
+        <p class="tagline">Create, record, and share flow arts choreography</p>
+      </div>
+      <HeroInstallFlow />
     </div>
 
-    <HeroInstallFlow />
-
-    <div class="hero-visual">
-      <LandingAnimationDemo />
+    <!-- Right side: Video showcase -->
+    <div class="hero-video-side">
+      <VideoShowcaseSection compact />
     </div>
   </div>
 </section>
@@ -30,6 +33,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 60px 24px;
     overflow: hidden;
   }
 
@@ -64,8 +68,21 @@
 
   .hero-content {
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(32px, 5vw, 80px);
+    max-width: 1200px;
+    width: 100%;
+  }
+
+  .hero-text-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
-    max-width: 800px;
+    max-width: 500px;
   }
 
   .hero-text-panel {
@@ -78,7 +95,7 @@
   }
 
   .hero h1 {
-    font-size: clamp(2.5rem, 8vw, 4.5rem);
+    font-size: clamp(2rem, 5vw, 3.5rem);
     margin-bottom: 8px;
     background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
     -webkit-background-clip: text;
@@ -87,24 +104,53 @@
   }
 
   .tagline {
-    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
     color: var(--theme-accent-strong, #818cf8);
-    margin-bottom: 16px;
+    margin-bottom: 0;
     font-weight: 500;
   }
 
-  .hero-visual {
-    margin-top: clamp(24px, 5vw, 48px);
+  .hero-video-side {
+    flex: 0 0 auto;
+    width: clamp(280px, 35vw, 400px);
   }
 
-  @media (max-width: 768px) {
+  /* Tablet and below - stack vertically */
+  @media (max-width: 900px) {
     .hero {
-      padding: 60px 16px;
+      padding: 80px 16px 40px;
+    }
+
+    .hero-content {
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .hero-text-side {
+      max-width: 100%;
     }
 
     .hero-text-panel {
-      padding: 32px 24px 24px;
+      padding: 32px 24px;
       border-radius: 20px;
+    }
+
+    .hero-video-side {
+      width: 100%;
+      max-width: 360px;
+    }
+  }
+
+  /* Mobile - tighter spacing */
+  @media (max-width: 480px) {
+    .hero {
+      padding: 60px 16px 32px;
+      min-height: auto;
+    }
+
+    .hero-text-panel {
+      padding: 24px 20px;
+      margin-bottom: 24px;
     }
   }
 </style>

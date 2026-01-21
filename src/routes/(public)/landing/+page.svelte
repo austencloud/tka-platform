@@ -5,9 +5,8 @@
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
 
   import HeroSection from "../../landing/components/HeroSection.svelte";
-  import VideoShowcaseSection from "../../landing/components/VideoShowcaseSection.svelte";
+  import NotationShowcaseSection from "../../landing/components/NotationShowcaseSection.svelte";
   import WhatIsTKASection from "../../landing/components/WhatIsTKASection.svelte";
-  import ShowcaseSection from "../../landing/components/ShowcaseSection.svelte";
   import LandingFooter from "../../landing/components/LandingFooter.svelte";
   import LandingBackgroundPicker from "../../landing/components/LandingBackgroundPicker.svelte";
 
@@ -57,9 +56,8 @@
   <div class="content-layer">
     <HeroSection />
     <main id="main-content">
-      <VideoShowcaseSection />
+      <NotationShowcaseSection />
       <WhatIsTKASection />
-      <ShowcaseSection />
     </main>
     <LandingFooter />
   </div>

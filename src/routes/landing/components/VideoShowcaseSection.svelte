@@ -10,6 +10,13 @@
   import type { ShowcaseVideo } from "$lib/features/landing-preview/types";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 
+  interface Props {
+    /** When true, hides the header and shows just the video player (for hero integration) */
+    compact?: boolean;
+  }
+
+  let { compact = false }: Props = $props();
+
   let videos = $state<Array<{ src: string; title?: string; description?: string }>>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
@@ -75,12 +82,14 @@
   });
 </script>
 
-<section class="video-showcase" id="videos">
+<section class="video-showcase" class:compact id="videos">
   <div class="container">
-    <h2>Real Performances</h2>
-    <p class="section-intro">
-      Sequences performed with staves, poi, and fans.
-    </p>
+    {#if !compact}
+      <h2>Real Performances</h2>
+      <p class="section-intro">
+        Sequences performed with staves, poi, and fans.
+      </p>
+    {/if}
 
     <div class="player-wrapper">
       {#if loading}
@@ -94,7 +103,7 @@
           <span>{error}</span>
         </div>
       {:else if videos.length > 0}
-        <EndlessVideoPlayer {videos} crossfadeDuration={1000} showInfo={true} />
+        <EndlessVideoPlayer {videos} crossfadeDuration={1000} showInfo={!compact} />
       {/if}
     </div>
   </div>
@@ -105,9 +114,21 @@
     padding: 80px 24px;
   }
 
+  .video-showcase.compact {
+    padding: 0;
+  }
+
   .container {
     max-width: 500px;
     margin: 0 auto;
+  }
+
+  .compact .container {
+    max-width: 100%;
+  }
+
+  .compact .player-wrapper {
+    max-width: 100%;
   }
 
   h2 {
