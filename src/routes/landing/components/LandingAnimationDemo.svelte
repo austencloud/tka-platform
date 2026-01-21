@@ -573,18 +573,13 @@
     gap: clamp(16px, 3vw, 24px);
     width: 100%;
     container-type: inline-size;
-    position: relative;
-    min-height: clamp(520px, 55cqw, 520px);
   }
 
   .demo-transition-wrapper {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
   }
 
   .demo-layout {
@@ -668,9 +663,7 @@
   }
 
   .controls-wrapper {
-    position: absolute;
-    bottom: 0;
-    z-index: 10;
+    margin-top: 24px;
   }
 
   /* Tablet - show both but stacked */
