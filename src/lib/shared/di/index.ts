@@ -112,6 +112,12 @@ const buildContainer = typeof window !== 'undefined' ? createBuildContainer({
   betaDetector: pictographContainer.items.betaDetector,
   arrowPositioningOrchestrator: pictographContainer.items.arrowPositioningOrchestrator,
   letterQueryHandler: pictographContainer.items.letterQueryHandler,
+  // Arrow adjustment services
+  screenSpaceAdjustmentTransformer: pictographContainer.items.screenSpaceAdjustmentTransformer,
+  arrowAdjustmentCalculator: pictographContainer.items.arrowAdjustmentCalculator,
+  arrowLocationCalculator: pictographContainer.items.arrowLocationCalculator,
+  pictographPreparer: pictographContainer.items.pictographPreparer,
+  turnsTupleGenerator: pictographContainer.items.turnsTupleGenerator,
   sharer: shareContainer.items.sharer,
 }) : null as any;
 

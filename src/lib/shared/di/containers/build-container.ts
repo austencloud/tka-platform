@@ -26,6 +26,7 @@ import { ResponsiveLayoutManager } from "$lib/features/create/shared/services/im
 import { NavigationSyncer } from "$lib/features/create/shared/services/implementations/NavigationSyncer";
 import { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
 import { KeyboardArrowAdjuster } from "$lib/features/create/shared/services/implementations/KeyboardArrowAdjuster";
+import { ArrowAdjustmentOrchestrator } from "$lib/features/create/shared/services/implementations/ArrowAdjustmentOrchestrator";
 import { UndoManager } from "$lib/features/create/shared/services/implementations/UndoManager";
 import { ConstructCoordinator } from "$lib/features/create/shared/services/implementations/ConstructCoordinator";
 import { TurnController } from "$lib/features/create/edit/services/TurnController";
@@ -143,6 +144,11 @@ import type { IPersistenceService } from "$lib/shared/persistence/services/contr
 import type { IArrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
+import type { IScreenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IScreenSpaceAdjustmentTransformer";
+import type { IArrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IArrowAdjustmentCalculator";
+import type { IArrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IArrowLocationCalculator";
+import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
+import type { ITurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
 
 /**
  * External dependencies that must be provided when creating the container.
@@ -173,6 +179,13 @@ export interface BuildContainerDependencies {
   betaDetector: IBetaDetector;
   arrowPositioningOrchestrator: IArrowPositioningOrchestrator;
   letterQueryHandler: ILetterQueryHandler;
+
+  // Arrow adjustment services (for ArrowAdjustmentOrchestrator)
+  screenSpaceAdjustmentTransformer: IScreenSpaceAdjustmentTransformer;
+  arrowAdjustmentCalculator: IArrowAdjustmentCalculator;
+  arrowLocationCalculator: IArrowLocationCalculator;
+  pictographPreparer: IPictographPreparer;
+  turnsTupleGenerator: ITurnsTupleGenerator;
 
   // Share service
   sharer: ISharer;
@@ -243,10 +256,22 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
       })
 
       // === Layer 2: Services with external deps only ===
-      .add({
+      .add((ctx) => ({
         // Create module layout - needs device services
         createModuleLayoutManager: () =>
           new CreateModuleLayoutManager(deps.deviceDetector, deps.viewportManager),
+
+        // Arrow adjustment orchestrator - needs keyboardArrowAdjuster (Layer 1) + external deps
+        arrowAdjustmentOrchestrator: () =>
+          new ArrowAdjustmentOrchestrator(
+            ctx.keyboardArrowAdjuster,
+            deps.screenSpaceAdjustmentTransformer,
+            deps.arrowAdjustmentCalculator,
+            deps.arrowLocationCalculator,
+            deps.pictographPreparer,
+            deps.gridModeDeriver!,
+            deps.turnsTupleGenerator
+          ),
 
         responsiveLayoutManager: () => {
           if (!responsiveLayoutManagerInstance) {
@@ -340,7 +365,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             deps.orientationCalculator,
             null as any // loopParameterProvider will be provided later - temp fix
           ),
-      })
+      }))
 
       // === Layer 3: Services with Layer 1/2 deps ===
       .add((ctx) => ({
