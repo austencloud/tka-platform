@@ -182,11 +182,11 @@ Settings dialog for camera configuration including mirror toggle and camera sour
   }
 
   .close-button {
-    width: 32px;
-    height: 32px;
+    width: 48px;
+    height: 48px;
     background: transparent;
     border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
-    border-radius: 50%; /* Consistent circular style */
+    border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -197,6 +197,11 @@ Settings dialog for camera configuration including mirror toggle and camera sour
   .close-button:hover {
     background: var(--surface-light, rgba(255, 255, 255, 0.1));
     border-color: var(--primary, var(--semantic-info));
+  }
+
+  .close-button:focus-visible {
+    outline: 2px solid var(--theme-accent, var(--semantic-info));
+    outline-offset: 2px;
   }
 
   .close-icon {
@@ -310,6 +315,14 @@ Settings dialog for camera configuration including mirror toggle and camera sour
     .dialog-header,
     .dialog-content {
       padding: var(--spacing-md, 16px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .close-button,
+    .toggle-button,
+    .camera-selector {
+      transition: none;
     }
   }
 </style>

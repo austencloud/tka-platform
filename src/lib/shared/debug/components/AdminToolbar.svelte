@@ -99,10 +99,11 @@
   });
 
   // Check if current preview user is in quick access
+  // Uses the reactive quickAccessUsers array so it updates when users are added/removed
   const isCurrentUserInQuickAccess = $derived.by(() => {
     const uid = previewProfile?.uid;
-    if (!uid || !quickAccessPersister) return false;
-    return quickAccessPersister.has(uid);
+    if (!uid) return false;
+    return quickAccessUsers.some((u) => u.uid === uid);
   });
 
   // Quick Access Functions
@@ -116,6 +117,12 @@
       photoURL: previewProfile.photoURL,
     };
     quickAccessUsers = quickAccessPersister.add(newUser);
+
+    // Show confirmation
+    introResetMessage = `Added ${newUser.displayName} to quick access`;
+    setTimeout(() => {
+      introResetMessage = null;
+    }, 2000);
   }
 
   function removeFromQuickAccess(uid: string) {

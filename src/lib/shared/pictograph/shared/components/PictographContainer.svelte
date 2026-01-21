@@ -267,6 +267,9 @@ with pre-prepared data for better performance.
       endPos: blueMotion.endPosition,
       motionType: blueMotion.motionType,
       rotation: blueMotion.rotationDirection,
+      // Include orientations so prop rotation updates when orientation changes propagate
+      startOrientation: blueMotion.startOrientation,
+      endOrientation: blueMotion.endOrientation,
       // Include manual adjustments so arrow moves when adjusted
       manualAdjustX: blueMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
       manualAdjustY: blueMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
@@ -279,6 +282,9 @@ with pre-prepared data for better performance.
       endPos: redMotion.endPosition,
       motionType: redMotion.motionType,
       rotation: redMotion.rotationDirection,
+      // Include orientations so prop rotation updates when orientation changes propagate
+      startOrientation: redMotion.startOrientation,
+      endOrientation: redMotion.endOrientation,
       // Include manual adjustments so arrow moves when adjusted
       manualAdjustX: redMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
       manualAdjustY: redMotion.arrowPlacementData?.manualAdjustmentY ?? 0,

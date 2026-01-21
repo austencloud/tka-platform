@@ -77,20 +77,14 @@
   async function createMarkers() {
     if (!map) return;
 
-    console.log(`🗺️ createMarkers called with ${locations.length} locations, ${markers.length} existing markers`);
-
     // Always clear existing markers first
     markers.forEach((marker) => {
-      console.log('  Removing marker:', marker);
       marker.map = null;
     });
     markers.length = 0;
 
-    console.log('  Markers cleared');
-
     // If no locations, we're done (markers cleared)
     if (locations.length === 0) {
-      console.log('  No locations, returning');
       return;
     }
 
@@ -222,6 +216,12 @@
     to {
       opacity: 1;
       transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .popup-wrapper {
+      animation: none;
     }
   }
 

@@ -206,8 +206,9 @@ Features square aspect ratio for consistent layout and settings dialog for camer
         class="settings-button"
         onclick={openSettings}
         title="Camera settings"
+        aria-label="Open camera settings"
       >
-        <span class="settings-icon">⚙️</span>
+        <span class="settings-icon" aria-hidden="true">⚙️</span>
       </button>
     {/if}
 
@@ -405,8 +406,8 @@ Features square aspect ratio for consistent layout and settings dialog for camer
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .settings-button {
-      width: 40px;
-      height: 40px;
+      width: var(--min-touch-target);
+      height: var(--min-touch-target);
       top: var(--spacing-sm, 8px);
       right: var(--spacing-sm, 8px);
     }
@@ -416,10 +417,26 @@ Features square aspect ratio for consistent layout and settings dialog for camer
     }
   }
 
+  .settings-button:focus-visible {
+    outline: 2px solid var(--theme-accent, var(--semantic-info));
+    outline-offset: 2px;
+  }
+
+  .retry-button:focus-visible {
+    outline: 2px solid var(--theme-accent, var(--semantic-info));
+    outline-offset: 2px;
+  }
+
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
     .spinner {
       animation: none;
+    }
+
+    .video-feed,
+    .settings-button,
+    .retry-button {
+      transition: none;
     }
   }
 </style>

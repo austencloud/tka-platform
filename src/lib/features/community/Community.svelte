@@ -241,7 +241,8 @@
   }
 
   .control-btn {
-    padding: 10px 16px;
+    min-height: 48px;
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
     border-radius: 10px;
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
@@ -252,6 +253,11 @@
     align-items: center;
     gap: 6px;
     white-space: nowrap;
+  }
+
+  .control-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #4a9eff);
+    outline-offset: 2px;
   }
 
   .share-btn {
@@ -366,6 +372,12 @@
     .control-btn {
       flex: 1;
       justify-content: center;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .control-btn {
+      transition: none;
     }
   }
 </style>

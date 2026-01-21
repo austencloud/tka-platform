@@ -11,7 +11,7 @@
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
+  import { authState, isEffectiveAdmin } from "$lib/shared/auth/state/authState.svelte.ts";
   import { discoverNavigationState } from "../../shared/state/discover-navigation-state.svelte";
   import { creatorsDataState } from "../state/creators-data-state.svelte";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
@@ -47,22 +47,51 @@
   const error = $derived(creatorsDataState.error);
 
   // Accounts to hide from public view (test/system accounts)
-  const HIDDEN_ACCOUNTS = ["tkascribe.review@gmail.com"];
+  // Admins can still see these accounts
+  const HIDDEN_EMAILS = ["tkascribe.review@gmail.com"];
+  const HIDDEN_USERNAMES = [
+    "netsua07",
+    "flowtacocat",
+    "tka.flowarts",
+    "cirqueaflame_603",
+  ];
 
-  // Filtered users based on search (excludes hidden accounts)
+  // Check if effective user is admin (respects preview mode)
+  const isAdmin = $derived(isEffectiveAdmin());
+
+  /**
+   * Fuzzy match a query against text.
+   * - Case insensitive
+   * - Matches if ALL query terms appear anywhere in the text
+   * - Each term can match partial words (e.g., "sky" matches "Bershadsky")
+   */
+  function fuzzyMatch(text: string, query: string): boolean {
+    const normalizedText = text.toLowerCase();
+    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+
+    // All terms must match somewhere in the text
+    return terms.every((term) => normalizedText.includes(term));
+  }
+
+  // Filtered users based on search (excludes hidden accounts for non-admins)
   const filteredUsers = $derived.by(() => {
-    // First filter out hidden accounts
-    const visibleUsers = users.filter(
-      (user) => !user.email || !HIDDEN_ACCOUNTS.includes(user.email)
-    );
+    // Admins see all accounts, non-admins have hidden accounts filtered out
+    const visibleUsers = isAdmin
+      ? users
+      : users.filter((user) => {
+          const isHiddenByEmail =
+            user.email && HIDDEN_EMAILS.includes(user.email);
+          const isHiddenByUsername = HIDDEN_USERNAMES.includes(user.username);
+          return !isHiddenByEmail && !isHiddenByUsername;
+        });
 
     if (!searchQuery) return visibleUsers;
-    const query = searchQuery.toLowerCase();
-    return visibleUsers.filter(
-      (user) =>
-        user.username.toLowerCase().includes(query) ||
-        user.displayName.toLowerCase().includes(query)
-    );
+
+    return visibleUsers.filter((user) => {
+      // Combine searchable fields into one string for matching
+      const searchableText = `${user.username} ${user.displayName}`;
+      return fuzzyMatch(searchableText, searchQuery);
+    });
   });
 
   onMount(async () => {

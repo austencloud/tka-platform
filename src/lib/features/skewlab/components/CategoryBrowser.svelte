@@ -15,11 +15,9 @@
   import { onMount, onDestroy } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import SkewLabEditorPanel from "./SkewLabEditorPanel.svelte";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
   import { container } from "$lib/shared/di";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { selectedArrowState } from "$lib/features/create/shared/state/selected-arrow-state.svelte";
@@ -43,24 +41,6 @@
 
   // Push content over when panel opens on desktop
   const isPanelOpen = $derived(editorOpen && isSideBySide);
-
-  // Cardinal locations (for determining grid type)
-  const CARDINAL = new Set([GridLocation.NORTH, GridLocation.EAST, GridLocation.SOUTH, GridLocation.WEST]);
-
-  function isCardinal(loc: GridLocation): boolean {
-    return CARDINAL.has(loc);
-  }
-
-  function formatLoc(loc: GridLocation | undefined): string {
-    if (!loc) return "?";
-    // Abbreviate: NORTH -> N, NORTHEAST -> NE, etc.
-    return loc.replace(/NORTH/g, "N").replace(/SOUTH/g, "S").replace(/EAST/g, "E").replace(/WEST/g, "W");
-  }
-
-  function getGridType(loc: GridLocation | undefined): "C" | "I" | "?" {
-    if (!loc) return "?";
-    return isCardinal(loc) ? "C" : "I";
-  }
 
   // State
   let allPictographs: PictographData[] = $state([]);
@@ -173,18 +153,6 @@
     const start = p.startPosition?.replace(/^(\w+)(\d+)$/, "$1$2") || "?";
     const end = p.endPosition?.replace(/^(\w+)(\d+)$/, "$1$2") || "?";
     return `${start} → ${end}`;
-  }
-
-  // Track which card was just copied (for visual feedback)
-  let copiedId = $state<string | null>(null);
-
-  async function copyPictographInfo(p: PictographData) {
-    const info = JSON.stringify(p, null, 2);
-    await navigator.clipboard.writeText(info);
-    copiedId = p.id;
-    setTimeout(() => {
-      if (copiedId === p.id) copiedId = null;
-    }, 1500);
   }
 </script>
 
@@ -699,170 +667,10 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-  /* Original detailed card-info (kept for reference, not currently used) */
-  .card-info {
-    display: none; /* Hidden in arrow adjustment mode */
-    flex-direction: column;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem 0.75rem;
-    background: rgba(0, 0, 0, 0.2);
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.05));
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .info-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .letter {
-    font-weight: 700;
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text, #fff);
-  }
-
-  .category {
-    padding: 0.125rem 0.5rem;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--theme-text-secondary, #888);
-    font-weight: 600;
-  }
-
-  .category.cat1 {
-    background: rgba(96, 165, 250, 0.2);
-    color: #60a5fa;
-  }
-
-  .category.cat2 {
-    background: rgba(52, 211, 153, 0.2);
-    color: #34d399;
-  }
-
-  .category.cat3 {
-    background: rgba(251, 191, 36, 0.2);
-    color: #fbbf24;
-  }
-
-  .category.cat4 {
-    background: rgba(248, 113, 113, 0.2);
-    color: #f87171;
-  }
-
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .copy-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    border: none;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--theme-text-secondary, #888);
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  @media (pointer: coarse) {
-    .copy-btn {
-      width: 2.75rem;
-      height: 2.75rem;
-    }
-  }
-
-  .copy-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--theme-text, #fff);
-  }
-
-  .copy-btn.copied {
-    background: rgba(52, 211, 153, 0.2);
-    color: #34d399;
-  }
-
-  .copy-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .copy-btn:active {
-    transform: scale(0.9);
-  }
-
-  .position-row {
-    display: flex;
-    gap: 0.5rem;
-    color: var(--theme-text-secondary, #888);
-  }
-
-  .pos-label {
-    font-weight: 600;
-    opacity: 0.7;
-  }
-
-  .position {
-    color: var(--theme-text, #fff);
-  }
-
-  .motion-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    margin-top: 0.25rem;
-    padding-top: 0.375rem;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.05));
-  }
-
-  .motion {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .motion-label {
-    font-weight: 600;
-    min-width: 2rem;
-  }
-
-  .motion.blue .motion-label {
-    color: #60a5fa;
-  }
-
-  .motion.red .motion-label {
-    color: #f87171;
-  }
-
-  .motion-type {
-    padding: 0.125rem 0.375rem;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--theme-text, #fff);
-    font-weight: 500;
-    text-transform: lowercase;
-  }
-
-  .motion-locs {
-    color: var(--theme-text-secondary, #888);
-  }
-
-  .grid-type {
-    font-size: var(--font-size-compact, 12px);
-    opacity: 0.6;
-  }
-
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
     .chip,
     .page-btn,
-    .copy-btn,
     .retry-btn,
     .card {
       transition: none;
@@ -870,7 +678,6 @@
 
     .chip:active:not(:disabled),
     .page-btn:active:not(:disabled),
-    .copy-btn:active,
     .retry-btn:active,
     .card:active {
       transform: none;

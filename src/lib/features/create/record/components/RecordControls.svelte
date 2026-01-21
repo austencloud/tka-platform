@@ -58,6 +58,8 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
       class:playing={isPlaying}
       onclick={onPlayPause}
       title={isPlaying ? "Pause" : "Play"}
+      aria-label={isPlaying ? "Pause playback" : "Start playback"}
+      aria-pressed={isPlaying}
     >
       {#if isPlaying}
         <span class="icon">⏸️</span>
@@ -71,6 +73,7 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
       class="control-button reset-button"
       onclick={onReset}
       title="Reset to beginning"
+      aria-label="Reset to beginning"
     >
       <span class="icon">⏮️</span>
       <span class="label">Reset</span>
@@ -89,8 +92,9 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
         class="bpm-adjust-button"
         onclick={() => incrementBpm(-10)}
         title="Decrease by 10 BPM"
+        aria-label="Decrease speed by 10 BPM"
       >
-        −
+        <span aria-hidden="true">−</span>
       </button>
 
       <input
@@ -101,14 +105,19 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
         value={localBpm}
         oninput={handleBpmChange}
         step="5"
+        aria-label="Playback speed in BPM"
+        aria-valuemin={minBpm}
+        aria-valuemax={maxBpm}
+        aria-valuenow={localBpm}
       />
 
       <button
         class="bpm-adjust-button"
         onclick={() => incrementBpm(10)}
         title="Increase by 10 BPM"
+        aria-label="Increase speed by 10 BPM"
       >
-        +
+        <span aria-hidden="true">+</span>
       </button>
     </div>
   </div>
@@ -121,8 +130,9 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
         checked={isMetronomeEnabled}
         onchange={(e) =>
           onMetronomeToggle((e.target as HTMLInputElement).checked)}
+        aria-label={isMetronomeEnabled ? "Disable metronome" : "Enable metronome"}
       />
-      <span class="toggle-icon">{isMetronomeEnabled ? "🔊" : "🔇"}</span>
+      <span class="toggle-icon" aria-hidden="true">{isMetronomeEnabled ? "🔊" : "🔇"}</span>
       <span class="toggle-label">Metronome</span>
     </label>
   </div>
@@ -358,6 +368,35 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
 
     .control-button {
       padding: var(--spacing-sm, 8px) var(--spacing-sm, 16px);
+    }
+  }
+
+  /* Accessibility: Focus indicators */
+  .control-button:focus-visible,
+  .bpm-adjust-button:focus-visible {
+    outline: 2px solid var(--theme-accent, var(--semantic-info));
+    outline-offset: 2px;
+  }
+
+  .speed-slider:focus-visible {
+    outline: 2px solid var(--theme-accent, var(--semantic-info));
+    outline-offset: 4px;
+  }
+
+  .metronome-toggle input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--theme-accent, var(--semantic-info));
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .control-button,
+    .bpm-adjust-button,
+    .speed-slider::-webkit-slider-thumb,
+    .speed-slider::-moz-range-thumb,
+    .metronome-toggle input[type="checkbox"],
+    .metronome-toggle input[type="checkbox"]::before {
+      transition: none;
     }
   }
 </style>

@@ -35,6 +35,7 @@
   let isActionPending = $state(false);
   let actionError = $state<string | null>(null);
   let confirmAction = $state<{ type: string; message: string } | null>(null);
+  let editNameModal = $state<{ open: boolean; value: string }>({ open: false, value: "" });
 
   async function changeRole(newRole: UserRole) {
     if (isActionPending || userProfile.role === newRole) return;
@@ -232,6 +233,36 @@
         break;
     }
   }
+
+  function openEditNameModal() {
+    editNameModal = { open: true, value: userProfile.displayName || "" };
+  }
+
+  async function saveDisplayName() {
+    if (isActionPending) return;
+
+    const newName = editNameModal.value.trim();
+    if (!newName || newName === userProfile.displayName) {
+      editNameModal = { open: false, value: "" };
+      return;
+    }
+
+    isActionPending = true;
+    actionError = null;
+
+    try {
+      const firestore = await getFirestoreInstance();
+      const userRef = doc(firestore, "users", userProfile.id);
+      await updateDoc(userRef, { displayName: newName });
+      onUserUpdated?.({ displayName: newName });
+      editNameModal = { open: false, value: "" };
+    } catch (err) {
+      console.error("[ProfileAdminSection] Failed to update display name:", err);
+      actionError = "Failed to update display name";
+    } finally {
+      isActionPending = false;
+    }
+  }
 </script>
 
 <section class="admin-section">
@@ -273,6 +304,15 @@
   <div class="control-group" role="group" aria-labelledby="actions-label">
     <span id="actions-label" class="control-label">Account Actions</span>
     <div class="action-buttons">
+      <button
+        class="action-btn"
+        disabled={isActionPending}
+        onclick={openEditNameModal}
+      >
+        <i class="fas fa-pen" aria-hidden="true"></i>
+        Edit Name
+      </button>
+
       <button
         class="action-btn"
         class:danger={!userProfile.isDisabled}
@@ -359,6 +399,56 @@
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           {:else}
             Confirm
+          {/if}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Edit Name Modal -->
+{#if editNameModal.open}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="modal-backdrop"
+    onclick={() => (editNameModal = { open: false, value: "" })}
+    onkeydown={(e) => e.key === "Escape" && (editNameModal = { open: false, value: "" })}
+  >
+    <div
+      class="modal"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-name-title"
+      tabindex="-1"
+    >
+      <h4 id="edit-name-title" class="modal-title">Edit Display Name</h4>
+      <input
+        type="text"
+        class="name-input"
+        bind:value={editNameModal.value}
+        placeholder="Display name"
+        maxlength="50"
+        onkeydown={(e) => e.key === "Enter" && saveDisplayName()}
+      />
+      <div class="modal-actions">
+        <button
+          class="modal-btn cancel"
+          onclick={() => (editNameModal = { open: false, value: "" })}
+          disabled={isActionPending}
+        >
+          Cancel
+        </button>
+        <button
+          class="modal-btn save"
+          onclick={saveDisplayName}
+          disabled={isActionPending || !editNameModal.value.trim()}
+        >
+          {#if isActionPending}
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          {:else}
+            Save
           {/if}
         </button>
       </div>
@@ -585,5 +675,43 @@
   .modal-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .modal-title {
+    margin: 0 0 16px 0;
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--theme-text);
+  }
+
+  .name-input {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 20px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+    outline: none;
+    transition: border-color var(--duration-normal) ease;
+  }
+
+  .name-input:focus {
+    border-color: var(--theme-accent);
+  }
+
+  .name-input::placeholder {
+    color: var(--theme-text-dim);
+  }
+
+  .modal-btn.save {
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-accent);
+  }
+
+  .modal-btn.save:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 </style>

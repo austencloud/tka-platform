@@ -94,13 +94,13 @@
 
   .close-btn {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: 8px;
+    right: 8px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
-    width: 32px;
-    height: 32px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -113,6 +113,11 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     color: var(--theme-text, #ffffff);
+  }
+
+  .close-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #4a9eff);
+    outline-offset: 2px;
   }
 
   .profile-header {
@@ -244,5 +249,12 @@
 
   .view-profile-btn i {
     font-size: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .close-btn,
+    .view-profile-btn {
+      transition: none;
+    }
   }
 </style>
