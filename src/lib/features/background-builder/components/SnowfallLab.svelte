@@ -1,18 +1,20 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import { SnowfallBackgroundSystem } from "$lib/shared/background/snowfall/services/SnowfallBackgroundSystem";
   import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import LabPreviewCanvas from "./LabPreviewCanvas.svelte";
 
-  // Canvas reference
-  let canvas: HTMLCanvasElement | null = $state(null);
+  // Background system
   let backgroundSystem: SnowfallBackgroundSystem | null = $state(null);
-  let animationFrame: number | null = $state(null);
-  let lastFrameTime = 0;
+  let canvasDimensions = $state({ width: 800, height: 600 });
 
   // Quality settings
   let quality: QualityLevel = $state("high");
+
+  // Loading state
+  let isLoading = $state(true);
 
   // Layer toggles
   let layers = $state({
@@ -29,21 +31,11 @@
   let stats = $state({ snowflakes: 0 });
   let lastStatsUpdate = 0;
 
-  function initializeSystem() {
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const container = canvas.parentElement;
-    if (container) {
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-    }
-
+  // Initialize system when canvas is ready
+  function handleCanvasReady(dimensions: { width: number; height: number }) {
+    canvasDimensions = dimensions;
     try {
       backgroundSystem = new SnowfallBackgroundSystem();
-      const dimensions = { width: canvas.width, height: canvas.height };
       backgroundSystem.initialize(dimensions, quality);
 
       // Apply layer visibility
@@ -51,71 +43,31 @@
         backgroundSystem.setLayerVisibility(layers);
       }
 
-      startAnimation();
+      isLoading = false;
     } catch (error) {
+      isLoading = false;
       console.error("Failed to initialize Snowfall Lab:", error);
     }
   }
 
-  function startAnimation() {
-    if (!canvas || !backgroundSystem) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const animate = (currentTime: number) => {
-      // Guard against destroyed component
-      if (!canvas || !backgroundSystem) return;
-
-      const deltaTime = currentTime - lastFrameTime;
-      const frameMultiplier = deltaTime / 16.67;
-      lastFrameTime = currentTime;
-
-      const dimensions = { width: canvas.width, height: canvas.height };
-      backgroundSystem.update(dimensions, frameMultiplier);
-      ctx.clearRect(0, 0, dimensions.width, dimensions.height);
-      backgroundSystem.draw(ctx, dimensions);
-
-      // Update stats every second
-      if (currentTime - lastStatsUpdate > 1000 && backgroundSystem) {
-        stats = backgroundSystem.getStats();
-        lastStatsUpdate = currentTime;
-      }
-
-      animationFrame = requestAnimationFrame(animate);
-    };
-
-    lastFrameTime = performance.now();
-    animationFrame = requestAnimationFrame(animate);
-  }
-
-  function stopAnimation() {
-    if (animationFrame !== null) {
-      cancelAnimationFrame(animationFrame);
-      animationFrame = null;
-    }
-  }
-
-  function handleResize() {
-    if (!canvas || !backgroundSystem) return;
-
-    const container = canvas.parentElement;
-    if (container) {
-      const oldDimensions = { width: canvas.width, height: canvas.height };
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-      const newDimensions = { width: canvas.width, height: canvas.height };
-      backgroundSystem.handleResize?.(oldDimensions, newDimensions);
+  // Update stats on each frame
+  function handleFrame() {
+    const now = performance.now();
+    if (now - lastStatsUpdate > 1000 && backgroundSystem) {
+      stats = backgroundSystem.getStats();
+      lastStatsUpdate = now;
     }
   }
 
   function regenerate() {
-    stopAnimation();
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
     }
-    backgroundSystem = null;
-    initializeSystem();
+    backgroundSystem = new SnowfallBackgroundSystem();
+    backgroundSystem.initialize(canvasDimensions, quality);
+    if (backgroundSystem.setLayerVisibility) {
+      backgroundSystem.setLayerVisibility(layers);
+    }
   }
 
   function setQuality(q: QualityLevel) {
@@ -135,17 +87,10 @@
     }
   }
 
-  onMount(() => {
-    initializeSystem();
-    window.addEventListener("resize", handleResize);
-  });
-
   onDestroy(() => {
-    stopAnimation();
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
     }
-    window.removeEventListener("resize", handleResize);
   });
 </script>
 
@@ -209,9 +154,14 @@
     </div>
   </div>
 
-  <div class="preview">
-    <canvas bind:this={canvas}></canvas>
-  </div>
+  <LabPreviewCanvas
+    system={backgroundSystem}
+    {isLoading}
+    accentColor="#67e8f9"
+    backgroundColor="rgba(10, 22, 40, 0.9)"
+    onCanvasReady={handleCanvasReady}
+    onFrame={handleFrame}
+  />
 </div>
 
 <style>
@@ -230,7 +180,7 @@
     padding: 20px;
     background: rgba(15, 15, 25, 0.8);
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     overflow-y: auto;
   }
 
@@ -302,7 +252,7 @@
     flex-direction: column;
     gap: 10px;
     padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .stats-grid {
@@ -316,7 +266,7 @@
     flex-direction: column;
     align-items: center;
     padding: 10px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 10px;
   }
 
@@ -337,7 +287,7 @@
     flex-direction: column;
     gap: 10px;
     padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .progress-pills {
@@ -369,20 +319,6 @@
     50% { opacity: 0.7; }
   }
 
-  .preview {
-    position: relative;
-    border-radius: 16px;
-    overflow: hidden;
-    background: #0a1628;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  .preview canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
-
   @media (max-width: 800px) {
     .snowfall-lab {
       grid-template-columns: 1fr;
@@ -401,8 +337,7 @@
 
   /* Accessibility: High contrast */
   @media (prefers-contrast: high) {
-    .controls,
-    .preview {
+    .controls {
       border: 2px solid rgba(255, 255, 255, 0.3);
     }
 

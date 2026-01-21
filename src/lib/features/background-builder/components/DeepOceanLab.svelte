@@ -19,6 +19,7 @@
 
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
+  let isLoading = $state(true);
   let backgroundSystem: DeepOceanBackgroundOrchestrator | null = $state(null);
   let animationFrame: number | null = $state(null);
   let lastFrameTime = 0;
@@ -137,7 +138,9 @@
       updateFishList();
 
       startAnimation();
+      isLoading = false;
     } catch (error) {
+      isLoading = false;
       console.error("Failed to initialize Deep Ocean Lab:", error);
     }
   }
@@ -819,6 +822,12 @@
   </div>
 
   <div class="preview">
+    {#if isLoading}
+      <div class="loading-overlay">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Loading...</span>
+      </div>
+    {/if}
     <canvas bind:this={canvas}></canvas>
   </div>
 </div>
@@ -839,7 +848,7 @@
     padding: 16px;
     background: rgba(15, 15, 25, 0.8);
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     overflow-y: auto;
   }
 
@@ -861,7 +870,7 @@
     background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(34, 211, 238, 0.3));
     border: 1px solid rgba(34, 211, 238, 0.4);
     border-radius: 20px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 600;
     color: #22d3ee;
     text-transform: uppercase;
@@ -926,7 +935,7 @@
 
   /* Subsection labels */
   .subsection-label {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 600;
     color: #6b7280;
     text-transform: uppercase;
@@ -964,8 +973,8 @@
   }
 
   .info-label {
-    font-size: 0.65rem;
-    color: #6b7280;
+    font-size: var(--font-size-compact, 0.75rem);
+    color: #9ca3af;
     text-transform: uppercase;
   }
 
@@ -988,7 +997,7 @@
     flex-direction: column;
     align-items: center;
     padding: 10px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 10px;
   }
 
@@ -999,8 +1008,8 @@
   }
 
   .stat-label {
-    font-size: 0.7rem;
-    color: #6b7280;
+    font-size: var(--font-size-compact, 0.75rem);
+    color: #9ca3af;
     text-transform: uppercase;
   }
 
@@ -1016,7 +1025,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 0.75rem);
     color: #9ca3af;
   }
 
@@ -1027,8 +1036,8 @@
 
   /* Debug Section */
   .debug-hint {
-    font-size: 0.65rem;
-    color: #6b7280;
+    font-size: var(--font-size-compact, 0.75rem);
+    color: #9ca3af;
     margin-top: 8px;
     font-style: italic;
   }
@@ -1039,7 +1048,7 @@
     border-radius: 16px;
     overflow: hidden;
     background: #0a1628;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     height: 100%;
     min-height: 400px;
   }
@@ -1050,10 +1059,59 @@
     display: block;
   }
 
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(10, 22, 40, 0.9);
+    color: #22d3ee;
+    font-size: var(--font-size-min, 0.875rem);
+    z-index: 10;
+  }
+
+  .loading-overlay i {
+    font-size: 1.5rem;
+  }
+
   @media (max-width: 800px) {
     .deep-ocean-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
+    }
+  }
+
+  .nav-btn:focus-visible {
+    outline: 2px solid #22d3ee;
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .nav-btn {
+      transition: none;
+    }
+  }
+
+  /* Accessibility: High contrast */
+  @media (prefers-contrast: high) {
+    .controls,
+    .preview {
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .stat {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .subsection-label,
+    .stat-label,
+    .info-label,
+    .debug-hint {
+      color: #d1d5db;
     }
   }
 </style>

@@ -1,26 +1,28 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import { RainbowBackgroundSystem } from "$lib/shared/background/rainbow/services/RainbowBackgroundSystem";
   import { PRIDE_PALETTES, type PridePalette } from "$lib/shared/background/rainbow/domain/constants/rainbow-constants";
   import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import LabPreviewCanvas from "./LabPreviewCanvas.svelte";
   import {
     getRainbowSettings,
     updateRainbowSettings,
   } from "../state/background-builder-state.svelte";
 
-  // Canvas reference
-  let canvas: HTMLCanvasElement | null = $state(null);
+  // Background system
   let backgroundSystem: RainbowBackgroundSystem | null = $state(null);
-  let animationFrame: number | null = $state(null);
-  let lastFrameTime = 0;
+  let canvasDimensions = $state({ width: 800, height: 600 });
 
   // Load persisted settings
   const savedSettings = getRainbowSettings();
 
   // Quality settings
   let quality: QualityLevel = $state(savedSettings.quality);
+
+  // Loading state
+  let isLoading = $state(true);
 
   // Palette selection
   let currentPalette: PridePalette = $state(savedSettings.palette);
@@ -50,26 +52,15 @@
     gay: "MLM",
   };
 
-  function initializeSystem() {
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const container = canvas.parentElement;
-    if (container) {
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-    }
-
+  // Initialize system when canvas is ready
+  function handleCanvasReady(dimensions: { width: number; height: number }) {
+    canvasDimensions = dimensions;
     backgroundSystem = new RainbowBackgroundSystem();
     backgroundSystem.setPalette(currentPalette);
-    const dimensions = { width: canvas.width, height: canvas.height };
     backgroundSystem.initialize(dimensions, quality);
     backgroundSystem.setLayerVisibility(layers);
-
     updateStats();
-    startAnimation();
+    isLoading = false;
   }
 
   function updateStats() {
@@ -85,60 +76,15 @@
     }
   }
 
-  function startAnimation() {
-    if (!canvas || !backgroundSystem) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const animate = (currentTime: number) => {
-      // Guard against destroyed component
-      if (!canvas || !backgroundSystem) return;
-
-      const deltaTime = currentTime - lastFrameTime;
-      const frameMultiplier = deltaTime / 16.67;
-      lastFrameTime = currentTime;
-
-      const dimensions = { width: canvas.width, height: canvas.height };
-      backgroundSystem.update(dimensions, frameMultiplier);
-      ctx.clearRect(0, 0, dimensions.width, dimensions.height);
-      backgroundSystem.draw(ctx, dimensions);
-
-      animationFrame = requestAnimationFrame(animate);
-    };
-
-    lastFrameTime = performance.now();
-    animationFrame = requestAnimationFrame(animate);
-  }
-
-  function stopAnimation() {
-    if (animationFrame !== null) {
-      cancelAnimationFrame(animationFrame);
-      animationFrame = null;
-    }
-  }
-
-  function handleResize() {
-    if (!canvas || !backgroundSystem) return;
-
-    const container = canvas.parentElement;
-    if (container) {
-      const oldDimensions = { width: canvas.width, height: canvas.height };
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-      const newDimensions = { width: canvas.width, height: canvas.height };
-      backgroundSystem.handleResize?.(oldDimensions, newDimensions);
-      updateStats();
-    }
-  }
-
   function regenerate() {
-    stopAnimation();
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
     }
-    backgroundSystem = null;
-    initializeSystem();
+    backgroundSystem = new RainbowBackgroundSystem();
+    backgroundSystem.setPalette(currentPalette);
+    backgroundSystem.initialize(canvasDimensions, quality);
+    backgroundSystem.setLayerVisibility(layers);
+    updateStats();
   }
 
   function setQuality(q: QualityLevel) {
@@ -166,17 +112,10 @@
     }
   }
 
-  onMount(() => {
-    initializeSystem();
-    window.addEventListener("resize", handleResize);
-  });
-
   onDestroy(() => {
-    stopAnimation();
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
     }
-    window.removeEventListener("resize", handleResize);
   });
 </script>
 
@@ -275,9 +214,13 @@
     </div>
   </div>
 
-  <div class="preview">
-    <canvas bind:this={canvas}></canvas>
-  </div>
+  <LabPreviewCanvas
+    system={backgroundSystem}
+    {isLoading}
+    accentColor="#fda4af"
+    backgroundColor="rgba(10, 10, 21, 0.9)"
+    onCanvasReady={handleCanvasReady}
+  />
 </div>
 
 <style>
@@ -296,7 +239,7 @@
     padding: 20px;
     background: rgba(15, 15, 25, 0.8);
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     overflow-y: auto;
   }
 
@@ -368,7 +311,7 @@
     flex-direction: column;
     gap: 10px;
     padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .stats-grid {
@@ -382,7 +325,7 @@
     flex-direction: column;
     align-items: center;
     padding: 10px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 10px;
   }
 
@@ -403,7 +346,7 @@
     flex-direction: column;
     gap: 8px;
     padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .info-text {
@@ -418,7 +361,7 @@
     flex-direction: column;
     gap: 10px;
     padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .progress-pills {
@@ -439,20 +382,6 @@
     color: #fda4af;
   }
 
-  .preview {
-    position: relative;
-    border-radius: 16px;
-    overflow: hidden;
-    background: rgb(10, 10, 21);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  .preview canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
-
   @media (max-width: 800px) {
     .pride-lab {
       grid-template-columns: 1fr;
@@ -470,10 +399,6 @@
   /* Accessibility: High contrast */
   @media (prefers-contrast: high) {
     .controls {
-      border: 2px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .preview {
       border: 2px solid rgba(255, 255, 255, 0.3);
     }
 

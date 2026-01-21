@@ -32,6 +32,7 @@
 
   // Preview state
   let canvas: HTMLCanvasElement | null = $state(null);
+  let isLoading = $state(true);
   const savedSettings = getFireflyForestSettings();
   let layers = $state<FireflyForestLayers>({ ...savedSettings.layers });
   let treeTypes = $state<TreeTypeVisibility>({ ...savedSettings.treeTypes });
@@ -62,6 +63,7 @@
     patterns = previewController.getAvailablePatterns();
     currentPatternId = previewController.getEcologicalPatternId();
     startStatsPolling();
+    isLoading = false;
   }
 
   function startStatsPolling() {
@@ -229,6 +231,12 @@
   <!-- Content Area -->
   {#if mode === "preview"}
     <div class="preview" onmousemove={handleMouseMove} onmouseleave={handleMouseLeave}>
+      {#if isLoading}
+        <div class="loading-overlay">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span>Loading...</span>
+        </div>
+      {/if}
       <canvas bind:this={canvas}></canvas>
     </div>
   {:else}
@@ -257,7 +265,7 @@
     padding: 20px;
     background: rgba(15, 15, 25, 0.8);
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     overflow-y: auto;
   }
 
@@ -279,7 +287,7 @@
     background: linear-gradient(135deg, rgba(132, 204, 22, 0.3), rgba(163, 230, 53, 0.3));
     border: 1px solid rgba(163, 230, 53, 0.4);
     border-radius: 20px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 600;
     color: #a3e635;
     text-transform: uppercase;
@@ -290,7 +298,7 @@
     display: flex;
     gap: 8px;
     padding: 4px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 10px;
   }
 
@@ -313,7 +321,7 @@
 
   .mode-btn:hover {
     color: #9ca3af;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
   }
 
   .mode-btn.active {
@@ -326,13 +334,31 @@
     border-radius: 16px;
     overflow: hidden;
     background: linear-gradient(to bottom, #0a1628 0%, #162033 50%, #1a2a3d 100%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .preview canvas {
     width: 100%;
     height: 100%;
     display: block;
+  }
+
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(10, 22, 40, 0.9);
+    color: #a3e635;
+    font-size: var(--font-size-min, 0.875rem);
+    z-index: 10;
+  }
+
+  .loading-overlay i {
+    font-size: 1.5rem;
   }
 
   .gallery-hint {
@@ -350,6 +376,30 @@
     .firefly-forest-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
+    }
+  }
+
+  .mode-btn:focus-visible {
+    outline: 2px solid #a3e635;
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .mode-btn {
+      transition: none;
+    }
+  }
+
+  /* Accessibility: High contrast */
+  @media (prefers-contrast: high) {
+    .controls,
+    .preview {
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .mode-toggle {
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
   }
 </style>
