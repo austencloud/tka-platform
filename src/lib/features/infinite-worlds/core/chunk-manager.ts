@@ -265,15 +265,10 @@ export class ChunkManager {
         if (distance <= viewDistance) {
           neededChunks.add(key);
 
-          // Determine LOD based on distance
-          let lod = lodDistances.length;
-          for (let i = 0; i < lodDistances.length; i++) {
-            const threshold = lodDistances[i];
-            if (threshold !== undefined && distance < threshold) {
-              lod = i;
-              break;
-            }
-          }
+          // Force LOD 0 for all chunks - uniform resolution eliminates seams
+          // CDLOD vertex morphing requires proper edge stitching which isn't implemented yet
+          // The performance cost is acceptable for this use case
+          const lod = 0;
 
           chunkPriorities.set(key, { distance, lod });
         }

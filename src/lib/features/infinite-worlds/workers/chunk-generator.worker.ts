@@ -186,12 +186,32 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   }
 
   // First pass: generate vertices
+  // CRITICAL: Edge vertices must use EXACT chunk boundary coordinates
+  // to ensure adjacent chunks sample identical heights at shared edges.
+  // Using step * x can introduce floating-point errors that cause seams.
   for (let z = 0; z < effectiveResolution; z++) {
     for (let x = 0; x < effectiveResolution; x++) {
       const idx = (z * effectiveResolution + x) * 3;
 
-      const worldX = originX + x * step;
-      const worldZ = originZ + z * step;
+      // Use exact boundary coordinates for edge vertices to prevent seams
+      let worldX: number;
+      let worldZ: number;
+
+      if (x === 0) {
+        worldX = originX; // Exact left edge
+      } else if (x === effectiveResolution - 1) {
+        worldX = originX + chunkSize; // Exact right edge
+      } else {
+        worldX = originX + x * step;
+      }
+
+      if (z === 0) {
+        worldZ = originZ; // Exact bottom edge
+      } else if (z === effectiveResolution - 1) {
+        worldZ = originZ + chunkSize; // Exact top edge
+      } else {
+        worldZ = originZ + z * step;
+      }
 
       // Get procedural height
       const proceduralHeight = getTerrainHeight(noise, worldX, worldZ);
@@ -257,9 +277,13 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
         }
       }
 
-      vertices[idx] = x * step;
+      // Local position must match world coordinate calculation for edge vertices
+      const localX = x === 0 ? 0 : (x === effectiveResolution - 1 ? chunkSize : x * step);
+      const localZ = z === 0 ? 0 : (z === effectiveResolution - 1 ? chunkSize : z * step);
+
+      vertices[idx] = localX;
       vertices[idx + 1] = height;
-      vertices[idx + 2] = z * step;
+      vertices[idx + 2] = localZ;
 
       // Color based on biome and height
       // Use special coloring for real terrain zone (grassier, more natural)
@@ -324,7 +348,7 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   // This hides any gaps caused by LOD differences or floating-point precision.
   // Industry-standard technique used by Unity Terrain, Unreal, etc.
 
-  const SKIRT_DEPTH = 5; // How far down skirts extend (meters)
+  const SKIRT_DEPTH = 15; // How far down skirts extend (meters) - increased to hide larger gaps
   const skirtVertexCount = effectiveResolution * 4; // 4 edges
   const totalVertexCount = vertexCount + skirtVertexCount;
 
@@ -347,10 +371,10 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     finalVertices[skirtIdx] = vertices[srcIdx];
     finalVertices[skirtIdx + 1] = vertices[srcIdx + 1] - SKIRT_DEPTH;
     finalVertices[skirtIdx + 2] = vertices[srcIdx + 2];
-    // Use same normal (pointing down-ish for skirts)
-    finalNormals[skirtIdx] = 0;
-    finalNormals[skirtIdx + 1] = -1;
-    finalNormals[skirtIdx + 2] = 0;
+    // Use same normal as terrain vertex for seamless lighting
+    finalNormals[skirtIdx] = normals[srcIdx];
+    finalNormals[skirtIdx + 1] = normals[srcIdx + 1];
+    finalNormals[skirtIdx + 2] = normals[srcIdx + 2];
     // Same color
     finalColors[skirtIdx] = colors[srcIdx];
     finalColors[skirtIdx + 1] = colors[srcIdx + 1];
@@ -364,9 +388,9 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     finalVertices[skirtIdx] = vertices[srcIdx];
     finalVertices[skirtIdx + 1] = vertices[srcIdx + 1] - SKIRT_DEPTH;
     finalVertices[skirtIdx + 2] = vertices[srcIdx + 2];
-    finalNormals[skirtIdx] = 0;
-    finalNormals[skirtIdx + 1] = -1;
-    finalNormals[skirtIdx + 2] = 0;
+    finalNormals[skirtIdx] = normals[srcIdx];
+    finalNormals[skirtIdx + 1] = normals[srcIdx + 1];
+    finalNormals[skirtIdx + 2] = normals[srcIdx + 2];
     finalColors[skirtIdx] = colors[srcIdx];
     finalColors[skirtIdx + 1] = colors[srcIdx + 1];
     finalColors[skirtIdx + 2] = colors[srcIdx + 2];
@@ -379,9 +403,9 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     finalVertices[skirtIdx] = vertices[srcIdx];
     finalVertices[skirtIdx + 1] = vertices[srcIdx + 1] - SKIRT_DEPTH;
     finalVertices[skirtIdx + 2] = vertices[srcIdx + 2];
-    finalNormals[skirtIdx] = 0;
-    finalNormals[skirtIdx + 1] = -1;
-    finalNormals[skirtIdx + 2] = 0;
+    finalNormals[skirtIdx] = normals[srcIdx];
+    finalNormals[skirtIdx + 1] = normals[srcIdx + 1];
+    finalNormals[skirtIdx + 2] = normals[srcIdx + 2];
     finalColors[skirtIdx] = colors[srcIdx];
     finalColors[skirtIdx + 1] = colors[srcIdx + 1];
     finalColors[skirtIdx + 2] = colors[srcIdx + 2];
@@ -394,9 +418,9 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     finalVertices[skirtIdx] = vertices[srcIdx];
     finalVertices[skirtIdx + 1] = vertices[srcIdx + 1] - SKIRT_DEPTH;
     finalVertices[skirtIdx + 2] = vertices[srcIdx + 2];
-    finalNormals[skirtIdx] = 0;
-    finalNormals[skirtIdx + 1] = -1;
-    finalNormals[skirtIdx + 2] = 0;
+    finalNormals[skirtIdx] = normals[srcIdx];
+    finalNormals[skirtIdx + 1] = normals[srcIdx + 1];
+    finalNormals[skirtIdx + 2] = normals[srcIdx + 2];
     finalColors[skirtIdx] = colors[srcIdx];
     finalColors[skirtIdx + 1] = colors[srcIdx + 1];
     finalColors[skirtIdx + 2] = colors[srcIdx + 2];

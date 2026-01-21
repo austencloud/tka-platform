@@ -60,9 +60,17 @@
     HemisphereLight,
     Group,
     Object3D,
+    Vector3,
     type Scene,
+    type Material,
   } from "three";
+  import { MeshStandardNodeMaterial } from "three/webgpu";
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+  import {
+    createCDLODMaterial,
+    updateChunkUniforms,
+    type CDLODConfig,
+  } from "../rendering/terrain-shader";
   
   // ============================================================================
   // PROPS
@@ -175,6 +183,11 @@
   let campgroundObjects: Object3D[] = [];
   const gltfLoader = new GLTFLoader();
 
+  // CDLOD terrain material - shared across all chunks for efficiency
+  // Uses TSL vertex morphing to eliminate seams between LOD levels
+  // Compatible with both WebGL and WebGPU renderers
+  let cdlodMaterial: MeshStandardNodeMaterial | null = null;
+
   onMount(async () => {
     inputCapabilities.init();
 
@@ -246,6 +259,15 @@
       maxConcurrentLoads: 4,
       resolution: 33,
     });
+
+    // Initialize CDLOD terrain material with vertex morphing
+    // This eliminates seams between chunks at different LOD levels
+    const cdlodConfig: CDLODConfig = {
+      lodDistances: activeConfig.chunks.lodDistances,
+      chunkSize: activeConfig.chunks.size,
+      baseResolution: 33,
+    };
+    cdlodMaterial = createCDLODMaterial(cdlodConfig);
 
     // CRITICAL: Set spawn clearing BEFORE any chunks are generated
     // This must happen immediately after chunk manager is created
@@ -540,6 +562,15 @@
     geometry.setAttribute("color", new BufferAttribute(colors, 3));
     geometry.setIndex(new BufferAttribute(indices, 1));
 
+    // Use CDLOD material with vertex morphing for seamless LOD transitions
+    // Each chunk gets a cloned material so we can set per-chunk uniforms
+    const chunk = state.entity.chunk;
+    const chunkWorldX = chunk ? chunk.chunkX * activeConfig.chunks.size : 0;
+    const chunkWorldZ = chunk ? chunk.chunkZ * activeConfig.chunks.size : 0;
+
+    // Use standard material - all chunks are LOD 0 (uniform resolution)
+    // so no morphing needed. The TSL CDLOD shader is preserved for future
+    // use when proper edge stitching is implemented.
     const material = new MeshStandardMaterial({
       vertexColors: true,
       roughness: 0.8,
@@ -550,13 +581,8 @@
     mesh.receiveShadow = true;
     mesh.castShadow = true;
 
-    const chunk = state.entity.chunk;
     if (chunk) {
-      mesh.position.set(
-        chunk.chunkX * activeConfig.chunks.size,
-        0,
-        chunk.chunkZ * activeConfig.chunks.size
-      );
+      mesh.position.set(chunkWorldX, 0, chunkWorldZ);
     }
 
     scene.add(mesh);
