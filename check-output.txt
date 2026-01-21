@@ -1,0 +1,4 @@
+﻿
+> @tka/scribe@0.8.1 check
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --compiler-warnings "state_referenced_locally:ignore"
+

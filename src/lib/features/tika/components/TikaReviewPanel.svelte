@@ -13,6 +13,7 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { TikaSessionRepository } from '../services/implementations/TikaSessionRepository';
+	import { TikaSessionFormatter } from '../services/implementations/TikaSessionFormatter';
 	import { authState } from '$lib/shared/auth/state/authState.svelte';
 	import type { TikaSession, ReviewStatus } from '../domain/models/tika-conversation-models';
 	import CopyAsImageButton from '$lib/shared/foundation/ui/CopyAsImageButton.svelte';
@@ -25,8 +26,9 @@
 		onLoadSession?: (sessionId: string) => void;
 	} = $props();
 
-	// Repository
+	// Services
 	const sessionRepository = browser ? new TikaSessionRepository() : null;
+	const sessionFormatter = new TikaSessionFormatter();
 
 	// State
 	let sessions = $state<TikaSession[]>([]);
@@ -218,282 +220,16 @@
 		notesInput = session.reviewMetadata?.notes || '';
 	}
 
-	// Extract text content from a UIMessage, including tool outputs
-	function getMessageText(message: { parts?: unknown[]; content?: string }): string {
-		// First try text parts
-		if (message.parts) {
-			const textParts = message.parts.filter((p: unknown) => {
-				const part = p as { type?: string };
-				return part.type === 'text';
-			});
-			const textContent = textParts
-				.map((p: unknown) => (p as { text?: string }).text || '')
-				.join('');
-			if (textContent) return textContent;
-
-			// If no text parts, try tool outputs
-			for (const part of message.parts) {
-				const p = part as { type?: string; output?: unknown; state?: string; toolInvocation?: { state: string; result?: unknown } };
-				// New AI SDK format: type is "tool-{toolName}"
-				if (p.type?.startsWith('tool-') && p.type !== 'tool-invocation') {
-					if (p.state === 'output-available' && p.output) {
-						const text = extractExplanation(p.output);
-						if (text) return text;
-					}
-				}
-				// Old format: tool-invocation
-				if (p.type === 'tool-invocation' && p.toolInvocation) {
-					if (p.toolInvocation.state === 'result' && p.toolInvocation.result) {
-						const text = extractExplanation(p.toolInvocation.result);
-						if (text) return text;
-					}
-				}
-			}
-		}
-
-		// Fallback to content field
-		return message.content || '';
-	}
-
-	// Extract explanation from tool output
-	function extractExplanation(output: unknown): string {
-		if (typeof output === 'string') return output;
-		if (output && typeof output === 'object') {
-			const obj = output as Record<string, unknown>;
-			// Check for explanation field (canonical response format)
-			if (typeof obj.explanation === 'string') {
-				return obj.explanation;
-			}
-		}
-		return '';
-	}
-
 	// Reference for image capture - will be set by the TikaConversationReadOnly component
 	let conversationReadOnlyComponent: TikaConversationReadOnly | null = $state(null);
 	let conversationPreviewEl: HTMLElement | null = $derived(
 		conversationReadOnlyComponent?.getContainerElement() ?? null
 	);
 
-	// Generate comprehensive conversation data for AI review
+	// Generate comprehensive conversation data for AI review (delegated to service)
 	function generateCopyForAI(): string {
 		if (!selectedSession) return '';
-
-		const lines: string[] = [
-			'# Tika Conversation for Review',
-			'',
-			`**Session ID:** ${selectedSession.id}`,
-			`**Created:** ${selectedSession.createdAt.toLocaleString()}`,
-			`**Messages:** ${selectedSession.messageCount}`,
-			`**Review Status:** ${selectedSession.reviewStatus || 'Not reviewed'}`,
-		];
-
-		// Add review metadata if available
-		if (selectedSession.reviewMetadata) {
-			const meta = selectedSession.reviewMetadata;
-			if (meta.grade) {
-				lines.push(`**Grade:** ${meta.grade}${meta.confidence ? ` (${meta.confidence}% confidence)` : ''}`);
-			}
-			if (meta.notes) {
-				lines.push(`**Reviewer Notes:** ${meta.notes}`);
-			}
-			if (meta.aiNotes) {
-				lines.push(`**AI Analysis:** ${meta.aiNotes}`);
-			}
-		}
-
-		lines.push('', '---', '');
-
-		// Process each message with full tool details
-		for (const message of selectedSession.messages) {
-			if (message.role === 'user') {
-				lines.push('## User Question');
-				lines.push('');
-				lines.push(getMessageText(message));
-				lines.push('');
-			} else if (message.role === 'assistant') {
-				lines.push('## Tika Response');
-				lines.push('');
-
-				// Process message parts in detail
-				if (message.parts) {
-					// First, get any direct text content
-					const textParts = message.parts.filter((p: unknown) => {
-						const part = p as { type?: string };
-						return part.type === 'text';
-					});
-					const textContent = textParts
-						.map((p: unknown) => (p as { text?: string }).text || '')
-						.join('');
-					if (textContent) {
-						lines.push(textContent);
-						lines.push('');
-					}
-
-					// Then process all tool invocations with FULL details
-					const toolDetails: string[] = [];
-					for (const part of message.parts) {
-						const p = part as {
-							type?: string;
-							input?: Record<string, unknown>;
-							output?: unknown;
-							state?: string;
-							toolInvocation?: {
-								toolName: string;
-								args: Record<string, unknown>;
-								state: string;
-								result?: unknown;
-							};
-						};
-
-						// New AI SDK format: type is "tool-{toolName}"
-						if (p.type?.startsWith('tool-') && p.type !== 'tool-invocation') {
-							const toolName = p.type.replace('tool-', '');
-							const isComplete = p.state === 'output-available';
-
-							toolDetails.push(`### Tool: \`${toolName}\``);
-							toolDetails.push('');
-							toolDetails.push(`**Status:** ${isComplete ? '✅ Completed' : '⏳ Pending'}`);
-
-							// Input parameters
-							if (p.input) {
-								toolDetails.push('');
-								toolDetails.push('**Input:**');
-								toolDetails.push('```json');
-								toolDetails.push(JSON.stringify(p.input, null, 2));
-								toolDetails.push('```');
-							}
-
-							// Output
-							if (isComplete && p.output) {
-								toolDetails.push('');
-								toolDetails.push('**Output:**');
-
-								const output = p.output as Record<string, unknown>;
-
-								// Extract explanation if present
-								if (typeof output.explanation === 'string') {
-									toolDetails.push('');
-									toolDetails.push('*Explanation:*');
-									toolDetails.push(output.explanation);
-								}
-
-								// Extract inline pictograph details
-								if (output.inlinePictograph) {
-									const pic = output.inlinePictograph as Record<string, unknown>;
-									toolDetails.push('');
-									toolDetails.push('*Generated Pictograph:*');
-									toolDetails.push(`- Letter: ${pic.letter}`);
-									if (pic.variation !== undefined) toolDetails.push(`- Variation: ${pic.variation}`);
-									if (pic.propType) toolDetails.push(`- Prop Type: ${pic.propType}`);
-									if (pic.imageUrl) toolDetails.push(`- Image: Generated successfully`);
-								}
-
-								// Extract inline gallery details
-								if (output.inlineGallery) {
-									const gal = output.inlineGallery as Record<string, unknown>;
-									const items = gal.items as unknown[] || [];
-									toolDetails.push('');
-									toolDetails.push('*Generated Gallery:*');
-									if (gal.title) toolDetails.push(`- Title: ${gal.title}`);
-									toolDetails.push(`- Items: ${items.length} pictographs`);
-									for (const item of items.slice(0, 5)) {
-										const it = item as Record<string, unknown>;
-										toolDetails.push(`  - ${it.label || it.letter || 'Unknown'}`);
-									}
-									if (items.length > 5) {
-										toolDetails.push(`  - ... and ${items.length - 5} more`);
-									}
-								}
-
-								// Extract multiple galleries
-								if (output.inlineGalleries && Array.isArray(output.inlineGalleries)) {
-									for (const gal of output.inlineGalleries) {
-										const gallery = gal as Record<string, unknown>;
-										const items = gallery.items as unknown[] || [];
-										toolDetails.push('');
-										toolDetails.push(`*Gallery: ${gallery.title || 'Untitled'}*`);
-										toolDetails.push(`- Items: ${items.length} pictographs`);
-									}
-								}
-
-								// Extract sequence player details
-								if (output.inlineSequencePlayer) {
-									const seq = output.inlineSequencePlayer as Record<string, unknown>;
-									toolDetails.push('');
-									toolDetails.push('*Generated Sequence Player:*');
-									if (seq.word) toolDetails.push(`- Word: ${seq.word}`);
-								}
-
-								// Extract quiz details
-								if (output.inlineQuiz) {
-									const quiz = output.inlineQuiz as Record<string, unknown>;
-									toolDetails.push('');
-									toolDetails.push('*Generated Quiz:*');
-									if (quiz.question) toolDetails.push(`- Question: ${quiz.question}`);
-									if (quiz.options && Array.isArray(quiz.options)) {
-										toolDetails.push(`- Options: ${quiz.options.length}`);
-									}
-								}
-
-								// Raw output for inspection (truncated)
-								const outputStr = JSON.stringify(output);
-								if (outputStr.length < 500) {
-									toolDetails.push('');
-									toolDetails.push('*Raw Output (for debugging):*');
-									toolDetails.push('```json');
-									toolDetails.push(JSON.stringify(output, null, 2));
-									toolDetails.push('```');
-								}
-							}
-							toolDetails.push('');
-						}
-
-						// Old format: tool-invocation
-						if (p.type === 'tool-invocation' && p.toolInvocation) {
-							const inv = p.toolInvocation;
-							const isComplete = inv.state === 'result';
-
-							toolDetails.push(`### Tool: \`${inv.toolName}\``);
-							toolDetails.push('');
-							toolDetails.push(`**Status:** ${isComplete ? '✅ Completed' : '⏳ Pending'}`);
-
-							toolDetails.push('');
-							toolDetails.push('**Input:**');
-							toolDetails.push('```json');
-							toolDetails.push(JSON.stringify(inv.args, null, 2));
-							toolDetails.push('```');
-
-							if (isComplete && inv.result) {
-								toolDetails.push('');
-								toolDetails.push('**Result:**');
-								const result = inv.result as Record<string, unknown>;
-								if (typeof result.explanation === 'string') {
-									toolDetails.push(result.explanation);
-								} else {
-									toolDetails.push('```json');
-									toolDetails.push(JSON.stringify(result, null, 2).slice(0, 1000));
-									toolDetails.push('```');
-								}
-							}
-							toolDetails.push('');
-						}
-					}
-
-					// Add tool details section if there are tools
-					if (toolDetails.length > 0) {
-						lines.push('---');
-						lines.push('');
-						lines.push('## Tool Invocations');
-						lines.push('');
-						lines.push(...toolDetails);
-					}
-				}
-			}
-			lines.push('---');
-			lines.push('');
-		}
-
-		return lines.join('\n');
+		return sessionFormatter.formatForAIReview(selectedSession);
 	}
 
 	onMount(() => {

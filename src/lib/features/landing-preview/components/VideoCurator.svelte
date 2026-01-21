@@ -6,7 +6,7 @@
    * Orchestrates extracted services and components.
    */
   import { onMount } from "svelte";
-  import { container } from "$shared/di";
+  import { container } from "$lib/shared/di";
   import { getVideoCache } from "$lib/shared/video";
   import CurationModeOverlay from "./CurationModeOverlay.svelte";
   import LinkingModeOverlay from "./LinkingModeOverlay.svelte";

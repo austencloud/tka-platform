@@ -5,7 +5,7 @@
  * Import services via: container.items.serviceName
  *
  * Example:
- *   import { container } from "$shared/di";
+ *   import { container } from "$lib/shared/di";
  *   const authenticator = container.items.authenticator;
  */
 

@@ -1,6 +1,6 @@
 {
-  "totalFiles": 3462,
-  "reachableFiles": 1670,
+  "totalFiles": 3471,
+  "reachableFiles": 1672,
   "deadFiles": [
     "src/app-env.d.ts",
     "src/lib/features/admin/components/active-users/UserActivityDetail.svelte",
@@ -859,6 +859,13 @@
     "src/lib/features/tika/evaluation/scenarios/beginner-scenarios.ts",
     "src/lib/features/tika/evaluation/types.ts",
     "src/lib/features/tika/knowledge/semantic-graph.ts",
+    "src/lib/features/tika/services/contracts/ITikaPictographLoader.ts",
+    "src/lib/features/tika/services/contracts/ITikaQuizGenerator.ts",
+    "src/lib/features/tika/services/contracts/ITikaSequenceGenerator.ts",
+    "src/lib/features/tika/services/contracts/ITikaSequenceValidator.ts",
+    "src/lib/features/tika/services/implementations/TikaPictographLoader.ts",
+    "src/lib/features/tika/services/implementations/TikaSequenceGenerator.ts",
+    "src/lib/features/tika/services/implementations/TikaSequenceValidator.ts",
     "src/lib/features/tika/validation/output-filter.ts",
     "src/lib/features/tika/validation/TikaResponseValidator.ts",
     "src/lib/features/tika/validation/types.ts",
@@ -3212,6 +3219,15 @@
       "lib/features/infinite-worlds/components/ObjectQuickSelect.svelte",
       "lib/features/infinite-worlds/components/TerrainCapturePanel.svelte",
       "lib/features/infinite-worlds/components/WorldDevPanel.svelte"
+    ],
+    "lib/features/tika/services": [
+      "lib/features/tika/services/contracts/ITikaPictographLoader.ts",
+      "lib/features/tika/services/contracts/ITikaQuizGenerator.ts",
+      "lib/features/tika/services/contracts/ITikaSequenceGenerator.ts",
+      "lib/features/tika/services/contracts/ITikaSequenceValidator.ts",
+      "lib/features/tika/services/implementations/TikaPictographLoader.ts",
+      "lib/features/tika/services/implementations/TikaSequenceGenerator.ts",
+      "lib/features/tika/services/implementations/TikaSequenceValidator.ts"
     ],
     "lib/shared/3d-animation/state": [
       "lib/shared/3d-animation/state/animation-3d-state.svelte.ts",

@@ -389,6 +389,9 @@ function extractDynamicLoaderTargets(
 // GRAPH BUILDING & REACHABILITY
 // ============================================================================
 
+// Debug specific file - set to filename to debug, or empty string to disable
+const DEBUG_FILE = "ConstructTabContent.svelte";
+
 function buildImportGraph(
   files: string[],
   compilerOptions: ts.CompilerOptions
@@ -398,6 +401,15 @@ function buildImportGraph(
   for (const file of files) {
     const imports = extractImportsFromFile(file, compilerOptions);
     graph[file] = imports;
+
+    // Debug output for specific file
+    if (DEBUG_FILE && file.includes(DEBUG_FILE)) {
+      console.log(`\n[DEBUG] ${file}`);
+      console.log(`  Imports found: ${imports.size}`);
+      for (const imp of imports) {
+        console.log(`    -> ${imp}`);
+      }
+    }
   }
 
   return graph;
