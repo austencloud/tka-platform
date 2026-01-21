@@ -126,6 +126,11 @@
     transform: scale(0.95);
   }
 
+  .back-button:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
   .next-hand-button {
     display: flex;
     align-items: center;
@@ -152,6 +157,27 @@
 
   .next-hand-button:active {
     transform: translateY(0);
+  }
+
+  .next-hand-button:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .back-button,
+    .next-hand-button {
+      transition: none;
+    }
+
+    .back-button:hover {
+      transform: none;
+    }
+
+    .next-hand-button:hover {
+      transform: none;
+    }
   }
 
   @media (max-width: 600px) {

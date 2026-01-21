@@ -98,4 +98,19 @@ Receives pre-calculated data, just renders it.
     outline-offset: 2px;
     filter: brightness(1.05);
   }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .option-card {
+      transition: none;
+    }
+
+    .option-card:hover {
+      transform: none;
+    }
+
+    .option-card:active {
+      transform: scale(0.97);
+    }
+  }
 </style>

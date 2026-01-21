@@ -442,6 +442,7 @@ Uses organizer and sizer services for section grouping and sizing.
     align-items: center;
     justify-content: center;
     gap: 6px;
+    min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
     padding: 6px 14px;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke-strong);
@@ -453,6 +454,11 @@ Uses organizer and sizer services for section grouping and sizing.
     margin: 4px 0;
     transition: all var(--duration-normal) ease;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  .filter-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
   }
 
   .filter-toggle:hover {
@@ -480,12 +486,24 @@ Uses organizer and sizer services for section grouping and sizing.
     font-size: var(--font-size-compact);
   }
 
-  /* Mobile: More compact */
+  /* Mobile: Keep 48px touch target */
   .filter-toggle.mobile {
+    min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
     padding: 4px 10px;
     font-size: var(--font-size-compact);
     margin: 2px 0;
     border-radius: 12px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .filter-toggle {
+      transition: none;
+    }
+
+    .filter-toggle:active {
+      transform: none;
+    }
   }
 
   .filter-toggle.mobile i {
