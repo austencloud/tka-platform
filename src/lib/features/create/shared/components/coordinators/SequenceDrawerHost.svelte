@@ -472,6 +472,8 @@
   let previousIsOpen = panelState.isShareHubPanelOpen;
   $effect(() => {
     const isOpen = panelState.isShareHubPanelOpen;
+
+    // Handle animation URL state (only when animation format selected)
     if (selectedFormat === "animation") {
       if (isOpen && !previousIsOpen && currentSequence) {
         urlManager.pushAnimationPanelOpen({
@@ -480,16 +482,20 @@
           isPlaying: animationPanelState.isPlaying,
           currentStep: animationPanelState.currentStep,
         });
-      } else if (!isOpen && previousIsOpen && hasMounted) {
-        // Only reset when panel actually closes (not during initial mount)
-        urlManager.clearUrlState();
-        // Reset loaded sequence tracking so reopening triggers full reinitialization
-        lastLoadedSequenceId = null;
-        lastSequenceHash = null;
-        // Reset animation state to start
-        animationPanelState.reset();
       }
     }
+
+    // ALWAYS reset animation state on close, regardless of format
+    // This ensures reopening after adding beats shows the updated sequence
+    if (!isOpen && previousIsOpen && hasMounted) {
+      urlManager.clearUrlState();
+      // Reset loaded sequence tracking so reopening triggers full reinitialization
+      lastLoadedSequenceId = null;
+      lastSequenceHash = null;
+      // Reset animation state to start
+      animationPanelState.reset();
+    }
+
     previousIsOpen = isOpen;
     // Set mounted flag after first effect run
     if (!hasMounted) {

@@ -197,8 +197,10 @@ export class FeedbackSubmissionService implements IFeedbackSubmissionService {
     type: FeedbackFormData["type"],
     description: string
   ): Promise<void> {
+    // Use silent mode to avoid showing error toasts for this background operation
+    // The feedback itself was already saved - failing to notify admin shouldn't alarm users
     const { conversation } =
-      await conversationService.getOrCreateConversation(ADMIN_USER_ID);
+      await conversationService.getOrCreateConversation(ADMIN_USER_ID, { silent: true });
 
     const feedbackAttachment: MessageAttachment = {
       type: "feedback",

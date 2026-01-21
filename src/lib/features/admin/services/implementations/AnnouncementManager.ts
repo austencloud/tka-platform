@@ -335,44 +335,4 @@ export class AnnouncementManager implements IAnnouncementManager {
 
     return undismissed;
   }
-
-  /**
-   * Search users by name or email
-   */
-  async searchUsers(
-    query: string
-  ): Promise<Array<{ uid: string; displayName: string; email: string }>> {
-    if (!query || query.trim().length < 2) {
-      return [];
-    }
-
-    try {
-      const firestore = await getFirestoreInstance();
-      const usersRef = collection(firestore, "users");
-      const snapshot = await getDocs(usersRef);
-
-      const queryLower = query.toLowerCase();
-      const results = snapshot.docs
-        .map((doc) => {
-          const data = doc.data();
-          return {
-            uid: doc.id,
-            displayName: data.displayName as string,
-            email: data.email as string,
-          };
-        })
-        .filter((user) => {
-          const displayName = user.displayName?.toLowerCase() || "";
-          const email = user.email?.toLowerCase() || "";
-          return displayName.includes(queryLower) || email.includes(queryLower);
-        })
-        .slice(0, 10); // Limit to 10 results
-
-      return results;
-    } catch (error) {
-      console.error("[AnnouncementManager] Failed to search users:", error);
-      toast.error("Failed to search users.");
-      return [];
-    }
-  }
 }

@@ -49,6 +49,7 @@ import { createGalleryContainer } from "./containers/gallery-container";
 import { createDelightContainer } from "./containers/delight-container";
 import { backgroundBuilderContainer } from "./containers/background-builder-container";
 import { createPoiLabContainer } from "./containers/poi-lab-container";
+import { createLandingPreviewContainer } from "./containers/landing-preview-container";
 
 // ============================================================================
 // INSTANTIATE FACTORY CONTAINERS WITH STUB DEPENDENCIES
@@ -182,6 +183,9 @@ const delightContainer = typeof window !== 'undefined' ? createDelightContainer(
 // Poi lab container - self-contained, no external dependencies
 const poiLabContainer = typeof window !== 'undefined' ? createPoiLabContainer() : null as any;
 
+// Landing preview container - self-contained, no external dependencies
+const landingPreviewContainer = typeof window !== 'undefined' ? createLandingPreviewContainer() : null as any;
+
 // ============================================================================
 // COMPOSE ALL CONTAINERS INTO ONE
 // ============================================================================
@@ -237,7 +241,8 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(galleryContainer.items)
   .add(backgroundBuilderContainer.items)
   .add(delightContainer.items)
-  .add(poiLabContainer.items) : null as any;
+  .add(poiLabContainer.items)
+  .add(landingPreviewContainer.items) : null as any;
 
 // Export type for the composed container
 export type AppContainer = typeof container;

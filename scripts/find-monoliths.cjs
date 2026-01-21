@@ -123,6 +123,10 @@ const AUDITED_FILES = {
     auditDate: "2026-01-15",
     reason: "Page orchestrator: 4/4 perspectives say leave it. Coordinates 3 playback modes (library/infinite/live). Logic in EndlessSpinnerOrchestrator, InfiniteSequenceGenerator, BroadcastRepository. 7 child components already extracted. 27% CSS. Complexity inherent to multi-mode feature.",
   },
+  "lib/features/tika/evaluation/scenarios/beginner-scenarios.ts": {
+    auditDate: "2026-01-20",
+    reason: "Data catalog: 3/3 perspectives say leave it. Pure static scenario data (~150 TikaScenario objects) organized into 17 named category arrays. No logic, no services to extract. Size from comprehensive test coverage, not complexity. Splitting would add overhead with no benefit.",
+  },
   // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
 

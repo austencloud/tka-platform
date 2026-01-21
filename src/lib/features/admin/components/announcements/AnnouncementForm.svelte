@@ -13,7 +13,8 @@
     AnnouncementSeverity,
     AnnouncementAudience,
   } from "../../domain/models/announcement-models";
-  import UserSearchInput from "./UserSearchInput.svelte";
+  import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
+  import type { UserSearchResult } from "$lib/shared/user-search/services/contracts/IUserSearcher";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
@@ -66,13 +67,9 @@
   let error = $state<string | null>(null);
 
   // Handler for user selection
-  function handleUserSelect(
-    userId: string,
-    displayName: string,
-    email: string
-  ) {
-    targetUserId = userId;
-    targetUserDisplay = displayName || email;
+  function handleUserSelect(user: UserSearchResult) {
+    targetUserId = user.uid;
+    targetUserDisplay = user.displayName || user.email;
   }
 
   // Severity options with colors

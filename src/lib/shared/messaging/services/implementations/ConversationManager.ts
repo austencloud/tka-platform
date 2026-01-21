@@ -160,9 +160,12 @@ export class ConversationManager implements IConversationManager {
 
   /**
    * Get or create a direct conversation between current user and another user
+   * @param otherUserId - The user ID to start/get conversation with
+   * @param options - Optional settings (silent: suppress error toasts for background operations)
    */
   async getOrCreateConversation(
-    otherUserId: string
+    otherUserId: string,
+    options?: { silent?: boolean }
   ): Promise<GetOrCreateConversationResult> {
     try {
       const firestore = await getFirestoreInstance();
@@ -234,7 +237,10 @@ export class ConversationManager implements IConversationManager {
         "[ConversationManager] Failed to get or create conversation:",
         error
       );
-      toast.error("Failed to start conversation.");
+      // Only show toast if not silent (silent mode for background operations)
+      if (!options?.silent) {
+        toast.error("Failed to start conversation.");
+      }
       throw error;
     }
   }

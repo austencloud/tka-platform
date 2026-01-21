@@ -105,11 +105,11 @@ Color-coded dots indicate which motion (blue/red) is reversing between pictograp
   const DOT_SPACING_PERCENT = 4.5; // Fixed spacing between dots as percentage (smaller for dots vs Rs)
 
   // Calculate actual positions based on pictograph dimensions
-  // Assuming standard SVG viewBox of 1000x1000
-  const X_POSITION = X_POSITION_PERCENT * 13; // Convert to 1000px scale
-  const CENTER_Y = CENTER_Y_PERCENT * 9.7; // Convert to 1000px scale (adjusted for visual centering)
-  const DOT_RADIUS = DOT_RADIUS_PERCENT * 10; // Convert to 1000px scale
-  const DOT_SPACING = DOT_SPACING_PERCENT * 13; // Convert to 1000px scale
+  // Standard SVG viewBox is 950x950, so center is at 475
+  const X_POSITION = X_POSITION_PERCENT * 13; // Convert to 950px scale
+  const CENTER_Y = CENTER_Y_PERCENT * 9.5; // Convert to 950px scale (50% * 9.5 = 475 = true center)
+  const DOT_RADIUS = DOT_RADIUS_PERCENT * 10; // Convert to 950px scale
+  const DOT_SPACING = DOT_SPACING_PERCENT * 13; // Convert to 950px scale
 
   // Calculate vertical positions when both dots are present (after visibility filtering)
   const redDotY = $derived.by(() => {

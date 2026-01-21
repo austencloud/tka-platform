@@ -3,23 +3,28 @@
   "entry": [
     "src/routes/**/*.svelte",
     "src/routes/**/*.ts",
-    "src/lib/features/*/index.ts",
+    "src/lib/shared/modules/ModuleRenderer.svelte",
     "src/lib/features/**/*Module.svelte",
     "src/lib/features/**/*Tab.svelte",
-    "src/lib/shared/inversify/bootstrap.ts",
-    "src/lib/shared/inversify/container.ts",
+    "src/lib/features/admin/components/AdminDashboard.svelte",
+    "src/lib/features/background-builder/BackgroundBuilder.svelte",
+    "src/lib/features/community/Community.svelte",
+    "src/lib/features/dashboard/components/Dashboard.svelte",
+    "src/lib/shared/di/index.ts",
+    "src/lib/shared/di/containers/*.ts",
     "scripts/*.js",
     "scripts/*.cjs",
-    "scripts/*.mjs",
+    "scripts/*.ts",
+    "scripts/**/*.ts",
     "tests/**/*.ts",
+    "tests/config/*.ts",
     "functions/src/index.ts",
     "vite.config.ts",
-    "svelte.config.js",
-    "vitest.config.ts"
+    "svelte.config.js"
   ],
   "project": [
     "src/**/*.{ts,svelte}",
-    "scripts/**/*.{js,cjs,mjs}",
+    "scripts/**/*.{js,cjs,ts}",
     "tests/**/*.ts"
   ],
   "ignore": [
@@ -27,14 +32,10 @@
     "src/stories/**",
     "docs/**",
     "deployment/**",
-    "**/node_modules/**"
+    "**/node_modules/**",
+    "scripts/temp/**"
   ],
   "ignoreDependencies": [
-    "@sveltejs/adapter-*",
-    "svelte-check",
-    "typescript",
-    "vite",
-    "vitest"
-  ],
-  "ignoreBinaries": ["firebase", "netlify"]
+    "@sveltejs/adapter-*"
+  ]
 }

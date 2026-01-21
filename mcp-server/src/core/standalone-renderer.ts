@@ -185,8 +185,13 @@ export class StandaloneRenderer {
   private projectRoot: string;
 
   constructor() {
-    // MCP server runs from mcp-server/src/core, go up to project root
-    this.projectRoot = join(__dirname, "../../..");
+    // When compiled, code runs from mcp-server/dist/src/core
+    // Go up 4 levels to reach project root (dist -> mcp-server -> project root)
+    // Check if we're in dist (compiled) or src (dev with tsx)
+    const inDist = __dirname.includes("dist");
+    this.projectRoot = inDist
+      ? join(__dirname, "../../../..")  // dist/src/core -> project root
+      : join(__dirname, "../../..");    // src/core -> project root
   }
 
   /**

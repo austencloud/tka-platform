@@ -2,22 +2,14 @@
   UserSearchInput - Shared user search with autocomplete
 
   Reusable component for searching users by name or email.
-  Uses direct Firestore queries - no server endpoints needed.
+  Uses IUserSearcher service for efficient Firestore queries.
 -->
 <script lang="ts">
-  import { browser } from "$app/environment";
-  import { collection, getDocs, limit, query } from "firebase/firestore";
-  import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import { container } from "$lib/shared/di";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
+  import type { UserSearchResult } from "./services/contracts/IUserSearcher";
 
-  interface UserResult {
-    uid: string;
-    displayName: string;
-    email: string;
-    photoURL?: string;
-  }
+  type UserResult = UserSearchResult;
 
   interface Props {
     selectedUserId?: string;
@@ -53,8 +45,9 @@
   let searchTimeout: number | null = null;
   let wasCleared = $state(false);
 
-  // Haptic feedback service
+  // Services
   const hapticService = container.items.hapticFeedback;
+  const userSearcher = container.items.userSearcher;
 
   // Auto-focus when requested
   $effect(() => {
@@ -74,51 +67,13 @@
   });
 
   /**
-   * Search users directly from Firestore
-   * Fetches from users collection and filters client-side
+   * Search users using the UserSearcher service
    */
   async function searchUsers(queryText: string): Promise<UserResult[]> {
-    const q = queryText.trim().toLowerCase();
-    if (!q || q.length < 2 || !browser) {
-      return [];
-    }
-
-    try {
-      const firestore = await getFirestoreInstance();
-
-      // Fetch users from Firestore (limited batch, filter client-side)
-      // Firestore doesn't support case-insensitive full-text search natively
-      const usersQuery = query(collection(firestore, "users"), limit(200));
-      const snapshot = await getDocs(usersQuery);
-
-      const matches: UserResult[] = [];
-
-      for (const docSnap of snapshot.docs) {
-        const data = docSnap.data();
-        const displayName = data.displayName || data.name || "";
-        const email = data.email || "";
-        const photoURL = data.photoURL || data.avatar || undefined;
-
-        // Case-insensitive search on displayName and email
-        const haystack = `${displayName} ${email}`.toLowerCase();
-        if (haystack.includes(q)) {
-          matches.push({
-            uid: docSnap.id,
-            displayName,
-            email,
-            photoURL,
-          });
-        }
-
-        // Stop after finding enough matches
-        if (matches.length >= 10) break;
-      }
-
-      return matches.filter((user) => !excludeUserIds.includes(user.uid));
-    } catch (error) {
-      console.error("[UserSearch] Failed to search users:", error);
-      return [];
-    }
+    return userSearcher.searchUsers(queryText, {
+      excludeUserIds,
+      limit: 10,
+    });
   }
 
   async function handleSearchInput() {

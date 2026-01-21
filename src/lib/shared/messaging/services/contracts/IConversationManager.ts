@@ -22,9 +22,12 @@ export interface IConversationManager {
   /**
    * Get or create a direct conversation between two users
    * Returns existing conversation if one exists, otherwise creates new
+   * @param otherUserId - The user ID to start/get conversation with
+   * @param options - Optional settings (silent: suppress error toasts for background operations)
    */
   getOrCreateConversation(
-    otherUserId: string
+    otherUserId: string,
+    options?: { silent?: boolean }
   ): Promise<GetOrCreateConversationResult>;
 
   /**

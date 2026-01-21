@@ -153,6 +153,12 @@
       return;
     }
 
+    // If nothing to fetch, we're done
+    if (itemsToFetch.length === 0) {
+      loading = false;
+      return;
+    }
+
     // Step 2: Fetch missing items from API (dev only) and save to static
     const BATCH_SIZE = 4;
 
@@ -197,11 +203,13 @@
           const data = await response.json();
           const base64 = data.imageBase64 as string;
 
-          // Save to static directory for production (dev only)
-          const staticKey = buildStaticKey(letter, variation);
-          const saved = await saveStaticPictograph(staticKey, base64);
-          if (saved) {
-            console.log(`[InlineGallery] Saved to static: ${letter}-${variation}`);
+          // Save to static directory (dev only - builds static cache for production)
+          if (dev) {
+            const staticKey = buildStaticKey(letter, variation);
+            const saved = await saveStaticPictograph(staticKey, base64);
+            if (saved) {
+              console.log(`[InlineGallery] Saved to static: ${letter}-${variation}`);
+            }
           }
 
           // Also cache in IndexedDB for this session

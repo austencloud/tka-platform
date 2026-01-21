@@ -266,29 +266,6 @@ export class UserRepository implements IUserRepository {
     };
   }
 
-  /**
-   * Search users by username or display name
-   */
-  async searchUsers(
-    searchQuery: string,
-    limit = 50
-  ): Promise<EnhancedUserProfile[]> {
-    try {
-      const allUsers = await this.getUsers({ limit });
-      const lowerQuery = searchQuery.toLowerCase();
-
-      return allUsers.filter(
-        (user) =>
-          user.username.toLowerCase().includes(lowerQuery) ||
-          user.displayName.toLowerCase().includes(lowerQuery)
-      );
-    } catch (error) {
-      console.error("[UserRepository] Error searching users:", error);
-      toast.error("Failed to search users.");
-      throw new Error("Failed to search users");
-    }
-  }
-
   // ============================================================================
   // FOLLOW FUNCTIONALITY
   // ============================================================================

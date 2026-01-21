@@ -47,11 +47,6 @@ export interface IUserRepository {
     currentUserId?: string
   ): () => void;
 
-  /**
-   * Search users by username or display name
-   */
-  searchUsers(query: string, limit?: number): Promise<EnhancedUserProfile[]>;
-
   // ============================================================================
   // FOLLOW FUNCTIONALITY
   // ============================================================================

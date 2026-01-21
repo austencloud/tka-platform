@@ -321,7 +321,9 @@
       "Bash(start \"\" \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\test-hand-beta-result.png\")",
       "WebFetch(domain:dustinpfister.github.io)",
       "Bash(instaloader --help:*)",
-      "Bash(instaloader:*)"
+      "Bash(instaloader:*)",
+      "WebFetch(domain:knip.dev)",
+      "Bash(./node_modules/.bin/tsc:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
