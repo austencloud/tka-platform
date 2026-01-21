@@ -254,6 +254,30 @@
     }
   }
 
+  // === EXCLUDE VIDEO ===
+  let confirmingExclude = $state<string | null>(null);
+
+  function startExclude(shortcode: string) {
+    confirmingExclude = shortcode;
+  }
+
+  function cancelExclude() {
+    confirmingExclude = null;
+  }
+
+  async function confirmExclude(shortcode: string) {
+    try {
+      await persister.updateVideo(shortcode, { excluded: true });
+      updateLocalVideo(shortcode, { excluded: true });
+      // Remove from list
+      videos = videos.filter(v => v.shortcode !== shortcode);
+    } catch (e) {
+      console.error("Failed to exclude video:", e);
+    } finally {
+      confirmingExclude = null;
+    }
+  }
+
   // === UTILITY ===
   function updateLocalVideo(shortcode: string, updates: Partial<ShowcaseVideo>) {
     const index = videos.findIndex((v) => v.shortcode === shortcode);
@@ -474,7 +498,38 @@
             >
               <i class="fas fa-edit" aria-hidden="true"></i>
             </button>
+            <button
+              class="action-btn delete-btn"
+              onclick={(e) => {
+                e.stopPropagation();
+                startExclude(video.shortcode);
+              }}
+              title="Exclude video"
+            >
+              <i class="fas fa-trash" aria-hidden="true"></i>
+            </button>
           </div>
+
+          <!-- Exclude confirmation overlay -->
+          {#if confirmingExclude === video.shortcode}
+            <div
+              class="exclude-confirm-overlay"
+              onclick={(e) => e.stopPropagation()}
+              onkeydown={(e) => e.key === "Escape" && cancelExclude()}
+              role="dialog"
+              tabindex="-1"
+            >
+              <p>Exclude this video?</p>
+              <div class="confirm-actions">
+                <button class="confirm-btn cancel" onclick={cancelExclude}>
+                  Cancel
+                </button>
+                <button class="confirm-btn delete" onclick={() => confirmExclude(video.shortcode)}>
+                  Exclude
+                </button>
+              </div>
+            </div>
+          {/if}
         </div>
       {/each}
     </div>
@@ -726,10 +781,84 @@
 
   .action-btn:hover {
     background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
   }
 
   .action-btn.active {
     background: #f59e0b;
+  }
+
+  .action-btn.active:hover {
+    background: #d97706;
+  }
+
+  /* Star button hover - gold */
+  .action-btn:not(.active):first-child:hover {
+    background: #f59e0b;
+  }
+
+  /* Edit button hover - accent */
+  .action-btn:nth-child(2):hover {
+    background: var(--theme-accent, #6366f1);
+  }
+
+  .action-btn.delete-btn:hover {
+    background: #ef4444;
+  }
+
+  /* Exclude confirmation overlay */
+  .exclude-confirm-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 10;
+    border-radius: 12px;
+  }
+
+  .exclude-confirm-overlay p {
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .confirm-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .confirm-btn.cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .confirm-btn.cancel:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+
+  .confirm-btn.delete {
+    background: #ef4444;
+    color: white;
+  }
+
+  .confirm-btn.delete:hover {
+    background: #dc2626;
   }
 
   /* Loading/Error/Empty states */

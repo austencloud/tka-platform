@@ -90,14 +90,6 @@
   <div class="actions">
     <button
       class="action-btn secondary"
-      onclick={controller.excludeVideo}
-      disabled={controller.saving}
-    >
-      <i class="fas fa-ban" aria-hidden="true"></i>
-      Exclude
-    </button>
-    <button
-      class="action-btn secondary"
       onclick={controller.skip}
       disabled={controller.saving}
     >

@@ -10,10 +10,7 @@
 
 <section class="notation-showcase" id="notation">
   <div class="container">
-    <h2>Every Move Has a Symbol</h2>
-    <p class="section-intro">
-      Watch the notation update in real time as the sequence plays.
-    </p>
+    <h2>Notation in motion</h2>
 
     <div class="demo-wrapper">
       <LandingAnimationDemo />
@@ -32,19 +29,11 @@
   }
 
   h2 {
-    font-size: clamp(2rem, 5vw, 3rem);
-    margin-bottom: 1rem;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    margin-bottom: 32px;
     text-align: center;
-    font-weight: 600;
-    line-height: 1.2;
-  }
-
-  .section-intro {
-    text-align: center;
-    font-size: 1.125rem;
+    font-weight: 500;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    max-width: 600px;
-    margin: 0 auto 48px;
   }
 
   .demo-wrapper {

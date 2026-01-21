@@ -21,6 +21,18 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
 
+  /**
+   * Fisher-Yates shuffle - randomizes array in place
+   */
+  function shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+
   async function loadFeaturedVideos(): Promise<ShowcaseVideo[]> {
     const { collection, getDocs, query, where, orderBy, limit } = await import(
       "firebase/firestore"
@@ -37,7 +49,7 @@
     );
 
     const snapshot = await getDocs(q);
-    return snapshot.docs
+    const loadedVideos = snapshot.docs
       .map((doc) => {
         const data = doc.data();
         return {
@@ -57,6 +69,9 @@
         } as ShowcaseVideo;
       })
       .filter((v) => !v.excluded && v.videoUrl);
+
+    // Randomize order so each page visit starts on a different video
+    return shuffleArray(loadedVideos);
   }
 
   onMount(async () => {
