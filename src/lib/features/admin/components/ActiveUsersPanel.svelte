@@ -423,6 +423,27 @@
     padding: 1rem;
     overflow-y: auto;
     height: 100%;
+
+    /* Themed scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  .users-grid-container::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .users-grid-container::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, transparent);
+  }
+
+  .users-grid-container::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
+    border-radius: 4px;
+  }
+
+  .users-grid-container::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
   }
 
   /* Drawer styling - wider for full profile */

@@ -118,6 +118,29 @@
     max-width: 1400px;
     margin: 0 auto;
     overflow-y: auto;
+
+    /* Themed scrollbar - Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
+      var(--scrollbar-track, transparent);
+  }
+
+  /* Webkit scrollbars need :global() in Svelte scoped CSS */
+  :global(.admin-content)::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  :global(.admin-content)::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, transparent);
+  }
+
+  :global(.admin-content)::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
+    border-radius: 4px;
+  }
+
+  :global(.admin-content)::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
   }
 
   /* Tab panels need to fill available height */
