@@ -23,6 +23,7 @@
     disposePlayerController,
     teleportPlayer,
     getPlayerPosition,
+    snapToGround,
   } from "$lib/shared/3d-core/physics/player-controller";
   import { createRapierPhysicsProvider, RapierPhysicsProvider } from "$lib/shared/3d-core/physics/RapierPhysicsProvider";
   import type { PhysicsProvider, AvatarState } from "$lib/shared/3d-core/camera/types";
@@ -56,8 +57,11 @@
     DirectionalLight,
     AmbientLight,
     HemisphereLight,
+    Group,
+    Object3D,
     type Scene,
   } from "three";
+  import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
   
   // ============================================================================
   // PROPS
@@ -161,6 +165,13 @@
   // ============================================================================
 
   let isInitialized = $state(false);
+  let needsGroundSnap = true; // Snap to ground once terrain loads
+  let groundSnapAttempts = 0; // Track attempts to avoid infinite loops
+  const MAX_GROUND_SNAP_ATTEMPTS = 300; // ~5 seconds at 60fps
+
+  // Campground objects placed in spawn clearing
+  let campgroundObjects: Object3D[] = [];
+  const gltfLoader = new GLTFLoader();
 
   onMount(async () => {
     inputCapabilities.init();
@@ -172,26 +183,37 @@
     // Create terrain physics manager
     terrainPhysics = new TerrainPhysicsManager(physicsState);
 
-    // Add immediate stage ground collider if in stage mode
+    // Add immediate ground collider for spawn clearing or stage zone
     // This prevents falling through before terrain chunks load
-    if (stageMode && activeConfig.stageZone?.enabled) {
+    const waterLevel = activeConfig.terrain.waterLevel ?? 5;
+    if (activeConfig.spawnClearing?.enabled) {
+      // Spawn clearing: ground is above water level
+      const clearingHeight = waterLevel + 3;
+      terrainPhysics.addStageGroundCollider(
+        activeConfig.spawnClearing.center.x,
+        activeConfig.spawnClearing.center.z,
+        activeConfig.spawnClearing.radius + activeConfig.spawnClearing.blendWidth,
+        clearingHeight
+      );
+    } else if (stageMode && activeConfig.stageZone?.enabled) {
+      // Legacy stage zone: ground at Y=0
       terrainPhysics.addStageGroundCollider(
         0, 0,  // Center at origin
         activeConfig.stageZone.radius + activeConfig.stageZone.blendWidth
       );
     }
 
-    // Create player controller at spawn position
+    // Create player controller - start high, ground snap happens in game loop once terrain loads
     const spawnPos = activeConfig.spawn.position;
     playerController = createPlayerController(physicsState, {
-      position: { x: spawnPos[0], y: spawnPos[1], z: spawnPos[2] },
+      position: { x: spawnPos[0], y: 500, z: spawnPos[2] }, // Start very high
     });
 
     // Create physics provider for UnifiedCameraController
     physicsProvider = createRapierPhysicsProvider(physicsState, playerController);
 
-    // Initialize position
-    playerPosition = { x: spawnPos[0], y: spawnPos[1], z: spawnPos[2] };
+    // Initialize position (will be updated when ground snap happens)
+    playerPosition = { x: spawnPos[0], y: 500, z: spawnPos[2] };
 
     // Setup lighting
     setupLighting();
@@ -222,6 +244,21 @@
       maxConcurrentLoads: 4,
       resolution: 33,
     });
+
+    // CRITICAL: Set spawn clearing BEFORE any chunks are generated
+    // This must happen immediately after chunk manager is created
+    if (activeConfig.spawnClearing?.enabled) {
+      const clearing = activeConfig.spawnClearing;
+      const waterLvl = activeConfig.terrain.waterLevel ?? 5;
+      chunkManager.setSpawnClearing(
+        clearing.center,
+        clearing.radius,
+        clearing.blendWidth,
+        waterLvl,
+        clearing.campground
+      );
+      console.log(`[WorldSceneContent] Set spawn clearing BEFORE chunk generation: radius=${clearing.radius}m, waterLevel=${waterLvl}`);
+    }
 
     // Handle chunk loaded
     chunkManager.onChunkLoaded = (key, state) => {
@@ -279,8 +316,13 @@
 
     isInitialized = true;
 
-    // Initialize stage zone if configured
-    if (stageMode && activeConfig.stageZone?.enabled && chunkManager) {
+    // Place campground objects (spawn clearing was already set above)
+    if (activeConfig.spawnClearing?.enabled && activeConfig.spawnClearing.campground.enabled) {
+      const waterLvl = activeConfig.terrain.waterLevel ?? 5;
+      await placeCampgroundObjects(activeConfig.spawnClearing, waterLvl);
+    }
+    // Legacy: Initialize stage zone if configured and no spawn clearing
+    else if (stageMode && activeConfig.stageZone?.enabled && chunkManager) {
       chunkManager.setStageZone(
         { x: 0, z: 0 },  // Stage at origin
         activeConfig.stageZone.radius,
@@ -305,6 +347,12 @@
       }
     }
     chunkMeshes.clear();
+
+    // Dispose campground objects
+    for (const obj of campgroundObjects) {
+      scene.remove(obj);
+    }
+    campgroundObjects = [];
 
     // Dispose managers
     chunkManager?.dispose();
@@ -348,6 +396,127 @@
     sun.shadow.camera.near = 0.5;
     sun.shadow.camera.far = 500;
     scene.add(sun);
+  }
+
+  // ============================================================================
+  // CAMPGROUND OBJECTS
+  // ============================================================================
+
+  /**
+   * Load a GLTF model and add it to the scene
+   */
+  async function loadAndPlaceModel(
+    path: string,
+    x: number,
+    y: number,
+    z: number,
+    rotationY: number = 0,
+    scale: number = 1
+  ): Promise<Object3D | null> {
+    try {
+      const gltf = await gltfLoader.loadAsync(path);
+      const model = gltf.scene;
+      model.position.set(x, y, z);
+      model.rotation.y = rotationY;
+      model.scale.setScalar(scale);
+      model.castShadow = true;
+      model.receiveShadow = true;
+      // Enable shadows on all children
+      model.traverse((child) => {
+        if (child instanceof Mesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      scene.add(model);
+      campgroundObjects.push(model);
+      return model;
+    } catch (error) {
+      console.warn(`[WorldSceneContent] Failed to load model ${path}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Place campground objects in the spawn clearing
+   */
+  async function placeCampgroundObjects(
+    clearing: NonNullable<typeof activeConfig.spawnClearing>,
+    waterLevel: number
+  ): Promise<void> {
+    const { center, campground } = clearing;
+    const groundY = waterLevel + 3; // Clearing is 3m above water
+
+    console.log(`[WorldSceneContent] Placing campground objects at Y=${groundY}`);
+
+    // Model paths
+    const MODELS = {
+      firePit: "/models/camping/campfire-pit.glb",
+      tent: "/models/camping/tent-canvas.glb",
+      log: "/models/camping/tree-log.glb",
+      logSmall: "/models/camping/tree-log-small.glb",
+    };
+
+    // Fire pit at center
+    if (campground.firePit) {
+      await loadAndPlaceModel(
+        MODELS.firePit,
+        center.x,
+        groundY,
+        center.z,
+        0,
+        1.5
+      );
+      console.log(`[WorldSceneContent] Placed fire pit`);
+    }
+
+    // Tent offset from center
+    if (campground.tent) {
+      await loadAndPlaceModel(
+        MODELS.tent,
+        center.x - 8,
+        groundY,
+        center.z - 5,
+        Math.PI * 0.25, // Face toward fire
+        1.2
+      );
+      console.log(`[WorldSceneContent] Placed tent`);
+    }
+
+    // Log seats around fire
+    if (campground.seatingLogs > 0) {
+      const logPositions = [
+        { x: center.x + 3, z: center.z + 2, rot: -Math.PI * 0.3 },
+        { x: center.x - 2, z: center.z + 4, rot: -Math.PI * 0.6 },
+        { x: center.x + 1, z: center.z - 3, rot: Math.PI * 0.4 },
+        { x: center.x + 4, z: center.z - 1, rot: Math.PI * 0.1 },
+      ];
+
+      const logsToPlace = Math.min(campground.seatingLogs, logPositions.length);
+      for (let i = 0; i < logsToPlace; i++) {
+        const pos = logPositions[i];
+        if (pos) {
+          await loadAndPlaceModel(
+            i % 2 === 0 ? MODELS.log : MODELS.logSmall,
+            pos.x,
+            groundY,
+            pos.z,
+            pos.rot,
+            0.8
+          );
+        }
+      }
+      console.log(`[WorldSceneContent] Placed ${logsToPlace} log seats`);
+    }
+
+    // Torches at perimeter (not implemented yet - would need torch model)
+    if (campground.torches > 0) {
+      // TODO: Add torch models when available
+      // For now, torches are placeholders
+      console.log(`[WorldSceneContent] Torches configured but no torch model available yet`);
+    }
+
+    console.log(`[WorldSceneContent] Campground objects placed`);
   }
 
   // ============================================================================
@@ -471,6 +640,24 @@
     if (physicsState.isInitialized && physicsState.world) {
       physicsState.world.timestep = Math.min(delta, 0.1);
       physicsState.world.step();
+    }
+
+    // Deferred ground snap: wait for terrain colliders to exist before snapping
+    if (needsGroundSnap && terrainPhysics && groundSnapAttempts < MAX_GROUND_SNAP_ATTEMPTS) {
+      groundSnapAttempts++;
+      const colliderCount = terrainPhysics.getColliderCount();
+
+      // Only snap once we have terrain colliders (not just the player collider)
+      if (colliderCount > 0) {
+        const snapped = snapToGround(physicsState, playerController, 1000);
+        const pos = getPlayerPosition(playerController);
+        console.log(`[WorldScene] Ground snap: snapped=${snapped}, Y=${pos?.y.toFixed(1)}, colliders=${colliderCount}`);
+
+        if (snapped && pos && pos.y < 500) {
+          // Successfully snapped to terrain
+          needsGroundSnap = false;
+        }
+      }
     }
 
     // Update player position from physics (after camera controller moves player)

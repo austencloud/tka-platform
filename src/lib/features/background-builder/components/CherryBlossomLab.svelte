@@ -461,7 +461,7 @@
     background: linear-gradient(135deg, rgba(244, 63, 94, 0.3), rgba(251, 113, 133, 0.3));
     border: 1px solid rgba(251, 113, 133, 0.4);
     border-radius: 20px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: #fb7185;
     text-transform: uppercase;
@@ -507,6 +507,11 @@
     transform: translateY(0);
   }
 
+  .action-btn:focus-visible {
+    outline: 2px solid #fb7185;
+    outline-offset: 2px;
+  }
+
   .gust-btn {
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
   }
@@ -545,8 +550,8 @@
   }
 
   .stat-label {
-    font-size: 0.7rem;
-    color: #6b7280;
+    font-size: var(--font-size-compact, 12px);
+    color: #9ca3af;
     text-transform: uppercase;
   }
 
@@ -567,7 +572,7 @@
   .pill {
     padding: 4px 10px;
     border-radius: 12px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
   }
 
@@ -681,6 +686,12 @@
     transform: scale(1.2);
   }
 
+  .slider-section input[type="range"]:focus-visible {
+    outline: 2px solid rgba(6, 182, 212, 0.7);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
   .slider-section input[type="range"]::-moz-range-thumb {
     width: 14px;
     height: 14px;
@@ -698,6 +709,33 @@
 
     .action-row {
       flex-direction: column;
+    }
+  }
+
+  /* Accessibility: Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .action-btn,
+    .gust-btn,
+    .pill {
+      transition: none;
+      animation: none;
+    }
+  }
+
+  /* Accessibility: High contrast */
+  @media (prefers-contrast: high) {
+    .controls,
+    .preview {
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .stat {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .label,
+    .stat-label {
+      color: #d1d5db;
     }
   }
 </style>

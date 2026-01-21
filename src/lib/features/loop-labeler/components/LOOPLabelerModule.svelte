@@ -366,19 +366,12 @@
 
     // If detection found a modular pattern, save it directly
     if (currentComputedDetection?.isModular) {
-      const updatedLabel = {
-        word: currentSequence.word,
-        designations: [],
-        isFreeform: false,
-        isModular: true,
-        needsVerification: false,
-        labeledAt: new Date().toISOString(),
-        notes: notes || "",
-        sections: currentLabel?.sections || [],
-        stepPairs: currentLabel?.stepPairs || [],
-        stepPairGroups: currentComputedDetection.stepPairGroups,
-      };
-      await loopLabelerController.saveLabel(updatedLabel);
+      await loopLabelerController.saveModularDetection(
+        currentSequence,
+        currentComputedDetection,
+        currentLabel,
+        notes
+      );
       loopLabelerController.nextSequence();
       return;
     }
@@ -396,21 +389,7 @@
   async function handleMarkUnknown() {
     if (!currentSequence) return;
 
-    // Mark sequence as unknown (needs more investigation)
-    const updatedLabel = {
-      word: currentSequence.word,
-      designations: [],
-      isFreeform: false,
-      isModular: false,
-      isUnknown: true,
-      needsVerification: true, // Keep in review queue
-      labeledAt: new Date().toISOString(),
-      notes: notes || "Marked as unknown - needs further investigation",
-      sections: currentLabel?.sections || [],
-      stepPairs: currentLabel?.stepPairs || [],
-    };
-
-    await loopLabelerController.saveLabel(updatedLabel);
+    await loopLabelerController.markAsUnknown(currentSequence, currentLabel, notes);
     loopLabelerController.nextSequence();
   }
 
@@ -466,22 +445,11 @@
   async function handleVerify() {
     if (!currentSequence) return;
 
-    // Create or update the label with verified status
-    const updatedLabel = {
-      word: currentSequence.word,
-      // Don't store designations - they're computed on-the-fly
-      designations: [],
-      isFreeform: currentComputedDetection?.isFreeform ?? false,
-      isModular: currentComputedDetection?.isModular ?? false,
-      needsVerification: false, // Mark as verified
-      labeledAt: new Date().toISOString(),
-      notes: currentLabel?.notes || "",
-      // Preserve any manual section/steppair annotations
-      sections: currentLabel?.sections || [],
-      stepPairs: currentLabel?.stepPairs || [],
-    };
-
-    await loopLabelerController.saveLabel(updatedLabel);
+    await loopLabelerController.verifySequence(
+      currentSequence,
+      currentComputedDetection,
+      currentLabel
+    );
     // NOTE: Do NOT call nextSequence() here!
     // When in "Needs Review" filter, the verified item is removed from the list,
     // so the selection naturally moves to the next item.
@@ -525,19 +493,7 @@
   async function handleSetFreeform() {
     if (!currentSequence) return;
 
-    const updatedLabel = {
-      word: currentSequence.word,
-      designations: [],
-      isFreeform: true,
-      isModular: false,
-      needsVerification: false,
-      labeledAt: new Date().toISOString(),
-      notes: notes || "",
-      sections: currentLabel?.sections || [],
-      stepPairs: currentLabel?.stepPairs || [],
-    };
-
-    await loopLabelerController.saveLabel(updatedLabel);
+    await loopLabelerController.markAsFreeform(currentSequence, currentLabel, notes);
   }
 
   // Keyboard event handling (shift key for section selection)

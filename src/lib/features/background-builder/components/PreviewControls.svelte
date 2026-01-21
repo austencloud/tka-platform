@@ -196,6 +196,11 @@
 
   .action-btn:active { transform: translateY(0); }
 
+  .action-btn:focus-visible {
+    outline: 2px solid #a3e635;
+    outline-offset: 2px;
+  }
+
   .pattern-section {
     display: flex;
     flex-direction: column;
@@ -321,8 +326,8 @@
   .slider-labels {
     display: flex;
     justify-content: space-between;
-    font-size: 0.65rem;
-    color: #6b7280;
+    font-size: var(--font-size-compact, 12px);
+    color: #9ca3af;
     margin-top: 2px;
   }
 
@@ -347,6 +352,12 @@
   }
 
   .placement-section input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+  .placement-section input[type="range"]:focus-visible {
+    outline: 2px solid rgba(132, 204, 22, 0.7);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 
   .placement-section input[type="range"]::-moz-range-thumb {
     width: 16px;

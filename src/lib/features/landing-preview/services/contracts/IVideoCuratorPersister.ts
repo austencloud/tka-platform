@@ -1,7 +1,7 @@
 /**
  * Interface for persisting video curator data to Firestore
  */
-import type { VideoCategory, UserProfile, VideoPerformer } from "../../types";
+import type { VideoCategory, UserProfile, VideoPerformer, LinkedSequence, VideoCropData, VideoSnipData } from "../../types";
 
 export interface VideoUpdateData {
   title?: string | null;
@@ -9,8 +9,10 @@ export interface VideoUpdateData {
   tags?: string[];
   featured?: boolean;
   performers?: VideoPerformer[];
-  sequenceId?: string | null;
-  sequenceWord?: string | null;
+  linkedSequences?: LinkedSequence[];
+  excluded?: boolean;
+  crop?: VideoCropData | null;
+  snip?: VideoSnipData | null;
 }
 
 export interface IVideoCuratorPersister {

@@ -13,6 +13,7 @@ import type {
 	PlayerControllerState,
 } from "./types";
 import { DEFAULT_PLAYER_CONFIG } from "./types";
+import { castRay } from "./rapier-world";
 
 // ============================================================================
 // PLAYER CONTROLLER CREATION
@@ -186,6 +187,49 @@ export function getPlayerVelocity(
  */
 export function isPlayerGrounded(playerState: PlayerControllerState): boolean {
 	return playerState.isGrounded;
+}
+
+// ============================================================================
+// GROUND SNAPPING
+// ============================================================================
+
+/**
+ * Raycast down to find ground and teleport player to stand on it.
+ * Call after terrain colliders exist to ensure correct positioning.
+ *
+ * @param physicsState - The physics world state
+ * @param playerState - The player controller state
+ * @param searchHeight - Height to cast ray from (default: 100m)
+ * @returns true if ground was found and player was snapped
+ */
+export function snapToGround(
+	physicsState: PhysicsWorldState,
+	playerState: PlayerControllerState,
+	searchHeight: number = 100,
+): boolean {
+	if (!playerState.rigidBody || !playerState.collider) return false;
+
+	const pos = playerState.rigidBody.translation();
+	const capsuleHeight = DEFAULT_PLAYER_CONFIG.halfHeight + DEFAULT_PLAYER_CONFIG.radius;
+
+	// Cast ray from high above current XZ position, excluding player's own collider
+	const rayStart = { x: pos.x, y: searchHeight, z: pos.z };
+	const result = castRay(
+		physicsState,
+		rayStart,
+		{ x: 0, y: -1, z: 0 },
+		searchHeight * 2,
+		playerState.collider, // Exclude player's collider from raycast
+	);
+
+	if (result) {
+		// Position capsule so bottom touches ground + small margin
+		const groundY = result.point.y;
+		const targetY = groundY + capsuleHeight + 0.05;
+		teleportPlayer(playerState, { x: pos.x, y: targetY, z: pos.z });
+		return true;
+	}
+	return false;
 }
 
 // ============================================================================

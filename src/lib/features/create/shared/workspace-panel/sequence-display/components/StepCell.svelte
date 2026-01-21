@@ -5,6 +5,7 @@
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
+  import { createStepCellAnimationManager } from "../services/implementations/StepCellAnimationManager";
 
   let {
     beat,
@@ -54,6 +55,12 @@
   // Services
   const hapticService = container.items.hapticFeedback;
 
+  // Animation state manager (per-instance, not a DI singleton)
+  const animationManager = createStepCellAnimationManager();
+
+  // Reactive state from animation manager
+  let animationState = $state(animationManager.getState());
+
   const isStartPosition = $derived.by(() => {
     return beat.stepNumber === 0;
   });
@@ -77,13 +84,6 @@
     };
   });
 
-  let hasAnimated = $state(false);
-  let currentAnimationName = $state("gentleBloom");
-  // Track previous beat ID for change detection
-  let previousBeatId = "";
-  // Track previous animation epoch to reset hasAnimated when a new animation starts
-  let previousAnimationEpoch = animationEpoch;
-
   // Long-press detection
   const LONG_PRESS_DURATION = 500; // ms
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -93,108 +93,49 @@
   // Element ref for focus management
   let cellElement: HTMLDivElement;
 
-  // Track when new pictograph data arrives for fade-in animation
-  let enableTransitionsForNewData = $state(false);
-
-  // Create a pictograph signature that represents the fundamental structure
-  // independent of transformations (which only change arrow locations/rotations)
-  function getPictographSignature(stepData: StepData): string {
-    if (stepData.isBlank) return "blank";
-
-    // Core structure: letter + which motion colors are present
-    const hasBlue = !!stepData.motions?.blue;
-    const hasRed = !!stepData.motions?.red;
-    const motionStructure = `${hasBlue ? "B" : ""}${hasRed ? "R" : ""}`;
-
-    return `${stepData.letter || "null"}-${motionStructure}`;
-  }
-
-  // Track previous signature for change detection
-  let previousSignature = "";
-
-  // Reset hasAnimated when a new animation epoch starts
-  // This is critical for when beat IDs are reused across generations (e.g., beat-5, beat-6)
+  // Sync animation manager with prop changes via effects
   $effect(() => {
-    if (animationEpoch !== previousAnimationEpoch) {
-      hasAnimated = false;
-      previousAnimationEpoch = animationEpoch;
-    }
+    animationManager.onEpochChanged(animationEpoch);
+    animationState = animationManager.getState();
   });
 
-  // Reset hasAnimated ONLY when the beat data itself changes (different beat loaded)
-  // This prevents re-animating all steps when only one beat should animate
   $effect(() => {
-    const newId = beat.id;
-    const oldId = previousBeatId;
-
-    if (newId !== oldId) {
-      hasAnimated = false;
-      previousBeatId = newId;
-    }
+    animationManager.onBeatChanged(beat.id);
+    animationState = animationManager.getState();
   });
 
-  // Enable fade transitions ONLY when loading a DIFFERENT beat (id changes)
-  // Do NOT enable for transforms on the SAME beat (id stays same, letter/positions change)
-  // Transforms should use CSS animations on props/arrows, not fade transitions
-  let previousIdForTransitions = "";
   $effect(() => {
-    const currentSignature = getPictographSignature(beat);
-    const signatureChanged = currentSignature !== previousSignature;
-    const idChanged = beat.id !== previousIdForTransitions;
-
-    // Only enable fade transitions when loading genuinely different content
-    // (id changed AND signature changed). Transforms keep same id.
-    if (idChanged && signatureChanged && !beat.isBlank) {
-      enableTransitionsForNewData = true;
-
-      // Disable transitions after animation completes
-      setTimeout(() => {
-        enableTransitionsForNewData = false;
-      }, 350); // Match pictograph fade-in duration
-    }
-
-    previousSignature = currentSignature;
-    previousIdForTransitions = beat.id;
+    animationManager.onDataChanged(beat);
+    animationState = animationManager.getState();
   });
 
+  // Derived values from animation manager
   const shouldAnimateIn = $derived.by(() => {
-    // Animate when:
-    // 1. shouldAnimate prop is true (parent says this step should animate)
-    // 2. hasAnimated is false (haven't animated yet)
-    // 3. beat is not blank
-    return shouldAnimate && !hasAnimated && !beat.isBlank;
+    return animationManager.shouldAnimateIn(shouldAnimate, beat.isBlank);
   });
 
-  // Steps should be invisible ONLY if they're waiting to animate
   const isVisible = $derived.by(() => {
-    // If it should animate but hasn't yet, hide it (will become visible via animation)
-    // This applies to ALL steps, including start position during generation
-    if (shouldAnimate && !hasAnimated) return false;
+    return animationManager.isVisible(shouldAnimate, index, beat.isBlank);
+  });
 
-    // Special case: Start position tile (index -1) should be visible even when blank
-    // This shows the "Start" placeholder before a start position is selected
-    if (index === -1) return true;
+  const enableTransitionsForNewData = $derived.by(() => {
+    return animationState.enableTransitions;
+  });
 
-    // If it's a blank beat in the main grid, never show it
-    if (beat.isBlank) return false;
-
-    // Otherwise, show it (either it has animated, or it doesn't need to animate)
-    return true;
+  const currentAnimationName = $derived.by(() => {
+    return animationState.animationName;
   });
 
   function handleAnimationEnd() {
-    // Only mark as animated if we're currently supposed to be animating.
-    // This prevents stale animationend events from old animations (when cell is reused)
-    // from incorrectly setting hasAnimated=true before the new animation starts.
-    if (shouldAnimateIn) {
-      hasAnimated = true;
-    }
+    animationManager.onAnimationEnd(shouldAnimateIn);
+    animationState = animationManager.getState();
   }
 
   // Listen for animation changes from the AnimationSelector
   onMount(() => {
     const handleAnimationChange = (event: CustomEvent) => {
-      currentAnimationName = event.detail.animation;
+      animationManager.setAnimationName(event.detail.animation);
+      animationState = animationManager.getState();
     };
 
     window.addEventListener(

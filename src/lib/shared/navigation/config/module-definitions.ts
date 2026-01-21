@@ -19,6 +19,7 @@ import {
   REALM_TABS,
   SKEWLAB_TABS,
   LANDING_PAGE_TABS,
+  WATCH_TABS,
 } from "./tab-definitions";
 
 /**
@@ -123,6 +124,16 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Compose sequences into animations",
     isMain: true,
     sections: ANIMATE_TABS, // TODO: Rename to COMPOSE_TABS
+  },
+  {
+    id: "watch",
+    label: "Watch",
+    icon: '<i class="fas fa-play-circle" style="color: #ef4444;" aria-hidden="true"></i>',
+    color: "#ef4444", // Red - video/playback
+    description: "Browse videos from the community",
+    isMain: true,
+    sections: WATCH_TABS,
+    adminOnly: true, // Admin-only for now until feature is ready
   },
   {
     id: "train",

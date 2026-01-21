@@ -12,19 +12,38 @@ import type { Destination, DestinationCategory } from "./types";
  * All available 3D destinations
  */
 export const DESTINATIONS: Destination[] = [
+	// Single destination - campground clearing with procedural forest
+	{
+		id: "worlds",
+		name: "Realm",
+		description:
+			"Campground clearing surrounded by procedural forest terrain",
+		icon: "fa-earth-americas",
+		color: "#10b981", // Green
+		supportsMultiplayer: false,
+		supportsPhysics: true,
+		defaultCameraMode: CameraMode.FIRST_PERSON,
+		category: "exploration",
+		tags: ["procedural", "terrain", "campground", "exploration"],
+		component: () =>
+			import("../../../features/infinite-worlds/WorldsDestination.svelte"),
+		enabled: true,
+	},
+	// Disabled destinations (kept for future re-enabling)
 	{
 		id: "stage",
 		name: "Stage",
 		description:
 			"Multi-performer choreography viewer with synchronized playback and timeline editing",
 		icon: "fa-theater-masks",
-		color: "#8b5cf6", // Purple
-		supportsMultiplayer: false, // Future: add multiplayer for live performances
+		color: "#8b5cf6",
+		supportsMultiplayer: false,
 		supportsPhysics: false,
 		defaultCameraMode: CameraMode.THIRD_PERSON,
 		category: "performance",
 		tags: ["choreography", "avatars", "performance", "timeline"],
 		component: () => import("../../../features/stage/StageDestination.svelte"),
+		enabled: false,
 	},
 	{
 		id: "gallery",
@@ -32,31 +51,15 @@ export const DESTINATIONS: Destination[] = [
 		description:
 			"Explore sequences in a procedural museum with friends. Multiplayer social experience",
 		icon: "fa-building-columns",
-		color: "#06b6d4", // Cyan
+		color: "#06b6d4",
 		supportsMultiplayer: true,
-		supportsPhysics: true, // Rapier physics for realistic movement
+		supportsPhysics: true,
 		defaultCameraMode: CameraMode.FIRST_PERSON,
 		category: "social",
 		tags: ["museum", "multiplayer", "social", "exhibits"],
 		component: () =>
 			import("../../../features/gallery/GalleryDestination.svelte"),
-		enabled: false, // Temporarily disabled - focusing on Stage first
-	},
-	{
-		id: "worlds",
-		name: "Infinite Worlds",
-		description:
-			"Procedurally generated terrain with biomes, vegetation, and endless exploration",
-		icon: "fa-earth-americas",
-		color: "#10b981", // Green
-		supportsMultiplayer: false, // Future: add multiplayer exploration
-		supportsPhysics: true, // Rapier physics with terrain colliders
-		defaultCameraMode: CameraMode.FIRST_PERSON,
-		category: "exploration",
-		tags: ["procedural", "terrain", "biomes", "exploration"],
-		component: () =>
-			import("../../../features/infinite-worlds/WorldsDestination.svelte"),
-		enabled: false, // Temporarily disabled - focusing on Stage first
+		enabled: false,
 	},
 	{
 		id: "hannons-camp",
@@ -64,7 +67,7 @@ export const DESTINATIONS: Destination[] = [
 		description:
 			"Real terrain from Kinetic Fire festival site in Southwest Ohio",
 		icon: "fa-campground",
-		color: "#f97316", // Orange
+		color: "#f97316",
 		supportsMultiplayer: false,
 		supportsPhysics: true,
 		defaultCameraMode: CameraMode.FIRST_PERSON,
@@ -72,7 +75,7 @@ export const DESTINATIONS: Destination[] = [
 		tags: ["real-terrain", "festival", "kinetic-fire", "ohio"],
 		component: () =>
 			import("../../../features/infinite-worlds/HannonsCampDestination.svelte"),
-		enabled: false, // Temporarily disabled - focusing on Stage first
+		enabled: false,
 	},
 	// Future destinations:
 	// {

@@ -324,10 +324,19 @@ export class Canvas2DTrailRenderer {
         ctx.quadraticCurveTo(point.x, point.y, midX, midY);
       }
 
-      // Connect to the last point
+      // Connect to the last point using a curve, not a straight line
+      // The straight lineTo() was causing visible artifacts at the trail's fading end
+      // when points were spaced far apart (especially after pruning in FADE mode)
       const lastPoint = smoothPoints[smoothPoints.length - 1]!;
+      const secondLastPoint = smoothPoints[smoothPoints.length - 2];
       if (!isNaN(lastPoint.x) && !isNaN(lastPoint.y)) {
-        ctx.lineTo(lastPoint.x, lastPoint.y);
+        if (secondLastPoint && !isNaN(secondLastPoint.x) && !isNaN(secondLastPoint.y)) {
+          // Use the second-to-last point as control point for smooth curve to final point
+          ctx.quadraticCurveTo(secondLastPoint.x, secondLastPoint.y, lastPoint.x, lastPoint.y);
+        } else {
+          // Fallback to line if no second-to-last point
+          ctx.lineTo(lastPoint.x, lastPoint.y);
+        }
       }
     }
 
@@ -447,7 +456,12 @@ export class Canvas2DTrailRenderer {
       const midY = (point.y + nextPoint.y) / 2;
       ctx.quadraticCurveTo(point.x, point.y, midX, midY);
     }
-    ctx.lineTo(leftEdge[leftEdge.length - 1]!.x, leftEdge[leftEdge.length - 1]!.y);
+    // Connect to the last left edge point with a curve to avoid straight line artifacts
+    if (leftEdge.length >= 2) {
+      const lastLeft = leftEdge[leftEdge.length - 1]!;
+      const secondLastLeft = leftEdge[leftEdge.length - 2]!;
+      ctx.quadraticCurveTo(secondLastLeft.x, secondLastLeft.y, lastLeft.x, lastLeft.y);
+    }
 
     // Right edge backward (creates closed shape)
     for (let i = rightEdge.length - 1; i > 0; i--) {
@@ -457,7 +471,12 @@ export class Canvas2DTrailRenderer {
       const midY = (point.y + prevPoint.y) / 2;
       ctx.quadraticCurveTo(point.x, point.y, midX, midY);
     }
-    ctx.lineTo(rightEdge[0]!.x, rightEdge[0]!.y);
+    // Connect to the first right edge point with a curve to avoid straight line artifacts
+    if (rightEdge.length >= 2) {
+      const firstRight = rightEdge[0]!;
+      const secondRight = rightEdge[1]!;
+      ctx.quadraticCurveTo(secondRight.x, secondRight.y, firstRight.x, firstRight.y);
+    }
 
     ctx.closePath();
 

@@ -15,7 +15,6 @@
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { DurationPattern } from "../../domain/models/DurationPatternData";
-  import { formatDurationCompact } from "../../domain/models/DurationPatternData";
   import {
     getTemplatesForStepCount,
     getCategoryInfo,
@@ -24,6 +23,8 @@
   } from "../../domain/templates/duration-templates";
   import { container } from "$lib/shared/di";
   import type { IDurationPatternManager } from "../../services/contracts/IDurationPatternManager";
+  import PatternItemCard from "./PatternItemCard.svelte";
+  import DurationPreviewGrid from "./DurationPreviewGrid.svelte";
 
   // Mobile detection - use layout state
   const isMobile = $derived(!layoutState.isSideBySideLayout);
@@ -252,20 +253,10 @@
           {#if !sequence || sequence.steps.length === 0}
             <p class="empty-message">No sequence to save pattern from</p>
           {:else}
-            <div class="pattern-preview">
-              <h3>Current Durations ({sequence.steps.length} steps)</h3>
-              <div class="preview-grid">
-                {#each sequence.steps as beat, i}
-                  {@const duration = beat.duration ?? 1.0}
-                  <div class="preview-beat">
-                    <span class="beat-num">{i + 1}</span>
-                    <span class="duration-value">
-                      {formatDurationCompact(duration)}
-                    </span>
-                  </div>
-                {/each}
-              </div>
-            </div>
+            <DurationPreviewGrid
+              durations={sequence.steps.map((s) => s.duration ?? 1.0)}
+              title="Current Durations ({sequence.steps.length} steps)"
+            />
 
             <div class="save-form">
               <input
@@ -379,28 +370,14 @@
                               template.category
                             )}
                             {#if pattern}
-                              <div
-                                class="pattern-item template category-{template.category}"
-                                style="--glass-color: {categoryInfo.color}"
+                              <PatternItemCard
+                                name={pattern.name}
+                                description={template.description}
+                                glassColor={categoryInfo.color}
+                                isTemplate={true}
+                                variant={template.category}
                                 onclick={() => handlePatternClick(pattern)}
-                                role="button"
-                                tabindex="0"
-                                onkeydown={(e) => {
-                                  if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    handlePatternClick(pattern);
-                                  }
-                                }}
-                              >
-                                <div class="pattern-info">
-                                  <span class="pattern-name"
-                                    >{pattern.name}</span
-                                  >
-                                  <span class="pattern-desc"
-                                    >{template.description}</span
-                                  >
-                                </div>
-                              </div>
+                              />
                             {/if}
                           {/each}
                         </div>
@@ -420,26 +397,14 @@
                         : null}
                       {@const categoryInfo = getCategoryInfo(template.category)}
                       {#if pattern}
-                        <div
-                          class="pattern-item template category-{template.category}"
-                          style="--glass-color: {categoryInfo.color}"
+                        <PatternItemCard
+                          name={pattern.name}
+                          description={template.description}
+                          glassColor={categoryInfo.color}
+                          isTemplate={true}
+                          variant={template.category}
                           onclick={() => handlePatternClick(pattern)}
-                          role="button"
-                          tabindex="0"
-                          onkeydown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              handlePatternClick(pattern);
-                            }
-                          }}
-                        >
-                          <div class="pattern-info">
-                            <span class="pattern-name">{pattern.name}</span>
-                            <span class="pattern-desc"
-                              >{template.description}</span
-                            >
-                          </div>
-                        </div>
+                        />
                       {/if}
                     {/each}
 
@@ -468,34 +433,17 @@
                       applyingPattern ||
                       !sequence ||
                       sequence.steps.length !== pattern.stepCount}
-                    <div
-                      class="pattern-item"
-                      class:disabled={isDisabled}
-                      onclick={() =>
-                        !isDisabled && handlePatternClick(pattern)}
-                      role="button"
-                      tabindex={isDisabled ? -1 : 0}
-                      onkeydown={(e) => {
-                        if (
-                          !isDisabled &&
-                          (e.key === "Enter" || e.key === " ")
-                        ) {
-                          e.preventDefault();
-                          handlePatternClick(pattern);
-                        }
-                      }}
-                      title={sequence &&
+                    <PatternItemCard
+                      name={pattern.name}
+                      stepCount={pattern.stepCount}
+                      disabled={isDisabled}
+                      disabledReason={sequence &&
                       sequence.steps.length !== pattern.stepCount
                         ? `Requires ${pattern.stepCount} steps`
-                        : "Apply pattern"}
+                        : undefined}
+                      onclick={() => handlePatternClick(pattern)}
                     >
-                      <div class="pattern-info">
-                        <span class="pattern-name">{pattern.name}</span>
-                        <span class="pattern-steps"
-                          >{pattern.stepCount} steps</span
-                        >
-                      </div>
-                      <div class="pattern-actions">
+                      <div slot="actions" class="pattern-actions">
                         <button
                           class="delete-btn"
                           onclick={(e) => {
@@ -508,7 +456,7 @@
                           <i class="fas fa-trash" aria-hidden="true"></i>
                         </button>
                       </div>
-                    </div>
+                    </PatternItemCard>
                   {/each}
                 </div>
               </div>
@@ -666,46 +614,6 @@
     padding: 32px 16px;
   }
 
-  .pattern-preview {
-    margin-bottom: 16px;
-  }
-
-  .pattern-preview h3 {
-    font-size: 0.85rem;
-    font-weight: 500;
-    margin: 0 0 12px;
-    color: var(--theme-text-dim);
-  }
-
-  .preview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-    gap: 6px;
-  }
-
-  .preview-beat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 6px 4px;
-    background: var(--theme-card-bg);
-    border-radius: 6px;
-    font-size: 0.75rem;
-    gap: 4px;
-  }
-
-  .beat-num {
-    font-weight: 600;
-    color: var(--theme-text-dim);
-  }
-
-  .duration-value {
-    font-family: monospace;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #f97316; /* Orange for duration */
-  }
-
   .save-form {
     display: flex;
     flex-direction: column;
@@ -778,57 +686,6 @@
     }
   }
 
-  .pattern-item {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
-    position: relative;
-    padding: 12px;
-    min-height: 60px;
-    background: var(--theme-card-bg);
-    border-radius: 8px;
-    border: 1px solid var(--theme-stroke);
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    user-select: none;
-  }
-
-  .pattern-item:hover:not(.disabled) {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(249, 115, 22, 0.4);
-  }
-
-  .pattern-item:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .pattern-item.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .pattern-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    width: 100%;
-  }
-
-  .pattern-name {
-    font-weight: 500;
-    font-size: 0.9rem;
-    line-height: 1.3;
-  }
-
-  .pattern-steps,
-  .pattern-desc {
-    font-size: 0.75rem;
-    color: var(--theme-text-dim);
-    line-height: 1.4;
-  }
-
   .pattern-actions {
     position: absolute;
     top: 6px;
@@ -847,12 +704,9 @@
     opacity: 0.7;
   }
 
-  .pattern-item:hover .delete-btn {
-    opacity: 1;
-  }
-
   .delete-btn:hover {
     background: rgba(239, 68, 68, 0.35);
+    opacity: 1;
   }
 
   /* Templates section */
@@ -917,23 +771,6 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-  }
-
-  /* User saved patterns need padding for delete button */
-  .saved-patterns-section .pattern-item {
-    padding-right: 32px;
-  }
-
-  /* Pattern items with colored glass effect */
-  .pattern-item.template {
-    background: color-mix(in srgb, var(--glass-color, #fff) 8%, transparent);
-    border: 1px solid
-      color-mix(in srgb, var(--glass-color, #fff) 20%, transparent);
-  }
-
-  .pattern-item.template:hover {
-    background: color-mix(in srgb, var(--glass-color, #fff) 15%, transparent);
-    border-color: color-mix(in srgb, var(--glass-color, #fff) 40%, transparent);
   }
 
   .empty-filter-message {
@@ -1005,19 +842,6 @@
   .patterns-list.mobile-compact {
     grid-template-columns: repeat(2, 1fr);
     gap: 6px;
-  }
-
-  .patterns-list.mobile-compact .pattern-item {
-    padding: 10px;
-    min-height: 44px;
-  }
-
-  .patterns-list.mobile-compact .pattern-name {
-    font-size: 0.8rem;
-  }
-
-  .patterns-list.mobile-compact .pattern-desc {
-    display: none; /* Hide descriptions on mobile to save space */
   }
 
   /* Mobile compact - templates section */

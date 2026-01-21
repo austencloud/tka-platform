@@ -5,10 +5,16 @@
    * Loads all skewed pictographs and allows filtering by category (1-4).
    * Includes pagination for manageable browsing.
    * Responds to prop type changes (Alt+number, P key).
+   *
+   * Arrow Editing:
+   * - Click a pictograph card to open the editor panel
+   * - Editor panel provides WASD arrow adjustment + turns editing
+   * - Reuses ArrowAdjustmentPanel and TurnsEditMode from Create module
    */
 
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import SkewLabEditorPanel from "./SkewLabEditorPanel.svelte";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -16,6 +22,27 @@
   import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
   import { container } from "$lib/shared/di";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { selectedArrowState } from "$lib/features/create/shared/state/selected-arrow-state.svelte";
+
+  // Detect if we're on desktop (for push-over effect)
+  let isSideBySide = $state(false);
+  let resizeCleanup: (() => void) | null = null;
+
+  onMount(() => {
+    const checkLayout = () => {
+      isSideBySide = window.innerWidth >= 1024;
+    };
+    checkLayout();
+    window.addEventListener("resize", checkLayout);
+    resizeCleanup = () => window.removeEventListener("resize", checkLayout);
+  });
+
+  onDestroy(() => {
+    resizeCleanup?.();
+  });
+
+  // Push content over when panel opens on desktop
+  const isPanelOpen = $derived(editorOpen && isSideBySide);
 
   // Cardinal locations (for determining grid type)
   const CARDINAL = new Set([GridLocation.NORTH, GridLocation.EAST, GridLocation.SOUTH, GridLocation.WEST]);
@@ -42,6 +69,16 @@
   let selectedCategory = $state<1 | 2 | 3 | 4 | "all">("all");
   let currentPage = $state(0);
   const perPage = 24;
+
+  // Editor panel state
+  let editorOpen = $state(false);
+  let selectedIndex = $state<number>(-1); // Index in filtered list
+
+  // Currently selected pictograph for editor
+  const selectedPictograph = $derived.by(() => {
+    if (selectedIndex < 0 || selectedIndex >= filtered.length) return null;
+    return filtered[selectedIndex];
+  });
 
   // Get user's prop types from reactive settings (responds to Alt+number, P key)
   const bluePropType = $derived.by(() => {
@@ -87,7 +124,36 @@
       error = e instanceof Error ? e.message : "Failed to load pictographs";
       isLoading = false;
     }
+
+    return () => {
+      selectedArrowState.clearSelection();
+    };
   });
+
+  // Handle clicking on a pictograph card - opens editor panel
+  function handlePictographCardClick(pictograph: PictographData, indexInPage: number) {
+    // Calculate the actual index in the filtered list
+    const actualIndex = currentPage * perPage + indexInPage;
+    selectedIndex = actualIndex;
+    editorOpen = true;
+  }
+
+  // Editor panel callbacks
+  function handleEditorClose() {
+    editorOpen = false;
+    selectedIndex = -1;
+    selectedArrowState.clearSelection();
+  }
+
+  function handleEditorNavigate(direction: "prev" | "next") {
+    if (direction === "prev" && selectedIndex > 0) {
+      selectedIndex--;
+      selectedArrowState.clearSelection();
+    } else if (direction === "next" && selectedIndex < filtered.length - 1) {
+      selectedIndex++;
+      selectedArrowState.clearSelection();
+    }
+  }
 
   // Reset page when filter changes
   $effect(() => {
@@ -122,12 +188,14 @@
   }
 </script>
 
-<div class="category-browser">
+<div class="category-browser" class:panel-open={isPanelOpen}>
   <header class="header">
     <h2>Category Browser</h2>
     <p class="description">
       Browse skewed pictographs by category. {allPictographs.length} total pictographs.
     </p>
+    <!-- Hint to click a pictograph -->
+    <p class="hint">Click a pictograph to edit its arrows</p>
   </header>
 
   {#if isLoading}
@@ -232,10 +300,19 @@
       </div>
     {:else}
     <div class="grid themed-scrollbar">
-      {#each paginated as pictograph (pictograph.id)}
-        {@const blueMotion = pictograph.motions[MotionColor.BLUE]}
-        {@const redMotion = pictograph.motions[MotionColor.RED]}
-        <article class="card">
+      {#each paginated as pictograph, indexInPage (pictograph.id)}
+        {@const actualIndex = currentPage * perPage + indexInPage}
+        {@const isSelected = actualIndex === selectedIndex && editorOpen}
+        <article
+          class="card"
+          class:selected={isSelected}
+          role="button"
+          tabindex="0"
+          onclick={() => handlePictographCardClick(pictograph, indexInPage)}
+          onkeydown={(e) => (e.key === "Enter" || e.key === " ") && handlePictographCardClick(pictograph, indexInPage)}
+          aria-pressed={isSelected}
+          aria-label="Pictograph {pictograph.letter} - click to edit"
+        >
           <div class="pictograph-area">
             <PictographContainer
               pictographData={pictograph}
@@ -244,50 +321,10 @@
               redPropTypeOverride={redPropType}
             />
           </div>
-          <div class="card-info">
-            <div class="info-header">
-              <span class="letter">{pictograph.letter}</span>
-              <div class="header-actions">
-                <span class="category cat{pictograph.category}">Cat {pictograph.category}</span>
-                <button
-                  class="copy-btn"
-                  class:copied={copiedId === pictograph.id}
-                  onclick={() => copyPictographInfo(pictograph)}
-                  title="Copy info to clipboard"
-                  aria-label="Copy pictograph info to clipboard"
-                >
-                  <i class="fas {copiedId === pictograph.id ? 'fa-check' : 'fa-copy'}" aria-hidden="true"></i>
-                </button>
-              </div>
-            </div>
-            <div class="position-row">
-              <span class="pos-label">Pos:</span>
-              <span class="position">{formatPosition(pictograph)}</span>
-            </div>
-            <div class="motion-details">
-              <div class="motion blue">
-                <span class="motion-label">Blue:</span>
-                <span class="motion-type">{blueMotion?.motionType ?? "?"}</span>
-                <span class="motion-locs">
-                  {formatLoc(blueMotion?.startLocation)}
-                  <span class="grid-type">({getGridType(blueMotion?.startLocation)})</span>
-                  →
-                  {formatLoc(blueMotion?.endLocation)}
-                  <span class="grid-type">({getGridType(blueMotion?.endLocation)})</span>
-                </span>
-              </div>
-              <div class="motion red">
-                <span class="motion-label">Red:</span>
-                <span class="motion-type">{redMotion?.motionType ?? "?"}</span>
-                <span class="motion-locs">
-                  {formatLoc(redMotion?.startLocation)}
-                  <span class="grid-type">({getGridType(redMotion?.startLocation)})</span>
-                  →
-                  {formatLoc(redMotion?.endLocation)}
-                  <span class="grid-type">({getGridType(redMotion?.endLocation)})</span>
-                </span>
-              </div>
-            </div>
+          <!-- Minimal info bar -->
+          <div class="card-info-minimal">
+            <span class="letter">{pictograph.letter}</span>
+            <span class="position">{formatPosition(pictograph)}</span>
           </div>
         </article>
       {/each}
@@ -321,12 +358,29 @@
   {/if}
 </div>
 
+<!-- Editor Panel -->
+<SkewLabEditorPanel
+  bind:isOpen={editorOpen}
+  pictographData={selectedPictograph}
+  currentIndex={selectedIndex}
+  totalCount={filtered.length}
+  onClose={handleEditorClose}
+  onNavigate={handleEditorNavigate}
+/>
+
 <style>
   .category-browser {
     height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    /* Push-over effect when drawer opens - matches SkewLabEditorPanel drawer width (40vw, min 450px) */
+    --drawer-width: max(40vw, 450px);
+    transition: padding-right var(--duration-emphasis, 350ms) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .category-browser.panel-open {
+    padding-right: var(--drawer-width);
   }
 
   .header {
@@ -345,6 +399,13 @@
     margin: 0.25rem 0 0;
     font-size: var(--font-size-min, 14px);
     color: var(--theme-text-secondary, #888);
+  }
+
+  .hint {
+    margin: 0.5rem 0 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-secondary, #888);
+    font-style: italic;
   }
 
   .loading,
@@ -568,35 +629,79 @@
     flex: 1;
     overflow-y: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    /* Fixed column size for consistent pictograph sizing */
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     grid-auto-rows: auto;
     align-content: start;
-    gap: 0.75rem;
-    padding: 0 1.5rem 1rem;
+    gap: 0.5rem;
+    padding: 0 1rem 1rem;
   }
 
   .card {
     display: flex;
     flex-direction: column;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
-    transition: border-color var(--duration-fast) ease;
+    cursor: pointer;
+    transition:
+      border-color var(--duration-fast) ease,
+      box-shadow var(--duration-fast) ease,
+      transform var(--duration-fast) ease;
   }
 
   .card:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
-  .pictograph-area {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.75rem;
+  .card:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
   }
 
-  .card-info {
+  .card:active {
+    transform: scale(0.98);
+  }
+
+  /* Selected card (editor panel open for this card) */
+  .card.selected {
+    border-color: var(--theme-accent, #8b5cf6);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  }
+
+  .pictograph-area {
+    /* Pictograph fills the card width, maintains square aspect */
+    aspect-ratio: 1;
+    width: 100%;
+    padding: 0.25rem;
+    box-sizing: border-box;
+  }
+
+  /* Minimal info bar for arrow adjustment mode */
+  .card-info-minimal {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.375rem 0.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.05));
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .card-info-minimal .letter {
+    font-weight: 700;
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text, #fff);
+  }
+
+  .card-info-minimal .position {
+    color: var(--theme-text-secondary, #888);
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  /* Original detailed card-info (kept for reference, not currently used) */
+  .card-info {
+    display: none; /* Hidden in arrow adjustment mode */
     flex-direction: column;
     gap: 0.375rem;
     padding: 0.5rem 0.75rem 0.75rem;
@@ -766,12 +871,21 @@
     .chip:active:not(:disabled),
     .page-btn:active:not(:disabled),
     .copy-btn:active,
-    .retry-btn:active {
+    .retry-btn:active,
+    .card:active {
       transform: none;
     }
 
     .loading i {
       animation: none;
+    }
+  }
+
+  /* Touch device optimization for card tap targets */
+  @media (pointer: coarse) {
+    .card {
+      /* Ensure good touch target size */
+      min-height: 120px;
     }
   }
 </style>

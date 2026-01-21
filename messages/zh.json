@@ -79,6 +79,8 @@
 	"module_library": "图书馆",
 	"module_compose": "撰写",
 	"module_train": "实践",
+	"module_watch": "观看",
+	"module_desc_watch": "浏览社区视频",
 	"module_settings": "设置",
 	"module_gallery": "画廊",
 	"module_feedback": "反馈",

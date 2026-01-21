@@ -79,6 +79,8 @@
 	"module_library": "図書館",
 	"module_compose": "作曲",
 	"module_train": "練習する",
+	"module_watch": "視聴",
+	"module_desc_watch": "コミュニティの動画を閲覧",
 	"module_settings": "設定",
 	"module_gallery": "ギャラリー",
 	"module_feedback": "フィードバック",

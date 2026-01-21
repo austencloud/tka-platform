@@ -15,6 +15,10 @@
  *   node scripts/find-monoliths.cjs --type ts        # Only .ts files
  *   node scripts/find-monoliths.cjs --include-audited  # Include audited files in results
  *
+ * Auditing (marking files as reviewed):
+ *   node scripts/find-monoliths.cjs --mark-audited <path> "<reason>"  # Mark file as audited
+ *   node scripts/find-monoliths.cjs --unmark-audited <path>           # Remove from audited list
+ *
  * Claiming (for multi-agent coordination):
  *   node scripts/find-monoliths.cjs --auto-claim     # ATOMIC: Find and claim top available file (RECOMMENDED)
  *   node scripts/find-monoliths.cjs --claim <path>   # Claim a specific file (manual)
@@ -134,6 +138,18 @@ const AUDITED_FILES = {
   "lib/features/tika/components/TikaReviewPanel.svelte": {
     auditDate: "2026-01-20",
     reason: "UI-dense review panel: 54% CSS (630 lines), only 226 lines TypeScript. Services already extracted (TikaSessionRepository, TikaSessionFormatter). Thin CRUD operations (5-15 lines each). Size from comprehensive master-detail styling, not logic complexity. 4/4 perspectives say leave it.",
+  },
+  "lib/features/create/shared/components/coordinators/SequenceDrawerHost.svelte": {
+    auditDate: "2026-01-20",
+    reason: "Coordinator/host component: 4/4 perspectives say leave it. Owns animation state and coordinates services (playbackController, exportOrchestrator, videoExportOrchestrator, sequenceRepository) for SequenceDrawer. 9 $effects are animation lifecycle management. 50 lines markup just passes props to child. Logic lives in injected services, this is reactive glue.",
+  },
+  "lib/shared/render/services/implementations/Canvas2DDirectRenderer.ts": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives say leave it. Canvas 2D renderer must maintain pixel-perfect parity with SVG system - 12+ glyph types each need positioning constants matching their Svelte counterparts. Splitting would complicate SVG/Canvas sync without meaningful benefit. Excellent documentation, clear orchestration via numbered render order.",
+  },
+  "lib/features/promo-generator/components/PromoGenerator.svelte": {
+    auditDate: "2026-01-21",
+    reason: "4/4 perspectives say leave it. 560+ lines are scoped CSS. Script is a thin orchestrator delegating to IPromoOrchestrator. Extractions would be pass-through wrappers without benefit.",
   },
   // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
@@ -446,6 +462,10 @@ const showClaimsFlag = args.includes("--claims");
 const clearExpiredFlag = args.includes("--clear-expired");
 const autoClaimFlag = args.includes("--auto-claim");
 
+// Audit-related arguments
+const markAuditedIdx = args.indexOf("--mark-audited");
+const unmarkAuditedIdx = args.indexOf("--unmark-audited");
+
 // Handle claim commands before main scan
 if (showClaimsFlag) {
   showClaims();
@@ -475,6 +495,102 @@ if (releaseIdx !== -1) {
   }
   const success = releaseClaim(pathToRelease);
   process.exit(success ? 0 : 1);
+}
+
+// Handle audit commands
+if (markAuditedIdx !== -1) {
+  const pathToAudit = args[markAuditedIdx + 1];
+  const reason = args[markAuditedIdx + 2];
+  if (!pathToAudit || !reason) {
+    console.error('\n❌ Usage: --mark-audited <file-path> "<reason>"\n');
+    console.error("   Example: --mark-audited lib/path/File.svelte \"Orchestrator: 4/4 perspectives say leave it. Coordinates services X, Y, Z.\"\n");
+    process.exit(1);
+  }
+
+  const normalizedPath = normalizePath(pathToAudit);
+  const today = new Date().toISOString().split("T")[0];
+
+  // Check if already audited
+  if (AUDITED_FILES[normalizedPath]) {
+    console.log(`\n⚠️  File already audited: ${normalizedPath}`);
+    console.log(`   Audit date: ${AUDITED_FILES[normalizedPath].auditDate}`);
+    console.log(`   Reason: ${AUDITED_FILES[normalizedPath].reason}\n`);
+    process.exit(1);
+  }
+
+  // Read the script file itself to add the entry
+  const scriptPath = __filename;
+  let scriptContent = fs.readFileSync(scriptPath, "utf-8");
+
+  // Find the position to insert (before the closing comment about deleted files)
+  const insertMarker = "  // SequencesView.svelte deleted";
+  const insertPos = scriptContent.indexOf(insertMarker);
+
+  if (insertPos === -1) {
+    console.error("\n❌ Could not find insertion point in script. Please add manually to AUDITED_FILES.\n");
+    process.exit(1);
+  }
+
+  // Build the new entry
+  const newEntry = `  "${normalizedPath}": {
+    auditDate: "${today}",
+    reason: "${reason.replace(/"/g, '\\"')}",
+  },
+`;
+
+  // Insert the entry
+  scriptContent = scriptContent.slice(0, insertPos) + newEntry + scriptContent.slice(insertPos);
+  fs.writeFileSync(scriptPath, scriptContent);
+
+  // Also release any existing claim on this file
+  const claimsData = readClaims();
+  if (claimsData.claims[normalizedPath]) {
+    delete claimsData.claims[normalizedPath];
+    writeClaims(claimsData);
+    console.log(`\n🔓 Released existing claim on: ${normalizedPath}`);
+  }
+
+  console.log(`\n✅ Marked as audited: ${normalizedPath}`);
+  console.log(`   Date: ${today}`);
+  console.log(`   Reason: ${reason}\n`);
+  process.exit(0);
+}
+
+if (unmarkAuditedIdx !== -1) {
+  const pathToUnmark = args[unmarkAuditedIdx + 1];
+  if (!pathToUnmark) {
+    console.error("\n❌ Usage: --unmark-audited <file-path>\n");
+    process.exit(1);
+  }
+
+  const normalizedPath = normalizePath(pathToUnmark);
+
+  if (!AUDITED_FILES[normalizedPath]) {
+    console.log(`\n⚠️  File not in audited list: ${normalizedPath}\n`);
+    process.exit(1);
+  }
+
+  // Read the script file itself to remove the entry
+  const scriptPath = __filename;
+  let scriptContent = fs.readFileSync(scriptPath, "utf-8");
+
+  // Build regex to match the entry (handles multiline)
+  const entryRegex = new RegExp(
+    `  "${normalizedPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}": \\{[^}]+\\},\\n`,
+    "g"
+  );
+
+  const newContent = scriptContent.replace(entryRegex, "");
+
+  if (newContent === scriptContent) {
+    console.error("\n❌ Could not find entry in script. Please remove manually from AUDITED_FILES.\n");
+    process.exit(1);
+  }
+
+  fs.writeFileSync(scriptPath, newContent);
+
+  console.log(`\n✅ Removed from audited list: ${normalizedPath}\n`);
+  process.exit(0);
 }
 
 // File analysis

@@ -32,6 +32,21 @@ let stageZone: {
   blendWidth: number;
 } | null = null;
 
+// Spawn clearing - grassy meadow above water level
+let spawnClearing: {
+  center: { x: number; z: number };
+  radius: number;
+  blendWidth: number;
+  waterLevel: number;
+  campground: {
+    enabled: boolean;
+    firePit: boolean;
+    tent: boolean;
+    seatingLogs: number;
+    torches: number;
+  };
+} | null = null;
+
 // ============================================================================
 // MESSAGE TYPES
 // ============================================================================
@@ -113,7 +128,26 @@ export interface ClearStageZoneMessage {
   type: "clear-stage-zone";
 }
 
-export type WorkerMessage = GenerateChunkMessage | LoadRealZoneMessage | ClearRealZoneMessage | SetStageZoneMessage | ClearStageZoneMessage;
+export interface SetSpawnClearingMessage {
+  type: "set-spawn-clearing";
+  center: { x: number; z: number };
+  radius: number;
+  blendWidth: number;
+  waterLevel: number;
+  campground: {
+    enabled: boolean;
+    firePit: boolean;
+    tent: boolean;
+    seatingLogs: number;
+    torches: number;
+  };
+}
+
+export interface ClearSpawnClearingMessage {
+  type: "clear-spawn-clearing";
+}
+
+export type WorkerMessage = GenerateChunkMessage | LoadRealZoneMessage | ClearRealZoneMessage | SetStageZoneMessage | ClearStageZoneMessage | SetSpawnClearingMessage | ClearSpawnClearingMessage;
 export type WorkerResponse = ChunkResultMessage | RealZoneLoadedMessage;
 
 // ============================================================================
@@ -122,6 +156,11 @@ export type WorkerResponse = ChunkResultMessage | RealZoneLoadedMessage;
 
 function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   const { chunkX, chunkY, chunkZ, worldSeed, chunkSize, resolution, lod } = msg;
+
+  // Debug: Check if spawn clearing is set for chunks near origin
+  if (chunkX >= -1 && chunkX <= 0 && chunkZ >= -1 && chunkZ <= 0) {
+    console.log(`[ChunkWorker] Generating chunk (${chunkX}, ${chunkZ}) - spawnClearing=${spawnClearing ? 'SET' : 'NULL'}`);
+  }
 
   // Adjust resolution based on LOD
   const effectiveResolution = Math.max(4, Math.floor(resolution / Math.pow(2, lod)));
@@ -167,31 +206,59 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
         ? getBlendedHeight(realTerrainZone, worldX, worldZ, proceduralHeight, 30)
         : proceduralHeight;
 
-      // Apply stage zone flattening
-      // The stage should be a flat clearing AT terrain level, not below it
-      if (stageZone) {
+      // Apply stage zone flattening (legacy - only if no spawn clearing)
+      // The stage is a flat clearing at Y=0 (ground level) that blends up to terrain
+      if (stageZone && !spawnClearing) {
         const dx = worldX - stageZone.center.x;
         const dz = worldZ - stageZone.center.z;
         const dist = Math.sqrt(dx * dx + dz * dz);
 
-        // Sample terrain height at the edge of the stage zone to get reference level
-        // This ensures the stage is at the same height as surrounding terrain base
-        const edgeX = stageZone.center.x + stageZone.radius;
-        const edgeZ = stageZone.center.z;
-        const edgeHeight = getTerrainHeight(noise, edgeX, edgeZ);
-        // Use the minimum of several edge samples to ensure flat ground
-        const edgeHeight2 = getTerrainHeight(noise, stageZone.center.x, stageZone.center.z + stageZone.radius);
-        const stageBaseHeight = Math.min(edgeHeight, edgeHeight2, 5); // Floor at minimum 5m
+        // Stage is at Y=0 (ground level)
+        // The terrain around it may be higher (hills/forest), and we blend up to it
+        const stageHeight = 0;
 
         if (dist < stageZone.radius) {
-          // Inside stage: completely flat at terrain base level
-          height = stageBaseHeight;
+          // Inside stage: completely flat at ground level
+          height = stageHeight;
         } else if (dist < stageZone.radius + stageZone.blendWidth) {
-          // Transition zone: blend from stage height to procedural
+          // Transition zone: blend from stage height UP to terrain
           const t = (dist - stageZone.radius) / stageZone.blendWidth;
           // Use smoothstep for a nicer transition
           const smooth = t * t * (3 - 2 * t);
-          height = stageBaseHeight + smooth * (height - stageBaseHeight);
+          // Ensure terrain is at least at stage height (no dipping below)
+          const targetHeight = Math.max(height, stageHeight);
+          height = stageHeight + smooth * (targetHeight - stageHeight);
+        }
+      }
+
+      // Apply spawn clearing (natural grassy meadow above water level)
+      // This creates a safe spawn point that's guaranteed to be above water
+      let isInClearing = false;
+      let clearingBlendFactor = 0;
+      if (spawnClearing) {
+        const dx = worldX - spawnClearing.center.x;
+        const dz = worldZ - spawnClearing.center.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+
+        // Clearing height: water level + 3m + micro noise for natural look
+        const microNoise = Math.sin(worldX * 0.5) * Math.cos(worldZ * 0.5) * 0.3;
+        const clearingHeight = spawnClearing.waterLevel + 3 + microNoise;
+
+        if (dist < spawnClearing.radius) {
+          // Inside clearing: grassy meadow above water
+          height = clearingHeight;
+          isInClearing = true;
+          clearingBlendFactor = 0;
+        } else if (dist < spawnClearing.radius + spawnClearing.blendWidth) {
+          // Transition zone: blend from clearing height to terrain
+          const t = (dist - spawnClearing.radius) / spawnClearing.blendWidth;
+          // Smoothstep for natural transition
+          const smooth = t * t * (3 - 2 * t);
+          // Ensure terrain is at least at clearing height (no dipping below)
+          const targetHeight = Math.max(height, clearingHeight);
+          height = clearingHeight + smooth * (targetHeight - clearingHeight);
+          isInClearing = true;
+          clearingBlendFactor = smooth;
         }
       }
 
@@ -204,7 +271,21 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
       let biome = getBiome(noise, worldX, worldZ);
       let color: { r: number; g: number; b: number };
 
-      if (usesRealTerrain && realTerrainZone && isPointInPolygon(worldX, worldZ, realTerrainZone.boundary)) {
+      if (isInClearing && spawnClearing) {
+        // Spawn clearing - lush grass color
+        const grassColor = getClearingGrassColor(height, spawnClearing.waterLevel);
+        if (clearingBlendFactor > 0) {
+          // Blend from grass to forest at edges
+          const forestColor = getBiomeColor("forest", height);
+          color = {
+            r: grassColor.r + clearingBlendFactor * (forestColor.r - grassColor.r),
+            g: grassColor.g + clearingBlendFactor * (forestColor.g - grassColor.g),
+            b: grassColor.b + clearingBlendFactor * (forestColor.b - grassColor.b),
+          };
+        } else {
+          color = grassColor;
+        }
+      } else if (usesRealTerrain && realTerrainZone && isPointInPolygon(worldX, worldZ, realTerrainZone.boundary)) {
         // Inside real zone - use campground-appropriate colors
         color = getCampgroundColor(height);
       } else {
@@ -294,13 +375,25 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
         const worldX = originX + x;
         const worldZ = originZ + z;
 
-        // Skip vegetation in stage zone
-        if (stageZone) {
+        // Skip vegetation in stage zone (legacy)
+        if (stageZone && !spawnClearing) {
           const dx = worldX - stageZone.center.x;
           const dz = worldZ - stageZone.center.z;
           const dist = Math.sqrt(dx * dx + dz * dz);
           // No vegetation within stage radius + half blend width
           if (dist < stageZone.radius + stageZone.blendWidth * 0.5) {
+            continue;
+          }
+        }
+
+        // Skip vegetation in spawn clearing (keep meadow clear)
+        if (spawnClearing) {
+          const dx = worldX - spawnClearing.center.x;
+          const dz = worldZ - spawnClearing.center.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          // No vegetation within clearing radius + half blend width
+          // This keeps the meadow clear and lets trees form a ring at the edge
+          if (dist < spawnClearing.radius + spawnClearing.blendWidth * 0.5) {
             continue;
           }
         }
@@ -478,6 +571,23 @@ function getCampgroundColor(height: number): { r: number; g: number; b: number }
   };
 }
 
+/**
+ * Colors for spawn clearing (lush meadow grass)
+ * Bright green grass that looks inviting and safe
+ */
+function getClearingGrassColor(height: number, waterLevel: number): { r: number; g: number; b: number } {
+  // Height relative to clearing center
+  const heightAboveWater = height - waterLevel;
+  const heightFactor = Math.min(1, Math.max(0, heightAboveWater / 10));
+
+  // Lush meadow green with slight variation
+  return {
+    r: 0.2 + heightFactor * 0.1,
+    g: 0.55 - heightFactor * 0.05,
+    b: 0.15,
+  };
+}
+
 // ============================================================================
 // WORKER MESSAGE HANDLER
 // ============================================================================
@@ -534,6 +644,24 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
     case "clear-stage-zone": {
       stageZone = null;
       console.log(`[ChunkWorker] Cleared stage zone`);
+      break;
+    }
+
+    case "set-spawn-clearing": {
+      spawnClearing = {
+        center: msg.center,
+        radius: msg.radius,
+        blendWidth: msg.blendWidth,
+        waterLevel: msg.waterLevel,
+        campground: msg.campground,
+      };
+      console.log(`[ChunkWorker] Set spawn clearing: center=(${msg.center.x}, ${msg.center.z}), radius=${msg.radius}m, blend=${msg.blendWidth}m, waterLevel=${msg.waterLevel}`);
+      break;
+    }
+
+    case "clear-spawn-clearing": {
+      spawnClearing = null;
+      console.log(`[ChunkWorker] Cleared spawn clearing`);
       break;
     }
   }

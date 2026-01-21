@@ -19,6 +19,8 @@ export interface TerrainConfig {
   dataPath?: string;
   /** Random seed (for procedural) */
   seed?: number;
+  /** Water level in world units (default: 5) */
+  waterLevel?: number;
 }
 
 /**
@@ -87,6 +89,40 @@ export interface StageZoneConfig {
 }
 
 /**
+ * Campground configuration
+ * Objects placed in the spawn clearing
+ */
+export interface CampgroundConfig {
+  /** Enable campground objects */
+  enabled: boolean;
+  /** Place fire pit at center */
+  firePit: boolean;
+  /** Place tent offset from center */
+  tent: boolean;
+  /** Number of log seats around fire (0-4) */
+  seatingLogs: number;
+  /** Number of torches at perimeter (0-6) */
+  torches: number;
+}
+
+/**
+ * Spawn clearing configuration
+ * A grassy clearing for spawn point, blending into procedural terrain
+ */
+export interface SpawnClearingConfig {
+  /** Enable spawn clearing */
+  enabled: boolean;
+  /** Center of clearing in world coordinates */
+  center: { x: number; z: number };
+  /** Radius of clear meadow area in meters */
+  radius: number;
+  /** Width of forest transition zone in meters */
+  blendWidth: number;
+  /** Campground object placement */
+  campground: CampgroundConfig;
+}
+
+/**
  * Complete realm configuration
  */
 export interface RealmConfig {
@@ -114,6 +150,9 @@ export interface RealmConfig {
 
   /** Stage zone configuration (optional flat performance area) */
   stageZone?: StageZoneConfig;
+
+  /** Spawn clearing configuration (grassy clearing with campground) */
+  spawnClearing?: SpawnClearingConfig;
 }
 
 // ============================================================================

@@ -117,7 +117,7 @@ export class TerrainPhysicsManager {
 		centerX: number,
 		centerZ: number,
 		radius: number,
-		height: number = 5, // Default to 5m above sea level (matches terrain base)
+		height: number = 0, // Default to ground level (Y=0)
 	): void {
 		if (!this.physicsState.rapier || !this.physicsState.world) {
 			console.warn("[TerrainPhysics] Physics not initialized");

@@ -12,8 +12,8 @@ const DEFAULT_CATEGORIES: VideoCategory[] = [
 ];
 
 const DEFAULT_QUICK_PERFORMERS: UserProfile[] = [
-  { id: "PBp3GSBO6igCKPwJyLZNmVEmamI3", displayName: "Austen" },
-  { id: "40ovmSoxdRNouOIeQrhDFSwkDEX2", displayName: "Skylar" },
+  { id: "PBp3GSBO6igCKPwJyLZNmVEmamI3", displayName: "Austen Cloud" },
+  { id: "40ovmSoxdRNouOIeQrhDFSwkDEX2", displayName: "Sky Guys Quest" },
 ];
 
 export class VideoCuratorLoader implements IVideoCuratorLoader {
@@ -34,6 +34,16 @@ export class VideoCuratorLoader implements IVideoCuratorLoader {
       if (performers.length === 0 && data.performerId && data.performerName) {
         performers = [{ id: data.performerId, displayName: data.performerName }];
       }
+      // Migrate legacy single sequence to linkedSequences array
+      let linkedSequences = data.linkedSequences || [];
+      if (linkedSequences.length === 0 && data.sequenceId && data.sequenceWord) {
+        linkedSequences = [{
+          id: data.sequenceId,
+          word: data.sequenceWord,
+          thumbnail: null,
+          ownerName: "",
+        }];
+      }
       return {
         shortcode: doc.id,
         videoUrl: data.videoUrl,
@@ -43,11 +53,13 @@ export class VideoCuratorLoader implements IVideoCuratorLoader {
         tags: data.tags || [],
         featured: data.featured || false,
         approved: data.approved || false,
-        sequenceId: data.sequenceId || null,
-        sequenceWord: data.sequenceWord || null,
+        linkedSequences,
         title: data.title || null,
         description: data.description || null,
         performers,
+        excluded: data.excluded || false,
+        crop: data.crop || undefined,
+        snip: data.snip || undefined,
       } as ShowcaseVideo;
     });
   }
@@ -62,10 +74,12 @@ export class VideoCuratorLoader implements IVideoCuratorLoader {
 
       if (snapshot.exists()) {
         const data = snapshot.data();
+        console.log("[VideoCuratorLoader] Loaded categories from Firestore:", data.categories);
         if (data.categories && Array.isArray(data.categories)) {
           return data.categories;
         }
       }
+      console.log("[VideoCuratorLoader] No categories in Firestore, using defaults");
       return DEFAULT_CATEGORIES;
     } catch (e) {
       console.warn("Failed to load categories, using defaults:", e);
@@ -83,10 +97,12 @@ export class VideoCuratorLoader implements IVideoCuratorLoader {
 
       if (snapshot.exists()) {
         const data = snapshot.data();
+        console.log("[VideoCuratorLoader] Loaded quick performers from Firestore:", data.performers);
         if (data.performers && Array.isArray(data.performers)) {
           return data.performers;
         }
       }
+      console.log("[VideoCuratorLoader] No quick performers in Firestore, using defaults");
       return DEFAULT_QUICK_PERFORMERS;
     } catch (e) {
       console.warn("Failed to load quick performers, using defaults:", e);

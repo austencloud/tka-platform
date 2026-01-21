@@ -5,8 +5,12 @@
    * Plays an array of videos in an endless loop with smooth crossfades.
    * Two video elements alternate - as one fades out, the next fades in.
    * Inspired by the endless spinner concept.
+   *
+   * Memory management: Uses VideoCache for blob URL management and releases
+   * video memory when swapping to prevent accumulation during long sessions.
    */
   import { onMount, onDestroy } from "svelte";
+  import { getVideoCache } from "$lib/shared/video";
 
   interface VideoItem {
     src: string;
@@ -24,6 +28,13 @@
     showInfo?: boolean;
   }>();
 
+  const videoCache = getVideoCache();
+
+  // Track which original URLs are currently loaded in each player
+  // so we can release them when swapping
+  let loadedUrlA = $state<string | null>(null);
+  let loadedUrlB = $state<string | null>(null);
+
   // Two video elements for crossfading
   let videoA = $state<HTMLVideoElement | null>(null);
   let videoB = $state<HTMLVideoElement | null>(null);
@@ -36,6 +47,36 @@
 
   // Current video info for display
   const currentVideo = $derived(videos[currentIndex] || null);
+
+  /**
+   * Load a video into a player element, releasing the previous video's blob URL
+   */
+  async function loadVideoIntoPlayer(
+    player: HTMLVideoElement,
+    originalUrl: string,
+    isPlayerA: boolean
+  ): Promise<void> {
+    // Release the previous video's blob URL if any
+    const previousUrl = isPlayerA ? loadedUrlA : loadedUrlB;
+    if (previousUrl && previousUrl !== originalUrl) {
+      videoCache.releaseVideo(previousUrl);
+    }
+
+    // Get cached URL (creates blob URL if cached, returns original if not)
+    const playbackUrl = await videoCache.getVideoUrl(originalUrl, {
+      cacheIfMissing: true,
+      priority: 5,
+    });
+
+    // Track what's loaded
+    if (isPlayerA) {
+      loadedUrlA = originalUrl;
+    } else {
+      loadedUrlB = originalUrl;
+    }
+
+    player.src = playbackUrl;
+  }
 
   // Opacity states for crossfade
   let opacityA = $state(1);
@@ -52,14 +93,17 @@
   /**
    * Preload the next video into the inactive player
    */
-  function preloadNext() {
+  async function preloadNext() {
     const nextIndex = getNextIndex(currentIndex);
     const nextVideo = videos[nextIndex];
     if (!nextVideo) return;
 
     const inactivePlayer = isVideoAActive ? videoB : videoA;
-    if (inactivePlayer && inactivePlayer.src !== nextVideo.src) {
-      inactivePlayer.src = nextVideo.src;
+    const isPlayerA = !isVideoAActive;
+    const currentLoadedUrl = isPlayerA ? loadedUrlA : loadedUrlB;
+
+    if (inactivePlayer && currentLoadedUrl !== nextVideo.src) {
+      await loadVideoIntoPlayer(inactivePlayer, nextVideo.src, isPlayerA);
       inactivePlayer.load();
     }
   }
@@ -74,6 +118,7 @@
     const nextIndex = getNextIndex(currentIndex);
     const activePlayer = isVideoAActive ? videoA : videoB;
     const inactivePlayer = isVideoAActive ? videoB : videoA;
+    const inactiveIsPlayerA = !isVideoAActive;
 
     if (!activePlayer || !inactivePlayer) {
       isTransitioning = false;
@@ -82,10 +127,17 @@
 
     // Ensure next video is loaded
     const nextVideo = videos[nextIndex];
-    if (inactivePlayer.src !== nextVideo.src) {
-      inactivePlayer.src = nextVideo.src;
+    const currentLoadedUrl = inactiveIsPlayerA ? loadedUrlA : loadedUrlB;
+
+    if (currentLoadedUrl !== nextVideo.src) {
+      await loadVideoIntoPlayer(inactivePlayer, nextVideo.src, inactiveIsPlayerA);
+      // Clear any previous handler before assigning new one
+      inactivePlayer.onloadeddata = null;
       await new Promise((resolve) => {
-        inactivePlayer.onloadeddata = resolve;
+        inactivePlayer.onloadeddata = () => {
+          inactivePlayer.onloadeddata = null; // Clean up after firing
+          resolve(undefined);
+        };
         inactivePlayer.load();
       });
     }
@@ -146,7 +198,7 @@
     }
   }
 
-  function goToPrev() {
+  async function goToPrev() {
     if (isTransitioning || videos.length <= 1) return;
     // For prev, we need to adjust the logic
     isTransitioning = true;
@@ -154,6 +206,7 @@
     const prevIndex = getPrevIndex(currentIndex);
     const activePlayer = isVideoAActive ? videoA : videoB;
     const inactivePlayer = isVideoAActive ? videoB : videoA;
+    const inactiveIsPlayerA = !isVideoAActive;
 
     if (!activePlayer || !inactivePlayer) {
       isTransitioning = false;
@@ -161,10 +214,13 @@
     }
 
     const prevVideo = videos[prevIndex];
-    inactivePlayer.src = prevVideo.src;
+    await loadVideoIntoPlayer(inactivePlayer, prevVideo.src, inactiveIsPlayerA);
+    // Clear any previous handler before assigning new one
+    inactivePlayer.onloadeddata = null;
     inactivePlayer.load();
 
     inactivePlayer.onloadeddata = () => {
+      inactivePlayer.onloadeddata = null; // Clean up after firing
       inactivePlayer.currentTime = 0;
       inactivePlayer.play().catch(() => {});
 
@@ -211,13 +267,67 @@
     }
   }
 
-  onMount(() => {
+  /**
+   * Jump directly to a specific video index
+   */
+  async function jumpToVideo(targetIndex: number) {
+    if (targetIndex === currentIndex || isTransitioning) return;
+
+    const activePlayer = isVideoAActive ? videoA : videoB;
+    const inactivePlayer = isVideoAActive ? videoB : videoA;
+    const inactiveIsPlayerA = !isVideoAActive;
+
+    if (!inactivePlayer) return;
+
+    await loadVideoIntoPlayer(inactivePlayer, videos[targetIndex].src, inactiveIsPlayerA);
+    // Clear any previous handler before assigning new one
+    inactivePlayer.onloadeddata = null;
+    inactivePlayer.load();
+
+    inactivePlayer.onloadeddata = () => {
+      inactivePlayer.onloadeddata = null; // Clean up after firing
+      isTransitioning = true;
+      inactivePlayer.currentTime = 0;
+      inactivePlayer.play().catch(() => {});
+
+      const startTime = performance.now();
+      const animate = (now: number) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / crossfadeDuration, 1);
+        const eased =
+          progress < 0.5
+            ? 2 * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+        if (isVideoAActive) {
+          opacityA = 1 - eased;
+          opacityB = eased;
+        } else {
+          opacityA = eased;
+          opacityB = 1 - eased;
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          activePlayer?.pause();
+          isVideoAActive = !isVideoAActive;
+          currentIndex = targetIndex;
+          isTransitioning = false;
+          preloadNext();
+        }
+      };
+      requestAnimationFrame(animate);
+    };
+  }
+
+  onMount(async () => {
     if (videos.length === 0) return;
 
     // Initialize first video
     const firstVideo = videos[0];
     if (videoA && firstVideo) {
-      videoA.src = firstVideo.src;
+      await loadVideoIntoPlayer(videoA, firstVideo.src, true);
       videoA.load();
       videoA.play().catch(() => {});
     }
@@ -229,9 +339,26 @@
   });
 
   onDestroy(() => {
-    // Cleanup
-    if (videoA) videoA.pause();
-    if (videoB) videoB.pause();
+    // Cleanup - pause videos and clear event handlers to prevent memory leaks
+    if (videoA) {
+      videoA.pause();
+      videoA.onloadeddata = null;
+      videoA.src = ""; // Release video buffer
+    }
+    if (videoB) {
+      videoB.pause();
+      videoB.onloadeddata = null;
+      videoB.src = ""; // Release video buffer
+    }
+
+    // Release blob URLs for loaded videos to free memory
+    // Videos stay cached in IndexedDB for fast reload
+    if (loadedUrlA) {
+      videoCache.releaseVideo(loadedUrlA);
+    }
+    if (loadedUrlB) {
+      videoCache.releaseVideo(loadedUrlB);
+    }
   });
 </script>
 
@@ -303,48 +430,7 @@
             class="dot"
             class:active={i === currentIndex}
             class:transitioning={isTransitioning && i === getNextIndex(currentIndex)}
-            onclick={() => {
-              if (i !== currentIndex && !isTransitioning) {
-                // Jump to specific video
-                const activePlayer = isVideoAActive ? videoA : videoB;
-                const inactivePlayer = isVideoAActive ? videoB : videoA;
-                if (inactivePlayer) {
-                  inactivePlayer.src = videos[i].src;
-                  inactivePlayer.load();
-                  inactivePlayer.onloadeddata = () => {
-                    isTransitioning = true;
-                    inactivePlayer.currentTime = 0;
-                    inactivePlayer.play().catch(() => {});
-
-                    const startTime = performance.now();
-                    const animate = (now: number) => {
-                      const elapsed = now - startTime;
-                      const progress = Math.min(elapsed / crossfadeDuration, 1);
-                      const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-
-                      if (isVideoAActive) {
-                        opacityA = 1 - eased;
-                        opacityB = eased;
-                      } else {
-                        opacityA = eased;
-                        opacityB = 1 - eased;
-                      }
-
-                      if (progress < 1) {
-                        requestAnimationFrame(animate);
-                      } else {
-                        activePlayer?.pause();
-                        isVideoAActive = !isVideoAActive;
-                        currentIndex = i;
-                        isTransitioning = false;
-                        preloadNext();
-                      }
-                    };
-                    requestAnimationFrame(animate);
-                  };
-                }
-              }
-            }}
+            onclick={() => jumpToVideo(i)}
             aria-label="Go to video {i + 1}"
           ></button>
         {/each}

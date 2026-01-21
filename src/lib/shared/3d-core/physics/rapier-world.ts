@@ -189,12 +189,15 @@ export function stepPhysics(state: PhysicsWorldState, deltaTime: number): void {
 
 /**
  * Ray cast into the physics world
+ *
+ * @param excludeCollider - Optional collider to exclude from results (e.g., player's own collider)
  */
 export function castRay(
 	state: PhysicsWorldState,
 	origin: { x: number; y: number; z: number },
 	direction: { x: number; y: number; z: number },
 	maxDistance: number,
+	excludeCollider?: unknown,
 ): RaycastResult | null {
 	if (!state.rapier || !state.world) return null;
 
@@ -205,17 +208,33 @@ export function castRay(
 		new RAPIER.Vector3(direction.x, direction.y, direction.z),
 	);
 
-	const hit = state.world.castRay(ray, maxDistance, true);
+	// Use castRayAndGetNormal with filter if we need to exclude a collider
+	let hit;
+	if (excludeCollider) {
+		// Cast with predicate to filter out the excluded collider
+		hit = state.world.castRayAndGetNormal(
+			ray,
+			maxDistance,
+			true, // solid
+			undefined, // filter flags
+			undefined, // filter groups
+			undefined, // filter exclude collider
+			undefined, // filter exclude rigid body
+			(collider: unknown) => collider !== excludeCollider, // predicate
+		);
+	} else {
+		hit = state.world.castRay(ray, maxDistance, true);
+	}
 
 	if (hit) {
+		// Handle both castRay (returns {collider, timeOfImpact}) and
+		// castRayAndGetNormal (returns {collider, timeOfImpact, normal})
 		const point = ray.pointAt(hit.timeOfImpact);
-		const hitCollider = hit.collider;
-		const normal = hitCollider.castRayAndGetNormal(ray, maxDistance, true)
-			?.normal;
+		const normal = hit.normal ?? { x: 0, y: 1, z: 0 };
 
 		return {
 			point: { x: point.x, y: point.y, z: point.z },
-			normal: normal ? { x: normal.x, y: normal.y, z: normal.z } : { x: 0, y: 1, z: 0 },
+			normal: { x: normal.x, y: normal.y, z: normal.z },
 			distance: hit.timeOfImpact,
 		};
 	}

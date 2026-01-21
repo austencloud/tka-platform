@@ -79,6 +79,8 @@
 	"module_library": "Biblioteca",
 	"module_compose": "Componer",
 	"module_train": "Práctica",
+	"module_watch": "Ver",
+	"module_desc_watch": "Explora videos de la comunidad",
 	"module_settings": "Ajustes",
 	"module_gallery": "Galería",
 	"module_feedback": "Comentario",

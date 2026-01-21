@@ -91,6 +91,12 @@
   let playerController: PlayerControllerState | null = $state(null);
   let physicsProvider: PhysicsProvider | null = $state(null);
 
+  // Camera rotation state (synced from UnifiedCameraController for MCP bridge)
+  let cameraYaw = $state(0);
+  let cameraPitch = $state(0.3);
+  let externalYaw: number | null = $state(null);
+  let externalPitch: number | null = $state(null);
+
   // Performer management (extracted to dedicated state factory)
   let performerManager = $state<PerformerManager | null>(null);
 
@@ -338,6 +344,54 @@
 
     servicesReady = true;
     setTimeout(() => (initialized = true), 50);
+
+    // Initialize MCP Game Bridge in dev mode
+    if (import.meta.env.DEV && typeof window !== 'undefined') {
+      import("$lib/shared/3d-core/debug/game-bridge").then(async ({ initGameBridge }) => {
+        import("$lib/shared/3d-core/debug/game-bridge-types").then(async ({ DEFAULT_BRIDGE_CONFIG }) => {
+          const bridge = initGameBridge({
+            physics: {
+              getPlayerPosition: () => physicsProvider?.getPlayerPosition() ?? null,
+              getPlayerVelocity: () => physicsProvider?.getVelocity() ?? { x: 0, y: 0, z: 0 },
+              isGrounded: () => physicsProvider?.isGrounded() ?? false,
+              movePlayer: (movement, deltaTime) => physicsProvider?.movePlayer(movement, deltaTime),
+              teleportPlayer: (position) => physicsProvider?.teleport?.(position),
+              raycast: (origin, direction, maxDistance) => {
+                // TODO: Implement via Rapier castRay
+                return { hit: false };
+              },
+            },
+            camera: {
+              getMode: () => cameraMode,
+              setMode: (mode: string) => {
+                if (mode === 'orbit' || mode === 'third_person' || mode === 'first_person') {
+                  cameraMode = mode as typeof cameraMode;
+                }
+              },
+              getYaw: () => cameraYaw,
+              getPitch: () => cameraPitch,
+              setYaw: (yaw: number) => { externalYaw = yaw; },
+              setPitch: (pitch: number) => { externalPitch = pitch; },
+            },
+            playback: {
+              getPerformerManager: () => performerManager,
+              getSpeed: () => speed,
+              setSpeed: (s: number) => { speed = s; },
+            },
+          }, {
+            debug: true,
+          });
+
+          // Auto-connect to MCP server
+          try {
+            await bridge.connect();
+            console.log("[Viewer3D] MCP Game Bridge connected");
+          } catch {
+            console.log("[Viewer3D] MCP Game Bridge not available (run the MCP server to enable)");
+          }
+        });
+      });
+    }
   });
 
   // Sync speed to all performer states
@@ -442,11 +496,16 @@
     });
   });
 
-  onDestroy(() => {
+  onDestroy(async () => {
     performerManager?.destroy();
     // Clean up Rapier physics
     if (physicsState?.world) {
       physicsState.world.free();
+    }
+    // Clean up MCP game bridge
+    if (import.meta.env.DEV && typeof window !== 'undefined') {
+      const { destroyGameBridge } = await import("$lib/shared/3d-core/debug/game-bridge");
+      destroyGameBridge();
     }
   });
 </script>
@@ -565,6 +624,9 @@
             {physicsProvider}
             enabled={true}
             onModeChange={(mode) => (cameraMode = mode)}
+            onRotationChange={(yaw, pitch) => { cameraYaw = yaw; cameraPitch = pitch; }}
+            {externalYaw}
+            {externalPitch}
           />
         {/if}
       </Scene3D>

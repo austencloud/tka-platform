@@ -87,7 +87,7 @@
   // Avatar/Camera state
   let cameraMode = $state<CameraMode>(CameraMode.FIRST_PERSON);
   const showAvatar = $derived(cameraMode !== CameraMode.FIRST_PERSON);
-  let showGridPlanes = $state(true);
+  let showGridPlanes = $state(false); // Disabled for exploration mode
 
   // Player position (updated from physics)
   let playerPosition = $state({ x: 0, y: 0, z: 0 });

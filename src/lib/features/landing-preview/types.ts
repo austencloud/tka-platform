@@ -5,26 +5,10 @@
 export interface VideoPerformer {
   id: string;
   displayName: string;
-}
-
-export interface ShowcaseVideo {
-  shortcode: string;
-  videoUrl: string;
-  instagramDate: Date | null;
-  fileSize: number;
-  category: string | null;
-  tags: string[];
-  featured: boolean;
-  approved: boolean;
-  sequenceId: string | null;
-  sequenceWord: string | null;
-  title: string | null;
-  description: string | null;
-  /** @deprecated Use performers array instead */
-  performerId?: string | null;
-  /** @deprecated Use performers array instead */
-  performerName?: string | null;
-  performers: VideoPerformer[];
+  /** If true, this is an external performer not yet in the system */
+  isExternal?: boolean;
+  /** Instagram handle for external performers (without @) */
+  instagramHandle?: string;
 }
 
 export interface VideoCategory {
@@ -49,6 +33,76 @@ export interface MatchedSequence {
   isPublic: boolean;
 }
 
+/**
+ * A sequence linked to a video for curation
+ */
+export interface LinkedSequence {
+  id: string;
+  word: string;
+  thumbnail: string | null;
+  ownerName: string;
+}
+
+export type AspectRatioPreset =
+  | "16:9"
+  | "1:1"
+  | "9:16"
+  | "4:5"
+  | "original";
+
+export const ASPECT_RATIO_VALUES: Record<Exclude<AspectRatioPreset, "original">, number> = {
+  "16:9": 16 / 9,
+  "1:1": 1,
+  "9:16": 9 / 16,
+  "4:5": 4 / 5,
+};
+
+/**
+ * Normalized crop data for video display
+ * All position values are normalized (0-1) relative to video dimensions
+ */
+export interface VideoCropData {
+  /** Normalized pan offset from center (-0.5 to 0.5) */
+  position: { x: number; y: number };
+  /** Zoom scale (1.0 = no zoom, 2.0 = 2x zoom) */
+  scale: number;
+  /** Target aspect ratio (e.g., 1.0 for 1:1, 1.777 for 16:9) */
+  aspect: number;
+  /** Human-readable aspect label */
+  aspectLabel: AspectRatioPreset;
+}
+
+/**
+ * Snip data for video timeline trimming
+ * All times are in seconds (not normalized) for precision
+ */
+export interface VideoSnipData {
+  /** Start time in seconds */
+  inPoint: number;
+  /** End time in seconds */
+  outPoint: number;
+  /** Original video duration (for validation) */
+  duration: number;
+}
+
+export interface ShowcaseVideo {
+  shortcode: string;
+  videoUrl: string;
+  instagramDate: Date | null;
+  fileSize: number;
+  category: string | null;
+  tags: string[];
+  featured: boolean;
+  approved: boolean;
+  linkedSequences: LinkedSequence[];
+  title: string | null;
+  description: string | null;
+  performers: VideoPerformer[];
+  excluded: boolean;
+  crop?: VideoCropData;
+  snip?: VideoSnipData;
+}
+
 export interface CurationProgress {
   current: number;
   total: number;
@@ -68,3 +122,8 @@ export interface VideoStats {
   uncategorized: number;
   withWord: number;
 }
+
+/**
+ * Video editor overlay modes
+ */
+export type VideoEditorMode = "closed" | "browse" | "curate" | "link";

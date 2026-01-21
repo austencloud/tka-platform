@@ -60,6 +60,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Quick performers configuration - readable by authenticated users, writable by admins
+    match /config/quickPerformers {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // Feature flag audit log - append-only for admins
     match /audit/featureFlags/entries/{entryId} {
       allow read: if isAdmin();

@@ -252,7 +252,7 @@
     background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(103, 232, 249, 0.3));
     border: 1px solid rgba(103, 232, 249, 0.4);
     border-radius: 20px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: #67e8f9;
     text-transform: uppercase;
@@ -292,6 +292,11 @@
     transform: translateY(0);
   }
 
+  .action-btn:focus-visible {
+    outline: 2px solid #67e8f9;
+    outline-offset: 2px;
+  }
+
   .stats-section {
     display: flex;
     flex-direction: column;
@@ -322,8 +327,8 @@
   }
 
   .stat-label {
-    font-size: 0.7rem;
-    color: #6b7280;
+    font-size: var(--font-size-compact, 12px);
+    color: #9ca3af;
     text-transform: uppercase;
   }
 
@@ -344,7 +349,7 @@
   .pill {
     padding: 4px 10px;
     border-radius: 12px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
   }
 
@@ -382,6 +387,32 @@
     .snowfall-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
+    }
+  }
+
+  /* Accessibility: Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .action-btn,
+    .pill {
+      transition: none;
+      animation: none;
+    }
+  }
+
+  /* Accessibility: High contrast */
+  @media (prefers-contrast: high) {
+    .controls,
+    .preview {
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .stat {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .label,
+    .stat-label {
+      color: #d1d5db;
     }
   }
 </style>

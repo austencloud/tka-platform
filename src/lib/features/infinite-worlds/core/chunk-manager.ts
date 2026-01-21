@@ -58,7 +58,10 @@ import type {
   RealZoneLoadedMessage,
   SetStageZoneMessage,
   ClearStageZoneMessage,
+  SetSpawnClearingMessage,
+  ClearSpawnClearingMessage,
 } from "../workers/chunk-generator.worker";
+import type { CampgroundConfig } from "./realm-config";
 import {
   type RealTerrainZone,
   type ImportedTerrainData,
@@ -135,6 +138,15 @@ export class ChunkManager {
     center: { x: number; z: number };
     radius: number;
     blendWidth: number;
+  } | null = null;
+
+  // Spawn clearing (grassy meadow with campground)
+  private spawnClearingConfig: {
+    center: { x: number; z: number };
+    radius: number;
+    blendWidth: number;
+    waterLevel: number;
+    campground: CampgroundConfig;
   } | null = null;
 
   // Callbacks
@@ -706,6 +718,123 @@ export class ChunkManager {
     }
 
     console.log(`[ChunkManager] Regenerating ${chunksToRegenerate.length} chunks in stage zone`);
+
+    // Unload and re-queue these chunks
+    for (const key of chunksToRegenerate) {
+      const state = this.chunks.get(key);
+      if (state) {
+        state.loadState = "pending";
+        state.meshData = null;
+        this.loadQueue.push(key);
+      }
+    }
+
+    this.processQueue();
+  }
+
+  // ==========================================================================
+  // SPAWN CLEARING
+  // ==========================================================================
+
+  /**
+   * Set a spawn clearing - a grassy meadow above water level with campground
+   * This creates a safe, natural spawn point that blends into procedural forest
+   */
+  setSpawnClearing(
+    center: { x: number; z: number },
+    radius: number,
+    blendWidth: number,
+    waterLevel: number,
+    campground: CampgroundConfig
+  ): void {
+    this.spawnClearingConfig = { center, radius, blendWidth, waterLevel, campground };
+
+    console.log(`[ChunkManager] Setting spawn clearing: center=(${center.x}, ${center.z}), radius=${radius}m, blend=${blendWidth}m, waterLevel=${waterLevel}`);
+
+    const message: SetSpawnClearingMessage = {
+      type: "set-spawn-clearing",
+      center,
+      radius,
+      blendWidth,
+      waterLevel,
+      campground,
+    };
+
+    // Send to all workers
+    for (const worker of this.workers) {
+      worker.postMessage(message);
+    }
+
+    // Regenerate affected chunks
+    this.regenerateChunksInSpawnClearing(center, radius + blendWidth);
+  }
+
+  /**
+   * Clear the spawn clearing
+   */
+  clearSpawnClearing(): void {
+    if (!this.spawnClearingConfig) return;
+
+    const prevConfig = this.spawnClearingConfig;
+    this.spawnClearingConfig = null;
+
+    console.log(`[ChunkManager] Clearing spawn clearing`);
+
+    const message: ClearSpawnClearingMessage = {
+      type: "clear-spawn-clearing",
+    };
+
+    // Send to all workers
+    for (const worker of this.workers) {
+      worker.postMessage(message);
+    }
+
+    // Regenerate previously affected chunks
+    this.regenerateChunksInSpawnClearing(prevConfig.center, prevConfig.radius + prevConfig.blendWidth);
+  }
+
+  /**
+   * Check if a spawn clearing is set
+   */
+  hasSpawnClearing(): boolean {
+    return this.spawnClearingConfig !== null;
+  }
+
+  /**
+   * Get the spawn clearing config (for campground object placement)
+   */
+  getSpawnClearingConfig(): typeof this.spawnClearingConfig {
+    return this.spawnClearingConfig;
+  }
+
+  /**
+   * Regenerate chunks that overlap with the spawn clearing
+   */
+  private regenerateChunksInSpawnClearing(center: { x: number; z: number }, totalRadius: number): void {
+    const { chunkSize } = this.config;
+
+    // Find chunks that intersect the spawn clearing area
+    const chunksToRegenerate: ChunkKey[] = [];
+
+    for (const [key, state] of this.chunks) {
+      if (state.loadState !== "loaded") continue;
+
+      const [chunkX, , chunkZ] = this.parseChunkKey(key);
+      const chunkCenterX = (chunkX + 0.5) * chunkSize;
+      const chunkCenterZ = (chunkZ + 0.5) * chunkSize;
+
+      // Check if chunk center is within total radius + chunk diagonal
+      const dx = chunkCenterX - center.x;
+      const dz = chunkCenterZ - center.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      const chunkDiagonal = chunkSize * Math.SQRT2;
+
+      if (dist < totalRadius + chunkDiagonal) {
+        chunksToRegenerate.push(key);
+      }
+    }
+
+    console.log(`[ChunkManager] Regenerating ${chunksToRegenerate.length} chunks in spawn clearing`);
 
     // Unload and re-queue these chunks
     for (const key of chunksToRegenerate) {

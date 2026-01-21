@@ -35,6 +35,19 @@ export interface IVideoCache {
    * Clear entire cache
    */
   clearAll(): Promise<void>;
+
+  /**
+   * Release a video's blob URL from memory.
+   * The video stays cached in IndexedDB - only the in-memory blob URL is revoked.
+   * Call this when a video is no longer being displayed to prevent memory leaks.
+   */
+  releaseVideo(originalUrl: string): void;
+
+  /**
+   * Release all currently held blob URLs.
+   * Useful for cleanup when a video player component unmounts.
+   */
+  releaseAllBlobUrls(): void;
 }
 
 export interface GetVideoOptions {

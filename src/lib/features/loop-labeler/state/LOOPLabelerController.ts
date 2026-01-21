@@ -14,6 +14,8 @@ import type {
   LabeledSequence,
   FilterMode,
 } from "../domain/models/label-models";
+import type { LOOPDetectionResult } from "../services/contracts/ILOOPDetector";
+import type { SequenceEntry } from "../domain/models/sequence-models";
 
 const STORAGE_KEY = "tka-loop-labeler-state";
 
@@ -419,6 +421,107 @@ export class LOOPLabelerController {
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
+  }
+
+  // ============================================================
+  // LABELING OPERATIONS
+  // ============================================================
+
+  /**
+   * Verify a sequence - marks the computed detection as verified.
+   * With on-the-fly detection, this just marks "verified" without storing designations.
+   */
+  async verifySequence(
+    sequence: SequenceEntry,
+    detection: LOOPDetectionResult | null,
+    currentLabel: LabeledSequence | null
+  ): Promise<void> {
+    const label: LabeledSequence = {
+      word: sequence.word,
+      designations: [], // Don't store - computed on-the-fly
+      isFreeform: detection?.isFreeform ?? false,
+      isModular: detection?.isModular ?? false,
+      needsVerification: false, // Mark as verified
+      labeledAt: new Date().toISOString(),
+      notes: currentLabel?.notes || "",
+      sections: currentLabel?.sections || [],
+      stepPairs: currentLabel?.stepPairs || [],
+    };
+
+    await this.saveLabel(label);
+  }
+
+  /**
+   * Mark a sequence as freeform (circular but no recognizable pattern).
+   */
+  async markAsFreeform(
+    sequence: SequenceEntry,
+    currentLabel: LabeledSequence | null,
+    notes: string
+  ): Promise<void> {
+    const label: LabeledSequence = {
+      word: sequence.word,
+      designations: [],
+      isFreeform: true,
+      isModular: false,
+      needsVerification: false,
+      labeledAt: new Date().toISOString(),
+      notes: notes || "",
+      sections: currentLabel?.sections || [],
+      stepPairs: currentLabel?.stepPairs || [],
+    };
+
+    await this.saveLabel(label);
+  }
+
+  /**
+   * Mark a sequence as unknown (needs further investigation).
+   */
+  async markAsUnknown(
+    sequence: SequenceEntry,
+    currentLabel: LabeledSequence | null,
+    notes: string
+  ): Promise<void> {
+    const label: LabeledSequence = {
+      word: sequence.word,
+      designations: [],
+      isFreeform: false,
+      isModular: false,
+      isUnknown: true,
+      needsVerification: true, // Keep in review queue
+      labeledAt: new Date().toISOString(),
+      notes: notes || "Marked as unknown - needs further investigation",
+      sections: currentLabel?.sections || [],
+      stepPairs: currentLabel?.stepPairs || [],
+    };
+
+    await this.saveLabel(label);
+  }
+
+  /**
+   * Save a modular detection result directly.
+   * Used when detection found a modular pattern.
+   */
+  async saveModularDetection(
+    sequence: SequenceEntry,
+    detection: LOOPDetectionResult,
+    currentLabel: LabeledSequence | null,
+    notes: string
+  ): Promise<void> {
+    const label: LabeledSequence = {
+      word: sequence.word,
+      designations: [],
+      isFreeform: false,
+      isModular: true,
+      needsVerification: false,
+      labeledAt: new Date().toISOString(),
+      notes: notes || "",
+      sections: currentLabel?.sections || [],
+      stepPairs: currentLabel?.stepPairs || [],
+      stepPairGroups: detection.stepPairGroups,
+    };
+
+    await this.saveLabel(label);
   }
 
   // ============================================================

@@ -236,6 +236,30 @@ export class VideoCache implements IVideoCache {
     }
   }
 
+  /**
+   * Release a video's blob URL from memory.
+   * The video stays cached in IndexedDB - only the in-memory blob URL is revoked.
+   * Call this when a video is no longer being displayed to prevent memory leaks.
+   */
+  releaseVideo(originalUrl: string): void {
+    const blobUrl = this.blobUrls.get(originalUrl);
+    if (blobUrl) {
+      URL.revokeObjectURL(blobUrl);
+      this.blobUrls.delete(originalUrl);
+    }
+  }
+
+  /**
+   * Release all currently held blob URLs.
+   * Useful for cleanup when a video player component unmounts.
+   */
+  releaseAllBlobUrls(): void {
+    for (const blobUrl of this.blobUrls.values()) {
+      URL.revokeObjectURL(blobUrl);
+    }
+    this.blobUrls.clear();
+  }
+
   // --- Private methods ---
 
   private async getCachedVideo(url: string): Promise<CachedVideo | null> {

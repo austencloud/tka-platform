@@ -231,6 +231,12 @@
     transform: scale(0.95);
   }
 
+  .delete-btn:focus-visible {
+    outline: 2px solid #f87171;
+    outline-offset: 2px;
+    opacity: 1;
+  }
+
   .delete-btn i {
     font-size: 0.75rem;
   }
@@ -264,9 +270,9 @@
   }
 
   .image-label {
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
     font-family: monospace;
-    color: #6b7280;
+    color: #9ca3af;
     text-align: center;
     word-break: break-all;
   }

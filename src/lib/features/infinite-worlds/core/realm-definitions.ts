@@ -41,8 +41,8 @@ export const HANNONS_CAMP_CONFIG: RealmConfig = {
   },
 
   spawn: {
-    // Main field area
-    position: [231, 0, -96],
+    // Main field area - Y ignored, snapToGround finds actual ground
+    position: [231, 50, -96],
     // Face roughly east (88 degrees)
     yaw: (88 * Math.PI) / 180,
   },
@@ -64,19 +64,19 @@ export const HANNONS_CAMP_CONFIG: RealmConfig = {
 /**
  * Performance Stage
  *
- * Stage area surrounded by forest. The stage is a flat circular
- * area at the world origin, with forest terrain blending in beyond.
- * Users can perform sequences on the stage grid, then walk away
- * into the procedural forest terrain.
+ * Spawn in a natural campground clearing, then explore procedural forest.
+ * The clearing is a grassy meadow above water level with campground objects
+ * (fire pit, tent, log seating, torches). Forest blends in at the perimeter.
  */
 export const PERFORMANCE_STAGE_CONFIG: RealmConfig = {
   id: "performance-stage",
   name: "Performance Stage",
-  description: "Stage area surrounded by forest",
+  description: "Campground clearing surrounded by forest",
 
   terrain: {
     type: "procedural",
     seed: 42,  // Forest seed
+    waterLevel: 5,  // Water at Y=5
   },
 
   chunks: {
@@ -92,7 +92,7 @@ export const PERFORMANCE_STAGE_CONFIG: RealmConfig = {
   },
 
   spawn: {
-    position: [0, 2, 0],  // Center of stage, slightly elevated
+    position: [0, 50, 0],  // Center of clearing - Y ignored, snapToGround finds actual ground
     yaw: 0,
   },
 
@@ -105,10 +105,19 @@ export const PERFORMANCE_STAGE_CONFIG: RealmConfig = {
     playerHeight: 1.7,
   },
 
-  stageZone: {
+  // Spawn clearing replaces stage zone for a more natural feel
+  spawnClearing: {
     enabled: true,
-    radius: 15,      // 15m flat stage area
-    blendWidth: 10,  // 10m transition to forest
+    center: { x: 0, z: 0 },
+    radius: 20,       // 20m clear meadow
+    blendWidth: 15,   // 15m transition to forest
+    campground: {
+      enabled: true,
+      firePit: true,
+      tent: true,
+      seatingLogs: 3,
+      torches: 4,
+    },
   },
 };
 
@@ -193,7 +202,7 @@ export const FLAT_TESTING_CONFIG: RealmConfig = {
   },
 
   spawn: {
-    position: [0, 2, 0],
+    position: [0, 50, 0],  // Y ignored, snapToGround finds actual ground
     yaw: 0,
   },
 

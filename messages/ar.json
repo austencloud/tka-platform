@@ -79,6 +79,8 @@
 	"module_library": "مكتبة",
 	"module_compose": "تأليف",
 	"module_train": "يمارس",
+	"module_watch": "مشاهدة",
+	"module_desc_watch": "تصفح مقاطع الفيديو من المجتمع",
 	"module_settings": "إعدادات",
 	"module_gallery": "معرض",
 	"module_feedback": "تعليق",

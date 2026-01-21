@@ -43,6 +43,7 @@ import {
   ADMIN_TABS,
   ACCOUNT_TABS,
   SETTINGS_TABS,
+  WATCH_TABS,
 } from "../config/tab-definitions";
 
 import { MODULE_DEFINITIONS } from "../config/module-definitions";
@@ -51,7 +52,6 @@ import { MODULE_DEFINITIONS } from "../config/module-definitions";
 import {
   CURRENT_MODULE_KEY,
   ACTIVE_TAB_KEY,
-  MODULE_LAST_TABS_KEY,
   CURRENT_CREATE_MODE_KEY,
   CURRENT_LEARN_MODE_KEY,
   PREVIOUS_MODULE_SESSION_KEY,
@@ -80,6 +80,7 @@ export {
   ML_TRAINING_TABS,
   FEEDBACK_TABS,
   TRAIN_TABS,
+  WATCH_TABS,
 } from "../config/tab-definitions";
 
 export { MODULE_DEFINITIONS } from "../config/module-definitions";
@@ -99,7 +100,6 @@ export function createNavigationState() {
   // Module-based state
   let currentModule = $state<ModuleId>("dashboard");
   let activeTab = $state<string>(""); // Active tab within the current module (dashboard has no tabs)
-  let lastTabByModule = $state<Partial<Record<ModuleId, string>>>({});
 
   // Track previous module for settings toggle behavior
   let previousModule = $state<ModuleId | null>(loadPreviousModuleFromSession());
@@ -180,39 +180,6 @@ export function createNavigationState() {
       currentModule = savedModule as ModuleId;
     }
 
-    // Load last active tab for each module
-    const savedLastTabs = localStorage.getItem(MODULE_LAST_TABS_KEY);
-    if (savedLastTabs) {
-      try {
-        const parsed = JSON.parse(savedLastTabs) as Record<string, string>;
-        const filteredEntries = Object.entries(parsed).filter(
-          ([moduleId, tabId]) => {
-            const moduleDefinition = MODULE_DEFINITIONS.find(
-              (m) => m.id === moduleId
-            );
-            return (
-              moduleDefinition?.sections.some((tab) => tab.id === tabId) ??
-              false
-            );
-          }
-        );
-
-        if (filteredEntries.length > 0) {
-          lastTabByModule = filteredEntries.reduce<
-            Partial<Record<ModuleId, string>>
-          >((acc, [moduleId, tabId]) => {
-            acc[moduleId as ModuleId] = tabId;
-            return acc;
-          }, {});
-        }
-      } catch (error) {
-        console.warn(
-          "NavigationState: failed to parse saved module tab map:",
-          error
-        );
-      }
-    }
-
     // Load last open panel for each tab via panelPersistenceState
     // Validator ensures saved tab keys are still valid
     panelPersistenceState.loadFromStorage((tabKey: string) => {
@@ -226,25 +193,8 @@ export function createNavigationState() {
       );
     });
 
-    // Load current active tab
-    const savedActiveTab = localStorage.getItem(ACTIVE_TAB_KEY);
-    if (savedActiveTab) {
-      activeTab = savedActiveTab;
-    }
-
-    // Remember the last active tab for current module (inline to avoid closure warning)
-    const rememberedTab = lastTabByModule[currentModule];
-    if (rememberedTab) {
-      const moduleDefinition = MODULE_DEFINITIONS.find(
-        (m) => m.id === currentModule
-      );
-      if (moduleDefinition?.sections.some((tab) => tab.id === rememberedTab)) {
-        activeTab = rememberedTab;
-      }
-    }
-
     // ─────────────────────────────────────────────────────────────────────────────
-    // URL Path Parsing - URL takes priority over localStorage for deep linking
+    // URL Path Parsing - URL is the source of truth for navigation
     // Parses paths like /realm/gallery → module: "realm", tab: "gallery"
     // ─────────────────────────────────────────────────────────────────────────────
     if (typeof window !== "undefined") {
@@ -266,32 +216,23 @@ export function createNavigationState() {
           // URL has valid module - use it
           currentModule = urlModule as ModuleId;
 
-          // If URL also specifies a tab, use it if valid
-          if (urlTab && urlModuleDefinition.sections.length > 0) {
-            const validTab = urlModuleDefinition.sections.find(
-              (s) => s.id === urlTab
-            );
+          // Determine the tab to use
+          if (urlModuleDefinition.sections.length > 0) {
+            // Module has tabs - check if URL specifies a valid one
+            const validTab = urlTab
+              ? urlModuleDefinition.sections.find((s) => s.id === urlTab)
+              : null;
+
             if (validTab) {
+              // URL has valid tab - use it
               activeTab = urlTab;
-              // Also remember this tab for the module
-              lastTabByModule[urlModule as ModuleId] = urlTab;
             } else {
-              // URL tab not valid - use remembered or default tab
-              const remembered = lastTabByModule[urlModule as ModuleId];
-              const defaultTab =
+              // No valid tab in URL - use default tab
+              activeTab =
                 urlModule === "create"
                   ? DEFAULT_CREATE_TAB
                   : urlModuleDefinition.sections[0]?.id || "";
-              activeTab = remembered || defaultTab;
             }
-          } else if (urlModuleDefinition.sections.length > 0) {
-            // Module has tabs but URL doesn't specify one - use remembered or default
-            const remembered = lastTabByModule[urlModule as ModuleId];
-            const defaultTab =
-              urlModule === "create"
-                ? DEFAULT_CREATE_TAB
-                : urlModuleDefinition.sections[0]?.id || "";
-            activeTab = remembered || defaultTab;
           } else {
             // Module has no tabs
             activeTab = "";
@@ -344,27 +285,11 @@ export function createNavigationState() {
     }
   }
 
-  function persistLastTabs() {
-    if (typeof localStorage === "undefined") {
-      return;
-    }
-
-    try {
-      localStorage.setItem(
-        MODULE_LAST_TABS_KEY,
-        JSON.stringify(lastTabByModule)
-      );
-    } catch (error) {
-      console.warn("NavigationState: failed to persist module tab map:", error);
-    }
-  }
-
   // Module-based functions
-  // targetTab: Optional tab to set directly (bypasses remembered/default tab logic)
+  // targetTab: Optional tab to set directly (bypasses default tab logic)
   function setCurrentModule(moduleId: ModuleId, targetTab?: string) {
     if (MODULE_DEFINITIONS.some((m) => m.id === moduleId)) {
       const previousModuleLocal = currentModule;
-      const _previousTabLocal = activeTab;
 
       // Track previous module/tab for feedback context
       // Save current location when LEAVING it (unless leaving feedback/settings)
@@ -385,11 +310,11 @@ export function createNavigationState() {
 
       currentModule = moduleId;
 
-      // Set default tab for the module
+      // Determine the tab - use targetTab if valid, otherwise use default
       const moduleDefinition = MODULE_DEFINITIONS.find(
         (m) => m.id === moduleId
       );
-      let nextTab = activeTab;
+      let nextTab = "";
       if (moduleDefinition && moduleDefinition.sections.length > 0) {
         // If targetTab is specified and valid, use it directly
         if (
@@ -398,29 +323,12 @@ export function createNavigationState() {
         ) {
           nextTab = targetTab;
         } else {
-          // Otherwise fall back to remembered or default tab
-          const remembered = lastTabByModule[moduleId];
-          const defaultTab =
+          // Use default tab for the module
+          nextTab =
             moduleId === "create"
               ? DEFAULT_CREATE_TAB
               : moduleDefinition.sections[0]?.id || "";
-          nextTab =
-            remembered &&
-            moduleDefinition.sections.some((tab) => tab.id === remembered)
-              ? remembered
-              : defaultTab;
         }
-
-        lastTabByModule = {
-          ...lastTabByModule,
-          [moduleId]: nextTab,
-        };
-      } else {
-        // Module has no sections (e.g., dashboard) - clear the active tab
-        nextTab = "";
-        const updatedMap = { ...lastTabByModule };
-        delete updatedMap[moduleId];
-        lastTabByModule = updatedMap;
       }
 
       activeTab = nextTab;
@@ -462,8 +370,6 @@ export function createNavigationState() {
           localStorage.removeItem(ACTIVE_TAB_KEY);
         }
       }
-
-      persistLastTabs();
 
       // Sync with mode-specific state
       const tab = getActiveTab();
@@ -516,12 +422,6 @@ export function createNavigationState() {
       if (typeof localStorage !== "undefined") {
         localStorage.setItem(ACTIVE_TAB_KEY, tabId);
       }
-
-      lastTabByModule = {
-        ...lastTabByModule,
-        [currentModule]: tabId,
-      };
-      persistLastTabs();
 
       // Sync with mode-specific state
       const module = getCurrentModule();

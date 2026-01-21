@@ -1,19 +1,13 @@
 <script lang="ts">
 	/**
-	 * Worlds Destination - Wrapper for procedural infinite terrain module
+	 * Worlds Destination - Campground clearing with procedural forest
 	 *
-	 * Now uses Threlte-based WorldScene for full avatar parity with
-	 * Stage and Gallery destinations. Features:
-	 * - Unified camera controller (V to cycle modes)
-	 * - Full Avatar3D with GLTF models
-	 * - Grid planes for reference
-	 * - Physics-based movement with Rapier
-	 *
-	 * Uses WorldScene with PROCEDURAL_WORLD_CONFIG.
+	 * Spawn in a grassy meadow with fire pit, tent, and log seating.
+	 * Walk out into procedurally generated forest terrain.
 	 */
 
 	import WorldScene from "./components/WorldScene.svelte";
-	import { PROCEDURAL_WORLD_CONFIG } from "./core/realm-definitions";
+	import { PERFORMANCE_STAGE_CONFIG } from "./core/realm-definitions";
 </script>
 
-<WorldScene realmConfig={PROCEDURAL_WORLD_CONFIG} />
+<WorldScene realmConfig={PERFORMANCE_STAGE_CONFIG} />

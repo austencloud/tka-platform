@@ -445,6 +445,42 @@ export const FEEDBACK_TABS: Section[] = [
   },
 ];
 
+// Watch tabs configuration - video browsing hub
+export const WATCH_TABS: Section[] = [
+  {
+    id: "feed",
+    label: "Feed",
+    icon: '<i class="fas fa-stream" aria-hidden="true"></i>',
+    description: "Public videos from the community",
+    color: "#ef4444",
+    gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
+  },
+  {
+    id: "library",
+    label: "Library",
+    icon: '<i class="fas fa-photo-video" aria-hidden="true"></i>',
+    description: "Your videos and collaborations",
+    color: "#3b82f6",
+    gradient: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
+  },
+  {
+    id: "showcase",
+    label: "Showcase",
+    icon: '<i class="fas fa-star" aria-hidden="true"></i>',
+    description: "Curated performances",
+    color: "#fbbf24",
+    gradient: "linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%)",
+  },
+  {
+    id: "curator",
+    label: "Curator",
+    icon: '<i class="fas fa-tags" aria-hidden="true"></i>',
+    description: "Tag and curate Instagram videos",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+  },
+];
+
 // Landing Page tabs configuration (admin-only, for iterating on public pages)
 // These mirror the actual public routes: /landing, /about, /terms, /privacy, /roots
 export const LANDING_PAGE_TABS: Section[] = [
@@ -463,14 +499,6 @@ export const LANDING_PAGE_TABS: Section[] = [
     description: "Video gallery layout prototypes",
     color: "#6366f1",
     gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
-  },
-  {
-    id: "curator",
-    label: "Curator",
-    icon: '<i class="fas fa-tags" aria-hidden="true"></i>',
-    description: "Tag and curate Instagram videos",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
   {
     id: "about",

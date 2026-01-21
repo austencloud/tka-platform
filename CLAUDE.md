@@ -102,7 +102,22 @@ The agent must **run verification itself and include the output as proof**.
 
 ## Writing Style: Avoid AI-isms
 
-**When writing user-facing copy, marketing text, documentation, or any prose for this project, avoid these patterns that scream "AI wrote this":**
+**STOP. Before writing ANY user-facing text (headings, descriptions, button labels, section intros), ask yourself: "Would Austen say this out loud at a fire jam?" If it sounds like a press release, rewrite it.**
+
+When writing user-facing copy, marketing text, documentation, or any prose for this project, avoid these patterns that scream "AI wrote this":
+
+### TKA-Specific Bad Examples
+
+These are real mistakes Claude made on this project. Don't repeat them.
+
+| BAD (what Claude wrote) | GOOD (what it should be) | Why |
+|-------------------------|--------------------------|-----|
+| "Flow Artists in Motion" | "Real Performances" | Vague marketing fluff vs. specific |
+| "Watch skilled performers bring sequences to life" | "Sequences performed with staves, poi, and fans" | Empty praise vs. concrete description |
+| "Empower your flow journey" | "Practice mode with camera feedback" | Meaningless vs. what it actually does |
+| "Seamlessly integrate notation into your practice" | "See the pictograph while you spin" | Corporate speak vs. plain language |
+| "Unlock the full potential of your movement vocabulary" | "Search the sequence library" | Buzzwords vs. what you actually do |
+| "Whether you're a beginner or seasoned professional" | (just delete it) | Nobody talks like this |
 
 ### Banned Patterns
 
@@ -147,11 +162,14 @@ AI writes uniform medium-length sentences. Real writing varies.
 
 Short punches. Then longer explanations when the idea needs room to breathe. Fragments work. Staccato. The lack of variation (called "burstiness") is measurable by detectors.
 
-### The Test
+### The Fire Jam Test
 
-Read it out loud. Does it sound like:
-- A person explaining something to a friend? ✓
-- A press release or landing page template? ✗
+Read it out loud. Would Austen say this to another spinner at a fire jam?
+
+- "Hey, check out these real performances" ✓
+- "Behold, flow artists in motion bringing sequences to life" ✗
+
+If you wouldn't say it out loud without cringing, rewrite it.
 
 ### When Writing Copy
 
@@ -161,6 +179,7 @@ Read it out loud. Does it sound like:
 4. **Check features exist.** Don't describe capabilities the software doesn't have.
 5. **No first person** on pages without a signature. "TKA does X" not "I built X."
 6. **Vary sentence length.** Mix short and long. Break perfect patterns.
+7. **Default to plain.** When in doubt, be boring. "Videos" not "Visual Showcase".
 
 ---
 

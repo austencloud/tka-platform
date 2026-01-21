@@ -317,6 +317,13 @@ export default defineConfig({
             handler: "NetworkOnly",
           },
           {
+            // 🎬 TKA Firebase Storage videos (alternate URL format)
+            // Videos use storage.googleapis.com/{bucket}/... format
+            // NetworkOnly avoids caching large video files and prevents no-response errors
+            urlPattern: /^https:\/\/storage\.googleapis\.com\/the-kinetic-alphabet\.firebasestorage\.app\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
             // 📦 CDN resources (jsdelivr, unpkg, cdnjs) - often return opaque responses
             // Let the browser cache these natively instead of fighting with service worker
             urlPattern: /^https:\/\/(cdn\.jsdelivr\.net|unpkg\.com|cdnjs\.cloudflare\.com)\/.*/i,

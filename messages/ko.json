@@ -79,6 +79,8 @@
 	"module_library": "도서관",
 	"module_compose": "구성하다",
 	"module_train": "관행",
+	"module_watch": "시청",
+	"module_desc_watch": "커뮤니티 동영상 탐색",
 	"module_settings": "설정",
 	"module_gallery": "갱도",
 	"module_feedback": "피드백",

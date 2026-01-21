@@ -133,14 +133,53 @@ Extracting thin wrappers (switch statements, property setters, ctx.save/restore 
 
 ---
 
-## Release Claim
+## Concluding Monolith Review
 
-After completing refactor:
+After analyzing a file, you must reach one of two conclusions:
+
+### Option A: Decompose
+
+If decomposition is warranted:
+1. Get user confirmation
+2. Extract services following the mandatory pattern
+3. Release claim when done: `node scripts/find-monoliths.cjs --release "lib/path/to/File.svelte"`
+
+### Option B: Mark as Audited (Leave It Alone)
+
+If the Four Perspectives Test says leave it alone:
+1. Present findings with clear reasoning
+2. Offer to mark as audited so it won't appear in future `/monolith` runs
+3. If user agrees, run:
 
 ```bash
-node scripts/find-monoliths.cjs --release "lib/path/to/File.svelte"
+node scripts/find-monoliths.cjs --mark-audited "lib/path/to/File.svelte" "Reason: 4/4 perspectives say leave it. [Brief explanation of why complexity is inherent]"
 ```
 
-Other commands:
-- `--claims` - See active claims
-- `--clear-expired` - Remove stale claims (>2 hours)
+This automatically:
+- Adds the file to the audited list with today's date
+- Releases any existing claim
+- Excludes it from future monolith scans
+
+**Always offer this option when concluding "leave it alone"** - don't just ask to release the claim.
+
+---
+
+## Commands Reference
+
+```bash
+# Scanning
+node scripts/find-monoliths.cjs              # Show top 20 monoliths
+node scripts/find-monoliths.cjs --all        # Show all files over threshold
+node scripts/find-monoliths.cjs --include-audited  # Include audited files
+
+# Claiming (multi-agent coordination)
+node scripts/find-monoliths.cjs --auto-claim     # Find and claim top available (RECOMMENDED)
+node scripts/find-monoliths.cjs --claim <path>   # Claim specific file
+node scripts/find-monoliths.cjs --release <path> # Release a claim
+node scripts/find-monoliths.cjs --claims         # Show active claims
+node scripts/find-monoliths.cjs --clear-expired  # Remove stale claims (>2 hours)
+
+# Auditing
+node scripts/find-monoliths.cjs --mark-audited <path> "<reason>"  # Mark as reviewed
+node scripts/find-monoliths.cjs --unmark-audited <path>           # Remove from audited list
+```

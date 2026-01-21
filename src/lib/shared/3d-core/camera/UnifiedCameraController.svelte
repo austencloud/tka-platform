@@ -43,6 +43,12 @@
     jumpForce?: number;
     /** Gravity (units per second squared) */
     gravity?: number;
+    /** Callback to expose camera rotation state for external access (e.g., MCP bridge) */
+    onRotationChange?: (yaw: number, pitch: number) => void;
+    /** External yaw setter (for MCP control) */
+    externalYaw?: number | null;
+    /** External pitch setter (for MCP control) */
+    externalPitch?: number | null;
   }
 
   let {
@@ -55,6 +61,9 @@
     sprintMultiplier = SCALE.SPRINT_MULTIPLIER,
     jumpForce = SCALE.JUMP_VELOCITY,
     gravity = Math.abs(SCALE.GRAVITY) * 2.5, // Amplified for game feel
+    onRotationChange,
+    externalYaw = null,
+    externalPitch = null,
   }: Props = $props();
 
   // Derived: are we using physics-based movement?
@@ -84,6 +93,10 @@
     maxZ: 50.0,
   };
 
+  // Capsule geometry: halfHeight=0.55 + radius=0.3 = 0.85m half-extent
+  // The physics position is the capsule CENTER, so feet are at (targetY - 0.85)
+  const CAPSULE_HALF_EXTENT = 0.85;
+
   // Camera settings (all distances/heights in meters)
   // Orbit mode settings are in Scene3D.svelte's OrbitControls
   const SETTINGS = {
@@ -91,15 +104,15 @@
     // Third person
     thirdPerson: {
       distance: 3.0,        // 3 meters behind avatar
-      height: 2.0,          // 2 meters above ground
-      lookAtHeight: 1.2,    // Look at chest height
+      height: 1.15,         // Camera 2m above feet = 2.0 - CAPSULE_HALF_EXTENT
+      lookAtHeight: 0.35,   // Look at chest 1.2m above feet = 1.2 - CAPSULE_HALF_EXTENT
       minPitch: -0.3,
       maxPitch: 1.2,
     },
     // First person
     firstPerson: {
-      height: SCALE.EYE_HEIGHT,  // 1.6 meters (eye level)
-      forwardOffset: 0.05,       // 5cm forward offset
+      height: 0.75,         // Eye level 1.6m above feet = 1.6 - CAPSULE_HALF_EXTENT
+      forwardOffset: 0.05,  // 5cm forward offset
       minPitch: -1.4,
       maxPitch: 1.4,
     },
@@ -233,6 +246,25 @@
 
     if (document.pointerLockElement) {
       document.exitPointerLock();
+    }
+  });
+
+  // Notify parent of rotation changes (for MCP bridge)
+  $effect(() => {
+    onRotationChange?.(yaw, pitch);
+  });
+
+  // Handle external rotation changes (from MCP)
+  $effect(() => {
+    if (externalYaw !== null && externalYaw !== undefined) {
+      yaw = externalYaw;
+    }
+  });
+
+  $effect(() => {
+    if (externalPitch !== null && externalPitch !== undefined) {
+      const config = mode === CameraMode.FIRST_PERSON ? SETTINGS.firstPerson : SETTINGS.thirdPerson;
+      pitch = Math.max(config.minPitch, Math.min(config.maxPitch, externalPitch));
     }
   });
 

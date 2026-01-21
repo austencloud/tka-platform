@@ -79,6 +79,8 @@
       import("../../features/train/prop-tracking-lab/components/PropTrackingLabModule.svelte"),
     // compose module
     compose: () => import("../../features/compose/ComposeModule.svelte"),
+    // watch module - video browsing hub
+    watch: () => import("../../features/watch/WatchModule.svelte"),
     // settings module - accessed via gear icon in sidebar footer
     settings: () => import("../../features/settings/SettingsModule.svelte"),
     // Realm module - Unified 3D destination hub (Stage, Gallery, Worlds, etc.)

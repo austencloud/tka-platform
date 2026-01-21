@@ -117,7 +117,7 @@
   .pill {
     padding: 4px 10px;
     border-radius: 12px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
   }
 
