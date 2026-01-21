@@ -112,6 +112,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
     padding: 10px 18px;
     border-radius: 8px;
     border: 1px solid var(--theme-accent);
@@ -120,6 +121,11 @@
     cursor: pointer;
     transition: all var(--duration-normal) ease;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .action-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
   }
 
   .action-btn.primary {
@@ -168,5 +174,16 @@
     font-family: monospace;
     font-size: var(--font-size-compact);
     font-weight: 600;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .action-btn {
+      transition: none;
+    }
+
+    .action-btn.primary:hover {
+      transform: none;
+    }
   }
 </style>

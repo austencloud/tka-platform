@@ -343,6 +343,11 @@
     border-color: rgba(139, 92, 246, 0.4);
   }
 
+  .format-card:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
   .format-card i {
     font-size: 1.25rem;
     color: var(--theme-text-dim);
@@ -389,6 +394,11 @@
   .quality-btn.selected {
     background: rgba(139, 92, 246, 0.15);
     border-color: rgba(139, 92, 246, 0.4);
+  }
+
+  .quality-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
   }
 
   .quality-label {
@@ -491,6 +501,11 @@
     cursor: not-allowed;
   }
 
+  .loop-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
   .loop-count {
     font-size: 1.1rem;
     font-weight: 600;
@@ -541,6 +556,11 @@
     cursor: not-allowed;
   }
 
+  .export-btn:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 2px;
+  }
+
   /* Mobile adjustments */
   @media (max-width: 500px) {
     .format-grid {
@@ -556,6 +576,22 @@
 
     .format-card i {
       font-size: 1.5rem;
+    }
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .format-card,
+    .quality-btn,
+    .toggle-track,
+    .toggle-track::after,
+    .loop-btn,
+    .export-btn {
+      transition: none;
+    }
+
+    .export-btn:hover:not(:disabled) {
+      transform: none;
     }
   }
 </style>

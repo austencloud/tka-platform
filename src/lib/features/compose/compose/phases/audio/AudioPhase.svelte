@@ -253,7 +253,11 @@
                 ).padStart(2, "0")}
               </span>
             </div>
-            <button class="clear-btn" onclick={onClearAudio}>
+            <button
+              class="clear-btn"
+              onclick={onClearAudio}
+              aria-label="Remove audio file"
+            >
               <i class="fas fa-times" aria-hidden="true"></i>
               Remove
             </button>
@@ -591,6 +595,11 @@
     border-color: rgba(239, 68, 68, 0.3);
   }
 
+  .clear-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(248, 113, 113, 0.8));
+    outline-offset: 2px;
+  }
+
   /* BPM Controls */
   .bpm-controls {
     display: flex;
@@ -707,5 +716,22 @@
 
   .source.uncertain i {
     font-size: 0.85rem;
+  }
+
+  /* Focus indicators for inputs */
+  .drop-zone:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .drop-zone,
+    .clear-btn,
+    .progress-fill,
+    .bpm-input,
+    .manual-bpm-input {
+      transition: none;
+    }
   }
 </style>

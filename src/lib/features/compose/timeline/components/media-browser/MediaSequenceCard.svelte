@@ -192,5 +192,19 @@
     .spinner {
       animation: none;
     }
+
+    .sequence-item,
+    .item-thumb {
+      transition: none;
+    }
+
+    .sequence-item:hover:not(:disabled) {
+      transform: none;
+    }
+  }
+
+  .sequence-item:focus-visible .item-thumb {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
   }
 </style>

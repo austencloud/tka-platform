@@ -47,6 +47,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-height: var(--min-touch-target);
     padding: 0.5rem 1rem;
     background: transparent;
     border: none;
@@ -55,6 +56,11 @@
     cursor: pointer;
     transition: all var(--duration-normal) ease;
     position: relative;
+  }
+
+  .stepper-step:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
   }
 
   .stepper-step:hover {
@@ -118,6 +124,13 @@
 
     .stepper-step {
       padding: 0.5rem 0.75rem;
+    }
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .stepper-step {
+      transition: none;
     }
   }
 </style>

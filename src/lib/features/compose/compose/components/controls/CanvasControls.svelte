@@ -400,9 +400,21 @@
     }
   }
 
+  /* Focus indicators */
+  .control-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(59, 130, 246, 0.8));
+    outline-offset: 2px;
+  }
+
+  .dropdown-item:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(59, 130, 246, 0.8));
+    outline-offset: -2px;
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .control-btn {
+    .control-btn,
+    .dropdown-item {
       transition: none;
     }
 

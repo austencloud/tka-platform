@@ -90,6 +90,7 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
+    min-height: var(--min-touch-target, 48px); /* WCAG AAA touch target */
     padding: 8px 12px;
     background: var(--theme-card-bg, var(--theme-card-bg));
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
@@ -98,6 +99,11 @@
     color: var(--theme-text);
     cursor: pointer;
     transition: all var(--duration-fast) ease;
+  }
+
+  .action-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
   }
 
   .action-btn:hover {
@@ -124,5 +130,12 @@
 
   .action-btn i {
     font-size: var(--font-size-compact);
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .action-btn {
+      transition: none;
+    }
   }
 </style>

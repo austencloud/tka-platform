@@ -384,6 +384,11 @@
     cursor: not-allowed;
   }
 
+  .tap-button:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(251, 191, 36, 0.8));
+    outline-offset: 4px;
+  }
+
   .tap-hint {
     display: flex;
     align-items: center;
@@ -454,15 +459,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 4px;
     color: var(--theme-text-dim);
-    font-size: 0.7rem;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
+  }
+
+  .action-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(251, 191, 36, 0.8));
+    outline-offset: 2px;
   }
 
   .action-btn:hover {
@@ -510,8 +520,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
-    height: 18px;
+    min-width: 32px;
+    min-height: 32px;
     background: transparent;
     border: none;
     color: var(--theme-text-dim);
@@ -519,6 +529,12 @@
     cursor: pointer;
     opacity: 0;
     transition: all var(--duration-normal) ease;
+  }
+
+  .tap-remove:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(248, 113, 113, 0.8));
+    outline-offset: 2px;
+    opacity: 1;
   }
 
   .tap-item:hover .tap-remove {
@@ -566,5 +582,17 @@
     margin-top: 0.25rem;
     font-size: var(--font-size-compact);
     color: rgba(255, 255, 255, 0.75);
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .manual-beat-tapper,
+    .toggle-track,
+    .toggle-track::after,
+    .tap-button,
+    .action-btn,
+    .tap-remove {
+      transition: none;
+    }
   }
 </style>

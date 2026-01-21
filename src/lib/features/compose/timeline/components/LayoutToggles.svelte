@@ -72,4 +72,20 @@
     box-shadow: 0 0 12px
       color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
+
+  .toggle-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .toggle-btn {
+      transition: none;
+    }
+
+    .toggle-btn:hover {
+      transform: none;
+    }
+  }
 </style>
