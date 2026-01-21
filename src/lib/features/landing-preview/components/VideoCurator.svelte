@@ -98,6 +98,15 @@
     videos.filter((v) => v.title && v.title.length > 0 && v.linkedSequences.length === 0)
   );
 
+  const unnamedVideos = $derived.by(() =>
+    videos.filter((v) => {
+      if (v.excluded) return false;
+      if (!v.title) return true;
+      if (v.title === v.shortcode) return true;
+      return /^[A-Za-z0-9_-]{8,}$/.test(v.title);
+    })
+  );
+
   const filteredVideos = $derived.by(() => {
     let result = videos;
     if (filterCategory !== "all") {
@@ -173,6 +182,12 @@
   function enterLinkingMode() {
     if (editorController) {
       editorController.openLink();
+    }
+  }
+
+  function enterRenameMode() {
+    if (editorController) {
+      editorController.openRename();
     }
   }
 
@@ -349,6 +364,7 @@
     {loading}
     uncuratedCount={uncuratedVideos.length}
     unlinkableCount={unlinkableVideos.length}
+    unnamedCount={unnamedVideos.length}
     filteredCount={filteredVideos.length}
     totalCount={videos.length}
     {showAddCategory}
@@ -362,6 +378,7 @@
     onRefresh={loadVideos}
     onEnterCurationMode={enterCurationMode}
     onEnterLinkingMode={enterLinkingMode}
+    onEnterRenameMode={enterRenameMode}
     onToggleAddCategory={(show) => (showAddCategory = show)}
     onAddCategory={addCategory}
     onUpdateCategoryLabel={(label) => (newCategoryLabel = label)}

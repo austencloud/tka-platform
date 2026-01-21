@@ -14,6 +14,7 @@
   import CurateSequencePanel from "./panels/CurateSequencePanel.svelte";
   import CurateMetadataPanel from "./panels/CurateMetadataPanel.svelte";
   import LinkPanel from "./panels/LinkPanel.svelte";
+  import RenamePanel from "./panels/RenamePanel.svelte";
   import type { VideoEditorController } from "../../state/VideoEditorController.svelte";
 
   interface Props {
@@ -82,10 +83,12 @@
           Curate
         {:else if mode === "link"}
           Link Sequences
+        {:else if mode === "rename"}
+          Rename Videos
         {/if}
       </div>
 
-      <!-- Progress (curate/link modes) -->
+      <!-- Progress (curate/link/rename modes) -->
       {#if mode === "curate"}
         <div class="progress-pill">
           <span class="progress-num">{progress.done}</span>
@@ -99,13 +102,20 @@
           <span class="progress-total">{stats.withWord}</span>
           <span class="progress-suffix">linked</span>
         </div>
+      {:else if mode === "rename"}
+        <div class="progress-pill rename">
+          <span class="progress-num">{controller.renamingProgress.named}</span>
+          <span class="progress-sep">/</span>
+          <span class="progress-total">{controller.renamingProgress.named + controller.unnamedVideos.length}</span>
+          <span class="progress-suffix">named</span>
+        </div>
       {:else}
         <div class="header-spacer"></div>
       {/if}
     </header>
 
     <!-- Main content -->
-    <main class="main" class:curate-layout={mode === "curate"}>
+    <main class="main" class:curate-layout={mode === "curate"} class:rename-layout={mode === "rename"}>
       {#if mode === "curate"}
         <!-- Curate: 3-column layout -->
         <div class="side-panel left-panel">
@@ -126,6 +136,27 @@
 
         <div class="side-panel right-panel">
           <CurateMetadataPanel video={currentVideo} {controller} {formatDate} />
+        </div>
+      {:else if mode === "rename"}
+        <!-- Rename: centered 2-column layout -->
+        <VideoStage
+          video={currentVideo}
+          videoUrl={controller.videoUrl}
+          saving={controller.saving}
+          onOpenCrop={controller.openCropMode}
+          onClearCrop={controller.clearCrop}
+          onOpenSnip={controller.openSnipMode}
+          onClearSnip={controller.clearSnip}
+          bind:videoElement={videoEl}
+          onTimeUpdate={savePlaybackPosition}
+        />
+
+        <div class="side-panel rename-panel-container">
+          <RenamePanel
+            video={currentVideo}
+            {controller}
+            {formatDate}
+          />
         </div>
       {:else}
         <!-- Browse/Link: 2-column layout -->
@@ -266,6 +297,15 @@
     margin-left: 4px;
   }
 
+  .progress-pill.rename {
+    background: color-mix(in srgb, #f59e0b 15%, rgba(255, 255, 255, 0.06));
+    border: 1px solid color-mix(in srgb, #f59e0b 30%, transparent);
+  }
+
+  .progress-pill.rename .progress-num {
+    color: #f59e0b;
+  }
+
   .header-spacer {
     width: 44px;
   }
@@ -289,6 +329,20 @@
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+  }
+
+  /* 2-column rename layout - centered group */
+  .main.rename-layout {
+    gap: 24px;
+    padding: 80px 24px 60px;
+    justify-content: center;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .rename-panel-container {
+    width: 340px;
   }
 
   /* Side panels for curate mode */

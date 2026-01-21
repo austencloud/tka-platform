@@ -21,7 +21,7 @@ import type { IVideoCuratorPersister } from "../services/contracts/IVideoCurator
 import type { ISequenceMatcher } from "../services/contracts/ISequenceMatcher";
 import type { IVideoCache } from "$lib/shared/video/services/contracts/IVideoCache";
 
-export type VideoEditorMode = "closed" | "browse" | "curate" | "link";
+export type VideoEditorMode = "closed" | "browse" | "curate" | "link" | "rename";
 
 export interface VideoEditorState {
   mode: VideoEditorMode;
@@ -99,6 +99,22 @@ export function createVideoEditorController(options: VideoEditorControllerOption
     videos.filter((v) => v.title && v.title.length > 0 && v.linkedSequences.length === 0)
   );
 
+  // Derived: unnamed videos (for rename mode)
+  // These are videos that still have their Instagram shortcode as the title
+  // (no title set, or title looks like a shortcode - alphanumeric, no spaces)
+  const unnamedVideos = $derived.by(() =>
+    videos.filter((v) => {
+      if (v.excluded) return false;
+      // No title at all
+      if (!v.title) return true;
+      // Title is exactly the shortcode
+      if (v.title === v.shortcode) return true;
+      // Title looks like a shortcode (alphanumeric with underscores, no spaces, 8+ chars)
+      const looksLikeShortcode = /^[A-Za-z0-9_-]{8,}$/.test(v.title);
+      return looksLikeShortcode;
+    })
+  );
+
   // Derived: current video based on mode
   const currentVideo = $derived.by((): ShowcaseVideo | null => {
     if (mode === "closed") return null;
@@ -108,7 +124,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
       return videos.find((v) => v.shortcode === currentVideoShortcode) || null;
     }
 
-    // For curate/link modes, fall back to index in filtered list
+    // For curate/link/rename modes, fall back to index in filtered list
     if (mode === "curate") {
       if (uncuratedVideos.length === 0) return null;
       return uncuratedVideos[Math.min(currentIndex, uncuratedVideos.length - 1)] || null;
@@ -117,6 +133,11 @@ export function createVideoEditorController(options: VideoEditorControllerOption
     if (mode === "link") {
       if (unlinkableVideos.length === 0) return null;
       return unlinkableVideos[Math.min(currentIndex, unlinkableVideos.length - 1)] || null;
+    }
+
+    if (mode === "rename") {
+      if (unnamedVideos.length === 0) return null;
+      return unnamedVideos[Math.min(currentIndex, unnamedVideos.length - 1)] || null;
     }
 
     return null;
@@ -134,6 +155,13 @@ export function createVideoEditorController(options: VideoEditorControllerOption
     current: currentIndex + 1,
     total: unlinkableVideos.length,
     linked: videos.filter((v) => v.linkedSequences.length > 0).length,
+  });
+
+  // Derived: renaming progress
+  const renamingProgress = $derived({
+    current: currentIndex + 1,
+    total: unnamedVideos.length,
+    named: videos.filter((v) => v.title && !/^[A-Za-z0-9_-]{8,}$/.test(v.title)).length,
   });
 
   // Derived: stats
@@ -220,6 +248,13 @@ export function createVideoEditorController(options: VideoEditorControllerOption
     }
   }
 
+  function openRename() {
+    mode = "rename";
+    currentIndex = 0;
+    currentVideoShortcode = unnamedVideos[0]?.shortcode || null;
+    resetFormState();
+  }
+
   function close() {
     mode = "closed";
     currentVideoShortcode = null;
@@ -244,6 +279,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
   function getVideoList(): ShowcaseVideo[] {
     if (mode === "curate") return uncuratedVideos;
     if (mode === "link") return unlinkableVideos;
+    if (mode === "rename") return unnamedVideos;
     return [];
   }
 
@@ -269,6 +305,22 @@ export function createVideoEditorController(options: VideoEditorControllerOption
         searchSequencesForCurrentVideo();
       }
     }
+  }
+
+  /** Go to next video (for rename mode - continues even after renaming current) */
+  function goNextInRenameMode() {
+    // In rename mode, after renaming a video it's no longer "unnamed",
+    // so we just need to navigate to the first unnamed video at current index
+    // (which will be the next one since current was removed from list)
+    const list = unnamedVideos;
+    if (list.length === 0) {
+      close();
+      return;
+    }
+    // Stay at same index (list shifted) or go to last item if index exceeds
+    const newIndex = Math.min(currentIndex, list.length - 1);
+    currentIndex = newIndex;
+    currentVideoShortcode = list[newIndex]?.shortcode || null;
   }
 
   function skip() {
@@ -715,8 +767,10 @@ export function createVideoEditorController(options: VideoEditorControllerOption
     get quickPerformers() { return quickPerformers; },
     get uncuratedVideos() { return uncuratedVideos; },
     get unlinkableVideos() { return unlinkableVideos; },
+    get unnamedVideos() { return unnamedVideos; },
     get curationProgress() { return curationProgress; },
     get linkingProgress() { return linkingProgress; },
+    get renamingProgress() { return renamingProgress; },
     get stats() { return stats; },
     get maxLinks() { return maxLinks; },
     get canAddMoreLinks() { return canAddMoreLinks; },
@@ -729,11 +783,13 @@ export function createVideoEditorController(options: VideoEditorControllerOption
     openBrowse,
     openCurate,
     openLink,
+    openRename,
     close,
 
     // Navigation
     goNext,
     goPrev,
+    goNextInRenameMode,
     skip,
 
     // Category operations

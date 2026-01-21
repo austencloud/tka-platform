@@ -47,6 +47,12 @@ export class VideoCuratorPersister implements IVideoCuratorPersister {
     const { doc, updateDoc } = await import("firebase/firestore");
     const db = await getFirestoreInstance();
 
-    await updateDoc(doc(db, "showcaseVideos", shortcode), { featured: newValue });
+    // When featuring a video, also mark it as approved (required for landing page query)
+    const updates: Record<string, boolean> = { featured: newValue };
+    if (newValue) {
+      updates.approved = true;
+    }
+
+    await updateDoc(doc(db, "showcaseVideos", shortcode), updates);
   }
 }

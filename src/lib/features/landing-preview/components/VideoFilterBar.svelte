@@ -22,6 +22,7 @@
     loading: boolean;
     uncuratedCount: number;
     unlinkableCount: number;
+    unnamedCount: number;
     filteredCount: number;
     totalCount: number;
     showAddCategory: boolean;
@@ -35,6 +36,7 @@
     onRefresh: () => void;
     onEnterCurationMode: () => void;
     onEnterLinkingMode: () => void;
+    onEnterRenameMode: () => void;
     onToggleAddCategory: (show: boolean) => void;
     onAddCategory: () => void;
     onUpdateCategoryLabel: (label: string) => void;
@@ -53,6 +55,7 @@
     loading,
     uncuratedCount,
     unlinkableCount,
+    unnamedCount,
     filteredCount,
     totalCount,
     showAddCategory,
@@ -66,6 +69,7 @@
     onRefresh,
     onEnterCurationMode,
     onEnterLinkingMode,
+    onEnterRenameMode,
     onToggleAddCategory,
     onAddCategory,
     onUpdateCategoryLabel,
@@ -120,6 +124,14 @@
         <i class="fas fa-link" aria-hidden="true"></i>
         <span>Link</span>
         <span class="count">{unlinkableCount}</span>
+      </button>
+    {/if}
+
+    {#if unnamedCount > 0}
+      <button class="action-pill rename" onclick={onEnterRenameMode}>
+        <i class="fas fa-pen" aria-hidden="true"></i>
+        <span>Rename</span>
+        <span class="count">{unnamedCount}</span>
       </button>
     {/if}
   </div>
@@ -406,6 +418,15 @@
 
   .action-pill.link:hover {
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .action-pill.rename {
+    background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  }
+
+  .action-pill.rename:hover {
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
     transform: translateY(-1px);
   }
 
