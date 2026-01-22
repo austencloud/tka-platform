@@ -1050,6 +1050,54 @@ async function addSubtask(docId, title, description, dependsOn = []) {
 }
 
 /**
+ * Delete a subtask from a feedback item
+ */
+async function deleteSubtask(docId, subtaskId) {
+  try {
+    const docRef = db.collection("feedback").doc(docId);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      console.log(`\n  ❌ Feedback not found: ${docId}\n`);
+      return null;
+    }
+
+    const item = doc.data();
+    const subtasks = item.subtasks || [];
+
+    const subtaskIndex = subtasks.findIndex((s) => s.id === subtaskId);
+    if (subtaskIndex === -1) {
+      console.log(`\n  ❌ Subtask not found: ${subtaskId}\n`);
+      return null;
+    }
+
+    const deletedSubtask = subtasks[subtaskIndex];
+    subtasks.splice(subtaskIndex, 1);
+
+    await docRef.update({
+      subtasks,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    const completed = subtasks.filter((s) => s.status === "completed").length;
+    const total = subtasks.length;
+
+    console.log("\n" + "=".repeat(70));
+    console.log(`\n  🗑️ SUBTASK DELETED\n`);
+    console.log("─".repeat(70));
+    console.log(`  Feedback: ${item.title || docId}`);
+    console.log(`  Deleted: #${subtaskId} - ${deletedSubtask.title}`);
+    console.log(`  Remaining: ${total} subtasks (${completed} completed)`);
+    console.log("\n" + "=".repeat(70) + "\n");
+
+    return deletedSubtask;
+  } catch (error) {
+    console.error("\n  Error deleting subtask:", error.message);
+    throw error;
+  }
+}
+
+/**
  * Update subtask status
  */
 async function updateSubtaskStatus(docId, subtaskId, status) {
@@ -2347,6 +2395,16 @@ async function main() {
       } else if (subCommand === "list") {
         // <id> subtask list
         await listSubtasks(docId);
+      } else if (subCommand === "delete") {
+        // <id> subtask delete <subtaskId>
+        const subtaskId = args[3];
+        if (!subtaskId) {
+          console.log(
+            "\n  Usage: node scripts/fetch-feedback.js <id> subtask delete <subtaskId>\n"
+          );
+          return;
+        }
+        await deleteSubtask(docId, subtaskId);
       } else if (subCommand) {
         // <id> subtask <subtaskId> <status>
         // e.g., <id> subtask 1 completed
@@ -2366,6 +2424,7 @@ async function main() {
           '    <id> subtask add "title" "description" [dependsOn...]'
         );
         console.log("    <id> subtask list");
+        console.log("    <id> subtask delete <subtaskId>");
         console.log("    <id> subtask <subtaskId> <status>\n");
       }
     } else if (args[1]) {
