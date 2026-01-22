@@ -1,15 +1,13 @@
 <!--
-  UsernameEditor Component
+  InstagramUsernameEditor Component
 
-  Inline editor for username with real-time availability checking and suggestions.
-  Extracted from AccountSettingsSection for single responsibility.
+  Inline editor for Instagram username with format validation.
+  Simpler than UsernameEditor - no availability checking needed.
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import type { IUsernameValidator } from "../../../auth/services/contracts/IUsernameValidator";
   import type { User } from "firebase/auth";
   import { authState } from "../../../auth/state/authState.svelte";
-  import { container } from "$lib/shared/di";
   import { toast } from "../../../toast/state/toast-state.svelte";
   import { doc, getDoc } from "firebase/firestore";
   import { getFirestoreInstance } from "../../../auth/firebase";
@@ -27,43 +25,42 @@
   let editedUsername = $state("");
   let isEditing = $state(false);
   let isSaving = $state(false);
-  let isChecking = $state(false);
   let error = $state("");
-  let isAvailable = $state(false);
-  let suggestions = $state<string[]>([]);
-  let checkTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  // Get username validator service
-  const usernameValidator = container.items.usernameValidator as IUsernameValidator;
+  // Instagram username validation: alphanumeric, underscores, periods, 1-30 chars
+  const INSTAGRAM_REGEX = /^[a-zA-Z0-9._]{1,30}$/;
 
-  // Load current username from Firestore on mount
+  // Load current Instagram username from Firestore on mount
   onMount(async () => {
     try {
       const firestore = await getFirestoreInstance();
       const userDocRef = doc(firestore, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
       if (userDoc.exists()) {
-        currentUsername = userDoc.data()?.username || "";
+        currentUsername = userDoc.data()?.instagramUsername || "";
       }
     } catch (err) {
-      console.error("Failed to load username:", err);
+      console.error("Failed to load Instagram username:", err);
     }
   });
 
+  // Derived: can save if valid format and changed
   const isSaveDisabled = $derived(
     isSaving ||
-    isChecking ||
-    !isAvailable ||
-    !editedUsername.trim() ||
-    editedUsername.trim().toLowerCase() === currentUsername.toLowerCase()
+    !!error ||
+    (editedUsername.trim() !== "" && !validateFormat(editedUsername.trim())) ||
+    editedUsername.trim() === currentUsername
   );
+
+  function validateFormat(username: string): boolean {
+    if (!username) return true; // Empty is valid (clears the field)
+    return INSTAGRAM_REGEX.test(username);
+  }
 
   function startEditing() {
     editedUsername = currentUsername;
     isEditing = true;
     error = "";
-    isAvailable = false;
-    suggestions = [];
     hapticService?.trigger("selection");
   }
 
@@ -71,126 +68,82 @@
     isEditing = false;
     editedUsername = "";
     error = "";
-    isAvailable = false;
-    suggestions = [];
-    if (checkTimeoutId) {
-      clearTimeout(checkTimeoutId);
-      checkTimeoutId = null;
-    }
   }
 
   function handleInput() {
-    // Clear previous timeout
-    if (checkTimeoutId) {
-      clearTimeout(checkTimeoutId);
-    }
-
     error = "";
-    isAvailable = false;
-    suggestions = [];
 
+    // Strip @ if user enters it
+    if (editedUsername.startsWith("@")) {
+      editedUsername = editedUsername.slice(1);
+    }
+
+    // Validate format
     const username = editedUsername.trim();
-    if (!username) return;
-
-    // Debounce the availability check
-    checkTimeoutId = setTimeout(() => {
-      checkAvailability(username);
-    }, 500);
-  }
-
-  async function checkAvailability(username: string) {
-    if (!usernameValidator) {
-      error = "Username validation unavailable";
-      return;
-    }
-
-    // Skip check if unchanged
-    if (username.toLowerCase() === currentUsername.toLowerCase()) {
-      isAvailable = true;
-      return;
-    }
-
-    isChecking = true;
-    try {
-      const result = await usernameValidator.checkAvailability(username, user.uid);
-      if (result.isValid) {
-        isAvailable = true;
-        error = "";
-      } else {
-        isAvailable = false;
-        error = result.error || "Username unavailable";
-        suggestions = result.suggestions || [];
-      }
-    } catch (err) {
-      console.error("Failed to check username:", err);
-      error = "Unable to check availability";
-    } finally {
-      isChecking = false;
+    if (username && !validateFormat(username)) {
+      error = "Letters, numbers, underscores, and periods only (1-30 chars)";
     }
   }
 
   async function save() {
     const trimmedUsername = editedUsername.trim();
-    if (!trimmedUsername || !isAvailable) {
-      cancelEditing();
+
+    // Validate format
+    if (trimmedUsername && !validateFormat(trimmedUsername)) {
+      error = "Invalid format";
       return;
     }
 
     // Don't save if unchanged
-    if (trimmedUsername.toLowerCase() === currentUsername.toLowerCase()) {
+    if (trimmedUsername === currentUsername) {
       cancelEditing();
       return;
     }
 
     isSaving = true;
     try {
-      await authState.updateUsername(trimmedUsername);
+      await authState.updateInstagramUsername(trimmedUsername);
       currentUsername = trimmedUsername;
       hapticService?.trigger("success");
-      toast.success("Username updated successfully");
+      toast.success(trimmedUsername ? "Instagram username updated" : "Instagram username cleared");
       isEditing = false;
     } catch (err) {
-      console.error("Failed to update username:", err);
+      console.error("Failed to update Instagram username:", err);
       hapticService?.trigger("error");
-      toast.error(err instanceof Error ? err.message : "Failed to update username");
+      toast.error(err instanceof Error ? err.message : "Failed to update Instagram");
     } finally {
       isSaving = false;
     }
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter" && isAvailable && !isChecking) {
+    if (e.key === "Enter" && !isSaveDisabled) {
       e.preventDefault();
       save();
     } else if (e.key === "Escape") {
       cancelEditing();
     }
   }
-
-  function selectSuggestion(suggestion: string) {
-    editedUsername = suggestion;
-    handleInput();
-  }
 </script>
 
 <div class="section">
-  <label class="label" for="username">Username</label>
+  <label class="label" for="instagram-username">Instagram</label>
   {#if isEditing}
     <div class="input-row">
-      <div class="username-input-wrapper" class:error class:success={isAvailable && !isChecking}>
-        <span class="username-prefix">@</span>
+      <div class="instagram-input-wrapper" class:error class:success={editedUsername.trim() && !error}>
+        <i class="fab fa-instagram instagram-icon" aria-hidden="true"></i>
         <input
-          id="username"
+          id="instagram-username"
           type="text"
-          class="input username-input"
+          class="input instagram-input"
           bind:value={editedUsername}
           oninput={handleInput}
           onkeydown={handleKeydown}
-          maxlength="20"
+          maxlength="30"
           placeholder="your_username"
           disabled={isSaving}
           aria-invalid={error ? "true" : "false"}
-          aria-describedby={error ? "username-error" : undefined}
+          aria-describedby={error ? "instagram-error" : undefined}
         />
       </div>
       <div class="inline-actions">
@@ -198,7 +151,7 @@
           class="icon-btn save"
           onclick={save}
           disabled={isSaveDisabled}
-          aria-label="Save username"
+          aria-label="Save Instagram username"
         >
           {#if isSaving}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -218,34 +171,10 @@
     </div>
 
     <!-- Real-time feedback -->
-    {#if isChecking}
-      <p class="hint-message checking">
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        Checking availability...
-      </p>
-    {:else if error}
-      <p id="username-error" class="hint-message error" role="alert">
+    {#if error}
+      <p id="instagram-error" class="hint-message error" role="alert">
         <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
         {error}
-      </p>
-      {#if suggestions.length > 0}
-        <div class="suggestions">
-          <span class="suggestions-label">Try:</span>
-          {#each suggestions as suggestion}
-            <button
-              type="button"
-              class="suggestion-btn"
-              onclick={() => selectSuggestion(suggestion)}
-            >
-              @{suggestion}
-            </button>
-          {/each}
-        </div>
-      {/if}
-    {:else if isAvailable && editedUsername.trim()}
-      <p class="hint-message success">
-        <i class="fas fa-check-circle" aria-hidden="true"></i>
-        Username available
       </p>
     {/if}
   {:else}
@@ -255,9 +184,12 @@
       onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && startEditing()}
       role="button"
       tabindex="0"
-      aria-label="Edit username"
+      aria-label="Edit Instagram username"
     >
-      <span class="current-value">@{currentUsername || "Not set"}</span>
+      <div class="current-value-wrapper">
+        <i class="fab fa-instagram instagram-icon" aria-hidden="true"></i>
+        <span class="current-value">{currentUsername || "Not set"}</span>
+      </div>
       <i class="fas fa-pen edit-icon" aria-hidden="true"></i>
     </div>
   {/if}
@@ -300,9 +232,20 @@
     outline-offset: 2px;
   }
 
+  .current-value-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
   .current-value {
     font-size: var(--font-size-sm);
     color: var(--theme-text-dim);
+  }
+
+  .instagram-icon {
+    font-size: 16px;
+    color: #E4405F;
   }
 
   .edit-icon {
@@ -397,8 +340,8 @@
     opacity: 0.6;
   }
 
-  /* Username input wrapper */
-  .username-input-wrapper {
+  /* Instagram input wrapper */
+  .instagram-input-wrapper {
     flex: 1;
     display: flex;
     align-items: center;
@@ -406,35 +349,29 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     transition: all var(--duration-normal) ease;
+    padding-left: 12px;
   }
 
-  .username-input-wrapper:focus-within {
-    border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
+  .instagram-input-wrapper:focus-within {
+    border-color: color-mix(in srgb, #E4405F 60%, transparent);
     background: var(--theme-card-hover-bg);
   }
 
-  .username-input-wrapper.error {
+  .instagram-input-wrapper.error {
     border-color: rgba(239, 68, 68, 0.6);
   }
 
-  .username-input-wrapper.success {
-    border-color: rgba(34, 197, 94, 0.6);
+  .instagram-input-wrapper.success {
+    border-color: rgba(228, 64, 95, 0.6);
   }
 
-  .username-prefix {
-    padding: 12px 0 12px 16px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-sm);
-    user-select: none;
-  }
-
-  .username-input {
+  .instagram-input {
     border: none;
     background: transparent;
-    padding-left: 4px;
+    padding-left: 8px;
   }
 
-  .username-input:focus {
+  .instagram-input:focus {
     border: none;
     background: transparent;
     outline: none;
@@ -450,47 +387,8 @@
     gap: 8px;
   }
 
-  .hint-message.checking {
-    color: var(--theme-text-dim);
-  }
-
   .hint-message.error {
     color: rgba(239, 68, 68, 0.9);
-  }
-
-  .hint-message.success {
-    color: rgba(34, 197, 94, 0.9);
-  }
-
-  /* Suggestions */
-  .suggestions {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 8px;
-  }
-
-  .suggestions-label {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-  }
-
-  .suggestion-btn {
-    padding: 4px 10px;
-    font-size: var(--font-size-compact);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 6px;
-    color: var(--theme-text-dim);
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .suggestion-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
-    color: var(--theme-text);
   }
 
   /* Accessibility */
@@ -499,8 +397,7 @@
     outline-offset: 2px;
   }
 
-  .icon-btn:focus-visible,
-  .suggestion-btn:focus-visible {
+  .icon-btn:focus-visible {
     outline: 3px solid var(--theme-accent);
     outline-offset: 2px;
   }
@@ -508,8 +405,7 @@
   @media (prefers-reduced-motion: reduce) {
     .value-row,
     .edit-icon,
-    .icon-btn,
-    .suggestion-btn {
+    .icon-btn {
       transition: none;
     }
   }

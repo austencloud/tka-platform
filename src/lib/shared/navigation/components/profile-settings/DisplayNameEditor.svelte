@@ -107,16 +107,16 @@
       </div>
     </div>
   {:else}
-    <div class="value-row">
+    <div
+      class="value-row"
+      onclick={startEditing}
+      onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && startEditing()}
+      role="button"
+      tabindex="0"
+      aria-label="Edit display name"
+    >
       <span class="current-value">{user.displayName || "Not set"}</span>
-      <button
-        class="edit-btn"
-        onclick={startEditing}
-        aria-label="Edit display name"
-      >
-        <i class="fas fa-pen" aria-hidden="true"></i>
-        Edit
-      </button>
+      <i class="fas fa-pen edit-icon" aria-hidden="true"></i>
     </div>
   {/if}
 </div>
@@ -143,6 +143,19 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 10px;
+    cursor: pointer;
+    transition: all var(--duration-fast) ease;
+  }
+
+  .value-row:hover,
+  .value-row:focus {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .value-row:focus-visible {
+    outline: 3px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 
   .current-value {
@@ -150,29 +163,23 @@
     color: var(--theme-text-dim);
   }
 
-  .edit-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
+  .edit-icon {
+    font-size: 12px;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    opacity: 0;
+    transition: opacity var(--duration-fast) ease;
   }
 
-  .edit-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
-    color: var(--theme-text);
+  .value-row:hover .edit-icon,
+  .value-row:focus .edit-icon {
+    opacity: 0.6;
   }
 
-  .edit-btn i {
-    font-size: 11px;
+  /* Always show on touch devices (no hover capability) */
+  @media (hover: none) {
+    .edit-icon {
+      opacity: 0.4;
+    }
   }
 
   .input-row {
@@ -254,14 +261,14 @@
     outline-offset: 2px;
   }
 
-  .edit-btn:focus-visible,
   .icon-btn:focus-visible {
     outline: 3px solid var(--theme-accent);
     outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .edit-btn,
+    .value-row,
+    .edit-icon,
     .icon-btn {
       transition: none;
     }

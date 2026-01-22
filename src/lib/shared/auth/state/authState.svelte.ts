@@ -39,7 +39,7 @@ import { auth } from "../firebase";
 import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 import type { IActivityLogger } from "../../analytics/services/contracts/IActivityLogger";
 import type { IUsernameValidator } from "../services/contracts/IUsernameValidator";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "../firebase";
 import { featureFlagService } from "../services/FeatureFlagService.svelte";
 import type { UserRole } from "../domain/models/UserRole";
@@ -743,6 +743,48 @@ export async function updateUsername(newUsername: string) {
 }
 
 /**
+ * Update user's Instagram username
+ * @param username - The Instagram username (@ prefix will be stripped)
+ */
+export async function updateInstagramUsername(username: string) {
+  const user = _state.user;
+  if (!user) {
+    throw new Error("No authenticated user");
+  }
+
+  try {
+    // Normalize: trim whitespace and strip @ prefix if present
+    const normalized = username.trim().replace(/^@/, "");
+
+    // If empty, we'll store null to clear the field
+    const valueToStore = normalized || null;
+
+    const firestore = await getFirestoreInstance();
+    const userDocRef = doc(firestore, "users", user.uid);
+
+    await setDoc(
+      userDocRef,
+      { instagramUsername: valueToStore },
+      { merge: true }
+    );
+
+    return {
+      success: true,
+      message: valueToStore
+        ? "Instagram username updated successfully."
+        : "Instagram username cleared.",
+    };
+  } catch (error: unknown) {
+    console.error("❌ [authState] Instagram username update error:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to update Instagram username. Please try again.";
+    throw new Error(message);
+  }
+}
+
+/**
  * Clean up the auth listener
  * Call this when your app unmounts (if ever)
  */
@@ -808,6 +850,7 @@ export const authState = {
   changeEmail,
   updateDisplayName,
   updateUsername,
+  updateInstagramUsername,
   refreshUser,
   cleanup,
 };

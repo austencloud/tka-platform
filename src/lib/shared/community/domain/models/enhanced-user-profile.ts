@@ -22,9 +22,17 @@ export interface UserProfile {
   joinedDate: Date;
   isFollowing?: boolean;
 
+  // Social links
+  instagramUsername?: string;
+
   // Admin-related fields
   role?: UserRole;
   isDisabled?: boolean;
+
+  // Warning-related fields
+  hasActiveWarning?: boolean;
+  lastWarningAt?: Date;
+  lastWarningReportId?: string;
 }
 
 export interface EnhancedUserProfile extends UserProfile {

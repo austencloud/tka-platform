@@ -2,6 +2,7 @@
   import { fade } from "svelte/transition";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import AvatarImage from "./AvatarImage.svelte";
+  import { reportModalState } from "$lib/features/moderation/state/report-modal-state.svelte";
 
   let {
     userProfile,
@@ -16,6 +17,14 @@
     followInProgress: boolean;
     onFollowToggle: () => void;
   } = $props();
+
+  function handleReportUser() {
+    reportModalState.open({
+      id: userProfile.id,
+      displayName: userProfile.displayName,
+      email: userProfile.email || "",
+    });
+  }
 </script>
 
 <div class="hero-section" transition:fade={{ duration: 300 }}>
@@ -41,20 +50,44 @@
       <p class="bio">{userProfile.bio}</p>
     {/if}
 
-    {#if currentUserId && !isOwnProfile}
-      <button
-        class="follow-button"
-        class:following={userProfile.isFollowing}
-        class:loading={followInProgress}
-        disabled={followInProgress}
-        onclick={onFollowToggle}
+    {#if userProfile.instagramUsername}
+      <a
+        href="https://instagram.com/{userProfile.instagramUsername}"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="instagram-link"
+        aria-label="View {userProfile.displayName}'s Instagram profile"
       >
-        {#if followInProgress}
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        {:else}
-          {userProfile.isFollowing ? "Following" : "Follow"}
-        {/if}
-      </button>
+        <i class="fab fa-instagram" aria-hidden="true"></i>
+        <span>@{userProfile.instagramUsername}</span>
+      </a>
+    {/if}
+
+    {#if currentUserId && !isOwnProfile}
+      <div class="action-buttons">
+        <button
+          class="follow-button"
+          class:following={userProfile.isFollowing}
+          class:loading={followInProgress}
+          disabled={followInProgress}
+          onclick={onFollowToggle}
+        >
+          {#if followInProgress}
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          {:else}
+            {userProfile.isFollowing ? "Following" : "Follow"}
+          {/if}
+        </button>
+
+        <button
+          class="report-button"
+          onclick={handleReportUser}
+          aria-label="Report {userProfile.displayName}"
+          title="Report user"
+        >
+          <i class="fas fa-flag" aria-hidden="true"></i>
+        </button>
+      </div>
     {/if}
   </div>
 </div>
@@ -134,8 +167,40 @@
     max-width: 400px;
   }
 
-  .follow-button {
+  .instagram-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: rgba(228, 64, 95, 0.12);
+    border: 1px solid rgba(228, 64, 95, 0.25);
+    border-radius: 20px;
+    color: #E4405F;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    text-decoration: none;
+    transition: all var(--duration-normal) ease;
+  }
+
+  .instagram-link:hover {
+    background: rgba(228, 64, 95, 0.2);
+    border-color: rgba(228, 64, 95, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .instagram-link i {
+    font-size: 16px;
+  }
+
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin-top: 16px;
+  }
+
+  .follow-button {
     padding: 12px 32px;
     background: var(--theme-accent);
     border: 1px solid var(--theme-accent);
@@ -175,6 +240,32 @@
     pointer-events: none;
   }
 
+  .report-button {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: all var(--duration-normal) ease;
+  }
+
+  .report-button:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .report-button:focus-visible {
+    outline: 2px solid var(--semantic-error, #ef4444);
+    outline-offset: 2px;
+  }
+
   @media (max-width: 768px) {
     .hero-section {
       padding: 16px;
@@ -191,12 +282,20 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .follow-button {
+    .follow-button,
+    .instagram-link,
+    .report-button {
       transition: none;
     }
 
-    .follow-button:hover {
+    .follow-button:hover,
+    .instagram-link:hover {
       transform: none;
     }
+  }
+
+  .instagram-link:focus-visible {
+    outline: 3px solid #E4405F;
+    outline-offset: 2px;
   }
 </style>

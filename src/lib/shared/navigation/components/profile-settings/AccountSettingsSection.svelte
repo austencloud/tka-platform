@@ -9,6 +9,7 @@
   import type { User } from "firebase/auth";
   import DisplayNameEditor from "./DisplayNameEditor.svelte";
   import UsernameEditor from "./UsernameEditor.svelte";
+  import InstagramUsernameEditor from "./InstagramUsernameEditor.svelte";
   import PasswordChangeForm from "./PasswordChangeForm.svelte";
 
   interface Props {
@@ -28,6 +29,10 @@
   <div class="divider"></div>
 
   <UsernameEditor {user} {hapticService} />
+
+  <div class="divider"></div>
+
+  <InstagramUsernameEditor {user} {hapticService} />
 
   {#if hasPasswordProvider}
     <div class="divider"></div>
