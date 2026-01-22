@@ -44,6 +44,12 @@ service cloud.firestore {
         && (userData.role == 'admin' || userData.role == 'tester' || userData.role == 'premium' || userData.isAdmin == true);
     }
 
+    // Check if user has verified their age (18+) for Hall of Shame access
+    function isAgeVerified() {
+      let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return isAuthenticated() && userData.ageVerifiedAt != null;
+    }
+
     // ============================================================================
     // CONFIG COLLECTIONS
     // ============================================================================
@@ -311,7 +317,8 @@ service cloud.firestore {
       match /notifications/{notificationId} {
         // Admins can read for impersonation/preview mode
         allow read: if isOwner(userId) || isAdmin();
-        allow create, update: if isOwner(userId);
+        // Admins can create notifications on behalf of users (e.g., moderation warnings)
+        allow create, update: if isOwner(userId) || isAdmin();
         allow delete: if isOwner(userId) || isAdmin();
       }
 
@@ -801,6 +808,127 @@ service cloud.firestore {
 
       // Only admins can create/update/delete
       allow create, update, delete: if isAdmin();
+    }
+
+    // ============================================================================
+    // USER REPORTS (Moderation System)
+    // ============================================================================
+
+    // User reports - community members can report problematic users
+    // Users can read their own submitted reports
+    // Admins can read all reports and update/delete them
+    match /userReports/{reportId} {
+      // Users can read their own reports, admins can read all
+      allow read: if isAuthenticated()
+        && (resource.data.reporterId == request.auth.uid || isAdmin());
+
+      // Authenticated users can submit reports (not about themselves)
+      allow create: if isAuthenticated()
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.reportedUserId != request.auth.uid;
+
+      // Only admins can update reports (status changes, resolution, etc.)
+      allow update: if isAdmin();
+
+      // Only admins can delete reports
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================================
+    // CONTENT APPEALS (Content Moderation Appeals)
+    // ============================================================================
+
+    // Content appeals - users can appeal flagged content moderation decisions
+    // Users can read/create their own appeals
+    // Admins can read all appeals and resolve them
+    match /contentAppeals/{appealId} {
+      // Users can read their own appeals, admins can read all
+      allow read: if isAuthenticated()
+        && (resource.data.ownerId == request.auth.uid || isAdmin());
+
+      // Users can create appeals for their own content
+      allow create: if isAuthenticated()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      // Only admins can update appeals (resolve them)
+      allow update: if isAdmin();
+
+      // Only admins can delete appeals
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================================
+    // HALL OF SHAME (Age-Gated Adult Content)
+    // ============================================================================
+
+    // Hall of Shame entries - age-verified users can browse, admins moderate
+    match /hallOfShame/{sequenceId} {
+      // Age-verified users can read approved, non-hidden entries
+      // Users can always see their own entries (any status)
+      // Admins can read all entries for moderation
+      allow read: if isAdmin()
+        || (isAuthenticated()
+            && isAgeVerified()
+            && (resource.data.status == 'approved' || resource.data.ownerId == request.auth.uid)
+            && resource.data.hidden != true);
+
+      // Users can submit their own sequences (pending status only)
+      // Enforces initial values to prevent manipulation
+      allow create: if isAuthenticated()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.voteCount == 0
+        && request.resource.data.viewCount == 0
+        && request.resource.data.reportCount == 0
+        && request.resource.data.featured == false
+        && request.resource.data.hidden == false;
+
+      // Only admins can approve/reject/feature/hide
+      allow update: if isAdmin();
+
+      // Users can delete their own pending submissions only
+      allow delete: if isAuthenticated()
+        && resource.data.ownerId == request.auth.uid
+        && resource.data.status == 'pending';
+    }
+
+    // Hall of Shame votes - one vote per user per sequence
+    // Document ID format: {voterId}_{sequenceId} for uniqueness enforcement
+    match /hallOfShameVotes/{voteId} {
+      // Age-verified users can read votes
+      allow read: if isAuthenticated() && isAgeVerified();
+
+      // One vote per user per sequence (enforced by document ID pattern)
+      allow create: if isAuthenticated()
+        && isAgeVerified()
+        && voteId == request.auth.uid + '_' + request.resource.data.sequenceId
+        && request.resource.data.voterId == request.auth.uid;
+
+      // Votes cannot be changed or deleted (permanent)
+      allow update, delete: if false;
+    }
+
+    // Hall of Shame rate limits - tracks daily submission count
+    match /hallOfShameRateLimits/{limitId} {
+      // Users can read/write their own rate limit docs
+      allow read, create, update: if isAuthenticated()
+        && limitId.matches(request.auth.uid + '_.*');
+      allow delete: if isAdmin();
+    }
+
+    // Hall of Shame reports - for post-approval issue tracking
+    match /hallOfShameReports/{reportId} {
+      // Only admins can read reports
+      allow read: if isAdmin();
+
+      // Age-verified users can submit reports
+      allow create: if isAuthenticated()
+        && isAgeVerified()
+        && request.resource.data.reporterId == request.auth.uid;
+
+      // Reports cannot be modified or deleted
+      allow update, delete: if false;
     }
 
     // ============================================================================

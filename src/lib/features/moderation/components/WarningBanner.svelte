@@ -1,0 +1,200 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { doc, onSnapshot, type Unsubscribe } from 'firebase/firestore';
+  import { getFirestoreInstance } from '$lib/shared/auth/firebase';
+  import { authState, getEffectiveUserId } from '$lib/shared/auth/state/authState.svelte';
+  import { warningAcknowledger } from '../services/implementations/WarningAcknowledger';
+
+  let isAcknowledging = $state(false);
+  let hasActiveWarning = $state(false);
+  let unsubscribe: Unsubscribe | null = null;
+
+  async function handleAcknowledge() {
+    if (isAcknowledging) return;
+
+    isAcknowledging = true;
+    try {
+      await warningAcknowledger.acknowledgeWarning();
+      // The subscription will update hasActiveWarning automatically
+    } catch (error) {
+      console.error('Failed to acknowledge warning:', error);
+    } finally {
+      isAcknowledging = false;
+    }
+  }
+
+  // Subscribe to user document for warning status
+  async function subscribeToWarningStatus(userId: string) {
+    // Clean up existing subscription
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribe = null;
+    }
+
+    try {
+      const firestore = await getFirestoreInstance();
+      const userRef = doc(firestore, 'users', userId);
+
+      unsubscribe = onSnapshot(
+        userRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            hasActiveWarning = snapshot.data()?.hasActiveWarning === true;
+          } else {
+            hasActiveWarning = false;
+          }
+        },
+        (error) => {
+          console.error('Warning status subscription error:', error);
+          hasActiveWarning = false;
+        }
+      );
+    } catch (error) {
+      console.error('Failed to subscribe to warning status:', error);
+    }
+  }
+
+  // Track auth state changes (uses effective user ID for impersonation support)
+  $effect(() => {
+    const userId = getEffectiveUserId();
+
+    if (userId) {
+      subscribeToWarningStatus(userId);
+    } else {
+      // User logged out, clean up
+      if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+      hasActiveWarning = false;
+    }
+  });
+
+  onMount(() => {
+    return () => {
+      // Cleanup subscription on unmount
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  });
+
+  // Only show if user is logged in and has an active warning
+  const shouldShow = $derived(
+    authState.isAuthenticated && hasActiveWarning
+  );
+</script>
+
+{#if shouldShow}
+  <div class="warning-banner" role="alert">
+    <div class="warning-content">
+      <i class="fa-solid fa-triangle-exclamation warning-icon" aria-hidden="true"></i>
+      <div class="warning-text">
+        <p class="warning-title">Your account has received a warning</p>
+        <p class="warning-message">
+          Please review our community guidelines. Repeated violations may result in account restrictions.
+        </p>
+      </div>
+    </div>
+    <button
+      class="acknowledge-button"
+      onclick={handleAcknowledge}
+      disabled={isAcknowledging}
+    >
+      {#if isAcknowledging}
+        <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+      {:else}
+        Acknowledge
+      {/if}
+    </button>
+  </div>
+{/if}
+
+<style>
+  .warning-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .warning-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+  }
+
+  .warning-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .warning-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .warning-title {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+  }
+
+  .warning-message {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    opacity: 0.9;
+  }
+
+  .acknowledge-button {
+    flex-shrink: 0;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
+    color: white;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    min-width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .acknowledge-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+
+  .acknowledge-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  /* Mobile: stack vertically */
+  @media (max-width: 480px) {
+    .warning-banner {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    .acknowledge-button {
+      width: 100%;
+    }
+  }
+</style>

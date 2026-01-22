@@ -13,6 +13,7 @@
   import AnalyticsDashboard from "./AnalyticsDashboard.svelte";
   import FeatureFlagManagement from "./FeatureFlagManagement.svelte";
   import AnnouncementManagement from "./AnnouncementManagement.svelte";
+  import ShameQueuePanel from "./ShameQueuePanel.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   // Services
@@ -79,6 +80,14 @@
           aria-labelledby="announcements-tab"
         >
           <AnnouncementManagement />
+        </div>
+      {:else if activeSection === "hall-of-shame"}
+        <div
+          id="hall-of-shame-panel"
+          role="tabpanel"
+          aria-labelledby="hall-of-shame-tab"
+        >
+          <ShameQueuePanel />
         </div>
       {/if}
     </main>

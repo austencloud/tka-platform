@@ -1,0 +1,169 @@
+/**
+ * Report Modal State
+ *
+ * Manages the state for the user report modal (open/close, target user, submission).
+ * Uses Svelte 5 runes for reactivity.
+ */
+
+import type { ReportCategory } from '../domain/models/report-models';
+
+interface ReportTargetUser {
+	id: string;
+	displayName: string;
+	email: string;
+}
+
+interface ReportModalState {
+	isOpen: boolean;
+	targetUser: ReportTargetUser | null;
+	selectedCategory: ReportCategory | null;
+	description: string;
+	isSubmitting: boolean;
+	error: string | null;
+	success: boolean;
+}
+
+// Reactive state using Svelte 5 $state rune
+let _state = $state<ReportModalState>({
+	isOpen: false,
+	targetUser: null,
+	selectedCategory: null,
+	description: '',
+	isSubmitting: false,
+	error: null,
+	success: false
+});
+
+/**
+ * Open the report modal for a specific user.
+ */
+export function openReportModal(user: ReportTargetUser): void {
+	_state = {
+		isOpen: true,
+		targetUser: user,
+		selectedCategory: null,
+		description: '',
+		isSubmitting: false,
+		error: null,
+		success: false
+	};
+}
+
+/**
+ * Close the report modal and reset state.
+ */
+export function closeReportModal(): void {
+	_state = {
+		isOpen: false,
+		targetUser: null,
+		selectedCategory: null,
+		description: '',
+		isSubmitting: false,
+		error: null,
+		success: false
+	};
+}
+
+/**
+ * Set the selected category.
+ */
+export function setCategory(category: ReportCategory): void {
+	_state.selectedCategory = category;
+	_state.error = null;
+}
+
+/**
+ * Set the description text.
+ */
+export function setDescription(text: string): void {
+	_state.description = text;
+	_state.error = null;
+}
+
+/**
+ * Set submitting state.
+ */
+export function setSubmitting(isSubmitting: boolean): void {
+	_state.isSubmitting = isSubmitting;
+}
+
+/**
+ * Set error message.
+ */
+export function setError(error: string | null): void {
+	_state.error = error;
+}
+
+/**
+ * Mark submission as successful.
+ */
+export function setSuccess(): void {
+	_state.success = true;
+	_state.isSubmitting = false;
+}
+
+/**
+ * Validate the form before submission.
+ */
+export function validateForm(): boolean {
+	if (!_state.selectedCategory) {
+		_state.error = 'Please select a category';
+		return false;
+	}
+
+	if (_state.selectedCategory === 'other' && !_state.description.trim()) {
+		_state.error = 'Please provide a description for "Other" reports';
+		return false;
+	}
+
+	if (_state.description.length > 1000) {
+		_state.error = 'Description must be less than 1000 characters';
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Export the report modal state with reactive getters.
+ */
+export const reportModalState = {
+	get isOpen() {
+		return _state.isOpen;
+	},
+	get targetUser() {
+		return _state.targetUser;
+	},
+	get selectedCategory() {
+		return _state.selectedCategory;
+	},
+	get description() {
+		return _state.description;
+	},
+	get isSubmitting() {
+		return _state.isSubmitting;
+	},
+	get error() {
+		return _state.error;
+	},
+	get success() {
+		return _state.success;
+	},
+	get canSubmit() {
+		return (
+			_state.selectedCategory !== null &&
+			!_state.isSubmitting &&
+			(_state.selectedCategory !== 'other' || _state.description.trim().length > 0)
+		);
+	},
+
+	// Actions
+	open: openReportModal,
+	close: closeReportModal,
+	setCategory,
+	setDescription,
+	setSubmitting,
+	setError,
+	setSuccess,
+	validate: validateForm
+};

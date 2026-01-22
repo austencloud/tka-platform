@@ -1,0 +1,355 @@
+<!--
+  ContentAppealModal.svelte
+
+  Modal for appealing content that was flagged by moderation.
+  Shows what was flagged, why, and allows user to submit an appeal.
+-->
+<script lang="ts">
+	import BaseModal from '$lib/shared/foundation/ui/modal/BaseModal.svelte';
+	import ModalHeader from '$lib/shared/foundation/ui/modal/ModalHeader.svelte';
+	import ModalFooter from '$lib/shared/foundation/ui/modal/ModalFooter.svelte';
+	import { container } from '$lib/shared/di';
+	import type { FlaggedTerm, CreateAppealData } from '../domain/models/content-moderation-models';
+
+	interface Props {
+		/** The word/content that was flagged */
+		word: string;
+		/** ID of the content (sequence or act) */
+		contentId: string;
+		/** Type of content */
+		contentType: 'sequence' | 'act';
+		/** Terms that triggered the moderation flag */
+		flaggedTerms: FlaggedTerm[];
+		/** Called when modal is closed */
+		onClose: () => void;
+		/** Called when appeal is successfully submitted */
+		onAppealSubmitted?: () => void;
+	}
+
+	let { word, contentId, contentType, flaggedTerms, onClose, onAppealSubmitted }: Props = $props();
+
+	let isOpen = $state(true);
+	let appealReason = $state('');
+	let isSubmitting = $state(false);
+	let submitError = $state<string | null>(null);
+
+	// Category labels for display
+	const categoryLabels: Record<string, string> = {
+		profanity: 'Profanity',
+		slur: 'Offensive term',
+		hate: 'Hate speech',
+		sexual: 'Explicit content'
+	};
+
+	function handleClose() {
+		isOpen = false;
+		setTimeout(onClose, 250);
+	}
+
+	async function handleSubmit() {
+		if (!appealReason.trim()) {
+			submitError = 'Please explain why you believe this content should be allowed.';
+			return;
+		}
+
+		isSubmitting = true;
+		submitError = null;
+
+		try {
+			const appealManager = container.items.contentAppealManager;
+			const userId = container.items.authenticator?.currentUser?.uid;
+
+			if (!userId) {
+				throw new Error('You must be signed in to submit an appeal.');
+			}
+
+			const data: CreateAppealData = {
+				contentType,
+				contentId,
+				word,
+				flaggedTerms,
+				appealReason: appealReason.trim()
+			};
+
+			await appealManager.submitAppeal(userId, data);
+
+			onAppealSubmitted?.();
+			handleClose();
+		} catch (error) {
+			submitError = error instanceof Error ? error.message : 'Failed to submit appeal.';
+		} finally {
+			isSubmitting = false;
+		}
+	}
+</script>
+
+<BaseModal bind:open={isOpen} onclose={handleClose} size="md" animation="pop" labelledBy="appeal-modal-title">
+	{#snippet header()}
+		<ModalHeader
+			title="Appeal Content Moderation"
+			subtitle="Request review of flagged content"
+			icon="fa-gavel"
+			iconColor="#f59e0b"
+			onClose={handleClose}
+			id="appeal-modal-title"
+		/>
+	{/snippet}
+
+	<div class="appeal-content">
+		<!-- Flagged content display -->
+		<div class="flagged-section" data-animate="2">
+			<h3 class="section-title">Flagged Content</h3>
+			<div class="flagged-word">{word}</div>
+		</div>
+
+		<!-- Why it was flagged -->
+		<div class="reasons-section" data-animate="3">
+			<h3 class="section-title">Why it was flagged</h3>
+			<ul class="reasons-list">
+				{#each flaggedTerms as term}
+					<li>
+						<span class="reason-category">{categoryLabels[term.category] || term.category}</span>
+						<span class="reason-term">Matched: "{term.matchedPattern}"</span>
+					</li>
+				{/each}
+			</ul>
+		</div>
+
+		<!-- Info box -->
+		<div class="info-box" data-animate="4">
+			<i class="fas fa-info-circle info-icon" aria-hidden="true"></i>
+			<div class="info-text">
+				<p>Your content can still be saved privately or shared via link. This moderation only prevents public gallery visibility.</p>
+			</div>
+		</div>
+
+		<!-- Appeal form -->
+		<div class="appeal-form" data-animate="5">
+			<h3 class="section-title">Your Appeal</h3>
+			<p class="form-description">
+				Explain why you believe this content should be allowed in the public gallery.
+				An admin will review your request.
+			</p>
+			<textarea
+				bind:value={appealReason}
+				placeholder="Example: This is the name of a place/person, not offensive content..."
+				rows="4"
+				disabled={isSubmitting}
+			></textarea>
+		</div>
+
+		<!-- Error display -->
+		{#if submitError}
+			<div class="error-box" data-animate="6">
+				<i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+				<span>{submitError}</span>
+			</div>
+		{/if}
+	</div>
+
+	{#snippet footer()}
+		<ModalFooter>
+			<button class="secondary" onclick={handleClose} disabled={isSubmitting}>
+				Cancel
+			</button>
+			<button class="primary" onclick={handleSubmit} disabled={isSubmitting || !appealReason.trim()}>
+				{#if isSubmitting}
+					<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+					Submitting...
+				{:else}
+					Submit Appeal
+				{/if}
+			</button>
+		</ModalFooter>
+	{/snippet}
+</BaseModal>
+
+<style>
+	.appeal-content {
+		padding: var(--modal-padding, 24px);
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+
+	.section-title {
+		margin: 0 0 8px 0;
+		font-size: var(--font-size-min, 14px);
+		font-weight: 600;
+		color: var(--theme-text, rgba(255, 255, 255, 0.9));
+	}
+
+	/* Flagged content display */
+	.flagged-section {
+		text-align: center;
+	}
+
+	.flagged-word {
+		display: inline-block;
+		padding: 12px 24px;
+		font-size: 18px;
+		font-weight: 700;
+		font-family: var(--font-mono, monospace);
+		letter-spacing: 2px;
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		border-radius: 8px;
+		color: #fca5a5;
+	}
+
+	/* Reasons list */
+	.reasons-list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.reasons-list li {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 8px 12px;
+		background: rgba(255, 255, 255, 0.03);
+		border-radius: 6px;
+	}
+
+	.reason-category {
+		padding: 2px 8px;
+		font-size: var(--font-size-compact, 12px);
+		font-weight: 600;
+		background: rgba(239, 68, 68, 0.2);
+		border-radius: 4px;
+		color: #fca5a5;
+	}
+
+	.reason-term {
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+		font-family: var(--font-mono, monospace);
+	}
+
+	/* Info box */
+	.info-box {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		padding: 12px 14px;
+		background: rgba(59, 130, 246, 0.1);
+		border: 1px solid rgba(59, 130, 246, 0.2);
+		border-radius: 8px;
+	}
+
+	.info-icon {
+		flex-shrink: 0;
+		color: #60a5fa;
+		margin-top: 2px;
+	}
+
+	.info-text p {
+		margin: 0;
+		font-size: var(--font-size-min, 14px);
+		line-height: 1.5;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.85));
+	}
+
+	/* Appeal form */
+	.form-description {
+		margin: 0 0 12px 0;
+		font-size: var(--font-size-min, 14px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+		line-height: 1.5;
+	}
+
+	textarea {
+		width: 100%;
+		padding: 12px;
+		font-size: var(--font-size-min, 14px);
+		font-family: inherit;
+		line-height: 1.5;
+		color: var(--theme-text, rgba(255, 255, 255, 0.9));
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 8px;
+		resize: vertical;
+		transition: border-color 0.2s ease;
+	}
+
+	textarea:focus {
+		outline: none;
+		border-color: var(--theme-accent, #3b82f6);
+	}
+
+	textarea:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	textarea::placeholder {
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+	}
+
+	/* Error box */
+	.error-box {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 14px;
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		border-radius: 8px;
+		font-size: var(--font-size-min, 14px);
+		color: #fca5a5;
+	}
+
+	/* Footer buttons */
+	button {
+		padding: 10px 20px;
+		font-size: var(--font-size-min, 14px);
+		font-weight: 500;
+		border-radius: 8px;
+		border: none;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	button.secondary {
+		background: rgba(255, 255, 255, 0.1);
+		color: var(--theme-text, rgba(255, 255, 255, 0.9));
+	}
+
+	button.secondary:hover:not(:disabled) {
+		background: rgba(255, 255, 255, 0.15);
+	}
+
+	button.primary {
+		background: var(--theme-accent, #3b82f6);
+		color: white;
+	}
+
+	button.primary:hover:not(:disabled) {
+		filter: brightness(1.1);
+	}
+
+	button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* Mobile responsive */
+	@media (max-width: 480px) {
+		.appeal-content {
+			padding: var(--modal-padding-mobile, 20px);
+		}
+
+		.flagged-word {
+			font-size: 16px;
+			padding: 10px 18px;
+		}
+	}
+</style>
