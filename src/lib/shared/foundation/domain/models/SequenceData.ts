@@ -88,11 +88,75 @@ export interface SequenceData {
   readonly animatedSequencePath?: string;
 }
 
+/**
+ * Normalize step data to ensure motions are in the correct format.
+ * Handles legacy data where 'blue' and 'red' are at the top level instead of inside 'motions'.
+ */
+function normalizeStepData(step: Record<string, unknown>): StepData {
+  // If step already has motions with data, return as-is
+  const existingMotions = step.motions as Record<string, unknown> | undefined;
+  if (existingMotions && (existingMotions.blue || existingMotions.red)) {
+    return step as unknown as StepData;
+  }
+
+  // Check for legacy format: 'blue' and 'red' at top level
+  const legacyBlue = step.blue as Record<string, unknown> | undefined;
+  const legacyRed = step.red as Record<string, unknown> | undefined;
+
+  if (legacyBlue || legacyRed) {
+    // Convert legacy format to modern format
+    const motions: Record<string, unknown> = {};
+    if (legacyBlue) {
+      motions.blue = {
+        motionType: legacyBlue.type,
+        rotationDirection: legacyBlue.dir,
+        startLocation: legacyBlue.start,
+        endLocation: legacyBlue.end,
+        turns: legacyBlue.turns,
+        startOrientation: legacyBlue.startOri,
+        endOrientation: legacyBlue.endOri,
+      };
+    }
+    if (legacyRed) {
+      motions.red = {
+        motionType: legacyRed.type,
+        rotationDirection: legacyRed.dir,
+        startLocation: legacyRed.start,
+        endLocation: legacyRed.end,
+        turns: legacyRed.turns,
+        startOrientation: legacyRed.startOri,
+        endOrientation: legacyRed.endOri,
+      };
+    }
+
+    // Return step with motions populated
+    return {
+      ...step,
+      motions,
+      // Ensure required StepData fields exist
+      id: (step.id as string) ?? crypto.randomUUID(),
+      stepNumber: (step.stepNumber as number) ?? (step.beat as number) ?? 1,
+      duration: (step.duration as number) ?? 1,
+      blueReversal: (step.blueReversal as boolean) ?? false,
+      redReversal: (step.redReversal as boolean) ?? false,
+      isBlank: (step.isBlank as boolean) ?? false,
+      letter: step.letter ?? null,
+      startPosition: step.start ?? step.startPosition ?? null,
+      endPosition: step.end ?? step.endPosition ?? null,
+    } as unknown as StepData;
+  }
+
+  // No conversion needed
+  return step as unknown as StepData;
+}
+
 export function createSequenceData(
   data: Partial<SequenceData> & { beats?: readonly StepData[] } = {}
 ): SequenceData {
   // Backwards compatibility: support old 'beats' property name
-  const steps = data.steps ?? data.beats ?? [];
+  const rawSteps = data.steps ?? data.beats ?? [];
+  // Normalize each step to ensure motions are in the correct format
+  const steps = rawSteps.map((step) => normalizeStepData(step as unknown as Record<string, unknown>));
   const result: SequenceData = {
     id: data.id ?? crypto.randomUUID(),
     name: data.name ?? "",
