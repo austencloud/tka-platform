@@ -83,14 +83,14 @@
     {/if}
 
     <!-- Step Grid -->
-    {#each steps as beat, index (getBeatKey(beat, index))}
+    {#each steps as step, index (getBeatKey(step, index))}
       {@const position = calculateBeatPosition(index, gridLayout.columns)}
       {@const isDeleting = removingStepIndices.has(index)}
       {@const shouldSlide =
         removingStepIndex !== null && !isDeleting && index > removingStepIndex}
       {@const musicalPosition = getDurationDisplay(index)}
       <div
-        class="beat-container"
+        class="step-container"
         class:deleting={isDeleting}
         class:sliding={shouldSlide}
         class:hidden-for-sequential={displayState.shouldBeatBeHidden(index)}
@@ -101,16 +101,16 @@
           : "0ms"}
       >
         <StepCell
-          {beat}
+          {step}
           {index}
-          onClick={() => onStepClick?.(beat.stepNumber)}
-          onDelete={() => onStepDelete?.(beat.stepNumber)}
+          onClick={() => onStepClick?.(step.stepNumber)}
+          onDelete={() => onStepDelete?.(step.stepNumber)}
           onLongPress={onStepLongPress}
           shouldAnimate={displayState.shouldBeatAnimate(index)}
-          isSelected={selectedStepNumber === beat.stepNumber}
-          isPracticeStep={practiceStepNumber === beat.stepNumber}
+          isSelected={selectedStepNumber === step.stepNumber}
+          isPracticeStep={practiceStepNumber === step.stepNumber}
           {activeMode}
-          highlightStyle={highlightedSteps?.get(beat.stepNumber) ?? null}
+          highlightStyle={highlightedSteps?.get(step.stepNumber) ?? null}
           {musicalPosition}
           animationEpoch={displayState.animationEpoch}
         />
@@ -193,7 +193,7 @@
     transform: scale(0.95) translateY(-10px);
   }
 
-  .beat-container {
+  .step-container {
     margin: 0;
     position: relative;
     display: flex;
@@ -205,16 +205,16 @@
     min-height: 0;
   }
 
-  .beat-container.deleting {
+  .step-container.deleting {
     animation: fadeOutDisintegrate var(--duration-normal) ease-out forwards;
   }
 
-  .beat-container.sliding {
+  .step-container.sliding {
     animation: slideIntoPlace var(--duration-normal) cubic-bezier(0.25, 0.46, 0.45, 0.94)
       forwards;
   }
 
-  .beat-container.hidden-for-sequential {
+  .step-container.hidden-for-sequential {
     opacity: 0;
     pointer-events: none;
   }
@@ -251,8 +251,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .beat-container.deleting,
-    .beat-container.sliding {
+    .step-container.deleting,
+    .step-container.sliding {
       animation: none;
     }
   }

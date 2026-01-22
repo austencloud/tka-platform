@@ -1,8 +1,8 @@
 <!--
   RemoveStepButton.svelte
 
-  Remove beat button for ButtonPanel.
-  Removes the selected beat and all following steps.
+  Remove step button for ButtonPanel.
+  Removes the selected step and all following steps.
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
@@ -26,10 +26,10 @@
 </script>
 
 <button
-  class="panel-button remove-beat-button"
+  class="panel-button remove-step-button"
   onclick={handleClick}
-  aria-label="Remove Beat {stepNumber} and all following steps"
-  title="Remove Beat {stepNumber} and all following steps"
+  aria-label="Remove Step {stepNumber} and all following steps"
+  title="Remove Step {stepNumber} and all following steps"
 >
   <i class="fa-solid fa-trash" aria-hidden="true"></i>
 </button>
@@ -69,7 +69,7 @@
     outline-offset: 2px;
   }
 
-  .remove-beat-button {
+  .remove-step-button {
     background: linear-gradient(
       135deg,
       var(--semantic-warning) 0%,
@@ -80,7 +80,7 @@
       color-mix(in srgb, var(--semantic-warning) 40%, transparent);
   }
 
-  .remove-beat-button:hover {
+  .remove-step-button:hover {
     background: linear-gradient(
       135deg,
       color-mix(in srgb, var(--semantic-warning) 80%, #ff0000) 0%,

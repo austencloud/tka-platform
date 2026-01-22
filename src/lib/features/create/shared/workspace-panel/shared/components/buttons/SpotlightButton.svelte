@@ -1,7 +1,7 @@
 <!--
   SpotlightButton.svelte
 
-  Triggers spotlight mode to enlarge the selected beat for detailed viewing.
+  Triggers spotlight mode to enlarge the selected step for detailed viewing.
   Replaces the long-press gesture on StepCell for better discoverability.
 -->
 <script lang="ts">
@@ -26,7 +26,7 @@
   class="spotlight-button glass-button"
   class:disabled
   onclick={handleClick}
-  aria-label="Spotlight selected beat"
+  aria-label="Spotlight selected step"
   title="Spotlight"
   data-testid="spotlight-button"
   {disabled}

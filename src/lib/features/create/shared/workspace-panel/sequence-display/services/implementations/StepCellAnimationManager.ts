@@ -36,7 +36,7 @@ export class StepCellAnimationManager implements IStepCellAnimationManager {
   private enableTransitions = false;
 
   // Tracking for change detection
-  private previousBeatId = "";
+  private previousStepId = "";
   private previousEpoch = 0;
   private previousSignature = "";
   private previousIdForTransitions = "";
@@ -60,7 +60,7 @@ export class StepCellAnimationManager implements IStepCellAnimationManager {
     // Animate when:
     // 1. shouldAnimate prop is true (parent says this step should animate)
     // 2. hasAnimated is false (haven't animated yet)
-    // 3. beat is not blank
+    // 3. step is not blank
     return shouldAnimate && !this.hasAnimated && !isBlank;
   }
 
@@ -71,17 +71,17 @@ export class StepCellAnimationManager implements IStepCellAnimationManager {
     // Special case: Start position tile (index -1) should be visible even when blank
     if (index === -1) return true;
 
-    // If it's a blank beat, never show it
+    // If it's a blank step, never show it
     if (isBlank) return false;
 
     // Otherwise, show it
     return true;
   }
 
-  onBeatChanged(beatId: string): void {
-    if (beatId !== this.previousBeatId) {
+  onStepChanged(stepId: string): void {
+    if (stepId !== this.previousStepId) {
       this.hasAnimated = false;
-      this.previousBeatId = beatId;
+      this.previousStepId = stepId;
     }
   }
 
@@ -92,14 +92,14 @@ export class StepCellAnimationManager implements IStepCellAnimationManager {
     }
   }
 
-  onDataChanged(beat: StepData): void {
-    const currentSignature = getPictographSignature(beat);
+  onDataChanged(step: StepData): void {
+    const currentSignature = getPictographSignature(step);
     const signatureChanged = currentSignature !== this.previousSignature;
-    const idChanged = beat.id !== this.previousIdForTransitions;
+    const idChanged = step.id !== this.previousIdForTransitions;
 
     // Only enable fade transitions when loading genuinely different content
     // (id changed AND signature changed). Transforms keep same id.
-    if (idChanged && signatureChanged && !beat.isBlank) {
+    if (idChanged && signatureChanged && !step.isBlank) {
       this.enableTransitions = true;
 
       // Clear any existing timer
@@ -115,7 +115,7 @@ export class StepCellAnimationManager implements IStepCellAnimationManager {
     }
 
     this.previousSignature = currentSignature;
-    this.previousIdForTransitions = beat.id;
+    this.previousIdForTransitions = step.id;
   }
 
   onAnimationEnd(shouldAnimateIn: boolean): void {
@@ -134,7 +134,7 @@ export class StepCellAnimationManager implements IStepCellAnimationManager {
   reset(): void {
     this.hasAnimated = false;
     this.enableTransitions = false;
-    this.previousBeatId = "";
+    this.previousStepId = "";
     this.previousEpoch = 0;
     this.previousSignature = "";
     this.previousIdForTransitions = "";

@@ -8,7 +8,7 @@
   import { createStepCellAnimationManager } from "../services/implementations/StepCellAnimationManager";
 
   let {
-    beat,
+    step,
     index = 0,
     onClick,
     onDelete,
@@ -27,10 +27,10 @@
     // Width multiplier for expanded timeline cells (1 = normal, 2 = double width, etc.)
     widthMultiplier = 1,
     // Animation epoch - increments when a new sequence animation starts
-    // Used to reset hasAnimated even when beat.id stays the same
+    // Used to reset hasAnimated even when step.id stays the same
     animationEpoch = 0,
   } = $props<{
-    beat: StepData;
+    step: StepData;
     index?: number;
     onClick?: () => void;
     onDelete?: () => void;
@@ -62,24 +62,24 @@
   let animationState = $state(animationManager.getState());
 
   const isStartPosition = $derived.by(() => {
-    return beat.stepNumber === 0;
+    return step.stepNumber === 0;
   });
 
-  const displayBeatNumber = $derived.by(() => {
-    return beat.stepNumber || index + 1;
+  const displayStepNumber = $derived.by(() => {
+    return step.stepNumber || index + 1;
   });
 
   const ariaLabel = $derived.by(() => {
     if (isStartPosition) {
       return "Start Position";
     }
-    return `Beat ${displayBeatNumber} ${beat.isBlank ? "Empty" : "Pictograph"}`;
+    return `Step ${displayStepNumber} ${step.isBlank ? "Empty" : "Pictograph"}`;
   });
 
-  // Create beat data with selection state for the Pictograph component
+  // Create step data with selection state for the Pictograph component
   const stepDataWithSelection = $derived.by(() => {
     return {
-      ...beat,
+      ...step,
       isSelected,
     };
   });
@@ -100,22 +100,22 @@
   });
 
   $effect(() => {
-    animationManager.onBeatChanged(beat.id);
+    animationManager.onStepChanged(step.id);
     animationState = animationManager.getState();
   });
 
   $effect(() => {
-    animationManager.onDataChanged(beat);
+    animationManager.onDataChanged(step);
     animationState = animationManager.getState();
   });
 
   // Derived values from animation manager
   const shouldAnimateIn = $derived.by(() => {
-    return animationManager.shouldAnimateIn(shouldAnimate, beat.isBlank);
+    return animationManager.shouldAnimateIn(shouldAnimate, step.isBlank);
   });
 
   const isVisible = $derived.by(() => {
-    return animationManager.isVisible(shouldAnimate, index, beat.isBlank);
+    return animationManager.isVisible(shouldAnimate, index, step.isBlank);
   });
 
   const enableTransitionsForNewData = $derived.by(() => {
@@ -151,7 +151,7 @@
     };
   });
 
-  // Auto-focus when this cell becomes selected (e.g., after deleting another beat)
+  // Auto-focus when this cell becomes selected (e.g., after deleting another step)
   // This enables continuous Delete key presses to delete steps one by one
   // Use null as sentinel to detect first run and initialize to isSelected's value
   let wasSelected: boolean | null = null;
@@ -177,7 +177,7 @@
   });
 
   function handleClick() {
-    // Trigger haptic feedback for beat selection
+    // Trigger haptic feedback for step selection
     hapticService?.trigger("selection");
     onClick?.();
     // Focus the cell so keyboard events (Delete/Backspace) work immediately
@@ -186,7 +186,7 @@
 
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === "Enter") {
-      // Enter activates the beat (accessibility)
+      // Enter activates the step (accessibility)
       event.preventDefault();
       hapticService?.trigger("selection");
       onClick?.();
@@ -198,7 +198,7 @@
       // Don't call onClick - let global shortcuts handle Space
       return;
     } else if (event.key === "Delete" || event.key === "Backspace") {
-      // Allow deletion if beat is selected (including start position)
+      // Allow deletion if step is selected (including start position)
       if (isSelected) {
         event.preventDefault();
         // Trigger warning haptic feedback for deletion
@@ -266,7 +266,7 @@
   class:expanded={widthMultiplier > 1}
   class:timeline-mode={isTimelineMode}
   class:selected={isSelected && !isTimelineMode}
-  class:practice-beat={isPracticeStep && !isTimelineMode}
+  class:practice-step={isPracticeStep && !isTimelineMode}
   class:practice-intense={isPracticeStep &&
     !isTimelineMode &&
     practiceAnimationStyle.current === "intense"}
@@ -303,7 +303,7 @@
   tabindex="0"
   aria-label={ariaLabel}
 >
-  <!-- Normal pictograph (will show empty grid when beat.isBlank) -->
+  <!-- Normal pictograph (will show empty grid when step.isBlank) -->
   <PictographContainer
     pictographData={stepDataWithSelection}
     disableTransitions={!enableTransitionsForNewData}
@@ -367,7 +367,7 @@
     transition: none;
   }
 
-  /* Invisible state - beat takes up space but pictograph is hidden */
+  /* Invisible state - step takes up space but pictograph is hidden */
   .step-cell.invisible {
     opacity: 0;
     pointer-events: none;
@@ -457,7 +457,7 @@
     /* Scale effect - expands equally on all sides */
     transform: scale(1.08);
 
-    /* NO transparency - keep selected beat fully opaque */
+    /* NO transparency - keep selected step fully opaque */
     opacity: 1;
 
     /* Smooth spring animation - longer duration for more noticeable fade-in */
@@ -504,7 +504,7 @@
     }
   }
 
-  /* Selection styling DURING animation - border/glow visible while beat animates in */
+  /* Selection styling DURING animation - border/glow visible while step animates in */
   .step-cell.animate.selected {
     z-index: 10;
     border: 3px solid transparent;
@@ -564,8 +564,8 @@
      Toggle between styles using the button in ButtonPanel
      ========================================================================= */
 
-  /* Base practice beat styling - shared by all variants */
-  .step-cell.practice-beat {
+  /* Base practice step styling - shared by all variants */
+  .step-cell.practice-step {
     border: 3px solid var(--semantic-warning);
     border-radius: 8px;
     z-index: 10;
@@ -714,7 +714,7 @@
     }
   }
 
-  .step-cell.practice-beat:hover {
+  .step-cell.practice-step:hover {
     box-shadow:
       0 0 24px rgba(251, 191, 36, 0.7),
       0 0 48px rgba(251, 191, 36, 0.3);

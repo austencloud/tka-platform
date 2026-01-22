@@ -60,7 +60,7 @@
   aria-label="Start Position"
 >
   <StepCell
-    beat={startPosition}
+    step={startPosition}
     index={-1}
     {shouldAnimate}
     {isSelected}

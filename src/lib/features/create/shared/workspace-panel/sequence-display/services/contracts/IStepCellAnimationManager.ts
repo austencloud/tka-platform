@@ -1,8 +1,8 @@
 /**
  * IStepCellAnimationManager
  *
- * Manages animation state for StepCell components. Tracks which beats have animated,
- * detects when beat data changes (requiring re-animation), and controls transition
+ * Manages animation state for StepCell components. Tracks which steps have animated,
+ * detects when step data changes (requiring re-animation), and controls transition
  * enablement for smooth pictograph loading.
  *
  * This service encapsulates the complex animation coordination logic that was
@@ -39,8 +39,8 @@ export interface IStepCellAnimationManager {
   getState(): StepCellAnimationState;
 
   /**
-   * Check if a beat should animate in.
-   * Returns true when: shouldAnimate is true AND hasAnimated is false AND beat is not blank.
+   * Check if a step should animate in.
+   * Returns true when: shouldAnimate is true AND hasAnimated is false AND step is not blank.
    */
   shouldAnimateIn(shouldAnimate: boolean, isBlank: boolean): boolean;
 
@@ -55,22 +55,22 @@ export interface IStepCellAnimationManager {
   ): boolean;
 
   /**
-   * Called when a new beat is loaded into this cell.
-   * Resets hasAnimated if the beat ID changed.
+   * Called when a new step is loaded into this cell.
+   * Resets hasAnimated if the step ID changed.
    */
-  onBeatChanged(beatId: string): void;
+  onStepChanged(stepId: string): void;
 
   /**
    * Called when the animation epoch changes (new sequence animation started).
-   * Resets hasAnimated even if beat ID is the same.
+   * Resets hasAnimated even if step ID is the same.
    */
   onEpochChanged(epoch: number): void;
 
   /**
-   * Called when beat data changes to determine if transitions should be enabled.
+   * Called when step data changes to determine if transitions should be enabled.
    * Enables fade transitions only when loading genuinely different content.
    */
-  onDataChanged(beat: StepData): void;
+  onDataChanged(step: StepData): void;
 
   /**
    * Called when the CSS animation completes.

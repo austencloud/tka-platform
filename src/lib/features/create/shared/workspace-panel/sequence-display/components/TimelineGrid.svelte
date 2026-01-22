@@ -98,7 +98,7 @@
       {#each timelineRows as row, rowIndex (rowIndex)}
         <div class="timeline-row">
           {#each row.steps as { stepIndex, duration } (getBeatKey(steps[stepIndex], stepIndex))}
-            {@const beat = steps[stepIndex]}
+            {@const step = steps[stepIndex]}
             {@const isDeleting = removingStepIndices.has(stepIndex)}
             {@const shouldSlide =
               removingStepIndex !== null &&
@@ -106,28 +106,28 @@
               stepIndex > removingStepIndex}
             {@const musicalPosition = getDurationDisplay(stepIndex)}
             <div
-              class="timeline-cell beat-container"
+              class="timeline-cell step-container"
               class:deleting={isDeleting}
               class:sliding={shouldSlide}
               class:hidden-for-sequential={displayState.shouldBeatBeHidden(stepIndex)}
-              class:timeline-selected={selectedStepNumber === beat.stepNumber}
-              class:timeline-practice={practiceStepNumber === beat.stepNumber}
+              class:timeline-selected={selectedStepNumber === step.stepNumber}
+              class:timeline-practice={practiceStepNumber === step.stepNumber}
               style:--duration-multiplier={getTimelineWidthMultiplier(duration)}
               style:animation-delay={shouldSlide
                 ? `${Math.min(stepIndex - removingStepIndex - 1, 5) * 50}ms`
                 : "0ms"}
             >
               <StepCell
-                {beat}
+                {step}
                 index={stepIndex}
-                onClick={() => onStepClick?.(beat.stepNumber)}
-                onDelete={() => onStepDelete?.(beat.stepNumber)}
+                onClick={() => onStepClick?.(step.stepNumber)}
+                onDelete={() => onStepDelete?.(step.stepNumber)}
                 onLongPress={onStepLongPress}
                 shouldAnimate={displayState.shouldBeatAnimate(stepIndex)}
-                isSelected={selectedStepNumber === beat.stepNumber}
-                isPracticeStep={practiceStepNumber === beat.stepNumber}
+                isSelected={selectedStepNumber === step.stepNumber}
+                isPracticeStep={practiceStepNumber === step.stepNumber}
                 {activeMode}
-                highlightStyle={highlightedSteps?.get(beat.stepNumber) ?? null}
+                highlightStyle={highlightedSteps?.get(step.stepNumber) ?? null}
                 {musicalPosition}
                 isTimelineMode={true}
                 widthMultiplier={duration}
@@ -274,27 +274,27 @@
     box-shadow: 0 0 16px rgba(251, 191, 36, 0.5);
   }
 
-  .beat-container {
+  .step-container {
     margin: 0;
     position: relative;
   }
 
-  .beat-container.deleting {
+  .step-container.deleting {
     animation: fadeOutDisintegrate var(--duration-normal) ease-out forwards;
   }
 
-  .beat-container.sliding {
+  .step-container.sliding {
     animation: slideIntoPlace var(--duration-normal) cubic-bezier(0.25, 0.46, 0.45, 0.94)
       forwards;
   }
 
-  .beat-container.hidden-for-sequential {
+  .step-container.hidden-for-sequential {
     opacity: 0;
     pointer-events: none;
   }
 
   /* Timeline mode: override width from .beat-container */
-  .timeline-cell.beat-container,
+  .timeline-cell.step-container,
   .timeline-cell.start-tile {
     width: calc(var(--cell-size) * var(--duration-multiplier, 1));
   }
@@ -331,8 +331,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .beat-container.deleting,
-    .beat-container.sliding {
+    .step-container.deleting,
+    .step-container.sliding {
       animation: none;
     }
   }

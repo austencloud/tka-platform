@@ -1,79 +1,79 @@
 <!--
-  BeatVisualization.svelte - Current Beat Display
+  BeatVisualization.svelte - Current Step Display
 
-  Shows the current beat from the sequence during training.
-  Displays pictograph visualization and beat information.
+  Shows the current step from the sequence during training.
+  Displays pictograph visualization and step information.
 -->
 <script lang="ts">
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
 
   interface Props {
-    beat: StepData | null;
+    step: StepData | null;
     stepNumber: number;
     totalSteps: number;
     showDetails?: boolean;
   }
 
   let {
-    beat = null,
+    step = null,
     stepNumber = 0,
     totalSteps = 0,
     showDetails = true,
   }: Props = $props();
 
-  // Get beat info for display
-  const hasStep = $derived(beat !== null);
-  const isBlank = $derived(beat?.isBlank ?? false);
+  // Get step info for display
+  const hasStep = $derived(step !== null);
+  const isBlank = $derived(step?.isBlank ?? false);
 </script>
 
-<div class="beat-visualization">
-  <!-- Beat counter -->
-  <div class="beat-header">
-    <span class="beat-counter">Beat {stepNumber} / {totalSteps}</span>
+<div class="step-visualization">
+  <!-- Step counter -->
+  <div class="step-header">
+    <span class="step-counter">Step {stepNumber} / {totalSteps}</span>
   </div>
 
   <!-- Pictograph visualization -->
   <div class="pictograph-container">
     {#if hasStep && !isBlank}
-      <PictographContainer pictographData={beat} />
+      <PictographContainer pictographData={step} />
     {:else if isBlank}
-      <div class="blank-beat">
-        <span>Blank Beat</span>
+      <div class="blank-step">
+        <span>Blank Step</span>
       </div>
     {:else}
-      <div class="no-beat">
-        <span>No beat data</span>
+      <div class="no-step">
+        <span>No step data</span>
       </div>
     {/if}
   </div>
 
-  <!-- Beat details (optional) -->
-  {#if showDetails && beat}
-    <div class="beat-details">
-      {#if beat.blueReversal || beat.redReversal}
+  <!-- Step details (optional) -->
+  {#if showDetails && step}
+    <div class="step-details">
+      {#if step.blueReversal || step.redReversal}
         <div class="reversals">
-          {#if beat.blueReversal}
+          {#if step.blueReversal}
             <span class="reversal blue">Blue Reversal</span>
           {/if}
-          {#if beat.redReversal}
+          {#if step.redReversal}
             <span class="reversal red">Red Reversal</span>
           {/if}
         </div>
       {/if}
 
-      {#if beat.motions}
+      {#if step.motions}
         <div class="positions">
-          {#if beat.motions.blue}
+          {#if step.motions.blue}
             <div class="position-info">
               <span class="label blue">Blue:</span>
-              <span class="location">{beat.motions.blue.endLocation}</span>
+              <span class="location">{step.motions.blue.endLocation}</span>
             </div>
           {/if}
-          {#if beat.motions.red}
+          {#if step.motions.red}
             <div class="position-info">
               <span class="label red">Red:</span>
-              <span class="location">{beat.motions.red.endLocation}</span>
+              <span class="location">{step.motions.red.endLocation}</span>
             </div>
           {/if}
         </div>
@@ -83,7 +83,7 @@
 </div>
 
 <style>
-  .beat-visualization {
+  .step-visualization {
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -93,13 +93,13 @@
     border-radius: 12px;
   }
 
-  .beat-header {
+  .step-header {
     display: flex;
     justify-content: center;
     align-items: center;
   }
 
-  .beat-counter {
+  .step-counter {
     font-size: 1.25rem;
     font-weight: 600;
     color: var(--theme-text, white);
@@ -117,8 +117,8 @@
     padding: 1rem;
   }
 
-  .blank-beat,
-  .no-beat {
+  .blank-step,
+  .no-step {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -128,7 +128,7 @@
     font-size: 1rem;
   }
 
-  .beat-details {
+  .step-details {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
