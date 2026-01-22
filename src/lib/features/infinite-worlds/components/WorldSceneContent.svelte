@@ -79,10 +79,6 @@
   const USE_TERRAIN_TEXTURING = true; // Enabled - requires WebGPU renderer (GalleryCanvas with webgpu-auto)
 
   // ============================================================================
-  // EMERGENCY SAFE MODE - Now controlled via props from SafeModePanel
-  // ============================================================================
-
-  // ============================================================================
   // PROPS
   // ============================================================================
 
@@ -244,42 +240,23 @@
     setupLighting();
 
     // Initialize vegetation manager with GLTF models
-    // Controlled by safeMode.enableVegetation - start disabled
-    if (safeMode.enableVegetation) {
-      vegetationManager = new VegetationManager(scene, { useGLTFModels: true });
-      await vegetationManager.initWithModels();
-    }
+    vegetationManager = new VegetationManager(scene, { useGLTFModels: true });
+    await vegetationManager.initWithModels();
 
     // Initialize atmosphere (sky, fog)
-    // Controlled by safeMode.enableAtmosphere
-    if (safeMode.enableAtmosphere) {
-      atmosphereManager = new AtmosphereManager(scene);
-      atmosphereManager.createSky();
-      atmosphereManager.setFog(stageMode ? "forest" : "plains");
-    }
+    atmosphereManager = new AtmosphereManager(scene);
+    atmosphereManager.createSky();
+    atmosphereManager.setFog(stageMode ? "forest" : "plains");
 
     // Initialize water
-    // Controlled by safeMode.enableWater
-    if (safeMode.enableWater) {
-      waterManager = new WaterManager(scene, {
-        waterLevel: 5,
-        color: "#2a8faa",
-        opacity: 0.75,
-      });
-      waterManager.create();
-    }
+    waterManager = new WaterManager(scene, {
+      waterLevel: 5,
+      color: "#2a8faa",
+      opacity: 0.75,
+    });
+    waterManager.create();
 
     // Initialize chunk manager
-    // Controlled by safeMode.enableChunks
-    if (!safeMode.enableChunks) {
-      console.log("[WorldSceneContent] Chunks disabled via safeMode");
-      isInitialized = true;
-      isReadyToRender = true; // Skip ground snap, just render
-      needsGroundSnap = false;
-      playerPosition = { x: 0, y: 10, z: 0 }; // Safe default position
-      return; // Exit early - skip all chunk/terrain setup
-    }
-
     chunkManager = new ChunkManager(worldSeed, {
       chunkSize: activeConfig.chunks.size,
       viewDistance: activeConfig.chunks.viewDistance,
@@ -423,70 +400,6 @@
     }
 
     inputCapabilities.destroy();
-  });
-
-  // ============================================================================
-  // RUNTIME SAFE MODE EFFECTS
-  // These handle toggling features AFTER initial mount
-  // Note: Chunks cannot be toggled at runtime - requires page refresh
-  // ============================================================================
-
-  // Track previous values to detect changes
-  let prevEnableVegetation = safeMode.enableVegetation;
-  let prevEnableWater = safeMode.enableWater;
-  let prevEnableAtmosphere = safeMode.enableAtmosphere;
-
-  $effect(() => {
-    // Vegetation toggle (only works if chunks are enabled)
-    if (safeMode.enableVegetation !== prevEnableVegetation) {
-      prevEnableVegetation = safeMode.enableVegetation;
-
-      if (safeMode.enableVegetation && !vegetationManager && chunkManager) {
-        // Create vegetation manager
-        vegetationManager = new VegetationManager(scene, { useGLTFModels: true });
-        vegetationManager.initWithModels().then(() => {
-          console.log("[WorldSceneContent] Vegetation manager initialized");
-        });
-      } else if (!safeMode.enableVegetation && vegetationManager) {
-        // Hide all vegetation (don't dispose - keep for re-enabling)
-        vegetationManager.setVisible(false);
-      } else if (safeMode.enableVegetation && vegetationManager) {
-        vegetationManager.setVisible(true);
-      }
-    }
-  });
-
-  $effect(() => {
-    // Water toggle
-    if (safeMode.enableWater !== prevEnableWater) {
-      prevEnableWater = safeMode.enableWater;
-
-      if (safeMode.enableWater && !waterManager) {
-        waterManager = new WaterManager(scene, {
-          waterLevel: 5,
-          color: "#2a8faa",
-          opacity: 0.75,
-        });
-        waterManager.create();
-      } else if (waterManager) {
-        waterManager.setVisible(safeMode.enableWater);
-      }
-    }
-  });
-
-  $effect(() => {
-    // Atmosphere toggle
-    if (safeMode.enableAtmosphere !== prevEnableAtmosphere) {
-      prevEnableAtmosphere = safeMode.enableAtmosphere;
-
-      if (safeMode.enableAtmosphere && !atmosphereManager) {
-        atmosphereManager = new AtmosphereManager(scene);
-        atmosphereManager.createSky();
-        atmosphereManager.setFog(stageMode ? "forest" : "plains");
-      } else if (atmosphereManager) {
-        atmosphereManager.setVisible(safeMode.enableAtmosphere);
-      }
-    }
   });
 
   // ============================================================================
@@ -669,7 +582,6 @@
             triplanarSharpness: 4.0,
             useSimplePatterns: false,
           });
-          console.log("[WorldScene] Created terrain splat material:", sharedTerrainMaterial.type);
         } catch (error) {
           console.warn("[WorldScene] Failed to create terrain splat material, falling back to vertex colors:", error);
           sharedTerrainMaterial = new MeshStandardMaterial({
