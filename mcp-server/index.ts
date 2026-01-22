@@ -36,8 +36,13 @@ import {
   getPresetConstraintSet,
   listPresets,
   formatConstraintReport,
+  getTransitionMatrix,
+  analyzeWordFeasibility,
+  suggestAlternatives,
+  explainConstraintImpossibility,
   type PresetName,
   type ConstraintReport,
+  type WordFeasibility,
 } from "./src/core/constraints/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1492,6 +1497,133 @@ server.tool(
   }
 );
 
+// Tool: analyze_word_feasibility
+server.tool(
+  "analyze_word_feasibility",
+  "Analyze whether specific constraints are achievable for a word BEFORE attempting generation. Returns detailed feasibility report including which transitions block certain constraints and suggests alternatives.",
+  {
+    word: z.string().describe('The word to analyze, e.g., "DICKWIPE" or "ABC"'),
+    gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode to analyze"),
+  },
+  async ({ word, gridMode = "diamond" }) => {
+    const allPictographs = ensureDataLoaded(gridMode);
+    const letters = parseWordToLetters(word.toUpperCase());
+
+    if (letters.length === 0) {
+      return {
+        content: [
+          { type: "text" as const, text: `Cannot analyze: no valid letters in "${word}"` },
+        ],
+        isError: true,
+      };
+    }
+
+    if (letters.length < 2) {
+      return {
+        content: [
+          { type: "text" as const, text: `Single-letter words have no transitions to analyze. All constraints are trivially satisfiable.` },
+        ],
+      };
+    }
+
+    // Get or build the transition matrix
+    const matrix = getTransitionMatrix(allPictographs, gridMode);
+
+    // Analyze the word
+    const feasibility = analyzeWordFeasibility(word, letters, matrix);
+
+    // Build response
+    const sections: string[] = [];
+
+    sections.push(`## Word Feasibility Analysis: "${word}"\n`);
+    sections.push(`Letters: ${letters.join(" → ")}`);
+    sections.push(`Total transitions: ${letters.length - 1}\n`);
+
+    // Constraint feasibility summary
+    sections.push(`### Constraint Feasibility\n`);
+    sections.push(`| Constraint | Achievable | Details |`);
+    sections.push(`|------------|------------|---------|`);
+
+    // No hand reversals
+    const noHandStatus = feasibility.canAvoidAllHandReversals ? "✅ Yes" : "❌ No";
+    const noHandDetails = feasibility.canAvoidAllHandReversals
+      ? "All transitions can maintain continuous hand paths"
+      : `${feasibility.handReversalBlockers.length} blocking transition(s)`;
+    sections.push(`| No hand reversals | ${noHandStatus} | ${noHandDetails} |`);
+
+    // No prop reversals
+    const noPropStatus = feasibility.canAvoidAllPropReversals ? "✅ Yes" : "❌ No";
+    const noPropDetails = feasibility.canAvoidAllPropReversals
+      ? "All transitions can maintain consistent prop spin"
+      : `${feasibility.propReversalBlockers.length} blocking transition(s)`;
+    sections.push(`| No prop reversals | ${noPropStatus} | ${noPropDetails} |`);
+
+    // Hand reversal every beat
+    const everyHandStatus = feasibility.canHaveHandReversalEveryBeat ? "✅ Yes" : "❌ No";
+    const everyHandDetails = feasibility.canHaveHandReversalEveryBeat
+      ? "All transitions can produce a hand reversal"
+      : `${feasibility.noHandReversalPossible.length} transition(s) are always continuous`;
+    sections.push(`| Hand reversal every beat | ${everyHandStatus} | ${everyHandDetails} |`);
+
+    // Reversal range
+    sections.push(`\n### Reversal Range\n`);
+    sections.push(`- **Hand reversals:** ${feasibility.minHandReversals} (minimum) to ${feasibility.maxHandReversals} (maximum) out of ${letters.length - 1} transitions`);
+    sections.push(`- **Prop reversals:** ${feasibility.minPropReversals} (minimum) to ${feasibility.maxPropReversals} (maximum) out of ${letters.length - 1} transitions`);
+
+    // Blocking transitions
+    if (feasibility.handReversalBlockers.length > 0) {
+      sections.push(`\n### Transitions That ALWAYS Require Hand Reversal\n`);
+      sections.push(feasibility.handReversalBlockers.map(t => `- ${t}`).join("\n"));
+      const explanation = explainConstraintImpossibility(feasibility, "no-hand-reversals");
+      if (explanation) {
+        sections.push(`\n*${explanation}*`);
+      }
+    }
+
+    if (feasibility.propReversalBlockers.length > 0) {
+      sections.push(`\n### Transitions That ALWAYS Require Prop Reversal\n`);
+      sections.push(feasibility.propReversalBlockers.map(t => `- ${t}`).join("\n"));
+    }
+
+    if (feasibility.noHandReversalPossible.length > 0 && !feasibility.canHaveHandReversalEveryBeat) {
+      sections.push(`\n### Transitions That Can NEVER Produce Hand Reversal\n`);
+      sections.push(feasibility.noHandReversalPossible.map(t => `- ${t}`).join("\n"));
+      const explanation = explainConstraintImpossibility(feasibility, "hand-reversal-every-beat");
+      if (explanation) {
+        sections.push(`\n*${explanation}*`);
+      }
+    }
+
+    // Suggestions
+    const suggestions = suggestAlternatives(feasibility);
+    if (suggestions.length > 0) {
+      sections.push(`\n### Suggestions\n`);
+      sections.push(suggestions.map(s => `💡 ${s}`).join("\n\n"));
+    }
+
+    // Recommended presets
+    sections.push(`\n### Recommended Presets for This Word\n`);
+    if (feasibility.canAvoidAllHandReversals && feasibility.canAvoidAllPropReversals) {
+      sections.push(`- **smooth** - Maximize overall flow (both hand and prop continuity achievable)`);
+    } else if (feasibility.canAvoidAllHandReversals) {
+      sections.push(`- **smooth-hands** - Maximize hand path continuity (achievable for this word)`);
+    } else if (feasibility.canAvoidAllPropReversals) {
+      sections.push(`- **smooth-props** - Maximize prop spin continuity (achievable for this word)`);
+    } else {
+      sections.push(`- **smooth** - Will minimize reversals even though zero isn't achievable`);
+    }
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: sections.join("\n"),
+        },
+      ],
+    };
+  }
+);
+
 // Tool: generate_sequence_data
 server.tool(
   "generate_sequence_data",
@@ -1541,6 +1673,55 @@ server.tool(
     const useConstrainedBuilder = constraintSet.hard.length > 0 || constraintSet.soft.length > 0;
 
     if (useConstrainedBuilder) {
+      // Run feasibility analysis to generate warnings
+      let feasibilityWarnings: string[] = [];
+      if (letters.length >= 2) {
+        const matrix = getTransitionMatrix(allPictographs, gridMode);
+        const feasibility = analyzeWordFeasibility(word, letters, matrix);
+
+        // Check if user requested constraints that can't be fully satisfied
+        const hasReversalConstraint = constraintSet.soft.some(c => c.type === "reversal");
+        const hasHandPathEveryConstraint = constraintSet.soft.some(
+          c => c.type === "handPath" && c.description.includes("every")
+        );
+        const hasContinuityConstraint = constraintSet.soft.some(c => c.type === "continuity");
+        const hasHandPathContinuityConstraint = constraintSet.soft.some(
+          c => c.type === "handPath" && c.description.includes("continuous")
+        );
+
+        // Warning for reversal preset if prop reversal every beat is impossible
+        if (hasReversalConstraint && !feasibility.canHavePropReversalEveryBeat) {
+          feasibilityWarnings.push(
+            `Prop reversal every beat is not achievable for "${word}". ` +
+            `Maximum: ${feasibility.maxPropReversals}/${letters.length - 1} transitions.`
+          );
+        }
+
+        // Warning for hand path reversal every beat
+        if (hasHandPathEveryConstraint && !feasibility.canHaveHandReversalEveryBeat) {
+          feasibilityWarnings.push(
+            `Hand path reversal every beat is not achievable for "${word}". ` +
+            `Maximum: ${feasibility.maxHandReversals}/${letters.length - 1} transitions.`
+          );
+        }
+
+        // Warning for smooth if no prop reversals is impossible
+        if (hasContinuityConstraint && !feasibility.canAvoidAllPropReversals) {
+          feasibilityWarnings.push(
+            `Zero prop reversals is not achievable for "${word}". ` +
+            `Minimum: ${feasibility.minPropReversals} unavoidable reversal(s).`
+          );
+        }
+
+        // Warning for smooth-hands if no hand reversals is impossible
+        if (hasHandPathContinuityConstraint && !feasibility.canAvoidAllHandReversals) {
+          feasibilityWarnings.push(
+            `Zero hand path reversals is not achievable for "${word}". ` +
+            `Minimum: ${feasibility.minHandReversals} unavoidable reversal(s).`
+          );
+        }
+      }
+
       // Use the new constrained builder with beam search
       const result = buildConstrainedSequence({
         letters,
@@ -1592,6 +1773,11 @@ server.tool(
         if (parseResult.warnings.length > 0) {
           (response.constraintReport as Record<string, unknown>).warnings = parseResult.warnings;
         }
+      }
+
+      // Include feasibility warnings if constraints can't be fully satisfied
+      if (feasibilityWarnings.length > 0) {
+        (response.constraintReport as Record<string, unknown>).feasibilityWarnings = feasibilityWarnings;
       }
 
       // Include bridge information if bridges were used

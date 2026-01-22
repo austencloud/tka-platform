@@ -78,7 +78,10 @@ STATIC_PAIRS.forEach(([start, end]) => {
 /**
  * Get hand path direction from start/end locations.
  */
-export function getHandpathDirection(startLocation: string, endLocation: string): HandPath {
+export function getHandpathDirection(startLocation: string | undefined, endLocation: string | undefined): HandPath {
+  if (!startLocation || !endLocation) {
+    return HandPath.STATIC;
+  }
   const key = `${startLocation.toLowerCase()}_${endLocation.toLowerCase()}`;
   return handpathMap.get(key) || HandPath.STATIC;
 }

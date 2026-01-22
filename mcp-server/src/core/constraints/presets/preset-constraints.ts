@@ -85,7 +85,7 @@ export const PRESETS: PresetDefinition[] = [
   },
   {
     name: "reversal",
-    description: "Maximum reversals - direction change every beat for dynamic sequences",
+    description: "Maximize prop reversals - as many direction changes as the word allows",
     constraintSet: {
       hard: [],
       soft: [new ReversalConstraint("every")],
@@ -141,10 +141,13 @@ export const PRESETS: PresetDefinition[] = [
   },
   {
     name: "maximum-chaos",
-    description: "Maximum reversals with mixed motion types - chaotic and dynamic",
+    description: "Maximize all reversals (hand path + prop) - as chaotic as the word allows",
     constraintSet: {
       hard: [],
-      soft: [new ReversalConstraint("every")],
+      soft: [
+        new ReversalConstraint("every"),
+        new HandPathReversalConstraint("every"),
+      ],
     },
   },
 ];

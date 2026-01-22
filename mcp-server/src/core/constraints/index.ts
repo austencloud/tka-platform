@@ -160,3 +160,20 @@ export {
   getPerHandDashScore,
   getCombinedPerHandDashScore,
 } from "./search/bridge-scorer.js";
+
+// Feasibility analysis (pre-generation constraint checking)
+export {
+  analyzeTransition,
+  analyzeWord,
+  analyzeWordFeasibility,
+  buildTransitionMatrix,
+  getTransitionMatrix,
+  clearTransitionMatrixCache,
+  suggestAlternatives,
+  explainConstraintImpossibility,
+  type TransitionAnalysis,
+  type WordAnalysis,
+  type TransitionFeasibility,
+  type TransitionMatrix,
+  type WordFeasibility,
+} from "./analysis/index.js";

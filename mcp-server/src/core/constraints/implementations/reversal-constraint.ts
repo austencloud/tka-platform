@@ -51,13 +51,13 @@ export class ReversalConstraint implements IVariationConstraint {
 
     switch (reversalMode) {
       case "every":
-        this.description = "Reversal every beat (maximum direction changes)";
+        this.description = "Maximize prop reversals (as many as the word allows)";
         break;
       case "minimize":
-        this.description = "Minimize reversals";
+        this.description = "Minimize prop reversals";
         break;
       case "count":
-        this.description = `Target ${targetCount} reversals`;
+        this.description = `Target ${targetCount} prop reversals`;
         break;
     }
   }
