@@ -17,7 +17,7 @@
 
 <style>
   .section-header {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
     width: 100%;
   }
 
@@ -33,17 +33,18 @@
   .section-title-row {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-xs);
+    gap: var(--spacing-xs);
   }
 
   .section-title {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: var(--font-size-min, 14px); /* Minimum readable size */
     font-weight: 600;
-    color: var(--theme-text);
+    color: var(--theme-text-dim, var(--theme-text));
     white-space: nowrap;
     flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 
   .section-divider {
@@ -52,15 +53,8 @@
     background: linear-gradient(
       to right,
       var(--theme-stroke) 0%,
-      var(--theme-stroke) 60%,
+      var(--theme-stroke) 40%,
       transparent 100%
     );
-  }
-
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .section-title {
-      font-size: 1.1rem;
-    }
   }
 </style>

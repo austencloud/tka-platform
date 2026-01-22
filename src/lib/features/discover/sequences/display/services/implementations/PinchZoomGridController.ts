@@ -1,42 +1,50 @@
 /**
  * Pinch-to-Zoom Grid Controller
  *
- * Handles two-finger pinch gestures to control grid column count.
- * Mobile-only feature for photo gallery-style zoom behavior.
- *
- * Uses Pointer Events for cross-platform touch/mouse support.
+ * iOS Photos-style pinch gestures for controlling grid column count.
+ * Uses discrete column changes when pinch threshold is crossed.
+ * No scale transforms - layout changes are handled by CSS grid + transitions.
  */
 
-import type { IPinchZoomGridController } from "../contracts/IPinchZoomGridController";
+import type { IPinchZoomGridController, PinchZoomState } from "../contracts/IPinchZoomGridController";
 
-/** Zoom levels: columns 2-6 (2 = largest cards, 6 = smallest) */
+/** Column count limits */
 const MIN_COLUMNS = 2;
 const MAX_COLUMNS = 6;
 
-/** Debounce delay for column changes to avoid jittery transitions */
-const DEBOUNCE_MS = 100;
+/** Scale threshold to trigger column change (lower = snappier response) */
+const SCALE_THRESHOLD = 1.15;
 
-/** Scale threshold to trigger column change (pinch must be significant) */
-const SCALE_THRESHOLD = 1.3;
+/** Minimum finger distance to track (filters jitter) */
+const MIN_PINCH_DISTANCE = 20;
+
+/** Duration for transition state after column change */
+const TRANSITION_DURATION_MS = 200;
 
 export class PinchZoomGridController implements IPinchZoomGridController {
 	private element: HTMLElement | null = null;
 	private pointerCache: PointerEvent[] = [];
-	private prevPointerDist = -1;
+	private initialPinchDist = -1;
+	private prevPinchDist = -1;
 	private currentColumns: number;
-	private onColumnChange: ((columns: number) => void) | null = null;
-	private debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+	private onStateChange: ((state: PinchZoomState) => void) | null = null;
+
+	// Cumulative scale for threshold detection
 	private cumulativeScale = 1;
 
-	// Bound event handlers for cleanup
+	// Gesture state
+	private isGesturing = false;
+	private isTransitioning = false;
+	private transitionTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	// Bound event handlers
 	private boundPointerDown: (ev: PointerEvent) => void;
 	private boundPointerMove: (ev: PointerEvent) => void;
 	private boundPointerUp: (ev: PointerEvent) => void;
 
 	constructor() {
-		this.currentColumns = MIN_COLUMNS; // Default
+		this.currentColumns = MIN_COLUMNS;
 
-		// Bind handlers
 		this.boundPointerDown = this.handlePointerDown.bind(this);
 		this.boundPointerMove = this.handlePointerMove.bind(this);
 		this.boundPointerUp = this.handlePointerUp.bind(this);
@@ -49,16 +57,15 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 
 		this.element = element;
 
-		// Only attach on touch devices
 		if (!this.isTouchDevice()) {
 			return;
 		}
 
-		element.addEventListener("pointerdown", this.boundPointerDown);
-		element.addEventListener("pointermove", this.boundPointerMove);
-		element.addEventListener("pointerup", this.boundPointerUp);
-		element.addEventListener("pointercancel", this.boundPointerUp);
-		element.addEventListener("pointerleave", this.boundPointerUp);
+		element.addEventListener("pointerdown", this.boundPointerDown, { passive: true });
+		element.addEventListener("pointermove", this.boundPointerMove, { passive: false });
+		element.addEventListener("pointerup", this.boundPointerUp, { passive: true });
+		element.addEventListener("pointercancel", this.boundPointerUp, { passive: true });
+		element.addEventListener("pointerleave", this.boundPointerUp, { passive: true });
 	}
 
 	detach(): void {
@@ -71,18 +78,12 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 			this.element = null;
 		}
 
-		if (this.debounceTimeout) {
-			clearTimeout(this.debounceTimeout);
-			this.debounceTimeout = null;
-		}
-
-		this.pointerCache = [];
-		this.prevPointerDist = -1;
-		this.cumulativeScale = 1;
+		this.clearTransitionTimeout();
+		this.resetState();
 	}
 
-	setOnColumnChange(callback: (columns: number) => void): void {
-		this.onColumnChange = callback;
+	setOnStateChange(callback: (state: PinchZoomState) => void): void {
+		this.onStateChange = callback;
 	}
 
 	setColumnCount(columns: number): void {
@@ -90,33 +91,50 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 	}
 
 	isTouchDevice(): boolean {
-		// Check for touch capability
 		return "ontouchstart" in window || navigator.maxTouchPoints > 0;
 	}
 
-	private handlePointerDown(ev: PointerEvent): void {
-		// Only handle touch events
-		if (ev.pointerType !== "touch") {
-			return;
+	private resetState(): void {
+		this.pointerCache = [];
+		this.initialPinchDist = -1;
+		this.prevPinchDist = -1;
+		this.cumulativeScale = 1;
+		this.isGesturing = false;
+	}
+
+	private clearTransitionTimeout(): void {
+		if (this.transitionTimeout !== null) {
+			clearTimeout(this.transitionTimeout);
+			this.transitionTimeout = null;
 		}
+	}
+
+	private emitState(): void {
+		this.onStateChange?.({
+			columns: this.currentColumns,
+			isGesturing: this.isGesturing,
+			isTransitioning: this.isTransitioning,
+		});
+	}
+
+	private handlePointerDown(ev: PointerEvent): void {
+		if (ev.pointerType !== "touch") return;
 
 		this.pointerCache.push(ev);
-
-		// Capture pointer for tracking outside element
 		(ev.target as HTMLElement).setPointerCapture?.(ev.pointerId);
 
-		// Reset cumulative scale when starting a new pinch gesture
+		// Start pinch when we have two fingers
 		if (this.pointerCache.length === 2) {
+			this.initialPinchDist = this.getPointerDistance();
+			this.prevPinchDist = this.initialPinchDist;
 			this.cumulativeScale = 1;
-			this.prevPointerDist = this.getPointerDistance();
+			this.isGesturing = true;
+			this.emitState();
 		}
 	}
 
 	private handlePointerMove(ev: PointerEvent): void {
-		// Only handle touch events
-		if (ev.pointerType !== "touch") {
-			return;
-		}
+		if (ev.pointerType !== "touch") return;
 
 		// Update cached pointer
 		const idx = this.pointerCache.findIndex((p) => p.pointerId === ev.pointerId);
@@ -124,28 +142,28 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 			this.pointerCache[idx] = ev;
 		}
 
-		// Only handle two-finger gestures
+		// Handle two-finger pinch
 		if (this.pointerCache.length === 2) {
+			ev.preventDefault(); // Prevent browser zoom
 			this.handlePinch();
 		}
 	}
 
 	private handlePointerUp(ev: PointerEvent): void {
-		// Remove pointer from cache
 		const idx = this.pointerCache.findIndex((p) => p.pointerId === ev.pointerId);
 		if (idx >= 0) {
 			this.pointerCache.splice(idx, 1);
 		}
 
-		// Reset pinch state when losing second finger
-		if (this.pointerCache.length < 2) {
-			this.prevPointerDist = -1;
+		// When gesture ends
+		if (this.pointerCache.length < 2 && this.isGesturing) {
+			this.isGesturing = false;
+			this.emitState();
+		}
 
-			// Apply any pending column change when gesture ends
-			if (this.cumulativeScale !== 1) {
-				this.applyScaleToColumns();
-				this.cumulativeScale = 1;
-			}
+		if (this.pointerCache.length < 2) {
+			this.initialPinchDist = -1;
+			this.prevPinchDist = -1;
 		}
 	}
 
@@ -158,26 +176,29 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 	private handlePinch(): void {
 		const curDist = this.getPointerDistance();
 
-		if (this.prevPointerDist > 0 && curDist > 0) {
-			// Calculate scale change since last move
-			const scaleChange = curDist / this.prevPointerDist;
+		if (curDist < MIN_PINCH_DISTANCE || this.prevPinchDist < MIN_PINCH_DISTANCE) {
+			this.prevPinchDist = curDist;
+			return;
+		}
 
-			// Accumulate scale
+		if (this.prevPinchDist > 0 && curDist > 0) {
+			// Calculate instantaneous scale change
+			const scaleChange = curDist / this.prevPinchDist;
+
+			// Update cumulative scale for threshold detection
 			this.cumulativeScale *= scaleChange;
 
-			// Check if we've crossed threshold for column change
+			// Check thresholds for column change
 			if (this.cumulativeScale > SCALE_THRESHOLD) {
 				// Pinch out = fewer columns (larger cards)
 				this.changeColumns(-1);
-				this.cumulativeScale = 1; // Reset for next change
 			} else if (this.cumulativeScale < 1 / SCALE_THRESHOLD) {
 				// Pinch in = more columns (smaller cards)
 				this.changeColumns(1);
-				this.cumulativeScale = 1; // Reset for next change
 			}
 		}
 
-		this.prevPointerDist = curDist;
+		this.prevPinchDist = curDist;
 	}
 
 	private changeColumns(delta: number): void {
@@ -188,27 +209,20 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 
 		if (newColumns !== this.currentColumns) {
 			this.currentColumns = newColumns;
-			this.emitColumnChange();
+			// Reset cumulative scale for next threshold
+			this.cumulativeScale = 1;
+
+			// Set transitioning state for CSS animation
+			this.isTransitioning = true;
+			this.emitState();
+
+			// Clear transitioning state after animation completes
+			this.clearTransitionTimeout();
+			this.transitionTimeout = setTimeout(() => {
+				this.isTransitioning = false;
+				this.transitionTimeout = null;
+				this.emitState();
+			}, TRANSITION_DURATION_MS);
 		}
-	}
-
-	private applyScaleToColumns(): void {
-		// Final application of scale when gesture ends
-		// This handles cases where the scale didn't quite reach threshold
-		// but the user clearly intended to zoom
-	}
-
-	private emitColumnChange(): void {
-		if (!this.onColumnChange) return;
-
-		// Debounce to avoid rapid-fire changes
-		if (this.debounceTimeout) {
-			clearTimeout(this.debounceTimeout);
-		}
-
-		this.debounceTimeout = setTimeout(() => {
-			this.onColumnChange?.(this.currentColumns);
-			this.debounceTimeout = null;
-		}, DEBOUNCE_MS);
 	}
 }

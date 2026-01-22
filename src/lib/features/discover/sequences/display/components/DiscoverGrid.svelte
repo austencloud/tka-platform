@@ -30,7 +30,8 @@
     thumbnailService,
     showSections = false,
     onAction = () => {},
-    mobileColumnOverride,
+    pinchColumnOverride,
+    isTransitioning = false,
   } = $props<{
     sequences?: SequenceData[];
     sections?: SequenceData[];
@@ -38,8 +39,10 @@
     thumbnailService: IDiscoverThumbnailProvider | null;
     showSections?: boolean;
     onAction?: (action: string, sequence: SequenceData) => void;
-    /** Mobile pinch-to-zoom column override (2-6). Overrides breakpoints on mobile. */
-    mobileColumnOverride?: number;
+    /** Pinch-to-zoom column override (2-6). Active on any touch device. */
+    pinchColumnOverride?: number;
+    /** True for ~200ms after column change (for CSS transition timing) */
+    isTransitioning?: boolean;
   }>();
 
   // Determine if we should use virtualization
@@ -106,25 +109,22 @@
   // Track container width to control column count
   let containerWidth = $state(0);
 
-  // Mobile breakpoint for pinch-to-zoom override
-  const MOBILE_BREAKPOINT = 768;
+  // Detect touch capability once (doesn't change during session)
+  const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
   const columnCount = $derived.by(() => {
-    // On mobile with pinch-to-zoom override active, use that value
-    if (
-      mobileColumnOverride !== undefined &&
-      containerWidth > 0 &&
-      containerWidth < MOBILE_BREAKPOINT
-    ) {
-      return mobileColumnOverride;
+    // On touch devices with pinch-to-zoom override active, use that value
+    // No breakpoint check - pinch works on any size touch screen
+    if (pinchColumnOverride !== undefined && isTouchDevice) {
+      return pinchColumnOverride;
     }
 
-    // Reduced column counts by 1 at each breakpoint for larger thumbnails
+    // Responsive column counts based on container width
     if (containerWidth === 0) return 2; // Default
-    if (containerWidth >= 1600) return 5; // was 6
-    if (containerWidth >= 1200) return 4; // was 5
-    if (containerWidth >= 800) return 3;  // was 4
-    if (containerWidth >= 481) return 2;  // was 3
+    if (containerWidth >= 1600) return 5;
+    if (containerWidth >= 1200) return 4;
+    if (containerWidth >= 800) return 3;
+    if (containerWidth >= 481) return 2;
     return 2; // minimum
   });
 
@@ -243,6 +243,7 @@
             class="sequences-grid"
             class:list-view={viewMode === "list"}
             class:grid-view={viewMode === "grid"}
+            class:is-transitioning={isTransitioning}
             style:grid-template-columns={viewMode === "grid"
               ? `repeat(${columnCount}, 1fr)`
               : undefined}
@@ -273,6 +274,7 @@
     class="sequences-grid"
     class:list-view={viewMode === "list"}
     class:grid-view={viewMode === "grid"}
+    class:is-transitioning={isTransitioning}
     style:grid-template-columns={viewMode === "grid"
       ? `repeat(${columnCount}, 1fr)`
       : undefined}
@@ -300,7 +302,7 @@
   .sections-container {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
   }
 
   .sequence-section {
@@ -309,39 +311,23 @@
   }
 
   /* Responsive grid that adapts to container width */
-  /* animate-css-grid handles smooth FLIP transitions when columns change */
-  /* Column count is controlled via JavaScript with debounced ResizeObserver */
+  /* Column count controlled via JavaScript for pinch-to-zoom support */
   .sequences-grid.grid-view {
     display: grid;
-    /* grid-template-columns set via inline style based on debounced container width */
-    gap: var(--spacing-lg);
-    /* Let cards determine their own height via aspect-ratio - no row-based sizing */
+    /* grid-template-columns set via inline style */
+    gap: var(--spacing-sm); /* Compact gap - pictures are the focus */
+    /* Let cards determine their own height via aspect-ratio */
     align-items: start;
-    /* Smooth transitions for pinch-to-zoom column changes */
-    transition: gap 0.2s ease-out;
   }
 
-  /* Cards animate smoothly during column changes */
-  .sequences-grid.grid-view :global(.sequence-card) {
-    transition: transform 0.2s ease-out;
+  /* Smooth gap transition when columns change (iOS Photos style) */
+  .sequences-grid.grid-view.is-transitioning {
+    transition: gap 200ms ease-out;
   }
 
   .sequences-grid.list-view {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--spacing-md);
-  }
-
-  /* Responsive gap adjustments */
-  @container (max-width: 480px) {
-    .sequences-grid.grid-view {
-      gap: 8px;
-    }
-  }
-
-  @container (min-width: 481px) and (max-width: 1199px) {
-    .sequences-grid.grid-view {
-      gap: var(--spacing-md);
-    }
+    gap: var(--spacing-sm);
   }
 </style>

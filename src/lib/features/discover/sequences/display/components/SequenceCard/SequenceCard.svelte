@@ -24,7 +24,7 @@ LOOP badge:
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { container } from "$lib/shared/di";
-  import LOOPGlyph from "$lib/shared/components/LOOPGlyph.svelte";
+  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import PropAwareThumbnail from "../PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
 
@@ -162,11 +162,11 @@ LOOP badge:
   <!-- LOOP badge - bottom-left corner, shows when sequence has LOOP constraints -->
   {#if loopComponents}
     <div class="loop-badge" class:light-mode={lightMode}>
-      <LOOPGlyph
+      <LOOPIconStrip
         activeComponents={loopComponents}
-        size={20}
-        interactive={false}
+        size={14}
         darkMode={!lightMode}
+        showFreeformWhenEmpty={false}
       />
     </div>
   {/if}
@@ -256,19 +256,19 @@ LOOP badge:
     transition: opacity var(--duration-normal) ease-out;
   }
 
-  /* LOOP badge - positioned bottom-left */
+  /* LOOP badge - positioned bottom-left, horizontal strip */
   .loop-badge {
     position: absolute;
-    bottom: 6px;
-    left: 6px;
-    padding: 3px;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 50%;
+    bottom: 4px;
+    left: 4px;
+    padding: 3px 5px;
+    background: rgba(0, 0, 0, 0.65);
+    border-radius: 4px;
     backdrop-filter: blur(4px);
     z-index: 1;
   }
 
   .loop-badge.light-mode {
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.85);
   }
 </style>

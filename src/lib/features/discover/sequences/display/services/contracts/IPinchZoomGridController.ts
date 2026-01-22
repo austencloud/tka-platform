@@ -1,9 +1,19 @@
 /**
  * Pinch-to-Zoom Grid Controller Interface
  *
- * Handles two-finger pinch gestures to control grid column count.
- * Mobile-only feature for photo gallery-style zoom behavior.
+ * iOS Photos-style pinch gestures for controlling grid column count.
+ * Uses discrete column changes with CSS layout transitions (no scale transforms).
  */
+
+/** State emitted during pinch gestures */
+export interface PinchZoomState {
+	/** Current column count (discrete: 2-6) */
+	columns: number;
+	/** Whether gesture is active */
+	isGesturing: boolean;
+	/** True for ~200ms after column change (for CSS transition timing) */
+	isTransitioning: boolean;
+}
 
 export interface IPinchZoomGridController {
 	/**
@@ -18,10 +28,11 @@ export interface IPinchZoomGridController {
 	detach(): void;
 
 	/**
-	 * Set callback for when column count should change.
-	 * @param callback Called with new column count (2-6)
+	 * Set callback for state updates.
+	 * Called when columns change or transition state changes.
+	 * @param callback Called with current pinch state
 	 */
-	setOnColumnChange(callback: (columns: number) => void): void;
+	setOnStateChange(callback: (state: PinchZoomState) => void): void;
 
 	/**
 	 * Set the current column count (for initializing from settings).

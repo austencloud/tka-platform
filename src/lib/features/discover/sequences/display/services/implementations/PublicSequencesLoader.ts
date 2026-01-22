@@ -142,6 +142,7 @@ export class PublicSequencesLoader implements IDiscoverLoader {
       thumbnails: [...data.thumbnails],
       sequenceLength: data.sequenceLength,
       difficultyLevel: data.difficultyLevel,
+      loopType: data.loopType ?? undefined,
       isFavorite: false,
       isCircular: false,
       tags: [...data.tags],

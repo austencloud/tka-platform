@@ -9,9 +9,10 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
   import { sequenceControlsManager } from "../state/sequence-controls-state.svelte";
   import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
   import { sequenceSourceManager, type SequenceSource } from "../state/sequence-source-state.svelte";
+  import { gridZoomManager } from "../state/grid-zoom-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-    import { onMount } from "svelte";
+  import { onMount } from "svelte";
   import { ExploreSortMethod } from "../domain/enums/discover-enums";
 
   interface Props {
@@ -29,6 +30,11 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
 
   // Check if filter panel is already open (hide button to avoid redundant UI)
   const isFilterPanelOpen = $derived(sequencePanelManager.isFiltersOpen);
+
+  // Grid zoom state
+  const currentColumns = $derived(gridZoomManager.columns);
+  const canZoomIn = $derived(gridZoomManager.canZoomIn);
+  const canZoomOut = $derived(gridZoomManager.canZoomOut);
 
   // Services
   let hapticService: IHapticFeedback | null = null;
@@ -95,6 +101,16 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     sequenceSourceManager.setSource(source);
     onSourceChange?.(source);
   }
+
+  function handleZoomIn() {
+    hapticService?.trigger("selection");
+    gridZoomManager.zoomIn();
+  }
+
+  function handleZoomOut() {
+    hapticService?.trigger("selection");
+    gridZoomManager.zoomOut();
+  }
 </script>
 
 {#if sequenceControls}
@@ -140,8 +156,33 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
         </div>
       </div>
 
-      <!-- Right: Filter controls -->
+      <!-- Right: Zoom controls + Filter controls -->
       <div class="filter-section">
+        <!-- Grid Zoom Controls -->
+        <div class="zoom-controls">
+          <button
+            class="zoom-button"
+            onclick={handleZoomOut}
+            disabled={!canZoomOut}
+            type="button"
+            aria-label="Zoom out (larger cards)"
+            title="Larger cards"
+          >
+            <i class="fas fa-minus" aria-hidden="true"></i>
+          </button>
+          <span class="zoom-indicator">{currentColumns}</span>
+          <button
+            class="zoom-button"
+            onclick={handleZoomIn}
+            disabled={!canZoomIn}
+            type="button"
+            aria-label="Zoom in (smaller cards)"
+            title="Smaller cards"
+          >
+            <i class="fas fa-plus" aria-hidden="true"></i>
+          </button>
+        </div>
+
         <!-- Active Filter (if any) -->
         {#if hasActiveFilter && activeFilterLabel}
           <button class="active-filter-chip" onclick={handleClearFilter}>
@@ -340,6 +381,51 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
   .active-filter-chip i {
     font-size: var(--font-size-compact);
     opacity: 0.8;
+  }
+
+  /* Zoom Controls */
+  .zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    padding: 2px;
+  }
+
+  .zoom-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    cursor: pointer;
+    transition: all var(--duration-fast) ease;
+  }
+
+  .zoom-button:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
+  }
+
+  .zoom-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .zoom-indicator {
+    min-width: 20px;
+    text-align: center;
+    font-size: var(--font-size-compact);
+    font-weight: 600;
+    color: var(--theme-text-dim);
+    font-variant-numeric: tabular-nums;
   }
 
   /* Filter Button */

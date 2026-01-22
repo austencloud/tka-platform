@@ -1,17 +1,14 @@
 <script lang="ts">
   import type { SequenceSection } from "./../../../shared/domain/models/discover-models.ts";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
   import type { IDiscoverThumbnailProvider } from "../services/contracts/IDiscoverThumbnailProvider";
-  import type { IPinchZoomGridController } from "../services/contracts/IPinchZoomGridController";
+  import { PinchZoomGridController } from "../services/implementations/PinchZoomGridController";
   import DiscoverGrid from "./DiscoverGrid.svelte";
   import DiscoverThumbnailSkeleton from "./DiscoverThumbnailSkeleton.svelte";
   import SequenceTopBarControls from "../../../shared/components/SequenceTopBarControls.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-
-  let hapticService: IHapticFeedback | null = null;
+  import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
   const {
@@ -40,14 +37,12 @@
   let thumbnailService: IDiscoverThumbnailProvider | null = $state(null);
 
   // Pinch-to-zoom state
-  let pinchController: IPinchZoomGridController | null = null;
+  let pinchController: PinchZoomGridController | null = null;
   let displayContentEl: HTMLElement | null = $state(null);
 
-  // Mobile column override from pinch-to-zoom (undefined = use breakpoints)
-  // Initialize from settings if available, otherwise undefined
-  let mobileColumnOverride = $state<number | undefined>(
-    settingsService.settings.gridZoomLevel ?? undefined
-  );
+  // Derive from shared grid zoom manager
+  const pinchColumns = $derived(gridZoomManager.columns);
+  const isTransitioning = $derived(gridZoomManager.isTransitioning);
 
   // ✅ DERIVED RUNES: UI state
   // Show skeleton until loading is done AND sections are ready
@@ -68,29 +63,20 @@
 
   onMount(async () => {
     thumbnailService = container.items.discoverThumbnailProvider as IDiscoverThumbnailProvider;
-    hapticService = container.items.hapticFeedback;
 
-    // Initialize pinch-to-zoom controller (mobile only)
-    const pinchControllerFactory = container.items.pinchZoomGridControllerFactory as () => IPinchZoomGridController;
-    pinchController = pinchControllerFactory();
+    // Initialize from settings
+    gridZoomManager.initFromSettings();
 
-    // Only attach on touch devices
+    // Initialize pinch-to-zoom controller (touch devices only)
+    pinchController = new PinchZoomGridController();
+
     if (pinchController.isTouchDevice() && displayContentEl) {
-      // Initialize with saved preference or default
-      const savedColumns = settingsService.settings.gridZoomLevel;
-      if (savedColumns !== undefined) {
-        pinchController.setColumnCount(savedColumns);
-      }
+      // Sync controller with current state
+      pinchController.setColumnCount(gridZoomManager.columns);
 
-      // Handle column changes from pinch gestures
-      pinchController.setOnColumnChange((columns: number) => {
-        mobileColumnOverride = columns;
-
-        // Persist to settings
-        settingsService.updateSetting("gridZoomLevel", columns);
-
-        // Haptic feedback on column change
-        hapticService?.trigger("selection");
+      // Handle state updates from pinch gestures - update shared manager
+      pinchController.setOnStateChange((state) => {
+        gridZoomManager.setColumns(state.columns);
       });
 
       pinchController.attach(displayContentEl);
@@ -103,7 +89,6 @@
   });
 
   function handleRetry() {
-    hapticService?.trigger("selection");
     onAction("retry", {} as SequenceData);
   }
 
@@ -148,7 +133,8 @@
         {showSections}
         {thumbnailService}
         onAction={handleSequenceAction}
-        {mobileColumnOverride}
+        pinchColumnOverride={pinchColumns}
+        {isTransitioning}
       />
     {/if}
   </div>
