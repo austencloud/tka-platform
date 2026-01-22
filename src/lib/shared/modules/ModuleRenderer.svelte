@@ -96,6 +96,11 @@
       import("../../features/landing-preview/LandingPreviewModule.svelte"),
     // Tika module - AI tutor for TKA (standalone module)
     tika: () => import("../../features/tika/TikaModule.svelte"),
+    // Moderation module - user reports dashboard (admin-only)
+    moderation: () => import("../../features/moderation/ModerationModule.svelte"),
+    // LOOP Design Lab - icon design playground (admin-only)
+    "loop-design-lab": () =>
+      import("../../features/loop-design-lab/LOOPDesignLab.svelte"),
     // ========================================================================
     // REMOVED: Standalone 3D modules (now accessible via Realm destinations)
     // ========================================================================

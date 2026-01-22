@@ -30,6 +30,7 @@ import { SequenceDomainManager } from "$lib/features/create/shared/services/impl
 import { ReversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
 import { SequenceImporter } from "$lib/features/create/shared/services/implementations/SequenceImporter";
 import { SequenceNormalizer } from "$lib/features/compose/services/implementations/SequenceNormalizer";
+import { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 
 // Background services
 import { BackgroundManager } from "../../background/shared/services/implementations/BackgroundManager";
@@ -68,6 +69,7 @@ export const dataContainer = createContainer()
     sequenceDomainManager: () => new SequenceDomainManager(),
     reversalDetector: () => new ReversalDetector(),
     sequenceNormalizer: () => new SequenceNormalizer(),
+    sequenceLoopabilityChecker: () => new SequenceLoopabilityChecker(),
 
     // Background services with no dependencies
     backgroundManager: () => new BackgroundManager(),

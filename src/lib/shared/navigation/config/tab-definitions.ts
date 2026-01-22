@@ -107,6 +107,14 @@ export const DISCOVER_TABS: Section[] = [
     color: "#06b6d4",
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
+  {
+    id: "hall-of-shame",
+    label: "Hall of Shame",
+    icon: '<i class="fas fa-skull" aria-hidden="true"></i>',
+    description: "Naughty words and crude humor",
+    color: "#ef4444",
+    gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
+  },
 ];
 
 /**
@@ -335,6 +343,14 @@ export const ADMIN_TABS: Section[] = [
     description: "Create and manage system announcements",
     color: "#6366f1",
     gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
+  },
+  {
+    id: "hall-of-shame",
+    label: "Hall of Shame",
+    icon: '<i class="fas fa-skull" aria-hidden="true"></i>',
+    description: "Moderate adult content submissions",
+    color: "#ef4444",
+    gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
   },
 ];
 

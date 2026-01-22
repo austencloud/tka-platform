@@ -149,6 +149,7 @@ import type { IArrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/po
 import type { IArrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/contracts/IArrowLocationCalculator";
 import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
 import type { ITurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
+import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
 
 /**
  * External dependencies that must be provided when creating the container.
@@ -189,6 +190,9 @@ export interface BuildContainerDependencies {
 
   // Share service
   sharer: ISharer;
+
+  // Animation services
+  sequenceLoopabilityChecker: ISequenceLoopabilityChecker;
 }
 
 /**
@@ -500,7 +504,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         // LOOPDetector needs loopabilityChecker and loopTypeResolver
         loopDetector: () =>
           new LOOPDetector(
-            null as any, // ISequenceLoopabilityChecker - temp fix
+            deps.sequenceLoopabilityChecker,
             ctx.loopTypeResolver
           ),
 

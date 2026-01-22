@@ -18,6 +18,8 @@ import type { IOrientationCycleDetector } from "$lib/features/create/generate/ci
 import type { IPublicIndexSyncer } from "$lib/features/library/services/contracts/IPublicIndexSyncer";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IFirebaseVideoUploader } from "$lib/shared/share/services/contracts/IFirebaseVideoUploader";
+import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
+import type { IContentAppealManager } from "$lib/features/moderation/services/contracts/IContentAppealManager";
 
 /**
  * Library Repository dependencies
@@ -39,6 +41,14 @@ interface LibrarySaveServiceDeps {
 }
 
 /**
+ * Public Index Syncer dependencies (content moderation)
+ */
+interface PublicIndexSyncerDeps {
+  contentModerator?: IContentModerator;
+  contentAppealManager?: IContentAppealManager;
+}
+
+/**
  * Creates the library container with required dependencies.
  *
  * @param deps - Dependencies for services that require them
@@ -46,9 +56,13 @@ interface LibrarySaveServiceDeps {
 export function createLibraryContainer(deps: {
   libraryRepository: LibraryRepositoryDeps;
   librarySaveService: LibrarySaveServiceDeps;
+  publicIndexSyncer?: PublicIndexSyncerDeps;
 }) {
   // Create PublicIndexSyncer first since LibraryRepository depends on it
-  const publicIndexSyncer = new PublicIndexSyncer();
+  const publicIndexSyncer = new PublicIndexSyncer(
+    deps.publicIndexSyncer?.contentModerator,
+    deps.publicIndexSyncer?.contentAppealManager
+  );
 
   return createContainer().add({
     publicIndexSyncer: () => publicIndexSyncer,

@@ -177,6 +177,16 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: FEEDBACK_TABS,
   },
   {
+    id: "moderation",
+    label: "Moderation",
+    icon: '<i class="fas fa-shield-halved" style="color: #ef4444;" aria-hidden="true"></i>',
+    color: "#ef4444", // Red - moderation/safety
+    description: "Review and manage user reports",
+    isMain: true,
+    sections: [], // Single-tab module
+    adminOnly: true, // Admin-only
+  },
+  {
     id: "ml-training",
     label: "ML Training",
     icon: '<i class="fas fa-brain" style="color: #8b5cf6;" aria-hidden="true"></i>',
@@ -242,6 +252,16 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Design and iterate on deep ocean background elements",
     isMain: true, // Admin-only for development
     sections: [], // Tab switching handled internally
+    adminOnly: true,
+  },
+  {
+    id: "loop-design-lab",
+    label: "LOOP Lab",
+    icon: '<i class="fas fa-palette" style="color: #f472b6;" aria-hidden="true"></i>',
+    color: "#f472b6", // Pink - design/creative
+    description: "Design the LOOP primitive icon system",
+    isMain: true,
+    sections: [],
     adminOnly: true,
   },
   {

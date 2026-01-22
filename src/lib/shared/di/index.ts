@@ -50,6 +50,8 @@ import { createDelightContainer } from "./containers/delight-container";
 import { backgroundBuilderContainer } from "./containers/background-builder-container";
 import { createPoiLabContainer } from "./containers/poi-lab-container";
 import { createLandingPreviewContainer } from "./containers/landing-preview-container";
+import { createModerationContainer } from "./containers/moderation-container";
+import { createHallOfShameContainer } from "./containers/hall-of-shame-container";
 
 // ============================================================================
 // INSTANTIATE FACTORY CONTAINERS WITH STUB DEPENDENCIES
@@ -119,6 +121,8 @@ const buildContainer = typeof window !== 'undefined' ? createBuildContainer({
   pictographPreparer: pictographContainer.items.pictographPreparer,
   turnsTupleGenerator: pictographContainer.items.turnsTupleGenerator,
   sharer: shareContainer.items.sharer,
+  // Animation services (from data container to avoid circular deps)
+  sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
 }) : null as any;
 
 // Animator container needs multiple external deps
@@ -130,6 +134,7 @@ const animatorContainer = typeof window !== 'undefined' ? createAnimatorContaine
   sequenceRepository: dataContainer.items.sequenceRepository,
   sequenceTransformer: buildContainer.items.sequenceTransformer,
   discoverLoader: discoverContainer.items.discoverLoader,
+  sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
 }) : null as any;
 
 // Loop labeler container needs sequenceAnalyzer from build
@@ -153,7 +158,10 @@ const learnContainer = typeof window !== 'undefined' ? createLearnContainer(
   pictographContainer.items.letterQueryHandler
 ) : null as any;
 
-// Library container needs multiple deps
+// Moderation container - self-contained, must be before library for content moderation
+const moderationContainer = typeof window !== 'undefined' ? createModerationContainer() : null as any;
+
+// Library container needs multiple deps including content moderation
 const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer({
   libraryRepository: {
     achievementManager: gamificationContainer.items.achievementManager,
@@ -165,6 +173,10 @@ const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer(
     sharer: shareContainer.items.sharer,
     firebaseVideoUploader: shareContainer.items.firebaseVideoUploader,
     tagManager: coreContainer.items.tagManager,
+  },
+  publicIndexSyncer: {
+    contentModerator: moderationContainer.items.contentModerator,
+    contentAppealManager: moderationContainer.items.contentAppealManager,
   },
 }) : null as any;
 
@@ -191,6 +203,9 @@ const poiLabContainer = typeof window !== 'undefined' ? createPoiLabContainer() 
 
 // Landing preview container - self-contained, no external dependencies
 const landingPreviewContainer = typeof window !== 'undefined' ? createLandingPreviewContainer() : null as any;
+
+// Hall of Shame container - self-contained, no external dependencies
+const hallOfShameContainer = typeof window !== 'undefined' ? createHallOfShameContainer() : null as any;
 
 // ============================================================================
 // COMPOSE ALL CONTAINERS INTO ONE
@@ -248,7 +263,9 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(backgroundBuilderContainer.items)
   .add(delightContainer.items)
   .add(poiLabContainer.items)
-  .add(landingPreviewContainer.items) : null as any;
+  .add(landingPreviewContainer.items)
+  .add(moderationContainer.items)
+  .add(hallOfShameContainer.items) : null as any;
 
 // Export type for the composed container
 export type AppContainer = typeof container;

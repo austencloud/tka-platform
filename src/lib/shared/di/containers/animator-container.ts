@@ -19,7 +19,6 @@ import { StepCalculator } from "$lib/features/compose/services/implementations/S
 import { CanvasRenderer } from "$lib/features/compose/services/implementations/CanvasRenderer";
 import { CoordinateUpdater } from "$lib/features/compose/services/implementations/CoordinateUpdater";
 import { MotionCalculator } from "$lib/features/compose/services/implementations/MotionCalculator";
-import { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 import { SVGGenerator } from "$lib/features/compose/services/implementations/SVGGenerator";
 import { TrailCapturer } from "$lib/features/compose/services/implementations/TrailCapturer";
 import { AnimationStorageManager } from "$lib/features/compose/services/implementations/AnimationStorageManager";
@@ -47,6 +46,7 @@ import type { IFileDownloader } from "$lib/shared/foundation/services/contracts/
 import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
 import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
 import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
 
 /**
  * External dependencies that must be provided from other containers
@@ -59,6 +59,7 @@ export interface AnimatorContainerDependencies {
   sequenceRepository: ISequenceRepository;
   sequenceTransformer: ISequenceTransformer;
   discoverLoader: IDiscoverLoader;
+  sequenceLoopabilityChecker: ISequenceLoopabilityChecker;
 }
 
 /**
@@ -78,7 +79,6 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
       canvasRenderer: () => new CanvasRenderer(),
       coordinateUpdater: () => new CoordinateUpdater(),
       motionCalculator: () => new MotionCalculator(),
-      sequenceLoopabilityChecker: () => new SequenceLoopabilityChecker(),
       svgGenerator: () => new SVGGenerator(),
       trailCapturer: () => new TrailCapturer(),
       animationStorageManager: () => new AnimationStorageManager(),
@@ -108,7 +108,7 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
         new AnimationPlaybackController(
           ctx.sequenceAnimationOrchestrator,
           ctx.animationLoop,
-          ctx.sequenceLoopabilityChecker
+          externalDeps.sequenceLoopabilityChecker
         ),
     }))
     // === TIER 2: Services with external dependencies ===
