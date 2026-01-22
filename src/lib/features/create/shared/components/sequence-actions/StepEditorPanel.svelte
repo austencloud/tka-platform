@@ -76,9 +76,9 @@
   const { layout, panelState } = ctx;
   const isSideBySideLayout = $derived(layout.shouldUseSideBySideLayout);
 
-  // Hold onto previous beat data during transitions
+  // Hold onto previous step data during transitions
   // This prevents layout flicker when deleting steps - the controls stay visible
-  // with the old data until the new beat is selected, then CSS transitions
+  // with the old data until the new step is selected, then CSS transitions
   // smoothly animate the pictograph elements to their new positions
   let displayedStepData = $state<StepData | null>(null);
   let displayedStepNumber = $state<number | null>(null);
@@ -158,7 +158,7 @@
     if (displayedStepNumber === null) return "";
     return displayedStepNumber === 0
       ? "Start Position"
-      : `Beat ${displayedStepNumber}`;
+      : `Step ${displayedStepNumber}`;
   });
 
   // Inspect modal state (admin-only)
@@ -184,10 +184,10 @@
     showInspectModal = false;
   }
 
-  function handleBeatDataUpdate(updatedStepData: StepData) {
+  function handleStepDataUpdate(updatedStepData: StepData) {
     // Forward to parent for persistence
     onStepDataUpdate?.(updatedStepData);
-    // Also update the displayed beat data locally for immediate visual feedback
+    // Also update the displayed step data locally for immediate visual feedback
     displayedStepData = updatedStepData;
   }
 </script>
@@ -215,7 +215,7 @@
       {#if isAdmin() && hasArrowSelected && displayedStepData}
         <ArrowAdjustmentPanel
           stepData={displayedStepData}
-          onStepDataUpdate={handleBeatDataUpdate}
+          onStepDataUpdate={handleStepDataUpdate}
           {onPushUndoSnapshot}
         />
       {/if}
@@ -243,10 +243,10 @@
             onclick={() => onDelete()}
             aria-label={isStartPositionSelected
               ? "Delete start position"
-              : "Delete beat"}
+              : "Delete step"}
             title={isStartPositionSelected
               ? "Delete start position"
-              : "Delete this beat"}
+              : "Delete this step"}
           >
             <i class="fa-solid fa-trash" aria-hidden="true"></i>
           </button>
@@ -254,7 +254,7 @@
         <button
           class="icon-btn close"
           onclick={handleClose}
-          aria-label="Close beat editor"
+          aria-label="Close step editor"
         >
           <i class="fas fa-times" aria-hidden="true"></i>
         </button>
@@ -279,7 +279,7 @@
       {#if !hasSelection}
         <div class="no-selection">
           <i class="fas fa-hand-pointer" aria-hidden="true"></i>
-          <p>Select a beat to edit</p>
+          <p>Select a step to edit</p>
         </div>
       {:else if isStartPositionSelected}
         <StartPositionEditMode

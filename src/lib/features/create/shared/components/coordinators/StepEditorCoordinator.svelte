@@ -51,15 +51,27 @@
   const isTabSupported = $derived(SUPPORTED_TABS.has(currentTab));
   const isOpen = $derived(panelState.isStepEditorPanelOpen && isTabSupported);
 
-  // Get active sequence state and selected beat data
-  // Use $derived.by() to ensure reactive property tracking through function calls
-  // Without .by(), Svelte may not detect changes to properties inside returned objects
-  const activeSequenceState = $derived.by(() =>
-    CreateModuleState.getActiveTabSequenceState()
-  );
-  const selectedStepNumber = $derived.by(
-    () => activeSequenceState.selectedStepNumber
-  );
+  // CRITICAL: Track the active tab's sequence state reactively
+  // We need to access reactive properties directly to establish dependencies.
+  // Without accessing the actual properties, Svelte won't know to re-evaluate.
+  const activeSequenceState = $derived.by(() => {
+    // Track the active tab so we re-evaluate when it changes
+    const _activeTab = navigationState.activeTab;
+
+    // Get the sequence state for the active tab
+    const state = CreateModuleState.getActiveTabSequenceState();
+
+    // Access reactive properties to establish dependencies
+    // This ensures we re-evaluate when selection changes
+    const _selectedStep = state.selectedStepNumber;
+    const _sequence = state.currentSequence;
+    const _startPos = state.selectedStartPosition;
+
+    return state;
+  });
+
+  // Now this will properly update because activeSequenceState re-evaluates on selection change
+  const selectedStepNumber = $derived(activeSequenceState.selectedStepNumber);
 
   // CRITICAL: Track selectedStartPosition explicitly to ensure reactivity
   // when orientation changes update the start position. Without this explicit
@@ -68,15 +80,48 @@
     () => activeSequenceState.selectedStartPosition
   );
 
-  // Derive selectedStepData with explicit dependency on selectedStartPosition
-  // This ensures the UI updates when orientation changes modify the start position
+  // Get current sequence with explicit reactive tracking
+  const sequence = $derived.by(() => activeSequenceState.currentSequence);
+
+  // CRITICAL FIX: Compute selectedStepData directly instead of using the getter
+  // The getter on activeSequenceState is NOT reactive because it's a plain object getter.
+  // We must compute the value here with explicit dependencies on reactive state.
   const selectedStepData = $derived.by(() => {
-    // Access selectedStartPosition to create explicit dependency
-    const _ = selectedStartPosition;
-    return activeSequenceState.selectedStepData;
+    // Access reactive properties to establish dependencies
+    const startPos = selectedStartPosition;
+    const currentSeq = sequence;
+    const stepNum = selectedStepNumber;
+
+    // Step 0 = start position
+    if (stepNum === 0 && startPos) {
+      return {
+        ...startPos,
+        stepNumber: 0,
+        duration: 1,
+        blueReversal: false,
+        redReversal: false,
+        isBlank: false,
+      };
+    }
+
+    // Regular steps: stepNumber 1 = index 0, stepNumber 2 = index 1, etc.
+    if (stepNum === null || stepNum < 1 || !currentSeq?.steps) {
+      return null;
+    }
+
+    const stepIndex = stepNum - 1;
+    return currentSeq.steps[stepIndex] ?? null;
   });
 
-  const sequence = $derived.by(() => activeSequenceState.currentSequence);
+  // DEBUG: Track what's happening with selection (placed after all derivations)
+  $effect(() => {
+    console.log('[StepEditorCoordinator] DEBUG:', {
+      selectedStepNumber,
+      selectedStepData,
+      sequenceSteps: sequence?.steps?.length,
+      hasSequence: !!sequence
+    });
+  });
 
   // Animation state for deletion visualization
   const removingStepIndices = $derived.by(() =>

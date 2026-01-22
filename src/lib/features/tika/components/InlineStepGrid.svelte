@@ -189,7 +189,7 @@
 <figure class="inline-step-grid">
   <div class="word-header">
     <span class="word-label">{stepGrid.word}</span>
-    <span class="beat-count">{stepGrid.steps.length} beats</span>
+    <span class="step-count">{stepGrid.steps.length} steps</span>
   </div>
 
   <div class="steps-grid">
@@ -248,7 +248,7 @@
     letter-spacing: 0.05em;
   }
 
-  .beat-count {
+  .step-count {
     font-size: 12px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     padding: 2px 8px;

@@ -28,6 +28,8 @@ const START_POSITION_BEAT_NUMBER = 0;
 export interface AutoEditPanelConfig {
   CreateModuleState: CreateModuleState;
   panelState: PanelCoordinationState;
+  /** Optional: Direct getter for selectedStepNumber to ensure reactivity */
+  getSelectedStepNumber?: () => number | null;
 }
 
 /**
@@ -98,8 +100,9 @@ export function createAutoBeatEditorEffect(
 
   return $effect.root(() => {
     $effect(() => {
-      const selectedStepNumber =
-        CreateModuleState.sequenceState.selectedStepNumber;
+      // Get the sequence state fresh each time
+      const seqState = CreateModuleState.sequenceState;
+      const selectedStepNumber = seqState.selectedStepNumber;
 
       // Only act when selection CHANGES (prevents fight with manual close)
       if (selectedStepNumber !== lastSelectedBeat) {

@@ -102,11 +102,15 @@
     panelState?.closeAnimationPanel();
     animationStateRef?.stop();
 
-    // Select the step - the edit panel will open automatically
+    // Select the step
     localSelectedStepNumber = stepNumber;
     sequenceState.selectStep(stepNumber);
-    // Note: We no longer switch to edit tab! The edit slide panel will open instead.
-    // This is handled by an effect in CreateModule.svelte that watches for step selection.
+
+    // Open the step editor panel directly
+    // NOTE: We do this here rather than relying on an effect because
+    // Svelte 5's $effect.root() doesn't properly track reactive state
+    // accessed through multiple getter layers (CreateModuleState.sequenceState.selectedStepNumber)
+    panelState?.openStepEditorPanel();
   }
 
   // Handle start position selection (stepNumber 0)
@@ -131,8 +135,8 @@
     localSelectedStepNumber = 0;
     sequenceState.selectStartPositionForEditing();
 
-    // Note: We no longer switch to edit tab! The edit slide panel will open instead.
-    // This is handled by an effect in CreateModule.svelte that watches for start position selection.
+    // Open the step editor panel directly (same fix as handleBeatSelected)
+    panelState?.openStepEditorPanel();
   }
 
   // Handle beat deletion via keyboard

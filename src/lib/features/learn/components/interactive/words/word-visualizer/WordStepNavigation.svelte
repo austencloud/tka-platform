@@ -1,5 +1,5 @@
 <!--
-WordStepNavigation - Beat navigation dots for letter sequence
+WordStepNavigation - Step navigation dots for letter sequence
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -28,31 +28,31 @@ WordStepNavigation - Beat navigation dots for letter sequence
   }
 </script>
 
-<div class="beat-navigation">
+<div class="step-navigation">
   {#each letters as letter, i}
     <button
-      class="beat-dot"
+      class="step-dot"
       class:active={i === currentStepIndex}
       class:compact
       onclick={() => goToStep(i)}
-      aria-label="Beat {i + 1}: {letter.letter}"
+      aria-label="Step {i + 1}: {letter.letter}"
     >
       {#if showStepNumber}
-        <span class="beat-number">{i + 1}</span>
+        <span class="step-number">{i + 1}</span>
       {/if}
     </button>
   {/each}
 </div>
 
 <style>
-  .beat-navigation {
+  .step-navigation {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
     justify-content: center;
   }
 
-  .beat-dot {
+  .step-dot {
     width: 32px;
     height: 32px;
     display: flex;
@@ -68,25 +68,25 @@ WordStepNavigation - Beat navigation dots for letter sequence
     font-weight: 600;
   }
 
-  .beat-dot.compact {
+  .step-dot.compact {
     width: 24px;
     height: 24px;
     font-size: 0.625rem;
   }
 
-  .beat-dot:hover {
+  .step-dot:hover {
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.25);
     transform: scale(1.1);
   }
 
-  .beat-dot.active {
+  .step-dot.active {
     background: rgba(34, 211, 238, 0.25);
     border-color: rgba(34, 211, 238, 0.6);
     color: #22d3ee;
   }
 
-  .beat-number {
+  .step-number {
     line-height: 1;
   }
 </style>
