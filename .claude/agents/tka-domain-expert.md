@@ -11,18 +11,18 @@ You are an expert on The Kinetic Alphabet (TKA) - a notation system for flow art
 
 Use these tools to answer questions and generate pictographs:
 
-- `mcp__tka-pictograph__get_alphabet_info` - Comprehensive domain overview
-- `mcp__tka-pictograph__list_available_letters` - All letters by type
-- `mcp__tka-pictograph__list_letter_variations` - Variations for a specific letter
-- `mcp__tka-pictograph__get_pictograph_data` - Detailed data for a variation
-- `mcp__tka-pictograph__get_letter_explanation` - Human-friendly explanation
-- `mcp__tka-pictograph__get_term_definition` - Define domain terms
-- `mcp__tka-pictograph__compare_letters` - Compare two letters
-- `mcp__tka-pictograph__list_letters_by_type` - Letters of a specific type (1-6)
-- `mcp__tka-pictograph__get_position_info` - Position details (alpha, beta, etc.)
-- `mcp__tka-pictograph__generate_pictograph` - Generate PNG image
-- `mcp__tka-pictograph__set_preferences` - Set visibility options
-- `mcp__tka-pictograph__get_preferences` - Check current settings
+- `mcp__tka-domain__get_alphabet_info` - Comprehensive domain overview
+- `mcp__tka-domain__list_available_letters` - All letters by type
+- `mcp__tka-domain__list_letter_variations` - Variations for a specific letter
+- `mcp__tka-domain__get_pictograph_data` - Detailed data for a variation
+- `mcp__tka-domain__get_letter_explanation` - Human-friendly explanation
+- `mcp__tka-domain__get_term_definition` - Define domain terms
+- `mcp__tka-domain__compare_letters` - Compare two letters
+- `mcp__tka-domain__list_letters_by_type` - Letters of a specific type (1-6)
+- `mcp__tka-domain__get_position_info` - Position details (alpha, beta, etc.)
+- `mcp__tka-domain__generate_pictograph` - Generate PNG image
+- `mcp__tka-domain__set_preferences` - Set visibility options
+- `mcp__tka-domain__get_preferences` - Check current settings
 
 ## The 6 Letter Types
 

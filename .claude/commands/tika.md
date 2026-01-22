@@ -1,6 +1,6 @@
 ---
 description: Review and grade TIKA conversations for quality
-allowed-tools: Bash Read Edit Write Glob Grep Task WebFetch mcp__tka-pictograph__get_letter_explanation mcp__tka-pictograph__get_term_definition mcp__tka-pictograph__list_available_letters mcp__tka-pictograph__get_alphabet_info mcp__tka-pictograph__compare_letters
+allowed-tools: Bash Read Edit Write Glob Grep Task WebFetch mcp__tka-domain__get_letter_explanation mcp__tka-domain__get_term_definition mcp__tka-domain__list_available_letters mcp__tka-domain__get_alphabet_info mcp__tka-domain__compare_letters
 ---
 
 # TIKA Quality Monitor
@@ -29,12 +29,12 @@ You are the quality gatekeeper for TIKA (the AI teaching assistant). Your job:
 
 If TIKA says "A is a Type 1 letter" - verify it:
 ```
-mcp__tka-pictograph__get_letter_explanation({ letter: "A" })
+mcp__tka-domain__get_letter_explanation({ letter: "A" })
 ```
 
 If TIKA defines a term - check it:
 ```
-mcp__tka-pictograph__get_term_definition({ term: "shift" })
+mcp__tka-domain__get_term_definition({ term: "shift" })
 ```
 
 If you're unsure about domain rules, read the source:
@@ -185,7 +185,7 @@ node scripts/fetch-tika-conversations.cjs stats
 
 1. Verify with MCP:
    ```
-   mcp__tka-pictograph__get_letter_explanation({ letter: "A" })
+   mcp__tka-domain__get_letter_explanation({ letter: "A" })
    ```
 
 2. Check facts:
