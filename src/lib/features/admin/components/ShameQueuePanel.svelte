@@ -402,7 +402,7 @@
   >
     <div
       class="modal-content"
-      onclick|stopPropagation
+      onclick={(e) => e.stopPropagation()}
       role="dialog"
       aria-labelledby="reject-modal-title"
       aria-modal="true"

@@ -36,12 +36,15 @@ export class ReportSubmitter implements IReportSubmitter {
 			throw new Error('You cannot report yourself');
 		}
 
-		// Check for recent duplicate reports
-		const hasRecent = await this.hasRecentReport(input.reportedUserId);
-		if (hasRecent) {
-			throw new Error(
-				'You have already reported this user recently. Please wait before submitting another report.'
-			);
+		// Check for recent duplicate reports (admins bypass this for testing)
+		const isAdmin = authState.isAdmin;
+		if (!isAdmin) {
+			const hasRecent = await this.hasRecentReport(input.reportedUserId);
+			if (hasRecent) {
+				throw new Error(
+					'You have already reported this user recently. Please wait before submitting another report.'
+				);
+			}
 		}
 
 		const firestore = await getFirestoreInstance();

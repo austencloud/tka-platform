@@ -9,7 +9,7 @@
 
   import { Canvas } from "@threlte/core";
   import { type Snippet } from "svelte";
-  import { WebGLRenderer } from "three";
+  import { WebGLRenderer, PCFSoftShadowMap } from "three";
   import type { RenderingBackend } from "../state/gallery-settings.svelte";
   import { isWebGPUSupported } from "$lib/shared/3d-core/rendering/create-renderer";
 
@@ -78,6 +78,10 @@
         powerPreference: "high-performance" as GPUPowerPreference,
       });
 
+      // Enable shadow maps
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = PCFSoftShadowMap;
+
       // Initialize WebGPU async - Three.js queues renders until ready
       renderer.init().then(() => {
         console.info("[GalleryCanvas] WebGPU renderer initialized");
@@ -89,12 +93,18 @@
     }
 
     // Standard WebGL renderer
-    return new WebGLRenderer({
+    const glRenderer = new WebGLRenderer({
       canvas,
       antialias: true,
       alpha: false,
       powerPreference: "high-performance",
     });
+
+    // Enable shadow maps
+    glRenderer.shadowMap.enabled = true;
+    glRenderer.shadowMap.type = PCFSoftShadowMap;
+
+    return glRenderer;
   }
 </script>
 

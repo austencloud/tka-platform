@@ -14,6 +14,7 @@
   import FeatureFlagManagement from "./FeatureFlagManagement.svelte";
   import AnnouncementManagement from "./AnnouncementManagement.svelte";
   import ShameQueuePanel from "./ShameQueuePanel.svelte";
+  import LOOPLabelerModule from "$lib/features/loop-labeler/components/LOOPLabelerModule.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   // Services
@@ -88,6 +89,14 @@
           aria-labelledby="hall-of-shame-tab"
         >
           <ShameQueuePanel />
+        </div>
+      {:else if activeSection === "loop-labeler"}
+        <div
+          id="loop-labeler-panel"
+          role="tabpanel"
+          aria-labelledby="loop-labeler-tab"
+        >
+          <LOOPLabelerModule />
         </div>
       {/if}
     </main>
