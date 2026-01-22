@@ -5,7 +5,10 @@
  * LOOP type, slice size, constraints, turn intensity, level, and more.
  */
 
-import type { LoopType, SliceSize, GridMode } from "../sequence-generation/types.js";
+// Simple string types to avoid dependency on other modules
+export type LoopType = "rewound" | "strict_rotated";
+export type SliceSize = "halved" | "quartered";
+export type GridMode = "diamond" | "box" | "skewed";
 
 /**
  * Configuration for sequence generation stored in a preset.
