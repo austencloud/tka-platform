@@ -2,6 +2,7 @@
  * PublicIndexSyncer - Public Sequence Index Management
  *
  * Handles syncing sequences to/from the publicSequences collection.
+ * Includes content moderation - flagged content cannot be synced to public.
  * Extracted from LibraryRepository for single responsibility.
  */
 
@@ -16,15 +17,45 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencePath } from "../../data/firestore-paths";
 import type { IPublicIndexSyncer } from "../contracts/IPublicIndexSyncer";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
+import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
+import type { IContentAppealManager } from "$lib/features/moderation/services/contracts/IContentAppealManager";
+import { ContentModerationError } from "$lib/features/moderation/errors/ContentModerationError";
 
 export class PublicIndexSyncer implements IPublicIndexSyncer {
+  constructor(
+    private readonly contentModerator?: IContentModerator,
+    private readonly contentAppealManager?: IContentAppealManager
+  ) {}
+
   /**
-   * Sync a public sequence to the publicSequences collection
+   * Sync a public sequence to the publicSequences collection.
+   * Throws ContentModerationError if content is flagged and not whitelisted.
    */
   async syncToPublicIndex(
     sequence: LibrarySequence,
     userId: string
   ): Promise<void> {
+    // Run content moderation check if moderator is available
+    if (this.contentModerator && sequence.word) {
+      const result = this.contentModerator.checkWord(sequence.word);
+
+      if (!result.isAllowed) {
+        // Check if this content has been whitelisted via appeal
+        const isWhitelisted = this.contentAppealManager
+          ? await this.contentAppealManager.isWhitelisted("sequence", sequence.id)
+          : false;
+
+        if (!isWhitelisted) {
+          throw new ContentModerationError(
+            "Content flagged by moderation",
+            result.flaggedTerms,
+            sequence.word,
+            sequence.id
+          );
+        }
+      }
+    }
+
     const firestore = await getFirestoreInstance();
 
     try {

@@ -1,6 +1,8 @@
 <script lang="ts">
   import FullscreenPrompt from "$lib/shared/components/FullscreenPrompt.svelte";
   import InAppBrowserPrompt from "$lib/shared/auth/components/InAppBrowserPrompt.svelte";
+  import ReportUserModal from "$lib/features/moderation/components/ReportUserModal.svelte";
+  import WarningBanner from "$lib/features/moderation/components/WarningBanner.svelte";
   import { container } from "$lib/shared/di";
   import type { Snippet } from "svelte";
   import { onMount, setContext } from "svelte";
@@ -154,6 +156,9 @@
     <button onclick={() => window.location.reload()}>Retry</button>
   </div>
 {:else if containerReady}
+  <!-- Warning banner for users who have received a moderation warning -->
+  <WarningBanner />
+
   <!-- ITI container is ready synchronously - render children immediately -->
   {@render children()}
 
@@ -162,6 +167,9 @@
 
   <!-- Warn users in restricted in-app browsers (Messenger, Instagram, etc.) -->
   <InAppBrowserPrompt />
+
+  <!-- Global report user modal -->
+  <ReportUserModal />
 {:else}
   <!-- Brief loading while container sets up -->
   <div class="error-screen">

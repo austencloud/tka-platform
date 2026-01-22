@@ -105,6 +105,9 @@ export interface AppSettings {
   musicianMode?: boolean; // Show positions as "1 e & a" instead of decimals (1.25, 1.5)
   defaultTimeSignature?: TimeSignatureKey; // Default time signature for sequences (default: "4/4")
 
+  // Discover Grid Settings
+  gridZoomLevel?: number; // Mobile pinch-to-zoom: columns 2-6, default 2
+
   // Image Export Settings
   imageExport?: {
     addWord?: boolean;

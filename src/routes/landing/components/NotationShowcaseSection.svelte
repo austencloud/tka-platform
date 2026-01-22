@@ -45,9 +45,5 @@
     .notation-showcase {
       padding: 60px 16px 80px;
     }
-
-    .section-intro {
-      margin-bottom: 32px;
-    }
   }
 </style>

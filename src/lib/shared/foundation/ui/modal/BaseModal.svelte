@@ -220,7 +220,7 @@
     oncancel={handleDialogCancel}
   >
     <!-- Click barrier to prevent backdrop clicks from triggering on content -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
     <div class="modal-content-wrapper" onclick={(e) => e.stopPropagation()}>
       {#if header}
         <div class="modal-header-slot" data-animate="1">

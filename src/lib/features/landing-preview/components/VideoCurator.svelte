@@ -3,19 +3,23 @@
    * VideoCurator
    *
    * Admin UI for browsing, tagging, and selecting Instagram showcase videos.
-   * Uses the unified VideoEditorOverlay for all editing modes.
+   * Orchestrates extracted services and components.
    */
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import { getVideoCache } from "$lib/shared/video";
-  import VideoEditorOverlay from "./video-editor/VideoEditorOverlay.svelte";
+  import CurationModeOverlay from "./CurationModeOverlay.svelte";
+  import LinkingModeOverlay from "./LinkingModeOverlay.svelte";
+  import VideoPreviewModal from "./VideoPreviewModal.svelte";
   import VideoEditModal from "./VideoEditModal.svelte";
   import VideoFilterBar from "./VideoFilterBar.svelte";
-  import VideoCropEditor from "./VideoCropEditor.svelte";
-  import VideoSnipEditor from "./VideoSnipEditor.svelte";
-  import CroppedVideoPlayer from "./CroppedVideoPlayer.svelte";
-  import { createVideoEditorController } from "../state/VideoEditorController.svelte";
-  import type { ShowcaseVideo, VideoCategory, UserProfile } from "../types";
+  import type {
+    ShowcaseVideo,
+    VideoCategory,
+    UserProfile,
+    MatchedSequence,
+    VideoPerformer,
+  } from "../types";
 
   // Services from DI container
   const loader = container.items.videoCuratorLoader;
@@ -43,6 +47,11 @@
   let newCategoryLabel = $state("");
   let newCategoryColor = $state("#6366f1");
 
+  // === PREVIEW MODAL STATE ===
+  let selectedVideo = $state<ShowcaseVideo | null>(null);
+  let selectedVideoUrl = $state<string | null>(null);
+  let showUserSearch = $state(false);
+
   // === EDIT MODAL STATE ===
   let editingVideo = $state<ShowcaseVideo | null>(null);
   let editTitle = $state("");
@@ -50,44 +59,22 @@
   let editTags = $state("");
   let saving = $state(false);
 
-  // === VIDEO EDITOR CONTROLLER ===
-  let editorController = $state<ReturnType<typeof createVideoEditorController> | null>(null);
+  // === CURATION MODE STATE ===
+  let curationMode = $state(false);
+  let curationIndex = $state(0);
+  let curationVideoShortcode = $state<string | null>(null); // Track by shortcode, not index
+  let curationSaving = $state(false);
+  let curationVideoUrl = $state<string | null>(null);
+  let showAddPerformer = $state(false);
+  const PERFORMER_KEYS = "asdfgh";
 
-  // Initialize controller when data is loaded
-  $effect(() => {
-    if (videos.length > 0 && categories.length >= 0 && quickPerformers.length >= 0 && !editorController) {
-      editorController = createVideoEditorController({
-        videos,
-        categories,
-        quickPerformers,
-        persister,
-        sequenceMatcher,
-        videoCache,
-        onVideosUpdate: (updatedVideos) => {
-          videos = updatedVideos;
-        },
-      });
-    }
-  });
-
-  // Sync external state changes to controller
-  $effect(() => {
-    if (editorController) {
-      editorController.syncVideos(videos);
-    }
-  });
-
-  $effect(() => {
-    if (editorController) {
-      editorController.syncCategories(categories);
-    }
-  });
-
-  $effect(() => {
-    if (editorController) {
-      editorController.syncQuickPerformers(quickPerformers);
-    }
-  });
+  // === LINKING MODE STATE ===
+  let linkingMode = $state(false);
+  let linkingIndex = $state(0);
+  let linkingSearching = $state(false);
+  let linkingSaving = $state(false);
+  let matchedSequences = $state<MatchedSequence[]>([]);
+  let selectedSequenceForLink = $state<MatchedSequence | null>(null);
 
   // === DERIVED STATE ===
   const uncuratedVideos = $derived.by(() =>
@@ -95,17 +82,37 @@
   );
 
   const unlinkableVideos = $derived.by(() =>
-    videos.filter((v) => v.title && v.title.length > 0 && v.linkedSequences.length === 0)
+    videos.filter((v) => v.title && v.title.length > 0 && !v.sequenceId)
   );
 
-  const unnamedVideos = $derived.by(() =>
-    videos.filter((v) => {
-      if (v.excluded) return false;
-      if (!v.title) return true;
-      if (v.title === v.shortcode) return true;
-      return /^[A-Za-z0-9_-]{8,}$/.test(v.title);
-    })
-  );
+  const currentCurationVideo = $derived.by(() => {
+    if (!curationMode) return null;
+    // If we have a locked shortcode, find that video (even if it's now "curated")
+    if (curationVideoShortcode) {
+      const lockedVideo = videos.find((v) => v.shortcode === curationVideoShortcode);
+      if (lockedVideo) return lockedVideo;
+    }
+    // Otherwise fall back to index in uncurated list
+    if (uncuratedVideos.length === 0) return null;
+    return uncuratedVideos[Math.min(curationIndex, uncuratedVideos.length - 1)] || null;
+  });
+
+  const currentLinkingVideo = $derived.by(() => {
+    if (!linkingMode || unlinkableVideos.length === 0) return null;
+    return unlinkableVideos[Math.min(linkingIndex, unlinkableVideos.length - 1)] || null;
+  });
+
+  const curationProgress = $derived({
+    current: curationIndex + 1,
+    total: uncuratedVideos.length,
+    done: videos.length - uncuratedVideos.length,
+  });
+
+  const linkingProgress = $derived({
+    current: linkingIndex + 1,
+    total: unlinkableVideos.length,
+    linked: videos.filter((v) => v.sequenceId).length,
+  });
 
   const filteredVideos = $derived.by(() => {
     let result = videos;
@@ -129,7 +136,7 @@
         (v) =>
           v.shortcode.toLowerCase().includes(query) ||
           v.title?.toLowerCase().includes(query) ||
-          v.linkedSequences.some((s) => s.word.toLowerCase().includes(query)) ||
+          v.sequenceWord?.toLowerCase().includes(query) ||
           v.performers.some((p) => p.displayName.toLowerCase().includes(query)) ||
           v.tags.some((t) => t.toLowerCase().includes(query))
       );
@@ -155,10 +162,6 @@
     withWord: videos.filter((v) => v.title && v.title.length > 0).length,
   });
 
-  const linkingProgress = $derived({
-    linked: videos.filter((v) => v.linkedSequences.length > 0).length,
-  });
-
   // === DATA LOADING ===
   async function loadVideos() {
     loading = true;
@@ -172,32 +175,99 @@
     }
   }
 
-  // === MODE TRANSITIONS (via controller) ===
+  // === CURATION MODE ===
   function enterCurationMode() {
-    if (editorController) {
-      editorController.openCurate();
+    curationMode = true;
+    curationIndex = 0;
+    // Lock to first uncurated video
+    curationVideoShortcode = uncuratedVideos[0]?.shortcode || null;
+  }
+
+  function exitCurationMode() {
+    curationMode = false;
+    curationVideoShortcode = null;
+  }
+
+  function nextCurationVideo() {
+    // Find current position in uncurated list and move forward
+    const currentIdx = uncuratedVideos.findIndex((v) => v.shortcode === curationVideoShortcode);
+    if (currentIdx < uncuratedVideos.length - 1) {
+      curationIndex = currentIdx + 1;
+      curationVideoShortcode = uncuratedVideos[curationIndex]?.shortcode || null;
+    } else if (uncuratedVideos.length > 0) {
+      // Current video might be curated now, just go to first uncurated
+      curationIndex = 0;
+      curationVideoShortcode = uncuratedVideos[0]?.shortcode || null;
     }
   }
 
-  function enterLinkingMode() {
-    if (editorController) {
-      editorController.openLink();
+  function prevCurationVideo() {
+    const currentIdx = uncuratedVideos.findIndex((v) => v.shortcode === curationVideoShortcode);
+    if (currentIdx > 0) {
+      curationIndex = currentIdx - 1;
+      curationVideoShortcode = uncuratedVideos[curationIndex]?.shortcode || null;
     }
   }
 
-  function enterRenameMode() {
-    if (editorController) {
-      editorController.openRename();
+  async function setCurationCategory(categoryId: string) {
+    const video = currentCurationVideo;
+    if (!video || curationSaving) return;
+    curationSaving = true;
+    try {
+      await persister.updateVideo(video.shortcode, { category: categoryId });
+      updateLocalVideo(video.shortcode, { category: categoryId });
+      // Don't auto-advance - let user control when to move on
+    } catch (e) {
+      console.error("Failed to set category:", e);
+    } finally {
+      curationSaving = false;
     }
   }
 
-  function selectVideo(video: ShowcaseVideo) {
-    if (editorController) {
-      editorController.openBrowse(video);
+  async function toggleCurationPerformer(user: UserProfile) {
+    const video = currentCurationVideo;
+    if (!video || curationSaving) return;
+    curationSaving = true;
+    try {
+      const existingIndex = video.performers.findIndex((p) => p.id === user.id);
+      let newPerformers: VideoPerformer[];
+      if (existingIndex >= 0) {
+        // Remove performer if already tagged
+        newPerformers = video.performers.filter((p) => p.id !== user.id);
+      } else {
+        // Add performer
+        newPerformers = [...video.performers, { id: user.id, displayName: user.displayName }];
+      }
+      await persister.updateVideo(video.shortcode, { performers: newPerformers });
+      updateLocalVideo(video.shortcode, { performers: newPerformers });
+      // Don't auto-advance when toggling performers - user may want to add multiple
+    } catch (e) {
+      console.error("Failed to toggle performer:", e);
+    } finally {
+      curationSaving = false;
     }
   }
 
-  // === CATEGORY MANAGEMENT ===
+  function skipCurationVideo() {
+    nextCurationVideo();
+  }
+
+  async function excludeCurationVideo() {
+    const video = currentCurationVideo;
+    if (!video || curationSaving) return;
+    curationSaving = true;
+    try {
+      await persister.updateVideo(video.shortcode, { excluded: true });
+      updateLocalVideo(video.shortcode, { excluded: true });
+      // Move to next video after excluding
+      nextCurationVideo();
+    } catch (e) {
+      console.error("Failed to exclude video:", e);
+    } finally {
+      curationSaving = false;
+    }
+  }
+
   async function addCategory() {
     if (!newCategoryLabel.trim()) return;
     const id = newCategoryLabel.toLowerCase().replace(/\s+/g, "-");
@@ -213,7 +283,128 @@
     showAddCategory = false;
   }
 
-  // === VIDEO EDITING (grid actions) ===
+  async function addQuickPerformer(user: { uid: string; displayName: string }) {
+    console.log("[VideoCurator] addQuickPerformer called with:", user);
+    if (quickPerformers.some((p) => p.id === user.uid)) {
+      console.log("[VideoCurator] Performer already exists, skipping");
+      showAddPerformer = false;
+      return;
+    }
+    quickPerformers = [...quickPerformers, { id: user.uid, displayName: user.displayName }];
+    console.log("[VideoCurator] Updated quickPerformers:", quickPerformers);
+    try {
+      await persister.saveQuickPerformers(quickPerformers);
+      console.log("[VideoCurator] Save completed successfully");
+    } catch (e) {
+      console.error("[VideoCurator] Failed to save quick performers:", e);
+    }
+    showAddPerformer = false;
+  }
+
+  async function removeQuickPerformer(id: string) {
+    console.log("[VideoCurator] removeQuickPerformer called for:", id);
+    quickPerformers = quickPerformers.filter((p) => p.id !== id);
+    try {
+      await persister.saveQuickPerformers(quickPerformers);
+      console.log("[VideoCurator] Remove save completed successfully");
+    } catch (e) {
+      console.error("[VideoCurator] Failed to save after remove:", e);
+    }
+  }
+
+  // === LINKING MODE ===
+  function enterLinkingMode() {
+    linkingMode = true;
+    linkingIndex = 0;
+    matchedSequences = [];
+    selectedSequenceForLink = null;
+    if (unlinkableVideos.length > 0) searchSequencesForCurrentVideo();
+  }
+
+  function exitLinkingMode() {
+    linkingMode = false;
+    matchedSequences = [];
+    selectedSequenceForLink = null;
+  }
+
+  function nextLinkingVideo() {
+    if (linkingIndex < unlinkableVideos.length - 1) {
+      linkingIndex++;
+      matchedSequences = [];
+      selectedSequenceForLink = null;
+      searchSequencesForCurrentVideo();
+    }
+  }
+
+  function prevLinkingVideo() {
+    if (linkingIndex > 0) {
+      linkingIndex--;
+      matchedSequences = [];
+      selectedSequenceForLink = null;
+      searchSequencesForCurrentVideo();
+    }
+  }
+
+  async function searchSequencesForCurrentVideo() {
+    const video = currentLinkingVideo;
+    if (!video || !video.title) return;
+    linkingSearching = true;
+    matchedSequences = [];
+    try {
+      const results = await sequenceMatcher.searchByWord(video.title);
+      matchedSequences = results;
+      if (results.length === 1) selectedSequenceForLink = results[0];
+    } catch (e) {
+      console.error("Failed to search sequences:", e);
+    } finally {
+      linkingSearching = false;
+    }
+  }
+
+  async function linkVideoToSequence() {
+    const video = currentLinkingVideo;
+    if (!video || !selectedSequenceForLink || linkingSaving) return;
+    linkingSaving = true;
+    try {
+      const updates = {
+        sequenceId: selectedSequenceForLink.id,
+        sequenceWord: selectedSequenceForLink.word,
+      };
+      await persister.updateVideo(video.shortcode, updates);
+      updateLocalVideo(video.shortcode, updates);
+      setTimeout(() => {
+        matchedSequences = [];
+        selectedSequenceForLink = null;
+        if (unlinkableVideos.length > 0) searchSequencesForCurrentVideo();
+      }, 300);
+    } catch (e) {
+      console.error("Failed to link video:", e);
+    } finally {
+      linkingSaving = false;
+    }
+  }
+
+  function skipLinkingVideo() {
+    nextLinkingVideo();
+  }
+
+  // === VIDEO SELECTION & EDITING ===
+  async function selectVideo(video: ShowcaseVideo) {
+    selectedVideo = video;
+    selectedVideoUrl = null;
+    const cachedUrl = await videoCache.getVideoUrl(video.videoUrl, {
+      cacheIfMissing: true,
+      priority: 100,
+    });
+    selectedVideoUrl = cachedUrl;
+  }
+
+  function closePreview() {
+    selectedVideo = null;
+    selectedVideoUrl = null;
+    showUserSearch = false;
+  }
+
   function startEdit(video: ShowcaseVideo) {
     editingVideo = video;
     editTitle = video.title || "";
@@ -254,27 +445,40 @@
     }
   }
 
-  // === EXCLUDE VIDEO ===
-  let confirmingExclude = $state<string | null>(null);
-
-  function startExclude(shortcode: string) {
-    confirmingExclude = shortcode;
-  }
-
-  function cancelExclude() {
-    confirmingExclude = null;
-  }
-
-  async function confirmExclude(shortcode: string) {
+  async function setCategory(video: ShowcaseVideo, category: string) {
     try {
-      await persister.updateVideo(shortcode, { excluded: true });
-      updateLocalVideo(shortcode, { excluded: true });
-      // Remove from list
-      videos = videos.filter(v => v.shortcode !== shortcode);
+      await persister.updateVideo(video.shortcode, { category });
+      updateLocalVideo(video.shortcode, { category });
     } catch (e) {
-      console.error("Failed to exclude video:", e);
-    } finally {
-      confirmingExclude = null;
+      console.error("Failed to set category:", e);
+    }
+  }
+
+  async function addPerformerToVideo(video: ShowcaseVideo, user: UserProfile) {
+    try {
+      if (video.performers.some((p) => p.id === user.id)) return; // Already tagged
+      const newPerformers = [...video.performers, { id: user.id, displayName: user.displayName }];
+      await persister.updateVideo(video.shortcode, { performers: newPerformers });
+      updateLocalVideo(video.shortcode, { performers: newPerformers });
+      if (selectedVideo?.shortcode === video.shortcode) {
+        selectedVideo = { ...selectedVideo, performers: newPerformers };
+      }
+      showUserSearch = false;
+    } catch (e) {
+      console.error("Failed to add performer:", e);
+    }
+  }
+
+  async function removePerformerFromVideo(video: ShowcaseVideo, performerId: string) {
+    try {
+      const newPerformers = video.performers.filter((p) => p.id !== performerId);
+      await persister.updateVideo(video.shortcode, { performers: newPerformers });
+      updateLocalVideo(video.shortcode, { performers: newPerformers });
+      if (selectedVideo?.shortcode === video.shortcode) {
+        selectedVideo = { ...selectedVideo, performers: newPerformers };
+      }
+    } catch (e) {
+      console.error("Failed to remove performer:", e);
     }
   }
 
@@ -310,17 +514,85 @@
     searchQuery = "";
   }
 
+  // === KEYBOARD SHORTCUTS ===
+  function isTypingInInput(): boolean {
+    const active = document.activeElement;
+    if (!active) return false;
+    const tagName = active.tagName.toLowerCase();
+    return tagName === "input" || tagName === "textarea" || (active as HTMLElement).isContentEditable;
+  }
+
+  function handleCurationKeydown(e: KeyboardEvent) {
+    if (!curationMode || curationSaving) return;
+    // Don't intercept keys when user is typing in an input field
+    if (isTypingInInput()) return;
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= categories.length) {
+      e.preventDefault();
+      setCurationCategory(categories[num - 1].id);
+      return;
+    }
+    const letterIndex = PERFORMER_KEYS.indexOf(e.key.toLowerCase());
+    if (letterIndex >= 0 && letterIndex < quickPerformers.length) {
+      e.preventDefault();
+      toggleCurationPerformer(quickPerformers[letterIndex]);
+      return;
+    }
+    if (e.key === "ArrowLeft" || e.key === "h") {
+      e.preventDefault();
+      prevCurationVideo();
+    } else if (e.key === "ArrowRight" || e.key === "l") {
+      e.preventDefault();
+      nextCurationVideo();
+    } else if (e.key === "x") {
+      e.preventDefault();
+      skipCurationVideo();
+    } else if (e.key === "Escape") {
+      exitCurationMode();
+    }
+  }
+
+  function handleLinkingKeydown(e: KeyboardEvent) {
+    if (!linkingMode || linkingSaving || linkingSearching) return;
+    // Don't intercept keys when user is typing in an input field
+    if (isTypingInInput()) return;
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= matchedSequences.length) {
+      e.preventDefault();
+      selectedSequenceForLink = matchedSequences[num - 1];
+      return;
+    }
+    if (e.key === "Enter" && selectedSequenceForLink) {
+      e.preventDefault();
+      linkVideoToSequence();
+    } else if (e.key === "ArrowLeft" || e.key === "h") {
+      e.preventDefault();
+      prevLinkingVideo();
+    } else if (e.key === "ArrowRight" || e.key === "l") {
+      e.preventDefault();
+      nextLinkingVideo();
+    } else if (e.key === "x") {
+      e.preventDefault();
+      skipLinkingVideo();
+    } else if (e.key === "Escape") {
+      exitLinkingMode();
+    }
+  }
+
   // === LIFECYCLE ===
   onMount(async () => {
+    console.log("[VideoCurator] onMount - loading categories and performers");
     const [loadedCategories, loadedPerformers] = await Promise.all([
       loader.loadCategories(),
       loader.loadQuickPerformers(),
     ]);
+    console.log("[VideoCurator] Loaded categories:", loadedCategories);
+    console.log("[VideoCurator] Loaded performers:", loadedPerformers);
     categories = loadedCategories;
     quickPerformers = loadedPerformers;
     await loadVideos();
-    const cacheInfo = await videoCache.getStats();
-    cacheStats = { count: cacheInfo.count, totalSize: cacheInfo.totalSize };
+    const stats = await videoCache.getStats();
+    cacheStats = { count: stats.count, totalSize: stats.totalSize };
     if (videos.length > 0) {
       const preloadUrls = videos.slice(0, 12).map((v) => v.videoUrl);
       videoCache.preload(preloadUrls);
@@ -331,6 +603,41 @@
     if (filteredVideos.length > 0) {
       const preloadUrls = filteredVideos.slice(0, 8).map((v) => v.videoUrl);
       videoCache.preload(preloadUrls);
+    }
+  });
+
+  $effect(() => {
+    if (!curationMode) return;
+    window.addEventListener("keydown", handleCurationKeydown);
+    return () => window.removeEventListener("keydown", handleCurationKeydown);
+  });
+
+  $effect(() => {
+    if (currentCurationVideo) {
+      curationVideoUrl = null; // Reset while loading
+      videoCache.getVideoUrl(currentCurationVideo.videoUrl, {
+        cacheIfMissing: true,
+        priority: 100,
+      }).then((url) => {
+        curationVideoUrl = url;
+      });
+    } else {
+      curationVideoUrl = null;
+    }
+  });
+
+  $effect(() => {
+    if (!linkingMode) return;
+    window.addEventListener("keydown", handleLinkingKeydown);
+    return () => window.removeEventListener("keydown", handleLinkingKeydown);
+  });
+
+  $effect(() => {
+    if (currentLinkingVideo) {
+      videoCache.getVideoUrl(currentLinkingVideo.videoUrl, {
+        cacheIfMissing: true,
+        priority: 100,
+      });
     }
   });
 </script>
@@ -388,7 +695,6 @@
     {loading}
     uncuratedCount={uncuratedVideos.length}
     unlinkableCount={unlinkableVideos.length}
-    unnamedCount={unnamedVideos.length}
     filteredCount={filteredVideos.length}
     totalCount={videos.length}
     {showAddCategory}
@@ -402,7 +708,6 @@
     onRefresh={loadVideos}
     onEnterCurationMode={enterCurationMode}
     onEnterLinkingMode={enterLinkingMode}
-    onEnterRenameMode={enterRenameMode}
     onToggleAddCategory={(show) => (showAddCategory = show)}
     onAddCategory={addCategory}
     onUpdateCategoryLabel={(label) => (newCategoryLabel = label)}
@@ -442,12 +747,9 @@
           onkeydown={(e) => e.key === "Enter" && selectVideo(video)}
         >
           <div class="video-thumbnail">
-            <CroppedVideoPlayer
-              src={video.videoUrl}
-              crop={video.crop}
-              muted
-              class="thumbnail-video"
-            />
+            <video src={video.videoUrl} preload="metadata" muted>
+              <track kind="captions" />
+            </video>
             {#if video.featured}
               <div class="featured-badge">
                 <i class="fas fa-star" aria-hidden="true"></i>
@@ -498,43 +800,30 @@
             >
               <i class="fas fa-edit" aria-hidden="true"></i>
             </button>
-            <button
-              class="action-btn delete-btn"
-              onclick={(e) => {
-                e.stopPropagation();
-                startExclude(video.shortcode);
-              }}
-              title="Exclude video"
-            >
-              <i class="fas fa-trash" aria-hidden="true"></i>
-            </button>
           </div>
-
-          <!-- Exclude confirmation overlay -->
-          {#if confirmingExclude === video.shortcode}
-            <div
-              class="exclude-confirm-overlay"
-              onclick={(e) => e.stopPropagation()}
-              onkeydown={(e) => e.key === "Escape" && cancelExclude()}
-              role="dialog"
-              tabindex="-1"
-            >
-              <p>Exclude this video?</p>
-              <div class="confirm-actions">
-                <button class="confirm-btn cancel" onclick={cancelExclude}>
-                  Cancel
-                </button>
-                <button class="confirm-btn delete" onclick={() => confirmExclude(video.shortcode)}>
-                  Exclude
-                </button>
-              </div>
-            </div>
-          {/if}
         </div>
       {/each}
     </div>
   {/if}
 </div>
+
+<!-- Video preview modal -->
+{#if selectedVideo}
+  <VideoPreviewModal
+    video={selectedVideo}
+    videoUrl={selectedVideoUrl}
+    {categories}
+    {showUserSearch}
+    onClose={closePreview}
+    onSetCategory={(catId) => setCategory(selectedVideo!, catId)}
+    onToggleFeatured={() => toggleFeatured(selectedVideo!)}
+    onAddPerformer={(user) => addPerformerToVideo(selectedVideo!, user)}
+    onRemovePerformer={(performerId) => removePerformerFromVideo(selectedVideo!, performerId)}
+    onToggleUserSearch={(show) => (showUserSearch = show)}
+    {formatDate}
+    {formatFileSize}
+  />
+{/if}
 
 <!-- Edit modal -->
 {#if editingVideo}
@@ -553,32 +842,61 @@
   />
 {/if}
 
-<!-- Unified Video Editor Overlay -->
-{#if editorController}
-  <VideoEditorOverlay
-    controller={editorController}
+<!-- Curation mode overlay -->
+{#if curationMode && currentCurationVideo}
+  <CurationModeOverlay
+    currentVideo={currentCurationVideo}
+    videoUrl={curationVideoUrl}
+    {categories}
+    {quickPerformers}
+    progress={curationProgress}
+    {stats}
+    {curationIndex}
+    uncuratedCount={uncuratedVideos.length}
+    saving={curationSaving}
+    {showAddCategory}
+    {showAddPerformer}
+    {newCategoryLabel}
+    {newCategoryColor}
+    performerKeys={PERFORMER_KEYS}
+    onExit={exitCurationMode}
+    onPrev={prevCurationVideo}
+    onNext={nextCurationVideo}
+    onSetCategory={setCurationCategory}
+    onTogglePerformer={toggleCurationPerformer}
+    onSkip={skipCurationVideo}
+    onExclude={excludeCurationVideo}
+    onAddCategory={addCategory}
+    onAddPerformer={addQuickPerformer}
+    onRemovePerformer={removeQuickPerformer}
+    onToggleAddCategory={(show) => (showAddCategory = show)}
+    onToggleAddPerformer={(show) => (showAddPerformer = show)}
+    onUpdateCategoryLabel={(label) => (newCategoryLabel = label)}
+    onUpdateCategoryColor={(color) => (newCategoryColor = color)}
     {formatDate}
   />
+{/if}
 
-  <!-- Crop editor overlay -->
-  {#if editorController.cropModeActive && editorController.currentVideo && editorController.videoUrl}
-    <VideoCropEditor
-      videoUrl={editorController.videoUrl}
-      initialCrop={editorController.currentVideo.crop}
-      onApply={editorController.applyCrop}
-      onCancel={editorController.closeCropMode}
-    />
-  {/if}
-
-  <!-- Snip editor overlay -->
-  {#if editorController.snipModeActive && editorController.currentVideo && editorController.videoUrl}
-    <VideoSnipEditor
-      videoUrl={editorController.videoUrl}
-      initialSnip={editorController.currentVideo.snip}
-      onApply={editorController.applySnip}
-      onCancel={editorController.closeSnipMode}
-    />
-  {/if}
+<!-- Sequence Linking mode overlay -->
+{#if linkingMode && currentLinkingVideo}
+  <LinkingModeOverlay
+    currentVideo={currentLinkingVideo}
+    {matchedSequences}
+    selectedSequence={selectedSequenceForLink}
+    progress={linkingProgress}
+    {stats}
+    {linkingIndex}
+    unlinkableCount={unlinkableVideos.length}
+    searching={linkingSearching}
+    saving={linkingSaving}
+    onExit={exitLinkingMode}
+    onPrev={prevLinkingVideo}
+    onNext={nextLinkingVideo}
+    onSelectSequence={(seq) => (selectedSequenceForLink = seq)}
+    onConfirmLink={linkVideoToSequence}
+    onSkip={skipLinkingVideo}
+    {formatDate}
+  />
 {/if}
 
 <style>
@@ -781,84 +1099,10 @@
 
   .action-btn:hover {
     background: rgba(0, 0, 0, 0.8);
-    transform: scale(1.1);
   }
 
   .action-btn.active {
     background: #f59e0b;
-  }
-
-  .action-btn.active:hover {
-    background: #d97706;
-  }
-
-  /* Star button hover - gold */
-  .action-btn:not(.active):first-child:hover {
-    background: #f59e0b;
-  }
-
-  /* Edit button hover - accent */
-  .action-btn:nth-child(2):hover {
-    background: var(--theme-accent, #6366f1);
-  }
-
-  .action-btn.delete-btn:hover {
-    background: #ef4444;
-  }
-
-  /* Exclude confirmation overlay */
-  .exclude-confirm-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.9);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    z-index: 10;
-    border-radius: 12px;
-  }
-
-  .exclude-confirm-overlay p {
-    color: white;
-    font-size: 14px;
-    font-weight: 500;
-    margin: 0;
-  }
-
-  .confirm-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .confirm-btn {
-    padding: 8px 16px;
-    border-radius: 6px;
-    border: none;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .confirm-btn.cancel {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  .confirm-btn.cancel:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-  }
-
-  .confirm-btn.delete {
-    background: #ef4444;
-    color: white;
-  }
-
-  .confirm-btn.delete:hover {
-    background: #dc2626;
   }
 
   /* Loading/Error/Empty states */
