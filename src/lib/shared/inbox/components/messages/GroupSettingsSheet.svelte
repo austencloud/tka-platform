@@ -197,7 +197,7 @@
 
 <div class="group-settings">
   <div class="header">
-    <button type="button" class="back-btn" onclick={onClose}>
+    <button type="button" class="back-btn" onclick={onClose} aria-label="Close settings">
       <i class="fas fa-arrow-left" aria-hidden="true"></i>
     </button>
     <h2>Group Settings</h2>

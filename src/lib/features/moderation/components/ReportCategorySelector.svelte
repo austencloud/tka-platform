@@ -55,7 +55,7 @@
 <div class="category-selector" role="radiogroup" aria-label="Report category">
 	<p class="label" id="category-label">Select a reason for reporting:</p>
 
-	<div class="categories" onkeydown={handleKeydown}>
+	<div class="categories" role="presentation" onkeydown={handleKeydown}>
 		{#each categories as [key, config], index}
 			<button
 				type="button"

@@ -394,6 +394,7 @@
 
 <!-- Reject Modal -->
 {#if showRejectModal && rejectingEntry}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="modal-backdrop"
     onclick={closeRejectModal}
@@ -403,9 +404,11 @@
     <div
       class="modal-content"
       onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.key === "Escape" && closeRejectModal()}
       role="dialog"
       aria-labelledby="reject-modal-title"
       aria-modal="true"
+      tabindex="-1"
     >
       <h3 id="reject-modal-title">Reject Submission</h3>
       <p>Rejecting: <strong>{rejectingEntry.word}</strong></p>

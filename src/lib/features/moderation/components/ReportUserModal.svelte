@@ -134,6 +134,8 @@
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="report-modal-title"
+		tabindex="-1"
+		bind:this={modalContentRef}
 	>
 		<div class="modal-content">
 			{#if reportModalState.success}
