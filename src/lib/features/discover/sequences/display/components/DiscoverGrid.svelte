@@ -30,6 +30,7 @@
     thumbnailService,
     showSections = false,
     onAction = () => {},
+    mobileColumnOverride,
   } = $props<{
     sequences?: SequenceData[];
     sections?: SequenceData[];
@@ -37,6 +38,8 @@
     thumbnailService: IDiscoverThumbnailProvider | null;
     showSections?: boolean;
     onAction?: (action: string, sequence: SequenceData) => void;
+    /** Mobile pinch-to-zoom column override (2-6). Overrides breakpoints on mobile. */
+    mobileColumnOverride?: number;
   }>();
 
   // Determine if we should use virtualization
@@ -103,7 +106,19 @@
   // Track container width to control column count
   let containerWidth = $state(0);
 
+  // Mobile breakpoint for pinch-to-zoom override
+  const MOBILE_BREAKPOINT = 768;
+
   const columnCount = $derived.by(() => {
+    // On mobile with pinch-to-zoom override active, use that value
+    if (
+      mobileColumnOverride !== undefined &&
+      containerWidth > 0 &&
+      containerWidth < MOBILE_BREAKPOINT
+    ) {
+      return mobileColumnOverride;
+    }
+
     // Reduced column counts by 1 at each breakpoint for larger thumbnails
     if (containerWidth === 0) return 2; // Default
     if (containerWidth >= 1600) return 5; // was 6
@@ -302,6 +317,13 @@
     gap: var(--spacing-lg);
     /* Let cards determine their own height via aspect-ratio - no row-based sizing */
     align-items: start;
+    /* Smooth transitions for pinch-to-zoom column changes */
+    transition: gap 0.2s ease-out;
+  }
+
+  /* Cards animate smoothly during column changes */
+  .sequences-grid.grid-view :global(.sequence-card) {
+    transition: transform 0.2s ease-out;
   }
 
   .sequences-grid.list-view {

@@ -3,11 +3,13 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-    import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import type { IDiscoverThumbnailProvider } from "../services/contracts/IDiscoverThumbnailProvider";
+  import type { IPinchZoomGridController } from "../services/contracts/IPinchZoomGridController";
   import DiscoverGrid from "./DiscoverGrid.svelte";
   import DiscoverThumbnailSkeleton from "./DiscoverThumbnailSkeleton.svelte";
   import SequenceTopBarControls from "../../../shared/components/SequenceTopBarControls.svelte";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   let hapticService: IHapticFeedback | null = null;
 
@@ -37,6 +39,16 @@
   // ✅ RESOLVE SERVICES: Get services from DI container (lazy resolution)
   let thumbnailService: IDiscoverThumbnailProvider | null = $state(null);
 
+  // Pinch-to-zoom state
+  let pinchController: IPinchZoomGridController | null = null;
+  let displayContentEl: HTMLElement | null = $state(null);
+
+  // Mobile column override from pinch-to-zoom (undefined = use breakpoints)
+  // Initialize from settings if available, otherwise undefined
+  let mobileColumnOverride = $state<number | undefined>(
+    settingsService.settings.gridZoomLevel ?? undefined
+  );
+
   // ✅ DERIVED RUNES: UI state
   // Show skeleton until loading is done AND sections are ready
   // Note: Don't check sections.length - empty library is valid state, not "still loading"
@@ -57,6 +69,37 @@
   onMount(async () => {
     thumbnailService = container.items.discoverThumbnailProvider as IDiscoverThumbnailProvider;
     hapticService = container.items.hapticFeedback;
+
+    // Initialize pinch-to-zoom controller (mobile only)
+    const pinchControllerFactory = container.items.pinchZoomGridControllerFactory as () => IPinchZoomGridController;
+    pinchController = pinchControllerFactory();
+
+    // Only attach on touch devices
+    if (pinchController.isTouchDevice() && displayContentEl) {
+      // Initialize with saved preference or default
+      const savedColumns = settingsService.settings.gridZoomLevel;
+      if (savedColumns !== undefined) {
+        pinchController.setColumnCount(savedColumns);
+      }
+
+      // Handle column changes from pinch gestures
+      pinchController.setOnColumnChange((columns: number) => {
+        mobileColumnOverride = columns;
+
+        // Persist to settings
+        settingsService.updateSetting("gridZoomLevel", columns);
+
+        // Haptic feedback on column change
+        hapticService?.trigger("selection");
+      });
+
+      pinchController.attach(displayContentEl);
+    }
+  });
+
+  onDestroy(() => {
+    pinchController?.detach();
+    pinchController = null;
   });
 
   function handleRetry() {
@@ -84,7 +127,7 @@
   </div>
 
   <!-- Content area -->
-  <div class="display-content" onscroll={handleScroll}>
+  <div class="display-content" bind:this={displayContentEl} onscroll={handleScroll}>
     {#if isInitializing}
       <!-- Show skeletons until sections are fully ready -->
       <DiscoverThumbnailSkeleton viewMode="grid" count={12} />
@@ -105,6 +148,7 @@
         {showSections}
         {thumbnailService}
         onAction={handleSequenceAction}
+        {mobileColumnOverride}
       />
     {/if}
   </div>
@@ -129,6 +173,8 @@
     overflow-y: auto;
     padding: var(--spacing-lg);
     container-type: inline-size; /* Enable container queries for responsive grid */
+    /* Allow vertical scroll + pinch zoom, let JS handle custom pinch */
+    touch-action: pan-y;
   }
 
   /* Modern scrollbar - thin and subtle */

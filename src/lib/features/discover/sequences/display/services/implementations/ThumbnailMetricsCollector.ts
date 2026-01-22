@@ -240,15 +240,12 @@ export class ThumbnailMetricsCollector implements IThumbnailMetricsCollector {
     const summary = this.getSummary();
 
     if (summary.totalRequests === 0) {
-      console.log("[ThumbnailMetrics] No requests yet");
       return;
     }
 
     const sessionMins = (summary.sessionDuration / 60000).toFixed(1);
 
-    console.group(
-      `[ThumbnailMetrics] ${summary.totalRequests} requests over ${sessionMins} min`
-    );
+
 
     // Cache hit rates
     console.log("📊 Cache Hit Rates:");

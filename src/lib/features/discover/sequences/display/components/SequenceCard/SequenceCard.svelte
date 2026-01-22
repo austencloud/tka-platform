@@ -13,12 +13,26 @@ Variation support:
 - When a sequence has variations (same word, different authors/props/turns),
   a pill shows "1/3" etc. at the bottom
 - Tapping the pill cycles through variations with crossfade
+
+LOOP badge:
+- Shows a small pie chart glyph when sequence has LOOP constraints
+- Positioned in bottom-left corner as overlay
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import { container } from "$lib/shared/di";
+  import LOOPGlyph from "$lib/shared/components/LOOPGlyph.svelte";
   import PropAwareThumbnail from "../PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
+
+  // Singleton resolver instance for parsing LOOP types
+  const loopTypeResolver = new LOOPTypeResolver();
+
+  // Cache for on-demand LOOP detection results (keyed by sequence ID)
+  const loopDetectionCache = new Map<string, Set<LOOPComponent> | null>();
 
   const {
     sequence,
@@ -58,6 +72,62 @@ Variation support:
   // Total count for the pill
   const variationCount = $derived(variations.length > 1 ? variations.length : 0);
 
+  /**
+   * Detect LOOP components on demand for sequences without loopType.
+   * Uses caching to avoid repeated analysis.
+   */
+  function detectLoopComponents(seq: SequenceData): Set<LOOPComponent> | null {
+    // Check cache first
+    const cacheKey = seq.id;
+    if (loopDetectionCache.has(cacheKey)) {
+      return loopDetectionCache.get(cacheKey)!;
+    }
+
+    // Need full sequence data with steps for detection
+    if (!seq.steps || seq.steps.length < 2) {
+      loopDetectionCache.set(cacheKey, null);
+      return null;
+    }
+
+    try {
+      const loopDetector = container.items.loopDetector;
+      const result = loopDetector.detectLOOPType(seq);
+
+      if (result.loopType && result.loopType !== "freeform") {
+        const components = loopTypeResolver.parseComponents(result.loopType);
+        const resultSet = components.size > 0 ? components : null;
+        loopDetectionCache.set(cacheKey, resultSet);
+        return resultSet;
+      }
+
+      loopDetectionCache.set(cacheKey, null);
+      return null;
+    } catch {
+      // Detection failed - cache null to avoid repeated attempts
+      loopDetectionCache.set(cacheKey, null);
+      return null;
+    }
+  }
+
+  // Parse LOOP components for badge display
+  // Priority: 1) Use existing loopType if set, 2) Detect on-demand if steps available
+  const loopComponents = $derived.by(() => {
+    const loopType = displayedSequence.loopType;
+
+    // If loopType is explicitly set, use it
+    if (loopType && loopType !== "freeform") {
+      const components = loopTypeResolver.parseComponents(loopType);
+      return components.size > 0 ? components : null;
+    }
+
+    // If no loopType, try to detect it on-demand
+    if (!loopType && displayedSequence.steps) {
+      return detectLoopComponents(displayedSequence);
+    }
+
+    return null;
+  });
+
   // Cycle to next variation
   function handleCycleVariation() {
     if (variations.length > 1) {
@@ -88,6 +158,18 @@ Variation support:
       userName={displayedSequence.ownerDisplayName}
     />
   </div>
+
+  <!-- LOOP badge - bottom-left corner, shows when sequence has LOOP constraints -->
+  {#if loopComponents}
+    <div class="loop-badge" class:light-mode={lightMode}>
+      <LOOPGlyph
+        activeComponents={loopComponents}
+        size={20}
+        interactive={false}
+        darkMode={!lightMode}
+      />
+    </div>
+  {/if}
 
   <VariationPill
     currentIndex={currentVariationIndex}
@@ -172,5 +254,21 @@ Variation support:
   .thumbnail-container.crossfade :global(img),
   .thumbnail-container.crossfade :global(.placeholder) {
     transition: opacity var(--duration-normal) ease-out;
+  }
+
+  /* LOOP badge - positioned bottom-left */
+  .loop-badge {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    padding: 3px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    backdrop-filter: blur(4px);
+    z-index: 1;
+  }
+
+  .loop-badge.light-mode {
+    background: rgba(255, 255, 255, 0.8);
   }
 </style>

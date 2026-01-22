@@ -34,12 +34,13 @@
   import AnimationSheetCoordinator from "../../../../shared/coordinators/AnimationSheetCoordinator.svelte";
   import { consumePendingSequenceView } from "../../state/pending-sequence.svelte";
   import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
+  import HallOfShameGallery from "$lib/features/hall-of-shame/components/HallOfShameGallery.svelte";
 
   // Note: Library tab removed - now integrated into Sequences via scope toggle (Community / My Library)
-  type DiscoverModuleType = "sequences" | "collections" | "creators";
+  type DiscoverModuleType = "sequences" | "collections" | "creators" | "hall-of-shame";
 
   // Tab order for determining slide direction (left-to-right in bottom nav)
-  const TAB_ORDER: DiscoverModuleType[] = ["sequences", "collections", "creators"];
+  const TAB_ORDER: DiscoverModuleType[] = ["sequences", "collections", "creators", "hall-of-shame"];
 
   // Transition configuration
   const SLIDE_DISTANCE = 30; // pixels
@@ -110,6 +111,8 @@
       newTab = "collections";
     } else if (navTab === "creators") {
       newTab = "creators";
+    } else if (navTab === "hall-of-shame") {
+      newTab = "hall-of-shame";
     }
 
     // Only push to history if this is a user-initiated tab change (not from history nav)
@@ -482,6 +485,8 @@
           {:else}
             <CreatorsPanel />
           {/if}
+        {:else if activeTab === "hall-of-shame"}
+          <HallOfShameGallery />
         {/if}
       </div>
     {/key}
