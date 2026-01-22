@@ -374,6 +374,7 @@ Uses pure runes instead of stores for reactivity.
 
   .tka-glyph.interactive {
     cursor: pointer;
+    pointer-events: auto;
   }
 
   /* When visible, maintain full opacity even on hover */

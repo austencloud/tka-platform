@@ -237,6 +237,7 @@ Based on legacy start_to_end_pos_glyph.py implementation.
 
   .position-glyph.interactive {
     cursor: pointer;
+    pointer-events: auto;
   }
 
   /* When visible, maintain full opacity even on hover */

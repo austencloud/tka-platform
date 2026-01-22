@@ -128,6 +128,7 @@ Based on legacy vtg_glyph.py and vtg_glyph_renderer.py implementations.
 
   .vtg-glyph.interactive {
     cursor: pointer;
+    pointer-events: auto;
   }
 
   /* When visible, maintain full opacity even on hover */

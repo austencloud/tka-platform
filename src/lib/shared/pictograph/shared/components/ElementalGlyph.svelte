@@ -130,6 +130,7 @@ Based on legacy elemental_glyph.py implementation.
 
   .elemental-glyph.interactive {
     cursor: pointer;
+    pointer-events: auto;
   }
 
   /* When visible, maintain full opacity even on hover */

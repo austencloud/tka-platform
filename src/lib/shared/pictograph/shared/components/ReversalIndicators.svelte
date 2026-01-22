@@ -187,6 +187,7 @@ Color-coded dots indicate which motion (blue/red) is reversing between pictograp
 
   .reversal-indicators.interactive {
     cursor: pointer;
+    pointer-events: auto;
   }
 
   /* When visible, maintain full opacity even on hover */
