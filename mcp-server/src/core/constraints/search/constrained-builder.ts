@@ -31,6 +31,7 @@ import {
 import { generateConstraintReport } from "../reporting/report-generator.js";
 import { scoreBridgeOptions } from "./bridge-scorer.js";
 import { getLetterTransitionGraph } from "../../letter-transition-graph.js";
+import { calculateEndOrientation, Orientation } from "../../orientation-calculator.js";
 
 /**
  * Type 6 static letters - valid for starting positions.
@@ -445,6 +446,73 @@ function findStartPosition(
 }
 
 /**
+ * Propagate orientations through the sequence for PictographData[].
+ * Each beat's start orientation = previous beat's end orientation.
+ */
+function propagateOrientations(steps: PictographData[]): PictographData[] {
+  if (steps.length === 0) return steps;
+
+  const result: PictographData[] = [];
+
+  // Get initial orientations from start position (step 0)
+  const startPosition = steps[0];
+  if (!startPosition) return steps;
+
+  let blueOrientation = (startPosition.blueMotion.endOrientation || "in") as Orientation;
+  let redOrientation = (startPosition.redMotion.endOrientation || "in") as Orientation;
+
+  // Keep start position as-is
+  result.push(startPosition);
+
+  // Propagate through remaining steps
+  for (let i = 1; i < steps.length; i++) {
+    const step = steps[i];
+    if (!step) continue;
+
+    // Calculate blue end orientation
+    const blueEndOrientation = calculateEndOrientation({
+      motionType: step.blueMotion.motionType,
+      turns: 0, // CSV variations are all 0 turns
+      rotationDirection: step.blueMotion.rotationDirection || "cw",
+      startLocation: step.blueMotion.startLocation,
+      endLocation: step.blueMotion.endLocation,
+      startOrientation: blueOrientation,
+    });
+
+    // Calculate red end orientation
+    const redEndOrientation = calculateEndOrientation({
+      motionType: step.redMotion.motionType,
+      turns: 0,
+      rotationDirection: step.redMotion.rotationDirection || "cw",
+      startLocation: step.redMotion.startLocation,
+      endLocation: step.redMotion.endLocation,
+      startOrientation: redOrientation,
+    });
+
+    // Create updated step with correct orientations
+    result.push({
+      ...step,
+      blueMotion: {
+        ...step.blueMotion,
+        startOrientation: blueOrientation,
+        endOrientation: blueEndOrientation,
+      },
+      redMotion: {
+        ...step.redMotion,
+        startOrientation: redOrientation,
+        endOrientation: redEndOrientation,
+      },
+    });
+
+    // Update for next iteration
+    blueOrientation = blueEndOrientation;
+    redOrientation = redEndOrientation;
+  }
+
+  return result;
+}
+
+/**
  * Build the final result from a search state.
  */
 function buildResult(
@@ -457,12 +525,15 @@ function buildResult(
 ): ConstrainedSequenceResult {
   const report = generateConstraintReport(state, constraintSet);
 
+  // Propagate orientations through the sequence
+  const stepsWithOrientations = propagateOrientations(state.steps);
+
   return {
     success: !isPartial && report.satisfied,
-    steps: state.steps,
+    steps: stepsWithOrientations,
     variationIndices: state.stepScores.map((s) => s.variationIndex),
     word,
-    startPosition: state.steps[0]?.startPosition || "",
+    startPosition: stepsWithOrientations[0]?.startPosition || "",
     endPosition: state.currentEndPosition,
     constraintReport: report,
     statesExplored,

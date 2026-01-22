@@ -21,12 +21,19 @@ import {
 } from "../implementations/rotation-direction-constraint.js";
 import { ReversalConstraint } from "../implementations/reversal-constraint.js";
 import { DashPreferenceConstraint, maximizeDashes } from "../implementations/dash-preference-constraint.js";
+import {
+  HandPathReversalConstraint,
+  maximizeHandPathContinuity,
+  enforceHandPathContinuity,
+} from "../implementations/hand-path-constraint.js";
 
 /**
  * Available preset names.
  */
 export type PresetName =
   | "smooth"
+  | "smooth-hands"
+  | "smooth-props"
   | "reversal"
   | "isolation"
   | "antispin"
@@ -51,7 +58,26 @@ export interface PresetDefinition {
 export const PRESETS: PresetDefinition[] = [
   {
     name: "smooth",
-    description: "Maximize flow continuity - minimize reversals for smooth transitions",
+    description: "Maximize overall flow - minimize both hand path and prop reversals",
+    constraintSet: {
+      hard: [],
+      soft: [
+        new ContinuityConstraint("maximize"),
+        maximizeHandPathContinuity(),
+      ],
+    },
+  },
+  {
+    name: "smooth-hands",
+    description: "Maximize hand path continuity - allow prop reversals if hand paths stay smooth",
+    constraintSet: {
+      hard: [],
+      soft: [maximizeHandPathContinuity()],
+    },
+  },
+  {
+    name: "smooth-props",
+    description: "Maximize prop spin continuity - allow hand reversals if prop spins stay consistent",
     constraintSet: {
       hard: [],
       soft: [new ContinuityConstraint("maximize")],

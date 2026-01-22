@@ -19,6 +19,7 @@ import {
   PerHandDashConstraint,
   type HandTarget as PerHandTarget,
 } from "../implementations/per-hand-dash-constraint.js";
+import { HandPathReversalConstraint } from "../implementations/hand-path-constraint.js";
 import { containsConcept, canonicalize } from "./synonyms.js";
 
 /**
@@ -358,7 +359,133 @@ function createRotationPattern(direction: string): ConstraintPattern {
 }
 
 // =============================================================================
-// REVERSAL PATTERNS
+// HAND PATH PATTERNS
+// =============================================================================
+
+/**
+ * Detects hand path constraints from natural language.
+ * Hand path = how the hand travels around the grid (cw/ccw)
+ * This is distinct from prop rotation direction.
+ *
+ * Examples:
+ * - "no hand reversals" / "no hand path reversals"
+ * - "maximize hand continuity" / "smooth hand paths"
+ * - "hand reversal every beat"
+ * - "allow hand reversals but no prop reversals"
+ */
+
+const maximizeHandPathContinuityPattern: ConstraintPattern = {
+  id: "maximize-hand-path-continuity",
+  type: ConstraintType.HAND_PATH,
+  description: "Maximize hand path continuity (minimize hand reversals)",
+  matches(text: string): boolean {
+    // Must mention hand path or hand reversal concept
+    if (!containsConcept(text, "handpath")) {
+      return false;
+    }
+    // "maximize hand continuity", "smooth hand paths", "continuous hand movement"
+    if (containsConcept(text, "maximize") || containsConcept(text, "continuity")) {
+      return true;
+    }
+    // "minimize hand reversals" implies maximize continuity
+    if (containsConcept(text, "minimize")) {
+      return true;
+    }
+    return false;
+  },
+  build(_text: string): IConstraint {
+    return new HandPathReversalConstraint("maximize");
+  },
+};
+
+const enforceHandPathContinuityPattern: ConstraintPattern = {
+  id: "enforce-hand-path-continuity",
+  type: ConstraintType.HAND_PATH,
+  description: "Require continuous hand paths (no hand reversals allowed)",
+  matches(text: string): boolean {
+    if (!containsConcept(text, "handpath")) {
+      return false;
+    }
+    // "no hand reversals", "never reverse hand", "require continuous hand paths"
+    if (containsConcept(text, "exclude")) {
+      return true;
+    }
+    if (containsConcept(text, "require") && containsConcept(text, "continuity")) {
+      return true;
+    }
+    return false;
+  },
+  build(_text: string): IConstraint {
+    return new HandPathReversalConstraint("enforce");
+  },
+};
+
+const handPathReversalEveryBeatPattern: ConstraintPattern = {
+  id: "hand-path-reversal-every-beat",
+  type: ConstraintType.HAND_PATH,
+  description: "Hand path reversal every beat",
+  matches(text: string): boolean {
+    if (!containsConcept(text, "handpath")) {
+      return false;
+    }
+    // "hand reversal every beat", "maximize hand reversals"
+    return (
+      text.toLowerCase().includes("every") ||
+      (containsConcept(text, "maximize") && containsConcept(text, "reversal"))
+    );
+  },
+  build(_text: string): IConstraint {
+    return new HandPathReversalConstraint("every");
+  },
+};
+
+// =============================================================================
+// PROP REVERSAL PATTERNS (explicit prop/spin reversal control)
+// =============================================================================
+
+/**
+ * These patterns explicitly target PROP reversals (spin direction changes)
+ * as distinct from hand path reversals.
+ *
+ * Examples:
+ * - "no prop reversals" / "no spin reversals"
+ * - "allow hand reversals but no prop reversals"
+ */
+
+const noPropReversalsPattern: ConstraintPattern = {
+  id: "no-prop-reversals",
+  type: ConstraintType.CONTINUITY,
+  description: "No prop/spin reversals (prop spin direction must stay consistent)",
+  matches(text: string): boolean {
+    // Must explicitly mention "prop reversal" or "spin reversal"
+    if (!containsConcept(text, "propreversal")) {
+      return false;
+    }
+    return containsConcept(text, "exclude") || containsConcept(text, "minimize");
+  },
+  build(_text: string): IConstraint {
+    // This uses the existing ContinuityConstraint which tracks prop rotation
+    return new ContinuityConstraint("enforce");
+  },
+};
+
+const maximizePropContinuityPattern: ConstraintPattern = {
+  id: "maximize-prop-continuity",
+  type: ConstraintType.CONTINUITY,
+  description: "Maximize prop spin continuity (minimize prop reversals)",
+  matches(text: string): boolean {
+    if (!containsConcept(text, "propreversal")) {
+      return false;
+    }
+    return containsConcept(text, "maximize") || containsConcept(text, "minimize");
+  },
+  build(_text: string): IConstraint {
+    return new ContinuityConstraint("maximize");
+  },
+};
+
+// =============================================================================
+// REVERSAL PATTERNS (general - when user doesn't specify hand vs prop)
 // =============================================================================
 
 const reversalEveryBeatPattern: ConstraintPattern = {
@@ -422,11 +549,20 @@ function detectHand(text: string): HandTarget {
  * More specific patterns should come before general ones.
  */
 export const CONSTRAINT_PATTERNS: ConstraintPattern[] = [
-  // Continuity (specific before general)
+  // Hand path patterns (specific hand path vs general reversal)
+  enforceHandPathContinuityPattern,
+  maximizeHandPathContinuityPattern,
+  handPathReversalEveryBeatPattern,
+
+  // Prop reversal patterns (specific prop/spin reversal)
+  noPropReversalsPattern,
+  maximizePropContinuityPattern,
+
+  // Continuity (general - specific before general)
   enforceContinuityPattern,
   maximizeContinuityPattern,
 
-  // Reversals
+  // Reversals (general - when user doesn't specify hand vs prop)
   reversalEveryBeatPattern,
   noReversalsPattern,
 

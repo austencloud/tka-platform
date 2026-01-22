@@ -15,6 +15,7 @@ export enum ConstraintType {
   // Sequence-level constraints
   CONTINUITY = "continuity",
   REVERSAL = "reversal",
+  HAND_PATH = "handPath",
 
   // Position constraints
   POSITION_GROUP = "positionGroup",
@@ -51,6 +52,7 @@ export const CONSTRAINT_CATEGORIES: Record<ConstraintType, ConstraintCategory> =
     [ConstraintType.ROTATION_DIRECTION]: ConstraintCategory.MOTION,
     [ConstraintType.CONTINUITY]: ConstraintCategory.SEQUENCE,
     [ConstraintType.REVERSAL]: ConstraintCategory.SEQUENCE,
+    [ConstraintType.HAND_PATH]: ConstraintCategory.SEQUENCE,
     [ConstraintType.POSITION_GROUP]: ConstraintCategory.POSITION,
     [ConstraintType.VTG_TIMING]: ConstraintCategory.TIMING,
     [ConstraintType.ALTERNATING]: ConstraintCategory.PATTERN,

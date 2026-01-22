@@ -33,6 +33,8 @@ export const SYNONYMS: Record<string, string[]> = {
   // Constraint concepts
   continuity: ["continuous", "flow", "smooth", "flowing", "seamless", "unbroken"],
   reversal: ["reversals", "direction-change", "break", "breaks", "flip", "flips"],
+  handpath: ["hand-path", "hand path", "hand reversal", "hand reversals", "path reversal", "path reversals", "hand direction"],
+  propreversal: ["prop reversal", "prop reversals", "spin reversal", "spin reversals", "rotation reversal"],
 
   // Positions
   alpha: ["opposite", "split", "across"],
@@ -80,6 +82,7 @@ export function matchesConcept(term: string, concept: string): boolean {
 
 /**
  * Find all terms in text that match a concept.
+ * Uses word boundary matching to avoid partial matches (e.g., "low" in "flow").
  */
 export function findMatchingTerms(text: string, concept: string): string[] {
   const canonical = canonicalize(concept);
@@ -90,12 +93,23 @@ export function findMatchingTerms(text: string, concept: string): string[] {
   const lowerText = text.toLowerCase();
 
   for (const term of allTerms) {
-    if (lowerText.includes(term.toLowerCase())) {
+    const lowerTerm = term.toLowerCase();
+    // Use word boundary regex to match whole words only
+    // This prevents "low" from matching inside "flow"
+    const pattern = new RegExp(`\\b${escapeRegex(lowerTerm)}\\b`, "i");
+    if (pattern.test(lowerText)) {
       matches.push(term);
     }
   }
 
   return matches;
+}
+
+/**
+ * Escape special regex characters in a string.
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**

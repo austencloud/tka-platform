@@ -58,6 +58,17 @@ export {
 export { ReversalConstraint, type ReversalMode } from "./implementations/reversal-constraint.js";
 
 export {
+  HandPathReversalConstraint,
+  type HandPathMode,
+  HandPath,
+  getHandpathDirection,
+  // Convenience factories
+  maximizeHandPathContinuity,
+  enforceHandPathContinuity,
+  handReversalEveryBeat,
+} from "./implementations/hand-path-constraint.js";
+
+export {
   DashPreferenceConstraint,
   type DashPreferenceMode,
   maximizeDashes,

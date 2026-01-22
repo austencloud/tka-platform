@@ -366,6 +366,7 @@ function scoreAgainstConstraints(
           previousSteps: [],
           stepIndex: 0,
           totalSteps: 1,
+          letter: variation.letter,
         });
         totalScore += result.score;
         count++;
