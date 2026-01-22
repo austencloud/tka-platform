@@ -1438,5 +1438,9 @@
   "admin_calendar": "Calendar",
   "admin_timeline": "Timeline",
   "admin_train_challenges": "Train Challenge Manager",
-  "admin_train_challenges_desc": "Create and manage training challenges"
+  "admin_train_challenges_desc": "Create and manage training challenges",
+  "tab_admin_hall_of_shame": "Hall of Shame",
+  "tab_admin_loop_labeler": "LOOP Labeler",
+  "tab_desc_admin_hall_of_shame": "Manage hall of shame submissions",
+  "tab_desc_admin_loop_labeler": "Label sequences with LOOP patterns"
 }

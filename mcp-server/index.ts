@@ -1503,7 +1503,7 @@ server.tool(
     bridgeSelections: z.record(z.string(), z.number()).optional().describe('Map of bridge transition index to preferred bridge option index. E.g., {"0": 1} uses the 2nd bridge option for the first bridge needed.'),
     // NEW: Constraint options
     constraints: z.string().optional().describe('Natural language constraints, e.g., "maximize continuity, all pro motions", "smooth flow with blue clockwise"'),
-    constraintPreset: z.enum(["smooth", "reversal", "isolation", "antispin", "pro-cw", "anti-ccw", "no-dash", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset: smooth (maximize continuity), reversal (break every beat), isolation (all pro), antispin (all anti), pro-cw, anti-ccw, no-dash, maximize-dash (prefer Type 4/5 letters), maximum-chaos'),
+    constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "pro-cw", "anti-ccw", "no-dash", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset: smooth (maximize continuity), reversal (break every beat), isolation (all pro), antispin (all anti), pro-cw, anti-ccw, no-dash, maximize-dash (prefer Type 4/5 letters), maximum-chaos, smooth-hands (hand path continuity), smooth-props (prop spin continuity)'),
   },
   async ({ word, gridMode = "diamond", maxAttempts = 100, bridgeSelections, constraints, constraintPreset }) => {
     const allPictographs = ensureDataLoaded(gridMode);
@@ -1677,7 +1677,7 @@ server.tool(
     loopComponents: z.array(z.enum(["rotated", "mirrored", "swapped", "inverted"])).optional().describe("LOOP components for the pie chart glyph in top-right corner. E.g., ['rotated', 'mirrored'] shows those two quadrants filled."),
     // Constraint options (same as generate_sequence_data)
     constraints: z.string().optional().describe('Natural language constraints, e.g., "maximize continuity, all pro motions", "smooth flow with blue clockwise"'),
-    constraintPreset: z.enum(["smooth", "reversal", "isolation", "antispin", "pro-cw", "anti-ccw", "no-dash", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset: smooth (maximize continuity), reversal (break every beat), isolation (all pro), antispin (all anti), pro-cw, anti-ccw, no-dash, maximize-dash (prefer Type 4/5 letters), maximum-chaos'),
+    constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "pro-cw", "anti-ccw", "no-dash", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset: smooth (maximize continuity), reversal (break every beat), isolation (all pro), antispin (all anti), pro-cw, anti-ccw, no-dash, maximize-dash (prefer Type 4/5 letters), maximum-chaos, smooth-hands (hand path continuity), smooth-props (prop spin continuity)'),
   },
   async ({ word, gridMode = "diamond", layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100, showDifficulty = true, userName, notes, birthday, bridgeSelections, level = 1, turnIntensity, loopComponents, constraints, constraintPreset }) => {
     const allPictographs = ensureDataLoaded(gridMode);

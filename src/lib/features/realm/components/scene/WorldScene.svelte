@@ -32,7 +32,47 @@
   import type { RealmConfig } from "../../core/realm-config";
   import { getDefaultRealmConfig } from "../../core/realm-definitions";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
+  import { onMount, onDestroy } from "svelte";
+  import { browser } from "$app/environment";
   import type { Mesh } from "three";
+
+  // ============================================================================
+  // HMR POSITION PERSISTENCE
+  // ============================================================================
+  // Stores player position/yaw in sessionStorage so HMR doesn't reset you to spawn
+
+  const HMR_STORAGE_KEY = "realm-hmr-state";
+
+  interface HMRState {
+    x: number;
+    y: number;
+    z: number;
+    yaw: number;
+    cameraMode: CameraMode;
+  }
+
+  function loadHMRState(): HMRState | null {
+    if (!browser) return null;
+    try {
+      const stored = sessionStorage.getItem(HMR_STORAGE_KEY);
+      if (!stored) return null;
+      return JSON.parse(stored) as HMRState;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveHMRState(state: HMRState): void {
+    if (!browser) return;
+    try {
+      sessionStorage.setItem(HMR_STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  // Load initial state from HMR storage (if exists)
+  const hmrState = loadHMRState();
 
   // ============================================================================
   // PROPS
@@ -84,15 +124,22 @@
   const worldSeedEncoded = encodeSeed(worldSeed);
   const worldNoise = new SeededNoise(worldSeed);
 
-  // Avatar/Camera state
-  let cameraMode = $state<CameraMode>(CameraMode.FIRST_PERSON);
+  // Avatar/Camera state - restore from HMR if available
+  let cameraMode = $state<CameraMode>(hmrState?.cameraMode ?? CameraMode.FIRST_PERSON);
   const showAvatar = $derived(cameraMode !== CameraMode.FIRST_PERSON);
   let showGridPlanes = $state(false); // Disabled for exploration mode
 
-  // Player position (updated from physics)
-  let playerPosition = $state({ x: 0, y: 0, z: 0 });
-  let playerYaw = $state(0);
+  // Player position (updated from physics) - restore from HMR if available
+  let playerPosition = $state({
+    x: hmrState?.x ?? 0,
+    y: hmrState?.y ?? 0,
+    z: hmrState?.z ?? 0,
+  });
+  let playerYaw = $state(hmrState?.yaw ?? 0);
   let isMoving = $state(false);
+
+  // Flag to indicate we should teleport to HMR position after physics init
+  let pendingHMRTeleport = hmrState !== null;
 
   // Debug stats
   let fps = $state(0);
@@ -138,6 +185,45 @@
       playerYaw = angle;
     },
   };
+
+  // ============================================================================
+  // HMR STATE PERSISTENCE
+  // ============================================================================
+
+  // Save state periodically for HMR (throttled to avoid excessive writes)
+  let lastSaveTime = 0;
+  $effect(() => {
+    // Track position and yaw changes
+    const { x, y, z } = playerPosition;
+    const yaw = playerYaw;
+    const mode = cameraMode;
+
+    // Throttle saves to every 500ms
+    const now = Date.now();
+    if (now - lastSaveTime > 500) {
+      lastSaveTime = now;
+      saveHMRState({ x, y, z, yaw, cameraMode: mode });
+    }
+  });
+
+  // Teleport to HMR position once physics is ready
+  $effect(() => {
+    if (pendingHMRTeleport && playerController && hmrState) {
+      // Small delay to ensure physics is fully initialized
+      setTimeout(() => {
+        if (playerController) {
+          teleportPlayer(playerController, {
+            x: hmrState.x,
+            y: hmrState.y,
+            z: hmrState.z,
+          });
+          playerYaw = hmrState.yaw;
+          pendingHMRTeleport = false;
+          console.log("[WorldScene] Restored HMR position:", hmrState);
+        }
+      }, 100);
+    }
+  });
 </script>
 
 <div class="realm-world">

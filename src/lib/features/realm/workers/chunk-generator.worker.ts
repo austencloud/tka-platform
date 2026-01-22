@@ -700,8 +700,9 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
 
   // ADAPTIVE SKIRT DEPTH: Coarser LODs have larger gaps, need deeper skirts.
   // Also factor in terrain variance - hilly terrain needs deeper skirts.
-  const BASE_SKIRT = 15;
-  const LOD_MULTIPLIER = 1.5;
+  // Large base (50) ensures T-junction artifacts at LOD boundaries are fully hidden.
+  const BASE_SKIRT = 50;
+  const LOD_MULTIPLIER = 2.0;
 
   // Calculate height variance for this chunk
   let minH = Infinity;
@@ -714,7 +715,8 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   const variance = maxH - minH;
 
   // Adaptive depth: deeper at coarser LODs + proportional to terrain variance
-  const SKIRT_DEPTH = BASE_SKIRT * Math.pow(LOD_MULTIPLIER, lod) + variance * 0.3;
+  // Minimum of 50 units ensures even flat terrain near water is fully hidden
+  const SKIRT_DEPTH = Math.max(50, BASE_SKIRT * Math.pow(LOD_MULTIPLIER, lod) + variance * 0.5);
 
   const skirtVertexCount = effectiveResolution * 4; // 4 edges
   const totalVertexCount = vertexCount + skirtVertexCount;
