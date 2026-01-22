@@ -386,7 +386,9 @@
       "Bash(powershell.exe -Command \"Test-Path ''F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\mcp-server\\\\dist\\\\src\\\\core\\\\constraints\\\\analysis\\\\transition-analyzer.js''\")",
       "mcp__tka-domain__get_preferences",
       "mcp__tka-domain__analyze_word_feasibility",
-      "Bash(do wc -c \"$f\")"
+      "Bash(do wc -c \"$f\")",
+      "mcp__tka-domain__generate_random_word",
+      "Bash(tsc:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
