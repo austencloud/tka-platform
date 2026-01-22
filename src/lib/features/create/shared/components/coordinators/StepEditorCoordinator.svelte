@@ -113,16 +113,6 @@
     return currentSeq.steps[stepIndex] ?? null;
   });
 
-  // DEBUG: Track what's happening with selection (placed after all derivations)
-  $effect(() => {
-    console.log('[StepEditorCoordinator] DEBUG:', {
-      selectedStepNumber,
-      selectedStepData,
-      sequenceSteps: sequence?.steps?.length,
-      hasSequence: !!sequence
-    });
-  });
-
   // Animation state for deletion visualization
   const removingStepIndices = $derived.by(() =>
     activeSequenceState.getRemovingBeatIndices()

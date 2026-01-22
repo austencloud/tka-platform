@@ -104,6 +104,7 @@
 
     // Select the step
     localSelectedStepNumber = stepNumber;
+
     sequenceState.selectStep(stepNumber);
 
     // Open the step editor panel directly
