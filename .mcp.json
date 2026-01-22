@@ -27,6 +27,14 @@
       "env": {
         "GAME_WS_PORT": "9876"
       }
+    },
+    "zoom-recorder": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "cd /d F:\\_THE KINETIC ALPHABET\\zoom-recorder\\mcp-server && npx -y tsx index.ts"
+      ],
+      "env": {}
     }
   }
 }
