@@ -263,7 +263,15 @@ export default defineConfig({
         mode: "production",
         disableDevLogs: true,
         // Cache strategies for different asset types
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,webp}"],
+        // In dev mode, use minimal patterns to avoid "no files matched" warnings
+        // In production, glob against actual build output structure
+        globPatterns: process.env.NODE_ENV === "production"
+          ? [
+              "**/*.{js,css,html,ico,png,svg,woff2,woff,webp}",
+              "prerendered/**/*.{html,json}",
+              "client/**/*.{js,css,ico,png,svg,webp,webmanifest}",
+            ]
+          : [], // Empty in dev - SW handles caching at runtime
         // Exclude files from precaching that shouldn't be cached
         globIgnores: [
           "**/data/*.json", // sequence-index.json is 8MB+
@@ -274,6 +282,7 @@ export default defineConfig({
           "icon-preview.html",
           "legacy-sw.js", // Old SW shouldn't be cached by new SW
           "google*.html", // Google site verification files
+          "server/**", // Server files shouldn't be precached
         ],
         // Disable the size limit check entirely - immutable chunks don't need precaching
         maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
