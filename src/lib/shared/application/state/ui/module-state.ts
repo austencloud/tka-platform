@@ -50,8 +50,21 @@ export async function revalidateCurrentModule(): Promise<void> {
   // ITI containers are synchronous - no initialization needed
   const currentModule = getActiveModule();
 
+  // IMPORTANT: Check if this is URL-based navigation (deep linking)
+  // If user explicitly navigated to a URL, do NOT override with cached module
+  let isUrlNavigation = false;
+  if (browser) {
+    const pathname = window.location.pathname;
+    const parts = pathname.replace(/^\/+/, "").split("/").filter(Boolean);
+    if (parts.length > 0 && parts[0]) {
+      // URL has a module path - this is explicit navigation
+      isUrlNavigation = true;
+    }
+  }
+
   // Try to restore any cached module that user now has access to
-  if (featureFlagService.isTester || featureFlagService.isAdmin) {
+  // BUT skip if user explicitly navigated via URL
+  if ((featureFlagService.isTester || featureFlagService.isAdmin) && !isUrlNavigation) {
     try {
       // Check localStorage FIRST (most recent user intent, survives even if Firestore was overwritten)
       const cached = browser ? localStorage.getItem(LOCAL_STORAGE_KEY) : null;
@@ -255,14 +268,21 @@ export async function initializeModulePersistence(): Promise<void> {
     let urlTab: string | null = null;
     if (browser) {
       const pathname = window.location.pathname;
+      const searchParams = new URLSearchParams(window.location.search);
       const parts = pathname.replace(/^\/+/, "").split("/").filter(Boolean);
       const firstPart = parts[0];
       const secondPart = parts[1];
       if (firstPart) {
         urlModule = firstPart.toLowerCase();
       }
+      // Tab can come from path (/admin/loop-labeler) OR query param (?section=loop-labeler)
       if (secondPart) {
         urlTab = secondPart.toLowerCase();
+      } else {
+        const sectionParam = searchParams.get("section");
+        if (sectionParam) {
+          urlTab = sectionParam.toLowerCase();
+        }
       }
     }
 
