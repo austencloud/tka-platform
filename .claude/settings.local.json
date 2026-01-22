@@ -390,7 +390,16 @@
       "Bash(ipconfig:*)",
       "Bash(do echo \"Trying $port...\")",
       "mcp__tka-domain__parse_constraints",
-      "mcp__tka-domain__get_letter_explanation"
+      "mcp__tka-domain__get_letter_explanation",
+      "WebFetch(domain:joyofcode.xyz)",
+      "mcp__tka-domain__validate_loop_options",
+      "Bash(tsc)",
+      "Bash(powershell.exe -Command \"cd ''F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\mcp-server''; npm run build; ls\")",
+      "Bash(powershell.exe -Command \"cd ''F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\mcp-server''; node test-synonyms.mjs\")",
+      "Bash(powershell.exe -Command \"npx tsc 2>&1\")",
+      "Bash(powershell.exe -Command \"Test-Path ''F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\mcp-server\\\\dist''\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem ''F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\mcp-server\\\\dist\\\\src\\\\core\\\\constraints\\\\implementations'' -Name\")",
+      "Bash(powershell.exe -Command \"Test-Path ''F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\mcp-server\\\\dist\\\\src\\\\core\\\\constraints\\\\analysis\\\\transition-analyzer.js''\")"
     ]
   },
   "enableAllProjectMcpServers": true,

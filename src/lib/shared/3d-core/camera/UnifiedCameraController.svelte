@@ -46,6 +46,10 @@
     gravity?: number;
     /** Callback to expose camera rotation state for external access (e.g., MCP bridge) */
     onRotationChange?: (yaw: number, pitch: number) => void;
+    /** Initial yaw angle (radians) - used for HMR position restoration */
+    initialYaw?: number;
+    /** Initial pitch angle (radians) - used for HMR position restoration */
+    initialPitch?: number;
     /** External yaw setter (for MCP control) */
     externalYaw?: number | null;
     /** External pitch setter (for MCP control) */
@@ -63,6 +67,8 @@
     jumpForce = SCALE.JUMP_VELOCITY,
     gravity = Math.abs(SCALE.GRAVITY) * 2.5, // Amplified for game feel
     onRotationChange,
+    initialYaw = 0,
+    initialPitch = 0.3,
     externalYaw = null,
     externalPitch = null,
   }: Props = $props();
@@ -76,8 +82,9 @@
   let mode = $state<CameraMode>(cameraPreferences.getModeForDestination(destinationId));
 
   // Camera state (for game modes - orbit mode uses Scene3D's OrbitControls)
-  let yaw = $state(0);
-  let pitch = $state(0.3);
+  // Use initial values from props for HMR restoration
+  let yaw = $state(initialYaw);
+  let pitch = $state(initialPitch);
   let isPointerLocked = $state(false);
 
   // Movement keys

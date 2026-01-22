@@ -236,14 +236,31 @@ function interpolateToCoarseEdge(
 }
 
 /**
- * Check if an edge needs stitching to a coarser neighbor
+ * Maximum LOD level used for reference stitching when neighbor is unknown.
+ * This ensures edges are always stitched to a common reference, preventing
+ * spiky edges when neighbors load later with different LODs.
+ */
+const MAX_LOD_FOR_STITCHING = 4;
+
+/**
+ * Get the effective LOD to stitch to.
+ * When neighbor is unknown (-1), use MAX_LOD_FOR_STITCHING as a safe reference.
+ * This ensures that when the neighbor eventually loads (at any LOD), the edge
+ * will still be reasonably aligned since we pre-stitched to the coarsest case.
+ */
+function getStitchingLOD(neighborLod: number): number {
+  return neighborLod < 0 ? MAX_LOD_FOR_STITCHING : neighborLod;
+}
+
+/**
+ * Check if an edge needs stitching to a coarser neighbor (or reference LOD)
  * Stitching is needed when neighbor LOD > our LOD (coarser = higher LOD number)
+ * OR when neighbor is unknown (we stitch to MAX_LOD_FOR_STITCHING)
  */
 function needsStitching(ourLod: number, neighborLod: number): boolean {
-  // -1 means no neighbor, no stitching needed
-  if (neighborLod < 0) return false;
-  // Stitch when neighbor is coarser (higher LOD number)
-  return neighborLod > ourLod;
+  const effectiveNeighborLod = getStitchingLOD(neighborLod);
+  // Stitch when neighbor (or reference) is coarser than us
+  return effectiveNeighborLod > ourLod;
 }
 
 function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
@@ -474,7 +491,8 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
 
     // SOUTH EDGE (z = 0) - neighbor is at z-1 (south)
     if (needsStitching(lod, neighborLODs.south)) {
-      const coarseRes = getEdgeVertexCount(resolution, neighborLODs.south);
+      const effectiveLOD = getStitchingLOD(neighborLODs.south);
+      const coarseRes = getEdgeVertexCount(resolution, effectiveLOD);
       const coarseStep = chunkSize / (coarseRes - 1);
 
       // Get coarse height function - samples at positions the coarse neighbor uses
@@ -504,7 +522,8 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
 
     // NORTH EDGE (z = max) - neighbor is at z+1 (north)
     if (needsStitching(lod, neighborLODs.north)) {
-      const coarseRes = getEdgeVertexCount(resolution, neighborLODs.north);
+      const effectiveLOD = getStitchingLOD(neighborLODs.north);
+      const coarseRes = getEdgeVertexCount(resolution, effectiveLOD);
       const coarseStep = chunkSize / (coarseRes - 1);
 
       // CRITICAL: Use exact boundary coordinates for first/last vertices
@@ -532,7 +551,8 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
 
     // WEST EDGE (x = 0) - neighbor is at x-1 (west)
     if (needsStitching(lod, neighborLODs.west)) {
-      const coarseRes = getEdgeVertexCount(resolution, neighborLODs.west);
+      const effectiveLOD = getStitchingLOD(neighborLODs.west);
+      const coarseRes = getEdgeVertexCount(resolution, effectiveLOD);
       const coarseStep = chunkSize / (coarseRes - 1);
 
       // CRITICAL: Use exact boundary coordinates for first/last vertices
@@ -560,7 +580,8 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
 
     // EAST EDGE (x = max) - neighbor is at x+1 (east)
     if (needsStitching(lod, neighborLODs.east)) {
-      const coarseRes = getEdgeVertexCount(resolution, neighborLODs.east);
+      const effectiveLOD = getStitchingLOD(neighborLODs.east);
+      const coarseRes = getEdgeVertexCount(resolution, effectiveLOD);
       const coarseStep = chunkSize / (coarseRes - 1);
 
       // CRITICAL: Use exact boundary coordinates for first/last vertices

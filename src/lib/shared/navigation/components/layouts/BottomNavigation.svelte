@@ -170,7 +170,7 @@
   class:floating={isDashboard}
   bind:this={navElement}
 >
-  <!-- Left side: Module Switcher + Network Status -->
+  <!-- Left side: Module Switcher -->
   <div class="left-buttons">
     <!-- Module Switcher Button - now shown even in settings for consistent home/back affordance -->
     <!-- Long-press opens admin toolbar for admins -->
@@ -180,8 +180,10 @@
         onLongPress={handleModuleSwitcherLongPress}
       />
     {/if}
+  </div>
 
-    <!-- Network Status Indicator (mobile) -->
+  <!-- Network Status Indicator (mobile) - positioned absolutely to not affect layout -->
+  <div class="network-status-overlay">
     <NetworkStatusIndicator variant="mobile" />
   </div>
 
@@ -369,7 +371,7 @@
   }
 
   /* ============================================================================
-     LEFT BUTTONS CONTAINER (Module Switcher + Network Status)
+     LEFT BUTTONS CONTAINER (Module Switcher)
      ============================================================================ */
   .left-buttons {
     display: flex;
@@ -377,6 +379,23 @@
     align-items: center;
     gap: 4px;
     flex-shrink: 0;
+  }
+
+  /* ============================================================================
+     NETWORK STATUS OVERLAY - Positioned absolutely to not affect nav layout
+     ============================================================================ */
+  .network-status-overlay {
+    position: absolute;
+    left: 56px; /* Position after module switcher (48px + 8px gap) */
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 101; /* Above navigation but below modals */
+    pointer-events: none; /* Let clicks pass through to navigation */
+  }
+
+  /* Re-enable pointer events on the indicator itself */
+  .network-status-overlay :global(.network-status) {
+    pointer-events: auto;
   }
 
   /* ============================================================================

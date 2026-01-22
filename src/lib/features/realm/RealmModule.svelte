@@ -12,8 +12,8 @@
   import { onMount } from "svelte";
   import { destinationManager } from "$lib/shared/3d-core/destinations/destination-manager.svelte";
   import { DESTINATIONS } from "$lib/shared/3d-core/destinations/definitions";
-  import DestinationPicker from "./components/DestinationPicker.svelte";
-  import DestinationRenderer from "./components/DestinationRenderer.svelte";
+  import DestinationPicker from "./components/picker/DestinationPicker.svelte";
+  import DestinationRenderer from "./components/picker/DestinationRenderer.svelte";
 
   // Current destination state
   const currentDestinationId = $derived(destinationManager.currentDestinationId);

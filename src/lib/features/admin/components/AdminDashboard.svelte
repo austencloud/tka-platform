@@ -14,8 +14,23 @@
   import FeatureFlagManagement from "./FeatureFlagManagement.svelte";
   import AnnouncementManagement from "./AnnouncementManagement.svelte";
   import ShameQueuePanel from "./ShameQueuePanel.svelte";
-  import LOOPLabelerModule from "$lib/features/loop-labeler/components/LOOPLabelerModule.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+
+  // Lazy load LOOP Labeler to avoid blocking admin dashboard if it fails
+  let LOOPLabelerModule: typeof import("$lib/features/loop-labeler/components/LOOPLabelerModule.svelte").default | null =
+    $state(null);
+
+  $effect(() => {
+    if (activeSection === "loop-labeler" && !LOOPLabelerModule) {
+      import("$lib/features/loop-labeler/components/LOOPLabelerModule.svelte")
+        .then((mod) => {
+          LOOPLabelerModule = mod.default;
+        })
+        .catch((err) => {
+          console.error("Failed to load LOOP Labeler:", err);
+        });
+    }
+  });
 
   // Services
   let adminChallengeService = $state<IAdminChallengeManager | null>(null);
@@ -96,7 +111,14 @@
           role="tabpanel"
           aria-labelledby="loop-labeler-tab"
         >
-          <LOOPLabelerModule />
+          {#if LOOPLabelerModule}
+            <LOOPLabelerModule />
+          {:else}
+            <div class="loading-state">
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              <p>Loading LOOP Labeler...</p>
+            </div>
+          {/if}
         </div>
       {/if}
     </main>

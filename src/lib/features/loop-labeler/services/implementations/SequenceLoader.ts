@@ -52,24 +52,21 @@ export class SequenceLoader implements ISequenceLoader {
     labels: Map<string, LabeledSequence>,
     filterMode: FilterMode
   ): SequenceEntry[] {
-    // First filter to only circular sequences
-    const circularSequences = sequences.filter((s) => s.isCircular);
-
     // Apply filter mode
     switch (filterMode) {
       case "needsVerification":
-        return circularSequences.filter(
+        return sequences.filter(
           (s) => labels.get(s.word)?.needsVerification === true
         );
 
       case "verified":
-        return circularSequences.filter((s) => {
+        return sequences.filter((s) => {
           const label = labels.get(s.word);
           return label && !label.needsVerification;
         });
 
       default:
-        return circularSequences;
+        return sequences;
     }
   }
 
@@ -77,8 +74,7 @@ export class SequenceLoader implements ISequenceLoader {
     sequences: SequenceEntry[],
     labels: Map<string, LabeledSequence>
   ): SequenceStats {
-    const circularSequences = sequences.filter((s) => s.isCircular);
-    const total = circularSequences.length;
+    const total = sequences.length;
 
     const needsVerification = Array.from(labels.values()).filter(
       (l) => l.needsVerification === true

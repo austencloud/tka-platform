@@ -819,9 +819,13 @@
     {avatarState}
     {physicsProvider}
     enabled={true}
+    initialYaw={playerYaw}
     onModeChange={(mode) => {
       cameraMode = mode;
       onModeChange(mode);
+    }}
+    onRotationChange={(newYaw, _pitch) => {
+      playerYaw = newYaw;
     }}
   />
 {/if}

@@ -196,16 +196,20 @@ export function createNavigationState() {
     // ─────────────────────────────────────────────────────────────────────────────
     // URL Path Parsing - URL is the source of truth for navigation
     // Parses paths like /realm/gallery → module: "realm", tab: "gallery"
+    // Also supports query param: /admin?section=loop-labeler → module: "admin", tab: "loop-labeler"
     // ─────────────────────────────────────────────────────────────────────────────
     if (typeof window !== "undefined") {
       const pathname = window.location.pathname;
+      const searchParams = new URLSearchParams(window.location.search);
+
       // Remove leading slash and split by remaining slashes
       const pathParts = pathname.replace(/^\/+/, "").split("/").filter(Boolean);
 
       const firstPart = pathParts[0];
       if (pathParts.length >= 1 && firstPart) {
         const urlModule = firstPart.toLowerCase();
-        const urlTab = pathParts[1]?.toLowerCase();
+        // Tab can come from path (/admin/loop-labeler) OR query param (?section=loop-labeler)
+        const urlTab = pathParts[1]?.toLowerCase() || searchParams.get("section")?.toLowerCase();
 
         // Check if URL specifies a valid module
         const urlModuleDefinition = MODULE_DEFINITIONS.find(

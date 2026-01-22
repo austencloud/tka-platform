@@ -102,7 +102,14 @@ function isHandPathReversal(prev: HandPath, current: HandPath): boolean {
 
 /**
  * Calculate hand path continuity score between two consecutive steps.
- * Returns 1 if continuous, 0 if reversal, 0.5 if one is static/dash.
+ *
+ * Scoring:
+ * - cw → cw or ccw → ccw = 1 (continuous)
+ * - cw ↔ ccw = 0 (reversal)
+ * - Anything involving dash or static = 1 (continuous - dash/static don't reverse direction)
+ *
+ * Dash is NOT a reversal because the hand passes straight through rather than
+ * changing its circular direction. cw → dash → cw is perfectly continuous.
  */
 function calculateHandPathScore(
   prev: PictographData,
@@ -131,21 +138,11 @@ function calculateHandPathScore(
   const blueReversal = isHandPathReversal(prevBlueHandPath, currentBlueHandPath);
   const redReversal = isHandPathReversal(prevRedHandPath, currentRedHandPath);
 
-  // Check for static/dash (neutral - not continuous, not reversal)
-  const blueNeutral =
-    prevBlueHandPath === HandPath.STATIC ||
-    prevBlueHandPath === HandPath.DASH ||
-    currentBlueHandPath === HandPath.STATIC ||
-    currentBlueHandPath === HandPath.DASH;
-  const redNeutral =
-    prevRedHandPath === HandPath.STATIC ||
-    prevRedHandPath === HandPath.DASH ||
-    currentRedHandPath === HandPath.STATIC ||
-    currentRedHandPath === HandPath.DASH;
-
+  // Only cw ↔ ccw is a reversal (score 0)
+  // Everything else (including dash/static transitions) is continuous (score 1)
   return {
-    blueScore: blueNeutral ? 0.5 : blueReversal ? 0 : 1,
-    redScore: redNeutral ? 0.5 : redReversal ? 0 : 1,
+    blueScore: blueReversal ? 0 : 1,
+    redScore: redReversal ? 0 : 1,
     blueReversal,
     redReversal,
   };
@@ -250,11 +247,7 @@ export class HandPathReversalConstraint implements IVariationConstraint {
     // Build reason string
     let reason: string;
     if (!blueReversal && !redReversal) {
-      if (avgScore === 1) {
-        reason = "Continuous hand paths (no reversals)";
-      } else {
-        reason = "No hand path reversals (some static/dash)";
-      }
+      reason = "Continuous hand paths (no reversals)";
     } else if (blueReversal && redReversal) {
       reason = "Both hands reversed path";
     } else if (blueReversal) {

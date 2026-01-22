@@ -484,6 +484,7 @@ let historyInitialized = false;
 /**
  * Parse the URL pathname and extract module/section IDs
  * Expected format: /moduleId or /moduleId/sectionId
+ * Also supports query param: /moduleId?section=sectionId
  * Also handles legacy /app prefix and hash format for backwards compatibility
  */
 function parsePathNavigation(): {
@@ -494,6 +495,7 @@ function parsePathNavigation(): {
 
   // First try pathname (format: /create/constructor)
   let pathname = window.location.pathname;
+  const searchParams = new URLSearchParams(window.location.search);
 
   // Strip legacy /app prefix if present (backwards compatibility)
   if (pathname.startsWith("/app")) {
@@ -504,7 +506,8 @@ function parsePathNavigation(): {
     // Remove leading slash and split by /
     const parts = pathname.substring(1).split("/").filter(Boolean);
     let moduleId = parts[0] as ModuleId;
-    const sectionId = parts[1];
+    // Section can come from path (/admin/loop-labeler) OR query param (?section=loop-labeler)
+    const sectionId = parts[1] || searchParams.get("section") || undefined;
 
     // Redirect legacy /library URLs to /discover with "My Library" source active
     // Library is now integrated into Gallery via Community/My Library toggle
