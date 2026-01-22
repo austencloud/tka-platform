@@ -63,11 +63,14 @@ export interface PictographOperation {
 // Import from there if needed
 
 // Fundamental LOOP components that can be combined
+// The 6 transformation primitives + freeform
 export enum LOOPComponent {
-  ROTATED = "rotated",
-  MIRRORED = "mirrored",
-  SWAPPED = "swapped",
-  INVERTED = "inverted",
+  ROTATED = "rotated",    // 180° or 90° position rotation
+  MIRRORED = "mirrored",  // Vertical reflection (left ↔ right)
+  FLIPPED = "flipped",    // Horizontal reflection (north ↔ south)
+  SWAPPED = "swapped",    // Blue/red hand exchange
+  INVERTED = "inverted",  // PRO ↔ ANTI motion direction flip
+  REWOUND = "rewound",    // Time reversal (plays backward)
 }
 
 /**

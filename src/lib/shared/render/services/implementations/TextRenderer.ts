@@ -8,6 +8,7 @@
 import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { IDimensionCalculator } from "../contracts/IDimensionCalculator";
 import type { ILOOPGlyphRenderer } from "../contracts/ILOOPGlyphRenderer";
+import type { ILOOPIconStripRenderer } from "../contracts/ILOOPIconStripRenderer";
 import type {
   TextRenderOptions,
   UserExportInfo,
@@ -24,7 +25,8 @@ export class TextRenderer implements ITextRenderer {
 
   constructor(
     private dimensionService: IDimensionCalculator,
-    private loopGlyphRenderer?: ILOOPGlyphRenderer
+    private loopGlyphRenderer?: ILOOPGlyphRenderer,
+    private loopIconStripRenderer?: ILOOPIconStripRenderer
   ) {}
 
   /**
@@ -153,9 +155,11 @@ export class TextRenderer implements ITextRenderer {
       return;
     }
 
-    // Check if we have LOOP components to show (and renderer is available)
+    // Check if we have LOOP components to show (and a renderer is available)
+    // Prefer icon strip renderer over pie chart glyph renderer
     const hasLoopComponents =
-      loopComponents && loopComponents.size > 0 && this.loopGlyphRenderer;
+      loopComponents && loopComponents.size > 0 &&
+      (this.loopIconStripRenderer || this.loopGlyphRenderer);
 
     // Allow rendering even with empty word if we need to show badges
     const hasWord = word && word.trim() !== "";
@@ -211,18 +215,45 @@ export class TextRenderer implements ITextRenderer {
       );
     }
 
-    // Render LOOP glyph on the right side (symmetrical to level badge)
-    if (hasLoopComponents && this.loopGlyphRenderer && loopComponents) {
-      const glyphX = canvas.width - badgePadding - badgeSize / 2;
-      const glyphY = headerHeight / 2;
-      this.loopGlyphRenderer.render(
-        ctx,
-        loopComponents,
-        glyphX,
-        glyphY,
-        badgeSize,
-        darkMode
-      );
+    // Render LOOP icons on the right side
+    if (hasLoopComponents && loopComponents) {
+      const iconSize = badgeSize * 0.6; // Smaller icons for cleaner look
+      const rightEdge = canvas.width - badgePadding;
+
+      // Prefer icon strip renderer (Font Awesome style icons)
+      if (this.loopIconStripRenderer) {
+        // Icon strip renders from center, so we need to calculate where center should be
+        // First, calculate how wide the strip will be
+        const activeCount = Array.from(loopComponents).length;
+        const gap = Math.max(2, Math.round(iconSize * 0.15));
+        const stripWidth = activeCount > 0
+          ? activeCount * iconSize + (activeCount - 1) * gap
+          : iconSize; // freeform single icon
+
+        // Position so right edge of strip aligns with rightEdge - some padding
+        const stripCenterX = rightEdge - stripWidth / 2 - iconSize * 0.2;
+
+        this.loopIconStripRenderer.render(
+          ctx,
+          loopComponents,
+          stripCenterX,
+          headerHeight / 2,
+          iconSize,
+          darkMode
+        );
+      } else if (this.loopGlyphRenderer) {
+        // Fallback to pie chart glyph
+        const glyphX = canvas.width - badgePadding - badgeSize / 2;
+        const glyphY = headerHeight / 2;
+        this.loopGlyphRenderer.render(
+          ctx,
+          loopComponents,
+          glyphX,
+          glyphY,
+          badgeSize,
+          darkMode
+        );
+      }
     }
   }
 

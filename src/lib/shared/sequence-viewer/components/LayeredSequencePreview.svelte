@@ -24,7 +24,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
-  import LOOPGlyph from "$lib/shared/components/LOOPGlyph.svelte";
+  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -478,22 +478,21 @@
             </span>
           {/if}
 
-          <!-- LOOP glyph - absolute positioned at top-right (symmetrical to difficulty badge) -->
+          <!-- LOOP icon strip - absolute positioned at top-right -->
           {#if showLoopGlyph && loopComponents}
             <div
-              class="loop-glyph-badge"
+              class="loop-icon-badge"
               style="
-                width: {badgeSize}px;
                 height: {badgeSize}px;
                 right: {badgePadding}px;
               "
               transition:scale={{ duration: 200, easing: cubicOut }}
             >
-              <LOOPGlyph
+              <LOOPIconStrip
                 activeComponents={loopComponents}
-                size={badgeSize}
-                interactive={false}
+                size={Math.floor(badgeSize * 0.6)}
                 darkMode={darkMode}
+                showFreeformWhenEmpty={false}
               />
             </div>
           {/if}
@@ -659,17 +658,24 @@
     color: #ffffff;
   }
 
-  /* LOOP glyph badge - absolute positioned at top-right (symmetrical to difficulty badge) */
-  .loop-glyph-badge {
+  /* LOOP icon strip badge - absolute positioned at top-right */
+  .loop-icon-badge {
     position: absolute;
     /* right set via inline style from badgePadding() */
     top: 50%;
     transform: translateY(-50%);
-    /* width, height set via inline style */
+    /* height set via inline style */
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    padding: 0 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+  }
+
+  .dark-mode .loop-icon-badge {
+    background: rgba(255, 255, 255, 0.1);
   }
 
   /* Grid section */

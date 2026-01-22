@@ -932,6 +932,20 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // LOOP LABELS (Admin Labeling Tool)
+    // ============================================================================
+
+    // LOOP labels - admin tool for labeling sequences with LOOP patterns
+    // Document ID is the sequence word (uppercase)
+    match /loop-labels/{word} {
+      // Authenticated users can read labels (needed for Discover to show LOOP icons)
+      allow read: if isAuthenticated();
+
+      // Only admins can write labels
+      allow write: if isAdmin();
+    }
+
+    // ============================================================================
     // EXPLICIT DENY FOR UNMATCHED PATHS
     // Any collection not explicitly defined above is denied by default
     // ============================================================================

@@ -21,6 +21,7 @@ import { ImageComposer } from "$lib/shared/render/services/implementations/Image
 import { ImageFormatConverter } from "$lib/shared/render/services/implementations/ImageFormatConverter";
 import { LayoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
 import { LOOPGlyphRenderer } from "$lib/shared/render/services/implementations/LOOPGlyphRenderer";
+import { LOOPIconStripRenderer } from "$lib/shared/render/services/implementations/LOOPIconStripRenderer";
 import { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import { SVGToCanvasConverter } from "$lib/shared/render/services/implementations/SVGToCanvasConverter";
 import { TextRenderer } from "$lib/shared/render/services/implementations/TextRenderer";
@@ -56,14 +57,20 @@ export function createRenderContainer(fileDownloader: IFileDownloader) {
     canvas2DRenderer: () => new Canvas2DDirectRenderer(),
     // Layer compositor - composes cached layers for fast visibility toggles
     layerCompositor: () => new LayerCompositor(),
-    // LOOP glyph renderer - renders pie chart badges for LOOP components
+    // LOOP glyph renderer - renders pie chart badges for LOOP components (legacy)
     loopGlyphRenderer: () => new LOOPGlyphRenderer(),
+    // LOOP icon strip renderer - renders horizontal icon strip (preferred)
+    loopIconStripRenderer: () => new LOOPIconStripRenderer(),
   });
 
   // Layer 2: Services that depend on Layer 1
   const layer2Container = baseContainer.add((ctx) => ({
     textRenderer: () =>
-      new TextRenderer(ctx.dimensionCalculator, ctx.loopGlyphRenderer),
+      new TextRenderer(
+        ctx.dimensionCalculator,
+        ctx.loopGlyphRenderer,
+        ctx.loopIconStripRenderer
+      ),
     imageFormatConverter: () => new ImageFormatConverter(fileDownloader),
   }));
 

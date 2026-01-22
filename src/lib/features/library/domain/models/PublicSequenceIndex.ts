@@ -56,6 +56,9 @@ export interface PublicSequenceIndex {
   /** Difficulty level (e.g., "beginner", "intermediate", "advanced") */
   readonly difficultyLevel?: string;
 
+  /** LOOP type label (e.g., "rotated", "mirrored+swapped", "freeform", null for non-LOOP) */
+  readonly loopType?: string | null;
+
   // ============================================================
   // ENGAGEMENT METRICS
   // ============================================================

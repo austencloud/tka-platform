@@ -12,6 +12,7 @@ import {
   setDoc,
   deleteDoc,
   serverTimestamp,
+  type Firestore,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencePath } from "../../data/firestore-paths";
@@ -20,6 +21,7 @@ import type { LibrarySequence } from "../../domain/models/LibrarySequence";
 import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
 import type { IContentAppealManager } from "$lib/features/moderation/services/contracts/IContentAppealManager";
 import { ContentModerationError } from "$lib/features/moderation/errors/ContentModerationError";
+import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";
 
 export class PublicIndexSyncer implements IPublicIndexSyncer {
   constructor(
@@ -63,6 +65,9 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       const userDoc = await getDoc(doc(firestore, `users/${userId}`));
       const userData = userDoc.data() ?? {};
 
+      // Fetch LOOP label if exists (keyed by word)
+      const loopType = await this.fetchLoopType(firestore, sequence.word);
+
       const publicData = {
         id: sequence.id,
         sourceRef: `users/${userId}/sequences/${sequence.id}`,
@@ -75,6 +80,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         thumbnails: sequence.thumbnails.slice(0, 3) ?? [],
         sequenceLength: sequence.steps.length ?? 0,
         difficultyLevel: sequence.difficultyLevel,
+        loopType,
         forkCount: sequence.forkCount ?? 0,
         viewCount: sequence.viewCount ?? 0,
         starCount: sequence.starCount ?? 0,
@@ -113,6 +119,56 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         error
       );
       throw error; // Re-throw so callers know the removal failed
+    }
+  }
+
+  /**
+   * Fetch LOOP type from the loop-labels collection.
+   * Returns a string like "rotated", "mirrored+swapped", "freeform", or null if not labeled.
+   */
+  private async fetchLoopType(
+    firestore: Firestore,
+    word: string
+  ): Promise<string | null> {
+    if (!word) return null;
+
+    try {
+      const labelDoc = await getDoc(doc(firestore, LOOP_LABELS_COLLECTION, word));
+
+      if (!labelDoc.exists()) {
+        return null;
+      }
+
+      const data = labelDoc.data();
+
+      // If explicitly marked as freeform
+      if (data.isFreeform) {
+        return "freeform";
+      }
+
+      // If has designations, join the components
+      const designations = data.designations as Array<{
+        loopType: string;
+        components: string[];
+      }> | undefined;
+
+      if (designations && designations.length > 0) {
+        // Take the first designation's components and join them
+        const components = designations[0].components;
+        if (components && components.length > 0) {
+          return components.join("+");
+        }
+        // Or use the loopType directly if no components
+        return designations[0].loopType || "freeform";
+      }
+
+      return null;
+    } catch (error) {
+      console.warn(
+        `[PublicIndexSyncer] Failed to fetch LOOP label for "${word}":`,
+        error
+      );
+      return null;
     }
   }
 }

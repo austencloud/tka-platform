@@ -354,15 +354,22 @@ export class LOOPLabelerController {
     const repo = this.services.labelsRepository;
     if (!repo) return;
 
+    // Optimistic update for responsive UI
     this.state.updateLabel(label.word, label);
-    repo.saveToLocalStorage(this.state.labels);
-
     this.state.setSyncStatus("syncing");
+
     try {
+      // Firebase FIRST - this is the source of truth
       await repo.saveLabelToFirebase(label.word, label);
+
+      // Then update localStorage as cache
+      repo.saveToLocalStorage(this.state.labels);
+
       this.state.setSyncStatus("synced");
     } catch (error) {
       console.error("[LOOPLabelerController] Failed to save label:", error);
+      // Still save to localStorage as fallback (will be recovered on next load)
+      repo.saveToLocalStorage(this.state.labels);
       this.state.setSyncStatus("error");
     }
   }
@@ -371,15 +378,22 @@ export class LOOPLabelerController {
     const repo = this.services.labelsRepository;
     if (!repo) return;
 
+    // Optimistic update for responsive UI
     this.state.deleteLabel(word);
-    repo.saveToLocalStorage(this.state.labels);
-
     this.state.setSyncStatus("syncing");
+
     try {
+      // Firebase FIRST - this is the source of truth
       await repo.deleteLabelFromFirebase(word);
+
+      // Then update localStorage as cache
+      repo.saveToLocalStorage(this.state.labels);
+
       this.state.setSyncStatus("synced");
     } catch (error) {
       console.error("[LOOPLabelerController] Failed to delete label:", error);
+      // Still save to localStorage as fallback
+      repo.saveToLocalStorage(this.state.labels);
       this.state.setSyncStatus("error");
     }
   }

@@ -12,7 +12,7 @@ import type { ILOOPTypeResolver } from "../contracts/ILOOPTypeResolver";
 export class LOOPTypeResolver implements ILOOPTypeResolver {
   /**
    * Parse LOOP type to extract components
-   * EXACT ORIGINAL LOGIC from LOOPCard.svelte lines 70-79
+   * Handles all 6 primitives: rotated, mirrored, flipped, swapped, inverted, rewound
    */
   parseComponents(loopType: LOOPType): Set<LOOPComponent> {
     const components = new Set<LOOPComponent>();
@@ -22,10 +22,13 @@ export class LOOPTypeResolver implements ILOOPTypeResolver {
       return components;
     }
 
+    // Parse all 6 primitives from the loopType string
     if (loopType.includes("rotated")) components.add(LOOPComponent.ROTATED);
     if (loopType.includes("mirrored")) components.add(LOOPComponent.MIRRORED);
+    if (loopType.includes("flipped")) components.add(LOOPComponent.FLIPPED);
     if (loopType.includes("swapped")) components.add(LOOPComponent.SWAPPED);
     if (loopType.includes("inverted")) components.add(LOOPComponent.INVERTED);
+    if (loopType.includes("rewound")) components.add(LOOPComponent.REWOUND);
 
     return components;
   }
