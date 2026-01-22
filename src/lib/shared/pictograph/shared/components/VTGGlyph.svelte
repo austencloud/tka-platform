@@ -1,10 +1,11 @@
 <!--
 VTGGlyph.svelte - VTG Glyph Component
 
-Renders VTG mode glyphs (SS, SO, TS, TO, QS, QO) in the bottom-right corner
+Renders VTG mode labels (SS, SO, TS, TO, QS, QO) in the bottom-right corner
 of pictographs. Only displays for Type1 letters.
 
-Based on legacy vtg_glyph.py and vtg_glyph_renderer.py implementations.
+Redesigned 2026-01-21: Switched from legacy SVG images to clean text labels
+that adapt to dark/light mode automatically.
 -->
 <script lang="ts">
   import type { VTGMode } from "../domain/enums/pictograph-enums";
@@ -22,6 +23,7 @@ Based on legacy vtg_glyph.py and vtg_glyph_renderer.py implementations.
     previewMode = false,
     onToggle = undefined,
     xOffset = 0,
+    darkMode = undefined,
   } = $props<{
     /** The VTG mode to display (SS, SO, TS, TO, QS, QO) */
     vtgMode?: VTGMode | null;
@@ -37,6 +39,8 @@ Based on legacy vtg_glyph.py and vtg_glyph_renderer.py implementations.
     onToggle?: () => void;
     /** X offset for expanded timeline cells (shifts glyph right) */
     xOffset?: number;
+    /** Dark Mode override for export. When set, forces specific colors. */
+    darkMode?: boolean;
   }>();
 
   // Only render for Type1 letters with valid VTG mode AND when visible
@@ -58,29 +62,26 @@ Based on legacy vtg_glyph.py and vtg_glyph_renderer.py implementations.
     return true;
   });
 
-  // SVG path - VTG glyphs are in static/images/vtg_glyphs/
-  const svgPath = $derived.by(() => {
-    if (!vtgMode) return "";
-    return `/images/vtg_glyphs/${vtgMode}.svg`;
-  });
-
-  // Positioning based on legacy vtg_glyph_renderer.py:
-  // - 4% offset from edges
-  // - Positioned in bottom-right corner
+  // Positioning:
+  // - Positioned in bottom-right corner with padding from edges
   // - Standard pictograph size is 950x950 (viewBox)
   const PICTOGRAPH_SIZE = 950;
-  const OFFSET_PERCENTAGE = 0.04;
+  const PADDING = 40;
 
-  // VTG glyph dimensions (from actual SVG viewBox: 201.24 x 133.6)
-  const GLYPH_WIDTH = 201.24;
-  const GLYPH_HEIGHT = 133.6;
-
-  const offsetWidth = PICTOGRAPH_SIZE * OFFSET_PERCENTAGE;
-  const offsetHeight = PICTOGRAPH_SIZE * OFFSET_PERCENTAGE;
+  // Text label dimensions (approximate bounding box for "SS" at font-size 72)
+  const LABEL_WIDTH = 100;
+  const LABEL_HEIGHT = 72;
 
   // Position in bottom-right corner (with x-offset for expanded cells)
-  const xPosition = $derived(PICTOGRAPH_SIZE - GLYPH_WIDTH - offsetWidth + xOffset);
-  const yPosition = PICTOGRAPH_SIZE - GLYPH_HEIGHT - offsetHeight;
+  const xPosition = $derived(PICTOGRAPH_SIZE - PADDING + xOffset);
+  const yPosition = PICTOGRAPH_SIZE - PADDING;
+
+  // Get explicit fill color for export (inline style overrides CSS)
+  const explicitFill = $derived.by(() => {
+    if (darkMode === true) return "rgba(255, 255, 255, 0.85)";
+    if (darkMode === false) return "rgba(0, 0, 0, 0.7)";
+    return undefined;
+  });
 </script>
 
 {#if shouldRender}
@@ -100,13 +101,16 @@ Based on legacy vtg_glyph.py and vtg_glyph_renderer.py implementations.
           "aria-label": `VTG mode: ${vtgMode}`,
         }}
   >
-    <image
-      href={svgPath}
+    <text
       x={xPosition}
       y={yPosition}
-      width={GLYPH_WIDTH}
-      height={GLYPH_HEIGHT}
-    />
+      class="vtg-label"
+      text-anchor="end"
+      dominant-baseline="text-bottom"
+      style={explicitFill ? `fill: ${explicitFill}` : undefined}
+    >
+      {vtgMode}
+    </text>
   </g>
 {/if}
 
@@ -114,7 +118,7 @@ Based on legacy vtg_glyph.py and vtg_glyph_renderer.py implementations.
   .vtg-glyph {
     /* Beautiful fade in/out effect */
     opacity: 0;
-    transition: opacity var(--duration-normal) ease;
+    transition: opacity var(--duration-normal, 200ms) ease;
   }
 
   .vtg-glyph.visible {
@@ -139,5 +143,20 @@ Based on legacy vtg_glyph.py and vtg_glyph_renderer.py implementations.
   /* When not visible in preview mode, dim on hover */
   .vtg-glyph.preview-mode:not(.visible).interactive:hover {
     opacity: 0.5;
+  }
+
+  .vtg-label {
+    font-family: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 72px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    /* Light mode default - dark text */
+    fill: rgba(0, 0, 0, 0.7);
+    transition: fill 150ms ease-out;
+  }
+
+  /* Dark mode: light text for dark backgrounds */
+  :global(:root.dark) .vtg-label {
+    fill: rgba(255, 255, 255, 0.85);
   }
 </style>

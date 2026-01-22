@@ -263,7 +263,7 @@ Usage:
     style="pointer-events: none;"
   >
     <!-- Background - fills entire expanded viewBox -->
-    <rect width={expandedWidth} height={BASE_SIZE} fill={darkMode === true ? "#0a0a0f" : darkMode === false ? "white" : "var(--dm-pictograph-bg)"} pointer-events="none" />
+    <rect width={expandedWidth} height={BASE_SIZE} fill={darkMode === true ? "#0a0a0f" : darkMode === false ? "#f8f8f6" : "var(--dm-pictograph-bg)"} pointer-events="none" />
 
     <!-- Core content (grid, props, arrows) - centered in expanded viewBox -->
     <g transform="translate({coreContentOffset}, 0)">
@@ -404,6 +404,7 @@ Usage:
         {hasValidData}
         visible={showVTG}
         {previewMode}
+        {darkMode}
         onToggle={onToggleVTG}
         xOffset={rightGlyphOffset}
       />
