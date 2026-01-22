@@ -420,19 +420,21 @@
                         : undefined}
                       onclick={() => handleApplyPattern(pattern)}
                     >
-                      <div slot="actions" class="pattern-actions">
-                        <button
-                          class="delete-btn"
-                          onclick={(e) => {
-                            e.stopPropagation();
-                            handleDeletePattern(pattern);
-                          }}
-                          title="Delete pattern"
-                          aria-label="Delete pattern"
-                        >
-                          <i class="fas fa-trash" aria-hidden="true"></i>
-                        </button>
-                      </div>
+                      {#snippet actions()}
+                        <div class="pattern-actions">
+                          <button
+                            class="delete-btn"
+                            onclick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePattern(pattern);
+                            }}
+                            title="Delete pattern"
+                            aria-label="Delete pattern"
+                          >
+                            <i class="fas fa-trash" aria-hidden="true"></i>
+                          </button>
+                        </div>
+                      {/snippet}
                     </PatternItemCard>
                   {/each}
                 </div>

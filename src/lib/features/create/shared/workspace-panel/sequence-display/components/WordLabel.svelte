@@ -462,7 +462,5 @@
     .active-wave {
       animation: none;
     }
-    /* Disable local keyframe animations */
-
   }
 </style>

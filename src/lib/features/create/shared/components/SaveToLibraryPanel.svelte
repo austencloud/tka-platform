@@ -19,11 +19,17 @@
   import TagAutocompleteInput from "$lib/features/library/components/tags/TagAutocompleteInput.svelte";
   import SaveProgressOverlay from "$lib/features/library/components/SaveProgressOverlay.svelte";
   import ExpandableField from "$lib/features/library/components/ExpandableField.svelte";
+  import ContentAppealModal from "$lib/features/moderation/components/ContentAppealModal.svelte";
+  import HallOfShameGate from "$lib/features/hall-of-shame/components/HallOfShameGate.svelte";
+  import type { IHallOfShameSubmitter } from "$lib/features/hall-of-shame/services/contracts/IHallOfShameSubmitter";
+  import type { ShameCategory } from "$lib/features/hall-of-shame/domain/models/hall-of-shame-models";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { container } from "$lib/shared/di";
   import type { ILibrarySaveService } from "$lib/features/library/services/contracts/ILibrarySaveService";
+  import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
+  import type { ContentModerationResult } from "$lib/features/moderation/domain/models/content-moderation-models";
   import { simplifyAndTruncate } from "../workspace-panel/shared/utils/word-simplifier";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
 
@@ -71,6 +77,14 @@
     console.warn("Failed to resolve librarySaveService:", error);
   }
 
+  // Get the content moderator
+  let contentModerator: IContentModerator | null = null;
+  try {
+    contentModerator = container.items.contentModerator;
+  } catch (error) {
+    console.warn("Failed to resolve contentModerator:", error);
+  }
+
   // Save steps definition
   const saveSteps = [
     { icon: "fa-image", label: "Creating thumbnail" },
@@ -99,6 +113,24 @@
   let showNotes = $state(false);
   let showTags = $state(false);
 
+  // Content moderation state
+  let moderationResult = $state<ContentModerationResult | null>(null);
+  let showAppealModal = $state(false);
+  let savedSequenceIdForAppeal = $state<string | null>(null);
+
+  // Hall of Shame state
+  let showShameGate = $state(false);
+  let isSubmittingToShame = $state(false);
+  let shameSubmitError = $state<string | null>(null);
+
+  // Get the Hall of Shame submitter
+  let hallOfShameSubmitter: IHallOfShameSubmitter | null = null;
+  try {
+    hallOfShameSubmitter = container.items.hallOfShameSubmitter;
+  } catch (error) {
+    console.warn("Failed to resolve hallOfShameSubmitter:", error);
+  }
+
   // Derive TKA name from word prop, sequence word, or compute from beat letters
   const derivedWord = $derived.by(() => {
     // First try props and sequence.word
@@ -124,6 +156,9 @@
     currentUser?.displayName || currentUser?.email || "Anonymous"
   );
 
+  // Check content moderation when word changes
+  const isFlagged = $derived(moderationResult !== null && !moderationResult.isAllowed);
+
   // Duplicate detection - check if this word already exists in library
   const duplicateCheck = $derived.by(() => {
     if (!tkaName || !show) return { hasDuplicate: false, existingSequences: [] };
@@ -146,6 +181,15 @@
   // Sync isOpen with show prop
   $effect(() => {
     isOpen = show;
+  });
+
+  // Run content moderation when tkaName changes
+  $effect(() => {
+    if (tkaName && contentModerator && show) {
+      moderationResult = contentModerator.checkWord(tkaName);
+    } else {
+      moderationResult = null;
+    }
   });
 
   // Reset form when sequence changes or panel opens
@@ -222,6 +266,74 @@
     isOpen = false;
     onClose?.();
   }
+
+  function handleOpenAppeal() {
+    showAppealModal = true;
+  }
+
+  function handleCloseAppeal() {
+    showAppealModal = false;
+  }
+
+  function handleAppealSubmitted() {
+    // Appeal was submitted - could show a success message
+    // For now, just close the appeal modal
+    showAppealModal = false;
+  }
+
+  function handleSubmitToShame() {
+    // Show the age verification gate first
+    showShameGate = true;
+  }
+
+  async function handleShameVerified() {
+    showShameGate = false;
+
+    if (!sequence || !tkaName || !currentUser) {
+      shameSubmitError = "Missing required data for submission.";
+      return;
+    }
+
+    if (!hallOfShameSubmitter) {
+      shameSubmitError = "Hall of Shame service unavailable.";
+      return;
+    }
+
+    isSubmittingToShame = true;
+    shameSubmitError = null;
+
+    try {
+      // Derive category from flagged terms
+      const flaggedCategories = moderationResult?.flaggedTerms?.map(t => t.category) || [];
+      const category: ShameCategory = flaggedCategories.includes('sexual') ? 'sexual'
+        : flaggedCategories.includes('profanity') ? 'profanity'
+        : 'creative';
+
+      await hallOfShameSubmitter.submit({
+        sourceSequenceId: sequence.id || `temp-${Date.now()}`,
+        userId: currentUser.uid,
+        word: tkaName,
+        thumbnails: sequence.thumbnailUrl ? [sequence.thumbnailUrl] : [],
+        sequenceLength: sequence.steps?.length || 0,
+        flaggedTerms: moderationResult?.flaggedTerms || [],
+        category,
+        displayName: sequence.displayName,
+        difficulty: sequence.difficulty,
+      });
+
+      logger.success("Submitted to Hall of Shame successfully");
+      handleClose();
+    } catch (error) {
+      logger.error("Failed to submit to Hall of Shame:", error);
+      shameSubmitError = error instanceof Error ? error.message : "Failed to submit. Please try again.";
+    } finally {
+      isSubmittingToShame = false;
+    }
+  }
+
+  function handleShameCanceled() {
+    showShameGate = false;
+  }
 </script>
 
 <CreatePanelDrawer
@@ -269,8 +381,59 @@
         </div>
       </div>
 
+      <!-- Content Moderation Warning -->
+      {#if isFlagged && moderationResult}
+        <div class="moderation-warning">
+          <div class="warning-header">
+            <i class="fas fa-shield-alt" aria-hidden="true"></i>
+            <span>Content flagged by moderation</span>
+          </div>
+          <p class="warning-text">
+            This sequence contains content that cannot be published to the public gallery.
+            You can still save it privately or share via link.
+          </p>
+          <div class="flagged-terms">
+            {#each moderationResult.flaggedTerms as term}
+              <span class="flagged-term">
+                {term.category}: "{term.matchedPattern}"
+              </span>
+            {/each}
+          </div>
+          <div class="moderation-actions">
+            <button
+              type="button"
+              class="appeal-button"
+              onclick={handleOpenAppeal}
+            >
+              <i class="fas fa-gavel" aria-hidden="true"></i>
+              Appeal
+            </button>
+            <button
+              type="button"
+              class="shame-button"
+              onclick={handleSubmitToShame}
+              disabled={isSubmittingToShame}
+            >
+              {#if isSubmittingToShame}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                Submitting...
+              {:else}
+                <i class="fas fa-skull" aria-hidden="true"></i>
+                Hall of Shame
+              {/if}
+            </button>
+          </div>
+          {#if shameSubmitError}
+            <div class="shame-error" role="alert">
+              <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+              <span>{shameSubmitError}</span>
+            </div>
+          {/if}
+        </div>
+      {/if}
+
       <!-- Duplicate Warning -->
-      {#if hasDuplicate}
+      {#if hasDuplicate && !isFlagged}
         <div class="duplicate-warning">
           <div class="warning-header">
             <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
@@ -365,11 +528,14 @@
         type="button"
         class="button button-primary"
         onclick={handleSave}
-        disabled={!tkaName || isSaving || (hasDuplicate && !acknowledgedDuplicate)}
+        disabled={!tkaName || isSaving || (hasDuplicate && !acknowledgedDuplicate) || isFlagged}
       >
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           Publishing...
+        {:else if isFlagged}
+          <i class="fas fa-ban" aria-hidden="true"></i>
+          Cannot Publish
         {:else}
           <i class="fas fa-globe" aria-hidden="true"></i>
           Add to Gallery
@@ -378,6 +544,26 @@
     </div>
   </div>
 </CreatePanelDrawer>
+
+<!-- Content Appeal Modal -->
+{#if showAppealModal && moderationResult && tkaName}
+  <ContentAppealModal
+    word={tkaName}
+    contentId={savedSequenceIdForAppeal || "pending"}
+    contentType="sequence"
+    flaggedTerms={moderationResult.flaggedTerms}
+    onClose={handleCloseAppeal}
+    onAppealSubmitted={handleAppealSubmitted}
+  />
+{/if}
+
+<!-- Hall of Shame Age Gate -->
+{#if showShameGate}
+  <HallOfShameGate
+    onVerified={handleShameVerified}
+    onCancel={handleShameCanceled}
+  />
+{/if}
 
 <style>
   .panel-inner {
@@ -497,6 +683,111 @@
     font-size: var(--font-size-base, 16px);
     color: var(--theme-text-dim);
     text-align: center;
+  }
+
+  /* Content Moderation Warning */
+  .moderation-warning {
+    padding: 16px;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .moderation-warning .warning-header {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .flagged-terms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .flagged-term {
+    padding: 4px 10px;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    border-radius: 6px;
+    font-size: var(--font-size-compact, 12px);
+    font-family: var(--font-mono, monospace);
+    color: var(--theme-text-dim);
+  }
+
+  .moderation-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .appeal-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: transparent;
+    border: 1.5px solid color-mix(in srgb, var(--semantic-error, #ef4444) 50%, transparent);
+    border-radius: 8px;
+    color: var(--theme-text);
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--duration-normal) ease;
+  }
+
+  .appeal-button:hover {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    border-color: var(--semantic-error, #ef4444);
+  }
+
+  .appeal-button i {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .shame-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--semantic-error, #ef4444) 50%, transparent);
+    border-radius: 8px;
+    color: var(--theme-text);
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--duration-normal) ease;
+  }
+
+  .shame-button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    border-color: var(--semantic-error, #ef4444);
+  }
+
+  .shame-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .shame-button i {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .shame-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    font-size: var(--font-size-sm, 14px);
+    color: #fca5a5;
+  }
+
+  .shame-error i {
+    color: var(--semantic-error, #ef4444);
   }
 
   /* Duplicate Warning */

@@ -282,6 +282,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
       difficultyLevel: options.difficulty,
       isFavorite: false,
       isCircular: true,
+      loopType, // Store LOOP type so glyph can display without re-detection
       tags: ["circular", "cap", loopType.replace("_", "-")],
       metadata,
     });

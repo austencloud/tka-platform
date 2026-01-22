@@ -5,6 +5,8 @@
   Used by DurationPatternDrawer, TurnPatternDrawer, and potentially others.
 -->
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   interface Props {
     name: string;
     description?: string;
@@ -21,6 +23,8 @@
     /** Optional variant class name for styling (e.g., "accent", "simple") */
     variant?: string;
     onclick: () => void;
+    /** Optional actions slot content */
+    actions?: Snippet;
   }
 
   let {
@@ -33,6 +37,7 @@
     isTemplate = false,
     variant,
     onclick,
+    actions,
   }: Props = $props();
 
   function handleKeydown(e: KeyboardEvent) {
@@ -63,7 +68,9 @@
       <span class="pattern-steps">{stepCount} steps</span>
     {/if}
   </div>
-  <slot name="actions" />
+  {#if actions}
+    {@render actions()}
+  {/if}
 </div>
 
 <style>

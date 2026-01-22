@@ -1,6 +1,9 @@
-﻿<!--
+<!--
 LOOPSelectionPanel.svelte - Bottom sheet for selecting LOOP components
 Includes curated presets, user favorites, and manual component selection
+
+Build Combo mode shows an interactive pie chart picker for visual consistency
+with exported sequence cards.
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -8,10 +11,12 @@ Includes curated presets, user favorites, and manual component selection
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { onMount } from "svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
+  import { LOOP_COMPONENTS } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
   import { LOOPExplanationTextGenerator } from "$lib/features/create/generate/shared/services/implementations/LOOPExplanationTextGenerator";
   import { loopFavoritesManager } from "$lib/features/create/generate/shared/services/implementations/LOOPFavoritesManager";
   import type { ILOOPTypeResolver } from "$lib/features/create/generate/shared/services/contracts/ILOOPTypeResolver";
   import type { LOOPPreset } from "../../shared/domain/constants/loop-presets";
+  import LOOPGlyph from "$lib/shared/components/LOOPGlyph.svelte";
   import LOOPComponentGrid from "./LOOPComponentGrid.svelte";
   import LOOPExplanationPanel from "./LOOPExplanationPanel.svelte";
   import LOOPModalHeader from "./LOOPModalHeader.svelte";
@@ -164,15 +169,38 @@ Includes curated presets, user favorites, and manual component selection
       onModeChange={handleModeChange}
     />
 
-    <!-- Main Component Selection - always visible -->
-    <LOOPComponentGrid
-      {selectedComponents}
-      {isMultiSelectMode}
-      onToggleComponent={handleToggle}
-    />
-
-    <!-- Explanation panel - only shown in Build Combo mode -->
+    <!-- Main Component Selection -->
     {#if isMultiSelectMode}
+      <!-- Build Combo mode: Interactive pie chart picker with legend -->
+      <div class="pie-picker-section">
+        <div class="pie-chart-container">
+          <LOOPGlyph
+            activeComponents={selectedComponents}
+            size={120}
+            interactive={true}
+            darkMode={true}
+            onToggle={handleToggle}
+          />
+        </div>
+        <div class="pie-legend">
+          {#each LOOP_COMPONENTS as componentInfo}
+            <button
+              class="legend-item"
+              class:active={selectedComponents.has(componentInfo.component)}
+              onclick={() => handleToggle(componentInfo.component)}
+              style="--component-color: {componentInfo.color}"
+            >
+              <span
+                class="legend-dot"
+                class:filled={selectedComponents.has(componentInfo.component)}
+              ></span>
+              <span class="legend-label">{componentInfo.label}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <!-- Explanation panel - only shown in Build Combo mode -->
       <div class="info-section">
         <LOOPExplanationPanel {explanationText} />
         {#if !isImplemented && selectionCount > 0}
@@ -181,6 +209,13 @@ Includes curated presets, user favorites, and manual component selection
           </div>
         {/if}
       </div>
+    {:else}
+      <!-- Quick Apply mode: Grid of buttons with descriptions -->
+      <LOOPComponentGrid
+        {selectedComponents}
+        {isMultiSelectMode}
+        onToggleComponent={handleToggle}
+      />
     {/if}
 
     <!-- Collapsible Presets Section -->
@@ -326,6 +361,98 @@ Includes curated presets, user favorites, and manual component selection
     margin: 0;
     border-radius: 999px;
     transform: translateY(-50%);
+  }
+
+  /* Pie chart picker section (Build Combo mode) */
+  .pie-picker-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 16px 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .pie-chart-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .pie-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all var(--duration-normal) ease;
+    min-width: 120px;
+    min-height: 36px;
+  }
+
+  .legend-item:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-color: var(--component-color);
+  }
+
+  .legend-item.active {
+    background: color-mix(in srgb, var(--component-color) 15%, transparent);
+    border-color: var(--component-color);
+  }
+
+  .legend-item:focus-visible {
+    outline: 2px solid var(--component-color);
+    outline-offset: 2px;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--component-color);
+    background: transparent;
+    transition: background var(--duration-normal) ease;
+    flex-shrink: 0;
+  }
+
+  .legend-dot.filled {
+    background: var(--component-color);
+  }
+
+  .legend-label {
+    font-size: var(--font-size-sm);
+    color: var(--theme-text, white);
+    font-weight: 500;
+  }
+
+  /* Mobile: stack vertically on small screens */
+  @media (max-width: 360px) {
+    .pie-picker-section {
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .pie-legend {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .legend-item {
+      min-width: auto;
+    }
   }
 
   .presets-toggle-section {

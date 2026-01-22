@@ -132,9 +132,15 @@ Card-based architecture with integrated Generate button:
       // Optional service
     }
   });
+
+  function handlePanelKeydown(event: KeyboardEvent) {
+    if (helpMode !== "selecting") return;
+    if (event.key === "Escape") {
+      exitHelpMode();
+    }
+  }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div
   class="generate-panel"
   class:help-active={helpMode !== "inactive"}
@@ -143,6 +149,9 @@ Card-based architecture with integrated Generate button:
   data-is-desktop={isDesktop}
   style="--min-touch-target: {deviceState.minTouchTarget}px; --element-spacing: {deviceState.elementSpacing}px;"
   onclick={handlePanelClick}
+  onkeydown={handlePanelKeydown}
+  role="region"
+  aria-label="Generator settings panel"
 >
   <!-- Desktop-only help button in top-right corner -->
   {#if isDesktop}
