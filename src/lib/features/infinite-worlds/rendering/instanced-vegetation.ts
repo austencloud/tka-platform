@@ -396,7 +396,7 @@ export class VegetationManager {
     const count = Math.min(items.length, batch.maxInstances - batch.instanceCount);
 
     if (count <= 0) {
-      console.warn(`[VegetationManager] ${type} batch full`);
+      // Silently skip - batch full warnings are noisy and expected during exploration
       return;
     }
 
@@ -519,6 +519,15 @@ export class VegetationManager {
       bushes,
       grass: this.batches.get("grass")?.instanceCount ?? 0,
     };
+  }
+
+  /**
+   * Set visibility of all vegetation batches
+   */
+  setVisible(visible: boolean): void {
+    for (const batch of this.batches.values()) {
+      batch.mesh.visible = visible;
+    }
   }
 
   dispose(): void {

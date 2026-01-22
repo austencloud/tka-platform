@@ -184,6 +184,21 @@ export class AtmosphereManager {
   }
 
   /**
+   * Set visibility of atmosphere (sky and fog)
+   */
+  setVisible(visible: boolean): void {
+    if (this.skyMesh) {
+      this.skyMesh.visible = visible;
+    }
+    if (!visible) {
+      this.scene.fog = null;
+    } else if (this.skyMesh) {
+      // Re-enable fog with default settings
+      this.setFog("plains");
+    }
+  }
+
+  /**
    * Dispose resources
    */
   dispose(): void {

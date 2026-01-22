@@ -65,10 +65,23 @@
     type Material,
   } from "three";
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-  // Geometry Clipmap module preserved for reference. T-junction stitching is now
-  // implemented in the chunk worker (CPU-side), so GPU vertex morphing is not needed.
-  // See: chunk-generator.worker.ts for the stitching implementation.
-  
+
+  // Terrain texturing system
+  import {
+    createTerrainSplatMaterial,
+    createTerrainFallbackMaterial,
+    type TerrainSplatConfig,
+  } from "../rendering/terrain-splat-material";
+
+  // Feature flag for terrain texturing system
+  // Set to true to enable procedural PBR terrain textures
+  // Set to false to use simple vertex colors (fallback)
+  const USE_TERRAIN_TEXTURING = true; // Enabled - requires WebGPU renderer (GalleryCanvas with webgpu-auto)
+
+  // ============================================================================
+  // EMERGENCY SAFE MODE - Now controlled via props from SafeModePanel
+  // ============================================================================
+
   // ============================================================================
   // PROPS
   // ============================================================================
@@ -231,24 +244,42 @@
     setupLighting();
 
     // Initialize vegetation manager with GLTF models
-    vegetationManager = new VegetationManager(scene, { useGLTFModels: true });
-    await vegetationManager.initWithModels();
+    // Controlled by safeMode.enableVegetation - start disabled
+    if (safeMode.enableVegetation) {
+      vegetationManager = new VegetationManager(scene, { useGLTFModels: true });
+      await vegetationManager.initWithModels();
+    }
 
-    // Initialize atmosphere
-    atmosphereManager = new AtmosphereManager(scene);
-    atmosphereManager.createSky();
-    // Use forest fog for stage mode, otherwise use plains
-    atmosphereManager.setFog(stageMode ? "forest" : "plains");
+    // Initialize atmosphere (sky, fog)
+    // Controlled by safeMode.enableAtmosphere
+    if (safeMode.enableAtmosphere) {
+      atmosphereManager = new AtmosphereManager(scene);
+      atmosphereManager.createSky();
+      atmosphereManager.setFog(stageMode ? "forest" : "plains");
+    }
 
     // Initialize water
-    waterManager = new WaterManager(scene, {
-      waterLevel: 5,
-      color: "#2a8faa",
-      opacity: 0.75,
-    });
-    waterManager.create();
+    // Controlled by safeMode.enableWater
+    if (safeMode.enableWater) {
+      waterManager = new WaterManager(scene, {
+        waterLevel: 5,
+        color: "#2a8faa",
+        opacity: 0.75,
+      });
+      waterManager.create();
+    }
 
     // Initialize chunk manager
+    // Controlled by safeMode.enableChunks
+    if (!safeMode.enableChunks) {
+      console.log("[WorldSceneContent] Chunks disabled via safeMode");
+      isInitialized = true;
+      isReadyToRender = true; // Skip ground snap, just render
+      needsGroundSnap = false;
+      playerPosition = { x: 0, y: 10, z: 0 }; // Safe default position
+      return; // Exit early - skip all chunk/terrain setup
+    }
+
     chunkManager = new ChunkManager(worldSeed, {
       chunkSize: activeConfig.chunks.size,
       viewDistance: activeConfig.chunks.viewDistance,
@@ -273,7 +304,7 @@
         waterLvl,
         clearing.campground
       );
-      console.log(`[WorldSceneContent] Set spawn clearing BEFORE chunk generation: radius=${clearing.radius}m, waterLevel=${waterLvl}`);
+      // Logging disabled - was contributing to console spam
     }
 
     // Handle chunk loaded
@@ -348,7 +379,7 @@
         activeConfig.stageZone.radius,
         activeConfig.stageZone.blendWidth
       );
-      console.log(`[WorldSceneContent] Initialized stage zone: radius=${activeConfig.stageZone.radius}m, blend=${activeConfig.stageZone.blendWidth}m`);
+      // Logging disabled
     }
 
     // Auto-load terrain if configured
@@ -392,6 +423,70 @@
     }
 
     inputCapabilities.destroy();
+  });
+
+  // ============================================================================
+  // RUNTIME SAFE MODE EFFECTS
+  // These handle toggling features AFTER initial mount
+  // Note: Chunks cannot be toggled at runtime - requires page refresh
+  // ============================================================================
+
+  // Track previous values to detect changes
+  let prevEnableVegetation = safeMode.enableVegetation;
+  let prevEnableWater = safeMode.enableWater;
+  let prevEnableAtmosphere = safeMode.enableAtmosphere;
+
+  $effect(() => {
+    // Vegetation toggle (only works if chunks are enabled)
+    if (safeMode.enableVegetation !== prevEnableVegetation) {
+      prevEnableVegetation = safeMode.enableVegetation;
+
+      if (safeMode.enableVegetation && !vegetationManager && chunkManager) {
+        // Create vegetation manager
+        vegetationManager = new VegetationManager(scene, { useGLTFModels: true });
+        vegetationManager.initWithModels().then(() => {
+          console.log("[WorldSceneContent] Vegetation manager initialized");
+        });
+      } else if (!safeMode.enableVegetation && vegetationManager) {
+        // Hide all vegetation (don't dispose - keep for re-enabling)
+        vegetationManager.setVisible(false);
+      } else if (safeMode.enableVegetation && vegetationManager) {
+        vegetationManager.setVisible(true);
+      }
+    }
+  });
+
+  $effect(() => {
+    // Water toggle
+    if (safeMode.enableWater !== prevEnableWater) {
+      prevEnableWater = safeMode.enableWater;
+
+      if (safeMode.enableWater && !waterManager) {
+        waterManager = new WaterManager(scene, {
+          waterLevel: 5,
+          color: "#2a8faa",
+          opacity: 0.75,
+        });
+        waterManager.create();
+      } else if (waterManager) {
+        waterManager.setVisible(safeMode.enableWater);
+      }
+    }
+  });
+
+  $effect(() => {
+    // Atmosphere toggle
+    if (safeMode.enableAtmosphere !== prevEnableAtmosphere) {
+      prevEnableAtmosphere = safeMode.enableAtmosphere;
+
+      if (safeMode.enableAtmosphere && !atmosphereManager) {
+        atmosphereManager = new AtmosphereManager(scene);
+        atmosphereManager.createSky();
+        atmosphereManager.setFog(stageMode ? "forest" : "plains");
+      } else if (atmosphereManager) {
+        atmosphereManager.setVisible(safeMode.enableAtmosphere);
+      }
+    }
   });
 
   // ============================================================================
@@ -467,7 +562,7 @@
     const { center, campground } = clearing;
     const groundY = waterLevel + 3; // Clearing is 3m above water
 
-    console.log(`[WorldSceneContent] Placing campground objects at Y=${groundY}`);
+    // Logging disabled
 
     // Model paths
     const MODELS = {
@@ -487,7 +582,6 @@
         0,
         1.5
       );
-      console.log(`[WorldSceneContent] Placed fire pit`);
     }
 
     // Tent offset from center
@@ -500,7 +594,6 @@
         Math.PI * 0.25, // Face toward fire
         1.2
       );
-      console.log(`[WorldSceneContent] Placed tent`);
     }
 
     // Log seats around fire
@@ -526,27 +619,25 @@
           );
         }
       }
-      console.log(`[WorldSceneContent] Placed ${logsToPlace} log seats`);
     }
 
     // Torches at perimeter (not implemented yet - would need torch model)
-    if (campground.torches > 0) {
-      // TODO: Add torch models when available
-      // For now, torches are placeholders
-      console.log(`[WorldSceneContent] Torches configured but no torch model available yet`);
-    }
-
-    console.log(`[WorldSceneContent] Campground objects placed`);
+    // if (campground.torches > 0) {
+    //   TODO: Add torch models when available
+    // }
   }
 
   // ============================================================================
   // CHUNK MESH CREATION
   // ============================================================================
 
+  // Shared terrain material (one instance for all chunks when using procedural texturing)
+  let sharedTerrainMaterial: Material | null = null;
+
   function createChunkMesh(state: ChunkState, key: string): void {
     if (!state.meshData) return;
 
-    const { vertices, normals, colors, indices } = state.meshData;
+    const { vertices, normals, colors, indices, blendWeights1, blendWeights2 } = state.meshData;
 
     const geometry = new BufferGeometry();
     geometry.setAttribute("position", new BufferAttribute(vertices, 3));
@@ -554,18 +645,49 @@
     geometry.setAttribute("color", new BufferAttribute(colors, 3));
     geometry.setIndex(new BufferAttribute(indices, 1));
 
+    // Add blend weight attributes for terrain splatting
+    if (blendWeights1 && blendWeights2) {
+      geometry.setAttribute("blendWeights1", new BufferAttribute(blendWeights1, 3));
+      geometry.setAttribute("blendWeights2", new BufferAttribute(blendWeights2, 3));
+    }
+
     const chunk = state.entity.chunk;
     const chunkWorldX = chunk ? chunk.chunkX * activeConfig.chunks.size : 0;
     const chunkWorldZ = chunk ? chunk.chunkZ * activeConfig.chunks.size : 0;
 
-    // T-junction stitching handles LOD seams at CPU level during chunk generation.
-    // Edge vertices are adjusted to match coarser neighbors, so we just need a
-    // standard material here - no GPU vertex morphing required.
-    const material = new MeshStandardMaterial({
-      vertexColors: true,
-      roughness: 0.8,
-      metalness: 0.1,
-    });
+    // Choose material based on feature flag
+    // When USE_TERRAIN_TEXTURING is enabled, use procedural PBR material
+    // Otherwise, use simple vertex colors for WebGL compatibility
+    let material: Material;
+
+    if (USE_TERRAIN_TEXTURING) {
+      // Create shared material on first use (all chunks share one material)
+      if (!sharedTerrainMaterial) {
+        try {
+          sharedTerrainMaterial = createTerrainSplatMaterial({
+            tileScale: 0.1,
+            triplanarSharpness: 4.0,
+            useSimplePatterns: false,
+          });
+          console.log("[WorldScene] Created terrain splat material:", sharedTerrainMaterial.type);
+        } catch (error) {
+          console.warn("[WorldScene] Failed to create terrain splat material, falling back to vertex colors:", error);
+          sharedTerrainMaterial = new MeshStandardMaterial({
+            vertexColors: true,
+            roughness: 0.8,
+            metalness: 0.1,
+          });
+        }
+      }
+      material = sharedTerrainMaterial;
+    } else {
+      // Fallback: simple vertex colors (works with WebGL)
+      material = new MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.8,
+        metalness: 0.1,
+      });
+    }
 
     const mesh = new Mesh(geometry, material);
     mesh.receiveShadow = true;
@@ -620,7 +742,7 @@
       playerPosition = { x: centerX, y: 100, z: centerZ };
     }
 
-    console.log(`[WorldScene] Loaded Hannon's Camp, teleporting to center: (${centerX.toFixed(0)}, ${centerZ.toFixed(0)})`);
+    // Logging disabled
   }
 
   // ============================================================================
@@ -673,7 +795,7 @@
       if (colliderCount > 0) {
         const snapped = snapToGround(physicsState, playerController, 1000);
         const pos = getPlayerPosition(playerController);
-        console.log(`[WorldScene] Ground snap: snapped=${snapped}, Y=${pos?.y.toFixed(1)}, colliders=${colliderCount}`);
+        // Ground snap logging disabled
 
         if (snapped && pos && pos.y < 500) {
           // Successfully snapped to terrain

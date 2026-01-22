@@ -126,6 +126,10 @@ export interface ChunkResultMessage {
   indices: Uint32Array;
   vegetation: VegetationData[];
   biome: string;
+  /** Blend weights for terrain splatting (grass, rock, dirt) */
+  blendWeights1: Float32Array;
+  /** Blend weights for terrain splatting (sand, snow, unused) */
+  blendWeights2: Float32Array;
 }
 
 export interface VegetationData {
@@ -260,6 +264,11 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   const vertices = new Float32Array(vertexCount * 3);
   const normals = new Float32Array(vertexCount * 3);
   const colors = new Float32Array(vertexCount * 3);
+  // Blend weights for terrain splatting (two vec3 attributes)
+  // blendWeights1: grass (x), rock (y), dirt (z)
+  // blendWeights2: sand (x), snow (y), unused (z)
+  const blendWeights1 = new Float32Array(vertexCount * 3);
+  const blendWeights2 = new Float32Array(vertexCount * 3);
 
   const step = chunkSize / (effectiveResolution - 1);
 
@@ -268,10 +277,10 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     ? chunkIntersectsZone(realTerrainZone, chunkX, chunkZ, chunkSize, 30)
     : false;
 
-  // Debug logging for real terrain zone detection
-  if (realTerrainZone && chunkX >= -30 && chunkX <= 10 && chunkZ >= -25 && chunkZ <= -10) {
-    console.log(`[ChunkWorker] Chunk (${chunkX}, ${chunkZ}) at world (${originX}, ${originZ}): usesRealTerrain=${usesRealTerrain}`);
-  }
+  // Debug logging for real terrain zone detection - DISABLED to prevent log spam
+  // if (realTerrainZone && chunkX >= -30 && chunkX <= 10 && chunkZ >= -25 && chunkZ <= -10) {
+  //   console.log(`[ChunkWorker] Chunk (${chunkX}, ${chunkZ}) at world (${originX}, ${originZ}): usesRealTerrain=${usesRealTerrain}`);
+  // }
 
   // First pass: generate vertices
   // CRITICAL: Edge vertices must use EXACT chunk boundary coordinates
@@ -631,6 +640,57 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     }
   }
 
+  // Third pass: calculate blend weights (requires normals for slope)
+  for (let z = 0; z < effectiveResolution; z++) {
+    for (let x = 0; x < effectiveResolution; x++) {
+      const idx = (z * effectiveResolution + x) * 3;
+
+      // Get world position
+      let worldX: number;
+      let worldZ: number;
+      if (x === 0) {
+        worldX = originX;
+      } else if (x === effectiveResolution - 1) {
+        worldX = originX + chunkSize;
+      } else {
+        worldX = originX + x * step;
+      }
+      if (z === 0) {
+        worldZ = originZ;
+      } else if (z === effectiveResolution - 1) {
+        worldZ = originZ + chunkSize;
+      } else {
+        worldZ = originZ + z * step;
+      }
+
+      const height = vertices[idx + 1] ?? 0;
+      const normalY = normals[idx + 1] ?? 1;
+
+      // Calculate slope from normal
+      const slopeAngle = calculateSlopeFromNormal(
+        normals[idx] ?? 0,
+        normalY,
+        normals[idx + 2] ?? 0
+      );
+
+      // Get biome at this position
+      const biome = getBiome(noise, worldX, worldZ);
+
+      // Calculate blend weights
+      const weights = calculateBlendWeights(biome, height, slopeAngle, noise, worldX, worldZ);
+
+      // Store in blendWeights1 (grass, rock, dirt)
+      blendWeights1[idx] = weights.grass;
+      blendWeights1[idx + 1] = weights.rock;
+      blendWeights1[idx + 2] = weights.dirt;
+
+      // Store in blendWeights2 (sand, snow, unused)
+      blendWeights2[idx] = weights.sand;
+      blendWeights2[idx + 1] = weights.snow;
+      blendWeights2[idx + 2] = 0;
+    }
+  }
+
   // ============================================================================
   // TERRAIN SKIRTS - Hide seams between chunks
   // ============================================================================
@@ -663,11 +723,15 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   const finalVertices = new Float32Array(totalVertexCount * 3);
   const finalNormals = new Float32Array(totalVertexCount * 3);
   const finalColors = new Float32Array(totalVertexCount * 3);
+  const finalBlendWeights1 = new Float32Array(totalVertexCount * 3);
+  const finalBlendWeights2 = new Float32Array(totalVertexCount * 3);
 
   // Copy main terrain data
   finalVertices.set(vertices);
   finalNormals.set(normals);
   finalColors.set(colors);
+  finalBlendWeights1.set(blendWeights1);
+  finalBlendWeights2.set(blendWeights2);
 
   // Add skirt vertices (one for each edge vertex, dropped down by SKIRT_DEPTH)
   let skirtIdx = vertexCount * 3;
@@ -676,7 +740,7 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   for (let x = 0; x < effectiveResolution; x++) {
     const srcIdx = x * 3;
     finalVertices[skirtIdx] = vertices[srcIdx];
-    finalVertices[skirtIdx + 1] = vertices[srcIdx + 1] - SKIRT_DEPTH;
+    finalVertices[skirtIdx + 1] = vertices[srcIdx + 1]! - SKIRT_DEPTH;
     finalVertices[skirtIdx + 2] = vertices[srcIdx + 2];
     // Use same normal as terrain vertex for seamless lighting
     finalNormals[skirtIdx] = normals[srcIdx];
@@ -686,6 +750,13 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     finalColors[skirtIdx] = colors[srcIdx];
     finalColors[skirtIdx + 1] = colors[srcIdx + 1];
     finalColors[skirtIdx + 2] = colors[srcIdx + 2];
+    // Same blend weights
+    finalBlendWeights1[skirtIdx] = blendWeights1[srcIdx];
+    finalBlendWeights1[skirtIdx + 1] = blendWeights1[srcIdx + 1];
+    finalBlendWeights1[skirtIdx + 2] = blendWeights1[srcIdx + 2];
+    finalBlendWeights2[skirtIdx] = blendWeights2[srcIdx];
+    finalBlendWeights2[skirtIdx + 1] = blendWeights2[srcIdx + 1];
+    finalBlendWeights2[skirtIdx + 2] = blendWeights2[srcIdx + 2];
     skirtIdx += 3;
   }
 
@@ -693,7 +764,7 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   for (let x = 0; x < effectiveResolution; x++) {
     const srcIdx = ((effectiveResolution - 1) * effectiveResolution + x) * 3;
     finalVertices[skirtIdx] = vertices[srcIdx];
-    finalVertices[skirtIdx + 1] = vertices[srcIdx + 1] - SKIRT_DEPTH;
+    finalVertices[skirtIdx + 1] = vertices[srcIdx + 1]! - SKIRT_DEPTH;
     finalVertices[skirtIdx + 2] = vertices[srcIdx + 2];
     finalNormals[skirtIdx] = normals[srcIdx];
     finalNormals[skirtIdx + 1] = normals[srcIdx + 1];
@@ -701,6 +772,12 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     finalColors[skirtIdx] = colors[srcIdx];
     finalColors[skirtIdx + 1] = colors[srcIdx + 1];
     finalColors[skirtIdx + 2] = colors[srcIdx + 2];
+    finalBlendWeights1[skirtIdx] = blendWeights1[srcIdx];
+    finalBlendWeights1[skirtIdx + 1] = blendWeights1[srcIdx + 1];
+    finalBlendWeights1[skirtIdx + 2] = blendWeights1[srcIdx + 2];
+    finalBlendWeights2[skirtIdx] = blendWeights2[srcIdx];
+    finalBlendWeights2[skirtIdx + 1] = blendWeights2[srcIdx + 1];
+    finalBlendWeights2[skirtIdx + 2] = blendWeights2[srcIdx + 2];
     skirtIdx += 3;
   }
 
@@ -708,7 +785,7 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   for (let z = 0; z < effectiveResolution; z++) {
     const srcIdx = (z * effectiveResolution) * 3;
     finalVertices[skirtIdx] = vertices[srcIdx];
-    finalVertices[skirtIdx + 1] = vertices[srcIdx + 1] - SKIRT_DEPTH;
+    finalVertices[skirtIdx + 1] = vertices[srcIdx + 1]! - SKIRT_DEPTH;
     finalVertices[skirtIdx + 2] = vertices[srcIdx + 2];
     finalNormals[skirtIdx] = normals[srcIdx];
     finalNormals[skirtIdx + 1] = normals[srcIdx + 1];
@@ -716,6 +793,12 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     finalColors[skirtIdx] = colors[srcIdx];
     finalColors[skirtIdx + 1] = colors[srcIdx + 1];
     finalColors[skirtIdx + 2] = colors[srcIdx + 2];
+    finalBlendWeights1[skirtIdx] = blendWeights1[srcIdx];
+    finalBlendWeights1[skirtIdx + 1] = blendWeights1[srcIdx + 1];
+    finalBlendWeights1[skirtIdx + 2] = blendWeights1[srcIdx + 2];
+    finalBlendWeights2[skirtIdx] = blendWeights2[srcIdx];
+    finalBlendWeights2[skirtIdx + 1] = blendWeights2[srcIdx + 1];
+    finalBlendWeights2[skirtIdx + 2] = blendWeights2[srcIdx + 2];
     skirtIdx += 3;
   }
 
@@ -723,7 +806,7 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   for (let z = 0; z < effectiveResolution; z++) {
     const srcIdx = (z * effectiveResolution + effectiveResolution - 1) * 3;
     finalVertices[skirtIdx] = vertices[srcIdx];
-    finalVertices[skirtIdx + 1] = vertices[srcIdx + 1] - SKIRT_DEPTH;
+    finalVertices[skirtIdx + 1] = vertices[srcIdx + 1]! - SKIRT_DEPTH;
     finalVertices[skirtIdx + 2] = vertices[srcIdx + 2];
     finalNormals[skirtIdx] = normals[srcIdx];
     finalNormals[skirtIdx + 1] = normals[srcIdx + 1];
@@ -731,6 +814,12 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     finalColors[skirtIdx] = colors[srcIdx];
     finalColors[skirtIdx + 1] = colors[srcIdx + 1];
     finalColors[skirtIdx + 2] = colors[srcIdx + 2];
+    finalBlendWeights1[skirtIdx] = blendWeights1[srcIdx];
+    finalBlendWeights1[skirtIdx + 1] = blendWeights1[srcIdx + 1];
+    finalBlendWeights1[skirtIdx + 2] = blendWeights1[srcIdx + 2];
+    finalBlendWeights2[skirtIdx] = blendWeights2[srcIdx];
+    finalBlendWeights2[skirtIdx + 1] = blendWeights2[srcIdx + 1];
+    finalBlendWeights2[skirtIdx + 2] = blendWeights2[srcIdx + 2];
     skirtIdx += 3;
   }
 
@@ -1008,6 +1097,8 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     indices,
     vegetation,
     biome,
+    blendWeights1: finalBlendWeights1,
+    blendWeights2: finalBlendWeights2,
   };
 }
 
@@ -1080,6 +1171,155 @@ function getClearingGrassColor(height: number, waterLevel: number): { r: number;
 }
 
 // ============================================================================
+// BLEND WEIGHT CALCULATION
+// ============================================================================
+
+/**
+ * Terrain blend weights for PBR splatting
+ * Returns weights for: grass, rock, dirt, sand, snow
+ * All weights sum to 1.0
+ */
+interface BlendWeights {
+  grass: number;
+  rock: number;
+  dirt: number;
+  sand: number;
+  snow: number;
+}
+
+/**
+ * Calculate blend weights based on biome, height, and slope
+ *
+ * @param biome - Current biome type
+ * @param height - World height in meters
+ * @param slopeAngle - Slope angle (0-1, where 1 = vertical)
+ * @param noise - Noise generator for variation
+ * @param worldX - World X coordinate
+ * @param worldZ - World Z coordinate
+ */
+function calculateBlendWeights(
+  biome: string,
+  height: number,
+  slopeAngle: number,
+  noise: SeededNoise,
+  worldX: number,
+  worldZ: number
+): BlendWeights {
+  // Initialize weights
+  let grass = 0;
+  let rock = 0;
+  let dirt = 0;
+  let sand = 0;
+  let snow = 0;
+
+  // Step 1: Base weights from biome
+  switch (biome) {
+    case "plains":
+      grass = 0.75;
+      dirt = 0.25;
+      break;
+    case "forest":
+      grass = 0.55;
+      dirt = 0.40;
+      rock = 0.05;
+      break;
+    case "mountains":
+      rock = 0.60;
+      dirt = 0.25;
+      grass = 0.15;
+      break;
+    case "desert":
+      sand = 0.85;
+      rock = 0.15;
+      break;
+    case "ocean":
+      sand = 0.60;
+      dirt = 0.40;
+      break;
+    default:
+      grass = 0.5;
+      dirt = 0.3;
+      rock = 0.2;
+  }
+
+  // Step 2: Height-based snow blending (35m-50m transition zone)
+  const SNOW_START = 35;
+  const SNOW_FULL = 50;
+  if (height > SNOW_START) {
+    const snowFactor = Math.min(1, (height - SNOW_START) / (SNOW_FULL - SNOW_START));
+    // Smoothstep for natural transition
+    const smoothSnow = snowFactor * snowFactor * (3 - 2 * snowFactor);
+
+    // Snow replaces other materials proportionally
+    const remaining = 1 - smoothSnow;
+    grass *= remaining;
+    rock *= remaining;
+    dirt *= remaining;
+    sand *= remaining;
+    snow = smoothSnow;
+  }
+
+  // Step 3: Slope-based rock blending (steep surfaces = more rock)
+  // 0.4 radians (~24°) = start, 0.8 radians (~45°) = full rock
+  const ROCK_SLOPE_START = 0.4;
+  const ROCK_SLOPE_FULL = 0.8;
+  if (slopeAngle > ROCK_SLOPE_START) {
+    const rockFactor = Math.min(1, (slopeAngle - ROCK_SLOPE_START) / (ROCK_SLOPE_FULL - ROCK_SLOPE_START));
+    const smoothRock = rockFactor * rockFactor * (3 - 2 * rockFactor);
+
+    // Rock replaces grass and dirt on steep slopes
+    const grassLoss = grass * smoothRock * 0.8;
+    const dirtLoss = dirt * smoothRock * 0.6;
+
+    grass -= grassLoss;
+    dirt -= dirtLoss;
+    rock += grassLoss + dirtLoss;
+  }
+
+  // Step 4: Noise variation for natural look
+  const variationNoise = (noise.fbm(worldX * 0.05, 0, worldZ * 0.05, 3) + 1) * 0.5;
+  const variation = (variationNoise - 0.5) * 0.15;
+
+  // Subtle variation to grass/dirt balance
+  if (grass > 0.1 && dirt > 0.1) {
+    grass += variation;
+    dirt -= variation;
+  }
+
+  // Step 5: Normalize to ensure sum = 1.0
+  const total = grass + rock + dirt + sand + snow;
+  if (total > 0) {
+    grass /= total;
+    rock /= total;
+    dirt /= total;
+    sand /= total;
+    snow /= total;
+  } else {
+    // Fallback
+    grass = 1;
+  }
+
+  // Clamp to valid range
+  grass = Math.max(0, Math.min(1, grass));
+  rock = Math.max(0, Math.min(1, rock));
+  dirt = Math.max(0, Math.min(1, dirt));
+  sand = Math.max(0, Math.min(1, sand));
+  snow = Math.max(0, Math.min(1, snow));
+
+  return { grass, rock, dirt, sand, snow };
+}
+
+/**
+ * Calculate slope angle from normal vector
+ * Returns value 0-1 where 0 = flat, 1 = vertical
+ */
+function calculateSlopeFromNormal(nx: number, ny: number, nz: number): number {
+  // Normal Y component indicates how "up" the surface is
+  // Y=1 means flat ground, Y=0 means vertical wall
+  return 1 - Math.abs(ny);
+}
+
+// ============================================================================
 // WORKER MESSAGE HANDLER
 // ============================================================================
 
@@ -1097,6 +1337,8 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
           result.normals.buffer,
           result.colors.buffer,
           result.indices.buffer,
+          result.blendWeights1.buffer,
+          result.blendWeights2.buffer,
         ]
       });
       break;
@@ -1105,8 +1347,9 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
     case "load-real-zone": {
       // Load real terrain zone data
       realTerrainZone = deserializeZoneInWorker(msg.zone);
-      console.log(`[ChunkWorker] Loaded real terrain zone: ${realTerrainZone.name}`);
-      console.log(`[ChunkWorker] Zone bounds: ${realTerrainZone.bounds.minX.toFixed(0)} to ${realTerrainZone.bounds.maxX.toFixed(0)} X, ${realTerrainZone.bounds.minZ.toFixed(0)} to ${realTerrainZone.bounds.maxZ.toFixed(0)} Z`);
+      // Logging disabled to reduce overhead
+      // console.log(`[ChunkWorker] Loaded real terrain zone: ${realTerrainZone.name}`);
+      // console.log(`[ChunkWorker] Zone bounds: ${realTerrainZone.bounds.minX.toFixed(0)} to ${realTerrainZone.bounds.maxX.toFixed(0)} X, ${realTerrainZone.bounds.minZ.toFixed(0)} to ${realTerrainZone.bounds.maxZ.toFixed(0)} Z`);
 
       self.postMessage({
         type: "real-zone-loaded",
@@ -1116,9 +1359,7 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
     }
 
     case "clear-real-zone": {
-      const name = realTerrainZone?.name ?? "none";
       realTerrainZone = null;
-      console.log(`[ChunkWorker] Cleared real terrain zone: ${name}`);
       break;
     }
 
@@ -1128,13 +1369,11 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
         radius: msg.radius,
         blendWidth: msg.blendWidth,
       };
-      console.log(`[ChunkWorker] Set stage zone: center=(${msg.center.x}, ${msg.center.z}), radius=${msg.radius}m, blend=${msg.blendWidth}m`);
       break;
     }
 
     case "clear-stage-zone": {
       stageZone = null;
-      console.log(`[ChunkWorker] Cleared stage zone`);
       break;
     }
 
@@ -1146,13 +1385,11 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
         waterLevel: msg.waterLevel,
         campground: msg.campground,
       };
-      console.log(`[ChunkWorker] Set spawn clearing: center=(${msg.center.x}, ${msg.center.z}), radius=${msg.radius}m, blend=${msg.blendWidth}m, waterLevel=${msg.waterLevel}`);
       break;
     }
 
     case "clear-spawn-clearing": {
       spawnClearing = null;
-      console.log(`[ChunkWorker] Cleared spawn clearing`);
       break;
     }
   }

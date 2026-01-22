@@ -108,6 +108,10 @@ export interface ChunkMeshData {
   indices: Uint32Array;
   vegetation: VegetationData[];
   biome: string;
+  /** Blend weights for terrain splatting (grass, rock, dirt) */
+  blendWeights1: Float32Array;
+  /** Blend weights for terrain splatting (sand, snow, unused) */
+  blendWeights2: Float32Array;
 }
 
 /**
@@ -201,7 +205,7 @@ export class ChunkManager {
         if (msg.type === "chunk-result") {
           this.handleWorkerResult(msg);
         } else if (msg.type === "real-zone-loaded") {
-          console.log(`[ChunkManager] Worker loaded real zone: ${msg.name}`);
+          // Logging disabled
           this.onRealZoneLoaded?.(msg.name);
         }
       };
@@ -227,6 +231,8 @@ export class ChunkManager {
         indices: result.indices,
         vegetation: result.vegetation,
         biome: result.biome,
+        blendWeights1: result.blendWeights1,
+        blendWeights2: result.blendWeights2,
       });
     }
 
@@ -316,19 +322,30 @@ export class ChunkManager {
       }
     }
 
-    // Process reactive re-stitching: chunks that need regeneration because
-    // their neighbors loaded after they did (filling in neighborLOD=-1 gaps)
-    if (this.chunksNeedingRestitch.size > 0) {
-      for (const key of this.chunksNeedingRestitch) {
-        const state = this.chunks.get(key);
-        if (state?.loadState === 'loaded') {
-          state.loadState = 'pending';
-          state.meshData = null;
-          this.loadQueue.unshift(key); // High priority
-        }
-      }
-      this.chunksNeedingRestitch.clear();
-    }
+    // DISABLED: Reactive re-stitching was causing infinite cascade loops
+    // When chunk A loads, it notifies neighbors B, C, D... to restitch.
+    // When B restitches (reloads), it notifies ITS neighbors including A.
+    // This creates an infinite loop that overwhelms the system.
+    //
+    // The T-junction stitching with skirts should handle seams adequately
+    // without needing to regenerate entire chunks when neighbors load.
+    //
+    // TODO: If re-enabling, add a "generation" counter to prevent cascades:
+    // - Only restitch if neighbor loaded in a LATER generation than our last stitch
+    // - Track which neighbors we've already stitched against
+    //
+    // if (this.chunksNeedingRestitch.size > 0) {
+    //   for (const key of this.chunksNeedingRestitch) {
+    //     const state = this.chunks.get(key);
+    //     if (state?.loadState === 'loaded') {
+    //       state.loadState = 'pending';
+    //       state.meshData = null;
+    //       this.loadQueue.unshift(key); // High priority
+    //     }
+    //   }
+    //   this.chunksNeedingRestitch.clear();
+    // }
+    this.chunksNeedingRestitch.clear(); // Just clear without processing
 
     // Sort load queue by priority (closest first)
     this.loadQueue.sort((a, b) => {
@@ -418,9 +435,10 @@ export class ChunkManager {
       }
     }
 
-    if (iterations > 1) {
-      console.log(`[ChunkManager] LOD constraint: converged in ${iterations} iterations`);
-    }
+    // Removed verbose logging - this was firing constantly and contributing to system overload
+    // if (iterations > 1) {
+    //   console.log(`[ChunkManager] LOD constraint: converged in ${iterations} iterations`);
+    // }
   }
 
   /**
@@ -619,9 +637,7 @@ export class ChunkManager {
     // Create zone from imported data
     this.realTerrainZone = createRealTerrainZone(data);
 
-    console.log(`[ChunkManager] Loading real terrain zone: ${this.realTerrainZone.name}`);
-    console.log(`[ChunkManager] Boundary points: ${this.realTerrainZone.boundary.length}`);
-    console.log(`[ChunkManager] Heightmap: ${this.realTerrainZone.heightmap.width}x${this.realTerrainZone.heightmap.height}`);
+    // Logging disabled - was contributing to console spam
 
     // Serialize for workers
     const serialized = serializeZoneForWorker(this.realTerrainZone);
@@ -663,7 +679,7 @@ export class ChunkManager {
   clearRealTerrainZone(): void {
     if (!this.realTerrainZone) return;
 
-    console.log(`[ChunkManager] Clearing real terrain zone: ${this.realTerrainZone.name}`);
+    // Logging disabled
     this.realTerrainZone = null;
 
     // Notify workers
@@ -726,7 +742,7 @@ export class ChunkManager {
       }
     }
 
-    console.log(`[ChunkManager] Regenerating ${chunksToRegenerate.length} chunks in zone`);
+    // Logging disabled
 
     // Unload and re-queue these chunks
     for (const key of chunksToRegenerate) {
@@ -770,7 +786,7 @@ export class ChunkManager {
   setStageZone(center: { x: number; z: number }, radius: number, blendWidth: number): void {
     this.stageZone = { center, radius, blendWidth };
 
-    console.log(`[ChunkManager] Setting stage zone: center=(${center.x}, ${center.z}), radius=${radius}m, blend=${blendWidth}m`);
+    // Logging disabled
 
     const message: SetStageZoneMessage = {
       type: "set-stage-zone",
@@ -797,7 +813,7 @@ export class ChunkManager {
     const prevZone = this.stageZone;
     this.stageZone = null;
 
-    console.log(`[ChunkManager] Clearing stage zone`);
+    // Logging disabled
 
     const message: ClearStageZoneMessage = {
       type: "clear-stage-zone",
@@ -846,7 +862,7 @@ export class ChunkManager {
       }
     }
 
-    console.log(`[ChunkManager] Regenerating ${chunksToRegenerate.length} chunks in stage zone`);
+    // Logging disabled
 
     // Unload and re-queue these chunks
     for (const key of chunksToRegenerate) {
@@ -878,7 +894,7 @@ export class ChunkManager {
   ): void {
     this.spawnClearingConfig = { center, radius, blendWidth, waterLevel, campground };
 
-    console.log(`[ChunkManager] Setting spawn clearing: center=(${center.x}, ${center.z}), radius=${radius}m, blend=${blendWidth}m, waterLevel=${waterLevel}`);
+    // Logging disabled
 
     const message: SetSpawnClearingMessage = {
       type: "set-spawn-clearing",
@@ -907,7 +923,7 @@ export class ChunkManager {
     const prevConfig = this.spawnClearingConfig;
     this.spawnClearingConfig = null;
 
-    console.log(`[ChunkManager] Clearing spawn clearing`);
+    // Logging disabled
 
     const message: ClearSpawnClearingMessage = {
       type: "clear-spawn-clearing",
@@ -963,7 +979,7 @@ export class ChunkManager {
       }
     }
 
-    console.log(`[ChunkManager] Regenerating ${chunksToRegenerate.length} chunks in spawn clearing`);
+    // Logging disabled
 
     // Unload and re-queue these chunks
     for (const key of chunksToRegenerate) {
