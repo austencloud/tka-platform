@@ -40,15 +40,15 @@
   import { Plane } from "$lib/shared/3d-animation/domain/enums/Plane";
 
   // World systems
-  import { ChunkManager, type ChunkState } from "../core/chunk-manager";
-  import { SeededNoise, getBiome } from "../generation/seed-generator";
-  import { type ImportedTerrainData, isPointInPolygon } from "../generation/real-terrain-zone";
-  import { VegetationManager } from "../rendering/instanced-vegetation";
-  import { AtmosphereManager } from "../rendering/atmosphere";
-  import { WaterManager } from "../rendering/water";
-  import type { RealmConfig } from "../core/realm-config";
+  import { ChunkManager, type ChunkState } from "../../core/chunk-manager";
+  import { SeededNoise, getBiome } from "../../generation/seed-generator";
+  import { type ImportedTerrainData, isPointInPolygon } from "../../generation/real-terrain-zone";
+  import { VegetationManager } from "../../rendering/instanced-vegetation";
+  import { AtmosphereManager } from "../../rendering/atmosphere";
+  import { WaterManager } from "../../rendering/water";
+  import type { RealmConfig } from "../../core/realm-config";
 
-  import hannonsTerrainData from "../data/hannons-camp-terrain.json";
+  import hannonsTerrainData from "../../data/hannons-camp-terrain.json";
 
   import {
     BufferGeometry,
@@ -71,7 +71,7 @@
     createTerrainSplatMaterial,
     createTerrainFallbackMaterial,
     type TerrainSplatConfig,
-  } from "../rendering/terrain-splat-material";
+  } from "../../rendering/terrain-splat-material";
 
   // Feature flag for terrain texturing system
   // Set to true to enable procedural PBR terrain textures
@@ -188,6 +188,9 @@
   // Campground objects placed in spawn clearing
   let campgroundObjects: Object3D[] = [];
   const gltfLoader = new GLTFLoader();
+
+  // Sun light reference for shadow updates
+  let sunLight: DirectionalLight | null = null;
 
   // NOTE: Clipmap material is disabled until T-junction stitching is implemented.
   // The GPU vertex morphing only works if adjacent chunks have the same vertex
@@ -340,9 +343,9 @@
 
     isInitialized = true;
 
-    // Force FIRST_PERSON mode for infinite-worlds (ORBIT mode doesn't work without OrbitControls)
+    // Force FIRST_PERSON mode for realm (ORBIT mode doesn't work without OrbitControls)
     // This ensures the camera starts correctly regardless of saved preferences
-    cameraPreferences.setModeForDestination("infinite-worlds", CameraMode.FIRST_PERSON);
+    cameraPreferences.setModeForDestination("realm", CameraMode.FIRST_PERSON);
 
     // Place campground objects (spawn clearing was already set above)
     if (activeConfig.spawnClearing?.enabled && activeConfig.spawnClearing.campground.enabled) {
@@ -415,15 +418,34 @@
     const hemisphere = new HemisphereLight(0x87ceeb, 0x3d5c3d, 0.6);
     scene.add(hemisphere);
 
-    // Sun
+    // Sun with standard directional light shadows
+    // Shadow frustum follows player for infinite terrain coverage
     const sun = new DirectionalLight(0xffffff, 1.0);
-    sun.position.set(50, 100, 50);
+    sun.position.set(100, 200, 100);
     sun.castShadow = true;
+
+    // Shadow map settings - larger map for quality
     sun.shadow.mapSize.width = 2048;
     sun.shadow.mapSize.height = 2048;
-    sun.shadow.camera.near = 0.5;
+
+    // Shadow camera frustum - covers area around player
+    // Will be updated each frame to follow player position
+    const shadowSize = 100; // 100m radius around player
+    sun.shadow.camera.left = -shadowSize;
+    sun.shadow.camera.right = shadowSize;
+    sun.shadow.camera.top = shadowSize;
+    sun.shadow.camera.bottom = -shadowSize;
+    sun.shadow.camera.near = 1;
     sun.shadow.camera.far = 500;
+
+    // Bias to prevent shadow acne
+    sun.shadow.bias = -0.0005;
+    sun.shadow.normalBias = 0.02;
+
     scene.add(sun);
+    sun.target.position.set(0, 0, 0);
+    scene.add(sun.target);
+    sunLight = sun;
   }
 
   // ============================================================================
@@ -698,6 +720,16 @@
       physicsState.world.step();
     }
 
+    // Update shadow camera to follow player position
+    // This ensures shadows render around the player on infinite terrain
+    if (sunLight && camera.current) {
+      const camPos = camera.current.position;
+      // Move light and target to follow player horizontally
+      sunLight.position.set(camPos.x + 100, 200, camPos.z + 100);
+      sunLight.target.position.set(camPos.x, 0, camPos.z);
+      sunLight.target.updateMatrixWorld();
+    }
+
     // Deferred ground snap: wait for terrain colliders to exist before snapping
     if (needsGroundSnap && terrainPhysics && groundSnapAttempts < MAX_GROUND_SNAP_ATTEMPTS) {
       groundSnapAttempts++;
@@ -715,6 +747,14 @@
           isReadyToRender = true; // Now safe to show camera/avatar
         }
       }
+    }
+
+    // Fallback: if ground snap times out, still render the avatar
+    // This prevents the avatar from being permanently hidden
+    if (needsGroundSnap && groundSnapAttempts >= MAX_GROUND_SNAP_ATTEMPTS) {
+      console.warn("[WorldSceneContent] Ground snap timed out, rendering anyway");
+      needsGroundSnap = false;
+      isReadyToRender = true;
     }
 
     // Update player position from physics (after camera controller moves player)
@@ -775,7 +815,7 @@
 <!-- Takes over once ground snap is complete and player is at correct position -->
 {#if isInitialized && isReadyToRender && physicsProvider}
   <UnifiedCameraController
-    destinationId="infinite-worlds"
+    destinationId="realm"
     {avatarState}
     {physicsProvider}
     enabled={true}
@@ -790,7 +830,7 @@
 <!-- Wait for isReadyToRender to prevent showing avatar at wrong position -->
 {#if isInitialized && isReadyToRender && showAvatar}
   <Avatar3D
-    id="infinite-worlds-player"
+    id="realm-player"
     bluePropState={null}
     redPropState={null}
     visible={true}

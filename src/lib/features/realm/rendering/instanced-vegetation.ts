@@ -142,9 +142,11 @@ export class VegetationManager {
 
     // Create tree batches (all use same procedural geometry for fallback)
     const treeGeometry = this.createTreeGeometry();
-    const treeMaterial = new MeshLambertMaterial({
+    const treeMaterial = new MeshStandardMaterial({
       color: 0x2d5a27,
       flatShading: true,
+      roughness: 0.85,
+      metalness: 0.0,
     });
     this.createBatch("tree1", treeGeometry.clone(), treeMaterial.clone(), maxPerType);
     this.createBatch("tree2", treeGeometry.clone(), treeMaterial.clone(), maxPerType);
@@ -152,9 +154,11 @@ export class VegetationManager {
 
     // Create rock batches
     const rockGeometry = this.createRockGeometry();
-    const rockMaterial = new MeshLambertMaterial({
+    const rockMaterial = new MeshStandardMaterial({
       color: 0x696969,
       flatShading: true,
+      roughness: 0.75,
+      metalness: 0.1,
     });
     this.createBatch("rock1", rockGeometry.clone(), rockMaterial.clone(), maxPerType);
     this.createBatch("rock2", rockGeometry.clone(), rockMaterial.clone(), maxPerType);
@@ -162,14 +166,16 @@ export class VegetationManager {
     // Create bush batches (use smaller tree geometry as fallback)
     const bushGeometry = this.createTreeGeometry();
     bushGeometry.scale(0.3, 0.4, 0.3); // Make smaller
-    const bushMaterial = new MeshLambertMaterial({
+    const bushMaterial = new MeshStandardMaterial({
       color: 0x3d6b2d,
       flatShading: true,
+      roughness: 0.9,
+      metalness: 0.0,
     });
     this.createBatch("bush1", bushGeometry.clone(), bushMaterial.clone(), maxPerType);
     this.createBatch("bush2", bushGeometry.clone(), bushMaterial.clone(), maxPerType);
 
-    // Create grass batch
+    // Create grass batch - keep MeshLambertMaterial for performance (grass is small and numerous)
     const grassGeometry = this.createGrassGeometry();
     const grassMaterial = new MeshLambertMaterial({
       color: 0x4a7c3f,
@@ -231,7 +237,7 @@ export class VegetationManager {
     mesh.count = 0; // Start with 0 visible instances
     mesh.frustumCulled = false; // Disable - bounding box doesn't cover all instances
     mesh.castShadow = true;
-    mesh.receiveShadow = false;
+    mesh.receiveShadow = true; // Enable shadow receiving for CSM
 
     // Initialize all matrices to identity (hidden)
     const identity = new Matrix4();

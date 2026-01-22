@@ -9,7 +9,7 @@
 	 * Stage and Gallery destinations.
 	 */
 
-	import WorldScene from "./components/WorldScene.svelte";
+	import WorldScene from "./components/scene/WorldScene.svelte";
 	import { HANNONS_CAMP_CONFIG } from "./core/realm-definitions";
 </script>
 

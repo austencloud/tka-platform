@@ -24,13 +24,13 @@
   import { teleportPlayer } from "$lib/shared/3d-core/physics/player-controller";
   import { CameraMode } from "$lib/shared/3d-core/camera/types";
 
-  import { ChunkManager } from "../core/chunk-manager";
-  import { generateWorldSeed, encodeSeed, SeededNoise } from "../generation/seed-generator";
-  import { VegetationManager } from "../rendering/instanced-vegetation";
-  import { AtmosphereManager } from "../rendering/atmosphere";
-  import { WaterManager } from "../rendering/water";
-  import type { RealmConfig } from "../core/realm-config";
-  import { getDefaultRealmConfig } from "../core/realm-definitions";
+  import { ChunkManager } from "../../core/chunk-manager";
+  import { generateWorldSeed, encodeSeed, SeededNoise } from "../../generation/seed-generator";
+  import { VegetationManager } from "../../rendering/instanced-vegetation";
+  import { AtmosphereManager } from "../../rendering/atmosphere";
+  import { WaterManager } from "../../rendering/water";
+  import type { RealmConfig } from "../../core/realm-config";
+  import { getDefaultRealmConfig } from "../../core/realm-definitions";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
   import type { Mesh } from "three";
 
@@ -140,7 +140,7 @@
   };
 </script>
 
-<div class="infinite-worlds">
+<div class="realm-world">
   <GalleryCanvas
     renderingBackend="webgpu-auto"
     autoRender={true}
@@ -289,7 +289,7 @@
 </div>
 
 <style>
-  .infinite-worlds {
+  .realm-world {
     position: absolute;
     inset: 0;
     overflow: hidden;

@@ -8,7 +8,7 @@
    * Now uses the new WorldScene component with full avatar parity.
    */
 
-  import WorldScene from "$lib/features/infinite-worlds/components/WorldScene.svelte";
+  import WorldScene from "$lib/features/realm/components/scene/WorldScene.svelte";
   import { onMount } from "svelte";
 
   // Optional: Parse seed from URL query param
