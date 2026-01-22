@@ -234,19 +234,21 @@ export function generateMatteTheme(
   const mobile = isMobile();
 
   if (mode === "light") {
+    // Softened light mode - no pure whites to reduce eye strain
+    // Pure white (#fff) is reserved for print mode only
     return {
-      panelBg: "#f5f7fb",
-      panelElevatedBg: "#ffffff",
-      cardBg: "#ffffff",
-      cardHoverBg: "#f3f6fb",
+      panelBg: "#d0d0ca", // Warm medium gray
+      panelElevatedBg: "#d8d8d2", // Slightly lighter for elevation
+      cardBg: "#d8d8d2", // Matches pictograph background
+      cardHoverBg: "#c8c8c2", // Darker on hover
       accent,
       accentStrong: accent,
-      stroke: "rgba(15, 23, 42, 0.08)",
-      strokeStrong: "rgba(15, 23, 42, 0.14)",
+      stroke: "rgba(15, 23, 42, 0.15)", // More visible strokes on darker bg
+      strokeStrong: "rgba(15, 23, 42, 0.22)",
       text: "#0f172a",
-      textDim: "rgba(15, 23, 42, 0.7)",
-      shadow: "0 12px 28px rgba(15, 23, 42, 0.12)",
-      panelShadow: "0 12px 28px rgba(15, 23, 42, 0.12)",
+      textDim: "rgba(15, 23, 42, 0.75)",
+      shadow: "0 12px 28px rgba(15, 23, 42, 0.18)",
+      panelShadow: "0 12px 28px rgba(15, 23, 42, 0.18)",
     };
   }
 

@@ -79,6 +79,8 @@ Usage:
     onPropClick = undefined,
     // Dark Mode override for export (when set, overrides CSS-based detection)
     darkMode = undefined,
+    // Print Mode: uses pure white background for professional print output (Choreo Cards)
+    printMode = false,
     // Toggle callbacks (for interactive visibility controls)
     onToggleTKA = undefined,
     onToggleVTG = undefined,
@@ -120,6 +122,8 @@ Usage:
     onPropClick?: (hand: "blue" | "red") => void;
     /** Dark Mode override for export. When set, overrides CSS-based detection. */
     darkMode?: boolean;
+    /** Print Mode: pure white background for professional print (Choreo Cards). */
+    printMode?: boolean;
     onToggleTKA?: () => void;
     onToggleVTG?: () => void;
     onToggleElemental?: () => void;
@@ -263,7 +267,7 @@ Usage:
     style="pointer-events: none;"
   >
     <!-- Background - fills entire expanded viewBox -->
-    <rect width={expandedWidth} height={BASE_SIZE} fill={darkMode === true ? "#0a0a0f" : darkMode === false ? "#f8f8f6" : "var(--dm-pictograph-bg)"} pointer-events="none" />
+    <rect width={expandedWidth} height={BASE_SIZE} fill={printMode ? "#ffffff" : darkMode === true ? "#0a0a0f" : darkMode === false ? "#d8d8d2" : "var(--dm-pictograph-bg)"} pointer-events="none" />
 
     <!-- Core content (grid, props, arrows) - centered in expanded viewBox -->
     <g transform="translate({coreContentOffset}, 0)">
