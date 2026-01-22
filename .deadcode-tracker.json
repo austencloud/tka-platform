@@ -1,0 +1,32 @@
+{
+  "scopes": {
+    "features/background-builder": {
+      "scannedAt": "2026-01-21T22:38:21.682Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/choreo-card": {
+      "scannedAt": "2026-01-21T22:38:44.455Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/community": {
+      "scannedAt": "2026-01-21T22:38:50.381Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    }
+  },
+  "items": {},
+  "falsePositives": [],
+  "stats": {
+    "totalRemoved": 0,
+    "totalDeferred": 0,
+    "lastScan": null
+  }
+}

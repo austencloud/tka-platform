@@ -207,6 +207,14 @@ const AUDITED_FILES = {
     auditDate: "2026-01-21",
     reason: "4/4 perspectives: Web Worker isolation prevents DI, single chunk generation domain, procedural pipeline, utilities already extracted to seed-generator.ts",
   },
+  "lib/features/infinite-worlds/rendering/geometry-clipmap.ts": {
+    auditDate: "2026-01-21",
+    reason: "Reason: 3/4 perspectives say leave it. Domain-specific algorithm (GPU terrain LOD from SIGGRAPH 2004). Clear section headers, extensive documentation. Size is due to domain complexity, not poor organization.",
+  },
+  "lib/features/train/components/ResultsScreen.svelte": {
+    auditDate: "2026-01-21",
+    reason: "Reason: 4/4 perspectives say leave it. Display-only component with 0 effects, 3 trivial derived values. 946 lines = 90 TS + 230 markup + 620 CSS. No extractable logic, just well-organized presentation with optional XP/challenge sections. CSS bulk is appropriate for polished results screen with WCAG AAA support.",
+  },
   // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
 
