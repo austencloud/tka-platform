@@ -40,12 +40,11 @@ export type ModuleId =
   | "ml-training"
   | "admin"
   | "settings"
-  | "realm" // 3D experiences - Stage, Gallery, Infinite Worlds
+  | "realm" // 3D exploration - procedural forest with campground
   | "mandala"
   | "skewlab" // Experimental skewed positions (admin-only, temporary)
   | "poi-lab" // Poi physics constraints with VTG terminology (admin-only)
   | "background-builder" // Design and iterate on deep ocean background elements
-  | "infinite-worlds" // WebGPU + ECS + Rapier procedural world exploration
   | "landing-preview"; // Preview and iterate on landing page designs
 
 /**

@@ -135,6 +135,6 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   skewlab: false, // Skewlab internal tool
   "poi-lab": false, // Poi Lab internal tool (poi physics constraints)
   "background-builder": false, // Background builder internal tool
-  "infinite-worlds": false, // Infinite worlds procedural generation (admin-only)
+  // "infinite-worlds" removed - now part of "realm"
   "landing-preview": false, // Landing page preview/iteration (admin-only)
 };

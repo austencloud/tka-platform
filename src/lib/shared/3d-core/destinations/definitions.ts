@@ -14,7 +14,7 @@ import type { Destination, DestinationCategory } from "./types";
 export const DESTINATIONS: Destination[] = [
 	// Single destination - campground clearing with procedural forest
 	{
-		id: "worlds",
+		id: "realm",
 		name: "Realm",
 		description:
 			"Campground clearing surrounded by procedural forest terrain",
@@ -26,7 +26,7 @@ export const DESTINATIONS: Destination[] = [
 		category: "exploration",
 		tags: ["procedural", "terrain", "campground", "exploration"],
 		component: () =>
-			import("../../../features/infinite-worlds/WorldsDestination.svelte"),
+			import("../../../features/realm/RealmDestination.svelte"),
 		enabled: true,
 	},
 	// Disabled destinations (kept for future re-enabling)
@@ -74,7 +74,7 @@ export const DESTINATIONS: Destination[] = [
 		category: "exploration",
 		tags: ["real-terrain", "festival", "kinetic-fire", "ohio"],
 		component: () =>
-			import("../../../features/infinite-worlds/HannonsCampDestination.svelte"),
+			import("../../../features/realm/HannonsCampDestination.svelte"),
 		enabled: false,
 	},
 	// Future destinations:

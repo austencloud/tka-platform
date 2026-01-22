@@ -38,9 +38,6 @@ import { SequenceDetailLoader } from "$lib/features/discover/sequences/display/s
 import { VideoCountManager } from "$lib/features/discover/sequences/display/services/implementations/VideoCountManager";
 import { ClaudeCodeCopier } from "$lib/features/discover/sequences/display/services/implementations/ClaudeCodeCopier";
 
-// Grid interaction services
-import { PinchZoomGridController } from "$lib/features/discover/sequences/display/services/implementations/PinchZoomGridController";
-
 // External dependency types
 import type { IWordDeriver } from "$lib/shared/foundation/services/contracts/IWordDeriver";
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
@@ -126,10 +123,7 @@ export function createDiscoverContainer(deps: DiscoverContainerDeps) {
       // Deletion
       discoverDeleter: () => new DiscoverDeleter(),
     })
-    .add({
-      // Pinch-to-zoom for grid (factory - creates new instance per grid)
-      pinchZoomGridControllerFactory: () => () => new PinchZoomGridController(),
-    });
+;
 
   // Tier 1: Services depending on tier 0
   const tier1 = tier0.add((ctx) => ({

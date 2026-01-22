@@ -352,6 +352,14 @@ export const ADMIN_TABS: Section[] = [
     color: "#ef4444",
     gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
   },
+  {
+    id: "loop-labeler",
+    label: "LOOP Labeler",
+    icon: '<i class="fas fa-tags" aria-hidden="true"></i>',
+    description: "Label sequences with LOOP patterns",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+  },
 ];
 
 // Skew Lab - single page module (no sub-tabs)

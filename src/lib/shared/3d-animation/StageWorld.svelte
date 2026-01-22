@@ -15,8 +15,8 @@
    * <StageWorld showDebug={true} />
    */
 
-  import WorldScene from "$lib/features/infinite-worlds/components/WorldScene.svelte";
-  import { PERFORMANCE_STAGE_CONFIG } from "$lib/features/infinite-worlds/core/realm-definitions";
+  import WorldScene from "$lib/features/realm/components/scene/WorldScene.svelte";
+  import { PERFORMANCE_STAGE_CONFIG } from "$lib/features/realm/core/realm-definitions";
 
   interface Props {
     /** Show debug info overlay */

@@ -23,6 +23,7 @@
   import { CameraMode, getNextCameraMode, isGameMode, type PhysicsProvider, type AvatarState } from "./types";
   import { cameraPreferences } from "./camera-preferences.svelte";
   import { SCALE } from "../scale/scale-constants";
+  import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
 
   interface Props {
     /** Destination ID for preference persistence (e.g., "stage", "gallery") */
@@ -81,6 +82,13 @@
 
   // Movement keys
   const keys = new Set<string>();
+
+  // Input capabilities for detecting touch vs mouse
+  const inputCaps = getInputCapabilities();
+
+  // Drag-to-look state (used when pointer lock isn't available - touch, DevTools simulation)
+  let isDragging = $state(false);
+  let lastPointerPos = { x: 0, y: 0 };
 
   // Vertical velocity (used by BOTH physics and kinematic paths for jumping)
   let verticalVelocity = 0;
@@ -174,10 +182,21 @@
     // Orbit mode: handled by Scene3D's OrbitControls - we don't touch the mouse
     if (mode === CameraMode.ORBIT) return;
 
-    // Game modes: pointer lock mouse look
+    // Game modes: pointer lock mouse look OR drag-to-look fallback
     if (isPointerLocked) {
       yaw -= e.movementX * SETTINGS.lookSensitivity;
       pitch += e.movementY * SETTINGS.lookSensitivity;
+
+      const config = mode === CameraMode.FIRST_PERSON ? SETTINGS.firstPerson : SETTINGS.thirdPerson;
+      pitch = Math.max(config.minPitch, Math.min(config.maxPitch, pitch));
+    } else if (isDragging) {
+      // Drag-to-look fallback (touch simulation, mobile, etc.)
+      const deltaX = e.clientX - lastPointerPos.x;
+      const deltaY = e.clientY - lastPointerPos.y;
+      lastPointerPos = { x: e.clientX, y: e.clientY };
+
+      yaw -= deltaX * SETTINGS.lookSensitivity;
+      pitch += deltaY * SETTINGS.lookSensitivity;
 
       const config = mode === CameraMode.FIRST_PERSON ? SETTINGS.firstPerson : SETTINGS.thirdPerson;
       pitch = Math.max(config.minPitch, Math.min(config.maxPitch, pitch));
@@ -187,6 +206,28 @@
   function handleWheel(e: WheelEvent) {
     // Orbit mode zoom is handled by Scene3D's OrbitControls
     // This handler is no longer needed but kept for potential future use
+  }
+
+  function handlePointerDown(e: PointerEvent) {
+    if (!enabled) return;
+
+    // Track pointer type for input capabilities
+    inputCaps.handlePointerEvent(e);
+
+    // In game modes without pointer lock, start drag-to-look
+    if (isGameMode(mode) && !isPointerLocked) {
+      isDragging = true;
+      lastPointerPos = { x: e.clientX, y: e.clientY };
+    }
+  }
+
+  function handlePointerUp(e: PointerEvent) {
+    isDragging = false;
+  }
+
+  function handlePointerMove(e: PointerEvent) {
+    // Track pointer type changes (touch vs mouse)
+    inputCaps.handlePointerEvent(e);
   }
 
   function handlePointerLockChange() {
@@ -202,15 +243,16 @@
   function handleCanvasClick() {
     if (!enabled) return;
 
-    // In orbit mode, clicking enters third-person mode with pointer lock
+    // In orbit mode, clicking enters third-person mode
     if (mode === CameraMode.ORBIT) {
       cameraPreferences.setModeForDestination(destinationId, CameraMode.THIRD_PERSON);
       mode = CameraMode.THIRD_PERSON;
       onModeChange?.(mode);
     }
 
-    // Request pointer lock for game modes
-    if (isGameMode(mode)) {
+    // Only request pointer lock if we can use it (mouse, not touch/DevTools simulation)
+    // When using touch, the drag-to-look fallback is handled by pointer events
+    if (isGameMode(mode) && inputCaps.canUsePointerLock()) {
       renderer.domElement.requestPointerLock();
     }
   }
@@ -224,6 +266,9 @@
 
     const canvas = renderer.domElement;
 
+    // Initialize input capabilities tracking
+    inputCaps.init();
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("blur", handleBlur);
@@ -231,10 +276,19 @@
     document.addEventListener("pointerlockchange", handlePointerLockChange);
     canvas.addEventListener("click", handleCanvasClick);
     canvas.addEventListener("wheel", handleWheel, { passive: false });
+
+    // Pointer events for input type detection and drag-to-look
+    canvas.addEventListener("pointerdown", handlePointerDown);
+    canvas.addEventListener("pointerup", handlePointerUp);
+    canvas.addEventListener("pointercancel", handlePointerUp);
+    canvas.addEventListener("pointermove", handlePointerMove);
   });
 
   onDestroy(() => {
     const canvas = renderer.domElement;
+
+    // Cleanup input capabilities
+    inputCaps.destroy();
 
     window.removeEventListener("keydown", handleKeyDown);
     window.removeEventListener("keyup", handleKeyUp);
@@ -243,6 +297,12 @@
     document.removeEventListener("pointerlockchange", handlePointerLockChange);
     canvas?.removeEventListener("click", handleCanvasClick);
     canvas?.removeEventListener("wheel", handleWheel);
+
+    // Cleanup pointer event listeners
+    canvas?.removeEventListener("pointerdown", handlePointerDown);
+    canvas?.removeEventListener("pointerup", handlePointerUp);
+    canvas?.removeEventListener("pointercancel", handlePointerUp);
+    canvas?.removeEventListener("pointermove", handlePointerMove);
 
     if (document.pointerLockElement) {
       document.exitPointerLock();
@@ -465,26 +525,37 @@
     mode === CameraMode.ORBIT ? "fa-arrows-rotate" :
     mode === CameraMode.THIRD_PERSON ? "fa-user" : "fa-eye"
   );
+
+  // Check if we're using touch input (for UI hints)
+  const isUsingTouch = $derived(inputCaps.current.currentPointerType === "touch");
 </script>
 
 <!-- Controls hint (when not in game mode or not pointer locked) -->
 {#if enabled && (mode === CameraMode.ORBIT || !isPointerLocked)}
   <div class="controls-hint">
     {#if mode === CameraMode.ORBIT}
-      <span>Drag to orbit • Click to enter game mode</span>
+      <span>Drag to orbit • Tap to enter game mode</span>
+    {:else if isUsingTouch}
+      <span>Drag to look around</span>
     {:else}
       <span>Click to look around</span>
     {/if}
     <div class="controls">
-      <kbd>V</kbd> {modeLabel}
+      {#if !isUsingTouch}
+        <kbd>V</kbd> {modeLabel}
+      {/if}
       {#if isGameMode(mode)}
-        <kbd>WASD</kbd> Move
-        <kbd>Mouse</kbd> Look
-        {#if usePhysics}
+        {#if isUsingTouch}
+          <span>Drag to look</span>
+        {:else}
+          <kbd>WASD</kbd> Move
+          <kbd>Mouse</kbd> Look
+        {/if}
+        {#if usePhysics && !isUsingTouch}
           <kbd>Shift</kbd> Sprint
           <kbd>Space</kbd> Jump
         {/if}
-      {:else}
+      {:else if !isUsingTouch}
         <kbd>Scroll</kbd> Zoom
       {/if}
     </div>
