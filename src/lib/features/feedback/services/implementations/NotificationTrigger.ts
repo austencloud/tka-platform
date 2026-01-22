@@ -58,6 +58,7 @@ import type {
   SocialNotification,
   MessageNotification,
   SystemNotification,
+  ModerationNotification,
 } from "../../domain/models/notification-models";
 import { getPreferenceKeyForType } from "../../domain/models/notification-models";
 import { notificationPreferencesService } from "./NotificationPreferencesManager";
@@ -320,14 +321,39 @@ export class NotificationTriggerService {
   }
 
   /**
+   * Create a moderation warning notification
+   * Moderation warnings always bypass user preferences (like system announcements)
+   */
+  async createModerationWarning(
+    userId: string,
+    reportId: string,
+    category: string,
+    adminMessage?: string
+  ): Promise<string> {
+    const notification: Omit<ModerationNotification, "id"> = {
+      userId,
+      type: "moderation-warning",
+      reportId,
+      category,
+      message: `You have received a warning for ${category}. Please review our community guidelines.`,
+      createdAt: new Date(),
+      read: false,
+      ...(adminMessage && { adminMessage }),
+    };
+
+    // Moderation warnings bypass preference checking (mandatory)
+    return await this.createNotification(userId, notification);
+  }
+
+  /**
    * Check if user should receive this notification type
    */
   private async shouldNotify(
     userId: string,
     type: NotificationType
   ): Promise<boolean> {
-    // System announcements always notify
-    if (type === "system-announcement") {
+    // System announcements and moderation warnings always notify
+    if (type === "system-announcement" || type === "moderation-warning") {
       return true;
     }
 
@@ -359,7 +385,8 @@ export class NotificationTriggerService {
       | SequenceNotification
       | SocialNotification
       | MessageNotification
-      | SystemNotification,
+      | SystemNotification
+      | ModerationNotification,
       "id"
     >
   ): Promise<string> {

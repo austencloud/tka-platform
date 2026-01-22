@@ -23,7 +23,9 @@ export type NotificationType =
   // Admin notifications
   | "admin-new-user-signup" // A new user signed up (admin-only)
   // System notifications
-  | "system-announcement"; // Important system announcements
+  | "system-announcement" // Important system announcements
+  // Moderation notifications
+  | "moderation-warning"; // User received a moderation warning
 
 /**
  * Base notification interface
@@ -112,6 +114,16 @@ export interface AdminNotification extends BaseNotification {
 }
 
 /**
+ * Moderation notification (warning issued to user)
+ */
+export interface ModerationNotification extends BaseNotification {
+  type: "moderation-warning";
+  reportId: string;
+  category: string; // What the warning was for (e.g., "Harassment", "Spam")
+  adminMessage?: string; // Optional message from admin
+}
+
+/**
  * Union type for all notifications
  */
 export type UserNotification =
@@ -120,7 +132,8 @@ export type UserNotification =
   | SocialNotification
   | MessageNotification
   | SystemNotification
-  | AdminNotification;
+  | AdminNotification
+  | ModerationNotification;
 
 /**
  * Legacy alias for backward compatibility
@@ -270,5 +283,12 @@ export const NOTIFICATION_TYPE_CONFIG: Record<
     color: "#6366f1",
     icon: "fa-bell",
     actionLabel: "Learn More",
+  },
+  // Moderation notifications
+  "moderation-warning": {
+    label: "Account Warning",
+    color: "#ef4444", // Red - serious
+    icon: "fa-exclamation-triangle",
+    actionLabel: "View Details",
   },
 };

@@ -42,10 +42,16 @@ export interface KanbanBoardState {
   deferNotes: string;
   isSubmittingDefer: boolean;
 
-  // Undo support
+  // Undo/Redo support
   canUndo: boolean;
-  pushUndo(action: UndoableAction): void;
+  canRedo: boolean;
+  showUndoHint: boolean;
+  pushUndo(action: UndoableAction, clearRedo?: boolean): void;
   popUndo(): UndoableAction | null;
+  popRedo(): UndoableAction | null;
+  pushRedo(action: UndoableAction): void;
+  clearRedoStack(): void;
+  dismissUndoHint(): void;
 
   // Actions
   setActiveStatus(status: FeedbackStatus): void;
@@ -115,9 +121,14 @@ export function createKanbanBoardState(
   let deferNotes = $state("");
   let isSubmittingDefer = $state(false);
 
-  // Undo stack for drag operations
+  // Undo/Redo stacks for drag operations
   let undoStack = $state<UndoableAction[]>([]);
+  let redoStack = $state<UndoableAction[]>([]);
+  let showUndoHint = $state(false);
+  let undoHintTimeout: ReturnType<typeof setTimeout> | null = null;
+
   const canUndo = $derived(undoStack.length > 0);
+  const canRedo = $derived(redoStack.length > 0);
 
   // Detect column at a screen position
   function getColumnAtPosition(
@@ -164,8 +175,18 @@ export function createKanbanBoardState(
     deferNotes = "";
   }
 
-  function pushUndo(action: UndoableAction) {
+  function pushUndo(action: UndoableAction, clearRedo = true) {
     undoStack = [...undoStack, action].slice(-MAX_UNDO_HISTORY);
+    // Clear redo stack when a new action is performed (but not during redo operations)
+    if (clearRedo) {
+      redoStack = [];
+      // Show undo hint briefly (only for new actions, not redo restores)
+      showUndoHint = true;
+      if (undoHintTimeout) clearTimeout(undoHintTimeout);
+      undoHintTimeout = setTimeout(() => {
+        showUndoHint = false;
+      }, 4000);
+    }
   }
 
   function popUndo(): UndoableAction | null {
@@ -173,6 +194,26 @@ export function createKanbanBoardState(
     const action = undoStack[undoStack.length - 1];
     undoStack = undoStack.slice(0, -1);
     return action;
+  }
+
+  function pushRedo(action: UndoableAction) {
+    redoStack = [...redoStack, action].slice(-MAX_UNDO_HISTORY);
+  }
+
+  function popRedo(): UndoableAction | null {
+    if (redoStack.length === 0) return null;
+    const action = redoStack[redoStack.length - 1];
+    redoStack = redoStack.slice(0, -1);
+    return action;
+  }
+
+  function clearRedoStack() {
+    redoStack = [];
+  }
+
+  function dismissUndoHint() {
+    showUndoHint = false;
+    if (undoHintTimeout) clearTimeout(undoHintTimeout);
   }
 
   return {
@@ -218,6 +259,12 @@ export function createKanbanBoardState(
     get canUndo() {
       return canUndo;
     },
+    get canRedo() {
+      return canRedo;
+    },
+    get showUndoHint() {
+      return showUndoHint;
+    },
 
     setActiveStatus(status: FeedbackStatus) {
       activeStatus = status;
@@ -255,5 +302,9 @@ export function createKanbanBoardState(
     getColumnAtPosition,
     pushUndo,
     popUndo,
+    pushRedo,
+    popRedo,
+    clearRedoStack,
+    dismissUndoHint,
   };
 }

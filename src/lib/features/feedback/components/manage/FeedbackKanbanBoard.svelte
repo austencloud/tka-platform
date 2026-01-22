@@ -4,9 +4,10 @@
   import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
   import type { KanbanBoardState } from "../../state/kanban-board-state.svelte";
   import { createKanbanBoardState } from "../../state/kanban-board-state.svelte";
-  import type { IStorageManager } from "$lib/shared/foundation/services/contracts/IStorageManager";
   import type { IFeedbackSorter } from "../../services/contracts/IFeedbackSorter";
   import { container } from "$lib/shared/di";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { STATUS_CONFIG } from "../../domain/models/feedback-models";
   import KanbanMobileView from "./KanbanMobileView.svelte";
   import KanbanDesktopView from "./KanbanDesktopView.svelte";
 
@@ -22,29 +23,102 @@
   const sortingService = container.items.feedbackSorter;
   const storageService = container.items.storageManager;
 
+  // Debounce flag to prevent rapid undo/redo
+  let isProcessingUndoRedo = false;
+
   // Handle undo keyboard shortcut
   async function handleUndo() {
-    if (!boardState?.canUndo) return;
+    if (!boardState?.canUndo || isProcessingUndoRedo) return;
 
     const action = boardState.popUndo();
     if (!action) return;
 
+    // Check if item still exists
+    const itemExists = manageState.allItems.some(
+      (item) => item.id === action.feedbackId
+    );
+    if (!itemExists) {
+      toast.warning("Item no longer exists");
+      return;
+    }
+
+    isProcessingUndoRedo = true;
+
     try {
       await manageState.updateStatus(action.feedbackId, action.previousStatus);
+      // Push to redo stack (with swapped statuses for redo)
+      boardState.pushRedo({
+        feedbackId: action.feedbackId,
+        previousStatus: action.newStatus,
+        newStatus: action.previousStatus,
+        timestamp: Date.now(),
+      });
+      const statusLabel = STATUS_CONFIG[action.previousStatus]?.label || action.previousStatus;
+      toast.info(`Moved back to ${statusLabel}`);
     } catch (err) {
       console.error("[FeedbackKanbanBoard] Failed to undo:", err);
+      toast.error("Failed to undo");
+    } finally {
+      isProcessingUndoRedo = false;
+    }
+  }
+
+  // Handle redo keyboard shortcut
+  async function handleRedo() {
+    if (!boardState?.canRedo || isProcessingUndoRedo) return;
+
+    const action = boardState.popRedo();
+    if (!action) return;
+
+    // Check if item still exists
+    const itemExists = manageState.allItems.some(
+      (item) => item.id === action.feedbackId
+    );
+    if (!itemExists) {
+      toast.warning("Item no longer exists");
+      return;
+    }
+
+    isProcessingUndoRedo = true;
+
+    try {
+      await manageState.updateStatus(action.feedbackId, action.previousStatus);
+      // Push back to undo stack without clearing redo (we're in redo mode)
+      boardState.pushUndo(
+        {
+          feedbackId: action.feedbackId,
+          previousStatus: action.newStatus,
+          newStatus: action.previousStatus,
+          timestamp: Date.now(),
+        },
+        false // Don't clear redo stack
+      );
+      const statusLabel = STATUS_CONFIG[action.previousStatus]?.label || action.previousStatus;
+      toast.info(`Restored to ${statusLabel}`);
+    } catch (err) {
+      console.error("[FeedbackKanbanBoard] Failed to redo:", err);
+      toast.error("Failed to redo");
+    } finally {
+      isProcessingUndoRedo = false;
     }
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    // Ctrl+Z or Cmd+Z (but not Ctrl+Shift+Z which is redo)
-    if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
-      // Only handle if we're not in an input/textarea
-      const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
-        return;
-      }
+    // Only handle if we're not in an input/textarea
+    const target = e.target as HTMLElement;
+    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+      return;
+    }
 
+    // Ctrl+Shift+Z or Cmd+Shift+Z = Redo
+    if ((e.ctrlKey || e.metaKey) && e.key === "z" && e.shiftKey) {
+      e.preventDefault();
+      handleRedo();
+      return;
+    }
+
+    // Ctrl+Z or Cmd+Z = Undo
+    if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
       e.preventDefault();
       handleUndo();
     }
@@ -80,7 +154,7 @@
 
     initializeBoard();
 
-    // Add keyboard listener for undo
+    // Add keyboard listener for undo/redo
     document.addEventListener("keydown", handleKeydown);
 
     return () => {
@@ -246,6 +320,31 @@
             </button>
           </div>
         </div>
+      </div>
+    {/if}
+
+    <!-- Undo/Redo Hint - shows briefly after drag operations -->
+    {#if boardState.showUndoHint}
+      <div
+        class="undo-hint"
+        onclick={() => boardState?.dismissUndoHint()}
+        onkeydown={(e) => e.key === "Escape" && boardState?.dismissUndoHint()}
+        role="status"
+        aria-live="polite"
+      >
+        <i class="fas fa-undo" aria-hidden="true"></i>
+        <span>Ctrl+Z to undo</span>
+        <button
+          type="button"
+          class="undo-hint-dismiss"
+          onclick={(e) => {
+            e.stopPropagation();
+            boardState?.dismissUndoHint();
+          }}
+          aria-label="Dismiss hint"
+        >
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
       </div>
     {/if}
   {/if}
@@ -638,6 +737,70 @@
     }
   }
 
+  /* ===== UNDO HINT ===== */
+  .undo-hint {
+    position: absolute;
+    bottom: clamp(16px, 4cqi, 24px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 2cqi, 12px);
+    padding: clamp(10px, 2.5cqi, 14px) clamp(16px, 4cqi, 20px);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--kb-radius-full);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.3),
+      0 2px 8px rgba(0, 0, 0, 0.2);
+    font-size: var(--kb-text-sm);
+    color: var(--theme-text);
+    cursor: pointer;
+    animation: slideUpFade 0.3s var(--spring-bounce);
+    z-index: 100;
+  }
+
+  .undo-hint i {
+    font-size: clamp(14px, 3.5cqi, 16px);
+    color: var(--theme-accent);
+  }
+
+  .undo-hint span {
+    font-weight: 500;
+  }
+
+  .undo-hint-dismiss {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(20px, 5cqi, 24px);
+    height: clamp(20px, 5cqi, 24px);
+    margin-left: clamp(4px, 1cqi, 8px);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: var(--theme-text-dim);
+    font-size: clamp(10px, 2.5cqi, 12px);
+    cursor: pointer;
+    transition: all var(--duration-normal) ease;
+  }
+
+  .undo-hint-dismiss:hover {
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
+  }
+
+  @keyframes slideUpFade {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
     .skeleton-card {
@@ -647,6 +810,9 @@
       animation: none;
     }
     .defer-dialog {
+      animation: none;
+    }
+    .undo-hint {
       animation: none;
     }
   }
