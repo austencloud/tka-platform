@@ -7,6 +7,7 @@
  *
  * Tools:
  * - Pictograph Generation: generate_pictograph, generate_pictograph_url, generate_sequence_image
+ * - Token-Efficient Viewing: view_pictograph, view_sequence (open in system viewer, no image data returned)
  * - Data Queries: list_available_letters, list_letter_variations, get_pictograph_data, search_pictographs
  * - Sequences: generate_sequence_data, validate_word
  * - Educational: get_alphabet_info, get_letter_explanation, get_term_definition, compare_letters
@@ -44,6 +45,19 @@ import {
   type ConstraintReport,
   type WordFeasibility,
 } from "./src/core/constraints/index.js";
+import {
+  createPreset,
+  updatePreset,
+  deletePreset,
+  getPreset,
+  listPresets as listUserPresets,
+  formatPresetSummary,
+  seedDefaultPresets,
+  PresetValidationError,
+  PresetNotFoundError,
+  type UserSequencePreset,
+  type CreatePresetInput,
+} from "./src/core/user-presets/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -867,6 +881,139 @@ server.tool(
       });
 
       return { content };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Failed to generate pictograph: ${errorMessage}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Tool: view_pictograph (opens in system viewer, returns minimal tokens - NO image data)
+server.tool(
+  "view_pictograph",
+  "Generate a pictograph and open it in the system image viewer. Returns only confirmation text - NO image data returned. Use this when the USER needs to see the pictograph but Claude doesn't need to analyze it. Saves ~15-30k tokens compared to generate_pictograph.",
+  {
+    letter: z.string().describe("The letter to render (A-Z or Greek: α, β, γ, Δ, Θ, Λ, Σ, Φ, Ψ, Ω)"),
+    variation: z.number().optional().default(0).describe("Variation index (0-based)"),
+    // Override preferences for this render only (optional)
+    darkMode: z.boolean().optional().describe("Override: dark background"),
+    size: z.number().optional().describe("Override: image size in pixels"),
+    showTKA: z.boolean().optional().describe("Override: show TKA letter glyph"),
+    showVTG: z.boolean().optional().describe("Override: show VTG (timing) glyph"),
+    showPositions: z.boolean().optional().describe("Override: show start→end positions glyph"),
+    showReversals: z.boolean().optional().describe("Override: show reversal indicators"),
+    showGrid: z.boolean().optional().describe("Override: show grid"),
+    showNonRadialPoints: z.boolean().optional().describe("Override: show non-radial grid points"),
+    showBlueMotion: z.boolean().optional().describe("Override: show blue motion (prop + arrow)"),
+    showRedMotion: z.boolean().optional().describe("Override: show red motion (prop + arrow)"),
+  },
+  async ({ letter, variation = 0, ...overrides }) => {
+    const allPictographs = ensureDataLoaded();
+
+    // Validate the letter exists
+    const variations = allPictographs.filter((p) => p.letter === letter);
+    if (variations.length === 0) {
+      return {
+        content: [
+          { type: "text" as const, text: `No pictograph found for letter: ${letter}` },
+        ],
+        isError: true,
+      };
+    }
+
+    if (variation >= variations.length) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Variation ${variation} not found. Letter ${letter} has ${variations.length} variations (0-${variations.length - 1})`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    try {
+      const csvRow = variations[variation];
+
+      // Merge preferences with any overrides
+      const prefs = { ...currentPreferences };
+      if (overrides.darkMode !== undefined) prefs.darkMode = overrides.darkMode;
+      if (overrides.size !== undefined) prefs.size = overrides.size;
+      if (overrides.showTKA !== undefined) prefs.showTKA = overrides.showTKA;
+      if (overrides.showVTG !== undefined) prefs.showVTG = overrides.showVTG;
+      if (overrides.showPositions !== undefined) prefs.showPositions = overrides.showPositions;
+      if (overrides.showReversals !== undefined) prefs.showReversals = overrides.showReversals;
+      if (overrides.showGrid !== undefined) prefs.showGrid = overrides.showGrid;
+      if (overrides.showNonRadialPoints !== undefined) prefs.showNonRadialPoints = overrides.showNonRadialPoints;
+      if (overrides.showBlueMotion !== undefined) prefs.showBlueMotion = overrides.showBlueMotion;
+      if (overrides.showRedMotion !== undefined) prefs.showRedMotion = overrides.showRedMotion;
+
+      // Convert CSV row to the simple input format for standalone renderer
+      const pictographInput = {
+        letter: csvRow.letter,
+        startPosition: csvRow.startPosition,
+        endPosition: csvRow.endPosition,
+        blueMotion: {
+          motionType: csvRow.blueMotion.motionType,
+          rotationDirection: csvRow.blueMotion.rotationDirection || "no_rotation",
+          startLocation: csvRow.blueMotion.startLocation,
+          endLocation: csvRow.blueMotion.endLocation,
+          color: "blue",
+          turns: 0,
+          startOrientation: "in",
+        },
+        redMotion: {
+          motionType: csvRow.redMotion.motionType,
+          rotationDirection: csvRow.redMotion.rotationDirection || "no_rotation",
+          startLocation: csvRow.redMotion.startLocation,
+          endLocation: csvRow.redMotion.endLocation,
+          color: "red",
+          turns: 0,
+          startOrientation: "in",
+        },
+      };
+
+      // Build visibility options from preferences
+      const visibility: RenderVisibilityOptions = {
+        darkMode: prefs.darkMode,
+        size: prefs.size,
+        showTKA: prefs.showTKA,
+        showVTG: prefs.showVTG,
+        showPositions: prefs.showPositions,
+        showReversals: prefs.showReversals,
+        showGrid: prefs.showGrid,
+        showNonRadialPoints: prefs.showNonRadialPoints,
+        showBlueMotion: prefs.showBlueMotion,
+        showRedMotion: prefs.showRedMotion,
+        bluePropType: prefs.bluePropType,
+        redPropType: prefs.redPropType,
+      };
+
+      // Render using standalone Node.js renderer
+      const renderer = getStandaloneRenderer();
+      const pngBuffer = await renderer.renderToPng(pictographInput, visibility);
+
+      // Save to temp and open in system viewer
+      const tempPath = saveAndOpenImage(pngBuffer, letter);
+
+      // Return ONLY minimal text - NO image data (saves 15-30k tokens)
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Opened ${letter} (variation ${variation}) in system viewer.\nPosition: ${csvRow.startPosition} → ${csvRow.endPosition}\nFile: ${tempPath}`,
+          },
+        ],
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
@@ -2037,6 +2184,176 @@ server.tool(
   }
 );
 
+// Tool: view_sequence (opens in system viewer, returns minimal tokens - NO image data)
+server.tool(
+  "view_sequence",
+  "Generate a sequence image (word card) and open it in the system image viewer. Returns only confirmation text - NO image data returned. Use this when the USER needs to see the sequence but Claude doesn't need to analyze it. Saves ~30-100k tokens compared to generate_sequence_image.",
+  {
+    word: z.string().describe('The sequence word, e.g., "ABC"'),
+    gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
+    layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
+    cellSize: z.number().optional().default(150).describe("Size of each pictograph cell in pixels"),
+    showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers overlaid on each pictograph"),
+    showWord: z.boolean().optional().default(true).describe("Show word header at the top"),
+    darkMode: z.boolean().optional().default(true).describe("Use dark background"),
+    maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
+    showDifficulty: z.boolean().optional().default(true).describe("Show difficulty level badge in header"),
+    userName: z.string().optional().describe("Username to show in footer (bottom-left)"),
+    notes: z.string().optional().describe("Notes to show in footer (bottom-center)"),
+    birthday: z.string().optional().describe("Birthday/creation date in ISO format (bottom-right), e.g., '2024-01-15'"),
+    bridgeSelections: z.record(z.string(), z.number()).optional().describe('Map of bridge transition index to preferred bridge option index.'),
+    level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
+    turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3)."),
+    loopComponents: z.array(z.enum(["rotated", "mirrored", "swapped", "inverted"])).optional().describe("LOOP components for the pie chart glyph."),
+    constraints: z.string().optional().describe('Natural language constraints, e.g., "maximize continuity, all pro motions"'),
+    constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "pro-cw", "anti-ccw", "no-dash", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset'),
+  },
+  async ({ word, gridMode = "diamond", layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100, showDifficulty = true, userName, notes, birthday, bridgeSelections, level = 1, turnIntensity, loopComponents, constraints, constraintPreset }) => {
+    const allPictographs = ensureDataLoaded(gridMode);
+    const letters = parseWordToLetters(word.toUpperCase());
+
+    if (letters.length === 0) {
+      return {
+        content: [
+          { type: "text" as const, text: `Cannot generate sequence image: no valid letters in "${word}"` },
+        ],
+        isError: true,
+      };
+    }
+
+    const parsedBridgeSelections: BridgeSelections | undefined = bridgeSelections
+      ? Object.fromEntries(
+          Object.entries(bridgeSelections).map(([k, v]) => [parseInt(k, 10), v])
+        )
+      : undefined;
+
+    let constraintSet = emptyConstraintSet();
+
+    if (constraintPreset) {
+      const presetConstraints = getPresetConstraintSet(constraintPreset as PresetName);
+      if (presetConstraints) {
+        constraintSet = presetConstraints;
+      }
+    } else if (constraints) {
+      const parsed = parseConstraintSet(constraints);
+      constraintSet = parsed.constraintSet;
+    }
+
+    const useConstrainedBuilder = constraintSet.hard.length > 0 || constraintSet.soft.length > 0;
+
+    let result: SequenceResult;
+
+    if (useConstrainedBuilder) {
+      const constrainedResult = buildConstrainedSequence({
+        letters,
+        allPictographs,
+        constraintSet,
+        beamConfig: {
+          maxBacktracks: maxAttempts,
+        },
+      });
+
+      if (!constrainedResult.success && !constrainedResult.steps.length) {
+        return {
+          content: [
+            { type: "text" as const, text: `Failed to generate constrained sequence for "${word}": ${constrainedResult.error}` },
+          ],
+          isError: true,
+        };
+      }
+
+      result = {
+        word: constrainedResult.word,
+        steps: constrainedResult.steps.map((step, i) => ({
+          letter: step.letter,
+          variation: constrainedResult.variationIndices[i] ?? 0,
+          startPosition: step.startPosition,
+          endPosition: step.endPosition,
+          blueMotion: step.blueMotion,
+          redMotion: step.redMotion,
+          stepNumber: i,
+          isBridge: constrainedResult.bridges?.some(b => b.selectedBridge === step.letter && i > 0) ?? false,
+        })),
+        startPosition: constrainedResult.startPosition,
+        endPosition: constrainedResult.endPosition,
+        isValid: true,
+        bridges: constrainedResult.bridges?.map(b => ({
+          transitionIndex: b.transitionIndex,
+          fromLetter: b.fromLetter,
+          toLetter: b.toLetter,
+          availableOptions: b.availableOptions,
+          selectedBridge: b.selectedBridge,
+          selectedIndex: b.selectedIndex,
+        })),
+      };
+    } else {
+      result = buildSequenceFromLetters(letters, allPictographs, maxAttempts, parsedBridgeSelections);
+    }
+
+    if (!result.isValid) {
+      return {
+        content: [
+          { type: "text" as const, text: `Failed to generate sequence for "${word}": ${result.error}` },
+        ],
+        isError: true,
+      };
+    }
+
+    try {
+      const birthdayDate = birthday ? new Date(birthday) : undefined;
+      const stepCount = result.steps.length - 1;
+      const turnAllocation = allocateTurns(stepCount, level, turnIntensity);
+
+      const parsedLoopComponents = loopComponents?.map(c => {
+        switch (c) {
+          case "rotated": return LOOPComponent.ROTATED;
+          case "mirrored": return LOOPComponent.MIRRORED;
+          case "swapped": return LOOPComponent.SWAPPED;
+          case "inverted": return LOOPComponent.INVERTED;
+          default: return LOOPComponent.ROTATED;
+        }
+      });
+
+      const pngBuffer = await renderSequenceToImage(result.steps, result.word, {
+        layout,
+        cellSize,
+        showStepNumbers,
+        showWord,
+        darkMode,
+        padding: 8,
+        showDifficulty,
+        userName,
+        notes,
+        birthday: birthdayDate,
+        level,
+        turnAllocation,
+        loopComponents: parsedLoopComponents,
+      });
+
+      // Save to temp and open in system viewer
+      const tempPath = saveAndOpenImage(pngBuffer, `seq-${word}`);
+
+      // Return ONLY minimal text - NO image data (saves 30-100k tokens)
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Opened sequence "${word}" in system viewer.\n${result.steps.length - 1} beats, ${layout} layout, ${cellSize}px cells\nFile: ${tempPath}`,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          { type: "text" as const, text: `Failed to render sequence image: ${errorMessage}` },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
 // ============================================================================
 // LOOP (CIRCULAR SEQUENCE) TOOLS
 // ============================================================================
@@ -2329,6 +2646,463 @@ server.tool(
     }
   }
 );
+
+// ============================================================================
+// USER PRESET TOOLS
+// ============================================================================
+
+// Tool: list_user_presets
+server.tool(
+  "list_user_presets",
+  "List all saved user sequence presets with their configurations.",
+  {},
+  async () => {
+    const presets = listUserPresets();
+
+    if (presets.length === 0) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: "No presets saved yet. Use save_user_preset to create one.",
+          },
+        ],
+      };
+    }
+
+    const summaries = presets.map((p, i) => `${i + 1}. ${formatPresetSummary(p)}`);
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `## Saved Presets (${presets.length})\n\n${summaries.join("\n\n")}`,
+        },
+      ],
+    };
+  }
+);
+
+// Tool: save_user_preset
+server.tool(
+  "save_user_preset",
+  "Create or update a user sequence preset. Presets remember generation settings across sessions.",
+  {
+    name: z.string().describe("Preset name (e.g., 'Comfy 16')"),
+    description: z.string().optional().describe("Description of the preset"),
+    icon: z.string().optional().describe("Emoji icon for the preset"),
+    loopType: z.enum(["rewound", "strict_rotated"]).optional().describe("LOOP type"),
+    sliceSize: z.enum(["halved", "quartered"]).optional().describe("Slice size for LOOP"),
+    loopComponents: z.array(z.enum(["rotated", "mirrored", "swapped", "inverted"])).optional().describe("LOOP transformation components"),
+    wordLength: z.number().min(1).max(20).optional().describe("Default word length"),
+    level: z.number().min(1).max(3).optional().describe("Difficulty level (1-3)"),
+    turnIntensity: z.number().min(0).max(3).optional().describe("Turn intensity (0-3)"),
+    constraintPreset: z.string().optional().describe("Constraint preset name (smooth, reversal, etc.)"),
+    constraints: z.string().optional().describe("Natural language constraints"),
+    gridMode: z.enum(["diamond", "box", "skewed"]).optional().describe("Grid mode"),
+    darkMode: z.boolean().optional().describe("Use dark background"),
+    cellSize: z.number().min(50).max(500).optional().describe("Image cell size in pixels"),
+    layout: z.enum(["grid", "strip"]).optional().describe("Image layout"),
+    update: z.boolean().optional().describe("If true, update existing preset with same name"),
+  },
+  async (input) => {
+    try {
+      // Check if updating existing preset
+      if (input.update) {
+        const existing = listUserPresets().find(
+          (p) => p.name.toLowerCase() === input.name.toLowerCase()
+        );
+        if (existing) {
+          const updated = updatePreset(existing.id, input as CreatePresetInput);
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Updated preset: ${formatPresetSummary(updated)}`,
+              },
+            ],
+          };
+        }
+      }
+
+      // Create new preset
+      const preset = createPreset(input as CreatePresetInput);
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Created preset: ${formatPresetSummary(preset)}`,
+          },
+        ],
+      };
+    } catch (error) {
+      const message =
+        error instanceof PresetValidationError
+          ? error.message
+          : error instanceof Error
+          ? error.message
+          : String(error);
+
+      return {
+        content: [{ type: "text" as const, text: `Error: ${message}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Tool: delete_user_preset
+server.tool(
+  "delete_user_preset",
+  "Delete a saved user preset by name or ID.",
+  {
+    preset: z.string().describe("Preset name or ID to delete"),
+  },
+  async ({ preset }) => {
+    try {
+      const existing = getPreset(preset);
+      deletePreset(preset);
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Deleted preset: ${existing.name}`,
+          },
+        ],
+      };
+    } catch (error) {
+      const message =
+        error instanceof PresetNotFoundError
+          ? `Preset not found: ${preset}`
+          : error instanceof Error
+          ? error.message
+          : String(error);
+
+      return {
+        content: [{ type: "text" as const, text: `Error: ${message}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Tool: get_user_preset
+server.tool(
+  "get_user_preset",
+  "Get full details of a saved user preset.",
+  {
+    preset: z.string().describe("Preset name or ID"),
+  },
+  async ({ preset }) => {
+    try {
+      const p = getPreset(preset);
+
+      const details = {
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        icon: p.icon,
+        config: p.config,
+        createdAt: new Date(p.createdAt).toISOString(),
+        updatedAt: new Date(p.updatedAt).toISOString(),
+      };
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `## ${p.icon || ""} ${p.name}\n\n${p.description || ""}\n\n**Configuration:**\n\`\`\`json\n${JSON.stringify(details.config, null, 2)}\n\`\`\``,
+          },
+        ],
+      };
+    } catch (error) {
+      const message =
+        error instanceof PresetNotFoundError
+          ? `Preset not found: ${preset}`
+          : error instanceof Error
+          ? error.message
+          : String(error);
+
+      return {
+        content: [{ type: "text" as const, text: `Error: ${message}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Tool: generate_with_preset
+server.tool(
+  "generate_with_preset",
+  "Generate a sequence using a saved preset. Word is optional - if omitted, generates a random word of appropriate length.",
+  {
+    preset: z.string().describe("Preset name or ID"),
+    word: z.string().optional().describe("Word to generate (optional - random if omitted)"),
+    // Overrides
+    level: z.number().min(1).max(3).optional().describe("Override: difficulty level"),
+    turnIntensity: z.number().min(0).max(3).optional().describe("Override: turn intensity"),
+    gridMode: z.enum(["diamond", "box", "skewed"]).optional().describe("Override: grid mode"),
+    darkMode: z.boolean().optional().describe("Override: dark mode"),
+  },
+  async (input) => {
+    try {
+      const p = getPreset(input.preset);
+      const config = p.config;
+
+      // Determine word
+      let word = input.word?.toUpperCase();
+      if (!word) {
+        // Generate random word
+        const targetLength = config.wordLength || 4;
+        word = generateRandomWord(targetLength);
+      }
+
+      // Merge config with overrides
+      const level = input.level ?? config.level ?? 1;
+      const turnIntensity = input.turnIntensity ?? config.turnIntensity ?? 0;
+      const gridMode = (input.gridMode ?? config.gridMode ?? "diamond") as GridMode;
+      const darkMode = input.darkMode ?? config.darkMode ?? true;
+      const cellSize = config.cellSize ?? 150;
+      const layout = config.layout ?? "grid";
+
+      // Load pictograph data
+      const allPictographs = ensureDataLoaded(gridMode);
+
+      // Parse word
+      const letters = parseWordToLetters(word);
+      if (letters.length === 0) {
+        return {
+          content: [{ type: "text" as const, text: `No valid letters in word: ${word}` }],
+          isError: true,
+        };
+      }
+
+      // Build sequence with constraints if specified
+      let steps: SequenceStep[];
+      let sequenceWord = word;
+
+      if (config.constraintPreset || config.constraints) {
+        const constraintSet = config.constraintPreset
+          ? getPresetConstraintSet(config.constraintPreset as PresetName)
+          : config.constraints
+          ? parseConstraintSet(config.constraints).constraintSet
+          : emptyConstraintSet();
+
+        const constrained = buildConstrainedSequence({
+          letters,
+          allPictographs,
+          constraintSet,
+        });
+
+        if (!constrained.success) {
+          return {
+            content: [{ type: "text" as const, text: `Failed to generate sequence: ${constrained.error}` }],
+            isError: true,
+          };
+        }
+
+        // Convert PictographData[] to SequenceStep[]
+        steps = constrained.steps.map((picto, index) => ({
+          letter: picto.letter,
+          variation: constrained.variationIndices[index] || 0,
+          startPosition: picto.startPosition,
+          endPosition: picto.endPosition,
+          blueMotion: picto.blueMotion,
+          redMotion: picto.redMotion,
+          stepNumber: index,
+        }));
+        sequenceWord = constrained.word;
+      } else {
+        const result = buildSequenceFromLetters(letters, allPictographs, 100);
+        if (!result.isValid) {
+          return {
+            content: [{ type: "text" as const, text: `Failed to generate sequence: ${result.error}` }],
+            isError: true,
+          };
+        }
+        steps = result.steps;
+        sequenceWord = result.word;
+      }
+
+      // If LOOP type is specified, apply transformation
+      if (config.loopType) {
+        const loopTypeEnum = config.loopType === "rewound" ? LOOPType.REWOUND : LOOPType.STRICT_ROTATED;
+        const sliceSize = config.sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
+
+        const loopResult = executeLOOP(steps, sequenceWord, loopTypeEnum, sliceSize, allPictographs);
+
+        if (!loopResult.success) {
+          return {
+            content: [{ type: "text" as const, text: `Failed to apply LOOP: ${loopResult.error}` }],
+            isError: true,
+          };
+        }
+
+        // Render LOOP image
+        const parsedLoopComponents = config.loopType === "rewound" ? undefined : config.loopComponents?.map((c) => {
+          switch (c) {
+            case "rotated": return LOOPComponent.ROTATED;
+            case "mirrored": return LOOPComponent.MIRRORED;
+            case "swapped": return LOOPComponent.SWAPPED;
+            case "inverted": return LOOPComponent.INVERTED;
+            default: return LOOPComponent.ROTATED;
+          }
+        });
+
+        const stepCount = loopResult.steps.length - 1;
+        const turnAllocation = allocateTurns(stepCount, level as 1 | 2 | 3);
+
+        const pngBuffer = await renderSequenceToImage(loopResult.steps, loopResult.loopWord, {
+          layout,
+          cellSize,
+          showStepNumbers: true,
+          showWord: true,
+          darkMode,
+          turnAllocation,
+          loopComponents: parsedLoopComponents,
+          showDifficulty: true,
+          level: level as 1 | 2 | 3,
+        });
+
+        const tempPath = saveAndOpenImage(pngBuffer, loopResult.loopWord);
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Generated LOOP sequence from preset "${p.name}":\n- Word: ${loopResult.loopWord}\n- Beats: ${loopResult.steps.length}\n- Type: ${config.loopType} (${config.sliceSize || "halved"})\n- Level: ${level}\n\nImage saved and opened: ${tempPath}`,
+            },
+            {
+              type: "image" as const,
+              data: pngBuffer.toString("base64"),
+              mimeType: "image/png",
+            },
+          ],
+        };
+      }
+
+      // Non-LOOP sequence
+      const stepCount = steps.length - 1;
+      const turnAllocation = allocateTurns(stepCount, level as 1 | 2 | 3);
+
+      const pngBuffer = await renderSequenceToImage(steps, sequenceWord, {
+        layout,
+        cellSize,
+        showStepNumbers: true,
+        showWord: true,
+        darkMode,
+        turnAllocation,
+        showDifficulty: true,
+        level: level as 1 | 2 | 3,
+      });
+
+      const tempPath = saveAndOpenImage(pngBuffer, sequenceWord);
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Generated sequence from preset "${p.name}":\n- Word: ${sequenceWord}\n- Beats: ${steps.length}\n- Level: ${level}\n\nImage saved and opened: ${tempPath}`,
+          },
+          {
+            type: "image" as const,
+            data: pngBuffer.toString("base64"),
+            mimeType: "image/png",
+          },
+        ],
+      };
+    } catch (error) {
+      const message =
+        error instanceof PresetNotFoundError
+          ? `Preset not found: ${input.preset}`
+          : error instanceof Error
+          ? error.message
+          : String(error);
+
+      return {
+        content: [{ type: "text" as const, text: `Error: ${message}` }],
+        isError: true,
+      };
+    }
+  }
+);
+
+// Tool: seed_default_presets
+server.tool(
+  "seed_default_presets",
+  "Seed default presets (Comfy 16, Mirrored/Inverted, Rewound/Inverted). Only adds presets that don't already exist.",
+  {},
+  async () => {
+    const result = seedDefaultPresets();
+
+    const lines: string[] = [];
+
+    if (result.added.length > 0) {
+      lines.push(`Added: ${result.added.join(", ")}`);
+    }
+
+    if (result.skipped.length > 0) {
+      lines.push(`Skipped (already exist): ${result.skipped.join(", ")}`);
+    }
+
+    if (lines.length === 0) {
+      lines.push("No presets to seed.");
+    }
+
+    return {
+      content: [{ type: "text" as const, text: lines.join("\n") }],
+    };
+  }
+);
+
+// Tool: generate_random_word (helper)
+server.tool(
+  "generate_random_word",
+  "Generate a random valid TKA word of specified length.",
+  {
+    length: z.number().min(1).max(20).describe("Number of letters"),
+    excludeLetters: z.array(z.string()).optional().describe("Letters to exclude"),
+  },
+  async ({ length, excludeLetters }) => {
+    const word = generateRandomWord(length, excludeLetters);
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `Generated word: **${word}** (${word.length} letters)`,
+        },
+      ],
+    };
+  }
+);
+
+/**
+ * Generate a random valid TKA word of the specified length.
+ */
+function generateRandomWord(length: number, excludeLetters?: string[]): string {
+  // All standard TKA letters (A-Z, no Greek for simplicity in random generation)
+  const allLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  // Filter out excluded letters
+  const availableLetters = excludeLetters
+    ? allLetters.filter((l) => !excludeLetters.map((e) => e.toUpperCase()).includes(l))
+    : allLetters;
+
+  if (availableLetters.length === 0) {
+    return "ABCD".slice(0, length); // Fallback
+  }
+
+  let word = "";
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * availableLetters.length);
+    word += availableLetters[randomIndex];
+  }
+
+  return word;
+}
 
 // Start the server
 async function main() {
