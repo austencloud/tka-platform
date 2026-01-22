@@ -5,6 +5,7 @@
  * Contains the main configuration types and fundamental data structures.
  */
 
+import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 
 // ============================================================================
@@ -22,6 +23,10 @@ export interface SequenceExportOptions {
   combinedGrids: boolean;
   addDifficultyLevel: boolean;
   customName?: string; // Optional custom name for header (overrides word when provided)
+
+  // LOOP glyph settings
+  loopType?: LOOPType; // LOOP type to display as glyph badge in header
+  showLoopGlyph?: boolean; // Whether to show the LOOP glyph (defaults to true if loopType is set)
 
   // Granular footer controls - footer renders if any of these are true
   showCreatorName?: boolean; // Bottom-left: creator name

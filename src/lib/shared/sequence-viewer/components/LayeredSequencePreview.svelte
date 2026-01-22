@@ -14,6 +14,7 @@
   import { fly, fade, scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import { onMount, onDestroy, untrack } from "svelte";
   import { container } from "$lib/shared/di";
   import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
@@ -22,6 +23,8 @@
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import LOOPGlyph from "$lib/shared/components/LOOPGlyph.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -33,6 +36,7 @@
     showCreatorName?: boolean;
     showNotes?: boolean;
     showBirthday?: boolean;
+    showLoopGlyph?: boolean;
     // Settings
     darkMode?: boolean;
     userName?: string;
@@ -52,6 +56,7 @@
     showCreatorName = true,
     showNotes = true,
     showBirthday = true,
+    showLoopGlyph = true,
     darkMode = false,
     userName = "",
     customNotesText = "Created using TKA Scribe",
@@ -59,6 +64,49 @@
     redPropType,
     catDogModeEnabled = false,
   }: Props = $props();
+
+  // LOOP type resolver for parsing loopType to components
+  const loopTypeResolver = new LOOPTypeResolver();
+
+  // Cache for on-demand LOOP detection results (keyed by sequence ID)
+  const loopDetectionCache = new Map<string, Set<LOOPComponent> | null>();
+
+  /**
+   * Detect LOOP components on demand for sequences without loopType.
+   * Uses caching to avoid repeated analysis.
+   */
+  function detectLoopComponents(seq: SequenceData): Set<LOOPComponent> | null {
+    // Check cache first
+    const cacheKey = seq.id;
+    if (loopDetectionCache.has(cacheKey)) {
+      return loopDetectionCache.get(cacheKey)!;
+    }
+
+    // Need full sequence data with steps for detection
+    if (!seq.steps || seq.steps.length < 2) {
+      loopDetectionCache.set(cacheKey, null);
+      return null;
+    }
+
+    try {
+      const loopDetector = container.items.loopDetector;
+      const result = loopDetector.detectLOOPType(seq);
+
+      if (result.loopType && result.loopType !== "freeform") {
+        const components = loopTypeResolver.parseComponents(result.loopType);
+        const resultSet = components.size > 0 ? components : null;
+        loopDetectionCache.set(cacheKey, resultSet);
+        return resultSet;
+      }
+
+      loopDetectionCache.set(cacheKey, null);
+      return null;
+    } catch {
+      // Detection failed - cache null to avoid repeated attempts
+      loopDetectionCache.set(cacheKey, null);
+      return null;
+    }
+  }
 
   // Base image state
   let baseImageUrl = $state<string | null>(null);
@@ -120,9 +168,28 @@
     return difficultyCalculator.calculateDifficultyLevel([...sequence.steps]);
   });
 
-  // Show header when either word or difficulty is enabled
+  // Parse LOOP components for the glyph
+  // Priority: 1) Use existing loopType if set, 2) Detect on-demand if steps available
+  const loopComponents = $derived.by(() => {
+    const loopType = sequence.loopType;
+
+    // If loopType is explicitly set, use it
+    if (loopType && loopType !== "freeform") {
+      const components = loopTypeResolver.parseComponents(loopType);
+      return components.size > 0 ? components : null;
+    }
+
+    // If no loopType, try to detect it on-demand
+    if (!loopType && sequence.steps) {
+      return detectLoopComponents(sequence);
+    }
+
+    return null;
+  });
+
+  // Show header when word, difficulty, or LOOP glyph is enabled
   const showHeader = $derived(
-    (showWord && derivedWord) || showDifficultyLevel
+    (showWord && derivedWord) || showDifficultyLevel || (showLoopGlyph && loopComponents)
   );
 
   // Show footer when any footer element is enabled
@@ -410,6 +477,26 @@
               {derivedWord}
             </span>
           {/if}
+
+          <!-- LOOP glyph - absolute positioned at top-right (symmetrical to difficulty badge) -->
+          {#if showLoopGlyph && loopComponents}
+            <div
+              class="loop-glyph-badge"
+              style="
+                width: {badgeSize}px;
+                height: {badgeSize}px;
+                right: {badgePadding}px;
+              "
+              transition:scale={{ duration: 200, easing: cubicOut }}
+            >
+              <LOOPGlyph
+                activeComponents={loopComponents}
+                size={badgeSize}
+                interactive={false}
+                darkMode={darkMode}
+              />
+            </div>
+          {/if}
         </div>
       {/if}
 
@@ -570,6 +657,19 @@
 
   .dark-mode .word-text {
     color: #ffffff;
+  }
+
+  /* LOOP glyph badge - absolute positioned at top-right (symmetrical to difficulty badge) */
+  .loop-glyph-badge {
+    position: absolute;
+    /* right set via inline style from badgePadding() */
+    top: 50%;
+    transform: translateY(-50%);
+    /* width, height set via inline style */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   /* Grid section */

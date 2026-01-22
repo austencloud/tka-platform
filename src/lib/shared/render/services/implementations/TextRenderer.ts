@@ -5,7 +5,9 @@
  * on exported images. Matches desktop application text rendering patterns.
  */
 
+import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { IDimensionCalculator } from "../contracts/IDimensionCalculator";
+import type { ILOOPGlyphRenderer } from "../contracts/ILOOPGlyphRenderer";
 import type {
   TextRenderOptions,
   UserExportInfo,
@@ -20,7 +22,10 @@ export class TextRenderer implements ITextRenderer {
     "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
   private readonly userInfoFontWeight = "400";
 
-  constructor(private dimensionService: IDimensionCalculator) {}
+  constructor(
+    private dimensionService: IDimensionCalculator,
+    private loopGlyphRenderer?: ILOOPGlyphRenderer
+  ) {}
 
   /**
    * Render sequence word/title text at the top center of the canvas
@@ -131,6 +136,7 @@ export class TextRenderer implements ITextRenderer {
    * Render word in a header at the top of the canvas
    * Simple background with optional level badge indicator
    * @param darkMode - When true, uses dark theme styling (dark bg, light text)
+   * @param loopComponents - Optional LOOP components to display as badge on right side
    */
   renderWordHeader(
     canvas: HTMLCanvasElement,
@@ -139,16 +145,21 @@ export class TextRenderer implements ITextRenderer {
     headerHeight: number,
     difficultyLevel: number = 1,
     showDifficultyBadge: boolean = true,
-    darkMode: boolean = false
+    darkMode: boolean = false,
+    loopComponents?: Set<LOOPComponent>
   ): void {
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       return;
     }
 
-    // Allow rendering even with empty word if we need to show the difficulty badge
+    // Check if we have LOOP components to show (and renderer is available)
+    const hasLoopComponents =
+      loopComponents && loopComponents.size > 0 && this.loopGlyphRenderer;
+
+    // Allow rendering even with empty word if we need to show badges
     const hasWord = word && word.trim() !== "";
-    if (!hasWord && !showDifficultyBadge) {
+    if (!hasWord && !showDifficultyBadge && !hasLoopComponents) {
       return;
     }
 
@@ -197,6 +208,20 @@ export class TextRenderer implements ITextRenderer {
         badgePadding,
         (headerHeight - badgeSize) / 2,
         badgeSize
+      );
+    }
+
+    // Render LOOP glyph on the right side (symmetrical to level badge)
+    if (hasLoopComponents && this.loopGlyphRenderer && loopComponents) {
+      const glyphX = canvas.width - badgePadding - badgeSize / 2;
+      const glyphY = headerHeight / 2;
+      this.loopGlyphRenderer.render(
+        ctx,
+        loopComponents,
+        glyphX,
+        glyphY,
+        badgeSize,
+        darkMode
       );
     }
   }

@@ -1,3 +1,4 @@
+import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type {
   TextRenderOptions,
   UserExportInfo as UserInfo,
@@ -34,6 +35,7 @@ export interface ITextRenderer {
    * Render word in a header at the top of the canvas
    * Simple background with optional level badge indicator
    * @param darkMode - When true, uses dark theme styling (dark bg, light text)
+   * @param loopComponents - Optional LOOP components to display as badge on right side
    */
   renderWordHeader(
     canvas: HTMLCanvasElement,
@@ -42,7 +44,8 @@ export interface ITextRenderer {
     headerHeight: number,
     difficultyLevel?: number,
     showDifficultyBadge?: boolean,
-    darkMode?: boolean
+    darkMode?: boolean,
+    loopComponents?: Set<LOOPComponent>
   ): void;
 
   /**

@@ -20,6 +20,9 @@ export interface ImageCompositionSettings {
   darkMode: boolean;
   customName?: string; // Optional custom name for header
 
+  // LOOP glyph visibility (pie chart badge in header)
+  showLoopGlyph: boolean; // Top-right: LOOP constraint indicator
+
   // Granular footer controls (replaces single addUserInfo toggle)
   showCreatorName: boolean; // Bottom-left: creator name
   showNotes: boolean; // Bottom-center: notes text
@@ -36,6 +39,9 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
   addDifficultyLevel: false,
   includeStartPosition: true,
   darkMode: false, // Default to light mode (will be synced from global on init)
+
+  // LOOP glyph - shown by default when sequence has LOOP constraints
+  showLoopGlyph: true,
 
   // Footer defaults - all shown by default when user info is enabled
   showCreatorName: true,
@@ -157,6 +163,10 @@ class ImageCompositionStateManager {
     return this.settings.customName;
   }
 
+  get showLoopGlyph(): boolean {
+    return this.settings.showLoopGlyph;
+  }
+
   // Granular footer getters
   get showCreatorName(): boolean {
     return this.settings.showCreatorName;
@@ -253,6 +263,12 @@ class ImageCompositionStateManager {
 
   setCustomName(value: string | undefined): void {
     this.settings.customName = value;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  setShowLoopGlyph(value: boolean): void {
+    this.settings.showLoopGlyph = value;
     this.saveToStorage();
     this.notifyObservers();
   }

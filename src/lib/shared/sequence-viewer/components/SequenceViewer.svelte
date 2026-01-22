@@ -84,6 +84,7 @@
 	let localAddDifficultyLevel = $state(imageSettings.addDifficultyLevel);
 	let localAddUserInfo = $state(imageSettings.addUserInfo);
 	let localDarkMode = $state(imageSettings.darkMode);
+	let localShowLoopGlyph = $state(imageSettings.showLoopGlyph);
 	// Granular footer controls
 	let localShowCreatorName = $state(imageSettings.showCreatorName);
 	let localShowNotes = $state(imageSettings.showNotes);
@@ -96,6 +97,7 @@
 		localAddDifficultyLevel = imageSettings.addDifficultyLevel;
 		localAddUserInfo = imageSettings.addUserInfo;
 		localDarkMode = imageSettings.darkMode;
+		localShowLoopGlyph = imageSettings.showLoopGlyph;
 		// Granular footer controls
 		localShowCreatorName = imageSettings.showCreatorName;
 		localShowNotes = imageSettings.showNotes;
@@ -120,6 +122,9 @@
 	const showCreatorName = $derived(showVisibilitySettings ? localShowCreatorName : (globalImageExport?.showCreatorName ?? true));
 	const showNotes = $derived(showVisibilitySettings ? localShowNotes : (globalImageExport?.showNotes ?? true));
 	const showBirthday = $derived(showVisibilitySettings ? localShowBirthday : (globalImageExport?.showBirthday ?? true));
+
+	// LOOP glyph visibility
+	const showLoopGlyph = $derived(showVisibilitySettings ? localShowLoopGlyph : (globalImageExport?.showLoopGlyph ?? true));
 
 	// Prop type settings for PropAwareThumbnail
 	const bluePropType = $derived(settingsService.settings.bluePropType);
@@ -155,6 +160,9 @@
 	}
 	function toggleShowBirthday() {
 		imageSettings.toggle("showBirthday");
+	}
+	function toggleShowLoopGlyph() {
+		imageSettings.toggle("showLoopGlyph");
 	}
 
 	// Container width for responsive layout detection
@@ -342,6 +350,7 @@
 							{showCreatorName}
 							{showNotes}
 							{showBirthday}
+							{showLoopGlyph}
 							{darkMode}
 							{userName}
 							{bluePropType}
@@ -407,6 +416,16 @@
 							aria-pressed={addDifficultyLevel}
 						>
 							Difficulty
+						</button>
+						<button
+							type="button"
+							class="chip"
+							class:active={showLoopGlyph}
+							onclick={toggleShowLoopGlyph}
+							aria-pressed={showLoopGlyph}
+							title="LOOP constraint indicator"
+						>
+							LOOP
 						</button>
 						<button
 							type="button"

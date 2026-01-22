@@ -11,6 +11,7 @@ import type { PictographData } from "../../../pictograph/shared/domain/models/Pi
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
+import { LOOPTypeResolver } from "../../../../features/create/generate/shared/services/implementations/LOOPTypeResolver";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { createStartPositionFromBeatStart } from "../../../../features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
 import { getVisibilityStateManager } from "../../../pictograph/shared/state/visibility-state.svelte";
@@ -36,6 +37,7 @@ import type { ILayerCompositor } from "../contracts/ILayerCompositor";
 export class ImageComposer implements IImageComposer {
   // Create instance directly to avoid DI module loading order issues
   private readonly difficultyCalculator = new SequenceDifficultyCalculator();
+  private readonly loopTypeResolver = new LOOPTypeResolver();
 
   // Global two-layer caching stats (lifetime totals)
   private layer1Hits = 0;
@@ -381,8 +383,21 @@ export class ImageComposer implements IImageComposer {
 
     // Step 7: Render header with word at the top
     // The header has a level badge indicator (only if addDifficultyLevel is true)
-    // Show header when either word or difficulty is enabled
-    const showHeader = (options.addWord && (derivedWord || options.customName)) || options.addDifficultyLevel;
+    // Parse LOOP components for glyph display
+    const loopType = options.loopType ?? sequence.loopType;
+    const loopComponents = loopType
+      ? this.loopTypeResolver.parseComponents(loopType)
+      : undefined;
+    const showLoopGlyph =
+      options.showLoopGlyph !== false &&
+      loopComponents &&
+      loopComponents.size > 0;
+
+    // Show header when word, difficulty, or LOOP glyph is enabled
+    const showHeader =
+      (options.addWord && (derivedWord || options.customName)) ||
+      options.addDifficultyLevel ||
+      showLoopGlyph;
     if (showHeader && headerHeight > 0) {
       const difficultyLevel = this.getDifficultyLevel(sequence);
       // Only show word if addWord is enabled
@@ -398,7 +413,8 @@ export class ImageComposer implements IImageComposer {
         headerHeight,
         difficultyLevel,
         options.addDifficultyLevel, // Only show badge if toggle is on
-        isDarkMode // Dark Mode for dark theme styling
+        isDarkMode, // Dark Mode for dark theme styling
+        showLoopGlyph ? loopComponents : undefined // LOOP glyph badge
       );
     }
 

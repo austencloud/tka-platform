@@ -409,13 +409,50 @@
 
   /* Override preview mode opacity to fully hide (not dim) invisible glyphs */
   /* This gives smooth fade transitions while ensuring invisible = opacity 0, not 0.4 */
+  /* In the special Pictograph panel, preview mode dims "off" elements to 40% so users can click them. */
+  /* In Image Export, we want truly hidden (0%) to accurately preview what exports look like. */
+
+  /* Glyph components - these use .visible class directly */
   .pictograph-cell :global(.tka-glyph.preview-mode:not(.visible)),
+  .pictograph-cell :global(.turns-column.preview-mode:not(.visible)),
   .pictograph-cell :global(.vtg-glyph.preview-mode:not(.visible)),
   .pictograph-cell :global(.elemental-glyph.preview-mode:not(.visible)),
-  .pictograph-cell :global(.positions-glyph.preview-mode:not(.visible)),
-  .pictograph-cell :global(.reversal-indicator.preview-mode:not(.visible)),
-  .pictograph-cell :global(.hand-point.preview-mode:not(.visible)),
-  .pictograph-cell :global(.non-radial-point.preview-mode:not(.visible)) {
+  .pictograph-cell :global(.position-glyph.preview-mode:not(.visible)),
+  .pictograph-cell :global(.reversal-indicators.preview-mode:not(.visible)) {
+    opacity: 0 !important;
+  }
+
+  /* Hand points - controlled via grid-container classes, not individual element classes */
+  /* When hide-inactive-hand-points is active, inactive points normally show at 40% */
+  .pictograph-cell
+    :global(
+      .grid-container.preview-mode.hide-inactive-hand-points .hand-point-inactive
+    ) {
+    opacity: 0 !important;
+  }
+
+  /* Non-radial points - controlled by show-non-radial class on grid-container */
+  /* These target specific IDs within the grid SVG */
+  .pictograph-cell
+    :global(
+      .grid-container.preview-mode:not(.show-non-radial)
+        #ne_diamond_layer2_point
+    ),
+  .pictograph-cell
+    :global(
+      .grid-container.preview-mode:not(.show-non-radial)
+        #se_diamond_layer2_point
+    ),
+  .pictograph-cell
+    :global(
+      .grid-container.preview-mode:not(.show-non-radial)
+        #sw_diamond_layer2_point
+    ),
+  .pictograph-cell
+    :global(
+      .grid-container.preview-mode:not(.show-non-radial)
+        #nw_diamond_layer2_point
+    ) {
     opacity: 0 !important;
   }
 

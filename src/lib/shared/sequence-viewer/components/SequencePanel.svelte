@@ -124,7 +124,7 @@
 
   // Services
   let hapticService: IHapticFeedback | null = null;
-  let imageSharer: ISequenceImageSharer | null = null;
+  let imageSharer = $state<ISequenceImageSharer | null>(null);
   let detailLoader: ISequenceDetailLoader | null = null;
   let videoCountManager: IVideoCountManager | null = null;
 
@@ -450,17 +450,16 @@
         </button>
       {/if}
 
-      {#if isOwned && onEdit}
-        <button
-          type="button"
-          class="action-btn"
-          onclick={() => { hapticService?.trigger("selection"); onEdit?.(); }}
-          aria-label="Edit sequence"
-        >
-          <i class="fas fa-edit" aria-hidden="true"></i>
-          <span>Edit</span>
-        </button>
-      {/if}
+      <!-- Open in Constructor - always available for any sequence -->
+      <button
+        type="button"
+        class="action-btn primary"
+        onclick={() => handleAction("edit")}
+        aria-label="Open in Constructor"
+      >
+        <i class="fas fa-hammer" aria-hidden="true"></i>
+        <span>Open in Constructor</span>
+      </button>
 
       {#if videoCount > 0 || isOwned}
         <button
@@ -721,6 +720,17 @@
 
   .action-btn.danger:hover:not(:disabled) {
     background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+  }
+
+  .action-btn.primary {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+    color: white;
+  }
+
+  .action-btn.primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
+    border-color: var(--theme-accent, #6366f1);
   }
 
   .action-btn i {
