@@ -17,9 +17,23 @@ import {
   renderUserInfo,
   calculateHeaderHeight,
   calculateFooterHeight,
+  renderLOOPGlyph,
+  LOOPComponent,
   type UserExportInfo,
+  type LetterStyle,
 } from "./text-renderer.js";
+
+// Re-export LOOPComponent for consumers
+export { LOOPComponent };
 import { calculateDifficultyLevel } from "./difficulty-calculator.js";
+
+/**
+ * Turn allocation per step (blue and red get independent values)
+ */
+export interface TurnAllocation {
+  blue: (number | "fl")[];
+  red: (number | "fl")[];
+}
 
 export interface SequenceRenderOptions {
   layout: "grid" | "strip";
@@ -33,6 +47,13 @@ export interface SequenceRenderOptions {
   userName?: string;
   notes?: string;
   birthday?: Date;
+  // Difficulty level (for badge display and orientation calculation)
+  level?: number;
+  // Turn allocations per step (indexed by step number - 1, since step 0 is start position)
+  // Each motion gets its own random turn value
+  turnAllocation?: TurnAllocation;
+  // LOOP components for the pie chart glyph (top-right corner)
+  loopComponents?: LOOPComponent[];
 }
 
 const DEFAULT_OPTIONS: SequenceRenderOptions = {
@@ -43,7 +64,17 @@ const DEFAULT_OPTIONS: SequenceRenderOptions = {
   showWord: true,
   darkMode: true,
   showDifficulty: true,
+  level: 1,
 };
+
+/**
+ * Get start orientation based on difficulty level.
+ * - Level 1-2: "in" (radial)
+ * - Level 3: "clock" (non-radial)
+ */
+function getStartOrientationForLevel(level: number): string {
+  return level === 3 ? "clock" : "in";
+}
 
 /**
  * Render a sequence as a composite image.
@@ -57,19 +88,26 @@ export async function renderSequenceToImage(
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const renderer = getStandaloneRenderer();
 
-  // Skip step 0 (start position) for the composite - show actual letters only
-  const letterSteps = steps.filter((s) => s.stepNumber > 0);
+  // Include all steps (including step 0 start position)
+  const letterSteps = steps;
 
   if (letterSteps.length === 0) {
-    throw new Error("No letter steps to render");
+    throw new Error("No steps to render");
   }
 
-  // Calculate difficulty level for the badge
-  const difficultyLevel = calculateDifficultyLevel(steps);
+  // Use provided level for difficulty badge
+  const difficultyLevel = opts.level ?? 1;
+
+  // Get base orientation based on level
+  const baseOrientation = getStartOrientationForLevel(difficultyLevel);
+
+  // Turn allocation (per step, per color)
+  const turnAllocation = opts.turnAllocation;
 
   // Check if we need header and footer
-  const hasHeader = opts.showWord || opts.showDifficulty;
-  const hasFooter = opts.userName || opts.notes || opts.birthday;
+  const hasHeader = !!(opts.showWord || opts.showDifficulty);
+  // Footer always shows (with defaults) - "Created with TKA Scribe" center text is always present
+  const hasFooter = true;
 
   // Calculate layout dimensions
   const { width, height, columns, rows, headerHeight, footerHeight, gridStartY } = calculateLayout(
@@ -105,13 +143,18 @@ export async function renderSequenceToImage(
     const step = letterSteps[i];
     if (!step) continue;
 
-    // Calculate cell position
-    const col = i % columns;
-    const row = Math.floor(i / columns);
+    // Calculate cell position using the offset layout
+    const { row, col } = calculateStepPosition(i, columns);
     const x = col * opts.cellSize;
     const y = gridStartY + row * opts.cellSize;
 
     // Convert step to pictograph input format
+    // Step 0 is start position (always 0 turns)
+    // Other steps get their turns from the allocation array (indexed by stepNumber - 1)
+    const allocationIndex = step.stepNumber - 1;
+    const blueTurns = step.stepNumber === 0 ? 0 : (turnAllocation?.blue[allocationIndex] ?? 0);
+    const redTurns = step.stepNumber === 0 ? 0 : (turnAllocation?.red[allocationIndex] ?? 0);
+
     const pictographInput = {
       letter: step.letter,
       startPosition: step.startPosition,
@@ -122,8 +165,8 @@ export async function renderSequenceToImage(
         startLocation: step.blueMotion.startLocation,
         endLocation: step.blueMotion.endLocation,
         color: "blue",
-        turns: 0,
-        startOrientation: step.blueMotion.startOrientation || "in",
+        turns: blueTurns,
+        startOrientation: step.blueMotion.startOrientation || baseOrientation,
       },
       redMotion: {
         motionType: step.redMotion.motionType,
@@ -131,8 +174,8 @@ export async function renderSequenceToImage(
         startLocation: step.redMotion.startLocation,
         endLocation: step.redMotion.endLocation,
         color: "red",
-        turns: 0,
-        startOrientation: step.redMotion.startOrientation || "in",
+        turns: redTurns,
+        startOrientation: step.redMotion.startOrientation || baseOrientation,
       },
     };
 
@@ -165,6 +208,16 @@ export async function renderSequenceToImage(
 
   // Draw word header if enabled
   if (hasHeader && headerHeight > 0) {
+    // Build letter styles from steps (excluding step 0 which is start position)
+    const letterStyles: LetterStyle[] = opts.showWord
+      ? letterSteps
+          .filter((s) => s.stepNumber > 0)
+          .map((s) => ({
+            letter: s.letter,
+            isBridge: s.isBridge ?? false,
+          }))
+      : [];
+
     renderWordHeader(
       ctx,
       opts.showWord ? word : "",
@@ -172,21 +225,63 @@ export async function renderSequenceToImage(
       headerHeight,
       difficultyLevel,
       opts.showDifficulty ?? true,
-      opts.darkMode
+      opts.darkMode,
+      letterStyles.length > 0 ? letterStyles : undefined,
+      opts.loopComponents // Pass LOOP components for glyph
     );
   }
 
-  // Draw user info footer if we have any user info
+  // Draw user info footer (always shown with defaults)
   if (hasFooter && footerHeight > 0) {
     const userInfo: UserExportInfo = {
       userName: opts.userName,
       notes: opts.notes,
       birthday: opts.birthday,
+      word, // Pass word for contextual captions
     };
     renderUserInfo(ctx, userInfo, width, height, footerHeight, opts.darkMode);
   }
 
   return canvas.toBuffer("image/png");
+}
+
+/**
+ * Calculate grid position for a step, accounting for start position offset.
+ *
+ * Layout pattern:
+ * Row 1: [start] [1] [2] [3] ...
+ * Row 2:    -    [4] [5] [6] ...  (empty cell in column 0)
+ * Row 3:    -    [7] [8] [9] ...
+ *
+ * @param stepIndex - Index in the steps array (0 = start position)
+ * @param totalColumns - Total columns in the grid
+ * @returns { row, col } position
+ */
+function calculateStepPosition(
+  stepIndex: number,
+  totalColumns: number
+): { row: number; col: number } {
+  if (stepIndex === 0) {
+    // Start position is always at (0, 0)
+    return { row: 0, col: 0 };
+  }
+
+  // Letter steps: account for start position taking column 0 of row 0
+  // beatColumns = totalColumns - 1 (columns available for beats per row after the start column)
+  const beatColumns = totalColumns - 1;
+  const beatIndex = stepIndex - 1; // 0-based index among letter steps
+
+  if (beatIndex < beatColumns) {
+    // First row: steps go after the start position
+    return { row: 0, col: beatIndex + 1 };
+  }
+
+  // Subsequent rows: start at column 1 (column 0 is empty)
+  const adjustedIndex = beatIndex - beatColumns; // Index relative to row 2+
+  const row = Math.floor(adjustedIndex / beatColumns) + 1;
+  const col = (adjustedIndex % beatColumns) + 1;
+
+  return { row, col };
 }
 
 function calculateLayout(
@@ -208,7 +303,7 @@ function calculateLayout(
   const footerHeight = hasFooter ? calculateFooterHeight(opts.cellSize) : 0;
 
   if (opts.layout === "strip") {
-    // Single row layout
+    // Single row layout - all steps in one row
     const columns = stepCount;
     const rows = 1;
     const width = columns * opts.cellSize;
@@ -216,13 +311,27 @@ function calculateLayout(
     return { width, height, columns, rows, headerHeight, footerHeight, gridStartY: headerHeight };
   }
 
-  // Grid layout - try to make it roughly square
-  const columns = Math.ceil(Math.sqrt(stepCount));
-  const rows = Math.ceil(stepCount / columns);
-  const width = columns * opts.cellSize;
+  // Grid layout with start position offset
+  // We need to figure out how many columns based on letter count
+  const letterCount = stepCount - 1; // Exclude start position
+
+  // Target roughly square, but minimum 2 columns (1 for start + 1 for beats)
+  // Calculate beat columns (columns after the start position)
+  const beatColumns = Math.max(1, Math.ceil(Math.sqrt(letterCount)));
+  const totalColumns = beatColumns + 1; // +1 for start position column
+
+  // Calculate rows needed
+  // Row 1 has beatColumns beats
+  // Subsequent rows each have beatColumns beats
+  const beatsInFirstRow = Math.min(letterCount, beatColumns);
+  const remainingBeats = letterCount - beatsInFirstRow;
+  const additionalRows = remainingBeats > 0 ? Math.ceil(remainingBeats / beatColumns) : 0;
+  const rows = 1 + additionalRows;
+
+  const width = totalColumns * opts.cellSize;
   const height = headerHeight + rows * opts.cellSize + footerHeight;
 
-  return { width, height, columns, rows, headerHeight, footerHeight, gridStartY: headerHeight };
+  return { width, height, columns: totalColumns, rows, headerHeight, footerHeight, gridStartY: headerHeight };
 }
 
 /**
@@ -241,8 +350,8 @@ function drawOverlaidStepNumber(
   const fontSize = Math.max(12, Math.floor(cellSize * 0.1));
   const padding = Math.floor(cellSize * 0.02);
 
-  // Step number text
-  const text = stepNumber.toString();
+  // Step number text - use "start" for step 0, otherwise the number
+  const text = stepNumber === 0 ? "start" : stepNumber.toString();
 
   // Set font for measurement
   ctx.font = `bold ${fontSize}px Georgia, Times New Roman, serif`;
@@ -293,11 +402,10 @@ function drawSmartCellBorders(
   ctx.strokeStyle = darkMode ? "rgba(255, 255, 255, 0.15)" : "#e0e0e0";
   ctx.lineWidth = 1;
 
-  // Create a set of occupied cells
+  // Create a set of occupied cells using the offset layout
   const occupied = new Set<string>();
   for (let i = 0; i < stepCount; i++) {
-    const col = i % columns;
-    const row = Math.floor(i / columns);
+    const { row, col } = calculateStepPosition(i, columns);
     occupied.add(`${col},${row}`);
   }
 

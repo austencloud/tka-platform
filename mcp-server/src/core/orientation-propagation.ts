@@ -1,0 +1,103 @@
+/**
+ * Orientation Propagation for MCP Server
+ *
+ * Functions for propagating prop orientations through a sequence.
+ * Ensures orientation chain integrity after sequence building.
+ *
+ * Ported from: src/lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation.ts
+ */
+
+import { calculateEndOrientation, Orientation, type OrientationInput } from "./orientation-calculator.js";
+import type { SequenceStep, SequenceResult } from "./sequence-builder.js";
+
+/**
+ * Propagate orientations for a single color through all steps.
+ * Each beat's start orientation = previous beat's end orientation.
+ *
+ * @param steps - The sequence steps (including start position at index 0)
+ * @param color - Which motion color to propagate ("blue" or "red")
+ * @param initialOrientation - The starting orientation (from step 0's end orientation)
+ * @returns Updated steps with correct orientations
+ */
+export function propagateOrientationsForColor(
+  steps: SequenceStep[],
+  color: "blue" | "red",
+  initialOrientation: Orientation
+): SequenceStep[] {
+  const updatedSteps = [...steps];
+  let previousEndOrientation = initialOrientation;
+
+  // Start from step 1 (skip the start position at step 0)
+  for (let i = 1; i < updatedSteps.length; i++) {
+    const step = updatedSteps[i];
+    if (!step) continue;
+
+    const motion = color === "blue" ? step.blueMotion : step.redMotion;
+    if (!motion) continue;
+
+    // Build input for orientation calculation
+    const orientationInput: OrientationInput = {
+      motionType: motion.motionType,
+      turns: 0, // CSV variations are all 0 turns
+      rotationDirection: motion.rotationDirection || "cw",
+      startLocation: motion.startLocation,
+      endLocation: motion.endLocation,
+      startOrientation: previousEndOrientation,
+    };
+
+    // Calculate new end orientation based on this beat's motion
+    const newEndOrientation = calculateEndOrientation(orientationInput);
+
+    // Update this step with correct orientations
+    const updatedMotion = {
+      ...motion,
+      startOrientation: previousEndOrientation,
+      endOrientation: newEndOrientation,
+    };
+
+    updatedSteps[i] = {
+      ...step,
+      blueMotion: color === "blue" ? updatedMotion : step.blueMotion,
+      redMotion: color === "red" ? updatedMotion : step.redMotion,
+    };
+
+    previousEndOrientation = newEndOrientation;
+  }
+
+  return updatedSteps;
+}
+
+/**
+ * Recalculate all prop orientations through the entire sequence.
+ * Uses the start position (step 0) orientations as the baseline.
+ *
+ * @param result - The sequence result to fix orientations on
+ * @returns Updated sequence result with corrected orientations
+ */
+export function recalculateAllOrientations(result: SequenceResult): SequenceResult {
+  if (!result.isValid || result.steps.length === 0) {
+    return result;
+  }
+
+  // Get the start position (step 0)
+  const startPosition = result.steps[0];
+  if (!startPosition) {
+    return result;
+  }
+
+  let updatedSteps = [...result.steps];
+
+  // Recalculate orientations for blue prop
+  // Start with the end orientation of the start position
+  const blueStartOrientation = (startPosition.blueMotion.endOrientation || "in") as Orientation;
+  updatedSteps = propagateOrientationsForColor(updatedSteps, "blue", blueStartOrientation);
+
+  // Recalculate orientations for red prop
+  const redStartOrientation = (startPosition.redMotion.endOrientation || "in") as Orientation;
+  updatedSteps = propagateOrientationsForColor(updatedSteps, "red", redStartOrientation);
+
+  return {
+    ...result,
+    steps: updatedSteps,
+  };
+}

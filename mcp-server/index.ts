@@ -24,9 +24,21 @@ import { fileURLToPath } from "url";
 import { exec } from "child_process";
 import { tmpdir } from "os";
 import { getStandaloneRenderer, type RenderVisibilityOptions } from "./src/core/standalone-renderer.js";
-import { buildSequenceFromLetters, parseWordToLetters, type SequenceStep, type SequenceResult } from "./src/core/sequence-builder.js";
-import { renderSequenceToImage } from "./src/core/sequence-renderer.js";
+import { buildSequenceFromLetters, parseWordToLetters, type SequenceStep, type SequenceResult, type BridgeSelections, type BridgeInfo } from "./src/core/sequence-builder.js";
+import { renderSequenceToImage, LOOPComponent } from "./src/core/sequence-renderer.js";
 import { calculateOrientations } from "./src/core/orientation-calculator.js";
+import { allocateTurns } from "./src/core/turn-allocator.js";
+import {
+  parseConstraintSet,
+  parseConstraints,
+  buildConstrainedSequence,
+  emptyConstraintSet,
+  getPresetConstraintSet,
+  listPresets,
+  formatConstraintReport,
+  type PresetName,
+  type ConstraintReport,
+} from "./src/core/constraints/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -161,17 +173,29 @@ interface PictographData {
   redMotion: MotionData;
 }
 
-// CSV loading
-const DATAFRAME_PATH = path.resolve(
-  __dirname,
-  "../static/data/pictographs/DiamondPictographDataframe.csv"
-);
+// CSV loading - support for all three grid modes
+type GridMode = "diamond" | "box" | "skewed";
 
-let allPictographs: PictographData[] = [];
+const DATAFRAME_PATHS: Record<GridMode, string> = {
+  diamond: path.resolve(__dirname, "../static/data/pictographs/DiamondPictographDataframe.csv"),
+  box: path.resolve(__dirname, "../static/data/pictographs/BoxPictographDataframe.csv"),
+  skewed: path.resolve(__dirname, "../static/data/pictographs/SkewedPictographDataframe.csv"),
+};
 
-function loadDataframe(): PictographData[] {
+// Cache for loaded dataframes
+const pictographsByGridMode: Record<GridMode, PictographData[]> = {
+  diamond: [],
+  box: [],
+  skewed: [],
+};
+
+// Default grid mode for backwards compatibility
+let defaultGridMode: GridMode = "diamond";
+
+function loadDataframe(gridMode: GridMode): PictographData[] {
+  const dataframePath = DATAFRAME_PATHS[gridMode];
   try {
-    const csvContent = fs.readFileSync(DATAFRAME_PATH, "utf-8");
+    const csvContent = fs.readFileSync(dataframePath, "utf-8");
     const lines = csvContent.trim().split("\n");
     if (lines.length < 2) return [];
 
@@ -235,17 +259,23 @@ function loadDataframe(): PictographData[] {
 
     return pictographs;
   } catch (error) {
-    console.error("[MCP] Failed to load dataframe:", error);
+    console.error(`[MCP] Failed to load ${gridMode} dataframe:`, error);
     return [];
   }
 }
 
-function ensureDataLoaded() {
-  if (allPictographs.length === 0) {
-    console.error("[MCP] Loading pictograph dataframe...");
-    allPictographs = loadDataframe();
-    console.error(`[MCP] Loaded ${allPictographs.length} pictographs`);
+function ensureDataLoaded(gridMode: GridMode = defaultGridMode): PictographData[] {
+  if (pictographsByGridMode[gridMode].length === 0) {
+    console.error(`[MCP] Loading ${gridMode} pictograph dataframe...`);
+    pictographsByGridMode[gridMode] = loadDataframe(gridMode);
+    console.error(`[MCP] Loaded ${pictographsByGridMode[gridMode].length} pictographs for ${gridMode} mode`);
   }
+  return pictographsByGridMode[gridMode];
+}
+
+// Legacy getter for backwards compatibility (uses default grid mode)
+function getAllPictographs(): PictographData[] {
+  return ensureDataLoaded(defaultGridMode);
 }
 
 // Create MCP server
@@ -262,7 +292,7 @@ server.tool(
     letter: z.string().describe("Letter to list variations for (A-Z, or Greek: α, β, γ, Δ, Θ, Λ, Σ, Φ, Ψ, Ω)"),
   },
   async ({ letter }) => {
-    ensureDataLoaded();
+    const allPictographs = ensureDataLoaded();
 
     const variations = allPictographs.filter((p) => p.letter === letter);
 
@@ -302,7 +332,7 @@ server.tool(
     variation: z.number().optional().default(0).describe("Variation index (0-based)"),
   },
   async ({ letter, variation = 0 }) => {
-    ensureDataLoaded();
+    const allPictographs = ensureDataLoaded();
 
     const variations = allPictographs.filter((p) => p.letter === letter);
 
@@ -351,7 +381,7 @@ server.tool(
     limit: z.number().optional().default(10).describe("Max results to return"),
   },
   async ({ startPosition, endPosition, motionType, startLocation, endLocation, limit = 10 }) => {
-    ensureDataLoaded();
+    const allPictographs = ensureDataLoaded();
 
     let results = [...allPictographs];
 
@@ -477,7 +507,7 @@ server.tool(
     compact: z.boolean().optional().default(false).describe("Compact output (just letter lists, no descriptions - saves ~800 tokens)"),
   },
   async ({ compact = false }) => {
-    ensureDataLoaded();
+    const allPictographs = ensureDataLoaded();
 
     // Get letters actually present in the dataframe
     const availableLetters = new Set<string>();
@@ -635,7 +665,7 @@ server.tool(
     minimal: z.boolean().optional().default(true).describe("Minimal mode (no UI, just the pictograph)"),
   },
   async ({ letter, variation = 0, darkMode = false, minimal = true }) => {
-    ensureDataLoaded();
+    const allPictographs = ensureDataLoaded();
 
     // Validate the letter exists
     const variations = allPictographs.filter((p) => p.letter === letter);
@@ -705,7 +735,7 @@ server.tool(
     includeTextData: z.boolean().optional().default(true).describe("Include motion data as text (false = image only, saves tokens)"),
   },
   async ({ letter, variation = 0, includeTextData = true, ...overrides }) => {
-    ensureDataLoaded();
+    const allPictographs = ensureDataLoaded();
 
     // Validate the letter exists
     const variations = allPictographs.filter((p) => p.letter === letter);
@@ -1045,7 +1075,7 @@ server.tool(
     variation: z.number().optional().default(0).describe("Specific variation to focus on (0-based, optional)"),
   },
   async ({ letter, variation = 0 }) => {
-    ensureDataLoaded();
+    const allPictographs = ensureDataLoaded();
 
     // Find all variations of this letter
     const variations = allPictographs.filter((p) => p.letter === letter);
@@ -1159,7 +1189,7 @@ server.tool(
     letter2: z.string().describe("Second letter to compare"),
   },
   async ({ letter1, letter2 }) => {
-    ensureDataLoaded();
+    const allPictographs = ensureDataLoaded();
 
     const var1 = allPictographs.filter((p) => p.letter === letter1);
     const var2 = allPictographs.filter((p) => p.letter === letter2);
@@ -1266,7 +1296,7 @@ server.tool(
       };
     }
 
-    ensureDataLoaded();
+    const allPictographs = ensureDataLoaded();
 
     // Get variation counts for each letter
     const letterCounts = typeInfo.letters.map(letter => {
@@ -1389,7 +1419,7 @@ server.tool(
     }
 
     // Count how many pictographs use this position
-    ensureDataLoaded();
+    const allPictographs = ensureDataLoaded();
     const startCount = allPictographs.filter(p =>
       p.startPosition.toLowerCase().startsWith(normalizedPos)
     ).length;
@@ -1426,16 +1456,57 @@ ${posInfo.examples.map(e => `- ${e}`).join("\n")}
 // SEQUENCE GENERATION TOOLS
 // ============================================================================
 
+// Tool: parse_constraints (debug/preview tool)
+server.tool(
+  "parse_constraints",
+  "Parse a natural language constraint string without generating a sequence. Useful for understanding how constraints will be interpreted.",
+  {
+    constraints: z.string().describe('Natural language constraints to parse, e.g., "maximize flow with blue clockwise"'),
+  },
+  async ({ constraints }) => {
+    const result = parseConstraints(constraints);
+
+    const output = {
+      recognized: result.constraints.map(c => ({
+        type: c.type,
+        mode: c.mode,
+        description: c.description,
+      })),
+      unrecognized: result.unrecognized,
+      confidence: Math.round(result.confidence * 100) / 100,
+      normalized: result.normalized,
+      warnings: result.warnings,
+    };
+
+    // Also list available presets
+    const presets = listPresets();
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `## Parsed Constraints\n\n${JSON.stringify(output, null, 2)}\n\n## Available Presets\n\n${presets.map(p => `- **${p.name}**: ${p.description}`).join("\n")}`,
+        },
+      ],
+    };
+  }
+);
+
 // Tool: generate_sequence_data
 server.tool(
   "generate_sequence_data",
-  "Generate a valid TKA sequence from a word (letters). Returns sequence data with all step information.",
+  "Generate a valid TKA sequence from a word (letters). Supports natural language constraints like 'maximize continuity' or 'all pro motions'. Returns sequence data with constraint satisfaction report.",
   {
     word: z.string().describe('The sequence word, e.g., "ABC" or "DEFGH"'),
+    gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
     maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
+    bridgeSelections: z.record(z.string(), z.number()).optional().describe('Map of bridge transition index to preferred bridge option index. E.g., {"0": 1} uses the 2nd bridge option for the first bridge needed.'),
+    // NEW: Constraint options
+    constraints: z.string().optional().describe('Natural language constraints, e.g., "maximize continuity, all pro motions", "smooth flow with blue clockwise"'),
+    constraintPreset: z.enum(["smooth", "reversal", "isolation", "antispin", "pro-cw", "anti-ccw", "no-dash", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset: smooth (maximize continuity), reversal (break every beat), isolation (all pro), antispin (all anti), pro-cw, anti-ccw, no-dash, maximize-dash (prefer Type 4/5 letters), maximum-chaos'),
   },
-  async ({ word, maxAttempts = 100 }) => {
-    ensureDataLoaded();
+  async ({ word, gridMode = "diamond", maxAttempts = 100, bridgeSelections, constraints, constraintPreset }) => {
+    const allPictographs = ensureDataLoaded(gridMode);
 
     // Parse word to individual letters
     const letters = parseWordToLetters(word.toUpperCase());
@@ -1449,8 +1520,111 @@ server.tool(
       };
     }
 
-    // Build the sequence
-    const result = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+    // Determine which constraint set to use
+    let constraintSet = emptyConstraintSet();
+    let parseResult: ReturnType<typeof parseConstraints> | undefined;
+
+    if (constraintPreset) {
+      // Use preset
+      const presetConstraints = getPresetConstraintSet(constraintPreset as PresetName);
+      if (presetConstraints) {
+        constraintSet = presetConstraints;
+      }
+    } else if (constraints) {
+      // Parse natural language constraints
+      const parsed = parseConstraintSet(constraints);
+      constraintSet = parsed.constraintSet;
+      parseResult = parsed.parseResult;
+    }
+
+    // Check if we should use constrained or legacy builder
+    const useConstrainedBuilder = constraintSet.hard.length > 0 || constraintSet.soft.length > 0;
+
+    if (useConstrainedBuilder) {
+      // Use the new constrained builder with beam search
+      const result = buildConstrainedSequence({
+        letters,
+        allPictographs,
+        constraintSet,
+        beamConfig: {
+          maxBacktracks: maxAttempts,
+        },
+      });
+
+      if (!result.success && !result.steps.length) {
+        return {
+          content: [
+            { type: "text" as const, text: `Failed to generate constrained sequence for "${word}": ${result.error}` },
+          ],
+          isError: true,
+        };
+      }
+
+      // Build response with constraint report
+      const response: Record<string, unknown> = {
+        word: result.word,
+        steps: result.steps.map((step, i) => ({
+          ...step,
+          variation: result.variationIndices[i] ?? 0,
+          stepNumber: i,
+        })),
+        startPosition: result.startPosition,
+        endPosition: result.endPosition,
+        stepCount: result.steps.length - 1,
+        constraintReport: {
+          score: result.constraintReport.score,
+          satisfied: result.constraintReport.satisfied,
+          details: result.constraintReport.details.map(d => ({
+            constraint: d.constraint,
+            score: d.score,
+            description: d.description,
+            mode: d.mode,
+          })),
+        },
+      };
+
+      // Include parse info if constraints were parsed from text
+      if (parseResult) {
+        (response.constraintReport as Record<string, unknown>).parseConfidence = parseResult.confidence;
+        if (parseResult.unrecognized.length > 0) {
+          (response.constraintReport as Record<string, unknown>).unrecognized = parseResult.unrecognized;
+        }
+        if (parseResult.warnings.length > 0) {
+          (response.constraintReport as Record<string, unknown>).warnings = parseResult.warnings;
+        }
+      }
+
+      // Include bridge information if bridges were used
+      if (result.bridges && result.bridges.length > 0) {
+        response.bridges = result.bridges.map(b => ({
+          transitionIndex: b.transitionIndex,
+          fromLetter: b.fromLetter,
+          toLetter: b.toLetter,
+          availableOptions: b.availableOptions,
+          selectedBridge: b.selectedBridge,
+          selectedIndex: b.selectedIndex,
+          constraintScored: b.constraintScored,
+        }));
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(response, null, 2),
+          },
+        ],
+      };
+    }
+
+    // Fall back to legacy builder for unconstrained generation
+    const parsedBridgeSelections: BridgeSelections | undefined = bridgeSelections
+      ? Object.fromEntries(
+          Object.entries(bridgeSelections).map(([k, v]) => [parseInt(k, 10), v])
+        )
+      : undefined;
+
+    const result = buildSequenceFromLetters(letters, allPictographs, maxAttempts, parsedBridgeSelections);
 
     if (!result.isValid) {
       return {
@@ -1461,7 +1635,6 @@ server.tool(
       };
     }
 
-    // Return sequence data
     return {
       content: [
         {
@@ -1471,7 +1644,8 @@ server.tool(
             steps: result.steps,
             startPosition: result.startPosition,
             endPosition: result.endPosition,
-            stepCount: result.steps.length - 1, // Exclude start position
+            stepCount: result.steps.length - 1,
+            bridges: result.bridges,
           }, null, 2),
         },
       ],
@@ -1485,6 +1659,7 @@ server.tool(
   "Generate a composite image showing all beats of a sequence (word card). Returns base64-encoded PNG.",
   {
     word: z.string().describe('The sequence word, e.g., "ABC"'),
+    gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
     layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
     cellSize: z.number().optional().default(150).describe("Size of each pictograph cell in pixels"),
     showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers overlaid on each pictograph"),
@@ -1496,9 +1671,16 @@ server.tool(
     userName: z.string().optional().describe("Username to show in footer (bottom-left)"),
     notes: z.string().optional().describe("Notes to show in footer (bottom-center)"),
     birthday: z.string().optional().describe("Birthday/creation date in ISO format (bottom-right), e.g., '2024-01-15'"),
+    bridgeSelections: z.record(z.string(), z.number()).optional().describe('Map of bridge transition index to preferred bridge option index. E.g., {"0": 1} uses the 2nd bridge option for the first bridge needed.'),
+    level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
+    turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3). Each motion gets a random turn value from 0 up to this max. Defaults to 0 for level 1, 3 for level 2-3."),
+    loopComponents: z.array(z.enum(["rotated", "mirrored", "swapped", "inverted"])).optional().describe("LOOP components for the pie chart glyph in top-right corner. E.g., ['rotated', 'mirrored'] shows those two quadrants filled."),
+    // Constraint options (same as generate_sequence_data)
+    constraints: z.string().optional().describe('Natural language constraints, e.g., "maximize continuity, all pro motions", "smooth flow with blue clockwise"'),
+    constraintPreset: z.enum(["smooth", "reversal", "isolation", "antispin", "pro-cw", "anti-ccw", "no-dash", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset: smooth (maximize continuity), reversal (break every beat), isolation (all pro), antispin (all anti), pro-cw, anti-ccw, no-dash, maximize-dash (prefer Type 4/5 letters), maximum-chaos'),
   },
-  async ({ word, layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100, showDifficulty = true, userName, notes, birthday }) => {
-    ensureDataLoaded();
+  async ({ word, gridMode = "diamond", layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100, showDifficulty = true, userName, notes, birthday, bridgeSelections, level = 1, turnIntensity, loopComponents, constraints, constraintPreset }) => {
+    const allPictographs = ensureDataLoaded(gridMode);
 
     // Parse word to individual letters
     const letters = parseWordToLetters(word.toUpperCase());
@@ -1512,8 +1694,82 @@ server.tool(
       };
     }
 
-    // Build the sequence
-    const result = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+    // Convert string keys to numbers for bridgeSelections
+    const parsedBridgeSelections: BridgeSelections | undefined = bridgeSelections
+      ? Object.fromEntries(
+          Object.entries(bridgeSelections).map(([k, v]) => [parseInt(k, 10), v])
+        )
+      : undefined;
+
+    // Determine which constraint set to use
+    let constraintSet = emptyConstraintSet();
+
+    if (constraintPreset) {
+      // Use preset
+      const presetConstraints = getPresetConstraintSet(constraintPreset as PresetName);
+      if (presetConstraints) {
+        constraintSet = presetConstraints;
+      }
+    } else if (constraints) {
+      // Parse natural language constraints
+      const parsed = parseConstraintSet(constraints);
+      constraintSet = parsed.constraintSet;
+    }
+
+    // Check if we should use constrained or legacy builder
+    const useConstrainedBuilder = constraintSet.hard.length > 0 || constraintSet.soft.length > 0;
+
+    let result: SequenceResult;
+
+    if (useConstrainedBuilder) {
+      // Use the constrained builder with beam search
+      const constrainedResult = buildConstrainedSequence({
+        letters,
+        allPictographs,
+        constraintSet,
+        beamConfig: {
+          maxBacktracks: maxAttempts,
+        },
+      });
+
+      if (!constrainedResult.success && !constrainedResult.steps.length) {
+        return {
+          content: [
+            { type: "text" as const, text: `Failed to generate constrained sequence for "${word}": ${constrainedResult.error}` },
+          ],
+          isError: true,
+        };
+      }
+
+      // Convert constrained result to SequenceResult format
+      result = {
+        word: constrainedResult.word,
+        steps: constrainedResult.steps.map((step, i) => ({
+          letter: step.letter,
+          variation: constrainedResult.variationIndices[i] ?? 0,
+          startPosition: step.startPosition,
+          endPosition: step.endPosition,
+          blueMotion: step.blueMotion,
+          redMotion: step.redMotion,
+          stepNumber: i,
+          isBridge: constrainedResult.bridges?.some(b => b.selectedBridge === step.letter && i > 0) ?? false,
+        })),
+        startPosition: constrainedResult.startPosition,
+        endPosition: constrainedResult.endPosition,
+        isValid: true,
+        bridges: constrainedResult.bridges?.map(b => ({
+          transitionIndex: b.transitionIndex,
+          fromLetter: b.fromLetter,
+          toLetter: b.toLetter,
+          availableOptions: b.availableOptions,
+          selectedBridge: b.selectedBridge,
+          selectedIndex: b.selectedIndex,
+        })),
+      };
+    } else {
+      // Fall back to legacy builder for unconstrained generation
+      result = buildSequenceFromLetters(letters, allPictographs, maxAttempts, parsedBridgeSelections);
+    }
 
     if (!result.isValid) {
       return {
@@ -1528,6 +1784,22 @@ server.tool(
       // Parse birthday string to Date if provided
       const birthdayDate = birthday ? new Date(birthday) : undefined;
 
+      // Allocate turns for each step (excluding start position)
+      // Each motion gets a random turn value based on level and max intensity
+      const stepCount = result.steps.length - 1; // Exclude start position (step 0)
+      const turnAllocation = allocateTurns(stepCount, level, turnIntensity);
+
+      // Convert loopComponents strings to enum values
+      const parsedLoopComponents = loopComponents?.map(c => {
+        switch (c) {
+          case "rotated": return LOOPComponent.ROTATED;
+          case "mirrored": return LOOPComponent.MIRRORED;
+          case "swapped": return LOOPComponent.SWAPPED;
+          case "inverted": return LOOPComponent.INVERTED;
+          default: return LOOPComponent.ROTATED; // Fallback
+        }
+      });
+
       // Render composite image with visual parity features
       const pngBuffer = await renderSequenceToImage(result.steps, result.word, {
         layout,
@@ -1541,6 +1813,11 @@ server.tool(
         userName,
         notes,
         birthday: birthdayDate,
+        // Difficulty level and turn allocations
+        level,
+        turnAllocation,
+        // LOOP glyph
+        loopComponents: parsedLoopComponents,
       });
 
       // AUTO-OPEN: Save to temp and open immediately with system viewer
@@ -1567,6 +1844,299 @@ server.tool(
       return {
         content: [
           { type: "text" as const, text: `Failed to render sequence image: ${errorMessage}` },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+// ============================================================================
+// LOOP (CIRCULAR SEQUENCE) TOOLS
+// ============================================================================
+
+import {
+  LOOPType,
+  SliceSize,
+  LOOP_TYPE_LABELS,
+  LOOP_TYPE_DESCRIPTIONS,
+  SUPPORTED_LOOP_TYPES,
+  getLOOPOptionsForPositionPair,
+  executeLOOP,
+} from "./src/core/loop/index.js";
+
+// Tool: validate_loop_options
+server.tool(
+  "validate_loop_options",
+  "Given a sequence's start/end positions, return which LOOP types are valid. LOOPs are circular sequence patterns that transform the first half/quarter of a sequence to create a complete circular motion.",
+  {
+    startPosition: z.string().describe("Start position of the sequence (e.g., alpha1, beta3, gamma5)"),
+    endPosition: z.string().describe("End position of the sequence (e.g., alpha5, beta7, gamma13)"),
+    sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
+  },
+  async ({ startPosition, endPosition, sliceSize = "halved" }) => {
+    const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
+    const result = getLOOPOptionsForPositionPair(startPosition, endPosition, slice);
+
+    const output = {
+      startPosition,
+      endPosition,
+      sliceSize,
+      available: result.available.map((opt) => ({
+        loopType: opt.loopType,
+        name: opt.name,
+        description: opt.description,
+      })),
+      unavailable: result.unavailable.map((opt) => ({
+        loopType: opt.loopType,
+        name: opt.name,
+        reason: opt.reason || "Position pair not valid for this LOOP type",
+      })),
+      supportedTypes: SUPPORTED_LOOP_TYPES.map((t) => ({
+        loopType: t,
+        name: LOOP_TYPE_LABELS[t],
+      })),
+    };
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify(output, null, 2),
+        },
+      ],
+    };
+  }
+);
+
+// Tool: generate_loop_sequence
+server.tool(
+  "generate_loop_sequence",
+  "Generate a complete LOOP sequence from a word + LOOP type. Returns the circular sequence with all transformed steps. Currently supports REWOUND and STRICT_ROTATED.",
+  {
+    word: z.string().describe('The sequence word, e.g., "CAKE"'),
+    loopType: z.enum(["rewound", "strict_rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "strict_rotated" (180°/90° rotation)'),
+    sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
+    gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
+    maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
+  },
+  async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", maxAttempts = 100 }) => {
+    const allPictographs = ensureDataLoaded(gridMode);
+
+    // Parse word to individual letters
+    const letters = parseWordToLetters(word.toUpperCase());
+
+    if (letters.length === 0) {
+      return {
+        content: [
+          { type: "text" as const, text: `Cannot generate sequence: no valid letters in "${word}"` },
+        ],
+        isError: true,
+      };
+    }
+
+    // Build the base sequence first
+    const baseResult = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+
+    if (!baseResult.isValid) {
+      return {
+        content: [
+          { type: "text" as const, text: `Failed to generate base sequence for "${word}": ${baseResult.error}` },
+        ],
+        isError: true,
+      };
+    }
+
+    // Determine LOOP type enum
+    const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.STRICT_ROTATED;
+    const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
+
+    // Execute the LOOP transformation (pass pictograph data for letter derivation)
+    const loopResult = executeLOOP(baseResult.steps, baseResult.word, loopTypeEnum, slice, allPictographs);
+
+    if (!loopResult.success) {
+      return {
+        content: [
+          { type: "text" as const, text: `Failed to generate LOOP sequence: ${loopResult.error}` },
+        ],
+        isError: true,
+      };
+    }
+
+    // Format output
+    const output = {
+      word: loopResult.word,
+      loopWord: loopResult.loopWord,
+      seedWord: loopResult.seedWord,
+      derivedWord: loopResult.derivedWord,
+      loopType: loopResult.loopType,
+      sliceSize: loopResult.sliceSize,
+      isCircular: loopResult.isCircular,
+      stepCount: loopResult.steps.length - 1, // Exclude start position
+      startPosition: baseResult.startPosition,
+      endPosition: loopResult.steps[loopResult.steps.length - 1]?.endPosition || "",
+      derivedBeatIndices: loopResult.derivedBeatIndices,
+      steps: loopResult.steps.map((step, i) => ({
+        stepNumber: i,
+        letter: step.letter,
+        isDerived: loopResult.derivedBeatIndices.includes(i),
+        startPosition: step.startPosition,
+        endPosition: step.endPosition,
+        blueMotion: {
+          startLocation: step.blueMotion.startLocation,
+          endLocation: step.blueMotion.endLocation,
+          motionType: step.blueMotion.motionType,
+          rotationDirection: step.blueMotion.rotationDirection,
+        },
+        redMotion: {
+          startLocation: step.redMotion.startLocation,
+          endLocation: step.redMotion.endLocation,
+          motionType: step.redMotion.motionType,
+          rotationDirection: step.redMotion.rotationDirection,
+        },
+      })),
+    };
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify(output, null, 2),
+        },
+      ],
+    };
+  }
+);
+
+// Tool: generate_loop_image
+server.tool(
+  "generate_loop_image",
+  "Generate a word card image for a LOOP sequence. Displays the complete circular sequence as a composite image.",
+  {
+    word: z.string().describe('The sequence word, e.g., "CAKE"'),
+    loopType: z.enum(["rewound", "strict_rotated"]).describe('LOOP type to apply'),
+    sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size'),
+    gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
+    layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
+    cellSize: z.number().optional().default(150).describe("Size of each pictograph cell in pixels"),
+    showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers"),
+    showWord: z.boolean().optional().default(true).describe("Show word header"),
+    darkMode: z.boolean().optional().default(true).describe("Use dark background"),
+    maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
+    loopComponents: z.array(z.enum(["rotated", "mirrored", "swapped", "inverted"])).optional().describe("LOOP components for the pie chart glyph"),
+    level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level"),
+    userName: z.string().optional().describe("Username for footer"),
+    notes: z.string().optional().describe("Notes for footer"),
+    birthday: z.string().optional().describe("Birthday/creation date in ISO format"),
+  },
+  async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100, loopComponents, level = 1, userName, notes, birthday }) => {
+    const allPictographs = ensureDataLoaded(gridMode);
+
+    // Parse word to individual letters
+    const letters = parseWordToLetters(word.toUpperCase());
+
+    if (letters.length === 0) {
+      return {
+        content: [
+          { type: "text" as const, text: `Cannot generate sequence: no valid letters in "${word}"` },
+        ],
+        isError: true,
+      };
+    }
+
+    // Build the base sequence
+    const baseResult = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+
+    if (!baseResult.isValid) {
+      return {
+        content: [
+          { type: "text" as const, text: `Failed to generate base sequence for "${word}": ${baseResult.error}` },
+        ],
+        isError: true,
+      };
+    }
+
+    // Execute the LOOP transformation (pass pictograph data for letter derivation)
+    const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.STRICT_ROTATED;
+    const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
+
+    const loopResult = executeLOOP(baseResult.steps, baseResult.word, loopTypeEnum, slice, allPictographs);
+
+    if (!loopResult.success) {
+      return {
+        content: [
+          { type: "text" as const, text: `Failed to generate LOOP sequence: ${loopResult.error}` },
+        ],
+        isError: true,
+      };
+    }
+
+    try {
+      // Parse birthday string to Date if provided
+      const birthdayDate = birthday ? new Date(birthday) : undefined;
+
+      // For rewound LOOP, don't use loopComponents since it's not a spatial transformation
+      // loopComponents only apply to spatial transformations (rotated, mirrored, swapped, inverted)
+      const parsedLoopComponents = loopType === "rewound" ? undefined : loopComponents?.map((c) => {
+        switch (c) {
+          case "rotated":
+            return LOOPComponent.ROTATED;
+          case "mirrored":
+            return LOOPComponent.MIRRORED;
+          case "swapped":
+            return LOOPComponent.SWAPPED;
+          case "inverted":
+            return LOOPComponent.INVERTED;
+          default:
+            return LOOPComponent.ROTATED;
+        }
+      });
+
+      // Allocate turns for each step
+      const stepCount = loopResult.steps.length - 1;
+      const turnAllocation = allocateTurns(stepCount, level);
+
+      // Render composite image
+      const pngBuffer = await renderSequenceToImage(loopResult.steps, loopResult.loopWord, {
+        layout,
+        cellSize,
+        showStepNumbers,
+        showWord,
+        darkMode,
+        padding: 8,
+        showDifficulty: true,
+        userName,
+        notes,
+        birthday: birthdayDate,
+        level,
+        turnAllocation,
+        loopComponents: parsedLoopComponents,
+      });
+
+      // AUTO-OPEN: Save to temp and open immediately
+      const tempPath = saveAndOpenImage(pngBuffer, `loop-${word}`);
+
+      // Convert to base64
+      const base64 = pngBuffer.toString("base64");
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `## LOOP Sequence: ${loopResult.loopWord}\n\n**Original word:** ${word}\n**LOOP type:** ${loopType}\n**Slice size:** ${sliceSize}\n**Beats:** ${stepCount}`,
+          },
+          {
+            type: "image" as const,
+            data: base64,
+            mimeType: "image/png",
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          { type: "text" as const, text: `Failed to render LOOP image: ${errorMessage}` },
         ],
         isError: true,
       };

@@ -1,0 +1,223 @@
+/**
+ * Search State
+ *
+ * Tracks the state of beam search during constrained sequence generation.
+ * Manages candidate states, beam pruning, and backtracking.
+ */
+
+import type {
+  SearchState,
+  VariationScore,
+  PictographData,
+  ConstraintSet,
+} from "../types.js";
+import { scoreVariation, calculateSequenceScore } from "./variation-scorer.js";
+
+/**
+ * Configuration for the beam search algorithm.
+ */
+export interface BeamSearchConfig {
+  /** Number of candidates to keep at each step */
+  beamWidth: number;
+
+  /** Maximum backtrack attempts on dead ends */
+  maxBacktracks: number;
+
+  /** Minimum acceptable final score (0-1) */
+  minAcceptableScore: number;
+
+  /** Whether to allow partial results if no complete sequence found */
+  allowPartial: boolean;
+}
+
+export const DEFAULT_BEAM_CONFIG: BeamSearchConfig = {
+  beamWidth: 10,
+  maxBacktracks: 50,
+  minAcceptableScore: 0.3,
+  allowPartial: true,
+};
+
+/**
+ * Creates an initial search state from a starting position.
+ */
+export function createInitialState(
+  startPictograph: PictographData,
+  variationIndex: number
+): SearchState {
+  return {
+    steps: [startPictograph],
+    cumulativeScore: 1.0, // Start with perfect score
+    stepScores: [
+      {
+        variation: startPictograph,
+        variationIndex,
+        totalScore: 1.0,
+        hardConstraintsSatisfied: true,
+        constraintScores: new Map(),
+      },
+    ],
+    currentEndPosition: startPictograph.endPosition,
+  };
+}
+
+/**
+ * Extends a search state with a new step.
+ */
+export function extendState(
+  state: SearchState,
+  newStep: PictographData,
+  stepScore: VariationScore
+): SearchState {
+  const newSteps = [...state.steps, newStep];
+  const newStepScores = [...state.stepScores, stepScore];
+
+  // Recalculate cumulative score
+  const totalScores = newStepScores.slice(1); // Exclude start position
+  const cumulativeScore =
+    totalScores.length > 0
+      ? totalScores.reduce((sum, s) => sum + s.totalScore, 0) / totalScores.length
+      : 1.0;
+
+  return {
+    steps: newSteps,
+    cumulativeScore,
+    stepScores: newStepScores,
+    currentEndPosition: newStep.endPosition,
+  };
+}
+
+/**
+ * Prune the beam to keep only the top N states by score.
+ */
+export function pruneBeam(
+  states: SearchState[],
+  beamWidth: number
+): SearchState[] {
+  // Sort by cumulative score descending
+  const sorted = [...states].sort(
+    (a, b) => b.cumulativeScore - a.cumulativeScore
+  );
+
+  // Keep only the top beamWidth states
+  return sorted.slice(0, beamWidth);
+}
+
+/**
+ * Check if a state is viable (all hard constraints satisfied so far).
+ */
+export function isStateViable(state: SearchState): boolean {
+  // All step scores must have hard constraints satisfied
+  return state.stepScores.every((s) => s.hardConstraintsSatisfied);
+}
+
+/**
+ * Get all viable states from a beam.
+ */
+export function getViableStates(states: SearchState[]): SearchState[] {
+  return states.filter(isStateViable);
+}
+
+/**
+ * Find the best complete state (if any).
+ */
+export function getBestState(
+  states: SearchState[],
+  minScore: number
+): SearchState | null {
+  const viable = getViableStates(states);
+  if (viable.length === 0) {
+    return null;
+  }
+
+  // Sort by score and filter by minimum
+  const sorted = viable.sort((a, b) => b.cumulativeScore - a.cumulativeScore);
+  const best = sorted[0];
+
+  if (best && best.cumulativeScore >= minScore) {
+    return best;
+  }
+
+  return null;
+}
+
+/**
+ * Calculate the total number of reversals in a sequence.
+ * Used for reporting.
+ */
+export function countReversals(state: SearchState): number {
+  let reversals = 0;
+
+  for (let i = 1; i < state.steps.length; i++) {
+    const prev = state.steps[i - 1];
+    const curr = state.steps[i];
+    if (!prev || !curr) continue;
+
+    // Check blue hand
+    if (isDirectionChange(prev.blueMotion.rotationDirection, curr.blueMotion.rotationDirection)) {
+      reversals++;
+    }
+
+    // Check red hand
+    if (isDirectionChange(prev.redMotion.rotationDirection, curr.redMotion.rotationDirection)) {
+      reversals++;
+    }
+  }
+
+  return reversals;
+}
+
+function isDirectionChange(prev: string, curr: string): boolean {
+  if (prev === "no_rot" || prev === "noRotation" || curr === "no_rot" || curr === "noRotation") {
+    return false;
+  }
+  return (
+    (prev === "cw" && curr === "ccw") ||
+    (prev === "ccw" && curr === "cw")
+  );
+}
+
+/**
+ * Calculate continuity percentage for a sequence.
+ */
+export function calculateContinuityPercentage(state: SearchState): number {
+  if (state.steps.length <= 1) {
+    return 100;
+  }
+
+  let continuousTransitions = 0;
+  let totalTransitions = 0;
+
+  for (let i = 1; i < state.steps.length; i++) {
+    const prev = state.steps[i - 1];
+    const curr = state.steps[i];
+    if (!prev || !curr) continue;
+
+    // Check blue hand
+    const blueStatic =
+      prev.blueMotion.motionType === "static" ||
+      curr.blueMotion.motionType === "static";
+    if (!blueStatic) {
+      totalTransitions++;
+      if (!isDirectionChange(prev.blueMotion.rotationDirection, curr.blueMotion.rotationDirection)) {
+        continuousTransitions++;
+      }
+    }
+
+    // Check red hand
+    const redStatic =
+      prev.redMotion.motionType === "static" ||
+      curr.redMotion.motionType === "static";
+    if (!redStatic) {
+      totalTransitions++;
+      if (!isDirectionChange(prev.redMotion.rotationDirection, curr.redMotion.rotationDirection)) {
+        continuousTransitions++;
+      }
+    }
+  }
+
+  if (totalTransitions === 0) {
+    return 100;
+  }
+
+  return Math.round((continuousTransitions / totalTransitions) * 100);
+}
