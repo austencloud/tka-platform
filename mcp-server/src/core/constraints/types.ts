@@ -175,6 +175,9 @@ export interface SearchState {
 
   /** Current end position (for position continuity) */
   currentEndPosition: string;
+
+  /** Indices of steps that are bridge letters (not user-requested letters) */
+  bridgeStepIndices?: Set<number>;
 }
 
 // =============================================================================

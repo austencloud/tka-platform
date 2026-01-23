@@ -4,7 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
-    "strict": false,
+    "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
@@ -13,8 +13,10 @@
     },
     "outDir": "./dist",
     "declaration": true,
-    "declarationDir": "./dist"
+    "declarationDir": "./dist",
+    "noEmit": false,
+    "rootDir": "."
   },
-  "include": ["index.ts", "src/**/*.ts"],
-  "exclude": ["node_modules", "NodePictographRenderer.ts", "StandalonePictographRenderer.ts", "render-q.ts", "showcase-all-letters.ts", "showcase-grid.ts"]
+  "include": ["index.ts", "src/**/*.ts", "test-loop.ts"],
+  "exclude": ["node_modules"]
 }

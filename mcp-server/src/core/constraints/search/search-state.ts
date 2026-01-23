@@ -62,11 +62,13 @@ export function createInitialState(
 
 /**
  * Extends a search state with a new step.
+ * @param isBridge - If true, marks this step index as a bridge letter
  */
 export function extendState(
   state: SearchState,
   newStep: PictographData,
-  stepScore: VariationScore
+  stepScore: VariationScore,
+  isBridge: boolean = false
 ): SearchState {
   const newSteps = [...state.steps, newStep];
   const newStepScores = [...state.stepScores, stepScore];
@@ -78,11 +80,18 @@ export function extendState(
       ? totalScores.reduce((sum, s) => sum + s.totalScore, 0) / totalScores.length
       : 1.0;
 
+  // Copy and extend bridge indices if this is a bridge
+  const bridgeStepIndices = new Set(state.bridgeStepIndices);
+  if (isBridge) {
+    bridgeStepIndices.add(newSteps.length - 1); // Index of the just-added step
+  }
+
   return {
     steps: newSteps,
     cumulativeScore,
     stepScores: newStepScores,
     currentEndPosition: newStep.endPosition,
+    bridgeStepIndices,
   };
 }
 

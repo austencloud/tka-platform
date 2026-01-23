@@ -290,6 +290,19 @@ export class LetterTransitionGraph {
   isInitialized(): boolean {
     return this.initialized;
   }
+
+  /**
+   * Get all letters in the graph (excluding specified letters)
+   */
+  getAllLetters(excludeLetters: Set<string> = new Set()): string[] {
+    const letters: string[] = [];
+    for (const letter of this.letterPositions.keys()) {
+      if (!excludeLetters.has(letter)) {
+        letters.push(letter);
+      }
+    }
+    return letters;
+  }
 }
 
 // Singleton instance

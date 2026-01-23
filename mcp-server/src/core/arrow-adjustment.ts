@@ -12,9 +12,14 @@
  * 5. Return final adjustment [x, y]
  */
 
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, appendFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+
+// Debug logging to file
+function debugLog(msg: string) {
+  appendFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../debug-arrow.txt"), msg + "\n");
+}
 import { GridLocation, GridMode, MotionType, Orientation } from "./enums.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -91,8 +96,10 @@ function loadSpecialPlacement(gridMode: GridMode, oriKey: string, letter: string
   );
 
   if (!existsSync(placementPath)) {
+    debugLog(`[PLACEMENT] File not found: ${placementPath}`);
     return null;
   }
+  debugLog(`[PLACEMENT] File found: ${placementPath}`);
 
   try {
     const content = readFileSync(placementPath, "utf-8");
@@ -342,6 +349,10 @@ function generateDirectionalTuples(
   };
 
   // DASH for diamond grid
+  // NOTE: The browser's DirectionalTupleProcessor has a bug where isNoRot never matches
+  // (it checks rot === "noRotation" but rot is already lowercased). This means the browser
+  // ALWAYS falls through to the default tuple for noRotation cases. We must match that
+  // behavior for parity - noRotation uses the same uniform fallback as the default case.
   const dashDiamond = (): Tuple[] => {
     if (isCW)
       return [
@@ -357,17 +368,12 @@ function generateDirectionalTuples(
         tuple(baseX, baseY),
         tuple(-baseY, baseX),
       ];
-    if (isNoRot)
-      return [
-        tuple(baseX, baseY),
-        tuple(-baseY, -baseX),
-        tuple(baseX, -baseY),
-        tuple(baseY, baseX),
-      ];
+    // noRotation and default both use uniform tuple (browser parity - see note above)
     return [tuple(baseX, baseY), tuple(baseX, baseY), tuple(baseX, baseY), tuple(baseX, baseY)];
   };
 
   // DASH for box grid
+  // Same browser parity issue as dashDiamond - noRotation falls through to default
   const dashBox = (): Tuple[] => {
     if (isCW)
       return [
@@ -383,13 +389,7 @@ function generateDirectionalTuples(
         tuple(baseX, -baseY),
         tuple(baseY, baseX),
       ];
-    if (isNoRot)
-      return [
-        tuple(baseX, baseY),
-        tuple(-baseY, baseX),
-        tuple(-baseX, -baseY),
-        tuple(baseY, -baseX),
-      ];
+    // noRotation and default both use uniform tuple (browser parity)
     return [tuple(baseX, baseY), tuple(baseX, baseY), tuple(baseX, baseY), tuple(baseX, baseY)];
   };
 
@@ -588,6 +588,10 @@ export function calculateArrowAdjustment(
   motion: MotionAdjustmentInput,
   arrowLocation: GridLocation
 ): [number, number] {
+  // UNCONDITIONAL DEBUG LOG
+  debugLog(`[ENTRY] calculateArrowAdjustment called: letter=${pictograph.letter}, motion.color=${motion.color}, motion.motionType=${motion.motionType}`);
+  debugLog(`[DEBUG PATH] gridMode=${pictograph.gridMode}, blueEndOri=${pictograph.blueMotion.endOrientation}, redEndOri=${pictograph.redMotion.endOrientation}`);
+
   // 1. Try to get special placement override first
   const blueEndOri = pictograph.blueMotion.endOrientation || "in";
   const redEndOri = pictograph.redMotion.endOrientation || "in";
@@ -643,6 +647,16 @@ export function calculateArrowAdjustment(
   const motionTypeEnum = motion.motionType.toLowerCase() as MotionType;
   const quadrantIndex = calculateQuadrantIndex(arrowLocation, motionTypeEnum, pictograph.gridMode);
   const selectedTuple = tuples[quadrantIndex] || [0, 0];
+
+  // DEBUG: Log W- dash adjustments
+  if (pictograph.letter === "W-" && motion.color === "blue") {
+    debugLog(`[DEBUG W- BLUE] letter=${pictograph.letter}, motionType=${motion.motionType}, rotDir=${motion.rotationDirection}`);
+    debugLog(`[DEBUG W- BLUE] startLoc=${motion.startLocation}, endLoc=${motion.endLocation}, turns=${motion.turns}`);
+    debugLog(`[DEBUG W- BLUE] arrowLocation=${arrowLocation}, quadrantIndex=${quadrantIndex}`);
+    debugLog(`[DEBUG W- BLUE] hasSpecialPlacement=${hasSpecialPlacement}, baseX=${baseX}, baseY=${baseY}`);
+    debugLog(`[DEBUG W- BLUE] tuples=${JSON.stringify(tuples)}`);
+    debugLog(`[DEBUG W- BLUE] selectedTuple=${JSON.stringify(selectedTuple)}`);
+  }
 
   return selectedTuple;
 }

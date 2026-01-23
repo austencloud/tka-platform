@@ -1,7 +1,7 @@
 /**
  * Sequence Renderer for MCP Server
  *
- * Composites multiple pictographs into a single "word card" image.
+ * Composites multiple pictographs into a single "choreo card" image.
  * Matches the app's ImageComposer output with:
  * - Header with word text and difficulty badge (Georgia Bold)
  * - Footer with username, notes, and birthday
@@ -11,7 +11,7 @@
 
 import { createCanvas, type Canvas, type CanvasRenderingContext2D } from "canvas";
 import { getStandaloneRenderer, type RenderVisibilityOptions } from "./standalone-renderer.js";
-import type { SequenceStep } from "./sequence-builder.js";
+import { detectReversals, type SequenceStep } from "./sequence-builder.js";
 import {
   renderWordHeader,
   renderUserInfo,
@@ -54,6 +54,13 @@ export interface SequenceRenderOptions {
   turnAllocation?: TurnAllocation;
   // LOOP components for the pie chart glyph (top-right corner)
   loopComponents?: LOOPComponent[];
+  // Show reversal indicators (direction change dots on left edge)
+  showReversals?: boolean;
+  // LOOP sequence info - which beats are derived (transformed) vs seed (original)
+  // Used for header text styling only - pictographs are not dimmed
+  derivedBeatIndices?: number[];
+  // Original seed word for LOOP sequences (displayed prominently in header)
+  seedWord?: string;
 }
 
 const DEFAULT_OPTIONS: SequenceRenderOptions = {
@@ -65,6 +72,7 @@ const DEFAULT_OPTIONS: SequenceRenderOptions = {
   darkMode: true,
   showDifficulty: true,
   level: 1,
+  showReversals: true,
 };
 
 /**
@@ -89,7 +97,8 @@ export async function renderSequenceToImage(
   const renderer = getStandaloneRenderer();
 
   // Include all steps (including step 0 start position)
-  const letterSteps = steps;
+  // Apply reversal detection if showReversals is enabled
+  const letterSteps = opts.showReversals ? detectReversals(steps) : steps;
 
   if (letterSteps.length === 0) {
     throw new Error("No steps to render");
@@ -135,7 +144,7 @@ export async function renderSequenceToImage(
     showRedMotion: true,
     showVTG: false,
     showPositions: false,
-    showReversals: false,
+    showReversals: opts.showReversals ?? false,
     showNonRadialPoints: false,
   };
 
@@ -177,6 +186,9 @@ export async function renderSequenceToImage(
         turns: redTurns,
         startOrientation: step.redMotion.startOrientation || baseOrientation,
       },
+      // Reversal indicators (if detected)
+      blueReversal: step.blueReversal,
+      redReversal: step.redReversal,
     };
 
     try {
@@ -187,6 +199,10 @@ export async function renderSequenceToImage(
       const { loadImage } = await import("canvas");
       const img = await loadImage(pngBuffer);
       ctx.drawImage(img, x, y, opts.cellSize, opts.cellSize);
+
+      // Note: Derived beats in LOOP sequences are distinguished in the header text
+      // (smaller font, secondary color) but the pictographs themselves are NOT dimmed
+      // to maintain readability
 
       // Draw step number overlaid on pictograph (top-left corner)
       if (opts.showStepNumbers) {
@@ -208,19 +224,27 @@ export async function renderSequenceToImage(
 
   // Draw word header if enabled
   if (hasHeader && headerHeight > 0) {
-    // Build letter styles from steps (excluding step 0 which is start position)
+    // For LOOP sequences, use the seedWord (original word) for the header display
+    // instead of the full loopWord (which includes derived/transformed letters)
+    const headerWord = opts.seedWord ?? word;
+
+    // Build letter styles from seed word only (for LOOP sequences)
+    // This shows ONLY the original letters, not the transformed portion
+    const seedLetters = opts.seedWord
+      ? letterSteps.filter((s) => s.stepNumber > 0 && !opts.derivedBeatIndices?.includes(s.stepNumber))
+      : letterSteps.filter((s) => s.stepNumber > 0);
+
     const letterStyles: LetterStyle[] = opts.showWord
-      ? letterSteps
-          .filter((s) => s.stepNumber > 0)
-          .map((s) => ({
-            letter: s.letter,
-            isBridge: s.isBridge ?? false,
-          }))
+      ? seedLetters.map((s) => ({
+          letter: s.letter,
+          isBridge: s.isBridge ?? false,
+          isDerived: false, // Never dim since we're only showing seed letters
+        }))
       : [];
 
     renderWordHeader(
       ctx,
-      opts.showWord ? word : "",
+      opts.showWord ? headerWord : "",
       width,
       headerHeight,
       difficultyLevel,

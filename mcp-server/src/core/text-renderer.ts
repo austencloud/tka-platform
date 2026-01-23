@@ -64,11 +64,13 @@ export interface UserExportInfo {
 }
 
 /**
- * Letter styling info for rendering the header with bridge letters grayed out
+ * Letter styling info for rendering the header with bridge/derived letters grayed out
  */
 export interface LetterStyle {
   letter: string;
   isBridge: boolean;
+  /** Whether this letter is derived from LOOP transformation (dimmed like bridges) */
+  isDerived?: boolean;
 }
 
 /**
@@ -145,18 +147,19 @@ export function renderWordHeader(
     ctx.fillText(word, canvasWidth / 2, centerY);
   }
 
-  // Render LOOP glyph in top-right corner (if provided)
+  // Render LOOP badges in top-right corner (if provided)
   if (loopComponents && loopComponents.length > 0) {
-    const glyphSize = badgeSize; // Same size as difficulty badge
-    const glyphPadding = badgePadding;
-    const glyphX = canvasWidth - glyphSize - glyphPadding;
-    const glyphY = (headerHeight - glyphSize) / 2;
-    renderLOOPGlyph(ctx, loopComponents, glyphX, glyphY, glyphSize, darkMode);
+    const singleBadgeSize = badgeSize; // Same size as difficulty badge
+    const gap = Math.floor(singleBadgeSize * 0.15);
+    const totalWidth = loopComponents.length * singleBadgeSize + (loopComponents.length - 1) * gap;
+    const glyphX = canvasWidth - totalWidth - badgePadding;
+    const glyphY = (headerHeight - singleBadgeSize) / 2;
+    renderLOOPGlyph(ctx, loopComponents, glyphX, glyphY, singleBadgeSize, darkMode);
   }
 }
 
 /**
- * Render word with styled letters (bridge letters smaller and grayed out)
+ * Render word with styled letters (bridge/derived letters smaller and grayed out)
  */
 function renderStyledWord(
   ctx: CanvasRenderingContext2D,
@@ -168,33 +171,36 @@ function renderStyledWord(
 ): void {
   ctx.textBaseline = "middle";
 
-  // Bridge letters are 60% size and much more faded
+  // Bridge/derived letters are 60% size and much more faded
   const primaryFontSize = fontSize;
-  const bridgeFontSize = fontSize * 0.6;
+  const secondaryFontSize = fontSize * 0.6;
+
+  // Helper to check if letter should be dimmed (bridge OR derived)
+  const isDimmed = (ls: LetterStyle) => ls.isBridge || ls.isDerived;
 
   // Calculate total width to center the word (accounting for different sizes)
   let totalWidth = 0;
   for (const ls of letterStyles) {
-    ctx.font = `bold ${ls.isBridge ? bridgeFontSize : primaryFontSize}px ${TITLE_FONT_FAMILY}`;
+    ctx.font = `bold ${isDimmed(ls) ? secondaryFontSize : primaryFontSize}px ${TITLE_FONT_FAMILY}`;
     totalWidth += ctx.measureText(ls.letter).width;
   }
 
   // Start position (centered)
   let x = (canvasWidth - totalWidth) / 2;
 
-  // Colors - bridges are very faded (25% opacity)
+  // Colors - bridges/derived are very faded (25% opacity)
   const primaryColor = darkMode ? "#ffffff" : "#1f2937";
-  const bridgeColor = darkMode ? "rgba(255, 255, 255, 0.25)" : "rgba(31, 41, 55, 0.25)";
+  const secondaryColor = darkMode ? "rgba(255, 255, 255, 0.25)" : "rgba(31, 41, 55, 0.25)";
 
   // Render each letter
   ctx.textAlign = "left";
   for (const ls of letterStyles) {
-    const currentFontSize = ls.isBridge ? bridgeFontSize : primaryFontSize;
+    const currentFontSize = isDimmed(ls) ? secondaryFontSize : primaryFontSize;
     ctx.font = `bold ${currentFontSize}px ${TITLE_FONT_FAMILY}`;
-    ctx.fillStyle = ls.isBridge ? bridgeColor : primaryColor;
+    ctx.fillStyle = isDimmed(ls) ? secondaryColor : primaryColor;
 
-    // Adjust Y position for smaller bridge letters to keep baseline aligned
-    const yOffset = ls.isBridge ? (primaryFontSize - bridgeFontSize) * 0.15 : 0;
+    // Adjust Y position for smaller secondary letters to keep baseline aligned
+    const yOffset = isDimmed(ls) ? (primaryFontSize - secondaryFontSize) * 0.15 : 0;
     ctx.fillText(ls.letter, x, centerY + yOffset);
 
     x += ctx.measureText(ls.letter).width;
@@ -523,41 +529,191 @@ function getContextualCaption(word: string): string | null {
 export enum LOOPComponent {
   ROTATED = "rotated",
   MIRRORED = "mirrored",
+  FLIPPED = "flipped",
   SWAPPED = "swapped",
   INVERTED = "inverted",
+  REWOUND = "rewound",
 }
 
 const LOOP_COMPONENT_COLORS: Record<LOOPComponent, string> = {
-  [LOOPComponent.ROTATED]: "#36c3ff",   // Blue
+  [LOOPComponent.ROTATED]: "#36c3ff",   // Cyan
   [LOOPComponent.MIRRORED]: "#6F2DA8", // Purple
+  [LOOPComponent.FLIPPED]: "#e91e63",  // Pink
   [LOOPComponent.SWAPPED]: "#26e600",  // Green
   [LOOPComponent.INVERTED]: "#eb7d00", // Orange
-};
-
-// Quadrant indices for each component (clockwise from top-right)
-const LOOP_COMPONENT_QUADRANT: Record<LOOPComponent, number> = {
-  [LOOPComponent.ROTATED]: 0,   // Top-right
-  [LOOPComponent.MIRRORED]: 1,  // Bottom-right
-  [LOOPComponent.SWAPPED]: 2,   // Bottom-left
-  [LOOPComponent.INVERTED]: 3,  // Top-left
+  [LOOPComponent.REWOUND]: "#00bcd4",  // Teal
 };
 
 /**
- * Render LOOP glyph - a 4-quadrant pie chart showing which LOOP components are active
+ * Draw a simplified icon for a LOOP component
+ * Since we can't use Font Awesome in node-canvas, we draw geometric representations
+ */
+function drawLOOPIcon(
+  ctx: CanvasRenderingContext2D,
+  component: LOOPComponent,
+  x: number,
+  y: number,
+  size: number,
+  color: string
+): void {
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  const r = size * 0.35; // Icon radius
+
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = Math.max(1.5, size * 0.08);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  switch (component) {
+    case LOOPComponent.ROTATED:
+      // Circular arrow (rotation symbol)
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, -Math.PI * 0.7, Math.PI * 0.5);
+      ctx.stroke();
+      // Arrow head
+      const arrowTip = { x: cx + r * Math.cos(Math.PI * 0.5), y: cy + r * Math.sin(Math.PI * 0.5) };
+      ctx.beginPath();
+      ctx.moveTo(arrowTip.x - size * 0.12, arrowTip.y - size * 0.08);
+      ctx.lineTo(arrowTip.x, arrowTip.y);
+      ctx.lineTo(arrowTip.x + size * 0.08, arrowTip.y - size * 0.12);
+      ctx.stroke();
+      break;
+
+    case LOOPComponent.MIRRORED:
+      // Left-right arrows (horizontal mirror)
+      const hw = r * 0.8;
+      // Left arrow
+      ctx.beginPath();
+      ctx.moveTo(cx - hw, cy);
+      ctx.lineTo(cx - hw * 0.3, cy);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx - hw, cy);
+      ctx.lineTo(cx - hw + size * 0.1, cy - size * 0.08);
+      ctx.moveTo(cx - hw, cy);
+      ctx.lineTo(cx - hw + size * 0.1, cy + size * 0.08);
+      ctx.stroke();
+      // Right arrow
+      ctx.beginPath();
+      ctx.moveTo(cx + hw, cy);
+      ctx.lineTo(cx + hw * 0.3, cy);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + hw, cy);
+      ctx.lineTo(cx + hw - size * 0.1, cy - size * 0.08);
+      ctx.moveTo(cx + hw, cy);
+      ctx.lineTo(cx + hw - size * 0.1, cy + size * 0.08);
+      ctx.stroke();
+      // Center line
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - r * 0.6);
+      ctx.lineTo(cx, cy + r * 0.6);
+      ctx.stroke();
+      break;
+
+    case LOOPComponent.FLIPPED:
+      // Up-down arrows (vertical mirror)
+      const vh = r * 0.8;
+      // Up arrow
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - vh);
+      ctx.lineTo(cx, cy - vh * 0.3);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - vh);
+      ctx.lineTo(cx - size * 0.08, cy - vh + size * 0.1);
+      ctx.moveTo(cx, cy - vh);
+      ctx.lineTo(cx + size * 0.08, cy - vh + size * 0.1);
+      ctx.stroke();
+      // Down arrow
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + vh);
+      ctx.lineTo(cx, cy + vh * 0.3);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + vh);
+      ctx.lineTo(cx - size * 0.08, cy + vh - size * 0.1);
+      ctx.moveTo(cx, cy + vh);
+      ctx.lineTo(cx + size * 0.08, cy + vh - size * 0.1);
+      ctx.stroke();
+      // Center line
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 0.6, cy);
+      ctx.lineTo(cx + r * 0.6, cy);
+      ctx.stroke();
+      break;
+
+    case LOOPComponent.SWAPPED:
+      // Shuffle/crossing arrows
+      const sw = r * 0.7;
+      ctx.beginPath();
+      // Top-left to bottom-right
+      ctx.moveTo(cx - sw, cy - sw * 0.5);
+      ctx.lineTo(cx + sw, cy + sw * 0.5);
+      ctx.stroke();
+      // Bottom-left to top-right
+      ctx.beginPath();
+      ctx.moveTo(cx - sw, cy + sw * 0.5);
+      ctx.lineTo(cx + sw, cy - sw * 0.5);
+      ctx.stroke();
+      // Arrow heads on right side
+      ctx.beginPath();
+      ctx.moveTo(cx + sw, cy + sw * 0.5);
+      ctx.lineTo(cx + sw - size * 0.1, cy + sw * 0.5 - size * 0.06);
+      ctx.moveTo(cx + sw, cy - sw * 0.5);
+      ctx.lineTo(cx + sw - size * 0.1, cy - sw * 0.5 + size * 0.06);
+      ctx.stroke();
+      break;
+
+    case LOOPComponent.INVERTED:
+      // Half-filled circle (adjust icon)
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.85, 0, 2 * Math.PI);
+      ctx.stroke();
+      // Fill left half
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.85, Math.PI * 0.5, Math.PI * 1.5);
+      ctx.fill();
+      break;
+
+    case LOOPComponent.REWOUND:
+      // Backward arrows (rewind symbol)
+      const rw = r * 0.5;
+      // First triangle (left)
+      ctx.beginPath();
+      ctx.moveTo(cx - rw * 0.1, cy - rw);
+      ctx.lineTo(cx - rw * 1.2, cy);
+      ctx.lineTo(cx - rw * 0.1, cy + rw);
+      ctx.closePath();
+      ctx.fill();
+      // Second triangle (right)
+      ctx.beginPath();
+      ctx.moveTo(cx + rw * 0.9, cy - rw);
+      ctx.lineTo(cx - rw * 0.2, cy);
+      ctx.lineTo(cx + rw * 0.9, cy + rw);
+      ctx.closePath();
+      ctx.fill();
+      break;
+  }
+}
+
+/**
+ * Render LOOP badges - individual icon badges for each active LOOP component
  *
  * Design:
- * - Circle divided into 4 quadrants
- * - Each quadrant represents a LOOP primitive
- * - Filled quadrant = component is active (colored)
- * - Empty quadrant = component is inactive (faded/gray)
- * - All empty = freeform sequence
+ * - Each active component rendered as a colored badge with icon
+ * - Badges arranged in a horizontal row
+ * - Right-aligned in the header
  *
  * @param ctx Canvas 2D context
  * @param activeComponents Array of active LOOP components
- * @param x Left edge of glyph
- * @param y Top edge of glyph
- * @param size Diameter of the glyph
+ * @param rightEdge Right edge to align to
+ * @param y Top edge of badges
+ * @param badgeSize Size of each badge
  * @param darkMode Whether to use dark theme
+ * @returns Total width consumed by badges
  */
 export function renderLOOPGlyph(
   ctx: CanvasRenderingContext2D,
@@ -567,72 +723,32 @@ export function renderLOOPGlyph(
   size: number,
   darkMode: boolean
 ): void {
-  const centerX = x + size / 2;
-  const centerY = y + size / 2;
-  const radius = size / 2;
+  if (activeComponents.length === 0) return;
 
-  // Create a set for O(1) lookup
-  const activeSet = new Set(activeComponents);
+  const badgeSize = size;
+  const gap = Math.floor(size * 0.15);
+  const cornerRadius = Math.floor(size * 0.2);
 
-  // Draw each quadrant
-  const quadrantOrder: LOOPComponent[] = [
-    LOOPComponent.ROTATED,   // 0: top-right
-    LOOPComponent.MIRRORED,  // 1: bottom-right
-    LOOPComponent.SWAPPED,   // 2: bottom-left
-    LOOPComponent.INVERTED,  // 3: top-left
-  ];
+  // Draw badges from left to right (starting at x)
+  let currentX = x;
 
-  for (let i = 0; i < 4; i++) {
-    const component = quadrantOrder[i];
-    if (!component) continue;
+  for (const component of activeComponents) {
+    const color = LOOP_COMPONENT_COLORS[component];
 
-    const isActive = activeSet.has(component);
-
-    // Calculate arc angles (starting from top, going clockwise)
-    // Quadrant 0 (top-right): -90° to 0°
-    // Quadrant 1 (bottom-right): 0° to 90°
-    // Quadrant 2 (bottom-left): 90° to 180°
-    // Quadrant 3 (top-left): 180° to 270° (-90°)
-    const startAngle = (-Math.PI / 2) + (i * Math.PI / 2);
-    const endAngle = startAngle + (Math.PI / 2);
-
-    // Draw the quadrant
+    // Draw badge background (rounded rectangle)
     ctx.beginPath();
-    ctx.moveTo(centerX, centerY);
-    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-    ctx.closePath();
-
-    if (isActive) {
-      // Filled with component color
-      ctx.fillStyle = LOOP_COMPONENT_COLORS[component];
-    } else {
-      // Empty/inactive - very faded
-      ctx.fillStyle = darkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)";
-    }
+    ctx.roundRect(currentX, y, badgeSize, badgeSize, cornerRadius);
+    ctx.fillStyle = darkMode ? "rgba(0, 0, 0, 0.6)" : "rgba(255, 255, 255, 0.85)";
     ctx.fill();
-
-    // Draw quadrant border
-    ctx.strokeStyle = darkMode ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.2)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
     ctx.stroke();
+
+    // Draw the icon
+    drawLOOPIcon(ctx, component, currentX, y, badgeSize, color);
+
+    currentX += badgeSize + gap;
   }
-
-  // Draw outer circle border for definition
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-  ctx.strokeStyle = darkMode ? "rgba(255, 255, 255, 0.5)" : "rgba(0, 0, 0, 0.3)";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Draw cross lines through center for quadrant definition
-  ctx.beginPath();
-  ctx.moveTo(centerX, y);
-  ctx.lineTo(centerX, y + size);
-  ctx.moveTo(x, centerY);
-  ctx.lineTo(x + size, centerY);
-  ctx.strokeStyle = darkMode ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.2)";
-  ctx.lineWidth = 1;
-  ctx.stroke();
 }
 
 /**

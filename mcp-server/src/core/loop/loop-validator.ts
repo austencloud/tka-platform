@@ -480,3 +480,103 @@ export function getExpectedEndPosition(
       return null;
   }
 }
+
+/**
+ * Find bridge letters that could transition from currentEndPosition to a
+ * valid end position for the given LOOP type.
+ *
+ * @param startPosition - The sequence's start position (used to determine valid LOOP end positions)
+ * @param currentEndPosition - Where the sequence currently ends
+ * @param loopType - The LOOP type we want to achieve
+ * @param sliceSize - Halved or quartered
+ * @param allPictographs - Pictograph data to find bridge letters from
+ * @returns Array of bridge letter options that would make the LOOP valid, or empty if no bridge needed/possible
+ */
+export function findBridgeLettersForLoop(
+  startPosition: string,
+  currentEndPosition: string,
+  loopType: LOOPType,
+  sliceSize: SliceSize,
+  allPictographs: Array<{ letter: string; startPosition: string; endPosition: string }>
+): string[] {
+  // Get what end positions would be valid for this LOOP
+  const validEndPositions = getValidEndPositionsForLoop(startPosition, loopType, sliceSize);
+
+  // If current position is already valid, no bridge needed
+  if (validEndPositions.includes(currentEndPosition)) {
+    return [];
+  }
+
+  // Find letters that start at currentEndPosition and end at a valid position
+  const bridgeOptions: string[] = [];
+  const seenLetters = new Set<string>();
+
+  for (const picto of allPictographs) {
+    // Must start at our current end position
+    if (picto.startPosition !== currentEndPosition) continue;
+
+    // Must end at a valid LOOP position
+    if (!validEndPositions.includes(picto.endPosition)) continue;
+
+    // Avoid duplicates (same letter, different variations)
+    if (seenLetters.has(picto.letter)) continue;
+    seenLetters.add(picto.letter);
+
+    bridgeOptions.push(picto.letter);
+  }
+
+  return bridgeOptions;
+}
+
+/**
+ * Get ALL valid end positions for a given start position and LOOP type.
+ * Unlike getExpectedEndPosition which returns a single position, this returns
+ * all positions that would make the LOOP valid (e.g., both CW and CCW for quartered).
+ */
+export function getValidEndPositionsForLoop(
+  startPosition: string,
+  loopType: LOOPType,
+  sliceSize: SliceSize
+): string[] {
+  const validPositions: string[] = [];
+
+  switch (loopType) {
+    case LOOPType.STRICT_ROTATED:
+    case LOOPType.ROTATED_INVERTED:
+      if (sliceSize === SliceSize.HALVED) {
+        const halved = HALF_POSITION_MAP[startPosition];
+        if (halved) validPositions.push(halved);
+      } else {
+        // Quartered: both CW and CCW are valid
+        const cw = QUARTER_POSITION_MAP_CW[startPosition];
+        const ccw = QUARTER_POSITION_MAP_CCW[startPosition];
+        if (cw) validPositions.push(cw);
+        if (ccw && ccw !== cw) validPositions.push(ccw);
+      }
+      break;
+
+    case LOOPType.STRICT_MIRRORED:
+    case LOOPType.MIRRORED_INVERTED:
+      const mirrored = VERTICAL_MIRROR_POSITION_MAP[startPosition];
+      if (mirrored) validPositions.push(mirrored);
+      break;
+
+    case LOOPType.STRICT_SWAPPED:
+    case LOOPType.SWAPPED_INVERTED:
+      const swapped = SWAPPED_POSITION_MAP[startPosition];
+      if (swapped) validPositions.push(swapped);
+      break;
+
+    case LOOPType.STRICT_INVERTED:
+      validPositions.push(startPosition); // Returns to same position
+      break;
+
+    case LOOPType.REWOUND:
+      // Rewound works with any end position - return null to indicate "no constraint"
+      // But for API consistency, we return the start (since it will end there after rewound)
+      validPositions.push(startPosition);
+      break;
+  }
+
+  return validPositions;
+}

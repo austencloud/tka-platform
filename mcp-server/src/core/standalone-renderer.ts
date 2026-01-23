@@ -158,6 +158,10 @@ export interface PictographInput {
   blueMotion: MotionInput;
   redMotion: MotionInput;
   gridMode?: string;
+  /** Whether blue motion has a reversal (direction change from previous step) */
+  blueReversal?: boolean;
+  /** Whether red motion has a reversal (direction change from previous step) */
+  redReversal?: boolean;
 }
 
 export interface RenderVisibilityOptions {
@@ -256,6 +260,7 @@ export class StandaloneRenderer {
       showVTG = false,
       showElemental = false,
       showPositions = false,
+      showReversals = false,
       showGrid = true,
       showBlueMotion = true,
       showRedMotion = true,
@@ -324,6 +329,16 @@ export class StandaloneRenderer {
     if (showVTG && input.letter && input.startPosition) {
       const vtgSvg = this.renderVTGGlyph(input.letter, input.startPosition, darkMode);
       if (vtgSvg) svgParts.push(vtgSvg);
+    }
+
+    // 9. Reversal indicators (left edge)
+    if (showReversals && (input.blueReversal || input.redReversal)) {
+      const reversalSvg = this.renderReversalIndicators(
+        input.blueReversal ?? false,
+        input.redReversal ?? false,
+        darkMode
+      );
+      if (reversalSvg) svgParts.push(reversalSvg);
     }
 
     return `<?xml version="1.0" encoding="UTF-8"?>
@@ -555,6 +570,13 @@ ${svgParts.join("\n")}
 
       const dashLocation = calculateDashLocation(dashLocationInput);
 
+      // DEBUG: Log W- blue dash location calculation
+      if (pictograph.letter === "W-" && motion.color === "blue") {
+        console.error(`[DEBUG W- BLUE DASH] dashLocation=${dashLocation}`);
+        console.error(`[DEBUG W- BLUE DASH] input: startLoc=${motion.startLocation}, endLoc=${motion.endLocation}, turns=${motion.turns}`);
+        console.error(`[DEBUG W- BLUE DASH] other: type=${otherMotion?.motionType}, start=${otherMotion?.startLocation}, end=${otherMotion?.endLocation}`);
+      }
+
       // Get coordinates for the calculated dash location
       const position = getLayer2PointCoordinates(dashLocation, gridMode);
 
@@ -633,6 +655,13 @@ ${svgParts.join("\n")}
     // Apply adjustment to placement
     const finalX = placement.x + adjustX;
     const finalY = placement.y + adjustY;
+
+    // DEBUG: Log final placement for W- blue dash
+    if (pictograph.letter === "W-" && motion.color === "blue") {
+      console.error(`[DEBUG W- BLUE FINAL] placement.x=${placement.x}, placement.y=${placement.y}, rotation=${placement.rotation}`);
+      console.error(`[DEBUG W- BLUE FINAL] adjustX=${adjustX}, adjustY=${adjustY}`);
+      console.error(`[DEBUG W- BLUE FINAL] finalX=${finalX}, finalY=${finalY}`);
+    }
 
     // Determine arrow file path based on motion type and start orientation
     const arrowPath = this.getArrowPath(motionType, startOrientation, motion.turns);
@@ -1144,6 +1173,61 @@ ${turnNumbersSvg}
       console.error("[Renderer] Failed to render position glyph:", error);
       return "";
     }
+  }
+
+  // ==========================================================================
+  // REVERSAL INDICATOR RENDERING
+  // ==========================================================================
+
+  /**
+   * Render reversal indicators on the left edge of the pictograph.
+   * Matches ReversalIndicators.svelte positioning EXACTLY.
+   *
+   * The Svelte component uses percentage-based constants with specific multipliers:
+   * - X_POSITION_PERCENT = 5.5, multiplied by 13 = 71.5
+   * - DOT_RADIUS_PERCENT = 1.5, multiplied by 10 = 15
+   * - DOT_SPACING_PERCENT = 4.5, multiplied by 13 = 58.5
+   * - CENTER_Y_PERCENT = 50, multiplied by 9.5 = 475
+   *
+   * When both reversals present: RED on top, BLUE on bottom
+   */
+  private renderReversalIndicators(
+    blueReversal: boolean,
+    redReversal: boolean,
+    darkMode: boolean
+  ): string {
+    if (!blueReversal && !redReversal) return "";
+
+    // Constants matching ReversalIndicators.svelte EXACTLY
+    // These use the specific multipliers from the Svelte component
+    const X_POSITION = 5.5 * 13;    // = 71.5 (NOT VIEWBOX_SIZE * 0.055)
+    const DOT_RADIUS = 1.5 * 10;    // = 15
+    const DOT_SPACING = 4.5 * 13;   // = 58.5
+    const CENTER_Y = 50 * 9.5;      // = 475
+
+    // Colors matching the motion colors
+    const blueColor = darkMode ? BLUE_COLOR : BLUE_COLOR_LIGHT;
+    const redColor = darkMode ? RED_COLOR : RED_COLOR_LIGHT;
+
+    const circles: string[] = [];
+
+    if (blueReversal && redReversal) {
+      // Both reversals: stack vertically
+      // RED on top (center - spacing/2), BLUE on bottom (center + spacing/2)
+      const redY = CENTER_Y - DOT_SPACING / 2;   // 475 - 29.25 = 445.75
+      const blueY = CENTER_Y + DOT_SPACING / 2;  // 475 + 29.25 = 504.25
+
+      circles.push(`<circle cx="${X_POSITION}" cy="${redY}" r="${DOT_RADIUS}" fill="${redColor}"/>`);
+      circles.push(`<circle cx="${X_POSITION}" cy="${blueY}" r="${DOT_RADIUS}" fill="${blueColor}"/>`);
+    } else if (blueReversal) {
+      // Only blue reversal: centered
+      circles.push(`<circle cx="${X_POSITION}" cy="${CENTER_Y}" r="${DOT_RADIUS}" fill="${blueColor}"/>`);
+    } else if (redReversal) {
+      // Only red reversal: centered
+      circles.push(`<circle cx="${X_POSITION}" cy="${CENTER_Y}" r="${DOT_RADIUS}" fill="${redColor}"/>`);
+    }
+
+    return `<g class="reversal-indicators">${circles.join("\n")}</g>`;
   }
 
   // ==========================================================================

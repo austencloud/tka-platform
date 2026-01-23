@@ -56,6 +56,8 @@ export interface BridgeInfo {
   selectedIndex: number;
   /** Whether this bridge was selected based on constraint scoring */
   constraintScored: boolean;
+  /** Index of this bridge step in the final steps array (set after path selection) */
+  stepIndex?: number;
 }
 
 /**
@@ -89,8 +91,11 @@ export interface ConstrainedSequenceResult {
   /** Number of search states explored */
   statesExplored?: number;
 
-  /** Information about bridge letters used */
+  /** Information about bridge letters used (deprecated - use bridgeStepIndices) */
   bridges?: BridgeInfo[];
+
+  /** Indices of steps that are bridge letters (not user-requested letters) */
+  bridgeStepIndices?: number[];
 }
 
 /**
@@ -229,10 +234,6 @@ export function buildConstrainedSequence(
     };
   }
 
-  // Track bridge information
-  const bridges: BridgeInfo[] = [];
-  let bridgeTransitionIndex = 0;
-
   // Get transition graph for bridge finding
   const transitionGraph = getLetterTransitionGraph();
 
@@ -292,20 +293,9 @@ export function buildConstrainedSequence(
         const bestBridgeScore = bridgeScores[0];
         if (!bestBridgeScore || !bestBridgeScore.hardConstraintsSatisfied) continue;
 
-        // Extend state with bridge letter
-        const stateWithBridge = extendState(state, bestBridgeScore.variation, bestBridgeScore);
+        // Extend state with bridge letter (marked as bridge)
+        const stateWithBridge = extendState(state, bestBridgeScore.variation, bestBridgeScore, true);
         statesExplored++;
-
-        // Record bridge info
-        bridges.push({
-          transitionIndex: bridgeTransitionIndex++,
-          fromLetter: previousLetter,
-          toLetter: letter,
-          availableOptions: bridgeOptions,
-          selectedBridge: bestBridge.letter,
-          selectedIndex: bridgeOptions.indexOf(bestBridge.letter),
-          constraintScored: constraintSet.hard.length > 0 || constraintSet.soft.length > 0,
-        });
 
         // Now find target letter variations from bridge's end position
         validVariations = allPictographs.filter(
@@ -380,7 +370,6 @@ export function buildConstrainedSequence(
         },
         error: `No valid path found after letter "${letter}" (position ${i + 1})`,
         statesExplored,
-        bridges: bridges.length > 0 ? bridges : undefined,
       };
     }
   }
@@ -394,7 +383,7 @@ export function buildConstrainedSequence(
     if (config.allowPartial && beam.length > 0) {
       const partial = beam.sort((a, b) => b.cumulativeScore - a.cumulativeScore)[0];
       if (partial) {
-        return buildResult(partial, word, constraintSet, statesExplored, true, bridges);
+        return buildResult(partial, word, constraintSet, statesExplored, true);
       }
     }
 
@@ -412,11 +401,10 @@ export function buildConstrainedSequence(
       },
       error: `No sequence met minimum score threshold (${config.minAcceptableScore})`,
       statesExplored,
-      bridges: bridges.length > 0 ? bridges : undefined,
     };
   }
 
-  return buildResult(bestState, word, constraintSet, statesExplored, false, bridges);
+  return buildResult(bestState, word, constraintSet, statesExplored, false);
 }
 
 /**
@@ -520,13 +508,17 @@ function buildResult(
   word: string,
   constraintSet: ConstraintSet,
   statesExplored: number,
-  isPartial: boolean,
-  bridges?: BridgeInfo[]
+  isPartial: boolean
 ): ConstrainedSequenceResult {
   const report = generateConstraintReport(state, constraintSet);
 
   // Propagate orientations through the sequence
   const stepsWithOrientations = propagateOrientations(state.steps);
+
+  // Extract bridge step indices from the state
+  const bridgeStepIndices = state.bridgeStepIndices
+    ? Array.from(state.bridgeStepIndices).sort((a, b) => a - b)
+    : undefined;
 
   return {
     success: !isPartial && report.satisfied,
@@ -538,7 +530,7 @@ function buildResult(
     constraintReport: report,
     statesExplored,
     error: isPartial ? "Partial result (minimum score not met)" : undefined,
-    bridges: bridges && bridges.length > 0 ? bridges : undefined,
+    bridgeStepIndices: bridgeStepIndices && bridgeStepIndices.length > 0 ? bridgeStepIndices : undefined,
   };
 }
 

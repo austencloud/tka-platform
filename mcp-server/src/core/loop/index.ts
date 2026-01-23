@@ -22,9 +22,19 @@ export {
   isLOOPSupported,
   getLOOPOptionsForPositionPair,
   getExpectedEndPosition,
+  getValidEndPositionsForLoop,
+  findBridgeLettersForLoop,
   HALVED_LOOPS,
   QUARTERED_LOOPS,
 } from "./loop-validator.js";
+
+// Detector (analyzes sequence steps to identify LOOP patterns)
+export {
+  detectLOOPFromSteps,
+  isSequenceCircular,
+  type LOOPComponentId,
+  type LOOPDetectionResult,
+} from "./loop-detector.js";
 
 // Executor
 export {
