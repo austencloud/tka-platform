@@ -7,7 +7,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import SequenceBrowserPanel from "../../../shared/animation-engine/components/SequenceBrowserPanel.svelte";
   import { container } from "$lib/shared/di";
-  import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+  import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -18,7 +18,7 @@
   let { onSequenceSelected }: Props = $props();
 
   // Services - resolved lazily
-  let loaderService = $state<IDiscoverLoader | null>(null);
+  let loaderService = $state<IExploreLoader | null>(null);
 
   // State
   let showBrowser = $state(false);
@@ -26,7 +26,7 @@
   let isLoadingFullSequence = $state(false);
 
   onMount(() => {
-    loaderService = container.items.discoverLoader;
+    loaderService = container.items.exploreLoader;
   });
 
   $effect(() => {

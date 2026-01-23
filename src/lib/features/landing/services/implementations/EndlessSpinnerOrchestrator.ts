@@ -9,7 +9,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
 import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
 import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
 import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
@@ -308,7 +308,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
   };
 
   constructor(
-    private readonly discoverLoader: IDiscoverLoader,
+    private readonly exploreLoader: IExploreLoader,
     private readonly generationOrchestrator: IGenerationOrchestrator,
     private readonly sequenceTransformer: ISequenceTransformer,
     private readonly startPositionDeriver: IStartPositionDeriver,
@@ -321,7 +321,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
 
     try {
       // Load all sequence metadata
-      const allSequences = await this.discoverLoader.loadSequenceMetadata();
+      const allSequences = await this.exploreLoader.loadSequenceMetadata();
 
       // Filter for circular sequences only (LOOPs loop seamlessly)
       this.circularSequences = allSequences.filter((seq) => seq.isCircular === true);
@@ -353,7 +353,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
 
     for (const sequence of this.circularSequences) {
       // Load full sequence data to get the steps
-      const fullSequence = await this.discoverLoader.loadFullSequenceData(sequence.word);
+      const fullSequence = await this.exploreLoader.loadFullSequenceData(sequence.word);
       if (!fullSequence || !fullSequence.steps || fullSequence.steps.length === 0) continue;
 
       // Get or derive start position
@@ -455,7 +455,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
       }
 
       // Load full sequence data
-      const fullSequence = await this.discoverLoader.loadFullSequenceData(candidate.word);
+      const fullSequence = await this.exploreLoader.loadFullSequenceData(candidate.word);
       if (!fullSequence?.steps?.length || !fullSequence.isCircular) continue;
 
       // Scan each beat for a position match
@@ -702,7 +702,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
       }
 
       // Load full sequence data
-      const fullSequence = await this.discoverLoader.loadFullSequenceData(candidate.word);
+      const fullSequence = await this.exploreLoader.loadFullSequenceData(candidate.word);
       if (!fullSequence?.steps?.length) continue;
 
       // Get the sequence's start position
@@ -767,7 +767,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
     if (!randomSeq) return null;
 
     // Load full sequence data
-    return this.discoverLoader.loadFullSequenceData(randomSeq.word);
+    return this.exploreLoader.loadFullSequenceData(randomSeq.word);
   }
 
   /**
@@ -802,7 +802,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
 
     for (const sequence of this.circularSequences) {
       // Load full sequence data
-      const fullSequence = await this.discoverLoader.loadFullSequenceData(sequence.word);
+      const fullSequence = await this.exploreLoader.loadFullSequenceData(sequence.word);
       if (!fullSequence?.steps || !fullSequence.isCircular) continue;
 
       // Check each beat's end state

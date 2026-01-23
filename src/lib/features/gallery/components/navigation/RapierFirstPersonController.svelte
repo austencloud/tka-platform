@@ -176,25 +176,34 @@
       document.exitPointerLock();
     }
 
-    // Clean up colliders
-    if (physicsState) {
-      if (wallColliders.length > 0) {
-        removeColliders(physicsState, wallColliders);
-        wallColliders = [];
+    // Clean up physics resources
+    // Wrapped in try-catch because during HMR, Rapier's WASM module may already
+    // be freed before our cleanup runs, causing "_initialized" errors
+    try {
+      if (physicsState) {
+        if (wallColliders.length > 0) {
+          removeColliders(physicsState, wallColliders);
+          wallColliders = [];
+        }
+
+        if (floorCollider && physicsState.world) {
+          physicsState.world.removeCollider(floorCollider, true);
+          floorCollider = null;
+        }
       }
 
-      if (floorCollider && physicsState.world) {
-        physicsState.world.removeCollider(floorCollider, true);
-        floorCollider = null;
+      if (physicsState && playerController) {
+        disposePlayerController(physicsState, playerController);
       }
-    }
 
-    if (physicsState && playerController) {
-      disposePlayerController(physicsState, playerController);
-    }
-
-    if (physicsState) {
-      disposePhysicsWorld(physicsState);
+      if (physicsState) {
+        disposePhysicsWorld(physicsState);
+      }
+    } catch (e) {
+      // Expected during HMR when Rapier WASM is already freed
+      if (import.meta.hot) {
+        console.debug('[RapierFirstPersonController] Rapier cleanup during HMR:', e);
+      }
     }
   });
 

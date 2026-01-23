@@ -10,7 +10,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
-import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
 import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/SequenceExportOptions";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -26,7 +26,7 @@ export interface RenderOptions {
 export class GalleryRenderer implements IGalleryRenderer {
   constructor(
     private renderService: ISequenceRenderer,
-    private loaderService: IDiscoverLoader,
+    private loaderService: IExploreLoader,
     private startPositionDeriver: IStartPositionDeriver
   ) {}
 
