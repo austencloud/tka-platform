@@ -19,6 +19,7 @@
     onRecordingEnd,
     onVoiceTimeout,
     onClearText,
+    onFocusChange,
   } = $props<{
     value: string;
     error?: string;
@@ -35,7 +36,33 @@
     onRecordingEnd: () => void;
     onVoiceTimeout: () => void;
     onClearText: () => void;
+    onFocusChange?: (focused: boolean) => void;
   }>();
+
+  let textareaElement = $state<HTMLTextAreaElement | null>(null);
+  let isFocused = $state(false);
+
+  function handleFocus() {
+    isFocused = true;
+    onFocusChange?.(true);
+
+    // On mobile, scroll the textarea into view after keyboard animation
+    if (isMobile && textareaElement) {
+      setTimeout(() => {
+        textareaElement?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 300);
+    }
+  }
+
+  function handleBlur() {
+    isFocused = false;
+    onFocusChange?.(false);
+  }
+
+  /** Called when user taps Done on mobile keyboard or presses the Done button */
+  export function dismissKeyboard() {
+    textareaElement?.blur();
+  }
 
   const minChars = 10;
   const charsNeeded = $derived(Math.max(0, minChars - value.trim().length));
@@ -48,15 +75,21 @@
   >
   <div class="textarea-wrapper">
     <textarea
+      bind:this={textareaElement}
       id="fb-description"
       class="field-textarea"
       class:has-error={!!error}
       class:streaming={isStreaming}
+      class:focused={isFocused}
       {value}
       oninput={(e) => onInput(e.currentTarget.value)}
       onkeydown={onKeydown}
+      onfocus={handleFocus}
+      onblur={handleBlur}
       placeholder={`${placeholder}${isMobile ? "" : " (Shift+Enter to submit)"}`}
       rows="6"
+      inputmode="text"
+      enterkeyhint="done"
       aria-invalid={!!error}
       aria-describedby={error ? "fb-description-error" : undefined}
     ></textarea>

@@ -63,14 +63,19 @@ Run `node scripts/fetch-feedback.js list` to show the feedback queue.
 - Check the details of 3+ items before deciding
 - Ask which item to work on
 
-After selecting, announce your choice with a 1-sentence rationale, then immediately claim it.
+After selecting, announce your choice with a 1-sentence rationale, then immediately claim it:
+```bash
+node scripts/fetch-feedback.js claim <id>
+```
+This atomically claims the item with a unique token, preventing race conditions with other agents.
 
 ### If argument provided (feedback ID):
 
 1. **Claim the feedback:**
    ```bash
-   node scripts/fetch-feedback.js $ARGUMENTS
+   node scripts/fetch-feedback.js claim $ARGUMENTS
    ```
+   This atomically claims the item with a unique token, preventing other agents from picking it up.
 
 2. **Display the feedback** with all details:
    - Title and ID

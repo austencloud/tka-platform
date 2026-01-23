@@ -166,8 +166,12 @@ Task({
 ## Other Commands
 
 - `node scripts/fetch-feedback.js list` - See queue status
-- `node scripts/fetch-feedback.js <id>` - View specific item
+- `node scripts/fetch-feedback.js claim <id>` - **Atomically claim** an item (REQUIRED before working)
+- `node scripts/fetch-feedback.js <id>` - View specific item (does NOT claim)
+- `node scripts/fetch-feedback.js unclaim <id>` - Release a claimed item
 - `node scripts/fetch-feedback.js <id> priority <level>` - Set priority
 - `node scripts/fetch-feedback.js <id> resolution "notes"` - Add user-facing notes
 - `node scripts/fetch-feedback.js <id> subtask add "title" "desc"` - Add subtask
 - `node scripts/fetch-feedback.js <id> defer "YYYY-MM-DD" "reason"` - Defer item
+
+**CRITICAL:** Always use `claim <id>` before working on an item. Just viewing with `<id>` alone does NOT prevent other agents from picking it up.
