@@ -117,6 +117,15 @@ import { DurationPatternManager } from "$lib/features/create/shared/services/imp
 // === Equivalence Detection ===
 import { WordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
 
+// === Sequence Comparison Engine ===
+import { MotionSignatureGenerator } from "$lib/shared/comparison/services/implementations/MotionSignatureGenerator";
+import { BeatSignatureGenerator } from "$lib/shared/comparison/services/implementations/BeatSignatureGenerator";
+import { SpatialTransformDetector } from "$lib/shared/comparison/services/implementations/SpatialTransformDetector";
+import { SequenceCanonicalizer } from "$lib/shared/comparison/services/implementations/SequenceCanonicalizer";
+import { SequenceEquivalenceDetector } from "$lib/shared/comparison/services/implementations/SequenceEquivalenceDetector";
+import { SequenceAligner } from "$lib/shared/comparison/services/implementations/SequenceAligner";
+import { SimilarityCalculator } from "$lib/shared/comparison/services/implementations/SimilarityCalculator";
+
 // === Spell Tab Services ===
 import { LetterTransitionGraph } from "$lib/features/create/spell/services/implementations/LetterTransitionGraph";
 import { WordSequenceGenerator } from "$lib/features/create/spell/services/implementations/WordSequenceGenerator";
@@ -254,6 +263,10 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         // Equivalence detection - no deps
         wordCyclicEquivalenceDetector: () => new WordCyclicEquivalenceDetector(),
 
+        // Sequence Comparison Engine - Layer 1 (no deps)
+        motionSignatureGenerator: () => new MotionSignatureGenerator(),
+        spatialTransformDetector: () => new SpatialTransformDetector(),
+
         // Generation - no deps (moved from Layer 4)
         loopTypeResolver: () => new LOOPTypeResolver(),
         sequenceToEntryConverter: () => new SequenceToEntryConverter(),
@@ -346,10 +359,12 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           ),
         rewoundLOOPExecutor: () => new RewoundLOOPExecutor(),
 
-        // Spell - letter transition graph (singleton) - no constructor deps
+        // Spell - letter transition graph (singleton) - needs letterQueryHandler for initialization
         letterTransitionGraph: () => {
           if (!letterTransitionGraphInstance) {
             letterTransitionGraphInstance = new LetterTransitionGraph();
+            // Set the letterQueryHandler for data loading (initialization happens async later)
+            letterTransitionGraphInstance.setLetterQueryHandler(deps.letterQueryHandler);
           }
           return letterTransitionGraphInstance;
         },
@@ -375,6 +390,27 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
 
       // === Layer 3: Services with Layer 1/2 deps ===
       .add((ctx) => ({
+        // Sequence Comparison Engine - Layer 2 (depends on Layer 1)
+        beatSignatureGenerator: () =>
+          new BeatSignatureGenerator(ctx.motionSignatureGenerator),
+        sequenceCanonicalizer: () =>
+          new SequenceCanonicalizer(
+            ctx.beatSignatureGenerator,
+            ctx.wordCyclicEquivalenceDetector
+          ),
+        sequenceAligner: () =>
+          new SequenceAligner(
+            ctx.beatSignatureGenerator,
+            ctx.spatialTransformDetector
+          ),
+        sequenceEquivalenceDetector: () =>
+          new SequenceEquivalenceDetector(
+            ctx.sequenceCanonicalizer,
+            ctx.beatSignatureGenerator,
+            ctx.spatialTransformDetector,
+            ctx.wordCyclicEquivalenceDetector
+          ),
+
         // Option sorter - needs reversal checker and position analyzer
         optionSorter: () =>
           new OptionSorter(ctx.reversalChecker, ctx.positionAnalyzer),
@@ -443,6 +479,13 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
 
       // === Layer 4: Higher-level services ===
       .add((ctx) => ({
+        // Sequence Comparison Engine - Layer 3 (depends on Layer 2)
+        similarityCalculator: () =>
+          new SimilarityCalculator(
+            ctx.beatSignatureGenerator,
+            ctx.sequenceAligner
+          ),
+
         // Workbench - needs ISequenceRepository and IPersistenceService
         workbench: () =>
           new Workbench(
@@ -585,7 +628,8 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             deps.orientationCalculator,
             ctx.sequenceExtender,
             ctx.startPositionValidator,
-            ctx.orientationContinuityValidator
+            ctx.orientationContinuityValidator,
+            deps.reversalDetector
           ),
       }))
 
@@ -599,7 +643,8 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.orientationContinuityValidator,
             deps.orientationCalculator,
             ctx.sequenceExtender,
-            ctx.stepConverter
+            ctx.stepConverter,
+            deps.reversalDetector
           ),
         variationExplorationOrchestrator: () =>
           new VariationExplorationOrchestrator(ctx.spellServiceLoader),

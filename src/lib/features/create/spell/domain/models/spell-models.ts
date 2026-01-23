@@ -13,6 +13,7 @@ import type {
   ExtensionAnalysis,
   LOOPOption,
 } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
+import type { ConstraintPresetId } from "$lib/shared/sequence-engine/constraints";
 
 /**
  * Tracks whether a letter in the sequence is original (user-typed) or a bridge (interpolated)
@@ -42,6 +43,8 @@ export interface SpellPreferences {
   makeCircular: boolean;
   /** Selected LOOP type when makeCircular is true (null = show options after generation) */
   selectedLOOPType: LOOPType | null;
+  /** Constraint preset for variation selection */
+  constraintPreset: ConstraintPresetId;
 }
 
 /**

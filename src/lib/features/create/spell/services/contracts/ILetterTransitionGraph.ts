@@ -1,14 +1,19 @@
 /**
  * Letter Transition Graph Service Interface
  *
- * Manages the graph of valid letter transitions based on position groups.
- * A letter X can follow letter Y only if X.startPositionGroup === Y.endPositionGroup
+ * Extends the shared ITransitionGraph for use in Spell Tab.
+ * Adds Letter-typed overloads for type safety in browser context.
  */
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { ITransitionGraph } from "$lib/shared/sequence-engine/services/contracts/ITransitionGraph";
 import type { LetterPositionInfo } from "../../domain/models/spell-models";
 
+/**
+ * Extended interface for browser contexts with Letter enum typing.
+ * The underlying implementation uses the shared TransitionGraph.
+ */
 export interface ILetterTransitionGraph {
   /**
    * Initialize the graph by loading letter mapping data

@@ -21,13 +21,17 @@ import type { IOrientationContinuityValidator } from "../contracts/IOrientationC
 import type { IOrientationCalculator } from "$lib/shared/pictograph/orientation/services/contracts/IOrientationCalculator";
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
+import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
+import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
 
 interface RandomWalkState {
   steps: StepData[];
   pictographs: PictographData[];
   letterIndex: number;
+  startPositionPictograph: PictographData;
 }
 
 export class RandomSequenceGenerator implements IRandomSequenceGenerator {
@@ -37,7 +41,8 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     private orientationContinuityValidator: IOrientationContinuityValidator,
     private orientationCalculator: IOrientationCalculator,
     private sequenceExtender: ISequenceExtender,
-    private stepConverter: IStepConverter
+    private stepConverter: IStepConverter,
+    private reversalDetector: IReversalDetector
   ) {}
 
   async generateRandomSequence(
@@ -137,19 +142,23 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       return null;
     }
 
+    // Pick a random start position (Type 6 static letter)
+    const startPositionPictograph = this.pickRandom(validStartPositions);
+    if (!startPositionPictograph) return null;
+
     // Step 4: Convert first letter variation to beat 1
-    // (Start position will be derived from beat 1's startPosition)
     const firstLetterStep = this.stepConverter.convertToStep(
       firstLetterVariation,
       1,
       gridMode
     );
 
-    // Initialize walk state with first letter only
+    // Initialize walk state with first letter and start position
     const state: RandomWalkState = {
       steps: [firstLetterStep],
       pictographs: [firstLetterVariation],
       letterIndex: 1, // Start from second letter (index 1) since first is already placed
+      startPositionPictograph,
     };
 
     // Walk through remaining letters
@@ -176,8 +185,12 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       state.letterIndex++;
     }
 
-    // Build final sequence
-    const sequence = this.buildSequence(state.steps, gridMode);
+    // Build final sequence with proper start position for orientation propagation
+    const sequence = this.buildSequence(
+      state.steps,
+      gridMode,
+      state.startPositionPictograph
+    );
 
     // Apply LOOP extension if circular is required
     if (constraints?.requiresCircular && !sequence.isCircular) {
@@ -283,58 +296,46 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     );
   }
 
-  private buildSequence(steps: StepData[], gridMode: GridMode): SequenceData {
-    // Recalculate all orientations to ensure consistency
-    const stepsWithOrientations = steps.map((step, index) => {
-      if (index === 0) return step;
-
-      const previousStep = steps[index - 1];
-      if (!previousStep) return step;
-
-      // Recalculate orientations based on previous step
-      const blueStartOrientation =
-        previousStep.blueMotion?.endOrientation ||
-        step.blueMotion?.startOrientation;
-      const redStartOrientation =
-        previousStep.redMotion?.endOrientation ||
-        step.redMotion?.startOrientation;
-
-      return {
-        ...step,
-        blueMotion: step.blueMotion
-          ? {
-              ...step.blueMotion,
-              startOrientation:
-                blueStartOrientation || step.blueMotion.startOrientation,
-            }
-          : undefined,
-        redMotion: step.redMotion
-          ? {
-              ...step.redMotion,
-              startOrientation:
-                redStartOrientation || step.redMotion.startOrientation,
-            }
-          : undefined,
-      };
-    });
-
-    // Extract word from step letters (all beats are actual letters now)
-    const word = stepsWithOrientations
+  private buildSequence(
+    steps: StepData[],
+    gridMode: GridMode,
+    startPositionPictograph: PictographData
+  ): SequenceData {
+    // Extract word from step letters
+    const word = steps
       .map((step) => step.letter || "")
       .filter((letter) => letter)
       .join("");
 
-    return createSequenceData({
-      steps: stepsWithOrientations,
+    // Convert the start position pictograph to StartPositionData
+    const startPosition = this.stepConverter.convertToStartPosition(
+      startPositionPictograph,
+      gridMode
+    );
+
+    // Create the initial sequence with start position
+    let sequence = createSequenceData({
+      steps,
       name: word,
       word: word,
       gridMode,
       isCircular: false,
+      startPosition,
       metadata: {
         generatedAt: new Date().toISOString(),
         generationMethod: "random-walk",
       },
     });
+
+    // Recalculate all orientations using proper propagation
+    // This uses the start position's end orientations as the baseline
+    // and calculates each step's end orientation based on motion type
+    sequence = recalculateAllOrientations(sequence, this.orientationCalculator);
+
+    // Detect and apply reversal markers
+    sequence = this.reversalDetector.processReversals(sequence);
+
+    return sequence;
   }
 
   private async applyCircularExtension(

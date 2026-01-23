@@ -10,9 +10,8 @@ New "preferences-first" flow:
 <script lang="ts">
   import type { SpellPreferences } from "../domain/models/spell-models";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { CONSTRAINT_PRESETS, type ConstraintPresetId } from "$lib/shared/sequence-engine/constraints";
   import WordInput from "./WordInput.svelte";
-  import QuickGreekBar from "./QuickGreekBar.svelte";
-  import LetterPalette from "./LetterPalette.svelte";
 
   let {
     word,
@@ -24,7 +23,6 @@ New "preferences-first" flow:
     onGenerate,
     estimatedCount = null,
     isEstimating = false,
-    showGreekBar = true,
   }: {
     word: string;
     onWordChange: (word: string) => void;
@@ -38,7 +36,6 @@ New "preferences-first" flow:
     onGenerate: () => void;
     estimatedCount?: number | null;
     isEstimating?: boolean;
-    showGreekBar?: boolean;
   } = $props();
 
   // Grid mode options
@@ -70,10 +67,6 @@ New "preferences-first" flow:
     { value: 2, label: "Few (1-2)" },
   ];
 
-  function handleLetterClick(letter: string) {
-    onWordChange(word + letter);
-  }
-
   const canGenerate = $derived(word.length > 0);
 </script>
 
@@ -95,10 +88,6 @@ New "preferences-first" flow:
         value={word}
         onInput={onWordChange}
       />
-
-      {#if showGreekBar}
-        <QuickGreekBar onSelect={handleLetterClick} />
-      {/if}
     </section>
 
     <!-- Grid Mode Section -->
@@ -153,6 +142,29 @@ New "preferences-first" flow:
           </button>
         {/each}
       </div>
+    </section>
+
+    <!-- Generation Style Section -->
+    <section class="preference-section">
+      <h3 class="section-title">Generation Style</h3>
+      <div class="chip-group" role="radiogroup" aria-label="Generation style">
+        {#each CONSTRAINT_PRESETS as preset}
+          <button
+            class="chip chip-with-icon"
+            class:active={preferences.constraintPreset === preset.id}
+            onclick={() => onPreferenceChange("constraintPreset", preset.id)}
+            role="radio"
+            aria-checked={preferences.constraintPreset === preset.id}
+            title={preset.description}
+          >
+            <i class="fas {preset.icon}" aria-hidden="true"></i>
+            <span>{preset.label}</span>
+          </button>
+        {/each}
+      </div>
+      <p class="style-hint">
+        {CONSTRAINT_PRESETS.find(p => p.id === preferences.constraintPreset)?.description || ""}
+      </p>
     </section>
 
     <!-- Reversals Section -->
@@ -394,6 +406,29 @@ New "preferences-first" flow:
     padding-left: var(--settings-spacing-sm, 8px);
   }
 
+  /* Style hint for generation style */
+  .style-hint {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    line-height: 1.4;
+    min-height: 1.4em;
+  }
+
+  /* Chips with icons */
+  .chip-with-icon {
+    gap: var(--settings-spacing-xs, 4px);
+  }
+
+  .chip-with-icon i {
+    font-size: var(--font-size-compact, 12px);
+    opacity: 0.7;
+  }
+
+  .chip-with-icon.active i {
+    opacity: 1;
+  }
+
   /* Generate Section */
   .generate-section {
     display: flex;
@@ -449,6 +484,12 @@ New "preferences-first" flow:
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
     cursor: not-allowed;
+    opacity: 0.6;
+    box-shadow: none;
+  }
+
+  .generate-button:disabled .button-icon {
+    opacity: 0.5;
   }
 
   .button-icon {

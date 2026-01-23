@@ -11,6 +11,7 @@ import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contra
 import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
+import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -40,7 +41,8 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
     private orientationCalculator: IOrientationCalculator,
     private sequenceExtender: ISequenceExtender,
     private startPositionValidator: IStartPositionValidator,
-    private orientationContinuityValidator: IOrientationContinuityValidator
+    private orientationContinuityValidator: IOrientationContinuityValidator,
+    private reversalDetector: IReversalDetector
   ) {}
 
   async generateFromWord(
@@ -126,6 +128,9 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
         sequence,
         this.orientationCalculator
       );
+
+      // Detect reversals in the sequence
+      sequence = this.reversalDetector.processReversals(sequence);
 
       // If a forced bridge letter was specified (for circularization), append it
       if (options.forceBridgeLetter) {
