@@ -33,8 +33,8 @@ const IS_DEV =
  * - Train → Create (compose), Learn (review)
  */
 const NAVIGATION_PATTERNS: Record<string, string[]> = {
-  dashboard: ["create", "discover"],
-  create: ["compose", "discover"],
+  dashboard: ["create", "explore"],
+  create: ["compose", "explore"],
   discover: ["create"],
   compose: ["create"],
   learn: ["create", "train"],
@@ -52,10 +52,10 @@ const NAVIGATION_PATTERNS: Record<string, string[]> = {
  * In production, .svelte files are compiled to hashed chunks.
  */
 const MODULE_PATHS: Record<string, string> = {
-  dashboard: "/src/lib/features/dashboard/components/Dashboard.svelte",
+  // dashboard removed - Create is now the default landing module
   create: "/src/lib/features/create/shared/components/CreateModule.svelte",
   discover:
-    "/src/lib/features/discover/shared/components/DiscoverModule.svelte",
+    "/src/lib/features/explore/shared/components/ExploreModule.svelte",
   compose: "/src/lib/features/compose/ComposeModule.svelte",
   learn: "/src/lib/features/learn/LearnTab.svelte",
   train: "/src/lib/features/train/components/TrainModule.svelte",
@@ -164,7 +164,7 @@ export function preloadCriticalModules(currentModuleId?: string): void {
     () => {
       // Most users start on Dashboard and go to Create or Discover
       prefetchModule("create");
-      prefetchModule("discover");
+      prefetchModule("explore");
     },
     { timeout: 3000 }
   );

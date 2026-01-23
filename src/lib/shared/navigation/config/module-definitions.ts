@@ -9,7 +9,7 @@ import type { ModuleDefinition, ModuleId } from "../domain/types";
 import {
   CREATE_TABS,
   LEARN_TABS,
-  DISCOVER_TABS,
+  EXPLORE_TABS,
   ANIMATE_TABS,
   TRAIN_TABS,
   FEEDBACK_TABS,
@@ -29,6 +29,8 @@ import {
  */
 const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   TIKA: "tika", // Module renamed back to lowercase for cleaner URLs
+  discover: "explore", // Module renamed from Discover to Explore (Jan 2026)
+  dashboard: "create", // Dashboard removed - Create is now the default landing (Jan 2026)
 };
 
 /**
@@ -52,16 +54,8 @@ export function normalizeModuleId(rawModuleId: string): ModuleId | undefined {
 }
 
 // Module definitions for the new navigation system
+// NOTE: Dashboard removed - it was a redundant launcher. Create is now the default landing.
 export const MODULE_DEFINITIONS: ModuleDefinition[] = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: '<i class="fas fa-home" style="color: #10b981;" aria-hidden="true"></i>',
-    color: "#10b981", // Emerald - home/dashboard
-    description: "Home",
-    isMain: true,
-    sections: [], // Dashboard has no sub-tabs
-  },
   {
     id: "create",
     label: "Create",
@@ -72,13 +66,13 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: CREATE_TABS,
   },
   {
-    id: "discover",
-    label: "Discover",
+    id: "explore",
+    label: "Explore",
     icon: '<i class="fas fa-compass" style="color: #a855f7;" aria-hidden="true"></i>',
-    color: "#a855f7", // Purple - discovery/exploration
+    color: "#a855f7", // Purple - exploration
     description: "Browse sequences and creators",
     isMain: true,
-    sections: DISCOVER_TABS,
+    sections: EXPLORE_TABS,
   },
   {
     id: "community",
@@ -133,7 +127,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Browse videos from the community",
     isMain: true,
     sections: WATCH_TABS,
-    adminOnly: true, // Admin-only for now until feature is ready
+    // Feed tab now has TikTok-style scroll experience
   },
   {
     id: "train",
@@ -233,6 +227,16 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true, // Visibility controlled by feature flags (admin-only)
     sections: [], // Uses destination picker instead of tabs
     adminOnly: true,
+  },
+  {
+    id: "terrain-research",
+    label: "Terrain Lab",
+    icon: '<i class="fas fa-mountain" style="color: #22c55e;" aria-hidden="true"></i>',
+    color: "#22c55e", // Green - terrain/nature
+    description: "Research lab comparing open-source terrain implementations (temporary)",
+    isMain: true,
+    sections: [],
+    adminOnly: true, // Admin-only temporary module
   },
   {
     id: "mandala",

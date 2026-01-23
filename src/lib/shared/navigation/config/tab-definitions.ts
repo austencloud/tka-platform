@@ -80,14 +80,14 @@ export const LEARN_TABS: Section[] = [
   },
 ];
 
-// Discover tabs configuration (public discovery)
+// Explore tabs configuration (browsing sequences, creators, collections)
 // Note: Library functionality is now integrated into Sequences via scope toggle (Community / My Library)
-export const DISCOVER_TABS: Section[] = [
+export const EXPLORE_TABS: Section[] = [
   {
     id: "sequences",
     label: "Sequences",
     icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
-    description: "Browse and discover sequences",
+    description: "Browse and explore sequences",
     color: "#a855f7",
     gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
   },
@@ -118,7 +118,7 @@ export const DISCOVER_TABS: Section[] = [
 ];
 
 /**
- * @deprecated Library module removed - functionality now in Discover > Sequences via scope toggle.
+ * @deprecated Library module removed - functionality now in Explore > Sequences via scope toggle.
  * Kept for backwards compatibility only.
  */
 export const LIBRARY_TABS: Section[] = [];
@@ -172,7 +172,7 @@ export const COMMUNITY_TABS: Section[] = [
 ];
 
 /**
- * @deprecated Collect and Library modules removed - functionality now in Discover > Sequences.
+ * @deprecated Collect and Library modules removed - functionality now in Explore > Sequences.
  */
 export const COLLECT_TABS: Section[] = [];
 
@@ -345,14 +345,6 @@ export const ADMIN_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
   {
-    id: "hall-of-shame",
-    label: "Hall of Shame",
-    icon: '<i class="fas fa-skull" aria-hidden="true"></i>',
-    description: "Moderate adult content submissions",
-    color: "#ef4444",
-    gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
-  },
-  {
     id: "loop-labeler",
     label: "LOOP Labeler",
     icon: '<i class="fas fa-tags" aria-hidden="true"></i>',
@@ -470,12 +462,13 @@ export const FEEDBACK_TABS: Section[] = [
 ];
 
 // Watch tabs configuration - video browsing hub
+// Note: Showcase content merged into Library. Curator is admin-only (handled by visibility logic).
 export const WATCH_TABS: Section[] = [
   {
     id: "feed",
     label: "Feed",
     icon: '<i class="fas fa-stream" aria-hidden="true"></i>',
-    description: "Public videos from the community",
+    description: "Videos from the community",
     color: "#ef4444",
     gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
   },
@@ -483,25 +476,9 @@ export const WATCH_TABS: Section[] = [
     id: "library",
     label: "Library",
     icon: '<i class="fas fa-photo-video" aria-hidden="true"></i>',
-    description: "Your videos and collaborations",
+    description: "Your videos and saved performances",
     color: "#3b82f6",
     gradient: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
-  },
-  {
-    id: "showcase",
-    label: "Showcase",
-    icon: '<i class="fas fa-star" aria-hidden="true"></i>',
-    description: "Curated performances",
-    color: "#fbbf24",
-    gradient: "linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%)",
-  },
-  {
-    id: "curator",
-    label: "Curator",
-    icon: '<i class="fas fa-tags" aria-hidden="true"></i>',
-    description: "Tag and curate Instagram videos",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
 ];
 

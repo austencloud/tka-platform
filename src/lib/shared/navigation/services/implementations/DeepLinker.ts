@@ -51,8 +51,8 @@ const MODULE_MAPPINGS: Record<string, ModuleMapping> = {
   tunnel: { moduleId: "compose", tabId: "arrange" },
   mirror: { moduleId: "compose", tabId: "arrange" },
   grid: { moduleId: "compose", tabId: "arrange" },
-  explore: { moduleId: "discover", tabId: "gallery" },
-  gallery: { moduleId: "discover", tabId: "gallery" },
+  explore: { moduleId: "explore", tabId: "gallery" },
+  gallery: { moduleId: "explore", tabId: "gallery" },
   // View module uses standalone route
   view: { moduleId: "view" },
   sequence: { moduleId: "view" },
@@ -78,7 +78,7 @@ export class DeepLinker implements IDeepLinker {
     const spotlightId = urlParams.get("spotlight");
     if (spotlightId) {
       // User is viewing a sequence in Explorer - ensure we're in the discover module
-      navigationState.setCurrentModule("discover");
+      navigationState.setCurrentModule("explore");
       navigationState.setActiveTab("gallery");
       return;
     }

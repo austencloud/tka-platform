@@ -37,7 +37,7 @@ import {
   CREATE_TABS,
   DEFAULT_CREATE_TAB,
   LEARN_TABS,
-  DISCOVER_TABS,
+  EXPLORE_TABS,
   LIBRARY_TABS,
   COMMUNITY_TABS,
   ADMIN_TABS,
@@ -65,7 +65,7 @@ import { panelPersistenceState } from "./panel-persistence-state.svelte";
 export {
   CREATE_TABS,
   LEARN_TABS,
-  DISCOVER_TABS,
+  EXPLORE_TABS,
   LIBRARY_TABS,
   COMMUNITY_TABS,
   ANIMATE_TABS,
@@ -97,9 +97,9 @@ export function createNavigationState() {
   let currentCreateMode = $state<string>("constructor");
   let currentLearnMode = $state<string>("concepts");
 
-  // Module-based state
-  let currentModule = $state<ModuleId>("dashboard");
-  let activeTab = $state<string>(""); // Active tab within the current module (dashboard has no tabs)
+  // Module-based state - Create is the default landing module
+  let currentModule = $state<ModuleId>("create");
+  let activeTab = $state<string>(DEFAULT_CREATE_TAB); // Default to constructor tab
 
   // Track previous module for settings toggle behavior
   let previousModule = $state<ModuleId | null>(loadPreviousModuleFromSession());
@@ -169,10 +169,12 @@ export function createNavigationState() {
 
     // Load module persistence
     const savedModule = localStorage.getItem(CURRENT_MODULE_KEY);
-    if (savedModule === "community" || savedModule === "account") {
-      // Migration: community and account modules retired, redirect to dashboard
-      currentModule = "dashboard";
-      localStorage.setItem(CURRENT_MODULE_KEY, "dashboard");
+    if (savedModule === "community" || savedModule === "account" || savedModule === "dashboard") {
+      // Migration: community, account, and dashboard modules redirect to create
+      // Dashboard is now a minimal launcher; Create is the default landing
+      currentModule = "create";
+      activeTab = DEFAULT_CREATE_TAB;
+      localStorage.setItem(CURRENT_MODULE_KEY, "create");
     } else if (
       savedModule &&
       MODULE_DEFINITIONS.some((m) => m.id === savedModule)
@@ -495,7 +497,7 @@ export function createNavigationState() {
       return LEARN_TABS;
     },
     get discoverTabs() {
-      return DISCOVER_TABS;
+      return EXPLORE_TABS;
     },
     get communityTabs() {
       return COMMUNITY_TABS;
@@ -539,11 +541,11 @@ export function createNavigationState() {
     },
     /** @deprecated Use discoverTabs instead */
     get discoverModes() {
-      return DISCOVER_TABS;
+      return EXPLORE_TABS;
     },
     /** @deprecated Use discoverTabs instead */
     get DiscoverModes() {
-      return DISCOVER_TABS;
+      return EXPLORE_TABS;
     },
     /** @deprecated Use activeTab instead */
     get currentSection() {
