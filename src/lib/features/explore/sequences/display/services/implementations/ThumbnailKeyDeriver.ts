@@ -1,0 +1,208 @@
+/**
+ * ThumbnailKeyDeriver
+ *
+ * Derives cache keys from thumbnail render inputs using hash comparison.
+ * Replaces 13 prev* state variables with a single hash.
+ */
+
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type {
+  IThumbnailKeyDeriver,
+  ThumbnailRenderInput,
+  ThumbnailCacheKey,
+  CompositionDefaults,
+} from "../contracts/IThumbnailKeyDeriver";
+import type { ThumbnailVariant } from "../contracts/ICloudThumbnailCache";
+
+const GALLERY_DEFAULTS: CompositionDefaults = {
+  addWord: true,
+  addStepNumbers: true,
+  includeStartPosition: true,
+  addDifficultyLevel: true,
+  addUserInfo: false,
+  showCreatorName: true,
+  showNotes: true,
+  showBirthday: true,
+};
+
+const WORDCARD_DEFAULTS: CompositionDefaults = {
+  ...GALLERY_DEFAULTS,
+  addUserInfo: true,
+};
+
+export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
+  deriveKey(input: ThumbnailRenderInput): ThumbnailCacheKey {
+    const defaults = this.getVariantDefaults(input.variant);
+    const usesDefaults = this.checkInputUsesDefaults(input, defaults);
+
+    // Determine effective prop type(s)
+    const isCatDog = this.isCatDogMode(input);
+    const propKey = this.derivePropKey(input, isCatDog);
+
+    // Build cloud path (only meaningful for default settings)
+    const mode = input.lightMode ? "light" : "dark";
+    const cloudPath = `thumbnails/${input.variant}/${propKey}/${input.sequenceName}_${mode}.webp`;
+
+    // Compute hash of all inputs that affect visual output
+    const hashInput = usesDefaults
+      ? {
+          seq: input.sequenceName,
+          prop: propKey,
+          mode,
+          variant: input.variant,
+        }
+      : this.buildFullHashInput(input);
+
+    const hash = this.computeHash(hashInput);
+
+    return {
+      hash,
+      cloudPath,
+      inputs: Object.freeze({ ...input }),
+      usesDefaults,
+      propKey,
+    };
+  }
+
+  keysEqual(a: ThumbnailCacheKey, b: ThumbnailCacheKey): boolean {
+    return a.hash === b.hash;
+  }
+
+  getVariantDefaults(variant: ThumbnailVariant): CompositionDefaults {
+    return variant === "wordcard" ? WORDCARD_DEFAULTS : GALLERY_DEFAULTS;
+  }
+
+  inputUsesDefaults(input: ThumbnailRenderInput): boolean {
+    const defaults = this.getVariantDefaults(input.variant);
+    return this.checkInputUsesDefaults(input, defaults);
+  }
+
+  private isCatDogMode(input: ThumbnailRenderInput): boolean {
+    return (
+      input.catDogModeEnabled &&
+      input.bluePropType !== undefined &&
+      input.redPropType !== undefined &&
+      input.bluePropType !== input.redPropType
+    );
+  }
+
+  private derivePropKey(input: ThumbnailRenderInput, isCatDog: boolean): string {
+    if (isCatDog) {
+      // Cat-dog: preserve hand positions (blue=left, red=right)
+      return `catdog_${input.bluePropType}_${input.redPropType}`;
+    }
+    // Single prop mode: use blue, fallback to red, fallback to staff
+    return input.bluePropType || input.redPropType || PropType.STAFF;
+  }
+
+  private checkInputUsesDefaults(
+    input: ThumbnailRenderInput,
+    defaults: CompositionDefaults
+  ): boolean {
+    // If any setting is defined and differs from default, not using defaults
+    if (input.addWord !== undefined && input.addWord !== defaults.addWord)
+      return false;
+    if (
+      input.addStepNumbers !== undefined &&
+      input.addStepNumbers !== defaults.addStepNumbers
+    )
+      return false;
+    if (
+      input.includeStartPosition !== undefined &&
+      input.includeStartPosition !== defaults.includeStartPosition
+    )
+      return false;
+    if (
+      input.addDifficultyLevel !== undefined &&
+      input.addDifficultyLevel !== defaults.addDifficultyLevel
+    )
+      return false;
+    if (input.addUserInfo !== undefined && input.addUserInfo !== defaults.addUserInfo)
+      return false;
+    if (
+      input.showCreatorName !== undefined &&
+      input.showCreatorName !== defaults.showCreatorName
+    )
+      return false;
+    if (input.showNotes !== undefined && input.showNotes !== defaults.showNotes)
+      return false;
+    if (input.showBirthday !== undefined && input.showBirthday !== defaults.showBirthday)
+      return false;
+    // Any custom text means not using defaults
+    if (input.customNotesText !== undefined) return false;
+    // userName only matters if addUserInfo is enabled (otherwise it's not displayed)
+    const userInfoEnabled = input.addUserInfo ?? defaults.addUserInfo;
+    if (userInfoEnabled && input.userName !== undefined && input.userName !== "")
+      return false;
+
+    // Visibility settings affect rendered appearance - check if any are non-default
+    if (input.visibility) {
+      // Default values for visibility
+      const defaultVisibility = {
+        showTKA: true,
+        showReversals: true,
+        showGrid: true,
+        showNonRadialPoints: false,
+        handPointVisibility: "all" as const,
+      };
+      // If any visibility setting differs from default, not using defaults
+      if (input.visibility.showTKA !== undefined && input.visibility.showTKA !== defaultVisibility.showTKA)
+        return false;
+      if (input.visibility.showReversals !== undefined && input.visibility.showReversals !== defaultVisibility.showReversals)
+        return false;
+      if (input.visibility.showGrid !== undefined && input.visibility.showGrid !== defaultVisibility.showGrid)
+        return false;
+      if (input.visibility.showNonRadialPoints !== undefined && input.visibility.showNonRadialPoints !== defaultVisibility.showNonRadialPoints)
+        return false;
+      if (input.visibility.handPointVisibility !== undefined && input.visibility.handPointVisibility !== defaultVisibility.handPointVisibility)
+        return false;
+    }
+
+    return true;
+  }
+
+  private buildFullHashInput(input: ThumbnailRenderInput): object {
+    // Include all fields that affect visual output
+    //
+    // CANONICAL (excluded from hash) - these are overlays that don't affect base pictograph:
+    // - showTKA, showReversals: text/symbol overlays
+    //
+    // INCLUDED in hash - these affect the rendered appearance:
+    // - showGrid, handPointVisibility, showNonRadialPoints: grid dot visibility
+    //   (User wants to toggle these and see thumbnails update)
+    return {
+      seq: input.sequenceName,
+      blue: input.bluePropType,
+      red: input.redPropType,
+      catDog: input.catDogModeEnabled,
+      light: input.lightMode,
+      variant: input.variant,
+      addWord: input.addWord,
+      addStepNumbers: input.addStepNumbers,
+      includeStartPosition: input.includeStartPosition,
+      addDifficultyLevel: input.addDifficultyLevel,
+      addUserInfo: input.addUserInfo,
+      showCreatorName: input.showCreatorName,
+      showNotes: input.showNotes,
+      showBirthday: input.showBirthday,
+      customNotesText: input.customNotesText,
+      userName: input.userName,
+      // Grid visibility settings - user wants these to update thumbnails
+      showGrid: input.visibility?.showGrid,
+      handPointVisibility: input.visibility?.handPointVisibility,
+      showNonRadialPoints: input.visibility?.showNonRadialPoints,
+      // EXCLUDED: showTKA, showReversals - these are canonical (always ON)
+    };
+  }
+
+  private computeHash(obj: object): string {
+    // Sort keys for deterministic output
+    const str = JSON.stringify(obj, Object.keys(obj).sort());
+    // Simple hash - good enough for cache keys
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+    }
+    return hash.toString(36);
+  }
+}
