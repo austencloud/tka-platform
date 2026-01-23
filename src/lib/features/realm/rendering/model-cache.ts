@@ -1,8 +1,8 @@
 /**
  * GLTF Model Cache
  *
- * Loads and caches GLTF/GLB models for instanced rendering.
- * Models are loaded once and their geometries extracted for use with InstancedMesh.
+ * Legacy compatibility layer that wraps the new ModelRegistry.
+ * Maintains the original API for existing code while using the new 329-model system.
  */
 
 import { GLTFLoader, type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -11,9 +11,10 @@ import {
   Mesh,
   MeshStandardMaterial,
   type Material,
-  Group,
 } from "three";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { ModelRegistry } from "../vegetation/services/implementations/ModelRegistry";
+import type { VegetationCategory, ManifestBiome } from "../vegetation/domain/vegetation-categories";
 
 // ============================================================================
 // TYPES
@@ -31,9 +32,12 @@ export interface ModelDefinition {
 }
 
 // ============================================================================
-// MODEL DEFINITIONS
+// LEGACY MODEL DEFINITIONS (for backward compatibility)
 // ============================================================================
 
+/**
+ * @deprecated Use ModelRegistry instead
+ */
 export const FOREST_MODELS: Record<string, ModelDefinition> = {
   tree1: { path: "/models/forest/Tree_1_A_Color1.gltf", scale: 2.5, yOffset: 0 },
   tree2: { path: "/models/forest/Tree_2_A_Color1.gltf", scale: 2.5, yOffset: 0 },
@@ -53,12 +57,34 @@ export class ModelCache {
   private cache: Map<string, CachedModel> = new Map();
   private loading: Map<string, Promise<CachedModel>> = new Map();
 
+  // New registry for 329 models
+  private registry: ModelRegistry;
+  private registryInitialized = false;
+
   constructor() {
     this.loader = new GLTFLoader();
+    this.registry = new ModelRegistry();
   }
 
   /**
-   * Preload all forest models
+   * Initialize the new model registry
+   */
+  async initRegistry(): Promise<void> {
+    if (this.registryInitialized) return;
+    await this.registry.initialize();
+    this.registryInitialized = true;
+  }
+
+  /**
+   * Get the underlying registry for direct access to 329 models
+   */
+  getRegistry(): ModelRegistry {
+    return this.registry;
+  }
+
+  /**
+   * Preload all forest models (legacy method)
+   * @deprecated Use initRegistry() + preloadCategory() instead
    */
   async preloadForestModels(): Promise<void> {
     const promises = Object.entries(FOREST_MODELS).map(([key, def]) =>
@@ -68,7 +94,17 @@ export class ModelCache {
   }
 
   /**
-   * Load a model and cache its geometry
+   * Preload a category of new models
+   */
+  async preloadCategory(category: VegetationCategory): Promise<void> {
+    if (!this.registryInitialized) {
+      await this.initRegistry();
+    }
+    await this.registry.preloadCategory(category);
+  }
+
+  /**
+   * Load a model and cache its geometry (legacy method)
    */
   async loadModel(key: string, definition: ModelDefinition): Promise<CachedModel> {
     // Return cached if available
@@ -133,12 +169,6 @@ export class ModelCache {
         geom.scale(scale, scale, scale);
         geom.translate(0, yOffset * scale, 0);
 
-        // Apply any transforms from the mesh
-        if (child.matrixWorld) {
-          child.updateWorldMatrix(true, false);
-          // Don't apply world matrix since we handle transforms via instancing
-        }
-
         geometries.push(geom);
 
         // Use the first material we find
@@ -164,14 +194,40 @@ export class ModelCache {
   }
 
   /**
-   * Get a cached model
+   * Get a cached model (legacy)
    */
   getModel(key: string): CachedModel | undefined {
     return this.cache.get(key);
   }
 
   /**
-   * Get a random tree model key
+   * Get a random model from the new registry
+   */
+  getRandomModelFromCategory(
+    category: VegetationCategory,
+    biome: ManifestBiome,
+    rng: () => number
+  ): { id: string; model: CachedModel } | undefined {
+    if (!this.registryInitialized) return undefined;
+
+    const info = this.registry.getRandomModelForBiome(category, biome, rng);
+    if (!info) return undefined;
+
+    const cached = this.registry.getCachedModel(info.id);
+    if (!cached) return undefined;
+
+    return {
+      id: info.id,
+      model: {
+        geometry: cached.geometry,
+        material: cached.material,
+      },
+    };
+  }
+
+  /**
+   * Get a random tree model key (legacy method)
+   * @deprecated Use getRandomModelFromCategory('tree', biome, rng) instead
    */
   getRandomTreeKey(rng: () => number): string {
     const treeKeys = ["tree1", "tree2", "tree3"];
@@ -179,7 +235,8 @@ export class ModelCache {
   }
 
   /**
-   * Get a random rock model key
+   * Get a random rock model key (legacy method)
+   * @deprecated Use getRandomModelFromCategory('rock', biome, rng) instead
    */
   getRandomRockKey(rng: () => number): string {
     const rockKeys = ["rock1", "rock2"];
@@ -187,7 +244,8 @@ export class ModelCache {
   }
 
   /**
-   * Get a random bush model key
+   * Get a random bush model key (legacy method)
+   * @deprecated Use getRandomModelFromCategory('bush', biome, rng) instead
    */
   getRandomBushKey(rng: () => number): string {
     const bushKeys = ["bush1", "bush2"];
@@ -205,5 +263,9 @@ export class ModelCache {
       }
     }
     this.cache.clear();
+
+    // Dispose registry
+    this.registry.dispose();
+    this.registryInitialized = false;
   }
 }

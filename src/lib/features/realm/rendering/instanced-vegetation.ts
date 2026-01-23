@@ -4,12 +4,18 @@
  * Uses Three.js InstancedMesh for GPU-efficient rendering of vegetation.
  * A single draw call renders thousands of trees/rocks/grass.
  *
+ * Architecture:
+ * - Batches vegetation by CATEGORY (tree, rock, bush, etc.) not individual model
+ * - 12 categories = max 12 InstancedMesh draw calls (vs. 329 if per-model)
+ * - Uses the new 329-model system via ModelRegistry
+ * - Maintains backward compatibility with legacy VegetationType
+ *
  * Features:
- * - Automatic batching by vegetation type
+ * - Automatic batching by vegetation category
  * - Dynamic instance buffer updates
- * - LOD support with billboard fallback
+ * - LOD support with procedural fallback
  * - Frustum culling at batch level
- * - Optional GLTF model loading
+ * - Model variety through random selection within categories
  */
 
 import {
@@ -19,35 +25,39 @@ import {
   Vector3,
   Quaternion,
   Euler,
-  Color,
   ConeGeometry,
   CylinderGeometry,
-  SphereGeometry,
   DodecahedronGeometry,
   BufferGeometry,
   Float32BufferAttribute,
   MeshStandardMaterial,
   MeshLambertMaterial,
-  Group,
   type Scene,
   type Material,
 } from "three";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { VegetationData } from "../workers/chunk-generator.worker";
 import { ModelCache } from "./model-cache";
+import type { VegetationCategory } from "../vegetation/domain/vegetation-categories";
+import { SCATTER_CATEGORIES } from "../vegetation/domain/vegetation-categories";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type VegetationType =
+/**
+ * Legacy vegetation types for backward compatibility with worker
+ */
+export type LegacyVegetationType =
   | "tree1" | "tree2" | "tree3"
   | "rock1" | "rock2"
   | "bush1" | "bush2"
   | "grass";
 
-// Legacy type for worker compatibility
-export type VegetationCategory = "tree" | "rock" | "bush" | "grass";
+/**
+ * All supported vegetation types (legacy + new categories)
+ */
+export type VegetationType = LegacyVegetationType | VegetationCategory;
 
 interface VegetationBatch {
   mesh: InstancedMesh;
@@ -58,9 +68,10 @@ interface VegetationBatch {
 }
 
 interface VegetationConfig {
-  maxInstancesPerType: number;
+  maxInstancesPerCategory: number;
   maxGrassInstances: number;
   useGLTFModels: boolean;
+  useNewModelSystem: boolean;
 }
 
 // ============================================================================
@@ -68,17 +79,22 @@ interface VegetationConfig {
 // ============================================================================
 
 const DEFAULT_CONFIG: VegetationConfig = {
-  maxInstancesPerType: 3000, // Per variant (tree1, tree2, etc.)
+  maxInstancesPerCategory: 10000, // Per category (tree, rock, etc.)
   maxGrassInstances: 50000,
   useGLTFModels: true,
+  useNewModelSystem: true, // Enable the 329-model system
 };
 
-// Map category to specific variants
-const CATEGORY_VARIANTS: Record<VegetationCategory, VegetationType[]> = {
-  tree: ["tree1", "tree2", "tree3"],
-  rock: ["rock1", "rock2"],
-  bush: ["bush1", "bush2"],
-  grass: ["grass"],
+// Map legacy types to categories
+const LEGACY_TO_CATEGORY: Record<LegacyVegetationType, VegetationCategory> = {
+  tree1: "tree",
+  tree2: "tree",
+  tree3: "tree",
+  rock1: "rock",
+  rock2: "rock",
+  bush1: "bush",
+  bush2: "bush",
+  grass: "grass",
 };
 
 // ============================================================================
@@ -88,10 +104,12 @@ const CATEGORY_VARIANTS: Record<VegetationCategory, VegetationType[]> = {
 export class VegetationManager {
   private scene: Scene;
   private config: VegetationConfig;
-  private batches: Map<VegetationType, VegetationBatch> = new Map();
+  private batches: Map<VegetationCategory, VegetationBatch> = new Map();
+  private legacyBatches: Map<LegacyVegetationType, VegetationBatch> = new Map();
   private chunkVegetation: Map<string, VegetationData[]> = new Map();
   private modelCache: ModelCache | null = null;
   private initialized = false;
+  private useNewSystem = false;
 
   // Temporary objects for matrix composition (avoid GC)
   private tempObject = new Object3D();
@@ -108,7 +126,7 @@ export class VegetationManager {
     if (this.config.useGLTFModels) {
       this.modelCache = new ModelCache();
     } else {
-      this.initBatches();
+      this.initProceduralBatches();
     }
   }
 
@@ -118,29 +136,223 @@ export class VegetationManager {
   async initWithModels(): Promise<void> {
     if (this.initialized) return;
 
-    if (this.modelCache) {
+    if (this.modelCache && this.config.useNewModelSystem) {
       try {
-        await this.modelCache.preloadForestModels();
-        this.initBatchesWithGLTF();
+        // Initialize the new registry
+        await this.modelCache.initRegistry();
+
+        // Preload categories we'll use for scattering
+        const categoriesToPreload: VegetationCategory[] = ["tree", "pine", "rock", "bush", "grass", "flower"];
+        await Promise.all(
+          categoriesToPreload.map(cat => this.modelCache!.preloadCategory(cat))
+        );
+
+        this.initCategoryBatches();
+        this.useNewSystem = true;
+        console.log("[VegetationManager] Initialized with new 329-model system");
       } catch (error) {
-        console.warn("[VegetationManager] Failed to load GLTF models, falling back to procedural", error);
-        this.initBatches();
+        console.warn("[VegetationManager] Failed to initialize new model system, falling back to legacy", error);
+        await this.initLegacySystem();
       }
+    } else if (this.modelCache) {
+      await this.initLegacySystem();
     } else {
-      this.initBatches();
+      this.initProceduralBatches();
     }
 
     this.initialized = true;
   }
 
+  private async initLegacySystem(): Promise<void> {
+    try {
+      await this.modelCache!.preloadForestModels();
+      this.initLegacyBatchesWithGLTF();
+      this.useNewSystem = false;
+    } catch (error) {
+      console.warn("[VegetationManager] Failed to load GLTF models, falling back to procedural", error);
+      this.initProceduralBatches();
+    }
+  }
+
   // ==========================================================================
-  // INITIALIZATION
+  // CATEGORY-BASED INITIALIZATION (New System)
   // ==========================================================================
 
-  private initBatches(): void {
-    const maxPerType = this.config.maxInstancesPerType;
+  private initCategoryBatches(): void {
+    const maxPerCategory = this.config.maxInstancesPerCategory;
+    const registry = this.modelCache?.getRegistry();
 
-    // Create tree batches (all use same procedural geometry for fallback)
+    // Create a batch for each scatter category
+    for (const category of SCATTER_CATEGORIES) {
+      const maxInstances = category === "grass" ? this.config.maxGrassInstances : maxPerCategory;
+
+      // Try to get a model from the registry first
+      let geometry: BufferGeometry;
+      let material: Material;
+
+      if (registry?.isInitialized()) {
+        // Get all models in this category and pick one for the batch geometry
+        const models = registry.getModelsInCategory(category);
+        if (models.length > 0) {
+          // Use the first available cached model as the "representative" geometry
+          const cachedModel = registry.getCachedModel(models[0]!.id);
+          if (cachedModel) {
+            geometry = cachedModel.geometry;
+            material = cachedModel.material;
+            console.log(`[VegetationManager] Using GLB model for ${category}: ${models[0]!.id}`);
+          } else {
+            // Model not cached yet, fall back to procedural
+            const procedural = this.getProceduralGeometryForCategory(category);
+            geometry = procedural.geometry;
+            material = procedural.material;
+            console.log(`[VegetationManager] Model not cached for ${category}, using procedural`);
+          }
+        } else {
+          // No models in this category, use procedural
+          const procedural = this.getProceduralGeometryForCategory(category);
+          geometry = procedural.geometry;
+          material = procedural.material;
+          console.log(`[VegetationManager] No models for ${category}, using procedural`);
+        }
+      } else {
+        // Registry not ready, use procedural
+        const procedural = this.getProceduralGeometryForCategory(category);
+        geometry = procedural.geometry;
+        material = procedural.material;
+      }
+
+      this.createCategoryBatch(category, geometry, material, maxInstances);
+    }
+  }
+
+  private createCategoryBatch(
+    category: VegetationCategory,
+    geometry: BufferGeometry,
+    material: Material,
+    maxInstances: number
+  ): void {
+    const mesh = new InstancedMesh(geometry, material, maxInstances);
+    mesh.count = 0;
+    mesh.frustumCulled = false;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.name = `vegetation_${category}`;
+
+    // Initialize all matrices to identity
+    const identity = new Matrix4();
+    for (let i = 0; i < maxInstances; i++) {
+      mesh.setMatrixAt(i, identity);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+
+    this.scene.add(mesh);
+
+    this.batches.set(category, {
+      mesh,
+      instances: new Map(),
+      instanceCount: 0,
+      maxInstances,
+      dirty: false,
+    });
+  }
+
+  private getProceduralGeometryForCategory(category: VegetationCategory): { geometry: BufferGeometry; material: Material } {
+    switch (category) {
+      case "tree":
+      case "pine":
+      case "palm":
+        return {
+          geometry: this.createTreeGeometry(),
+          material: new MeshStandardMaterial({
+            color: category === "pine" ? 0x1a472a : category === "palm" ? 0x228b22 : 0x2d5a27,
+            flatShading: true,
+            roughness: 0.85,
+            metalness: 0.0,
+          }),
+        };
+      case "rock":
+        return {
+          geometry: this.createRockGeometry(),
+          material: new MeshStandardMaterial({
+            color: 0x696969,
+            flatShading: true,
+            roughness: 0.75,
+            metalness: 0.1,
+          }),
+        };
+      case "bush":
+        const bushGeom = this.createTreeGeometry();
+        bushGeom.scale(0.3, 0.4, 0.3);
+        return {
+          geometry: bushGeom,
+          material: new MeshStandardMaterial({
+            color: 0x3d6b2d,
+            flatShading: true,
+            roughness: 0.9,
+            metalness: 0.0,
+          }),
+        };
+      case "grass":
+        return {
+          geometry: this.createGrassGeometry(),
+          material: new MeshLambertMaterial({
+            color: 0x4a7c3f,
+            flatShading: true,
+            side: 2,
+          }),
+        };
+      case "flower":
+        return {
+          geometry: this.createGrassGeometry(),
+          material: new MeshLambertMaterial({
+            color: 0xff69b4,
+            flatShading: true,
+            side: 2,
+          }),
+        };
+      case "mushroom":
+        return {
+          geometry: this.createMushroomGeometry(),
+          material: new MeshStandardMaterial({
+            color: 0xcd853f,
+            flatShading: true,
+            roughness: 0.9,
+          }),
+        };
+      case "log":
+        return {
+          geometry: this.createLogGeometry(),
+          material: new MeshStandardMaterial({
+            color: 0x8b4513,
+            flatShading: true,
+            roughness: 0.9,
+          }),
+        };
+      case "cactus":
+        return {
+          geometry: this.createCactusGeometry(),
+          material: new MeshStandardMaterial({
+            color: 0x228b22,
+            flatShading: true,
+            roughness: 0.8,
+          }),
+        };
+      default:
+        return {
+          geometry: new BufferGeometry(),
+          material: new MeshStandardMaterial(),
+        };
+    }
+  }
+
+  // ==========================================================================
+  // LEGACY INITIALIZATION (Backward Compatibility)
+  // ==========================================================================
+
+  private initProceduralBatches(): void {
+    const maxPerType = this.config.maxInstancesPerCategory;
+
+    // Create tree batches
     const treeGeometry = this.createTreeGeometry();
     const treeMaterial = new MeshStandardMaterial({
       color: 0x2d5a27,
@@ -148,9 +360,9 @@ export class VegetationManager {
       roughness: 0.85,
       metalness: 0.0,
     });
-    this.createBatch("tree1", treeGeometry.clone(), treeMaterial.clone(), maxPerType);
-    this.createBatch("tree2", treeGeometry.clone(), treeMaterial.clone(), maxPerType);
-    this.createBatch("tree3", treeGeometry.clone(), treeMaterial.clone(), maxPerType);
+    this.createLegacyBatch("tree1", treeGeometry.clone(), treeMaterial.clone(), maxPerType);
+    this.createLegacyBatch("tree2", treeGeometry.clone(), treeMaterial.clone(), maxPerType);
+    this.createLegacyBatch("tree3", treeGeometry.clone(), treeMaterial.clone(), maxPerType);
 
     // Create rock batches
     const rockGeometry = this.createRockGeometry();
@@ -160,86 +372,83 @@ export class VegetationManager {
       roughness: 0.75,
       metalness: 0.1,
     });
-    this.createBatch("rock1", rockGeometry.clone(), rockMaterial.clone(), maxPerType);
-    this.createBatch("rock2", rockGeometry.clone(), rockMaterial.clone(), maxPerType);
+    this.createLegacyBatch("rock1", rockGeometry.clone(), rockMaterial.clone(), maxPerType);
+    this.createLegacyBatch("rock2", rockGeometry.clone(), rockMaterial.clone(), maxPerType);
 
-    // Create bush batches (use smaller tree geometry as fallback)
+    // Create bush batches
     const bushGeometry = this.createTreeGeometry();
-    bushGeometry.scale(0.3, 0.4, 0.3); // Make smaller
+    bushGeometry.scale(0.3, 0.4, 0.3);
     const bushMaterial = new MeshStandardMaterial({
       color: 0x3d6b2d,
       flatShading: true,
       roughness: 0.9,
       metalness: 0.0,
     });
-    this.createBatch("bush1", bushGeometry.clone(), bushMaterial.clone(), maxPerType);
-    this.createBatch("bush2", bushGeometry.clone(), bushMaterial.clone(), maxPerType);
+    this.createLegacyBatch("bush1", bushGeometry.clone(), bushMaterial.clone(), maxPerType);
+    this.createLegacyBatch("bush2", bushGeometry.clone(), bushMaterial.clone(), maxPerType);
 
-    // Create grass batch - keep MeshLambertMaterial for performance (grass is small and numerous)
+    // Create grass batch
     const grassGeometry = this.createGrassGeometry();
     const grassMaterial = new MeshLambertMaterial({
       color: 0x4a7c3f,
       flatShading: true,
       side: 2,
     });
-    this.createBatch("grass", grassGeometry, grassMaterial, this.config.maxGrassInstances);
+    this.createLegacyBatch("grass", grassGeometry, grassMaterial, this.config.maxGrassInstances);
   }
 
-  /**
-   * Initialize batches using GLTF models - one batch per variant
-   */
-  private initBatchesWithGLTF(): void {
+  private initLegacyBatchesWithGLTF(): void {
     if (!this.modelCache) return;
 
-    const maxPerType = this.config.maxInstancesPerType;
+    const maxPerType = this.config.maxInstancesPerCategory;
 
-    // Create batches for each tree variant
-    for (const treeType of ["tree1", "tree2", "tree3"] as VegetationType[]) {
+    // Create batches for each legacy tree variant
+    for (const treeType of ["tree1", "tree2", "tree3"] as LegacyVegetationType[]) {
       const model = this.modelCache.getModel(treeType);
       if (model) {
-        this.createBatch(treeType, model.geometry.clone(), model.material.clone(), maxPerType);
+        this.createLegacyBatch(treeType, model.geometry.clone(), model.material.clone(), maxPerType);
       }
     }
 
     // Create batches for each rock variant
-    for (const rockType of ["rock1", "rock2"] as VegetationType[]) {
+    for (const rockType of ["rock1", "rock2"] as LegacyVegetationType[]) {
       const model = this.modelCache.getModel(rockType);
       if (model) {
-        this.createBatch(rockType, model.geometry.clone(), model.material.clone(), maxPerType);
+        this.createLegacyBatch(rockType, model.geometry.clone(), model.material.clone(), maxPerType);
       }
     }
 
     // Create batches for each bush variant
-    for (const bushType of ["bush1", "bush2"] as VegetationType[]) {
+    for (const bushType of ["bush1", "bush2"] as LegacyVegetationType[]) {
       const model = this.modelCache.getModel(bushType);
       if (model) {
-        this.createBatch(bushType, model.geometry.clone(), model.material.clone(), maxPerType);
+        this.createLegacyBatch(bushType, model.geometry.clone(), model.material.clone(), maxPerType);
       }
     }
 
-    // Grass still uses procedural (no GLTF model)
+    // Grass still uses procedural
     const grassGeometry = this.createGrassGeometry();
     const grassMaterial = new MeshLambertMaterial({
       color: 0x4a7c3f,
       flatShading: true,
       side: 2,
     });
-    this.createBatch("grass", grassGeometry, grassMaterial, this.config.maxGrassInstances);
+    this.createLegacyBatch("grass", grassGeometry, grassMaterial, this.config.maxGrassInstances);
   }
 
-  private createBatch(
-    type: VegetationType,
+  private createLegacyBatch(
+    type: LegacyVegetationType,
     geometry: BufferGeometry,
     material: Material,
     maxInstances: number
   ): void {
     const mesh = new InstancedMesh(geometry, material, maxInstances);
-    mesh.count = 0; // Start with 0 visible instances
-    mesh.frustumCulled = false; // Disable - bounding box doesn't cover all instances
+    mesh.count = 0;
+    mesh.frustumCulled = false;
     mesh.castShadow = true;
-    mesh.receiveShadow = true; // Enable shadow receiving for CSM
+    mesh.receiveShadow = true;
 
-    // Initialize all matrices to identity (hidden)
+    // Initialize all matrices to identity
     const identity = new Matrix4();
     for (let i = 0; i < maxInstances; i++) {
       mesh.setMatrixAt(i, identity);
@@ -248,7 +457,7 @@ export class VegetationManager {
 
     this.scene.add(mesh);
 
-    this.batches.set(type, {
+    this.legacyBatches.set(type, {
       mesh,
       instances: new Map(),
       instanceCount: 0,
@@ -262,33 +471,26 @@ export class VegetationManager {
   // ==========================================================================
 
   private createTreeGeometry(): BufferGeometry {
-    // Stylized low-poly evergreen tree with layered foliage
     const geometries: BufferGeometry[] = [];
 
-    // Trunk - brown cylinder
+    // Trunk
     const trunk = new CylinderGeometry(0.4, 0.6, 3, 6);
     trunk.translate(0, 1.5, 0);
 
-    // Bottom foliage layer - widest
+    // Foliage layers
     const foliage1 = new ConeGeometry(3, 4, 7);
     foliage1.translate(0, 5, 0);
 
-    // Middle foliage layer
     const foliage2 = new ConeGeometry(2.2, 3.5, 7);
     foliage2.translate(0, 7.5, 0);
 
-    // Top foliage layer - smallest
     const foliage3 = new ConeGeometry(1.4, 3, 7);
     foliage3.translate(0, 9.5, 0);
 
     geometries.push(trunk, foliage1, foliage2, foliage3);
 
-    // Merge all geometries into one for instancing
     const merged = BufferGeometryUtils.mergeGeometries(geometries);
-
-    // Fallback to simple cone if merge fails
     if (!merged) {
-      console.warn("[VegetationManager] Geometry merge failed, using fallback");
       const fallback = new ConeGeometry(2, 8, 6);
       fallback.translate(0, 4, 0);
       return fallback;
@@ -298,17 +500,11 @@ export class VegetationManager {
   }
 
   private createRockGeometry(): BufferGeometry {
-    // Irregular rock shape using dodecahedron with some deformation
     const geometry = new DodecahedronGeometry(1, 0);
 
-    // Slightly randomize vertices for more natural look
     const positions = geometry.getAttribute("position");
     for (let i = 0; i < positions.count; i++) {
-      const x = positions.getX(i);
       const y = positions.getY(i);
-      const z = positions.getZ(i);
-
-      // Flatten vertically and add slight variation
       positions.setY(i, y * 0.6);
     }
     positions.needsUpdate = true;
@@ -318,7 +514,6 @@ export class VegetationManager {
   }
 
   private createGrassGeometry(): BufferGeometry {
-    // Simple grass blade - thin triangle
     const geometry = new BufferGeometry();
 
     const positions = new Float32Array([
@@ -339,6 +534,53 @@ export class VegetationManager {
     return geometry;
   }
 
+  private createMushroomGeometry(): BufferGeometry {
+    const geometries: BufferGeometry[] = [];
+
+    // Stem
+    const stem = new CylinderGeometry(0.1, 0.15, 0.3, 6);
+    stem.translate(0, 0.15, 0);
+
+    // Cap
+    const cap = new ConeGeometry(0.25, 0.15, 8);
+    cap.rotateX(Math.PI);
+    cap.translate(0, 0.35, 0);
+
+    geometries.push(stem, cap);
+
+    const merged = BufferGeometryUtils.mergeGeometries(geometries);
+    return merged ?? new BufferGeometry();
+  }
+
+  private createLogGeometry(): BufferGeometry {
+    const geometry = new CylinderGeometry(0.3, 0.35, 2, 8);
+    geometry.rotateZ(Math.PI / 2);
+    geometry.translate(0, 0.25, 0);
+    return geometry;
+  }
+
+  private createCactusGeometry(): BufferGeometry {
+    const geometries: BufferGeometry[] = [];
+
+    // Main body
+    const body = new CylinderGeometry(0.3, 0.35, 1.5, 8);
+    body.translate(0, 0.75, 0);
+
+    // Arms
+    const arm1 = new CylinderGeometry(0.15, 0.15, 0.6, 6);
+    arm1.rotateZ(Math.PI / 4);
+    arm1.translate(0.4, 1.0, 0);
+
+    const arm2 = new CylinderGeometry(0.15, 0.15, 0.5, 6);
+    arm2.rotateZ(-Math.PI / 4);
+    arm2.translate(-0.35, 0.8, 0);
+
+    geometries.push(body, arm1, arm2);
+
+    const merged = BufferGeometryUtils.mergeGeometries(geometries);
+    return merged ?? new BufferGeometry();
+  }
+
   // ==========================================================================
   // CHUNK VEGETATION MANAGEMENT
   // ==========================================================================
@@ -357,17 +599,33 @@ export class VegetationManager {
     // Store vegetation data
     this.chunkVegetation.set(chunkKey, vegetation);
 
-    // Group by type
-    const byType = new Map<VegetationType, VegetationData[]>();
-    for (const v of vegetation) {
-      const list = byType.get(v.type) || [];
-      list.push(v);
-      byType.set(v.type, list);
-    }
+    if (this.useNewSystem) {
+      // New system: group by category
+      const byCategory = new Map<VegetationCategory, VegetationData[]>();
+      for (const v of vegetation) {
+        const category = this.getCategory(v.type);
+        const list = byCategory.get(category) || [];
+        list.push(v);
+        byCategory.set(category, list);
+      }
 
-    // Add to batches
-    for (const [type, items] of byType) {
-      this.addToBatch(type, chunkKey, chunkWorldX, chunkWorldZ, items);
+      for (const [category, items] of byCategory) {
+        this.addToCategoryBatch(category, chunkKey, chunkWorldX, chunkWorldZ, items);
+      }
+    } else {
+      // Legacy system: group by type
+      const byType = new Map<LegacyVegetationType, VegetationData[]>();
+      for (const v of vegetation) {
+        if (this.isLegacyType(v.type)) {
+          const list = byType.get(v.type as LegacyVegetationType) || [];
+          list.push(v);
+          byType.set(v.type as LegacyVegetationType, list);
+        }
+      }
+
+      for (const [type, items] of byType) {
+        this.addToLegacyBatch(type, chunkKey, chunkWorldX, chunkWorldZ, items);
+      }
     }
   }
 
@@ -378,40 +636,56 @@ export class VegetationManager {
     const vegetation = this.chunkVegetation.get(chunkKey);
     if (!vegetation) return;
 
-    // Group by type to know which batches to update
-    const types = new Set(vegetation.map(v => v.type));
-
-    for (const type of types) {
-      this.removeFromBatch(type, chunkKey);
+    if (this.useNewSystem) {
+      const categories = new Set(vegetation.map(v => this.getCategory(v.type)));
+      for (const category of categories) {
+        this.removeFromCategoryBatch(category, chunkKey);
+      }
+    } else {
+      const types = new Set(
+        vegetation
+          .filter(v => this.isLegacyType(v.type))
+          .map(v => v.type as LegacyVegetationType)
+      );
+      for (const type of types) {
+        this.removeFromLegacyBatch(type, chunkKey);
+      }
     }
 
     this.chunkVegetation.delete(chunkKey);
   }
 
-  private addToBatch(
-    type: VegetationType,
+  private getCategory(type: string): VegetationCategory {
+    if (type in LEGACY_TO_CATEGORY) {
+      return LEGACY_TO_CATEGORY[type as LegacyVegetationType];
+    }
+    // Assume it's already a category
+    return type as VegetationCategory;
+  }
+
+  private isLegacyType(type: string): type is LegacyVegetationType {
+    return type in LEGACY_TO_CATEGORY;
+  }
+
+  private addToCategoryBatch(
+    category: VegetationCategory,
     chunkKey: string,
     chunkWorldX: number,
     chunkWorldZ: number,
     items: VegetationData[]
   ): void {
-    const batch = this.batches.get(type);
+    const batch = this.batches.get(category);
     if (!batch) return;
 
     const startIndex = batch.instanceCount;
     const count = Math.min(items.length, batch.maxInstances - batch.instanceCount);
 
-    if (count <= 0) {
-      // Silently skip - batch full warnings are noisy and expected during exploration
-      return;
-    }
+    if (count <= 0) return;
 
-    // Set instance matrices
     for (let i = 0; i < count; i++) {
       const item = items[i]!;
       const instanceIndex = startIndex + i;
 
-      // Compose transform matrix
       this.tempPosition.set(
         chunkWorldX + item.x,
         item.y,
@@ -435,12 +709,60 @@ export class VegetationManager {
     batch.mesh.instanceMatrix.needsUpdate = true;
   }
 
-  private removeFromBatch(type: VegetationType, chunkKey: string): void {
-    const batch = this.batches.get(type);
+  private addToLegacyBatch(
+    type: LegacyVegetationType,
+    chunkKey: string,
+    chunkWorldX: number,
+    chunkWorldZ: number,
+    items: VegetationData[]
+  ): void {
+    const batch = this.legacyBatches.get(type);
     if (!batch) return;
 
-    // For simplicity, we'll just mark this as needing rebuild
-    // A more efficient approach would compact the buffer
+    const startIndex = batch.instanceCount;
+    const count = Math.min(items.length, batch.maxInstances - batch.instanceCount);
+
+    if (count <= 0) return;
+
+    for (let i = 0; i < count; i++) {
+      const item = items[i]!;
+      const instanceIndex = startIndex + i;
+
+      this.tempPosition.set(
+        chunkWorldX + item.x,
+        item.y,
+        chunkWorldZ + item.z
+      );
+      this.tempEuler.set(0, item.rotation, 0);
+      this.tempQuaternion.setFromEuler(this.tempEuler);
+      this.tempScale.setScalar(item.scale);
+
+      this.tempObject.position.copy(this.tempPosition);
+      this.tempObject.quaternion.copy(this.tempQuaternion);
+      this.tempObject.scale.copy(this.tempScale);
+      this.tempObject.updateMatrix();
+
+      batch.mesh.setMatrixAt(instanceIndex, this.tempObject.matrix);
+    }
+
+    batch.instances.set(chunkKey, startIndex);
+    batch.instanceCount += count;
+    batch.mesh.count = batch.instanceCount;
+    batch.mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  private removeFromCategoryBatch(category: VegetationCategory, chunkKey: string): void {
+    const batch = this.batches.get(category);
+    if (!batch) return;
+
+    batch.instances.delete(chunkKey);
+    batch.dirty = true;
+  }
+
+  private removeFromLegacyBatch(type: LegacyVegetationType, chunkKey: string): void {
+    const batch = this.legacyBatches.get(type);
+    if (!batch) return;
+
     batch.instances.delete(chunkKey);
     batch.dirty = true;
   }
@@ -449,82 +771,137 @@ export class VegetationManager {
    * Rebuild dirty batches (called periodically)
    */
   rebuildDirtyBatches(): void {
-    for (const [type, batch] of this.batches) {
-      if (!batch.dirty) continue;
+    if (this.useNewSystem) {
+      for (const [category, batch] of this.batches) {
+        if (!batch.dirty) continue;
+        this.rebuildCategoryBatch(category, batch);
+      }
+    } else {
+      for (const [type, batch] of this.legacyBatches) {
+        if (!batch.dirty) continue;
+        this.rebuildLegacyBatch(type, batch);
+      }
+    }
+  }
 
-      // Rebuild from stored vegetation data
-      batch.instanceCount = 0;
+  private rebuildCategoryBatch(category: VegetationCategory, batch: VegetationBatch): void {
+    batch.instanceCount = 0;
 
-      for (const [chunkKey, vegetation] of this.chunkVegetation) {
-        const items = vegetation.filter(v => v.type === type);
-        if (items.length === 0) continue;
+    for (const [chunkKey, vegetation] of this.chunkVegetation) {
+      const items = vegetation.filter(v => this.getCategory(v.type) === category);
+      if (items.length === 0) continue;
 
-        // Parse chunk position from key
-        const parts = chunkKey.split(",").map(Number);
-        const chunkWorldX = (parts[0] ?? 0) * 32;
-        const chunkWorldZ = (parts[2] ?? 0) * 32;
+      const parts = chunkKey.split(",").map(Number);
+      const chunkWorldX = (parts[0] ?? 0) * 32;
+      const chunkWorldZ = (parts[2] ?? 0) * 32;
 
-        const startIndex = batch.instanceCount;
-        const count = Math.min(items.length, batch.maxInstances - batch.instanceCount);
+      const startIndex = batch.instanceCount;
+      const count = Math.min(items.length, batch.maxInstances - batch.instanceCount);
 
-        for (let i = 0; i < count; i++) {
-          const item = items[i]!;
-          const instanceIndex = startIndex + i;
+      for (let i = 0; i < count; i++) {
+        const item = items[i]!;
+        const instanceIndex = startIndex + i;
 
-          this.tempPosition.set(
-            chunkWorldX + item.x,
-            item.y,
-            chunkWorldZ + item.z
-          );
-          this.tempEuler.set(0, item.rotation, 0);
-          this.tempQuaternion.setFromEuler(this.tempEuler);
-          this.tempScale.setScalar(item.scale);
+        this.tempPosition.set(
+          chunkWorldX + item.x,
+          item.y,
+          chunkWorldZ + item.z
+        );
+        this.tempEuler.set(0, item.rotation, 0);
+        this.tempQuaternion.setFromEuler(this.tempEuler);
+        this.tempScale.setScalar(item.scale);
 
-          this.tempObject.position.copy(this.tempPosition);
-          this.tempObject.quaternion.copy(this.tempQuaternion);
-          this.tempObject.scale.copy(this.tempScale);
-          this.tempObject.updateMatrix();
+        this.tempObject.position.copy(this.tempPosition);
+        this.tempObject.quaternion.copy(this.tempQuaternion);
+        this.tempObject.scale.copy(this.tempScale);
+        this.tempObject.updateMatrix();
 
-          batch.mesh.setMatrixAt(instanceIndex, this.tempObject.matrix);
-        }
-
-        batch.instances.set(chunkKey, startIndex);
-        batch.instanceCount += count;
+        batch.mesh.setMatrixAt(instanceIndex, this.tempObject.matrix);
       }
 
-      batch.mesh.count = batch.instanceCount;
-      batch.mesh.instanceMatrix.needsUpdate = true;
-      batch.dirty = false;
+      batch.instances.set(chunkKey, startIndex);
+      batch.instanceCount += count;
     }
+
+    batch.mesh.count = batch.instanceCount;
+    batch.mesh.instanceMatrix.needsUpdate = true;
+    batch.dirty = false;
+  }
+
+  private rebuildLegacyBatch(type: LegacyVegetationType, batch: VegetationBatch): void {
+    batch.instanceCount = 0;
+
+    for (const [chunkKey, vegetation] of this.chunkVegetation) {
+      const items = vegetation.filter(v => v.type === type);
+      if (items.length === 0) continue;
+
+      const parts = chunkKey.split(",").map(Number);
+      const chunkWorldX = (parts[0] ?? 0) * 32;
+      const chunkWorldZ = (parts[2] ?? 0) * 32;
+
+      const startIndex = batch.instanceCount;
+      const count = Math.min(items.length, batch.maxInstances - batch.instanceCount);
+
+      for (let i = 0; i < count; i++) {
+        const item = items[i]!;
+        const instanceIndex = startIndex + i;
+
+        this.tempPosition.set(
+          chunkWorldX + item.x,
+          item.y,
+          chunkWorldZ + item.z
+        );
+        this.tempEuler.set(0, item.rotation, 0);
+        this.tempQuaternion.setFromEuler(this.tempEuler);
+        this.tempScale.setScalar(item.scale);
+
+        this.tempObject.position.copy(this.tempPosition);
+        this.tempObject.quaternion.copy(this.tempQuaternion);
+        this.tempObject.scale.copy(this.tempScale);
+        this.tempObject.updateMatrix();
+
+        batch.mesh.setMatrixAt(instanceIndex, this.tempObject.matrix);
+      }
+
+      batch.instances.set(chunkKey, startIndex);
+      batch.instanceCount += count;
+    }
+
+    batch.mesh.count = batch.instanceCount;
+    batch.mesh.instanceMatrix.needsUpdate = true;
+    batch.dirty = false;
   }
 
   // ==========================================================================
   // STATS & CLEANUP
   // ==========================================================================
 
-  getStats(): { trees: number; rocks: number; bushes: number; grass: number } {
-    // Sum up all tree variants
-    const trees =
-      (this.batches.get("tree1")?.instanceCount ?? 0) +
-      (this.batches.get("tree2")?.instanceCount ?? 0) +
-      (this.batches.get("tree3")?.instanceCount ?? 0);
-
-    // Sum up all rock variants
-    const rocks =
-      (this.batches.get("rock1")?.instanceCount ?? 0) +
-      (this.batches.get("rock2")?.instanceCount ?? 0);
-
-    // Sum up all bush variants
-    const bushes =
-      (this.batches.get("bush1")?.instanceCount ?? 0) +
-      (this.batches.get("bush2")?.instanceCount ?? 0);
-
-    return {
-      trees,
-      rocks,
-      bushes,
-      grass: this.batches.get("grass")?.instanceCount ?? 0,
-    };
+  getStats(): { trees: number; rocks: number; bushes: number; grass: number; totalCategories?: number } {
+    if (this.useNewSystem) {
+      return {
+        trees: (this.batches.get("tree")?.instanceCount ?? 0) +
+               (this.batches.get("pine")?.instanceCount ?? 0) +
+               (this.batches.get("palm")?.instanceCount ?? 0),
+        rocks: this.batches.get("rock")?.instanceCount ?? 0,
+        bushes: this.batches.get("bush")?.instanceCount ?? 0,
+        grass: this.batches.get("grass")?.instanceCount ?? 0,
+        totalCategories: this.batches.size,
+      };
+    } else {
+      return {
+        trees:
+          (this.legacyBatches.get("tree1")?.instanceCount ?? 0) +
+          (this.legacyBatches.get("tree2")?.instanceCount ?? 0) +
+          (this.legacyBatches.get("tree3")?.instanceCount ?? 0),
+        rocks:
+          (this.legacyBatches.get("rock1")?.instanceCount ?? 0) +
+          (this.legacyBatches.get("rock2")?.instanceCount ?? 0),
+        bushes:
+          (this.legacyBatches.get("bush1")?.instanceCount ?? 0) +
+          (this.legacyBatches.get("bush2")?.instanceCount ?? 0),
+        grass: this.legacyBatches.get("grass")?.instanceCount ?? 0,
+      };
+    }
   }
 
   /**
@@ -534,9 +911,13 @@ export class VegetationManager {
     for (const batch of this.batches.values()) {
       batch.mesh.visible = visible;
     }
+    for (const batch of this.legacyBatches.values()) {
+      batch.mesh.visible = visible;
+    }
   }
 
   dispose(): void {
+    // Dispose category batches
     for (const batch of this.batches.values()) {
       this.scene.remove(batch.mesh);
       batch.mesh.geometry.dispose();
@@ -547,6 +928,19 @@ export class VegetationManager {
       }
     }
     this.batches.clear();
+
+    // Dispose legacy batches
+    for (const batch of this.legacyBatches.values()) {
+      this.scene.remove(batch.mesh);
+      batch.mesh.geometry.dispose();
+      if (Array.isArray(batch.mesh.material)) {
+        batch.mesh.material.forEach(m => m.dispose());
+      } else {
+        batch.mesh.material.dispose();
+      }
+    }
+    this.legacyBatches.clear();
+
     this.chunkVegetation.clear();
 
     // Dispose model cache

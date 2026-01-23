@@ -82,7 +82,8 @@ export const PERFORMANCE_STAGE_CONFIG: RealmConfig = {
   chunks: {
     size: 32,
     viewDistance: 256,
-    lodDistances: [32, 64, 128, 256],
+    // Single LOD - no seams
+    lodDistances: [],
   },
 
   features: {
@@ -139,12 +140,14 @@ export const PROCEDURAL_WORLD_CONFIG: RealmConfig = {
   terrain: {
     type: "procedural",
     seed: 42,
+    waterLevel: 5,  // Water at Y=5, prevents spawning in underwater pits
   },
 
   chunks: {
     size: 32,
     viewDistance: 256,
-    lodDistances: [32, 64, 128, 256],
+    // Single LOD - no transitions, no seams. Just works.
+    lodDistances: [],
   },
 
   features: {
@@ -154,8 +157,7 @@ export const PROCEDURAL_WORLD_CONFIG: RealmConfig = {
   },
 
   spawn: {
-    // Start elevated for procedural terrain
-    position: [0, 50, 0],
+    position: [0, 50, 0],  // Y ignored, snapToGround finds actual ground
     yaw: 0,
   },
 
@@ -163,9 +165,24 @@ export const PROCEDURAL_WORLD_CONFIG: RealmConfig = {
     walkSpeed: 5,
     runSpeed: 10,
     flySpeed: 50,
-    gravity: 25,
-    jumpForce: 8,
+    gravity: 12, // Low gravity for floaty exploration feel
+    jumpForce: 10, // Good jump height with low gravity
     playerHeight: 1.7,
+  },
+
+  // Spawn clearing ensures player spawns above water level in a safe meadow
+  spawnClearing: {
+    enabled: true,
+    center: { x: 0, z: 0 },
+    radius: 15,       // 15m clear meadow
+    blendWidth: 10,   // 10m transition to natural terrain
+    campground: {
+      enabled: false, // No campground objects for procedural world
+      firePit: false,
+      tent: false,
+      seatingLogs: 0,
+      torches: 0,
+    },
   },
 };
 
@@ -192,7 +209,8 @@ export const FLAT_TESTING_CONFIG: RealmConfig = {
   chunks: {
     size: 64,
     viewDistance: 128,
-    lodDistances: [64, 128],
+    // Single LOD - no seams
+    lodDistances: [],
   },
 
   features: {

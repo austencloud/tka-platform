@@ -16,6 +16,18 @@
 	import { T } from "@threlte/core";
 	import { onMount, type Component } from "svelte";
 
+	// Explicit imports for Vite compatibility (no dynamic string interpolation)
+	import RealmPreview from "./previews/realm-preview.svelte";
+	import StagePreview from "./previews/stage-preview.svelte";
+	import GalleryPreview from "./previews/gallery-preview.svelte";
+
+	// Map of destination ID to preview component
+	const PREVIEW_COMPONENTS: Record<string, Component<{ isHovered: boolean }>> = {
+		realm: RealmPreview,
+		stage: StagePreview,
+		gallery: GalleryPreview,
+	};
+
 	interface Props {
 		destinationId: string;
 		isHovered: boolean;
@@ -35,18 +47,17 @@
 	const CAMERA_FOV = 50;
 
 	// Load destination-specific preview scene
-	onMount(async () => {
-		try {
-			// Dynamic import of destination-specific preview
-			const module = await import(`./previews/${destinationId}-preview.svelte`);
-			SceneContent = module.default;
+	onMount(() => {
+		const PreviewComponent = PREVIEW_COMPONENTS[destinationId];
+		if (PreviewComponent) {
+			SceneContent = PreviewComponent;
 			isLoading = false;
 			onReady?.();
-		} catch (err) {
-			console.warn(`[Mini3DPreview] Failed to load preview for "${destinationId}":`, err);
+		} else {
+			console.warn(`[Mini3DPreview] No preview found for "${destinationId}"`);
 			hasError = true;
 			isLoading = false;
-			onError?.(err instanceof Error ? err : new Error(String(err)));
+			onError?.(new Error(`No preview for ${destinationId}`));
 		}
 	});
 </script>

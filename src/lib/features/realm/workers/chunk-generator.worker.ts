@@ -13,7 +13,18 @@
  * - Blends real heightmap with procedural terrain at zone boundaries
  */
 
-import { SeededNoise, createChunkRNG, getTerrainHeight, getBiome, getVegetationDensity, shouldPlaceTree } from "../generation/seed-generator";
+import {
+  SeededNoise,
+  createChunkRNG,
+  getTerrainHeight,
+  getBiome,
+  getVegetationDensity,
+  shouldPlaceTree,
+  applyErosion,
+  applyThermalErosion,
+  mulberry32,
+  type ErosionParams,
+} from "../generation/seed-generator";
 import {
   type RealTerrainZone,
   deserializeZoneInWorker,
@@ -21,6 +32,34 @@ import {
   chunkIntersectsZone,
   isPointInPolygon,
 } from "../generation/real-terrain-zone";
+import {
+  BiomeType,
+  getBiomeType,
+  getBlendedBiomeWeights,
+  getBiomeVegetationDensity,
+  BIOME_CHARACTERISTICS,
+  biomeTypeToLegacy,
+  DEFAULT_BIOME_CONFIG,
+} from "../generation/biome-system";
+import { calculateDrainage } from "../generation/drainage-calculator";
+import type { DrainageConfig, DrainageData } from "../generation/gpu/terrain-compute-types";
+import { DEFAULT_DRAINAGE_CONFIG } from "../generation/gpu/terrain-compute-types";
+import {
+  generateVegetationScatter,
+  toLegacyFormat,
+  type TerrainSample,
+  type LegacyVegetationType,
+} from "../generation/vegetation-scatter";
+
+// Drainage configuration (can be updated via message)
+// Tuned for lakes/pools only - high minPoolSize prevents thin river artifacts
+let drainageConfig: DrainageConfig = {
+  ...DEFAULT_DRAINAGE_CONFIG,
+  enabled: true,
+  minPoolSize: 50,        // Much higher - only substantial water bodies (was 4)
+  drainageThreshold: 0.3, // Higher threshold - needs more drainage to form water (was 0.15)
+  heightTolerance: 8,     // Slightly more tolerance for pooling (was 5)
+};
 
 // Real terrain zone (loaded once, used for all chunks)
 let realTerrainZone: RealTerrainZone | null = null;
@@ -52,21 +91,17 @@ let spawnClearing: {
 // ============================================================================
 
 /**
- * Neighbor LOD information for T-junction stitching
- * -1 means no neighbor (edge of loaded area)
- * >= 0 is the LOD level of that neighbor
- * Includes diagonals for corner vertex coordination
+ * Erosion configuration for worker
  */
-export interface NeighborLODs {
-  north: number; // +Z direction
-  south: number; // -Z direction
-  east: number;  // +X direction
-  west: number;  // -X direction
-  // Diagonals for corner coordination
-  northEast: number;
-  northWest: number;
-  southEast: number;
-  southWest: number;
+export interface WorkerErosionConfig {
+  enabled: boolean;
+  iterations: number;
+  erosionStrength: number;
+  upliftRate: number;
+  depositionRate: number;
+  minSlope: number;
+  rainAmount: number;
+  evaporationRate: number;
 }
 
 export interface GenerateChunkMessage {
@@ -79,8 +114,8 @@ export interface GenerateChunkMessage {
   chunkSize: number;
   resolution: number; // Vertices per side at LOD 0
   lod: number;
-  /** Neighbor LODs for T-junction stitching. If not provided, assumes same LOD. */
-  neighborLODs?: NeighborLODs;
+  /** Optional erosion configuration */
+  erosion?: WorkerErosionConfig;
 }
 
 export interface LoadRealZoneMessage {
@@ -130,6 +165,8 @@ export interface ChunkResultMessage {
   blendWeights1: Float32Array;
   /** Blend weights for terrain splatting (sand, snow, unused) */
   blendWeights2: Float32Array;
+  /** Drainage data for water placement (optional) */
+  drainage?: DrainageData;
 }
 
 export interface VegetationData {
@@ -178,93 +215,8 @@ export type WorkerResponse = ChunkResultMessage | RealZoneLoadedMessage;
 // CHUNK GENERATION
 // ============================================================================
 
-// ============================================================================
-// T-JUNCTION STITCHING HELPERS
-// ============================================================================
-
-/**
- * Calculate how many vertices a given LOD level has along an edge
- * LOD 0 = base resolution, each higher LOD halves it
- */
-function getEdgeVertexCount(baseResolution: number, lod: number): number {
-  return Math.max(4, Math.floor(baseResolution / Math.pow(2, lod)));
-}
-
-/**
- * Calculate the interpolated height at a position along an edge when stitching
- * to a coarser neighbor. The coarser grid has fewer vertices, so we interpolate
- * between the two coarse vertices that bracket this position.
- *
- * This implements the clipmap formula: z' = (1-α)z1 + α*z2
- *
- * @param finePosition Position along the edge (0 to fineResolution-1)
- * @param fineResolution Number of vertices at fine LOD
- * @param coarseResolution Number of vertices at coarse LOD
- * @param getCoarseHeight Function to get height at coarse vertex index
- * @returns Interpolated height that matches the coarser grid
- */
-function interpolateToCoarseEdge(
-  finePosition: number,
-  fineResolution: number,
-  coarseResolution: number,
-  getCoarseHeight: (coarseIdx: number) => number
-): number {
-  // Map fine position to coarse coordinate space
-  // Fine positions 0...(fineRes-1) map to coarse 0...(coarseRes-1)
-  const fineMaxIdx = fineResolution - 1;
-  const coarseMaxIdx = coarseResolution - 1;
-
-  // Position in 0..1 space along the edge
-  const t = finePosition / fineMaxIdx;
-
-  // Corresponding position in coarse index space
-  const coarseFloat = t * coarseMaxIdx;
-
-  // Find the two coarse vertices that bracket this position
-  const coarseIdx1 = Math.floor(coarseFloat);
-  const coarseIdx2 = Math.min(coarseIdx1 + 1, coarseMaxIdx);
-
-  // Interpolation factor between the two coarse vertices
-  const alpha = coarseFloat - coarseIdx1;
-
-  // Get heights at the coarse vertices
-  const h1 = getCoarseHeight(coarseIdx1);
-  const h2 = getCoarseHeight(coarseIdx2);
-
-  // Interpolate: z' = (1-α)*h1 + α*h2
-  return h1 + alpha * (h2 - h1);
-}
-
-/**
- * Maximum LOD level used for reference stitching when neighbor is unknown.
- * This ensures edges are always stitched to a common reference, preventing
- * spiky edges when neighbors load later with different LODs.
- */
-const MAX_LOD_FOR_STITCHING = 4;
-
-/**
- * Get the effective LOD to stitch to.
- * When neighbor is unknown (-1), use MAX_LOD_FOR_STITCHING as a safe reference.
- * This ensures that when the neighbor eventually loads (at any LOD), the edge
- * will still be reasonably aligned since we pre-stitched to the coarsest case.
- */
-function getStitchingLOD(neighborLod: number): number {
-  return neighborLod < 0 ? MAX_LOD_FOR_STITCHING : neighborLod;
-}
-
-/**
- * Check if an edge needs stitching to a coarser neighbor (or reference LOD)
- * Stitching is needed when neighbor LOD > our LOD (coarser = higher LOD number)
- * OR when neighbor is unknown (we stitch to MAX_LOD_FOR_STITCHING)
- */
-function needsStitching(ourLod: number, neighborLod: number): boolean {
-  const effectiveNeighborLod = getStitchingLOD(neighborLod);
-  // Stitch when neighbor (or reference) is coarser than us
-  return effectiveNeighborLod > ourLod;
-}
-
 function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
-  const { chunkX, chunkY, chunkZ, worldSeed, chunkSize, resolution, lod, neighborLODs } = msg;
+  const { chunkX, chunkY, chunkZ, worldSeed, chunkSize, resolution, lod, erosion } = msg;
 
   // Adjust resolution based on LOD
   const effectiveResolution = Math.max(4, Math.floor(resolution / Math.pow(2, lod)));
@@ -272,9 +224,10 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   const noise = new SeededNoise(worldSeed);
   const rng = createChunkRNG(worldSeed, chunkX, chunkY, chunkZ);
 
-  // World position of chunk origin
-  const originX = chunkX * chunkSize;
-  const originZ = chunkZ * chunkSize;
+  // World position of chunk origin - use integer math to avoid floating point drift
+  // This ensures chunk (0,0) right edge (0+32=32) exactly equals chunk (1,0) left edge (1*32=32)
+  const originX = Math.round(chunkX * chunkSize);
+  const originZ = Math.round(chunkZ * chunkSize);
 
   // Generate height map
   const vertexCount = effectiveResolution * effectiveResolution;
@@ -432,208 +385,75 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   }
 
   // ============================================================================
-  // T-JUNCTION STITCHING - Adjust edge heights to match coarser neighbors
+  // EROSION SIMULATION (Optional)
   // ============================================================================
-  // When a neighbor has a coarser LOD (higher LOD number), they have fewer
-  // vertices along the shared edge. We adjust our edge vertex heights to
-  // interpolate to what the coarser grid would produce, eliminating seams.
-  //
-  // This implements the GPU Gems 2 Geometry Clipmaps technique:
-  // z' = (1-α)zf + αzc
-  //
-  // We keep skirts as a safety net for any remaining precision issues.
+  // Apply hydraulic and thermal erosion to create more natural terrain features.
+  // This creates realistic river valleys and mountain ridges.
+  // Only applies at sufficient resolution (8+ vertices per side).
+  if (erosion?.enabled && effectiveResolution >= 8) {
+    // Extract heights from vertices into a 2D array for erosion processing
+    const heights = new Float32Array(effectiveResolution * effectiveResolution);
+    for (let i = 0; i < effectiveResolution * effectiveResolution; i++) {
+      heights[i] = vertices[i * 3 + 1]!;
+    }
 
-  if (neighborLODs) {
-    // Helper to get height at a world position using the same noise function
-    // This samples at the positions the coarser grid would use
-    const getHeightAtWorldPos = (worldX: number, worldZ: number): number => {
-      // Get procedural height
-      let height = getTerrainHeight(noise, worldX, worldZ);
+    // Create deterministic RNG for this chunk's erosion
+    const erosionSeed = worldSeed + chunkX * 10000 + chunkZ;
+    const erosionRng = mulberry32(erosionSeed);
 
-      // Apply the same zone blending as the main vertex pass
-      if (usesRealTerrain) {
-        height = getBlendedHeight(realTerrainZone, worldX, worldZ, height, 30);
-      }
+    // Apply hydraulic erosion (water flow)
+    // Scale iterations based on LOD - coarser LODs need fewer iterations
+    const scaledIterations = Math.max(5, Math.floor(erosion.iterations / (lod + 1)));
+    applyErosion(heights, effectiveResolution, {
+      iterations: scaledIterations,
+      erosionStrength: erosion.erosionStrength,
+      depositionRate: erosion.depositionRate,
+      evaporationRate: erosion.evaporationRate,
+      minSlope: erosion.minSlope,
+      rainAmount: erosion.rainAmount,
+      upliftRate: erosion.upliftRate,
+    }, erosionRng);
 
-      if (stageZone && !spawnClearing) {
-        const dx = worldX - stageZone.center.x;
-        const dz = worldZ - stageZone.center.z;
-        const dist = Math.sqrt(dx * dx + dz * dz);
-        const stageHeight = 0;
-        if (dist < stageZone.radius) {
-          height = stageHeight;
-        } else if (dist < stageZone.radius + stageZone.blendWidth) {
-          const t = (dist - stageZone.radius) / stageZone.blendWidth;
-          const smooth = t * t * (3 - 2 * t);
-          const targetHeight = Math.max(height, stageHeight);
-          height = stageHeight + smooth * (targetHeight - stageHeight);
-        }
-      }
+    // Apply thermal erosion (weathering) - lighter touch
+    applyThermalErosion(heights, effectiveResolution, 3, 0.5);
 
-      if (spawnClearing) {
-        const dx = worldX - spawnClearing.center.x;
-        const dz = worldZ - spawnClearing.center.z;
-        const dist = Math.sqrt(dx * dx + dz * dz);
-        const microNoise = Math.sin(worldX * 0.5) * Math.cos(worldZ * 0.5) * 0.3;
-        const clearingHeight = spawnClearing.waterLevel + 3 + microNoise;
-        if (dist < spawnClearing.radius) {
-          height = clearingHeight;
-        } else if (dist < spawnClearing.radius + spawnClearing.blendWidth) {
-          const t = (dist - spawnClearing.radius) / spawnClearing.blendWidth;
-          const smooth = t * t * (3 - 2 * t);
-          const targetHeight = Math.max(height, clearingHeight);
-          height = clearingHeight + smooth * (targetHeight - clearingHeight);
-        }
-      }
+    // Write eroded heights back to vertices
+    for (let i = 0; i < effectiveResolution * effectiveResolution; i++) {
+      vertices[i * 3 + 1] = heights[i]!;
+    }
 
-      return height;
-    };
-
-    // SOUTH EDGE (z = 0) - neighbor is at z-1 (south)
-    if (needsStitching(lod, neighborLODs.south)) {
-      const effectiveLOD = getStitchingLOD(neighborLODs.south);
-      const coarseRes = getEdgeVertexCount(resolution, effectiveLOD);
-      const coarseStep = chunkSize / (coarseRes - 1);
-
-      // Get coarse height function - samples at positions the coarse neighbor uses
-      // CRITICAL: Use exact boundary coordinates for first/last vertices to avoid floating-point drift
-      const getCoarseHeight = (coarseIdx: number): number => {
-        let worldX: number;
-        if (coarseIdx === 0) {
-          worldX = originX; // Exact boundary
-        } else if (coarseIdx === coarseRes - 1) {
-          worldX = originX + chunkSize; // Exact boundary
-        } else {
-          worldX = originX + coarseIdx * coarseStep;
-        }
-        const worldZ = originZ; // z = 0 edge
-        return getHeightAtWorldPos(worldX, worldZ);
-      };
-
-      // Adjust heights along south edge
+    // Update colors based on new eroded heights
+    // Erosion can create gullies and ridges that should affect coloring
+    for (let z = 0; z < effectiveResolution; z++) {
       for (let x = 0; x < effectiveResolution; x++) {
-        const idx = x * 3; // z = 0 row
-        const stitchedHeight = interpolateToCoarseEdge(
-          x, effectiveResolution, coarseRes, getCoarseHeight
-        );
-        vertices[idx + 1] = stitchedHeight;
-      }
-    }
+        const idx = (z * effectiveResolution + x) * 3;
+        const newHeight = vertices[idx + 1]!;
 
-    // NORTH EDGE (z = max) - neighbor is at z+1 (north)
-    if (needsStitching(lod, neighborLODs.north)) {
-      const effectiveLOD = getStitchingLOD(neighborLODs.north);
-      const coarseRes = getEdgeVertexCount(resolution, effectiveLOD);
-      const coarseStep = chunkSize / (coarseRes - 1);
-
-      // CRITICAL: Use exact boundary coordinates for first/last vertices
-      const getCoarseHeight = (coarseIdx: number): number => {
+        // Get world position for biome lookup
         let worldX: number;
-        if (coarseIdx === 0) {
-          worldX = originX; // Exact boundary
-        } else if (coarseIdx === coarseRes - 1) {
-          worldX = originX + chunkSize; // Exact boundary
-        } else {
-          worldX = originX + coarseIdx * coarseStep;
-        }
-        const worldZ = originZ + chunkSize; // z = max edge
-        return getHeightAtWorldPos(worldX, worldZ);
-      };
-
-      for (let x = 0; x < effectiveResolution; x++) {
-        const idx = ((effectiveResolution - 1) * effectiveResolution + x) * 3;
-        const stitchedHeight = interpolateToCoarseEdge(
-          x, effectiveResolution, coarseRes, getCoarseHeight
-        );
-        vertices[idx + 1] = stitchedHeight;
-      }
-    }
-
-    // WEST EDGE (x = 0) - neighbor is at x-1 (west)
-    if (needsStitching(lod, neighborLODs.west)) {
-      const effectiveLOD = getStitchingLOD(neighborLODs.west);
-      const coarseRes = getEdgeVertexCount(resolution, effectiveLOD);
-      const coarseStep = chunkSize / (coarseRes - 1);
-
-      // CRITICAL: Use exact boundary coordinates for first/last vertices
-      const getCoarseHeight = (coarseIdx: number): number => {
-        const worldX = originX; // x = 0 edge
         let worldZ: number;
-        if (coarseIdx === 0) {
-          worldZ = originZ; // Exact boundary
-        } else if (coarseIdx === coarseRes - 1) {
-          worldZ = originZ + chunkSize; // Exact boundary
+        if (x === 0) {
+          worldX = originX;
+        } else if (x === effectiveResolution - 1) {
+          worldX = originX + chunkSize;
         } else {
-          worldZ = originZ + coarseIdx * coarseStep;
+          worldX = originX + x * step;
         }
-        return getHeightAtWorldPos(worldX, worldZ);
-      };
-
-      for (let z = 0; z < effectiveResolution; z++) {
-        const idx = (z * effectiveResolution) * 3; // x = 0 column
-        const stitchedHeight = interpolateToCoarseEdge(
-          z, effectiveResolution, coarseRes, getCoarseHeight
-        );
-        vertices[idx + 1] = stitchedHeight;
-      }
-    }
-
-    // EAST EDGE (x = max) - neighbor is at x+1 (east)
-    if (needsStitching(lod, neighborLODs.east)) {
-      const effectiveLOD = getStitchingLOD(neighborLODs.east);
-      const coarseRes = getEdgeVertexCount(resolution, effectiveLOD);
-      const coarseStep = chunkSize / (coarseRes - 1);
-
-      // CRITICAL: Use exact boundary coordinates for first/last vertices
-      const getCoarseHeight = (coarseIdx: number): number => {
-        const worldX = originX + chunkSize; // x = max edge
-        let worldZ: number;
-        if (coarseIdx === 0) {
-          worldZ = originZ; // Exact boundary
-        } else if (coarseIdx === coarseRes - 1) {
-          worldZ = originZ + chunkSize; // Exact boundary
+        if (z === 0) {
+          worldZ = originZ;
+        } else if (z === effectiveResolution - 1) {
+          worldZ = originZ + chunkSize;
         } else {
-          worldZ = originZ + coarseIdx * coarseStep;
+          worldZ = originZ + z * step;
         }
-        return getHeightAtWorldPos(worldX, worldZ);
-      };
 
-      for (let z = 0; z < effectiveResolution; z++) {
-        const idx = (z * effectiveResolution + effectiveResolution - 1) * 3;
-        const stitchedHeight = interpolateToCoarseEdge(
-          z, effectiveResolution, coarseRes, getCoarseHeight
-        );
-        vertices[idx + 1] = stitchedHeight;
+        // Re-calculate color with eroded height
+        const biome = getBiome(noise, worldX, worldZ);
+        const color = getBiomeColor(biome, newHeight);
+        colors[idx] = color.r;
+        colors[idx + 1] = color.g;
+        colors[idx + 2] = color.b;
       }
-    }
-
-    // ========================================================================
-    // CORNER VERTEX COORDINATION
-    // ========================================================================
-    // Corner vertices are where 4 chunks meet. We ensure deterministic heights
-    // by sampling at the exact corner world coordinates. All 4 chunks sharing
-    // a corner will sample the same world position, guaranteeing agreement.
-    //
-    // Corner positions (in local grid coordinates):
-    //   SW: (0, 0)                   SE: (res-1, 0)
-    //   NW: (0, res-1)               NE: (res-1, res-1)
-
-    const cornerConfigs = [
-      { x: 0, z: 0, name: 'SW' },
-      { x: effectiveResolution - 1, z: 0, name: 'SE' },
-      { x: 0, z: effectiveResolution - 1, name: 'NW' },
-      { x: effectiveResolution - 1, z: effectiveResolution - 1, name: 'NE' },
-    ];
-
-    for (const corner of cornerConfigs) {
-      // Sample height at exact corner world position
-      // This ensures all 4 chunks meeting at this corner get the same height
-      const worldX = corner.x === 0 ? originX : originX + chunkSize;
-      const worldZ = corner.z === 0 ? originZ : originZ + chunkSize;
-      const cornerHeight = getHeightAtWorldPos(worldX, worldZ);
-
-      const idx = (corner.z * effectiveResolution + corner.x) * 3;
-      vertices[idx + 1] = cornerHeight;
     }
   }
 
@@ -948,165 +768,95 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     indices[indexIdx++] = topRight;
   }
 
-  // Generate vegetation (LOD 0-2 full density, LOD 3 sparse trees only)
-  const vegetation: VegetationData[] = [];
+  // Calculate drainage-based water data FIRST (needed for vegetation placement)
+  // Extract heights from main terrain vertices (not skirts) for drainage calculation
+  let drainage: DrainageData | undefined;
+  if (drainageConfig.enabled) {
+    const heights = new Float32Array(vertexCount);
+    for (let i = 0; i < vertexCount; i++) {
+      heights[i] = vertices[i * 3 + 1]!; // Y component is height
+    }
+    // Ocean level from biome config (default -10)
+    const oceanLevel = -10;
+    drainage = calculateDrainage(heights, effectiveResolution, chunkSize, drainageConfig, oceanLevel);
+  }
 
-  // Helper to pick random tree variant
-  const pickTreeVariant = (): "tree1" | "tree2" | "tree3" => {
-    const r = rng();
-    if (r < 0.4) return "tree1";
-    if (r < 0.7) return "tree2";
-    return "tree3";
-  };
-
-  // Helper to pick random rock variant
-  const pickRockVariant = (): "rock1" | "rock2" => {
-    return rng() < 0.5 ? "rock1" : "rock2";
-  };
-
-  // Helper to pick random bush variant
-  const pickBushVariant = (): "bush1" | "bush2" => {
-    return rng() < 0.5 ? "bush1" : "bush2";
-  };
+  // Generate vegetation using ScatterMeshes-style placement
+  // Deterministic, terrain-aware, with Poisson disk sampling for natural distribution
+  let vegetation: VegetationData[] = [];
 
   if (lod <= 3) {
-    const lodMultiplier = lod === 3 ? 4 : 1;
-    const vegStep = Math.max(2, step) * lodMultiplier;
+    // Create terrain sampler that uses heights/normals from vertex data
+    // Also includes waterMask from drainage calculation to prevent vegetation in water
+    const sampleTerrain = (worldX: number, worldZ: number): TerrainSample => {
+      // Convert world coords to local chunk coords
+      const localX = worldX - originX;
+      const localZ = worldZ - originZ;
 
-    for (let z = 0; z < chunkSize; z += vegStep) {
-      for (let x = 0; x < chunkSize; x += vegStep) {
-        const worldX = originX + x;
-        const worldZ = originZ + z;
+      // Find nearest vertex (simple nearest-neighbor for now)
+      const gridX = Math.round(localX / step);
+      const gridZ = Math.round(localZ / step);
+      const clampedX = Math.max(0, Math.min(effectiveResolution - 1, gridX));
+      const clampedZ = Math.max(0, Math.min(effectiveResolution - 1, gridZ));
+      const vertexIdx = clampedZ * effectiveResolution + clampedX;
 
-        // Skip vegetation in stage zone (legacy)
-        if (stageZone && !spawnClearing) {
-          const dx = worldX - stageZone.center.x;
-          const dz = worldZ - stageZone.center.z;
-          const dist = Math.sqrt(dx * dx + dz * dz);
-          // No vegetation within stage radius + half blend width
-          if (dist < stageZone.radius + stageZone.blendWidth * 0.5) {
-            continue;
-          }
-        }
+      const height = vertices[vertexIdx * 3 + 1] ?? 0;
+      const nx = normals[vertexIdx * 3] ?? 0;
+      const ny = normals[vertexIdx * 3 + 1] ?? 1;
+      const nz = normals[vertexIdx * 3 + 2] ?? 0;
 
-        // Skip vegetation in spawn clearing (keep meadow clear)
-        if (spawnClearing) {
-          const dx = worldX - spawnClearing.center.x;
-          const dz = worldZ - spawnClearing.center.z;
-          const dist = Math.sqrt(dx * dx + dz * dz);
-          // No vegetation within clearing radius + half blend width
-          // This keeps the meadow clear and lets trees form a ring at the edge
-          if (dist < spawnClearing.radius + spawnClearing.blendWidth * 0.5) {
-            continue;
-          }
-        }
+      // Calculate slope from normal (0 = flat, 1 = vertical)
+      const slope = 1 - ny;
 
-        const height = getTerrainHeight(noise, worldX, worldZ);
-        const localBiome = getBiome(noise, worldX, worldZ);
-        const density = getVegetationDensity(noise, worldX, worldZ);
+      // Get biome using legacy string format (matches vegetation rules)
+      const biome = getBiome(noise, worldX, worldZ);
 
-        // FOREST BIOME: Dense trees and bushes
-        if (localBiome === "forest") {
-          const effectiveDensity = lod === 3 ? density * 0.5 : density;
-          if (shouldPlaceTree(worldSeed, worldX, worldZ, effectiveDensity)) {
-            vegetation.push({
-              type: pickTreeVariant(),
-              x: x,
-              y: height,
-              z: z,
-              rotation: rng() * Math.PI * 2,
-              scale: 0.7 + rng() * 0.5,
-            });
-          }
-          // Add bushes between trees (LOD 0-2 only)
-          if (lod <= 2 && rng() < density * 0.4) {
-            vegetation.push({
-              type: pickBushVariant(),
-              x: x + (rng() - 0.5) * 3,
-              y: height,
-              z: z + (rng() - 0.5) * 3,
-              rotation: rng() * Math.PI * 2,
-              scale: 0.6 + rng() * 0.4,
-            });
-          }
-        }
+      // Get water mask from drainage data (if available)
+      const waterMask = drainage?.waterMask[vertexIdx] ?? 0;
 
-        // PLAINS BIOME: Sparse trees, some bushes
-        if (localBiome === "plains") {
-          const effectiveDensity = lod === 3 ? density * 0.3 : density * 0.5;
-          if (shouldPlaceTree(worldSeed, worldX, worldZ, effectiveDensity)) {
-            vegetation.push({
-              type: pickTreeVariant(),
-              x: x,
-              y: height,
-              z: z,
-              rotation: rng() * Math.PI * 2,
-              scale: 0.8 + rng() * 0.4,
-            });
-          }
-          // Occasional bushes
-          if (lod <= 2 && rng() < density * 0.2) {
-            vegetation.push({
-              type: pickBushVariant(),
-              x: x + (rng() - 0.5) * 2,
-              y: height,
-              z: z + (rng() - 0.5) * 2,
-              rotation: rng() * Math.PI * 2,
-              scale: 0.5 + rng() * 0.3,
-            });
-          }
-        }
+      return {
+        height,
+        slope,
+        biome,
+        waterMask,
+      };
+    };
 
-        // MOUNTAINS BIOME: Rocks, very sparse trees at lower elevations
-        if (localBiome === "mountains") {
-          // Rocks are common
-          if (lod <= 2 && rng() < density * 0.5) {
-            vegetation.push({
-              type: pickRockVariant(),
-              x: x + (rng() - 0.5) * 2,
-              y: height,
-              z: z + (rng() - 0.5) * 2,
-              rotation: rng() * Math.PI * 2,
-              scale: 0.8 + rng() * 1.5,
-            });
-          }
-          // Sparse trees only at lower mountain elevations
-          if (height < 35 && rng() < density * 0.15) {
-            vegetation.push({
-              type: pickTreeVariant(),
-              x: x,
-              y: height,
-              z: z,
-              rotation: rng() * Math.PI * 2,
-              scale: 0.5 + rng() * 0.3, // Smaller trees
-            });
-          }
-        }
-
-        // DESERT BIOME: Only rocks, no vegetation
-        if (localBiome === "desert") {
-          if (lod <= 2 && rng() < density * 0.3) {
-            vegetation.push({
-              type: pickRockVariant(),
-              x: x + (rng() - 0.5) * 3,
-              y: height,
-              z: z + (rng() - 0.5) * 3,
-              rotation: rng() * Math.PI * 2,
-              scale: 0.4 + rng() * 1.2,
-            });
-          }
-        }
-
-        // OCEAN BIOME: Nothing (underwater)
-        // No vegetation placed
-      }
+    // Build exclude zone from spawn clearing or stage zone
+    let excludeZone: { centerX: number; centerZ: number; radius: number } | undefined;
+    if (spawnClearing) {
+      excludeZone = {
+        centerX: spawnClearing.center.x,
+        centerZ: spawnClearing.center.z,
+        radius: spawnClearing.radius + spawnClearing.blendWidth * 0.5,
+      };
+    } else if (stageZone) {
+      excludeZone = {
+        centerX: stageZone.center.x,
+        centerZ: stageZone.center.z,
+        radius: stageZone.radius + stageZone.blendWidth * 0.5,
+      };
     }
+
+    // Generate vegetation using the new scatter system
+    const scatterInstances = generateVegetationScatter(chunkX, chunkZ, {
+      chunkSize,
+      worldSeed,
+      lod,
+      excludeZone,
+    }, sampleTerrain);
+
+    // Convert to legacy format for compatibility with existing rendering
+    vegetation = toLegacyFormat(scatterInstances);
   }
 
   // Determine primary biome for this chunk
   const centerX = originX + chunkSize / 2;
   const centerZ = originZ + chunkSize / 2;
   const biome = getBiome(noise, centerX, centerZ);
+
+  // Note: drainage was calculated earlier (before vegetation) so waterMask
+  // could be used to prevent placing vegetation in water areas
 
   return {
     type: "chunk-result",
@@ -1122,6 +872,7 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     biome,
     blendWeights1: finalBlendWeights1,
     blendWeights2: finalBlendWeights2,
+    drainage,
   };
 }
 
@@ -1221,87 +972,42 @@ interface BlendWeights {
  * @param worldZ - World Z coordinate
  */
 function calculateBlendWeights(
-  biome: string,
+  legacyBiome: string,
   height: number,
   slopeAngle: number,
   noise: SeededNoise,
   worldX: number,
   worldZ: number
 ): BlendWeights {
-  // Initialize weights
-  let grass = 0;
-  let rock = 0;
-  let dirt = 0;
-  let sand = 0;
-  let snow = 0;
+  // Get Whittaker-style biome type based on temperature/precipitation
+  const biomeType = getBiomeType(noise, worldX, worldZ, height, DEFAULT_BIOME_CONFIG);
 
-  // Step 1: Base weights from biome
-  switch (biome) {
-    case "plains":
-      grass = 0.75;
-      dirt = 0.25;
-      break;
-    case "forest":
-      grass = 0.55;
-      dirt = 0.40;
-      rock = 0.05;
-      break;
-    case "mountains":
-      rock = 0.60;
-      dirt = 0.25;
-      grass = 0.15;
-      break;
-    case "desert":
-      sand = 0.85;
-      rock = 0.15;
-      break;
-    case "ocean":
-      sand = 0.60;
-      dirt = 0.40;
-      break;
-    default:
-      grass = 0.5;
-      dirt = 0.3;
-      rock = 0.2;
-  }
+  // Get base blend weights from biome characteristics
+  const characteristics = BIOME_CHARACTERISTICS[biomeType];
+  let { grass, rock, dirt, sand, snow } = { ...characteristics.blendWeights };
 
-  // Step 2: Height-based snow blending (35m-50m transition zone)
-  const SNOW_START = 35;
-  const SNOW_FULL = 50;
-  if (height > SNOW_START) {
-    const snowFactor = Math.min(1, (height - SNOW_START) / (SNOW_FULL - SNOW_START));
-    // Smoothstep for natural transition
-    const smoothSnow = snowFactor * snowFactor * (3 - 2 * snowFactor);
-
-    // Snow replaces other materials proportionally
-    const remaining = 1 - smoothSnow;
-    grass *= remaining;
-    rock *= remaining;
-    dirt *= remaining;
-    sand *= remaining;
-    snow = smoothSnow;
-  }
-
-  // Step 3: Slope-based rock blending (steep surfaces = more rock)
-  // 0.4 radians (~24°) = start, 0.8 radians (~45°) = full rock
-  const ROCK_SLOPE_START = 0.4;
-  const ROCK_SLOPE_FULL = 0.8;
+  // Step 1: Slope-based rock blending (steep surfaces = more rock)
+  // This applies universally across all biomes
+  const ROCK_SLOPE_START = 0.35;
+  const ROCK_SLOPE_FULL = 0.75;
   if (slopeAngle > ROCK_SLOPE_START) {
     const rockFactor = Math.min(1, (slopeAngle - ROCK_SLOPE_START) / (ROCK_SLOPE_FULL - ROCK_SLOPE_START));
     const smoothRock = rockFactor * rockFactor * (3 - 2 * rockFactor);
 
-    // Rock replaces grass and dirt on steep slopes
-    const grassLoss = grass * smoothRock * 0.8;
-    const dirtLoss = dirt * smoothRock * 0.6;
+    // Rock replaces grass, dirt, and sand on steep slopes
+    const grassLoss = grass * smoothRock * 0.85;
+    const dirtLoss = dirt * smoothRock * 0.7;
+    const sandLoss = sand * smoothRock * 0.6;
 
     grass -= grassLoss;
     dirt -= dirtLoss;
-    rock += grassLoss + dirtLoss;
+    sand -= sandLoss;
+    rock += grassLoss + dirtLoss + sandLoss;
   }
 
-  // Step 4: Noise variation for natural look
+  // Step 2: Noise variation for natural look
   const variationNoise = (noise.fbm(worldX * 0.05, 0, worldZ * 0.05, 3) + 1) * 0.5;
-  const variation = (variationNoise - 0.5) * 0.15;
+  const variation = (variationNoise - 0.5) * 0.12;
 
   // Subtle variation to grass/dirt balance
   if (grass > 0.1 && dirt > 0.1) {
@@ -1309,7 +1015,7 @@ function calculateBlendWeights(
     dirt -= variation;
   }
 
-  // Step 5: Normalize to ensure sum = 1.0
+  // Step 3: Normalize to ensure sum = 1.0
   const total = grass + rock + dirt + sand + snow;
   if (total > 0) {
     grass /= total;

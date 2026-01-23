@@ -15,7 +15,7 @@
 
   import GalleryCanvas from "$lib/features/gallery/components/GalleryCanvas.svelte";
   import WorldSceneContent from "./WorldSceneContent.svelte";
-  import DebugPanel from "./DebugPanel.svelte";
+  import DebugPanelTabs from "../debug/DebugPanelTabs.svelte";
   import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
 
   import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d-core/physics/types";
@@ -35,6 +35,18 @@
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
   import type { Mesh } from "three";
+
+  // Performer/Sequence system
+  import {
+    createPerformerManager,
+    type PerformerManager,
+  } from "$lib/shared/3d-animation/state/performer-manager.svelte";
+  import { container } from "$lib/shared/di";
+  import {
+    DEFAULT_AVATAR_ID,
+    type AvatarId,
+  } from "$lib/shared/3d-animation/config/avatar-definitions";
+  import DuetOrchestrator from "$lib/shared/3d-animation/components/DuetOrchestrator.svelte";
 
   // ============================================================================
   // HMR POSITION PERSISTENCE
@@ -125,7 +137,8 @@
   const worldNoise = new SeededNoise(worldSeed);
 
   // Avatar/Camera state - restore from HMR if available
-  let cameraMode = $state<CameraMode>(hmrState?.cameraMode ?? CameraMode.FIRST_PERSON);
+  // Default to ORBIT so users see the welcome overlay and can click to enter exploration
+  let cameraMode = $state<CameraMode>(hmrState?.cameraMode ?? CameraMode.ORBIT);
   const showAvatar = $derived(cameraMode !== CameraMode.FIRST_PERSON);
   let showGridPlanes = $state(false); // Disabled for exploration mode
 
@@ -150,6 +163,34 @@
   let vegetationCount = $state({ trees: 0, rocks: 0, bushes: 0, grass: 0 });
   let currentBiome = $state("forest");
 
+  // Environment toggle states (tracked here for reactivity)
+  let terrainTexturesEnabled = $state(true);
+  let fogEnabled = $state(true);
+  let waterVisible = $state(true);
+
+  // Vegetation toggle states
+  let treesEnabled = $state(true);
+  let grassEnabled = $state(true);
+  let rocksEnabled = $state(true);
+  let bushesEnabled = $state(true);
+
+  // Physics state
+  let noclipEnabled = $state(false);
+  let isGrounded = $state(true);
+  const walkSpeed = 5.0;
+  const sprintSpeed = 10.0;
+
+  // Camera settings
+  let fov = $state(75);
+  let sensitivity = $state(1.0);
+
+  // View distance
+  let viewDistance = $state(256);
+  const chunkSize = 64;
+
+  // Debug panel visibility
+  let debugPanelVisible = $state(true);
+
   // Terrain zone state
   let hannonsLoaded = $state(false);
   let zoneBounds = $state<{ minX: number; maxX: number; minZ: number; maxZ: number } | null>(null);
@@ -160,6 +201,107 @@
   let showTouchUI = $state(false);
   let joystickInput = $state({ x: 0, z: 0 });
   const inputCapabilities = getInputCapabilities();
+
+  // ============================================================================
+  // PERFORMER/SEQUENCE SYSTEM
+  // ============================================================================
+
+  // Performer management (for sequence playback)
+  let performerManager = $state<PerformerManager | null>(null);
+  let sequenceBrowserOpen = $state(false);
+  let playbackSpeed = $state(1);
+
+  // Derived: shorthand accessors from performer manager
+  const performerStates = $derived.by(() => {
+    return performerManager ? performerManager.performers : [];
+  });
+  const activePerformerIndex = $derived.by(() => {
+    return performerManager ? performerManager.activeIndex : 0;
+  });
+  const activePerformerState = $derived.by(() => {
+    return performerManager ? performerManager.activeState : null;
+  });
+
+  // Initialize performer manager on mount
+  $effect(() => {
+    if (browser && !performerManager) {
+      const propInterpolator = container.items.propStateInterpolator;
+      const sequenceConverter = container.items.sequenceConverter;
+
+      performerManager = createPerformerManager({
+        propInterpolator,
+        sequenceConverter,
+        initialAvatarId: DEFAULT_AVATAR_ID,
+      });
+
+      // Initialize with first performer
+      performerManager.initialize();
+    }
+  });
+
+  // Sync speed to all performer states
+  $effect(() => {
+    performerManager?.setSpeed(playbackSpeed);
+  });
+
+  // Cleanup performer manager
+  onDestroy(() => {
+    performerManager?.destroy();
+  });
+
+  // ============================================================================
+  // MCP GAME BRIDGE (for Claude to inspect game state)
+  // ============================================================================
+
+  let gameBridgeInitialized = false;
+
+  // Initialize MCP Game Bridge in dev mode
+  $effect(() => {
+    if (!browser || !import.meta.env.DEV) return;
+    if (!physicsProvider || !performerManager) return;
+    if (gameBridgeInitialized) return;
+    gameBridgeInitialized = true;
+
+    import("$lib/shared/3d-core/debug/game-bridge").then(async ({ initGameBridge }) => {
+      const bridge = initGameBridge({
+        physics: {
+          getPlayerPosition: () => physicsProvider?.getPlayerPosition() ?? null,
+          getPlayerVelocity: () => physicsProvider?.getVelocity() ?? { x: 0, y: 0, z: 0 },
+          isGrounded: () => physicsProvider?.isGrounded() ?? false,
+          movePlayer: (movement, deltaTime) => physicsProvider?.movePlayer(movement, deltaTime),
+          teleportPlayer: (position) => physicsProvider?.teleport?.(position),
+          raycast: (_origin, _direction, _maxDistance) => ({ hit: false }),
+        },
+        camera: {
+          getMode: () => cameraMode === CameraMode.FIRST_PERSON ? "first_person" : cameraMode === CameraMode.THIRD_PERSON ? "third_person" : "orbit",
+          setMode: (mode: string) => {
+            if (mode === "first_person") cameraMode = CameraMode.FIRST_PERSON;
+            else if (mode === "third_person") cameraMode = CameraMode.THIRD_PERSON;
+            else if (mode === "orbit") cameraMode = CameraMode.ORBIT;
+          },
+          getYaw: () => playerYaw,
+          getPitch: () => 0, // Pitch tracked separately in camera controller
+          setYaw: (yaw: number) => { playerYaw = yaw; },
+          setPitch: (_pitch: number) => { /* Not directly settable */ },
+        },
+        playback: {
+          getPerformerManager: () => performerManager,
+          getSpeed: () => playbackSpeed,
+          setSpeed: (s: number) => { playbackSpeed = s; },
+        },
+      }, {
+        debug: true,
+      });
+
+      // Auto-connect to MCP server
+      try {
+        await bridge.connect();
+        console.log("[WorldScene] MCP Game Bridge connected");
+      } catch {
+        console.log("[WorldScene] MCP Game Bridge not available (run the MCP server to enable)");
+      }
+    });
+  });
 
   // ============================================================================
   // AVATAR STATE (for UnifiedCameraController)
@@ -204,6 +346,20 @@
       lastSaveTime = now;
       saveHMRState({ x, y, z, yaw, cameraMode: mode });
     }
+  });
+
+  // Keyboard handler for debug panel toggle (backtick)
+  $effect(() => {
+    function handleKeydown(e: KeyboardEvent) {
+      // Backtick to toggle debug panel
+      if (e.key === "`" || e.key === "~") {
+        e.preventDefault();
+        debugPanelVisible = !debugPanelVisible;
+      }
+    }
+
+    window.addEventListener("keydown", handleKeydown);
+    return () => window.removeEventListener("keydown", handleKeydown);
   });
 
   // Teleport to HMR position once physics is ready
@@ -267,7 +423,9 @@
       {showAvatar}
       {showGridPlanes}
       {inputCapabilities}
+      bind:terrainTexturesEnabled
       onModeChange={(mode) => (cameraMode = mode)}
+      performerState={activePerformerState}
     />
   </GalleryCanvas>
 
@@ -285,23 +443,91 @@
     </div>
   {/if}
 
-  <DebugPanel
-    position={playerPosition}
-    biome={currentBiome}
-    onTeleport={(x, y, z) => {
-      if (playerController) {
-        teleportPlayer(playerController, { x, y, z });
-      }
-    }}
-    onToggleWater={(visible) => waterManager?.setVisible(visible)}
-    onToggleFog={(enabled) => {
-      if (atmosphereManager) {
-        if (enabled) {
-          atmosphereManager.setFog(currentBiome);
+  {#if debugPanelVisible}
+    <DebugPanelTabs
+      position={playerPosition}
+      biome={currentBiome}
+      texturesEnabled={terrainTexturesEnabled}
+      texturesLoaded={true}
+      {fogEnabled}
+      {waterVisible}
+      atmosphereState={atmosphereManager?.getState() ?? null}
+      waterState={waterManager?.getState() ?? null}
+      {fps}
+      {chunkStats}
+      vegetationStats={vegetationCount}
+      {colliderCount}
+      seed={worldSeedEncoded}
+      {viewDistance}
+      {chunkSize}
+      {treesEnabled}
+      {grassEnabled}
+      {rocksEnabled}
+      {bushesEnabled}
+      {noclipEnabled}
+      {isGrounded}
+      {walkSpeed}
+      {sprintSpeed}
+      cameraMode={cameraMode === CameraMode.FIRST_PERSON ? "first-person" : cameraMode === CameraMode.THIRD_PERSON ? "third-person" : "orbit"}
+      {fov}
+      {sensitivity}
+      onTeleport={(x, y, z) => {
+        if (playerController) {
+          teleportPlayer(playerController, { x, y, z });
         }
-      }
-    }}
-  />
+      }}
+      onToggleWater={() => {
+        waterVisible = !waterVisible;
+        waterManager?.setVisible(waterVisible);
+      }}
+      onToggleFog={() => {
+        fogEnabled = !fogEnabled;
+        atmosphereManager?.setFogEnabled(fogEnabled);
+      }}
+      onToggleTextures={() => {
+        terrainTexturesEnabled = !terrainTexturesEnabled;
+      }}
+      onToggleTrees={() => {
+        treesEnabled = !treesEnabled;
+        // TODO: Wire to vegetation manager
+      }}
+      onToggleGrass={() => {
+        grassEnabled = !grassEnabled;
+        // TODO: Wire to vegetation manager
+      }}
+      onToggleRocks={() => {
+        rocksEnabled = !rocksEnabled;
+        // TODO: Wire to vegetation manager
+      }}
+      onToggleBushes={() => {
+        bushesEnabled = !bushesEnabled;
+        // TODO: Wire to vegetation manager
+      }}
+      onToggleNoclip={() => {
+        if (physicsProvider?.toggleNoclip) {
+          noclipEnabled = physicsProvider.toggleNoclip();
+        }
+      }}
+      onViewDistanceChange={(distance) => {
+        viewDistance = distance;
+        // TODO: Wire to chunk manager
+      }}
+      onModeChange={(mode) => {
+        cameraMode = mode === "first-person" ? CameraMode.FIRST_PERSON : mode === "third-person" ? CameraMode.THIRD_PERSON : CameraMode.ORBIT;
+      }}
+      onFovChange={(newFov) => {
+        fov = newFov;
+        // TODO: Wire to camera
+      }}
+      onSensitivityChange={(newSensitivity) => {
+        sensitivity = newSensitivity;
+        // TODO: Wire to camera controller
+      }}
+      onClose={() => {
+        debugPanelVisible = false;
+      }}
+    />
+  {/if}
 
   {#if hannonsLoaded && zoneBounds}
     <div class="zone-overlay">
@@ -372,6 +598,82 @@
       </div>
     </div>
   {/if}
+
+  <!-- Sequence Playback Controls -->
+  {#if activePerformerState}
+    <div class="playback-controls">
+      <button
+        class="control-btn"
+        onclick={() => sequenceBrowserOpen = true}
+        title="Load sequence"
+      >
+        <i class="fas fa-folder-open" aria-hidden="true"></i>
+      </button>
+
+      {#if activePerformerState.hasSequence}
+        <div class="sequence-info">
+          <span class="sequence-name">{activePerformerState.loadedSequence?.word ?? 'Sequence'}</span>
+          <span class="step-counter">
+            {activePerformerState.currentStepIndex + 1} / {activePerformerState.totalSteps}
+          </span>
+        </div>
+
+        <button
+          class="control-btn"
+          onclick={() => activePerformerState?.prevStep()}
+          title="Previous step"
+          disabled={activePerformerState.currentStepIndex === 0}
+        >
+          <i class="fas fa-step-backward" aria-hidden="true"></i>
+        </button>
+
+        <button
+          class="control-btn play-btn"
+          onclick={() => activePerformerState?.togglePlay()}
+          title={activePerformerState.isPlaying ? 'Pause' : 'Play'}
+        >
+          <i class="fas" class:fa-pause={activePerformerState.isPlaying} class:fa-play={!activePerformerState.isPlaying} aria-hidden="true"></i>
+        </button>
+
+        <button
+          class="control-btn"
+          onclick={() => activePerformerState?.nextStep()}
+          title="Next step"
+          disabled={activePerformerState.currentStepIndex >= activePerformerState.totalSteps - 1}
+        >
+          <i class="fas fa-step-forward" aria-hidden="true"></i>
+        </button>
+
+        <button
+          class="control-btn"
+          onclick={() => activePerformerState?.reset()}
+          title="Reset to start"
+        >
+          <i class="fas fa-undo" aria-hidden="true"></i>
+        </button>
+
+        <button
+          class="control-btn"
+          class:active={activePerformerState.loop}
+          onclick={() => {
+            if (activePerformerState) activePerformerState.loop = !activePerformerState.loop;
+          }}
+          title={activePerformerState.loop ? 'Looping enabled' : 'Enable loop'}
+        >
+          <i class="fas fa-sync" aria-hidden="true"></i>
+        </button>
+      {/if}
+    </div>
+  {/if}
+
+  <!-- Sequence Browser (Duet Orchestrator) -->
+  {#if performerManager}
+    <DuetOrchestrator
+      open={sequenceBrowserOpen}
+      {performerManager}
+      onClose={() => (sequenceBrowserOpen = false)}
+    />
+  {/if}
 </div>
 
 <style>
@@ -380,6 +682,8 @@
     inset: 0;
     overflow: hidden;
     background: #0a0a1a;
+    /* Prevent browser touch gestures (pinch-zoom, scroll) from interfering with drag-to-look */
+    touch-action: none;
   }
 
   .controls-overlay {
@@ -547,5 +851,89 @@
       animation: none;
       opacity: 0.6;
     }
+  }
+
+  /* Playback Controls */
+  .playback-controls {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+
+  .control-btn {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .control-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+  }
+
+  .control-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .control-btn.play-btn {
+    width: 52px;
+    height: 52px;
+    background: #8b5cf6;
+    font-size: 18px;
+  }
+
+  .control-btn.play-btn:hover {
+    background: #7c3aed;
+  }
+
+  .control-btn.active {
+    background: #22c55e;
+  }
+
+  .control-btn.active:hover {
+    background: #16a34a;
+  }
+
+  .sequence-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 12px;
+    min-width: 80px;
+  }
+
+  .sequence-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .step-counter {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: monospace;
   }
 </style>

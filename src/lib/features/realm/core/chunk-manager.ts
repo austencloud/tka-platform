@@ -60,8 +60,9 @@ import type {
   ClearStageZoneMessage,
   SetSpawnClearingMessage,
   ClearSpawnClearingMessage,
-  NeighborLODs,
 } from "../workers/chunk-generator.worker";
+import type { DrainageData } from "../generation/gpu/terrain-compute-types";
+import { DEFAULT_EROSION_CONFIG } from "../generation/gpu/terrain-compute-types";
 import type { CampgroundConfig } from "./realm-config";
 import {
   type RealTerrainZone,
@@ -96,6 +97,8 @@ export interface ChunkState {
   priority: number;
   lod: number;
   lastAccessTime: number;
+  /** Estimated memory usage in bytes */
+  memoryBytes: number;
 }
 
 /**
@@ -112,31 +115,33 @@ export interface ChunkMeshData {
   blendWeights1: Float32Array;
   /** Blend weights for terrain splatting (sand, snow, unused) */
   blendWeights2: Float32Array;
+  /** Drainage data for water placement (optional) */
+  drainage?: DrainageData;
 }
 
 /**
  * Chunk key for map lookup
  */
-type ChunkKey = string;
+export type ChunkKey = string;
 
 // ============================================================================
 // CHUNK MANAGER
 // ============================================================================
 
 export class ChunkManager {
-  private config: ChunkManagerConfig;
-  private worldSeed: number;
-  private chunks: Map<ChunkKey, ChunkState> = new Map();
-  private loadQueue: ChunkKey[] = [];
-  private activeLoads = 0;
-  private workers: Worker[] = [];
-  private nextWorkerId = 0;
-  private pendingCallbacks: Map<number, (result: ChunkMeshData) => void> = new Map();
-  private nextRequestId = 0;
-  private octree: Octree;
+  protected config: ChunkManagerConfig;
+  protected worldSeed: number;
+  protected chunks: Map<ChunkKey, ChunkState> = new Map();
+  protected loadQueue: ChunkKey[] = [];
+  protected activeLoads = 0;
+  protected workers: Worker[] = [];
+  protected nextWorkerId = 0;
+  protected pendingCallbacks: Map<number, (result: ChunkMeshData) => void> = new Map();
+  protected nextRequestId = 0;
+  protected octree: Octree;
 
-  // Reactive re-stitching: chunks that need regeneration when neighbors load
-  private chunksNeedingRestitch: Set<ChunkKey> = new Set();
+  // Total memory used by loaded chunks (bytes)
+  protected totalMemoryBytes = 0;
 
   // Real terrain zone
   private realTerrainZone: RealTerrainZone | null = null;
@@ -233,6 +238,7 @@ export class ChunkManager {
         biome: result.biome,
         blendWeights1: result.blendWeights1,
         blendWeights2: result.blendWeights2,
+        drainage: result.drainage,
       });
     }
 
@@ -245,9 +251,55 @@ export class ChunkManager {
   // ==========================================================================
 
   /**
-   * Update chunks based on camera position
+   * Camera direction for direction-aware chunk loading prioritization.
+   * Set via updateWithDirection() for predictive loading.
+   */
+  private cameraDirection: { x: number; z: number } | null = null;
+
+  /**
+   * Update chunks based on camera position.
+   * Call updateWithDirection() instead for direction-aware prioritization.
    */
   update(cameraX: number, cameraY: number, cameraZ: number): void {
+    this.updateInternal(cameraX, cameraY, cameraZ, null);
+  }
+
+  /**
+   * Update chunks with direction-aware prioritization.
+   * Chunks in the camera's forward direction will be prioritized for loading.
+   *
+   * @param cameraX - Camera X position
+   * @param cameraY - Camera Y position
+   * @param cameraZ - Camera Z position
+   * @param dirX - Camera forward direction X component (should be normalized)
+   * @param dirZ - Camera forward direction Z component (should be normalized)
+   */
+  updateWithDirection(
+    cameraX: number,
+    cameraY: number,
+    cameraZ: number,
+    dirX: number,
+    dirZ: number
+  ): void {
+    // Normalize direction
+    const len = Math.sqrt(dirX * dirX + dirZ * dirZ);
+    if (len > 0.001) {
+      this.cameraDirection = { x: dirX / len, z: dirZ / len };
+    } else {
+      this.cameraDirection = null;
+    }
+    this.updateInternal(cameraX, cameraY, cameraZ, this.cameraDirection);
+  }
+
+  /**
+   * Internal update implementation with optional direction prioritization.
+   */
+  private updateInternal(
+    cameraX: number,
+    cameraY: number,
+    cameraZ: number,
+    direction: { x: number; z: number } | null
+  ): void {
     const { chunkSize, viewDistance, lodDistances } = this.config;
 
     // Calculate which chunks should be visible
@@ -268,31 +320,50 @@ export class ChunkManager {
         // Calculate distance to chunk center
         const centerX = (chunkX + 0.5) * chunkSize;
         const centerZ = (chunkZ + 0.5) * chunkSize;
-        const distance = Math.sqrt(
+        const actualDistance = Math.sqrt(
           (cameraX - centerX) ** 2 + (cameraZ - centerZ) ** 2
         );
 
-        if (distance <= viewDistance) {
+        if (actualDistance <= viewDistance) {
           neededChunks.add(key);
 
-          // Calculate LOD based on distance
-          // T-junction stitching is implemented in the worker to handle
-          // different LOD levels at chunk boundaries seamlessly.
+          // Calculate LOD based on actual distance
+          // Skirts (vertical mesh extensions) hide any gaps between LOD levels
           let lod = lodDistances.length;
           for (let i = 0; i < lodDistances.length; i++) {
-            if (distance < lodDistances[i]!) {
+            if (actualDistance < lodDistances[i]!) {
               lod = i;
               break;
             }
           }
 
-          chunkPriorities.set(key, { distance, lod });
+          // Calculate prioritized distance (for queue ordering)
+          // Chunks in the camera's forward direction get a priority boost
+          let priorityDistance = actualDistance;
+
+          if (direction && actualDistance > 0.001) {
+            // Vector from camera to chunk center
+            const toChunkX = centerX - cameraX;
+            const toChunkZ = centerZ - cameraZ;
+
+            // Dot product with camera direction (both normalized)
+            const toChunkLen = Math.sqrt(toChunkX * toChunkX + toChunkZ * toChunkZ);
+            const dot = (toChunkX * direction.x + toChunkZ * direction.z) / toChunkLen;
+
+            // dot = 1 means chunk is directly ahead, -1 means behind
+            // Reduce priority distance for chunks ahead (making them load first)
+            // Factor of 0.5 means chunks ahead are treated as 50% closer for loading priority
+            const directionBoost = Math.max(0, dot) * 0.5;
+            priorityDistance = actualDistance * (1 - directionBoost);
+          }
+
+          chunkPriorities.set(key, { distance: priorityDistance, lod });
         }
       }
     }
 
     // Enforce max 1 LOD difference between adjacent chunks
-    // This is the single most important fix - makes T-junction stitching reliable
+    // This prevents jarring visual transitions even though skirts hide gaps
     this.enforceMaxLODDifference(chunkPriorities);
 
     // Unload chunks that are no longer needed
@@ -322,31 +393,6 @@ export class ChunkManager {
       }
     }
 
-    // DISABLED: Reactive re-stitching was causing infinite cascade loops
-    // When chunk A loads, it notifies neighbors B, C, D... to restitch.
-    // When B restitches (reloads), it notifies ITS neighbors including A.
-    // This creates an infinite loop that overwhelms the system.
-    //
-    // The T-junction stitching with skirts should handle seams adequately
-    // without needing to regenerate entire chunks when neighbors load.
-    //
-    // TODO: If re-enabling, add a "generation" counter to prevent cascades:
-    // - Only restitch if neighbor loaded in a LATER generation than our last stitch
-    // - Track which neighbors we've already stitched against
-    //
-    // if (this.chunksNeedingRestitch.size > 0) {
-    //   for (const key of this.chunksNeedingRestitch) {
-    //     const state = this.chunks.get(key);
-    //     if (state?.loadState === 'loaded') {
-    //       state.loadState = 'pending';
-    //       state.meshData = null;
-    //       this.loadQueue.unshift(key); // High priority
-    //     }
-    //   }
-    //   this.chunksNeedingRestitch.clear();
-    // }
-    this.chunksNeedingRestitch.clear(); // Just clear without processing
-
     // Sort load queue by priority (closest first)
     this.loadQueue.sort((a, b) => {
       const stateA = this.chunks.get(a);
@@ -371,6 +417,7 @@ export class ChunkManager {
       priority: distance,
       lod,
       lastAccessTime: Date.now(),
+      memoryBytes: 0,
     };
 
     this.chunks.set(key, state);
@@ -393,7 +440,7 @@ export class ChunkManager {
 
   /**
    * Enforce max 1 LOD difference between adjacent chunks.
-   * This is the industry-standard constraint that makes T-junction stitching reliable.
+   * This prevents jarring visual transitions at chunk boundaries.
    * Uses iterative constraint propagation until stable.
    */
   private enforceMaxLODDifference(
@@ -441,65 +488,12 @@ export class ChunkManager {
     // }
   }
 
-  /**
-   * Get the LOD of a neighbor chunk (-1 if not loaded or pending)
-   */
-  private getNeighborLOD(chunkX: number, chunkZ: number): number {
-    const key = this.chunkKey(chunkX, 0, chunkZ);
-    const neighbor = this.chunks.get(key);
-    // Return -1 if neighbor doesn't exist or isn't loaded/loading
-    // For loading chunks, use their intended LOD
-    if (!neighbor) return -1;
-    if (neighbor.loadState === "unloading") return -1;
-    return neighbor.lod;
-  }
-
-  /**
-   * Get neighbor LODs for T-junction stitching (includes diagonals for corner coordination)
-   */
-  private getNeighborLODs(chunkX: number, chunkZ: number): NeighborLODs {
-    return {
-      north: this.getNeighborLOD(chunkX, chunkZ + 1), // +Z direction
-      south: this.getNeighborLOD(chunkX, chunkZ - 1), // -Z direction
-      east: this.getNeighborLOD(chunkX + 1, chunkZ),  // +X direction
-      west: this.getNeighborLOD(chunkX - 1, chunkZ),  // -X direction
-      northEast: this.getNeighborLOD(chunkX + 1, chunkZ + 1),
-      northWest: this.getNeighborLOD(chunkX - 1, chunkZ + 1),
-      southEast: this.getNeighborLOD(chunkX + 1, chunkZ - 1),
-      southWest: this.getNeighborLOD(chunkX - 1, chunkZ - 1),
-    };
-  }
-
-  /**
-   * Notify all 8 neighbors that this chunk has loaded.
-   * Neighbors that were generated with neighborLOD=-1 (no neighbor) now need
-   * to re-stitch their edges to match this chunk's LOD.
-   */
-  private notifyNeighborsOfLoad(chunkX: number, chunkZ: number): void {
-    const neighbors: [number, number][] = [
-      [1, 0], [-1, 0], [0, 1], [0, -1], // cardinal
-      [1, 1], [-1, 1], [1, -1], [-1, -1], // diagonal
-    ];
-
-    for (const [dx, dz] of neighbors) {
-      const key = this.chunkKey(chunkX + dx, 0, chunkZ + dz);
-      const state = this.chunks.get(key);
-      // Only mark for restitch if already loaded (not loading or pending)
-      if (state?.loadState === 'loaded') {
-        this.chunksNeedingRestitch.add(key);
-      }
-    }
-  }
-
-  private loadChunk(key: ChunkKey, state: ChunkState): void {
+  protected loadChunk(key: ChunkKey, state: ChunkState): void {
     state.loadState = "loading";
     this.activeLoads++;
 
     const [chunkX, chunkY, chunkZ] = this.parseChunkKey(key);
     const requestId = this.nextRequestId++;
-
-    // Get neighbor LODs for T-junction stitching
-    const neighborLODs = this.getNeighborLODs(chunkX, chunkZ);
 
     const message: GenerateChunkMessage = {
       type: "generate-chunk",
@@ -511,7 +505,10 @@ export class ChunkManager {
       chunkSize: this.config.chunkSize,
       resolution: this.config.resolution,
       lod: state.lod,
-      neighborLODs,
+      // Erosion disabled: per-chunk erosion creates seams at edges because
+      // the simulation runs independently per chunk. Would need overlapping
+      // regions or a global pass to maintain seamless edges.
+      erosion: { ...DEFAULT_EROSION_CONFIG, enabled: false },
     };
 
     // Round-robin worker selection
@@ -526,16 +523,20 @@ export class ChunkManager {
       state.meshData = meshData;
       state.loadState = "loaded";
 
+      // Calculate and track memory usage
+      state.memoryBytes = this.calculateChunkMemory(meshData);
+      this.totalMemoryBytes += state.memoryBytes;
+
       // Update octree
       const worldX = chunkX * this.config.chunkSize + this.config.chunkSize / 2;
       const worldZ = chunkZ * this.config.chunkSize + this.config.chunkSize / 2;
       this.octree.insert(chunkX * 1000000 + chunkZ, { x: worldX, y: 0, z: worldZ });
 
-      // Notify neighbors they may need re-stitching (reactive re-stitch system)
-      this.notifyNeighborsOfLoad(chunkX, chunkZ);
-
       // Notify callback
       this.onChunkLoaded?.(key, state);
+
+      // Check memory budget and evict if needed
+      this.enforceMemoryBudget();
     });
 
     worker.postMessage(message);
@@ -543,6 +544,9 @@ export class ChunkManager {
 
   private unloadChunk(key: ChunkKey, state: ChunkState): void {
     state.loadState = "unloading";
+
+    // Track memory release
+    this.totalMemoryBytes -= state.memoryBytes;
 
     // Entity is just a plain object now - no ECS cleanup needed
 
@@ -558,6 +562,73 @@ export class ChunkManager {
   }
 
   // ==========================================================================
+  // MEMORY MANAGEMENT
+  // ==========================================================================
+
+  /**
+   * Calculate the memory footprint of a chunk's mesh data in bytes.
+   * Includes all typed arrays (vertices, normals, colors, indices, blend weights).
+   */
+  protected calculateChunkMemory(meshData: ChunkMeshData): number {
+    let bytes = 0;
+
+    // Float32Arrays: 4 bytes per element
+    bytes += meshData.vertices.byteLength;
+    bytes += meshData.normals.byteLength;
+    bytes += meshData.colors.byteLength;
+    bytes += meshData.blendWeights1.byteLength;
+    bytes += meshData.blendWeights2.byteLength;
+
+    // Uint32Array: 4 bytes per element
+    bytes += meshData.indices.byteLength;
+
+    // Vegetation data: estimate ~100 bytes per item (object overhead + properties)
+    bytes += meshData.vegetation.length * 100;
+
+    return bytes;
+  }
+
+  /**
+   * Enforce the memory budget by evicting least-recently-used chunks.
+   * Only evicts chunks that are outside the current view distance.
+   */
+  protected enforceMemoryBudget(): void {
+    const budgetBytes = this.config.memoryBudgetMB * 1024 * 1024;
+
+    // If under budget, nothing to do
+    if (this.totalMemoryBytes <= budgetBytes) return;
+
+    // Collect candidates for eviction (loaded chunks sorted by last access time)
+    const candidates: Array<{ key: ChunkKey; state: ChunkState }> = [];
+
+    for (const [key, state] of this.chunks) {
+      // Only consider loaded chunks for eviction
+      if (state.loadState !== "loaded") continue;
+
+      candidates.push({ key, state });
+    }
+
+    // Sort by last access time (oldest first = LRU)
+    candidates.sort((a, b) => a.state.lastAccessTime - b.state.lastAccessTime);
+
+    // Evict until under budget
+    let evicted = 0;
+    for (const { key, state } of candidates) {
+      if (this.totalMemoryBytes <= budgetBytes) break;
+
+      // Evict this chunk
+      this.unloadChunk(key, state);
+      evicted++;
+    }
+
+    if (evicted > 0) {
+      const usedMB = (this.totalMemoryBytes / 1024 / 1024).toFixed(1);
+      const budgetMB = this.config.memoryBudgetMB;
+      console.log(`[ChunkManager] Evicted ${evicted} chunks for memory (${usedMB}MB / ${budgetMB}MB)`);
+    }
+  }
+
+  // ==========================================================================
   // UTILITIES
   // ==========================================================================
 
@@ -565,7 +636,7 @@ export class ChunkManager {
     return `${x},${y},${z}`;
   }
 
-  private parseChunkKey(key: ChunkKey): [number, number, number] {
+  protected parseChunkKey(key: ChunkKey): [number, number, number] {
     const parts = key.split(",").map(Number);
     return [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0];
   }
@@ -580,18 +651,76 @@ export class ChunkManager {
   }
 
   /**
-   * Get terrain height at world position
+   * Get terrain height at world position using bilinear interpolation
+   * from the chunk's vertex grid.
+   *
+   * @param worldX - World X coordinate
+   * @param worldZ - World Z coordinate
+   * @returns Interpolated height, or null if chunk not loaded
    */
   getHeightAt(worldX: number, worldZ: number): number | null {
     const chunk = this.getChunkAt(worldX, worldZ);
     if (!chunk?.meshData) return null;
 
-    // Interpolate height from chunk vertices
-    const localX = worldX - Math.floor(worldX / this.config.chunkSize) * this.config.chunkSize;
-    const localZ = worldZ - Math.floor(worldZ / this.config.chunkSize) * this.config.chunkSize;
+    const { chunkSize, resolution } = this.config;
+    const { vertices } = chunk.meshData;
 
-    // TODO: Implement bilinear interpolation from chunk vertices
-    return null; // Placeholder
+    // Calculate chunk origin - use Math.round for consistency with worker
+    const chunkX = Math.floor(worldX / chunkSize);
+    const chunkZ = Math.floor(worldZ / chunkSize);
+    const originX = Math.round(chunkX * chunkSize);
+    const originZ = Math.round(chunkZ * chunkSize);
+
+    // Local position within chunk (0 to chunkSize)
+    const localX = worldX - originX;
+    const localZ = worldZ - originZ;
+
+    // The mesh has skirt vertices appended after the main grid.
+    // Main grid is resolution × resolution vertices.
+    // We need to sample from the main grid only.
+    //
+    // Vertex layout in the mesh:
+    // - Main grid: resolution × resolution vertices (indices 0 to resolution²-1)
+    // - Skirts: 4 × resolution vertices (appended after)
+    //
+    // Grid spacing (step between vertices)
+    const step = chunkSize / (resolution - 1);
+
+    // Find grid cell containing this point
+    const gridX = localX / step;
+    const gridZ = localZ / step;
+
+    // Integer grid indices (clamped to valid range)
+    const x0 = Math.max(0, Math.min(resolution - 2, Math.floor(gridX)));
+    const z0 = Math.max(0, Math.min(resolution - 2, Math.floor(gridZ)));
+    const x1 = x0 + 1;
+    const z1 = z0 + 1;
+
+    // Fractional position within cell (0 to 1)
+    const fx = gridX - x0;
+    const fz = gridZ - z0;
+
+    // Get heights at the four corners of the cell
+    // Vertex index = z * resolution + x, height is at offset +1 (x, y, z layout)
+    const getHeight = (gx: number, gz: number): number => {
+      const idx = (gz * resolution + gx) * 3 + 1;
+      return vertices[idx] ?? 0;
+    };
+
+    const h00 = getHeight(x0, z0); // Bottom-left
+    const h10 = getHeight(x1, z0); // Bottom-right
+    const h01 = getHeight(x0, z1); // Top-left
+    const h11 = getHeight(x1, z1); // Top-right
+
+    // Bilinear interpolation
+    // h = (1-fx)(1-fz)h00 + fx(1-fz)h10 + (1-fx)fz*h01 + fx*fz*h11
+    const height =
+      (1 - fx) * (1 - fz) * h00 +
+      fx * (1 - fz) * h10 +
+      (1 - fx) * fz * h01 +
+      fx * fz * h11;
+
+    return height;
   }
 
   /**
@@ -603,6 +732,8 @@ export class ChunkManager {
     loadingChunks: number;
     queueLength: number;
     activeLoads: number;
+    memoryUsedMB: number;
+    memoryBudgetMB: number;
   } {
     let loaded = 0;
     let pending = 0;
@@ -622,6 +753,84 @@ export class ChunkManager {
       loadingChunks: loading,
       queueLength: this.loadQueue.length,
       activeLoads: this.activeLoads,
+      memoryUsedMB: Math.round(this.totalMemoryBytes / 1024 / 1024 * 10) / 10,
+      memoryBudgetMB: this.config.memoryBudgetMB,
+    };
+  }
+
+  /**
+   * Get detailed performance statistics for profiling
+   */
+  getDetailedStats(): {
+    // Basic stats
+    loadedChunks: number;
+    pendingChunks: number;
+    loadingChunks: number;
+
+    // Per-LOD breakdown
+    chunksPerLOD: Record<number, number>;
+
+    // Memory
+    memoryUsedMB: number;
+    memoryBudgetMB: number;
+    memoryPressure: number; // 0-1, where 1 = at budget
+
+    // Performance
+    totalTriangles: number;
+    totalVertices: number;
+    averageChunkTriangles: number;
+
+    // Queue health
+    queueLength: number;
+    activeLoads: number;
+    maxConcurrentLoads: number;
+    loadUtilization: number; // 0-1, where 1 = fully utilized
+  } {
+    let loaded = 0;
+    let pending = 0;
+    let loading = 0;
+    let totalTriangles = 0;
+    let totalVertices = 0;
+    const chunksPerLOD: Record<number, number> = {};
+
+    for (const state of this.chunks.values()) {
+      switch (state.loadState) {
+        case "loaded":
+          loaded++;
+          // Track LOD distribution
+          chunksPerLOD[state.lod] = (chunksPerLOD[state.lod] ?? 0) + 1;
+          // Estimate triangles and vertices from mesh data
+          if (state.meshData) {
+            totalVertices += state.meshData.vertices.length / 3;
+            totalTriangles += state.meshData.indices.length / 3;
+          }
+          break;
+        case "pending": pending++; break;
+        case "loading": loading++; break;
+      }
+    }
+
+    const memoryUsedMB = this.totalMemoryBytes / 1024 / 1024;
+    const memoryPressure = Math.min(1, memoryUsedMB / this.config.memoryBudgetMB);
+    const loadUtilization = this.config.maxConcurrentLoads > 0
+      ? this.activeLoads / this.config.maxConcurrentLoads
+      : 0;
+
+    return {
+      loadedChunks: loaded,
+      pendingChunks: pending,
+      loadingChunks: loading,
+      chunksPerLOD,
+      memoryUsedMB: Math.round(memoryUsedMB * 10) / 10,
+      memoryBudgetMB: this.config.memoryBudgetMB,
+      memoryPressure: Math.round(memoryPressure * 100) / 100,
+      totalTriangles,
+      totalVertices,
+      averageChunkTriangles: loaded > 0 ? Math.round(totalTriangles / loaded) : 0,
+      queueLength: this.loadQueue.length,
+      activeLoads: this.activeLoads,
+      maxConcurrentLoads: this.config.maxConcurrentLoads,
+      loadUtilization: Math.round(loadUtilization * 100) / 100,
     };
   }
 
@@ -725,10 +934,10 @@ export class ChunkManager {
       if (state.loadState !== "loaded") continue;
 
       const [chunkX, , chunkZ] = this.parseChunkKey(key);
-      const chunkMinX = chunkX * chunkSize;
-      const chunkMaxX = (chunkX + 1) * chunkSize;
-      const chunkMinZ = chunkZ * chunkSize;
-      const chunkMaxZ = (chunkZ + 1) * chunkSize;
+      const chunkMinX = Math.round(chunkX * chunkSize);
+      const chunkMaxX = Math.round((chunkX + 1) * chunkSize);
+      const chunkMinZ = Math.round(chunkZ * chunkSize);
+      const chunkMaxZ = Math.round((chunkZ + 1) * chunkSize);
 
       // Check if chunk overlaps zone bounds (with margin for blending)
       const margin = 50;

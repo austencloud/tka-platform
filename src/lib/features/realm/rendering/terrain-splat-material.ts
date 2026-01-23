@@ -6,15 +6,22 @@
  * - 5-layer texture splatting (grass, rock, dirt, sand, snow)
  * - Procedural noise patterns (no texture files needed)
  * - Height-based and slope-based blending
+ * - LOD vertex morphing for seamless terrain transitions (clipmap-style)
  *
  * Blend weights come from vertex attributes computed in the chunk worker.
  * All texturing is procedural - generated on the GPU via TSL noise functions.
+ *
+ * LOD morphing is based on Geometry Clipmaps (Losasso & Hoppe, SIGGRAPH 2004):
+ * - Vertices at "odd" grid positions morph toward "even" positions
+ * - Formula: z' = (1-α)zf + αzc where α increases near LOD boundaries
+ * - This eliminates popping/seams between LOD levels
  *
  * Based on Three.js official webgpu_tsl_procedural_terrain example.
  *
  * References:
  * - https://threejs.org/examples/webgpu_tsl_procedural_terrain.html
  * - https://github.com/boytchev/tsl-textures
+ * - https://developer.nvidia.com/gpugems/gpugems2/part-i-geometric-complexity/chapter-2-terrain-rendering-using-gpu-based-geometry
  */
 
 import { MeshStandardNodeMaterial } from "three/webgpu";
@@ -23,8 +30,11 @@ import {
   Fn,
   uniform,
   attribute,
+  positionLocal,
   positionWorld,
   normalWorld,
+  cameraPosition,
+  modelWorldMatrix,
   vec2,
   vec3,
   float,
@@ -46,7 +56,10 @@ import {
   cos,
   hash,
   length,
+  If,
 } from "three/tsl";
+
+import { Vector3 } from "three";
 
 // ============================================================================
 // CONFIGURATION
@@ -59,12 +72,31 @@ export interface TerrainSplatConfig {
   triplanarSharpness?: number;
   /** Use simplified patterns for better performance (default: false) */
   useSimplePatterns?: boolean;
+
+  // LOD morphing configuration
+  /** Enable LOD vertex morphing for seamless transitions (default: true) */
+  enableLODMorphing?: boolean;
+  /** LOD distance thresholds (default: [32, 64, 128, 256, 512]) */
+  lodDistances?: number[];
+  /** Chunk size in world units (default: 32) */
+  chunkSize?: number;
+  /** Base resolution (vertices per side at LOD 0) (default: 33) */
+  baseResolution?: number;
+  /** Where morphing starts within each LOD range (0.5 = 50%) (default: 0.6) */
+  morphStart?: number;
 }
 
 const DEFAULT_CONFIG: Required<TerrainSplatConfig> = {
   tileScale: 0.1,
   triplanarSharpness: 4.0,
   useSimplePatterns: false,
+
+  // LOD morphing defaults
+  enableLODMorphing: true,
+  lodDistances: [32, 64, 128, 256, 512],
+  chunkSize: 32,
+  baseResolution: 33,
+  morphStart: 0.6, // Start morphing at 60% of LOD range
 };
 
 // ============================================================================
@@ -304,15 +336,176 @@ export function createTerrainSplatMaterial(
 ): MeshStandardNodeMaterial {
   const cfg = { ...DEFAULT_CONFIG, ...config };
 
-  // Uniforms
+  // Uniforms for texturing
   const uTileScale = uniform(cfg.tileScale, "float");
   const uTriplanarSharpness = uniform(cfg.triplanarSharpness, "float");
+
+  // Uniforms for LOD morphing (shared across all chunks)
+  // Note: uChunkWorldPos is NOT needed - we derive chunk position from modelWorldMatrix
+  // This allows all chunks to share a single material instance
+  const uChunkSize = uniform(cfg.chunkSize, "float");
+  const uMorphStart = uniform(cfg.morphStart, "float");
+  const uLodDistances = cfg.lodDistances.map((d) => uniform(d, "float"));
 
   // Create the material
   const material = new MeshStandardNodeMaterial({
     roughness: 0.8,
     metalness: 0.0,
   });
+
+  // ===========================================================================
+  // LOD VERTEX MORPHING (Geometry Clipmaps technique)
+  // ===========================================================================
+  // This eliminates popping/seams between LOD levels by smoothly morphing
+  // vertices at "odd" grid positions toward "even" positions as the camera
+  // moves away from the chunk.
+
+  if (cfg.enableLODMorphing) {
+    /**
+     * Calculate the blend factor α based on camera distance
+     * α = 0 at inner LOD boundary, ramps to 1 at outer boundary
+     */
+    const calculateMorphAlpha = Fn(([distToCamera]: [ReturnType<typeof float>]) => {
+      const alpha = float(0.0).toVar();
+
+      // Check each LOD level (unrolled for TSL compatibility)
+      If(distToCamera.lessThan(uLodDistances[0]), () => {
+        // Within LOD 0 range
+        const lodEnd = uLodDistances[0];
+        const transitionStart = mul(lodEnd, uMorphStart);
+        const transitionRange = sub(lodEnd, transitionStart);
+
+        If(distToCamera.greaterThan(transitionStart), () => {
+          const posInTransition = div(sub(distToCamera, transitionStart), transitionRange);
+          alpha.assign(clamp(posInTransition, 0.0, 1.0));
+        });
+      }).ElseIf(distToCamera.lessThan(uLodDistances[1]), () => {
+        // Within LOD 1 range
+        const lodStart = uLodDistances[0];
+        const lodEnd = uLodDistances[1];
+        const lodRange = sub(lodEnd, lodStart);
+        const transitionStart = add(lodStart, mul(lodRange, uMorphStart));
+        const transitionRange = sub(lodEnd, transitionStart);
+
+        If(distToCamera.greaterThan(transitionStart), () => {
+          const posInTransition = div(sub(distToCamera, transitionStart), transitionRange);
+          alpha.assign(clamp(posInTransition, 0.0, 1.0));
+        });
+      }).ElseIf(distToCamera.lessThan(uLodDistances[2]), () => {
+        // Within LOD 2 range
+        const lodStart = uLodDistances[1];
+        const lodEnd = uLodDistances[2];
+        const lodRange = sub(lodEnd, lodStart);
+        const transitionStart = add(lodStart, mul(lodRange, uMorphStart));
+        const transitionRange = sub(lodEnd, transitionStart);
+
+        If(distToCamera.greaterThan(transitionStart), () => {
+          const posInTransition = div(sub(distToCamera, transitionStart), transitionRange);
+          alpha.assign(clamp(posInTransition, 0.0, 1.0));
+        });
+      }).ElseIf(distToCamera.lessThan(uLodDistances[3]), () => {
+        // Within LOD 3 range
+        const lodStart = uLodDistances[2];
+        const lodEnd = uLodDistances[3];
+        const lodRange = sub(lodEnd, lodStart);
+        const transitionStart = add(lodStart, mul(lodRange, uMorphStart));
+        const transitionRange = sub(lodEnd, transitionStart);
+
+        If(distToCamera.greaterThan(transitionStart), () => {
+          const posInTransition = div(sub(distToCamera, transitionStart), transitionRange);
+          alpha.assign(clamp(posInTransition, 0.0, 1.0));
+        });
+      }).Else(() => {
+        // Beyond all LOD levels - fully morphed
+        alpha.assign(1.0);
+      });
+
+      return alpha;
+    });
+
+    /**
+     * Morph vertex position from fine grid to coarse grid
+     *
+     * Vertices at "odd" grid positions (those that exist only at finer LODs)
+     * morph toward their even neighbors (which exist at coarser LODs).
+     *
+     * Grid position parity: fract(gridPos * 0.5) * 2
+     * - Even positions: result = 0
+     * - Odd positions: result = 1
+     */
+    const morphVertexPosition = Fn(
+      ([localPos, alpha]: [ReturnType<typeof vec3>, ReturnType<typeof float>]) => {
+        const result = vec3(localPos).toVar();
+
+        If(alpha.greaterThan(0.001), () => {
+          // Grid step at current resolution
+          const gridStep = div(uChunkSize, float(cfg.baseResolution - 1));
+
+          // Convert local position to grid coordinates
+          const gridX = div(localPos.x, gridStep);
+          const gridZ = div(localPos.z, gridStep);
+
+          // Determine if this is an "odd" vertex (needs morphing)
+          // fract(x * 0.5) * 2 gives 0 for even, ~1 for odd grid positions
+          const oddX = mul(fract(mul(gridX, 0.5)), 2.0);
+          const oddZ = mul(fract(mul(gridZ, 0.5)), 2.0);
+
+          // Calculate the offset to the coarser grid position
+          const offsetX = mul(mul(oddX, gridStep), alpha);
+          const offsetZ = mul(mul(oddZ, gridStep), alpha);
+
+          // Apply morphing - move toward coarser grid position
+          result.x.assign(sub(localPos.x, offsetX));
+          result.z.assign(sub(localPos.z, offsetZ));
+        });
+
+        return result;
+      }
+    );
+
+    /**
+     * Main vertex displacement function
+     *
+     * Uses the model's world transform to determine chunk position,
+     * allowing all chunks to share a single material instance.
+     */
+    const vertexDisplacement = Fn(() => {
+      const localPos = positionLocal;
+
+      // Get chunk's world origin from the model matrix (translation component)
+      // This allows all chunks to share one material - each mesh's transform provides its position
+      const chunkOrigin = vec3(
+        modelWorldMatrix.element(3).element(0), // Translation X
+        modelWorldMatrix.element(3).element(1), // Translation Y
+        modelWorldMatrix.element(3).element(2)  // Translation Z
+      );
+
+      // World position of chunk center
+      const chunkCenterWorld = add(
+        chunkOrigin,
+        vec3(mul(uChunkSize, 0.5), float(0), mul(uChunkSize, 0.5))
+      );
+
+      // Distance from camera to chunk center (XZ plane only)
+      const toCamera = sub(cameraPosition, chunkCenterWorld);
+      const distToCamera = length(vec3(toCamera.x, float(0), toCamera.z));
+
+      // Calculate morph alpha
+      const alpha = calculateMorphAlpha(distToCamera);
+
+      // Morph vertex position (XZ only - height stays the same)
+      const morphedPos = morphVertexPosition(localPos, alpha);
+
+      return vec3(morphedPos.x, localPos.y, morphedPos.z);
+    });
+
+    // Apply vertex displacement
+    material.positionNode = vertexDisplacement();
+  }
+
+  // ===========================================================================
+  // TERRAIN TEXTURING (Triplanar procedural splatting)
+  // ===========================================================================
 
   // Assign color node - this is the main terrain color calculation
   material.colorNode = Fn(() => {
@@ -429,11 +622,15 @@ export function createTerrainSplatMaterial(
     return clamp(roughness, float(0.2), float(1.0));
   })();
 
-  // Store config for debugging
+  // Store config and uniforms for runtime updates
   (material as Record<string, unknown>).terrainConfig = cfg;
   (material as Record<string, unknown>).terrainUniforms = {
     uTileScale,
     uTriplanarSharpness,
+    // LOD morphing uniforms (shared - chunk position derived from model matrix)
+    uChunkSize,
+    uMorphStart,
+    uLodDistances,
   };
 
   return material;

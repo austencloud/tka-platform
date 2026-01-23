@@ -41,13 +41,30 @@ import {
   clamp,
   sqrt,
   normalize,
-} from "three/webgpu";
+} from "three/tsl";
 import type {
   TerrainComputeConfig,
   GPUChunkResult,
+  GPUVegetationData,
   ChunkGenerateRequest,
+  ErosionConfig,
 } from "./terrain-compute-types";
-import { DEFAULT_TERRAIN_CONFIG } from "./terrain-compute-types";
+import { DEFAULT_TERRAIN_CONFIG, DEFAULT_EROSION_CONFIG } from "./terrain-compute-types";
+import { applyErosion, applyThermalErosion, mulberry32 } from "../seed-generator";
+import {
+  generateVegetationScatter,
+  toLegacyFormat,
+  type TerrainSample,
+} from "../vegetation-scatter";
+import {
+  BiomeType,
+  getBiomeType,
+  BIOME_CHARACTERISTICS,
+  biomeTypeToLegacy,
+  DEFAULT_BIOME_CONFIG,
+  type BiomeSystemConfig,
+} from "../biome-system";
+import { SeededNoise } from "../seed-generator";
 
 /**
  * Check if WebGPU is available in the current browser
@@ -154,14 +171,14 @@ export class TerrainComputeGenerator {
     // Try GPU generation if initialized
     if (this.isInitialized && this.renderer) {
       try {
-        return await this.generateChunkGPU(chunkX, chunkZ, effectiveRes);
+        return await this.generateChunkGPU(chunkX, chunkZ, effectiveRes, lod);
       } catch (error) {
         console.warn("[TerrainCompute] GPU generation failed, falling back:", error);
       }
     }
 
     // CPU fallback
-    return this.generateChunkCPU(chunkX, chunkZ, effectiveRes);
+    return this.generateChunkCPU(chunkX, chunkZ, effectiveRes, lod);
   }
 
   /**
@@ -170,7 +187,8 @@ export class TerrainComputeGenerator {
   private async generateChunkGPU(
     chunkX: number,
     chunkZ: number,
-    resolution: number
+    resolution: number,
+    lod: number
   ): Promise<GPUChunkResult> {
     if (!this.renderer || !this.heightBuffer || !this.normalBuffer || !this.colorBuffer) {
       throw new Error("GPU not initialized");
@@ -223,11 +241,33 @@ export class TerrainComputeGenerator {
     const centerHeight = heights[Math.floor(vertexCount / 2)] ?? 0;
     const biome = this.getBiomeFromHeight(centerHeight);
 
-    return {
+    // Generate blend weights based on height and slope (with Whittaker biome classification)
+    const { blendWeights1, blendWeights2 } = this.generateBlendWeights(heights, normals, resolution, originX, originZ);
+
+    // Generate vegetation with ScatterMeshes-style placement
+    const vegetation = this.generateVegetation(heights, normals, originX, originZ, resolution, biome, lod);
+
+    // Add skirt geometry to hide seams between chunks
+    const withSkirts = this.addSkirtGeometry(
       vertices,
       normals,
       colors,
+      blendWeights1,
+      blendWeights2,
       indices,
+      resolution,
+      lod,
+      heights
+    );
+
+    return {
+      vertices: withSkirts.vertices,
+      normals: withSkirts.normals,
+      colors: withSkirts.colors,
+      indices: withSkirts.indices,
+      blendWeights1: withSkirts.blendWeights1,
+      blendWeights2: withSkirts.blendWeights2,
+      vegetation,
       biome,
       usedGPU: true,
     };
@@ -405,7 +445,8 @@ export class TerrainComputeGenerator {
   private generateChunkCPU(
     chunkX: number,
     chunkZ: number,
-    resolution: number
+    resolution: number,
+    lod: number
   ): GPUChunkResult {
     const { chunkSize, noise } = this.config;
     const vertexCount = resolution * resolution;
@@ -426,6 +467,29 @@ export class TerrainComputeGenerator {
 
         heights[idx] = this.cpuFBM(worldX * noise.baseScale, worldZ * noise.baseScale) * noise.heightScale;
       }
+    }
+
+    // Apply erosion simulation if enabled
+    // This creates more natural terrain with river valleys and realistic ridges
+    const erosionConfig = this.config.erosion ?? DEFAULT_EROSION_CONFIG;
+    if (erosionConfig.enabled && resolution >= 8) {
+      // Create a deterministic RNG for this chunk
+      const erosionSeed = this.config.worldSeed + chunkX * 10000 + chunkZ;
+      const rng = mulberry32(erosionSeed);
+
+      // Apply hydraulic erosion
+      applyErosion(heights, resolution, {
+        iterations: Math.max(5, Math.floor(erosionConfig.iterations / (lod + 1))), // Fewer iterations at higher LOD
+        erosionStrength: erosionConfig.erosionStrength,
+        upliftRate: erosionConfig.upliftRate,
+        depositionRate: erosionConfig.depositionRate,
+        minSlope: erosionConfig.minSlope,
+        rainAmount: erosionConfig.rainAmount,
+        evaporationRate: erosionConfig.evaporationRate,
+      }, rng);
+
+      // Apply thermal erosion for more realistic cliff faces
+      applyThermalErosion(heights, resolution, 3, 0.5);
     }
 
     // Calculate normals
@@ -461,12 +525,37 @@ export class TerrainComputeGenerator {
     // Build geometry
     const { vertices, indices } = this.buildGeometry(heights, resolution, originX, originZ);
 
-    return {
+    // Generate blend weights (with Whittaker biome classification)
+    const { blendWeights1, blendWeights2 } = this.generateBlendWeights(heights, normals, resolution, originX, originZ);
+
+    // Determine biome
+    const biome = this.getBiomeFromHeight(heights[Math.floor(vertexCount / 2)] ?? 0);
+
+    // Generate vegetation with ScatterMeshes-style placement
+    const vegetation = this.generateVegetation(heights, normals, originX, originZ, resolution, biome, lod);
+
+    // Add skirt geometry to hide seams between chunks
+    const withSkirts = this.addSkirtGeometry(
       vertices,
       normals,
       colors,
+      blendWeights1,
+      blendWeights2,
       indices,
-      biome: this.getBiomeFromHeight(heights[Math.floor(vertexCount / 2)] ?? 0),
+      resolution,
+      lod,
+      heights
+    );
+
+    return {
+      vertices: withSkirts.vertices,
+      normals: withSkirts.normals,
+      colors: withSkirts.colors,
+      indices: withSkirts.indices,
+      blendWeights1: withSkirts.blendWeights1,
+      blendWeights2: withSkirts.blendWeights2,
+      vegetation,
+      biome,
       usedGPU: false,
     };
   }
@@ -577,6 +666,446 @@ export class TerrainComputeGenerator {
     if (height < oceanLevel) return "ocean";
     if (height > mountainLevel) return "mountains";
     return "plains";
+  }
+
+  /**
+   * Generate blend weights for terrain splatting using Whittaker biome system
+   * blendWeights1: (grass, rock, dirt)
+   * blendWeights2: (sand, snow, unused)
+   */
+  private generateBlendWeights(
+    heights: Float32Array,
+    normals: Float32Array,
+    resolution: number,
+    originX: number,
+    originZ: number
+  ): { blendWeights1: Float32Array; blendWeights2: Float32Array } {
+    const vertexCount = resolution * resolution;
+    const blendWeights1 = new Float32Array(vertexCount * 3);
+    const blendWeights2 = new Float32Array(vertexCount * 3);
+    const { chunkSize } = this.config;
+    const step = chunkSize / (resolution - 1);
+
+    // Create noise generator for biome lookup
+    const noise = new SeededNoise(this.config.worldSeed);
+
+    for (let z = 0; z < resolution; z++) {
+      for (let x = 0; x < resolution; x++) {
+        const i = z * resolution + x;
+        const height = heights[i] ?? 0;
+        const ny = normals[i * 3 + 1] ?? 1; // Y component of normal (steepness)
+        const slope = 1 - ny; // 0 = flat, 1 = vertical
+
+        // Calculate world position
+        const worldX = originX + x * step;
+        const worldZ = originZ + z * step;
+
+        // Get Whittaker-style biome type
+        const biomeType = getBiomeType(noise, worldX, worldZ, height, DEFAULT_BIOME_CONFIG);
+
+        // Get base blend weights from biome characteristics
+        const characteristics = BIOME_CHARACTERISTICS[biomeType];
+        let { grass, rock, dirt, sand, snow } = { ...characteristics.blendWeights };
+
+        // Apply slope-based rock blending (steep surfaces = more rock)
+        const ROCK_SLOPE_START = 0.35;
+        const ROCK_SLOPE_FULL = 0.75;
+        if (slope > ROCK_SLOPE_START) {
+          const rockFactor = Math.min(1, (slope - ROCK_SLOPE_START) / (ROCK_SLOPE_FULL - ROCK_SLOPE_START));
+          const smoothRock = rockFactor * rockFactor * (3 - 2 * rockFactor);
+
+          // Rock replaces grass, dirt, and sand on steep slopes
+          const grassLoss = grass * smoothRock * 0.85;
+          const dirtLoss = dirt * smoothRock * 0.7;
+          const sandLoss = sand * smoothRock * 0.6;
+
+          grass -= grassLoss;
+          dirt -= dirtLoss;
+          sand -= sandLoss;
+          rock += grassLoss + dirtLoss + sandLoss;
+        }
+
+        // Noise variation for natural look
+        const variationNoise = (noise.fbm(worldX * 0.05, 0, worldZ * 0.05, 3) + 1) * 0.5;
+        const variation = (variationNoise - 0.5) * 0.12;
+
+        // Subtle variation to grass/dirt balance
+        if (grass > 0.1 && dirt > 0.1) {
+          grass += variation;
+          dirt -= variation;
+        }
+
+        // Normalize weights
+        const total = grass + rock + dirt + sand + snow;
+        if (total > 0) {
+          grass /= total;
+          rock /= total;
+          dirt /= total;
+          sand /= total;
+          snow /= total;
+        }
+
+        // Clamp to valid range
+        grass = Math.max(0, Math.min(1, grass));
+        rock = Math.max(0, Math.min(1, rock));
+        dirt = Math.max(0, Math.min(1, dirt));
+        sand = Math.max(0, Math.min(1, sand));
+        snow = Math.max(0, Math.min(1, snow));
+
+        blendWeights1[i * 3] = grass;
+        blendWeights1[i * 3 + 1] = rock;
+        blendWeights1[i * 3 + 2] = dirt;
+
+        blendWeights2[i * 3] = sand;
+        blendWeights2[i * 3 + 1] = snow;
+        blendWeights2[i * 3 + 2] = 0; // unused
+      }
+    }
+
+    return { blendWeights1, blendWeights2 };
+  }
+
+  /**
+   * Generate vegetation instances for a chunk using ScatterMeshes-style placement
+   *
+   * Features:
+   * - Deterministic, seeded placement
+   * - Biome-aware distribution
+   * - Slope-based filtering (no trees on cliffs)
+   * - Poisson disk sampling for natural distribution
+   * - LOD-based detail reduction
+   */
+  private generateVegetation(
+    heights: Float32Array,
+    normals: Float32Array,
+    originX: number,
+    originZ: number,
+    resolution: number,
+    biome: string,
+    lod: number
+  ): GPUVegetationData[] {
+    const { chunkSize, worldSeed } = this.config;
+
+    // Calculate chunk coordinates
+    const chunkX = Math.round(originX / chunkSize);
+    const chunkZ = Math.round(originZ / chunkSize);
+
+    // Create terrain sampler that uses precomputed heights and normals
+    const step = chunkSize / (resolution - 1);
+    const sampleTerrain = (worldX: number, worldZ: number): TerrainSample => {
+      // Convert world position to grid indices
+      const localX = worldX - originX;
+      const localZ = worldZ - originZ;
+      const gx = Math.floor(localX / step);
+      const gz = Math.floor(localZ / step);
+
+      // Clamp to valid range
+      const clampedGx = Math.max(0, Math.min(resolution - 1, gx));
+      const clampedGz = Math.max(0, Math.min(resolution - 1, gz));
+      const idx = clampedGz * resolution + clampedGx;
+
+      const height = heights[idx] ?? 0;
+
+      // Calculate slope from normal (1 - normalY gives slope: 0 = flat, 1 = vertical)
+      const normalY = normals[idx * 3 + 1] ?? 1;
+      const slope = 1 - Math.abs(normalY);
+
+      // Determine biome using noise-based Whittaker classification
+      // Convert to legacy format for vegetation rules
+      const biomeEnum = getBiomeType(this.noise!, worldX, worldZ, height, DEFAULT_BIOME_CONFIG);
+      const localBiome = biomeTypeToLegacy(biomeEnum);
+
+      return { height, slope, biome: localBiome };
+    };
+
+    // Generate vegetation using the new scatter system
+    const instances = generateVegetationScatter(
+      chunkX,
+      chunkZ,
+      {
+        worldSeed,
+        chunkSize,
+        lod,
+        densityMultiplier: 1.0,
+      },
+      sampleTerrain
+    );
+
+    // Convert to legacy format for backwards compatibility with rendering
+    const legacyInstances = toLegacyFormat(instances);
+
+    // Map to GPUVegetationData format
+    return legacyInstances.map(inst => ({
+      type: this.mapVegetationType(inst.type),
+      x: originX + inst.x,
+      y: inst.y,
+      z: originZ + inst.z,
+      scale: inst.scale,
+      rotation: inst.rotation,
+    }));
+  }
+
+  /**
+   * Map legacy vegetation types to GPU vegetation data types
+   */
+  private mapVegetationType(
+    type: "tree1" | "tree2" | "tree3" | "rock1" | "rock2" | "bush1" | "bush2" | "grass"
+  ): GPUVegetationData["type"] {
+    switch (type) {
+      case "tree1":
+      case "tree2":
+      case "tree3":
+        return "tree";
+      case "rock1":
+      case "rock2":
+        return "rock";
+      case "bush1":
+      case "bush2":
+        return "bush";
+      case "grass":
+        return "grass";
+      default:
+        return "grass";
+    }
+  }
+
+  /**
+   * Seeded pseudo-random number generator (0-1)
+   */
+  private seededRandom(seed: number): number {
+    const x = Math.sin(seed) * 43758.5453;
+    return x - Math.floor(x);
+  }
+
+  /**
+   * Add skirt geometry around chunk edges to hide seams between chunks.
+   * This is an industry-standard technique used by Unity Terrain, Unreal, etc.
+   *
+   * Skirts are vertical "curtains" that drop down from the edges, hiding any
+   * gaps caused by LOD differences or floating-point precision issues.
+   */
+  private addSkirtGeometry(
+    vertices: Float32Array,
+    normals: Float32Array,
+    colors: Float32Array,
+    blendWeights1: Float32Array,
+    blendWeights2: Float32Array,
+    indices: Uint32Array,
+    resolution: number,
+    lod: number,
+    heights: Float32Array
+  ): {
+    vertices: Float32Array;
+    normals: Float32Array;
+    colors: Float32Array;
+    blendWeights1: Float32Array;
+    blendWeights2: Float32Array;
+    indices: Uint32Array;
+  } {
+    const vertexCount = resolution * resolution;
+    const skirtVertexCount = resolution * 4; // 4 edges
+    const totalVertexCount = vertexCount + skirtVertexCount;
+
+    // Adaptive skirt depth: coarser LODs need deeper skirts
+    // Also consider terrain variance - hilly terrain needs deeper skirts
+    const BASE_SKIRT = 50;
+    const LOD_MULTIPLIER = 2.0;
+
+    let minHeight = Infinity;
+    let maxHeight = -Infinity;
+    for (let i = 0; i < vertexCount; i++) {
+      const h = heights[i] ?? 0;
+      minHeight = Math.min(minHeight, h);
+      maxHeight = Math.max(maxHeight, h);
+    }
+    const variance = maxHeight - minHeight;
+    const SKIRT_DEPTH = Math.max(50, BASE_SKIRT * Math.pow(LOD_MULTIPLIER, lod) + variance * 0.5);
+
+    // Create expanded arrays
+    const finalVertices = new Float32Array(totalVertexCount * 3);
+    const finalNormals = new Float32Array(totalVertexCount * 3);
+    const finalColors = new Float32Array(totalVertexCount * 3);
+    const finalBlendWeights1 = new Float32Array(totalVertexCount * 3);
+    const finalBlendWeights2 = new Float32Array(totalVertexCount * 3);
+
+    // Copy main terrain data
+    finalVertices.set(vertices);
+    finalNormals.set(normals);
+    finalColors.set(colors);
+    finalBlendWeights1.set(blendWeights1);
+    finalBlendWeights2.set(blendWeights2);
+
+    // Add skirt vertices
+    let skirtIdx = vertexCount * 3;
+
+    // Bottom edge (z = 0)
+    for (let x = 0; x < resolution; x++) {
+      const srcIdx = x * 3;
+      finalVertices[skirtIdx] = vertices[srcIdx]!;
+      finalVertices[skirtIdx + 1] = vertices[srcIdx + 1]! - SKIRT_DEPTH;
+      finalVertices[skirtIdx + 2] = vertices[srcIdx + 2]!;
+      finalNormals[skirtIdx] = normals[srcIdx]!;
+      finalNormals[skirtIdx + 1] = normals[srcIdx + 1]!;
+      finalNormals[skirtIdx + 2] = normals[srcIdx + 2]!;
+      finalColors[skirtIdx] = colors[srcIdx]!;
+      finalColors[skirtIdx + 1] = colors[srcIdx + 1]!;
+      finalColors[skirtIdx + 2] = colors[srcIdx + 2]!;
+      finalBlendWeights1[skirtIdx] = blendWeights1[srcIdx]!;
+      finalBlendWeights1[skirtIdx + 1] = blendWeights1[srcIdx + 1]!;
+      finalBlendWeights1[skirtIdx + 2] = blendWeights1[srcIdx + 2]!;
+      finalBlendWeights2[skirtIdx] = blendWeights2[srcIdx]!;
+      finalBlendWeights2[skirtIdx + 1] = blendWeights2[srcIdx + 1]!;
+      finalBlendWeights2[skirtIdx + 2] = blendWeights2[srcIdx + 2]!;
+      skirtIdx += 3;
+    }
+
+    // Top edge (z = resolution - 1)
+    for (let x = 0; x < resolution; x++) {
+      const srcIdx = ((resolution - 1) * resolution + x) * 3;
+      finalVertices[skirtIdx] = vertices[srcIdx]!;
+      finalVertices[skirtIdx + 1] = vertices[srcIdx + 1]! - SKIRT_DEPTH;
+      finalVertices[skirtIdx + 2] = vertices[srcIdx + 2]!;
+      finalNormals[skirtIdx] = normals[srcIdx]!;
+      finalNormals[skirtIdx + 1] = normals[srcIdx + 1]!;
+      finalNormals[skirtIdx + 2] = normals[srcIdx + 2]!;
+      finalColors[skirtIdx] = colors[srcIdx]!;
+      finalColors[skirtIdx + 1] = colors[srcIdx + 1]!;
+      finalColors[skirtIdx + 2] = colors[srcIdx + 2]!;
+      finalBlendWeights1[skirtIdx] = blendWeights1[srcIdx]!;
+      finalBlendWeights1[skirtIdx + 1] = blendWeights1[srcIdx + 1]!;
+      finalBlendWeights1[skirtIdx + 2] = blendWeights1[srcIdx + 2]!;
+      finalBlendWeights2[skirtIdx] = blendWeights2[srcIdx]!;
+      finalBlendWeights2[skirtIdx + 1] = blendWeights2[srcIdx + 1]!;
+      finalBlendWeights2[skirtIdx + 2] = blendWeights2[srcIdx + 2]!;
+      skirtIdx += 3;
+    }
+
+    // Left edge (x = 0)
+    for (let z = 0; z < resolution; z++) {
+      const srcIdx = (z * resolution) * 3;
+      finalVertices[skirtIdx] = vertices[srcIdx]!;
+      finalVertices[skirtIdx + 1] = vertices[srcIdx + 1]! - SKIRT_DEPTH;
+      finalVertices[skirtIdx + 2] = vertices[srcIdx + 2]!;
+      finalNormals[skirtIdx] = normals[srcIdx]!;
+      finalNormals[skirtIdx + 1] = normals[srcIdx + 1]!;
+      finalNormals[skirtIdx + 2] = normals[srcIdx + 2]!;
+      finalColors[skirtIdx] = colors[srcIdx]!;
+      finalColors[skirtIdx + 1] = colors[srcIdx + 1]!;
+      finalColors[skirtIdx + 2] = colors[srcIdx + 2]!;
+      finalBlendWeights1[skirtIdx] = blendWeights1[srcIdx]!;
+      finalBlendWeights1[skirtIdx + 1] = blendWeights1[srcIdx + 1]!;
+      finalBlendWeights1[skirtIdx + 2] = blendWeights1[srcIdx + 2]!;
+      finalBlendWeights2[skirtIdx] = blendWeights2[srcIdx]!;
+      finalBlendWeights2[skirtIdx + 1] = blendWeights2[srcIdx + 1]!;
+      finalBlendWeights2[skirtIdx + 2] = blendWeights2[srcIdx + 2]!;
+      skirtIdx += 3;
+    }
+
+    // Right edge (x = resolution - 1)
+    for (let z = 0; z < resolution; z++) {
+      const srcIdx = (z * resolution + resolution - 1) * 3;
+      finalVertices[skirtIdx] = vertices[srcIdx]!;
+      finalVertices[skirtIdx + 1] = vertices[srcIdx + 1]! - SKIRT_DEPTH;
+      finalVertices[skirtIdx + 2] = vertices[srcIdx + 2]!;
+      finalNormals[skirtIdx] = normals[srcIdx]!;
+      finalNormals[skirtIdx + 1] = normals[srcIdx + 1]!;
+      finalNormals[skirtIdx + 2] = normals[srcIdx + 2]!;
+      finalColors[skirtIdx] = colors[srcIdx]!;
+      finalColors[skirtIdx + 1] = colors[srcIdx + 1]!;
+      finalColors[skirtIdx + 2] = colors[srcIdx + 2]!;
+      finalBlendWeights1[skirtIdx] = blendWeights1[srcIdx]!;
+      finalBlendWeights1[skirtIdx + 1] = blendWeights1[srcIdx + 1]!;
+      finalBlendWeights1[skirtIdx + 2] = blendWeights1[srcIdx + 2]!;
+      finalBlendWeights2[skirtIdx] = blendWeights2[srcIdx]!;
+      finalBlendWeights2[skirtIdx + 1] = blendWeights2[srcIdx + 1]!;
+      finalBlendWeights2[skirtIdx + 2] = blendWeights2[srcIdx + 2]!;
+      skirtIdx += 3;
+    }
+
+    // Generate indices for skirt triangles
+    const mainQuadCount = (resolution - 1) * (resolution - 1);
+    const skirtQuadCount = (resolution - 1) * 4;
+    const totalQuadCount = mainQuadCount + skirtQuadCount;
+    const finalIndices = new Uint32Array(totalQuadCount * 6);
+
+    // Copy main terrain indices
+    finalIndices.set(indices);
+
+    // Add skirt indices
+    let indexIdx = mainQuadCount * 6;
+    const skirtStartIdx = vertexCount;
+
+    // Bottom edge skirt (z = 0)
+    for (let x = 0; x < resolution - 1; x++) {
+      const topLeft = x;
+      const topRight = x + 1;
+      const bottomLeft = skirtStartIdx + x;
+      const bottomRight = skirtStartIdx + x + 1;
+
+      finalIndices[indexIdx++] = topLeft;
+      finalIndices[indexIdx++] = bottomLeft;
+      finalIndices[indexIdx++] = topRight;
+      finalIndices[indexIdx++] = topRight;
+      finalIndices[indexIdx++] = bottomLeft;
+      finalIndices[indexIdx++] = bottomRight;
+    }
+
+    // Top edge skirt (z = max)
+    const topEdgeSkirtStart = skirtStartIdx + resolution;
+    for (let x = 0; x < resolution - 1; x++) {
+      const topLeft = (resolution - 1) * resolution + x;
+      const topRight = topLeft + 1;
+      const bottomLeft = topEdgeSkirtStart + x;
+      const bottomRight = topEdgeSkirtStart + x + 1;
+
+      finalIndices[indexIdx++] = topLeft;
+      finalIndices[indexIdx++] = topRight;
+      finalIndices[indexIdx++] = bottomLeft;
+      finalIndices[indexIdx++] = bottomLeft;
+      finalIndices[indexIdx++] = topRight;
+      finalIndices[indexIdx++] = bottomRight;
+    }
+
+    // Left edge skirt (x = 0)
+    const leftEdgeSkirtStart = skirtStartIdx + resolution * 2;
+    for (let z = 0; z < resolution - 1; z++) {
+      const topLeft = z * resolution;
+      const bottomLeft = (z + 1) * resolution;
+      const topRight = leftEdgeSkirtStart + z;
+      const bottomRight = leftEdgeSkirtStart + z + 1;
+
+      finalIndices[indexIdx++] = topLeft;
+      finalIndices[indexIdx++] = topRight;
+      finalIndices[indexIdx++] = bottomLeft;
+      finalIndices[indexIdx++] = bottomLeft;
+      finalIndices[indexIdx++] = topRight;
+      finalIndices[indexIdx++] = bottomRight;
+    }
+
+    // Right edge skirt (x = max)
+    const rightEdgeSkirtStart = skirtStartIdx + resolution * 3;
+    for (let z = 0; z < resolution - 1; z++) {
+      const topLeft = z * resolution + resolution - 1;
+      const bottomLeft = (z + 1) * resolution + resolution - 1;
+      const topRight = rightEdgeSkirtStart + z;
+      const bottomRight = rightEdgeSkirtStart + z + 1;
+
+      finalIndices[indexIdx++] = topLeft;
+      finalIndices[indexIdx++] = bottomLeft;
+      finalIndices[indexIdx++] = topRight;
+      finalIndices[indexIdx++] = topRight;
+      finalIndices[indexIdx++] = bottomLeft;
+      finalIndices[indexIdx++] = bottomRight;
+    }
+
+    return {
+      vertices: finalVertices,
+      normals: finalNormals,
+      colors: finalColors,
+      blendWeights1: finalBlendWeights1,
+      blendWeights2: finalBlendWeights2,
+      indices: finalIndices,
+    };
   }
 
   /**

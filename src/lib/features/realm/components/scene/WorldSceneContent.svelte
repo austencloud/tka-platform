@@ -40,12 +40,14 @@
   import { Plane } from "$lib/shared/3d-animation/domain/enums/Plane";
 
   // World systems
-  import { ChunkManager, type ChunkState } from "../../core/chunk-manager";
+  import { type ChunkState } from "../../core/chunk-manager";
+  import { createHybridChunkManager, type HybridChunkManager } from "../../core/hybrid-chunk-manager";
   import { SeededNoise, getBiome } from "../../generation/seed-generator";
   import { type ImportedTerrainData, isPointInPolygon } from "../../generation/real-terrain-zone";
   import { VegetationManager } from "../../rendering/instanced-vegetation";
   import { AtmosphereManager } from "../../rendering/atmosphere";
   import { WaterManager } from "../../rendering/water";
+  import { DrainageWaterManager } from "../../rendering/drainage-water";
   import type { RealmConfig } from "../../core/realm-config";
 
   import hannonsTerrainData from "../../data/hannons-camp-terrain.json";
@@ -67,16 +69,19 @@
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
   // Terrain texturing system
+  // Texture-based approach using real PBR textures from AmbientCG
   import {
-    createTerrainSplatMaterial,
+    loadTerrainTextures,
+    createTerrainTextureMaterial,
     createTerrainFallbackMaterial,
-    type TerrainSplatConfig,
-  } from "../../rendering/terrain-splat-material";
+    disposeTerrainTextures,
+    type TerrainTextureConfig,
+  } from "../../rendering/terrain-texture-material";
 
   // Feature flag for terrain texturing system
-  // Set to true to enable procedural PBR terrain textures
-  // Set to false to use simple vertex colors (fallback)
-  const USE_TERRAIN_TEXTURING = true; // Enabled - requires WebGPU renderer (GalleryCanvas with webgpu-auto)
+  // Set to true to enable PBR terrain textures (grass, rock, dirt, sand)
+  // Set to false to use simple vertex colors (faster, fallback)
+  const USE_TERRAIN_TEXTURING = true;
 
   // ============================================================================
   // PROPS
@@ -99,7 +104,7 @@
     vegetationManager: VegetationManager | null;
     atmosphereManager: AtmosphereManager | null;
     waterManager: WaterManager | null;
-    chunkManager: ChunkManager | null;
+    chunkManager: HybridChunkManager | null;
     chunkMeshes: Map<string, Mesh>;
     playerPosition: { x: number; y: number; z: number };
     playerYaw: number;
@@ -123,6 +128,12 @@
     showGridPlanes: boolean;
     inputCapabilities: ReturnType<typeof import("$lib/shared/input/InputCapabilities.svelte").getInputCapabilities>;
     onModeChange: (mode: CameraMode) => void;
+
+    /** Toggle terrain textures on/off (bindable) */
+    terrainTexturesEnabled: boolean;
+
+    /** Performer state for sequence playback (optional) */
+    performerState?: import("$lib/shared/3d-animation/state/avatar-instance-state.svelte").AvatarInstanceState | null;
   }
 
   let {
@@ -163,6 +174,8 @@
     showGridPlanes,
     inputCapabilities,
     onModeChange,
+    terrainTexturesEnabled = $bindable(true),
+    performerState = null,
   }: Props = $props();
 
   // Get Threlte context
@@ -185,12 +198,19 @@
   let groundSnapAttempts = 0; // Track attempts to avoid infinite loops
   const MAX_GROUND_SNAP_ATTEMPTS = 300; // ~5 seconds at 60fps
 
+  // Flag to prevent physics operations during/after cleanup
+  // This prevents Rapier WASM errors during HMR when the module is partially freed
+  let isDisposed = false;
+
   // Campground objects placed in spawn clearing
   let campgroundObjects: Object3D[] = [];
   const gltfLoader = new GLTFLoader();
 
   // Sun light reference for shadow updates
   let sunLight: DirectionalLight | null = null;
+
+  // Drainage-based water manager (per-chunk water that follows terrain topology)
+  let drainageWaterManager: DrainageWaterManager | null = null;
 
   // NOTE: Clipmap material is disabled until T-junction stitching is implemented.
   // The GPU vertex morphing only works if adjacent chunks have the same vertex
@@ -242,6 +262,10 @@
     // Setup lighting
     setupLighting();
 
+    // Initialize terrain textures (async, non-blocking)
+    // Chunks render with vertex colors initially, textures applied when loaded
+    initTerrainMaterial();
+
     // Initialize vegetation manager with GLTF models
     vegetationManager = new VegetationManager(scene, { useGLTFModels: true });
     await vegetationManager.initWithModels();
@@ -251,7 +275,7 @@
     atmosphereManager.createSky();
     atmosphereManager.setFog(stageMode ? "forest" : "plains");
 
-    // Initialize water
+    // Initialize water (flat plane that follows camera - legacy fallback)
     waterManager = new WaterManager(scene, {
       waterLevel: 5,
       color: "#2a8faa",
@@ -259,13 +283,23 @@
     });
     waterManager.create();
 
-    // Initialize chunk manager
-    chunkManager = new ChunkManager(worldSeed, {
+    // Initialize drainage-based water (per-chunk water that follows terrain)
+    drainageWaterManager = new DrainageWaterManager(scene, {
+      oceanLevel: activeConfig.terrain.waterLevel ?? -10,
+      deepColor: "#1a5f7a",
+      shallowColor: "#4a9fb5",
+    });
+
+    // Initialize hybrid chunk manager
+    // GPU compute is disabled until Three.js WebGPU compute API stabilizes
+    // (readStorageBufferAsync API changed in recent versions)
+    chunkManager = createHybridChunkManager(worldSeed, {
       chunkSize: activeConfig.chunks.size,
       viewDistance: activeConfig.chunks.viewDistance,
       lodDistances: activeConfig.chunks.lodDistances,
       maxConcurrentLoads: 4,
       resolution: 33,
+      useGPU: false, // Disabled - WebGPU compute API needs update
     });
 
     // T-junction stitching is implemented in the chunk worker (CPU-side).
@@ -288,38 +322,107 @@
     }
 
     // Handle chunk loaded
+    // Skip processing during disposal to prevent Rapier WASM errors
     chunkManager.onChunkLoaded = (key, state) => {
+      if (isDisposed) return;
+
       if (state.meshData) {
         createChunkMesh(state, key);
 
-        // Create terrain collider
+        // Create terrain collider (wrapped in try-catch for HMR safety)
         const chunk = state.entity.chunk;
         const chunkSize = activeConfig.chunks.size;
         if (chunk && terrainPhysics) {
-          terrainPhysics.addChunkCollider(
+          try {
+            terrainPhysics.addChunkCollider(
+              chunk.chunkX,
+              chunk.chunkZ,
+              chunkSize,
+              state.meshData
+            );
+          } catch (e) {
+            if (import.meta.hot) {
+              console.debug('[WorldSceneContent] Chunk collider creation failed (likely HMR):', e);
+            }
+          }
+        }
+
+        // Add vegetation (filter out items in water areas)
+        if (chunk && vegetationManager && state.meshData.vegetation.length > 0) {
+          const chunkWorldX = Math.round(chunk.chunkX * chunkSize);
+          const chunkWorldZ = Math.round(chunk.chunkZ * chunkSize);
+
+          // DEBUG: Check what drainage data we have
+          const hasDrainage = !!state.meshData.drainage;
+          const hasWaterMask = !!state.meshData.drainage?.waterMask;
+          const waterMaskLength = state.meshData.drainage?.waterMask?.length ?? 0;
+          const hasWater = state.meshData.drainage?.waterMask
+            ? Array.from(state.meshData.drainage.waterMask).some((v) => v > 0.3)
+            : false;
+          console.log(
+            `[Chunk ${chunk.chunkX},${chunk.chunkZ}] Drainage: ${hasDrainage}, WaterMask: ${hasWaterMask}, Length: ${waterMaskLength}, HasWater: ${hasWater}, Veg: ${state.meshData.vegetation.length}`
+          );
+
+          // Filter vegetation to exclude water areas
+          let filteredVegetation = state.meshData.vegetation;
+          if (state.meshData.drainage?.waterMask) {
+            const resolution = 33;
+            const step = chunkSize / (resolution - 1);
+            const waterMask = state.meshData.drainage.waterMask;
+
+            filteredVegetation = state.meshData.vegetation.filter((veg) => {
+              // Convert vegetation world position to grid index
+              const localX = veg.x - chunkWorldX;
+              const localZ = veg.z - chunkWorldZ;
+              const gridX = Math.round(localX / step);
+              const gridZ = Math.round(localZ / step);
+              const clampedX = Math.max(0, Math.min(resolution - 1, gridX));
+              const clampedZ = Math.max(0, Math.min(resolution - 1, gridZ));
+              const idx = clampedZ * resolution + clampedX;
+
+              // Keep vegetation only if waterMask is below threshold
+              const water = waterMask[idx] ?? 0;
+              return water < 0.3;
+            });
+
+            if (filteredVegetation.length < state.meshData.vegetation.length) {
+              console.log(
+                `[Chunk ${chunk.chunkX},${chunk.chunkZ}] Filtered ${state.meshData.vegetation.length - filteredVegetation.length} vegetation items in water`
+              );
+            }
+          }
+
+          vegetationManager.addChunkVegetation(key, chunkWorldX, chunkWorldZ, filteredVegetation);
+        }
+
+        // Create drainage-based water for this chunk
+        if (chunk && drainageWaterManager && state.meshData.drainage) {
+          const resolution = 33; // Same as chunk generator
+          const mainVertexCount = resolution * resolution; // 1089 vertices (excludes skirts)
+
+          // Extract heights from main terrain vertices only (not skirts)
+          // Skirts are appended after the main grid, so first mainVertexCount vertices are the grid
+          const heights = new Float32Array(mainVertexCount);
+          for (let i = 0; i < mainVertexCount; i++) {
+            heights[i] = state.meshData.vertices[i * 3 + 1]!;
+          }
+          drainageWaterManager.createChunkWater(
             chunk.chunkX,
             chunk.chunkZ,
             chunkSize,
-            state.meshData
-          );
-        }
-
-        // Add vegetation
-        if (chunk && vegetationManager && state.meshData.vegetation.length > 0) {
-          const chunkWorldX = chunk.chunkX * chunkSize;
-          const chunkWorldZ = chunk.chunkZ * chunkSize;
-          vegetationManager.addChunkVegetation(
-            key,
-            chunkWorldX,
-            chunkWorldZ,
-            state.meshData.vegetation
+            resolution,
+            state.meshData.drainage,
+            heights
           );
         }
       }
     };
 
     // Handle chunk unloaded
+    // Skip cleanup during disposal to prevent Rapier WASM errors
     chunkManager.onChunkUnloaded = (key) => {
+      if (isDisposed) return;
+
       // Remove mesh from scene
       const mesh = chunkMeshes.get(key);
       if (mesh) {
@@ -331,14 +434,23 @@
         chunkMeshes.delete(key);
       }
 
-      // Remove terrain collider
+      // Remove terrain collider (wrapped in try-catch for HMR safety)
       const parts = key.split(",").map(Number);
       const chunkX = parts[0] ?? 0;
       const chunkZ = parts[2] ?? 0;
-      terrainPhysics?.removeChunkCollider(chunkX, chunkZ);
+      try {
+        terrainPhysics?.removeChunkCollider(chunkX, chunkZ);
+      } catch (e) {
+        if (import.meta.hot) {
+          console.debug('[WorldSceneContent] Chunk collider removal failed (likely HMR):', e);
+        }
+      }
 
       // Remove vegetation
       vegetationManager?.removeChunkVegetation(key);
+
+      // Remove drainage water
+      drainageWaterManager?.removeChunkWater(chunkX, chunkZ);
     };
 
     isInitialized = true;
@@ -369,6 +481,9 @@
   });
 
   onDestroy(() => {
+    // Mark as disposed FIRST to prevent useTask from accessing freed resources
+    isDisposed = true;
+
     // Dispose chunk meshes
     for (const [key, mesh] of chunkMeshes) {
       scene.remove(mesh);
@@ -385,21 +500,34 @@
     }
     campgroundObjects = [];
 
-    // Dispose managers
+    // Dispose managers (non-physics)
     chunkManager?.dispose();
     vegetationManager?.dispose();
     atmosphereManager?.dispose();
     waterManager?.dispose();
-    terrainPhysics?.dispose();
+    drainageWaterManager?.dispose();
 
-    // Dispose player controller
-    if (physicsState && playerController) {
-      disposePlayerController(physicsState, playerController);
-    }
+    // Dispose terrain textures
+    disposeTerrainTextures();
 
-    // Dispose physics world
-    if (physicsState) {
-      disposePhysicsWorld(physicsState);
+    // Dispose physics-related resources
+    // Wrapped in try-catch because during HMR, Rapier's WASM module may already
+    // be freed before our cleanup runs, causing "_initialized" errors
+    try {
+      terrainPhysics?.dispose();
+
+      if (physicsState && playerController) {
+        disposePlayerController(physicsState, playerController);
+      }
+
+      if (physicsState) {
+        disposePhysicsWorld(physicsState);
+      }
+    } catch (e) {
+      // Expected during HMR when Rapier WASM is already freed
+      if (import.meta.hot) {
+        console.debug('[WorldSceneContent] Rapier cleanup during HMR:', e);
+      }
     }
 
     inputCapabilities.destroy();
@@ -566,8 +694,57 @@
   // CHUNK MESH CREATION
   // ============================================================================
 
-  // Shared terrain material (one instance for all chunks when using procedural texturing)
-  let sharedTerrainMaterial: Material | null = null;
+  // Shared terrain materials (one textured, one fallback)
+  let texturedTerrainMaterial: Material | null = null;
+  let fallbackTerrainMaterial: Material | null = null;
+  let terrainTexturesLoaded = false;
+
+  // Get the appropriate material based on texture toggle
+  function getCurrentTerrainMaterial(): Material {
+    if (terrainTexturesEnabled && texturedTerrainMaterial) {
+      return texturedTerrainMaterial;
+    }
+    if (!fallbackTerrainMaterial) {
+      fallbackTerrainMaterial = createTerrainFallbackMaterial();
+    }
+    return fallbackTerrainMaterial;
+  }
+
+  // Initialize terrain textures on mount (async)
+  async function initTerrainMaterial(): Promise<void> {
+    if (!USE_TERRAIN_TEXTURING || terrainTexturesLoaded) return;
+
+    try {
+      const textures = await loadTerrainTextures();
+      texturedTerrainMaterial = createTerrainTextureMaterial(textures, {
+        textureScale: 0.05, // 20m texture repeat
+        triplanarSharpness: 4.0,
+        normalStrength: 1.0,
+      });
+      terrainTexturesLoaded = true;
+
+      // Update existing chunk meshes with the new material if textures are enabled
+      if (terrainTexturesEnabled) {
+        for (const mesh of chunkMeshes.values()) {
+          mesh.material = texturedTerrainMaterial;
+        }
+      }
+    } catch (error) {
+      console.warn("[WorldScene] Failed to load terrain textures, using vertex colors:", error);
+      terrainTexturesLoaded = true;
+    }
+  }
+
+  // React to texture toggle changes
+  $effect(() => {
+    const enabled = terrainTexturesEnabled;
+    const material = getCurrentTerrainMaterial();
+
+    // Update all existing chunk meshes
+    for (const mesh of chunkMeshes.values()) {
+      mesh.material = material;
+    }
+  });
 
   function createChunkMesh(state: ChunkState, key: string): void {
     if (!state.meshData) return;
@@ -587,41 +764,12 @@
     }
 
     const chunk = state.entity.chunk;
-    const chunkWorldX = chunk ? chunk.chunkX * activeConfig.chunks.size : 0;
-    const chunkWorldZ = chunk ? chunk.chunkZ * activeConfig.chunks.size : 0;
+    // Use Math.round to match the worker's integer math - prevents floating point drift at chunk boundaries
+    const chunkWorldX = chunk ? Math.round(chunk.chunkX * activeConfig.chunks.size) : 0;
+    const chunkWorldZ = chunk ? Math.round(chunk.chunkZ * activeConfig.chunks.size) : 0;
 
-    // Choose material based on feature flag
-    // When USE_TERRAIN_TEXTURING is enabled, use procedural PBR material
-    // Otherwise, use simple vertex colors for WebGL compatibility
-    let material: Material;
-
-    if (USE_TERRAIN_TEXTURING) {
-      // Create shared material on first use (all chunks share one material)
-      if (!sharedTerrainMaterial) {
-        try {
-          sharedTerrainMaterial = createTerrainSplatMaterial({
-            tileScale: 0.1,
-            triplanarSharpness: 4.0,
-            useSimplePatterns: false,
-          });
-        } catch (error) {
-          console.warn("[WorldScene] Failed to create terrain splat material, falling back to vertex colors:", error);
-          sharedTerrainMaterial = new MeshStandardMaterial({
-            vertexColors: true,
-            roughness: 0.8,
-            metalness: 0.1,
-          });
-        }
-      }
-      material = sharedTerrainMaterial;
-    } else {
-      // Fallback: simple vertex colors (works with WebGL)
-      material = new MeshStandardMaterial({
-        vertexColors: true,
-        roughness: 0.8,
-        metalness: 0.1,
-      });
-    }
+    // Get the appropriate material based on current texture toggle state
+    const material = getCurrentTerrainMaterial();
 
     const mesh = new Mesh(geometry, material);
     mesh.receiveShadow = true;
@@ -684,7 +832,8 @@
   // ============================================================================
 
   useTask((delta) => {
-    if (!isInitialized || !physicsState || !playerController) return;
+    // Early exit if disposed or not ready - prevents Rapier WASM errors during HMR cleanup
+    if (isDisposed || !isInitialized || !physicsState || !playerController) return;
 
     // Update FPS counter
     frameCount++;
@@ -714,10 +863,19 @@
     // Check touch UI
     showTouchUI = inputCapabilities.shouldShowTouchUI();
 
-    // Step physics
+    // Step physics - wrapped in try-catch for HMR scenarios where WASM may be freed
     if (physicsState.isInitialized && physicsState.world) {
-      physicsState.world.timestep = Math.min(delta, 0.1);
-      physicsState.world.step();
+      try {
+        physicsState.world.timestep = Math.min(delta, 0.1);
+        physicsState.world.step();
+      } catch (e) {
+        // Rapier WASM may be freed during HMR - mark as disposed to stop further operations
+        if (import.meta.hot) {
+          console.debug('[WorldSceneContent] Physics step failed (likely HMR):', e);
+          isDisposed = true;
+        }
+        return;
+      }
     }
 
     // Update shadow camera to follow player position
@@ -731,21 +889,55 @@
     }
 
     // Deferred ground snap: wait for terrain colliders to exist before snapping
+    // Wrapped in try-catch for HMR safety
     if (needsGroundSnap && terrainPhysics && groundSnapAttempts < MAX_GROUND_SNAP_ATTEMPTS) {
       groundSnapAttempts++;
-      const colliderCount = terrainPhysics.getColliderCount();
+      try {
+        const colliderCount = terrainPhysics.getColliderCount();
 
-      // Only snap once we have terrain colliders (not just the player collider)
-      if (colliderCount > 0) {
-        const snapped = snapToGround(physicsState, playerController, 1000);
-        const pos = getPlayerPosition(playerController);
-        // Ground snap logging disabled
+        // Only snap once we have terrain colliders (not just the player collider)
+        if (colliderCount > 0) {
+          const snapped = snapToGround(physicsState, playerController, 1000);
+          const pos = getPlayerPosition(playerController);
+          // Ground snap logging disabled
 
-        if (snapped && pos && pos.y < 500) {
-          // Successfully snapped to terrain
-          needsGroundSnap = false;
-          isReadyToRender = true; // Now safe to show camera/avatar
+          if (snapped && pos && pos.y < 500) {
+            // Successfully snapped to terrain
+            needsGroundSnap = false;
+            isReadyToRender = true; // Now safe to show camera/avatar
+          }
         }
+      } catch (e) {
+        if (import.meta.hot) {
+          console.debug('[WorldSceneContent] Ground snap failed (likely HMR):', e);
+          isDisposed = true;
+        }
+        return;
+      }
+    }
+
+    // HMR safety check: if player somehow ended up underground, teleport them up
+    // This catches cases where HMR preserved a bad position
+    // Wrapped in try-catch for HMR safety
+    if (!needsGroundSnap && isReadyToRender && playerController) {
+      try {
+        const pos = getPlayerPosition(playerController);
+        const minSafeHeight = (activeConfig.terrain.waterLevel ?? 5) + 2; // Just above water
+        if (pos && pos.y < minSafeHeight) {
+          // Player is underground! Teleport to spawn position
+          const spawnPos = activeConfig.spawn.position;
+          teleportPlayer(playerController, { x: spawnPos[0], y: 500, z: spawnPos[2] });
+          needsGroundSnap = true;
+          groundSnapAttempts = 0;
+          isReadyToRender = false;
+          console.warn("[WorldSceneContent] Player was underground, teleporting to spawn");
+        }
+      } catch (e) {
+        if (import.meta.hot) {
+          console.debug('[WorldSceneContent] Position check failed (likely HMR):', e);
+          isDisposed = true;
+        }
+        return;
       }
     }
 
@@ -758,25 +950,41 @@
     }
 
     // Update player position from physics (after camera controller moves player)
-    const pos = getPlayerPosition(playerController);
-    if (pos) {
-      playerPosition = { x: pos.x, y: pos.y, z: pos.z };
+    // Wrapped in try-catch for HMR safety
+    try {
+      const pos = getPlayerPosition(playerController);
+      if (pos) {
+        playerPosition = { x: pos.x, y: pos.y, z: pos.z };
 
-      // Update biome based on position
-      currentBiome = getBiome(worldNoise, pos.x, pos.z);
+        // Update biome based on position
+        currentBiome = getBiome(worldNoise, pos.x, pos.z);
 
-      // Check if inside zone
-      if (zoneBoundary.length > 0) {
-        isInsideZone = isPointInPolygon(pos.x, pos.z, zoneBoundary);
+        // Check if inside zone
+        if (zoneBoundary.length > 0) {
+          isInsideZone = isPointInPolygon(pos.x, pos.z, zoneBoundary);
+        }
       }
+    } catch (e) {
+      if (import.meta.hot) {
+        console.debug('[WorldSceneContent] Position update failed (likely HMR):', e);
+        isDisposed = true;
+      }
+      return;
     }
 
-    // Update chunks based on player position
+    // Update chunks based on player position and camera direction
+    // Direction-aware loading prioritizes chunks in view frustum
     if (camera.current) {
-      chunkManager?.update(
+      // Get camera forward direction (projected to XZ plane)
+      const forward = new Vector3(0, 0, -1);
+      forward.applyQuaternion(camera.current.quaternion);
+
+      chunkManager?.updateWithDirection(
         camera.current.position.x,
         camera.current.position.y,
-        camera.current.position.z
+        camera.current.position.z,
+        forward.x,
+        forward.z
       );
     }
 
@@ -792,6 +1000,7 @@
     const time = performance.now() / 1000;
     if (camera.current) {
       waterManager?.update(time, camera.current.position.x, camera.current.position.z);
+      drainageWaterManager?.update(time, camera.current.position.x, camera.current.position.z);
     }
   });
 </script>
@@ -835,13 +1044,35 @@
 {#if isInitialized && isReadyToRender && showAvatar}
   <Avatar3D
     id="realm-player"
-    bluePropState={null}
-    redPropState={null}
+    bluePropState={performerState?.bluePropState ?? null}
+    redPropState={performerState?.redPropState ?? null}
     visible={true}
     position={playerPosition}
     facingAngle={playerYaw}
     isMoving={avatarState.isMoving}
   />
+
+  <!-- Props (staffs) when sequence is loaded -->
+  {#if performerState?.bluePropState}
+    <Staff3D
+      propState={performerState.bluePropState}
+      color="blue"
+      avatarPosition={{ x: playerPosition.x, y: 0, z: playerPosition.z }}
+      facingAngle={playerYaw}
+      gridOffset={-0.5}
+      isActivePlayer={true}
+    />
+  {/if}
+  {#if performerState?.redPropState}
+    <Staff3D
+      propState={performerState.redPropState}
+      color="red"
+      avatarPosition={{ x: playerPosition.x, y: 0, z: playerPosition.z }}
+      facingAngle={playerYaw}
+      gridOffset={-0.5}
+      isActivePlayer={true}
+    />
+  {/if}
 {/if}
 
 <!-- Grid Planes (optional) -->

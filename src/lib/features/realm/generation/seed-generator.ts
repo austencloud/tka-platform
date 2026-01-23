@@ -330,6 +330,254 @@ export function shouldPlaceTree(
 }
 
 // ============================================================================
+// EROSION SIMULATION
+// ============================================================================
+
+/**
+ * Erosion simulation configuration
+ * Matches the ErosionConfig interface from terrain-compute-types.ts
+ */
+export interface ErosionParams {
+  iterations: number;
+  erosionStrength: number;
+  upliftRate: number;
+  depositionRate: number;
+  minSlope: number;
+  rainAmount: number;
+  evaporationRate: number;
+}
+
+/**
+ * Apply hydraulic erosion simulation to a heightmap.
+ *
+ * This implements a simplified particle-based hydraulic erosion algorithm:
+ * 1. Rain drops water particles across the terrain
+ * 2. Water flows downhill, picking up sediment
+ * 3. Water deposits sediment when it slows down or evaporates
+ * 4. Optional uplift simulates tectonic forces
+ *
+ * The result is more natural-looking terrain with:
+ * - V-shaped river valleys
+ * - Realistic drainage patterns
+ * - Smoothed peaks and filled basins
+ *
+ * @param heights - Float32Array of height values (modified in place)
+ * @param resolution - Grid resolution (heights is resolution x resolution)
+ * @param params - Erosion simulation parameters
+ * @param rng - Seeded random number generator for determinism
+ */
+export function applyErosion(
+  heights: Float32Array,
+  resolution: number,
+  params: ErosionParams,
+  rng: () => number
+): void {
+  const {
+    iterations,
+    erosionStrength,
+    upliftRate,
+    depositionRate,
+    minSlope,
+    rainAmount,
+    evaporationRate,
+  } = params;
+
+  // Water and sediment buffers
+  const water = new Float32Array(heights.length);
+  const sediment = new Float32Array(heights.length);
+
+  // Helper to get index from grid coordinates
+  const idx = (x: number, z: number): number => {
+    x = Math.max(0, Math.min(resolution - 1, x));
+    z = Math.max(0, Math.min(resolution - 1, z));
+    return z * resolution + x;
+  };
+
+  // Get height at grid position (with bounds checking)
+  const getHeight = (x: number, z: number): number => {
+    return heights[idx(x, z)] ?? 0;
+  };
+
+  // Calculate gradient at a position (direction of steepest descent)
+  const getGradient = (x: number, z: number): { dx: number; dz: number; slope: number } => {
+    const h = getHeight(x, z);
+    const hL = getHeight(x - 1, z);
+    const hR = getHeight(x + 1, z);
+    const hD = getHeight(x, z - 1);
+    const hU = getHeight(x, z + 1);
+
+    // Central difference gradient
+    const dx = (hL - hR) / 2;
+    const dz = (hD - hU) / 2;
+    const slope = Math.sqrt(dx * dx + dz * dz);
+
+    return { dx, dz, slope };
+  };
+
+  // Run erosion iterations
+  for (let iter = 0; iter < iterations; iter++) {
+    // Step 1: Rain - add water uniformly with slight noise
+    for (let i = 0; i < heights.length; i++) {
+      water[i] += rainAmount * (0.8 + rng() * 0.4);
+    }
+
+    // Step 2: Flow simulation - water moves downhill carrying sediment
+    // Use a simplified flow model where each cell distributes water to lower neighbors
+    for (let z = 1; z < resolution - 1; z++) {
+      for (let x = 1; x < resolution - 1; x++) {
+        const i = idx(x, z);
+        const currentHeight = heights[i]! + water[i]!;
+
+        // Find lowest neighbor
+        let lowestHeight = currentHeight;
+        let lowestIdx = -1;
+        let totalDrop = 0;
+
+        // Check 4-connected neighbors
+        const neighbors = [
+          { nx: x - 1, nz: z },
+          { nx: x + 1, nz: z },
+          { nx: x, nz: z - 1 },
+          { nx: x, nz: z + 1 },
+        ];
+
+        for (const { nx, nz } of neighbors) {
+          const ni = idx(nx, nz);
+          const neighborHeight = heights[ni]! + water[ni]!;
+          if (neighborHeight < lowestHeight) {
+            lowestHeight = neighborHeight;
+            lowestIdx = ni;
+            totalDrop = currentHeight - neighborHeight;
+          }
+        }
+
+        // If we found a lower neighbor, transfer water and sediment
+        if (lowestIdx >= 0 && totalDrop > minSlope) {
+          // Calculate flow amount based on height difference
+          const flowAmount = Math.min(water[i]!, totalDrop * 0.5);
+
+          if (flowAmount > 0.001) {
+            // Transfer water
+            water[i]! -= flowAmount;
+            water[lowestIdx]! += flowAmount;
+
+            // Erosion: pick up sediment proportional to flow and slope
+            const erosionAmount = erosionStrength * flowAmount * totalDrop;
+            const maxErosion = heights[i]! * 0.1; // Don't erode more than 10% of height
+            const actualErosion = Math.min(erosionAmount, maxErosion);
+
+            heights[i]! -= actualErosion;
+            sediment[i]! += actualErosion;
+
+            // Transfer some sediment with the water
+            const sedimentTransfer = Math.min(sediment[i]!, flowAmount * 2);
+            sediment[i]! -= sedimentTransfer;
+            sediment[lowestIdx]! += sedimentTransfer;
+          }
+        }
+      }
+    }
+
+    // Step 3: Deposition - sediment settles in low-velocity areas
+    for (let z = 1; z < resolution - 1; z++) {
+      for (let x = 1; x < resolution - 1; x++) {
+        const i = idx(x, z);
+        const { slope } = getGradient(x, z);
+
+        // Deposit sediment in flat areas or where water is shallow
+        if (slope < minSlope * 2 || water[i]! < 0.1) {
+          const depositAmount = sediment[i]! * depositionRate;
+          sediment[i]! -= depositAmount;
+          heights[i]! += depositAmount;
+        }
+      }
+    }
+
+    // Step 4: Evaporation - water disappears, depositing remaining sediment
+    for (let i = 0; i < heights.length; i++) {
+      // Evaporate water
+      water[i]! *= (1 - evaporationRate);
+
+      // Deposit sediment as water evaporates
+      const depositFromEvap = sediment[i]! * evaporationRate * 0.5;
+      sediment[i]! -= depositFromEvap;
+      heights[i]! += depositFromEvap;
+    }
+
+    // Step 5: Tectonic uplift (optional) - raises terrain slightly
+    if (upliftRate > 0) {
+      for (let i = 0; i < heights.length; i++) {
+        heights[i]! += upliftRate;
+      }
+    }
+  }
+
+  // Final pass: deposit any remaining sediment
+  for (let i = 0; i < heights.length; i++) {
+    heights[i]! += sediment[i]!;
+  }
+}
+
+/**
+ * Apply thermal erosion (weathering) to a heightmap.
+ *
+ * Thermal erosion simulates material falling from steep slopes
+ * due to gravity and weathering. This creates more realistic
+ * cliff faces and talus slopes.
+ *
+ * @param heights - Float32Array of height values (modified in place)
+ * @param resolution - Grid resolution
+ * @param iterations - Number of passes
+ * @param talusAngle - Maximum stable slope angle (0-1, default 0.5)
+ */
+export function applyThermalErosion(
+  heights: Float32Array,
+  resolution: number,
+  iterations: number = 5,
+  talusAngle: number = 0.5
+): void {
+  const idx = (x: number, z: number): number => {
+    x = Math.max(0, Math.min(resolution - 1, x));
+    z = Math.max(0, Math.min(resolution - 1, z));
+    return z * resolution + x;
+  };
+
+  for (let iter = 0; iter < iterations; iter++) {
+    for (let z = 1; z < resolution - 1; z++) {
+      for (let x = 1; x < resolution - 1; x++) {
+        const i = idx(x, z);
+        const h = heights[i]!;
+
+        // Check all 8 neighbors
+        const neighbors = [
+          { nx: x - 1, nz: z, dist: 1 },
+          { nx: x + 1, nz: z, dist: 1 },
+          { nx: x, nz: z - 1, dist: 1 },
+          { nx: x, nz: z + 1, dist: 1 },
+          { nx: x - 1, nz: z - 1, dist: Math.SQRT2 },
+          { nx: x + 1, nz: z - 1, dist: Math.SQRT2 },
+          { nx: x - 1, nz: z + 1, dist: Math.SQRT2 },
+          { nx: x + 1, nz: z + 1, dist: Math.SQRT2 },
+        ];
+
+        for (const { nx, nz, dist } of neighbors) {
+          const ni = idx(nx, nz);
+          const nh = heights[ni]!;
+          const slope = (h - nh) / dist;
+
+          // If slope exceeds talus angle, transfer material
+          if (slope > talusAngle) {
+            const excess = (slope - talusAngle) * dist * 0.5;
+            heights[i]! -= excess;
+            heights[ni]! += excess;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
 // WORLD SEED UTILITIES
 // ============================================================================
 

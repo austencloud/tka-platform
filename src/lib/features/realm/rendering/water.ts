@@ -127,6 +127,23 @@ export class WaterManager {
   }
 
   /**
+   * Get current water state for debug display
+   */
+  getState(): {
+    visible: boolean;
+    waterLevel: number;
+    color: string;
+    opacity: number;
+  } {
+    return {
+      visible: this.waterMesh?.visible ?? false,
+      waterLevel: this.config.waterLevel,
+      color: this.config.color,
+      opacity: this.config.opacity,
+    };
+  }
+
+  /**
    * Dispose resources
    */
   dispose(): void {

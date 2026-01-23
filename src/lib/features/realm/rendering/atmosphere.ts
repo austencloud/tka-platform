@@ -102,6 +102,7 @@ export class AtmosphereManager {
   private currentBiome: string = "default";
   private targetFogColor = new Color();
   private currentFogColor = new Color();
+  private _fogEnabled: boolean = true;
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -143,6 +144,19 @@ export class AtmosphereManager {
     }
 
     this.currentBiome = biome;
+    this._fogEnabled = true;
+  }
+
+  /**
+   * Toggle fog on/off while preserving current biome
+   */
+  setFogEnabled(enabled: boolean): void {
+    this._fogEnabled = enabled;
+    if (enabled) {
+      this.setFog(this.currentBiome);
+    } else {
+      this.scene.fog = null;
+    }
   }
 
   /**
@@ -181,6 +195,24 @@ export class AtmosphereManager {
    */
   getFogConfig(biome: string): FogConfig {
     return BIOME_FOG_CONFIGS[biome] || BIOME_FOG_CONFIGS.default!;
+  }
+
+  /**
+   * Get current atmosphere state for debug display
+   */
+  getState(): {
+    fogEnabled: boolean;
+    currentBiome: string;
+    fogDensity: number;
+    fogColor: string;
+  } {
+    const config = BIOME_FOG_CONFIGS[this.currentBiome] || BIOME_FOG_CONFIGS.default!;
+    return {
+      fogEnabled: this._fogEnabled,
+      currentBiome: this.currentBiome,
+      fogDensity: config.density,
+      fogColor: config.color,
+    };
   }
 
   /**
