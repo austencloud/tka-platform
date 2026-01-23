@@ -21,24 +21,27 @@ $ARGUMENTS - Optional feedback ID (first 8+ characters)
 
 ### If no argument provided:
 
-**STEP 1: Check for your in-progress items**
+**STEP 1: Check for in-progress items**
 
-Run this command to check if you have any claimed items:
+Run this command to check if there are any in-progress items:
 ```bash
 node scripts/fetch-feedback.js mine
 ```
 
-**If items are found**, use AskUserQuestion tool to present options:
+**IMPORTANT: The `mine` command shows ALL in-progress items, including ones claimed by OTHER agents in different sessions.** The claim token (shown in brackets like `[0c8265ee]`) identifies which session owns the claim. You cannot "resume" an item claimed by another session - you must either:
+- Wait for them to finish
+- Ask the user if they want to unclaim it (if the other agent died/disconnected)
 
-Question: "I found [N] item(s) you were working on. What would you like to do?"
+**If items are found**, tell the user:
+- How many in-progress items exist
+- Their claim tokens
+- That these may belong to other active Claude sessions
 
-Options:
-1. "Resume [ID]: [Title]" (description: Continue working on this item)
-2. "Unclaim it and start fresh" (description: Release this item and claim something new)
+Then ask: "Is another agent currently working on these, or should I unclaim and take over?"
 
-**If user chooses resume:** Run `node scripts/fetch-feedback.js <id>` to display and continue with that item.
+**If user says another agent is working on it:** Skip to STEP 2 and pick from unclaimed items only.
 
-**If user chooses unclaim:** Run `node scripts/fetch-feedback.js unclaim <id>` then proceed to STEP 2.
+**If user says to take over:** Run `node scripts/fetch-feedback.js unclaim <id>` then re-claim it.
 
 **If no in-progress items found:** Proceed directly to STEP 2.
 
@@ -48,20 +51,30 @@ Options:
 
 Run `node scripts/fetch-feedback.js list` to show the feedback queue.
 
+**Auto-delete obvious test submissions:** Before selecting, scan the unclaimed list for items that are clearly just testing the feedback system (e.g., "This is a test", "Testing again", "asdfgh", single words like "test"). Delete these immediately without asking:
+```bash
+node scripts/fetch-feedback.js delete <id>
+```
+Do NOT delete items that might be real feedback with poor titles - only delete when 99%+ confident it's just a test.
+
 **Auto-select the best item using this priority:**
 
 1. **ONLY select from "new" (unclaimed) items** - never select in-progress items for auto-selection
 2. **Bugs first** - bugs affect current users, features can wait
 3. **Higher priority** - high > medium > low > unset
-4. **Clear scope** - items with clear titles/descriptions over vague ones
-5. **Achievable complexity** - prefer items that can be completed in one session
-6. **Skip incomplete metadata** - avoid items with `--title` or `--description` placeholders
+4. **Skip incomplete metadata** - avoid items with `--title` or `--description` placeholders
 
-**BE DECISIVE.** Apply these criteria once and pick the first item that matches from the "🆕 UNCLAIMED" section. Do NOT:
-- Cycle through multiple items looking for the "perfect" one
-- Second-guess your selection
-- Check the details of 3+ items before deciding
-- Ask which item to work on
+**STOP OVERTHINKING. JUST PICK ONE.**
+
+- Look at the list ONCE
+- Pick the FIRST item that isn't obviously broken metadata
+- If there are no bugs, pick the first feature
+- "Too complex for one session" is NOT a reason to skip - you have plenty of tokens
+- Large features are fine - break them into subtasks and make progress
+- Do NOT check 2+ items before deciding
+- Do NOT reject items for being "ambitious"
+
+The goal is PROGRESS, not finding the "perfect" item.
 
 After selecting, announce your choice with a 1-sentence rationale, then immediately claim it:
 ```bash
@@ -85,19 +98,27 @@ This atomically claims the item with a unique token, preventing race conditions 
    - The full description - word for word
    - Any existing notes or subtasks
 
-3. **Assess complexity** using model triage:
+3. **If feedback has images attached:**
+   - Read each image with the Read tool (so Claude can analyze it)
+   - **ALSO open each image for the user** so they see what you see:
+     ```bash
+     powershell -Command "Invoke-Item '<absolute-path-to-image>'"
+     ```
+   - This ensures both Claude and the user are looking at the same thing
+
+4. **Assess complexity** using model triage:
    - **TRIVIAL** (Haiku): Literal string swaps, single-line changes where solution is already known
    - **MEDIUM** (Sonnet): CSS fixes, single-file changes, clear bugs with repro steps
    - **COMPLEX** (Opus): Multi-module coordination, ambiguous requirements, 4+ files
 
-4. **Announce triage decision:**
+5. **Announce triage decision:**
    ```
    **Complexity Assessment:** [TRIVIAL / MEDIUM / COMPLEX]
    **Model Routing:** [Delegating to Haiku / Delegating to Sonnet / Handling as Opus]
    **Reasoning:** [Brief explanation]
    ```
 
-5. **Ask for confirmation** before proceeding with implementation.
+6. **Ask for confirmation** before proceeding with implementation.
 
 ### After implementing:
 

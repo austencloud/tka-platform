@@ -148,5 +148,32 @@
     "examples": ["0 turns = prop doesn't rotate", "1 turn = full 360 degree rotation"],
     "relatedTerms": ["rotation", "spin", "beat"],
     "category": "motion"
+  },
+  "negative-space": {
+    "definition": "Passing the prop through space around the body without turning the torso.",
+    "examples": ["Reaching behind to execute a pattern", "Using arm extension instead of body rotation"],
+    "relatedTerms": ["body-turns", "execution"],
+    "category": "execution",
+    "benefit": "Face audience, reduce body movement"
+  },
+  "body-turns": {
+    "definition": "Turning the torso to execute patterns, especially for longer staves.",
+    "examples": ["Rotating shoulders to reach behind", "Full body rotation during complex sequences"],
+    "relatedTerms": ["negative-space", "execution"],
+    "category": "execution",
+    "benefit": "Add movement quality, handle longer staves, create dynamic contrast"
+  },
+  "thumb-orientation": {
+    "definition": "Tracking whether thumbs point inward or outward on each beat to verify prop rotation.",
+    "examples": ["thumbs-in: starting position with thumbs toward center", "thumbs-out: thumbs away from center"],
+    "relatedTerms": ["prospin", "antispin", "rotation"],
+    "category": "execution",
+    "importance": "Track rotations and check position on every beat"
+  },
+  "loop": {
+    "definition": "A circular sequence that returns to its starting position through transformations (rotation, mirroring, swapping, etc.).",
+    "examples": ["DJII (8-count)", "AABB with mirrored-swapped transformation"],
+    "relatedTerms": ["sequence", "word", "transformation"],
+    "category": "sequence"
   }
 }

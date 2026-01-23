@@ -342,11 +342,24 @@ async function atomicClaim(docId, isReclaim = false) {
 
       const data = doc.data();
 
-      // Check if still claimable
+      // Check if still claimable - MUST check for existing claimToken too
+      // Bug fix: Status could be 'new' but claimToken exists if transaction timing overlaps
       if (data.status === "in-progress" && !isReclaim) {
         // Another agent claimed it between our query and this transaction
         const otherToken = data.claimToken?.substring(0, 8) || "unknown";
         throw new Error(`Already claimed by another agent [${otherToken}]`);
+      }
+
+      // Secondary check: If there's a recent claimToken (within last 5 seconds), reject
+      // This catches race conditions where status update hasn't propagated yet
+      if (!isReclaim && data.claimToken && data.claimedAt) {
+        const claimAge = data.claimedAt?.toDate?.()
+          ? Date.now() - data.claimedAt.toDate().getTime()
+          : Infinity;
+        if (claimAge < 5000) {
+          const otherToken = data.claimToken.substring(0, 8);
+          throw new Error(`Recently claimed by another agent [${otherToken}] (${Math.round(claimAge/1000)}s ago)`);
+        }
       }
 
       // For reclaims, verify it's still stale
@@ -1801,6 +1814,20 @@ async function claimSpecificFeedback(docId) {
       return null;
     }
 
+    // Secondary check: If there's a recent claimToken (within 5 seconds), block
+    // This catches the race condition where status update hasn't propagated
+    if (item.claimToken && item.claimedAt) {
+      const claimAge = item.claimedAt?.toDate?.()
+        ? Date.now() - item.claimedAt.toDate().getTime()
+        : Infinity;
+      if (claimAge < 5000) {
+        const claimToken = item.claimToken.substring(0, 8);
+        console.log(`\n  ⚠️  Item was just claimed ${Math.round(claimAge/1000)}s ago (token: [${claimToken}])`);
+        console.log(`  Wait a moment and try again, or use 'unclaim ${docId}' first.\n`);
+        return null;
+      }
+    }
+
     // Check if in terminal state
     if (["completed", "archived"].includes(item.status)) {
       console.log(
@@ -2190,7 +2217,10 @@ async function showMyProgress() {
       });
 
     console.log("\n" + "=".repeat(70));
-    console.log(`\n  📋 YOUR IN-PROGRESS ITEMS (${items.length})\n`);
+    console.log(`\n  📋 IN-PROGRESS ITEMS (${items.length})\n`);
+    console.log("  ⚠️  NOTE: These may belong to OTHER Claude sessions.");
+    console.log("  Each session has a unique claim token (shown in brackets).");
+    console.log("  If another agent is actively working, do NOT unclaim.\n");
     console.log("─".repeat(70));
 
     items.forEach((item, idx) => {

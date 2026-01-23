@@ -420,7 +420,8 @@
       "WebFetch(domain:nathanpointer.com)",
       "WebFetch(domain:ishadeed.com)",
       "WebFetch(domain:saricden.com)",
-      "WebFetch(domain:tkte.ch)"
+      "WebFetch(domain:tkte.ch)",
+      "Bash(start \"\" \"F:\\\\tka-platform\\\\feedback-images\\\\feedback-0qai89PqCGl0ekUooUn5-1.png\")"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -23,11 +23,13 @@ const CENTER = VIEWBOX_SIZE / 2;
 const ARROW_SCALE = 0.35;
 const PROP_SCALE = 0.3;
 
-// Color constants
-const BLUE_COLOR = "#2E77AE";
-const RED_COLOR = "#ED1C24";
-const BLUE_COLOR_LIGHT = "#1a4a6e";
-const RED_COLOR_LIGHT = "#a31018";
+// Motion colors - must match CSS variables in app.css
+// Dark mode: bright colors for visibility on dark backgrounds
+const BLUE_COLOR_DARK = "#3575E2";
+const RED_COLOR_DARK = "#ED1C24";
+// Light mode: darker colors for visibility on light backgrounds
+const BLUE_COLOR_LIGHT = "#3D44B8";
+const RED_COLOR_LIGHT = "#DC2626";
 
 // VTG glyph constants
 const VTG_GLYPH_WIDTH = 201.24;
@@ -292,8 +294,8 @@ ${svgParts.join("\n")}
 
       // Apply color
       const color = motion.color === "blue"
-        ? (darkMode ? BLUE_COLOR : BLUE_COLOR_LIGHT)
-        : (darkMode ? RED_COLOR : RED_COLOR_LIGHT);
+        ? (darkMode ? BLUE_COLOR_DARK : BLUE_COLOR_LIGHT)
+        : (darkMode ? RED_COLOR_DARK : RED_COLOR_LIGHT);
       innerContent = innerContent.replace(/#000000/gi, color);
       innerContent = innerContent.replace(/black/gi, color);
 
@@ -375,8 +377,8 @@ ${svgParts.join("\n")}
 
       // Apply color
       const color = motion.color === "blue"
-        ? (darkMode ? BLUE_COLOR : BLUE_COLOR_LIGHT)
-        : (darkMode ? RED_COLOR : RED_COLOR_LIGHT);
+        ? (darkMode ? BLUE_COLOR_DARK : BLUE_COLOR_LIGHT)
+        : (darkMode ? RED_COLOR_DARK : RED_COLOR_LIGHT);
       innerContent = innerContent.replace(/#000000/gi, color);
       innerContent = innerContent.replace(/black/gi, color);
 
