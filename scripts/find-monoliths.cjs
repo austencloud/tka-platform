@@ -215,6 +215,10 @@ const AUDITED_FILES = {
     auditDate: "2026-01-21",
     reason: "Reason: 4/4 perspectives say leave it. Display-only component with 0 effects, 3 trivial derived values. 946 lines = 90 TS + 230 markup + 620 CSS. No extractable logic, just well-organized presentation with optional XP/challenge sections. CSS bulk is appropriate for polished results screen with WCAG AAA support.",
   },
+  "lib/features/realm/workers/chunk-generator.worker.ts": {
+    auditDate: "2026-01-22",
+    reason: "1420-line Web Worker is appropriately monolithic. Workers are self-contained by design. Contains: T-junction stitching, biome generation, vegetation placement, skirt geometry. All responsibilities are cohesive to terrain chunk generation. 2026-01-22 audit: Added getHeightAt(), fixed re-stitch cascade, added LRU memory eviction.",
+  },
   // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
 

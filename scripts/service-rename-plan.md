@@ -222,7 +222,7 @@ Drop the "Service" suffix in favor of names that describe what the class actuall
 | `VoiceCommandService`         | `VoiceCommandHandler`       |
 | `MediaPipeDetectionService`   | `MediaPipeDetector`         |
 
-### Word Card Feature
+### Choreo Card Feature
 
 | Current                            | Proposed                    |
 | ---------------------------------- | --------------------------- |
