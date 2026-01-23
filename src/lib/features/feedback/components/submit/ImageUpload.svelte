@@ -281,13 +281,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    /* Visual size 32px with padding for 48px touch target */
+    width: 32px;
+    height: 32px;
+    padding: 8px;
+    box-sizing: content-box;
+    /* Offset the padding so visual position stays correct */
+    margin-top: -8px;
+    margin-right: -8px;
     background: rgba(0, 0, 0, 0.7);
     border: none;
     border-radius: 50%;
     color: white;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
   }

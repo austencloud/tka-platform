@@ -14,6 +14,8 @@
     resetSharedFeedbackSubmitState,
   } from "../../state/feedback-submit-state.svelte";
   import FeedbackForm from "../submit/FeedbackForm.svelte";
+  import { TYPE_CONFIG } from "../../domain/models/feedback-models";
+  import type { FeedbackType } from "../../domain/models/feedback-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { container } from "$lib/shared/di";
@@ -27,21 +29,56 @@
   const formState = getSharedFeedbackSubmitState();
   const deviceDetector = container.items.deviceDetector;
   let responsiveSettings = $state<ResponsiveSettings | null>(null);
-  let activeSnapPoint = $state<number | null>(null);
   let hasShownSuccessToast = $state(false);
+  let isInputFocused = $state(false);
+  let keyboardHeight = $state(0);
+  // Initialize synchronously to prevent placement flip during drawer animation
+  // This MUST have the correct value before first render, not in onMount
+  let isTouchDevice = $state(deviceDetector.isTouchDevice());
 
-  const isBottomSheet = $derived(
-    responsiveSettings?.navigationLayout === "bottom"
-  );
+  // Touch devices always get full-screen bottom sheet for better mobile UX
+  // Only true desktop (non-touch) gets the side drawer from right
+  // This handles Z Fold landscape (touch + left nav) correctly - still gets full screen
+  const isBottomSheet = $derived(isTouchDevice);
   const drawerPlacement = $derived(isBottomSheet ? "bottom" : "right");
-  const drawerSnapPoints = $derived(isBottomSheet ? ["100%"] : null);
+  // Note: No snap points - we always want 100% height, and removing snap points
+  // eliminates animation timing issues observed on Z Fold devices
+
+  // Input mode triggers on ANY touch device when focused, not just bottom sheet
+  // This handles Z Fold landscape (side drawer + touch keyboard) correctly
+  // Stay in input mode while submitting to avoid UI flash before panel closes
+  const isInputMode = $derived((isInputFocused || formState.isSubmitting) && isTouchDevice);
+
+  // Show keyboard hints only on non-touch devices (true desktop with physical keyboard)
+  const showKeyboardHints = $derived(!isTouchDevice);
+
+  // Get haptic feedback service
+  const hapticService = container.items.hapticFeedback;
+
+  function handleTypeChange(event: MouseEvent, type: FeedbackType) {
+    // Prevent focus loss from textarea when clicking type buttons
+    event.preventDefault();
+    hapticService?.trigger("selection");
+    formState.setType(type);
+  }
 
   function handleClose() {
     debug.log("handleClose called, current isOpen:", quickFeedbackState.isOpen);
+
+    // Show "draft saved" toast if user had content and closed without submitting
+    const hasContent = formState.formData.description.trim().length > 0;
+    const wasSubmitted = formState.submitStatus === "success";
+
     quickFeedbackState.close();
     debug.log("After close(), isOpen:", quickFeedbackState.isOpen);
+
     // Reset the toast flag when panel closes
     hasShownSuccessToast = false;
+
+    // Show recovery hint if they had content but didn't submit
+    if (hasContent && !wasSubmitted) {
+      toast.info("Draft saved. Press F to continue.", 3000);
+    }
     // Don't reset form state - drafts should persist!
   }
 
@@ -58,9 +95,15 @@
 
   onMount(() => {
     syncResponsiveSettings();
+    // Note: isTouchDevice is initialized synchronously above, no need to set here
+    // Only subscribe to changes for dynamic updates (e.g., connecting/disconnecting touch input)
 
     const cleanup = deviceDetector.onCapabilitiesChanged(() => {
       syncResponsiveSettings();
+      // Only update if drawer is closed to prevent mid-animation placement changes
+      if (!quickFeedbackState.isOpen) {
+        isTouchDevice = deviceDetector.isTouchDevice();
+      }
     });
 
     return () => {
@@ -74,15 +117,24 @@
       // Mark as shown to prevent infinite loop
       hasShownSuccessToast = true;
 
-      // Close panel immediately and show toast simultaneously
-      handleClose();
-      toast.success(
-        "Feedback submitted! Thank you for helping improve TKA Scribe.",
-        3000
-      );
+      // Dismiss keyboard first by blurring active element
+      // This syncs the keyboard dismiss with the drawer close animation
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
 
-      // Reset the shared state after panel is closed
-      resetSharedFeedbackSubmitState();
+      // Brief delay for keyboard to start closing, then close panel
+      // This makes both animations happen together instead of sequentially
+      setTimeout(() => {
+        handleClose();
+        toast.success(
+          "Feedback submitted! Thank you for helping improve TKA Scribe.",
+          3000
+        );
+
+        // Reset the shared state after panel is closed
+        resetSharedFeedbackSubmitState();
+      }, 50);
     }
   });
 </script>
@@ -92,6 +144,10 @@
   placement={drawerPlacement}
   onclose={handleClose}
   onbackdropclick={(e) => {
+    // Don't close while user is typing - they might accidentally tap outside
+    if (isInputFocused && isBottomSheet) {
+      return false;
+    }
     handleClose();
     return true;
   }}
@@ -101,10 +157,8 @@
   showHandle={isBottomSheet}
   dismissible={true}
   class={`quick-feedback-drawer ${isBottomSheet ? "bottom-sheet" : ""}`}
-  snapPoints={drawerSnapPoints}
-  bind:activeSnapPoint
 >
-  <div class="quick-feedback-panel" class:bottom-sheet={isBottomSheet}>
+  <div class="quick-feedback-panel" class:bottom-sheet={isBottomSheet} class:input-mode={isInputMode}>
     <!-- Left edge drag handle for swipe-to-dismiss -->
     <div class="swipe-edge" class:hidden={isBottomSheet} aria-hidden="true">
       <div class="swipe-indicator"></div>
@@ -112,7 +166,8 @@
 
     <!-- Main content column -->
     <div class="panel-content">
-      <header class="panel-header">
+      <!-- Default header - hidden in input mode -->
+      <header class="panel-header" class:hidden={isInputMode}>
         <div class="header-title">
           <i class="fas fa-comment-dots" aria-hidden="true"></i>
           <h2>Quick Feedback</h2>
@@ -127,19 +182,45 @@
         </button>
       </header>
 
-      <div
-        class="keyboard-hint"
-        class:hidden={isBottomSheet}
-        aria-hidden="true"
-      >
-        <kbd>f</kbd>
-        <span>or</span>
-        <kbd>Esc</kbd>
-        <span>to close</span>
-      </div>
+      <!-- Compact header for input mode - inline type selector -->
+      {#if isInputMode}
+        <header class="input-mode-header">
+          <div class="input-mode-types">
+            {#each Object.entries(TYPE_CONFIG) as [type, config]}
+              <button
+                type="button"
+                class="type-chip"
+                class:selected={formState.formData.type === type}
+                onmousedown={(e) => handleTypeChange(e, type as FeedbackType)}
+                style="--type-color: {config.color}"
+              >
+                <i class="fas {config.icon}" aria-hidden="true"></i>
+                <span>{config.label.replace(" Report", "").replace(" Request", "").replace(" Feedback", "")}</span>
+              </button>
+            {/each}
+          </div>
+        </header>
+      {/if}
 
-      <main class="panel-body">
-        <FeedbackForm {formState} hideSuccessState={true} />
+      <!-- Keyboard hints - only on non-touch devices (desktop with physical keyboard) -->
+      {#if showKeyboardHints}
+        <div class="keyboard-hint" aria-hidden="true">
+          <kbd>f</kbd>
+          <span>or</span>
+          <kbd>Esc</kbd>
+          <span>to close</span>
+        </div>
+      {/if}
+
+      <main class="panel-body" style={isInputMode && keyboardHeight > 0 ? `padding-bottom: ${keyboardHeight}px` : ''}>
+        <FeedbackForm
+          {formState}
+          hideSuccessState={true}
+          {isInputMode}
+          {isTouchDevice}
+          onInputFocusChange={(focused) => { isInputFocused = focused; }}
+          onKeyboardHeightChange={(height) => { keyboardHeight = height; }}
+        />
       </main>
     </div>
   </div>
@@ -425,6 +506,114 @@
     flex: 1;
   }
 
+  /* Input mode - reduce padding, form fills space above toolbar */
+  .quick-feedback-panel.input-mode {
+    padding-top: 0;
+  }
+
+  .quick-feedback-panel.input-mode .panel-body {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    justify-content: flex-start;
+    flex: 1;
+    min-height: 0; /* Allow flex shrinking */
+    overflow: hidden; /* Prevent content spilling */
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     INPUT MODE - Distraction-free mobile input
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Input mode compact header with inline type selector */
+  .input-mode-header {
+    display: flex;
+    align-items: center;
+    padding: 6px var(--panel-padding);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+    animation: fadeSlideDown 150ms ease-out;
+  }
+
+  @keyframes fadeSlideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .input-mode-types {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .input-mode-types::-webkit-scrollbar {
+    display: none;
+  }
+
+  .type-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    min-height: 48px; /* WCAG AAA touch target */
+    min-width: 48px;
+    flex: 1; /* Equal width distribution */
+    background: transparent;
+    border: 1.5px solid var(--border-subtle);
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast) ease;
+    white-space: nowrap;
+  }
+
+  .type-chip:hover {
+    border-color: color-mix(in srgb, var(--type-color) 50%, transparent);
+    color: var(--text-primary);
+  }
+
+  .type-chip.selected {
+    background: color-mix(in srgb, var(--type-color) 15%, transparent);
+    border-color: var(--type-color);
+    color: var(--text-primary);
+  }
+
+  .type-chip.selected i {
+    color: var(--type-color);
+  }
+
+  .type-chip i {
+    font-size: 0.75rem;
+  }
+
+  /* Panel header transitions for input mode */
+  .panel-header {
+    transition:
+      opacity var(--duration-fast) ease-out,
+      transform var(--duration-fast) ease-out,
+      max-height var(--duration-fast) ease-out;
+    max-height: 100px;
+    overflow: hidden;
+  }
+
+  .panel-header.hidden {
+    opacity: 0;
+    transform: translateY(-12px);
+    max-height: 0;
+    padding: 0;
+    border: none;
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .close-btn {
@@ -433,6 +622,18 @@
 
     .panel-body {
       scroll-behavior: auto;
+    }
+
+    .input-mode-header {
+      animation: none;
+    }
+
+    .panel-header {
+      transition: none;
+    }
+
+    .type-chip {
+      transition: none;
     }
   }
 </style>

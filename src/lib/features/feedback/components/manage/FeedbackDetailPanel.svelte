@@ -1,6 +1,6 @@
 <!-- FeedbackDetailPanel - Refactored with service-based architecture and Svelte 5 runes -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import type {
     FeedbackItem,
     FeedbackPriority,
@@ -105,6 +105,44 @@
     if (descriptionTextarea) {
       autoResizeTextarea(descriptionTextarea);
     }
+  });
+
+  // Keyboard shortcut: Delete key twice to delete feedback
+  // First press shows confirmation, second press confirms deletion
+  function handleKeyDown(event: KeyboardEvent) {
+    // Only handle Delete key
+    if (event.key !== "Delete") return;
+
+    // Don't intercept if user is typing in an input/textarea
+    const target = event.target as HTMLElement;
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.isContentEditable
+    ) {
+      return;
+    }
+
+    // Don't handle if read-only
+    if (readOnly) return;
+
+    event.preventDefault();
+
+    if (detailState.showDeleteConfirm) {
+      // Second Delete press - confirm deletion
+      void detailState.handleDelete();
+    } else {
+      // First Delete press - show confirmation
+      detailState.showDeleteConfirm = true;
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener("keydown", handleKeyDown);
+  });
+
+  onDestroy(() => {
+    window.removeEventListener("keydown", handleKeyDown);
   });
 </script>
 

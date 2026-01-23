@@ -2,13 +2,14 @@
   import { TYPE_CONFIG } from "../../domain/models/feedback-models";
   import type { FeedbackType } from "../../domain/models/feedback-models";
 
-  const { selectedType, onTypeChange } = $props<{
+  const { selectedType, onTypeChange, isInputMode = false } = $props<{
     selectedType: FeedbackType;
     onTypeChange: (type: FeedbackType) => void;
+    isInputMode?: boolean;
   }>();
 </script>
 
-<fieldset class="type-selector">
+<fieldset class="type-selector" class:collapsed={isInputMode}>
   <legend class="sr-only">Feedback Type</legend>
   <div class="segment-control">
     {#each Object.entries(TYPE_CONFIG) as [type, config]}
@@ -36,6 +37,19 @@
   .type-selector {
     border: none;
     padding: 0;
+    margin: 0;
+    max-height: 100px;
+    opacity: 1;
+    overflow: hidden;
+    transition:
+      max-height var(--duration-fast, 150ms) ease-out,
+      opacity var(--duration-fast, 150ms) ease-out,
+      margin var(--duration-fast, 150ms) ease-out;
+  }
+
+  .type-selector.collapsed {
+    max-height: 0;
+    opacity: 0;
     margin: 0;
   }
 
@@ -122,5 +136,12 @@
 
   .segment.selected i {
     color: var(--type-color);
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .type-selector {
+      transition: none;
+    }
   }
 </style>

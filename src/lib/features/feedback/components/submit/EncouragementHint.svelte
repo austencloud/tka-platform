@@ -1,10 +1,11 @@
 <script lang="ts">
-  const { message } = $props<{
+  const { message, isInputMode = false } = $props<{
     message: string;
+    isInputMode?: boolean;
   }>();
 </script>
 
-<div class="encouragement-hint">
+<div class="encouragement-hint" class:collapsed={isInputMode}>
   <i class="fas fa-robot" aria-hidden="true"></i>
   <span>{message}</span>
 </div>
@@ -15,6 +16,14 @@
     align-items: flex-start;
     gap: clamp(8px, 2cqi, 12px);
     padding: clamp(10px, 2.5cqi, 14px) clamp(12px, 3cqi, 16px);
+    max-height: 100px;
+    opacity: 1;
+    overflow: hidden;
+    transition:
+      max-height var(--duration-fast, 150ms) ease-out,
+      opacity var(--duration-fast, 150ms) ease-out,
+      margin var(--duration-fast, 150ms) ease-out,
+      padding var(--duration-fast, 150ms) ease-out;
     background: linear-gradient(
       135deg,
       color-mix(
@@ -60,5 +69,19 @@
       transparent
     );
     line-height: 1.5;
+  }
+
+  .encouragement-hint.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .encouragement-hint {
+      transition: none;
+    }
   }
 </style>

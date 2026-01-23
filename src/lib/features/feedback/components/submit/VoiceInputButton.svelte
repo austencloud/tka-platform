@@ -1,6 +1,6 @@
 <!-- VoiceInputButton - Web Speech API voice-to-text for feedback -->
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount } from "svelte";
 
   // Web Speech API type declarations
   interface SpeechRecognitionResult {
@@ -149,15 +149,15 @@
         }
       };
     }
-  });
 
-  // Cleanup on unmount
-  onDestroy(() => {
-    document.removeEventListener("visibilitychange", handleVisibilityChange);
-    clearMaxDurationTimeout();
-    if (recognition && isRecording) {
-      recognition.abort();
-    }
+    // Return cleanup function - guaranteed to run even if onMount is interrupted
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearMaxDurationTimeout();
+      if (recognition && isRecording) {
+        recognition.abort();
+      }
+    };
   });
 
   function clearMaxDurationTimeout() {

@@ -17,19 +17,27 @@
   let {
     visible = false,
     disabled = false,
+    isFormValid = false,
+    isSubmitting = false,
     onDone,
+    onSubmit,
     onVoiceTranscript,
     onInterimTranscript,
     onRecordingEnd,
     onVoiceTimeout,
+    onKeyboardHeightChange,
   } = $props<{
     visible: boolean;
     disabled?: boolean;
+    isFormValid?: boolean;
+    isSubmitting?: boolean;
     onDone: () => void;
+    onSubmit?: () => void;
     onVoiceTranscript: (transcript: string, isFinal: boolean) => void;
     onInterimTranscript: (transcript: string) => void;
     onRecordingEnd: () => void;
     onVoiceTimeout: () => void;
+    onKeyboardHeightChange?: (height: number) => void;
   }>();
 
   let keyboardHeight = $state(0);
@@ -37,6 +45,13 @@
 
   // Track if VirtualKeyboard API is available (Chrome Android)
   let hasVirtualKeyboardAPI = $state(false);
+
+  // Debounce timer for keyboard height updates (prevents jank during keyboard animation)
+  let keyboardDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  // Track last stable height to avoid micro-fluctuations
+  let lastStableHeight = 0;
+  // Pending height to apply after debounce
+  let pendingHeight = 0;
 
   onMount(() => {
     if (!browser) return;
@@ -51,10 +66,9 @@
 
       // Listen for geometry changes
       vk.addEventListener("geometrychange", handleVirtualKeyboardChange);
-    }
-
-    // Fallback: visualViewport API (iOS Safari, older Chrome)
-    if (window.visualViewport) {
+    } else if (window.visualViewport) {
+      // Fallback: visualViewport API (iOS Safari, older Chrome)
+      // Only use this if VirtualKeyboard API is NOT available
       window.visualViewport.addEventListener("resize", handleVisualViewportResize);
       window.visualViewport.addEventListener("scroll", handleVisualViewportResize);
     }
@@ -62,6 +76,10 @@
 
   onDestroy(() => {
     if (!browser) return;
+
+    if (keyboardDebounceTimer) {
+      clearTimeout(keyboardDebounceTimer);
+    }
 
     if (hasVirtualKeyboardAPI && "virtualKeyboard" in navigator) {
       const vk = (navigator as any).virtualKeyboard;
@@ -75,10 +93,37 @@
   });
 
   function handleVirtualKeyboardChange(event: Event) {
-    const vk = (event.target as any);
+    const vk = event.target as any;
     const rect = vk.boundingRect;
-    keyboardHeight = rect.height;
-    isKeyboardVisible = rect.height > 0;
+    const newHeight = rect.height;
+
+    // Debounce to prevent jank during keyboard animation
+    if (keyboardDebounceTimer) {
+      clearTimeout(keyboardDebounceTimer);
+    }
+
+    pendingHeight = newHeight;
+
+    keyboardDebounceTimer = setTimeout(() => {
+      // Only update if height changed significantly (> 20px)
+      const heightDiff = Math.abs(pendingHeight - lastStableHeight);
+
+      if (pendingHeight > 100) {
+        // Keyboard is visible
+        if (heightDiff > 20 || !isKeyboardVisible) {
+          keyboardHeight = pendingHeight;
+          isKeyboardVisible = true;
+          lastStableHeight = pendingHeight;
+        }
+      } else {
+        // Keyboard is hidden
+        if (isKeyboardVisible) {
+          keyboardHeight = 0;
+          isKeyboardVisible = false;
+          lastStableHeight = 0;
+        }
+      }
+    }, 50); // 50ms debounce - matches visualViewport handler
   }
 
   function handleVisualViewportResize() {
@@ -89,15 +134,40 @@
     const windowHeight = window.innerHeight;
     const calculatedHeight = windowHeight - viewportHeight - window.visualViewport.offsetTop;
 
-    // Only consider it a keyboard if height is significant (> 100px)
-    if (calculatedHeight > 100) {
-      keyboardHeight = calculatedHeight;
-      isKeyboardVisible = true;
-    } else {
-      keyboardHeight = 0;
-      isKeyboardVisible = false;
+    // Debounce rapid updates during keyboard animation
+    if (keyboardDebounceTimer) {
+      clearTimeout(keyboardDebounceTimer);
     }
+
+    keyboardDebounceTimer = setTimeout(() => {
+      // Only update if height changed significantly (> 20px difference)
+      // This prevents micro-fluctuations during animation
+      const heightDiff = Math.abs(calculatedHeight - lastStableHeight);
+
+      if (calculatedHeight > 100) {
+        // Keyboard is visible
+        if (heightDiff > 20 || !isKeyboardVisible) {
+          keyboardHeight = calculatedHeight;
+          isKeyboardVisible = true;
+          lastStableHeight = calculatedHeight;
+        }
+      } else {
+        // Keyboard is hidden
+        if (isKeyboardVisible) {
+          keyboardHeight = 0;
+          isKeyboardVisible = false;
+          lastStableHeight = 0;
+        }
+      }
+    }, 50); // 50ms debounce
   }
+
+  // Notify parent when keyboard height changes
+  $effect(() => {
+    // Add toolbar height (~60px) to keyboard height for total bottom inset
+    const totalHeight = keyboardHeight > 0 ? keyboardHeight + 60 : 0;
+    onKeyboardHeightChange?.(totalHeight);
+  });
 
   // Compute bottom position using CSS env() with JS fallback
   const toolbarStyle = $derived.by(() => {
@@ -131,20 +201,46 @@
           {onRecordingEnd}
           onTimeout={onVoiceTimeout}
           {disabled}
-          size="small"
         />
       </div>
 
-      <button
-        type="button"
-        class="done-button"
-        onclick={onDone}
-        {disabled}
-        aria-label="Done - dismiss keyboard"
-      >
-        <span class="done-text">Done</span>
-        <i class="fas fa-keyboard" aria-hidden="true"></i>
-      </button>
+      <div class="toolbar-right">
+        {#if onSubmit}
+          <button
+            type="button"
+            class="submit-button"
+            onmousedown={(e) => {
+              // Prevent blur from textarea so submit completes before keyboard dismisses
+              e.preventDefault();
+              onSubmit();
+            }}
+            ontouchstart={(e) => {
+              // Same for touch - prevent blur, then submit
+              e.preventDefault();
+              onSubmit();
+            }}
+            disabled={disabled || !isFormValid || isSubmitting}
+            aria-label="Submit feedback"
+          >
+            {#if isSubmitting}
+              <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+            {:else}
+              <i class="fas fa-paper-plane" aria-hidden="true"></i>
+            {/if}
+            <span>Submit</span>
+          </button>
+        {/if}
+
+        <button
+          type="button"
+          class="done-button"
+          onclick={onDone}
+          {disabled}
+          aria-label="Done - dismiss keyboard"
+        >
+          <span class="done-text">Done</span>
+        </button>
+      </div>
     </div>
   </div>
 {/if}
@@ -203,13 +299,18 @@
     gap: 8px;
   }
 
-  .done-button {
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .submit-button {
     display: flex;
     align-items: center;
     gap: 6px;
     padding: 10px 16px;
-    min-height: 44px;
-    min-width: 80px;
+    min-height: 48px; /* WCAG AAA touch target */
 
     background: var(--theme-accent, #4a9eff);
     border: none;
@@ -221,14 +322,52 @@
 
     cursor: pointer;
     transition: all 150ms ease;
+    touch-action: manipulation;
+  }
+
+  .submit-button:hover:not(:disabled) {
+    background: var(--theme-accent-strong, #5aafff);
+    transform: translateY(-1px);
+  }
+
+  .submit-button:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .submit-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .submit-button i {
+    font-size: 14px;
+  }
+
+  .done-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    min-height: 44px;
+
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+
+    color: var(--theme-text, white);
+    font-size: 15px;
+    font-weight: 600;
+
+    cursor: pointer;
+    transition: all 150ms ease;
 
     /* Ensure touch target */
     touch-action: manipulation;
   }
 
   .done-button:hover:not(:disabled) {
-    background: var(--theme-accent-strong, #5aafff);
-    transform: translateY(-1px);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
   .done-button:active:not(:disabled) {
@@ -238,11 +377,6 @@
   .done-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  .done-button i {
-    font-size: 14px;
-    opacity: 0.9;
   }
 
   .done-text {
@@ -255,7 +389,8 @@
       animation: none;
     }
 
-    .done-button {
+    .done-button,
+    .submit-button {
       transition: none;
     }
   }

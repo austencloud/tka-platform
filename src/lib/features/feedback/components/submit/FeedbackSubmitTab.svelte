@@ -1,17 +1,35 @@
 <!-- FeedbackSubmitTab - Fluid container-query based layout -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import FeedbackForm from "./FeedbackForm.svelte";
   import { getSharedFeedbackSubmitState } from "../../state/feedback-submit-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { container } from "$lib/shared/di";
 
   // Use shared state so drafts persist between tab and quick panel
   const submitState = getSharedFeedbackSubmitState();
+  const deviceDetector = container.items.deviceDetector;
+
+  // Track touch device and focus state for input mode
+  let isTouchDevice = $state(false);
+  let isInputFocused = $state(false);
+
+  // Input mode: distraction-free typing on touch devices
+  const isInputMode = $derived((isInputFocused || submitState.isSubmitting) && isTouchDevice);
+
+  onMount(() => {
+    isTouchDevice = deviceDetector.isTouchDevice();
+  });
+
+  function handleInputFocusChange(focused: boolean) {
+    isInputFocused = focused;
+  }
 </script>
 
-<div class="submit-tab">
+<div class="submit-tab" class:input-mode={isInputMode}>
   <div class="submit-container">
-    <!-- Centered header -->
-    <header class="submit-header">
+    <!-- Centered header - collapses in input mode -->
+    <header class="submit-header" class:collapsed={isInputMode}>
       <div class="header-icon">
         <i class="fas fa-paper-plane" aria-hidden="true"></i>
       </div>
@@ -20,7 +38,12 @@
     </header>
 
     <!-- Form Content -->
-    <FeedbackForm formState={submitState} />
+    <FeedbackForm
+      formState={submitState}
+      {isInputMode}
+      {isTouchDevice}
+      onInputFocusChange={handleInputFocusChange}
+    />
   </div>
 </div>
 
@@ -164,5 +187,48 @@
   .submit-tab::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
     border-radius: 2px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     INPUT MODE - Distraction-free typing on touch devices
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Header collapse animation */
+  .submit-header {
+    transition:
+      max-height var(--duration-fast, 150ms) ease-out,
+      opacity var(--duration-fast, 150ms) ease-out,
+      padding var(--duration-fast, 150ms) ease-out,
+      margin var(--duration-fast, 150ms) ease-out;
+    max-height: 200px;
+    overflow: hidden;
+  }
+
+  .submit-header.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* In input mode, form should expand to fill available space */
+  .submit-tab.input-mode {
+    justify-content: flex-start;
+    padding-top: 8px;
+  }
+
+  .submit-tab.input-mode .submit-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: none;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .submit-header {
+      transition: none;
+    }
   }
 </style>

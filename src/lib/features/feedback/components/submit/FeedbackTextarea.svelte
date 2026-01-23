@@ -9,9 +9,11 @@
     placeholder,
     isStreaming = false,
     isMobile = false,
+    isTouchDevice = false,
     draftStatus = "idle",
     images = $bindable([]),
     disabled = false,
+    isInputMode = false,
     onInput,
     onKeydown,
     onVoiceTranscript,
@@ -26,9 +28,12 @@
     placeholder: string;
     isStreaming?: boolean;
     isMobile?: boolean;
+    /** Touch device - hides keyboard shortcuts like "(Shift+Enter to submit)" */
+    isTouchDevice?: boolean;
     draftStatus?: DraftSaveStatus;
     images?: string[];
     disabled?: boolean;
+    isInputMode?: boolean;
     onInput: (value: string) => void;
     onKeydown: (event: KeyboardEvent) => void;
     onVoiceTranscript: (transcript: string, isFinal: boolean) => void;
@@ -69,7 +74,7 @@
   const charsMet = $derived(value.trim().length >= minChars);
 </script>
 
-<div class="field">
+<div class="field" class:input-mode={isInputMode}>
   <label for="fb-description" class="sr-only"
     >Feedback description (minimum 10 characters)</label
   >
@@ -86,7 +91,7 @@
       onkeydown={onKeydown}
       onfocus={handleFocus}
       onblur={handleBlur}
-      placeholder={`${placeholder}${isMobile ? "" : " (Shift+Enter to submit)"}`}
+      placeholder={`${placeholder}${isTouchDevice ? "" : " (Shift+Enter to submit)"}`}
       rows="6"
       inputmode="text"
       enterkeyhint="done"
@@ -199,8 +204,15 @@
     background: color-mix(
       in srgb,
       var(--active-type-color) 5%,
-      rgba(0, 0, 0, 0.25)
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98))
     );
+    /* Subtle glow on focus for clear visual state */
+    box-shadow: 0 0 0 3px
+      color-mix(
+        in srgb,
+        var(--active-type-color, var(--theme-accent)) 20%,
+        transparent
+      );
   }
 
   .textarea-wrapper:has(.field-textarea.has-error) {
@@ -366,5 +378,44 @@
     .draft-saved {
       animation: none;
     }
+  }
+
+  /* Input mode - textarea expands to fill available space */
+  .field.input-mode {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Allow flex shrinking */
+    overflow: hidden;
+  }
+
+  .field.input-mode .textarea-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .field.input-mode .field-textarea {
+    flex: 1;
+    min-height: 100px;
+    max-height: 100%;
+    overflow-y: auto;
+  }
+
+  /* Hide voice button in textarea during input mode - it's in the toolbar */
+  .field.input-mode .voice-input-wrapper {
+    display: none;
+  }
+
+  /* Keep footer visible in input mode but compact - image upload is important */
+  .field.input-mode .field-footer {
+    margin-top: 8px;
+  }
+
+  /* Hide the char count hint in input mode - it's less relevant */
+  .field.input-mode .field-hint .char-count {
+    display: none;
   }
 </style>
