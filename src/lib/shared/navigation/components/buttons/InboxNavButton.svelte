@@ -22,20 +22,47 @@
   );
 
   function handleClick(event: MouseEvent | TouchEvent) {
-    if (event instanceof TouchEvent) {
-      event.preventDefault();
-    }
+    event.preventDefault();
+    event.stopPropagation();
     inboxState.open();
   }
 
-  function startLongPress(event: PointerEvent) {
-    if (!onLongPress) return;
-    if (event.pointerType === "mouse") return;
+  function handleTouchStart(event: TouchEvent) {
+    // Prevent Android context menu and gesture navigation from triggering
+    event.stopPropagation();
+
+    // Start long press timer on touch devices
+    if (onLongPress) {
+      clearLongPress();
+      longPressTimer = setTimeout(() => {
+        suppressNextClick = true;
+        onLongPress?.();
+      }, longPressMs);
+    }
+  }
+
+  function handleTouchMove(event: TouchEvent) {
+    // If user moves finger, cancel long press
     clearLongPress();
-    longPressTimer = setTimeout(() => {
-      suppressNextClick = true;
-      onLongPress?.();
-    }, longPressMs);
+  }
+
+  function handleTouchEnd(event: TouchEvent) {
+    // Prevent browser from triggering native share sheet or context menus
+    event.preventDefault();
+    event.stopPropagation();
+
+    clearLongPress();
+
+    if (suppressNextClick) {
+      suppressNextClick = false;
+      return;
+    }
+    handleClick(event);
+  }
+
+  function handleTouchCancel() {
+    clearLongPress();
+    suppressNextClick = false;
   }
 
   function clearLongPress() {
@@ -45,11 +72,8 @@
     }
   }
 
-  function handlePointerUp() {
-    clearLongPress();
-  }
-
-  function handleWrapperClick(event: MouseEvent | TouchEvent) {
+  function handleWrapperClick(event: MouseEvent) {
+    // Only handle mouse clicks - touch is handled by touchend
     if (suppressNextClick) {
       suppressNextClick = false;
       return;
@@ -61,11 +85,11 @@
 <div
   class="inbox-nav-button-wrapper"
   onclick={handleWrapperClick}
-  ontouchend={handleWrapperClick}
-  onpointerdown={startLongPress}
-  onpointerup={handlePointerUp}
-  onpointerleave={clearLongPress}
-  onpointercancel={clearLongPress}
+  ontouchstart={handleTouchStart}
+  ontouchmove={handleTouchMove}
+  ontouchend={handleTouchEnd}
+  ontouchcancel={handleTouchCancel}
+  oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); return false; }}
   onkeydown={(e) =>
     e.key === "Enter" && handleClick(e as unknown as MouseEvent)}
   role="button"
@@ -92,11 +116,19 @@
 <style>
   .inbox-nav-button-wrapper {
     display: contents;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   .inbox-button-container {
     position: relative;
     display: inline-flex;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   .unread-badge {

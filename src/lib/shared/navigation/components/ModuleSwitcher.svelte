@@ -155,13 +155,23 @@
     box-sizing: border-box !important;
   }
 
-  /* Bottom placement: Full width, full height for focused navigation */
+  /* Bottom placement: Full width, content-adaptive height */
   :global(.module-switcher-drawer[data-placement="bottom"]) {
     left: 0 !important;
     right: 0 !important;
     width: 100% !important;
+    /* Default: full height on narrow mobile */
     height: 100vh !important;
     max-height: 100vh !important;
+  }
+
+  /* Widescreen devices (Z-Fold unfolded, tablets): content-sized drawer */
+  @media (min-width: 700px) and (min-height: 500px) {
+    :global(.module-switcher-drawer[data-placement="bottom"]) {
+      height: auto !important;
+      max-height: 85vh !important;
+      border-radius: var(--sheet-radius-large, 20px) var(--sheet-radius-large, 20px) 0 0;
+    }
   }
 
   /* Left placement: Full height, partial width */

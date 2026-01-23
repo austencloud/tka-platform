@@ -20,6 +20,7 @@
   import { onMount } from "svelte";
   import { translateModule } from "$lib/shared/i18n/translate";
   import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
+  import { browser } from "$app/environment";
 
   // Reactive locale for re-rendering translations
   const locale = $derived(getReactiveLocale());
@@ -47,17 +48,95 @@
     startTime: 0,
   });
 
+  // ============================================================================
+  // SMART ORDERING - Track module usage for intelligent sorting
+  // ============================================================================
+  const USAGE_STORAGE_KEY = "tka-module-usage";
+  const MAX_HISTORY = 20;
+
+  interface ModuleUsage {
+    counts: Record<string, number>;
+    recents: string[]; // Most recent first
+  }
+
+  function getModuleUsage(): ModuleUsage {
+    if (!browser) return { counts: {}, recents: [] };
+    try {
+      const stored = localStorage.getItem(USAGE_STORAGE_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return { counts: {}, recents: [] };
+  }
+
+  function recordModuleUsage(moduleId: ModuleId) {
+    if (!browser) return;
+    const usage = getModuleUsage();
+
+    // Update count
+    usage.counts[moduleId] = (usage.counts[moduleId] || 0) + 1;
+
+    // Update recents (remove if exists, add to front)
+    usage.recents = usage.recents.filter((id) => id !== moduleId);
+    usage.recents.unshift(moduleId);
+    if (usage.recents.length > MAX_HISTORY) {
+      usage.recents = usage.recents.slice(0, MAX_HISTORY);
+    }
+
+    try {
+      localStorage.setItem(USAGE_STORAGE_KEY, JSON.stringify(usage));
+    } catch {}
+  }
+
+  function getModuleScore(moduleId: string, usage: ModuleUsage): number {
+    // Weighted score: recency matters more than frequency
+    const recencyIndex = usage.recents.indexOf(moduleId);
+    const recencyScore = recencyIndex === -1 ? 0 : (MAX_HISTORY - recencyIndex) * 3;
+    const frequencyScore = usage.counts[moduleId] || 0;
+    return recencyScore + frequencyScore;
+  }
+
+  // Sort modules by usage (smart ordering)
+  function sortByUsage(mods: ModuleDefinition[]): ModuleDefinition[] {
+    const usage = getModuleUsage();
+
+    // If no usage history, return original order
+    if (usage.recents.length === 0) return mods;
+
+    return [...mods].sort((a, b) => {
+      // Current module always first
+      if (a.id === currentModule) return -1;
+      if (b.id === currentModule) return 1;
+
+      // Then by usage score
+      const scoreA = getModuleScore(a.id, usage);
+      const scoreB = getModuleScore(b.id, usage);
+      return scoreB - scoreA;
+    });
+  }
+
   onMount(() => {
     hapticService = container.items.hapticFeedback;
   });
 
-  // Filter to main modules and dev modules
-  const mainModules = $derived(
+  // Filter to main modules and dev modules, then sort by usage
+  const mainModulesFiltered = $derived(
     modules.filter((m: ModuleDefinition) => m.isMain)
   );
+  const mainModules = $derived(sortByUsage(mainModulesFiltered));
   const devModules = $derived(
     modules.filter((m: ModuleDefinition) => !m.isMain)
   );
+
+  // Determine grid layout class based on module count
+  // This enables adaptive layouts that fill space better with fewer modules
+  const gridLayoutClass = $derived(() => {
+    const count = mainModules.length;
+    if (count <= 3) return "layout-few"; // Large cells, single column or row
+    if (count === 4) return "layout-quad"; // 2×2 grid with larger cells
+    if (count === 5) return "layout-five"; // Asymmetric 3+2 or 2+3
+    if (count === 6) return "layout-six"; // Balanced 2×3 or 3×2
+    return "layout-many"; // Default compact grid for 7+
+  });
 
   /**
    * 🎨 Extract primary color from module icon HTML
@@ -120,6 +199,7 @@
     }
 
     hapticService?.trigger("selection");
+    recordModuleUsage(moduleId);
     onModuleSelect?.(moduleId);
   }
 
@@ -144,12 +224,12 @@
   }
 </script>
 
-<!-- Main Modules Section - Compact 2-Column Grid -->
-<section class="module-section">
+<!-- Main Modules Section - Adaptive Grid based on module count -->
+<section class="module-section" data-module-count={mainModules.length}>
   <h3 class="section-title">Modules</h3>
   {#key locale}
-  <div class="module-grid">
-    {#each mainModules as module}
+  <div class="module-grid {gridLayoutClass()}">
+    {#each mainModules as module, index}
       {@const moduleColor = module.color || extractModuleColor(module.icon)}
       {@const isActive = currentModule === module.id}
       {@const isDisabled = module.disabled ?? false}
@@ -163,7 +243,7 @@
         onpointerdown={handlePointerDown}
         onpointermove={handlePointerMove}
         onclick={(e) => handleModuleClick(module.id, e, isDisabled)}
-        style="--module-color: {moduleColor};"
+        style="--module-color: {moduleColor}; --stagger-index: {index};"
         aria-disabled={isDisabled}
         disabled={isDisabled}
       >
@@ -313,8 +393,29 @@
     cursor: pointer;
     text-align: center;
     overflow: hidden;
-    transition: transform var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     isolation: isolate;
+
+    /* Staggered entrance animation */
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    animation: cellEntrance 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation-delay: calc(var(--stagger-index, 0) * 50ms + 100ms);
+
+    /* Smooth transitions for interactions */
+    transition:
+      transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 0.2s ease;
+  }
+
+  @keyframes cellEntrance {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 
   /* Layered Background System - With prominent module-colored accent */
@@ -389,21 +490,43 @@
   }
 
   /* ============================================================================
-     ACTIVE STATE - MODULE-SPECIFIC COLORS (Refined)
+     ACTIVE STATE - Current module is visually prominent
+     Larger, brighter, with a subtle breathing pulse
      ============================================================================ */
+  .module-cell.active {
+    transform: scale(1.05);
+    z-index: 2;
+  }
+
   .module-cell.active .cell-background {
     background: linear-gradient(
       145deg,
-      color-mix(in srgb, var(--module-color) 12%, transparent) 0%,
-      color-mix(in srgb, var(--module-color) 4%, transparent) 100%
+      color-mix(in srgb, var(--module-color) 25%, rgba(255, 255, 255, 0.08)) 0%,
+      color-mix(in srgb, var(--module-color) 15%, rgba(255, 255, 255, 0.03)) 100%
     );
-    border-color: color-mix(in srgb, var(--module-color) 35%, transparent);
-    box-shadow: 0 0 12px
-      color-mix(in srgb, var(--module-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--module-color) 50%, rgba(255, 255, 255, 0.2));
+    border-width: 2px;
+    box-shadow:
+      0 0 20px color-mix(in srgb, var(--module-color) 25%, transparent),
+      0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   .module-cell.active .cell-glow {
-    opacity: 0.06;
+    opacity: 0.18;
+    animation: activeGlowPulse 3s ease-in-out infinite;
+  }
+
+  @keyframes activeGlowPulse {
+    0%, 100% { opacity: 0.15; }
+    50% { opacity: 0.22; }
+  }
+
+  .module-cell.active .cell-icon {
+    transform: scale(1.1);
+  }
+
+  .module-cell.active .cell-label {
+    font-weight: 700;
   }
 
   /* ============================================================================
@@ -544,12 +667,238 @@
   }
 
   /* ============================================================================
-     RESPONSIVE - 3 columns on wider screens
-     (Height/sizing now handled by clamp() for fluid responsiveness)
+     ADAPTIVE LAYOUTS - Based on module count
+     Modules expand to fill space when there are fewer of them
+     ============================================================================ */
+
+  /* Few modules (1-3): Large cells, vertically centered */
+  .module-grid.layout-few {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    align-content: center;
+    justify-content: center;
+  }
+
+  .module-grid.layout-few .module-cell {
+    min-height: clamp(100px, 18vh, 160px);
+    max-width: 400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Quad layout (4 modules): 2×2 grid with larger cells */
+  .module-grid.layout-quad {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    align-content: center;
+  }
+
+  .module-grid.layout-quad .module-cell {
+    min-height: clamp(100px, 20vh, 180px);
+  }
+
+  /* Five modules: 2×2 + 1 centered, or 3+2 on wider screens */
+  .module-grid.layout-five {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    align-content: center;
+  }
+
+  .module-grid.layout-five .module-cell {
+    min-height: clamp(90px, 16vh, 150px);
+  }
+
+  /* Center the 5th item (odd one out) */
+  .module-grid.layout-five .module-cell:nth-child(5) {
+    grid-column: 1 / -1;
+    max-width: calc(50% - 7px);
+    justify-self: center;
+  }
+
+  /* Six modules: 2×3 grid with balanced sizing */
+  .module-grid.layout-six {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 14px;
+    align-content: stretch;
+  }
+
+  .module-grid.layout-six .module-cell {
+    min-height: clamp(85px, 14vh, 140px);
+  }
+
+  /* Many modules (7+): Compact default layout */
+  .module-grid.layout-many {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    align-content: start;
+  }
+
+  /* ============================================================================
+     RESPONSIVE - Wider screen adaptations for each layout
      ============================================================================ */
   @media (min-width: 400px) {
-    .module-grid {
+    /* Few modules on wide screens: horizontal row */
+    .module-grid.layout-few {
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+
+    .module-grid.layout-few .module-cell {
+      min-height: clamp(120px, 25vh, 200px);
+      max-width: none;
+    }
+
+    /* Quad on wide screens: stays 2×2 but larger */
+    .module-grid.layout-quad {
+      gap: 20px;
+    }
+
+    .module-grid.layout-quad .module-cell {
+      min-height: clamp(120px, 25vh, 200px);
+    }
+
+    /* Five modules on wide: 3+2 layout */
+    .module-grid.layout-five {
       grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .module-grid.layout-five .module-cell {
+      min-height: clamp(100px, 18vh, 160px);
+    }
+
+    /* 4th and 5th items span to center the bottom row */
+    .module-grid.layout-five .module-cell:nth-child(4) {
+      grid-column: 1 / 2;
+      justify-self: end;
+      width: calc(100% + 8px);
+      margin-right: -8px;
+    }
+
+    .module-grid.layout-five .module-cell:nth-child(5) {
+      grid-column: 2 / 4;
+      max-width: none;
+      width: calc(100% + 8px);
+      margin-left: -8px;
+      justify-self: start;
+    }
+
+    /* Six modules on wide: 3×2 grid */
+    .module-grid.layout-six {
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .module-grid.layout-six .module-cell {
+      min-height: clamp(100px, 18vh, 160px);
+    }
+
+    /* Many modules: 3 columns */
+    .module-grid.layout-many {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  /* ============================================================================
+     WIDESCREEN DEVICES (Z-Fold unfolded, tablets)
+     Drawer is now content-sized, so grid just needs comfortable sizing
+     ============================================================================ */
+  @media (min-width: 700px) and (min-height: 500px) {
+    .module-grid.layout-six,
+    .module-grid.layout-five,
+    .module-grid.layout-quad,
+    .module-grid.layout-few {
+      gap: 16px;
+    }
+
+    .module-grid .module-cell {
+      min-height: 110px;
+    }
+
+    /* Slightly larger icons on widescreen */
+    .module-grid .cell-icon {
+      font-size: clamp(28px, 4vw, 40px);
+      width: clamp(40px, 5.5vw, 56px);
+      height: clamp(40px, 5.5vw, 56px);
+    }
+
+    .module-grid .cell-label {
+      font-size: clamp(13px, 1.5vw, 16px);
+    }
+  }
+
+  /* ============================================================================
+     LANDSCAPE MOBILE - Optimize for horizontal space
+     ============================================================================ */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .module-grid.layout-few,
+    .module-grid.layout-quad,
+    .module-grid.layout-five,
+    .module-grid.layout-six {
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      max-width: none;
+    }
+
+    .module-grid .module-cell {
+      min-height: clamp(70px, 12vh, 100px);
+    }
+  }
+
+  /* ============================================================================
+     TALL SCREENS (tablets in portrait) - Use vertical space
+     ============================================================================ */
+  @media (min-height: 800px) {
+    .module-grid.layout-few .module-cell,
+    .module-grid.layout-quad .module-cell {
+      min-height: clamp(140px, 20vh, 220px);
+    }
+
+    .module-grid.layout-five .module-cell,
+    .module-grid.layout-six .module-cell {
+      min-height: clamp(120px, 16vh, 180px);
+    }
+  }
+
+  /* ============================================================================
+     SCALED CONTENT FOR LARGER CELLS
+     Icons and labels grow proportionally with cell size
+     ============================================================================ */
+  .module-grid.layout-few .cell-icon,
+  .module-grid.layout-quad .cell-icon {
+    font-size: clamp(32px, 5vh, 48px);
+    width: clamp(48px, 7vh, 64px);
+    height: clamp(48px, 7vh, 64px);
+  }
+
+  .module-grid.layout-few .cell-label,
+  .module-grid.layout-quad .cell-label {
+    font-size: clamp(14px, 2vh, 18px);
+  }
+
+  .module-grid.layout-five .cell-icon,
+  .module-grid.layout-six .cell-icon {
+    font-size: clamp(28px, 4vh, 40px);
+    width: clamp(40px, 6vh, 56px);
+    height: clamp(40px, 6vh, 56px);
+  }
+
+  .module-grid.layout-five .cell-label,
+  .module-grid.layout-six .cell-label {
+    font-size: clamp(13px, 1.8vh, 16px);
+  }
+
+  /* Restore compact sizing for landscape mobile */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .module-grid .cell-icon {
+      font-size: clamp(24px, 3.5vh, 32px);
+      width: clamp(32px, 5vh, 40px);
+      height: clamp(32px, 5vh, 40px);
+    }
+
+    .module-grid .cell-label {
+      font-size: clamp(11px, 1.5vh, 13px);
     }
   }
 
@@ -557,6 +906,12 @@
      ACCESSIBILITY & REDUCED MOTION
      ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
+    .module-cell {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
     .module-cell,
     .cell-background,
     .cell-glow,
@@ -567,6 +922,14 @@
     .module-cell:hover,
     .module-cell:active {
       transform: none !important;
+    }
+
+    .module-cell.active {
+      transform: none !important;
+    }
+
+    .module-cell.active .cell-glow {
+      animation: none !important;
     }
   }
 

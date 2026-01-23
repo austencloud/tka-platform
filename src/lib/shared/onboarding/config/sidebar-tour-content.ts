@@ -21,16 +21,10 @@ export interface TourStep {
 /**
  * Tour steps in display order.
  * Only includes core user-facing modules.
+ *
+ * Updated Jan 2026: Removed dashboard (deleted) and library (merged into Explore).
  */
 export const SIDEBAR_TOUR_STEPS: TourStep[] = [
-  {
-    moduleId: "dashboard",
-    heading: "Dashboard",
-    description:
-      "Your home base. See progress, recent activity, and quick access to everything in TKA Scribe.",
-    icon: "home",
-    color: "#10b981",
-  },
   {
     moduleId: "create",
     heading: "Create",
@@ -41,9 +35,9 @@ export const SIDEBAR_TOUR_STEPS: TourStep[] = [
   },
   {
     moduleId: "explore",
-    heading: "Discover",
+    heading: "Explore",
     description:
-      "Browse community sequences, find creators to follow, and get inspired by what others are making.",
+      "Browse sequences from the community or your own library. Find creators and get inspired.",
     icon: "compass",
     color: "#a855f7",
   },
@@ -72,12 +66,12 @@ export const SIDEBAR_TOUR_STEPS: TourStep[] = [
     color: "#ef4444",
   },
   {
-    moduleId: "library",
-    heading: "Library",
+    moduleId: "feedback",
+    heading: "Feedback",
     description:
-      "Your personal collection. Sequences you've created, saved, or favorited — all organized in one place.",
-    icon: "book",
-    color: "#0891b2",
+      "Report bugs, suggest features, or share ideas. Your input shapes how TKA Scribe evolves.",
+    icon: "comment-dots",
+    color: "#14b8a6",
   },
 ];
 

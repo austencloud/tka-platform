@@ -2,6 +2,7 @@
  * Sidebar Tour State
  *
  * Manages the desktop sidebar tour lifecycle using Svelte 5 runes.
+ * Dynamically filters tour steps to only show modules visible in the sidebar.
  */
 
 import {
@@ -12,8 +13,9 @@ import {
 } from "../config/storage-keys";
 import {
   SIDEBAR_TOUR_STEPS,
-  TOUR_STEP_COUNT,
+  type TourStep,
 } from "../config/sidebar-tour-content";
+import { getModuleDefinitions } from "../../navigation-coordinator/navigation-coordinator.svelte";
 
 export type TourPhase = "idle" | "prompt" | "touring" | "complete";
 
@@ -27,6 +29,15 @@ interface SidebarTourState {
 }
 
 /**
+ * Get tour steps filtered to only include modules visible in the sidebar.
+ * This ensures the tour doesn't try to highlight modules the user can't see.
+ */
+function getVisibleTourSteps(): TourStep[] {
+  const visibleModuleIds = new Set(getModuleDefinitions().map((m) => m.id));
+  return SIDEBAR_TOUR_STEPS.filter((step) => visibleModuleIds.has(step.moduleId));
+}
+
+/**
  * Reactive tour state
  */
 function createSidebarTourState() {
@@ -36,11 +47,15 @@ function createSidebarTourState() {
     wasCollapsed: false,
   });
 
-  // Derived values
-  const currentStepData = $derived(SIDEBAR_TOUR_STEPS[state.currentStep]);
+  // Filter steps to only visible modules (reactive to auth/feature flag changes)
+  const visibleSteps = $derived(getVisibleTourSteps());
+  const stepCount = $derived(visibleSteps.length);
+
+  // Derived values based on filtered steps
+  const currentStepData = $derived(visibleSteps[state.currentStep]);
   const isFirstStep = $derived(state.currentStep === 0);
-  const isLastStep = $derived(state.currentStep === TOUR_STEP_COUNT - 1);
-  const progress = $derived((state.currentStep + 1) / TOUR_STEP_COUNT);
+  const isLastStep = $derived(state.currentStep === stepCount - 1);
+  const progress = $derived(stepCount > 0 ? (state.currentStep + 1) / stepCount : 0);
 
   return {
     // State getters
@@ -66,10 +81,10 @@ function createSidebarTourState() {
       return progress;
     },
     get totalSteps() {
-      return TOUR_STEP_COUNT;
+      return stepCount;
     },
     get steps() {
-      return SIDEBAR_TOUR_STEPS;
+      return visibleSteps;
     },
 
     /**
@@ -107,7 +122,7 @@ function createSidebarTourState() {
      * Go to next step
      */
     nextStep(): void {
-      if (state.currentStep < TOUR_STEP_COUNT - 1) {
+      if (state.currentStep < stepCount - 1) {
         state.currentStep++;
       } else {
         // Tour complete
@@ -128,7 +143,7 @@ function createSidebarTourState() {
      * Jump to a specific step
      */
     goToStep(index: number): void {
-      if (index >= 0 && index < TOUR_STEP_COUNT) {
+      if (index >= 0 && index < stepCount) {
         state.currentStep = index;
       }
     },
