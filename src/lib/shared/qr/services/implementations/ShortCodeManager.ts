@@ -24,7 +24,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
 import type {
   IShortCodeManager,
   ShortCodeRecord,
@@ -41,7 +41,7 @@ const ALPHABET =
 export class ShortCodeManager implements IShortCodeManager {
   private firestore: Firestore | null = null;
 
-  constructor(private readonly discoverLoader: IDiscoverLoader) {}
+  constructor(private readonly exploreLoader: IExploreLoader) {}
 
   /**
    * Initialize Firestore instance (called lazily)
@@ -170,7 +170,7 @@ export class ShortCodeManager implements IShortCodeManager {
 
     try {
       // Load the full sequence data using the stored identifier
-      const fullSequence = await this.discoverLoader.loadFullSequenceData(data.sequence);
+      const fullSequence = await this.exploreLoader.loadFullSequenceData(data.sequence);
       return fullSequence;
     } catch (error) {
       console.error("Failed to load sequence from short code:", error);

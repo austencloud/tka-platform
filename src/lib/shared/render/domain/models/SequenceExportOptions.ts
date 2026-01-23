@@ -66,6 +66,8 @@ export interface SequenceExportOptions {
     showTurnNumbers?: boolean;
     /** Dark Mode - dark background, inverted grid, white text/outlines */
     darkMode?: boolean;
+    /** Print Mode - pure white background for professional printing (overrides darkMode) */
+    printMode?: boolean;
     /** Show/hide grid background */
     showGrid?: boolean;
     /** Hand point visibility: "all" | "active" | "none" */

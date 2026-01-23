@@ -101,6 +101,8 @@ export interface PlayerControllerState {
 	isGrounded: boolean;
 	groundNormal: { x: number; y: number; z: number };
 	velocity: { x: number; y: number; z: number };
+	/** Noclip mode - ignore collisions and gravity, allow free flight */
+	noclipEnabled: boolean;
 }
 
 // ============================================================================
@@ -160,9 +162,9 @@ export const DEFAULT_PLAYER_CONFIG: PlayerControllerConfig = {
 	halfHeight: 0.55,
 	position: { x: 0, y: 50, z: 0 }, // Start high, will fall to ground
 	offset: 0.02, // Small skin width
-	maxSlopeClimbAngle: Math.PI / 4, // 45 degrees
-	minSlopeSlideAngle: Math.PI / 4,
-	autoStepMaxHeight: 0.4, // Can step up 40cm (stairs)
-	autoStepMinWidth: 0.2,
-	snapToGroundDistance: 0.3, // Snap when within 30cm of ground
+	maxSlopeClimbAngle: (70 * Math.PI) / 180, // 70 degrees - very steep climbs allowed
+	minSlopeSlideAngle: (60 * Math.PI) / 180, // 60 degrees before sliding
+	autoStepMaxHeight: 1.0, // Can step up 1m - handles rocky terrain
+	autoStepMinWidth: 0.1, // Narrower min width for more aggressive stepping
+	snapToGroundDistance: 0.5, // Larger snap distance for uneven terrain
 };

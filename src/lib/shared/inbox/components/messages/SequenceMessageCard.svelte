@@ -11,7 +11,7 @@
   import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
   import { inboxState } from "../../state/inbox-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
-  import { setPendingSequenceView } from "$lib/features/discover/state/pending-sequence.svelte";
+  import { setPendingSequenceView } from "$lib/features/explore/state/pending-sequence.svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
@@ -59,7 +59,7 @@
     setPendingSequenceView(sequenceId);
 
     // Navigate to Discover sequences tab
-    await handleModuleChange("discover", "sequences");
+    await handleModuleChange("explore", "sequences");
   }
 </script>
 

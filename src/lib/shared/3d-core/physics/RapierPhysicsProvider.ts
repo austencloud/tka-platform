@@ -11,7 +11,7 @@
 
 import type { PhysicsProvider, Vector3 } from "../camera/types";
 import type { PhysicsWorldState, PlayerControllerState } from "./types";
-import { movePlayer, getPlayerPosition, teleportPlayer } from "./player-controller";
+import { movePlayer, getPlayerPosition, teleportPlayer, toggleNoclip, setNoclip } from "./player-controller";
 
 export class RapierPhysicsProvider implements PhysicsProvider {
 	constructor(
@@ -53,6 +53,27 @@ export class RapierPhysicsProvider implements PhysicsProvider {
 	 */
 	teleport(position: Vector3): void {
 		teleportPlayer(this.playerState, position);
+	}
+
+	/**
+	 * Toggle noclip mode (fly through terrain, no gravity)
+	 */
+	toggleNoclip(): boolean {
+		return toggleNoclip(this.playerState);
+	}
+
+	/**
+	 * Check if noclip mode is enabled
+	 */
+	isNoclipEnabled(): boolean {
+		return this.playerState.noclipEnabled;
+	}
+
+	/**
+	 * Set noclip mode explicitly
+	 */
+	setNoclip(enabled: boolean): void {
+		setNoclip(this.playerState, enabled);
 	}
 }
 

@@ -22,7 +22,7 @@
     success: {
       icon: "fa-check-circle",
       color: "#34d399",
-      bg: "rgba(16, 185, 129, 0.15)",
+      bg: "rgba(16, 185, 129, 0.35)",
     },
     warning: {
       icon: "fa-exclamation-triangle",

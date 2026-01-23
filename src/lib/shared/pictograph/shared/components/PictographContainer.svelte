@@ -79,6 +79,8 @@ with pre-prepared data for better performance.
     onToggleBeatPosition = undefined,
     // Dark Mode override for export (when set, overrides CSS-based detection)
     darkMode = undefined,
+    // Print Mode: pure white background for professional print output
+    printMode = false,
     // Explicit prop types for export/thumbnail rendering
     // When provided, passed to PictographPreparer for consistency during async operations
     bluePropTypeOverride = undefined,
@@ -113,6 +115,8 @@ with pre-prepared data for better performance.
     onToggleBeatPosition?: () => void;
     /** Dark Mode override for export. When set, overrides CSS-based detection. */
     darkMode?: boolean;
+    /** Print Mode: pure white background for professional print output (Choreo Cards). */
+    printMode?: boolean;
     /** Explicit prop type for blue hand. Export/thumbnail rendering provides this for consistency. */
     bluePropTypeOverride?: PropType;
     /** Explicit prop type for red hand. Export/thumbnail rendering provides this for consistency. */
@@ -393,6 +397,7 @@ with pre-prepared data for better performance.
         {visibleHand}
         {arrowsClickable}
         darkMode={effectiveDarkMode}
+        {printMode}
         {onToggleTKA}
         {onToggleVTG}
         {onToggleElemental}
@@ -431,6 +436,7 @@ with pre-prepared data for better performance.
             {visibleHand}
             {arrowsClickable}
             darkMode={effectiveDarkMode}
+            {printMode}
             {onToggleTKA}
             {onToggleVTG}
             {onToggleElemental}

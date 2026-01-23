@@ -174,11 +174,21 @@ export class TerrainPhysicsManager {
 
 	/**
 	 * Dispose all colliders
+	 *
+	 * Uses try-catch to handle HMR scenarios where Rapier's WASM objects
+	 * may already be freed before this cleanup runs.
 	 */
 	dispose(): void {
-		if (this.physicsState.world) {
-			for (const terrain of this.colliders.values()) {
-				this.physicsState.world.removeCollider(terrain.collider, true);
+		try {
+			if (this.physicsState.world) {
+				for (const terrain of this.colliders.values()) {
+					this.physicsState.world.removeCollider(terrain.collider, true);
+				}
+			}
+		} catch (e) {
+			// Rapier WASM objects may already be freed during HMR - this is expected
+			if (import.meta.hot) {
+				console.debug('[TerrainCollider] Rapier cleanup during HMR:', e);
 			}
 		}
 		this.colliders.clear();

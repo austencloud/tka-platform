@@ -40,7 +40,7 @@ export const SIDEBAR_TOUR_STEPS: TourStep[] = [
     color: "#f59e0b",
   },
   {
-    moduleId: "discover",
+    moduleId: "explore",
     heading: "Discover",
     description:
       "Browse community sequences, find creators to follow, and get inspired by what others are making.",

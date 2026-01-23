@@ -64,7 +64,7 @@ export interface AppSettings {
   singleKeyShortcuts?: boolean;
   showShortcutHints?: boolean;
 
-  // Word Card Settings
+  // Choreo Card Settings
   WordCard?: {
     defaultColumnCount?: number;
     defaultLayoutMode?: "grid" | "list" | "printable";

@@ -7,7 +7,7 @@
  */
 
 import type { AppSettings } from "../../../settings/domain/AppSettings";
-import type { CompleteExploreState } from "../../../../features/discover/shared/domain/models/discover-models";
+import type { CompleteExploreState } from "../../../../features/explore/shared/domain/models/explore-models";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
 import type { TabId } from "../../../foundation/ui/UITypes";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";

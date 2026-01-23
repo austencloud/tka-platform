@@ -156,6 +156,13 @@ export function moduleSections() {
     });
   }
 
+  // Admin module: Filter tabs based on feature flag access
+  if (module === "admin") {
+    return baseSections.filter((section: { id: string }) => {
+      return featureFlagService.canAccessTab("admin", section.id);
+    });
+  }
+
   return baseSections;
 }
 
@@ -164,7 +171,7 @@ export function moduleSections() {
 const MODULE_ORDER = [
   "dashboard",
   "create",
-  "discover",
+  "explore",
   "learn",
   "compose",
   "train",
@@ -441,7 +448,7 @@ export function getModuleDefinitions() {
     // This prevents layout shifts while waiting for auth
     if (!isAuthInitialized || !isFeatureFlagsInitialized) {
       // Only show these core modules before auth is ready
-      return ["dashboard", "create", "discover"].includes(module.id);
+      return ["dashboard", "create", "explore"].includes(module.id);
     }
 
     // Use feature flag service for all access checks
@@ -509,10 +516,10 @@ function parsePathNavigation(): {
     // Section can come from path (/admin/loop-labeler) OR query param (?section=loop-labeler)
     const sectionId = parts[1] || searchParams.get("section") || undefined;
 
-    // Redirect legacy /library URLs to /discover with "My Library" source active
+    // Redirect legacy /library URLs to /explore with "My Library" source active
     // Library is now integrated into Gallery via Community/My Library toggle
     if (moduleId === "library") {
-      moduleId = "discover" as ModuleId;
+      moduleId = "explore" as ModuleId;
       // Set gallery source to my-library (uses same localStorage key as gallerySourceManager)
       try {
         localStorage.setItem("tka-gallery-source", "my-library");
@@ -549,7 +556,7 @@ function parsePathNavigation(): {
 
     // Redirect legacy #library URLs to discover with "My Library" source active
     if (moduleId === "library") {
-      moduleId = "discover" as ModuleId;
+      moduleId = "explore" as ModuleId;
       try {
         localStorage.setItem("tka-gallery-source", "my-library");
       } catch {
@@ -610,7 +617,7 @@ export function initializeNavigationHistory() {
     let targetModule = state.moduleId;
     let targetSection = state.sectionId;
     if (targetModule === "library") {
-      targetModule = "discover" as ModuleId;
+      targetModule = "explore" as ModuleId;
       targetSection = undefined;
       try {
         localStorage.setItem("tka-gallery-source", "my-library");

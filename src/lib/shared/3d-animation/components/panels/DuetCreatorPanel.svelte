@@ -9,7 +9,7 @@
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { container } from "$lib/shared/di";
-  import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+  import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
   import type { IDuetPersister } from "../../services/contracts/IDuetPersister";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type {
@@ -43,7 +43,7 @@
   let activeSelector = $state<"avatar1" | "avatar2" | null>(null);
 
   // Services
-  let discoverLoader: IDiscoverLoader | null = null;
+  let exploreLoader: IExploreLoader | null = null;
   let duetPersister: IDuetPersister | null = null;
 
   // Derived
@@ -76,7 +76,7 @@
 
   onMount(async () => {
     try {
-      discoverLoader = container.items.discoverLoader;
+      exploreLoader = container.items.exploreLoader;
       duetPersister = container.items.duetPersister;
       await loadSequences();
     } catch (e) {
@@ -86,11 +86,11 @@
   });
 
   async function loadSequences() {
-    if (!discoverLoader) return;
+    if (!exploreLoader) return;
 
     isLoadingSequences = true;
     try {
-      sequences = await discoverLoader.loadSequenceMetadata();
+      sequences = await exploreLoader.loadSequenceMetadata();
     } catch (e) {
       error = "Failed to load sequences";
       console.error("[DuetCreatorPanel] Load error:", e);

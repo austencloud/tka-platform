@@ -117,6 +117,22 @@ export interface PhysicsProvider {
 	 * Teleport the player to a position (bypasses physics)
 	 */
 	teleport?(position: Vector3): void;
+
+	/**
+	 * Toggle noclip mode (fly through terrain, no gravity)
+	 * @returns The new noclip state
+	 */
+	toggleNoclip?(): boolean;
+
+	/**
+	 * Check if noclip mode is enabled
+	 */
+	isNoclipEnabled?(): boolean;
+
+	/**
+	 * Set noclip mode explicitly
+	 */
+	setNoclip?(enabled: boolean): void;
 }
 
 /**

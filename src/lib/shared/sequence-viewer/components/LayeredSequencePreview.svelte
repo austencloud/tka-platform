@@ -19,7 +19,7 @@
   import { container } from "$lib/shared/di";
   import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
   import type { ILayoutCalculator } from "$lib/shared/render/services/contracts/ILayoutCalculator";
-  import { SequenceDifficultyCalculator } from "$lib/features/discover/sequences/display/services/implementations/SequenceDifficultyCalculator";
+  import { SequenceDifficultyCalculator } from "$lib/features/explore/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -45,6 +45,9 @@
     bluePropType?: PropType;
     redPropType?: PropType;
     catDogModeEnabled?: boolean;
+    // Step highlighting (for animation sync)
+    highlightedStepIndex?: number | null;  // 0-indexed step to highlight (null = none)
+    showHighlight?: boolean;               // Enable highlighting (default: false)
   }
 
   const {
@@ -63,6 +66,8 @@
     bluePropType,
     redPropType,
     catDogModeEnabled = false,
+    highlightedStepIndex = null,
+    showHighlight = false,
   }: Props = $props();
 
   // LOOP type resolver for parsing loopType to components
@@ -231,17 +236,18 @@
     const cellHeightPct = 100 / rows;
     // Position within cell: 50/950 ≈ 5.26%
     const inCellOffsetPct = 5.26;
-    const positions: Array<{ leftPct: number; topPct: number; label: string; isStart: boolean }> = [];
+    const positions: Array<{ leftPct: number; topPct: number; label: string; isStart: boolean; stepIndex: number }> = [];
     const startColumn = includeStartPosition ? 1 : 0;
     const stepsPerRow = columns - startColumn;
 
-    // Start position
+    // Start position (stepIndex = -1 for start position, won't match highlight)
     if (includeStartPosition && sequence.startPosition) {
       positions.push({
         leftPct: cellWidthPct * (inCellOffsetPct / 100),
         topPct: cellHeightPct * (inCellOffsetPct / 100),
         label: "Start",
-        isStart: true
+        isStart: true,
+        stepIndex: -1
       });
     }
 
@@ -253,7 +259,8 @@
         leftPct: col * cellWidthPct + cellWidthPct * (inCellOffsetPct / 100),
         topPct: row * cellHeightPct + cellHeightPct * (inCellOffsetPct / 100),
         label: String(i + 1),
-        isStart: false
+        isStart: false,
+        stepIndex: i
       });
     }
 
@@ -520,6 +527,8 @@
             {#each beatPositions as pos}
               <div
                 class="beat-number"
+                class:highlighted={showHighlight && highlightedStepIndex === pos.stepIndex}
+                class:played={showHighlight && highlightedStepIndex !== null && pos.stepIndex < highlightedStepIndex && pos.stepIndex !== -1}
                 style="left: {pos.leftPct}%; top: {pos.topPct}%; font-size: {pos.isStart ? startFontSize : beatFontSize}px;"
               >
                 {pos.label}
@@ -717,6 +726,30 @@
 
   .dark-mode .beat-number {
     color: #ffffff;
+  }
+
+  /* Step highlighting for animation sync */
+  .beat-number.highlighted {
+    background: rgba(251, 191, 36, 0.15);
+    border: 2px solid rgba(251, 191, 36, 0.8);
+    box-shadow:
+      0 0 12px rgba(251, 191, 36, 0.4),
+      0 0 24px rgba(251, 191, 36, 0.2);
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: -2px -4px; /* Offset padding to maintain position */
+    color: #fbbf24; /* Golden amber text for highlighted */
+    transition: all 0.15s ease-out;
+  }
+
+  .dark-mode .beat-number.highlighted {
+    color: #fbbf24;
+  }
+
+  /* Played beats (already passed) are dimmed */
+  .beat-number.played {
+    opacity: 0.5;
+    transition: opacity 0.15s ease-out;
   }
 
   /* Footer section - height, padding, font-size set via inline style */

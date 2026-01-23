@@ -19,7 +19,7 @@
 	import { container } from "$lib/shared/di";
 	import { onMount, onDestroy } from "svelte";
 	import AnimationPlayer from "./AnimationPlayer.svelte";
-	import PropAwareThumbnail from "$lib/features/discover/sequences/display/components/PropAwareThumbnail.svelte";
+	import PropAwareThumbnail from "$lib/features/explore/sequences/display/components/PropAwareThumbnail.svelte";
 	import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
@@ -59,8 +59,18 @@
 	});
 
 	// State - restore from sessionStorage if available (survives HMR)
+	// IMPORTANT: If initialMediaType is explicitly set (not the default "image"),
+	// use it instead of sessionStorage. This ensures spacebar always opens animation.
 	function getPersistedMediaType(): MediaType {
 		if (!browser) return initialMediaType;
+
+		// If initialMediaType is explicitly set to something other than the default,
+		// honor it over persisted preference (e.g., spacebar requests animation)
+		if (initialMediaType !== "image") {
+			return initialMediaType;
+		}
+
+		// Otherwise check sessionStorage for user's persisted preference
 		const stored = sessionStorage.getItem(MEDIA_TYPE_STORAGE_KEY);
 		if (stored === "image" || stored === "animation" || stored === "video") {
 			return stored;

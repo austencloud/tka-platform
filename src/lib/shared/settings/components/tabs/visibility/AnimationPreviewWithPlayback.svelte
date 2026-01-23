@@ -15,7 +15,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import type { IDiscoverLoader } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverLoader";
+  import type { IExploreLoader } from "$lib/features/explore/gallery/display/services/contracts/IExploreLoader";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   // TurnPatternManager is loaded dynamically to avoid pulling in entire Create module at startup
@@ -31,7 +31,7 @@
 
   // Services
   let playbackController: IAnimationPlaybackController | null = null;
-  let discoverLoader: IDiscoverLoader | null = null;
+  let exploreLoader: IExploreLoader | null = null;
 
   // Component state
   let loading = $state(true);
@@ -177,14 +177,14 @@
 
       // Get services from container
       playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
-      discoverLoader = container.items.discoverLoader as IDiscoverLoader;
+      exploreLoader = container.items.exploreLoader as IExploreLoader;
 
       // Ensure sequence metadata is loaded (populates the cache) - with retry
-      await withRetry(() => discoverLoader!.loadSequenceMetadata());
+      await withRetry(() => exploreLoader!.loadSequenceMetadata());
 
       // Load the base "B" sequence - with retry
       const baseSequence = await withRetry(() =>
-        discoverLoader!.loadFullSequenceData("B")
+        exploreLoader!.loadFullSequenceData("B")
       );
 
       if (!baseSequence) {

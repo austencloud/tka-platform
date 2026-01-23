@@ -30,6 +30,8 @@ export interface PictographVisibilityOptions {
   showNonRadialPoints?: boolean;
   /** Dark Mode - dark background, inverted grid, white text/outlines */
   darkMode?: boolean;
+  /** Print Mode - pure white background for professional printing (overrides darkMode) */
+  printMode?: boolean;
   /**
    * Explicit prop type for blue hand.
    * When provided, passed through to PictographPreparer to ensure consistency
@@ -114,6 +116,7 @@ export async function renderPictographToSVG(
       componentProps.showNonRadialPoints =
         visibilityOptions.showNonRadialPoints;
       componentProps.darkMode = visibilityOptions.darkMode; // Dark Mode controls background/grid
+      componentProps.printMode = visibilityOptions.printMode; // Print Mode: pure white background
       // Pass explicit prop types through to PictographPreparer for consistency during async rendering
       componentProps.bluePropTypeOverride = visibilityOptions.bluePropType;
       componentProps.redPropTypeOverride = visibilityOptions.redPropType;

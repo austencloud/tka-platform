@@ -10,13 +10,15 @@
    * - Render SpotlightViewer component
    */
   import { onMount } from "svelte";
-  import SpotlightViewer from "../../features/discover/sequences/spotlight/components/SpotlightViewer.svelte";
+  import SpotlightViewer from "../../features/explore/sequences/spotlight/components/SpotlightViewer.svelte";
   import {
     closeSpotlightViewer,
     getShowSpotlight,
     getSpotlightSequence,
     getSpotlightThumbnailService,
     getSpotlightDisplayMode,
+    getSpotlightVideoUrl,
+    getSpotlightImageUrl,
   } from "../application/state/ui/ui-state.svelte";
   import type {
     ISheetRouter,
@@ -29,6 +31,8 @@
   let spotlightSequence = $derived(getSpotlightSequence());
   let spotlightThumbnailService = $derived(getSpotlightThumbnailService());
   let spotlightDisplayMode = $derived(getSpotlightDisplayMode());
+  let spotlightVideoUrl = $derived(getSpotlightVideoUrl());
+  let spotlightPosterUrl = $derived(getSpotlightImageUrl()); // imageUrl used as poster for videos
 
   // Route-based spotlight state
   let spotlightSequenceId = $state<string | null>(null);
@@ -93,7 +97,8 @@
 <!-- Spotlight Viewer - rendered at root level for proper z-index -->
 <!-- Route-aware: Opens via ?spotlight={id} or legacy showSpotlight state -->
 <!-- Note: thumbnailService is optional - SpotlightViewer can work without it -->
-{#if (showSpotlight && spotlightSequence) || spotlightSequenceId}
+<!-- Video mode: Works with videoUrl only, doesn't need sequence -->
+{#if (showSpotlight && (spotlightSequence || spotlightVideoUrl)) || spotlightSequenceId}
   <SpotlightViewer
     show={showSpotlight || !!spotlightSequenceId}
     displayMode={spotlightDisplayMode}
@@ -101,6 +106,8 @@
     {...spotlightThumbnailService
       ? { thumbnailService: spotlightThumbnailService }
       : {}}
+    {...spotlightVideoUrl ? { videoUrl: spotlightVideoUrl } : {}}
+    {...spotlightPosterUrl ? { posterUrl: spotlightPosterUrl } : {}}
     onClose={handleClose}
   />
 {/if}

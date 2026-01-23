@@ -10,7 +10,7 @@
 	import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
 	import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
 	import SettingsTogglePanel from "$lib/features/compose/components/controls/SettingsTogglePanel.svelte";
-	import { sequencePanelManager } from "$lib/features/discover/shared/state/sequence-panel-state.svelte";
+	import { sequencePanelManager } from "$lib/features/explore/shared/state/sequence-panel-state.svelte";
 	import type { ControlsLevel } from "../domain/types";
 
 	let {

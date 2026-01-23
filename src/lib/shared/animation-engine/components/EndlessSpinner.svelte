@@ -163,7 +163,7 @@
         .animationPlaybackController as IAnimationPlaybackController;
       startPositionDeriver = container.items
         .startPositionDeriver as IStartPositionDeriver;
-      const discoverLoader = container.items.discoverLoader;
+      const exploreLoader = container.items.exploreLoader;
       const generationOrchestrator = container.items.generationOrchestrator;
       const sequenceTransformer = container.items.sequenceTransformer;
       const orientationCalculator = container.items.orientationCalculator;
@@ -171,7 +171,7 @@
 
       // Create the spinner orchestrator
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
-        discoverLoader as any,
+        exploreLoader as any,
         generationOrchestrator as any,
         sequenceTransformer as any,
         startPositionDeriver,

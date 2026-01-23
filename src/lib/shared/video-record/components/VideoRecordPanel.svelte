@@ -17,7 +17,7 @@
   } from "../services/contracts/IVideoRecorder";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createVideoRecordSettings } from "../state/video-record-settings.svelte";
-  import InlineAnimationPlayer from "$lib/features/discover/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";
+  import InlineAnimationPlayer from "$lib/features/explore/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";
   import GridPreview from "./GridPreview.svelte";
   import VideoRecordSettingsSheet from "./VideoRecordSettingsSheet.svelte";
 

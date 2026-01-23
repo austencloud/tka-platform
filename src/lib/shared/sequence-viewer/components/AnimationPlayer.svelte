@@ -43,6 +43,7 @@
 		controlsLevel = "minimal" as ControlsLevel,
 		externalControl = false,
 		onCanvasReady,
+		onStepChange,
 		previewDarkMode = null,
 		layout = "vertical" as "vertical" | "horizontal",
 		bluePropType = null,
@@ -54,6 +55,8 @@
 		controlsLevel?: ControlsLevel;
 		externalControl?: boolean;
 		onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
+		/** Called when current step changes (0-indexed step index or null when not playing) */
+		onStepChange?: (stepIndex: number | null, isPlaying: boolean) => void;
 		previewDarkMode?: boolean | null;
 		layout?: "vertical" | "horizontal";
 		bluePropType?: PropType | null;
@@ -100,6 +103,16 @@
 
 	const letter = $derived(stepData?.letter ?? null);
 	const gridMode = $derived(sequenceData?.gridMode ?? sequence?.gridMode);
+
+	// Notify parent of step changes for animation sync (e.g., highlighting in dual view)
+	$effect(() => {
+		const step = currentStep;
+		const playing = isPlaying;
+		// Convert currentStep (1-indexed) to stepIndex (0-indexed)
+		// When step < 1, it's the start position - pass null
+		const stepIndex = step < 1 ? null : Math.max(0, Math.floor(step) - 1);
+		onStepChange?.(stepIndex, playing);
+	});
 
 	// Trail settings with fine-grained reactivity
 	const trailSettings = $derived.by(() => {

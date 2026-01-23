@@ -15,10 +15,10 @@
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
   import { onMount } from "svelte";
-  import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
-  import type { IDiscoverThumbnailProvider } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverThumbnailProvider";
+  import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+  import type { IExploreThumbnailProvider } from "$lib/features/explore/sequences/display/services/contracts/IExploreThumbnailProvider";
   import type { ISequenceNormalizer } from "$lib/features/compose/services/contracts/ISequenceNormalizer";
-  import SequenceCard from "$lib/features/discover/sequences/display/components/SequenceCard/SequenceCard.svelte";
+  import SequenceCard from "$lib/features/explore/sequences/display/components/SequenceCard/SequenceCard.svelte";
 
   // Props
   let {
@@ -38,8 +38,8 @@
   } = $props();
 
   // Services - resolved lazily after module is loaded
-  let loaderService = $state<IDiscoverLoader | null>(null);
-  let thumbnailService = $state<IDiscoverThumbnailProvider | null>(null);
+  let loaderService = $state<IExploreLoader | null>(null);
+  let thumbnailService = $state<IExploreThumbnailProvider | null>(null);
   let normalizationService = $state<ISequenceNormalizer | null>(null);
   let servicesReady = $state(false);
 
@@ -101,7 +101,7 @@
   function initializeServices() {
     try {
       // With ITI, all containers are already composed - no need for async module loading
-      loaderService = container.items.discoverLoader ?? null;
+      loaderService = container.items.exploreLoader ?? null;
       thumbnailService = container.items.discoverThumbnailProvider ?? null;
       // Note: ISequenceNormalizer may not be in the container yet - check build container
       normalizationService = (container.items as any).sequenceNormalizer ?? null;

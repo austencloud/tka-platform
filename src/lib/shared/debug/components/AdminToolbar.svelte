@@ -32,9 +32,9 @@
     IQuickAccessPersister,
     QuickAccessUser,
   } from "../services/contracts/IQuickAccessPersister";
-  import type { ICloudThumbnailCache } from "$lib/features/discover/sequences/display/services/contracts/ICloudThumbnailCache";
+  import type { ICloudThumbnailCache } from "$lib/features/explore/sequences/display/services/contracts/ICloudThumbnailCache";
   import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
-  import type { IThumbnailLocalCache } from "$lib/features/discover/sequences/display/services/contracts/IThumbnailLocalCache";
+  import type { IThumbnailLocalCache } from "$lib/features/explore/sequences/display/services/contracts/IThumbnailLocalCache";
   import AdminToolbarDesktop from "./AdminToolbarDesktop.svelte";
   import AdminToolbarMobile from "./AdminToolbarMobile.svelte";
 

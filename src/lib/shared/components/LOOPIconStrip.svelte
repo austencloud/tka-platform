@@ -13,7 +13,7 @@ Uses the user's chosen icons from the Design Lab (2026-01-21):
 
 Used in:
 1. Sequence cards (badge overlay)
-2. Export headers (word card image)
+2. Export headers (choreo card image)
 3. Layered sequence preview
 -->
 <script lang="ts">

@@ -43,7 +43,7 @@ export const DESTINATIONS: Destination[] = [
 		category: "performance",
 		tags: ["choreography", "avatars", "performance", "timeline"],
 		component: () => import("../../../features/stage/StageDestination.svelte"),
-		enabled: false,
+		enabled: false, // Will be ported to Realm
 	},
 	{
 		id: "gallery",
@@ -59,7 +59,7 @@ export const DESTINATIONS: Destination[] = [
 		tags: ["museum", "multiplayer", "social", "exhibits"],
 		component: () =>
 			import("../../../features/gallery/GalleryDestination.svelte"),
-		enabled: false,
+		enabled: false, // Will be completely redone
 	},
 	{
 		id: "hannons-camp",

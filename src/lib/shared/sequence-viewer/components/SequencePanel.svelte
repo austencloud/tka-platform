@@ -16,8 +16,8 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ISequenceImageSharer } from "$lib/shared/share/services/contracts/ISequenceImageSharer";
-  import type { ISequenceDetailLoader } from "$lib/features/discover/sequences/display/services/contracts/ISequenceDetailLoader";
-  import type { IVideoCountManager } from "$lib/features/discover/sequences/display/services/contracts/IVideoCountManager";
+  import type { ISequenceDetailLoader } from "$lib/features/explore/sequences/display/services/contracts/ISequenceDetailLoader";
+  import type { IVideoCountManager } from "$lib/features/explore/sequences/display/services/contracts/IVideoCountManager";
   import type { MediaType, ExportProgress, MediaFormat, ExportSettings } from "../domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
@@ -31,7 +31,7 @@
   import ExportControlsSection from "./ExportControlsSection.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { discoverNavigationState } from "$lib/features/discover/shared/state/discover-navigation-state.svelte";
+  import { exploreNavigationState } from "$lib/features/explore/shared/state/explore-navigation-state.svelte";
   import { openSpotlightWithAnimation } from "$lib/shared/application/state/ui/ui-state.svelte";
 
   /**
@@ -298,7 +298,7 @@
     if (!creatorInfo?.ownerId) return;
     hapticService?.trigger("selection");
     onClose?.();
-    discoverNavigationState.viewCreatorProfile(
+    exploreNavigationState.viewCreatorProfile(
       creatorInfo.ownerId,
       creatorInfo.displayName
     );

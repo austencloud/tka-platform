@@ -111,12 +111,17 @@
   // Derived values from user proportions
   // avatarHeight is the target height in scene units (cm * CM_TO_UNITS)
   const avatarHeight = $derived(cmToUnits(userProportionsState.heightCm));
-  const groundY = $derived(userProportionsState.groundY);
+  const defaultGroundY = $derived(userProportionsState.groundY);
 
-  // Calculate group Y position to put feet at groundY
-  // feetOffset is negative (feet are below model origin)
-  // groupY = groundY - feetOffset puts feet at world Y = groundY
-  const groupY = $derived(groundY - feetOffset);
+  // Calculate group Y position
+  // If position.y is provided (e.g., from terrain/physics), use it directly
+  // Otherwise, use groundY from user proportions (for flat stage mode)
+  // feetOffset adjusts so feet touch the ground (it's negative)
+  const groupY = $derived(
+    position.y !== undefined && position.y !== 0
+      ? position.y - feetOffset  // Use provided Y (terrain mode)
+      : defaultGroundY - feetOffset  // Use stage groundY (stage mode)
+  );
 
   // Load a GLTF model for a specific avatar
   // Uses hot-swap pattern: keeps old avatar visible until new one is ready
@@ -376,13 +381,14 @@
     <!--
       Position the avatar:
       - X, Z: from position object (supports locomotion)
-      - Y: groupY (calculated to put feet at groundY)
+      - Y: groupY (uses position.y if provided, else defaultGroundY)
       - rotation.y: facingAngle (avatar faces movement direction)
 
-      groupY = groundY - feetOffset
+      groupY calculation:
+      - If position.y is provided (terrain/physics mode): position.y - feetOffset
+      - Else (flat stage mode): defaultGroundY - feetOffset
       - feetOffset is negative (feet are below model origin)
-      - This positions the group so feet end up at world Y = groundY
-      - Shoulders end up at world Y = 0 (grid center)
+      - This positions feet at the correct ground level
 
       Using cachedRoot instead of skeletonService.getRoot() ensures
       the template only updates AFTER a new model is fully loaded,

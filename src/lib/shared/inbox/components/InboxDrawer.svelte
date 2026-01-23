@@ -134,13 +134,13 @@
       case "sequence-liked": {
         // Navigate to discover gallery
         inboxState.close();
-        await handleModuleChange("discover" as ModuleId, "gallery");
+        await handleModuleChange("explore" as ModuleId, "gallery");
         break;
       }
       case "user-followed": {
         // Navigate to discover creators
         inboxState.close();
-        await handleModuleChange("discover" as ModuleId, "creators");
+        await handleModuleChange("explore" as ModuleId, "creators");
         break;
       }
       case "achievement-unlocked": {

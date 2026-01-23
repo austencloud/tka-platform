@@ -126,10 +126,10 @@
     font-size: 0.9rem;
   }
 
-  /* Size variants */
+  /* Size variants - sm is visually smaller but maintains 48px touch target */
   .chip-toggle.sm {
     padding: 6px 10px;
-    min-height: 36px;
+    min-height: 48px;
     font-size: 0.75rem;
   }
 
@@ -139,7 +139,7 @@
 
   .chip-toggle.sm.icon-only {
     padding: 6px;
-    min-width: 36px;
+    min-width: 48px;
   }
 
   /* Vertical layout (icon on top, label below) */

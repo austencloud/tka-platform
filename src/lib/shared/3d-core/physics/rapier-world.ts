@@ -317,10 +317,21 @@ export function removeRigidBody(
 
 /**
  * Dispose the physics world
+ *
+ * Uses try-catch to handle HMR scenarios where Rapier's WASM objects
+ * may already be freed before this cleanup runs.
  */
 export function disposePhysicsWorld(state: PhysicsWorldState): void {
-	if (state.world) {
-		state.world.free();
+	try {
+		if (state.world) {
+			state.world.free();
+			state.world = null;
+		}
+	} catch (e) {
+		// Rapier WASM world may already be freed during HMR - this is expected
+		if (import.meta.hot) {
+			console.debug('[PhysicsWorld] Rapier cleanup during HMR:', e);
+		}
 		state.world = null;
 	}
 	state.rapier = null;

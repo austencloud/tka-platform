@@ -5,7 +5,7 @@
  * to full SequenceData using the discover loader.
  */
 
-import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IDuetPersister } from "../contracts/IDuetPersister";
 import type {
@@ -27,7 +27,7 @@ interface StoredDuet extends Omit<DuetSequence, "createdAt"> {
 export class DuetPersister implements IDuetPersister {
   private sequenceCache: Map<string, SequenceData> | null = null;
 
-  constructor(private discoverLoader: IDiscoverLoader) {}
+  constructor(private exploreLoader: IExploreLoader) {}
 
   /**
    * Save a new duet sequence
@@ -156,7 +156,7 @@ export class DuetPersister implements IDuetPersister {
     if (this.sequenceCache) return;
 
     try {
-      const sequences = await this.discoverLoader.loadSequenceMetadata();
+      const sequences = await this.exploreLoader.loadSequenceMetadata();
       this.sequenceCache = new Map();
       for (const seq of sequences) {
         this.sequenceCache.set(seq.id, seq);

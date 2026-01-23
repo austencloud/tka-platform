@@ -109,7 +109,7 @@ export function createCameraPreferences() {
 const DESTINATION_DEFAULTS: Record<string, CameraMode> = {
 	stage: CameraMode.ORBIT,
 	gallery: CameraMode.THIRD_PERSON,
-	// worlds uses globalDefault (first-person)
+	realm: CameraMode.ORBIT, // Start in orbit to show welcome overlay, click enters third-person
 };
 
 /**

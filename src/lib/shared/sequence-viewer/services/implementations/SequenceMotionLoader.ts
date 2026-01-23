@@ -2,15 +2,15 @@
  * SequenceMotionLoader
  *
  * Ensures sequence data has motion information for animation playback.
- * Delegates to IDiscoverLoader for gallery-based sequence loading.
+ * Delegates to IExploreLoader for gallery-based sequence loading.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
 import type { ISequenceMotionLoader } from "../contracts/ISequenceMotionLoader";
 
 export class SequenceMotionLoader implements ISequenceMotionLoader {
-  constructor(private readonly discoverLoader: IDiscoverLoader) {}
+  constructor(private readonly exploreLoader: IExploreLoader) {}
 
   async ensureMotionData(seq: SequenceData): Promise<SequenceData | null> {
     // Check if sequence already has motion data
@@ -23,7 +23,7 @@ export class SequenceMotionLoader implements ISequenceMotionLoader {
     const galleryId = seq.word || seq.name;
     if (galleryId) {
       try {
-        const loaded = await this.discoverLoader.loadFullSequenceData(galleryId);
+        const loaded = await this.exploreLoader.loadFullSequenceData(galleryId);
         if (loaded?.steps?.some((b) => b?.motions?.blue && b?.motions?.red)) {
           return loaded;
         }

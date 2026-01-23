@@ -33,7 +33,7 @@ import {
 const LAST_SEEN_VERSION_KEY = "tka-last-seen-version";
 
 const MODULES_WITH_ONBOARDING = [
-  "discover",
+  "explore",
   "learn",
   "create",
   "compose",

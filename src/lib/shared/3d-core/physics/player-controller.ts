@@ -35,6 +35,7 @@ export function createPlayerController(
 		isGrounded: false,
 		groundNormal: { x: 0, y: 1, z: 0 },
 		velocity: { x: 0, y: 0, z: 0 },
+		noclipEnabled: false,
 	};
 
 	if (!physicsState.rapier || !physicsState.world) {
@@ -93,11 +94,38 @@ export function movePlayer(
 	desiredMovement: { x: number; y: number; z: number },
 	deltaTime: number,
 ): void {
+	if (!playerState.rigidBody) {
+		return;
+	}
+
+	// Noclip mode: bypass collision detection entirely
+	if (playerState.noclipEnabled) {
+		const currentPos = playerState.rigidBody.translation();
+		playerState.rigidBody.setNextKinematicTranslation({
+			x: currentPos.x + desiredMovement.x,
+			y: currentPos.y + desiredMovement.y,
+			z: currentPos.z + desiredMovement.z,
+		});
+
+		// In noclip, we're never grounded
+		playerState.isGrounded = false;
+
+		// Store velocity
+		if (deltaTime > 0) {
+			playerState.velocity = {
+				x: desiredMovement.x / deltaTime,
+				y: desiredMovement.y / deltaTime,
+				z: desiredMovement.z / deltaTime,
+			};
+		}
+		return;
+	}
+
+	// Normal mode: use character controller for collision detection
 	if (
 		!physicsState.world ||
 		!playerState.controller ||
-		!playerState.collider ||
-		!playerState.rigidBody
+		!playerState.collider
 	) {
 		return;
 	}
@@ -189,6 +217,27 @@ export function isPlayerGrounded(playerState: PlayerControllerState): boolean {
 	return playerState.isGrounded;
 }
 
+/**
+ * Toggle noclip mode (fly through terrain, no gravity)
+ */
+export function toggleNoclip(playerState: PlayerControllerState): boolean {
+	playerState.noclipEnabled = !playerState.noclipEnabled;
+	// Reset velocity when toggling to prevent momentum carryover
+	playerState.velocity = { x: 0, y: 0, z: 0 };
+	return playerState.noclipEnabled;
+}
+
+/**
+ * Set noclip mode explicitly
+ */
+export function setNoclip(playerState: PlayerControllerState, enabled: boolean): void {
+	playerState.noclipEnabled = enabled;
+	if (!enabled) {
+		// Reset velocity when disabling to prevent momentum carryover
+		playerState.velocity = { x: 0, y: 0, z: 0 };
+	}
+}
+
 // ============================================================================
 // GROUND SNAPPING
 // ============================================================================
@@ -238,17 +287,27 @@ export function snapToGround(
 
 /**
  * Dispose the player controller
+ *
+ * Uses try-catch to handle HMR scenarios where Rapier's WASM objects
+ * may already be freed before this cleanup runs.
  */
 export function disposePlayerController(
 	physicsState: PhysicsWorldState,
 	playerState: PlayerControllerState,
 ): void {
-	if (physicsState.world) {
-		if (playerState.controller) {
-			physicsState.world.removeCharacterController(playerState.controller);
+	try {
+		if (physicsState.world) {
+			if (playerState.controller) {
+				physicsState.world.removeCharacterController(playerState.controller);
+			}
+			if (playerState.rigidBody) {
+				physicsState.world.removeRigidBody(playerState.rigidBody);
+			}
 		}
-		if (playerState.rigidBody) {
-			physicsState.world.removeRigidBody(playerState.rigidBody);
+	} catch (e) {
+		// Rapier WASM objects may already be freed during HMR - this is expected
+		if (import.meta.hot) {
+			console.debug('[PlayerController] Rapier cleanup during HMR:', e);
 		}
 	}
 

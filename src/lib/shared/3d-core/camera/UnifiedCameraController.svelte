@@ -19,7 +19,7 @@
    */
   import { onMount, onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
-  import { Vector3 } from "three";
+  import { Vector3, Raycaster, Mesh } from "three";
   import { CameraMode, getNextCameraMode, isGameMode, type PhysicsProvider, type AvatarState } from "./types";
   import { cameraPreferences } from "./camera-preferences.svelte";
   import { SCALE } from "../scale/scale-constants";
@@ -76,7 +76,7 @@
   // Derived: are we using physics-based movement?
   const usePhysics = $derived(physicsProvider !== null);
 
-  const { renderer, camera } = useThrelte();
+  const { renderer, camera, scene } = useThrelte();
 
   // Current camera mode (from preferences)
   let mode = $state<CameraMode>(cameraPreferences.getModeForDestination(destinationId));
@@ -100,6 +100,9 @@
   // Vertical velocity (used by BOTH physics and kinematic paths for jumping)
   let verticalVelocity = 0;
 
+  // Noclip mode state (synced with physics provider)
+  let noclipEnabled = $state(false);
+
   // Scene bounds (used by kinematic path - physics uses colliders instead)
   const SCENE_BOUNDS = {
     minX: -50.0,  // 50 meters (large for exploration)
@@ -112,6 +115,16 @@
   // The physics position is the capsule CENTER, so feet are at (targetY - 0.85)
   const CAPSULE_HALF_EXTENT = 0.85;
 
+  // Raycaster for camera terrain collision (prevents camera clipping through terrain)
+  const cameraRaycaster = new Raycaster();
+  const rayOrigin = new Vector3();
+  const rayDirection = new Vector3();
+  const desiredCamPos = new Vector3();
+  // Minimum distance to keep camera from terrain surface (prevents near-plane clipping)
+  const CAMERA_COLLISION_OFFSET = 0.5;
+  // Minimum camera distance from player (so we don't get stuck inside the player)
+  const MIN_CAMERA_DISTANCE = 0.8;
+
   // Camera settings (all distances/heights in meters)
   // Orbit mode settings are in Scene3D.svelte's OrbitControls
   const SETTINGS = {
@@ -121,8 +134,8 @@
       distance: 3.0,        // 3 meters behind avatar
       height: 1.15,         // Camera 2m above feet = 2.0 - CAPSULE_HALF_EXTENT
       lookAtHeight: 0.35,   // Look at chest 1.2m above feet = 1.2 - CAPSULE_HALF_EXTENT
-      minPitch: -0.3,
-      maxPitch: 1.2,
+      minPitch: -1.2,       // Allow looking up ~69 degrees
+      maxPitch: 1.2,        // Allow looking down ~69 degrees
     },
     // First person
     firstPerson: {
@@ -159,6 +172,17 @@
     if (e.code === "KeyV") {
       e.preventDefault();
       cycleMode();
+      return;
+    }
+
+    // G key toggles noclip mode (fly through terrain)
+    if (e.code === "KeyG" && isGameMode(mode)) {
+      e.preventDefault();
+      if (usePhysics && physicsProvider?.toggleNoclip) {
+        noclipEnabled = physicsProvider.toggleNoclip();
+        // Reset vertical velocity when toggling noclip
+        verticalVelocity = 0;
+      }
       return;
     }
 
@@ -225,6 +249,9 @@
     if (isGameMode(mode) && !isPointerLocked) {
       isDragging = true;
       lastPointerPos = { x: e.clientX, y: e.clientY };
+
+      // Prevent default to stop browser scroll/zoom behaviors
+      e.preventDefault();
     }
   }
 
@@ -235,6 +262,25 @@
   function handlePointerMove(e: PointerEvent) {
     // Track pointer type changes (touch vs mouse)
     inputCaps.handlePointerEvent(e);
+
+    // Handle drag-to-look when dragging (works with touch simulation in DevTools)
+    if (!enabled) return;
+    if (mode === CameraMode.ORBIT) return;
+
+    if (isDragging && !isPointerLocked) {
+      // Prevent default to stop browser scroll/zoom behaviors
+      e.preventDefault();
+
+      const deltaX = e.clientX - lastPointerPos.x;
+      const deltaY = e.clientY - lastPointerPos.y;
+      lastPointerPos = { x: e.clientX, y: e.clientY };
+
+      yaw -= deltaX * SETTINGS.lookSensitivity;
+      pitch += deltaY * SETTINGS.lookSensitivity;
+
+      const config = mode === CameraMode.FIRST_PERSON ? SETTINGS.firstPerson : SETTINGS.thirdPerson;
+      pitch = Math.max(config.minPitch, Math.min(config.maxPitch, pitch));
+    }
   }
 
   function handlePointerLockChange() {
@@ -285,10 +331,11 @@
     canvas.addEventListener("wheel", handleWheel, { passive: false });
 
     // Pointer events for input type detection and drag-to-look
+    // pointerdown on canvas to start drag, but move/up on document to catch moves outside canvas
     canvas.addEventListener("pointerdown", handlePointerDown);
-    canvas.addEventListener("pointerup", handlePointerUp);
-    canvas.addEventListener("pointercancel", handlePointerUp);
-    canvas.addEventListener("pointermove", handlePointerMove);
+    document.addEventListener("pointerup", handlePointerUp);
+    document.addEventListener("pointercancel", handlePointerUp);
+    document.addEventListener("pointermove", handlePointerMove);
   });
 
   onDestroy(() => {
@@ -307,9 +354,9 @@
 
     // Cleanup pointer event listeners
     canvas?.removeEventListener("pointerdown", handlePointerDown);
-    canvas?.removeEventListener("pointerup", handlePointerUp);
-    canvas?.removeEventListener("pointercancel", handlePointerUp);
-    canvas?.removeEventListener("pointermove", handlePointerMove);
+    document.removeEventListener("pointerup", handlePointerUp);
+    document.removeEventListener("pointercancel", handlePointerUp);
+    document.removeEventListener("pointermove", handlePointerMove);
 
     if (document.pointerLockElement) {
       document.exitPointerLock();
@@ -388,18 +435,39 @@
     const cam = camera.current;
     const _forward = new Vector3();
     const _right = new Vector3();
+    const _forward3D = new Vector3(); // Full 3D forward for noclip
 
-    // Get right vector from camera's X-axis, then cross with up to get forward
-    // This keeps movement on XZ plane (no flying when looking up/down)
+    // Get right vector from camera's X-axis
     _right.setFromMatrixColumn(cam.matrix, 0);
+
+    // For normal movement: project forward onto XZ plane (no flying when looking up/down)
     _forward.crossVectors(cam.up, _right);
+
+    // For noclip: get the actual camera facing direction (includes pitch)
+    cam.getWorldDirection(_forward3D);
 
     // Calculate speed
     const speed = isSprinting ? moveSpeed * sprintMultiplier : moveSpeed;
 
-    // Build movement vector from camera-relative directions
-    let moveX = (_forward.x * forwardInput + _right.x * strafeInput) * speed * delta;
-    let moveZ = (_forward.z * forwardInput + _right.z * strafeInput) * speed * delta;
+    // Check noclip state early so we can use the right forward vector
+    const isNoclip = usePhysics && physicsProvider?.isNoclipEnabled?.() || false;
+
+    // Build movement vector - use 3D forward in noclip, XZ-projected forward otherwise
+    let moveX: number;
+    let moveY: number;
+    let moveZ: number;
+
+    if (isNoclip) {
+      // Noclip: fly in the direction you're looking (pitch affects vertical movement)
+      moveX = (_forward3D.x * forwardInput + _right.x * strafeInput) * speed * delta;
+      moveY = (_forward3D.y * forwardInput) * speed * delta; // Vertical from looking up/down
+      moveZ = (_forward3D.z * forwardInput + _right.z * strafeInput) * speed * delta;
+    } else {
+      // Normal: movement stays on XZ plane
+      moveX = (_forward.x * forwardInput + _right.x * strafeInput) * speed * delta;
+      moveY = 0; // Will be set by gravity/jump below
+      moveZ = (_forward.z * forwardInput + _right.z * strafeInput) * speed * delta;
+    }
 
     // Normalize diagonal movement to prevent faster diagonal speed
     const moveLen = Math.sqrt(moveX * moveX + moveZ * moveZ);
@@ -411,20 +479,26 @@
 
     // === APPLY MOVEMENT (differs by physics vs kinematic) ===
     if (usePhysics && physicsProvider) {
-        // Physics path: handle jumping and gravity
-        if (isJumping && physicsProvider.isGrounded() && verticalVelocity <= 0) {
-          verticalVelocity = jumpForce;
-        }
-        if (!physicsProvider.isGrounded()) {
-          verticalVelocity -= gravity * delta;
-          verticalVelocity = Math.max(verticalVelocity, SCALE.TERMINAL_VELOCITY);
-        } else if (verticalVelocity < 0) {
-          verticalVelocity = 0;
+        // Sync noclip state from physics provider
+        noclipEnabled = isNoclip;
+
+        if (!isNoclip) {
+          // Normal physics: handle jumping and gravity
+          if (isJumping && physicsProvider.isGrounded() && verticalVelocity <= 0) {
+            verticalVelocity = jumpForce;
+          }
+          if (!physicsProvider.isGrounded()) {
+            verticalVelocity -= gravity * delta;
+            verticalVelocity = Math.max(verticalVelocity, SCALE.TERMINAL_VELOCITY);
+          } else if (verticalVelocity < 0) {
+            verticalVelocity = 0;
+          }
+          moveY = verticalVelocity * delta;
         }
 
-        // Apply through physics provider (handles collisions)
+        // Apply through physics provider (handles collisions, or bypasses in noclip)
         physicsProvider.movePlayer(
-          { x: moveX, y: verticalVelocity * delta, z: moveZ },
+          { x: moveX, y: moveY, z: moveZ },
           delta
         );
 
@@ -510,14 +584,60 @@
         camera.current.lookAt(lookX, lookY, lookZ);
 
       } else {
-        // Third-person: camera behind avatar
+        // Third-person: camera behind avatar with terrain collision
         const cfg = SETTINGS.thirdPerson;
         const cosPitch = Math.cos(pitch);
-        const camX = targetX - Math.sin(yaw) * cfg.distance * cosPitch;
-        const camY = targetY + cfg.height + Math.sin(pitch) * cfg.distance * 0.5;
-        const camZ = targetZ - Math.cos(yaw) * cfg.distance * cosPitch;
 
-        camera.current.position.set(camX, camY, camZ);
+        // Calculate desired camera position
+        const desiredCamX = targetX - Math.sin(yaw) * cfg.distance * cosPitch;
+        const desiredCamY = targetY + cfg.height + Math.sin(pitch) * cfg.distance * 0.5;
+        const desiredCamZ = targetZ - Math.cos(yaw) * cfg.distance * cosPitch;
+
+        let finalCamX = desiredCamX;
+        let finalCamY = desiredCamY;
+        let finalCamZ = desiredCamZ;
+
+        // Raycast from player to desired camera position to detect terrain collision
+        if (scene) {
+          // Start ray from player's head area (slightly above center)
+          rayOrigin.set(targetX, targetY + cfg.lookAtHeight, targetZ);
+          desiredCamPos.set(desiredCamX, desiredCamY, desiredCamZ);
+
+          // Direction from player to camera
+          rayDirection.subVectors(desiredCamPos, rayOrigin).normalize();
+          const distanceToCamera = rayOrigin.distanceTo(desiredCamPos);
+
+          cameraRaycaster.set(rayOrigin, rayDirection);
+          cameraRaycaster.far = distanceToCamera;
+
+          // Raycast against all meshes in the scene
+          const intersects = cameraRaycaster.intersectObjects(scene.children, true);
+
+          // Find first terrain/solid mesh intersection (ignore non-physical objects)
+          for (const intersection of intersects) {
+            if (intersection.object instanceof Mesh && intersection.object.visible) {
+              // Don't collide with the avatar itself
+              const objName = intersection.object.name || "";
+              const parentName = intersection.object.parent?.name || "";
+              if (objName.includes("avatar") || parentName.includes("avatar") ||
+                  objName.includes("Avatar") || parentName.includes("Avatar")) {
+                continue;
+              }
+
+              // Hit terrain - move camera closer to avoid clipping
+              const hitDistance = intersection.distance;
+              const safeDistance = Math.max(hitDistance - CAMERA_COLLISION_OFFSET, MIN_CAMERA_DISTANCE);
+
+              // Calculate the safe camera position along the ray
+              finalCamX = rayOrigin.x + rayDirection.x * safeDistance;
+              finalCamY = rayOrigin.y + rayDirection.y * safeDistance;
+              finalCamZ = rayOrigin.z + rayDirection.z * safeDistance;
+              break;
+            }
+          }
+        }
+
+        camera.current.position.set(finalCamX, finalCamY, finalCamZ);
         camera.current.lookAt(targetX, targetY + cfg.lookAtHeight, targetZ);
       }
   });
@@ -574,7 +694,10 @@
   <div class="mode-indicator">
     <i class="fas {modeIcon}"></i>
     <span>{modeLabel}</span>
-    <span class="hint">V to switch • ESC to exit</span>
+    {#if noclipEnabled}
+      <span class="noclip-badge">FLY</span>
+    {/if}
+    <span class="hint">V to switch • G fly • ESC to exit</span>
   </div>
 {/if}
 
@@ -641,5 +764,16 @@
     margin-left: 0.5rem;
     font-size: 11px;
     color: rgba(255, 255, 255, 0.5);
+  }
+
+  .noclip-badge {
+    padding: 2px 6px;
+    background: rgba(245, 158, 11, 0.3);
+    border: 1px solid rgba(245, 158, 11, 0.6);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fcd34d;
+    letter-spacing: 0.5px;
   }
 </style>

@@ -116,7 +116,7 @@
 
     return {
       type: "sequence",
-      url: `/discover?sequence=${sequence.id}`,
+      url: `/explore?sequence=${sequence.id}`,
       thumbnailUrl: thumbnailUrl || "",
       metadata,
     };

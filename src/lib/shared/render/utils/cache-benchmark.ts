@@ -293,12 +293,12 @@ async function runPass(
 }
 
 /**
- * Load real sequences from the discover index using DiscoverLoader
+ * Load real sequences from the discover index using ExploreLoader
  */
 async function loadRealSequences(count: number): Promise<SequenceData[]> {
   try {
     const { container } = await import("$lib/shared/di");
-    const discoverLoader = container.items.discoverLoader as {
+    const exploreLoader = container.items.exploreLoader as {
       loadSequenceMetadata: () => Promise<SequenceData[]>;
       loadFullSequenceData: (name: string) => Promise<SequenceData | null>;
     };
@@ -306,7 +306,7 @@ async function loadRealSequences(count: number): Promise<SequenceData[]> {
     // Ensure sequences are loaded first (populates the cache)
     console.log("[CacheBenchmark] Loading sequence metadata...");
     try {
-      await discoverLoader.loadSequenceMetadata();
+      await exploreLoader.loadSequenceMetadata();
       console.log("[CacheBenchmark] ✓ Index loaded");
     } catch (indexErr) {
       const msg = indexErr instanceof Error ? indexErr.message : String(indexErr);
@@ -338,7 +338,7 @@ async function loadRealSequences(count: number): Promise<SequenceData[]> {
 
       loadAttempts++;
       try {
-        const fullSeq = await discoverLoader.loadFullSequenceData(name);
+        const fullSeq = await exploreLoader.loadFullSequenceData(name);
         if (fullSeq && fullSeq.steps && fullSeq.steps.length > 0) {
           // Just accept sequences with steps - the renderer will show what works
           loadedSequences.push(fullSeq);

@@ -50,7 +50,7 @@
 
   import type { IDeepLinker } from "./navigation/services/contracts/IDeepLinker";
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
-  import { discoverScrollState } from "../features/discover/shared/state/DiscoverScrollState.svelte";
+  import { exploreScrollState } from "../features/explore/shared/state/ExploreScrollState.svelte";
   import type { IViewportManager } from "./device/services/contracts/IViewportManager";
   import { container } from "./di";
   import type { IDeviceDetector } from "./device/services/contracts/IDeviceDetector";
@@ -100,8 +100,8 @@
   // Primary navigation visibility - hide during Discover module scroll
   const isPrimaryNavVisible = $derived(() => {
     const module = currentModule();
-    if (module === "discover") {
-      return discoverScrollState.isUIVisible;
+    if (module === "explore") {
+      return exploreScrollState.isUIVisible;
     }
     return true;
   });
@@ -123,7 +123,7 @@
 
   // Handle reveal navigation from peek indicator
   function handleRevealNav() {
-    discoverScrollState.forceShowUI();
+    exploreScrollState.forceShowUI();
   }
 
 

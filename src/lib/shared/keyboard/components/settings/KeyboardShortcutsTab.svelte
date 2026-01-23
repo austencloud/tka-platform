@@ -49,7 +49,7 @@
     { context: "global", label: "Global", icon: "fa-globe" },
     { context: "create", label: "Create", icon: "fa-plus-circle" },
     { context: "edit-panel", label: "Edit Panel", icon: "fa-pen" },
-    { context: "discover", label: "Discover", icon: "fa-compass" },
+    { context: "explore", label: "Discover", icon: "fa-compass" },
     { context: "compose", label: "Compose", icon: "fa-music" },
     { context: "learn", label: "Learn", icon: "fa-graduation-cap" },
     { context: "realm", label: "Realm", icon: "fa-vr-cardboard" },

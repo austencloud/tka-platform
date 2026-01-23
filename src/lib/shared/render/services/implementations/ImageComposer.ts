@@ -18,7 +18,7 @@ import { getVisibilityStateManager } from "../../../pictograph/shared/state/visi
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
-import { SequenceDifficultyCalculator } from "$lib/features/discover/sequences/display/services/implementations/SequenceDifficultyCalculator";
+import { SequenceDifficultyCalculator } from "$lib/features/explore/sequences/display/services/implementations/SequenceDifficultyCalculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
 import type { IDimensionCalculator } from "../contracts/IDimensionCalculator";
 import type {
