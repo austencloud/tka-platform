@@ -1,14 +1,22 @@
 /**
  * Orientation Propagation for MCP Server
  *
- * Functions for propagating prop orientations through a sequence.
- * Ensures orientation chain integrity after sequence building.
- *
- * Ported from: src/lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation.ts
+ * Thin wrapper around the shared OrientationPropagator implementation.
+ * Maintains backward compatibility with existing MCP code.
  */
 
-import { calculateEndOrientation, Orientation, type OrientationInput } from "./orientation-calculator.js";
+import {
+  OrientationCalculator,
+  OrientationPropagator,
+  calculateEndOrientation as sharedCalculateEndOrientation,
+} from "../../../src/lib/shared/sequence-engine/services/implementations/OrientationPropagator.js";
+import type { Orientation } from "../../../src/lib/shared/sequence-engine/domain/models/SequenceEngineTypes.js";
+import { calculateEndOrientation as mcpCalculateEndOrientation, Orientation as McpOrientation } from "./orientation-calculator.js";
 import type { SequenceStep, SequenceResult } from "./sequence-builder.js";
+
+// Create shared instances
+const calculator = new OrientationCalculator();
+const propagator = new OrientationPropagator(calculator);
 
 /**
  * Propagate orientations for a single color through all steps.
@@ -22,7 +30,7 @@ import type { SequenceStep, SequenceResult } from "./sequence-builder.js";
 export function propagateOrientationsForColor(
   steps: SequenceStep[],
   color: "blue" | "red",
-  initialOrientation: Orientation
+  initialOrientation: McpOrientation
 ): SequenceStep[] {
   const updatedSteps = [...steps];
   let previousEndOrientation = initialOrientation;
@@ -35,18 +43,15 @@ export function propagateOrientationsForColor(
     const motion = color === "blue" ? step.blueMotion : step.redMotion;
     if (!motion) continue;
 
-    // Build input for orientation calculation
-    const orientationInput: OrientationInput = {
+    // Calculate new end orientation based on this beat's motion
+    const newEndOrientation = mcpCalculateEndOrientation({
       motionType: motion.motionType,
       turns: 0, // CSV variations are all 0 turns
       rotationDirection: motion.rotationDirection || "cw",
       startLocation: motion.startLocation,
       endLocation: motion.endLocation,
       startOrientation: previousEndOrientation,
-    };
-
-    // Calculate new end orientation based on this beat's motion
-    const newEndOrientation = calculateEndOrientation(orientationInput);
+    });
 
     // Update this step with correct orientations
     const updatedMotion = {
@@ -89,11 +94,11 @@ export function recalculateAllOrientations(result: SequenceResult): SequenceResu
 
   // Recalculate orientations for blue prop
   // Start with the end orientation of the start position
-  const blueStartOrientation = (startPosition.blueMotion.endOrientation || "in") as Orientation;
+  const blueStartOrientation = (startPosition.blueMotion.endOrientation || "in") as McpOrientation;
   updatedSteps = propagateOrientationsForColor(updatedSteps, "blue", blueStartOrientation);
 
   // Recalculate orientations for red prop
-  const redStartOrientation = (startPosition.redMotion.endOrientation || "in") as Orientation;
+  const redStartOrientation = (startPosition.redMotion.endOrientation || "in") as McpOrientation;
   updatedSteps = propagateOrientationsForColor(updatedSteps, "red", redStartOrientation);
 
   return {
@@ -101,3 +106,6 @@ export function recalculateAllOrientations(result: SequenceResult): SequenceResu
     steps: updatedSteps,
   };
 }
+
+// Re-export the shared calculator for direct use
+export { calculateEndOrientation } from "./orientation-calculator.js";
