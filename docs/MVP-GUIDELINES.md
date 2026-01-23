@@ -35,7 +35,7 @@ The MVP enables users to **create, save, navigate, and share sequences** in anim
 | ML Training | Tester        | Data collection tool            |
 | Admin       | Admin         | System management               |
 | 3D Viewer   | Admin         | Experimental                    |
-| Word Card   | Admin         | Internal tool                   |
+| Choreo Card   | Admin         | Internal tool                   |
 | Write       | Admin         | Internal tool                   |
 | Spell Tab   | Admin         | Create tab not ready for users  |
 
