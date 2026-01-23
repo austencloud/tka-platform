@@ -75,8 +75,8 @@ export function registerCreateShortcuts(
 
       const { panelState } = ref;
 
-      // Check if any animation panel is open (Animation Panel OR Share Hub)
-      if (panelState.isAnimationPanelOpen || panelState.isShareHubPanelOpen) {
+      // Check if any animation panel is open (Animation Panel, Share Hub, or Sequence Details Modal)
+      if (panelState.isAnimationPanelOpen || panelState.isShareHubPanelOpen || panelState.isSequenceDetailsModalOpen) {
         // Animation is visible - toggle play/pause
         const playbackController = getAnimationPlaybackRef();
         if (playbackController) {
@@ -86,33 +86,37 @@ export function registerCreateShortcuts(
         // No animation panel open - check if we have a sequence first
         const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
         if (sequenceState?.hasSequence()) {
-          // Open ShareHub with animation format - this is where animation viewer lives in Create module
-          panelState.openShareHubPanel("animation");
+          // Open the unified Sequence Details Modal (full-screen with animation + image views)
+          panelState.openSequenceDetailsModal();
         }
       }
     },
   });
 
-  // Escape - Close Share Hub panel
+  // Escape - Close Share Hub panel or Sequence Details Modal
   service.register({
     id: "create.close-share-hub",
-    label: "Close Share Hub",
-    description: "Close the Share Hub panel",
+    label: "Close Panel",
+    description: "Close the Share Hub panel or Sequence Details Modal",
     key: "Escape",
     modifiers: [],
     context: ["create", "share-hub"], // Works in both contexts
     scope: "animation",
     priority: "high",
     condition: () => {
-      // Only when Share Hub panel is open
+      // Only when Share Hub panel or Sequence Details Modal is open
       const ref = getCreateModuleRef();
-      return ref?.panelState.isShareHubPanelOpen ?? false;
+      return (ref?.panelState.isShareHubPanelOpen || ref?.panelState.isSequenceDetailsModalOpen) ?? false;
     },
     action: () => {
       const ref = getCreateModuleRef();
       if (!ref) return;
 
-      ref.panelState.closeShareHubPanel();
+      if (ref.panelState.isSequenceDetailsModalOpen) {
+        ref.panelState.closeSequenceDetailsModal();
+      } else if (ref.panelState.isShareHubPanelOpen) {
+        ref.panelState.closeShareHubPanel();
+      }
     },
   });
 

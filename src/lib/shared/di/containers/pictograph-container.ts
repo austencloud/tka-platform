@@ -396,6 +396,23 @@ if (typeof window === 'undefined') {
 export { pictographContainer };
 
 // ============================================================================
+// CACHE MANAGEMENT
+// ============================================================================
+
+/**
+ * Clear all pictograph-related caches.
+ * Useful when SVG content or color logic has changed.
+ */
+export function clearPictographCaches(): void {
+  arrowSvgLoader.clearCache();
+  propSvgLoader.clearCache();
+  // Also clear the preparer cache if container is initialized
+  if (typeof window !== 'undefined' && pictographContainer?.items?.pictographPreparer) {
+    pictographContainer.items.pictographPreparer.clearCache();
+  }
+}
+
+// ============================================================================
 // TYPE EXPORTS
 // ============================================================================
 

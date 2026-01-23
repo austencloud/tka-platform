@@ -62,7 +62,28 @@ class ImageCompositionStateManager {
   constructor() {
     if (browser) {
       this.loadSettings();
+      // Stay in sync with global dark mode changes
+      this.syncWithAnimationVisibility();
     }
+  }
+
+  /**
+   * Register as observer of AnimationVisibilityManager to stay in sync with global dark mode.
+   * This ensures the image export preview matches the animation preview.
+   */
+  private syncWithAnimationVisibility(): void {
+    const animVisibilityManager = getAnimationVisibilityManager();
+    // Sync initial state
+    this.settings.darkMode = animVisibilityManager.isDarkMode();
+    // Register for updates
+    animVisibilityManager.registerObserver(() => {
+      const newDarkMode = animVisibilityManager.isDarkMode();
+      if (this.settings.darkMode !== newDarkMode) {
+        this.settings.darkMode = newDarkMode;
+        this.saveToStorage();
+        this.notifyObservers();
+      }
+    });
   }
 
   /**
@@ -79,12 +100,7 @@ class ImageCompositionStateManager {
       // Fall back to localStorage for guests or if no Firebase settings exist
       this.loadFromStorage();
     }
-
-    // Sync dark mode from global settings if not previously set
-    if (this.settings.darkMode === DEFAULT_SETTINGS.darkMode) {
-      const animVisibilityManager = getAnimationVisibilityManager();
-      this.settings.darkMode = animVisibilityManager.isDarkMode();
-    }
+    // Note: darkMode is synced from AnimationVisibilityManager in syncWithAnimationVisibility()
   }
 
   private loadFromStorage(): void {

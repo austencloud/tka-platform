@@ -338,7 +338,8 @@ Last audit: 2025-12-27
   .canvas-wrapper :global(canvas) {
     /* Background is drawn via JavaScript fillRect for smooth transitions */
     /* CSS background is only a fallback before first render */
-    background: var(--canvas-bg, #ffffff);
+    /* Uses off-white (#f5f5f5) to reduce eye strain in light mode */
+    background: var(--canvas-bg, #f5f5f5);
     display: block;
     width: 100%;
     height: 100%;

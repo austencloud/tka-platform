@@ -66,7 +66,23 @@ export class SwipeToDismiss {
   // so swipe gestures should dismiss the top drawer instead
   private delegatingToTopDrawer = false;
 
+  // Disabled flag: when true, all gesture handling is blocked
+  // Used during open/close animations to prevent conflicts
+  private disabled = false;
+
   constructor(private options: SwipeToDismissOptions) {}
+
+  /**
+   * Temporarily disable gesture handling (e.g., during animations)
+   */
+  setDisabled(disabled: boolean) {
+    this.disabled = disabled;
+    if (disabled && this.isDragging) {
+      // Cancel any in-progress drag
+      this.isDragging = false;
+      this.options.onDragChange?.(0, 1, false);
+    }
+  }
 
   /**
    * Find the nearest scrollable ancestor from the touch target
@@ -246,6 +262,12 @@ export class SwipeToDismiss {
 
   private handleTouchStart(event: TouchEvent | MouseEvent) {
     debug.log(`handleTouchStart for drawer: ${this.options.drawerId}`);
+
+    // Block gestures when disabled (e.g., during opening animation)
+    if (this.disabled) {
+      debug.log("blocked: disabled during animation");
+      return;
+    }
 
     if (!this.options.dismissible) {
       debug.log("blocked: not dismissible");

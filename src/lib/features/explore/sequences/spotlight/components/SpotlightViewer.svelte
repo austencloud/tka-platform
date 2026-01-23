@@ -1,14 +1,24 @@
-<!-- SpotlightViewer.svelte - Fullscreen viewer for images, beat grids, or animations -->
+<!-- SpotlightViewer.svelte - Fullscreen viewer for images, beat grids, animations, or split view -->
 <script lang="ts">
   import { browser } from "$app/environment";
   import { onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IExploreThumbnailProvider } from "../../display/services/contracts/IExploreThumbnailProvider";
   import type { SpotlightDisplayMode } from "$lib/shared/application/state/ui/ui-state.svelte";
+  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import AnimationPlayer from "$lib/shared/sequence-viewer/components/AnimationPlayer.svelte";
+  import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import LayeredSequencePreview from "$lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte";
+  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
+  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
   import PropAwareThumbnail from "../../display/components/PropAwareThumbnail.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { createAnimationPanelState, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import { container } from "$lib/shared/di";
+  import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
   const {
@@ -51,8 +61,188 @@
 
   visibilityManager.registerObserver(handleVisibilityChange);
 
+  // ========================
+  // Split mode state
+  // ========================
+  let splitAnimationState = displayMode === "split" ? createAnimationPanelState() : null;
+  let splitPlaybackController: IAnimationPlaybackController | null = null;
+  let splitSequenceRepository: ISequenceRepository | null = null;
+  let splitAnimationReady = $state(false);
+  let splitAnimationLoading = $state(false);
+  let splitLastLoadedId: string | null = null;
+
+  // Local reactive state for split mode animation
+  let splitIsPlaying = $state(false);
+  let splitCurrentStep = $state(0);
+  let splitBpm = $state(60);
+  let cleanupSplitStateSubscription: (() => void) | undefined;
+
+  // Step highlighting for LayeredSequencePreview in split mode
+  let splitHighlightedIndex = $derived.by(() => {
+    if (!splitIsPlaying || splitCurrentStep < 1) return null;
+    return Math.floor(splitCurrentStep) - 1;
+  });
+
+  // Controls visibility for split mode (tap to show, auto-hide)
+  let splitControlsVisible = $state(false);
+  let splitControlsHideTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function showSplitControls() {
+    splitControlsVisible = true;
+    scheduleSplitControlsHide();
+  }
+
+  function scheduleSplitControlsHide() {
+    if (splitControlsHideTimeout) clearTimeout(splitControlsHideTimeout);
+    splitControlsHideTimeout = setTimeout(() => {
+      splitControlsVisible = false;
+      splitControlsHideTimeout = null;
+    }, 3000);
+  }
+
+  function handleSplitControlInteraction() {
+    scheduleSplitControlsHide();
+  }
+
+  // Initialize split mode animation services
+  async function initializeSplitMode() {
+    if (!sequence || displayMode !== "split") return;
+
+    try {
+      splitPlaybackController = container.items.animationPlaybackController;
+      splitSequenceRepository = container.items.sequenceRepository;
+
+      if (!splitAnimationState) {
+        splitAnimationState = createAnimationPanelState();
+      }
+
+      // Subscribe to animation state changes
+      cleanupSplitStateSubscription = splitAnimationState.subscribe(
+        (key: AnimationStateKey, value: unknown) => {
+          switch (key) {
+            case "isPlaying":
+              splitIsPlaying = value as boolean;
+              break;
+            case "currentStep":
+              splitCurrentStep = value as number;
+              break;
+            case "speed":
+              splitBpm = Math.round((value as number) * 60);
+              break;
+          }
+        }
+      );
+
+      await loadSplitAnimation(sequence);
+    } catch (error) {
+      console.error("[SpotlightViewer] Failed to initialize split mode:", error);
+    }
+  }
+
+  async function loadSplitAnimation(seq: SequenceData) {
+    if (!splitPlaybackController || !splitAnimationState) return;
+
+    const sequenceId = seq.id || seq.word || "unknown";
+    if (sequenceId === splitLastLoadedId) return;
+
+    splitAnimationLoading = true;
+    splitAnimationState.setLoading(true);
+
+    try {
+      // Try to get hydrated sequence data
+      let loadedSequence = seq;
+
+      const hasMotionData = (s: SequenceData) =>
+        Array.isArray(s.steps) &&
+        s.steps.length > 0 &&
+        s.steps.some((step) => step?.motions?.blue && step?.motions?.red);
+
+      if (!hasMotionData(seq) && splitSequenceRepository) {
+        const galleryId = seq.word || seq.name;
+        if (galleryId) {
+          const hydrated = await splitSequenceRepository.getSequence(galleryId);
+          if (hydrated && hasMotionData(hydrated)) {
+            loadedSequence = hydrated;
+          }
+        }
+      }
+
+      // Ensure word is populated
+      if (!loadedSequence.word) {
+        const derivedWord = loadedSequence.steps
+          ?.filter((step) => !!step.letter)
+          .map((step) => step.letter)
+          .join("") || "";
+        if (derivedWord) {
+          loadedSequence = { ...loadedSequence, word: derivedWord };
+        }
+      }
+
+      splitAnimationState.setShouldLoop(true);
+      const success = splitPlaybackController.initialize(loadedSequence, splitAnimationState);
+      if (!success) throw new Error("Failed to initialize playback");
+
+      setAnimationPlaybackRef(splitPlaybackController);
+      splitLastLoadedId = sequenceId;
+      splitAnimationState.setSequenceData(loadedSequence);
+      splitAnimationReady = true;
+
+      // Auto-start after brief delay
+      setTimeout(() => {
+        splitPlaybackController?.togglePlayback();
+      }, 300);
+    } catch (err) {
+      console.warn("[SpotlightViewer] Split animation not available:", err);
+      splitAnimationState?.setError("Animation data not available");
+    } finally {
+      splitAnimationLoading = false;
+      splitAnimationState?.setLoading(false);
+    }
+  }
+
+  function handleSplitPlaybackToggle() {
+    splitPlaybackController?.togglePlayback();
+  }
+
+  function handleSplitBpmChange(newBpm: number) {
+    const speedMultiplier = newBpm / 60;
+    splitPlaybackController?.setSpeed(speedMultiplier);
+  }
+
+  function handleSplitStepClick(stepIndex: number) {
+    if (splitPlaybackController && splitAnimationState) {
+      const targetStep = stepIndex + 1;
+      splitAnimationState.setCurrentStep(targetStep);
+      splitPlaybackController.jumpToStep(targetStep);
+    }
+  }
+
+  // Cleanup split mode resources
+  function cleanupSplitMode() {
+    cleanupSplitStateSubscription?.();
+    if (splitPlaybackController) {
+      splitPlaybackController.dispose();
+      splitPlaybackController = null;
+    }
+    if (splitAnimationState) {
+      splitAnimationState.dispose();
+      splitAnimationState = null;
+    }
+    setAnimationPlaybackRef(null);
+    splitAnimationReady = false;
+    splitLastLoadedId = null;
+    splitIsPlaying = false;
+    splitCurrentStep = 0;
+    splitControlsVisible = false;
+    if (splitControlsHideTimeout) {
+      clearTimeout(splitControlsHideTimeout);
+      splitControlsHideTimeout = null;
+    }
+  }
+
   onDestroy(() => {
     visibilityManager.unregisterObserver(handleVisibilityChange);
+    cleanupSplitMode();
   });
 
   // Persist column preference to localStorage (device-specific)
@@ -87,6 +277,11 @@
       try {
         document.documentElement.classList.add("tka-no-select");
       } catch {}
+
+      // Initialize split mode if needed
+      if (displayMode === "split" && sequence) {
+        initializeSplitMode();
+      }
     }
   });
 
@@ -239,6 +434,11 @@
       videoElement.pause();
     }
 
+    // Cleanup split mode
+    if (displayMode === "split") {
+      cleanupSplitMode();
+    }
+
     // Wait for animation
     setTimeout(() => {
       isVisible = false;
@@ -285,12 +485,12 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if isVisible && (sequence || videoUrl)}
-  <!-- Fullscreen overlay - clicking anywhere closes (except animation mode) -->
+  <!-- Fullscreen overlay - clicking anywhere closes (except animation, video, split modes) -->
   <div
     bind:this={_spotlightElement}
     class="spotlight"
     class:closing={isClosing}
-    onclick={displayMode !== "animation" && displayMode !== "video" ? handleClose : undefined}
+    onclick={displayMode !== "animation" && displayMode !== "video" && displayMode !== "split" ? handleClose : undefined}
     onkeydown={handleDialogKeydown}
     role="dialog"
     aria-modal="true"
@@ -467,6 +667,97 @@
               {colCount} columns
             </button>
           {/each}
+        </div>
+      {/if}
+    {:else if displayMode === "split" && sequence}
+      <!-- Split mode: Animation + LayeredSequencePreview side by side -->
+      <div
+        class="spotlight-split"
+        onclick={() => { if (!splitControlsVisible) showSplitControls(); }}
+        role="presentation"
+      >
+        <div class="split-pane animation-pane">
+          {#if splitAnimationLoading}
+            <div class="loading-state">
+              <div class="spinner"></div>
+            </div>
+          {:else if splitAnimationState?.error}
+            <div class="error-state">
+              <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+              <span>{splitAnimationState.error}</span>
+            </div>
+          {:else if splitAnimationReady && splitAnimationState}
+            <AnimatorCanvas
+              sequenceData={splitAnimationState.sequenceData}
+              currentStep={splitCurrentStep}
+              isPlaying={splitIsPlaying}
+              blueProp={splitAnimationState.bluePropState}
+              redProp={splitAnimationState.redPropState}
+              gridMode={sequence?.gridMode}
+            />
+          {/if}
+        </div>
+        <div class="split-pane preview-pane">
+          <LayeredSequencePreview
+            {sequence}
+            highlightedStepIndex={splitHighlightedIndex}
+            showHighlight={splitIsPlaying}
+            onStepClick={handleSplitStepClick}
+            showWord={true}
+            showStepNumbers={true}
+            showDifficultyLevel={true}
+            includeStartPosition={true}
+            showCreatorName={true}
+            showNotes={true}
+            showBirthday={true}
+            showLoopGlyph={true}
+            darkMode={!lightMode}
+            userName={authState.user?.displayName || ""}
+          />
+        </div>
+      </div>
+
+      <!-- Split mode controls (tap to show, auto-hide) -->
+      {#if splitControlsVisible}
+        <div class="split-controls" onclick={(e) => { e.stopPropagation(); handleSplitControlInteraction(); }}>
+          <!-- Close button -->
+          <button
+            class="close-button"
+            onclick={handleClose}
+            aria-label="Close fullscreen view"
+            title="Close (Escape)"
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+
+          <!-- Transport controls at bottom -->
+          <div class="split-transport">
+            <TransportControls
+              isPlaying={splitIsPlaying}
+              onPlaybackToggle={handleSplitPlaybackToggle}
+              onStepHalfBeatBackward={() => splitPlaybackController?.stepHalfBeatBackward()}
+              onStepHalfBeatForward={() => splitPlaybackController?.stepHalfBeatForward()}
+              onStepFullBeatBackward={() => splitPlaybackController?.stepFullBeatBackward()}
+              onStepFullBeatForward={() => splitPlaybackController?.stepFullBeatForward()}
+            />
+            <BpmChips
+              bpm={splitBpm}
+              variant="compact"
+              onBpmChange={handleSplitBpmChange}
+            />
+          </div>
         </div>
       {/if}
     {:else}
@@ -668,6 +959,109 @@
     padding: 16px;
     /* Animation controls need pointer events */
     pointer-events: auto;
+  }
+
+  /* Split mode container - side-by-side animation and preview */
+  .spotlight-split {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    box-sizing: border-box;
+    pointer-events: auto;
+    cursor: default;
+    gap: 2px;
+  }
+
+  .split-pane {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    /* Unified background - matches what the exported GIF/MP4 will look like */
+    background: #000;
+  }
+
+  .split-pane > :global(*) {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  /* Split mode controls overlay */
+  .split-controls {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 24px;
+    pointer-events: none;
+    animation: fadeIn 0.2s ease;
+    z-index: 10001;
+  }
+
+  .split-controls > * {
+    pointer-events: auto;
+  }
+
+  .split-transport {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Loading/error states for split mode */
+  .loading-state,
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .error-state {
+    color: var(--semantic-error, #f87171);
+  }
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-top-color: var(--theme-accent, #6366f1);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Mobile: stack split view vertically */
+  @media (max-width: 767px) {
+    .spotlight-split {
+      flex-direction: column;
+    }
+
+    .split-pane {
+      flex: 1;
+      min-height: 0;
+    }
   }
 
   /* Close button for animation mode */

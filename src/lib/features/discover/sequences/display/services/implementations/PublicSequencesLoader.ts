@@ -99,6 +99,41 @@ export class PublicSequencesLoader implements IDiscoverLoader {
     this.sourceRefCache.clear();
   }
 
+  /**
+   * Load a sequence by its document ID (for deep linking)
+   * Does NOT require metadata to be loaded first.
+   */
+  async loadSequenceById(sequenceId: string): Promise<SequenceData | null> {
+    const firestore = await getFirestoreInstance();
+
+    try {
+      // First, check if this ID exists in the publicSequences collection
+      const publicDoc = await getDoc(doc(firestore, `publicSequences/${sequenceId}`));
+      if (!publicDoc.exists()) {
+        console.warn(`[PublicSequencesLoader] No public sequence found for ID: ${sequenceId}`);
+        return null;
+      }
+
+      const data = publicDoc.data() as PublicSequenceIndex;
+      if (!data.sourceRef) {
+        console.warn(`[PublicSequencesLoader] Public sequence ${sequenceId} has no sourceRef`);
+        return null;
+      }
+
+      // Fetch full data from the source reference
+      const fullDoc = await getDoc(doc(firestore, data.sourceRef));
+      if (!fullDoc.exists()) {
+        console.warn(`[PublicSequencesLoader] Source sequence not found: ${data.sourceRef}`);
+        return null;
+      }
+
+      return this.mapFirestoreToSequenceData(fullDoc.data(), fullDoc.id);
+    } catch (error) {
+      console.error(`[PublicSequencesLoader] Failed to load sequence by ID:`, error);
+      return null;
+    }
+  }
+
   private async fetchPublicSequences(): Promise<SequenceData[]> {
     const firestore = await getFirestoreInstance();
     const publicSeqRef = collection(firestore, getPublicSequencesPath());

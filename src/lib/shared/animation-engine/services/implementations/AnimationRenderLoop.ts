@@ -7,7 +7,7 @@
 
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
-import type { TrailPoint } from "../../domain/types/TrailTypes";
+import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
 import { TrailMode } from "../../domain/types/TrailTypes";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
 import type {
@@ -25,6 +25,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private needsRender: boolean = false;
   private getFrameParamsCallback: (() => RenderFrameParams) | null = null;
   private isDisposed: boolean = false; // Prevent RAF from continuing after disposal
+
+  // Loop detection for cache-based trail gathering
+  // Tracks when the animation loops to prevent trail artifacts
+  private previousStep: number = 0;
+  private loopOccurredAtStep: number | null = null;
 
   // CRITICAL: Reusable arrays to prevent GC pressure on mobile
   // These are reused every frame instead of allocating new arrays
@@ -61,6 +66,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.rafId = null;
     }
     this.getFrameParamsCallback = null;
+    // Reset loop tracking on stop
+    this.previousStep = 0;
+    this.loopOccurredAtStep = null;
   }
 
   isRunning(): boolean {
@@ -183,7 +191,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       blueMotion && redMotion ? `${blueMotion.turns}${redMotion.turns}` : null;
 
     // Gather trail points
-    const trailPoints = this.gatherTrailPoints(currentStep);
+    const trailPoints = this.gatherTrailPoints(currentStep, trailSettings);
 
     // Apply visibility settings
     const effectiveGridVisible = gridVisible && visibility.gridVisible;
@@ -245,7 +253,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     });
   }
 
-  private gatherTrailPoints(currentStep: number): {
+  private gatherTrailPoints(
+    currentStep: number,
+    trailSettings: TrailSettings
+  ): {
     blue: TrailPoint[];
     red: TrailPoint[];
     secondaryBlue: TrailPoint[];
@@ -258,9 +269,46 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.reusableSecondaryBlueTrailPoints.length = 0;
     this.reusableSecondaryRedTrailPoints.length = 0;
 
+    // Detect animation loop (currentStep jumps backward significantly)
+    // This happens when the sequence repeats from the beginning
+    const LOOP_DETECTION_THRESHOLD = 0.5; // steps
+    if (this.previousStep - currentStep > LOOP_DETECTION_THRESHOLD) {
+      // Animation looped - record where the loop occurred
+      this.loopOccurredAtStep = currentStep;
+    }
+    this.previousStep = currentStep;
+
     // Use cache for perfect gap-free trails (if available and valid)
-    if (this.pathCache && this.pathCache.isValid() && currentStep !== null) {
+    const usingCache = this.pathCache && this.pathCache.isValid() && currentStep !== null;
+    if (usingCache) {
       const scaleFactor = this.canvasSize / 950;
+
+      // Calculate startStep based on trail mode
+      // In FADE mode, we only want points within the fade duration window
+      // Otherwise, start from 0 (show entire trail history)
+      let startStep = 0;
+      if (trailSettings.mode === TrailMode.FADE && trailSettings.fadeDurationMs > 0) {
+        // Get cache info to calculate step duration
+        const cacheInfo = this.pathCache.getCacheInfo();
+        if (cacheInfo && cacheInfo.totalSteps > 0) {
+          const stepDurationMs = cacheInfo.totalDurationMs / cacheInfo.totalSteps;
+          // Calculate how many steps fit in the fade duration
+          const fadeSteps = trailSettings.fadeDurationMs / stepDurationMs;
+          // Start from currentStep minus fadeSteps (but not less than 0)
+          startStep = Math.max(0, currentStep - fadeSteps);
+
+          // CRITICAL FIX: When a loop has occurred, don't let startStep go before
+          // the loop point. This prevents the renderer from drawing a line from
+          // the fading tail back to the start position (where the sequence began).
+          // The cache contains pre-computed points for steps 0 to totalSteps, but
+          // after a loop, step 0 is "fresh" and shouldn't connect to old points.
+          if (this.loopOccurredAtStep !== null) {
+            // After a loop, the earliest point we should retrieve is the loop point
+            // This ensures the trail only shows points captured since the loop
+            startStep = Math.max(startStep, this.loopOccurredAtStep);
+          }
+        }
+      }
 
       // Transform points in-place into reusable arrays (no .map() allocation)
       const transformAndPush = (
@@ -282,21 +330,21 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
       // Blue prop trails (both left and right endpoints)
       transformAndPush(
-        this.pathCache.getTrailPoints(0, 0, 0, currentStep),
+        this.pathCache.getTrailPoints(0, 0, startStep, currentStep),
         this.reusableBlueTrailPoints
       );
       transformAndPush(
-        this.pathCache.getTrailPoints(0, 1, 0, currentStep),
+        this.pathCache.getTrailPoints(0, 1, startStep, currentStep),
         this.reusableBlueTrailPoints
       );
 
       // Red prop trails (both left and right endpoints)
       transformAndPush(
-        this.pathCache.getTrailPoints(1, 0, 0, currentStep),
+        this.pathCache.getTrailPoints(1, 0, startStep, currentStep),
         this.reusableRedTrailPoints
       );
       transformAndPush(
-        this.pathCache.getTrailPoints(1, 1, 0, currentStep),
+        this.pathCache.getTrailPoints(1, 1, startStep, currentStep),
         this.reusableRedTrailPoints
       );
     } else if (this.TrailCapturer) {

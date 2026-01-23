@@ -25,19 +25,23 @@ export const ACCENT_COLORS_TO_PRESERVE = [
 
 /**
  * Mode-aware color map for motion colors.
- * Each color has variants optimized for dark and light backgrounds.
+ * Each color has variants optimized for CONTRAST against the background:
+ * - Dark mode (dark background) → BRIGHT colors for visibility
+ * - Light mode (light background) → DARKER colors for visibility
+ *
+ * Must match CSS variables in app.css (:root and :root.dark --dm-motion-*)
  */
 export const MOTION_COLOR_MAP: Record<
   MotionColor,
   { dark: string; light: string }
 > = {
   [MotionColor.BLUE]: {
-    dark: "#3575E2", // Slightly darkened blue - still bright on dark backgrounds
-    light: "#3D44B8", // Lightened TKA blue - more vibrant on light backgrounds
+    dark: "#3575E2", // Bright blue - visible on dark backgrounds
+    light: "#3D44B8", // Darker purplish blue - visible on light backgrounds
   },
   [MotionColor.RED]: {
-    dark: "#ED1C24", // Standard red - works well on dark
-    light: "#DC2626", // Tailwind Red 600 - slightly darker for light backgrounds
+    dark: "#ED1C24", // Bright red - visible on dark backgrounds
+    light: "#DC2626", // Darker red - visible on light backgrounds
   },
 };
 

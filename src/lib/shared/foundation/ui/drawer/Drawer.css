@@ -161,6 +161,11 @@ dialog.drawer-content {
   overscroll-behavior-y: contain;
   /* Allow touch manipulation - default to vertical panning */
   touch-action: pan-y;
+
+  /* Prevent context menu on long-press (Android) */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Horizontal touch action for right/left placement */
@@ -193,6 +198,18 @@ dialog.drawer-content {
     var(--sheet-radius-large, 20px)
   );
   border-bottom: none;
+}
+
+/* Extend background below drawer to prevent white flash during animation */
+.drawer-content[data-placement="bottom"]::after {
+  content: "";
+  position: absolute;
+  bottom: -100px; /* Extend 100px below the drawer */
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: inherit;
+  pointer-events: none;
 }
 
 /* Bottom placement with snap points - needs explicit height for transforms to work */

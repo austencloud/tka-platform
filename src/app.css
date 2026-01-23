@@ -30,6 +30,13 @@ body {
   overscroll-behavior-x: none;
   /* Prevent pull-to-refresh from interfering with swipe-to-dismiss on drawers/sheets (PWA) */
   overscroll-behavior-y: contain;
+  /* PWA: Prevent Android gesture navigation interference */
+  -webkit-touch-callout: none;
+  /* Ensure full viewport coverage - tells browser we're handling safe areas */
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* Prevent white/light flash during animations - dark base color */
+  background-color: #0a0a0a;
 }
 
 /*
@@ -106,6 +113,9 @@ body {
     sans-serif;
   /* Additional PWA gesture prevention */
   touch-action: pan-y pinch-zoom;
+  /* Prevent white flash during drawer animations - ensure dark background */
+  background-color: var(--background, #0a0a0a);
+  color: var(--foreground, #ffffff);
 }
 
 img,

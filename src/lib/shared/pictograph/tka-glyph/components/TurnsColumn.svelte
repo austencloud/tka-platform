@@ -71,11 +71,12 @@ Props:
   const visibilityManager = getAnimationVisibilityManager();
 
   // Static colors for when darkMode is explicitly controlled (preview isolation)
-  // Light mode: standard blue/red
-  // Dark mode: brighter versions for visibility on dark background
+  // Must match CSS variables in app.css for consistency:
+  // Light mode: darker colors for visibility on light backgrounds
+  // Dark mode: brighter colors for visibility on dark backgrounds
   const STATIC_COLORS = {
-    light: { blue: "#2E77AE", red: "#ED1C24" },
-    dark: { blue: "#3575E2", red: "#ED1C24" },
+    light: { blue: "#3D44B8", red: "#DC2626" }, // Matches :root --dm-motion-*
+    dark: { blue: "#3575E2", red: "#ED1C24" }, // Matches :root.dark --dm-motion-*
   };
 
   // Track colors from centralized cache (only used when darkMode is not explicitly provided)

@@ -123,7 +123,9 @@
   let wasOpen = $state(false);
   let shouldRender = $state(false);
   let isAnimatedOpen = $state(false); // Controls visual state for animations
+  let isAnimating = $state(false); // True during open/close animation - blocks swipe gestures
   let closeTimeoutId: ReturnType<typeof setTimeout> | null = null; // Track close animation timeout
+  let animatingTimeoutId: ReturnType<typeof setTimeout> | null = null; // Track animation duration
 
   /**
    * Detect if user prefers reduced motion (WCAG 2.2 / AAA).
@@ -350,12 +352,19 @@
 
       // When opening, add to DOM in closed state, then animate open
       if (isOpen) {
-        // CRITICAL: Cancel any pending close timeout to prevent race condition
-        // This fixes the bug where quickly closing/reopening causes the drawer to disappear
+        // CRITICAL: Cancel any pending timeouts to prevent race conditions
         if (closeTimeoutId !== null) {
           clearTimeout(closeTimeoutId);
           closeTimeoutId = null;
         }
+        if (animatingTimeoutId !== null) {
+          clearTimeout(animatingTimeoutId);
+          animatingTimeoutId = null;
+        }
+
+        // Block swipe gestures during animation
+        // This prevents conflicts when user's finger is still down from triggering the drawer
+        isAnimating = true;
 
         // LAZY INITIALIZATION: Create handlers on first open
         initializeHandlers();
@@ -381,11 +390,17 @@
             // Focus the drawer for proper interaction (unless autoFocus is disabled)
             drawerElement.focus();
           }
+
+          // Allow swipe gestures after animation completes (350ms transition)
+          animatingTimeoutId = setTimeout(() => {
+            isAnimating = false;
+          }, 400);
         };
 
         // Skip RAF timing for users who prefer reduced motion - show instantly
         if (prefersReducedMotion()) {
           isAnimatedOpen = true; // Instant (CSS handles the no-animation)
+          isAnimating = false; // No animation, allow gestures immediately
           // Still need to wait for DOM to render the element
           requestAnimationFrame(completeOpen);
         } else {
@@ -542,6 +557,13 @@
     };
   });
 
+  // Disable swipe gestures during animation to prevent conflicts
+  // This fixes the issue where holding finger down from long-press trigger
+  // causes jank as the swipe handler fights with the opening animation
+  $effect(() => {
+    swipeToDismiss?.setDisabled(isAnimating);
+  });
+
   // Update drawer effects (only if initialized)
   $effect(() => {
     if (!drawerEffects) return;
@@ -591,6 +613,7 @@
     aria-label={ariaLabel}
     aria-describedby={describedBy}
     oncancel={handleDialogCancel}
+    oncontextmenu={(e) => { e.preventDefault(); return false; }}
     style:z-index={stackZIndex}
     style:transform={computedTransform || undefined}
     style:transition={isDragging ? "none" : ""}

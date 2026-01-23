@@ -54,11 +54,12 @@ export class AnimationVisibilityStateManager {
   /**
    * Cached motion colors - computed once when dark mode changes.
    * Components read from this cache instead of each calling getComputedStyle().
+   * Defaults match LIGHT mode CSS values (darkMode: false is the default).
    */
   private motionColors: MotionColorsCache = {
-    blue: "#3575E2",
-    red: "#ED1C24",
-    grid: "#000000",
+    blue: "#3D44B8", // Light mode blue (darker, for light backgrounds)
+    red: "#DC2626", // Light mode red
+    grid: "#000000", // Light mode grid (black on light background)
   };
 
   /**
@@ -416,8 +417,8 @@ export class AnimationVisibilityStateManager {
     const style = getComputedStyle(document.documentElement);
 
     this.motionColors = {
-      blue: style.getPropertyValue("--dm-motion-blue").trim() || "#3575E2",
-      red: style.getPropertyValue("--dm-motion-red").trim() || "#ED1C24",
+      blue: style.getPropertyValue("--dm-motion-blue").trim() || "#3D44B8",
+      red: style.getPropertyValue("--dm-motion-red").trim() || "#DC2626",
       grid: style.getPropertyValue("--dm-grid-color").trim() || "#000000",
     };
 

@@ -113,6 +113,7 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
       return this.transformedSvgCache.get(transformedCacheKey)!;
     }
 
+
     this.cacheMisses++;
 
     // Fetch raw SVG (uses raw cache + deduplication)

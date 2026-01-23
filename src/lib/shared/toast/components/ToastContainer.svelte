@@ -12,27 +12,28 @@
 
   const typeConfig: Record<
     string,
-    { icon: string; color: string; bg: string }
+    { icon: string; color: string; bg: string; textColor?: string }
   > = {
     info: {
       icon: "fa-info-circle",
       color: "var(--semantic-info)",
-      bg: "rgba(59, 130, 246, 0.15)",
+      bg: "rgba(30, 58, 95, 0.95)",
     },
     success: {
       icon: "fa-check-circle",
-      color: "#34d399",
-      bg: "rgba(16, 185, 129, 0.35)",
+      color: "#10b981",
+      bg: "rgba(6, 78, 59, 0.95)",
+      textColor: "#a7f3d0",
     },
     warning: {
       icon: "fa-exclamation-triangle",
       color: "var(--semantic-warning)",
-      bg: "rgba(245, 158, 11, 0.15)",
+      bg: "rgba(92, 59, 13, 0.95)",
     },
     error: {
       icon: "fa-times-circle",
       color: "var(--semantic-error)",
-      bg: "rgba(239, 68, 68, 0.15)",
+      bg: "rgba(95, 30, 30, 0.95)",
     },
   };
 
@@ -40,6 +41,7 @@
     icon: string;
     color: string;
     bg: string;
+    textColor?: string;
   } {
     return typeConfig[type] ?? typeConfig.info!;
   }
@@ -52,7 +54,7 @@
       <div
         class="toast"
         class:has-image={toast.imageUrl}
-        style="--toast-color: {config.color}; --toast-bg: {config.bg}"
+        style="--toast-color: {config.color}; --toast-bg: {config.bg}; --toast-text: {config.textColor || 'var(--theme-text)'}"
         role="alert"
       >
         {#if toast.imageUrl}
@@ -83,7 +85,7 @@
 <style>
   .toast-container {
     position: fixed;
-    bottom: 24px;
+    top: max(24px, env(safe-area-inset-top, 0px));
     right: 24px;
     z-index: 10000;
     display: flex;
@@ -97,12 +99,17 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 14px 18px;
     background: var(--toast-bg);
-    border: 1px solid var(--toast-color);
-    border-radius: 10px;
-    box-shadow: 0 4px 20px var(--theme-shadow, var(--theme-shadow));
-    animation: slideIn var(--duration-normal) ease-out;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1.5px solid var(--toast-color);
+    border-radius: 12px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      0 2px 8px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: slideIn var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: auto;
   }
 
@@ -144,26 +151,28 @@
   @keyframes slideIn {
     from {
       opacity: 0;
-      transform: translateX(20px);
+      transform: translateY(-20px);
     }
     to {
       opacity: 1;
-      transform: translateX(0);
+      transform: translateY(0);
     }
   }
 
   .toast-icon {
-    font-size: var(--font-size-lg);
+    font-size: 1.25rem;
     color: var(--toast-color);
     flex-shrink: 0;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
   }
 
   .toast-message {
     flex: 1;
     font-size: var(--font-size-sm);
-    font-weight: 500;
-    color: color-mix(in srgb, var(--theme-text, white) 95%, transparent);
+    font-weight: 600;
+    color: var(--toast-text, var(--theme-text, white));
     line-height: 1.4;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 
   .toast-close {
@@ -191,7 +200,7 @@
     .toast-container {
       left: 12px;
       right: 12px;
-      bottom: 80px; /* Above mobile nav */
+      top: max(12px, env(safe-area-inset-top, 0px));
       max-width: none;
     }
 

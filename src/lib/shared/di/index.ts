@@ -54,6 +54,9 @@ import { createModerationContainer } from "./containers/moderation-container";
 import { createHallOfShameContainer } from "./containers/hall-of-shame-container";
 import { createWatchContainer } from "./containers/watch-container";
 
+// Deep link resolution for cross-tab/cross-user URLs
+import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
+
 // ============================================================================
 // INSTANTIATE FACTORY CONTAINERS WITH STUB DEPENDENCIES
 // NOTE: This is a temporary fix to get the app compiling.
@@ -215,6 +218,12 @@ const watchContainer = typeof window !== 'undefined' ? createWatchContainer({
   exploreLoader: exploreContainer.items.exploreLoader,
 }) : null as any;
 
+// DeepLinkResolver - needs sequenceRepository from data and exploreLoader from explore
+const deepLinkResolver = typeof window !== 'undefined' ? new DeepLinkResolver(
+  dataContainer.items.sequenceRepository,
+  exploreContainer.items.exploreLoader
+) : null as any;
+
 // ============================================================================
 // COMPOSE ALL CONTAINERS INTO ONE
 // ============================================================================
@@ -274,10 +283,29 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(landingPreviewContainer.items)
   .add(moderationContainer.items)
   .add(hallOfShameContainer.items)
-  .add(watchContainer.items) : null as any;
+  .add(watchContainer.items)
+  // Cross-container services (depend on multiple container outputs)
+  .add({ deepLinkResolver: () => deepLinkResolver }) : null as any;
 
 // Export type for the composed container
 export type AppContainer = typeof container;
+
+// ============================================================================
+// CACHE MANAGEMENT
+// ============================================================================
+import { clearPictographCaches } from "./containers/pictograph-container";
+import { clearSvgImageCache } from "../render/services/implementations/SvgImageCache";
+
+/**
+ * Clear all rendering-related caches.
+ * Call this when the app needs to re-render with fresh data
+ * (e.g., after code updates that affect colors, SVG content, etc.)
+ */
+export function clearAllRenderCaches(): void {
+  clearPictographCaches();
+  clearSvgImageCache();
+  console.log("[DI] All render caches cleared");
+}
 
 // Default export for convenience
 export default container;

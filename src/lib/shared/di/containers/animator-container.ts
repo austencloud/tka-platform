@@ -31,6 +31,7 @@ import { EndpointCalculator } from "$lib/features/compose/services/implementatio
 import { PropInterpolator } from "$lib/features/compose/services/implementations/PropInterpolator";
 import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+import { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 
 // === TIER 2: External dependencies (require other containers) ===
 import { CompositeVideoRenderer } from "$lib/features/compose/services/implementations/CompositeVideoRenderer";
