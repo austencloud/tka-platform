@@ -1,18 +1,20 @@
 <script lang="ts">
   /**
-   * Dashboard - 2026 Bento Box Design
-   * Composition-based widget dashboard with modular state management
-   * Supports preview mode for admin user viewing
+   * Dashboard - Minimal Launcher
+   *
+   * Now that Create is the default landing, Dashboard serves as:
+   * - Quick module access cards
+   * - Announcements banner
+   * - Sign-in toast
+   *
+   * The TikTok-style feed has moved to Watch > Feed
    */
 
-  import { onMount } from "svelte";
-  import { fly } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
+  import { onMount, onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
-  import type { IFollowingFeedProvider } from "../services/contracts/IFollowingFeedProvider";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
   import {
@@ -22,17 +24,12 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
-  // Components
-  import DashboardHeader from "./DashboardHeader.svelte";
+  // Supporting components
   import DashboardSignInToast from "./DashboardSignInToast.svelte";
   import AnnouncementBanner from "./AnnouncementBanner.svelte";
-  import TodayChallengeWidget from "./widgets/TodayChallengeWidget.svelte";
-  import CommunityFeedWidget from "./widgets/CommunityFeedWidget.svelte";
-  import FollowingFeedWidget from "./widgets/FollowingFeedWidget.svelte";
-  import MessagesWidget from "./widgets/MessagesWidget.svelte";
-  import AlertsWidget from "./widgets/AlertsWidget.svelte";
   import MyFeedbackDetail from "$lib/features/feedback/components/my-feedback/MyFeedbackDetail.svelte";
-  import DashboardFloatingActions from "./mobile/DashboardFloatingActions.svelte";
+
+  // State
   import { createDashboard } from "../state/dashboard-state.svelte";
   import type {
     FeedbackItem,
@@ -46,9 +43,9 @@
 
   // State
   const dashboardState = createDashboard();
-  let hasFollowing = $state(false);
+  let isVisible = $state(false);
 
-  // Preview-aware derived values (directly in component for proper reactivity)
+  // Preview-aware derived values
   const isPreviewActive = $derived(userPreviewState.isActive);
   const previewProfile = $derived(userPreviewState.data.profile);
 
@@ -60,7 +57,6 @@
   });
 
   const effectiveWelcomeMessage = $derived.by(() => {
-    // When previewing another user, show their name
     if (isPreviewActive && previewProfile) {
       const firstName = (
         previewProfile.displayName ||
@@ -69,7 +65,6 @@
       ).split(" ")[0] ?? "User";
       return t("dashboard_viewing_as", { name: firstName });
     }
-    // Normal authenticated user
     if (authState.isAuthenticated && authState.user?.displayName) {
       const firstName = authState.user.displayName.split(" ")[0];
       return `${greeting}, ${firstName}`;
@@ -82,10 +77,42 @@
     responsiveSettings?.isMobile || responsiveSettings?.isTablet || false
   );
 
-  // Reactive: get effective user ID (preview mode or authenticated user)
+  // Reactive: get effective user ID
   const effectiveUserId = $derived(
     getEffectiveUserId(authState.user?.uid || null)
   );
+
+  // Quick access cards
+  const quickAccessCards = [
+    {
+      id: "create",
+      label: "Create",
+      icon: "fa-wand-magic-sparkles",
+      color: "#8b5cf6",
+      description: "Build sequences",
+    },
+    {
+      id: "watch",
+      label: "Watch",
+      icon: "fa-play",
+      color: "#ef4444",
+      description: "Browse videos",
+    },
+    {
+      id: "explore",
+      label: "Explore",
+      icon: "fa-compass",
+      color: "#a855f7",
+      description: "Discover sequences",
+    },
+    {
+      id: "learn",
+      label: "Learn",
+      icon: "fa-graduation-cap",
+      color: "#3b82f6",
+      description: "Get started",
+    },
+  ];
 
   onMount(() => {
     let cleanup: (() => void) | undefined;
@@ -102,7 +129,7 @@
     }
 
     setTimeout(() => {
-      dashboardState.isVisible = true;
+      isVisible = true;
     }, 30);
 
     return () => {
@@ -111,43 +138,17 @@
     };
   });
 
-  // Reactively check following status when effectiveUserId changes
-  $effect(() => {
-    if (effectiveUserId) {
-      checkHasFollowing();
-    }
-  });
-
-  async function checkHasFollowing(retryCount = 0) {
-    if (!effectiveUserId) {
-      return;
-    }
-
-    try {
-      const feedService = container.items.followingFeedProvider;
-      if (feedService) {
-        hasFollowing = await feedService.hasFollowing(effectiveUserId);
-      } else if (retryCount < 3) {
-        // Service not available yet (Tier 2 still loading), retry after delay
-        setTimeout(() => checkHasFollowing(retryCount + 1), 500);
-      }
-    } catch (error) {
-      console.warn("Dashboard: Failed to check following status", error);
-    }
-  }
-
-  async function openSettings() {
+  function handleCardClick(moduleId: string) {
     hapticService?.trigger("selection");
-    await handleModuleChange("settings" as ModuleId);
+    handleModuleChange(moduleId as ModuleId);
   }
 
-  // Feedback detail handlers
+  // Feedback detail handlers (keep existing functionality)
   async function handleFeedbackUpdate(
     feedbackId: string,
     updates: { type?: FeedbackType; description?: string },
     appendMode?: boolean
   ): Promise<FeedbackItem> {
-    // Dynamically import feedback service
     const { feedbackService } =
       await import("$lib/features/feedback/services/implementations/FeedbackRepository");
 
@@ -157,7 +158,6 @@
       appendMode
     );
 
-    // Update the detail panel with new data
     if (dashboardState.feedbackDetailItem?.id === feedbackId) {
       dashboardState.openFeedbackDetail(updatedItem);
     }
@@ -166,101 +166,52 @@
   }
 
   async function handleFeedbackDelete(feedbackId: string): Promise<void> {
-    // Dynamically import feedback service
     const { feedbackService } =
       await import("$lib/features/feedback/services/implementations/FeedbackRepository");
 
     await feedbackService.deleteUserFeedback(feedbackId);
-
-    // Close the detail panel after deletion
     dashboardState.closeFeedbackDetail();
   }
 </script>
 
-<div class="dashboard" class:visible={dashboardState.isVisible}>
-  <DashboardHeader
-    welcomeMessage={effectiveWelcomeMessage}
-    isVisible={dashboardState.isVisible}
-  />
-
-  <!-- Announcement Banner (when there are active announcements) -->
-  {#if dashboardState.isVisible}
+<div class="dashboard" class:visible={isVisible}>
+  <!-- Announcement Banner -->
+  {#if isVisible}
     <AnnouncementBanner />
   {/if}
 
-  <!-- COMMUNITY HUB - Challenge, Community Feed, Messages, Alerts -->
-  <div class="community-grid" class:mobile={isMobile}>
-    <!-- Today's Challenge - Full Width -->
-    {#if dashboardState.isVisible}
-      <section
-        class="widget-challenge"
-        transition:fly={{
-          y: 12,
-          duration: 200,
-          delay: 200,
-          easing: cubicOut,
-        }}
-      >
-        <TodayChallengeWidget />
-      </section>
-    {/if}
+  <!-- Header -->
+  <header class="dashboard-header">
+    <h1 class="welcome-message">{effectiveWelcomeMessage}</h1>
+  </header>
 
-    <!-- Community/Following Feed - Show Following if user has following, else Community -->
-    {#if dashboardState.isVisible}
-      <section
-        class="widget-community"
-        transition:fly={{
-          y: 12,
-          duration: 200,
-          delay: 250,
-          easing: cubicOut,
-        }}
+  <!-- Quick Access Cards -->
+  <div class="quick-access-grid">
+    {#each quickAccessCards as card}
+      <button
+        class="quick-access-card"
+        style="--card-color: {card.color}"
+        onclick={() => handleCardClick(card.id)}
+        type="button"
       >
-        {#if hasFollowing}
-          <FollowingFeedWidget />
-        {:else}
-          <CommunityFeedWidget />
-        {/if}
-      </section>
-    {/if}
-
-    <!-- Messages - Direct messages -->
-    {#if dashboardState.isVisible}
-      <section
-        class="widget-messages"
-        transition:fly={{
-          y: 12,
-          duration: 200,
-          delay: 300,
-          easing: cubicOut,
-        }}
-      >
-        <MessagesWidget />
-      </section>
-    {/if}
-
-    <!-- Alerts - Notifications feed -->
-    {#if dashboardState.isVisible}
-      <section
-        class="widget-alerts"
-        transition:fly={{
-          y: 12,
-          duration: 200,
-          delay: 350,
-          easing: cubicOut,
-        }}
-      >
-        <AlertsWidget {dashboardState} />
-      </section>
-    {/if}
+        <div class="card-icon">
+          <i class="fas {card.icon}" aria-hidden="true"></i>
+        </div>
+        <div class="card-content">
+          <span class="card-label">{card.label}</span>
+          <span class="card-description">{card.description}</span>
+        </div>
+      </button>
+    {/each}
   </div>
 
+  <!-- Sign-in toast -->
   <DashboardSignInToast
     message={dashboardState.signInToastMessage}
     visible={dashboardState.showSignInToast}
   />
 
-  <!-- Feedback Detail Panel (rendered when feedback notification is clicked) -->
+  <!-- Feedback Detail Panel -->
   <MyFeedbackDetail
     item={dashboardState.feedbackDetailItem}
     isOpen={dashboardState.feedbackDetailOpen}
@@ -268,222 +219,117 @@
     onUpdate={handleFeedbackUpdate}
     onDelete={handleFeedbackDelete}
   />
-
-  <!-- Mobile-only floating action buttons -->
-  {#if isMobile}
-    <DashboardFloatingActions />
-  {/if}
 </div>
 
 <style>
-  /* ========================================
-     VIEW TRANSITIONS - Zoom from card effect
-     ======================================== */
-
-  /* Old page (dashboard) zooms out and fades */
-  /* Exclude settings portal transitions - they have their own animations in view-transitions.css */
-  :global(
-    :root:not(.settings-portal-enter):not(
-        .settings-portal-exit
-      )::view-transition-old(root)
-  ) {
-    animation: var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) both zoom-out-fade;
-    transform-origin: var(--transition-origin-x, 50%)
-      var(--transition-origin-y, 50%);
-  }
-
-  /* New page (module) zooms in from card position */
-  /* Exclude settings portal transitions - they have their own animations in view-transitions.css */
-  :global(
-    :root:not(.settings-portal-enter):not(
-        .settings-portal-exit
-      )::view-transition-new(root)
-  ) {
-    animation: var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) both zoom-in-reveal;
-    transform-origin: var(--transition-origin-x, 50%)
-      var(--transition-origin-y, 50%);
-  }
-
-  /* Dashboard zooms IN and fades (we're diving through it) */
-  @keyframes zoom-out-fade {
-    from {
-      opacity: 1;
-      transform: scale(1);
-    }
-    to {
-      opacity: 0;
-      transform: scale(1.3);
-    }
-  }
-
-  /* Module starts slightly small, grows to full (we're arriving) */
-  @keyframes zoom-in-reveal {
-    from {
-      opacity: 0;
-      transform: scale(0.85);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  /* ========================================
-     BACK TRANSITION - Pull out effect (Home button)
-     ======================================== */
-
-  /* When going back to dashboard, reverse the effect */
-  :global(.back-transition)::view-transition-old(root) {
-    animation: var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) both pull-out-old;
-  }
-
-  :global(.back-transition)::view-transition-new(root) {
-    animation: var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) both pull-out-new;
-  }
-
-  /* Module shrinks as we pull back from it */
-  @keyframes pull-out-old {
-    from {
-      opacity: 1;
-      transform: scale(1);
-    }
-    to {
-      opacity: 0;
-      transform: scale(0.85);
-    }
-  }
-
-  /* Dashboard zooms down from large to normal (we're pulling back to see it) */
-  @keyframes pull-out-new {
-    from {
-      opacity: 0;
-      transform: scale(1.3);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  /* ========================================
-     2026 DASHBOARD - Community Hub
-     Scrollable, engagement-focused layout
-     ======================================== */
-
   .dashboard {
-    box-sizing: border-box;
+    position: relative;
     width: 100%;
-    max-width: 1200px;
     height: 100%;
-    padding: 24px;
-    padding-bottom: 40px;
-    margin: 0 auto;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: auto;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     opacity: 0;
-    transition: opacity var(--duration-emphasis) ease;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+    transition: opacity var(--duration-emphasis, 200ms) ease;
+    padding: var(--spacing-lg, 24px);
+    padding-bottom: calc(var(--spacing-lg, 24px) + 80px); /* Space for bottom nav */
   }
 
   .dashboard.visible {
     opacity: 1;
   }
 
-  /* ========================================
-     COMMUNITY GRID - Widgets layout
-     ======================================== */
+  .dashboard-header {
+    margin-bottom: var(--spacing-xl, 32px);
+  }
 
-  .community-grid {
+  .welcome-message {
+    font-size: var(--font-size-2xl, 1.5rem);
+    font-weight: 700;
+    color: var(--theme-text, #fff);
+    margin: 0;
+  }
+
+  .quick-access-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: auto 1fr; /* First row auto, second row fills remaining space */
-    gap: 20px;
-    width: 100%;
-    min-width: 0;
-    flex: 1; /* Fill available vertical space in dashboard */
-    min-height: 0;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md, 16px);
+    max-width: 600px;
   }
 
-  /* Challenge spans full width on first row */
-  .widget-challenge {
-    grid-column: 1 / -1;
-    min-width: 0;
+  .quick-access-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md, 16px);
+    padding: var(--spacing-lg, 24px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-lg, 16px);
+    cursor: pointer;
+    transition:
+      transform var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      background var(--duration-fast, 150ms) ease;
+    text-align: left;
   }
 
-  /* Community, Messages, Alerts - three columns */
-  .widget-community,
-  .widget-messages,
-  .widget-alerts {
-    min-height: 280px;
-    min-width: 0;
+  .quick-access-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--card-color, var(--theme-accent));
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .quick-access-card:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .quick-access-card:active {
+    transform: scale(0.98);
+  }
+
+  .card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md, 12px);
+    background: color-mix(in srgb, var(--card-color) 15%, transparent);
+    color: var(--card-color);
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .card-content {
     display: flex;
     flex-direction: column;
+    gap: 4px;
   }
 
-  /* Make widget contents fill their containers */
-  .widget-community > :global(*),
-  .widget-messages > :global(*),
-  .widget-alerts > :global(*) {
-    flex: 1;
-    min-height: 0;
+  .card-label {
+    font-size: var(--font-size-base, 16px);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
   }
 
-  /* Tablet: 2 columns with Messages and Alerts side by side */
-  @media (max-width: 1024px) {
-    .community-grid:not(.mobile) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .community-grid:not(.mobile) .widget-community {
-      grid-column: 1 / -1;
-    }
-  }
-
-  /* Mobile: single column */
-  .community-grid.mobile {
-    grid-template-columns: 1fr;
-  }
-
-  .community-grid.mobile .widget-challenge,
-  .community-grid.mobile .widget-community,
-  .community-grid.mobile .widget-messages,
-  .community-grid.mobile .widget-alerts {
-    grid-column: 1;
-  }
-
-  /* Hide Messages/Alerts widgets on mobile (replaced by floating buttons) */
-  .community-grid.mobile .widget-messages,
-  .community-grid.mobile .widget-alerts {
-    display: none;
-  }
-
-  /* ========================================
-     RESPONSIVE BREAKPOINTS
-     ======================================== */
-
-  @media (max-width: 768px) {
-    .dashboard {
-      padding: 16px;
-      padding-bottom: 32px;
-      gap: 20px;
-    }
-
-    .community-grid {
-      gap: 16px;
-    }
+  .card-description {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, #9ca3af);
   }
 
   @media (max-width: 480px) {
-    .dashboard {
-      padding: 12px;
-      padding-bottom: 24px;
-      gap: 16px;
+    .quick-access-grid {
+      grid-template-columns: 1fr;
     }
 
-    .community-grid {
-      gap: 12px;
+    .quick-access-card {
+      padding: var(--spacing-md, 16px);
+    }
+
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      font-size: 1rem;
     }
   }
 
@@ -492,11 +338,8 @@
       transition: none;
     }
 
-    /* Disable view transition animations for reduced motion */
-    :global(::view-transition-group(*)),
-    :global(::view-transition-old(*)),
-    :global(::view-transition-new(*)) {
-      animation: none !important;
+    .quick-access-card {
+      transition: none;
     }
   }
 </style>

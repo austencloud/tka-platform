@@ -16,7 +16,7 @@
     FeedbackNotification,
     AdminNotification,
   } from "$lib/features/feedback/domain/models/notification-models";
-  import { discoverNavigationState } from "$lib/features/discover/shared/state/discover-navigation-state.svelte";
+  import { exploreNavigationState } from "$lib/features/explore/shared/state/explore-navigation-state.svelte";
   import {
     userPreviewState,
     loadPreviewSection,
@@ -90,15 +90,15 @@
       handleModuleChange("feedback", "my-feedback");
     } else if (notification.type.startsWith("sequence-")) {
       // Could navigate to specific sequence or discover module
-      handleModuleChange("discover", "gallery");
+      handleModuleChange("explore", "gallery");
     } else if (notification.type === "admin-new-user-signup") {
       // Navigate to the new user's profile
       const adminNotif = notification as AdminNotification;
-      discoverNavigationState.viewCreatorProfile(
+      exploreNavigationState.viewCreatorProfile(
         adminNotif.newUserId,
         adminNotif.newUserDisplayName
       );
-      handleModuleChange("discover", "creators");
+      handleModuleChange("explore", "creators");
     }
   }
 

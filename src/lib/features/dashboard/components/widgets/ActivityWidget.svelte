@@ -126,14 +126,14 @@
   async function continueSequence() {
     if (mostRecentSequence) {
       // Navigate to discover/sequences where they can open their sequence
-      await handleModuleChange("discover", "sequences");
+      await handleModuleChange("explore", "sequences");
     }
   }
 
   async function revisitOldSequence() {
     if (revisitSequence) {
       // Navigate to discover/sequences where they can find the sequence
-      await handleModuleChange("discover", "sequences");
+      await handleModuleChange("explore", "sequences");
     }
   }
 

@@ -89,7 +89,7 @@
       item.eventType === "sequence_favorite"
     ) {
       // Navigate to discover to find the sequence
-      await handleModuleChange("discover", "gallery");
+      await handleModuleChange("explore", "gallery");
     }
   }
 </script>
