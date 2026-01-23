@@ -1,9 +1,9 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { TabId } from "../../../navigation/domain/types";
-import type { IDiscoverThumbnailProvider } from "../../../../features/discover/sequences/display/services/contracts/IDiscoverThumbnailProvider";
+import type { IExploreThumbnailProvider } from "../../../../features/explore/sequences/display/services/contracts/IExploreThumbnailProvider";
 
 // Spotlight display modes
-export type SpotlightDisplayMode = "image" | "stepgrid" | "animation";
+export type SpotlightDisplayMode = "image" | "stepgrid" | "animation" | "video";
 
 // Centralized UI state leveraging Svelte 5 runes.
 // Uses TabId (which includes both ModuleId and LegacyTabId) for backwards compatibility
@@ -20,9 +20,10 @@ export const uiState = $state({
   isWaitingForModuleLoad: false,
   showSpotlight: false,
   spotlightSequence: null as SequenceData | null,
-  spotlightThumbnailService: null as IDiscoverThumbnailProvider | null,
+  spotlightThumbnailService: null as IExploreThumbnailProvider | null,
   spotlightImageUrl: null as string | null, // Direct image URL (for Create module spotlight)
-  spotlightDisplayMode: "image" as SpotlightDisplayMode, // "image" or "stepgrid"
+  spotlightVideoUrl: null as string | null, // Direct video URL (for Dashboard feed spotlight)
+  spotlightDisplayMode: "image" as SpotlightDisplayMode, // "image", "stepgrid", "animation", or "video"
   showDebugPanel: false, // Admin-only debug console
 });
 
@@ -197,12 +198,16 @@ export function getSpotlightSequence(): SequenceData | null {
   return uiState.spotlightSequence;
 }
 
-export function getSpotlightThumbnailService(): IDiscoverThumbnailProvider | null {
+export function getSpotlightThumbnailService(): IExploreThumbnailProvider | null {
   return uiState.spotlightThumbnailService;
 }
 
 export function getSpotlightImageUrl(): string | null {
   return uiState.spotlightImageUrl;
+}
+
+export function getSpotlightVideoUrl(): string | null {
+  return uiState.spotlightVideoUrl;
 }
 
 export function getSpotlightDisplayMode(): SpotlightDisplayMode {
@@ -211,7 +216,7 @@ export function getSpotlightDisplayMode(): SpotlightDisplayMode {
 
 export function openSpotlightViewer(
   sequence: SequenceData,
-  thumbnailService: IDiscoverThumbnailProvider
+  thumbnailService: IExploreThumbnailProvider
 ): void {
   uiState.spotlightSequence = sequence;
   uiState.spotlightThumbnailService = thumbnailService;
@@ -254,8 +259,22 @@ export function openSpotlightWithStepGrid(sequence: SequenceData): void {
 export function openSpotlightWithAnimation(sequence: SequenceData): void {
   uiState.spotlightSequence = sequence;
   uiState.spotlightImageUrl = null;
+  uiState.spotlightVideoUrl = null;
   uiState.spotlightThumbnailService = null;
   uiState.spotlightDisplayMode = "animation";
+  uiState.showSpotlight = true;
+}
+
+/**
+ * Open spotlight viewer with video playback
+ * Renders fullscreen video player - tap anywhere to dismiss
+ */
+export function openSpotlightWithVideo(videoUrl: string, posterUrl?: string): void {
+  uiState.spotlightVideoUrl = videoUrl;
+  uiState.spotlightImageUrl = posterUrl || null; // Use imageUrl for poster
+  uiState.spotlightSequence = null;
+  uiState.spotlightThumbnailService = null;
+  uiState.spotlightDisplayMode = "video";
   uiState.showSpotlight = true;
 }
 
@@ -264,6 +283,7 @@ export function closeSpotlightViewer(): void {
   uiState.spotlightSequence = null;
   uiState.spotlightThumbnailService = null;
   uiState.spotlightImageUrl = null;
+  uiState.spotlightVideoUrl = null;
   uiState.spotlightDisplayMode = "image";
 }
 
@@ -305,6 +325,7 @@ export function resetUIState(): void {
   uiState.spotlightSequence = null;
   uiState.spotlightThumbnailService = null;
   uiState.spotlightImageUrl = null;
+  uiState.spotlightVideoUrl = null;
   uiState.spotlightDisplayMode = "image";
   uiState.showDebugPanel = false;
 }

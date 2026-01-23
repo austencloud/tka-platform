@@ -29,7 +29,7 @@
   import type { IVideoExporter } from "$lib/features/compose/services/contracts/IVideoExporter";
   import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+  import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "../foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "../application/services/contracts/IHapticFeedback";
@@ -62,7 +62,7 @@
   } = $props();
 
   // Services
-  let discoverLoader: IDiscoverLoader | null = null;
+  let exploreLoader: IExploreLoader | null = null;
   let playbackController: IAnimationPlaybackController | null = null;
   let hapticService: IHapticFeedback | null = null;
   let videoExportOrchestrator: IVideoExportOrchestrator | null = null;
@@ -223,7 +223,7 @@
 
     // Resolve animation-specific services (all registered synchronously via ITI)
     try {
-      discoverLoader = container.items.discoverLoader;
+      exploreLoader = container.items.exploreLoader;
       playbackController = container.items.animationPlaybackController;
       videoExportOrchestrator = container.items.videoExportOrchestrator;
       VideoExporter = container.items.videoExporter;
@@ -304,7 +304,7 @@
         (b) => b?.motions?.blue && b?.motions?.red
       ),
       hasPlaybackController: !!playbackController,
-      hasDiscoverLoader: !!discoverLoader,
+      hasDiscoverLoader: !!exploreLoader,
     });
 
     // Wait for services to be ready AND panel to be open AND sequence to exist
@@ -312,7 +312,7 @@
       isOpen &&
       servicesReady &&
       sequence &&
-      discoverLoader &&
+      exploreLoader &&
       playbackController
     ) {
       // Check if this is the same sequence (prop type change only)
@@ -345,14 +345,14 @@
   });
 
   async function loadAndStartAnimation(seq: SequenceData, sequenceId: string) {
-    if (!discoverLoader || !playbackController) return;
+    if (!exploreLoader || !playbackController) return;
 
     animationPanelState.setLoading(true);
     animationPanelState.setError(null);
 
     try {
       // Inline sequence loading
-      const loadedSequence = await loadSequenceData(seq, discoverLoader);
+      const loadedSequence = await loadSequenceData(seq, exploreLoader);
 
       if (!loadedSequence) {
         throw new Error("Failed to load sequence");
@@ -393,7 +393,7 @@
    */
   async function loadSequenceData(
     sequence: SequenceData | null,
-    loader: IDiscoverLoader
+    loader: IExploreLoader
   ): Promise<SequenceData | null> {
     if (!sequence) return null;
 

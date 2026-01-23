@@ -33,19 +33,22 @@
   const moduleCache = new Map<string, Component<any>>();
 
   // Dynamic import functions for each module (enables code-splitting)
+  // NOTE: Dashboard removed - Create is now the default landing module
   const moduleLoaders: Record<
     string,
     () => Promise<{ default: Component<any> }>
   > = {
-    dashboard: () =>
-      import("../../features/dashboard/components/Dashboard.svelte"),
+    // dashboard removed - redirect to create via module ID migrations
     create: () =>
       import("../../features/create/shared/components/CreateModule.svelte"),
-    discover: () =>
-      import("../../features/discover/shared/components/DiscoverModule.svelte"),
-    // library module retired - backwards compat redirects to discover
+    explore: () =>
+      import("../../features/explore/shared/components/ExploreModule.svelte"),
+    // library module retired - backwards compat redirects to explore
     library: () =>
-      import("../../features/discover/shared/components/DiscoverModule.svelte"),
+      import("../../features/explore/shared/components/ExploreModule.svelte"),
+    // discover module renamed to explore - backwards compat alias
+    discover: () =>
+      import("../../features/explore/shared/components/ExploreModule.svelte"),
     community: () =>
       import("../../features/community/Community.svelte"),
     learn: () => import("../../features/learn/LearnTab.svelte"),
@@ -53,7 +56,7 @@
     // "animate" is a backwards-compat alias - deep links and old bookmarks may use it
     animate: () => import("../../features/compose/ComposeModule.svelte"),
     train: () => import("../../features/train/components/TrainModule.svelte"),
-    // library module retired - functionality now in Discover > Sequences via scope toggle
+    // library module retired - functionality now in Explore > Sequences via scope toggle
     // inbox module retired - Messages/notifications accessible via Dashboard widget drawer
     // edit module retired - Edit is now a slide-out panel, not a standalone module
     choreo_card: () =>
@@ -85,6 +88,9 @@
     settings: () => import("../../features/settings/SettingsModule.svelte"),
     // Realm module - Unified 3D destination hub (Stage, Gallery, Worlds, etc.)
     realm: () => import("../../features/realm/RealmModule.svelte"),
+    // Terrain Research Lab - temporary module for comparing terrain implementations
+    "terrain-research": () =>
+      import("../../features/terrain-research/TerrainResearchModule.svelte"),
     // Mandala generator - kaleidoscope art studio with TKA elements
     mandala: () =>
       import("../../features/mandala-generator/components/MandalaGeneratorModule.svelte"),

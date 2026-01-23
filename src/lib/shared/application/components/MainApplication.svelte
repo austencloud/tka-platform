@@ -237,7 +237,7 @@
             break;
           case "2":
             event.preventDefault();
-            switchModule("discover");
+            switchModule("explore");
             break;
           case "3":
             event.preventDefault();
