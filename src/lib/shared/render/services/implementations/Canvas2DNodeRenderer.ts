@@ -57,9 +57,11 @@ const DOT_SIZE = 25;
 // Turn number height
 const TURN_NUMBER_HEIGHT = 45;
 
-// Colors
-const BLUE_COLOR = "#2E77AE";
-const RED_COLOR = "#ED1C24";
+// Motion colors - must match CSS variables in app.css
+const BLUE_COLOR_LIGHT = "#3D44B8"; // Darker blue - visible on light backgrounds
+const BLUE_COLOR_DARK = "#3575E2"; // Bright blue - visible on dark backgrounds
+const RED_COLOR_LIGHT = "#DC2626"; // Darker red - visible on light backgrounds
+const RED_COLOR_DARK = "#ED1C24"; // Bright red - visible on dark backgrounds
 
 // Base grid points
 const BASE_GRID_POINTS = {

@@ -104,6 +104,7 @@ export class ImageComposer implements IImageComposer {
   private async getVisibilitySettings(
     overrides?: SequenceExportOptions["visibilityOverrides"]
   ): Promise<PictographVisibilityOptions> {
+
     // If all required overrides are provided, use them directly (no async needed)
     // Still need to include prop types from global settings for cache key derivation
     if (
@@ -1011,8 +1012,9 @@ export class ImageComposer implements IImageComposer {
       prepareSingle: (data: PictographData | StepData, opts: object) => Promise<PictographData>;
     };
 
+    const themeMode = visibilitySettings.darkMode ? "dark" : "light";
     const preparedPictograph = await preparer.prepareSingle(pictographData, {
-      themeMode: visibilitySettings.darkMode ? "dark" : "light",
+      themeMode,
       bluePropType: visibilitySettings.bluePropType,
       redPropType: visibilitySettings.redPropType,
     });

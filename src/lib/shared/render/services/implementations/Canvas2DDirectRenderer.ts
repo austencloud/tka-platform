@@ -109,9 +109,11 @@ const DASH_RADIUS = 9.5;
 const DASH_FILL_DARK = "#231f20"; // Near black - for light mode
 const DASH_FILL_LIGHT = "#ffffff"; // White - for dark mode
 
-// Colors
-const BLUE_COLOR = "#2E77AE";
-const RED_COLOR = "#ED1C24";
+// Prop colors - must match CSS variables in app.css (:root and :root.dark --dm-motion-*)
+const BLUE_COLOR_LIGHT = "#3D44B8"; // Darker blue - visible on light backgrounds
+const BLUE_COLOR_DARK = "#3575E2"; // Bright blue - visible on dark backgrounds
+const RED_COLOR_LIGHT = "#DC2626"; // Darker red - visible on light backgrounds
+const RED_COLOR_DARK = "#ED1C24"; // Bright red - visible on dark backgrounds
 
 // VTG Glyph positioning (from VTGGlyph.svelte)
 const VTG_GLYPH_WIDTH = 201.24;
@@ -387,7 +389,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
 
     // 12. Draw reversal indicators
     if (visibility.showReversals) {
-      this.drawReversalIndicators(ctx, preparedPictograph, size);
+      this.drawReversalIndicators(ctx, preparedPictograph, size, isDarkMode);
     }
 
     // Log timing breakdown for slow renders
@@ -1395,7 +1397,8 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   private drawReversalIndicators(
     ctx: CanvasRenderingContext2D,
     pictograph: PictographData | StepData,
-    size: number
+    size: number,
+    isDarkMode: boolean
   ): void {
     const indicatorSize = size * 0.04;
     const margin = size * 0.02;
@@ -1415,15 +1418,19 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       redReversal = pictograph.motions?.red?.isReversal ?? false;
     }
 
+    // Use bright colors in dark mode, darker colors in light mode for visibility
+    const blueColor = isDarkMode ? BLUE_COLOR_DARK : BLUE_COLOR_LIGHT;
+    const redColor = isDarkMode ? RED_COLOR_DARK : RED_COLOR_LIGHT;
+
     if (blueReversal) {
-      ctx.fillStyle = BLUE_COLOR;
+      ctx.fillStyle = blueColor;
       ctx.beginPath();
       ctx.arc(margin + indicatorSize / 2, y + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2);
       ctx.fill();
     }
 
     if (redReversal) {
-      ctx.fillStyle = RED_COLOR;
+      ctx.fillStyle = redColor;
       const x = blueReversal ? margin * 2 + indicatorSize : margin;
       ctx.beginPath();
       ctx.arc(x + indicatorSize / 2, y + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2);
@@ -1440,10 +1447,12 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
 
   /**
    * Simple string hash for cache keys
+   * IMPORTANT: Must hash the FULL string to capture color differences
+   * (colors are deep in the SVG content, not in the first 100 chars)
    */
   private hashString(str: string): string {
     let hash = 0;
-    for (let i = 0; i < Math.min(str.length, 100); i++) {
+    for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
       hash = hash & hash;

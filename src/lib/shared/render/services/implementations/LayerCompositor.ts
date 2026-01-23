@@ -62,8 +62,11 @@ const STEP_NUMBER_X = 50;
 const STEP_NUMBER_Y = 50;
 const BEAT_NUMBER_FONT_SIZE = 100;
 const BEAT_NUMBER_START_FONT_SIZE = 80;
-const BLUE_COLOR = "#2E77AE";
-const RED_COLOR = "#ED1C24";
+// Motion colors - must match CSS variables in app.css
+const BLUE_COLOR_LIGHT = "#3D44B8"; // Darker blue - visible on light backgrounds
+const BLUE_COLOR_DARK = "#3575E2"; // Bright blue - visible on dark backgrounds
+const RED_COLOR_LIGHT = "#DC2626"; // Darker red - visible on light backgrounds
+const RED_COLOR_DARK = "#ED1C24"; // Bright red - visible on dark backgrounds
 const TURN_NUMBER_HEIGHT = 45;
 const DOT_PADDING = 10;
 const DOT_SIZE = 25;
@@ -207,7 +210,7 @@ export class LayerCompositor implements ILayerCompositor {
     const stepData = pictograph as StepData;
     if (visibility.showReversals && this.isStepData(pictograph)) {
       const reversalStart = performance.now();
-      reversalResult = await this.renderReversalOverlay(stepData, options.size);
+      reversalResult = await this.renderReversalOverlay(stepData, options.size, options.darkMode);
       timing.reversalLayerMs = performance.now() - reversalStart;
       if (reversalResult) {
         cacheStats.reversalFromCache = reversalResult.fromCache;
@@ -384,12 +387,14 @@ export class LayerCompositor implements ILayerCompositor {
 
   async renderReversalOverlay(
     stepData: StepData,
-    size: number
+    size: number,
+    darkMode: boolean = false
   ): Promise<LayerRenderResult | null> {
     if (!stepData.blueReversal && !stepData.redReversal) return null;
 
     const startTime = performance.now();
-    const cacheKey = this.keyDeriver.deriveReversalLayerKey(stepData, size);
+    // Include darkMode in cache key since colors differ
+    const cacheKey = `${this.keyDeriver.deriveReversalLayerKey(stepData, size)}:${darkMode ? "dark" : "light"}`;
 
     // Check cache
     const cached = this.reversalCache.get(cacheKey);
@@ -405,7 +410,7 @@ export class LayerCompositor implements ILayerCompositor {
     }
 
     // Render reversal overlay (transparent background)
-    const canvas = this.renderReversalOverlayInternal(stepData, size);
+    const canvas = this.renderReversalOverlayInternal(stepData, size, darkMode);
 
     // Add to cache
     if (this.reversalCache.size >= REVERSAL_CACHE_LIMIT) {
@@ -678,7 +683,7 @@ export class LayerCompositor implements ILayerCompositor {
   /**
    * Render reversal overlay: blue/red dots
    */
-  private renderReversalOverlayInternal(stepData: StepData, size: number): HTMLCanvasElement {
+  private renderReversalOverlayInternal(stepData: StepData, size: number, darkMode: boolean): HTMLCanvasElement {
     const canvas = document.createElement("canvas");
     canvas.width = size;
     canvas.height = size;
@@ -692,15 +697,19 @@ export class LayerCompositor implements ILayerCompositor {
     const margin = size * 0.02;
     const y = size - indicatorSize - margin;
 
+    // Use bright colors in dark mode, darker colors in light mode for visibility
+    const blueColor = darkMode ? BLUE_COLOR_DARK : BLUE_COLOR_LIGHT;
+    const redColor = darkMode ? RED_COLOR_DARK : RED_COLOR_LIGHT;
+
     if (stepData.blueReversal) {
-      ctx.fillStyle = BLUE_COLOR;
+      ctx.fillStyle = blueColor;
       ctx.beginPath();
       ctx.arc(margin + indicatorSize / 2, y + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2);
       ctx.fill();
     }
 
     if (stepData.redReversal) {
-      ctx.fillStyle = RED_COLOR;
+      ctx.fillStyle = redColor;
       const x = stepData.blueReversal ? margin * 2 + indicatorSize : margin;
       ctx.beginPath();
       ctx.arc(x + indicatorSize / 2, y + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2);

@@ -256,3 +256,13 @@ export function getSvgImageCache(): SvgImageCache {
   }
   return instance;
 }
+
+/**
+ * Clear the global SVG image cache.
+ * Call this when SVG content may have changed (e.g., after code updates).
+ */
+export function clearSvgImageCache(): void {
+  if (instance) {
+    instance.clear();
+  }
+}

@@ -161,7 +161,8 @@ export interface ILayerCompositor {
    */
   renderReversalOverlay(
     stepData: StepData,
-    size: number
+    size: number,
+    darkMode?: boolean
   ): Promise<LayerRenderResult | null>;
 
   /**
