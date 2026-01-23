@@ -416,6 +416,13 @@
       videoExportOrchestrator = container.items.videoExportOrchestrator;
       sequenceRenderer = container.items.sequenceRenderer;
       animationServicesReady = true;
+
+      // Fetch all sequences for similarity comparison (non-blocking)
+      sequenceRepository.getAllSequences().then((sequences) => {
+        allSequences = sequences;
+      }).catch((e) => {
+        console.warn("[SequenceDetailsModal] Failed to load sequences for comparison:", e);
+      });
     } catch (error) {
       console.error("[SequenceDetailsModal] Failed to load services:", error);
       modalAnimationState.setError("Failed to load animation services");
@@ -1211,6 +1218,21 @@
             </div>
           {/if}
         </button>
+      </div>
+    {/if}
+
+    <!-- Similar Sequences Panel - shows at bottom of content area -->
+    {#if !isFullscreen && !isExportMode && sequence && allSequences.length > 0}
+      <div class="similar-sequences-wrapper">
+        <SimilarSequencesPanel
+          {sequence}
+          {allSequences}
+          onSequenceSelect={(seq) => {
+            // Navigate to the selected sequence by updating the modal's sequence
+            // For now, just show a toast - full navigation would require parent coordination
+            showToast(`Switch to "${seq.word || 'sequence'}" - feature coming soon`, "info");
+          }}
+        />
       </div>
     {/if}
   </div>
