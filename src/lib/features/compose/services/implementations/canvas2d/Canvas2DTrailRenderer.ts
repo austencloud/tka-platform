@@ -311,7 +311,24 @@ export class Canvas2DTrailRenderer {
       ctx.lineTo(lastPoint.x, lastPoint.y);
     } else {
       // For 3+ points, use quadratic curves with midpoint technique
-      for (let i = 1; i < smoothPoints.length - 1; i++) {
+      //
+      // IMPORTANT: Connect the first point to the second point with a curve
+      // Without this, the implicit connection from moveTo(firstPoint) to the first
+      // quadraticCurveTo creates a straight line artifact when the first point
+      // becomes distant from subsequent points (e.g., after pruning in FADE mode)
+      const secondPoint = smoothPoints[1]!;
+      const thirdPoint = smoothPoints[2];
+      if (!isNaN(secondPoint.x) && !isNaN(secondPoint.y)) {
+        if (thirdPoint && !isNaN(thirdPoint.x) && !isNaN(thirdPoint.y)) {
+          // Curve from first point toward second, ending at midpoint of second and third
+          const midX = (secondPoint.x + thirdPoint.x) / 2;
+          const midY = (secondPoint.y + thirdPoint.y) / 2;
+          ctx.quadraticCurveTo(secondPoint.x, secondPoint.y, midX, midY);
+        }
+      }
+
+      // Continue with remaining points (start at index 2 since we handled 0-1-2 above)
+      for (let i = 2; i < smoothPoints.length - 1; i++) {
         const point = smoothPoints[i]!;
         const nextPoint = smoothPoints[i + 1]!;
         if (isNaN(point.x) || isNaN(point.y)) continue;
@@ -449,7 +466,19 @@ export class Canvas2DTrailRenderer {
 
     // Left edge forward (using quadratic curves for smoothness)
     ctx.moveTo(leftEdge[0]!.x, leftEdge[0]!.y);
-    for (let i = 1; i < leftEdge.length - 1; i++) {
+
+    // IMPORTANT: Connect first point to second with a curve (same fix as renderUniformSmoothTrail)
+    // Without this, the implicit connection creates a straight line artifact when points are distant
+    if (leftEdge.length >= 3) {
+      const secondLeft = leftEdge[1]!;
+      const thirdLeft = leftEdge[2]!;
+      const midX = (secondLeft.x + thirdLeft.x) / 2;
+      const midY = (secondLeft.y + thirdLeft.y) / 2;
+      ctx.quadraticCurveTo(secondLeft.x, secondLeft.y, midX, midY);
+    }
+
+    // Continue with remaining left edge points (start at index 2)
+    for (let i = 2; i < leftEdge.length - 1; i++) {
       const point = leftEdge[i]!;
       const nextPoint = leftEdge[i + 1]!;
       const midX = (point.x + nextPoint.x) / 2;
@@ -464,7 +493,8 @@ export class Canvas2DTrailRenderer {
     }
 
     // Right edge backward (creates closed shape)
-    for (let i = rightEdge.length - 1; i > 0; i--) {
+    // Start from last point and work backward
+    for (let i = rightEdge.length - 1; i > 1; i--) {
       const point = rightEdge[i]!;
       const prevPoint = rightEdge[i - 1]!;
       const midX = (point.x + prevPoint.x) / 2;

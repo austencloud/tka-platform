@@ -4,14 +4,14 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
-import type { IDiscoverThumbnailProvider } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverThumbnailProvider";
-import type { IDiscoverFilter } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverFilter";
-import type { IDiscoverSorter } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverSorter";
+import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+import type { IExploreThumbnailProvider } from "$lib/features/explore/sequences/display/services/contracts/IExploreThumbnailProvider";
+import type { IExploreFilter } from "$lib/features/explore/sequences/display/services/contracts/IExploreFilter";
+import type { IExploreSorter } from "$lib/features/explore/sequences/display/services/contracts/IExploreSorter";
 import type { ExploreFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";
-import { ExploreSortMethod } from "$lib/features/discover/shared/domain/enums/discover-enums";
+import { ExploreSortMethod } from "$lib/features/explore/shared/domain/enums/explore-enums";
 import { container } from "$lib/shared/di";
 
 const BATCH_SIZE = 24;
@@ -23,10 +23,10 @@ export interface MediaFilter {
 
 export function createMediaBrowserState() {
   // Services
-  let loaderService = $state<IDiscoverLoader | null>(null);
-  let thumbnailService = $state<IDiscoverThumbnailProvider | null>(null);
-  let filterService = $state<IDiscoverFilter | null>(null);
-  let sortService = $state<IDiscoverSorter | null>(null);
+  let loaderService = $state<IExploreLoader | null>(null);
+  let thumbnailService = $state<IExploreThumbnailProvider | null>(null);
+  let filterService = $state<IExploreFilter | null>(null);
+  let sortService = $state<IExploreSorter | null>(null);
   let servicesReady = $state(false);
 
   // Core state
@@ -111,11 +111,11 @@ export function createMediaBrowserState() {
   // Initialize services
   function initializeServices(): boolean {
     try {
-      loaderService = container.items.discoverLoader as IDiscoverLoader;
+      loaderService = container.items.exploreLoader as IExploreLoader;
       thumbnailService = container.items
-        .discoverThumbnailProvider as IDiscoverThumbnailProvider;
-      filterService = container.items.discoverFilter as IDiscoverFilter;
-      sortService = container.items.discoverSorter as IDiscoverSorter;
+        .discoverThumbnailProvider as IExploreThumbnailProvider;
+      filterService = container.items.discoverFilter as IExploreFilter;
+      sortService = container.items.discoverSorter as IExploreSorter;
       servicesReady = !!(loaderService && thumbnailService);
       return servicesReady;
     } catch (err) {

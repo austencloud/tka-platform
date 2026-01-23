@@ -12,7 +12,7 @@
   import BeatGrid from "./BeatGrid.svelte";
   import { timeToPixels } from "../domain/timeline-types";
   import { container } from "$lib/shared/di";
-  import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+  import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
 
   interface Props {
     track: TimelineTrack;
@@ -87,7 +87,7 @@
       let sequence = sequenceData;
       if (sequenceData._needsFullLoad) {
         try {
-          const loader = container.items.discoverLoader as IDiscoverLoader;
+          const loader = container.items.exploreLoader as IExploreLoader;
           if (loader) {
             const fullSequence = await loader.loadFullSequenceData(
               sequenceData.word || sequenceData.name || sequenceData.id
