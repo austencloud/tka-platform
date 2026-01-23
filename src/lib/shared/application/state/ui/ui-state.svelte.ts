@@ -1,9 +1,15 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { TabId } from "../../../navigation/domain/types";
 import type { IExploreThumbnailProvider } from "../../../../features/explore/sequences/display/services/contracts/IExploreThumbnailProvider";
+import {
+  setSpotlightModalUrl,
+  clearModalUrlState,
+  cacheSequence,
+  type SpotlightDisplayMode as UrlSpotlightMode,
+} from "./modal-url-state.svelte";
 
 // Spotlight display modes
-export type SpotlightDisplayMode = "image" | "stepgrid" | "animation" | "video";
+export type SpotlightDisplayMode = "image" | "stepgrid" | "animation" | "video" | "split";
 
 // Centralized UI state leveraging Svelte 5 runes.
 // Uses TabId (which includes both ModuleId and LegacyTabId) for backwards compatibility
@@ -223,6 +229,9 @@ export function openSpotlightViewer(
   uiState.spotlightImageUrl = null; // Clear direct URL when using thumbnailService
   uiState.spotlightDisplayMode = "image";
   uiState.showSpotlight = true;
+  // Sync to URL for HMR persistence
+  cacheSequence(sequence);
+  setSpotlightModalUrl(sequence, "image" as UrlSpotlightMode);
 }
 
 /**
@@ -238,6 +247,11 @@ export function openSpotlightWithImage(
   uiState.spotlightThumbnailService = null;
   uiState.spotlightDisplayMode = "image";
   uiState.showSpotlight = true;
+  // Sync to URL for HMR persistence (only if sequence provided)
+  if (sequence) {
+    cacheSequence(sequence);
+    setSpotlightModalUrl(sequence, "image" as UrlSpotlightMode);
+  }
 }
 
 /**
@@ -250,6 +264,9 @@ export function openSpotlightWithStepGrid(sequence: SequenceData): void {
   uiState.spotlightThumbnailService = null;
   uiState.spotlightDisplayMode = "stepgrid";
   uiState.showSpotlight = true;
+  // Sync to URL for HMR persistence
+  cacheSequence(sequence);
+  setSpotlightModalUrl(sequence, "stepgrid" as UrlSpotlightMode);
 }
 
 /**
@@ -263,6 +280,9 @@ export function openSpotlightWithAnimation(sequence: SequenceData): void {
   uiState.spotlightThumbnailService = null;
   uiState.spotlightDisplayMode = "animation";
   uiState.showSpotlight = true;
+  // Sync to URL for HMR persistence
+  cacheSequence(sequence);
+  setSpotlightModalUrl(sequence, "animation" as UrlSpotlightMode);
 }
 
 /**
@@ -278,6 +298,23 @@ export function openSpotlightWithVideo(videoUrl: string, posterUrl?: string): vo
   uiState.showSpotlight = true;
 }
 
+/**
+ * Open spotlight viewer with split view
+ * Shows animation on one side and LayeredSequencePreview on the other
+ * Supports step highlighting during playback
+ */
+export function openSpotlightWithSplit(sequence: SequenceData): void {
+  uiState.spotlightSequence = sequence;
+  uiState.spotlightImageUrl = null;
+  uiState.spotlightVideoUrl = null;
+  uiState.spotlightThumbnailService = null;
+  uiState.spotlightDisplayMode = "split";
+  uiState.showSpotlight = true;
+  // Sync to URL for HMR persistence
+  cacheSequence(sequence);
+  setSpotlightModalUrl(sequence, "split" as UrlSpotlightMode);
+}
+
 export function closeSpotlightViewer(): void {
   uiState.showSpotlight = false;
   uiState.spotlightSequence = null;
@@ -285,6 +322,8 @@ export function closeSpotlightViewer(): void {
   uiState.spotlightImageUrl = null;
   uiState.spotlightVideoUrl = null;
   uiState.spotlightDisplayMode = "image";
+  // Clear URL state when closing spotlight
+  clearModalUrlState();
 }
 
 // ============================================================================

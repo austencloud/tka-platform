@@ -3,12 +3,14 @@
   import InAppBrowserPrompt from "$lib/shared/auth/components/InAppBrowserPrompt.svelte";
   import ReportUserModal from "$lib/features/moderation/components/ReportUserModal.svelte";
   import WarningBanner from "$lib/features/moderation/components/WarningBanner.svelte";
+  import ModalUrlRestorer from "$lib/shared/application/components/ModalUrlRestorer.svelte";
   import { container } from "$lib/shared/di";
   import type { Snippet } from "svelte";
   import { onMount, setContext } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { registerCacheClearShortcut } from "$lib/shared/utils/cache-buster";
   import { initI18n } from "$lib/shared/i18n/i18n.svelte.js";
+  import { initModalUrlState, cleanupModalUrlState } from "$lib/shared/application/state/ui/modal-url-state.svelte";
   import "../app.css";
   // Import modern view transitions CSS
   import "$lib/shared/transitions/view-transitions.css";
@@ -41,6 +43,9 @@
   onMount(() => {
     // ⚡ CRITICAL: Initialize i18n and set HTML dir attribute
     initI18n();
+
+    // ⚡ Initialize modal URL state tracking for HMR persistence
+    initModalUrlState();
 
     // ⚡ CRITICAL: Set up viewport height IMMEDIATELY for fast render
     updateViewportHeight();
@@ -128,6 +133,9 @@
       // Clean up auth listener
       authState.cleanup();
 
+      // Clean up modal URL state tracking
+      cleanupModalUrlState();
+
       if (window.visualViewport) {
         window.visualViewport.removeEventListener(
           "resize",
@@ -170,6 +178,9 @@
 
   <!-- Global report user modal -->
   <ReportUserModal />
+
+  <!-- Restore modal state from URL (for page refresh and HMR) -->
+  <ModalUrlRestorer />
 {:else}
   <!-- Brief loading while container sets up -->
   <div class="error-screen">
