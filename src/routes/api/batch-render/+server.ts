@@ -158,7 +158,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     // Determine if this sequence needs non-radial points shown
     const showNonRadial = requiresNonRadialPoints(sequence);
 
-    // Prepare rendering options with word card visibility settings
+    // Prepare rendering options with choreo card visibility settings
     const options: Partial<SequenceExportOptions> = {
       stepSize,
       format,
@@ -180,7 +180,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
       scale: 1.0,
       propTypeOverride: propType, // Apply prop type override if provided
 
-      // Word card visibility overrides
+      // Choreo card visibility overrides
       visibilityOverrides: {
         showTKA: true, // Always show TKA glyph
         showVTG: false, // Hide VTG glyph

@@ -19,12 +19,12 @@
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { container } from '$lib/shared/di';
-  import { PublicSequencesLoader } from '$lib/features/discover/sequences/display/services/implementations/PublicSequencesLoader';
+  import { PublicSequencesLoader } from '$lib/features/explore/sequences/display/services/implementations/PublicSequencesLoader';
   import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
-  import type { IThumbnailRenderOrchestrator } from '$lib/features/discover/sequences/display/services/contracts/IThumbnailRenderOrchestrator';
-  import type { IThumbnailKeyDeriver, ThumbnailRenderInput } from '$lib/features/discover/sequences/display/services/contracts/IThumbnailKeyDeriver';
-  import type { IThumbnailMetricsCollector, ThumbnailMetricsSummary } from '$lib/features/discover/sequences/display/services/contracts/IThumbnailMetricsCollector';
-  import type { IThumbnailLocalCache } from '$lib/features/discover/sequences/display/services/contracts/IThumbnailLocalCache';
+  import type { IThumbnailRenderOrchestrator } from '$lib/features/explore/sequences/display/services/contracts/IThumbnailRenderOrchestrator';
+  import type { IThumbnailKeyDeriver, ThumbnailRenderInput } from '$lib/features/explore/sequences/display/services/contracts/IThumbnailKeyDeriver';
+  import type { IThumbnailMetricsCollector, ThumbnailMetricsSummary } from '$lib/features/explore/sequences/display/services/contracts/IThumbnailMetricsCollector';
+  import type { IThumbnailLocalCache } from '$lib/features/explore/sequences/display/services/contracts/IThumbnailLocalCache';
 
   // Configuration
   const DEFAULT_SEQUENCE_COUNT = 50;

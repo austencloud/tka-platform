@@ -91,7 +91,7 @@ export const GET: RequestHandler = async () => {
   return json({
     endpoint: "/api/gallery-write",
     method: "POST",
-    description: "Writes word card images directly to static/gallery/",
+    description: "Writes choreo card images directly to static/gallery/",
     note: "Only available in development mode",
     usage: {
       body: "FormData with 'image' (File) and 'word' (string)",

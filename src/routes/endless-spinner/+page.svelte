@@ -5,7 +5,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+  import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
   import type {
     IEndlessSpinnerOrchestrator,
@@ -57,7 +57,7 @@
   // Animation state
   const animationState = createAnimationPanelState();
   let playbackController: IAnimationPlaybackController | null = null;
-  let discoverLoader: IDiscoverLoader | null = null;
+  let exploreLoader: IExploreLoader | null = null;
   let startPositionDeriver: IStartPositionDeriver | null = null;
   let gridPositionDeriver: IGridPositionDeriver | null = null;
   let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
@@ -208,7 +208,7 @@
       animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS);
       visibilityManager.setDarkMode(true);
 
-      discoverLoader = container.items.discoverLoader as IDiscoverLoader;
+      exploreLoader = container.items.exploreLoader as IExploreLoader;
       playbackController = container.items
         .animationPlaybackController as IAnimationPlaybackController;
       startPositionDeriver = container.items
@@ -224,7 +224,7 @@
         .orientationCalculator as IOrientationCalculator;
 
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
-        discoverLoader,
+        exploreLoader,
         generationOrchestrator,
         sequenceTransformer,
         startPositionDeriver,

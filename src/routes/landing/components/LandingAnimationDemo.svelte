@@ -7,7 +7,7 @@
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+  import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
   import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
@@ -68,7 +68,7 @@
   // Animation state
   const animationState = createAnimationPanelState();
   let playbackController: IAnimationPlaybackController | null = null;
-  let discoverLoader: IDiscoverLoader | null = null;
+  let exploreLoader: IExploreLoader | null = null;
   let startPositionDeriver: IStartPositionDeriver | null = null;
   let gridPositionDeriver: IGridPositionDeriver | null = null;
   let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
@@ -221,7 +221,7 @@
       visibilityManager.setDarkMode(darkMode);
 
       // Get services from DI container
-      discoverLoader = container.items.discoverLoader as IDiscoverLoader;
+      exploreLoader = container.items.exploreLoader as IExploreLoader;
       playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
       startPositionDeriver = container.items.startPositionDeriver as IStartPositionDeriver;
       gridPositionDeriver = container.items.gridPositionDeriver as IGridPositionDeriver;
@@ -232,7 +232,7 @@
       const orientationCalculator = container.items.orientationCalculator;
 
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
-        discoverLoader as any,
+        exploreLoader as any,
         generationOrchestrator as any,
         sequenceTransformer as any,
         startPositionDeriver,
