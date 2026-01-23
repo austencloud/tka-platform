@@ -40,14 +40,23 @@ The "-" suffix does NOT mean "letter with dash motion type". It's a naming conve
 
 ## MCP Server Tools
 
-When working with the TKA pictograph MCP server:
+### Showing Pictographs to Users
 
-1. **`list_available_letters`** - Shows all letters organized by type
-2. **`get_alphabet_info`** - Comprehensive domain reference
-3. **`list_letter_variations`** - Shows variations for a specific letter
-4. **`generate_pictograph`** - Generates a pictograph image
+- **`view_pictograph`** - Opens a single pictograph in system image viewer (~100 tokens)
+- **`view_sequence`** - Opens a choreo card in system image viewer (~100 tokens)
 
-**If unsure about a letter**, call `list_available_letters` first to see the full type-organized list.
+These open images externally so the user sees them without burning context.
+
+### Data & Reference Tools
+
+- **`list_available_letters`** - All letters organized by type
+- **`get_alphabet_info`** - Comprehensive domain reference
+- **`list_letter_variations`** - Variations for a specific letter
+- **`get_letter_explanation`** - Detailed explanation for teaching
+- **`get_pictograph_data`** - Raw motion data without image
+- **`generate_sequence_data`** - Sequence data without image
+
+**If unsure about a letter**, call `list_available_letters` first.
 
 ---
 

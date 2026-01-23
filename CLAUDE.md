@@ -33,6 +33,34 @@ Still suggest `/compact` at 70% context. The budget is generous, not infinite.
 
 ---
 
+## CRITICAL: MCP-Only for TKA Rendering
+
+**On January 22, 2026, Claude wasted massive tokens trying to render a sequence via bash scripts and manual code instead of using the MCP tools. This is forbidden.**
+
+### The Rule
+
+**NEVER render TKA pictographs or sequences via bash scripts, inline code, or base64 encoding.**
+
+The ONLY allowed methods are the MCP tools:
+- `mcp__tka-domain__view_pictograph` - single pictograph (~50 tokens)
+- `mcp__tka-domain__view_sequence` - choreo card (~50 tokens)
+
+These tools render the image, save to temp, open in system viewer, and return only a text confirmation.
+
+### If MCP Tools Are Unavailable
+
+**STOP.** Tell the user: "TKA MCP server not connected. Please restart Claude Code or check MCP configuration."
+
+**Do NOT:**
+- Fall back to bash scripts
+- Try to render via node commands
+- Use base64 encoding
+- Write custom rendering code
+
+The fallback approaches cost 10-100x more tokens and produce worse results.
+
+---
+
 ## CRITICAL: Never Claim "Fixed" Without Verification
 
 **On January 15, 2026, Claude claimed trail rendering was "fixed" after updating config files, without ever verifying the renderer actually used those settings. The user saw zero visual difference. This wasted significant time and was infuriating.**
