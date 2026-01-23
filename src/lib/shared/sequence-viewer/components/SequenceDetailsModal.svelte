@@ -39,7 +39,6 @@
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager, type TrailStyle } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import StaggerModeModal from "./stagger/StaggerModeModal.svelte";
-  import SimilarSequencesPanel from "./SimilarSequencesPanel.svelte";
   import {
     getExportOptionsState,
     type VideoFps,
@@ -101,9 +100,6 @@
 
   // LAN Sync state
   let syncSheetOpen = $state(false);
-
-  // Similar sequences state (for comparison panel)
-  let allSequences = $state<readonly SequenceData[]>([]);
 
   // Which pane is in edit mode: null, 'animation', or 'image'
   let editingPane = $state<'animation' | 'image' | null>(null);
@@ -302,7 +298,16 @@
   // Export state
   let isExporting = $state(false);
   let exportProgress = $state<VideoExportProgress | null>(null);
+  let exportError = $state<string | null>(null);
   let animationCanvas = $state<HTMLCanvasElement | null>(null);
+
+  // Human-readable stage names for export progress
+  const EXPORT_STAGE_LABELS: Record<string, string> = {
+    capturing: "Capturing frames",
+    encoding: "Encoding video",
+    complete: "Complete",
+    error: "Error",
+  };
 
   function handleCanvasReady(canvas: HTMLCanvasElement | null) {
     animationCanvas = canvas;
@@ -416,13 +421,6 @@
       videoExportOrchestrator = container.items.videoExportOrchestrator;
       sequenceRenderer = container.items.sequenceRenderer;
       animationServicesReady = true;
-
-      // Fetch all sequences for similarity comparison (non-blocking)
-      sequenceRepository.getAllSequences().then((sequences) => {
-        allSequences = sequences;
-      }).catch((e) => {
-        console.warn("[SequenceDetailsModal] Failed to load sequences for comparison:", e);
-      });
     } catch (error) {
       console.error("[SequenceDetailsModal] Failed to load services:", error);
       modalAnimationState.setError("Failed to load animation services");
@@ -586,12 +584,13 @@
 
   async function handleSplitExport() {
     if (!videoExportOrchestrator || !playbackController || !animationCanvas) {
-      showToast("Export services not ready", "error");
+      exportError = "Export services not ready. Please try again.";
       return;
     }
 
     const opts = exportOptions.getSplitOptions();
     isExporting = true;
+    exportError = null;
     exportProgress = { progress: 0, stage: "capturing" };
 
     try {
@@ -607,7 +606,7 @@
             exitExportMode();
           } else if (progress.stage === "error") {
             hapticService?.trigger("error");
-            showToast(progress.error || "Export failed", "error");
+            exportError = progress.error || "Export failed. Please try again.";
           }
         },
         {
@@ -622,7 +621,7 @@
     } catch (error) {
       if ((error as Error).message !== "Export cancelled") {
         console.error("[SequenceDetailsModal] Export failed:", error);
-        showToast("Export failed", "error");
+        exportError = "Export failed. Please try again.";
       }
     } finally {
       isExporting = false;
@@ -632,12 +631,13 @@
 
   async function handleAnimationExport() {
     if (!videoExportOrchestrator || !playbackController || !animationCanvas) {
-      showToast("Export services not ready", "error");
+      exportError = "Export services not ready. Please try again.";
       return;
     }
 
     const opts = exportOptions.getVideoOptions();
     isExporting = true;
+    exportError = null;
     exportProgress = { progress: 0, stage: "capturing" };
 
     try {
@@ -653,7 +653,7 @@
             exitExportMode();
           } else if (progress.stage === "error") {
             hapticService?.trigger("error");
-            showToast(progress.error || "Export failed", "error");
+            exportError = progress.error || "Export failed. Please try again.";
           }
         },
         {
@@ -665,7 +665,7 @@
     } catch (error) {
       if ((error as Error).message !== "Export cancelled") {
         console.error("[SequenceDetailsModal] Export failed:", error);
-        showToast("Export failed", "error");
+        exportError = "Export failed. Please try again.";
       }
     } finally {
       isExporting = false;
@@ -675,12 +675,13 @@
 
   async function handleImageExport() {
     if (!sequenceRenderer || !sequence) {
-      showToast("Export services not ready", "error");
+      exportError = "Export services not ready. Please try again.";
       return;
     }
 
     const opts = exportOptions.getImageOptions();
     isExporting = true;
+    exportError = null;
 
     try {
       const blob = await sequenceRenderer.renderSequenceToBlob(sequence, {
@@ -718,7 +719,7 @@
     } catch (error) {
       console.error("[SequenceDetailsModal] Image export failed:", error);
       hapticService?.trigger("error");
-      showToast("Export failed", "error");
+      exportError = "Export failed. Please try again.";
     } finally {
       isExporting = false;
     }
@@ -960,6 +961,11 @@
 
         <!-- Export options -->
         <div class="export-options-area">
+          <!-- Guidance hint -->
+          <p class="export-hint">
+            <i class="fas fa-info-circle" aria-hidden="true"></i>
+            Customize your export, then tap the button below.
+          </p>
           <div class="export-options-card">
             {#if viewMode === "image"}
               <!-- Image export options -->
@@ -1220,21 +1226,6 @@
         </button>
       </div>
     {/if}
-
-    <!-- Similar Sequences Panel - shows at bottom of content area -->
-    {#if !isFullscreen && !isExportMode && sequence && allSequences.length > 0}
-      <div class="similar-sequences-wrapper">
-        <SimilarSequencesPanel
-          {sequence}
-          {allSequences}
-          onSequenceSelect={(seq) => {
-            // Navigate to the selected sequence by updating the modal's sequence
-            // For now, just show a toast - full navigation would require parent coordination
-            showToast(`Switch to "${seq.word || 'sequence'}" - feature coming soon`, "info");
-          }}
-        />
-      </div>
-    {/if}
   </div>
 
   {#snippet footer()}
@@ -1247,13 +1238,37 @@
             in:fade={{ duration: 200, delay: 50, easing: cubicOut }}
             out:fade={{ duration: 100, easing: cubicOut }}
           >
-            {#if isExporting && exportProgress}
+            {#if exportError}
+              <!-- Error state with retry button -->
+              <div class="export-error-state" role="alert">
+                <div class="error-content">
+                  <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                  <span class="error-message">{exportError}</span>
+                </div>
+                <button
+                  type="button"
+                  class="retry-export-btn"
+                  onclick={() => { exportError = null; handleExport(); }}
+                >
+                  <i class="fas fa-redo" aria-hidden="true"></i>
+                  Retry
+                </button>
+              </div>
+            {:else if isExporting && exportProgress}
               <!-- Progress display during export -->
-              <div class="export-progress">
-                <div class="progress-bar">
+              <div class="export-progress" role="status" aria-live="polite">
+                <span class="progress-stage">{EXPORT_STAGE_LABELS[exportProgress.stage] || exportProgress.stage}</span>
+                <div
+                  class="progress-bar"
+                  role="progressbar"
+                  aria-valuenow={Math.round(exportProgress.progress * 100)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="Export progress"
+                >
                   <div class="progress-fill" style="width: {exportProgress.progress * 100}%"></div>
                 </div>
-                <span class="progress-text">{Math.round(exportProgress.progress * 100)}%</span>
+                <span class="progress-text" aria-live="polite" aria-atomic="true">{Math.round(exportProgress.progress * 100)}%</span>
                 <button
                   type="button"
                   class="cancel-export-btn"
@@ -1270,6 +1285,7 @@
                 class="primary-export-btn"
                 onclick={handleExport}
                 disabled={isExporting}
+                aria-label={isExporting ? "Export in progress" : `Export ${viewMode === "image" ? "image" : "video"}`}
               >
                 <i class="fas fa-download" aria-hidden="true"></i>
                 Export {viewMode === "image" ? "Image" : "Video"}
@@ -2016,10 +2032,11 @@
   }
 
   .chip.active {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
+    /* Higher opacity (35%) for better contrast - meets WCAG AA 4.5:1 on dark backgrounds */
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent);
     color: white;
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
     /* Subtle pulse when becoming active */
     animation: chipActivate 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
@@ -2180,6 +2197,23 @@
     overflow-y: auto;
   }
 
+  .export-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0;
+    padding: 8px 12px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    text-align: center;
+  }
+
+  .export-hint i {
+    font-size: 14px;
+    color: var(--theme-accent, #6366f1);
+  }
+
   .export-options-card {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -2312,6 +2346,79 @@
     color: var(--semantic-error, #f87171);
   }
 
+  /* Progress stage text */
+  .progress-stage {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    min-width: 100px;
+    white-space: nowrap;
+  }
+
+  /* Export error state */
+  .export-error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 320px;
+    padding: 16px;
+    background: color-mix(in srgb, var(--semantic-error, #f87171) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #f87171) 30%, transparent);
+    border-radius: 12px;
+  }
+
+  .export-error-state .error-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--semantic-error, #f87171);
+  }
+
+  .export-error-state .error-content i {
+    font-size: 16px;
+  }
+
+  .export-error-state .error-message {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .retry-export-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 100px;
+    height: 44px;
+    padding: 0 20px;
+    background: var(--theme-accent, #6366f1);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .retry-export-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 85%, white);
+    transform: scale(1.02);
+  }
+
+  .retry-export-btn:active {
+    transform: scale(0.98);
+  }
+
+  .retry-export-btn:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 2px;
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .spinner {
@@ -2331,6 +2438,7 @@
     .chip,
     .primary-export-btn,
     .cancel-export-btn,
+    .retry-export-btn,
     .progress-fill {
       transition: none !important;
     }
