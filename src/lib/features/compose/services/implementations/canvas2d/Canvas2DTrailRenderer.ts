@@ -75,10 +75,13 @@ function createSmoothCurve(
         : controlPoints[i + 1]!;
 
     // Calculate t values for centripetal parameterization
+    // Add small epsilon to prevent division by zero when points are identical
+    const EPSILON = 1e-6;
     const getT = (t: number, pa: Point2D, pb: Point2D) => {
       const dx = pb.x - pa.x;
       const dy = pb.y - pa.y;
-      return t + Math.pow(Math.sqrt(dx * dx + dy * dy), alpha);
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      return t + Math.max(EPSILON, Math.pow(dist, alpha));
     };
 
     const t0 = 0;
@@ -86,7 +89,8 @@ function createSmoothCurve(
     const t2 = getT(t1, p1, p2);
     const t3 = getT(t2, p2, p3);
 
-    // Linear interpolation helper
+    // Linear interpolation helper with safe division
+    const safeDivide = (num: number, den: number) => den === 0 ? 0 : num / den;
     const lerp = (pa: Point2D, pb: Point2D, t: number): Point2D => {
       const ct = Math.max(0, Math.min(1, t));
       return { x: pa.x + (pb.x - pa.x) * ct, y: pa.y + (pb.y - pa.y) * ct };
@@ -96,14 +100,14 @@ function createSmoothCurve(
     for (let j = 1; j <= subdivisions; j++) {
       const t = t1 + (j / subdivisions) * (t2 - t1);
 
-      const a1 = lerp(p0, p1, (t - t0) / (t1 - t0));
-      const a2 = lerp(p1, p2, (t - t1) / (t2 - t1));
-      const a3 = lerp(p2, p3, (t - t2) / (t3 - t2));
+      const a1 = lerp(p0, p1, safeDivide(t - t0, t1 - t0));
+      const a2 = lerp(p1, p2, safeDivide(t - t1, t2 - t1));
+      const a3 = lerp(p2, p3, safeDivide(t - t2, t3 - t2));
 
-      const b1 = lerp(a1, a2, (t - t0) / (t2 - t0));
-      const b2 = lerp(a2, a3, (t - t1) / (t3 - t1));
+      const b1 = lerp(a1, a2, safeDivide(t - t0, t2 - t0));
+      const b2 = lerp(a2, a3, safeDivide(t - t1, t3 - t1));
 
-      result.push(lerp(b1, b2, (t - t1) / (t2 - t1)));
+      result.push(lerp(b1, b2, safeDivide(t - t1, t2 - t1)));
     }
   }
 

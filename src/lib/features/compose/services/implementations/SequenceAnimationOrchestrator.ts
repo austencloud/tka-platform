@@ -514,6 +514,34 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
   }
 
   /**
+   * Convert a beat number (1-based) to a time position for duration-aware playback.
+   * Handles fractional beats by interpolating within the beat's duration.
+   *
+   * @param beat - The beat number (1-based, can be fractional like 2.5)
+   * @returns The time position in duration units
+   */
+  getTimePositionForBeat(beat: number): number {
+    if (beat <= 0 || this.steps.length === 0) {
+      return 0;
+    }
+
+    // Get the integer beat index (0-based) and fractional progress
+    const beatIndex = Math.floor(beat) - 1; // Convert 1-based to 0-based
+    const beatProgress = beat - Math.floor(beat);
+
+    // Calculate time position: sum of all previous beat durations + progress within current beat
+    let timePosition = this.stepCalculationService.getBeatStartTime(beatIndex, this.steps);
+
+    // Add progress within current beat
+    if (beatIndex >= 0 && beatIndex < this.steps.length) {
+      const currentBeatDuration = this.steps[beatIndex]?.duration ?? 1;
+      timePosition += beatProgress * currentBeatDuration;
+    }
+
+    return timePosition;
+  }
+
+  /**
    * Dispose of resources and reset state
    */
   dispose(): void {

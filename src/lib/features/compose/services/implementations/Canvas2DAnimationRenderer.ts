@@ -233,27 +233,39 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
       ctx.globalAlpha = blueAlpha;
 
       // Primary blue prop
-      this.renderProp(
-        ctx,
-        params.blueProp,
-        this.imageLoader.getBluePropImage(),
-        params.bluePropDimensions,
-        canvasSize,
-        params.bluePropFlipped ?? false,
-        params.bluePropType
-      );
+      const bluePropImage = this.imageLoader.getBluePropImage();
+      const hasSecondaryBlue = !!params.secondaryBlueProp;
 
-      // Secondary blue prop (tunnel mode)
-      if (params.secondaryBlueProp) {
+      // Debug: Warn if secondary exists but primary image is missing (indicates texture loading issue)
+      if (!bluePropImage && hasSecondaryBlue && this.imageLoader.getSecondaryBluePropImage()) {
+        console.warn("[Canvas2DAnimationRenderer] Primary blue texture missing but secondary exists - this may indicate a texture loading race condition");
+      }
+      if (bluePropImage) {
         this.renderProp(
           ctx,
-          params.secondaryBlueProp,
-          this.imageLoader.getSecondaryBluePropImage(),
+          params.blueProp,
+          bluePropImage,
           params.bluePropDimensions,
           canvasSize,
           params.bluePropFlipped ?? false,
           params.bluePropType
         );
+      }
+
+      // Secondary blue prop (stagger/tunnel mode)
+      if (params.secondaryBlueProp) {
+        const secondaryBluePropImage = this.imageLoader.getSecondaryBluePropImage();
+        if (secondaryBluePropImage) {
+          this.renderProp(
+            ctx,
+            params.secondaryBlueProp,
+            secondaryBluePropImage,
+            params.bluePropDimensions,
+            canvasSize,
+            params.bluePropFlipped ?? false,
+            params.bluePropType
+          );
+        }
       }
 
       ctx.restore();
@@ -266,27 +278,39 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
       ctx.globalAlpha = redAlpha;
 
       // Primary red prop
-      this.renderProp(
-        ctx,
-        params.redProp,
-        this.imageLoader.getRedPropImage(),
-        params.redPropDimensions,
-        canvasSize,
-        params.redPropFlipped ?? false,
-        params.redPropType
-      );
+      const redPropImage = this.imageLoader.getRedPropImage();
+      const hasSecondaryRed = !!params.secondaryRedProp;
 
-      // Secondary red prop (tunnel mode)
-      if (params.secondaryRedProp) {
+      // Debug: Warn if secondary exists but primary image is missing
+      if (!redPropImage && hasSecondaryRed && this.imageLoader.getSecondaryRedPropImage()) {
+        console.warn("[Canvas2DAnimationRenderer] Primary red texture missing but secondary exists - this may indicate a texture loading race condition");
+      }
+      if (redPropImage) {
         this.renderProp(
           ctx,
-          params.secondaryRedProp,
-          this.imageLoader.getSecondaryRedPropImage(),
+          params.redProp,
+          redPropImage,
           params.redPropDimensions,
           canvasSize,
           params.redPropFlipped ?? false,
           params.redPropType
         );
+      }
+
+      // Secondary red prop (stagger/tunnel mode)
+      if (params.secondaryRedProp) {
+        const secondaryRedPropImage = this.imageLoader.getSecondaryRedPropImage();
+        if (secondaryRedPropImage) {
+          this.renderProp(
+            ctx,
+            params.secondaryRedProp,
+            secondaryRedPropImage,
+            params.redPropDimensions,
+            canvasSize,
+            params.redPropFlipped ?? false,
+            params.redPropType
+          );
+        }
       }
 
       ctx.restore();

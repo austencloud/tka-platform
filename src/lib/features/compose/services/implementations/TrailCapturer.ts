@@ -674,11 +674,18 @@ export class TrailCapturer implements ITrailCapturer {
     const cutoffTime = currentTime - this.config.trailSettings.fadeDurationMs;
 
     // O(n) but only when needed (fade mode)
-    this.blueTrailBuffer.filterInPlace((p) => p.timestamp > cutoffTime);
-    this.redTrailBuffer.filterInPlace((p) => p.timestamp > cutoffTime);
-    this.secondaryBlueTrailBuffer.filterInPlace(
-      (p) => p.timestamp > cutoffTime
-    );
-    this.secondaryRedTrailBuffer.filterInPlace((p) => p.timestamp > cutoffTime);
+    // CRITICAL FIX: Also remove points with timestamp > currentTime
+    // These are leftover points from a previous loop iteration.
+    // When the animation loops, animRelativeTime resets to near 0, but old points
+    // from the previous loop have high timestamps (e.g., 8000ms). Without this check,
+    // the cutoffTime becomes negative and those old points are incorrectly kept,
+    // causing the renderer to draw lines connecting distant positions.
+    const isValidPoint = (p: TrailPoint) =>
+      p.timestamp > cutoffTime && p.timestamp <= currentTime;
+
+    this.blueTrailBuffer.filterInPlace(isValidPoint);
+    this.redTrailBuffer.filterInPlace(isValidPoint);
+    this.secondaryBlueTrailBuffer.filterInPlace(isValidPoint);
+    this.secondaryRedTrailBuffer.filterInPlace(isValidPoint);
   }
 }

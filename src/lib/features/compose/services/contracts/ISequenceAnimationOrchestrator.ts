@@ -78,4 +78,13 @@ export interface ISequenceAnimationOrchestrator {
    * Returns 0 if at start position.
    */
   getContinuousMusicalPosition(): number;
+
+  /**
+   * Convert a beat number (1-based) to a time position for duration-aware playback.
+   * Handles fractional beats by interpolating within the beat's duration.
+   *
+   * @param beat - The beat number (1-based, can be fractional like 2.5)
+   * @returns The time position in duration units
+   */
+  getTimePositionForBeat(beat: number): number;
 }

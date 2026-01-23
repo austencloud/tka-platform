@@ -201,6 +201,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     const clampedStep = Math.max(0, Math.min(beat, this.state.totalSteps));
     this.syncCurrentStep(clampedStep);
 
+    // Sync time position so continuous playback starts from here
+    this.timePosition = this.animationEngine.getTimePositionForBeat(clampedStep);
+
     // Calculate state for this beat
     this.animationEngine.calculateState(clampedStep);
     this.updatePropStatesFromEngine();
@@ -295,6 +298,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
       this.syncCurrentStep(finalStep);
       this.animationEngine.calculateState(finalStep);
       this.updatePropStatesFromEngine();
+
+      // Sync time position so continuous playback starts from the stepped position
+      this.timePosition = this.animationEngine.getTimePositionForBeat(finalStep);
     }
   }
 
