@@ -1,168 +1,207 @@
 <!--
   FeedTab.svelte
 
-  Public video feed with infinite scroll.
-  Displays videos from the community using CollaborativeVideoCard.
+  TikTok-style full-screen vertical feed with:
+  - Viewport-perfect cards (100dvh)
+  - Scroll snap on touch devices
+  - Snap detection with haptic feedback
+  - Directional preloading
+  - Floating header that auto-hides
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
-  import CollaborativeVideoCard from "$lib/shared/video-collaboration/components/CollaborativeVideoCard.svelte";
-  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import { createFeedState } from "../../state/feed-state.svelte";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import type { ModuleId } from "$lib/shared/navigation/domain/types";
+  import {
+    openSpotlightWithVideo,
+    openSpotlightWithImage,
+  } from "$lib/shared/application/state/ui/ui-state.svelte";
+  import {
+    userPreviewState,
+    getEffectiveUserId,
+  } from "$lib/shared/debug/state/user-preview-state.svelte";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { feedScrollState } from "../../state/feed-scroll-state.svelte";
 
-  interface Props {
-    onVideoClick?: (video: CollaborativeVideo) => void;
-  }
+  // Feed components
+  import FeedContainer from "../feed/FeedContainer.svelte";
+  import FloatingHeader from "../header/FloatingHeader.svelte";
 
-  const { onVideoClick }: Props = $props();
+  // State
+  import { createWatchFeedState } from "../../state/watch-feed-state.svelte";
+  import type { FeedItem } from "../../domain/models/feed-models";
 
-  const feedState = createFeedState();
+  // Services
+  let hapticService: IHapticFeedback | undefined;
 
-  onMount(() => {
-    loadVideos();
+  // State
+  const feedState = createWatchFeedState();
+  let isVisible = $state(false);
+
+  // Header visibility from scroll state
+  const isHeaderVisible = $derived(feedScrollState.isHeaderVisible);
+
+  // Preview-aware derived values
+  const isPreviewActive = $derived(userPreviewState.isActive);
+  const previewProfile = $derived(userPreviewState.data.profile);
+
+  const greeting = $derived.by(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t("dashboard_greeting_morning");
+    if (hour < 18) return t("dashboard_greeting_afternoon");
+    return t("dashboard_greeting_evening");
   });
 
-  async function loadVideos() {
-    const videoManager = container.items.collaborativeVideoManager;
-    if (!videoManager) {
-      feedState.setError("Video service unavailable");
-      return;
+  const effectiveWelcomeMessage = $derived.by(() => {
+    if (isPreviewActive && previewProfile) {
+      const firstName = (
+        previewProfile.displayName ||
+        previewProfile.email ||
+        "User"
+      ).split(" ")[0] ?? "User";
+      return t("dashboard_viewing_as", { name: firstName });
     }
+    if (authState.isAuthenticated && authState.user?.displayName) {
+      const firstName = authState.user.displayName.split(" ")[0];
+      return `${greeting}, ${firstName}`;
+    }
+    return "Watch";
+  });
 
-    feedState.setLoading();
+  // Settings-derived prop types
+  const bluePropType = $derived(settingsService.currentSettings.bluePropType);
+  const redPropType = $derived(settingsService.currentSettings.redPropType);
+  const catDogModeEnabled = $derived(settingsService.currentSettings.catDogMode);
 
+  onMount(() => {
     try {
-      const videos = await videoManager.getPublicVideos(20);
-      feedState.setVideos(videos, null, videos.length >= 20);
-    } catch (e) {
-      console.error("Failed to load public videos:", e);
-      feedState.setError(e instanceof Error ? e.message : "Failed to load videos");
+      hapticService = container.items.hapticFeedback;
+    } catch {
+      // Not available
     }
+
+    setTimeout(() => {
+      isVisible = true;
+    }, 30);
+
+    // Load initial feed
+    feedState.loadInitial();
+
+    return () => {
+      feedScrollState.reset();
+    };
+  });
+
+  // Feed handlers
+  function handleLoadMore() {
+    feedState.loadMore();
+  }
+
+  function handleCardClick(item: FeedItem) {
+    hapticService?.trigger("selection");
+    // Open in fullscreen spotlight - tap to dismiss
+    if (item.contentType === "video" && item.videoUrl) {
+      openSpotlightWithVideo(item.videoUrl, item.thumbnailUrl);
+    } else if (item.contentType === "animation" && item.animationUrl) {
+      openSpotlightWithImage(item.animationUrl);
+    } else if (item.thumbnailUrl) {
+      openSpotlightWithImage(item.thumbnailUrl);
+    }
+  }
+
+  function handleCreatorClick(creatorId: string, creatorName: string) {
+    hapticService?.trigger("selection");
+    const event = new CustomEvent("open-user-profile", {
+      detail: { userId: creatorId, displayName: creatorName },
+      bubbles: true,
+    });
+    document.dispatchEvent(event);
+  }
+
+  function handleCtaClick(item: FeedItem) {
+    hapticService?.trigger("selection");
+    switch (item.intent) {
+      case "tutorial":
+        handleModuleChange("learn" as ModuleId);
+        break;
+      case "demo":
+      case "sequence":
+        if (item.sequenceId) {
+          handleModuleChange("explore" as ModuleId, { sequenceId: item.sequenceId });
+        }
+        break;
+      case "composition":
+        handleModuleChange("compose" as ModuleId, { sequenceId: item.sequenceId });
+        break;
+    }
+  }
+
+  // Header icon handlers
+  function handleInboxClick() {
+    hapticService?.trigger("selection");
+    // TODO: Implement messages view navigation
+  }
+
+  function handleAlertsClick() {
+    hapticService?.trigger("selection");
+    // TODO: Implement notifications view navigation
   }
 </script>
 
-<div class="feed-tab">
-  {#if feedState.isLoading && feedState.videos.length === 0}
-    <div class="loading-state">
-      <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      <span>Loading videos...</span>
-    </div>
-  {:else if feedState.error}
-    <div class="error-state">
-      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-      <span>{feedState.error}</span>
-      <button class="retry-btn" onclick={loadVideos}>
-        <i class="fas fa-redo" aria-hidden="true"></i>
-        Retry
-      </button>
-    </div>
-  {:else if feedState.isEmpty}
-    <div class="empty-state">
-      <i class="fas fa-video-slash" aria-hidden="true"></i>
-      <span>No public videos yet</span>
-      <p class="empty-hint">Be the first to share a video with the community!</p>
-    </div>
-  {:else}
-    <div class="videos-grid">
-      {#each feedState.videos as video (video.id)}
-        <CollaborativeVideoCard
-          {video}
-          onclick={() => onVideoClick?.(video)}
-        />
-      {/each}
-    </div>
+<div class="feed-tab" class:visible={isVisible}>
+  <!-- Floating Header (auto-hides on scroll) -->
+  <FloatingHeader
+    welcomeMessage={effectiveWelcomeMessage}
+    isVisible={isHeaderVisible}
+    onInboxClick={handleInboxClick}
+    onAlertsClick={handleAlertsClick}
+  />
 
-    {#if feedState.isLoading}
-      <div class="loading-more">
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <span>Loading more...</span>
-      </div>
-    {/if}
-  {/if}
+  <!-- Feed container - full viewport, positioned absolute -->
+  <FeedContainer
+    items={feedState.items}
+    isLoading={feedState.isLoading}
+    hasMore={feedState.hasMore}
+    {bluePropType}
+    {redPropType}
+    {catDogModeEnabled}
+    onLoadMore={handleLoadMore}
+    onCardClick={handleCardClick}
+    onCreatorClick={handleCreatorClick}
+    onCtaClick={handleCtaClick}
+  />
 </div>
 
 <style>
   .feed-tab {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 1rem;
-    overflow-y: auto;
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    max-width: 100%;
+    overflow: hidden;
+    background: #000;
+    opacity: 0;
+    transition: opacity var(--duration-emphasis, 200ms) ease;
   }
 
-  .loading-state,
-  .error-state,
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    padding: 4rem 1rem;
-    text-align: center;
-    color: var(--theme-text-dim, var(--text-secondary));
-  }
-
-  .loading-state i,
-  .error-state i,
-  .empty-state i {
-    font-size: 2.5rem;
-    opacity: 0.4;
-  }
-
-  .error-state {
-    color: var(--semantic-error);
-  }
-
-  .empty-hint {
-    font-size: var(--font-size-compact, 12px);
-    opacity: 0.6;
-    margin-top: 0.5rem;
-  }
-
-  .retry-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 1rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    color: var(--theme-text-dim, var(--text-secondary));
-    font-size: var(--font-size-sm, 14px);
-    cursor: pointer;
-    transition: all var(--duration-normal, 150ms) ease;
-  }
-
-  .retry-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--theme-text, var(--text-primary));
-  }
-
-  .videos-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
-  }
-
-  .loading-more {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 1.5rem;
-    color: var(--theme-text-dim, var(--text-secondary));
-    font-size: var(--font-size-sm, 14px);
-  }
-
-  @media (max-width: 640px) {
+  /* Fallback for browsers without dvh */
+  @supports not (height: 100dvh) {
     .feed-tab {
-      padding: 0.75rem;
+      height: var(--viewport-height, 100vh);
     }
+  }
 
-    .videos-grid {
-      grid-template-columns: 1fr;
+  .feed-tab.visible {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .feed-tab {
+      transition: none;
     }
   }
 </style>

@@ -8,8 +8,9 @@ import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/
 
 /**
  * Tab identifiers for the Watch module
+ * Note: Showcase merged into Library. Curator is admin-only (handled separately).
  */
-export type WatchTabId = "feed" | "library" | "showcase";
+export type WatchTabId = "feed" | "library";
 
 /**
  * Pagination cursor for infinite scroll
