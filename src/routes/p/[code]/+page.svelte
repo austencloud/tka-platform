@@ -40,6 +40,9 @@
       const shortCodeManager = container.items.shortCodeManager;
 
       // Resolve short code to sequence
+      // Handles both formats:
+      // - s~{encodedData} → offline decode (no Firebase needed)
+      // - {shortCode} → Firebase lookup (traditional)
       const resolvedSequence =
         await shortCodeManager.resolveShortCode(shortCode);
 
@@ -52,10 +55,14 @@
       sequence = resolvedSequence;
       isLoading = false;
 
-      // Increment scan count for analytics (fire-and-forget)
-      shortCodeManager.incrementScanCount(shortCode).catch((err) => {
-        console.warn("Failed to increment scan count:", err);
-      });
+      // Only increment scan count for Firebase-backed short codes (not offline codes)
+      // Offline codes are inline-encoded and have no Firebase record to update
+      const sequenceEncoder = container.items.sequenceEncoder;
+      if (!sequenceEncoder.isInlineEncoded(shortCode)) {
+        shortCodeManager.incrementScanCount(shortCode).catch((err) => {
+          console.warn("Failed to increment scan count:", err);
+        });
+      }
     } catch (err) {
       console.error("Failed to load sequence:", err);
       error = "Failed to load sequence";

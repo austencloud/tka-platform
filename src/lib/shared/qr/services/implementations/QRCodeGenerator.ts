@@ -151,7 +151,24 @@ export class QRCodeGenerator implements IQRCodeGenerator {
     sequence: SequenceData,
     options?: QRCodeOptions
   ): Promise<QRCodeResult> {
-    // Create short code for the sequence
+    // Check if offline mode is requested
+    if (options?.offline) {
+      // Create offline code with embedded sequence data
+      const { code, url: offlineUrl } =
+        this.shortCodeManager.createOfflineCode(sequence);
+
+      // Generate QR code
+      const { svg, dataUrl } = await this.generateQR(offlineUrl, options);
+
+      return {
+        svg,
+        dataUrl,
+        encodedUrl: offlineUrl,
+        shortCode: code, // This will be the s~... code
+      };
+    }
+
+    // Default: Create Firebase-backed short code for smaller QR codes
     const { code, url: shortUrl } =
       await this.shortCodeManager.createShortCode(sequence);
 

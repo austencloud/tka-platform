@@ -70,6 +70,12 @@ export interface QRCodeOptions {
   margin?: number;
   /** Style configuration or preset name */
   style?: QRCodeStyle | QRStylePreset;
+  /**
+   * Generate an offline-capable QR code that embeds sequence data directly.
+   * When true, the QR code works without internet (no Firebase lookup needed).
+   * Default: false (uses Firebase short codes for smaller QR codes)
+   */
+  offline?: boolean;
 }
 
 /**

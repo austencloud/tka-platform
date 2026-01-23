@@ -35,6 +35,7 @@ import type {
   CompressionResult,
   ShareURLResult,
   DeepLinkParseResult,
+  QRSizeEstimate,
 } from "../contracts/ISequenceEncoder";
 
 // ============================================================================
@@ -446,6 +447,95 @@ export class SequenceEncoder implements ISequenceEncoder {
       compressed: false,
       savings: 0,
     };
+  }
+
+  // ============================================================================
+  // QR Code Offline Methods
+  // ============================================================================
+
+  /** Prefix for inline-encoded offline QR codes */
+  private static readonly INLINE_PREFIX = "s~";
+
+  /**
+   * Encode a sequence for QR code offline use.
+   * Returns a string prefixed with "s~" containing compressed sequence data.
+   */
+  encodeForQR(sequence: SequenceData): string {
+    const { encoded } = this.encodeWithCompression(sequence);
+    return `${SequenceEncoder.INLINE_PREFIX}${encoded}`;
+  }
+
+  /**
+   * Check if a code is an inline-encoded offline QR code (starts with "s~")
+   */
+  isInlineEncoded(code: string): boolean {
+    return code.startsWith(SequenceEncoder.INLINE_PREFIX);
+  }
+
+  /**
+   * Decode an inline-encoded QR code string back to SequenceData.
+   * Strips the "s~" prefix, decompresses, and parses.
+   */
+  decodeFromQR(encoded: string): SequenceData {
+    // Strip prefix if present
+    const data = encoded.startsWith(SequenceEncoder.INLINE_PREFIX)
+      ? encoded.slice(SequenceEncoder.INLINE_PREFIX.length)
+      : encoded;
+
+    // Use existing decompression logic
+    return this.decodeWithCompression(data);
+  }
+
+  /**
+   * Estimate the QR code size needed for offline encoding.
+   * QR version capacities (alphanumeric, error correction M):
+   * - Version 5 (37×37): 224 chars - comfortable phone scan
+   * - Version 10 (57×57): 395 chars - still scannable
+   * - Version 15 (77×77): 589 chars - needs good camera
+   * - Version 20+ : dense, may have scanning issues
+   */
+  estimateOfflineQRSize(sequence: SequenceData): QRSizeEstimate {
+    const encoded = this.encodeForQR(sequence);
+    const length = encoded.length;
+
+    // QR alphanumeric capacity at error correction M
+    // These are conservative estimates for reliable scanning
+    const VERSION_CAPACITIES = [
+      { version: 5, capacity: 224, comfortable: true },
+      { version: 10, capacity: 395, comfortable: true },
+      { version: 15, capacity: 589, comfortable: false },
+      { version: 20, capacity: 858, comfortable: false },
+      { version: 25, capacity: 1182, comfortable: false },
+    ];
+
+    let recommendedVersion = 40; // Max version
+    let comfortable = false;
+
+    for (const { version, capacity, comfortable: isComfortable } of VERSION_CAPACITIES) {
+      if (length <= capacity) {
+        recommendedVersion = version;
+        comfortable = isComfortable;
+        break;
+      }
+    }
+
+    const result: QRSizeEstimate = {
+      encodedLength: length,
+      recommendedVersion,
+      offlineRecommended: comfortable,
+    };
+
+    // Add warnings for large sequences
+    if (recommendedVersion > 15) {
+      result.warning = `Sequence produces a dense QR code (${length} chars). ` +
+        `Consider using online mode for better scanning reliability.`;
+      result.offlineRecommended = false;
+    } else if (recommendedVersion > 10) {
+      result.warning = `Sequence is moderately large (${length} chars). ` +
+        `QR code will require good lighting and a steady hand to scan.`;
+    }
+
+    return result;
   }
 
   // ============================================================================

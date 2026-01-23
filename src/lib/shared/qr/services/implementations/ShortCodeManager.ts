@@ -25,6 +25,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
 import type {
   IShortCodeManager,
   ShortCodeRecord,
@@ -41,7 +42,10 @@ const ALPHABET =
 export class ShortCodeManager implements IShortCodeManager {
   private firestore: Firestore | null = null;
 
-  constructor(private readonly exploreLoader: IExploreLoader) {}
+  constructor(
+    private readonly exploreLoader: IExploreLoader,
+    private readonly sequenceEncoder: ISequenceEncoder
+  ) {}
 
   /**
    * Initialize Firestore instance (called lazily)
@@ -135,6 +139,19 @@ export class ShortCodeManager implements IShortCodeManager {
   }
 
   /**
+   * Create an offline-capable code for a sequence.
+   * Embeds all sequence data in the URL, no Firebase lookup needed.
+   */
+  createOfflineCode(sequence: SequenceData): CreateShortCodeResult {
+    const code = this.sequenceEncoder.encodeForQR(sequence);
+    return {
+      code,
+      url: `${this.getBaseUrl()}/p/${code}`,
+      isNew: true, // Offline codes are always "new" (not stored)
+    };
+  }
+
+  /**
    * Find an existing short code for an encoded sequence
    */
   private async findExistingCode(encoded: string): Promise<string | null> {
@@ -153,6 +170,18 @@ export class ShortCodeManager implements IShortCodeManager {
   }
 
   async resolveShortCode(code: string): Promise<SequenceData | null> {
+    // Check if this is an inline-encoded offline code (s~...)
+    if (this.sequenceEncoder.isInlineEncoded(code)) {
+      try {
+        // Decode directly - no Firebase needed, works offline!
+        return this.sequenceEncoder.decodeFromQR(code);
+      } catch (error) {
+        console.error("Failed to decode inline sequence:", error);
+        return null;
+      }
+    }
+
+    // Existing Firebase lookup for traditional short codes
     const firestore = await this.ensureFirestore();
     const docRef = doc(firestore, SHORTCODES_COLLECTION, code);
     const docSnap = await getDoc(docRef);

@@ -50,6 +50,15 @@ export interface IShortCodeManager {
   createShortCode(sequence: SequenceData): Promise<CreateShortCodeResult>;
 
   /**
+   * Create an offline-capable code for a sequence.
+   * Returns a URL that embeds all sequence data, working without Firebase.
+   *
+   * @param sequence - The sequence to encode
+   * @returns The offline code (s~...) and full URL
+   */
+  createOfflineCode(sequence: SequenceData): CreateShortCodeResult;
+
+  /**
    * Resolve a short code to its sequence data.
    * Returns null if the code doesn't exist.
    *

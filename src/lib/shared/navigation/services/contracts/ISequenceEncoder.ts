@@ -100,4 +100,68 @@ export interface ISequenceEncoder {
     sequence: SequenceData,
     options?: { compress?: boolean }
   ): ShareURLResult;
+
+  /**
+   * Encode a sequence for QR code offline use.
+   * Returns a string prefixed with "s~" that contains all sequence data
+   * compressed and URL-safe, allowing the sequence to load without Firebase.
+   *
+   * Uses LZString compression (60-70% savings). A typical 16-beat sequence
+   * compresses to ~100-150 chars, fitting in a QR-5 (224 char capacity).
+   *
+   * @param sequence - The sequence to encode
+   * @returns URL-safe encoded string with "s~" prefix
+   *
+   * @example
+   * ```typescript
+   * // Generate offline QR code
+   * const offlineCode = sequenceEncoder.encodeForQR(mySequence);
+   * const url = `https://thekineticalphabet.com/p/${offlineCode}`;
+   *
+   * // Or use via QRCodeGenerator (recommended)
+   * const qr = await qrCodeGenerator.generateForSequence(sequence, { offline: true });
+   * ```
+   */
+  encodeForQR(sequence: SequenceData): string;
+
+  /**
+   * Check if a code is an inline-encoded offline QR code (starts with "s~")
+   *
+   * @param code - The code to check
+   * @returns True if this is an inline-encoded offline code
+   */
+  isInlineEncoded(code: string): boolean;
+
+  /**
+   * Decode an inline-encoded QR code string back to SequenceData.
+   * Strips the "s~" prefix, decompresses, and parses.
+   *
+   * @param encoded - The encoded string (with or without "s~" prefix)
+   * @returns Decoded sequence data
+   * @throws Error if decoding fails
+   */
+  decodeFromQR(encoded: string): SequenceData;
+
+  /**
+   * Estimate the QR code size needed for offline encoding of a sequence.
+   * Useful for warning users when a sequence may produce a dense QR code.
+   *
+   * @param sequence - The sequence to estimate
+   * @returns Estimation with encoded length and recommended QR version
+   */
+  estimateOfflineQRSize(sequence: SequenceData): QRSizeEstimate;
+}
+
+/**
+ * QR code size estimation result
+ */
+export interface QRSizeEstimate {
+  /** Length of the encoded string (including s~ prefix) */
+  encodedLength: number;
+  /** Recommended QR version (1-40, higher = denser) */
+  recommendedVersion: number;
+  /** Whether offline mode is recommended for this sequence */
+  offlineRecommended: boolean;
+  /** Warning message if sequence is too large for comfortable scanning */
+  warning?: string;
 }
