@@ -27,7 +27,7 @@ import { mandalaContainer } from "./containers/mandala-container";
 import { createBuildContainer } from "./containers/build-container";
 import { createAnimatorContainer } from "./containers/animator-container";
 import { createLoopLabelerContainer } from "./containers/loop-labeler-container";
-import { createDiscoverContainer } from "./containers/discover-container";
+import { createExploreContainer } from "./containers/explore-container";
 import { createNavigationContainer } from "./containers/navigation-container";
 import { createRenderContainer } from "./containers/render-container";
 import { createTrainContainer } from "./containers/train-container";
@@ -74,7 +74,7 @@ const navigationContainer = createNavigationContainer({
 const shareContainer = createShareContainer(renderContainer.items.sequenceRenderer);
 
 // Discover container needs multiple external deps
-const discoverContainer = createDiscoverContainer({
+const exploreContainer = createExploreContainer({
   wordDeriver: coreContainer.items.wordDeriver,
   deviceDetector: coreContainer.items.deviceDetector,
   sequenceRenderer: renderContainer.items.sequenceRenderer,
@@ -112,7 +112,7 @@ const animatorContainer = createAnimatorContainer({
   fileDownloader: coreContainer.items.fileDownloader,
   sequenceRepository: dataContainer.items.sequenceRepository,
   sequenceTransformer: buildContainer.items.sequenceTransformer,
-  discoverLoader: discoverContainer.items.discoverLoader,
+  exploreLoader: exploreContainer.items.exploreLoader,
 });
 
 // Loop labeler container needs sequenceAnalyzer from build
@@ -151,12 +151,12 @@ const libraryContainer = createLibraryContainer({
   },
 });
 
-// QR container needs discoverLoader for loading full sequence data
-const qrContainer = createQRContainer(discoverContainer.items.discoverLoader);
+// QR container needs exploreLoader for loading full sequence data
+const qrContainer = createQRContainer(exploreContainer.items.exploreLoader);
 
-// Animation 3D container needs discoverLoader
+// Animation 3D container needs exploreLoader
 const animation3DContainer = createAnimation3DContainer({
-  discoverLoader: discoverContainer.items.discoverLoader,
+  exploreLoader: exploreContainer.items.exploreLoader,
 });
 
 // Gallery container needs libraryRepository
@@ -198,9 +198,9 @@ export const container = createContainer()
   .add(animatorContainer.items)
   // Features
   .add(buildContainer.items)
-  // NOTE: discoverContainer has naming conflicts (filterPersister, navigator)
+  // NOTE: exploreContainer has naming conflicts (filterPersister, navigator)
   // Using upsert to allow overwriting - these should be renamed in a follow-up
-  .upsert(discoverContainer.items)
+  .upsert(exploreContainer.items)
   .add(trainContainer.items)
   .add(learnContainer.items)
   .add(libraryContainer.items)

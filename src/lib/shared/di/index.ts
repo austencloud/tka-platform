@@ -31,7 +31,7 @@ import { mandalaContainer } from "./containers/mandala-container";
 import { createBuildContainer } from "./containers/build-container";
 import { createAnimatorContainer } from "./containers/animator-container";
 import { createLoopLabelerContainer } from "./containers/loop-labeler-container";
-import { createDiscoverContainer } from "./containers/discover-container";
+import { createExploreContainer } from "./containers/explore-container";
 import { createNavigationContainer } from "./containers/navigation-container";
 import { createRenderContainer } from "./containers/render-container";
 import { createTrainContainer } from "./containers/train-container";
@@ -52,6 +52,7 @@ import { createPoiLabContainer } from "./containers/poi-lab-container";
 import { createLandingPreviewContainer } from "./containers/landing-preview-container";
 import { createModerationContainer } from "./containers/moderation-container";
 import { createHallOfShameContainer } from "./containers/hall-of-shame-container";
+import { createWatchContainer } from "./containers/watch-container";
 
 // ============================================================================
 // INSTANTIATE FACTORY CONTAINERS WITH STUB DEPENDENCIES
@@ -86,8 +87,8 @@ const navigationContainer = typeof window !== 'undefined' ? createNavigationCont
 // Share container needs sequenceRenderer from render
 const shareContainer = typeof window !== 'undefined' ? createShareContainer(renderContainer.items.sequenceRenderer) : null as any;
 
-// Discover container needs multiple external deps
-const discoverContainer = typeof window !== 'undefined' ? createDiscoverContainer({
+// Explore container needs multiple external deps
+const exploreContainer = typeof window !== 'undefined' ? createExploreContainer({
   wordDeriver: coreContainer.items.wordDeriver,
   deviceDetector: coreContainer.items.deviceDetector,
   sequenceRenderer: renderContainer.items.sequenceRenderer,
@@ -133,7 +134,7 @@ const animatorContainer = typeof window !== 'undefined' ? createAnimatorContaine
   fileDownloader: coreContainer.items.fileDownloader,
   sequenceRepository: dataContainer.items.sequenceRepository,
   sequenceTransformer: buildContainer.items.sequenceTransformer,
-  discoverLoader: discoverContainer.items.discoverLoader,
+  exploreLoader: exploreContainer.items.exploreLoader,
   sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
 }) : null as any;
 
@@ -180,12 +181,12 @@ const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer(
   },
 }) : null as any;
 
-// QR container needs discoverLoader for loading full sequence data
-const qrContainer = typeof window !== 'undefined' ? createQRContainer(discoverContainer.items.discoverLoader) : null as any;
+// QR container needs exploreLoader for loading full sequence data
+const qrContainer = typeof window !== 'undefined' ? createQRContainer(exploreContainer.items.exploreLoader) : null as any;
 
-// Animation 3D container needs discoverLoader
+// Animation 3D container needs exploreLoader
 const animation3DContainer = typeof window !== 'undefined' ? createAnimation3DContainer({
-  discoverLoader: discoverContainer.items.discoverLoader,
+  exploreLoader: exploreContainer.items.exploreLoader,
 }) : null as any;
 
 // Gallery container needs libraryRepository
@@ -206,6 +207,13 @@ const landingPreviewContainer = typeof window !== 'undefined' ? createLandingPre
 
 // Hall of Shame container - self-contained, no external dependencies
 const hallOfShameContainer = typeof window !== 'undefined' ? createHallOfShameContainer() : null as any;
+
+
+// Watch container - needs collaborativeVideoManager from share and exploreLoader from explore
+const watchContainer = typeof window !== 'undefined' ? createWatchContainer({
+  collaborativeVideoManager: shareContainer.items.collaborativeVideoManager,
+  exploreLoader: exploreContainer.items.exploreLoader,
+}) : null as any;
 
 // ============================================================================
 // COMPOSE ALL CONTAINERS INTO ONE
@@ -235,9 +243,9 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(animatorContainer.items)
   // Features
   .add(buildContainer.items)
-  // NOTE: discoverContainer has naming conflicts (filterPersister, navigator)
+  // NOTE: exploreContainer has naming conflicts (filterPersister, navigator)
   // Using upsert to allow overwriting - these should be renamed in a follow-up
-  .upsert(discoverContainer.items)
+  .upsert(exploreContainer.items)
   .add(trainContainer.items)
   .add(learnContainer.items)
   .add(libraryContainer.items)
@@ -265,7 +273,8 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(poiLabContainer.items)
   .add(landingPreviewContainer.items)
   .add(moderationContainer.items)
-  .add(hallOfShameContainer.items) : null as any;
+  .add(hallOfShameContainer.items)
+  .add(watchContainer.items) : null as any;
 
 // Export type for the composed container
 export type AppContainer = typeof container;

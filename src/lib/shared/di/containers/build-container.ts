@@ -64,6 +64,7 @@ import { LOOPEndPositionSelector } from "$lib/features/create/generate/circular/
 import { TypographyScaler } from "$lib/features/create/generate/shared/services/implementations/TypographyScaler";
 import { CardConfigurator } from "$lib/features/create/generate/shared/services/implementations/CardConfigurator";
 import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { SequenceToEntryConverter } from "$lib/features/choreo-card/services/implementations/SequenceToEntryConverter";
 import { LOOPDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
 import { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 import { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
@@ -255,6 +256,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
 
         // Generation - no deps (moved from Layer 4)
         loopTypeResolver: () => new LOOPTypeResolver(),
+        sequenceToEntryConverter: () => new SequenceToEntryConverter(),
         rotatedEndPositionSelector: () => new RotatedEndPositionSelector(),
         orientationCycleDetector: () => new OrientationCycleDetector(),
       })

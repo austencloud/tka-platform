@@ -7,19 +7,19 @@
  */
 
 import { createContainer } from "iti";
-import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
 import { ShortCodeManager } from "$lib/shared/qr/services/implementations/ShortCodeManager";
 import { QRCodeGenerator } from "$lib/shared/qr/services/implementations/QRCodeGenerator";
 
 /**
  * Create the QR container with external dependencies
  *
- * @param discoverLoader - Required dependency from discover module (for loading full sequence data)
+ * @param exploreLoader - Required dependency from discover module (for loading full sequence data)
  */
-export function createQRContainer(discoverLoader: IDiscoverLoader) {
-  // Layer 1: ShortCodeManager (depends on external discoverLoader)
+export function createQRContainer(exploreLoader: IExploreLoader) {
+  // Layer 1: ShortCodeManager (depends on external exploreLoader)
   const baseContainer = createContainer().add({
-    shortCodeManager: () => new ShortCodeManager(discoverLoader),
+    shortCodeManager: () => new ShortCodeManager(exploreLoader),
   });
 
   // Layer 2: QRCodeGenerator (depends on shortCodeManager)

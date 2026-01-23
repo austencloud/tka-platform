@@ -45,7 +45,7 @@ import type { ISvgImageConverter } from "$lib/shared/foundation/services/contrac
 import type { IFileDownloader } from "$lib/shared/foundation/services/contracts/IFileDownloader";
 import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
 import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
-import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
 import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
 
 /**
@@ -58,7 +58,7 @@ export interface AnimatorContainerDependencies {
   fileDownloader: IFileDownloader;
   sequenceRepository: ISequenceRepository;
   sequenceTransformer: ISequenceTransformer;
-  discoverLoader: IDiscoverLoader;
+  exploreLoader: IExploreLoader;
   sequenceLoopabilityChecker: ISequenceLoopabilityChecker;
 }
 
@@ -138,7 +138,7 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
     }))
     .add(() => ({
       sequenceMotionLoader: () =>
-        new SequenceMotionLoader(externalDeps.discoverLoader),
+        new SequenceMotionLoader(externalDeps.exploreLoader),
     }));
 }
 
