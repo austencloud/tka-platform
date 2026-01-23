@@ -53,6 +53,7 @@ import { createLandingPreviewContainer } from "./containers/landing-preview-cont
 import { createModerationContainer } from "./containers/moderation-container";
 import { createHallOfShameContainer } from "./containers/hall-of-shame-container";
 import { createWatchContainer } from "./containers/watch-container";
+import { createLanSyncContainer } from "./containers/lan-sync-container";
 
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
@@ -133,6 +134,7 @@ const buildContainer = typeof window !== 'undefined' ? createBuildContainer({
 const animatorContainer = typeof window !== 'undefined' ? createAnimatorContainer({
   imageComposer: renderContainer.items.imageComposer,
   dimensionCalculator: renderContainer.items.dimensionCalculator,
+  layoutCalculator: renderContainer.items.layoutCalculator,
   svgImageConverter: coreContainer.items.svgImageConverter,
   fileDownloader: coreContainer.items.fileDownloader,
   sequenceRepository: dataContainer.items.sequenceRepository,
@@ -184,8 +186,11 @@ const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer(
   },
 }) : null as any;
 
-// QR container needs exploreLoader for loading full sequence data
-const qrContainer = typeof window !== 'undefined' ? createQRContainer(exploreContainer.items.exploreLoader) : null as any;
+// QR container needs exploreLoader and sequenceEncoder for dual-mode (online/offline)
+const qrContainer = typeof window !== 'undefined' ? createQRContainer({
+  exploreLoader: exploreContainer.items.exploreLoader,
+  sequenceEncoder: navigationContainer.items.sequenceEncoder,
+}) : null as any;
 
 // Animation 3D container needs exploreLoader
 const animation3DContainer = typeof window !== 'undefined' ? createAnimation3DContainer({
@@ -217,6 +222,9 @@ const watchContainer = typeof window !== 'undefined' ? createWatchContainer({
   collaborativeVideoManager: shareContainer.items.collaborativeVideoManager,
   exploreLoader: exploreContainer.items.exploreLoader,
 }) : null as any;
+
+// LAN Sync container - self-contained, no external dependencies
+const lanSyncContainer = typeof window !== 'undefined' ? createLanSyncContainer() : null as any;
 
 // DeepLinkResolver - needs sequenceRepository from data and exploreLoader from explore
 const deepLinkResolver = typeof window !== 'undefined' ? new DeepLinkResolver(
@@ -284,6 +292,7 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(moderationContainer.items)
   .add(hallOfShameContainer.items)
   .add(watchContainer.items)
+  .add(lanSyncContainer.items)
   // Cross-container services (depend on multiple container outputs)
   .add({ deepLinkResolver: () => deepLinkResolver }) : null as any;
 

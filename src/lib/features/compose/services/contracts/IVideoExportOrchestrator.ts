@@ -23,6 +23,8 @@ export interface VideoExportOrchestratorOptions {
   filename?: string;
   /** Frame rate in FPS (default: 50) */
   fps?: number;
+  /** Number of times to loop the sequence (default: 1, only used for loopable sequences) */
+  loopCount?: number;
   /** Desired output format (mp4 or webm) */
   format?: VideoExportFormat;
   /** Composite mode: renders animation + grid side-by-side with beat highlighting */

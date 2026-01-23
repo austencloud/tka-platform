@@ -1,16 +1,12 @@
 <!--
   SequencePanel.svelte
 
+  @deprecated LEGACY COMPONENT - Use SequenceDetailsModal instead.
+  This component uses the deprecated SequenceViewer. New sequence viewing/editing
+  should use SequenceDetailsModal which provides split view with export capabilities.
+
+  Legacy description (for reference):
   Unified sequence viewer panel that works in both Browse (Discover) and Edit (Create) modes.
-
-  Features:
-  - Core media viewer (image/animation/video via SequenceViewer)
-  - QuickShareRow always visible (Copy as primary action)
-  - Contextual actions based on mode
-  - Browse mode: Creator badge, variations, favorite/fork/edit/delete, video panel
-  - Edit mode: Export controls, visibility settings, save to library
-
-  This component unifies SequenceDetailContent (Discover) and ShareHub (Create) patterns.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

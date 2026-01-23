@@ -108,11 +108,13 @@ const buildContainer = createBuildContainer({
 const animatorContainer = createAnimatorContainer({
   imageComposer: renderContainer.items.imageComposer,
   dimensionCalculator: renderContainer.items.dimensionCalculator,
+  layoutCalculator: renderContainer.items.layoutCalculator,
   svgImageConverter: coreContainer.items.svgImageConverter,
   fileDownloader: coreContainer.items.fileDownloader,
   sequenceRepository: dataContainer.items.sequenceRepository,
   sequenceTransformer: buildContainer.items.sequenceTransformer,
   exploreLoader: exploreContainer.items.exploreLoader,
+  sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
 });
 
 // Loop labeler container needs sequenceAnalyzer from build

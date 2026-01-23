@@ -42,6 +42,7 @@ import { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/imple
 // Type imports for external dependencies
 import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
 import type { IDimensionCalculator } from "$lib/shared/render/services/contracts/IDimensionCalculator";
+import type { ILayoutCalculator } from "$lib/shared/render/services/contracts/ILayoutCalculator";
 import type { ISvgImageConverter } from "$lib/shared/foundation/services/contracts/ISvgImageConverter";
 import type { IFileDownloader } from "$lib/shared/foundation/services/contracts/IFileDownloader";
 import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
@@ -55,6 +56,7 @@ import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services
 export interface AnimatorContainerDependencies {
   imageComposer: IImageComposer;
   dimensionCalculator: IDimensionCalculator;
+  layoutCalculator: ILayoutCalculator;
   svgImageConverter: ISvgImageConverter;
   fileDownloader: IFileDownloader;
   sequenceRepository: ISequenceRepository;
@@ -117,7 +119,8 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
       compositeVideoRenderer: () =>
         new CompositeVideoRenderer(
           externalDeps.imageComposer,
-          externalDeps.dimensionCalculator
+          externalDeps.dimensionCalculator,
+          externalDeps.layoutCalculator
         ),
     }))
     .add((ctx) => ({

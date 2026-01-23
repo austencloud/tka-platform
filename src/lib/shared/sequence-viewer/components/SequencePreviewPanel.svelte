@@ -1,12 +1,12 @@
 <!--
   SequencePreviewPanel.svelte
 
-  Internal sequence preview panel used within Create module and Discover gallery.
-  Works in two modes:
-  - preview: Export-focused (Create module) - shows export controls, format selection
-  - full: Detail-focused (Discover gallery) - shows metadata, favorites, actions
+  @deprecated LEGACY COMPONENT - Use SequenceDetailsModal instead.
+  This component uses the deprecated SequenceViewer. New sequence previews
+  should use SequenceDetailsModal with its split view and export capabilities.
 
-  Uses SequenceViewer for the core media display with tabs.
+  Legacy description (for reference):
+  Internal sequence preview panel used within Create module and Discover gallery.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

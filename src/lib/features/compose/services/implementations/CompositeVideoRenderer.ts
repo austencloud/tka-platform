@@ -18,6 +18,7 @@ import type {
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
 import type { IDimensionCalculator } from "$lib/shared/render/services/contracts/IDimensionCalculator";
+import type { ILayoutCalculator } from "$lib/shared/render/services/contracts/ILayoutCalculator";
 
 export class CompositeVideoRenderer implements ICompositeVideoRenderer {
   private sequence: SequenceData | null = null;
@@ -25,10 +26,12 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
   private cachedGridCanvas: HTMLCanvasElement | null = null;
   private dimensions: CompositeDimensions | null = null;
   private gridDimensions: { width: number; height: number } | null = null;
+  private gridLayout: [number, number] | null = null; // [columns, rows] from LayoutCalculator
 
   constructor(
-    private ImageComposer: IImageComposer,
-    private dimensionService: IDimensionCalculator
+    private imageComposer: IImageComposer,
+    private dimensionService: IDimensionCalculator,
+    private layoutCalculator: ILayoutCalculator
   ) {}
 
   async initialize(
@@ -38,13 +41,17 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
     this.sequence = sequence;
     this.options = options;
 
-    // Calculate grid dimensions based on sequence length
+    // Calculate grid layout using the same LayoutCalculator as ImageComposer
+    // This ensures consistent grid dimensions between what we expect and what ImageComposer renders
     const stepCount = sequence.steps.length;
     const cellSize = options.gridStepSize;
 
-    // Calculate optimal grid layout (approximately square)
-    const cols = Math.ceil(Math.sqrt(stepCount));
-    const rows = Math.ceil(stepCount / cols);
+    // Use LayoutCalculator to get exact same [columns, rows] as ImageComposer
+    const [cols, rows] = this.layoutCalculator.calculateLayout(
+      stepCount,
+      options.includeStartPosition
+    );
+    this.gridLayout = [cols, rows];
 
     this.gridDimensions = {
       width: cols * cellSize,
@@ -87,18 +94,34 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
     this.cachedGridCanvas.height = this.gridDimensions.height;
 
     // Render grid using ImageComposer
-    // TODO: Configure options for grid rendering (no background, beat numbers if enabled)
+    // Options match SequenceExportOptions interface to ensure no header/footer is added
     const renderOptions = {
       stepSize: this.options.gridStepSize,
-      showStepNumbers: this.options.showStepNumbers,
+      addStepNumbers: this.options.showStepNumbers,
       includeStartPosition: this.options.includeStartPosition,
-      includeBackground: false,
-      includeWord: false,
-      includeUserInfo: false,
-      includeDifficultyLevel: false,
+      // Disable header (word/difficulty) and footer (user info) to get grid-only output
+      addWord: false,
+      addDifficultyLevel: false,
+      addUserInfo: false,
+      showCreatorName: false,
+      showNotes: false,
+      showBirthday: false,
+      // Other required fields with sensible defaults
+      addReversalSymbols: true,
+      combinedGrids: false,
+      stepScale: 1,
+      margin: 0,
+      redVisible: true,
+      blueVisible: true,
+      userName: "",
+      exportDate: new Date().toISOString(),
+      notes: "",
+      format: "PNG" as const,
+      quality: 1,
+      scale: 1,
     };
 
-    const renderedGrid = await this.ImageComposer.composeSequenceImage(
+    const renderedGrid = await this.imageComposer.composeSequenceImage(
       this.sequence,
       renderOptions
     );
@@ -189,15 +212,14 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
   }
 
   getBeatGridPosition(stepIndex: number): StepGridPosition {
-    if (!this.sequence || !this.options || !this.gridDimensions) {
+    if (!this.sequence || !this.options || !this.gridDimensions || !this.gridLayout) {
       throw new Error("CompositeVideoRenderer not initialized");
     }
 
-    const stepCount = this.sequence.steps.length;
     const cellSize = this.options.gridStepSize;
 
-    // Calculate grid dimensions
-    const cols = Math.ceil(Math.sqrt(stepCount));
+    // Use the stored grid layout from LayoutCalculator (same as ImageComposer uses)
+    const [cols] = this.gridLayout;
 
     // Account for start position offset if included
     const offset = this.options.includeStartPosition ? 1 : 0;
@@ -234,6 +256,7 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
     this.options = null;
     this.dimensions = null;
     this.gridDimensions = null;
+    this.gridLayout = null;
   }
 
   // ========================================================================

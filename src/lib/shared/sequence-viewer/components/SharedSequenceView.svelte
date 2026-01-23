@@ -1,17 +1,13 @@
 <!--
   SharedSequenceView.svelte - External Sequence Viewer Page
 
+  @deprecated LEGACY COMPONENT - Use SequenceDetailsModal instead.
+  This component uses the deprecated SequenceViewer. New deep link handling
+  should route to SequenceDetailsModal via ModalUrlRestorer.
+
+  Legacy description (for reference):
   Full-page viewer for sequences received via deep links.
   Purpose: View a shared sequence and decide what to do with it.
-
-  Actions available:
-  - Open in Create (loads into Construct tab)
-  - Save to Library
-  - Favorite
-
-  Uses shared primitives:
-  - SequenceViewer for animation/image display
-  - Same animation engine as Create/Discover
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

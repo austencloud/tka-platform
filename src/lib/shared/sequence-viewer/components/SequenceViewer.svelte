@@ -1,16 +1,17 @@
 <!--
   SequenceViewer.svelte
 
+  @deprecated LEGACY COMPONENT - Use SequenceDetailsModal instead.
+  This component is scheduled for removal. All new features should use SequenceDetailsModal
+  which provides the full-screen split view experience with animation + image side-by-side.
+
+  Migration path:
+  - For viewing sequences: Use SequenceDetailsModal
+  - For exports: Export functionality is being added to SequenceDetailsModal
+
+  Legacy description (for reference):
   Unified media viewer with CTA button to switch between Image and Animation modes.
   Uses sessionStorage for persistence (survives HMR and page refresh).
-
-  Key features:
-  - Single CTA button at top to switch modes (no tabs)
-  - "Play Animation" button when in Image view
-  - "View Image" button when in Animation view
-  - Uses unified AnimationPlayer with configurable controls
-  - Supports export progress overlay
-  - Integrates with AnimationExportContext when used in ShareHub
 -->
 <script lang="ts">
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

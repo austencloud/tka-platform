@@ -1,11 +1,11 @@
 <!--
   SequenceViewerActions.svelte - Action buttons for the Sequence Viewer
 
-  Handles the action buttons with their various states:
-  - Open in Create (primary action)
-  - Save to Library (with saving/saved states)
-  - Share
-  - Favorite toggle
+  @deprecated LEGACY COMPONENT - Used by deprecated SequenceViewer.
+  New action patterns should be integrated into SequenceDetailsModal.
+
+  Legacy description (for reference):
+  Handles the action buttons with their various states.
 -->
 <script lang="ts">
   const {

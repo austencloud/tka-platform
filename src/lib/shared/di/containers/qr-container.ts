@@ -2,24 +2,36 @@
  * QR Container - ITI Dependency Injection
  *
  * Contains QR code generation and URL shortening services:
- * - ShortCodeManager - Firebase-backed URL shortening
- * - QRCodeGenerator - Styled QR code generation
+ * - ShortCodeManager - Firebase-backed URL shortening + offline encoding
+ * - QRCodeGenerator - Styled QR code generation with offline support
  */
 
 import { createContainer } from "iti";
 import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
 import { ShortCodeManager } from "$lib/shared/qr/services/implementations/ShortCodeManager";
 import { QRCodeGenerator } from "$lib/shared/qr/services/implementations/QRCodeGenerator";
 
 /**
+ * Dependencies required for the QR container
+ */
+export interface QRContainerDeps {
+  /** For loading full sequence data from Firebase (online mode) */
+  exploreLoader: IExploreLoader;
+  /** For encoding/decoding sequences (offline mode) */
+  sequenceEncoder: ISequenceEncoder;
+}
+
+/**
  * Create the QR container with external dependencies
  *
- * @param exploreLoader - Required dependency from discover module (for loading full sequence data)
+ * @param deps - Required dependencies from other containers
  */
-export function createQRContainer(exploreLoader: IExploreLoader) {
-  // Layer 1: ShortCodeManager (depends on external exploreLoader)
+export function createQRContainer(deps: QRContainerDeps) {
+  // Layer 1: ShortCodeManager (depends on external exploreLoader + sequenceEncoder)
   const baseContainer = createContainer().add({
-    shortCodeManager: () => new ShortCodeManager(exploreLoader),
+    shortCodeManager: () =>
+      new ShortCodeManager(deps.exploreLoader, deps.sequenceEncoder),
   });
 
   // Layer 2: QRCodeGenerator (depends on shortCodeManager)

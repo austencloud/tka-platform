@@ -120,7 +120,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const framesPerLoop = Math.ceil(singleLoopDurationSeconds * fps);
 
       // Apply loop count for circular sequences
-      const loopCount = panelState.exportLoopCount ?? 1;
+      // Prefer options.loopCount if provided, otherwise use panelState.exportLoopCount
+      const loopCount = options.loopCount ?? panelState.exportLoopCount ?? 1;
       const totalFrames = framesPerLoop * loopCount;
 
       // Calculate beat progression per frame to match timing
