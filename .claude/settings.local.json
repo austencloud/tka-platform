@@ -417,7 +417,10 @@
       "WebFetch(domain:slowroads.io)",
       "WebFetch(domain:web.dev)",
       "WebFetch(domain:anslo.medium.com)",
-      "WebFetch(domain:nathanpointer.com)"
+      "WebFetch(domain:nathanpointer.com)",
+      "WebFetch(domain:ishadeed.com)",
+      "WebFetch(domain:saricden.com)",
+      "WebFetch(domain:tkte.ch)"
     ]
   },
   "enableAllProjectMcpServers": true,
