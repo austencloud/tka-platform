@@ -120,6 +120,12 @@ This atomically claims the item with a unique token, preventing race conditions 
 
 6. **Ask for confirmation** before proceeding with implementation.
 
+7. **After user approves**, rename the conversation to reflect the feedback item:
+   ```
+   /rename FB: [short descriptive title]
+   ```
+   Use the feedback title if it's concise, or write a 2-4 word summary of what you're fixing/implementing.
+
 ### After implementing:
 
 1. Move to review: `node scripts/fetch-feedback.js <id> in-review "Brief admin notes"`
