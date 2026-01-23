@@ -6,7 +6,7 @@
   import type { IUserActivityTracker } from "../services/contracts/IUserActivityTracker";
   import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
   import UserPresenceCard from "./active-users/UserPresenceCard.svelte";
-  import UserProfilePanel from "$lib/features/discover/creators/components/UserProfilePanel.svelte";
+  import UserProfilePanel from "$lib/features/explore/creators/components/UserProfilePanel.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
 

@@ -128,7 +128,7 @@
   }
 
   function handleViewProfile(userId: string) {
-    goto(`/discover/creators/${userId}`);
+    goto(`/explore/creators/${userId}`);
   }
 
   function closePopup() {

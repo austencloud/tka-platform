@@ -8,7 +8,7 @@
 
 	const MAX_DESCRIPTION_LENGTH = 1000;
 
-	let modalContentRef: HTMLDivElement | null = null;
+	let modalContentRef = $state<HTMLDivElement | null>(null);
 	let previouslyFocusedElement: HTMLElement | null = null;
 
 	// Focus trap: get all focusable elements within the modal
