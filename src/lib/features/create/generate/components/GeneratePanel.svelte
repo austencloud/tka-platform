@@ -141,6 +141,7 @@ Card-based architecture with integrated Generate button:
   }
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
   class="generate-panel"
   class:help-active={helpMode !== "inactive"}
@@ -227,9 +228,18 @@ Card-based architecture with integrated Generate button:
     }
   }
 
+  /* Wide squarish displays (like Z-Fold unfolded): add horizontal padding
+     to prevent the generate panel from looking too stretched */
+  @container generate-panel (min-width: 700px) {
+    .generate-panel-inner {
+      padding-inline: min(8cqi, 64px);
+    }
+  }
+
+  /* Very wide landscape displays: more aggressive padding */
   @container generate-panel (min-aspect-ratio: 1.5) and (min-width: 800px) {
     .generate-panel-inner {
-      padding: 6px min(5cqi, 48px);
+      padding: 6px min(10cqi, 96px);
     }
   }
 

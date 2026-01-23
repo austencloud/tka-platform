@@ -280,6 +280,8 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let requestedShareHubFormat = $state<"animation" | "static" | null>(null);
   // View ID increments on each open - forces component remount to reinitialize animation
   let shareHubViewId = $state(0);
+  // Guard flag to prevent effects from seeing transient close during openShareHubPanel()
+  let isShareHubReopening = $state(false);
 
   // Save to Library panel state
   let isSaveToLibraryPanelOpen = $state(false);
@@ -513,9 +515,14 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     get shareHubViewId() {
       return shareHubViewId;
     },
+    get isShareHubReopening() {
+      return isShareHubReopening;
+    },
 
     openShareHubPanel(format?: "animation" | "static") {
       const wasOpen = isShareHubPanelOpen;
+      // Set guard flag BEFORE closeAllPanels to prevent effects from seeing transient close
+      isShareHubReopening = true;
       closeAllPanels();
       // Increment viewId when transitioning from closed to open
       // This forces remount after close, ensuring clean state
@@ -524,6 +531,8 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       }
       requestedShareHubFormat = format ?? null;
       isShareHubPanelOpen = true;
+      // Clear guard flag after open completes
+      isShareHubReopening = false;
     },
 
     closeShareHubPanel() {

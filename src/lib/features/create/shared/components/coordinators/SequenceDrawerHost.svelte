@@ -487,7 +487,10 @@
 
     // ALWAYS reset animation state on close, regardless of format
     // This ensures reopening after adding beats shows the updated sequence
-    if (!isOpen && previousIsOpen && hasMounted) {
+    // CRITICAL: Skip reset if we're in the middle of a reopen operation (guard flag set)
+    // This prevents the transient close from closeAllPanels() within openShareHubPanel() from
+    // corrupting state before the panel actually opens
+    if (!isOpen && previousIsOpen && hasMounted && !panelState.isShareHubReopening) {
       urlManager.clearUrlState();
       // Reset loaded sequence tracking so reopening triggers full reinitialization
       lastLoadedSequenceId = null;

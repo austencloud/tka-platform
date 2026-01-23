@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { simplifyAndTruncate } from "../../shared/utils/word-simplifier";
+  import { simplifyAndTruncate, simplifyRepeatedWord } from "../../shared/utils/word-simplifier";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
 
@@ -54,6 +54,11 @@
     isContextualMessage ? word : simplifyAndTruncate(word, 8)
   );
 
+  // Full simplified word for copying (no truncation/ellipsis)
+  const copyableWord = $derived(
+    isContextualMessage ? word : simplifyRepeatedWord(word)
+  );
+
   /**
    * Parse display word into TKA letter units (handles dash-letters like "Λ-")
    */
@@ -99,7 +104,7 @@
     if (!word || isContextualMessage) return;
 
     try {
-      await navigator.clipboard.writeText(displayWord);
+      await navigator.clipboard.writeText(copyableWord);
 
       // Show copied message
       showCopiedMessage = true;
@@ -165,7 +170,7 @@
 
     {#if showCopiedMessage}
       <div class="copied-message" role="status" aria-live="polite">
-        Copied "{displayWord}"!
+        Copied "{copyableWord}"!
       </div>
     {/if}
   </div>

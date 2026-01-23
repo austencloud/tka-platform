@@ -36,7 +36,7 @@ export class NavigationSyncer implements INavigationSyncer {
       isUpdatingFromToggle: CreateModuleState.isUpdatingFromToggle,
     });
 
-    // Skip if navigation is to a non-Create tab (e.g., "discover", "library")
+    // Skip if navigation is to a non-Create tab (e.g., "explore", "library")
     const validCreateTabs = ["assembler", "constructor", "generator", "spell"];
     if (!validCreateTabs.includes(currentMode)) {
       return;

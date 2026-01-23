@@ -90,8 +90,8 @@
   let containerRef: HTMLElement | undefined = $state();
   let scrollContainerRef: HTMLElement | undefined = $state();
 
-  // Computed grid layout
-  const gridLayout = $derived(() => {
+  // Computed grid layout - must use $derived.by for reactive recalculation
+  const gridLayout = $derived.by(() => {
     return calculateGridLayout(
       steps.length,
       containerWidth,
@@ -108,21 +108,25 @@
     );
   });
 
-  // Timeline mode calculations
-  const TIMELINE_ROW_CAPACITY = 4;
-  const timelineRows = $derived(() => {
+  // Timeline mode calculations - use 8 columns only in stacked layout on wide displays
+  // Side-by-side layout always uses 4 columns (workspace is narrower)
+  const WIDE_THRESHOLD = 650;
+  const timelineRowCapacity = $derived(
+    !isSideBySideLayout && containerWidth >= WIDE_THRESHOLD ? 8 : 4
+  );
+  const timelineRows = $derived.by(() => {
     if (!isTimelineMode) return [];
-    return calculateTimelineRows(steps, TIMELINE_ROW_CAPACITY, false);
+    return calculateTimelineRows(steps, timelineRowCapacity, false);
   });
 
-  const timelineUnitSize = $derived(() => {
+  const timelineUnitSize = $derived.by(() => {
     if (!isTimelineMode) return 0;
     const hasStart = startPosition && !startPosition.isBlank;
-    const totalUnits = hasStart ? TIMELINE_ROW_CAPACITY + 1 : TIMELINE_ROW_CAPACITY;
+    const totalUnits = hasStart ? timelineRowCapacity + 1 : timelineRowCapacity;
     return calculateTimelineUnitSize(containerWidth, totalUnits);
   });
 
-  const timelinePadding = $derived(() => {
+  const timelinePadding = $derived.by(() => {
     return calculateTimelinePadding(containerWidth);
   });
 
@@ -349,7 +353,7 @@
     <SpotlightGrid
       {steps}
       {startPosition}
-      gridLayout={gridLayout()}
+      gridLayout={gridLayout}
       {displayState}
       {selectedStepNumber}
       {practiceStepNumber}
@@ -369,9 +373,9 @@
     <TimelineGrid
       {steps}
       {startPosition}
-      timelineRows={timelineRows()}
-      timelineUnitSize={timelineUnitSize()}
-      timelinePadding={timelinePadding()}
+      timelineRows={timelineRows}
+      timelineUnitSize={timelineUnitSize}
+      timelinePadding={timelinePadding}
       {displayState}
       {scrollState}
       {selectedStepNumber}
@@ -393,7 +397,7 @@
     <StandardGrid
       {steps}
       {startPosition}
-      gridLayout={gridLayout()}
+      gridLayout={gridLayout}
       {displayState}
       {scrollState}
       {selectedStepNumber}

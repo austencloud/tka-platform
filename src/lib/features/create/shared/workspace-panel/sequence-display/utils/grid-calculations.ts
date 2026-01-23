@@ -91,9 +91,7 @@ export function calculateGridLayout(
     maxColumns = sizing.manualColumnCount;
     columns = Math.min(stepCount, sizing.manualColumnCount);
   } else {
-    // Automatic: determine max columns based on layout mode and container width
-    // Side-by-side layout: Always 4 columns max (ignores container width)
-    // Top-and-bottom layout: Width-based (4 or 8 columns depending on width)
+    // Automatic: determine max columns based on container width
     maxColumns = getMaxColumnsForBeatCount(
       stepCount,
       sizing.isSideBySideLayout,

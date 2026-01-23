@@ -222,7 +222,7 @@ export function shouldUseNarrowLayout(
 /**
  * Get maximum columns for responsive layout calculations
  * Returns the column count that should be used for the given beat count,
- * respecting both the optimal layout and layout mode constraints
+ * respecting both the optimal layout and container width constraints
  *
  * @param stepCount - Number of steps in the sequence
  * @param isSideBySideLayout - Whether using side-by-side (horizontal) layout
@@ -233,17 +233,11 @@ export function getMaxColumnsForBeatCount(
   isSideBySideLayout: boolean,
   containerWidth: number = 0
 ): number {
-  // In side-by-side layout: ALWAYS use narrow layout (4 columns max), ignore container width
-  // In top-and-bottom layout: Use container width to determine 4 vs 8 columns
-  if (isSideBySideLayout) {
-    // Side-by-side layout: Always use narrow layout table and cap at 4
-    const optimalLayout = getBeatFrameLayout(stepCount, false);
-    return Math.min(optimalLayout.columns, 4);
-  } else {
-    // Top-and-bottom layout: Use width-based logic
-    const useWideLayout = containerWidth >= 650;
-    const optimalLayout = getBeatFrameLayout(stepCount, useWideLayout);
-    const maxCap = useWideLayout ? 8 : 4;
-    return Math.min(optimalLayout.columns, maxCap);
-  }
+  // Always use container width to determine columns
+  // Even in side-by-side layout, if the container is wide enough (e.g., Z-Fold),
+  // we should use more columns to avoid vertical scrolling
+  const useWideLayout = containerWidth >= 650;
+  const optimalLayout = getBeatFrameLayout(stepCount, useWideLayout);
+  const maxCap = useWideLayout ? 8 : 4;
+  return Math.min(optimalLayout.columns, maxCap);
 }
