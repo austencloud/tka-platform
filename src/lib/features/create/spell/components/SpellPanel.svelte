@@ -368,6 +368,20 @@ This component only shows controls - no preview. Same pattern as Generator tab.
 </script>
 
 <div class="spell-panel" data-is-desktop={isDesktop}>
+  {#if spellState.error}
+    <div class="error-banner" role="alert">
+      <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+      <span class="error-message">{spellState.error}</span>
+      <button
+        class="error-dismiss"
+        onclick={() => spellState.clearError()}
+        aria-label="Dismiss error"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+  {/if}
+
   {#if spellState.wizardPhase === "preferences"}
     <!-- PREFERENCES PHASE -->
     <PreferencesPage
@@ -384,9 +398,9 @@ This component only shows controls - no preview. Same pattern as Generator tab.
 
   {:else if spellState.wizardPhase === "generating"}
     <!-- GENERATING PHASE -->
-    <div class="generation-phase">
+    <div class="generation-phase" role="status" aria-live="polite" aria-busy="true">
       <div class="progress-content">
-        <div class="spinner" aria-label="Generating sequence"></div>
+        <div class="spinner" aria-hidden="true"></div>
         <h3 class="progress-title">Generating your sequence...</h3>
       </div>
     </div>
@@ -429,6 +443,56 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     height: 100%;
     width: 100%;
     overflow: hidden;
+  }
+
+  /* Error Banner */
+  .error-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--settings-spacing-sm, 8px);
+    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 16px);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    border: 1.5px solid var(--semantic-error, #ef4444);
+    border-radius: var(--settings-radius-md, 12px);
+    margin: var(--settings-spacing-sm, 8px);
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .error-banner i:first-child {
+    color: var(--semantic-error, #ef4444);
+    flex-shrink: 0;
+  }
+
+  .error-message {
+    flex: 1;
+    line-height: 1.4;
+  }
+
+  .error-dismiss {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--settings-radius-sm, 8px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all var(--duration-fast, 150ms) ease;
+  }
+
+  .error-dismiss:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--theme-text, #ffffff);
+  }
+
+  .error-dismiss:focus-visible {
+    outline: 2px solid var(--semantic-error, #ef4444);
+    outline-offset: 2px;
   }
 
   /* Generation phase */

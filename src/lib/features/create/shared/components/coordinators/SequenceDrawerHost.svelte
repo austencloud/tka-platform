@@ -21,6 +21,7 @@
 
   import { onMount, onDestroy } from "svelte";
   import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
+  import SequenceDetailsModal from "$lib/shared/sequence-viewer/components/SequenceDetailsModal.svelte";
   import type { ExportSettings } from "$lib/shared/share-hub/domain/models/ExportSettings";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
@@ -267,9 +268,12 @@
   });
 
   // Lazy load animation services when Animation format selected
+  // Check requestedShareHubFormat to avoid loading when user explicitly requested static format
   $effect(() => {
+    const pendingFormat = panelState.requestedShareHubFormat;
+    const effectiveFormat = pendingFormat ?? selectedFormat;
     if (
-      selectedFormat === "animation" &&
+      effectiveFormat === "animation" &&
       panelState.isShareHubPanelOpen &&
       !animationServicesReady
     ) {
@@ -304,13 +308,16 @@
   }
 
   // Initialize animation when services ready and sequence available
+  // Check requestedShareHubFormat to avoid initializing when user explicitly requested static format
   $effect(() => {
     // Only initialize if we're actually in the Create module
     const isInCreateModule = navigationState.currentModule === "create";
+    const pendingFormat = panelState.requestedShareHubFormat;
+    const effectiveFormat = pendingFormat ?? selectedFormat;
 
     if (
       isInCreateModule &&
-      selectedFormat === "animation" &&
+      effectiveFormat === "animation" &&
       panelState.isShareHubPanelOpen &&
       animationServicesReady &&
       currentSequence &&
@@ -381,9 +388,12 @@
       lastLoadedSequenceId = sequenceId;
       animationPanelState.setSequenceData(loadedSequence);
 
-      // Auto-start after delay
+      // Auto-start after delay - but only if still viewing animation format
+      // This prevents step grid from animating when user opened with static format
       setTimeout(() => {
-        playbackController?.togglePlayback();
+        if (selectedFormat === "animation") {
+          playbackController?.togglePlayback();
+        }
       }, ANIMATION_AUTO_START_DELAY_MS);
     } catch (err) {
       // Use warn instead of error - animation init failures are expected for sequences
@@ -769,4 +779,13 @@
     onToggleRed={handleToggleRedMotion}
   />
   {/key}
+{/if}
+
+<!-- Sequence Details Modal (full-screen alternative to drawer) -->
+{#if currentSequence}
+  <SequenceDetailsModal
+    bind:open={panelState.isSequenceDetailsModalOpen}
+    sequence={currentSequence}
+    onclose={() => panelState.closeSequenceDetailsModal()}
+  />
 {/if}

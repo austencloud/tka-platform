@@ -3,6 +3,9 @@
  *
  * Syncs local component state to global application state.
  * Handles: panel open state, layout state, animation beat number.
+ *
+ * IMPORTANT: When the SequenceDetailsModal is open, workspace animation sync
+ * is SKIPPED to keep the modal's animation state completely isolated.
  */
 
 import {
@@ -34,7 +37,16 @@ export function createGlobalStateSyncEffects(
     // Sync animating beat number from shared animation state
     // Only show the word label glow effect while animation is actively playing
     // When stopped/paused, clear the highlight so it doesn't persist after closing the drawer
+    //
+    // CRITICAL: Skip sync when SequenceDetailsModal is open!
+    // The modal has its own isolated animation state and should NOT affect workspace UI.
     $effect(() => {
+      // When the full-screen modal is open, never sync workspace animation
+      if (panelState.isSequenceDetailsModalOpen) {
+        setAnimatingStepNumber(null);
+        return;
+      }
+
       if (sharedAnimationState.isPlaying) {
         const currentStep = sharedAnimationState.currentStep;
         setAnimatingStepNumber(Math.floor(currentStep));

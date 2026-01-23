@@ -61,6 +61,8 @@ export interface VariationConstraints {
   allowedLetterTypes: number[] | null;
   /** Whether sequence must be circular (return to start) */
   requiresCircular: boolean;
+  /** LOOP type to use when requiresCircular is true (null = default "REWOUND") */
+  loopType: LOOPType | null;
 }
 
 /**

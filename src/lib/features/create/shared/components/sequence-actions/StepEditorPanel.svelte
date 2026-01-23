@@ -161,6 +161,57 @@
       : `Step ${displayedStepNumber}`;
   });
 
+  // Calculate how many subsequent steps would be affected by orientation changes
+  // This helps users understand cascade impact when editing turns on mobile
+  const cascadeCount = $derived.by(() => {
+    if (displayedStepNumber === null || !sequence?.steps) return 0;
+    // Start position affects all steps, regular steps affect subsequent ones
+    if (displayedStepNumber === 0) {
+      return sequence.steps.length;
+    }
+    // Steps after the selected one (stepNumber 1 = index 0, so steps after index (n-1))
+    return Math.max(0, sequence.steps.length - displayedStepNumber);
+  });
+
+  // Track sequence changes to trigger pulse animation when cascade occurs
+  // We watch the sequence's steps array - when it changes and we have cascade steps,
+  // that means orientation propagated through subsequent steps
+  let lastSequenceVersion = $state(0);
+  let showCascadePulse = $state(false);
+
+  // Create a simple version number that changes when sequence steps change
+  const sequenceVersion = $derived.by(() => {
+    if (!sequence?.steps) return 0;
+    // Use a combination that changes when any step's orientation changes
+    return sequence.steps.reduce((acc, step, idx) => {
+      const blue = step?.motions?.[MotionColor.BLUE];
+      const red = step?.motions?.[MotionColor.RED];
+      return acc + idx * 1000 + (blue?.turns ?? 0) * 100 + (red?.turns ?? 0) * 10;
+    }, sequence.steps.length);
+  });
+
+  $effect(() => {
+    // Only pulse when:
+    // 1. We have cascade steps (cascadeCount > 0)
+    // 2. The sequence version changed (turns/orientations updated)
+    // 3. This isn't the initial load (lastSequenceVersion !== 0)
+    // 4. Panel is open and we're not on start position
+    if (
+      cascadeCount > 0 &&
+      sequenceVersion !== lastSequenceVersion &&
+      lastSequenceVersion !== 0 &&
+      isOpen &&
+      !isStartPositionSelected
+    ) {
+      showCascadePulse = true;
+      const timeout = setTimeout(() => {
+        showCascadePulse = false;
+      }, 300);
+      return () => clearTimeout(timeout);
+    }
+    lastSequenceVersion = sequenceVersion;
+  });
+
   // Inspect modal state (admin-only)
   let showInspectModal = $state(false);
 
@@ -208,7 +259,14 @@
     <header class="panel-header">
       <div class="header-info">
         <h2>Step Editor</h2>
-        <span class="subtitle">{stepLabel}</span>
+        <span class="subtitle">
+          {stepLabel}
+          {#if cascadeCount > 0 && !isStartPositionSelected}
+            <span class="cascade-indicator" class:pulse={showCascadePulse}>
+              → +{cascadeCount} step{cascadeCount === 1 ? "" : "s"}
+            </span>
+          {/if}
+        </span>
       </div>
 
       <!-- Arrow adjustment panel in header when arrow is selected -->
@@ -375,6 +433,31 @@
   .subtitle {
     font-size: 0.8rem;
     color: var(--theme-text-muted, var(--theme-text-dim));
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cascade-indicator {
+    color: var(--theme-accent, #60a5fa);
+    font-size: 0.75rem;
+    opacity: 0.9;
+    transition: opacity var(--duration-fast) ease;
+  }
+
+  .cascade-indicator.pulse {
+    animation: cascade-pulse 300ms ease-out;
+  }
+
+  @keyframes cascade-pulse {
+    0% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+    100% {
+      opacity: 0.9;
+      transform: scale(1);
+    }
   }
 
   .header-actions {
@@ -555,6 +638,14 @@
   @media (prefers-reduced-motion: reduce) {
     .icon-btn {
       transition: none;
+    }
+
+    .cascade-indicator {
+      transition: none;
+    }
+
+    .cascade-indicator.pulse {
+      animation: none;
     }
   }
 </style>

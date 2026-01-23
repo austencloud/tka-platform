@@ -41,6 +41,9 @@ export class VariationConstraintBuilder implements IVariationConstraintBuilder {
 
       // Circular requirement
       requiresCircular: preferences.makeCircular,
+
+      // LOOP type for circular sequences (defaults to REWOUND if not specified)
+      loopType: preferences.selectedLOOPType,
     };
   }
 }

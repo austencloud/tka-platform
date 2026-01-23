@@ -181,10 +181,7 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
 
     // Apply LOOP extension if circular is required
     if (constraints?.requiresCircular && !sequence.isCircular) {
-      const extended = await this.applyCircularExtension(
-        sequence,
-        constraints.requiresCircular
-      );
+      const extended = await this.applyCircularExtension(sequence, constraints);
       return extended || sequence;
     }
 
@@ -342,15 +339,16 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
 
   private async applyCircularExtension(
     sequence: SequenceData,
-    requiresCircular: boolean
+    constraints?: VariationConstraints
   ): Promise<SequenceData | null> {
-    if (!requiresCircular) return sequence;
+    if (!constraints?.requiresCircular) return sequence;
 
     try {
-      // Use sequence extender to apply LOOP
+      // Use specified LOOP type, or default to REWOUND
+      const loopType = constraints.loopType ?? "REWOUND";
       const extended = await this.sequenceExtender.extendSequence(
         sequence,
-        "REWOUND" // Default LOOP type - TODO: make configurable
+        loopType
       );
 
       return extended || sequence;

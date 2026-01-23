@@ -235,6 +235,12 @@ export interface PanelCoordinationState {
   /** @deprecated Use closeStartEndPanel instead */
   closeCustomizePanel(): void;
 
+  // Sequence Details Modal State (full-screen modal replaces drawer)
+  get isSequenceDetailsModalOpen(): boolean;
+
+  openSequenceDetailsModal(): void;
+  closeSequenceDetailsModal(): void;
+
   // Close all panels at once (for clear sequence, etc.)
   closeAllPanels(): void;
 
@@ -360,6 +366,9 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let startEndIsFreeformMode = $state(true); // Default to freeform (shows end position)
   let startEndGridMode = $state<GridMode>(GridMode.DIAMOND); // Grid mode for position picker
 
+  // Sequence Details Modal state (full-screen modal replacing drawer)
+  let isSequenceDetailsModalOpen = $state(false);
+
   /**
    * CRITICAL: Close all panels to enforce mutual exclusivity
    * This ensures only ONE panel is open at a time, preventing state conflicts
@@ -398,6 +407,8 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     startEndOnChange = null;
     startEndIsFreeformMode = true;
     startEndGridMode = GridMode.DIAMOND;
+
+    isSequenceDetailsModalOpen = false;
   }
 
   return {
@@ -800,6 +811,20 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       this.closeStartEndPanel();
     },
 
+    // Sequence Details Modal Getters
+    get isSequenceDetailsModalOpen() {
+      return isSequenceDetailsModalOpen;
+    },
+
+    openSequenceDetailsModal() {
+      closeAllPanels();
+      isSequenceDetailsModalOpen = true;
+    },
+
+    closeSequenceDetailsModal() {
+      isSequenceDetailsModalOpen = false;
+    },
+
     // Close all panels at once
     closeAllPanels,
 
@@ -815,7 +840,8 @@ export function createPanelCoordinationState(): PanelCoordinationState {
         isFilterPanelOpen ||
         isSequenceActionsPanelOpen ||
         isLOOPPanelOpen ||
-        isStartEndPanelOpen
+        isStartEndPanelOpen ||
+        isSequenceDetailsModalOpen
       );
     },
 
