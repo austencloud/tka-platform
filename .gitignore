@@ -146,8 +146,45 @@ tmpclaude-*
 *.mov
 *.avi
 *.mkv
+*.webm
+*.wmv
+*.flv
+*.m4v
 downloads/
 
 # Temporary output files
 stdout.txt
 stderr.txt
+
+# Large asset directories (tutorials, guides, Unity project)
+_ARCHIVE/
+_GUIDE/
+tka-worlds/
+Assets/
+
+# MCP server test/debug files
+mcp-server/*.txt
+mcp-server/test-*.ts
+mcp-server/basic-test.ts
+mcp-server/quick-test.mjs
+
+# Unity project artifacts (if not using tka-worlds exclusion)
+Library/
+Temp/
+Logs/
+UserSettings/
+*.cginc
+*.unitypackage
+
+# Staging models and textures (large binary files)
+static/models/staging/
+static/models/vegetation/
+static/textures/terrain/
+static/textures/water/
+
+# Script temp/backup directories
+scripts/temp/
+scripts/model-curator/
+
+# Monorepo remnants
+packages/manifest.json
