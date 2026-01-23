@@ -1,5 +1,5 @@
 <!--
-  Navigation.svelte - Word card filter sidebar
+  Navigation.svelte - Choreo card filter sidebar
 
   Length filter buttons and column layout selector.
 -->

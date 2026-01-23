@@ -4,15 +4,21 @@
   Displays a sequence thumbnail using PropAwareThumbnail with Firebase caching.
   Choreo cards always include user data footer (creator name, notes, birthday).
   In print mode, uses light background for paper preview.
+  Shows LOOP primitive icons when sequence uses a LOOP pattern (detected algorithmically).
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { ILOOPDetector } from "$lib/features/loop-labeler/services/contracts/ILOOPDetector";
+  import type { ISequenceToEntryConverter } from "../services/contracts/ISequenceToEntryConverter";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
-  import PropAwareThumbnail from "$lib/features/discover/sequences/display/components/PropAwareThumbnail.svelte";
+  import PropAwareThumbnail from "$lib/features/explore/sequences/display/components/PropAwareThumbnail.svelte";
   import ChoreoCardQR from "./ChoreoCardQR.svelte";
+  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import type { ComponentId } from "$lib/features/loop-labeler/domain/constants/loop-components";
 
   interface Props {
     sequence: SequenceData;
@@ -38,10 +44,56 @@
   }: Props = $props();
 
   let hapticService: IHapticFeedback;
+  let loopDetector: ILOOPDetector;
+  let sequenceToEntryConverter: ISequenceToEntryConverter;
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
+    loopDetector = container.items.loopDetector;
+    sequenceToEntryConverter = container.items.sequenceToEntryConverter;
   });
+
+  // Map ComponentId (loop-labeler format) to LOOPComponent (icon strip format)
+  function componentIdToLOOPComponent(id: ComponentId): LOOPComponent | null {
+    const mapping: Record<string, LOOPComponent> = {
+      rotated: LOOPComponent.ROTATED,
+      mirrored: LOOPComponent.MIRRORED,
+      flipped: LOOPComponent.FLIPPED,
+      swapped: LOOPComponent.SWAPPED,
+      inverted: LOOPComponent.INVERTED,
+      rewound: LOOPComponent.REWOUND,
+    };
+    return mapping[id] ?? null;
+  }
+
+  // Detect LOOP pattern from sequence steps algorithmically
+  const loopComponents = $derived.by(() => {
+    if (!loopDetector || !sequenceToEntryConverter || !sequence.steps?.length) {
+      return new Set<LOOPComponent>();
+    }
+
+    try {
+      // Convert SequenceData to SequenceEntry format for LOOP detection
+      const entry = sequenceToEntryConverter.convert(sequence);
+      const result = loopDetector.detectLOOP(entry);
+
+      // Convert detected components to LOOPComponent enum
+      const components = new Set<LOOPComponent>();
+      for (const componentId of result.components) {
+        const mapped = componentIdToLOOPComponent(componentId);
+        if (mapped) {
+          components.add(mapped);
+        }
+      }
+      return components;
+    } catch {
+      // If detection fails, return empty set
+      return new Set<LOOPComponent>();
+    }
+  });
+
+  // Only show LOOP icons if sequence has a LOOP pattern
+  const hasLoopPattern = $derived(loopComponents.size > 0);
 
   // Get prop settings from global state
   const propSettings = $derived({
@@ -95,6 +147,16 @@
     {#if showQRCodes}
       <div class="qr-overlay">
         <ChoreoCardQR {sequence} size={60} />
+      </div>
+    {/if}
+    {#if hasLoopPattern}
+      <div class="loop-overlay">
+        <LOOPIconStrip
+          activeComponents={loopComponents}
+          size={14}
+          darkMode={!printMode}
+          showFreeformWhenEmpty={false}
+        />
       </div>
     {/if}
   </div>
@@ -196,6 +258,24 @@
     pointer-events: none; /* Allow clicks through to card */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     border-radius: 4px;
+  }
+
+  /* LOOP icons overlay - positioned top-right */
+  .loop-overlay {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    z-index: 1;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 3px 6px;
+    border-radius: 4px;
+  }
+
+  /* Light background for print mode */
+  .choreo-card.print-mode .loop-overlay {
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   }
 
   /* Adjust card layout when QR codes are shown */

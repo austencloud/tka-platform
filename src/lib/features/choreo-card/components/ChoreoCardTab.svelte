@@ -7,19 +7,20 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
-  import type { IDiscoverLoader } from "../../discover/sequences/display/services/contracts/IDiscoverLoader";
+  import type { IExploreLoader } from "../../explore/sequences/display/services/contracts/IExploreLoader";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
-  import { SequenceDifficultyCalculator } from "../../discover/sequences/display/services/implementations/SequenceDifficultyCalculator";
+  import { SequenceDifficultyCalculator } from "../../explore/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import ChoreoCardNavigation from "./Navigation.svelte";
   import ChoreoCardFilters from "./ChoreoCardFilters.svelte";
   import ChoreoCardVisibility from "./ChoreoCardVisibility.svelte";
+  import ChoreoCardExport from "./ChoreoCardExport.svelte";
   import PageDisplay from "./PageDisplay.svelte";
 
   // Difficulty calculator for dynamic level calculation
   const difficultyCalculator = new SequenceDifficultyCalculator();
 
   // Services
-  let loaderService = $state<IDiscoverLoader | null>(null);
+  let loaderService = $state<IExploreLoader | null>(null);
 
   // Storage keys (migrated from wordCard.* to choreoCard.*)
   const STORAGE_KEY_LENGTH = "choreoCard.selectedLength";
@@ -298,7 +299,7 @@
   });
 
   onMount(async () => {
-    loaderService = container.items.discoverLoader;
+    loaderService = container.items.exploreLoader;
     await loadSequences();
   });
 
@@ -419,6 +420,15 @@
           onShowTKAChange={handleShowTKAChange}
           onShowWordChange={handleShowWordChange}
           onIncludeStartPositionChange={handleIncludeStartPositionChange}
+        />
+        <div class="filter-divider"></div>
+        <ChoreoCardExport
+          sequences={filteredSequences}
+          currentPageSequences={filteredSequences}
+          {showGrid}
+          {showTKA}
+          showWord={showWord}
+          {includeStartPosition}
         />
       </div>
     </aside>
