@@ -25,6 +25,7 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
+  import { clearSvgImageCache } from "$lib/shared/render/services/implementations/SvgImageCache";
 
   interface Props {
     sequence: SequenceData;
@@ -48,6 +49,8 @@
     // Step highlighting (for animation sync)
     highlightedStepIndex?: number | null;  // 0-indexed step to highlight (null = none)
     showHighlight?: boolean;               // Enable highlighting (default: false)
+    // Click handler for step seeking
+    onStepClick?: (stepIndex: number) => void;  // 0-indexed step that was clicked
   }
 
   const {
@@ -68,6 +71,7 @@
     catDogModeEnabled = false,
     highlightedStepIndex = null,
     showHighlight = false,
+    onStepClick,
   }: Props = $props();
 
   // LOOP type resolver for parsing loopType to components
@@ -113,13 +117,29 @@
     }
   }
 
-  // Base image state
-  let baseImageUrl = $state<string | null>(null);
+  // Dual image state for crossfade animation between light/dark modes
+  // Both images are pre-rendered on mount, then we crossfade by changing opacity
+  let lightImageUrl = $state<string | null>(null);
+  let darkImageUrl = $state<string | null>(null);
   let isLoading = $state(true);
   let isRendering = false; // Guard against concurrent renders
   let imageElement: HTMLImageElement | undefined = $state();
   let renderedImageWidth = $state(0);
   let renderedImageHeight = $state(0);
+
+  // Derived: current visible image URL (for overlays positioning)
+  const baseImageUrl = $derived(darkMode ? darkImageUrl : lightImageUrl);
+
+  function clearImageUrls() {
+    if (lightImageUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(lightImageUrl);
+    }
+    if (darkImageUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(darkImageUrl);
+    }
+    lightImageUrl = null;
+    darkImageUrl = null;
+  }
 
   // Track image element dimensions after render
   function handleImageLoad() {
@@ -328,8 +348,40 @@
   // Footer margin: Math.max(8, floor(footerHeight * 0.3))
   const footerMargin = $derived(Math.max(8, Math.floor(scaledFooterHeight * 0.3)));
 
-  // Render base image on mount and when relevant props change
-  async function renderBaseImage() {
+  // Helper to render a single image variant
+  async function renderImageVariant(isDark: boolean): Promise<{ url: string; width: number; height: number }> {
+    const renderer = container.items.sequenceRenderer;
+
+    const blob = await renderer.renderSequenceToBlob(sequence, {
+      stepSize: 240,
+      format: "PNG",
+      quality: 1.0,
+      includeStartPosition,
+      addStepNumbers: false, // We overlay these
+      addWord: false, // We overlay this
+      addDifficultyLevel: false, // We overlay this
+      addUserInfo: false, // We overlay this
+      addReversalSymbols: true,
+      visibilityOverrides: {
+        darkMode: isDark,
+      },
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    // Preload the image
+    const img = new Image();
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    return { url, width: img.width, height: img.height };
+  }
+
+  // Render both light and dark images on mount for instant crossfade
+  async function renderBothImages() {
     // Guard: need valid sequence with steps
     if (!sequence?.steps?.length) {
       isLoading = false;
@@ -341,10 +393,26 @@
       return;
     }
     isRendering = true;
-    isLoading = true;
+    // Don't set isLoading = true here - we want no spinner
 
     try {
-      const renderer = container.items.sequenceRenderer;
+      // Clear ALL caches to ensure fresh renders with correct theme colors
+      // This prevents stale cache entries from causing wrong colors
+      // 1. PictographPreparer cache (arrow/prop positions + colored SVGs)
+      const preparer = container.items.pictographPreparer as { clearCache?: () => void } | undefined;
+      if (preparer?.clearCache) {
+        preparer.clearCache();
+      }
+      // 2. LayerCompositor cache (composited pictograph layers)
+      const layerCompositor = container.items.layerCompositor as { clearCache?: () => void } | undefined;
+      if (layerCompositor?.clearCache) {
+        layerCompositor.clearCache();
+      }
+      // 3. SvgImageCache (HTMLImageElement cache for arrow/prop SVGs)
+      // CRITICAL: The old hash function only hashed first 100 chars, causing
+      // light/dark mode arrows with same prefix to collide
+      clearSvgImageCache();
+
       const layoutService = container.items.layoutCalculator;
 
       // Calculate layout
@@ -353,50 +421,25 @@
       columns = cols;
       rows = rws;
 
-      // Render base image (without text overlays)
-      // Don't pass prop type overrides - let each motion's embedded propType be used,
-      // falling back to global settings when not set (handled by PictographPreparer)
-      const blob = await renderer.renderSequenceToBlob(sequence, {
-        stepSize: 240,
-        format: "PNG",
-        quality: 1.0,
-        includeStartPosition,
-        addStepNumbers: false, // We overlay these
-        addWord: false, // We overlay this
-        addDifficultyLevel: false, // We overlay this
-        addUserInfo: false, // We overlay this
-        addReversalSymbols: true,
-        visibilityOverrides: {
-          darkMode,
-        },
-      });
+      // Render both light and dark versions in parallel
+      const [lightResult, darkResult] = await Promise.all([
+        renderImageVariant(false),
+        renderImageVariant(true),
+      ]);
 
-      // Create URL for the base image
-      const newUrl = URL.createObjectURL(blob);
+      // Store dimensions from whichever matches current mode
+      imageWidth = darkMode ? darkResult.width : lightResult.width;
+      imageHeight = darkMode ? darkResult.height : lightResult.height;
 
-      // Preload the image before showing
-      const img = new Image();
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => {
-          imageWidth = img.width;
-          imageHeight = img.height;
-          resolve();
-        };
-        img.onerror = (err) => {
-          console.error("Failed to load image:", err);
-          reject(err);
-        };
-        img.src = newUrl;
-      });
+      // Clear old URLs before setting new ones
+      clearImageUrls();
 
-      // Swap URLs
-      if (baseImageUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(baseImageUrl);
-      }
-      baseImageUrl = newUrl;
+      // Set both URLs - crossfade handled by CSS
+      lightImageUrl = lightResult.url;
+      darkImageUrl = darkResult.url;
 
     } catch (error) {
-      console.error("Failed to render base image:", error);
+      console.error("Failed to render images:", error);
     } finally {
       isLoading = false;
       isRendering = false;
@@ -406,44 +449,44 @@
   // Track if initial render is complete (to skip effect on mount)
   let hasMounted = false;
 
-  // Re-render base image when relevant props change
+  // Re-render both images when props OTHER than darkMode change
+  // (darkMode toggle is handled by CSS crossfade, no re-render needed)
   $effect(() => {
     // Access props to create reactive dependencies (these trigger the effect)
-    const _darkMode = darkMode;
+    // NOTE: darkMode is NOT included - we pre-render both modes
     const _bluePropType = bluePropType;
     const _redPropType = redPropType;
     const _catDogModeEnabled = catDogModeEnabled;
     const _includeStartPosition = includeStartPosition;
 
     // Skip initial mount - handled by onMount
-    // Use untrack to prevent renderBaseImage from creating additional dependencies
+    // Use untrack to prevent renderBothImages from creating additional dependencies
     if (hasMounted) {
       untrack(() => {
-        renderBaseImage();
+        renderBothImages();
       });
     }
   });
 
   onMount(() => {
-    renderBaseImage().then(() => {
+    renderBothImages().then(() => {
       // Mark as mounted AFTER first render completes
       hasMounted = true;
     });
   });
 
   onDestroy(() => {
-    if (baseImageUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(baseImageUrl);
-    }
+    // Clear all image URLs on component destroy
+    clearImageUrls();
   });
 </script>
 
 <div class="layered-preview" class:dark-mode={darkMode}>
-  {#if isLoading}
+  {#if isLoading && !lightImageUrl && !darkImageUrl}
     <div class="loading-placeholder">
       <div class="spinner"></div>
     </div>
-  {:else if baseImageUrl}
+  {:else if lightImageUrl || darkImageUrl}
     <div
       class="preview-stack"
       style={renderedImageWidth > 0 ? `width: ${renderedImageWidth}px;` : ''}
@@ -506,16 +549,30 @@
         </div>
       {/if}
 
-      <!-- Grid section with base image and beat number overlays -->
+      <!-- Grid section with dual images for crossfade -->
       <div class="grid-section">
-        <img
-          class="base-image"
-          src={baseImageUrl}
-          alt="Sequence preview"
-          draggable="false"
-          bind:this={imageElement}
-          onload={handleImageLoad}
-        />
+        <!-- Light mode image (fades out when dark mode active) -->
+        {#if lightImageUrl}
+          <img
+            class="base-image light-image"
+            class:hidden={darkMode}
+            src={lightImageUrl}
+            alt="Sequence preview (light)"
+            draggable="false"
+            bind:this={imageElement}
+            onload={handleImageLoad}
+          />
+        {/if}
+        <!-- Dark mode image (fades in when dark mode active) -->
+        {#if darkImageUrl}
+          <img
+            class="base-image dark-image"
+            class:visible={darkMode}
+            src={darkImageUrl}
+            alt="Sequence preview (dark)"
+            draggable="false"
+          />
+        {/if}
 
         <!-- Beat numbers overlay - centered to align with centered image -->
         {#if showStepNumbers && renderedImageWidth > 0}
@@ -525,11 +582,18 @@
             transition:fade={{ duration: 200 }}
           >
             {#each beatPositions as pos}
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
                 class="beat-number"
                 class:highlighted={showHighlight && highlightedStepIndex === pos.stepIndex}
                 class:played={showHighlight && highlightedStepIndex !== null && pos.stepIndex < highlightedStepIndex && pos.stepIndex !== -1}
+                class:clickable={onStepClick && pos.stepIndex >= 0}
                 style="left: {pos.leftPct}%; top: {pos.topPct}%; font-size: {pos.isStart ? startFontSize : beatFontSize}px;"
+                onclick={() => onStepClick && pos.stepIndex >= 0 && onStepClick(pos.stepIndex)}
+                onkeydown={(e) => e.key === 'Enter' && onStepClick && pos.stepIndex >= 0 && onStepClick(pos.stepIndex)}
+                role={onStepClick && pos.stepIndex >= 0 ? 'button' : undefined}
+                tabindex={onStepClick && pos.stepIndex >= 0 ? 0 : undefined}
+                aria-label={onStepClick && pos.stepIndex >= 0 ? `Go to step ${pos.label}` : undefined}
               >
                 {pos.label}
               </div>
@@ -710,9 +774,40 @@
     user-select: none;
   }
 
+  /* Crossfade animation for light/dark mode toggle */
+  .light-image {
+    opacity: 1;
+    transition: opacity 0.25s ease-out;
+  }
+
+  .light-image.hidden {
+    opacity: 0;
+  }
+
+  .dark-image {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.25s ease-out;
+  }
+
+  .dark-image.visible {
+    opacity: 1;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .light-image,
+    .dark-image {
+      transition: none;
+    }
+  }
+
   .beat-numbers-overlay {
     position: absolute;
-    pointer-events: none;
+    /* Allow pointer events to pass through to clickable beat numbers */
   }
 
   .beat-number {
@@ -722,10 +817,31 @@
     color: #231f20;
     white-space: nowrap;
     line-height: 1;
+    pointer-events: none;
   }
 
   .dark-mode .beat-number {
     color: #ffffff;
+  }
+
+  /* Clickable beat numbers for seeking */
+  .beat-number.clickable {
+    pointer-events: auto;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: -2px -4px;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+  }
+
+  .beat-number.clickable:hover {
+    background: rgba(99, 102, 241, 0.2);
+    transform: scale(1.1);
+  }
+
+  .beat-number.clickable:focus-visible {
+    outline: 2px solid rgba(99, 102, 241, 0.8);
+    outline-offset: 2px;
   }
 
   /* Step highlighting for animation sync */
