@@ -7,17 +7,16 @@ Displays TKA glyph and beat number with fade transitions.
 Dark mode: Uses prop-based approach for preview isolation.
 When darkMode prop is provided, it overrides global state.
 CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
-
-Toggle animations: Delightful scale/pop transitions when visibility toggles.
 -->
 <script lang="ts">
-  import { fly, fade } from "svelte/transition";
-  import { backOut, cubicOut } from "svelte/easing";
+  import { fade } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import TKAGlyph from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
   import StepNumber from "$lib/shared/pictograph/shared/components/StepNumber.svelte";
   import BeatPositionGlyph from "$lib/shared/pictograph/shared/components/BeatPositionGlyph.svelte";
+  import { getLetterDimensions } from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
 
   let {
     // Current glyph state
@@ -56,6 +55,62 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
     darkMode?: boolean;
     isAtStartPosition?: boolean;
   } = $props();
+
+  // Track letter dimensions with reactive state that updates when cache is populated
+  // We use $state + $effect because $derived only evaluates once per change,
+  // but the cache is populated asynchronously by TKAGlyph after SVG loads
+  let letterDimensions = $state({ width: 100, height: 100 });
+  let fadingOutLetterDimensions = $state({ width: 100, height: 100 });
+
+  // Watch for letter changes and poll for dimensions until they're loaded
+  $effect(() => {
+    if (!letter) {
+      letterDimensions = { width: 100, height: 100 };
+      return;
+    }
+
+    // Check cache immediately
+    const cached = getLetterDimensions(letter);
+    if (cached.width !== 100 || cached.height !== 100) {
+      letterDimensions = cached;
+      return;
+    }
+
+    // Dimensions not cached yet - poll until available
+    // TKAGlyph will load them, we just need to detect when it's done
+    const interval = setInterval(() => {
+      const dims = getLetterDimensions(letter);
+      if (dims.width !== 100 || dims.height !== 100) {
+        letterDimensions = dims;
+        clearInterval(interval);
+      }
+    }, 16); // Check every frame
+
+    return () => clearInterval(interval);
+  });
+
+  $effect(() => {
+    if (!fadingOutLetter) {
+      fadingOutLetterDimensions = { width: 100, height: 100 };
+      return;
+    }
+
+    const cached = getLetterDimensions(fadingOutLetter);
+    if (cached.width !== 100 || cached.height !== 100) {
+      fadingOutLetterDimensions = cached;
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const dims = getLetterDimensions(fadingOutLetter);
+      if (dims.width !== 100 || dims.height !== 100) {
+        fadingOutLetterDimensions = dims;
+        clearInterval(interval);
+      }
+    }, 16);
+
+    return () => clearInterval(interval);
+  });
 </script>
 
 <div class="glyph-overlay" class:dark-mode={darkMode} data-controlled="true">
@@ -76,10 +131,12 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
             scale={1}
             visible={true}
             {darkMode}
+            disableChangeAnimation={true}
           />
           <TurnsColumn
             turnsTuple={fadingOutTurnsTuple ?? "(s, 0, 0)"}
             letter={fadingOutLetter}
+            letterDimensions={fadingOutLetterDimensions}
             pictographData={null}
             x={50}
             y={800}
@@ -105,11 +162,11 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
         class="glyph-svg"
       >
         {#if letter && tkaGlyphVisible}
-          <!-- Glyph is bottom-left: flies in/out toward bottom-left -->
+          <!-- Glyph group with cross-fade transition -->
           <g
             class="glyph-group"
-            in:fly={{ x: -30, y: 30, duration: 350, easing: backOut }}
-            out:fly={{ x: -30, y: 30, duration: 250, easing: cubicOut }}
+            in:fade={{ duration: 200, easing: cubicOut }}
+            out:fade={{ duration: 150, easing: cubicOut }}
           >
             <TKAGlyph
               {letter}
@@ -119,10 +176,12 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
               scale={1}
               visible={true}
               {darkMode}
+              disableChangeAnimation={true}
             />
             <TurnsColumn
               turnsTuple={displayedTurnsTuple}
               {letter}
+              {letterDimensions}
               pictographData={null}
               x={50}
               y={800}
@@ -133,12 +192,12 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
           </g>
         {/if}
         {#if stepNumbersVisible || isAtStartPosition}
-          <!-- Beat number is top-left: flies in/out toward top-left -->
+          <!-- Beat number with cross-fade transition -->
           <!-- Always show "Start" indicator when at start position, even if beat numbers toggled off -->
           <g
             class="beat-number-group"
-            in:fly={{ x: -30, y: -30, duration: 300, easing: backOut }}
-            out:fly={{ x: -30, y: -30, duration: 200, easing: cubicOut }}
+            in:fade={{ duration: 200, easing: cubicOut }}
+            out:fade={{ duration: 150, easing: cubicOut }}
           >
             <StepNumber
               stepNumber={isAtStartPosition ? 0 : displayedStepNumber}
@@ -147,11 +206,11 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
           </g>
         {/if}
         {#if beatPositionVisible && !isAtStartPosition && displayedMusicalPosition}
-          <!-- Beat position is bottom-center: flies in/out from bottom -->
+          <!-- Beat position with cross-fade transition -->
           <g
             class="beat-position-group"
-            in:fly={{ x: 0, y: 30, duration: 300, easing: backOut }}
-            out:fly={{ x: 0, y: 30, duration: 200, easing: cubicOut }}
+            in:fade={{ duration: 200, easing: cubicOut }}
+            out:fade={{ duration: 150, easing: cubicOut }}
           >
             <BeatPositionGlyph
               musicalPosition={displayedMusicalPosition}
@@ -210,19 +269,6 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
   .glyph-svg {
     width: 100%;
     height: 100%;
-  }
-
-  /* SVG group styling - transform origins for fly animations */
-  .glyph-group {
-    transform-origin: 0% 100%; /* Bottom-left corner */
-  }
-
-  .beat-number-group {
-    transform-origin: 0% 0%; /* Top-left corner */
-  }
-
-  .beat-position-group {
-    transform-origin: 50% 100%; /* Bottom-center */
   }
 
   /* Dark Mode via prop (preview isolation) */

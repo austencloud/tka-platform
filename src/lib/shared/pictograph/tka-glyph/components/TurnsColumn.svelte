@@ -231,10 +231,11 @@ Props:
   });
 </script>
 
-<!-- Turns Column Group - only render when visible (or in preview mode)
+<!-- Turns Column Group - only render when visible (or in preview mode) AND dimensions are loaded
      NOTE: We check visibility here (not just CSS) because when exporting to SVG/image,
-     CSS classes don't carry over - only the raw SVG markup is captured. -->
-{#if visible || previewMode}
+     CSS classes don't carry over - only the raw SVG markup is captured.
+     We also wait for valid dimensions to avoid positioning flash when letter loads. -->
+{#if (visible || previewMode) && (effectiveLetterDimensions().width !== 100 || effectiveLetterDimensions().height !== 100)}
   <g
     class="turns-column"
     class:visible

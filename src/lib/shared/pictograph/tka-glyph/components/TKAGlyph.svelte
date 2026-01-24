@@ -152,6 +152,8 @@ Uses pure runes instead of stores for reactivity.
     onToggle = undefined,
     // Dark Mode override for export (when set, applies filter override)
     darkMode = undefined,
+    // Disable scale-pulse animation on letter change (for animation canvas overlay)
+    disableChangeAnimation = false,
   } = $props<{
     /** The letter to display */
     letter: string | null | undefined;
@@ -171,6 +173,8 @@ Uses pure runes instead of stores for reactivity.
     onToggle?: () => void;
     /** Dark Mode override for export. When set, applies filter override. */
     darkMode?: boolean;
+    /** Disable scale-pulse animation when letter changes */
+    disableChangeAnimation?: boolean;
   }>();
 
   // Letter dimensions state - match legacy behavior
@@ -321,7 +325,13 @@ Uses pure runes instead of stores for reactivity.
 
     // Skip animation on initial mount (previousLetter is null)
     // Only animate when letter actually changes to a different value
-    if (previousLetter !== null && currentLetter !== previousLetter && currentLetter !== null) {
+    // Also skip if animation is disabled (e.g., in animation canvas overlay)
+    if (
+      !disableChangeAnimation &&
+      previousLetter !== null &&
+      currentLetter !== previousLetter &&
+      currentLetter !== null
+    ) {
       // Trigger the scale-pulse animation
       isAnimatingChange = true;
 
