@@ -1,0 +1,325 @@
+<!--
+  SessionControls.svelte
+
+  Playback controls for synced session.
+  Standard transport: first, prev, play/pause, next, last + scrubber.
+-->
+<script lang="ts">
+	interface Props {
+		isPlaying: boolean;
+		currentBeat: number;
+		maxBeat: number;
+		disabled?: boolean;
+		onPlay: () => void;
+		onPause: () => void;
+		onPrevious: () => void;
+		onNext: () => void;
+		onFirst: () => void;
+		onLast: () => void;
+		onSeek: (beat: number) => void;
+	}
+
+	let {
+		isPlaying,
+		currentBeat,
+		maxBeat,
+		disabled = false,
+		onPlay,
+		onPause,
+		onPrevious,
+		onNext,
+		onFirst,
+		onLast,
+		onSeek
+	}: Props = $props();
+
+	function handlePlayPause() {
+		if (isPlaying) {
+			onPause();
+		} else {
+			onPlay();
+		}
+	}
+
+	function handleSliderChange(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const value = parseInt(target.value, 10);
+		onSeek(value);
+	}
+
+	// Progress percentage for styling
+	const progressPercent = $derived(maxBeat > 0 ? (currentBeat / maxBeat) * 100 : 0);
+</script>
+
+<div class="session-controls" class:disabled>
+	<!-- Transport buttons -->
+	<div class="transport-buttons">
+		<button
+			class="transport-btn"
+			onclick={onFirst}
+			disabled={disabled || currentBeat === 0}
+			aria-label="First beat"
+			title="First beat"
+		>
+			<i class="fas fa-step-backward" aria-hidden="true"></i>
+		</button>
+
+		<button
+			class="transport-btn"
+			onclick={onPrevious}
+			disabled={disabled || currentBeat === 0}
+			aria-label="Previous beat"
+			title="Previous beat"
+		>
+			<i class="fas fa-backward" aria-hidden="true"></i>
+		</button>
+
+		<button
+			class="transport-btn play-btn"
+			onclick={handlePlayPause}
+			{disabled}
+			aria-label={isPlaying ? 'Pause' : 'Play'}
+			title={isPlaying ? 'Pause' : 'Play'}
+		>
+			{#if isPlaying}
+				<i class="fas fa-pause" aria-hidden="true"></i>
+			{:else}
+				<i class="fas fa-play" aria-hidden="true"></i>
+			{/if}
+		</button>
+
+		<button
+			class="transport-btn"
+			onclick={onNext}
+			disabled={disabled || currentBeat >= maxBeat}
+			aria-label="Next beat"
+			title="Next beat"
+		>
+			<i class="fas fa-forward" aria-hidden="true"></i>
+		</button>
+
+		<button
+			class="transport-btn"
+			onclick={onLast}
+			disabled={disabled || currentBeat >= maxBeat}
+			aria-label="Last beat"
+			title="Last beat"
+		>
+			<i class="fas fa-step-forward" aria-hidden="true"></i>
+		</button>
+	</div>
+
+	<!-- Progress slider -->
+	<div class="progress-container">
+		<span class="beat-label">{currentBeat}</span>
+
+		<div class="slider-wrapper">
+			<input
+				type="range"
+				class="progress-slider"
+				min="0"
+				max={maxBeat}
+				value={currentBeat}
+				{disabled}
+				oninput={handleSliderChange}
+				aria-label="Seek position"
+				aria-valuemin={0}
+				aria-valuemax={maxBeat}
+				aria-valuenow={currentBeat}
+				aria-valuetext="Beat {currentBeat} of {maxBeat}"
+				style="--progress: {progressPercent}%"
+			/>
+		</div>
+
+		<span class="beat-label">{maxBeat}</span>
+	</div>
+</div>
+
+<style>
+	.session-controls {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 12px;
+		flex: 1;
+	}
+
+	.session-controls.disabled {
+		opacity: 0.5;
+	}
+
+	/* Transport buttons */
+	.transport-buttons {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.transport-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 48px;
+		height: 48px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 50%;
+		color: var(--theme-text, white);
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.transport-btn:hover:not(:disabled) {
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+	}
+
+	.transport-btn:active:not(:disabled) {
+		transform: scale(0.95);
+	}
+
+	.transport-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.transport-btn i {
+		font-size: 14px;
+	}
+
+	/* Play button - larger and accent colored */
+	.play-btn {
+		width: 60px;
+		height: 60px;
+		background: var(--theme-accent, #6366f1);
+		border-color: var(--theme-accent, #6366f1);
+	}
+
+	.play-btn:hover:not(:disabled) {
+		background: var(--theme-accent-hover, #4f46e5);
+		border-color: var(--theme-accent-hover, #4f46e5);
+	}
+
+	.play-btn i {
+		font-size: 18px;
+	}
+
+	/* Progress slider */
+	.progress-container {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+		max-width: 400px;
+	}
+
+	.beat-label {
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+		min-width: 24px;
+		text-align: center;
+	}
+
+	.slider-wrapper {
+		flex: 1;
+		position: relative;
+	}
+
+	.progress-slider {
+		width: 100%;
+		height: 6px;
+		-webkit-appearance: none;
+		appearance: none;
+		background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 3px;
+		outline: none;
+		cursor: pointer;
+	}
+
+	.progress-slider:disabled {
+		cursor: not-allowed;
+	}
+
+	/* Track styling */
+	.progress-slider::-webkit-slider-runnable-track {
+		height: 6px;
+		background: linear-gradient(
+			to right,
+			var(--theme-accent, #6366f1) 0%,
+			var(--theme-accent, #6366f1) var(--progress, 0%),
+			var(--theme-stroke, rgba(255, 255, 255, 0.1)) var(--progress, 0%),
+			var(--theme-stroke, rgba(255, 255, 255, 0.1)) 100%
+		);
+		border-radius: 3px;
+	}
+
+	.progress-slider::-moz-range-track {
+		height: 6px;
+		background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 3px;
+	}
+
+	.progress-slider::-moz-range-progress {
+		background: var(--theme-accent, #6366f1);
+		border-radius: 3px;
+	}
+
+	/* Thumb styling */
+	.progress-slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 16px;
+		height: 16px;
+		background: var(--theme-accent, #6366f1);
+		border: 2px solid white;
+		border-radius: 50%;
+		cursor: pointer;
+		margin-top: -5px;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+		transition: transform 0.15s ease;
+	}
+
+	.progress-slider::-moz-range-thumb {
+		width: 16px;
+		height: 16px;
+		background: var(--theme-accent, #6366f1);
+		border: 2px solid white;
+		border-radius: 50%;
+		cursor: pointer;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	}
+
+	.progress-slider:hover::-webkit-slider-thumb {
+		transform: scale(1.1);
+	}
+
+	.progress-slider:disabled::-webkit-slider-thumb,
+	.progress-slider:disabled::-moz-range-thumb {
+		cursor: not-allowed;
+	}
+
+	/* Mobile - maintain 48px minimum for AAA compliance */
+	@media (max-width: 600px) {
+		.transport-btn {
+			width: 48px;
+			height: 48px;
+		}
+
+		.play-btn {
+			width: 56px;
+			height: 56px;
+		}
+
+		.progress-container {
+			max-width: 100%;
+		}
+	}
+
+	/* Reduced motion */
+	@media (prefers-reduced-motion: reduce) {
+		.transport-btn,
+		.progress-slider::-webkit-slider-thumb {
+			transition: none;
+		}
+	}
+</style>
