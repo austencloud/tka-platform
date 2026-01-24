@@ -12,71 +12,132 @@ This project follows a **2026+ AI-assisted development approach**:
 
 ---
 
+## ⛔ DEPENDENCY INJECTION IS DEPRECATED ⛔
+
+**The ITI dependency injection container is being phased out. Do NOT create new DI-registered services.**
+
+### Why DI is being removed:
+
+1. **HMR pain** - Any change to a container or its dependencies triggers full container rebuilds, causing 5+ second refresh delays during development
+2. **Unnecessary complexity** - For a single-developer project, DI's "swap implementations" benefit never materialized
+3. **Indirection tax** - `container.items.serviceName` is harder to trace than direct imports
+4. **Circular dependency hell** - Container layering to avoid circular deps added massive complexity
+
+### The new pattern: Direct Singleton Exports
+
+Instead of registering services in containers, export singleton instances directly:
+
+```typescript
+// services/implementations/MyService.ts
+import type { IMyService } from '../contracts/IMyService';
+import { otherService } from '../other/OtherService';
+
+export class MyService implements IMyService {
+  doThing(): void { /* ... */ }
+}
+
+// Direct singleton export at bottom of file
+export const myService = new MyService();
+```
+
+```typescript
+// Usage - direct import, no container
+import { myService } from '$lib/path/to/MyService';
+
+myService.doThing();
+```
+
+### Migration status:
+
+The following containers are being eliminated one by one:
+- `pictograph-container.ts` - **IN PROGRESS** (core services migrated)
+- All other containers - **PENDING**
+
+### If you encounter `container.items.X`:
+
+1. Check if that service already has a direct export
+2. If yes, replace with direct import
+3. If no, add a direct singleton export to the service file, then use direct import
+
+### NEVER do this anymore:
+
+```typescript
+// ❌ OLD PATTERN - DO NOT USE
+import { container } from "$lib/shared/di";
+const myService = container.items.myService;
+
+// ❌ DO NOT CREATE NEW CONTAINERS
+export const myContainer = createContainer()
+  .add({ myService: () => new MyService() });
+```
+
+### Always do this instead:
+
+```typescript
+// ✅ NEW PATTERN - Direct imports
+import { myService } from "$lib/path/to/MyService";
+```
+
+---
+
 ## NEVER Create Utility Files or Hooks
 
-**This is a service-based architecture using ITI (Isomorphic Type-safe IoC). ALL logic must live in services.**
+**Logic lives in service classes, not loose functions.**
 
 ### What NOT to create:
 
 - `utils/` folders or files (e.g., `utils/deriveWord.ts`)
 - `helpers/` folders or files
 - `hooks/` folders or files (this isn't React)
-- Standalone pure functions meant to be imported directly
+- Standalone pure functions in random files
 
 ### What to create instead:
 
 1. **Interface** in `services/contracts/IServiceName.ts`
 2. **Implementation** in `services/implementations/ServiceName.ts`
-3. **Register in container** in `src/lib/shared/di/containers/{feature}-container.ts`
+3. **Direct singleton export** at the bottom of the implementation file
 
 ### Service Pattern Example:
 
 ```typescript
-// services/contracts/IMyService.ts
-export interface IMyService {
-  doThing(): void;
+// services/contracts/IWordDeriver.ts
+export interface IWordDeriver {
+  deriveWord(steps: StepData[]): string;
 }
 
-// services/implementations/MyService.ts
-import type { IMyService } from '../contracts/IMyService';
+// services/implementations/WordDeriver.ts
+import type { IWordDeriver } from '../contracts/IWordDeriver';
 
-export class MyService implements IMyService {
-  constructor(private dependency: IDependency) {}
-  doThing(): void { /* ... */ }
+export class WordDeriver implements IWordDeriver {
+  deriveWord(steps: StepData[]): string {
+    return steps.map(s => s.letter).join('');
+  }
 }
 
-// In the container file:
-import { createContainer } from "iti";
-import { MyService } from "./services/implementations/MyService";
-
-export const myContainer = createContainer()
-  .add({ myService: () => new MyService(someDep) });
-
-// Usage:
-import { container } from "$shared/di";
-const myService = container.items.myService;
+// Direct singleton export
+export const wordDeriver = new WordDeriver();
 ```
 
-### Why:
+### Why keep interfaces?
 
-- ITI provides type-safe dependency injection
-- Container manages service lifecycles and dependencies
-- Interfaces allow swapping implementations
-- Keeps all business logic in traceable, testable units
+- Documentation of the service's contract
+- Enables mocking in tests if needed
+- Self-documenting API surface
 
 ### If you think you need a utility:
 
-You actually need a service. Create an interface, implement it as a class, and register it in the appropriate container.
+You actually need a service class with a direct singleton export.
 
 ---
 
-### Why this matters for AI-assisted development:
+## Why this matters for AI-assisted development:
 
 - Smaller files = smaller context windows = faster, cheaper, more accurate AI assistance
 - Git diffs are cleaner and easier to review
 - Each file is fully readable in one screen
 - Easier to test, modify, and reason about in isolation
 - When user says "fix X", AI can read one focused file instead of hunting through 500 lines
+- **Direct imports = instant HMR** instead of waiting for container rebuilds
 
 ### What's NOT a good split:
 
@@ -124,7 +185,7 @@ You actually need a service. Create an interface, implement it as a class, and r
 ## State Management
 
 - Use **context + runes** for shared state, not stores
-- Services resolved via ITI container (`container.items.serviceName`)
+- **Direct singleton imports** for services (NOT `container.items.X`)
 - Settings persisted to Firebase with optimistic local updates
 
 ---

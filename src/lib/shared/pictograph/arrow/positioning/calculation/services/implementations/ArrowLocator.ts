@@ -93,3 +93,11 @@ export const MOTION_TYPES = {
   DASH: "dash",
   STATIC: "static",
 } as const;
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.arrowLocator to avoid DI container rebuilds.
+// ============================================================================
+
+export const arrowLocator = new ArrowLocator();

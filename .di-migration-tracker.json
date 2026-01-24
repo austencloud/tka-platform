@@ -1,0 +1,772 @@
+{
+  "containers": {
+    "admin": {
+      "file": "admin-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\admin-container.ts",
+      "services": [
+        "auditLogger",
+        "contentQueryAnalyzer",
+        "announcementManager",
+        "quickAccessPersister",
+        "systemStateManager",
+        "eventActivityAnalyzer",
+        "userActivityTracker",
+        "userMetricsAnalyzer",
+        "adminChallengeManager",
+        "analyticsDataProvider"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "analytics": {
+      "file": "analytics-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\analytics-container.ts",
+      "services": [
+        "sessionTracker",
+        "activityLogger"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "animation-3d": {
+      "file": "animation-3d-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\animation-3d-container.ts",
+      "services": [
+        "animation3DAngleMath",
+        "animation3DOrientationMapper",
+        "animation3DMotionCalculator",
+        "planeCoordinateMapper",
+        "propStateInterpolator",
+        "sequenceConverter",
+        "animation3DPersister",
+        "duetPersister",
+        "performerSynchronizerFactory"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "animator": {
+      "file": "animator-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\animator-container.ts",
+      "services": [
+        "angleCalculator",
+        "animationLoop",
+        "animationStateService",
+        "stepCalculationService",
+        "canvasRenderer",
+        "coordinateUpdater",
+        "motionCalculator",
+        "svgGenerator",
+        "trailCapturer",
+        "animationStorageManager",
+        "videoExporter",
+        "darkModeProvider",
+        "animator",
+        "endpointCalculator",
+        "propInterpolationService",
+        "sequenceAnimationOrchestrator",
+        "animationPlaybackController",
+        "compositeVideoRenderer",
+        "videoExportOrchestrator",
+        "tunnelModeSequenceManager",
+        "sequenceMotionLoader"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "background-builder": {
+      "file": "background-builder-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\background-builder-container.ts",
+      "services": [
+        "previewAnimationController",
+        "nightSkyLabController",
+        "ufoStatusPoller"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "build": {
+      "file": "build-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\build-container.ts",
+      "services": [
+        "createModuleOrchestrator",
+        "createModuleEffectCoordinator",
+        "navigationSyncer",
+        "keyboardArrowAdjuster",
+        "undoManager",
+        "constructCoordinator",
+        "turnController",
+        "filterPersister",
+        "reversalChecker",
+        "optionOrganizer",
+        "optionTransitionCoordinator",
+        "sectionTitleFormatter",
+        "optionGridFitCalculator",
+        "aspectLayoutPlanner",
+        "stepConverter",
+        "pictographFilter",
+        "turnManager",
+        "typographyScaler",
+        "cardConfigurator",
+        "sequenceValidator",
+        "sequenceStatsCalculator",
+        "panelPersister",
+        "subDrawerStatePersister",
+        "firstStepAnalyzer",
+        "rotationDirectionPatternManager",
+        "turnPatternManager",
+        "durationPatternManager",
+        "wordCyclicEquivalenceDetector",
+        "motionSignatureGenerator",
+        "spatialTransformDetector",
+        "loopTypeResolver",
+        "sequenceToEntryConverter",
+        "rotatedEndPositionSelector",
+        "orientationCycleDetector",
+        "createModuleLayoutManager",
+        "arrowAdjustmentOrchestrator",
+        "responsiveLayoutManager",
+        "deepLinkSequenceHandler",
+        "stepOperator",
+        "positionAnalyzer",
+        "layoutDetector",
+        "startPositionManager",
+        "sequenceAnalyzer",
+        "strictRotatedLOOPExecutor",
+        "strictMirroredLOOPExecutor",
+        "strictSwappedLOOPExecutor",
+        "strictInvertedLOOPExecutor",
+        "mirroredSwappedLOOPExecutor",
+        "swappedInvertedLOOPExecutor",
+        "rotatedSwappedLOOPExecutor",
+        "rewoundLOOPExecutor",
+        "letterTransitionGraph",
+        "mirroredInvertedLOOPExecutor",
+        "rotatedInvertedLOOPExecutor",
+        "mirroredSwappedInvertedLOOPExecutor",
+        "beatSignatureGenerator",
+        "sequenceCanonicalizer",
+        "sequenceAligner",
+        "sequenceEquivalenceDetector",
+        "optionSorter",
+        "optionFilter",
+        "optionLoader",
+        "loopParameterProvider",
+        "createModuleHandlers",
+        "mirroredRotatedLOOPExecutor",
+        "mirroredRotatedInvertedLOOPExecutor",
+        "mirroredRotatedInvertedSwappedLOOPExecutor",
+        "loopExecutorSelector",
+        "similarityCalculator",
+        "workbench",
+        "sequenceTransformer",
+        "sequenceExporter",
+        "sequencePersister",
+        "sequenceIndexer",
+        "loopValidator",
+        "orientationAlignmentCalculator",
+        "sequenceTransferHandler",
+        "sequenceJsonExporter",
+        "sequenceMetadataManager",
+        "turnAllocator",
+        "loopEndPositionSelector",
+        "bridgeFinder",
+        "sequenceExtender",
+        "loopDetector",
+        "startPositionSelector",
+        "stepGenerationOrchestrator",
+        "partialSequenceGenerator",
+        "generationOrchestrator",
+        "letterTypeClassifier",
+        "orientationContinuityValidator",
+        "startPositionValidator",
+        "variationConstraintBuilder",
+        "spellServiceLoader",
+        "wordSequenceGenerator",
+        "randomSequenceGenerator",
+        "variationExplorationOrchestrator",
+        "extensionFlowCoordinator",
+        "createModuleInitializer"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "community": {
+      "file": "community-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\community-container.ts",
+      "services": [
+        "leaderboardManager",
+        "userRepository",
+        "userSearcher",
+        "followingFeedProvider",
+        "locationProvider",
+        "userLocationRepository",
+        "geocodingService",
+        "locationSharingOrchestrator"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "connect": {
+      "file": "connect-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\connect-container.ts",
+      "services": [
+        "connectPresenceTracker",
+        "connectSessionManager",
+        "connectInviteHandler",
+        "connectFriendshipManager",
+        "connectOrchestrator"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "core": {
+      "file": "core-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\core-container.ts",
+      "services": [
+        "appState",
+        "appStateInitializer",
+        "performanceMetricsState",
+        "settingsState",
+        "settingsPersister",
+        "viewportManager",
+        "deviceDetector",
+        "applicationInitializer",
+        "resourceTracker",
+        "componentManager",
+        "errorHandler",
+        "hapticFeedback",
+        "rippleEffect",
+        "authenticator",
+        "profilePictureManager",
+        "userDocumentManager",
+        "subscriptionManager",
+        "profileApiClient",
+        "stepUpAuthCoordinator",
+        "usernameValidator",
+        "accountManager",
+        "mobileFullscreenManager",
+        "platformDetector",
+        "gestureHandler",
+        "pwaEngagementTracker",
+        "pwaInstallDismissalManager",
+        "wordDeriver",
+        "fileDownloader",
+        "storageManager",
+        "seoManager",
+        "svgImageConverter",
+        "onboardingPersister",
+        "tagManager"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "data": {
+      "file": "data-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\data-container.ts",
+      "services": [
+        "csvLoader",
+        "csvParser",
+        "enumMapper",
+        "dataTransformer",
+        "persistenceService",
+        "sequenceDomainManager",
+        "reversalDetector",
+        "sequenceNormalizer",
+        "sequenceLoopabilityChecker",
+        "backgroundManager",
+        "backgroundRenderingService",
+        "backgroundPreloader",
+        "backgroundConfigurationService",
+        "nightSkyCalculationService",
+        "geoLocationProvider",
+        "persistenceInitializationService",
+        "sequenceImporter",
+        "sequenceRepository"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "deep-ocean": {
+      "file": "deep-ocean-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\deep-ocean-container.ts",
+      "services": [
+        "bubblePhysics",
+        "particleSystem",
+        "lightRayCalculator",
+        "fishPropulsionCalculator",
+        "fishPersonalityGenerator",
+        "fishMoodManager",
+        "fishDecisionMaker",
+        "fishWobbleAnimator",
+        "fishFlockingCalculator",
+        "fishVisualUpdater",
+        "jellyfishAnimator",
+        "gradientRenderer",
+        "lightRayRenderer",
+        "bubbleRenderer",
+        "particleRenderer",
+        "jellyfishRenderer",
+        "colorCalculator",
+        "fishSpineController",
+        "fishFactory",
+        "fishMovementController",
+        "fishAnimator",
+        "fishEffectRenderer",
+        "fishFaceRenderer",
+        "fishFinRenderer",
+        "fishBodyRenderer",
+        "fishPatternRenderer",
+        "fishRenderer"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "delight": {
+      "file": "delight-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\delight-container.ts",
+      "services": [
+        "delightOrchestrator"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "explore": {
+      "file": "explore-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\explore-container.ts",
+      "services": [
+        "sequenceDifficultyCalculator",
+        "exploreCache",
+        "exploreFilter",
+        "exploreSorter",
+        "variationGrouper",
+        "exploreThumbnailProvider",
+        "thumbnailLocalCache",
+        "thumbnailKeyDeriver",
+        "thumbnailRenderQueue",
+        "thumbnailMetricsCollector",
+        "favoritesManager",
+        "exploreFilterPersister",
+        "exploreNavigator",
+        "exploreDeleter",
+        "exploreMetadataExtractor",
+        "exploreLoader",
+        "exploreSectionManager",
+        "optimizedExploreer",
+        "thumbnailRenderer",
+        "thumbnailRenderOrchestrator",
+        "exploreEventHandler",
+        "sequenceDetailLoader",
+        "videoCountManager",
+        "claudeCodeCopier"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "feedback": {
+      "file": "feedback-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\feedback-container.ts",
+      "services": [
+        "feedbackSorter",
+        "feedbackEditor",
+        "feedbackSubtaskManager",
+        "feedbackFormatter",
+        "voiceTranscriptCoordinator",
+        "formDraftPersister",
+        "feedbackTypeResolver"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "gallery": {
+      "file": "gallery-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\gallery-container.ts",
+      "services": [
+        "exhibitLoader",
+        "gallerySessionManager",
+        "galleryPositionSyncer"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "gamification": {
+      "file": "gamification-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\gamification-container.ts",
+      "services": [
+        "gamificationNotifier",
+        "streakTracker",
+        "achievementManager",
+        "dailyChallengeManager",
+        "weeklyChallengeManager",
+        "skillProgressionTracker",
+        "challengeCoordinator"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "hall-of-shame": {
+      "file": "hall-of-shame-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\hall-of-shame-container.ts",
+      "services": [
+        "ageVerifier",
+        "hallOfShameSubmitter",
+        "hallOfShameLoader",
+        "hallOfShameVoter",
+        "shameQueueManager"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "keyboard": {
+      "file": "keyboard-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\keyboard-container.ts",
+      "services": [
+        "shortcutRegistry",
+        "keyboardShortcutManager",
+        "commandPalette",
+        "shortcutCustomizer"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "lan-sync": {
+      "file": "lan-sync-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\lan-sync-container.ts",
+      "services": [
+        "peerConnectionManager",
+        "syncRoomBroadcaster",
+        "syncRoomDiscovery",
+        "lanSyncCoordinator"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "landing-preview": {
+      "file": "landing-preview-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\landing-preview-container.ts",
+      "services": [
+        "videoCuratorLoader",
+        "videoCuratorPersister",
+        "sequenceMatcher"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "learn": {
+      "file": "learn-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\learn-container.ts",
+      "services": [
+        "codexLetterMappingRepo",
+        "codexPictographUpdater",
+        "quizSessionManager",
+        "quizResultsAnalyzer",
+        "conceptProgressTracker",
+        "soundPlayer",
+        "quizRepoManager",
+        "codex"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "library": {
+      "file": "library-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\library-container.ts",
+      "services": [
+        "publicIndexSyncer",
+        "collectionManager",
+        "libraryRepository",
+        "librarySaveService"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "loop-labeler": {
+      "file": "loop-labeler-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\loop-labeler-container.ts",
+      "services": [
+        "stepDataConverter",
+        "beatPairAnalyzer",
+        "loopDesignator",
+        "polyrhythmicDetector",
+        "layeredPathDetector",
+        "candidateFormatter",
+        "rotationComparer",
+        "reflectionComparer",
+        "swapInvertComparer",
+        "loopLabelsFirebaseRepository",
+        "sequenceLoader",
+        "navigator",
+        "ruleBasedTagger",
+        "beatComparisonOrchestrator",
+        "transformationAnalyzer",
+        "loopDetector",
+        "sequenceFeatureExtractor"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "mandala": {
+      "file": "mandala-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\mandala-container.ts",
+      "services": [
+        "mandalaTransformer"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "moderation": {
+      "file": "moderation-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\moderation-container.ts",
+      "services": [
+        "reportSubmitter",
+        "reportQuerier",
+        "contentModerator",
+        "contentAppealManager",
+        "reportResolver"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "navigation": {
+      "file": "navigation-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\navigation-container.ts",
+      "services": [
+        "keyboardNavigator",
+        "moduleSelector",
+        "sheetRouter",
+        "sequenceEncoder",
+        "navigationValidator",
+        "urlSyncer",
+        "deepLinker",
+        "letterDeriver",
+        "positionDeriver",
+        "sequenceViewer"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "night-sky": {
+      "file": "night-sky-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\night-sky-container.ts",
+      "services": [
+        "ufoRenderer",
+        "ufoParticleRenderer",
+        "ufoMoodManager",
+        "ufoStarScanner",
+        "ufoInteractionHandler",
+        "ufoBehaviorRunner",
+        "ufoEntranceAnimator",
+        "ufoExitAnimator",
+        "ufoMovementController",
+        "ufoDecisionMaker"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "pictograph": {
+      "file": "pictograph-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\pictograph-container.ts",
+      "services": [],
+      "migrated": [
+        "letterQueryHandler",
+        "motionQueryHandler",
+        "gridRenderer",
+        "arrowRenderer",
+        "svgPreloader",
+        "startPositionDeriver",
+        "gridPositionDeriver",
+        "csvPictographParser",
+        "gridModeDeriver",
+        "orientationCalculator",
+        "propSvgLoader",
+        "dashLocationCalculator",
+        "handpathDirectionCalculator",
+        "specialPlacementOriKeyGenerator",
+        "turnsTupleKeyGenerator",
+        "rotationAngleOverrideKeyGenerator",
+        "letterClassifier",
+        "specialPlacementDataProvider",
+        "defaultPlacer",
+        "arrowQuadrantCalculator",
+        "directionalTupleCalculator",
+        "specialPlacementLookup",
+        "attributeKeyGenerator",
+        "arrowLocationCalculator",
+        "quadrantIndexCalculator",
+        "directionalTupleProcessor",
+        "arrowPlacementKeyGenerator",
+        "arrowGridCoordinator",
+        "specialPlacer",
+        "arrowRotationCalculator",
+        "rotationOverrideManager",
+        "arrowDataProcessor",
+        "arrowAdjustmentCalculator",
+        "arrowPositioningOrchestrator",
+        "arrowLifecycleManager",
+        "arrowPathResolver",
+        "arrowSvgParser",
+        "arrowSvgColorTransformer",
+        "turnsTupleGenerator",
+        "betaDetector",
+        "arrowSvgLoader",
+        "propPlacer",
+        "pictographPreparer",
+        "arrowPlacer",
+        "arrowCoordinateTransformer",
+        "screenSpaceAdjustmentTransformer",
+        "arrowLocator",
+        "arrowAdjustmentProcessor",
+        "pictographCoordinator"
+      ],
+      "status": "pending"
+    },
+    "poi-lab": {
+      "file": "poi-lab-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\poi-lab-container.ts",
+      "services": [
+        "poiGravityOrientationDeriver",
+        "vtgTerminologyMapper",
+        "poiConstraintValidator",
+        "poiSequenceValidator",
+        "poiOptionFilterDecorator"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "presence": {
+      "file": "presence-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\presence-container.ts",
+      "services": [
+        "presenceTracker"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "promo": {
+      "file": "promo-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\promo-container.ts",
+      "services": [
+        "promoSceneManager",
+        "screenshotInjector",
+        "promoAnimationController",
+        "promoVideoExporter",
+        "promoOrchestrator"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "qr": {
+      "file": "qr-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\qr-container.ts",
+      "services": [
+        "shortCodeManager",
+        "qrCodeGenerator"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "render": {
+      "file": "render-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\render-container.ts",
+      "services": [
+        "canvasManager",
+        "layoutCalculator",
+        "dimensionCalculator",
+        "svgToCanvasConverter",
+        "glyphCache",
+        "filenameGenerator",
+        "pictographBlobCache",
+        "pictographKeyHasher",
+        "pictographMemoryCache",
+        "beatNumberRenderer",
+        "canvas2DRenderer",
+        "layerCompositor",
+        "loopGlyphRenderer",
+        "loopIconStripRenderer",
+        "textRenderer",
+        "imageFormatConverter",
+        "imageComposer",
+        "sequenceRenderer"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "share": {
+      "file": "share-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\share-container.ts",
+      "services": [
+        "instagramLinker",
+        "firebaseVideoUploader",
+        "recordingPersister",
+        "collaborativeVideoManager",
+        "cloudThumbnailCache",
+        "sharer",
+        "sequenceImageSharer",
+        "shareHubExportOrchestrator",
+        "mediaBundler"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "tika": {
+      "file": "tika-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\tika-container.ts",
+      "services": [
+        "tikaSessionRepository",
+        "tikaMarkdownParser",
+        "tikaMessageExtractor",
+        "tikaSessionFormatter"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "train": {
+      "file": "train-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\train-container.ts",
+      "services": [
+        "handLandmarker",
+        "handednessAnalyzer",
+        "handStateAnalyzer",
+        "handTrackingStabilizer",
+        "cameraManager",
+        "voiceCommandHandler",
+        "performanceHistoryTracker",
+        "handAssigner",
+        "positionDetector",
+        "trainChallengeManager",
+        "sessionCompletionProcessor"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "watch": {
+      "file": "watch-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\watch-container.ts",
+      "services": [
+        "publicVideoLoader",
+        "videoPlaybackController",
+        "feedScrollBehavior",
+        "feedSnapDetector",
+        "feedPreloader",
+        "feedLoader"
+      ],
+      "migrated": [],
+      "status": "pending"
+    },
+    "write": {
+      "file": "write-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\write-container.ts",
+      "services": [
+        "actManager",
+        "musicPlayer"
+      ],
+      "migrated": [],
+      "status": "pending"
+    }
+  },
+  "lastScan": "2026-01-24T06:12:05.303Z",
+  "stats": {
+    "totalMigrated": 0,
+    "totalRemaining": 0
+  }
+}

@@ -297,3 +297,12 @@ export class ArrowPlacer implements IArrowPlacer {
     return motionPlacements?.[placementKey] || {};
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.arrowPlacer to avoid DI container rebuilds.
+// Uses the default jsonCache singleton.
+// ============================================================================
+
+export const arrowPlacer = new ArrowPlacer();

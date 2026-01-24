@@ -12,8 +12,19 @@ import { createContainer } from "iti";
 // ============================================================================
 import { coreContainer } from "./containers/core-container";
 import { dataContainer } from "./containers/data-container";
-import { pictographContainer } from "./containers/pictograph-container";
 import { keyboardContainer } from "./containers/keyboard-container";
+
+// ============================================================================
+// DIRECT PICTOGRAPH IMPORTS (migrated away from DI container)
+// ============================================================================
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { betaDetector } from "$lib/shared/pictograph/prop/services/implementations/BetaDetector";
+import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
 import { analyticsContainer } from "./containers/analytics-container";
 import { presenceContainer } from "./containers/presence-container";
 import { communityContainer } from "./containers/community-container";
@@ -64,9 +75,9 @@ const renderContainer = createRenderContainer(
 
 // Navigation container needs external deps from pictograph and data containers
 const navigationContainer = createNavigationContainer({
-  motionQueryHandler: pictographContainer.items.motionQueryHandler,
-  gridModeDeriver: pictographContainer.items.gridModeDeriver,
-  gridPositionDeriver: pictographContainer.items.gridPositionDeriver,
+  motionQueryHandler,
+  gridModeDeriver,
+  gridPositionDeriver,
   persistenceService: dataContainer.items.persistenceService,
 });
 
@@ -78,7 +89,7 @@ const exploreContainer = createExploreContainer({
   wordDeriver: coreContainer.items.wordDeriver,
   deviceDetector: coreContainer.items.deviceDetector,
   sequenceRenderer: renderContainer.items.sequenceRenderer,
-  startPositionDeriver: pictographContainer.items.startPositionDeriver,
+  startPositionDeriver,
   cloudThumbnailCache: shareContainer.items.cloudThumbnailCache,
   sheetRouter: navigationContainer.items.sheetRouter,
   collaborativeVideoManager: shareContainer.items.collaborativeVideoManager,
@@ -88,19 +99,19 @@ const exploreContainer = createExploreContainer({
 const buildContainer = createBuildContainer({
   deviceDetector: coreContainer.items.deviceDetector,
   viewportManager: coreContainer.items.viewportManager,
-  gridPositionDeriver: pictographContainer.items.gridPositionDeriver,
-  gridModeDeriver: pictographContainer.items.gridModeDeriver,
-  motionQueryHandler: pictographContainer.items.motionQueryHandler,
+  gridPositionDeriver,
+  gridModeDeriver,
+  motionQueryHandler,
   sequenceRepository: dataContainer.items.sequenceRepository,
   persistenceService: dataContainer.items.persistenceService,
   reversalDetector: dataContainer.items.reversalDetector,
   deepLinker: navigationContainer.items.deepLinker,
   letterDeriver: navigationContainer.items.letterDeriver,
   positionDeriver: navigationContainer.items.positionDeriver,
-  orientationCalculator: pictographContainer.items.orientationCalculator,
-  betaDetector: pictographContainer.items.betaDetector,
-  arrowPositioningOrchestrator: pictographContainer.items.arrowPositioningOrchestrator,
-  letterQueryHandler: pictographContainer.items.letterQueryHandler,
+  orientationCalculator,
+  betaDetector,
+  arrowPositioningOrchestrator,
+  letterQueryHandler,
   sharer: shareContainer.items.sharer,
 });
 
@@ -134,9 +145,7 @@ const adminContainer = createAdminContainer({
 });
 
 // Learn container needs letterQueryHandler from pictograph
-const learnContainer = createLearnContainer(
-  pictographContainer.items.letterQueryHandler
-);
+const learnContainer = createLearnContainer(letterQueryHandler);
 
 // Library container needs multiple deps
 const libraryContainer = createLibraryContainer({
@@ -195,7 +204,7 @@ export const container = createContainer()
   .add(navigationContainer.items)
   // Rendering
   .add(renderContainer.items)
-  .add(pictographContainer.items)
+  // NOTE: pictographContainer removed - all services now use direct imports
   // Animation
   .add(animatorContainer.items)
   // Features

@@ -27,20 +27,21 @@ Every extraction MUST follow this structure:
 ```
 1. Interface:      services/contracts/I{Name}.ts
 2. Implementation: services/implementations/{Name}.ts
-3. Container:      Register in src/lib/shared/di/containers/{feature}-container.ts
-4. Usage:          import { container } from "$shared/di"; container.items.serviceName
+3. Direct export:  export const serviceName = new ServiceName() at bottom of file
+4. Usage:          import { serviceName } from '$lib/path/to/ServiceName';
 ```
 
-**ITI Container Registration:**
-```typescript
-// In the container file:
-import { createContainer } from "iti";
-import { MyService } from "./services/implementations/MyService";
+**⛔ DO NOT register in DI containers - DI is deprecated. See di-migration.md.**
 
-export function createMyContainer(deps: MyContainerDeps) {
-  return createContainer()
-    .add({ myService: () => new MyService(deps.someDep) });
-}
+**Direct Singleton Export:**
+```typescript
+// At bottom of services/implementations/MyService.ts
+
+// Import dependencies (also direct exports)
+import { dependency } from '../other/Dependency';
+
+// Export singleton
+export const myService = new MyService(dependency);
 ```
 
 ### Service Naming (no "Service" suffix):

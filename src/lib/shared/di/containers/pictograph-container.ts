@@ -1,15 +1,22 @@
 /**
- * Pictograph Container - ITI Implementation
+ * ⛔ DEPRECATED - MIGRATION IN PROGRESS ⛔
  *
- * Converted from Inversify pictograph.module.ts
- * Contains all pictograph-related services including:
- * - Arrow services (orchestration, positioning, rendering, key generation)
- * - Grid services
- * - Prop services
- * - Coordination services
- * - Query handlers
+ * This container is being eliminated. Do NOT add new services here.
+ * See: .claude/rules/di-migration.md
  *
- * Services are organized in dependency order to ensure proper initialization.
+ * ALREADY MIGRATED (use direct imports instead):
+ * - letterQueryHandler → import from LetterQueryHandler.ts
+ * - motionQueryHandler → import from MotionQueryHandler.ts
+ * - gridRenderer → import from GridRenderer.ts
+ * - arrowRenderer → import from ArrowRenderer.ts
+ * - svgPreloader → import from SvgPreloader.ts
+ * - startPositionDeriver → import from StartPositionDeriver.ts
+ * - gridPositionDeriver → import from GridPositionDeriver.ts
+ * - csvLoader → import from CsvLoader.ts
+ * - csvParser → import from CsvParser.ts
+ * - csvPictographParser → import from CSVPictographParser.ts
+ *
+ * STILL NEEDS MIGRATION: See di-migration.md for full list
  */
 
 import { createContainer } from "iti";

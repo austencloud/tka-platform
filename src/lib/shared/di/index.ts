@@ -1,12 +1,20 @@
 /**
- * ITI Dependency Injection Container - Composition Root
+ * ⛔ DEPRECATED - DO NOT ADD NEW SERVICES HERE ⛔
  *
- * This file composes all module containers into a single unified container.
- * Import services via: container.items.serviceName
+ * This dependency injection system is being phased out.
+ * See: .claude/rules/di-migration.md for migration status and instructions.
  *
- * Example:
+ * NEW PATTERN: Direct singleton exports from service files.
+ *
+ * ❌ OLD (don't do this):
  *   import { container } from "$lib/shared/di";
- *   const authenticator = container.items.authenticator;
+ *   const myService = container.items.myService;
+ *
+ * ✅ NEW (do this instead):
+ *   import { myService } from "$lib/path/to/MyService";
+ *
+ * If you're adding a new service, export it directly from its implementation file.
+ * If you're consuming an existing service, check if it has a direct export first.
  */
 
 import { createContainer } from "iti";
@@ -16,8 +24,24 @@ import { createContainer } from "iti";
 // ============================================================================
 import { coreContainer } from "./containers/core-container";
 import { dataContainer } from "./containers/data-container";
-import { pictographContainer } from "./containers/pictograph-container";
 import { keyboardContainer } from "./containers/keyboard-container";
+
+// ============================================================================
+// DIRECT PICTOGRAPH IMPORTS (migrated away from DI container)
+// ============================================================================
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { betaDetector } from "$lib/shared/pictograph/prop/services/implementations/BetaDetector";
+import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { screenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
+import { arrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
+import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
+import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import { analyticsContainer } from "./containers/analytics-container";
 import { presenceContainer } from "./containers/presence-container";
 import { communityContainer } from "./containers/community-container";
@@ -83,9 +107,9 @@ const renderContainer = typeof window !== 'undefined' ? createRenderContainer(
 
 // Navigation container needs external deps from pictograph and data containers
 const navigationContainer = typeof window !== 'undefined' ? createNavigationContainer({
-  motionQueryHandler: pictographContainer.items.motionQueryHandler,
-  gridModeDeriver: pictographContainer.items.gridModeDeriver,
-  gridPositionDeriver: pictographContainer.items.gridPositionDeriver,
+  motionQueryHandler,
+  gridModeDeriver,
+  gridPositionDeriver,
   persistenceService: dataContainer.items.persistenceService,
 }) : null as any;
 
@@ -97,7 +121,7 @@ const exploreContainer = typeof window !== 'undefined' ? createExploreContainer(
   wordDeriver: coreContainer.items.wordDeriver,
   deviceDetector: coreContainer.items.deviceDetector,
   sequenceRenderer: renderContainer.items.sequenceRenderer,
-  startPositionDeriver: pictographContainer.items.startPositionDeriver,
+  startPositionDeriver,
   cloudThumbnailCache: shareContainer.items.cloudThumbnailCache,
   sheetRouter: navigationContainer.items.sheetRouter,
   collaborativeVideoManager: shareContainer.items.collaborativeVideoManager,
@@ -107,25 +131,25 @@ const exploreContainer = typeof window !== 'undefined' ? createExploreContainer(
 const buildContainer = typeof window !== 'undefined' ? createBuildContainer({
   deviceDetector: coreContainer.items.deviceDetector,
   viewportManager: coreContainer.items.viewportManager,
-  gridPositionDeriver: pictographContainer.items.gridPositionDeriver,
-  gridModeDeriver: pictographContainer.items.gridModeDeriver,
-  motionQueryHandler: pictographContainer.items.motionQueryHandler,
+  gridPositionDeriver,
+  gridModeDeriver,
+  motionQueryHandler,
   sequenceRepository: dataContainer.items.sequenceRepository,
   persistenceService: dataContainer.items.persistenceService,
   reversalDetector: dataContainer.items.reversalDetector,
   deepLinker: navigationContainer.items.deepLinker,
   letterDeriver: navigationContainer.items.letterDeriver,
   positionDeriver: navigationContainer.items.positionDeriver,
-  orientationCalculator: pictographContainer.items.orientationCalculator,
-  betaDetector: pictographContainer.items.betaDetector,
-  arrowPositioningOrchestrator: pictographContainer.items.arrowPositioningOrchestrator,
-  letterQueryHandler: pictographContainer.items.letterQueryHandler,
+  orientationCalculator,
+  betaDetector,
+  arrowPositioningOrchestrator,
+  letterQueryHandler,
   // Arrow adjustment services
-  screenSpaceAdjustmentTransformer: pictographContainer.items.screenSpaceAdjustmentTransformer,
-  arrowAdjustmentCalculator: pictographContainer.items.arrowAdjustmentCalculator,
-  arrowLocationCalculator: pictographContainer.items.arrowLocationCalculator,
-  pictographPreparer: pictographContainer.items.pictographPreparer,
-  turnsTupleGenerator: pictographContainer.items.turnsTupleGenerator,
+  screenSpaceAdjustmentTransformer,
+  arrowAdjustmentCalculator,
+  arrowLocationCalculator,
+  pictographPreparer,
+  turnsTupleGenerator,
   sharer: shareContainer.items.sharer,
   // Animation services (from data container to avoid circular deps)
   sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
@@ -162,7 +186,7 @@ const adminContainer = typeof window !== 'undefined' ? createAdminContainer({
 
 // Learn container needs letterQueryHandler from pictograph
 const learnContainer = typeof window !== 'undefined' ? createLearnContainer(
-  pictographContainer.items.letterQueryHandler
+  letterQueryHandler
 ) : null as any;
 
 // Moderation container - self-contained, must be before library for content moderation
@@ -261,7 +285,7 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(navigationContainer.items)
   // Rendering
   .add(renderContainer.items)
-  .add(pictographContainer.items)
+  // NOTE: pictographContainer removed - all services now use direct imports
   // Animation
   .add(animatorContainer.items)
   // Features

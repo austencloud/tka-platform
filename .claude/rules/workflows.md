@@ -265,6 +265,33 @@ Scans user-facing text for AI writing patterns.
 
 ---
 
+## /di Command
+
+Migrate services from dependency injection to direct singleton exports.
+
+```bash
+/di                    # Show migration progress across all containers
+/di pictograph         # Detailed status for one container
+```
+
+### Workflow
+
+1. **Claim a container**: `node scripts/migrate-di.cjs --auto-claim`
+2. **For each service**:
+   - Add direct singleton export at bottom of service file
+   - Update consumers to use direct import
+   - Mark done: `node scripts/migrate-di.cjs --mark-migrated <container> <service>`
+3. **When container is empty**: `node scripts/migrate-di.cjs --complete <container>`
+4. Delete the container file and update di/index.ts
+
+### Why
+
+The ITI dependency injection system causes 5+ second HMR delays. Direct singleton exports give instant hot reload.
+
+See: `.claude/rules/di-migration.md` for full details.
+
+---
+
 ## Context Management
 
 When context exceeds **70%**, suggest `/compact` before continuing with new tasks.

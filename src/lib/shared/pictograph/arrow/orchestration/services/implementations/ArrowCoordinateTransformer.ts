@@ -146,3 +146,11 @@ export class ArrowCoordinateTransformer implements IArrowCoordinateTransformer {
     return normalized < 0 ? normalized + 360 : normalized;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.arrowCoordinateTransformer to avoid DI container rebuilds.
+// ============================================================================
+
+export const arrowCoordinateTransformer = new ArrowCoordinateTransformer();

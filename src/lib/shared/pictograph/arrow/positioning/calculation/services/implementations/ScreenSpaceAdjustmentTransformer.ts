@@ -88,3 +88,17 @@ export class ScreenSpaceAdjustmentTransformer
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.screenSpaceAdjustmentTransformer to avoid DI container rebuilds.
+// ============================================================================
+
+import { directionalTupleCalculator } from "./DirectionalTupleProcessor";
+import { arrowQuadrantCalculator } from "../../../../orchestration/services/implementations/ArrowQuadrantCalculator";
+
+export const screenSpaceAdjustmentTransformer = new ScreenSpaceAdjustmentTransformer(
+  directionalTupleCalculator,
+  arrowQuadrantCalculator
+);
