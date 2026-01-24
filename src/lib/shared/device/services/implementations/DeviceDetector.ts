@@ -420,3 +420,10 @@ export class DeviceDetector implements IDeviceDetector {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { viewportManager } from "./ViewportManager.svelte";
+
+export const deviceDetector = new DeviceDetector(viewportManager);

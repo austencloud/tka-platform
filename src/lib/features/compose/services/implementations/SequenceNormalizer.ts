@@ -78,3 +78,8 @@ export class SequenceNormalizer implements ISequenceNormalizer {
     });
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sequenceNormalizer = new SequenceNormalizer();

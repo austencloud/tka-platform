@@ -180,3 +180,10 @@ export class StartPositionManager implements IStartPositionManager {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+
+export const startPositionManager = new StartPositionManager(gridPositionDeriver);

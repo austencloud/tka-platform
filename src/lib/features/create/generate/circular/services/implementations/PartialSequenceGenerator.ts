@@ -485,3 +485,28 @@ export class PartialSequenceGenerator implements IPartialSequenceGenerator {
     return nextStep;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { pictographFilter } from "$lib/features/create/generate/shared/services/implementations/PictographFilter";
+import { stepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
+import { turnManager } from "$lib/features/create/generate/shared/services/implementations/TurnManager";
+import { sequenceMetadataManager } from "$lib/features/create/generate/shared/services/implementations/SequenceMetadataManager";
+import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
+import { loopParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
+
+export const partialSequenceGenerator = new PartialSequenceGenerator(
+  letterQueryHandler,
+  pictographFilter,
+  stepConverter,
+  turnManager,
+  sequenceMetadataManager,
+  gridPositionDeriver,
+  orientationCalculator,
+  arrowPositioningOrchestrator,
+  loopParameterProvider
+);

@@ -77,3 +77,8 @@ export class SequenceTransferHandler implements ISequenceTransferHandler {
     await constructTabState.sequenceState.saveCurrentState("constructor");
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sequenceTransferHandler = new SequenceTransferHandler();

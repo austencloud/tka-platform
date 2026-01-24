@@ -239,3 +239,24 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { keyboardArrowAdjuster } from "./KeyboardArrowAdjuster";
+import { screenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
+import { arrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
+import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
+import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+
+export const arrowAdjustmentOrchestrator = new ArrowAdjustmentOrchestrator(
+  keyboardArrowAdjuster,
+  screenSpaceAdjustmentTransformer,
+  arrowAdjustmentCalculator,
+  arrowLocationCalculator,
+  pictographPreparer,
+  gridModeDeriver,
+  turnsTupleGenerator
+);

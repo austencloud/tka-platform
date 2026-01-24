@@ -146,3 +146,8 @@ export class OrientationContinuityValidator
     return null;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const orientationContinuityValidator = new OrientationContinuityValidator();

@@ -108,3 +108,14 @@ export class CreateModuleHandlers implements ICreateModuleHandlers {
     panelState.openSequenceActionsPanel();
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { createModuleOrchestrator } from "./CreateModuleOrchestrator";
+import { stepOperator } from "./StepOperator";
+
+export const createModuleHandlers = new CreateModuleHandlers(
+  createModuleOrchestrator,
+  stepOperator
+);

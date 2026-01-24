@@ -227,3 +227,13 @@ export class DeepLinkSequenceHandler implements IDeepLinkSequenceHandler {
     } as SequenceData;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Dependencies are optional - pass null since they come from navigation layer
+export const deepLinkSequenceHandler = new DeepLinkSequenceHandler(
+  null,
+  null,
+  null
+);

@@ -306,3 +306,28 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { startPositionSelector } from "./StartPositionSelector";
+import { loopParameterProvider } from "./LOOPParameterProvider";
+import { turnAllocator } from "./TurnAllocator";
+import { stepGenerationOrchestrator } from "./StepGenerationOrchestrator";
+import { sequenceMetadataManager } from "./SequenceMetadataManager";
+import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
+import { partialSequenceGenerator } from "$lib/features/create/generate/circular/services/implementations/PartialSequenceGenerator";
+import { loopEndPositionSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPEndPositionSelector";
+import { loopExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
+
+export const generationOrchestrator = new GenerationOrchestrator(
+  startPositionSelector,
+  loopParameterProvider,
+  turnAllocator,
+  stepGenerationOrchestrator,
+  sequenceMetadataManager,
+  reversalDetector,
+  partialSequenceGenerator,
+  loopEndPositionSelector,
+  loopExecutorSelector
+);

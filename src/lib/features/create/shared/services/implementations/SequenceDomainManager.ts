@@ -294,3 +294,8 @@ export class SequenceDomainManager implements ISequenceDomainManager {
     return `seq_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sequenceDomainManager = new SequenceDomainManager();

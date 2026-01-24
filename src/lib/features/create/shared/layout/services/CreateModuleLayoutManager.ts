@@ -105,3 +105,14 @@ export class CreateModuleLayoutManager implements ICreateModuleLayoutManager {
     return config.shouldUseSideBySideLayout;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { deviceDetector } from "$lib/shared/device/services/implementations/DeviceDetector";
+import { viewportManager } from "$lib/shared/device/services/implementations/ViewportManager.svelte";
+
+export const createModuleLayoutManager = new CreateModuleLayoutManager(
+  deviceDetector,
+  viewportManager
+);

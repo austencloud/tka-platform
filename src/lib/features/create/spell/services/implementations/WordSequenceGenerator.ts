@@ -754,3 +754,26 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
     return { success: true, sequence: recalculatedSequence };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { letterTransitionGraph } from "./LetterTransitionGraph";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { stepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
+import { startPositionValidator } from "./StartPositionValidator";
+import { orientationContinuityValidator } from "./OrientationContinuityValidator";
+import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
+
+export const wordSequenceGenerator = new WordSequenceGenerator(
+  letterTransitionGraph,
+  letterQueryHandler,
+  stepConverter,
+  orientationCalculator,
+  sequenceExtender,
+  startPositionValidator,
+  orientationContinuityValidator,
+  reversalDetector
+);

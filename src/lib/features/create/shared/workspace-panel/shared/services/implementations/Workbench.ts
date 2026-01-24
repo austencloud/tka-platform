@@ -150,3 +150,14 @@ export class Workbench implements IWorkbench {
     return true;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { sequenceRepository } from "$lib/features/create/shared/services/implementations/SequenceRepository";
+import { dexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
+
+export const workbench = new Workbench(
+  sequenceRepository,
+  dexiePersistenceService
+);

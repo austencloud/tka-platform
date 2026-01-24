@@ -147,3 +147,19 @@ export class SequenceRepository implements ISequenceRepository {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { sequenceDomainManager } from "./SequenceDomainManager";
+import { dexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
+import { reversalDetector } from "./ReversalDetector";
+import { sequenceNormalizer } from "$lib/features/compose/services/implementations/SequenceNormalizer";
+
+export const sequenceRepository = new SequenceRepository(
+  sequenceDomainManager,
+  dexiePersistenceService,
+  reversalDetector,
+  sequenceNormalizer,
+  undefined // sequenceImportService is optional
+);

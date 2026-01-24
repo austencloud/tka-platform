@@ -154,3 +154,12 @@ export class ExtensionFlowCoordinator implements IExtensionFlowCoordinator {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { sequenceExtender } from "./SequenceExtender";
+
+export const extensionFlowCoordinator = new ExtensionFlowCoordinator(
+  sequenceExtender
+);

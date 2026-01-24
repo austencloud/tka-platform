@@ -98,3 +98,14 @@ export class StartPositionValidator implements IStartPositionValidator {
     return null;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { letterTransitionGraph } from "./LetterTransitionGraph";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+
+export const startPositionValidator = new StartPositionValidator(
+  letterTransitionGraph,
+  letterQueryHandler
+);

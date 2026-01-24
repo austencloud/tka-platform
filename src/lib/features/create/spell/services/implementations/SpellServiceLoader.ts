@@ -2,10 +2,9 @@
  * Spell Service Loader Implementation
  *
  * Provides lazy-loaded access to spell-related services.
- * Handles DI module loading and service caching.
+ * Uses direct singleton imports.
  */
 
-import { container } from "$lib/shared/di";
 import type { ISpellServiceLoader } from "../contracts/ISpellServiceLoader";
 import type { ILetterTransitionGraph } from "../contracts/ILetterTransitionGraph";
 import type { IWordSequenceGenerator } from "../contracts/IWordSequenceGenerator";
@@ -13,48 +12,39 @@ import type { IVariationConstraintBuilder } from "../contracts/IVariationConstra
 import type { IRandomSequenceGenerator } from "../contracts/IRandomSequenceGenerator";
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 
-export class SpellServiceLoader implements ISpellServiceLoader {
-  private wordGenerator: IWordSequenceGenerator | null = null;
-  private transitionGraph: ILetterTransitionGraph | null = null;
-  private sequenceExtender: ISequenceExtender | null = null;
-  private variationConstraintBuilder: IVariationConstraintBuilder | null = null;
-  private randomSequenceGenerator: IRandomSequenceGenerator | null = null;
+// Direct singleton imports
+import { letterTransitionGraph as letterTransitionGraphSingleton } from "./LetterTransitionGraph";
+import { wordSequenceGenerator as wordSequenceGeneratorSingleton } from "./WordSequenceGenerator";
+import { variationConstraintBuilder as variationConstraintBuilderSingleton } from "./VariationConstraintBuilder";
+import { randomSequenceGenerator as randomSequenceGeneratorSingleton } from "./RandomSequenceGenerator";
+import { sequenceExtender as sequenceExtenderSingleton } from "$lib/features/create/shared/services/implementations/SequenceExtender";
 
+export class SpellServiceLoader implements ISpellServiceLoader {
   async getWordGenerator(): Promise<IWordSequenceGenerator> {
-    if (!this.wordGenerator) {
-      this.wordGenerator = container.items.wordSequenceGenerator as IWordSequenceGenerator;
-    }
-    return this.wordGenerator;
+    return wordSequenceGeneratorSingleton;
   }
 
   async getTransitionGraph(): Promise<ILetterTransitionGraph> {
-    if (!this.transitionGraph) {
-      this.transitionGraph = container.items.letterTransitionGraph as ILetterTransitionGraph;
-      if (!this.transitionGraph.isInitialized()) {
-        await this.transitionGraph.initialize();
-      }
+    if (!letterTransitionGraphSingleton.isInitialized()) {
+      await letterTransitionGraphSingleton.initialize();
     }
-    return this.transitionGraph;
+    return letterTransitionGraphSingleton;
   }
 
   async getSequenceExtender(): Promise<ISequenceExtender> {
-    if (!this.sequenceExtender) {
-      this.sequenceExtender = container.items.sequenceExtender as ISequenceExtender;
-    }
-    return this.sequenceExtender;
+    return sequenceExtenderSingleton;
   }
 
   async getVariationConstraintBuilder(): Promise<IVariationConstraintBuilder> {
-    if (!this.variationConstraintBuilder) {
-      this.variationConstraintBuilder = container.items.variationConstraintBuilder as IVariationConstraintBuilder;
-    }
-    return this.variationConstraintBuilder;
+    return variationConstraintBuilderSingleton;
   }
 
   async getRandomSequenceGenerator(): Promise<IRandomSequenceGenerator> {
-    if (!this.randomSequenceGenerator) {
-      this.randomSequenceGenerator = container.items.randomSequenceGenerator as IRandomSequenceGenerator;
-    }
-    return this.randomSequenceGenerator;
+    return randomSequenceGeneratorSingleton;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const spellServiceLoader = new SpellServiceLoader();

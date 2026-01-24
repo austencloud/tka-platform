@@ -107,3 +107,8 @@ export class SequenceMetadataManager implements ISequenceMetadataManager {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sequenceMetadataManager = new SequenceMetadataManager();

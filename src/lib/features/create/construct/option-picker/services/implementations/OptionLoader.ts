@@ -80,7 +80,7 @@ export class OptionLoader implements IOptionLoader {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-import { motionQueryHandler } from "$lib/shared/foundation/services/implementations/data/MotionQueryHandler";
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
 import { positionAnalyzer } from "./PositionAnalyzer";
 
 export const optionLoader = new OptionLoader(

@@ -152,3 +152,22 @@ export class StepGenerationOrchestrator implements IStepGenerationOrchestrator {
     return nextStep;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { pictographFilter } from "./PictographFilter";
+import { stepConverter } from "./StepConverter";
+import { turnManager } from "./TurnManager";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
+
+export const stepGenerationOrchestrator = new StepGenerationOrchestrator(
+  letterQueryHandler,
+  pictographFilter,
+  stepConverter,
+  turnManager,
+  orientationCalculator,
+  arrowPositioningOrchestrator
+);

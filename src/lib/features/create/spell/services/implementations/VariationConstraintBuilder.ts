@@ -47,3 +47,12 @@ export class VariationConstraintBuilder implements IVariationConstraintBuilder {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { letterTypeClassifier } from "./LetterTypeClassifier";
+
+export const variationConstraintBuilder = new VariationConstraintBuilder(
+  letterTypeClassifier
+);

@@ -97,3 +97,12 @@ export class VariationExplorationOrchestrator implements IVariationExplorationOr
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { spellServiceLoader } from "./SpellServiceLoader";
+
+export const variationExplorationOrchestrator = new VariationExplorationOrchestrator(
+  spellServiceLoader
+);

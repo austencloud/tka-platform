@@ -136,3 +136,12 @@ export class LOOPEndPositionSelector implements ILOOPEndPositionSelector {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { rotatedEndPositionSelector } from "./RotatedEndPositionSelector";
+
+export const loopEndPositionSelector = new LOOPEndPositionSelector(
+  rotatedEndPositionSelector
+);

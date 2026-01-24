@@ -131,3 +131,14 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
     this.layoutChangeCallbacks.forEach((callback) => callback(config));
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { deviceDetector } from "$lib/shared/device/services/implementations/DeviceDetector";
+import { viewportManager } from "$lib/shared/device/services/implementations/ViewportManager.svelte";
+
+export const responsiveLayoutManager = new ResponsiveLayoutManager(
+  deviceDetector,
+  viewportManager
+);

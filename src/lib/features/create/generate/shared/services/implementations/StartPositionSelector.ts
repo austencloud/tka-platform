@@ -75,3 +75,18 @@ export class StartPositionSelector implements IStartPositionSelector {
     return startPosition;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { pictographFilter } from "./PictographFilter";
+import { stepConverter } from "./StepConverter";
+import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
+
+export const startPositionSelector = new StartPositionSelector(
+  letterQueryHandler,
+  pictographFilter,
+  stepConverter,
+  arrowPositioningOrchestrator
+);

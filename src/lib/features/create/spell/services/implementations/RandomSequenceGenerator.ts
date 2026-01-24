@@ -454,3 +454,24 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     return items[randomIndex] ?? null;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { startPositionValidator } from "./StartPositionValidator";
+import { orientationContinuityValidator } from "./OrientationContinuityValidator";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
+import { stepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
+import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
+
+export const randomSequenceGenerator = new RandomSequenceGenerator(
+  letterQueryHandler,
+  startPositionValidator,
+  orientationContinuityValidator,
+  orientationCalculator,
+  sequenceExtender,
+  stepConverter,
+  reversalDetector
+);
