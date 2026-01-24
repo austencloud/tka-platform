@@ -7,11 +7,9 @@
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import {
-    passwordState,
-    resetPasswordForm,
-    uiState,
-  } from "../../state/profile-settings-state.svelte";
+  import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
+
+  const ctx = getProfileSettingsContext();
 
   interface Props {
     onChangePassword: () => Promise<void>;
@@ -25,22 +23,22 @@
   let showNewPassword = $state(false);
 
   const isFormValid = $derived(
-    passwordState.new && passwordState.new.length >= 8 && !uiState.saving
+    ctx.password.new && ctx.password.new.length >= 8 && !ctx.ui.saving
   );
 
   const isPasswordWeak = $derived(
-    passwordState.new && passwordState.new.length < 8
+    ctx.password.new && ctx.password.new.length < 8
   );
 
   function handleExpand() {
     hapticService?.trigger("selection");
-    uiState.showPasswordSection = true;
+    ctx.ui.showPasswordSection = true;
   }
 
   function handleCancel() {
     hapticService?.trigger("selection");
-    uiState.showPasswordSection = false;
-    resetPasswordForm();
+    ctx.ui.showPasswordSection = false;
+    ctx.resetPasswordForm();
     showCurrentPassword = false;
     showNewPassword = false;
   }
@@ -58,7 +56,7 @@
 
 <div class="section">
   <span class="label">Password</span>
-  {#if !uiState.showPasswordSection}
+  {#if !ctx.ui.showPasswordSection}
     <button class="button button--secondary" onclick={handleExpand}>
       <i class="fas fa-lock" aria-hidden="true"></i>
       Change Password
@@ -74,7 +72,7 @@
             id="current-password"
             type={showCurrentPassword ? "text" : "password"}
             class="input input-with-toggle"
-            bind:value={passwordState.current}
+            bind:value={ctx.password.current}
             placeholder="Enter current password (fallback)"
             autocomplete="current-password"
           />
@@ -103,7 +101,7 @@
             id="new-password"
             type={showNewPassword ? "text" : "password"}
             class="input input-with-toggle"
-            bind:value={passwordState.new}
+            bind:value={ctx.password.new}
             placeholder="Enter new password"
             aria-required="true"
             aria-invalid={isPasswordWeak ? "true" : "false"}

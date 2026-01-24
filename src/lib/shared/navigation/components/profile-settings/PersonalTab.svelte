@@ -7,18 +7,12 @@
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { authState } from "../../../auth/state/authState.svelte";
-  import {
-    personalInfoState,
-    originalPersonalInfoState,
-    uiState,
-    isCompactMode,
-    isVeryCompactMode,
-    canChangeEmail,
-    hasPersonalInfoChanges,
-  } from "../../state/profile-settings-state.svelte";
+  import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
   import ProfilePhotoUpload from "./ProfilePhotoUpload.svelte";
   import EmailChangeSection from "./EmailChangeSection.svelte";
   import { slide } from "svelte/transition";
+
+  const ctx = getProfileSettingsContext();
 
   let {
     onSave,
@@ -39,23 +33,15 @@
   // Sync with auth store
   $effect(() => {
     if (authState.user) {
-      const displayName = authState.user.displayName || "";
-      const email = authState.user.email || "";
-
-      personalInfoState.displayName = displayName;
-      personalInfoState.email = email;
-
-      // Update original values to track changes
-      originalPersonalInfoState.displayName = displayName;
-      originalPersonalInfoState.email = email;
+      ctx.syncWithUser(authState.user);
     }
   });
 </script>
 
 <section
   class="section section--with-footer"
-  class:compact={isCompactMode()}
-  class:very-compact={isVeryCompactMode()}
+  class:compact={ctx.isCompactMode()}
+  class:very-compact={ctx.isVeryCompactMode()}
 >
   <!-- Scrollable form content -->
   <div class="form-content">
@@ -74,7 +60,7 @@
         id="display-name"
         type="text"
         class="input"
-        bind:value={personalInfoState.displayName}
+        bind:value={ctx.personalInfo.displayName}
         placeholder="Enter your display name"
         autocomplete="name"
       />
@@ -83,22 +69,22 @@
     <!-- Email Section -->
     <div class="field">
       <label class="label" for="email">Email</label>
-      {#if !uiState.showEmailChangeSection}
+      {#if !ctx.ui.showEmailChangeSection}
         <div class="email-field-wrapper">
           <input
             id="email"
             type="email"
             class="input input--readonly"
-            value={personalInfoState.email}
+            value={ctx.personalInfo.email}
             readonly
             aria-readonly="true"
           />
-          {#if canChangeEmail()}
+          {#if ctx.canChangeEmail(authState.user)}
             <button
               class="button button--link"
               onclick={() => {
                 hapticService?.trigger("selection");
-                uiState.showEmailChangeSection = true;
+                ctx.ui.showEmailChangeSection = true;
               }}
               type="button"
             >
@@ -113,7 +99,7 @@
         <EmailChangeSection
           {onChangeEmail}
           onCancel={() => {
-            uiState.showEmailChangeSection = false;
+            ctx.ui.showEmailChangeSection = false;
           }}
           {hapticService}
         />
@@ -135,16 +121,16 @@
   </div>
 
   <!-- Sticky footer with save button - only shown when there are changes -->
-  {#if hasPersonalInfoChanges()}
+  {#if ctx.hasPersonalInfoChanges()}
     <div class="footer" transition:slide={{ duration: 200 }}>
       <button
         class="button button--primary"
         onclick={onSave}
-        disabled={uiState.saving}
-        aria-busy={uiState.saving}
+        disabled={ctx.ui.saving}
+        aria-busy={ctx.ui.saving}
       >
         <i class="fas fa-save" aria-hidden="true"></i>
-        {uiState.saving ? "Saving..." : "Save Changes"}
+        {ctx.ui.saving ? "Saving..." : "Save Changes"}
       </button>
     </div>
   {/if}

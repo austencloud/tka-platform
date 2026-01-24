@@ -6,16 +6,14 @@
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import {
-    hasPasswordProvider,
-    isCompactMode,
-    isVeryCompactMode,
-  } from "../../state/profile-settings-state.svelte";
+  import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
   import UnifiedHeader from "../../../settings/components/UnifiedHeader.svelte";
   import ConnectedAccounts from "./ConnectedAccounts.svelte";
   import DangerZone from "./DangerZone.svelte";
   import PasswordSection from "./PasswordSection.svelte";
   import { authState } from "../../../auth/state/authState.svelte";
+
+  const ctx = getProfileSettingsContext();
 
   let { onChangePassword, onDeleteAccount, hapticService } = $props<{
     onChangePassword: () => Promise<void>;
@@ -30,8 +28,8 @@
 
 <section
   class="section section--account"
-  class:compact={isCompactMode()}
-  class:very-compact={isVeryCompactMode()}
+  class:compact={ctx.isCompactMode()}
+  class:very-compact={ctx.isVeryCompactMode()}
 >
   <!-- Centered content container -->
   <div class="form-content">
@@ -46,7 +44,7 @@
     </div>
 
     <!-- Password Section (only for password-authenticated users) -->
-    {#if hasPasswordProvider()}
+    {#if ctx.hasPasswordProvider(authState.user)}
       <div class="security-card">
         <UnifiedHeader
           title="Password"

@@ -7,7 +7,9 @@
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import { uiState } from "../../state/profile-settings-state.svelte";
+  import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
+
+  const ctx = getProfileSettingsContext();
 
   let { onDeleteAccount, hapticService, userIdentifier } = $props<{
     onDeleteAccount: () => Promise<void>;
@@ -28,19 +30,19 @@
     hapticService?.trigger("selection");
     isExpanded = !isExpanded;
     if (!isExpanded) {
-      uiState.showDeleteConfirmation = false;
+      ctx.ui.showDeleteConfirmation = false;
       confirmationText = "";
     }
   }
 
   function handleShowConfirmation() {
     hapticService?.trigger("selection");
-    uiState.showDeleteConfirmation = true;
+    ctx.ui.showDeleteConfirmation = true;
   }
 
   function handleCancel() {
     hapticService?.trigger("selection");
-    uiState.showDeleteConfirmation = false;
+    ctx.ui.showDeleteConfirmation = false;
     confirmationText = "";
   }
 
@@ -75,7 +77,7 @@
         and data will be lost.
       </p>
 
-      {#if !uiState.showDeleteConfirmation}
+      {#if !ctx.ui.showDeleteConfirmation}
         <button class="button button--danger" onclick={handleShowConfirmation}>
           <i class="fas fa-trash-alt" aria-hidden="true"></i>
           Delete My Account

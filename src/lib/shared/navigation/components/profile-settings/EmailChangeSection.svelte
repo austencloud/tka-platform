@@ -7,12 +7,9 @@
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import {
-    emailChangeState,
-    uiState,
-    isCompactMode,
-    isVeryCompactMode,
-  } from "../../state/profile-settings-state.svelte";
+  import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
+
+  const ctx = getProfileSettingsContext();
 
   let { onChangeEmail, onCancel, hapticService } = $props<{
     onChangeEmail: () => Promise<void>;
@@ -27,11 +24,11 @@
   function validateEmail() {
     // Email validation - requires valid format with proper TLD
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailChangeState.newEmail) {
+    if (!ctx.emailChange.newEmail) {
       emailError = "Email is required";
       return false;
     }
-    if (!emailRegex.test(emailChangeState.newEmail)) {
+    if (!emailRegex.test(ctx.emailChange.newEmail)) {
       emailError = "Please enter a valid email address";
       return false;
     }
@@ -40,7 +37,7 @@
   }
 
   function validatePassword() {
-    if (!emailChangeState.password) {
+    if (!ctx.emailChange.password) {
       passwordError = "Password is required for verification";
       return false;
     }
@@ -67,8 +64,8 @@
 
 <div
   class="email-change-section"
-  class:compact={isCompactMode()}
-  class:very-compact={isVeryCompactMode()}
+  class:compact={ctx.isCompactMode()}
+  class:very-compact={ctx.isVeryCompactMode()}
 >
   <div class="section-header">
     <i class="fas fa-envelope" aria-hidden="true"></i>
@@ -88,10 +85,10 @@
       type="email"
       class="input"
       class:error={emailError}
-      bind:value={emailChangeState.newEmail}
+      bind:value={ctx.emailChange.newEmail}
       onblur={validateEmail}
       placeholder="Enter new email address"
-      disabled={uiState.changingEmail}
+      disabled={ctx.ui.changingEmail}
       autocomplete="email"
       aria-invalid={!!emailError}
       aria-describedby={emailError ? "new-email-error" : undefined}
@@ -112,10 +109,10 @@
       type="password"
       class="input"
       class:error={passwordError}
-      bind:value={emailChangeState.password}
+      bind:value={ctx.emailChange.password}
       onblur={validatePassword}
       placeholder="Enter your current password"
-      disabled={uiState.changingEmail}
+      disabled={ctx.ui.changingEmail}
       autocomplete="current-password"
       aria-invalid={!!passwordError}
       aria-describedby={passwordError ? "verify-password-error" : undefined}
@@ -133,7 +130,7 @@
     <button
       class="button button--secondary"
       onclick={handleCancel}
-      disabled={uiState.changingEmail}
+      disabled={ctx.ui.changingEmail}
     >
       <i class="fas fa-times" aria-hidden="true"></i>
       Cancel
@@ -141,11 +138,11 @@
     <button
       class="button button--primary"
       onclick={handleSubmit}
-      disabled={uiState.changingEmail}
-      aria-busy={uiState.changingEmail}
+      disabled={ctx.ui.changingEmail}
+      aria-busy={ctx.ui.changingEmail}
     >
       <i class="fas fa-paper-plane" aria-hidden="true"></i>
-      {uiState.changingEmail ? "Sending..." : "Send Verification Email"}
+      {ctx.ui.changingEmail ? "Sending..." : "Send Verification Email"}
     </button>
   </div>
 </div>

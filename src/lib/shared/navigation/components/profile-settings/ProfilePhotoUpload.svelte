@@ -7,11 +7,9 @@
 <script lang="ts">
   import { authState } from "../../../auth/state/authState.svelte";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import {
-    isCompactMode,
-    isVeryCompactMode,
-    uiState,
-  } from "../../state/profile-settings-state.svelte";
+  import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
+
+  const ctx = getProfileSettingsContext();
 
   let { onPhotoUpload, hapticService } = $props<{
     onPhotoUpload: (file: File) => Promise<void>;
@@ -37,14 +35,14 @@
 
 <div
   class="photo-container"
-  class:compact={isCompactMode()}
-  class:very-compact={isVeryCompactMode()}
+  class:compact={ctx.isCompactMode()}
+  class:very-compact={ctx.isVeryCompactMode()}
 >
   <button
     class="photo-wrapper"
     onclick={triggerFileInput}
-    disabled={uiState.uploadingPhoto}
-    aria-busy={uiState.uploadingPhoto}
+    disabled={ctx.ui.uploadingPhoto}
+    aria-busy={ctx.ui.uploadingPhoto}
     aria-label="Change profile photo"
   >
     {#if authState.user?.photoURL}
@@ -69,7 +67,7 @@
     <!-- Desktop hover overlay -->
     <div class="photo-overlay">
       <i class="fas fa-camera" aria-hidden="true"></i>
-      <span>{uiState.uploadingPhoto ? "Uploading..." : "Change Photo"}</span>
+      <span>{ctx.ui.uploadingPhoto ? "Uploading..." : "Change Photo"}</span>
     </div>
   </button>
 

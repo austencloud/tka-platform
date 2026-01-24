@@ -12,11 +12,9 @@
   import type { IStepUpAuthCoordinator } from "../../../auth/services/contracts/IStepUpAuthCoordinator";
   import { onMount } from "svelte";
   import {
-    hasPasswordProvider,
-    passwordState,
-    resetPasswordForm,
-    uiState,
-  } from "../../../navigation/state/profile-settings-state.svelte";
+    createProfileSettingsState,
+    setProfileSettingsContext,
+  } from "../../../navigation/state/profile-settings-context.svelte";
   import ConnectedAccounts from "../../../navigation/components/profile-settings/ConnectedAccounts.svelte";
   import ConnectedAccountsPreview from "../../../navigation/components/profile-settings/ConnectedAccountsPreview.svelte";
   import AccountSettingsSection from "../../../navigation/components/profile-settings/AccountSettingsSection.svelte";
@@ -33,6 +31,10 @@
 
   import type { PreviewUserProfile } from "../../../debug/state/user-preview-state.svelte";
   import type { User } from "firebase/auth";
+
+  // Create and provide profile settings context for child components
+  const profileState = createProfileSettingsState();
+  setProfileSettingsContext(profileState);
 
   // Check if we're in preview mode
   const isPreviewMode = $derived(
@@ -128,23 +130,23 @@
   }
 
   async function handleChangePassword() {
-    if (!accountManager || uiState.saving) return;
+    if (!accountManager || profileState.ui.saving) return;
 
-    uiState.saving = true;
+    profileState.ui.saving = true;
 
     try {
       await accountManager.changePassword(
-        passwordState.current,
-        passwordState.new
+        profileState.password.current,
+        profileState.password.new
       );
-      uiState.showPasswordSection = false;
-      resetPasswordForm();
+      profileState.ui.showPasswordSection = false;
+      profileState.resetPasswordForm();
     } catch (error) {
       console.error("Failed to change password:", error);
       hapticService?.trigger("error");
       alert("Failed to change password. Please try again.");
     } finally {
-      uiState.saving = false;
+      profileState.ui.saving = false;
     }
   }
 
@@ -315,7 +317,7 @@
           {#snippet children()}
             <AccountSettingsSection
               user={authState.user!}
-              hasPasswordProvider={hasPasswordProvider()}
+              hasPasswordProvider={profileState.hasPasswordProvider(authState.user)}
               onChangePassword={handleChangePassword}
               {hapticService}
             />
@@ -382,7 +384,7 @@
 {#if stepUpCoordinator}
   <PasskeyStepUpModal
     isOpen={stepUpCoordinator.showStepUpModal}
-    allowPassword={hasPasswordProvider()}
+    allowPassword={profileState.hasPasswordProvider(authState.user)}
     onSuccess={() => stepUpCoordinator?.handleSuccess()}
     onCancel={() => stepUpCoordinator?.handleCancel()}
   />
