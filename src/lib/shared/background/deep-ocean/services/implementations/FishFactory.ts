@@ -17,6 +17,7 @@ import {
   SPAWN_CONFIG,
   SPECIES_SPEED_MULTIPLIERS,
   DEPTH_TRANSITION,
+  SPECIES_VERTICAL_PREFERENCES,
 } from "../../domain/constants/fish-constants";
 
 /**
@@ -319,8 +320,27 @@ export class FishFactory implements IFishFactory {
           ? -bodyLength - Math.random() * maxOffset
           : dimensions.width + bodyLength + Math.random() * maxOffset;
     }
-    const baseY =
-      depthBand.min + Math.random() * (depthBand.max - depthBand.min);
+
+    // Apply species vertical preference to spawn position
+    // Deep fish spawn lower, tropical fish spawn higher
+    const verticalPref = SPECIES_VERTICAL_PREFERENCES[species];
+    const prefMin = verticalPref.preferredZone[0];
+    const prefMax = verticalPref.preferredZone[1];
+
+    // 70% spawn in preferred zone, 30% anywhere (maintains variety)
+    const usePreferredZone = Math.random() < 0.7;
+    let spawnFraction: number;
+
+    if (usePreferredZone) {
+      spawnFraction = prefMin + Math.random() * (prefMax - prefMin);
+    } else {
+      spawnFraction = Math.random();
+    }
+
+    const baseY = depthBand.min + spawnFraction * (depthBand.max - depthBand.min);
+
+    // Store preferred position for behavioral drift (within preferred zone)
+    const preferredVerticalPosition = prefMin + Math.random() * (prefMax - prefMin);
 
     // Apply species-specific speed multiplier on top of depth layer multiplier
     const speciesSpeedMult = this.randomInRange(SPECIES_SPEED_MULTIPLIERS[species]);
@@ -427,6 +447,9 @@ export class FishFactory implements IFishFactory {
       wobbleType: "none",
       wobbleTimer: 0,
       wobbleIntensity: 0,
+
+      // Vertical distribution (species-specific depth preferences)
+      preferredVerticalPosition,
 
       // Social identity
       fishId: FishFactory.nextFishId++,

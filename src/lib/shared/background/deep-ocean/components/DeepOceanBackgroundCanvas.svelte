@@ -60,15 +60,23 @@
     backgroundSystem?.cleanup();
   });
 
+  // Maximum delta time cap - prevents teleporting after HMR/tab switch
+  const MAX_DELTA_MS = 100;
+
   function startAnimation() {
     if (!backgroundSystem || !ctx || paused) return;
 
     const animate = (currentTime: number) => {
       if (!backgroundSystem || !ctx) return;
 
-      const deltaTime = currentTime - lastFrameTime;
-      const frameMultiplier = deltaTime / 16.67; // Normalize to 60fps
+      // Calculate delta time with proper first-frame handling
+      // First frame has no reference point, use ideal 60fps frame time
+      const rawDelta = lastFrameTime === 0 ? 16.67 : currentTime - lastFrameTime;
       lastFrameTime = currentTime;
+
+      // Clamp to prevent teleporting after tab visibility change or HMR
+      const deltaTime = Math.min(rawDelta, MAX_DELTA_MS);
+      const frameMultiplier = deltaTime / 16.67; // Normalize to 60fps
 
       // Clear canvas
       ctx.clearRect(0, 0, dimensions.width, dimensions.height);

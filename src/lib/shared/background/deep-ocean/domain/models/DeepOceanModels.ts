@@ -369,6 +369,12 @@ export interface FishMarineLife extends MarineLifeBase {
   // ============================================================================
 
   /**
+   * Preferred vertical position within depth band (0 = top, 1 = bottom)
+   * Set at spawn based on species, influences behavioral drift
+   */
+  preferredVerticalPosition?: number;
+
+  /**
    * Home zone - rough area where fish spawned
    * Fish have a slight tendency to drift back toward this zone
    */

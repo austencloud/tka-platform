@@ -2,7 +2,7 @@
  * Background Preloader Utility
  *
  * Handles immediate body background CSS variable updates when background settings change.
- * The BackgroundCanvas component handles the visual crossfade transition.
+ * The BackgroundHost component handles the visual crossfade transition.
  */
 
 import { BACKGROUND_GRADIENTS } from "./domain/constants/BackgroundGradients";
@@ -69,7 +69,7 @@ function applyBackground(newGradient: string, newAnimation: string): void {
 
 /**
  * Updates the body background CSS variables immediately
- * The BackgroundCanvas component handles the visual crossfade transition
+ * The BackgroundHost component handles the visual crossfade transition
  */
 export function updateBodyBackground(
   backgroundType: BackgroundType,
@@ -131,5 +131,57 @@ export function preloadBackgroundFromStorage(): void {
     }
   } catch (error) {
     console.warn("Failed to preload background:", error);
+  }
+}
+
+/**
+ * Ensure the body background CSS variable is applied based on localStorage settings.
+ * Call this when the background may have been cleared (HMR, remount, etc.)
+ * This ALWAYS applies - no "skip if same" optimization.
+ *
+ * Works in tandem with ensureThemeApplied() from background-theme-calculator.
+ */
+export function ensureBackgroundApplied(): void {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") {
+    return; // SSR safety
+  }
+
+  try {
+    const settingsKey = "tka-modern-web-settings";
+    const stored = localStorage.getItem(settingsKey);
+
+    if (!stored) {
+      // No settings - apply default (solid black)
+      updateBodyBackground(BackgroundType.SOLID_COLOR, { color: "#000000" });
+      return;
+    }
+
+    const settings = JSON.parse(stored) as {
+      backgroundType?: BackgroundType;
+      backgroundColor?: string;
+      gradientColors?: string[];
+      gradientDirection?: number;
+    };
+
+    const backgroundType = settings.backgroundType ?? BackgroundType.SOLID_COLOR;
+
+    // Build custom options from saved settings
+    const customOptions: CustomBackgroundOptions = {};
+    if (backgroundType === BackgroundType.SOLID_COLOR && settings.backgroundColor) {
+      customOptions.color = settings.backgroundColor;
+    } else if (backgroundType === BackgroundType.LINEAR_GRADIENT) {
+      if (settings.gradientColors) {
+        customOptions.colors = settings.gradientColors;
+      }
+      if (settings.gradientDirection !== undefined) {
+        customOptions.direction = settings.gradientDirection;
+      }
+    }
+
+    updateBodyBackground(backgroundType, customOptions);
+  } catch (error) {
+    console.warn("[Background] Failed to ensure background applied:", error);
+    // On error, apply default
+    updateBodyBackground(BackgroundType.SOLID_COLOR, { color: "#000000" });
   }
 }

@@ -10,6 +10,7 @@ import {
   BEHAVIOR_TRANSITION_PROBABILITY,
   SPECIES_BEHAVIOR_MODIFIERS,
   DEPTH_TRANSITION,
+  SPECIES_VERTICAL_PREFERENCES,
 } from "../../domain/constants/fish-constants";
 
 /**
@@ -154,6 +155,31 @@ export class FishDecisionMaker implements IFishDecisionMaker {
     if (speciesModifiers.descending) descending *= speciesModifiers.descending;
     if (speciesModifiers.approaching) approaching *= speciesModifiers.approaching;
     if (speciesModifiers.receding) receding *= speciesModifiers.receding;
+
+    // Apply species vertical preferences (deep fish descend more, tropical ascend more)
+    const verticalPref = SPECIES_VERTICAL_PREFERENCES[species];
+    ascending *= verticalPref.ascendingMod;
+    descending *= verticalPref.descendingMod;
+
+    // Additional feedback: if fish is outside preferred zone, increase tendency to return
+    if (fish.preferredVerticalPosition !== undefined) {
+      const bandHeight = fish.depthBand.max - fish.depthBand.min;
+      const currentFraction = (fish.baseY - fish.depthBand.min) / bandHeight;
+      const prefFraction = fish.preferredVerticalPosition;
+
+      const displacement = currentFraction - prefFraction;
+      const displacementStrength = Math.abs(displacement) * verticalPref.zoneAffinity * 2;
+
+      if (displacement > 0.15) {
+        // Too low (high Y = bottom) - boost ascending to go back up
+        ascending *= 1 + displacementStrength;
+        descending *= 1 - displacementStrength * 0.5;
+      } else if (displacement < -0.15) {
+        // Too high (low Y = top) - boost descending to go back down
+        descending *= 1 + displacementStrength;
+        ascending *= 1 - displacementStrength * 0.5;
+      }
+    }
 
     if (personality) {
       // Curiosity increases turning (exploring) and vertical exploration

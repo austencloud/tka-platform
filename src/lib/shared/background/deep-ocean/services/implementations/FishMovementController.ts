@@ -266,12 +266,66 @@ export class FishMovementController implements IFishMovementController {
       BEHAVIOR_CONFIG.turning.maxRotation;
   }
 
+  /**
+   * Natural fish C-start escape response with three phases:
+   * 1. COIL - body tenses, slows down briefly (preparatory)
+   * 2. BURST - explosive acceleration (propulsive)
+   * 3. RECOVERY - gradual easeOutExpo deceleration
+   */
   private applyDarting(fish: FishMarineLife, deltaSeconds: number): void {
-    fish.speed =
-      fish.dartSpeed ??
-      fish.baseSpeed * BEHAVIOR_CONFIG.darting.speedMultiplier[0];
+    const config = BEHAVIOR_CONFIG.darting;
+    const totalDuration = config.duration;
+
+    // Calculate elapsed time (timer counts down, so invert)
+    const elapsed = totalDuration - fish.behaviorTimer;
+
+    // Determine which phase we're in and calculate speed multiplier
+    let speedMultiplier: number;
+    let verticalJitter = 0;
+
+    if (elapsed < config.coilDuration) {
+      // Phase 1: COIL (preparatory)
+      // Fish slows down, body tenses - this creates the "windup" feel
+      speedMultiplier = config.coilSpeedMultiplier;
+      // Increase body flex to simulate coiling
+      fish.bodyFlexAmount = 1.3;
+    } else if (elapsed < config.coilDuration + config.burstDuration) {
+      // Phase 2: BURST (propulsive)
+      // Explosive acceleration - the actual dart
+      const burstProgress =
+        (elapsed - config.coilDuration) / config.burstDuration;
+      speedMultiplier =
+        (fish.dartSpeed ?? fish.baseSpeed * config.burstSpeedMultiplier[0]) /
+        fish.baseSpeed;
+      // Strong vertical jitter that decreases as burst progresses
+      // (fish doesn't move in a perfectly straight line during escape)
+      verticalJitter = (Math.random() - 0.5) * 4 * (1 - burstProgress);
+      // Reset body flex
+      fish.bodyFlexAmount = 1.0;
+    } else {
+      // Phase 3: RECOVERY (deceleration)
+      // Gradual slowdown using easeOutExpo for natural feel
+      const recoveryProgress =
+        (elapsed - config.coilDuration - config.burstDuration) /
+        config.recoveryDuration;
+
+      // easeOutExpo: fast initial slowdown, then gradual settle
+      const easeOut = recoveryProgress === 1 ? 1 : 1 - Math.pow(2, -10 * recoveryProgress);
+
+      // Interpolate from dart speed back to base speed
+      const dartMultiplier =
+        (fish.dartSpeed ?? fish.baseSpeed * config.burstSpeedMultiplier[0]) /
+        fish.baseSpeed;
+      speedMultiplier = dartMultiplier * (1 - easeOut) + 1 * easeOut;
+
+      // Minimal jitter during recovery
+      verticalJitter = (Math.random() - 0.5) * 0.5;
+    }
+
+    // Apply movement
+    fish.speed = fish.baseSpeed * speedMultiplier;
     fish.x += fish.direction * fish.speed * deltaSeconds;
-    fish.y += (Math.random() - 0.5) * 2; // Slight vertical jitter
+    fish.y += verticalJitter;
   }
 
   /**

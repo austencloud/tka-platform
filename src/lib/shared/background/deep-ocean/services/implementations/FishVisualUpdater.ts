@@ -88,7 +88,17 @@ export class FishVisualUpdater implements IFishVisualUpdater {
   }
 
   updateFinPhysics(fish: FishMarineLife, frameMultiplier: number): void {
-    const speedRatio = fish.speed / fish.baseSpeed;
+    let speedRatio = fish.speed / fish.baseSpeed;
+
+    // Tropical fish get nervous (faster fin movement) when too deep
+    // They're out of their comfort zone in the darker waters
+    if (fish.species === "tropical" && fish.preferredVerticalPosition !== undefined) {
+      const bandHeight = fish.depthBand.max - fish.depthBand.min;
+      const currentFraction = (fish.baseY - fish.depthBand.min) / bandHeight;
+      const depthDiscomfort = Math.max(0, currentFraction - 0.6);
+      speedRatio *= 1 + depthDiscomfort * 0.5; // Up to 20% faster fins when deep
+    }
+
     const isTurning = fish.behavior === "turning";
     const isDarting = fish.behavior === "darting";
 
@@ -249,8 +259,16 @@ export class FishVisualUpdater implements IFishVisualUpdater {
   ): void {
     fish.glowPhase += 0.02 * frameMultiplier;
 
-    const pulse = 0.5 + Math.sin(fish.glowPhase) * 0.3;
+    let pulse = 0.5 + Math.sin(fish.glowPhase) * 0.3;
     const burst = Math.random() < 0.002 ? 0.5 : 0;
+
+    // Deep fish glow brighter when ascending into lighter water
+    // They're "seeking warmth" - bioluminescence responds to light gradient
+    if (fish.species === "deep" && fish.behavior === "ascending") {
+      const bandHeight = fish.depthBand.max - fish.depthBand.min;
+      const verticalProgress = 1 - (fish.baseY - fish.depthBand.min) / bandHeight;
+      pulse += verticalProgress * 0.3; // Up to 30% brighter at top
+    }
 
     fish.glowIntensity = Math.min(1, pulse + burst);
   }

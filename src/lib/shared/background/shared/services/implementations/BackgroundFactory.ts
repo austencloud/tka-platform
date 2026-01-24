@@ -83,6 +83,8 @@ export class BackgroundFactory {
 
     let backgroundSystem: BackgroundSystem;
 
+    console.log('[BackgroundFactory] Creating system for type:', options.type);
+
     // Switch statement for background types - now with lazy loading
     switch (options.type) {
       case BackgroundType.PRIDE: {
@@ -103,7 +105,10 @@ export class BackgroundFactory {
       }
       case BackgroundType.DEEP_OCEAN: {
         // Deep Ocean services are now in ITI container
+        console.log('[BackgroundFactory] DEEP_OCEAN case hit, getting from container');
+        console.log('[BackgroundFactory] container.items.deepOceanBackgroundSystem:', container.items.deepOceanBackgroundSystem);
         backgroundSystem = container.items.deepOceanBackgroundSystem;
+        console.log('[BackgroundFactory] backgroundSystem assigned:', backgroundSystem?.constructor?.name);
         break;
       }
       case BackgroundType.EMBER_GLOW: {
@@ -171,6 +176,7 @@ export class BackgroundFactory {
     // Set initial quality
     backgroundSystem.setQuality(quality);
 
+    console.log('[BackgroundFactory] Returning system:', backgroundSystem?.constructor?.name, 'for type:', options.type);
     return backgroundSystem;
   }
 

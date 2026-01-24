@@ -121,13 +121,32 @@ export const BEHAVIOR_CONFIG = {
   },
 
   /**
-   * Darting: Sudden burst of speed (startled reaction)
-   * Brief, fast movement in current direction
+   * Darting: Natural fish C-start escape response
+   *
+   * Based on fish biomechanics research: real fish use a three-phase escape:
+   * 1. COIL (preparatory): Body tenses, bends into C-shape (~50ms)
+   * 2. BURST (propulsive): Explosive tail flip acceleration (~150ms)
+   * 3. RECOVERY (deceleration): Gradual easeOutExpo slowdown (~400ms)
+   *
+   * Reference: Journal of Experimental Biology - Fish Escape Responses
    */
   darting: {
-    /** Fixed duration in seconds */
-    duration: 0.8,
-    /** Speed multiplier range [min, max] */
+    /** Total duration of all three phases (seconds) */
+    duration: 0.6,
+
+    /** Phase 1: Coil (preparatory) - body tenses before burst */
+    coilDuration: 0.05, // 50ms - body tenses
+    coilSpeedMultiplier: 0.3, // Slows down during windup
+
+    /** Phase 2: Burst (propulsive) - explosive acceleration */
+    burstDuration: 0.15, // 150ms - explosive acceleration
+    burstSpeedMultiplier: [4.0, 6.0] as const, // Peak speed
+
+    /** Phase 3: Recovery (deceleration) - gradual slowdown */
+    recoveryDuration: 0.4, // 400ms - gradual slowdown
+    // Uses easeOutExpo curve: 1 - 2^(-10x) for natural deceleration
+
+    /** Legacy: kept for compatibility but not used in new 3-phase system */
     speedMultiplier: [2.5, 4.0] as const,
   },
 
@@ -248,6 +267,49 @@ export const BEHAVIOR_TRANSITION_PROBABILITY = {
   /** Chance to recede (swim away from camera) (2%) */
   receding: 0.02,
   // Remaining ~71% = continue cruising
+};
+
+/**
+ * Species-specific vertical preferences within their depth band.
+ * Controls where fish spawn and drift over time.
+ *
+ * preferredZone: [0, 1] where 0 = top of band, 1 = bottom
+ * zoneAffinity: how strongly fish are drawn back to preferred zone (0-1)
+ * ascendingMod/descendingMod: multipliers for vertical movement probability
+ */
+export const SPECIES_VERTICAL_PREFERENCES: Record<
+  FishSpecies,
+  {
+    preferredZone: [number, number];
+    zoneAffinity: number;
+    ascendingMod: number;
+    descendingMod: number;
+  }
+> = {
+  tropical: {
+    preferredZone: [0.0, 0.4], // Top 40% - bright water
+    zoneAffinity: 0.35,
+    ascendingMod: 1.4,
+    descendingMod: 0.7,
+  },
+  deep: {
+    preferredZone: [0.6, 1.0], // Bottom 40% - dark abyss
+    zoneAffinity: 0.45,
+    ascendingMod: 0.6,
+    descendingMod: 1.5,
+  },
+  sleek: {
+    preferredZone: [0.3, 0.7], // Middle - predators patrol everywhere
+    zoneAffinity: 0.15,
+    ascendingMod: 1.0,
+    descendingMod: 1.0,
+  },
+  schooling: {
+    preferredZone: [0.2, 0.6], // Upper-middle - safety in numbers
+    zoneAffinity: 0.25,
+    ascendingMod: 1.1,
+    descendingMod: 0.95,
+  },
 };
 
 /**
