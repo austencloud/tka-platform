@@ -92,6 +92,8 @@ Usage:
     onToggleBeatPosition = undefined,
     // Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox)
     widthMultiplier = 1,
+    // Cell index for position caching (enables smooth transitions on regeneration)
+    cellIndex = null,
   } = $props<{
     pictograph: PreparedPictographData;
     blueReversal?: boolean;
@@ -134,6 +136,8 @@ Usage:
     onToggleBeatPosition?: () => void;
     /** Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox) */
     widthMultiplier?: number;
+    /** Cell index for position caching (enables smooth transitions on regeneration) */
+    cellIndex?: number | null;
   }>();
 
   // Expanded viewBox calculations
@@ -300,6 +304,7 @@ Usage:
             onPropClick={propsClickable && onPropClick
               ? () => onPropClick(color)
               : undefined}
+            {cellIndex}
           />
         {/if}
       {/each}
@@ -316,6 +321,7 @@ Usage:
             shouldMirror={arrowMirroring[color] || false}
             showArrow={true}
             isClickable={arrowsClickable}
+            {cellIndex}
           />
         {/if}
       {/each}

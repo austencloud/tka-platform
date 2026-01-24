@@ -89,6 +89,8 @@ with pre-prepared data for better performance.
     musicalPosition = undefined,
     // Width multiplier for expanded timeline cells (1 = normal square, >1 = wider)
     widthMultiplier = 1,
+    // Cell index for position caching (enables smooth transitions on regeneration)
+    cellIndex = null,
   } = $props<{
     pictographData?: (StepData | PictographData) | null;
     disableTransitions?: boolean;
@@ -125,6 +127,8 @@ with pre-prepared data for better performance.
     musicalPosition?: string;
     /** Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox) */
     widthMultiplier?: number;
+    /** Cell index for position caching (enables smooth transitions on regeneration) */
+    cellIndex?: number | null;
   }>();
 
   // Extract beat context from StepData if available
@@ -405,6 +409,7 @@ with pre-prepared data for better performance.
         {onToggleNonRadial}
         {onToggleBeatPosition}
         {widthMultiplier}
+        {cellIndex}
       />
     {:else}
       {#key contentKey}
@@ -444,6 +449,7 @@ with pre-prepared data for better performance.
             {onToggleNonRadial}
             {onToggleBeatPosition}
             {widthMultiplier}
+            {cellIndex}
           />
         </div>
       {/key}

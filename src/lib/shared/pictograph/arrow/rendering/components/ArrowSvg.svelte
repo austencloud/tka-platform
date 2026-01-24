@@ -2,7 +2,27 @@
 Simple Arrow Component - Just renders an arrow with provided data
 Now with click interaction and selection visual feedback
 Now with intelligent rotation animation matching prop behavior!
+
+Position Cache System:
+When components are recreated (e.g., during {#each} rerender), the module-level
+cache preserves the last rendered position. This allows the component to start
+at the cached position and animate to the new one, enabling smooth transitions
+even when Svelte recreates the component instance.
 -->
+<script module lang="ts">
+  // Module-level position cache - persists across component instance recreation
+  // Key format: `${cellIndex}-${color}`
+  const arrowPositionCache = new Map<string, { x: number; y: number }>();
+
+  /**
+   * Clear the arrow position cache. Call this when clearing a sequence to ensure
+   * fresh generation doesn't animate from stale positions.
+   */
+  export function clearArrowPositionCache(): void {
+    arrowPositionCache.clear();
+  }
+</script>
+
 <script lang="ts">
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "../../../../application/services/contracts/IHapticFeedback";
@@ -29,6 +49,8 @@ Now with intelligent rotation animation matching prop behavior!
     color,
     pictographData = null,
     isClickable = false,
+    // Cell index for position caching (enables smooth transitions on regeneration)
+    cellIndex = null,
   } = $props<{
     motionData: MotionData;
     arrowAssets: ArrowAssets;
@@ -38,6 +60,8 @@ Now with intelligent rotation animation matching prop behavior!
     color: string;
     pictographData?: PictographData | null;
     isClickable?: boolean;
+    /** Cell index for position caching (enables smooth transitions on regeneration) */
+    cellIndex?: number | null;
   }>();
 
   // Get centralized visibility manager for dark mode state and cached colors
@@ -124,10 +148,10 @@ Now with intelligent rotation animation matching prop behavior!
   // We achieve this by deferring position updates by one frame
   let displayedX = $state<number>(0);
   let displayedY = $state<number>(0);
-  let isFirstRender = true;
   let pendingPositionFrame: number | null = null;
 
-  // Update displayed position with frame deferral for CSS transitions
+  // Update displayed position with cache-aware frame deferral for CSS transitions
+  // The cache allows smooth transitions even when component instances are recreated
   $effect(() => {
     const targetX = safePosition?.x ?? 0;
     const targetY = safePosition?.y ?? 0;
@@ -135,22 +159,40 @@ Now with intelligent rotation animation matching prop behavior!
     // Cancel any pending position update
     if (pendingPositionFrame !== null) {
       cancelAnimationFrame(pendingPositionFrame);
+      pendingPositionFrame = null;
     }
 
-    if (isFirstRender) {
-      // First render: set immediately (no animation needed)
+    // No cell index means we're not in a grid context (option picker, etc.)
+    // Set position immediately without caching
+    if (cellIndex === null) {
       displayedX = targetX;
       displayedY = targetY;
-      isFirstRender = false;
-    } else {
-      // Subsequent renders: defer by one frame so browser can compute current layout
-      // This ensures CSS transitions see the old values before the new ones
+      return;
+    }
+
+    // Build cache key from cell index and arrow color
+    const key = `${cellIndex}-${color}`;
+    const cached = arrowPositionCache.get(key);
+
+    if (cached && (cached.x !== targetX || cached.y !== targetY)) {
+      // Position changed and we have a cached previous position
+      // Start at cached position and animate to target
+      displayedX = cached.x;
+      displayedY = cached.y;
       pendingPositionFrame = requestAnimationFrame(() => {
         displayedX = targetX;
         displayedY = targetY;
         pendingPositionFrame = null;
       });
+    } else {
+      // First render for this cell OR position hasn't changed
+      // Set immediately (no animation needed)
+      displayedX = targetX;
+      displayedY = targetY;
     }
+
+    // Update cache with current target position
+    arrowPositionCache.set(key, { x: targetX, y: targetY });
 
     // Cleanup on unmount
     return () => {

@@ -310,6 +310,7 @@
     disableTransitions={true}
     {musicalPosition}
     {widthMultiplier}
+    cellIndex={index}
   />
 </div>
 
