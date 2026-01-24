@@ -1190,19 +1190,26 @@ export class AnimationEngine {
     // Set isPlaying to control render loop continuation
     fp.isPlaying = props.isPlaying ?? false;
 
-    // Get Buugeng flip settings from settings service
-    // Only apply flip for Buugeng family props (buugeng, bigbuugeng, fractalgeng)
+    // Get flip settings from settings service
+    // - Buugeng family: user preference (asymmetric props)
+    // - Hand: red hand always flipped (left/right hands are anatomically mirrored)
     const settings = this.settingsService?.currentSettings;
     const buugengFamily = ["buugeng", "bigbuugeng", "fractalgeng"];
     const bluePropType = this.state.currentBluePropType.toLowerCase();
     const redPropType = this.state.currentRedPropType.toLowerCase();
 
+    // Blue prop: Buugeng family uses user preference, hand is never flipped (it's the left hand)
     fp.bluePropFlipped = buugengFamily.includes(bluePropType)
       ? (settings?.blueBuugengFlipped ?? false)
       : false;
-    fp.redPropFlipped = buugengFamily.includes(redPropType)
-      ? (settings?.redBuugengFlipped ?? false)
-      : false;
+
+    // Red prop: Hand is always flipped (right hand mirror), Buugeng uses user preference
+    fp.redPropFlipped =
+      redPropType === "hand"
+        ? true
+        : buugengFamily.includes(redPropType)
+          ? (settings?.redBuugengFlipped ?? false)
+          : false;
 
     // Pass prop types for prop-specific rendering rules (e.g., hands never rotate)
     fp.bluePropType = bluePropType;
