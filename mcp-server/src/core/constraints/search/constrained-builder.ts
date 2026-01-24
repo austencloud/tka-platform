@@ -255,77 +255,165 @@ export function buildConstrainedSequence(
         const previousLetter = state.steps[state.steps.length - 1]?.letter;
         if (!previousLetter) continue;
 
-        // Find all valid single-letter bridges
-        const bridgeOptions = transitionGraph.findAllBridgeOptions(previousLetter, letter);
+        // First try single-letter bridges (can be scored for constraint optimization)
+        let bridgeOptions = transitionGraph.findAllBridgeOptions(previousLetter, letter);
+        let useMultiLetterBridge = false;
+        let multiBridgePath: string[] = [];
 
         if (bridgeOptions.length === 0) {
-          // No single-letter bridge available, this state cannot continue
-          continue;
+          // No single-letter bridge - fall back to BFS for multi-letter path
+          multiBridgePath = transitionGraph.findBridgeLetters(previousLetter, letter);
+          if (multiBridgePath.length === 0) {
+            // No bridge path available at all
+            continue;
+          }
+          useMultiLetterBridge = true;
         }
 
-        // Score bridge options against constraints
-        const scoredBridges = scoreBridgeOptions(bridgeOptions, constraintSet, allPictographs);
-        const bestBridge = scoredBridges[0];
-        if (!bestBridge) continue;
+        if (useMultiLetterBridge) {
+          // Multi-letter bridge: add each bridge letter sequentially
+          let currentState = state;
+          let bridgeSuccess = true;
+          const totalBridgeSteps = multiBridgePath.length;
 
-        // Find variations of the best bridge letter that start at current position
-        const bridgeVariations = allPictographs.filter(
-          (p) => p.letter === bestBridge.letter && p.startPosition === state.currentEndPosition
-        );
+          for (let bridgeIdx = 0; bridgeIdx < multiBridgePath.length; bridgeIdx++) {
+            const bridgeLetter = multiBridgePath[bridgeIdx];
+            if (!bridgeLetter) {
+              bridgeSuccess = false;
+              break;
+            }
 
-        if (bridgeVariations.length === 0) {
-          // Bridge letter doesn't have a variation at this position
-          continue;
-        }
+            // Find variations of this bridge letter at current position
+            const bridgeVariations = allPictographs.filter(
+              (p) => p.letter === bridgeLetter && p.startPosition === currentState.currentEndPosition
+            );
 
-        // Score and pick best bridge variation
-        const bridgeScores = scoreAndRankVariations(
-          bridgeVariations,
-          {
-            stepIndex: i,
-            totalSteps: letters.length + 1, // Account for bridge
-            previousSteps: state.steps,
-            letter: bestBridge.letter,
-          },
-          constraintSet
-        );
+            if (bridgeVariations.length === 0) {
+              bridgeSuccess = false;
+              break;
+            }
 
-        const bestBridgeScore = bridgeScores[0];
-        if (!bestBridgeScore || !bestBridgeScore.hardConstraintsSatisfied) continue;
+            // Score bridge variations
+            const bridgeScores = scoreAndRankVariations(
+              bridgeVariations,
+              {
+                stepIndex: i + bridgeIdx,
+                totalSteps: letters.length + totalBridgeSteps,
+                previousSteps: currentState.steps,
+                letter: bridgeLetter,
+              },
+              constraintSet
+            );
 
-        // Extend state with bridge letter (marked as bridge)
-        const stateWithBridge = extendState(state, bestBridgeScore.variation, bestBridgeScore, true);
-        statesExplored++;
+            const bestBridgeScore = bridgeScores[0];
+            if (!bestBridgeScore || !bestBridgeScore.hardConstraintsSatisfied) {
+              bridgeSuccess = false;
+              break;
+            }
 
-        // Now find target letter variations from bridge's end position
-        validVariations = allPictographs.filter(
-          (p) => p.letter === letter && p.startPosition === stateWithBridge.currentEndPosition
-        );
+            // Extend state with this bridge letter
+            currentState = extendState(currentState, bestBridgeScore.variation, bestBridgeScore, true);
+            statesExplored++;
+          }
 
-        if (validVariations.length === 0) {
-          // Still no valid path even with bridge
-          continue;
-        }
+          if (!bridgeSuccess) {
+            continue;
+          }
 
-        // Score variations in context (after bridge)
-        const scores = scoreAndRankVariations(
-          validVariations,
-          {
-            stepIndex: i + 1, // Adjusted for bridge
-            totalSteps: letters.length + 1,
-            previousSteps: stateWithBridge.steps,
-            letter,
-          },
-          constraintSet
-        );
+          // Now find target letter variations from final bridge's end position
+          validVariations = allPictographs.filter(
+            (p) => p.letter === letter && p.startPosition === currentState.currentEndPosition
+          );
 
-        // Extend state with target letter variations
-        for (const scored of scores.slice(0, config.beamWidth)) {
-          if (!scored.hardConstraintsSatisfied) continue;
+          if (validVariations.length === 0) {
+            continue;
+          }
 
-          const newState = extendState(stateWithBridge, scored.variation, scored);
-          nextBeam.push(newState);
+          // Score variations in context (after all bridges)
+          const scores = scoreAndRankVariations(
+            validVariations,
+            {
+              stepIndex: i + multiBridgePath.length,
+              totalSteps: letters.length + multiBridgePath.length,
+              previousSteps: currentState.steps,
+              letter,
+            },
+            constraintSet
+          );
+
+          // Extend state with target letter variations
+          for (const scored of scores.slice(0, config.beamWidth)) {
+            if (!scored.hardConstraintsSatisfied) continue;
+
+            const newState = extendState(currentState, scored.variation, scored);
+            nextBeam.push(newState);
+            statesExplored++;
+          }
+        } else {
+          // Single-letter bridge: score and pick the best one
+          const scoredBridges = scoreBridgeOptions(bridgeOptions, constraintSet, allPictographs);
+          const bestBridge = scoredBridges[0];
+          if (!bestBridge) continue;
+
+          // Find variations of the best bridge letter that start at current position
+          const bridgeVariations = allPictographs.filter(
+            (p) => p.letter === bestBridge.letter && p.startPosition === state.currentEndPosition
+          );
+
+          if (bridgeVariations.length === 0) {
+            // Bridge letter doesn't have a variation at this position
+            continue;
+          }
+
+          // Score and pick best bridge variation
+          const bridgeScores = scoreAndRankVariations(
+            bridgeVariations,
+            {
+              stepIndex: i,
+              totalSteps: letters.length + 1, // Account for bridge
+              previousSteps: state.steps,
+              letter: bestBridge.letter,
+            },
+            constraintSet
+          );
+
+          const bestBridgeScore = bridgeScores[0];
+          if (!bestBridgeScore || !bestBridgeScore.hardConstraintsSatisfied) continue;
+
+          // Extend state with bridge letter (marked as bridge)
+          const stateWithBridge = extendState(state, bestBridgeScore.variation, bestBridgeScore, true);
           statesExplored++;
+
+          // Now find target letter variations from bridge's end position
+          validVariations = allPictographs.filter(
+            (p) => p.letter === letter && p.startPosition === stateWithBridge.currentEndPosition
+          );
+
+          if (validVariations.length === 0) {
+            // Still no valid path even with bridge
+            continue;
+          }
+
+          // Score variations in context (after bridge)
+          const scores = scoreAndRankVariations(
+            validVariations,
+            {
+              stepIndex: i + 1, // Adjusted for bridge
+              totalSteps: letters.length + 1,
+              previousSteps: stateWithBridge.steps,
+              letter,
+            },
+            constraintSet
+          );
+
+          // Extend state with target letter variations
+          for (const scored of scores.slice(0, config.beamWidth)) {
+            if (!scored.hardConstraintsSatisfied) continue;
+
+            const newState = extendState(stateWithBridge, scored.variation, scored);
+            nextBeam.push(newState);
+            statesExplored++;
+          }
         }
       } else {
         // Direct path available - score and extend normally

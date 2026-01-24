@@ -153,41 +153,68 @@ export function registerLoopTools(server: McpServer): void {
       const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.STRICT_ROTATED;
       const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
 
-      // AUTO-BRIDGE: If position is incompatible, add a bridge letter
+      // Retry loop: keep generating until we get a LOOP-compatible sequence
+      // The bridge letter is determined by the end position, but rebuilding may land on a different position
+      let loopResult;
       let bridgeAdded: string | null = null;
-      const bridgeResult = autoBridgeForLoop(
-        baseResult.word,
-        letters,
-        baseResult.startPosition,
-        baseResult.endPosition,
-        loopTypeEnum,
-        slice,
-        allPictographs
-      );
 
-      if (bridgeResult.bridgeAdded) {
-        // Rebuild sequence with the bridge letter
-        bridgeAdded = bridgeResult.bridgeAdded;
-        letters = bridgeResult.letters;
-        baseResult = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+      for (let loopAttempt = 0; loopAttempt < maxAttempts; loopAttempt++) {
+        // Regenerate base sequence each attempt (randomness may produce different end positions)
+        if (loopAttempt > 0) {
+          baseResult = buildSequenceFromLetters(letters, allPictographs, 1);
+          if (!baseResult.isValid) continue;
+        }
 
-        if (!baseResult.isValid) {
-          return {
-            content: [
-              { type: "text" as const, text: `Failed to generate bridged sequence: ${baseResult.error}` },
-            ],
-            isError: true,
-          };
+        // Check if this base result is LOOP-compatible or can be bridged
+        const bridgeResult = autoBridgeForLoop(
+          baseResult.word,
+          letters,
+          baseResult.startPosition,
+          baseResult.endPosition,
+          loopTypeEnum,
+          slice,
+          allPictographs
+        );
+
+        let finalLetters = letters;
+        let finalResult = baseResult;
+
+        if (bridgeResult.bridgeAdded) {
+          // Need to add a bridge letter
+          finalLetters = bridgeResult.letters;
+          finalResult = buildSequenceFromLetters(finalLetters, allPictographs, 1);
+
+          if (!finalResult.isValid) continue;
+
+          // Verify the rebuilt sequence still ends at a compatible position
+          const positionPair = `${finalResult.startPosition},${finalResult.endPosition}`;
+          if (!isLOOPValidForPositionPair(loopTypeEnum, positionPair, slice)) {
+            // The rebuild landed on a different position - retry
+            continue;
+          }
+          bridgeAdded = bridgeResult.bridgeAdded;
+        } else {
+          // No bridge added - verify the base result is LOOP-compatible
+          const positionPair = `${baseResult.startPosition},${baseResult.endPosition}`;
+          if (!isLOOPValidForPositionPair(loopTypeEnum, positionPair, slice)) {
+            // Position not compatible and no bridge available - retry with different random variations
+            continue;
+          }
+        }
+
+        // Try to execute the LOOP
+        loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeEnum, slice, allPictographs);
+
+        if (loopResult.success) {
+          baseResult = finalResult;
+          break;
         }
       }
 
-      // Execute the LOOP transformation (pass pictograph data for letter derivation)
-      const loopResult = executeLOOP(baseResult.steps, baseResult.word, loopTypeEnum, slice, allPictographs);
-
-      if (!loopResult.success) {
+      if (!loopResult || !loopResult.success) {
         return {
           content: [
-            { type: "text" as const, text: `Failed to generate LOOP sequence: ${loopResult.error}` },
+            { type: "text" as const, text: `Failed to generate LOOP sequence: Could not find compatible position after ${maxAttempts} attempts` },
           ],
           isError: true,
         };
@@ -254,12 +281,13 @@ export function registerLoopTools(server: McpServer): void {
       darkMode: z.boolean().optional().default(true).describe("Use dark background"),
       maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
       loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP components for the pie chart glyph"),
-      level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level"),
+      level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
+      turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3). Each motion gets a random turn value from 0 up to this max. Defaults to 0 for level 1, 3 for level 2-3."),
       userName: z.string().optional().describe("Username for footer"),
       notes: z.string().optional().describe("Notes for footer"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format"),
     },
-    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100, loopComponents, level = 1, userName, notes, birthday }) => {
+    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100, loopComponents, level = 1, turnIntensity, userName, notes, birthday }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -290,38 +318,68 @@ export function registerLoopTools(server: McpServer): void {
       const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.STRICT_ROTATED;
       const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
 
-      // AUTO-BRIDGE: If position is incompatible, add a bridge letter
-      const bridgeResult = autoBridgeForLoop(
-        baseResult.word,
-        letters,
-        baseResult.startPosition,
-        baseResult.endPosition,
-        loopTypeEnum,
-        slice,
-        allPictographs
-      );
+      // Retry loop: keep generating until we get a LOOP-compatible sequence
+      // The bridge letter is determined by the end position, but rebuilding may land on a different position
+      let loopResult;
+      let bridgeAddedFinal: string | null = null;
 
-      if (bridgeResult.bridgeAdded) {
-        // Rebuild sequence with the bridge letter
-        letters = bridgeResult.letters;
-        baseResult = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+      for (let loopAttempt = 0; loopAttempt < maxAttempts; loopAttempt++) {
+        // Regenerate base sequence each attempt (randomness may produce different end positions)
+        if (loopAttempt > 0) {
+          baseResult = buildSequenceFromLetters(letters, allPictographs, 1);
+          if (!baseResult.isValid) continue;
+        }
 
-        if (!baseResult.isValid) {
-          return {
-            content: [
-              { type: "text" as const, text: `Failed to generate bridged sequence: ${baseResult.error}` },
-            ],
-            isError: true,
-          };
+        // Check if this base result is LOOP-compatible or can be bridged
+        const bridgeResult = autoBridgeForLoop(
+          baseResult.word,
+          letters,
+          baseResult.startPosition,
+          baseResult.endPosition,
+          loopTypeEnum,
+          slice,
+          allPictographs
+        );
+
+        let finalLetters = letters;
+        let finalResult = baseResult;
+
+        if (bridgeResult.bridgeAdded) {
+          // Need to add a bridge letter
+          finalLetters = bridgeResult.letters;
+          finalResult = buildSequenceFromLetters(finalLetters, allPictographs, 1);
+
+          if (!finalResult.isValid) continue;
+
+          // Verify the rebuilt sequence still ends at a compatible position
+          const positionPair = `${finalResult.startPosition},${finalResult.endPosition}`;
+          if (!isLOOPValidForPositionPair(loopTypeEnum, positionPair, slice)) {
+            // The rebuild landed on a different position - retry
+            continue;
+          }
+          bridgeAddedFinal = bridgeResult.bridgeAdded;
+        } else {
+          // No bridge added - verify the base result is LOOP-compatible
+          const positionPair = `${baseResult.startPosition},${baseResult.endPosition}`;
+          if (!isLOOPValidForPositionPair(loopTypeEnum, positionPair, slice)) {
+            // Position not compatible and no bridge available - retry with different random variations
+            continue;
+          }
+        }
+
+        // Try to execute the LOOP
+        loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeEnum, slice, allPictographs);
+
+        if (loopResult.success) {
+          baseResult = finalResult;
+          break;
         }
       }
 
-      const loopResult = executeLOOP(baseResult.steps, baseResult.word, loopTypeEnum, slice, allPictographs);
-
-      if (!loopResult.success) {
+      if (!loopResult || !loopResult.success) {
         return {
           content: [
-            { type: "text" as const, text: `Failed to generate LOOP sequence: ${loopResult.error}` },
+            { type: "text" as const, text: `Failed to generate LOOP sequence: Could not find compatible position after ${maxAttempts} attempts` },
           ],
           isError: true,
         };
@@ -356,7 +414,7 @@ export function registerLoopTools(server: McpServer): void {
 
         // Allocate turns for each step
         const stepCount = loopResult.steps.length - 1;
-        const turnAllocation = allocateTurns(stepCount, level);
+        const turnAllocation = allocateTurns(stepCount, level, turnIntensity);
 
         // Render composite image
         // Pass derivedBeatIndices so the renderer can dim the transformed beats
@@ -428,12 +486,13 @@ export function registerLoopTools(server: McpServer): void {
       darkMode: z.boolean().optional().default(true).describe("Use dark background"),
       maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
       loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP components for the pie chart glyph"),
-      level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level"),
+      level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
+      turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3). Each motion gets a random turn value from 0 up to this max. Defaults to 0 for level 1, 3 for level 2-3."),
       userName: z.string().optional().describe("Username for footer"),
       notes: z.string().optional().describe("Notes for footer"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format"),
     },
-    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100, loopComponents, level = 1, userName, notes, birthday }) => {
+    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100, loopComponents, level = 1, turnIntensity, userName, notes, birthday }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -464,40 +523,68 @@ export function registerLoopTools(server: McpServer): void {
       const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.STRICT_ROTATED;
       const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
 
-      // AUTO-BRIDGE: If position is incompatible, add a bridge letter
+      // Retry loop: keep generating until we get a LOOP-compatible sequence
+      // The bridge letter is determined by the end position, but rebuilding may land on a different position
+      let loopResult;
       let bridgeAdded: string | null = null;
-      const bridgeResult = autoBridgeForLoop(
-        baseResult.word,
-        letters,
-        baseResult.startPosition,
-        baseResult.endPosition,
-        loopTypeEnum,
-        slice,
-        allPictographs
-      );
 
-      if (bridgeResult.bridgeAdded) {
-        // Rebuild sequence with the bridge letter
-        bridgeAdded = bridgeResult.bridgeAdded;
-        letters = bridgeResult.letters;
-        baseResult = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+      for (let loopAttempt = 0; loopAttempt < maxAttempts; loopAttempt++) {
+        // Regenerate base sequence each attempt (randomness may produce different end positions)
+        if (loopAttempt > 0) {
+          baseResult = buildSequenceFromLetters(letters, allPictographs, 1);
+          if (!baseResult.isValid) continue;
+        }
 
-        if (!baseResult.isValid) {
-          return {
-            content: [
-              { type: "text" as const, text: `Failed to generate bridged sequence: ${baseResult.error}` },
-            ],
-            isError: true,
-          };
+        // Check if this base result is LOOP-compatible or can be bridged
+        const bridgeResult = autoBridgeForLoop(
+          baseResult.word,
+          letters,
+          baseResult.startPosition,
+          baseResult.endPosition,
+          loopTypeEnum,
+          slice,
+          allPictographs
+        );
+
+        let finalLetters = letters;
+        let finalResult = baseResult;
+
+        if (bridgeResult.bridgeAdded) {
+          // Need to add a bridge letter
+          finalLetters = bridgeResult.letters;
+          finalResult = buildSequenceFromLetters(finalLetters, allPictographs, 1);
+
+          if (!finalResult.isValid) continue;
+
+          // Verify the rebuilt sequence still ends at a compatible position
+          const positionPair = `${finalResult.startPosition},${finalResult.endPosition}`;
+          if (!isLOOPValidForPositionPair(loopTypeEnum, positionPair, slice)) {
+            // The rebuild landed on a different position - retry
+            continue;
+          }
+          bridgeAdded = bridgeResult.bridgeAdded;
+        } else {
+          // No bridge added - verify the base result is LOOP-compatible
+          const positionPair = `${baseResult.startPosition},${baseResult.endPosition}`;
+          if (!isLOOPValidForPositionPair(loopTypeEnum, positionPair, slice)) {
+            // Position not compatible and no bridge available - retry with different random variations
+            continue;
+          }
+        }
+
+        // Try to execute the LOOP
+        loopResult = executeLOOP(finalResult.steps, finalResult.word, loopTypeEnum, slice, allPictographs);
+
+        if (loopResult.success) {
+          baseResult = finalResult;
+          break;
         }
       }
 
-      const loopResult = executeLOOP(baseResult.steps, baseResult.word, loopTypeEnum, slice, allPictographs);
-
-      if (!loopResult.success) {
+      if (!loopResult || !loopResult.success) {
         return {
           content: [
-            { type: "text" as const, text: `Failed to generate LOOP sequence: ${loopResult.error}` },
+            { type: "text" as const, text: `Failed to generate LOOP sequence: Could not find compatible position after ${maxAttempts} attempts` },
           ],
           isError: true,
         };
@@ -532,7 +619,7 @@ export function registerLoopTools(server: McpServer): void {
 
         // Allocate turns for each step
         const stepCount = loopResult.steps.length - 1;
-        const turnAllocation = allocateTurns(stepCount, level);
+        const turnAllocation = allocateTurns(stepCount, level, turnIntensity);
 
         // Render composite image with derivedBeatIndices for proper dimming
         // Simplify word label if it's a repetition (e.g., "ABCABC" → "ABC")

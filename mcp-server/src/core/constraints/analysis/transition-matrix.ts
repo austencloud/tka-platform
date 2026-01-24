@@ -13,6 +13,7 @@
 
 import type { PictographData } from "../types.js";
 import { analyzeTransition, type TransitionAnalysis } from "./transition-analyzer.js";
+import { getLetterTransitionGraph } from "../../letter-transition-graph.js";
 
 /**
  * Compact representation of transition feasibility.
@@ -127,6 +128,10 @@ export interface WordFeasibility {
 /**
  * Analyze a word's feasibility using the pre-computed matrix.
  * Much faster than re-analyzing all pictographs.
+ *
+ * NOTE: When no direct transition exists, the system can insert bridge letters
+ * to make the transition possible. This function now checks for bridge availability
+ * instead of reporting "no valid transition" for bridgeable transitions.
  */
 export function analyzeWordFeasibility(
   word: string,
@@ -143,6 +148,9 @@ export function analyzeWordFeasibility(
   let minPropReversals = 0;
   let maxPropReversals = 0;
 
+  // Get transition graph for bridge checking
+  const transitionGraph = getLetterTransitionGraph();
+
   for (let i = 0; i < letters.length - 1; i++) {
     const from = letters[i]!;
     const to = letters[i + 1]!;
@@ -151,11 +159,29 @@ export function analyzeWordFeasibility(
     const feasibility = matrix.get(from)?.get(to);
 
     if (!feasibility) {
-      // No valid transition exists - this is a hard blocker
-      handReversalBlockers.push(transition + " (no valid transition)");
-      propReversalBlockers.push(transition + " (no valid transition)");
-      noHandReversalPossible.push(transition + " (no valid transition)");
-      noPropReversalPossible.push(transition + " (no valid transition)");
+      // No direct transition exists - check if a bridge letter can be used
+      const canFollowDirectly = transitionGraph.canFollow(from, to);
+      const bridgeOptions = transitionGraph.findAllBridgeOptions(from, to);
+
+      if (canFollowDirectly || bridgeOptions.length > 0) {
+        // Bridge available - transition IS possible, just needs an extra letter
+        // For constraint analysis, treat bridged transitions conservatively:
+        // - They CAN avoid reversals (bridge letter provides flexibility)
+        // - They CAN produce reversals (if needed)
+        // We don't know the exact bridge behavior without knowing which bridge,
+        // so we assume maximum flexibility (all constraints achievable via bridging)
+        maxHandReversals++; // Could have reversal
+        maxPropReversals++; // Could have reversal
+        // Note: We don't add to blockers because bridges provide escape routes
+        continue;
+      }
+
+      // Truly impossible transition (no direct path AND no bridge available)
+      // This should be extremely rare in TKA
+      handReversalBlockers.push(transition + " (no valid transition, no bridge)");
+      propReversalBlockers.push(transition + " (no valid transition, no bridge)");
+      noHandReversalPossible.push(transition + " (no valid transition, no bridge)");
+      noPropReversalPossible.push(transition + " (no valid transition, no bridge)");
       continue;
     }
 

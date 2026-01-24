@@ -20,13 +20,34 @@ import {
   Orientation,
   type PropColor,
 } from "./enums.js";
-import { calculatePropPlacement } from "./prop-placement.js";
+// Import shared core calculations - the SINGLE SOURCE OF TRUTH for rendering logic
+import {
+  // Grid position calculations
+  getLayer2PointCoordinates,
+  // Prop placement calculations
+  calculatePropPlacement,
+  // Arrow calculations (still using local files for arrow-specific logic)
+  // Beta offset
+  calculateBetaOffset,
+  type BetaOffsetInput,
+  type BetaMotionInput,
+  // Orientation
+  calculateOrientations,
+  type OrientationInput,
+  // Dash location
+  calculateDashLocation,
+  type DashLocationInput,
+  // Reversal indicators
+  calculateReversalPositions,
+  // Colors
+  BLUE_COLOR_DARK,
+  BLUE_COLOR_LIGHT,
+  RED_COLOR_DARK,
+  RED_COLOR_LIGHT,
+} from "$lib/shared/render/core/index.js";
+// Arrow calculations still use local files (they have MCP-specific logic)
 import { calculateArrowPlacement, calculateArrowRotation } from "./arrow-placement.js";
 import { calculateArrowAdjustment, type PictographAdjustmentInput, type MotionAdjustmentInput } from "./arrow-adjustment.js";
-import { calculateOrientations, Orientation as CalcOrientation } from "./orientation-calculator.js";
-import { calculateDashLocation, type DashLocationInput } from "./dash-location.js";
-import { getLayer2PointCoordinates } from "./grid-coordinates.js";
-import { calculateBetaOffset, type BetaOffsetInput, type BetaMotionInput } from "./beta-offset.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -38,13 +59,10 @@ const __dirname = dirname(__filename);
 const VIEWBOX_SIZE = 950;
 const CENTER = VIEWBOX_SIZE / 2; // 475
 
-// Colors (matching svg-color-utils.ts MOTION_COLOR_MAP - the actual prop rendering colors)
-// These are the colors used when rendering props/arrows in the main app
-const BLUE_COLOR = "#3575E2";  // Dark mode blue - bright on dark backgrounds
-const RED_COLOR = "#ED1C24";   // Dark mode red - standard red works well
-// Light mode variants (from MOTION_COLOR_MAP in svg-color-utils.ts)
-const BLUE_COLOR_LIGHT = "#3D44B8";  // Light mode blue - more vibrant on light backgrounds
-const RED_COLOR_LIGHT = "#DC2626";   // Light mode red - Tailwind Red 600
+// Colors imported from shared core
+// Use the shared constants for consistency
+const BLUE_COLOR = BLUE_COLOR_DARK;  // Dark mode blue - bright on dark backgrounds
+const RED_COLOR = RED_COLOR_DARK;    // Dark mode red - standard red works well
 
 // Glyph positioning (matching real renderer)
 const TKA_GLYPH_X = 50;
@@ -723,21 +741,22 @@ ${svgParts.join("\n")}
   }
 
   private getArrowPath(motionType: string, startOrientation: Orientation | undefined, turns: number | "fl" | undefined): string {
+    // Float turns use a special arrow that's the same regardless of motion type
+    // Located at static/images/arrows/float.svg
+    if (turns === "fl") {
+      return join(this.projectRoot, "static/images/arrows/float.svg");
+    }
+
     // Arrow files are organized by START orientation, not location
     // "from_radial" = starts from radial orientation (IN/OUT)
     // "from_nonradial" = starts from non-radial orientation (CLOCK/COUNTER)
     const isNonRadial = startOrientation === Orientation.CLOCK || startOrientation === Orientation.COUNTER;
     const startType = isNonRadial ? "from_nonradial" : "from_radial";
 
-    // Format turns for filename (0, 0.5, 1, 1.5, 2, 2.5, 3, or fl)
-    let turnsStr: string;
-    if (turns === "fl") {
-      turnsStr = "fl";
-    } else {
-      const turnsNum = turns ?? 0;
-      // Arrow files use .0 suffix for whole numbers (e.g., pro_1.0.svg, pro_3.0.svg)
-      turnsStr = Number.isInteger(turnsNum) ? `${turnsNum}.0` : turnsNum.toString();
-    }
+    // Format turns for filename (0, 0.5, 1, 1.5, 2, 2.5, 3)
+    const turnsNum = turns ?? 0;
+    // Arrow files use .0 suffix for whole numbers (e.g., pro_1.0.svg, pro_3.0.svg)
+    const turnsStr = Number.isInteger(turnsNum) ? `${turnsNum}.0` : turnsNum.toString();
 
     if (motionType === "dash") {
       return join(this.projectRoot, "static/images/arrows/dash", startType, `dash_${turnsStr}.svg`);
@@ -839,9 +858,13 @@ ${svgParts.join("\n")}
 
       // Remove the entire <defs><style>...</style></defs> block to avoid CSS conflicts
       innerContent = innerContent.replace(/<defs>[\s\S]*?<\/defs>/gi, "");
+      // Also remove standalone <style> blocks (float.svg has style without defs wrapper)
+      innerContent = innerContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
 
-      // Add inline fill to paths that use class="cls-1" (the default class in number SVGs)
+      // Add inline fill to paths that use CSS classes (cls-1 or st0 depending on SVG source)
+      // cls-1 is used by most number SVGs, st0 is used by float.svg
       innerContent = innerContent.replace(/class="cls-1"/gi, `fill="${fillColor}"`);
+      innerContent = innerContent.replace(/class="st0"/gi, `fill="${fillColor}"`);
 
       // Also replace any existing fill colors just in case
       innerContent = innerContent.replace(/fill="#010101"/gi, `fill="${fillColor}"`);
@@ -1181,51 +1204,27 @@ ${turnNumbersSvg}
 
   /**
    * Render reversal indicators on the left edge of the pictograph.
-   * Matches ReversalIndicators.svelte positioning EXACTLY.
+   * Uses the shared core calculateReversalPositions for consistent positioning
+   * across both browser and MCP renderers.
    *
-   * The Svelte component uses percentage-based constants with specific multipliers:
-   * - X_POSITION_PERCENT = 5.5, multiplied by 13 = 71.5
-   * - DOT_RADIUS_PERCENT = 1.5, multiplied by 10 = 15
-   * - DOT_SPACING_PERCENT = 4.5, multiplied by 13 = 58.5
-   * - CENTER_Y_PERCENT = 50, multiplied by 9.5 = 475
-   *
-   * When both reversals present: RED on top, BLUE on bottom
+   * Positioning (from unified core, matching ReversalIndicators.svelte):
+   * - Single reversal: dot is centered vertically at CENTER_Y (475)
+   * - Both reversals: RED on top, BLUE on bottom, spaced by DOT_SPACING
+   * - All dots are at X_POSITION (71.5) on the left edge
    */
   private renderReversalIndicators(
     blueReversal: boolean,
     redReversal: boolean,
     darkMode: boolean
   ): string {
-    if (!blueReversal && !redReversal) return "";
+    // Use shared core calculation for positioning
+    const { dots } = calculateReversalPositions(blueReversal, redReversal, darkMode);
 
-    // Constants matching ReversalIndicators.svelte EXACTLY
-    // These use the specific multipliers from the Svelte component
-    const X_POSITION = 5.5 * 13;    // = 71.5 (NOT VIEWBOX_SIZE * 0.055)
-    const DOT_RADIUS = 1.5 * 10;    // = 15
-    const DOT_SPACING = 4.5 * 13;   // = 58.5
-    const CENTER_Y = 50 * 9.5;      // = 475
+    if (dots.length === 0) return "";
 
-    // Colors matching the motion colors
-    const blueColor = darkMode ? BLUE_COLOR : BLUE_COLOR_LIGHT;
-    const redColor = darkMode ? RED_COLOR : RED_COLOR_LIGHT;
-
-    const circles: string[] = [];
-
-    if (blueReversal && redReversal) {
-      // Both reversals: stack vertically
-      // RED on top (center - spacing/2), BLUE on bottom (center + spacing/2)
-      const redY = CENTER_Y - DOT_SPACING / 2;   // 475 - 29.25 = 445.75
-      const blueY = CENTER_Y + DOT_SPACING / 2;  // 475 + 29.25 = 504.25
-
-      circles.push(`<circle cx="${X_POSITION}" cy="${redY}" r="${DOT_RADIUS}" fill="${redColor}"/>`);
-      circles.push(`<circle cx="${X_POSITION}" cy="${blueY}" r="${DOT_RADIUS}" fill="${blueColor}"/>`);
-    } else if (blueReversal) {
-      // Only blue reversal: centered
-      circles.push(`<circle cx="${X_POSITION}" cy="${CENTER_Y}" r="${DOT_RADIUS}" fill="${blueColor}"/>`);
-    } else if (redReversal) {
-      // Only red reversal: centered
-      circles.push(`<circle cx="${X_POSITION}" cy="${CENTER_Y}" r="${DOT_RADIUS}" fill="${redColor}"/>`);
-    }
+    const circles = dots.map(
+      dot => `<circle cx="${dot.cx}" cy="${dot.cy}" r="${dot.r}" fill="${dot.color}"/>`
+    );
 
     return `<g class="reversal-indicators">${circles.join("\n")}</g>`;
   }
