@@ -6,7 +6,7 @@
 
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
-  import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+  import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";

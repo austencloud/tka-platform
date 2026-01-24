@@ -109,13 +109,9 @@
   // Track container width to control column count
   let containerWidth = $state(0);
 
-  // Detect touch capability once (doesn't change during session)
-  const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-
   const columnCount = $derived.by(() => {
-    // On touch devices with pinch-to-zoom override active, use that value
-    // No breakpoint check - pinch works on any size touch screen
-    if (pinchColumnOverride !== undefined && isTouchDevice) {
+    // When zoom override is active (pinch on touch OR Shift+scroll on desktop), use it
+    if (pinchColumnOverride !== undefined) {
       return pinchColumnOverride;
     }
 

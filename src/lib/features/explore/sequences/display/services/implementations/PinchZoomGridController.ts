@@ -1,8 +1,11 @@
 /**
- * Pinch-to-Zoom Grid Controller
+ * Grid Zoom Controller
  *
- * iOS Photos-style pinch gestures for controlling grid column count.
- * Uses discrete column changes when pinch threshold is crossed.
+ * Controls grid column count via:
+ * - Pinch gestures on touch devices (iOS Photos-style)
+ * - Shift+scroll on desktop
+ *
+ * Uses discrete column changes when threshold is crossed.
  * No scale transforms - layout changes are handled by CSS grid + transitions.
  */
 
@@ -21,6 +24,9 @@ const MIN_PINCH_DISTANCE = 20;
 /** Duration for transition state after column change */
 const TRANSITION_DURATION_MS = 200;
 
+/** Scroll delta threshold to trigger column change (in pixels) */
+const SCROLL_THRESHOLD = 50;
+
 export class PinchZoomGridController implements IPinchZoomGridController {
 	private element: HTMLElement | null = null;
 	private pointerCache: PointerEvent[] = [];
@@ -29,8 +35,11 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 	private currentColumns: number;
 	private onStateChange: ((state: PinchZoomState) => void) | null = null;
 
-	// Cumulative scale for threshold detection
+	// Cumulative scale for threshold detection (pinch)
 	private cumulativeScale = 1;
+
+	// Cumulative scroll delta for threshold detection (Shift+wheel)
+	private cumulativeScrollDelta = 0;
 
 	// Gesture state
 	private isGesturing = false;
@@ -41,6 +50,7 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 	private boundPointerDown: (ev: PointerEvent) => void;
 	private boundPointerMove: (ev: PointerEvent) => void;
 	private boundPointerUp: (ev: PointerEvent) => void;
+	private boundWheel: (ev: WheelEvent) => void;
 
 	constructor() {
 		this.currentColumns = MIN_COLUMNS;
@@ -48,6 +58,7 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 		this.boundPointerDown = this.handlePointerDown.bind(this);
 		this.boundPointerMove = this.handlePointerMove.bind(this);
 		this.boundPointerUp = this.handlePointerUp.bind(this);
+		this.boundWheel = this.handleWheel.bind(this);
 	}
 
 	attach(element: HTMLElement): void {
@@ -57,19 +68,22 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 
 		this.element = element;
 
-		if (!this.isTouchDevice()) {
-			return;
-		}
+		// Always attach wheel listener for Shift+scroll on desktop
+		element.addEventListener("wheel", this.boundWheel, { passive: false });
 
-		element.addEventListener("pointerdown", this.boundPointerDown, { passive: true });
-		element.addEventListener("pointermove", this.boundPointerMove, { passive: false });
-		element.addEventListener("pointerup", this.boundPointerUp, { passive: true });
-		element.addEventListener("pointercancel", this.boundPointerUp, { passive: true });
-		element.addEventListener("pointerleave", this.boundPointerUp, { passive: true });
+		// Only attach touch listeners on touch devices
+		if (this.isTouchDevice()) {
+			element.addEventListener("pointerdown", this.boundPointerDown, { passive: true });
+			element.addEventListener("pointermove", this.boundPointerMove, { passive: false });
+			element.addEventListener("pointerup", this.boundPointerUp, { passive: true });
+			element.addEventListener("pointercancel", this.boundPointerUp, { passive: true });
+			element.addEventListener("pointerleave", this.boundPointerUp, { passive: true });
+		}
 	}
 
 	detach(): void {
 		if (this.element) {
+			this.element.removeEventListener("wheel", this.boundWheel);
 			this.element.removeEventListener("pointerdown", this.boundPointerDown);
 			this.element.removeEventListener("pointermove", this.boundPointerMove);
 			this.element.removeEventListener("pointerup", this.boundPointerUp);
@@ -99,6 +113,7 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 		this.initialPinchDist = -1;
 		this.prevPinchDist = -1;
 		this.cumulativeScale = 1;
+		this.cumulativeScrollDelta = 0;
 		this.isGesturing = false;
 	}
 
@@ -201,6 +216,28 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 		this.prevPinchDist = curDist;
 	}
 
+	private handleWheel(ev: WheelEvent): void {
+		// Only handle Shift+scroll (Ctrl/Cmd conflicts with browser zoom)
+		if (!ev.shiftKey) {
+			return;
+		}
+
+		// Prevent horizontal scroll that Shift+wheel normally triggers
+		ev.preventDefault();
+
+		// Accumulate scroll delta
+		this.cumulativeScrollDelta += ev.deltaY;
+
+		// Check thresholds for column change
+		if (this.cumulativeScrollDelta > SCROLL_THRESHOLD) {
+			// Scroll down with Shift = more columns (smaller cards)
+			this.changeColumns(1);
+		} else if (this.cumulativeScrollDelta < -SCROLL_THRESHOLD) {
+			// Scroll up with Shift = fewer columns (larger cards)
+			this.changeColumns(-1);
+		}
+	}
+
 	private changeColumns(delta: number): void {
 		const newColumns = Math.max(
 			MIN_COLUMNS,
@@ -209,8 +246,9 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 
 		if (newColumns !== this.currentColumns) {
 			this.currentColumns = newColumns;
-			// Reset cumulative scale for next threshold
+			// Reset cumulative values for next threshold
 			this.cumulativeScale = 1;
+			this.cumulativeScrollDelta = 0;
 
 			// Set transitioning state for CSS animation
 			this.isTransitioning = true;

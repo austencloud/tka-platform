@@ -28,7 +28,7 @@
     ThumbnailVisibilitySettings,
   } from "../services/contracts/IThumbnailKeyDeriver";
   import type { ICloudThumbnailCache } from "../services/contracts/ICloudThumbnailCache";
-  import type { ILayoutCalculator } from "$lib/shared/render/services/contracts/ILayoutCalculator";
+  import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   interface Props {
@@ -91,8 +91,7 @@
   let cloudCache: ICloudThumbnailCache | null = null;
   let servicesReady = $state(false);
 
-  // Layout calculator resolved synchronously (no async deps, needed for initial aspect ratio)
-  const layoutCalculator: ILayoutCalculator = container.items.layoutCalculator;
+  // Layout calculator resolved synchronously (direct import for instant HMR)
 
   // Derived: sequence name (raw)
   const sequenceName = $derived(sequence.word || sequence.name || "");

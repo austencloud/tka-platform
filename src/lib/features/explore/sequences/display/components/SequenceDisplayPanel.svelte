@@ -67,14 +67,14 @@
     // Initialize from settings
     gridZoomManager.initFromSettings();
 
-    // Initialize pinch-to-zoom controller (touch devices only)
+    // Initialize zoom controller (handles both pinch on touch and Shift+scroll on desktop)
     pinchController = new PinchZoomGridController();
 
-    if (pinchController.isTouchDevice() && displayContentEl) {
+    if (displayContentEl) {
       // Sync controller with current state
       pinchController.setColumnCount(gridZoomManager.columns);
 
-      // Handle state updates from pinch gestures - update shared manager
+      // Handle state updates from gestures - update shared manager
       pinchController.setOnStateChange((state) => {
         gridZoomManager.setColumns(state.columns);
       });
