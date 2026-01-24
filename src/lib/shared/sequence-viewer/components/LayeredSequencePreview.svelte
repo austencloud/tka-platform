@@ -142,6 +142,11 @@
   let isRendering = false;
   let cellWidth = $state(0);
 
+  // Container-based sizing for "contain" behavior
+  let containerElement: HTMLDivElement | undefined = $state();
+  let containedWidth = $state<number | null>(null);
+  let containedHeight = $state<number | null>(null);
+
   // Layout calculations
   const difficultyCalculator = new SequenceDifficultyCalculator();
 
@@ -453,6 +458,30 @@
   // Track the preview stack element for ResizeObserver
   let previewStackElement: HTMLDivElement | undefined = $state();
   let resizeObserver: ResizeObserver | undefined;
+  let containerObserver: ResizeObserver | undefined;
+
+  // Calculate "contain" dimensions - fill container while maintaining aspect ratio
+  function updateContainedDimensions() {
+    if (!containerElement || !previewAspectRatio) return;
+
+    const containerWidth = containerElement.clientWidth;
+    const containerHeight = containerElement.clientHeight;
+    const contentRatio = previewAspectRatio;
+
+    if (containerWidth === 0 || containerHeight === 0) return;
+
+    const containerRatio = containerWidth / containerHeight;
+
+    if (contentRatio > containerRatio) {
+      // Content is wider than container - constrain by width
+      containedWidth = containerWidth;
+      containedHeight = containerWidth / contentRatio;
+    } else {
+      // Content is taller than container - constrain by height
+      containedHeight = containerHeight;
+      containedWidth = containerHeight * contentRatio;
+    }
+  }
 
   // Track cell width for responsive sizing using ResizeObserver
   function updateCellWidth() {
@@ -481,7 +510,39 @@
     }
   });
 
-  // Set up ResizeObserver for proper responsive sizing
+  // Set up ResizeObserver for container-based "contain" sizing
+  $effect(() => {
+    if (containerElement) {
+      // Clean up previous observer
+      if (containerObserver) {
+        containerObserver.disconnect();
+      }
+
+      // Create new observer
+      containerObserver = new ResizeObserver(() => {
+        updateContainedDimensions();
+      });
+      containerObserver.observe(containerElement);
+
+      // Initial measurement
+      updateContainedDimensions();
+    }
+
+    return () => {
+      if (containerObserver) {
+        containerObserver.disconnect();
+      }
+    };
+  });
+
+  // Recalculate contained dimensions when aspect ratio changes
+  $effect(() => {
+    // Track previewAspectRatio dependency
+    const _ratio = previewAspectRatio;
+    updateContainedDimensions();
+  });
+
+  // Set up ResizeObserver for cell width calculation
   $effect(() => {
     if (previewStackElement) {
       // Clean up previous observer
@@ -517,16 +578,23 @@
     if (resizeObserver) {
       resizeObserver.disconnect();
     }
+    if (containerObserver) {
+      containerObserver.disconnect();
+    }
   });
 </script>
 
-<div class="layered-preview" class:dark-mode={darkMode}>
+<div class="layered-preview" class:dark-mode={darkMode} bind:this={containerElement}>
   {#if isLoading && cells.length === 0}
     <div class="loading-placeholder">
       <div class="spinner"></div>
     </div>
   {:else if cells.length > 0}
-    <div class="preview-stack" style="aspect-ratio: {previewAspectRatio};" bind:this={previewStackElement}>
+    <div
+      class="preview-stack"
+      style="width: {containedWidth ? `${containedWidth}px` : 'auto'}; height: {containedHeight ? `${containedHeight}px` : 'auto'};"
+      bind:this={previewStackElement}
+    >
       <!-- Header section -->
       {#if showHeader}
         <div
@@ -660,9 +728,9 @@
 
 <style>
   .layered-preview {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    /* Grid centering allows child to fill available space better than flex centering */
+    display: grid;
+    place-items: center;
     width: 100%;
     height: 100%;
     min-height: 0;
@@ -698,11 +766,12 @@
   .preview-stack {
     display: flex;
     flex-direction: column;
-    /* Constrain to fit within container while maintaining aspect ratio */
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
+    /* Dimensions are calculated via JS for true "contain" behavior.
+       The container observer calculates optimal width/height that fills
+       the available space while maintaining the content's aspect ratio. */
+    /* Fallback to auto if JS hasn't calculated yet */
+    min-width: 0;
+    min-height: 0;
     /* Allow highlight glow to show on edges */
     overflow: visible;
   }

@@ -304,9 +304,10 @@
   aria-label={ariaLabel}
 >
   <!-- Normal pictograph (will show empty grid when step.isBlank) -->
+  <!-- Always disable Svelte transitions to allow CSS transitions on props/arrows -->
   <PictographContainer
     pictographData={stepDataWithSelection}
-    disableTransitions={!enableTransitionsForNewData}
+    disableTransitions={true}
     {musicalPosition}
     {widthMultiplier}
   />

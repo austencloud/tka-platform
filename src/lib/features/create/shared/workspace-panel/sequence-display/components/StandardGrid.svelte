@@ -83,7 +83,8 @@
     {/if}
 
     <!-- Step Grid -->
-    {#each steps as step, index (getBeatKey(step, index))}
+    <!-- Key by index to preserve component identity during regeneration, enabling CSS transitions -->
+    {#each steps as step, index (index)}
       {@const position = calculateBeatPosition(index, gridLayout.columns)}
       {@const isDeleting = removingStepIndices.has(index)}
       {@const shouldSlide =

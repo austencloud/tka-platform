@@ -119,6 +119,47 @@ Now with intelligent rotation animation matching prop behavior!
   let previousRotation: number | null = null;
   let previousSnapshot: MotionSnapshot | null = null;
 
+  // Track displayed position for smooth CSS transitions
+  // CSS transitions require the old value to be rendered before the new value
+  // We achieve this by deferring position updates by one frame
+  let displayedX = $state<number>(0);
+  let displayedY = $state<number>(0);
+  let isFirstRender = true;
+  let pendingPositionFrame: number | null = null;
+
+  // Update displayed position with frame deferral for CSS transitions
+  $effect(() => {
+    const targetX = safePosition?.x ?? 0;
+    const targetY = safePosition?.y ?? 0;
+
+    // Cancel any pending position update
+    if (pendingPositionFrame !== null) {
+      cancelAnimationFrame(pendingPositionFrame);
+    }
+
+    if (isFirstRender) {
+      // First render: set immediately (no animation needed)
+      displayedX = targetX;
+      displayedY = targetY;
+      isFirstRender = false;
+    } else {
+      // Subsequent renders: defer by one frame so browser can compute current layout
+      // This ensures CSS transitions see the old values before the new ones
+      pendingPositionFrame = requestAnimationFrame(() => {
+        displayedX = targetX;
+        displayedY = targetY;
+        pendingPositionFrame = null;
+      });
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (pendingPositionFrame !== null) {
+        cancelAnimationFrame(pendingPositionFrame);
+      }
+    };
+  });
+
   // Determine optimal rotation animation based on motion data changes
   $effect(() => {
     const targetRotation = arrowPosition?.rotation ?? 0;
@@ -362,7 +403,7 @@ Now with intelligent rotation animation matching prop behavior!
       ? `${color} arrow - ${motionData.motionType} ${motionData.turns}`
       : undefined}
     style="
-      transform: translate({safePosition.x}px, {safePosition.y}px)
+      transform: translate({displayedX}px, {displayedY}px)
                  rotate({displayedRotation}deg)
                  {shouldMirror ? 'scale(-1, 1)' : ''};
       {lightModeStroke && !isSelected ? `filter: ${lightModeStroke};` : ''}

@@ -40,6 +40,10 @@
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager, type TrailStyle } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import StaggerModeModal from "./stagger/StaggerModeModal.svelte";
+  import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
+  import SyncToggleButton from "$lib/shared/ui/components/SyncToggleButton.svelte";
+  import MultiPerformerButton from "$lib/shared/ui/components/MultiPerformerButton.svelte";
+  import ExpandButton from "$lib/shared/ui/components/ExpandButton.svelte";
   import {
     getExportOptionsState,
     type VideoFps,
@@ -919,45 +923,31 @@
       <!-- Normal viewer header -->
       <header class="details-header" data-hidden={isFullscreen}>
         <div class="header-left">
-          <button
-            type="button"
-            class="header-icon-btn sync-btn"
-            class:syncing={lanSyncState.isActive}
-            class:connected={lanSyncState.isConnected}
-            class:toggling={isSyncToggling}
-            onclick={handleSyncToggle}
+          <SyncToggleButton
+            isSearching={lanSyncState.isActive && !lanSyncState.isConnected}
+            isConnected={lanSyncState.isConnected}
+            isToggling={isSyncToggling}
+            onToggle={handleSyncToggle}
             disabled={isSyncToggling}
-            aria-label={lanSyncState.isConnected ? "Synced - tap to disconnect" : lanSyncState.isActive ? "Looking for devices..." : "Tap to sync with nearby device"}
-            title={lanSyncState.isConnected ? "Connected - tap to disconnect" : lanSyncState.isActive ? "Waiting for device..." : "Sync"}
-          >
-            {#if isSyncToggling}
-              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            {:else if lanSyncState.isConnected}
-              <i class="fas fa-link" aria-hidden="true"></i>
-            {:else if lanSyncState.isActive}
-              <i class="fas fa-broadcast-tower" aria-hidden="true"></i>
-            {:else}
-              <i class="fas fa-broadcast-tower" aria-hidden="true"></i>
-            {/if}
-          </button>
-          <button
-            type="button"
-            class="header-icon-btn"
-            onclick={() => toggleImgSetting("darkMode")}
-            aria-label={imgDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-            title={imgDarkMode ? "Light mode" : "Dark mode"}
-          >
-            <i class="fas {imgDarkMode ? 'fa-moon' : 'fa-sun'}" aria-hidden="true"></i>
-          </button>
-          <button
-            type="button"
-            class="header-icon-btn"
+            size="small"
+          />
+          <MultiPerformerButton
+            onclick={() => {
+              staggerModeOpen = true;
+              setStaggerModeUrl(true);
+            }}
+            size="small"
+          />
+          <LightsToggleButton
+            lightsOn={!imgDarkMode}
+            onToggle={() => toggleImgSetting("darkMode")}
+            size="small"
+          />
+          <ExpandButton
+            isExpanded={isFullscreen}
             onclick={enterFullscreen}
-            aria-label="Enter fullscreen"
-            title="Fullscreen"
-          >
-            <i class="fas fa-expand" aria-hidden="true"></i>
-          </button>
+            size="small"
+          />
         </div>
 
         <div class="header-center">
@@ -1434,19 +1424,6 @@
               onStepFullBeatBackward={() => playbackController?.stepFullBeatBackward()}
               onStepFullBeatForward={() => playbackController?.stepFullBeatForward()}
             />
-            <button
-              type="button"
-              class="stagger-btn"
-              onclick={() => {
-                staggerModeOpen = true;
-                // Update URL to reflect stagger open
-                setStaggerModeUrl(true);
-              }}
-              aria-label="Open stagger mode"
-              title="Preview with multiple performers"
-            >
-              <i class="fas fa-users" aria-hidden="true"></i>
-            </button>
           </div>
           <div class="bpm-row">
             <BpmChips
@@ -1498,15 +1475,15 @@
       border-radius 400ms cubic-bezier(0.32, 0.72, 0, 1) !important;
   }
 
-  /* Modal expands to viewport in fullscreen - use margin:auto to stay centered while growing */
+  /* Modal expands to viewport in fullscreen - no backdrop padding */
   :global(dialog.sequence-details-modal.base-modal[data-fullscreen="true"]),
   :global(dialog.sequence-details-modal.base-modal[data-size="full"][data-fullscreen="true"]) {
     width: 100vw !important;
     height: 100vh !important;
     max-width: 100vw !important;
     max-height: 100vh !important;
+    padding: 0 !important;
     border-radius: 0 !important;
-    /* Keep margin:auto - the dialog stays centered as it grows to fill viewport */
     margin: auto !important;
   }
 
@@ -1515,13 +1492,14 @@
     max-width: 100vw !important;
     max-height: 100vh !important;
     height: 100% !important;
+    box-shadow: none !important;
   }
 
-  /* Header slide-fade out */
+  /* Header slide-fade out - CSS Grid for true center */
   .details-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
     padding: 12px 16px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -1669,21 +1647,20 @@
   /* ===== END FULLSCREEN MORPH STYLES ===== */
 
   .header-left {
-    flex: 0 0 auto;
+    justify-self: start;
     display: flex;
     align-items: center;
     gap: 4px;
   }
 
   .header-right {
-    flex: 0 0 48px;
+    justify-self: end;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
   }
 
   .header-center {
-    flex: 1;
+    /* Grid column 2 = always centered regardless of siblings */
     display: flex;
     justify-content: center;
   }
@@ -2032,37 +2009,6 @@
     gap: 12px;
   }
 
-  .stagger-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 50%;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-min, 14px);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .stagger-btn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    color: var(--theme-text, white);
-  }
-
-  .stagger-btn:active {
-    transform: scale(0.95);
-  }
-
-  .stagger-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
   .bpm-row {
     display: flex;
     justify-content: center;
@@ -2164,15 +2110,32 @@
     outline-offset: 2px;
   }
 
-  /* Desktop: 85% viewport sizing */
+  /* Desktop: 90% viewport sizing - immersive but still modal */
   @media (min-width: 768px) {
     :global(.sequence-details-modal.base-modal[data-size="full"]) {
-      width: clamp(600px, 85vw, 1400px) !important;
-      height: clamp(500px, 85vh, 900px) !important;
-      max-width: 85vw !important;
-      max-height: 85vh !important;
-      border-radius: 16px !important;
+      /* Fill viewport but add padding to create clickable backdrop area */
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      /* Padding creates clickable "backdrop" area that's actually part of the dialog */
+      padding: 5vh 5vw !important;
+      /* Make the padding area look like a backdrop */
+      background: transparent !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
       margin: auto !important;
+    }
+
+    /* The content wrapper gets the modal styling */
+    :global(.sequence-details-modal.base-modal[data-size="full"] .modal-content-wrapper) {
+      background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+      border-radius: 16px;
+      box-shadow:
+        0 25px 80px rgba(0, 0, 0, 0.5),
+        0 10px 30px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 var(--theme-stroke-strong, rgba(255, 255, 255, 0.1));
+      overflow: hidden;
     }
 
     .split-view {
@@ -2207,60 +2170,6 @@
     .controls-footer {
       padding: 12px;
       gap: 8px;
-    }
-  }
-
-  /* Header icon buttons (sync, dark mode, fullscreen) */
-  .header-icon-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    background: transparent;
-    border: none;
-    border-radius: 50%;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .header-icon-btn:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, white);
-  }
-
-  .header-icon-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  /* Sync button states */
-  .header-icon-btn.sync-btn.syncing {
-    color: var(--theme-accent, #6366f1);
-    animation: sync-pulse 2s ease-in-out infinite;
-  }
-
-  .header-icon-btn.sync-btn.connected {
-    color: var(--semantic-success, #22c55e);
-    animation: none;
-  }
-
-  .header-icon-btn.sync-btn.toggling {
-    opacity: 0.6;
-    cursor: wait;
-  }
-
-  @keyframes sync-pulse {
-    0%, 100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.6;
-      transform: scale(1.1);
     }
   }
 

@@ -75,6 +75,14 @@ Now with smooth transitions when position or orientation changes!
   let previousRotation: number | null = null;
   let previousSnapshot: MotionSnapshot | null = null;
 
+  // Track displayed position for smooth CSS transitions
+  // CSS transitions require the old value to be rendered before the new value
+  // We achieve this by deferring position updates by one frame
+  let displayedX = $state<number>(0);
+  let displayedY = $state<number>(0);
+  let isFirstRender = true;
+  let pendingPositionFrame: number | null = null;
+
   // Check if this prop should be mirrored (flipped horizontally)
   // - Red HAND is always mirrored (left/right hands are anatomically mirrored)
   // - Buugeng family can be flipped via user preference (asymmetric prop)
@@ -122,13 +130,46 @@ Now with smooth transitions when position or orientation changes!
     return false;
   });
 
-  // Build the complete transform string
+  // Build the complete transform string using displayed values for smooth transitions
   const transformString = $derived(
-    `translate(${propPosition.x}px, ${propPosition.y}px) ` +
+    `translate(${displayedX}px, ${displayedY}px) ` +
       `rotate(${displayedRotation}deg) ` +
       (shouldMirror ? "scaleX(-1) " : "") +
       `translate(${-propAssets.center.x}px, ${-propAssets.center.y}px)`
   );
+
+  // Update displayed position with frame deferral for CSS transitions
+  $effect(() => {
+    const targetX = propPosition?.x ?? 0;
+    const targetY = propPosition?.y ?? 0;
+
+    // Cancel any pending position update
+    if (pendingPositionFrame !== null) {
+      cancelAnimationFrame(pendingPositionFrame);
+    }
+
+    if (isFirstRender) {
+      // First render: set immediately (no animation needed)
+      displayedX = targetX;
+      displayedY = targetY;
+      isFirstRender = false;
+    } else {
+      // Subsequent renders: defer by one frame so browser can compute current layout
+      // This ensures CSS transitions see the old values before the new ones
+      pendingPositionFrame = requestAnimationFrame(() => {
+        displayedX = targetX;
+        displayedY = targetY;
+        pendingPositionFrame = null;
+      });
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (pendingPositionFrame !== null) {
+        cancelAnimationFrame(pendingPositionFrame);
+      }
+    };
+  });
 
   $effect(() => {
     const targetRotation = propPosition?.rotation ?? 0;
