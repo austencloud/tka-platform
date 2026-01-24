@@ -1125,6 +1125,7 @@
                 gridMode={sequence?.gridMode}
                 letter={currentLetter}
                 stepData={currentStepData}
+                word={sequence?.word}
                 onCanvasReady={handleCanvasReady}
               />
             {/if}
@@ -1331,6 +1332,7 @@
                 gridMode={sequence?.gridMode}
                 letter={currentLetter}
                 stepData={currentStepData}
+                word={sequence?.word}
                 onCanvasReady={handleCanvasReady}
               />
             {/if}
@@ -1955,96 +1957,6 @@
     to { transform: rotate(360deg); }
   }
 
-  /* Footer controls - base styles defined above in fullscreen section */
-  .transport-row {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .bpm-row {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-  }
-
-  /* Demoted BPM controls - secondary visual weight */
-  .bpm-row :global(.bpm-chips.compact) {
-    gap: 4px;
-  }
-
-  .bpm-row :global(.preset-chip) {
-    /* Smaller, subtler chips */
-    min-height: 36px;
-    padding: 6px 8px;
-    font-size: 0.7rem;
-    border-radius: 8px;
-    /* Reduced visual prominence */
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    box-shadow: none;
-    opacity: 0.8;
-  }
-
-  .bpm-row :global(.preset-chip.active) {
-    /* Active state still visible but toned down */
-    background: rgba(139, 92, 246, 0.15);
-    border-color: rgba(139, 92, 246, 0.3);
-    box-shadow: none;
-    opacity: 1;
-  }
-
-  .bpm-row :global(.preset-chip:hover:not(.active)) {
-    opacity: 1;
-    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
-  }
-
-  /* Footer content wrapper for view transitions */
-  .footer-content {
-    display: contents;
-  }
-
-  /* Prominent export button - shown in footer when not in export mode */
-  .export-btn-prominent {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-width: 120px;
-    height: 48px;
-    padding: 0 20px;
-    background: var(--theme-accent, #6366f1);
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-    flex-shrink: 0;
-  }
-
-  .export-btn-prominent i {
-    font-size: 16px;
-  }
-
-  .export-btn-prominent:hover {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 85%, white);
-    transform: scale(1.02);
-  }
-
-  .export-btn-prominent:active {
-    transform: scale(0.98);
-  }
-
-  .export-btn-prominent:focus-visible {
-    outline: 2px solid white;
-    outline-offset: 2px;
-  }
-
   .chip {
     display: flex;
     align-items: center;
@@ -2164,15 +2076,6 @@
   }
 
   /* ===== EXPORT MODE STYLES ===== */
-
-  .export-title {
-    margin: 0;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    color: var(--theme-text, white);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
 
   .export-mode-container {
     display: flex;
@@ -2432,7 +2335,6 @@
 
     :global(.sequence-details-modal.base-modal),
     .close-button,
-    .header-icon-btn,
     .pane-close-btn,
     .split-column,
     .preview-column,

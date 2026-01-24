@@ -31,6 +31,7 @@
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
+  import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
 
   interface Props {
     sequence: SequenceData;
@@ -253,12 +254,12 @@
 
   // Scaled sizes based on grid element width
   const scaledHeaderHeight = $derived.by(() => {
-    if (!cellWidth) return 0;
+    if (!cellWidth || !Number.isFinite(cellWidth)) return 0;
     return Math.floor(cellWidth / 3);
   });
 
   const scaledFooterHeight = $derived.by(() => {
-    if (!cellWidth) return 0;
+    if (!cellWidth || !Number.isFinite(cellWidth)) return 0;
     return Math.floor(cellWidth / 7);
   });
 
@@ -271,23 +272,77 @@
 
   // Beat number font size (10.526% of cell width, matching StepNumber.svelte)
   const beatNumberFontSize = $derived.by(() => {
-    if (!cellWidth) return 12;
+    if (!cellWidth || !Number.isFinite(cellWidth)) return 12;
     return Math.max(8, cellWidth * 0.10526);
   });
 
   const startFontSize = $derived.by(() => {
-    if (!cellWidth) return 10;
+    if (!cellWidth || !Number.isFinite(cellWidth)) return 10;
     return Math.max(7, cellWidth * 0.0842);
   });
 
   /**
-   * Render a single pictograph to a data URL
+   * Generate a cache key for a pictograph based on its data and render options
+   */
+  function derivePictographCacheKey(
+    pictographData: any,
+    stepNumber: number | undefined,
+    isDark: boolean
+  ): string {
+    // Build a deterministic key from all rendering parameters
+    const keyParts = [
+      pictographData.letter || "start",
+      pictographData.motions?.blue?.motionType || "none",
+      pictographData.motions?.blue?.startLocation || "",
+      pictographData.motions?.blue?.endLocation || "",
+      pictographData.motions?.blue?.turns ?? 0,
+      pictographData.motions?.red?.motionType || "none",
+      pictographData.motions?.red?.startLocation || "",
+      pictographData.motions?.red?.endLocation || "",
+      pictographData.motions?.red?.turns ?? 0,
+      bluePropType || "staff",
+      catDogModeEnabled ? (redPropType || "staff") : (bluePropType || "staff"),
+      isDark ? "dark" : "light",
+      showStepNumbers ? (stepNumber ?? "none") : "nonum",
+      CELL_SIZE,
+    ];
+
+    // djb2 hash
+    const str = keyParts.join("|");
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
+    }
+    return `lsp-${Math.abs(hash).toString(36)}`;
+  }
+
+  /**
+   * Render a single pictograph to a data URL (with IndexedDB caching)
    */
   async function renderPictograph(
     pictographData: any,
     stepNumber: number | undefined,
     isDark: boolean
   ): Promise<string> {
+    // Generate cache key
+    const cacheKey = derivePictographCacheKey(pictographData, stepNumber, isDark);
+
+    // Check IndexedDB cache first
+    try {
+      const cachedBlob = await pictographBlobCache.get(cacheKey);
+      if (cachedBlob) {
+        // Convert blob to data URL
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(cachedBlob);
+        });
+      }
+    } catch (err) {
+      // Cache miss or error, proceed to render
+    }
+
     const compositor = layerCompositor;
 
     // Prepare the pictograph data
@@ -321,8 +376,19 @@
       showStepNumbers ? stepNumber : undefined
     );
 
-    // Convert canvas to data URL
-    return result.canvas.toDataURL("image/png");
+    // Convert canvas to blob for caching
+    const dataUrl = result.canvas.toDataURL("image/png");
+
+    // Cache the result asynchronously (don't await)
+    result.canvas.toBlob((blob) => {
+      if (blob) {
+        pictographBlobCache.set(cacheKey, blob).catch(() => {
+          // Ignore cache write errors
+        });
+      }
+    }, "image/png");
+
+    return dataUrl;
   }
 
   /**
@@ -462,7 +528,7 @@
 
   // Calculate "contain" dimensions - fill container while maintaining aspect ratio
   function updateContainedDimensions() {
-    if (!containerElement || !previewAspectRatio) return;
+    if (!containerElement || !previewAspectRatio || !Number.isFinite(previewAspectRatio)) return;
 
     const containerWidth = containerElement.clientWidth;
     const containerHeight = containerElement.clientHeight;
@@ -475,11 +541,13 @@
     if (contentRatio > containerRatio) {
       // Content is wider than container - constrain by width
       containedWidth = containerWidth;
-      containedHeight = containerWidth / contentRatio;
+      const newHeight = containerWidth / contentRatio;
+      containedHeight = Number.isFinite(newHeight) ? newHeight : null;
     } else {
       // Content is taller than container - constrain by height
       containedHeight = containerHeight;
-      containedWidth = containerHeight * contentRatio;
+      const newWidth = containerHeight * contentRatio;
+      containedWidth = Number.isFinite(newWidth) ? newWidth : null;
     }
   }
 
@@ -488,7 +556,9 @@
     if (previewStackElement && columns > 0) {
       // Calculate cell width from the preview stack width
       const stackWidth = previewStackElement.clientWidth;
-      cellWidth = stackWidth / columns;
+      const newCellWidth = stackWidth / columns;
+      // Guard against NaN/Infinity from division edge cases
+      cellWidth = Number.isFinite(newCellWidth) ? newCellWidth : 0;
     }
   }
 
