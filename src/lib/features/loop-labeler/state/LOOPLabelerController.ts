@@ -5,10 +5,8 @@
  * Operates on LOOPLabelerState, uses services via LOOPLabelerServiceLocator.
  */
 
-import type {
-  LOOPLabelerState,
-  LabelingMode,
-} from "./loop-labeler-state.svelte";
+import type { LOOPLabelerState } from "./loop-labeler-state.svelte";
+import type { LabelingMode } from "../domain/types/labeler-types";
 import type { LOOPLabelerServiceLocator } from "./LOOPLabelerServiceLocator";
 import type {
   LabeledSequence,

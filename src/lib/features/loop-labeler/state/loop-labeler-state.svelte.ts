@@ -3,6 +3,9 @@
  *
  * Pure data container with reactive state using Svelte 5 runes.
  * All behavior lives in LOOPLabelerController.
+ *
+ * NOTE: This file should NOT import LOOPLabelerController to avoid circular deps.
+ * The controller is instantiated in the module component that uses both.
  */
 
 import type { SequenceEntry } from "../domain/models/sequence-models";
@@ -12,10 +15,10 @@ import type {
 } from "../domain/models/label-models";
 import type { LOOPDetectionResult } from "../services/contracts/ILOOPDetector";
 import { LOOPLabelerServiceLocator } from "./LOOPLabelerServiceLocator";
-import { LOOPLabelerController } from "./LOOPLabelerController";
+import type { LabelingMode, SyncStatus } from "../domain/types/labeler-types";
 
-export type LabelingMode = "whole" | "section" | "steppair";
-export type SyncStatus = "idle" | "syncing" | "synced" | "error";
+// Re-export for backwards compatibility
+export type { LabelingMode, SyncStatus } from "../domain/types/labeler-types";
 
 interface LOOPLabelerStateData {
   sequences: SequenceEntry[];
@@ -292,22 +295,11 @@ export class LOOPLabelerState {
 }
 
 // ============================================================
-// SINGLETON INSTANCES
+// NOTE ON INSTANTIATION
 // ============================================================
-
-export const loopLabelerState = new LOOPLabelerState();
-export const loopLabelerServices = new LOOPLabelerServiceLocator();
-export const loopLabelerController = new LOOPLabelerController(
-  loopLabelerState,
-  loopLabelerServices
-);
-
-// ============================================================
-// HMR SUPPORT
-// ============================================================
-
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    import.meta.hot!.data.LOOPLabelerState = loopLabelerState.getHMRData();
-  });
-}
+//
+// Singletons (loopLabelerState, loopLabelerServices, loopLabelerController)
+// are created in loop-labeler-composition.ts to avoid circular dependencies.
+// Import from there, not from this file.
+//
+// This file only exports the CLASS and TYPES.

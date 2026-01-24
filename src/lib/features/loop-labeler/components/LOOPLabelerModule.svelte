@@ -13,11 +13,11 @@
     ILOOPDetector,
     LOOPDetectionResult,
   } from "../services/contracts/ILOOPDetector";
+  import type { LOOPLabelerState } from "../state/loop-labeler-state.svelte";
   import {
-    LOOPLabelerState,
     loopLabelerState,
     loopLabelerController,
-  } from "../state/loop-labeler-state.svelte";
+  } from "../state/loop-labeler-composition";
   import { createSectionModeState } from "../state/section-mode-state.svelte";
   import { createBeatPairModeState } from "../state/steppair-mode-state.svelte";
   import { createWholeModeState } from "../state/whole-mode-state.svelte";
