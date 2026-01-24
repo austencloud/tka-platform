@@ -103,3 +103,8 @@ export class LetterTypeClassifier implements ILetterTypeClassifier {
     return this.classify(letter) === type;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const letterTypeClassifier = new LetterTypeClassifier();

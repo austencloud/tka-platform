@@ -143,3 +143,8 @@ export class LetterTransitionGraph implements ILetterTransitionGraph {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const letterTransitionGraph = new LetterTransitionGraph();

@@ -277,22 +277,6 @@ Same functionality, different density.
     />
   </section>
 
-  <!-- Generate Button -->
-  <button
-    class="generate-button"
-    onclick={handleGenerate}
-    disabled={!canGenerate}
-    aria-label={canGenerate ? "Generate sequence" : "Enter a word first"}
-  >
-    {#if spellState.isGenerating}
-      <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-      <span>Generating...</span>
-    {:else}
-      <i class="fas fa-magic" aria-hidden="true"></i>
-      <span>Generate</span>
-    {/if}
-  </button>
-
   <!-- Settings: Accordion for tall viewports, Chip bar for constrained -->
   <div class="settings-container">
     <div class="settings-accordion">
@@ -313,6 +297,22 @@ Same functionality, different density.
     </div>
   </div>
 
+  <!-- Generate Button -->
+  <button
+    class="generate-button"
+    onclick={handleGenerate}
+    disabled={!canGenerate}
+    aria-label={canGenerate ? "Generate sequence" : "Enter a word first"}
+  >
+    {#if spellState.isGenerating}
+      <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+      <span>Generating...</span>
+    {:else}
+      <i class="fas fa-magic" aria-hidden="true"></i>
+      <span>Generate</span>
+    {/if}
+  </button>
+
   <!-- Keyboard toolbar for touch devices -->
   {#if isTouchDevice}
     <SpellInputToolbar
@@ -332,6 +332,7 @@ Same functionality, different density.
     container-name: spell-panel;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: 12px;
     padding: 12px;
     width: 100%;
@@ -342,15 +343,9 @@ Same functionality, different density.
     overflow-y: auto;
   }
 
-  /* Mobile: center content and add bottom nav padding */
+  /* Mobile: add bottom nav padding */
   .spell-panel:not([data-is-desktop="true"]) {
-    justify-content: center;
     padding-bottom: calc(12px + 70px + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* Desktop: align to top, no extra padding */
-  .spell-panel[data-is-desktop="true"] {
-    justify-content: flex-start;
   }
 
   /* Word Section */
@@ -397,8 +392,7 @@ Same functionality, different density.
 
   /* Settings Container - switches between accordion and chips based on available height */
   .settings-container {
-    flex: 1;
-    min-height: 0;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
   }

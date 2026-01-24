@@ -113,9 +113,6 @@ Features:
     </div>
   </div>
 
-  <div class="input-hint">
-    Type letters A-Z or use the Greek palette for special characters
-  </div>
 </div>
 
 <style>
@@ -206,9 +203,4 @@ Features:
     }
   }
 
-  .input-hint {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    padding-left: var(--settings-spacing-sm, 8px);
-  }
 </style>
