@@ -23,17 +23,22 @@ Group changes by these dimensions:
 If everything belongs together → single commit.
 If changes span multiple concerns → plan multiple commits.
 
-## Step 3: Present the Plan
+## Step 3: Present the Plan (CONCISE)
 
-Show the user:
-1. How many commits you'll create
-2. What files go in each commit
-3. The proposed message for each (conventional format)
+Show a **brief table** - one row per commit group:
 
-Format: `type(scope): summary`
-- Types: feat, fix, refactor, docs, style, test, chore, perf
-- Scope: the module or feature area
-- Summary: imperative mood, under 50 chars
+| # | Message | Files |
+|---|---------|-------|
+| 1 | `refactor(di): migrate arrow services` | 8 files |
+| 2 | `fix(spell): panel layout` | 2 files |
+
+**Do NOT:**
+- List every file individually
+- Explain what each file does
+- Provide detailed breakdowns
+- Add commentary about the changes
+
+Just: commit message + file count. User can ask for details if needed.
 
 **Wait for confirmation before proceeding.**
 
