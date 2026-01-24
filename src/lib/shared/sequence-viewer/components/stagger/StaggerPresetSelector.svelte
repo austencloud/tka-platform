@@ -1,6 +1,11 @@
 <!--
-  StaggerPresetSelector.svelte
+  @archived - 2026-01-24
 
+  This component is archived and no longer imported.
+  Stagger mode is now handled by the Compose module.
+  Kept for reference during the Compose multi-performer implementation.
+
+  Original description:
   Chip-style buttons for selecting stagger timing presets.
   Active state uses accent color styling.
 -->

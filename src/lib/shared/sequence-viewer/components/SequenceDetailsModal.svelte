@@ -34,12 +34,14 @@
   import { createAnimationPanelState, type PlaybackMode, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
+  import ViewerFooter from "./ViewerFooter.svelte";
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
   import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager, type TrailStyle } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import StaggerModeModal from "./stagger/StaggerModeModal.svelte";
+  import { goto } from "$app/navigation";
+  import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
   import SyncToggleButton from "$lib/shared/ui/components/SyncToggleButton.svelte";
   import MultiPerformerButton from "$lib/shared/ui/components/MultiPerformerButton.svelte";
@@ -55,7 +57,6 @@
   import {
     setSequenceModalUrl,
     setViewModeUrl,
-    setStaggerModeUrl,
     setPlaybackTimeUrl,
     setBpmUrl,
     clearModalUrlState,
@@ -77,8 +78,6 @@
     initialPlaybackTimeMs?: number;
     /** Initial view mode to restore */
     initialViewMode?: ViewMode;
-    /** Whether to open stagger mode immediately */
-    initialStaggerOpen?: boolean;
   }
 
   let {
@@ -88,14 +87,10 @@
     initialBpm,
     initialPlaybackTimeMs,
     initialViewMode,
-    initialStaggerOpen,
   }: Props = $props();
 
   // View mode state (persisted via localStorage, but prefer initialViewMode if provided)
   let viewMode = $state<ViewMode>(initialViewMode || loadViewMode());
-
-  // Stagger mode state
-  let staggerModeOpen = $state(initialStaggerOpen || false);
 
   // Export mode state
   let isExportMode = $state(false);
@@ -168,6 +163,42 @@
     }
   }
 
+  /**
+   * Open sequence in Compose module for multi-performer visualization.
+   * Disconnects LAN sync if active, saves handoff data, and navigates to Compose.
+   */
+  async function handleOpenInCompose(preset: 'stagger' | 'mirror' = 'stagger') {
+    hapticService?.trigger("selection");
+
+    // Disconnect LAN sync if active
+    if (lanSyncState.isActive) {
+      lanSyncState.disconnect();
+    }
+
+    // Save handoff data for Compose to consume
+    saveSequenceHandoff({
+      sequence,
+      playbackState: {
+        currentStep: currentStepLocal,
+        bpm: bpmLocal,
+        isPlaying: isPlayingLocal,
+      },
+      preferredPreset: preset,
+      returnPath: window.location.pathname,
+    });
+
+    // Show feedback toast
+    showToast({
+      message: "Opening in Compose...",
+      type: "info",
+      duration: 2000,
+    });
+
+    // Close modal and navigate
+    open = false;
+    await goto('/compose?handoff=true');
+  }
+
   // Fullscreen state (morph-to-fullscreen instead of SpotlightViewer)
   let isFullscreen = $state(false);
   let fullscreenControlsVisible = $state(false);
@@ -208,6 +239,81 @@
   function handleFullscreenTap() {
     if (isFullscreen && !fullscreenControlsVisible) {
       showFullscreenControls();
+    }
+  }
+
+  // Footer auto-hide state (for mobile playback)
+  let footerControlsVisible = $state(true);
+  let footerHideTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function showFooterControls() {
+    footerControlsVisible = true;
+    scheduleFooterHide();
+  }
+
+  function scheduleFooterHide() {
+    clearFooterTimeout();
+    // Only auto-hide on mobile when playing
+    if (!isPlayingLocal) return;
+    if (typeof window !== "undefined" && window.innerWidth >= 768) return;
+
+    footerHideTimeout = setTimeout(() => {
+      footerControlsVisible = false;
+    }, 3000);
+  }
+
+  function clearFooterTimeout() {
+    if (footerHideTimeout) {
+      clearTimeout(footerHideTimeout);
+      footerHideTimeout = null;
+    }
+  }
+
+  // Keep footer visible when paused
+  $effect(() => {
+    if (!isPlayingLocal) {
+      footerControlsVisible = true;
+      clearFooterTimeout();
+    } else {
+      scheduleFooterHide();
+    }
+  });
+
+  // Footer action handlers
+  function handleSave() {
+    hapticService?.trigger("selection");
+    // TODO: Implement save to library
+    // For now, show a toast indicating the feature
+    if (!authState.isAuthenticated) {
+      showToast("Sign in to save sequences", "info");
+      return;
+    }
+    showToast("Save feature coming soon", "info");
+  }
+
+  function handleCompose() {
+    handleOpenInCompose();
+  }
+
+  function handleShare() {
+    hapticService?.trigger("selection");
+    // Use Web Share API if available, otherwise copy link
+    const shareUrl = window.location.href;
+    if (navigator.share) {
+      navigator.share({
+        title: sequence?.word || "Sequence",
+        text: `Check out this TKA sequence: ${sequence?.word || ""}`,
+        url: shareUrl,
+      }).catch(() => {
+        // User cancelled or share failed - silent
+      });
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        showToast("Link copied to clipboard", "success");
+      }).catch(() => {
+        showToast("Could not copy link", "error");
+      });
     }
   }
 
@@ -836,8 +942,8 @@
     if (open && sequence) {
       // Cache sequence for HMR restoration
       cacheSequence(sequence);
-      // Update URL with modal state
-      setSequenceModalUrl(sequence, viewMode as SequenceViewMode, staggerModeOpen);
+      // Update URL with modal state (stagger is now handled via Compose navigation)
+      setSequenceModalUrl(sequence, viewMode as SequenceViewMode, false);
     }
   });
 
@@ -857,6 +963,7 @@
   onDestroy(() => {
     cleanupAnimationStateSubscription?.();
     clearControlsTimeout();
+    clearFooterTimeout();
     if (playbackController) {
       playbackController.dispose();
     }
@@ -932,10 +1039,7 @@
             size="small"
           />
           <MultiPerformerButton
-            onclick={() => {
-              staggerModeOpen = true;
-              setStaggerModeUrl(true);
-            }}
+            onclick={() => handleOpenInCompose('stagger')}
             size="small"
           />
           <LightsToggleButton
@@ -1267,15 +1371,6 @@
             {/if}
           </div>
 
-          <!-- Visibility chips - shown when this pane is focused -->
-          {#if editingPane === 'animation'}
-            <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-            <div class="focus-mode-chips" role="presentation" onclick={(e) => e.stopPropagation()}>
-              <button type="button" class="chip" class:active={animTrailStyle === "on"} onclick={(e) => { e.stopPropagation(); toggleAnimSetting("trailStyle"); }} aria-pressed={animTrailStyle === "on"}>Trails</button>
-              <button type="button" class="chip" class:active={animTkaGlyph} onclick={(e) => { e.stopPropagation(); toggleAnimSetting("tkaGlyph"); }} aria-pressed={animTkaGlyph}>TKA</button>
-              <button type="button" class="chip" class:active={animWordHeader} onclick={(e) => { e.stopPropagation(); toggleAnimSetting("wordHeader"); }} aria-pressed={animWordHeader}>Word</button>
-            </div>
-          {/if}
         </div>
 
         <!-- Image/Preview pane -->
@@ -1326,18 +1421,6 @@
               />
             </div>
 
-            <!-- Visibility chips - shown when this pane is focused -->
-            {#if editingPane === 'image'}
-              <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-              <div class="focus-mode-chips" role="presentation" onclick={(e) => e.stopPropagation()}>
-                <button type="button" class="chip" class:active={imgShowWord} onclick={(e) => { e.stopPropagation(); toggleImgSetting("word"); }} aria-pressed={imgShowWord}>Word</button>
-                <button type="button" class="chip" class:active={imgShowStartPos} onclick={(e) => { e.stopPropagation(); toggleImgSetting("startPos"); }} aria-pressed={imgShowStartPos}>Start</button>
-                <button type="button" class="chip" class:active={imgShowDifficulty} onclick={(e) => { e.stopPropagation(); toggleImgSetting("difficulty"); }} aria-pressed={imgShowDifficulty}>Level</button>
-                <button type="button" class="chip" class:active={imgShowCreatorName} onclick={(e) => { e.stopPropagation(); toggleImgSetting("creatorName"); }} aria-pressed={imgShowCreatorName}>Name</button>
-                <button type="button" class="chip" class:active={imgShowNotes} onclick={(e) => { e.stopPropagation(); toggleImgSetting("notes"); }} aria-pressed={imgShowNotes}>Notes</button>
-                <button type="button" class="chip column-chip" onclick={(e) => { e.stopPropagation(); cycleColumnCount(); }} aria-label="Column count: {imgColumnCount ?? 'Auto'}">{imgColumnCount ?? 'Auto'} cols</button>
-              </div>
-            {/if}
           </div>
         </div>
       </div>
@@ -1346,9 +1429,9 @@
 
   {#snippet footer()}
     {#if !isFullscreen}
-      <footer class="controls-footer" data-hidden={isFullscreen}>
-        {#if isExportMode}
-          <!-- Export mode: prominent export button with progress -->
+      {#if isExportMode}
+        <!-- Export mode: prominent export button with progress -->
+        <footer class="controls-footer" data-hidden={isFullscreen}>
           <div
             class="export-footer-content"
             in:fade={{ duration: 200, delay: 50, easing: cubicOut }}
@@ -1408,59 +1491,31 @@
               </button>
             {/if}
           </div>
-        {:else}
-          <!-- Transport controls and export -->
-          <div
-            class="footer-content"
-            in:fade={{ duration: 200, delay: 50, easing: cubicOut }}
-            out:fade={{ duration: 100, easing: cubicOut }}
-          >
-          <div class="transport-row">
-            <TransportControls
-              isPlaying={isPlayingLocal}
-              onPlaybackToggle={handlePlaybackToggle}
-              onStepHalfBeatBackward={() => playbackController?.stepHalfBeatBackward()}
-              onStepHalfBeatForward={() => playbackController?.stepHalfBeatForward()}
-              onStepFullBeatBackward={() => playbackController?.stepFullBeatBackward()}
-              onStepFullBeatForward={() => playbackController?.stepFullBeatForward()}
-            />
-          </div>
-          <div class="bpm-row">
-            <BpmChips
-              bpm={bpmLocal}
-              variant="compact"
-              onBpmChange={handleBpmChange}
-            />
-            <!-- Export button -->
-            <button
-              type="button"
-              class="export-btn-prominent"
-              onclick={enterExportMode}
-              aria-label={exportButtonLabel}
-              title={exportButtonLabel}
-            >
-              <i class="fas fa-download" aria-hidden="true"></i>
-              <span>{exportButtonLabel}</span>
-            </button>
-          </div>
-          </div>
-        {/if}
-      </footer>
+        </footer>
+      {:else}
+        <!-- New unified footer with actions + playback -->
+        <ViewerFooter
+          bpm={bpmLocal}
+          isPlaying={isPlayingLocal}
+          isLoggedIn={authState.isAuthenticated}
+          controlsVisible={footerControlsVisible}
+          onBpmChange={handleBpmChange}
+          onPlayPause={handlePlaybackToggle}
+          onStepBack={() => playbackController?.stepFullBeatBackward()}
+          onStepForward={() => playbackController?.stepFullBeatForward()}
+          onStepHalfBack={() => playbackController?.stepHalfBeatBackward()}
+          onStepHalfForward={() => playbackController?.stepHalfBeatForward()}
+          onSave={handleSave}
+          onCompose={handleCompose}
+          onShare={handleShare}
+          onExport={enterExportMode}
+        />
+      {/if}
     {/if}
   {/snippet}
 </BaseModal>
 
-<StaggerModeModal
-  bind:open={staggerModeOpen}
-  {sequence}
-  bpm={bpmLocal}
-  onclose={() => {
-    staggerModeOpen = false;
-    // Update URL to reflect stagger closed
-    setStaggerModeUrl(false);
-  }}
-/>
-
+<!-- NOTE: Stagger mode now handled by Compose module via sequence handoff -->
 
 <style>
   /* ===== FULLSCREEN MORPH STYLES ===== */
@@ -1858,100 +1913,6 @@
     flex: 1 1 100%;
   }
 
-  /* Focus mode chips at bottom of expanded pane */
-  .focus-mode-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
-    padding: 16px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    /* Slide up animation */
-    animation: slideUpFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  @keyframes slideUpFadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* Individual chip stagger animation */
-  .focus-mode-chips .chip {
-    animation: chipPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
-  }
-
-  .focus-mode-chips .chip:nth-child(1) { animation-delay: 0.05s; }
-  .focus-mode-chips .chip:nth-child(2) { animation-delay: 0.08s; }
-  .focus-mode-chips .chip:nth-child(3) { animation-delay: 0.14s; }
-  .focus-mode-chips .chip:nth-child(4) { animation-delay: 0.17s; }
-  .focus-mode-chips .chip:nth-child(5) { animation-delay: 0.20s; }
-  .focus-mode-chips .chip:nth-child(6) { animation-delay: 0.23s; }
-
-  /* Column count chip - distinct styling */
-  .focus-mode-chips .chip.column-chip {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
-  }
-
-  .focus-mode-chips .chip.column-chip:hover {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
-  }
-
-  /* Wide screen: chips on right side when focused */
-  @media (min-width: 1024px) {
-    .preview-column-inner.focused {
-      flex-direction: row;
-    }
-
-    .preview-column-inner.focused .focus-mode-chips {
-      flex-direction: column;
-      justify-content: center;
-      align-items: stretch;
-      border-top: none;
-      border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-      padding: 24px 16px;
-      min-width: 120px;
-      max-width: 140px;
-      /* Slide in from right animation */
-      animation: slideInFromRight 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    }
-
-    .preview-column-inner.focused .focus-mode-chips .chip {
-      width: 100%;
-      justify-content: center;
-    }
-
-    @keyframes slideInFromRight {
-      from {
-        opacity: 0;
-        transform: translateX(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-  }
-
-  @keyframes chipPopIn {
-    from {
-      opacity: 0;
-      transform: scale(0.8) translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-
   /* Remove border between columns when in edit mode - with transition */
   .preview-column {
     transition:
@@ -2014,6 +1975,37 @@
     justify-content: center;
     align-items: center;
     gap: 12px;
+  }
+
+  /* Demoted BPM controls - secondary visual weight */
+  .bpm-row :global(.bpm-chips.compact) {
+    gap: 4px;
+  }
+
+  .bpm-row :global(.preset-chip) {
+    /* Smaller, subtler chips */
+    min-height: 36px;
+    padding: 6px 8px;
+    font-size: 0.7rem;
+    border-radius: 8px;
+    /* Reduced visual prominence */
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    box-shadow: none;
+    opacity: 0.8;
+  }
+
+  .bpm-row :global(.preset-chip.active) {
+    /* Active state still visible but toned down */
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+    box-shadow: none;
+    opacity: 1;
+  }
+
+  .bpm-row :global(.preset-chip:hover:not(.active)) {
+    opacity: 1;
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
   }
 
   /* Footer content wrapper for view transitions */
@@ -2463,8 +2455,6 @@
       transition: none !important;
     }
 
-    .focus-mode-chips,
-    .focus-mode-chips .chip,
     .pane-close-btn,
     .chip.active {
       animation: none !important;

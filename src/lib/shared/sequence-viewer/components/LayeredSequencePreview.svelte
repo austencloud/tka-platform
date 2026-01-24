@@ -728,9 +728,10 @@
 
 <style>
   .layered-preview {
-    /* Grid centering allows child to fill available space better than flex centering */
-    display: grid;
-    place-items: center;
+    /* Flexbox centering - child dimensions are calculated via JS */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
     height: 100%;
     min-height: 0;

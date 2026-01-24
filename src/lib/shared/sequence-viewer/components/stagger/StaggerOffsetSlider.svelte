@@ -1,6 +1,11 @@
 <!--
-  StaggerOffsetSlider.svelte
+  @archived - 2026-01-24
 
+  This component is archived and no longer imported.
+  Stagger mode is now handled by the Compose module.
+  Kept for reference during the Compose multi-performer implementation.
+
+  Original description:
   Custom offset slider for stagger mode.
   Shown only when preset is "custom".
   Range: 0 to sequence length in beats, step: 0.5 beats.

@@ -1,6 +1,11 @@
 /**
- * Stagger Mode State Factory
+ * @archived - 2026-01-24
  *
+ * This state factory is archived and no longer imported.
+ * Stagger mode is now handled by the Compose module via sequence-handoff.svelte.ts.
+ * Kept for reference during the Compose multi-performer implementation.
+ *
+ * Original description:
  * Manages state for dual-performer stagger visualization.
  * Creates independent animation panel states for primary and secondary performers,
  * plus reactive offset/preset controls.
