@@ -67,13 +67,46 @@ const DEFAULT_SETTINGS: AppSettings = {
   selectedPresetIndex: 0,
 };
 
+// Pre-load settings from localStorage synchronously to avoid flash of default background
+const SETTINGS_STORAGE_KEY = "tka-modern-web-settings";
+
+// Cache for preloaded settings - evaluated lazily on first access (not during SSR)
+let preloadedSettingsCache: AppSettings | null = null;
+
+function getPreloadedSettings(): AppSettings {
+  // Return cached value if already evaluated
+  if (preloadedSettingsCache !== null) {
+    return preloadedSettingsCache;
+  }
+
+  // During SSR, localStorage isn't available - return defaults
+  if (typeof window === "undefined" || typeof localStorage === "undefined") {
+    return DEFAULT_SETTINGS;
+  }
+
+  // On client, read from localStorage and cache the result
+  try {
+    const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!stored) {
+      preloadedSettingsCache = DEFAULT_SETTINGS;
+      return DEFAULT_SETTINGS;
+    }
+    const parsed = JSON.parse(stored);
+    preloadedSettingsCache = { ...DEFAULT_SETTINGS, ...parsed };
+    return preloadedSettingsCache;
+  } catch {
+    preloadedSettingsCache = DEFAULT_SETTINGS;
+    return DEFAULT_SETTINGS;
+  }
+}
+
 export function getSettings() {
   const initialized = areServicesInitialized();
 
   if (!initialized) {
-    // Return default settings if not initialized
-    // Use solidColor (black) to avoid flash while settings load
-    return DEFAULT_SETTINGS;
+    // Return pre-loaded settings from localStorage (not hardcoded defaults)
+    // This ensures BackgroundHost gets the user's saved background type immediately
+    return getPreloadedSettings();
   }
 
   // When in preview mode, return the previewed user's settings (read-only)

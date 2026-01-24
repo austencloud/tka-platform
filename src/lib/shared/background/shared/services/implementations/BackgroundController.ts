@@ -143,14 +143,6 @@ export class BackgroundController implements IBackgroundController {
 	 * Set the background type.
 	 */
 	async setBackground(type: BackgroundType, options?: BackgroundOptions): Promise<void> {
-		console.log('[BackgroundController] setBackground called:', {
-			type,
-			currentType: this.currentType,
-			mounted: this.mounted,
-			initialized: this.initialized,
-			isTransitioning: this.isTransitioning
-		});
-
 		// Merge options with existing (allows partial updates)
 		if (options) {
 			this.currentOptions = { ...this.currentOptions, ...options };
@@ -158,7 +150,6 @@ export class BackgroundController implements IBackgroundController {
 
 		// If not mounted yet, just store for later
 		if (!this.mounted) {
-			console.log('[BackgroundController] Not mounted yet, storing type for later');
 			this.currentType = type;
 			return;
 		}
@@ -169,13 +160,11 @@ export class BackgroundController implements IBackgroundController {
 			this.initialized &&
 			!this.isActiveCanvasBlank()
 		) {
-			console.log('[BackgroundController] Same type and canvas has content, no-op');
 			return;
 		}
 
 		// If currently transitioning, queue this request
 		if (this.isTransitioning) {
-			console.log('[BackgroundController] Currently transitioning, queuing request');
 			this.pendingType = type;
 			this.pendingOptions = options || null;
 			return;
@@ -185,18 +174,15 @@ export class BackgroundController implements IBackgroundController {
 		if (!this.initialized || this.isActiveCanvasBlank()) {
 			// Prevent concurrent initialization calls
 			if (this.initializationInProgress) {
-				console.log('[BackgroundController] Initialization already in progress, queuing:', type);
 				this.pendingType = type;
 				this.pendingOptions = options || null;
 				return;
 			}
-			console.log('[BackgroundController] First init or blank canvas, initializing...');
 			await this.initializeBackground(type, this.currentOptions);
 			return;
 		}
 
 		// Type changed - perform crossfade
-		console.log('[BackgroundController] Type changed, performing crossfade...');
 		await this.performCrossfade(type, this.currentOptions);
 	}
 
@@ -381,10 +367,7 @@ export class BackgroundController implements IBackgroundController {
 		type: BackgroundType,
 		options: BackgroundOptions
 	): Promise<void> {
-		console.log('[BackgroundController] initializeBackground called:', { type, options });
-
 		if (!this.canvasA) {
-			console.log('[BackgroundController] No canvasA, aborting');
 			return;
 		}
 
@@ -400,20 +383,27 @@ export class BackgroundController implements IBackgroundController {
 			this.systemA = null;
 			this.systemB = null;
 
-			console.log('[BackgroundController] Creating background system via factory for type:', type);
-
 			// Create the background system
-			const system = await BackgroundFactory.createBackgroundSystem({
-				type,
-				quality: this.quality,
-				initialQuality: this.quality,
-				thumbnailMode: options.thumbnailMode,
-				backgroundColor: options.backgroundColor,
-				gradientColors: options.gradientColors,
-				gradientDirection: options.gradientDirection
-			});
+			let system;
+			try {
+				system = await BackgroundFactory.createBackgroundSystem({
+					type,
+					quality: this.quality,
+					initialQuality: this.quality,
+					thumbnailMode: options.thumbnailMode,
+					backgroundColor: options.backgroundColor,
+					gradientColors: options.gradientColors,
+					gradientDirection: options.gradientDirection
+				});
+			} catch (factoryError) {
+				this.initializationInProgress = false;
+				return;
+			}
 
-			console.log('[BackgroundController] System created:', system?.constructor?.name, 'for type:', type);
+			if (!system) {
+				this.initializationInProgress = false;
+				return;
+			}
 
 			// Store and activate on canvas A
 			this.systemA = system;
@@ -425,17 +415,14 @@ export class BackgroundController implements IBackgroundController {
 				width: this.canvasA.width,
 				height: this.canvasA.height
 			};
-			console.log('[BackgroundController] Initializing system with dimensions:', dimensions);
 			system.initialize(dimensions, this.quality);
 
 			// Start the animation loop
-			console.log('[BackgroundController] Starting animation loop for type:', type);
 			this.startAnimation('A', type);
 
 			// Update state
 			this.currentType = type;
 			this.initialized = true;
-			console.log('[BackgroundController] Initialization complete for:', type);
 		} finally {
 			// Always release lock
 			this.initializationInProgress = false;
@@ -443,7 +430,6 @@ export class BackgroundController implements IBackgroundController {
 
 		// Process any pending request that came in during initialization
 		if (this.pendingType && this.pendingType !== type) {
-			console.log('[BackgroundController] Processing pending type after init:', this.pendingType);
 			const pending = this.pendingType;
 			const pendingOpts = this.pendingOptions || options;
 			this.pendingType = null;
