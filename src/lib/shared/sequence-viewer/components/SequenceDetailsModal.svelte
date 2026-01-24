@@ -395,6 +395,25 @@
     return Math.floor(currentStepLocal) - 1;
   });
 
+  // Derive current step data and letter for AnimatorCanvas glyph display
+  const currentStepData = $derived.by(() => {
+    const sequenceData = modalAnimationState.sequenceData;
+    if (!sequenceData) return null;
+    // Start position (currentStep 0 to <1)
+    if (currentStepLocal < 1 && sequenceData.startPosition) {
+      return sequenceData.startPosition;
+    }
+    // Motion steps (currentStep 1+ maps to steps array)
+    if (sequenceData.steps?.length > 0) {
+      const stepIndex = Math.max(0, Math.floor(currentStepLocal) - 1);
+      const clampedIndex = Math.min(stepIndex, sequenceData.steps.length - 1);
+      return sequenceData.steps[clampedIndex] || null;
+    }
+    return null;
+  });
+
+  const currentLetter = $derived(currentStepData?.letter || null);
+
   // Subscribe to animation state changes
   cleanupAnimationStateSubscription = modalAnimationState.subscribe(
     (key: AnimationStateKey, value: unknown) => {
@@ -1045,6 +1064,8 @@
                 blueProp={modalAnimationState.bluePropState}
                 redProp={modalAnimationState.redPropState}
                 gridMode={sequence?.gridMode}
+                letter={currentLetter}
+                stepData={currentStepData}
                 onCanvasReady={handleCanvasReady}
               />
             {/if}
@@ -1249,6 +1270,8 @@
                 blueProp={modalAnimationState.bluePropState}
                 redProp={modalAnimationState.redPropState}
                 gridMode={sequence?.gridMode}
+                letter={currentLetter}
+                stepData={currentStepData}
                 onCanvasReady={handleCanvasReady}
               />
             {/if}
