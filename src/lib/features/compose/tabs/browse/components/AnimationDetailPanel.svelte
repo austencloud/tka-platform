@@ -18,6 +18,7 @@ Features:
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
+  import { COMPOSE_MODE_CONFIG } from "$lib/features/compose/shared/domain/compose-mode-config";
 
   let hapticService: IHapticFeedback | null = null;
 
@@ -35,22 +36,8 @@ Features:
     hapticService = container.items.hapticFeedback;
   });
 
-  // Mode display
-  const modeIcons: Record<string, string> = {
-    single: "fa-play",
-    mirror: "fa-clone",
-    tunnel: "fa-layer-group",
-    grid: "fa-th",
-    "side-by-side": "fa-columns",
-  };
-
-  const modeNames: Record<string, string> = {
-    single: "Single Mode",
-    mirror: "Mirror Mode",
-    tunnel: "Tunnel Mode",
-    grid: "Grid Mode",
-    "side-by-side": "Side by Side Mode",
-  };
+  // Get mode config from centralized source
+  const modeConfig = $derived(COMPOSE_MODE_CONFIG[animation.mode]);
 
   // Format date
   const formattedDate = $derived.by(() => {
@@ -76,7 +63,7 @@ Features:
 
 <div class="detail-content">
   <!-- Close button -->
-  <button class="close-button" onclick={handleClose} aria-label="Close">
+  <button type="button" class="close-button" onclick={handleClose} aria-label="Close">
     <svg
       width="24"
       height="24"
@@ -104,7 +91,7 @@ Features:
     {:else}
       <div class="preview-placeholder">
         <i
-          class="fas {modeIcons[animation.mode]} placeholder-icon"
+          class="fas {modeConfig.icon} placeholder-icon"
           aria-hidden="true"
         ></i>
         <p class="placeholder-text">{t("empty_no_preview")}</p>
@@ -117,8 +104,8 @@ Features:
     <h2 class="animation-name">{animation.name}</h2>
 
     <div class="mode-indicator">
-      <i class="fas {modeIcons[animation.mode]}" aria-hidden="true"></i>
-      <span>{modeNames[animation.mode]}</span>
+      <i class="fas {modeConfig.icon}" aria-hidden="true"></i>
+      <span>{modeConfig.label} Mode</span>
     </div>
 
     <div class="metadata-grid">
@@ -162,6 +149,7 @@ Features:
   <!-- Action Buttons -->
   <div class="action-buttons">
     <button
+      type="button"
       class="action-btn action-btn-primary"
       onclick={() => handleAction("play")}
     >
@@ -169,12 +157,13 @@ Features:
       <span>Play</span>
     </button>
 
-    <button class="action-btn" onclick={() => handleAction("edit")}>
+    <button type="button" class="action-btn" onclick={() => handleAction("edit")}>
       <i class="fas fa-edit" aria-hidden="true"></i>
       <span>Edit</span>
     </button>
 
     <button
+      type="button"
       class="action-btn"
       class:favorited={animation.isFavorite}
       onclick={() => handleAction("favorite")}
@@ -191,6 +180,7 @@ Features:
     </button>
 
     <button
+      type="button"
       class="action-btn"
       onclick={() => handleAction("duplicate")}
       aria-label="Duplicate animation"
@@ -199,6 +189,7 @@ Features:
     </button>
 
     <button
+      type="button"
       class="action-btn"
       onclick={() => handleAction("share")}
       aria-label="Share animation"
@@ -207,6 +198,7 @@ Features:
     </button>
 
     <button
+      type="button"
       class="action-btn action-btn-danger"
       onclick={() => handleAction("delete")}
       aria-label="Delete animation"
@@ -238,16 +230,17 @@ Features:
     align-items: center;
     justify-content: center;
     background: var(--theme-card-hover-bg);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 50%;
-    color: white;
+    color: var(--theme-text);
     cursor: pointer;
     transition: all var(--duration-normal) ease;
     z-index: 10;
   }
 
   .close-button:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-accent);
     transform: scale(1.1);
   }
 
@@ -320,8 +313,8 @@ Features:
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    background: rgba(59, 130, 246, 0.15);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: color-mix(in srgb, var(--semantic-info) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-info) 30%, transparent);
     border-radius: 6px;
     color: var(--semantic-info);
     font-size: var(--font-size-sm);
@@ -427,9 +420,9 @@ Features:
     gap: 8px;
     padding: 12px 16px;
     background: var(--theme-card-hover-bg);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 8px;
-    color: white;
+    color: var(--theme-text);
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
@@ -438,7 +431,8 @@ Features:
   }
 
   .action-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg);
+    border-color: var(--theme-accent);
     transform: translateY(-2px);
   }
 

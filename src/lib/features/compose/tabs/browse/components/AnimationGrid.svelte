@@ -148,7 +148,7 @@ Features:
       <i class="fas fa-filter-circle-xmark empty-icon" aria-hidden="true"></i>
       <p class="empty-message">No animations match your filters</p>
       <p class="empty-hint">Try adjusting your search or filters</p>
-      <button class="clear-filters-btn" onclick={onClearFilters}>
+      <button type="button" class="clear-filters-btn" onclick={onClearFilters}>
         <i class="fas fa-times" aria-hidden="true"></i>
         Clear Filters
       </button>

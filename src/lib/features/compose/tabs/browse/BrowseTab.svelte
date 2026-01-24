@@ -169,7 +169,7 @@ Features:
         <i class="fas fa-exclamation-triangle error-icon" aria-hidden="true"
         ></i>
         <p class="error-message">{browseState.error}</p>
-        <button class="retry-btn" onclick={() => browseState.loadAnimations()}>
+        <button type="button" class="retry-btn" onclick={() => browseState.loadAnimations()}>
           <i class="fas fa-redo" aria-hidden="true"></i>
           Try Again
         </button>
@@ -264,7 +264,7 @@ Features:
 
   .error-icon {
     font-size: var(--font-size-3xl);
-    color: rgba(239, 68, 68, 0.5);
+    color: color-mix(in srgb, var(--semantic-error) 50%, transparent);
     margin-bottom: var(--spacing-lg);
   }
 
@@ -304,11 +304,11 @@ Features:
       width 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
     top: 64px !important;
     height: calc(100vh - 64px) !important;
-    background: rgba(20, 20, 30, 0.7) !important;
+    background: color-mix(in srgb, var(--theme-panel-bg) 70%, transparent) !important;
     backdrop-filter: blur(20px) !important;
     border: none !important;
     border-radius: 0 !important;
-    box-shadow: -2px 0 16px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: -2px 0 16px var(--theme-shadow, rgba(0, 0, 0, 0.15)) !important;
   }
 
   /* Subtle vertical grip indicator */

@@ -20,6 +20,7 @@ Features:
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
+  import { COMPOSE_MODE_CONFIG, ALL_MODES, getModeLabel } from "$lib/features/compose/shared/domain/compose-mode-config";
 
   let hapticService: IHapticFeedback | null = null;
 
@@ -56,26 +57,15 @@ Features:
     Boolean(searchQuery?.trim())
   );
 
-  // Mode options (single source of truth for labels)
-  const modeOptions: {
-    value: ComposeMode | "all";
-    label: string;
-    icon: string;
-  }[] = [
+  // Build mode options from centralized config
+  const modeOptions: { value: ComposeMode | "all"; label: string; icon: string }[] = [
     { value: "all", label: "All", icon: "fa-layer-group" },
-    { value: "single", label: "Single", icon: "fa-play" },
-    { value: "mirror", label: "Mirror", icon: "fa-clone" },
-    { value: "tunnel", label: "Tunnel", icon: "fa-layer-group" },
-    { value: "grid", label: "Grid", icon: "fa-th" },
-    { value: "side-by-side", label: "Side by Side", icon: "fa-columns" },
+    ...ALL_MODES.map((mode) => ({
+      value: mode,
+      label: COMPOSE_MODE_CONFIG[mode].label,
+      icon: COMPOSE_MODE_CONFIG[mode].icon,
+    })),
   ];
-
-  // Get mode label from modeOptions (derived from single source of truth)
-  function getModeLabel(mode: ComposeMode | undefined): string {
-    if (!mode) return "";
-    const option = modeOptions.find((opt) => opt.value === mode);
-    return option?.label || mode;
-  }
 
   // Sort options
   const sortOptions: { value: SortMethod; label: string }[] = [
@@ -129,6 +119,7 @@ Features:
       />
       {#if searchQuery}
         <button
+          type="button"
           class="search-clear"
           onclick={() => onSearchChange("")}
           aria-label="Clear search"
@@ -143,6 +134,7 @@ Features:
   <div class="toolbar-row">
     <!-- Expand toggle button -->
     <button
+      type="button"
       class="expand-toggle"
       class:active={hasActiveFilters}
       onclick={() => {
@@ -164,6 +156,7 @@ Features:
 
     <!-- Favorites toggle (always visible) -->
     <button
+      type="button"
       class="favorites-toggle-compact"
       class:active={currentFilter.favorites}
       onclick={handleFavoritesToggle}
@@ -182,6 +175,7 @@ Features:
             <i class="fas fa-search" aria-hidden="true"></i>
             <span class="search-term">"{searchQuery.length > 15 ? searchQuery.substring(0, 15) + '...' : searchQuery}"</span>
             <button
+              type="button"
               class="chip-remove"
               onclick={() => {
                 hapticService?.trigger("selection");
@@ -197,6 +191,7 @@ Features:
           <span class="filter-chip mode-chip-tag">
             {getModeLabel(currentFilter.mode)}
             <button
+              type="button"
               class="chip-remove"
               onclick={() => {
                 hapticService?.trigger("selection");
@@ -210,6 +205,7 @@ Features:
         {/if}
         {#if currentFilter.mode && searchQuery?.trim()}
           <button
+            type="button"
             class="clear-all-btn"
             onclick={() => {
               hapticService?.trigger("selection");
@@ -239,6 +235,7 @@ Features:
       </select>
 
       <button
+        type="button"
         class="sort-direction-btn"
         onclick={handleSortDirectionToggle}
         aria-label={sortDirection === "asc"
@@ -269,6 +266,7 @@ Features:
         <div class="mode-chips" role="group" aria-labelledby="mode-filter-label">
           {#each modeOptions as option}
             <button
+              type="button"
               class="mode-chip"
               class:active={option.value === "all"
                 ? !currentFilter.mode

@@ -14,7 +14,7 @@ Features:
 -->
 <script lang="ts">
   import type { SavedAnimation } from "../state/browse-state.svelte";
-  import type { ComposeMode } from "$lib/features/compose/shared/state/compose-module-state.svelte";
+  import { COMPOSE_MODE_CONFIG } from "$lib/features/compose/shared/domain/compose-mode-config";
 
   const {
     animation,
@@ -26,45 +26,8 @@ Features:
     onPrimaryAction?: (animation: SavedAnimation) => void;
   } = $props();
 
-  // Mode icon mapping
-  const modeIcons: Record<ComposeMode, string> = {
-    single: "fa-play",
-    mirror: "fa-clone",
-    tunnel: "fa-circle-notch",
-    grid: "fa-th-large",
-    "side-by-side": "fa-columns",
-  };
-
-  // Mode display names
-  const modeNames: Record<ComposeMode, string> = {
-    single: "Single",
-    mirror: "Mirror",
-    tunnel: "Tunnel",
-    grid: "Grid",
-    "side-by-side": "Side by Side",
-  };
-
-  // Mode color gradients
-  const modeGradients: Record<ComposeMode, string> = {
-    single:
-      "linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%)",
-    mirror:
-      "linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(109, 40, 217, 0.1) 100%)",
-    tunnel:
-      "linear-gradient(135deg, rgba(236, 72, 153, 0.2) 0%, rgba(219, 39, 119, 0.1) 100%)",
-    grid: "linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%)",
-    "side-by-side":
-      "linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.1) 100%)",
-  };
-
-  // Mode accent colors
-  const modeAccents: Record<ComposeMode, string> = {
-    single: "var(--semantic-info)",
-    mirror: "#8b5cf6",
-    tunnel: "#ec4899",
-    grid: "var(--semantic-warning)",
-    "side-by-side": "var(--semantic-success)",
-  };
+  // Get mode config from centralized source
+  const modeConfig = $derived(COMPOSE_MODE_CONFIG[animation.mode]);
 
   // Truncate title to 24 characters
   const displayTitle = $derived.by(() => {
@@ -80,7 +43,7 @@ Features:
   }
 </script>
 
-<button class="animation-card" class:selected onclick={handleClick}>
+<button type="button" class="animation-card" class:selected onclick={handleClick}>
   <!-- Thumbnail / Placeholder -->
   <div class="card-media">
     {#if animation.thumbnailUrl}
@@ -92,7 +55,7 @@ Features:
     {:else}
       <div
         class="placeholder"
-        style="background: {modeGradients[animation.mode]}"
+        style="background: {modeConfig.gradient}"
       >
         <!-- Visual mode preview SVG -->
         <svg viewBox="0 0 100 100" class="mode-preview-svg" aria-hidden="true">
@@ -105,7 +68,7 @@ Features:
               height="70"
               rx="4"
               class="preview-shape"
-              style="--accent: {modeAccents.single}"
+              style="--accent: {modeConfig.accent}"
             />
           {:else if animation.mode === "mirror"}
             <!-- Mirror: Two side-by-side rectangles -->
@@ -116,7 +79,7 @@ Features:
               height="60"
               rx="3"
               class="preview-shape"
-              style="--accent: {modeAccents.mirror}"
+              style="--accent: {modeConfig.accent}"
             />
             <rect
               x="57"
@@ -125,7 +88,7 @@ Features:
               height="60"
               rx="3"
               class="preview-shape mirrored"
-              style="--accent: {modeAccents.mirror}"
+              style="--accent: {modeConfig.accent}"
             />
             <line
               x1="50"
@@ -133,7 +96,7 @@ Features:
               x2="50"
               y2="85"
               class="mirror-line"
-              style="--accent: {modeAccents.mirror}"
+              style="--accent: {modeConfig.accent}"
             />
           {:else if animation.mode === "tunnel"}
             <!-- Tunnel: Concentric circles -->
@@ -142,14 +105,14 @@ Features:
               cy="50"
               r="38"
               class="preview-circle outer"
-              style="--accent: {modeAccents.tunnel}"
+              style="--accent: {modeConfig.accent}"
             />
             <circle
               cx="50"
               cy="50"
               r="26"
               class="preview-circle inner"
-              style="--accent: {modeAccents.tunnel}"
+              style="--accent: {modeConfig.accent}"
             />
           {:else if animation.mode === "grid"}
             <!-- Grid: 2x2 grid of squares -->
@@ -160,7 +123,7 @@ Features:
               height="38"
               rx="3"
               class="preview-shape"
-              style="--accent: {modeAccents.grid}"
+              style="--accent: {modeConfig.accent}"
             />
             <rect
               x="54"
@@ -169,7 +132,7 @@ Features:
               height="38"
               rx="3"
               class="preview-shape"
-              style="--accent: {modeAccents.grid}"
+              style="--accent: {modeConfig.accent}"
             />
             <rect
               x="8"
@@ -178,7 +141,7 @@ Features:
               height="38"
               rx="3"
               class="preview-shape"
-              style="--accent: {modeAccents.grid}"
+              style="--accent: {modeConfig.accent}"
             />
             <rect
               x="54"
@@ -187,7 +150,7 @@ Features:
               height="38"
               rx="3"
               class="preview-shape"
-              style="--accent: {modeAccents.grid}"
+              style="--accent: {modeConfig.accent}"
             />
             <line
               x1="50"
@@ -195,7 +158,7 @@ Features:
               x2="50"
               y2="95"
               class="grid-line"
-              style="--accent: {modeAccents.grid}"
+              style="--accent: {modeConfig.accent}"
             />
             <line
               x1="5"
@@ -203,19 +166,19 @@ Features:
               x2="95"
               y2="50"
               class="grid-line"
-              style="--accent: {modeAccents.grid}"
+              style="--accent: {modeConfig.accent}"
             />
           {/if}
         </svg>
-        <span class="mode-label" style="color: {modeAccents[animation.mode]}"
-          >{modeNames[animation.mode]}</span
+        <span class="mode-label" style="color: {modeConfig.accent}"
+          >{modeConfig.label}</span
         >
       </div>
     {/if}
 
     <!-- Mode indicator badge -->
-    <div class="mode-badge" title={modeNames[animation.mode]}>
-      <i class="fas {modeIcons[animation.mode]}" aria-hidden="true"></i>
+    <div class="mode-badge" title={modeConfig.label}>
+      <i class="fas {modeConfig.icon}" aria-hidden="true"></i>
     </div>
 
     <!-- Favorite indicator -->
