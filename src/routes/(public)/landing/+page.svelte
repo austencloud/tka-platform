@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import BackgroundCanvas from "$lib/shared/background/shared/components/BackgroundCanvas.svelte";
+  import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
 
@@ -43,7 +43,7 @@
   <!-- Background layer -->
   {#if mounted}
     <div class="background-layer">
-      <BackgroundCanvas
+      <BackgroundHost
         backgroundType={currentBackground}
         quality="medium"
       />

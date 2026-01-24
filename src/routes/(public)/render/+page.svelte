@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { container } from '$lib/shared/di';
+  import { canvas2DDirectRenderer } from '$lib/shared/render/services/implementations/Canvas2DDirectRenderer';
 
   let status = $state('Loading...');
 
@@ -16,8 +16,8 @@
     try {
       status = `Rendering ${letter}...`;
 
-      // Get renderer from ITI container
-      const renderer = container.items.canvas2DRenderer;
+      // Use direct import (avoids DI container rebuilds)
+      const renderer = canvas2DDirectRenderer;
       await renderer.initialize();
 
       // Load CSV

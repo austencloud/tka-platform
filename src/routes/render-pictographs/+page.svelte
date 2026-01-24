@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { container } from '$lib/shared/di';
-  import type { Canvas2DDirectRenderer } from '$lib/shared/render/services/implementations/Canvas2DDirectRenderer';
+  import { canvas2DDirectRenderer, type Canvas2DDirectRenderer } from '$lib/shared/render/services/implementations/Canvas2DDirectRenderer';
 
   let status = $state('Initializing...');
   let renderer: Canvas2DDirectRenderer | null = null;
@@ -11,8 +10,8 @@
     try {
       status = 'Loading renderer...';
 
-      // Get the Canvas2DDirectRenderer from ITI container
-      renderer = container.items.canvas2DRenderer;
+      // Use direct import (avoids DI container rebuilds)
+      renderer = canvas2DDirectRenderer;
       await renderer.initialize();
 
       status = 'Loading pictograph data...';

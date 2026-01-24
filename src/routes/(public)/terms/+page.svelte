@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import BackgroundCanvas from "$lib/shared/background/shared/components/BackgroundCanvas.svelte";
+  import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
   import { ANIMATED_BACKGROUNDS } from "$lib/shared/background/shared/config/animated-backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
@@ -39,7 +39,7 @@
 
 <div class="terms-page">
   <!-- Animated Background -->
-  <BackgroundCanvas backgroundType={currentBackground} quality="medium" />
+  <BackgroundHost backgroundType={currentBackground} quality="medium" />
 
   <div class="terms-container">
     <header class="terms-header">

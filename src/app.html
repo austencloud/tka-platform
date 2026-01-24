@@ -344,98 +344,200 @@
       })();
     </script>
 
-    <!-- BACKGROUND PRELOADER - Load saved background immediately to prevent default gradient flash -->
+    <!-- BACKGROUND PRELOADER - Load saved background immediately to prevent FART (Flash of inAccurate coloR Theme) -->
+    <!-- This script is render-blocking and runs BEFORE any Svelte/JS code -->
     <script>
       (function () {
         try {
           // Load saved settings
-          const settingsKey = "tka-modern-web-settings";
-          const stored = localStorage.getItem(settingsKey);
+          var settingsKey = "tka-modern-web-settings";
+          var stored = localStorage.getItem(settingsKey);
+          var root = document.documentElement;
 
-          if (stored) {
-            const settings = JSON.parse(stored);
-            // Default to solidColor to match SettingsState defaults
-            const backgroundType = settings.backgroundType || "solidColor";
+          // Theme colors for each background type - MUST match BACKGROUND_THEME_COLORS
+          var BACKGROUND_THEME_COLORS = {
+            pride: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
+            snowfall: ["#1e3a5f", "#3b82f6", "#93c5fd"],
+            nightSky: ["#1e1b4b", "#4338ca", "#818cf8"],
+            deepOcean: ["#0c4a6e", "#0891b2", "#22d3ee"],
+            emberGlow: ["#7c2d12", "#ea580c", "#fb923c"],
+            sakuraDrift: ["#831843", "#db2777", "#f9a8d4"],
+            fireflyForest: ["#0d3320", "#166534", "#22c55e", "#bef264"],
+            autumnDrift: ["#92400e", "#d97706", "#dc2626", "#78350f"],
+            solidColor: ["#18181b", "#6366f1", "#818cf8"],
+            linearGradient: ["#0d1117", "#6366f1", "#a78bfa"],
+          };
 
-            // Background gradients mapping - MUST match BackgroundGradients.ts
-            const backgroundGradients = {
-              // Simple backgrounds
-              solidColor: "#000000",
-              linearGradient: "linear-gradient(135deg, #0d1117, #161b22, #21262d)",
-              // Animated backgrounds - values from BackgroundGradients.ts
-              pride: "linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
-              snowfall: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
-              nightSky: "linear-gradient(135deg, #0a0e2c 0%, #1a2040 50%, #2a3060 100%)",
-              deepOcean: "linear-gradient(135deg, #001122 0%, #000c1e 50%, #000511 100%)",
-              emberGlow: "linear-gradient(135deg, #1a0a0a 0%, #2d1410 30%, #4a1f1a 60%, #3d1814 100%)",
-              sakuraDrift: "linear-gradient(135deg, #2a1f2e 0%, #3d2f42 30%, #4a3d52 60%, #362d40 100%)",
-              fireflyForest: "linear-gradient(180deg, #0a0e18 0%, #0a1612 60%, #0c1a14 85%, #0a1810 100%)",
-              autumnDrift: "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
-            };
+          // Calculate relative luminance (WCAG formula)
+          function calculateLuminance(hex) {
+            var color = hex.replace("#", "");
+            var r = parseInt(color.substring(0, 2), 16) / 255;
+            var g = parseInt(color.substring(2, 4), 16) / 255;
+            var b = parseInt(color.substring(4, 6), 16) / 255;
+            var rL = r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
+            var gL = g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
+            var bL = b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
+            return 0.2126 * rL + 0.7152 * gL + 0.0722 * bL;
+          }
 
-            // Background animation mapping - MUST match background-preloader.ts
-            const backgroundAnimations = {
-              // Simple backgrounds - no animation
-              solidColor: "",
-              linearGradient: "",
-              // Animated backgrounds
-              pride: "rainbow-flow",
-              snowfall: "snow-fall",
-              nightSky: "star-twinkle",
-              deepOcean: "deep-ocean-flow",
-              emberGlow: "ember-glow",
-              sakuraDrift: "cherry-blossom",
-              fireflyForest: "firefly-forest",
-              autumnDrift: "autumn-drift",
-            };
-
-            const selectedGradient =
-              backgroundGradients[backgroundType] ||
-              backgroundGradients.solidColor;
-
-            const selectedAnimation =
-              backgroundAnimations[backgroundType] || "";
-
-            // Update the CSS custom property immediately
-            document.documentElement.style.setProperty(
-              "--gradient-cosmic",
-              selectedGradient
-            );
-
-            // Apply animation class to body when DOM is ready
-            function applyBackgroundAnimation() {
-              const body = document.body;
-              if (body) {
-                // Remove any existing background animation classes
-                body.classList.remove(
-                  "rainbow-flow",
-                  "snow-fall",
-                  "star-twinkle",
-                  "deep-ocean-flow",
-                  "ember-glow",
-                  "cherry-blossom",
-                  "firefly-forest",
-                  "autumn-drift"
-                );
-                // Add the selected animation class (if one exists)
-                if (selectedAnimation) {
-                  body.classList.add(selectedAnimation);
-                }
-              } else {
-                // If body isn't ready yet, try again in a moment
-                setTimeout(applyBackgroundAnimation, 10);
+          // Calculate gradient luminance (weighted average)
+          function calculateGradientLuminance(colors) {
+            if (!colors || colors.length === 0) return 0;
+            if (colors.length === 1) return calculateLuminance(colors[0]);
+            var first = calculateLuminance(colors[0]) * 0.5;
+            var last = calculateLuminance(colors[colors.length - 1]) * 0.2;
+            var middle = 0;
+            if (colors.length > 2) {
+              var middleColors = colors.slice(1, -1);
+              for (var i = 0; i < middleColors.length; i++) {
+                middle += calculateLuminance(middleColors[i]);
               }
+              middle *= (0.3 / middleColors.length);
+            }
+            return first + middle + last;
+          }
+
+          // Extract accent color from gradient
+          function extractAccent(colors) {
+            if (!colors || colors.length === 0) return "#38bdf8";
+            if (colors.length === 1) return colors[0];
+            if (colors.length === 3) return colors[1];
+            return colors[1] || colors[0];
+          }
+
+          // Detect mobile viewport
+          function isMobile() {
+            return window.innerWidth < 768;
+          }
+
+          // Apply ALL theme CSS variables
+          function applyTheme(bgType, settings) {
+            var themeColors = BACKGROUND_THEME_COLORS[bgType] || BACKGROUND_THEME_COLORS.solidColor;
+            var luminance = calculateGradientLuminance(themeColors);
+            var mode = luminance > 0.4 ? "light" : "dark";
+            var accent = extractAccent(themeColors);
+            var mobile = isMobile();
+
+            // Set data attributes (survive HMR)
+            root.dataset.backgroundType = bgType;
+            root.dataset.themeLuminance = mode === "light" ? "bright" : "dim";
+
+            // Generate matte theme values
+            var panelBg, panelElevatedBg, cardBg, cardHoverBg, stroke, strokeStrong, text, textDim, shadow, panelShadow;
+
+            if (mode === "light") {
+              panelBg = "#d0d0ca";
+              panelElevatedBg = "#d8d8d2";
+              cardBg = "#d8d8d2";
+              cardHoverBg = "#c8c8c2";
+              stroke = "rgba(15, 23, 42, 0.15)";
+              strokeStrong = "rgba(15, 23, 42, 0.22)";
+              text = "#0f172a";
+              textDim = "rgba(15, 23, 42, 0.75)";
+              shadow = "0 12px 28px rgba(15, 23, 42, 0.18)";
+              panelShadow = "0 12px 28px rgba(15, 23, 42, 0.18)";
+            } else {
+              panelBg = mobile ? "rgba(0, 0, 0, 0.88)" : "rgba(0, 0, 0, 0.75)";
+              panelElevatedBg = mobile ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.5)";
+              cardBg = mobile ? "rgba(0, 0, 0, 0.88)" : "rgba(0, 0, 0, 0.75)";
+              cardHoverBg = mobile ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.55)";
+              stroke = "rgba(255, 255, 255, 0.08)";
+              strokeStrong = "rgba(255, 255, 255, 0.14)";
+              text = "#ffffff";
+              textDim = "rgba(255, 255, 255, 0.75)";
+              shadow = "0 14px 36px rgba(0, 0, 0, 0.4)";
+              panelShadow = "0 12px 28px rgba(0, 0, 0, 0.35)";
             }
 
-            // Apply animation immediately if DOM is ready, otherwise wait
-            if (document.body) {
-              applyBackgroundAnimation();
-            } else {
-              document.addEventListener(
-                "DOMContentLoaded",
-                applyBackgroundAnimation
+            // Apply --theme-* variables
+            root.style.setProperty("--theme-panel-bg", panelBg);
+            root.style.setProperty("--theme-panel-elevated-bg", panelElevatedBg);
+            root.style.setProperty("--theme-card-bg", cardBg);
+            root.style.setProperty("--theme-card-hover-bg", cardHoverBg);
+            root.style.setProperty("--theme-accent", accent);
+            root.style.setProperty("--theme-accent-strong", accent);
+            root.style.setProperty("--theme-stroke", stroke);
+            root.style.setProperty("--theme-stroke-strong", strokeStrong);
+            root.style.setProperty("--theme-text", text);
+            root.style.setProperty("--theme-text-dim", textDim);
+            root.style.setProperty("--theme-shadow", shadow);
+            root.style.setProperty("--theme-panel-shadow", panelShadow);
+
+            // Scrollbar variables
+            root.style.setProperty("--scrollbar-thumb", mode === "light" ? "rgba(15, 23, 42, 0.25)" : "rgba(255, 255, 255, 0.2)");
+            root.style.setProperty("--scrollbar-thumb-hover", mode === "light" ? "rgba(15, 23, 42, 0.4)" : "rgba(255, 255, 255, 0.35)");
+            root.style.setProperty("--scrollbar-track", mode === "light" ? "rgba(15, 23, 42, 0.05)" : "transparent");
+
+            // Semantic colors (constant)
+            root.style.setProperty("--semantic-error", "#ef4444");
+            root.style.setProperty("--semantic-success", "#22c55e");
+            root.style.setProperty("--semantic-warning", "#f59e0b");
+            root.style.setProperty("--semantic-info", "#3b82f6");
+          }
+
+          // Background gradients mapping - MUST match BackgroundGradients.ts
+          var backgroundGradients = {
+            solidColor: "#000000",
+            linearGradient: "linear-gradient(135deg, #0d1117, #161b22, #21262d)",
+            pride: "linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
+            snowfall: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+            nightSky: "linear-gradient(135deg, #0a0e2c 0%, #1a2040 50%, #2a3060 100%)",
+            deepOcean: "linear-gradient(135deg, #001122 0%, #000c1e 50%, #000511 100%)",
+            emberGlow: "linear-gradient(135deg, #1a0a0a 0%, #2d1410 30%, #4a1f1a 60%, #3d1814 100%)",
+            sakuraDrift: "linear-gradient(135deg, #2a1f2e 0%, #3d2f42 30%, #4a3d52 60%, #362d40 100%)",
+            fireflyForest: "linear-gradient(180deg, #0a0e18 0%, #0a1612 60%, #0c1a14 85%, #0a1810 100%)",
+            autumnDrift: "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
+          };
+
+          // Background animation mapping
+          var backgroundAnimations = {
+            solidColor: "",
+            linearGradient: "",
+            pride: "rainbow-flow",
+            snowfall: "snow-fall",
+            nightSky: "star-twinkle",
+            deepOcean: "deep-ocean-flow",
+            emberGlow: "ember-glow",
+            sakuraDrift: "cherry-blossom",
+            fireflyForest: "firefly-forest",
+            autumnDrift: "autumn-drift",
+          };
+
+          // Apply settings or defaults
+          var backgroundType = "solidColor";
+          if (stored) {
+            var settings = JSON.parse(stored);
+            backgroundType = settings.backgroundType || "solidColor";
+          }
+
+          // Apply theme CSS variables IMMEDIATELY (before paint)
+          applyTheme(backgroundType, stored ? JSON.parse(stored) : {});
+
+          // Apply gradient CSS variable
+          var selectedGradient = backgroundGradients[backgroundType] || backgroundGradients.solidColor;
+          root.style.setProperty("--gradient-cosmic", selectedGradient);
+
+          // Apply animation class to body when ready
+          var selectedAnimation = backgroundAnimations[backgroundType] || "";
+          function applyBackgroundAnimation() {
+            var body = document.body;
+            if (body) {
+              body.classList.remove(
+                "rainbow-flow", "snow-fall", "star-twinkle", "deep-ocean-flow",
+                "ember-glow", "cherry-blossom", "firefly-forest", "autumn-drift"
               );
+              if (selectedAnimation) {
+                body.classList.add(selectedAnimation);
+              }
+            } else {
+              setTimeout(applyBackgroundAnimation, 10);
             }
+          }
+
+          if (document.body) {
+            applyBackgroundAnimation();
+          } else {
+            document.addEventListener("DOMContentLoaded", applyBackgroundAnimation);
           }
         } catch (error) {
           console.warn("Failed to preload background:", error);

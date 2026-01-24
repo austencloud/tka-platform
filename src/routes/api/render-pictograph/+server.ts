@@ -16,7 +16,7 @@ export const GET: RequestHandler = async ({ url }) => {
   try {
     // Dynamically import so Node.js canvas works server-side
     const { createCanvas } = await import('canvas');
-    const { container } = await import('$lib/shared/di');
+    const { canvas2DDirectRenderer } = await import('$lib/shared/render/services/implementations/Canvas2DDirectRenderer');
 
     // Load CSV data
     const csvPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv');
@@ -68,8 +68,8 @@ export const GET: RequestHandler = async ({ url }) => {
       }
     };
 
-    // Get renderer from DI container (ITI)
-    const renderer = container.items.canvas2DRenderer;
+    // Use direct import (avoids DI container rebuilds)
+    const renderer = canvas2DDirectRenderer;
     await renderer.initialize();
 
     // Render using real Canvas2DDirectRenderer with Node.js canvas

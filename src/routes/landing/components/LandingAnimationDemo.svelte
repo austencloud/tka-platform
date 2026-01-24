@@ -14,6 +14,9 @@
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
   import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+  import { gridPositionDeriver as gridPositionDeriverInstance } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+  import { orientationCalculator as orientationCalculatorInstance } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+  import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import {
     animationSettings,
@@ -220,24 +223,23 @@
       // Enable dark mode on mount for visual impact
       visibilityManager.setDarkMode(darkMode);
 
-      // Get services from DI container
+      // Get services from DI container (some still need container, others use direct imports)
       exploreLoader = container.items.exploreLoader as IExploreLoader;
       playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
-      startPositionDeriver = container.items.startPositionDeriver as IStartPositionDeriver;
-      gridPositionDeriver = container.items.gridPositionDeriver as IGridPositionDeriver;
+      startPositionDeriver = startPositionDeriverInstance;
+      gridPositionDeriver = gridPositionDeriverInstance;
 
       // Create and initialize the spinner orchestrator for endless chaining
       const generationOrchestrator = container.items.generationOrchestrator;
       const sequenceTransformer = container.items.sequenceTransformer;
-      const orientationCalculator = container.items.orientationCalculator;
 
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
         exploreLoader as any,
         generationOrchestrator as any,
         sequenceTransformer as any,
-        startPositionDeriver,
-        orientationCalculator as any,
-        gridPositionDeriver as any
+        startPositionDeriverInstance,
+        orientationCalculatorInstance as any,
+        gridPositionDeriverInstance as any
       );
 
       await spinnerOrchestrator.initialize();
