@@ -51,7 +51,7 @@
 
   // Derived simplified word (only truncate actual words, not contextual messages)
   const displayWord = $derived(
-    isContextualMessage ? word : simplifyAndTruncate(word, 8)
+    isContextualMessage ? word : simplifyAndTruncate(word, 12)
   );
 
   // Full simplified word for copying (no truncation/ellipsis)
@@ -222,7 +222,7 @@
   }
 
   .word-label.has-word {
-    /* Slightly smaller to ensure 8 letter units fit comfortably on one line */
+    /* Slightly smaller to ensure 12 letter units fit comfortably on one line */
     font-size: clamp(1.25rem, 7vw, 2rem);
   }
 
@@ -333,8 +333,9 @@
   }
 
   .letter.bridge {
-    /* Bridge letters (interpolated) - dimmed */
+    /* Bridge letters (interpolated) - dimmed and smaller */
     font-weight: 400;
+    font-size: 0.7em;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     opacity: 0.6;
   }

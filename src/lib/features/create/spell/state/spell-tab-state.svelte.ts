@@ -36,7 +36,6 @@ import type {
 } from "../domain/models/spell-models";
 import { DEFAULT_SPELL_PREFERENCES } from "../domain/constants/spell-constants";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { WizardPhase } from "./funnel-state.svelte";
 
 const HAS_GENERATED_STORAGE_KEY = "spell-has-generated-once";
 const GRID_MODE_STORAGE_KEY = "spell-grid-mode";
@@ -97,9 +96,6 @@ export function createSpellTabState(
     }
   };
   let hasGeneratedOnce = $state(getInitialHasGenerated());
-
-  // Wizard state (preferences-first flow)
-  let wizardPhase = $state<WizardPhase>("preferences");
 
   // Grid mode selection (persisted)
   const getInitialGridMode = (): GridMode => {
@@ -163,10 +159,7 @@ export function createSpellTabState(
     loopAnalysis?.availableLOOPOptions ?? []
   );
 
-  // Circularization-related derived state (for sequences where position groups don't match)
-  // Note: Even if loopAnalysis.canExtend is true (e.g., REWOUND always works),
-  // we still show circularization options when position groups don't match
-  // to let users enable position-dependent LOOPs like STRICT_ROTATED
+  // Circularization-related derived state
   const hasCircularizationOptions = $derived(circularizationOptions.length > 0);
   const needsCircularization = $derived(
     preferences.makeCircular && circularizationOptions.length > 0
@@ -363,7 +356,6 @@ export function createSpellTabState(
     loopAnalysis = null;
     circularizationOptions = [];
     directLoopUnavailableReason = null;
-    wizardPhase = "preferences";
     // Clear persisted input word
     if (browser) {
       try {
@@ -372,10 +364,6 @@ export function createSpellTabState(
         // Ignore storage errors
       }
     }
-  }
-
-  function setWizardPhase(phase: WizardPhase) {
-    wizardPhase = phase;
   }
 
   function setGridMode(mode: GridMode) {
@@ -492,10 +480,7 @@ export function createSpellTabState(
       return hasGeneratedOnce;
     },
 
-    // Funnel wizard state
-    get wizardPhase() {
-      return wizardPhase;
-    },
+    // Grid mode
     get selectedGridMode() {
       return selectedGridMode;
     },
@@ -561,8 +546,7 @@ export function createSpellTabState(
     // Progressive disclosure
     markHasGeneratedOnce,
 
-    // Funnel wizard mutations
-    setWizardPhase,
+    // Grid mode mutation
     setGridMode,
 
     // Initialization

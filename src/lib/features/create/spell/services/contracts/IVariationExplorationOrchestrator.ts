@@ -5,6 +5,7 @@
  */
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { LetterSource } from "../../domain/models/spell-models";
 
 /**
  * Result of parsing a word for generation
@@ -18,6 +19,8 @@ export interface WordParseResult {
   expandedLetters?: Letter[];
   /** Expanded word string */
   expandedWord?: string;
+  /** Letter sources tracking which letters are original vs bridge */
+  letterSources?: LetterSource[];
   /** Error message if parsing failed */
   error?: string;
 }

@@ -5,6 +5,7 @@
  */
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { LetterSource } from "../../domain/models/spell-models";
 import type { ISpellServiceLoader } from "../contracts/ISpellServiceLoader";
 import type {
   IVariationExplorationOrchestrator,
@@ -32,23 +33,41 @@ export class VariationExplorationOrchestrator implements IVariationExplorationOr
         return { success: false, error: "No valid letters in word" };
       }
 
-      // Build expanded letters with bridge letters
+      // Build expanded letters with bridge letters AND track letter sources
       const expandedLetters: Letter[] = [];
+      const letterSources: LetterSource[] = [];
+
       for (let i = 0; i < originalLetters.length; i++) {
         const letter = originalLetters[i];
         if (!letter) continue;
 
         if (i === 0) {
           expandedLetters.push(letter);
+          letterSources.push({
+            letter,
+            isOriginal: true,
+            stepIndex: expandedLetters.length,
+          });
         } else {
           const prevLetter = expandedLetters[expandedLetters.length - 1];
           if (prevLetter) {
             const bridgeLetters = graph.findBridgeLetters(prevLetter, letter);
             if (bridgeLetters.length > 0 && bridgeLetters[0]) {
-              expandedLetters.push(bridgeLetters[0]);
+              const bridgeLetter = bridgeLetters[0];
+              expandedLetters.push(bridgeLetter);
+              letterSources.push({
+                letter: bridgeLetter,
+                isOriginal: false,
+                stepIndex: expandedLetters.length,
+              });
             }
           }
           expandedLetters.push(letter);
+          letterSources.push({
+            letter,
+            isOriginal: true,
+            stepIndex: expandedLetters.length,
+          });
         }
       }
 
@@ -64,6 +83,7 @@ export class VariationExplorationOrchestrator implements IVariationExplorationOr
         originalLetters,
         expandedLetters,
         expandedWord: expandedLetters.join(""),
+        letterSources,
       };
     } catch (error) {
       console.error(

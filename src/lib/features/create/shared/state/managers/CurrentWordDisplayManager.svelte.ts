@@ -78,8 +78,24 @@ export function createCurrentWordDisplayEffect(
             displayText = expandedWord || "";
             letterSources = sources;
           } else {
-            // No generation yet, show sequence word or empty
-            displayText = CreateModuleState.sequenceState.sequenceWord() ?? "";
+            // Check sequence metadata for persisted letterSources (survives refresh)
+            const sequence = CreateModuleState.sequenceState.currentSequence;
+            const spellData = sequence?.metadata?.spellData as {
+              originalWord?: string;
+              expandedWord?: string;
+              letterSources?: LetterSource[];
+            } | undefined;
+
+            if (spellData?.letterSources && spellData.letterSources.length > 0) {
+              displayText = spellData.expandedWord || sequence?.word || "";
+              letterSources = spellData.letterSources;
+              // Restore to spell state so subsequent reads don't need metadata lookup
+              spellState.setExpandedWord(spellData.expandedWord || "");
+              spellState.setLetterSources(spellData.letterSources);
+            } else {
+              // No generation yet, show sequence word or empty
+              displayText = CreateModuleState.sequenceState.sequenceWord() ?? "";
+            }
           }
         } else {
           displayText = CreateModuleState.sequenceState.sequenceWord() ?? "";

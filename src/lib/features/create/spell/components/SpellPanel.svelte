@@ -1,24 +1,18 @@
 <!--
-SpellPanel.svelte - Word-to-Sequence Generation Panel (Preferences-First Flow)
+SpellPanel.svelte - Word-to-Sequence Generation Panel (Container-Aware)
 
-New UX flow (preferences-first):
-1. PREFERENCES: Collect ALL preferences upfront (word, grid, motion, flow, loop)
-2. GENERATING: Progress bar while generating
-3. HAS-SEQUENCE: Show action buttons (Shuffle, Transform, New Word, Refine)
+Adapts to available space:
+- Tall viewport: Full accordion layout
+- Constrained viewport: Horizontal chip bar with bottom sheet
 
-Keyboard-aware input mode:
-- On touch devices, focusing the word input triggers "input mode"
-- Header and preferences collapse to maximize space for word entry
-- Keyboard toolbar appears above virtual keyboard with Generate/Done buttons
-
-Sequences go directly into sequenceState, and the workspace displays them automatically.
-This component only shows controls - no preview. Same pattern as Generator tab.
+Uses container queries to detect available height and switch layouts.
+Same functionality, different density.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
   import type { SpellTabState } from "../state/spell-tab-state.svelte";
-  import { container } from "$lib/shared/di";
+  import { container as diContainer } from "$lib/shared/di";
   import type { IVariationExplorationOrchestrator } from "../services/contracts/IVariationExplorationOrchestrator";
   import type { IRandomSequenceGenerator } from "../services/contracts/IRandomSequenceGenerator";
   import type { ISpellServiceLoader } from "../services/contracts/ISpellServiceLoader";
@@ -27,7 +21,9 @@ This component only shows controls - no preview. Same pattern as Generator tab.
   import { UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
-  import PreferencesPage from "./PreferencesPage.svelte";
+  import WordInput from "./WordInput.svelte";
+  import SettingsAccordion from "./SettingsAccordion.svelte";
+  import SettingsChipBar from "./SettingsChipBar.svelte";
   import SpellInputToolbar from "./SpellInputToolbar.svelte";
   import { loadSpellState, saveSpellState } from "../state/spell-persistence.svelte";
   import { createConstraintSet } from "$lib/shared/sequence-engine/constraints";
@@ -45,19 +41,17 @@ This component only shows controls - no preview. Same pattern as Generator tab.
   } = $props();
 
   // Touch device and input focus tracking
-  const deviceDetector = container.items.deviceDetector as IDeviceDetector;
+  const deviceDetector = diContainer.items.deviceDetector as IDeviceDetector;
   let isTouchDevice = $state(false);
   let isInputFocused = $state(false);
-  let keyboardHeight = $state(0);
-  let isKeyboardVisible = $state(false);
 
-  // Input mode: distraction-free typing on touch devices
+  // Input mode for mobile keyboard
   const isInputMode = $derived(isInputFocused && isTouchDevice);
 
-  // Get context at component initialization (not in event handlers)
+  // Get context
   const createModuleContext = tryGetCreateModuleContext();
 
-  // Notify parent layout when input mode changes (collapses workspace on mobile)
+  // Notify parent layout when input mode changes
   $effect(() => {
     createModuleContext?.layout?.setInputMode(isInputMode);
   });
@@ -69,14 +63,14 @@ This component only shows controls - no preview. Same pattern as Generator tab.
 
   function getServiceLoader(): ISpellServiceLoader {
     if (!serviceLoader) {
-      serviceLoader = container.items.spellServiceLoader as ISpellServiceLoader;
+      serviceLoader = diContainer.items.spellServiceLoader as ISpellServiceLoader;
     }
     return serviceLoader;
   }
 
   function getOrchestrator(): IVariationExplorationOrchestrator {
     if (!orchestrator) {
-      orchestrator = container.items.variationExplorationOrchestrator as IVariationExplorationOrchestrator;
+      orchestrator = diContainer.items.variationExplorationOrchestrator as IVariationExplorationOrchestrator;
     }
     return orchestrator;
   }
@@ -89,7 +83,7 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     return randomGenerator;
   }
 
-  // Load persisted state on mount and detect touch device
+  // Load persisted state on mount
   onMount(() => {
     isTouchDevice = deviceDetector.isTouchDevice();
 
@@ -100,12 +94,6 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     if (persisted.expandedWord) {
       spellState.setExpandedWord(persisted.expandedWord);
     }
-    // Restore wizard phase - if sequenceState has a sequence, show results
-    if (sequenceState?.currentSequence) {
-      spellState.setWizardPhase("results");
-    } else {
-      spellState.setWizardPhase(persisted.wizardPhase === "results" ? "preferences" : persisted.wizardPhase);
-    }
   });
 
   function handleInputFocusChange(focused: boolean) {
@@ -114,27 +102,19 @@ This component only shows controls - no preview. Same pattern as Generator tab.
 
   function handleToolbarDone() {
     isInputFocused = false;
-    // Blur any focused element
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
   }
 
-  function handleKeyboardVisibilityChange(visible: boolean, height: number) {
-    isKeyboardVisible = visible;
-    keyboardHeight = height;
-  }
-
-  // Auto-save state when phase changes (sequence is persisted via sequenceState)
+  // Auto-save state when it changes
   $effect(() => {
-    const phase = spellState.wizardPhase;
     const word = spellState.inputWord;
     const expanded = spellState.expandedWord;
     const prefs = spellState.preferences;
     const hasGenerated = spellState.hasGeneratedOnce;
 
     saveSpellState({
-      wizardPhase: phase,
       inputWord: word,
       expandedWord: expanded,
       preferences: prefs,
@@ -142,9 +122,13 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     });
   });
 
-  /**
-   * Derive start position from first step if missing, using proper service
-   */
+  // Derived
+  const canGenerate = $derived(spellState.inputWord.trim().length > 0 && !spellState.isGenerating);
+
+  // ============================================================================
+  // HELPERS
+  // ============================================================================
+
   function deriveStartPosition(sequence: SequenceData): SequenceData {
     if (sequence.startPosition || !sequence.steps?.length) {
       return sequence;
@@ -166,7 +150,7 @@ This component only shows controls - no preview. Same pattern as Generator tab.
   }
 
   // ============================================================================
-  // PREFERENCES PHASE
+  // HANDLERS
   // ============================================================================
 
   function handleWordChange(value: string) {
@@ -184,14 +168,9 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     spellState.updatePreference(key, value);
   }
 
-  // ============================================================================
-  // GENERATION PHASE
-  // ============================================================================
-
   async function handleGenerate() {
     if (!spellState.inputWord.trim() || !sequenceState) return;
 
-    spellState.setWizardPhase("generating");
     spellState.setGenerating(true);
     spellState.clearError();
 
@@ -199,18 +178,16 @@ This component only shows controls - no preview. Same pattern as Generator tab.
       const orch = getOrchestrator();
       const generator = await getRandomGenerator();
 
-      // Parse word WITH bridge letters (needed for incompatible transitions like B→O)
+      // Parse word WITH bridge letters
       const parseResult = await orch.parseWord(spellState.inputWord);
       if (!parseResult.success || !parseResult.expandedLetters) {
         spellState.setError(parseResult.error || "Could not parse word");
-        spellState.setWizardPhase("preferences");
         return;
       }
 
       const letters = parseResult.expandedLetters;
       spellState.setExpandedWord(parseResult.expandedWord || spellState.inputWord);
 
-      // Update letter sources for word label styling (original vs bridge letters)
       if (parseResult.letterSources) {
         spellState.setLetterSources(parseResult.letterSources);
       }
@@ -223,10 +200,9 @@ This component only shows controls - no preview. Same pattern as Generator tab.
         letters
       );
 
-      // Create soft constraint set for flow preferences (smooth, natural, high-reversal)
       const constraintSet = createConstraintSet(spellState.preferences.constraintPreset);
 
-      // Generate ONE random valid sequence
+      // Generate sequence
       const sequence = await generator.generateRandomSequence(
         letters,
         {
@@ -238,15 +214,11 @@ This component only shows controls - no preview. Same pattern as Generator tab.
 
       if (!sequence) {
         spellState.setError("Could not generate a valid sequence. Try different settings.");
-        spellState.setWizardPhase("preferences");
         return;
       }
 
-      // Derive start position if missing
       const sequenceWithStart = deriveStartPosition(sequence);
 
-      // Set sequence directly on sequenceState - workspace will display it
-      // Include spellData in metadata for word label styling persistence
       sequenceState.setCurrentSequence({
         ...sequenceWithStart,
         name: spellState.inputWord,
@@ -261,7 +233,6 @@ This component only shows controls - no preview. Same pattern as Generator tab.
         },
       });
 
-      // Also set the display start position
       if (sequenceWithStart.startPosition) {
         sequenceState.setSelectedStartPosition(sequenceWithStart.startPosition);
       }
@@ -271,171 +242,18 @@ This component only shows controls - no preview. Same pattern as Generator tab.
       });
 
       spellState.markHasGeneratedOnce();
-      spellState.setWizardPhase("results");
 
     } catch (error) {
       console.error("Failed to generate sequence:", error);
       spellState.setError(error instanceof Error ? error.message : "Generation failed");
-      spellState.setWizardPhase("preferences");
     } finally {
       spellState.setGenerating(false);
     }
   }
-
-  // ============================================================================
-  // RESULTS PHASE - Action buttons for the generated sequence
-  // ============================================================================
-
-  async function handleShuffle() {
-    // Shuffle generates new variations but preserves step IDs for smooth CSS transitions
-    if (!sequenceState?.currentSequence) {
-      // No existing sequence - do a full generate
-      handleGenerate();
-      return;
-    }
-
-    const existingSequence = sequenceState.currentSequence;
-    const existingSteps = existingSequence.steps;
-
-    spellState.setGenerating(true);
-    spellState.clearError();
-
-    try {
-      const generator = await getRandomGenerator();
-      const loader = getServiceLoader();
-      const orch = getOrchestrator();
-
-      // Parse word to get letters
-      const parseResult = await orch.parseWord(spellState.inputWord);
-      if (!parseResult.success || !parseResult.expandedLetters) {
-        spellState.setError(parseResult.error || "Could not parse word");
-        return;
-      }
-
-      const letters = parseResult.expandedLetters;
-
-      // Update letter sources for word label styling
-      if (parseResult.letterSources) {
-        spellState.setLetterSources(parseResult.letterSources);
-      }
-
-      // Build constraints from preferences
-      const constraintBuilder = await loader.getVariationConstraintBuilder();
-      const constraints = constraintBuilder.buildConstraints(
-        spellState.preferences,
-        letters
-      );
-
-      // Create soft constraint set for flow preferences
-      const constraintSet = createConstraintSet(spellState.preferences.constraintPreset);
-
-      // Generate new sequence
-      const newSequence = await generator.generateRandomSequence(
-        letters,
-        {
-          gridMode: spellState.selectedGridMode,
-          constraints,
-          constraintSet,
-        }
-      );
-
-      if (!newSequence) {
-        spellState.setError("Could not generate a new variation. Try again.");
-        return;
-      }
-
-      // Preserve existing step IDs for smooth transitions
-      const mergedSteps = newSequence.steps.map((newStep, index) => {
-        const existingId = existingSteps[index]?.id;
-        return {
-          ...newStep,
-          id: existingId ?? newStep.id, // Keep existing ID if available
-        };
-      });
-
-      // Derive new start position
-      const newStartPosition = mergedSteps.length > 0
-        ? startPositionDeriver.deriveFromFirstBeat(mergedSteps[0])
-        : existingSequence.startPosition;
-
-      // Update sequence in place - same ID, new data
-      // Include spellData in metadata for word label styling persistence
-      sequenceState.setCurrentSequence({
-        ...existingSequence,
-        steps: mergedSteps,
-        startPosition: newStartPosition,
-        metadata: {
-          ...existingSequence.metadata,
-          spellData: {
-            originalWord: spellState.inputWord,
-            expandedWord: spellState.expandedWord || spellState.inputWord,
-            letterSources: parseResult.letterSources || [],
-          },
-        },
-      });
-
-      // Also update the display start position (separate from sequence.startPosition)
-      if (newStartPosition) {
-        sequenceState.setSelectedStartPosition(newStartPosition);
-      }
-
-    } catch (error) {
-      console.error("Failed to shuffle sequence:", error);
-      spellState.setError(error instanceof Error ? error.message : "Shuffle failed");
-    } finally {
-      spellState.setGenerating(false);
-    }
-  }
-
-  function handleTransform() {
-    // Open the sequence actions panel for transforms
-    createModuleContext?.panelState?.openSequenceActionsPanel();
-  }
-
-  function handleNewWord() {
-    // Clear everything and start fresh
-    spellState.clearSpellState();
-    if (sequenceState) {
-      sequenceState.clearSequenceCompletely();
-    }
-    saveSpellState({
-      wizardPhase: "preferences",
-      inputWord: "",
-      expandedWord: "",
-      preferences: spellState.preferences,
-      hasGeneratedOnce: spellState.hasGeneratedOnce,
-    });
-  }
-
-  function handleRefine() {
-    // Go back to preferences (keep word and settings for refinement)
-    spellState.setWizardPhase("preferences");
-  }
-
-  // ============================================================================
-  // SHARED
-  // ============================================================================
-
-  function handleClear() {
-    spellState.clearSpellState();
-    if (sequenceState) {
-      sequenceState.clearSequenceCompletely();
-    }
-    // Clear persisted state
-    saveSpellState({
-      wizardPhase: "preferences",
-      inputWord: "",
-      expandedWord: "",
-      preferences: spellState.preferences,
-      hasGeneratedOnce: false,
-    });
-  }
-
-  // Derived: check if we have a sequence in sequenceState
-  const hasSequence = $derived(sequenceState?.currentSequence !== null);
 </script>
 
 <div class="spell-panel" data-is-desktop={isDesktop}>
+  <!-- Error Banner -->
   {#if spellState.error}
     <div class="error-banner" role="alert">
       <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
@@ -450,104 +268,187 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     </div>
   {/if}
 
-  {#if spellState.wizardPhase === "preferences"}
-    <!-- PREFERENCES PHASE -->
-    <PreferencesPage
-      word={spellState.inputWord}
-      onWordChange={handleWordChange}
-      gridMode={spellState.selectedGridMode}
-      onGridModeChange={handleGridModeChange}
-      preferences={spellState.preferences}
-      onPreferenceChange={handlePreferenceChange}
-      onGenerate={handleGenerate}
-      estimatedCount={null}
-      isEstimating={false}
-      {isInputMode}
-      {keyboardHeight}
-      onInputFocusChange={handleInputFocusChange}
+  <!-- Word Input -->
+  <section class="word-section">
+    <WordInput
+      value={spellState.inputWord}
+      onInput={handleWordChange}
+      onFocusChange={handleInputFocusChange}
     />
+  </section>
 
-    <!-- Keyboard toolbar for touch devices -->
-    {#if isTouchDevice}
-      <SpellInputToolbar
-        visible={isInputFocused}
-        canGenerate={spellState.inputWord.length > 0}
-        isGenerating={spellState.isGenerating}
-        word={spellState.inputWord}
-        onDone={handleToolbarDone}
-        onGenerate={handleGenerate}
-        onKeyboardVisibilityChange={handleKeyboardVisibilityChange}
-      />
+  <!-- Generate Button -->
+  <button
+    class="generate-button"
+    onclick={handleGenerate}
+    disabled={!canGenerate}
+    aria-label={canGenerate ? "Generate sequence" : "Enter a word first"}
+  >
+    {#if spellState.isGenerating}
+      <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+      <span>Generating...</span>
+    {:else}
+      <i class="fas fa-magic" aria-hidden="true"></i>
+      <span>Generate</span>
     {/if}
+  </button>
 
-  {:else if spellState.wizardPhase === "generating"}
-    <!-- GENERATING PHASE -->
-    <div class="generation-phase" role="status" aria-live="polite" aria-busy="true">
-      <div class="progress-content">
-        <div class="spinner" aria-hidden="true"></div>
-        <h3 class="progress-title">Generating your sequence...</h3>
-      </div>
+  <!-- Settings: Accordion for tall viewports, Chip bar for constrained -->
+  <div class="settings-container">
+    <div class="settings-accordion">
+      <SettingsAccordion
+        gridMode={spellState.selectedGridMode}
+        preferences={spellState.preferences}
+        onGridModeChange={handleGridModeChange}
+        onPreferenceChange={handlePreferenceChange}
+      />
     </div>
-
-  {:else if spellState.wizardPhase === "results" && hasSequence}
-    <!-- RESULTS PHASE - Controls only, workspace shows sequence -->
-    <div class="results-controls">
-      <div class="word-display">{spellState.expandedWord || spellState.inputWord}</div>
-      <p class="step-count">{sequenceState?.currentSequence?.steps?.length ?? 0} steps</p>
-
-      <div class="action-buttons">
-        <button class="action-button primary" onclick={handleShuffle}>
-          <i class="fas fa-sync-alt" aria-hidden="true"></i>
-          Shuffle
-        </button>
-        <button class="action-button secondary" onclick={handleTransform}>
-          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-          Transform
-        </button>
-        <button class="action-button secondary" onclick={handleNewWord}>
-          <i class="fas fa-plus" aria-hidden="true"></i>
-          New Word
-        </button>
-        <button class="action-button secondary" onclick={handleRefine}>
-          <i class="fas fa-sliders-h" aria-hidden="true"></i>
-          Refine...
-        </button>
-      </div>
+    <div class="settings-chips">
+      <SettingsChipBar
+        gridMode={spellState.selectedGridMode}
+        preferences={spellState.preferences}
+        onGridModeChange={handleGridModeChange}
+        onPreferenceChange={handlePreferenceChange}
+      />
     </div>
+  </div>
+
+  <!-- Keyboard toolbar for touch devices -->
+  {#if isTouchDevice}
+    <SpellInputToolbar
+      visible={isInputFocused}
+      canGenerate={spellState.inputWord.length > 0}
+      isGenerating={spellState.isGenerating}
+      word={spellState.inputWord}
+      onDone={handleToolbarDone}
+      onGenerate={handleGenerate}
+    />
   {/if}
 </div>
 
 <style>
   .spell-panel {
-    container-type: inline-size;
+    container-type: size;
     container-name: spell-panel;
-    position: relative;
     display: flex;
     flex-direction: column;
-    height: 100%;
+    gap: 12px;
+    padding: 12px;
     width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    height: 100%;
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;
   }
 
-  /* Ensure child phases fill the available space */
-  .spell-panel > :global(*) {
+  /* Mobile: center content and add bottom nav padding */
+  .spell-panel:not([data-is-desktop="true"]) {
+    justify-content: center;
+    padding-bottom: calc(12px + 70px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Desktop: align to top, no extra padding */
+  .spell-panel[data-is-desktop="true"] {
+    justify-content: flex-start;
+  }
+
+  /* Word Section */
+  .word-section {
+    flex-shrink: 0;
+  }
+
+  /* Generate Button */
+  .generate-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    background: var(--theme-accent, #6366f1);
+    border: none;
+    border-radius: var(--settings-radius-md, 12px);
+    color: white;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 150ms ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+
+  .generate-button:hover:not(:disabled) {
+    background: var(--theme-accent-hover, #4f46e5);
+  }
+
+  .generate-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 4px;
+  }
+
+  .generate-button:disabled {
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
+    cursor: not-allowed;
+  }
+
+  /* Settings Container - switches between accordion and chips based on available height */
+  .settings-container {
     flex: 1;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Default: show accordion, hide chips */
+  .settings-accordion {
+    display: block;
+  }
+
+  .settings-chips {
+    display: none;
+  }
+
+  /*
+   * Container query: switch to chips only when height is severely constrained.
+   *
+   * Accordion minimum: 4 collapsed items × 48px + 3 gaps × 8px = 216px
+   * Chips minimum: 2 rows × 56px + 1 gap × 8px = 120px
+   *
+   * Other panel content: input(~70px) + button(~60px) + gaps(~36px) = ~166px
+   * Bottom padding for nav: ~82px (70px nav + 12px padding)
+   *
+   * Total for accordion: 166 + 216 + 82 = ~464px
+   * Total for chips: 166 + 120 + 82 = ~368px
+   *
+   * Use chips only when container height < 400px
+   * This accounts for the bottom nav padding in the container measurement.
+   */
+  @container spell-panel (max-height: 400px) {
+    .settings-accordion {
+      display: none;
+    }
+
+    .settings-chips {
+      display: block;
+    }
   }
 
   /* Error Banner */
   .error-banner {
     display: flex;
     align-items: center;
-    gap: var(--settings-spacing-sm, 8px);
-    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 16px);
+    gap: 8px;
+    padding: 8px 12px;
     background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     border: 1.5px solid var(--semantic-error, #ef4444);
     border-radius: var(--settings-radius-md, 12px);
-    margin: var(--settings-spacing-sm, 8px);
     color: var(--theme-text, #ffffff);
     font-size: var(--font-size-min, 14px);
+    flex-shrink: 0;
   }
 
   .error-banner i:first-child {
@@ -564,8 +465,9 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 48px;
+    height: 48px;
+    margin: -8px -8px -8px 0;
     padding: 0;
     background: transparent;
     border: none;
@@ -573,7 +475,7 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     flex-shrink: 0;
-    transition: all var(--duration-fast, 150ms) ease;
+    transition: all 150ms ease;
   }
 
   .error-dismiss:hover {
@@ -586,132 +488,11 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     outline-offset: 2px;
   }
 
-  /* Generation phase */
-  .generation-phase {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--settings-spacing-lg, 24px);
-  }
-
-  .progress-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--settings-spacing-md, 16px);
-    max-width: 400px;
-    text-align: center;
-  }
-
-  .progress-title {
-    margin: 0;
-    font-size: var(--font-size-lg, 18px);
-    font-weight: 600;
-    color: var(--theme-text, #ffffff);
-  }
-
-  .spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #6366f1);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Results Controls - action buttons only, no preview */
-  .results-controls {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--settings-spacing-lg, 24px);
-    padding: var(--settings-spacing-lg, 24px);
-    text-align: center;
-  }
-
-  .word-display {
-    font-size: var(--font-size-xl, 24px);
-    font-weight: 700;
-    color: var(--theme-text, #ffffff);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .step-count {
-    margin: 0;
-    font-size: var(--font-size-md, 16px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-  }
-
-  .action-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: var(--settings-spacing-sm, 8px);
-    width: 100%;
-    max-width: 400px;
-  }
-
-  .action-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--settings-spacing-sm, 8px);
-    min-height: 56px;
-    padding: var(--settings-spacing-md, 16px);
-    border: none;
-    border-radius: var(--settings-radius-md, 12px);
-    font-size: var(--font-size-md, 16px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .action-button.primary {
-    background: var(--theme-accent, #6366f1);
-    color: white;
-  }
-
-  .action-button.primary:hover {
-    background: var(--theme-accent-hover, #4f46e5);
-    transform: translateY(-2px);
-  }
-
-  .action-button.secondary {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .action-button.secondary:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-  }
-
-  .action-button:focus-visible {
-    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
-    outline-offset: 2px;
-  }
-
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .action-button {
+    .generate-button,
+    .error-dismiss {
       transition: none;
-    }
-
-    .action-button.primary:hover {
-      transform: none;
-    }
-
-    .spinner {
-      animation: none;
     }
   }
 </style>

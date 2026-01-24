@@ -1,5 +1,5 @@
 /**
- * Spell Tab Persistence (Simplified)
+ * Spell Tab Persistence (Simplified - 2027 Redesign)
  *
  * Persists spell tab UI state:
  * - Schema versioning and migration
@@ -8,12 +8,11 @@
  * - Error recovery
  *
  * NOTE: Sequence data is persisted via sequenceState (not here).
- * This only persists UI state like wizard phase, input word, and preferences.
+ * NOTE: wizardPhase removed in 2027 redesign - state is now derived from word/sequence.
  */
 
 import { browser } from "$app/environment";
 import type { SpellPreferences } from "../domain/models/spell-models";
-import type { WizardPhase } from "./funnel-state.svelte";
 import { DEFAULT_SPELL_PREFERENCES } from "../domain/constants/spell-constants";
 import { debounce } from "$lib/shared/utils/debounce";
 
@@ -25,16 +24,21 @@ import { debounce } from "$lib/shared/utils/debounce";
  * Current schema version
  * Increment when making breaking changes to stored data structure
  */
-const SCHEMA_VERSION = 2; // Bumped: removed currentSequence (now persisted via sequenceState)
+const SCHEMA_VERSION = 3; // Bumped: removed wizardPhase (now derived)
 
 const STORAGE_KEYS = {
   VERSION: "tka_spell_state_version",
-  WIZARD_PHASE: "tka_spell_wizard_phase",
   INPUT_WORD: "tka_spell_input_word",
   EXPANDED_WORD: "tka_spell_expanded_word",
   PREFERENCES: "tka_spell_preferences",
   HAS_GENERATED: "tka_spell_has_generated",
 } as const;
+
+// Legacy keys to clean up
+const LEGACY_KEYS = [
+  "tka_spell_wizard_phase",
+  "tka_spell_current_sequence",
+];
 
 // ============================================================================
 // TYPES
@@ -43,13 +47,15 @@ const STORAGE_KEYS = {
 /**
  * Spell Tab Persisted State
  * NOTE: Sequence is persisted via sequenceState, not here.
+ * NOTE: wizardPhase removed - state is derived from word/sequence.
  */
 export interface SpellPersistedState {
-  wizardPhase: WizardPhase;
   inputWord: string;
   expandedWord: string;
   preferences: SpellPreferences;
   hasGeneratedOnce: boolean;
+  // Legacy field for backward compat with old saves - ignored on load
+  wizardPhase?: "preferences" | "generating" | "results";
 }
 
 // ============================================================================
@@ -57,20 +63,10 @@ export interface SpellPersistedState {
 // ============================================================================
 
 /**
- * Validate wizard phase
- */
-function isValidWizardPhase(value: unknown): value is WizardPhase {
-  return (
-    value === "preferences" || value === "generating" || value === "results"
-  );
-}
-
-/**
  * Validate preferences object
  */
 function isValidPreferences(data: unknown): data is SpellPreferences {
   if (!data || typeof data !== "object") return false;
-  // At minimum, should be an object - merge with defaults for safety
   return true;
 }
 
@@ -80,35 +76,24 @@ function isValidPreferences(data: unknown): data is SpellPreferences {
 
 /**
  * Migrate data from old schema versions
- * Returns null if migration fails or not needed
  */
-function migrateData(version: number): SpellPersistedState | null {
+function migrateData(version: number): void {
   if (version === SCHEMA_VERSION) {
-    // No migration needed
-    return null;
+    return;
   }
 
   console.log(
     `[SpellPersistence] Migrating from v${version} to v${SCHEMA_VERSION}`
   );
 
-  // Migration from v1 to v2: removed currentSequence (now persisted via sequenceState)
-  if (version === 1 && SCHEMA_VERSION === 2) {
-    // Just clear the old currentSequence key if it exists
-    try {
-      localStorage.removeItem("tka_spell_current_sequence");
-    } catch {
-      // Ignore
-    }
-    // Return null to proceed with normal load (v1 keys still work)
-    return null;
+  // Clean up legacy keys from all versions
+  try {
+    LEGACY_KEYS.forEach((key) => {
+      localStorage.removeItem(key);
+    });
+  } catch {
+    // Ignore
   }
-
-  // Unknown version - can't migrate safely
-  console.warn(
-    `[SpellPersistence] Unknown version ${version}, clearing state`
-  );
-  return null;
 }
 
 // ============================================================================
@@ -124,10 +109,6 @@ function saveSpellStateInternal(state: Partial<SpellPersistedState>): void {
   try {
     // Always save version
     localStorage.setItem(STORAGE_KEYS.VERSION, String(SCHEMA_VERSION));
-
-    if (state.wizardPhase !== undefined) {
-      localStorage.setItem(STORAGE_KEYS.WIZARD_PHASE, state.wizardPhase);
-    }
 
     if (state.inputWord !== undefined) {
       localStorage.setItem(STORAGE_KEYS.INPUT_WORD, state.inputWord);
@@ -151,15 +132,12 @@ function saveSpellStateInternal(state: Partial<SpellPersistedState>): void {
       );
     }
   } catch (error) {
-    // Check for quota exceeded
     if (
       error instanceof Error &&
       (error.name === "QuotaExceededError" ||
         error.name === "NS_ERROR_DOM_QUOTA_REACHED")
     ) {
-      console.error(
-        "[SpellPersistence] Storage quota exceeded."
-      );
+      console.error("[SpellPersistence] Storage quota exceeded.");
     } else {
       console.warn("[SpellPersistence] Failed to save state:", error);
     }
@@ -168,7 +146,6 @@ function saveSpellStateInternal(state: Partial<SpellPersistedState>): void {
 
 /**
  * Debounced save function (300ms delay)
- * Prevents hammering localStorage on rapid state changes
  */
 export const saveSpellState = debounce(saveSpellStateInternal, 300);
 
@@ -177,7 +154,6 @@ export const saveSpellState = debounce(saveSpellStateInternal, 300);
  */
 export function loadSpellState(): SpellPersistedState {
   const defaultState: SpellPersistedState = {
-    wizardPhase: "preferences",
     inputWord: "",
     expandedWord: "",
     preferences: { ...DEFAULT_SPELL_PREFERENCES },
@@ -192,14 +168,8 @@ export function loadSpellState(): SpellPersistedState {
     const version = versionStr ? parseInt(versionStr, 10) : 0;
 
     if (version !== SCHEMA_VERSION) {
-      // Attempt migration
-      const migrated = migrateData(version);
-      if (migrated) {
-        return migrated;
-      }
-      // Migration failed or not needed - fall through to normal load
+      migrateData(version);
       if (version > SCHEMA_VERSION) {
-        // Data is from future version - can't safely load
         console.warn(
           `[SpellPersistence] Data from future version (${version} > ${SCHEMA_VERSION}), clearing`
         );
@@ -207,12 +177,6 @@ export function loadSpellState(): SpellPersistedState {
         return defaultState;
       }
     }
-
-    // Load and validate wizard phase
-    const phaseStr = localStorage.getItem(STORAGE_KEYS.WIZARD_PHASE);
-    const wizardPhase = isValidWizardPhase(phaseStr)
-      ? phaseStr
-      : "preferences";
 
     // Load input word
     const inputWord = localStorage.getItem(STORAGE_KEYS.INPUT_WORD) || "";
@@ -241,7 +205,6 @@ export function loadSpellState(): SpellPersistedState {
       localStorage.getItem(STORAGE_KEYS.HAS_GENERATED) === "true";
 
     return {
-      wizardPhase,
       inputWord,
       expandedWord,
       preferences,
@@ -263,6 +226,9 @@ export function clearSpellState(): void {
     Object.values(STORAGE_KEYS).forEach((key) => {
       localStorage.removeItem(key);
     });
+    LEGACY_KEYS.forEach((key) => {
+      localStorage.removeItem(key);
+    });
     console.log("[SpellPersistence] State cleared");
   } catch (error) {
     console.warn("[SpellPersistence] Failed to clear state:", error);
@@ -271,7 +237,6 @@ export function clearSpellState(): void {
 
 /**
  * Check storage usage (diagnostic)
- * Returns approximate size in bytes
  */
 export function getStorageSize(): number {
   if (!browser) return 0;
@@ -281,7 +246,6 @@ export function getStorageSize(): number {
     Object.values(STORAGE_KEYS).forEach((key) => {
       const value = localStorage.getItem(key);
       if (value) {
-        // Each character is ~2 bytes in UTF-16
         total += value.length * 2;
       }
     });
