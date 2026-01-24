@@ -265,3 +265,23 @@ export class ArrowPositioningOrchestrator implements IArrowPositioningOrchestrat
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.arrowPositioningOrchestrator to avoid DI container rebuilds.
+// ============================================================================
+
+import { arrowLocationCalculator } from "../../../positioning/calculation/services/implementations/ArrowLocationCalculator";
+import { arrowRotationCalculator } from "../../../positioning/calculation/services/implementations/ArrowRotationCalculator";
+import { arrowAdjustmentCalculator } from "../../../positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
+import { arrowGridCoordinator } from "./ArrowGridCoordinator";
+import { arrowDataProcessor } from "./ArrowDataProcessor";
+
+export const arrowPositioningOrchestrator = new ArrowPositioningOrchestrator(
+  arrowLocationCalculator,
+  arrowRotationCalculator,
+  arrowAdjustmentCalculator,
+  arrowGridCoordinator,
+  arrowDataProcessor
+);

@@ -205,3 +205,13 @@ export class ArrowDataProcessor implements IArrowDataProcessor {
     return JSON.parse(JSON.stringify(pictographData));
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.arrowDataProcessor to avoid DI container rebuilds.
+// ============================================================================
+
+import { arrowGridCoordinator } from "./ArrowGridCoordinator";
+
+export const arrowDataProcessor = new ArrowDataProcessor(arrowGridCoordinator);

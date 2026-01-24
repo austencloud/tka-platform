@@ -200,3 +200,16 @@ export class ArrowRenderer implements IArrowRenderer {
     };
   }
 }
+
+// Direct singleton export for HMR-friendly imports
+import { arrowPathResolver } from "./ArrowPathResolver";
+import { arrowSvgParser } from "./ArrowSvgParser";
+import { arrowSvgColorTransformer } from "./ArrowSvgColorTransformer";
+import { arrowSvgLoader } from "./ArrowSvgLoader";
+
+export const arrowRenderer = new ArrowRenderer(
+  arrowPathResolver,
+  arrowSvgParser,
+  arrowSvgColorTransformer,
+  arrowSvgLoader
+);

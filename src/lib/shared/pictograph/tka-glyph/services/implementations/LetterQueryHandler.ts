@@ -381,3 +381,14 @@ export class LetterQueryHandler implements ILetterQueryHandler {
     return matchingRow ?? null;
   }
 }
+
+// Direct singleton export for HMR-friendly imports
+import { csvLoader } from "../../../../foundation/services/implementations/data/CsvLoader";
+import { csvParser } from "../../../../foundation/services/implementations/data/CsvParser";
+import { csvPictographParser } from "../../../shared/services/implementations/CSVPictographParser";
+
+export const letterQueryHandler = new LetterQueryHandler(
+  csvLoader,
+  csvParser,
+  csvPictographParser
+);

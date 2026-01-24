@@ -21,3 +21,11 @@ export class TurnsTupleKeyGenerator implements ITurnsTupleKeyGenerator {
     return 0;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.turnsTupleKeyGenerator to avoid DI container rebuilds.
+// ============================================================================
+
+export const turnsTupleKeyGenerator = new TurnsTupleKeyGenerator();

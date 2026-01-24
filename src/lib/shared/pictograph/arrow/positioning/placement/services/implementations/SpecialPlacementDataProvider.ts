@@ -177,3 +177,11 @@ export class SpecialPlacementDataProvider implements ISpecialPlacementDataProvid
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.specialPlacementDataProvider to avoid DI container rebuilds.
+// ============================================================================
+
+export const specialPlacementDataProvider = new SpecialPlacementDataProvider();

@@ -381,3 +381,18 @@ export class DirectionalTupleProcessor implements IDirectionalTupleProcessor {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORTS
+// ============================================================================
+// Use these instead of container.items.* to avoid DI container rebuilds.
+// ============================================================================
+
+import { arrowQuadrantCalculator } from "../../../../orchestration/services/implementations/ArrowQuadrantCalculator";
+
+export const directionalTupleCalculator = new DirectionalTupleCalculator();
+export const quadrantIndexCalculator = new QuadrantIndexCalculator(arrowQuadrantCalculator);
+export const directionalTupleProcessor = new DirectionalTupleProcessor(
+  directionalTupleCalculator,
+  quadrantIndexCalculator
+);

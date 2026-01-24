@@ -221,3 +221,12 @@ export class CSVPictographParser implements ICSVPictographParser {
     );
   }
 }
+
+// Direct singleton export for HMR-friendly imports
+import { enumMapper } from "../../../../foundation/services/implementations/data/EnumMapper";
+import { orientationCalculator } from "../../../prop/services/implementations/OrientationCalculator";
+
+export const csvPictographParser = new CSVPictographParser(
+  enumMapper,
+  orientationCalculator
+);

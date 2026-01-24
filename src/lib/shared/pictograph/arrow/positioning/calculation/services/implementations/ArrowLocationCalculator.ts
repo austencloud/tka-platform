@@ -17,7 +17,7 @@ import type { PictographData } from "../../../../../shared/domain/models/Pictogr
 import { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
 import { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import type { DashLocationCalculator } from "./DashLocationCalculator";
+import { DashLocationCalculator, dashLocationCalculator } from "./DashLocationCalculator";
 
 export class ArrowLocationCalculator implements IArrowLocationCalculator {
   /**
@@ -255,3 +255,11 @@ export class ArrowLocationCalculator implements IArrowLocationCalculator {
     return sortedLocations.join(",");
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.arrowLocationCalculator to avoid DI container rebuilds.
+// ============================================================================
+
+export const arrowLocationCalculator = new ArrowLocationCalculator(dashLocationCalculator);

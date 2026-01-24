@@ -100,3 +100,6 @@ export class ArrowSvgColorTransformer implements IArrowSvgColorTransformer {
     return coloredSvg;
   }
 }
+
+// Direct singleton export for HMR-friendly imports
+export const arrowSvgColorTransformer = new ArrowSvgColorTransformer();

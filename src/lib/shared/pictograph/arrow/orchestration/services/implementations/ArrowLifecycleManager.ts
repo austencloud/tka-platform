@@ -226,3 +226,17 @@ export class ArrowLifecycleManager implements IArrowLifecycleManager {
     // Currently no internal state to reset, but provides extension point
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.arrowLifecycleManager to avoid DI container rebuilds.
+// ============================================================================
+
+import { arrowSvgLoader } from "../../../rendering/services/implementations/ArrowSvgLoader";
+import { arrowPositioningOrchestrator } from "./ArrowPositioningOrchestrator";
+
+export const arrowLifecycleManager = new ArrowLifecycleManager(
+  arrowSvgLoader,
+  arrowPositioningOrchestrator
+);

@@ -344,3 +344,11 @@ export class ArrowPlacementKeyGenerator implements IArrowPlacementKeyGenerator {
     return MotionType.PRO;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.arrowPlacementKeyGenerator to avoid DI container rebuilds.
+// ============================================================================
+
+export const arrowPlacementKeyGenerator = new ArrowPlacementKeyGenerator();

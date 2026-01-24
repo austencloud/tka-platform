@@ -111,3 +111,6 @@ export class ArrowSvgParser implements IArrowSvgParser {
     return svgContentMatch[1];
   }
 }
+
+// Direct singleton export for HMR-friendly imports
+export const arrowSvgParser = new ArrowSvgParser();

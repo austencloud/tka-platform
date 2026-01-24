@@ -245,3 +245,11 @@ export class ArrowGridCoordinator implements IArrowGridCoordinator {
     return boxLocations.includes(location) ? GridMode.BOX : GridMode.DIAMOND;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.arrowGridCoordinator to avoid DI container rebuilds.
+// ============================================================================
+
+export const arrowGridCoordinator = new ArrowGridCoordinator();

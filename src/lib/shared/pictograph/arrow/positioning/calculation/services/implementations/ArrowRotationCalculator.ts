@@ -304,3 +304,19 @@ export class ArrowRotationCalculator implements IArrowRotationCalculator {
     return true;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.arrowRotationCalculator to avoid DI container rebuilds.
+// ============================================================================
+
+import { specialPlacer } from "../../../placement/services/implementations/SpecialPlacer";
+import { rotationAngleOverrideKeyGenerator } from "../../../key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
+import { handpathDirectionCalculator } from "./HandpathDirectionCalculator";
+
+export const arrowRotationCalculator = new ArrowRotationCalculator(
+  specialPlacer,
+  rotationAngleOverrideKeyGenerator,
+  handpathDirectionCalculator
+);

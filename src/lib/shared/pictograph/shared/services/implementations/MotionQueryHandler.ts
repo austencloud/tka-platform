@@ -524,3 +524,16 @@ export class MotionQueryHandler implements IMotionQueryHandler {
     return null;
   }
 }
+
+// Direct singleton export for HMR-friendly imports
+import { csvLoader } from "../../../../foundation/services/implementations/data/CsvLoader";
+import { csvParser } from "../../../../foundation/services/implementations/data/CsvParser";
+import { csvPictographParser } from "./CSVPictographParser";
+import { orientationCalculator } from "../../../prop/services/implementations/OrientationCalculator";
+
+export const motionQueryHandler = new MotionQueryHandler(
+  csvLoader,
+  csvParser,
+  csvPictographParser,
+  orientationCalculator
+);

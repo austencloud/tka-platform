@@ -563,3 +563,11 @@ export class DashLocationCalculator implements IDashLocationCalculator {
     return result;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.dashLocationCalculator to avoid DI container rebuilds.
+// ============================================================================
+
+export const dashLocationCalculator = new DashLocationCalculator();

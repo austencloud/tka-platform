@@ -37,3 +37,11 @@ export class SpecialPlacementOriKeyGenerator implements ISpecialPlacementOriKeyG
     return "from_layer1";
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.specialPlacementOriKeyGenerator to avoid DI container rebuilds.
+// ============================================================================
+
+export const specialPlacementOriKeyGenerator = new SpecialPlacementOriKeyGenerator();

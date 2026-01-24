@@ -183,3 +183,11 @@ export class ArrowQuadrantCalculator implements IArrowQuadrantCalculator {
     return mapping as Record<GridLocation, number>;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.arrowQuadrantCalculator to avoid DI container rebuilds.
+// ============================================================================
+
+export const arrowQuadrantCalculator = new ArrowQuadrantCalculator();

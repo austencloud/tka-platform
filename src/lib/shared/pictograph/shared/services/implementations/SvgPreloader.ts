@@ -212,3 +212,6 @@ export class SvgPreloader implements ISvgPreloader {
     return response.text();
   }
 }
+
+// Direct singleton export for HMR-friendly imports
+export const svgPreloader = new SvgPreloader();

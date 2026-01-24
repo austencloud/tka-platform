@@ -109,3 +109,6 @@ export class ArrowPathResolver implements IArrowPathResolver {
     return `/images/arrows/${motionType}/${radialPath}/${motionType}_${turnsStr}${skewSuffix}.svg`;
   }
 }
+
+// Direct singleton export for HMR-friendly imports
+export const arrowPathResolver = new ArrowPathResolver();

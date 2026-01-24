@@ -299,3 +299,21 @@ export class PictographPreparer implements IPictographPreparer {
     this.pendingPrepares.clear();
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.pictographPreparer to avoid DI container rebuilds.
+// ============================================================================
+
+import { arrowLifecycleManager } from "../../../arrow/orchestration/services/implementations/ArrowLifecycleManager";
+import { propSvgLoader } from "../../../prop/services/implementations/PropSvgLoader";
+import { propPlacer } from "../../../prop/services/implementations/PropPlacer";
+import { gridModeDeriver } from "../../../grid/services/implementations/GridModeDeriver";
+
+export const pictographPreparer = new PictographPreparer(
+  arrowLifecycleManager,
+  propSvgLoader,
+  propPlacer,
+  gridModeDeriver
+);

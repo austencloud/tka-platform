@@ -92,3 +92,12 @@ export class GridRenderer implements IGridRenderer {
     svg.appendChild(gridGroup);
   }
 }
+
+// Direct singleton export for HMR-friendly imports
+const SVG_CONFIG = {
+  SVG_SIZE: 950,
+  CENTER_X: 475,
+  CENTER_Y: 475,
+};
+
+export const gridRenderer = new GridRenderer(SVG_CONFIG);

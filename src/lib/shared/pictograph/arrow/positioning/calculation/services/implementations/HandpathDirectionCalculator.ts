@@ -44,3 +44,11 @@ export class HandpathDirectionCalculator implements IHandpathDirectionCalculator
     return "dash";
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.handpathDirectionCalculator to avoid DI container rebuilds.
+// ============================================================================
+
+export const handpathDirectionCalculator = new HandpathDirectionCalculator();

@@ -158,3 +158,11 @@ export class DefaultPlacer implements IDefaultPlacerJson {
     await this.placementDataService.debugAvailableKeys(motionType, gridMode);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.defaultPlacer to avoid DI container rebuilds.
+// ============================================================================
+
+export const defaultPlacer = new DefaultPlacer();

@@ -77,3 +77,11 @@ export class LetterClassifier implements ILetterClassifier {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.letterClassifier to avoid DI container rebuilds.
+// ============================================================================
+
+export const letterClassifier = new LetterClassifier();

@@ -230,3 +230,11 @@ export class AttributeKeyGenerator implements IAttributeKeyGenerator {
     return nonHybridLetters.includes(letter);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.attributeKeyGenerator to avoid DI container rebuilds.
+// ============================================================================
+
+export const attributeKeyGenerator = new AttributeKeyGenerator();
