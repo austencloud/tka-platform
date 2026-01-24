@@ -166,3 +166,14 @@ export class SequenceCanonicalizer implements ISequenceCanonicalizer {
     return hashes.join(";");
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { beatSignatureGenerator } from "./BeatSignatureGenerator";
+import { wordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
+
+export const sequenceCanonicalizer = new SequenceCanonicalizer(
+  beatSignatureGenerator,
+  wordCyclicEquivalenceDetector
+);

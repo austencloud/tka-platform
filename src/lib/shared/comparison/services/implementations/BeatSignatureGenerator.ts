@@ -213,3 +213,10 @@ export class BeatSignatureGenerator implements IBeatSignatureGenerator {
     return `${startPosGroup}>${endPosGroup}:${startAngle}-${endAngle}:B[${blueHash}]R[${redHash}]`;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { motionSignatureGenerator } from "./MotionSignatureGenerator";
+
+export const beatSignatureGenerator = new BeatSignatureGenerator(motionSignatureGenerator);

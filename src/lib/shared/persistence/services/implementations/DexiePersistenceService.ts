@@ -543,3 +543,8 @@ export class DexiePersistenceService implements IPersistenceService {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const dexiePersistenceService = new DexiePersistenceService();

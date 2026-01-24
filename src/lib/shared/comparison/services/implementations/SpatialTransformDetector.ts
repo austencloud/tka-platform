@@ -160,3 +160,8 @@ export class SpatialTransformDetector implements ISpatialTransformDetector {
     return Math.min(cwDistance, 8 - cwDistance);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const spatialTransformDetector = new SpatialTransformDetector();

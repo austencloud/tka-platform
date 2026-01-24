@@ -581,3 +581,14 @@ export class SequenceAligner implements ISequenceAligner {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { beatSignatureGenerator } from "./BeatSignatureGenerator";
+import { spatialTransformDetector } from "./SpatialTransformDetector";
+
+export const sequenceAligner = new SequenceAligner(
+  beatSignatureGenerator,
+  spatialTransformDetector
+);

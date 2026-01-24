@@ -194,3 +194,8 @@ export class MotionSignatureGenerator implements IMotionSignatureGenerator {
     return a.steps === b.steps && a.direction === b.direction;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const motionSignatureGenerator = new MotionSignatureGenerator();

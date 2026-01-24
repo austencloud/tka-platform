@@ -368,3 +368,18 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { sequenceCanonicalizer } from "./SequenceCanonicalizer";
+import { beatSignatureGenerator } from "./BeatSignatureGenerator";
+import { spatialTransformDetector } from "./SpatialTransformDetector";
+import { wordCyclicEquivalenceDetector } from "$lib/features/create/shared/services/implementations/WordCyclicEquivalenceDetector";
+
+export const sequenceEquivalenceDetector = new SequenceEquivalenceDetector(
+  sequenceCanonicalizer,
+  beatSignatureGenerator,
+  spatialTransformDetector,
+  wordCyclicEquivalenceDetector
+);

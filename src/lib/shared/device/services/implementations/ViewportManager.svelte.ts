@@ -110,3 +110,8 @@ export class ViewportManager implements IViewportManager {
     return this._height > this._width;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const viewportManager = new ViewportManager();

@@ -547,3 +547,14 @@ export class SimilarityCalculator implements ISimilarityCalculator {
     return parts.join(". ") + ".";
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { beatSignatureGenerator } from "./BeatSignatureGenerator";
+import { sequenceAligner } from "./SequenceAligner";
+
+export const similarityCalculator = new SimilarityCalculator(
+  beatSignatureGenerator,
+  sequenceAligner
+);
