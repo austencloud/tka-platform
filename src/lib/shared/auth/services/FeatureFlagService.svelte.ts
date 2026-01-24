@@ -290,6 +290,28 @@ export const featureFlagService = {
   },
 
   /**
+   * Check if a module WOULD be accessible based on role/environment alone,
+   * ignoring user's disabled features. Used by ModuleQuickToggle to show
+   * all modules a user COULD enable.
+   */
+  canAccessModuleIgnoringDisables(moduleId: ModuleId): boolean {
+    // Check environment visibility
+    if (!isModuleEnabledInEnvironment(moduleId)) {
+      return false;
+    }
+
+    // Check role-based access WITHOUT user overrides
+    const featureId = moduleIdToFeatureId(moduleId);
+    const config = getEffectiveFeatureConfig(featureId);
+    if (!config || !config.enabled) {
+      return false;
+    }
+
+    const effectiveRole = _state.debugRoleOverride ?? _state.userRole;
+    return hasRolePrivilege(effectiveRole, config.minimumRole);
+  },
+
+  /**
    * Check if a tab within a module is accessible to the current user
    * Falls back to module-level access if tab isn't explicitly defined
    */

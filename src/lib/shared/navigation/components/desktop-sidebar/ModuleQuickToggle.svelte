@@ -44,33 +44,46 @@
   // This is the source of truth for what the sidebar shows
   const sidebarModules = $derived(getModuleDefinitions());
 
-  // Get modules the user has HIDDEN (in disabledFeatures but would otherwise be accessible)
-  // These need to be shown so the user can un-hide them
-  const hiddenModules = $derived.by(() => {
-    const overrides = featureFlagService.userOverrides;
-    const disabledFeatures = overrides.disabledFeatures;
+  // Get all modules the user CAN access based on ROLE only
+  // For the module toggle UI, we ignore:
+  // - User's disabled features (they should be able to re-enable them)
+  // - Environment restrictions (admin should see all modules they have role access to)
+  // We only check role-based access from the module definition
+  const allAccessibleModules = $derived.by(() => {
+    const effectiveRole = featureFlagService.effectiveRole;
 
-    // Get modules that are in disabledFeatures
-    const hiddenModuleDefs: ModuleDefinition[] = [];
+    const result = MODULE_DEFINITIONS.filter((module) => {
+      // Skip non-main modules
+      if (!module.isMain) return false;
 
-    for (const featureId of disabledFeatures) {
-      // Only process module features (not tabs or capabilities)
-      if (!featureId.startsWith("module:")) continue;
-
-      const moduleId = featureId.replace("module:", "") as ModuleId;
-
-      // Skip core modules (they can't be hidden)
-      if (isCoreModule(moduleId)) continue;
-
-      // Find the module definition from the full list
-      // If it's in disabledFeatures, user must have had access to disable it
-      const fullDef = MODULE_DEFINITIONS.find((m) => m.id === moduleId);
-      if (fullDef) {
-        hiddenModuleDefs.push(fullDef);
+      // For adminOnly modules, check if user is admin
+      if (module.adminOnly && effectiveRole !== "admin") {
+        return false;
       }
-    }
 
-    return hiddenModuleDefs;
+      // All other main modules are accessible
+      // (role-based restrictions from feature flags would be checked here,
+      // but for now we just show all non-adminOnly modules to all users)
+      return true;
+    });
+
+    return result;
+  });
+
+  // Get modules that are accessible but NOT currently visible in the sidebar
+  // These should appear in the "Hidden" section so users can enable them
+  const hiddenModules = $derived.by(() => {
+    const visibleIds = new Set(sidebarModules.map((m) => m.id));
+
+    const hidden = allAccessibleModules.filter((module) => {
+      // Skip core modules (they're always visible and can't be toggled)
+      if (isCoreModule(module.id)) return false;
+
+      // Show modules that the user can access but aren't in the sidebar
+      return !visibleIds.has(module.id);
+    });
+
+    return hidden;
   });
 
   // Visible modules = what's in the sidebar (excluding core, which are handled separately)
@@ -117,7 +130,11 @@
   // Move a module from Hidden to Visible
   async function showModule(module: ModuleDefinition) {
     const userId = featureFlagService.userId;
-    if (!userId) return;
+    if (!userId) {
+      console.error("[ModuleQuickToggle] No userId, cannot save");
+      saving = false;
+      return;
+    }
 
     saving = true;
     hapticService?.trigger("selection");
@@ -126,18 +143,26 @@
       const currentOverrides = featureFlagService.userOverrides;
       const featureId = moduleIdToFeatureId(module.id);
 
-      // Remove from disabled list
+      // Remove from disabled list (if it was there)
       const newDisabledFeatures = currentOverrides.disabledFeatures.filter(
         (f) => f !== featureId
       );
 
+      // Add to enabled list (this overrides environment restrictions)
+      const newEnabledFeatures = currentOverrides.enabledFeatures.includes(featureId)
+        ? currentOverrides.enabledFeatures
+        : [...currentOverrides.enabledFeatures, featureId];
+
       // Add to end of module order
       const currentOrder = currentOverrides.moduleOrder || visibleModules.map((m) => m.id);
-      const newOrder = [...currentOrder, module.id];
+      const newOrder = currentOrder.includes(module.id)
+        ? currentOrder
+        : [...currentOrder, module.id];
 
       await featureFlagService.setUserFeatureOverrides(userId, {
         ...currentOverrides,
         disabledFeatures: newDisabledFeatures,
+        enabledFeatures: newEnabledFeatures,
         moduleOrder: newOrder,
       });
     } catch (error) {
@@ -151,7 +176,11 @@
   // Move a module from Visible to Hidden
   async function hideModule(module: ModuleDefinition) {
     const userId = featureFlagService.userId;
-    if (!userId) return;
+    if (!userId) {
+      console.error("[ModuleQuickToggle] No userId, cannot save");
+      saving = false;
+      return;
+    }
 
     saving = true;
     hapticService?.trigger("selection");
@@ -161,7 +190,14 @@
       const featureId = moduleIdToFeatureId(module.id);
 
       // Add to disabled list
-      const newDisabledFeatures = [...currentOverrides.disabledFeatures, featureId];
+      const newDisabledFeatures = currentOverrides.disabledFeatures.includes(featureId)
+        ? currentOverrides.disabledFeatures
+        : [...currentOverrides.disabledFeatures, featureId];
+
+      // Remove from enabled list
+      const newEnabledFeatures = currentOverrides.enabledFeatures.filter(
+        (f) => f !== featureId
+      );
 
       // Remove from module order
       const currentOrder = currentOverrides.moduleOrder || visibleModules.map((m) => m.id);
@@ -170,6 +206,7 @@
       await featureFlagService.setUserFeatureOverrides(userId, {
         ...currentOverrides,
         disabledFeatures: newDisabledFeatures,
+        enabledFeatures: newEnabledFeatures,
         moduleOrder: newOrder,
       });
     } catch (error) {
@@ -887,54 +924,70 @@
   }
 
   /* ============================================================================
-     HIDDEN MODULE CELLS - Dimmed, gray (not in sidebar)
+     HIDDEN MODULE CELLS - Available to add (not currently in sidebar)
+     Styled to look tappable/clickable, not disabled
      ============================================================================ */
   .hidden-module-cell {
-    opacity: 0.5;
+    opacity: 0.85;
   }
 
   .hidden-module-cell .cell-background {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px dashed rgba(255, 255, 255, 0.1);
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--module-color) 12%, rgba(255, 255, 255, 0.04)) 0%,
+      color-mix(in srgb, var(--module-color) 6%, rgba(255, 255, 255, 0.02)) 100%
+    );
+    border: 1.5px solid color-mix(in srgb, var(--module-color) 25%, rgba(255, 255, 255, 0.1));
   }
 
   .hidden-module-cell .cell-glow {
-    opacity: 0;
+    opacity: 0.05;
   }
 
   .hidden-module-cell .cell-icon {
-    filter: grayscale(0.6);
-    opacity: 0.7;
+    filter: none;
+    opacity: 0.8;
   }
 
-  .hidden-module-cell:hover {
-    opacity: 0.8;
+  .hidden-module-cell:hover,
+  .hidden-module-cell:active {
+    opacity: 1;
     transform: scale(1.02);
   }
 
-  .hidden-module-cell:hover .cell-background {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(16, 185, 129, 0.3);
-    border-style: solid;
+  .hidden-module-cell:hover .cell-background,
+  .hidden-module-cell:active .cell-background {
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--module-color) 20%, rgba(255, 255, 255, 0.06)) 0%,
+      color-mix(in srgb, var(--module-color) 10%, rgba(255, 255, 255, 0.03)) 100%
+    );
+    border-color: color-mix(in srgb, var(--module-color) 40%, rgba(255, 255, 255, 0.2));
   }
 
-  .hidden-module-cell:hover .cell-icon {
-    filter: grayscale(0);
+  .hidden-module-cell:hover .cell-icon,
+  .hidden-module-cell:active .cell-icon {
     opacity: 1;
   }
 
-  .hidden-module-cell .cell-label {
-    color: var(--theme-text-dim);
+  .hidden-module-cell:hover .cell-glow,
+  .hidden-module-cell:active .cell-glow {
+    opacity: 0.12;
   }
 
-  /* Add indicator */
+  .hidden-module-cell .cell-label {
+    color: var(--theme-text);
+    opacity: 0.85;
+  }
+
+  /* Add indicator - always visible on hidden cells to show they're tappable */
   .add-indicator {
     position: absolute;
     top: 6px;
     right: 6px;
-    color: rgba(16, 185, 129, 0.7);
+    color: rgba(16, 185, 129, 0.8);
     font-size: 14px;
-    opacity: 0;
+    opacity: 0.6;
     transition: opacity var(--duration-fast) ease;
   }
 
