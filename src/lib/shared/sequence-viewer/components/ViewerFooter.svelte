@@ -92,39 +92,39 @@
     <div class="actions-row">
       <button
         type="button"
-        class="action-btn"
+        class="action-btn save"
         onclick={onSave}
-        aria-label={t("viewer_save") ?? "Save to Library"}
+        aria-label="Save to Library"
       >
         <i class="fas fa-bookmark" aria-hidden="true"></i>
         <span>Save</span>
       </button>
       <button
         type="button"
-        class="action-btn"
+        class="action-btn compose"
         onclick={onCompose}
-        aria-label={t("viewer_compose") ?? "Open in Compose"}
+        aria-label="Open in Compose"
       >
         <i class="fas fa-users" aria-hidden="true"></i>
         <span>Compose</span>
       </button>
       <button
         type="button"
-        class="action-btn"
+        class="action-btn share"
         onclick={onShare}
-        aria-label={t("viewer_share") ?? "Share"}
+        aria-label="Share"
       >
         <i class="fas fa-share" aria-hidden="true"></i>
         <span>Share</span>
       </button>
       <button
         type="button"
-        class="action-btn accent"
+        class="action-btn download"
         onclick={onExport}
-        aria-label={t("viewer_export") ?? "Export"}
+        aria-label="Download"
       >
         <i class="fas fa-download" aria-hidden="true"></i>
-        <span>Export</span>
+        <span>Download</span>
       </button>
     </div>
 
@@ -170,39 +170,39 @@
       <div class="actions-section">
         <button
           type="button"
-          class="action-btn"
+          class="action-btn save"
           onclick={onSave}
-          aria-label={t("viewer_save") ?? "Save to Library"}
+          aria-label="Save to Library"
         >
           <i class="fas fa-bookmark" aria-hidden="true"></i>
           <span>Save</span>
         </button>
         <button
           type="button"
-          class="action-btn"
+          class="action-btn compose"
           onclick={onCompose}
-          aria-label={t("viewer_compose") ?? "Open in Compose"}
+          aria-label="Open in Compose"
         >
           <i class="fas fa-users" aria-hidden="true"></i>
           <span>Compose</span>
         </button>
         <button
           type="button"
-          class="action-btn"
+          class="action-btn share"
           onclick={onShare}
-          aria-label={t("viewer_share") ?? "Share"}
+          aria-label="Share"
         >
           <i class="fas fa-share" aria-hidden="true"></i>
           <span>Share</span>
         </button>
         <button
           type="button"
-          class="action-btn accent"
+          class="action-btn download"
           onclick={onExport}
-          aria-label={t("viewer_export") ?? "Export"}
+          aria-label="Download"
         >
           <i class="fas fa-download" aria-hidden="true"></i>
-          <span>Export</span>
+          <span>Download</span>
         </button>
       </div>
     </div>
@@ -295,16 +295,16 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    min-width: 48px;
-    min-height: 48px;
-    padding: 8px 12px;
+    gap: 2px;
+    min-width: 64px;
+    height: 48px;
+    padding: 6px 14px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-fast, 150ms) ease;
     -webkit-tap-highlight-color: transparent;
@@ -335,16 +335,50 @@
     outline-offset: 2px;
   }
 
-  /* Accent button (Export) */
-  .action-btn.accent {
-    background: var(--theme-accent, #6366f1);
-    border-color: transparent;
-    color: white;
+  /* Color-coded action buttons */
+  .action-btn.save {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.25);
+    color: #22c55e;
   }
 
-  .action-btn.accent:hover {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 85%, white);
-    border-color: transparent;
+  .action-btn.save:hover {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.4);
+  }
+
+  .action-btn.compose {
+    background: rgba(6, 182, 212, 0.1);
+    border-color: rgba(6, 182, 212, 0.25);
+    color: #06b6d4;
+  }
+
+  .action-btn.compose:hover {
+    background: rgba(6, 182, 212, 0.2);
+    border-color: rgba(6, 182, 212, 0.4);
+  }
+
+  .action-btn.share {
+    background: rgba(168, 85, 247, 0.1);
+    border-color: rgba(168, 85, 247, 0.25);
+    color: #a855f7;
+  }
+
+  .action-btn.share:hover {
+    background: rgba(168, 85, 247, 0.2);
+    border-color: rgba(168, 85, 247, 0.4);
+  }
+
+  .action-btn.download {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.35);
+    color: #818cf8;
+  }
+
+  .action-btn.download:hover {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #a5b4fc;
   }
 
   /* ===========================
@@ -353,32 +387,42 @@
 
   .bpm-compact {
     flex: 1;
-    min-width: 200px;
-    max-width: 400px;
+    min-width: 0;
+    max-width: 350px;
   }
 
-  /* Demote BPM visually - less prominent */
-  .bpm-compact :global(.bpm-chips) {
-    opacity: 0.85;
+  /* Match action button height and styling */
+  .bpm-compact :global(.bpm-chips.compact) {
+    gap: 6px;
   }
 
   .bpm-compact :global(.preset-chip) {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
     box-shadow: none;
-    min-height: 40px;
+    min-height: 48px;
+    padding: 8px 10px;
+    font-size: 13px;
   }
 
   .bpm-compact :global(.preset-chip.active) {
-    background: rgba(139, 92, 246, 0.15);
+    background: rgba(139, 92, 246, 0.12);
     border-color: rgba(139, 92, 246, 0.3);
-    box-shadow: none;
-    opacity: 1;
+    color: #a78bfa;
   }
 
   .bpm-compact :global(.preset-chip:hover:not(.active)) {
-    opacity: 1;
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  }
+
+  /* Custom chip - ensure text doesn't truncate */
+  .bpm-compact :global(.custom-chip) {
+    min-width: 56px;
+    max-width: 70px;
+    font-size: 11px;
+    padding: 8px 6px;
   }
 
   /* ===========================

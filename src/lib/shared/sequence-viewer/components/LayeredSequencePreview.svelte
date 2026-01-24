@@ -28,6 +28,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
 
@@ -106,7 +107,6 @@
     }
 
     try {
-      const loopDetector = container.items.loopDetector;
       const result = loopDetector.detectLOOPType(seq);
 
       if (result.loopType && result.loopType !== "freeform") {

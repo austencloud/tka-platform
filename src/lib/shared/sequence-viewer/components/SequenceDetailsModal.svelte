@@ -26,26 +26,26 @@
   import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
-  import type { ISequenceRenderer } from "$lib/shared/share/services/contracts/ISequenceRenderer";
+  import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+  import { sequenceModalExporter } from "../services/implementations/SequenceModalExporter";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { container } from "$lib/shared/di";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { createAnimationPanelState, type PlaybackMode, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
   import ViewerFooter from "./ViewerFooter.svelte";
-  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
-  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+  import ViewerHeader from "./ViewerHeader.svelte";
+  import ExportModeContent from "./ExportModeContent.svelte";
+  import ExportFooter from "./ExportFooter.svelte";
+  import FullscreenControls from "./FullscreenControls.svelte";
+  import SplitViewContent from "./SplitViewContent.svelte";
+  import { sequenceModalPersistence } from "../services/implementations/SequenceModalPersistence";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager, type TrailStyle } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { goto } from "$app/navigation";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
-  import SyncToggleButton from "$lib/shared/ui/components/SyncToggleButton.svelte";
-  import MultiPerformerButton from "$lib/shared/ui/components/MultiPerformerButton.svelte";
-  import ExpandButton from "$lib/shared/ui/components/ExpandButton.svelte";
+  // Button components now imported by ViewerHeader
+  import { browser } from "$app/environment";
   import {
     getExportOptionsState,
     type VideoFps,
@@ -98,6 +98,57 @@
 
   // LAN Sync - just a toggle, no complex UI
   let isSyncToggling = $state(false);
+
+  // Mobile detection for responsive behaviors
+  let isMobile = $state(false);
+
+  $effect(() => {
+    if (browser) {
+      const checkMobile = () => {
+        isMobile = window.innerWidth < 768;
+      };
+      checkMobile();
+      window.addEventListener("resize", checkMobile);
+      return () => window.removeEventListener("resize", checkMobile);
+    }
+  });
+
+  // Swipe-to-dismiss state (mobile only)
+  let swipeY = $state(0);
+  let swipeStartY = $state(0);
+  let isSwiping = $state(false);
+  const SWIPE_THRESHOLD = 100; // px to trigger dismiss
+
+  function handleTouchStart(e: TouchEvent) {
+    if (!isMobile || isFullscreen) return;
+    // Only start swipe from the top portion of the modal
+    const touch = e.touches[0];
+    if (touch.clientY < 150) {
+      swipeStartY = touch.clientY;
+      isSwiping = true;
+    }
+  }
+
+  function handleTouchMove(e: TouchEvent) {
+    if (!isSwiping) return;
+    const touch = e.touches[0];
+    const delta = touch.clientY - swipeStartY;
+    // Only allow downward swipe
+    if (delta > 0) {
+      swipeY = delta;
+    }
+  }
+
+  function handleTouchEnd() {
+    if (!isSwiping) return;
+    if (swipeY > SWIPE_THRESHOLD) {
+      // Dismiss the modal
+      handleClose();
+    }
+    // Reset
+    swipeY = 0;
+    isSwiping = false;
+  }
 
   // Which pane is in edit mode: null, 'animation', or 'image'
   let editingPane = $state<'animation' | 'image' | null>(null);
@@ -338,25 +389,11 @@
   });
 
   function loadViewMode(): ViewMode {
-    if (typeof localStorage !== "undefined") {
-      const saved = localStorage.getItem("tka_sequence_details_view_mode");
-      // If saved mode is "image", default to "split" instead
-      // (spacebar implies wanting to see animation, not static image)
-      if (saved === "animation" || saved === "split") {
-        return saved;
-      }
-      // "image" saved mode gets converted to "split" so animation is visible
-      if (saved === "image") {
-        return "split";
-      }
-    }
-    return "split";
+    return sequenceModalPersistence.loadViewMode();
   }
 
   function saveViewMode(mode: ViewMode) {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem("tka_sequence_details_view_mode", mode);
-    }
+    sequenceModalPersistence.saveViewMode(mode);
   }
 
   // Animation visibility (global singleton)
@@ -462,14 +499,13 @@
   let loopabilityChecker: ISequenceLoopabilityChecker | null = null;
   let sequenceRepository: ISequenceRepository | null = null;
   let hapticService: IHapticFeedback | null = null;
-  let videoExportOrchestrator: IVideoExportOrchestrator | null = null;
-  let sequenceRenderer: ISequenceRenderer | null = null;
 
-  // Export state
-  let isExporting = $state(false);
-  let exportProgress = $state<VideoExportProgress | null>(null);
-  let exportError = $state<string | null>(null);
+  // Export state (from service)
   let animationCanvas = $state<HTMLCanvasElement | null>(null);
+  // Reactive getters for exporter state
+  const isExporting = $derived(sequenceModalExporter.state.isExporting);
+  const exportProgress = $derived(sequenceModalExporter.state.progress);
+  const exportError = $derived(sequenceModalExporter.state.error);
 
   // Human-readable stage names for export progress
   const EXPORT_STAGE_LABELS: Record<string, string> = {
@@ -611,8 +647,6 @@
       loopabilityChecker = container.items.sequenceLoopabilityChecker;
       sequenceRepository = container.items.sequenceRepository;
       hapticService = container.items.hapticFeedback;
-      videoExportOrchestrator = container.items.videoExportOrchestrator;
-      sequenceRenderer = container.items.sequenceRenderer;
 
       // Initialize LAN sync state with coordinator from container
       const lanSyncCoordinator = container.items.lanSyncCoordinator as ILanSyncCoordinator;
@@ -760,7 +794,21 @@
     onclose();
   }
 
-  // Export handlers
+  // Export callbacks shared across all export types
+  const exportCallbacks = {
+    onSuccess: (message: string) => {
+      showToast(message, "success");
+      exitExportMode();
+    },
+    onError: (message: string) => {
+      // Error is already tracked in exporter state
+    },
+    onHaptic: (type: "success" | "error" | "selection") => {
+      hapticService?.trigger(type);
+    },
+  };
+
+  // Export handlers - delegate to service
   async function handleExport() {
     if (isExporting) return;
 
@@ -781,152 +829,40 @@
   }
 
   async function handleSplitExport() {
-    if (!videoExportOrchestrator || !playbackController || !animationCanvas) {
-      exportError = "Export services not ready. Please try again.";
-      return;
-    }
+    if (!playbackController || !animationCanvas) return;
 
     const opts = exportOptions.getSplitOptions();
-    isExporting = true;
-    exportError = null;
-    exportProgress = { progress: 0, stage: "capturing" };
-
-    try {
-      await videoExportOrchestrator.executeExport(
-        animationCanvas,
-        playbackController,
-        modalAnimationState,
-        (progress) => {
-          exportProgress = progress;
-          if (progress.stage === "complete") {
-            hapticService?.trigger("success");
-            showToast("Video exported!", "success");
-            exitExportMode();
-          } else if (progress.stage === "error") {
-            hapticService?.trigger("error");
-            exportError = progress.error || "Export failed. Please try again.";
-          }
-        },
-        {
-          compositeMode: opts.compositeOrientation,
-          gridStepSize: opts.gridStepSize,
-          showStepNumbers: opts.showStepNumbers,
-          includeStartPosition: opts.includeStartPosition,
-          fps: opts.fps,
-          loopCount: opts.loopCount,
-        }
-      );
-    } catch (error) {
-      if ((error as Error).message !== "Export cancelled") {
-        console.error("[SequenceDetailsModal] Export failed:", error);
-        exportError = "Export failed. Please try again.";
-      }
-    } finally {
-      isExporting = false;
-      exportProgress = null;
-    }
+    await sequenceModalExporter.exportSplit(
+      opts,
+      { canvas: animationCanvas, playbackController, panelState: modalAnimationState },
+      exportCallbacks
+    );
   }
 
   async function handleAnimationExport() {
-    if (!videoExportOrchestrator || !playbackController || !animationCanvas) {
-      exportError = "Export services not ready. Please try again.";
-      return;
-    }
+    if (!playbackController || !animationCanvas) return;
 
     const opts = exportOptions.getVideoOptions();
-    isExporting = true;
-    exportError = null;
-    exportProgress = { progress: 0, stage: "capturing" };
-
-    try {
-      await videoExportOrchestrator.executeExport(
-        animationCanvas,
-        playbackController,
-        modalAnimationState,
-        (progress) => {
-          exportProgress = progress;
-          if (progress.stage === "complete") {
-            hapticService?.trigger("success");
-            showToast("Video exported!", "success");
-            exitExportMode();
-          } else if (progress.stage === "error") {
-            hapticService?.trigger("error");
-            exportError = progress.error || "Export failed. Please try again.";
-          }
-        },
-        {
-          compositeMode: "none",
-          fps: opts.fps,
-          loopCount: opts.loopCount,
-        }
-      );
-    } catch (error) {
-      if ((error as Error).message !== "Export cancelled") {
-        console.error("[SequenceDetailsModal] Export failed:", error);
-        exportError = "Export failed. Please try again.";
-      }
-    } finally {
-      isExporting = false;
-      exportProgress = null;
-    }
+    await sequenceModalExporter.exportAnimation(
+      opts,
+      { canvas: animationCanvas, playbackController, panelState: modalAnimationState },
+      exportCallbacks
+    );
   }
 
   async function handleImageExport() {
-    if (!sequenceRenderer || !sequence) {
-      exportError = "Export services not ready. Please try again.";
-      return;
-    }
+    if (!sequence) return;
 
     const opts = exportOptions.getImageOptions();
-    isExporting = true;
-    exportError = null;
-
-    try {
-      const blob = await sequenceRenderer.renderSequenceToBlob(sequence, {
-        stepSize: 240,
-        format: "PNG",
-        quality: 1.0,
-        includeStartPosition: opts.includeStartPosition,
-        addStepNumbers: opts.showStepNumbers,
-        addWord: opts.showWord,
-        addDifficultyLevel: opts.showDifficulty,
-        addUserInfo: opts.showCreatorName || opts.showNotes,
-        userName: authState.user?.displayName ?? "",
-        showCreatorName: opts.showCreatorName,
-        showNotes: opts.showNotes,
-        showBirthday: true,
-        addReversalSymbols: true,
-        visibilityOverrides: {
-          darkMode: opts.darkMode,
-        },
-      });
-
-      // Download the image
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${sequence.word || "sequence"}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      hapticService?.trigger("success");
-      showToast("Image exported!", "success");
-      exitExportMode();
-    } catch (error) {
-      console.error("[SequenceDetailsModal] Image export failed:", error);
-      hapticService?.trigger("error");
-      exportError = "Export failed. Please try again.";
-    } finally {
-      isExporting = false;
-    }
+    await sequenceModalExporter.exportImage(
+      opts,
+      { sequence, userName: authState.user?.displayName ?? "" },
+      exportCallbacks
+    );
   }
 
   function handleCancelExport() {
-    videoExportOrchestrator?.cancelExport();
-    isExporting = false;
-    exportProgress = null;
+    sequenceModalExporter.cancel();
     showToast("Export cancelled", "info");
   }
 
@@ -968,6 +904,7 @@
       playbackController.dispose();
     }
     modalAnimationState.dispose();
+    sequenceModalExporter.dispose();
   });
 
   // Calculate preview aspect ratio to determine optimal fullscreen split layout
@@ -1028,34 +965,53 @@
       </header>
     {:else}
       <!-- Normal viewer header -->
-      <header class="details-header" data-hidden={isFullscreen}>
+      <header
+        class="details-header"
+        class:mobile={isMobile}
+        data-hidden={isFullscreen}
+        ontouchstart={handleTouchStart}
+        ontouchmove={handleTouchMove}
+        ontouchend={handleTouchEnd}
+        style={isSwiping ? `transform: translateY(${swipeY}px); opacity: ${1 - swipeY / 200}` : undefined}
+      >
+        <!-- Mobile: Swipe handle indicator -->
+        {#if isMobile}
+          <div class="swipe-handle" aria-hidden="true"></div>
+        {/if}
+
         <div class="header-left">
-          <SyncToggleButton
-            isSearching={lanSyncState.isActive && !lanSyncState.isConnected}
-            isConnected={lanSyncState.isConnected}
-            isToggling={isSyncToggling}
-            onToggle={handleSyncToggle}
-            disabled={isSyncToggling}
-            size="small"
-          />
-          <MultiPerformerButton
-            onclick={() => handleOpenInCompose('stagger')}
-            size="small"
-          />
+          {#if !isMobile}
+            <!-- Desktop: Full set of controls -->
+            <SyncToggleButton
+              isSearching={lanSyncState.isActive && !lanSyncState.isConnected}
+              isConnected={lanSyncState.isConnected}
+              isToggling={isSyncToggling}
+              onToggle={handleSyncToggle}
+              disabled={isSyncToggling}
+              size="small"
+            />
+            <MultiPerformerButton
+              onclick={() => handleOpenInCompose('stagger')}
+              size="small"
+            />
+          {/if}
           <LightsToggleButton
             lightsOn={!imgDarkMode}
             onToggle={() => toggleImgSetting("darkMode")}
             size="small"
           />
-          <ExpandButton
-            isExpanded={isFullscreen}
-            onclick={enterFullscreen}
-            size="small"
-          />
+          {#if !isMobile}
+            <!-- Desktop only: Fullscreen button -->
+            <ExpandButton
+              isExpanded={isFullscreen}
+              onclick={enterFullscreen}
+              size="small"
+            />
+          {/if}
         </div>
 
         <div class="header-center">
-          <h2 class="sequence-title">Sequence Viewer</h2>
+          <h2 class="sequence-title">{isMobile ? (sequence?.word || 'Viewer') : 'Sequence Viewer'}</h2>
         </div>
 
         <div class="header-right">
@@ -1447,7 +1403,7 @@
                 <button
                   type="button"
                   class="retry-export-btn"
-                  onclick={() => { exportError = null; handleExport(); }}
+                  onclick={() => { sequenceModalExporter.clearError(); handleExport(); }}
                 >
                   <i class="fas fa-redo" aria-hidden="true"></i>
                   Retry
@@ -1700,6 +1656,34 @@
   }
 
   /* ===== END FULLSCREEN MORPH STYLES ===== */
+
+  /* ===== MOBILE HEADER STYLES ===== */
+
+  /* Swipe handle - visual affordance for swipe-to-dismiss */
+  .swipe-handle {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+  }
+
+  /* Mobile header - minimal, with swipe affordance */
+  .details-header.mobile {
+    padding-top: 16px; /* Extra space for swipe handle */
+    touch-action: pan-y; /* Enable vertical swipe */
+  }
+
+  .details-header.mobile .sequence-title {
+    /* Show sequence word instead of generic title */
+    max-width: 150px;
+    font-size: var(--font-size-min, 14px);
+  }
+
+  /* ===== END MOBILE HEADER STYLES ===== */
 
   .header-left {
     justify-self: start;
