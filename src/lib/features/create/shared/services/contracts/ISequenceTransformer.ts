@@ -12,7 +12,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { TargetHand } from "../../state/panel-coordination-state.svelte";
+import type { TargetHand } from "../../domain/types/panel-types";
 
 export interface ISequenceTransformer {
   /**

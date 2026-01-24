@@ -15,17 +15,25 @@
  */
 
 import type { ModuleDefinition, ModuleId, Section } from "../domain/types";
-import { container } from "../../di";
 import type { IActivityLogger } from "../../analytics/services/contracts/IActivityLogger";
 import type { IPresenceTracker } from "../../presence/services/contracts/IPresenceTracker";
 
+// Lazy container reference to avoid circular dependency with DI
+// The DI container imports navigation-container which imports DeepLinker
+// which imports navigationState - creating a cycle if we import container here
+let _containerRef: { items: Record<string, unknown> } | null = null;
+
 // Helper function to safely resolve services from container
-// Uses unknown cast to avoid deep type instantiation issues with ITI container
+// Uses lazy resolution to break circular dependency with DI
 function tryResolveService<T>(serviceName: string): T | null {
   try {
-    // Access container.items through unknown to avoid TS2589 (type instantiation too deep)
-    const items = (container as unknown as { items: Record<string, unknown> }).items;
-    const service = items[serviceName];
+    // Lazy load container on first use
+    if (!_containerRef) {
+      // Dynamic import to break the cycle at module load time
+      const { container } = require("../../di");
+      _containerRef = container as { items: Record<string, unknown> };
+    }
+    const service = _containerRef.items[serviceName];
     return service ? (service as T) : null;
   } catch {
     return null;

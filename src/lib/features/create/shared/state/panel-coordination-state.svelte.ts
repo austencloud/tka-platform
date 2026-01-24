@@ -30,12 +30,22 @@ import {
   type GridPosition,
 } from "../../../../shared/pictograph/grid/domain/enums/grid-enums";
 import { createPersistenceHelper } from "../../../../shared/state/utils/persistent-state";
-import { getCreateModuleStateRef } from "./create-module-state-ref.svelte";
 
-/**
- * Target hand for transforms - which hand(s) to apply operations to
- */
-export type TargetHand = "blue" | "red" | "both";
+// Lazy import to break circular dependency
+// panel-coordination-state ↔ create-module-state-ref ↔ construct-tab-state (cycle)
+function getCreateModuleStateRefLazy() {
+  // Dynamic require breaks the cycle at module load time
+  const { getCreateModuleStateRef } = require("./create-module-state-ref.svelte");
+  return getCreateModuleStateRef();
+}
+
+// Re-export TargetHand from standalone types file for backwards compatibility
+// The type is defined in domain/types/panel-types.ts to break circular dependency
+// with ISequenceTransformer which also needs this type
+export type { TargetHand } from "../domain/types/panel-types";
+
+// Import for local use
+import type { TargetHand } from "../domain/types/panel-types";
 
 // ============================================================================
 // PERSISTENCE HELPERS
@@ -481,7 +491,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     openAnimationPanel() {
       closeAllPanels();
       // Clear beat editor selection when opening animation panel
-      const moduleState = getCreateModuleStateRef();
+      const moduleState = getCreateModuleStateRefLazy();
       if (moduleState?.sequenceState) {
         moduleState.sequenceState.clearSelection();
       }
