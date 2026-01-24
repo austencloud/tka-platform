@@ -178,8 +178,10 @@ Same functionality, different density.
       const orch = getOrchestrator();
       const generator = await getRandomGenerator();
 
-      // Parse word WITH bridge letters
-      const parseResult = await orch.parseWord(spellState.inputWord);
+      // Parse word WITH bridge letters (pass preferences for dash preference)
+      const parseResult = await orch.parseWord(spellState.inputWord, {
+        preferences: spellState.preferences,
+      });
       if (!parseResult.success || !parseResult.expandedLetters) {
         spellState.setError(parseResult.error || "Could not parse word");
         return;

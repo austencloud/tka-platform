@@ -44,7 +44,16 @@
   import { getAnimationVisibilityManager, type TrailStyle } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { goto } from "$app/navigation";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  // Button components now imported by ViewerHeader
+  // Button components
+  import SyncToggleButton from "$lib/shared/ui/components/SyncToggleButton.svelte";
+  import MultiPerformerButton from "$lib/shared/ui/components/MultiPerformerButton.svelte";
+  import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
+  import ExpandButton from "$lib/shared/ui/components/ExpandButton.svelte";
+  // Animation and playback
+  import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
+  import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
   import { browser } from "$app/environment";
   import {
     getExportOptionsState,

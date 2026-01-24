@@ -5,7 +5,7 @@
  */
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { LetterSource } from "../../domain/models/spell-models";
+import type { LetterSource, SpellPreferences } from "../../domain/models/spell-models";
 
 /**
  * Result of parsing a word for generation
@@ -25,11 +25,20 @@ export interface WordParseResult {
   error?: string;
 }
 
+/**
+ * Options for word parsing
+ */
+export interface WordParseOptions {
+  /** Preferences that affect bridge letter selection */
+  preferences?: SpellPreferences;
+}
+
 export interface IVariationExplorationOrchestrator {
   /**
    * Parse a word and prepare for generation
    * @param word The input word
+   * @param options Optional parsing options including preferences
    * @returns Parsed result with original and expanded letters
    */
-  parseWord(word: string): Promise<WordParseResult>;
+  parseWord(word: string, options?: WordParseOptions): Promise<WordParseResult>;
 }
