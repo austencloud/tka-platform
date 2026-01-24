@@ -27,7 +27,7 @@
 
   // ===== Types =====
   type CloseReason = "backdrop" | "escape" | "programmatic" | "button";
-  type ModalSize = "sm" | "md" | "lg" | "full" | "fit";
+  type ModalSize = "sm" | "md" | "lg" | "full" | "fit" | "module-grid";
   type ModalPosition = "center" | "top";
   type ModalAnimation = "pop" | "slide" | "none";
 

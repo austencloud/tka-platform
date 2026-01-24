@@ -18,6 +18,9 @@
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
+  import { startPositionDeriver as startPositionDeriverDirect } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+  import { orientationCalculator as orientationCalculatorDirect } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+  import { gridPositionDeriver as gridPositionDeriverDirect } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -158,25 +161,22 @@
     try {
       animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS);
 
-      // Get services from DI container
+      // Get services from DI container (some still need container, others use direct imports)
       playbackController = container.items
         .animationPlaybackController as IAnimationPlaybackController;
-      startPositionDeriver = container.items
-        .startPositionDeriver as IStartPositionDeriver;
+      startPositionDeriver = startPositionDeriverDirect;
       const exploreLoader = container.items.exploreLoader;
       const generationOrchestrator = container.items.generationOrchestrator;
       const sequenceTransformer = container.items.sequenceTransformer;
-      const orientationCalculator = container.items.orientationCalculator;
-      const gridPositionDeriver = container.items.gridPositionDeriver;
 
       // Create the spinner orchestrator
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
         exploreLoader as any,
         generationOrchestrator as any,
         sequenceTransformer as any,
-        startPositionDeriver,
-        orientationCalculator as any,
-        gridPositionDeriver as any
+        startPositionDeriverDirect,
+        orientationCalculatorDirect as any,
+        gridPositionDeriverDirect as any
       );
 
       // Initialize the orchestrator

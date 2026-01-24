@@ -89,88 +89,150 @@
 </script>
 
 <MessageActions {message} {isOwn}>
-  <div
-    class="message-bubble"
-    class:own={isOwn}
-    class:deleted={message.isDeleted}
-    class:is-new={isNew}
-    class:has-attachment={feedbackAttachment || sequenceAttachment}
-    class:has-reactions={hasReactions}
-    class:has-sender={showSender}
-    role="article"
-    aria-label="{isOwn ? 'You' : message.senderName} said: {message.content}"
-  >
-    <!-- Group message sender info -->
-    {#if showSender && senderInfo}
-      <div class="sender-row">
+  <!-- Group messages from others: avatar gutter layout -->
+  {#if showSender && senderInfo}
+    <div class="group-message-row">
+      <div class="avatar-gutter">
         <RobustAvatar
           src={senderInfo.avatar}
           name={senderInfo.displayName}
           alt=""
-          customSize={20}
+          customSize={28}
         />
-        <span class="sender-name">{senderInfo.displayName}</span>
       </div>
-    {/if}
-
-    <div class="bubble">
-      <!-- Reply preview -->
-      {#if message.replyTo}
-        <ReplyPreview reply={message.replyTo} compact />
-      {/if}
-
-      {#if sequenceAttachment}
-        <SequenceMessageCard attachment={sequenceAttachment} {isOwn} />
-        {#if message.content && !message.content.startsWith("Check out this sequence")}
-          <p class="content attachment-content">{message.content}</p>
-        {/if}
-      {:else if feedbackAttachment}
-        <FeedbackMessageCard attachment={feedbackAttachment} {isOwn} />
-        {#if message.content && message.content !== "[Feedback submitted]"}
-          <p class="content attachment-content">{message.content}</p>
-        {/if}
-      {:else}
-        <p class="content">{message.content}</p>
-      {/if}
-      <div class="meta">
-        <time class="time" datetime={message.createdAt.toISOString()}
-          >{formatTime(message.createdAt)}</time
-        >
-        {#if wasEdited && !message.isDeleted}
-          {#if message.editHistory && message.editHistory.length > 0}
-            <button
-              type="button"
-              class="edited-button"
-              onclick={handleEditedClick}
-              aria-label="View edit history"
-            >
-              (edited)
-            </button>
-          {:else}
-            <span class="edited">(edited)</span>
+      <div
+        class="message-bubble"
+        class:deleted={message.isDeleted}
+        class:is-new={isNew}
+        class:has-attachment={feedbackAttachment || sequenceAttachment}
+        class:has-reactions={hasReactions}
+        class:has-sender={true}
+        role="article"
+        aria-label="{message.senderName} said: {message.content}"
+      >
+        <span class="sender-name">{senderInfo.displayName}</span>
+        <div class="bubble">
+          <!-- Reply preview -->
+          {#if message.replyTo}
+            <ReplyPreview reply={message.replyTo} compact />
           {/if}
-        {/if}
-        {#if showReadReceipt && !message.isDeleted}
-          <span class="read-receipt read" aria-label="Read">
-            <i class="fas fa-check-double" aria-hidden="true"></i>
-            {#if readTimestamp}
-              <span class="read-time">{formatReadTime(readTimestamp)}</span>
+
+          {#if sequenceAttachment}
+            <SequenceMessageCard attachment={sequenceAttachment} {isOwn} />
+            {#if message.content && !message.content.startsWith("Check out this sequence")}
+              <p class="content attachment-content">{message.content}</p>
             {/if}
-          </span>
+          {:else if feedbackAttachment}
+            <FeedbackMessageCard attachment={feedbackAttachment} {isOwn} />
+            {#if message.content && message.content !== "[Feedback submitted]"}
+              <p class="content attachment-content">{message.content}</p>
+            {/if}
+          {:else}
+            <p class="content">{message.content}</p>
+          {/if}
+          <div class="meta">
+            <time class="time" datetime={message.createdAt.toISOString()}
+              >{formatTime(message.createdAt)}</time
+            >
+            {#if wasEdited && !message.isDeleted}
+              {#if message.editHistory && message.editHistory.length > 0}
+                <button
+                  type="button"
+                  class="edited-button"
+                  onclick={handleEditedClick}
+                  aria-label="View edit history"
+                >
+                  (edited)
+                </button>
+              {:else}
+                <span class="edited">(edited)</span>
+              {/if}
+            {/if}
+          </div>
+        </div>
+
+        <!-- Reactions -->
+        {#if hasReactions && message.reactions}
+          <div class="reactions-wrapper">
+            <MessageReactions
+              reactions={message.reactions}
+              onToggleReaction={handleToggleReaction}
+            />
+          </div>
         {/if}
       </div>
     </div>
+  {:else}
+    <!-- Own messages and 1:1 chat messages -->
+    <div
+      class="message-bubble"
+      class:own={isOwn}
+      class:deleted={message.isDeleted}
+      class:is-new={isNew}
+      class:has-attachment={feedbackAttachment || sequenceAttachment}
+      class:has-reactions={hasReactions}
+      role="article"
+      aria-label="{isOwn ? 'You' : message.senderName} said: {message.content}"
+    >
+      <div class="bubble">
+        <!-- Reply preview -->
+        {#if message.replyTo}
+          <ReplyPreview reply={message.replyTo} compact />
+        {/if}
 
-    <!-- Reactions -->
-    {#if hasReactions && message.reactions}
-      <div class="reactions-wrapper">
-        <MessageReactions
-          reactions={message.reactions}
-          onToggleReaction={handleToggleReaction}
-        />
+        {#if sequenceAttachment}
+          <SequenceMessageCard attachment={sequenceAttachment} {isOwn} />
+          {#if message.content && !message.content.startsWith("Check out this sequence")}
+            <p class="content attachment-content">{message.content}</p>
+          {/if}
+        {:else if feedbackAttachment}
+          <FeedbackMessageCard attachment={feedbackAttachment} {isOwn} />
+          {#if message.content && message.content !== "[Feedback submitted]"}
+            <p class="content attachment-content">{message.content}</p>
+          {/if}
+        {:else}
+          <p class="content">{message.content}</p>
+        {/if}
+        <div class="meta">
+          <time class="time" datetime={message.createdAt.toISOString()}
+            >{formatTime(message.createdAt)}</time
+          >
+          {#if wasEdited && !message.isDeleted}
+            {#if message.editHistory && message.editHistory.length > 0}
+              <button
+                type="button"
+                class="edited-button"
+                onclick={handleEditedClick}
+                aria-label="View edit history"
+              >
+                (edited)
+              </button>
+            {:else}
+              <span class="edited">(edited)</span>
+            {/if}
+          {/if}
+          {#if showReadReceipt && !message.isDeleted}
+            <span class="read-receipt read" aria-label="Read">
+              <i class="fas fa-check-double" aria-hidden="true"></i>
+              {#if readTimestamp}
+                <span class="read-time">{formatReadTime(readTimestamp)}</span>
+              {/if}
+            </span>
+          {/if}
+        </div>
       </div>
-    {/if}
-  </div>
+
+      <!-- Reactions -->
+      {#if hasReactions && message.reactions}
+        <div class="reactions-wrapper">
+          <MessageReactions
+            reactions={message.reactions}
+            onToggleReaction={handleToggleReaction}
+          />
+        </div>
+      {/if}
+    </div>
+  {/if}
 </MessageActions>
 
 <!-- Edit History Sheet -->
@@ -252,19 +314,26 @@
     border-bottom-left-radius: 6px;
   }
 
-  /* Group message sender info */
-  .sender-row {
+  /* Group message avatar gutter layout */
+  .group-message-row {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 4px;
-    padding-left: 2px;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 85%;
+  }
+
+  .avatar-gutter {
+    flex-shrink: 0;
+    padding-top: 2px;
   }
 
   .sender-name {
+    display: block;
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     color: var(--theme-text-dim);
+    margin-bottom: 2px;
+    padding-left: 2px;
   }
 
   .message-bubble.has-sender {

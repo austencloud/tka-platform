@@ -125,6 +125,12 @@ dialog.base-modal[data-size="fit"] {
   height: fit-content;
 }
 
+/* Module grid - wide modal for toggle grid */
+dialog.base-modal[data-size="module-grid"] {
+  width: min(95vw, 1200px);
+  height: min(90vh, 700px);
+}
+
 /* ===== Position Variants ===== */
 dialog.base-modal[data-position="top"] {
   margin-top: 10vh;
@@ -258,6 +264,14 @@ dialog.base-modal[data-entered="true"] [data-animate-icon] {
     max-height: 85vh;
     border-radius: var(--modal-border-radius-mobile);
     margin: auto;
+  }
+
+  /* Module grid takes full screen on mobile */
+  dialog.base-modal[data-size="module-grid"] {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    margin: 0;
   }
 }
 

@@ -3,6 +3,9 @@
  * Particularly important for Svelte 5 runes state management
  */
 
+// Track if we've already scheduled a reload to prevent multiple reloads
+let reloadScheduled = false;
+
 /**
  * Check if we're in HMR mode and the page needs a full reload
  */
@@ -29,6 +32,18 @@ export function shouldForceReload(): boolean {
 }
 
 /**
+ * Schedule a page reload with debounce to prevent multiple reloads
+ */
+function scheduleReload(reason: string) {
+  if (reloadScheduled) return;
+  reloadScheduled = true;
+  console.warn(`[HMR] Scheduling page reload: ${reason}`);
+  setTimeout(() => {
+    window.location.reload();
+  }, 100);
+}
+
+/**
  * Handle HMR-specific initialization
  * Call this in your main app component's onMount
  */
@@ -39,28 +54,109 @@ export function handleHMRInit() {
 
   // Listen for Vite HMR events
   if (import.meta.hot) {
-    // Before HMR invalidation, check if we should do a full reload instead
-    import.meta.hot.on("vite:beforeUpdate", () => {
+    // Before HMR invalidation, track which files are being updated
+    import.meta.hot.on("vite:beforeUpdate", (payload: { updates: Array<{ path: string }> }) => {
+      // Clear module cache to prevent stale chunk issues
+      clearModuleCache();
+
+      // Track updated files for reactivity check
+      const updatedFiles = payload.updates?.map(u => u.path) || [];
+      (window as any).__VITE_HMR_UPDATED_FILES__ = updatedFiles;
     });
 
-    // After HMR update, verify the page is still functional
-    import.meta.hot.on("vite:afterUpdate", () => {
+    // After HMR update, verify the page is still functional and restore theme
+    import.meta.hot.on("vite:afterUpdate", async () => {
       // Small delay to let Svelte finish rendering
-      setTimeout(() => {
+      setTimeout(async () => {
         if (shouldForceReload()) {
-          window.location.reload();
+          scheduleReload("Empty app after HMR update");
+        } else {
+          // Theme CSS variables can be cleared by HMR - restore them
+          // Note: BackgroundController handles its own HMR persistence
+          await restoreThemeFromSettings();
+          // Check if reactivity is still working after HMR
+          checkReactivityHealth();
         }
       }, 100);
     });
 
     // Handle errors during HMR
     import.meta.hot.on("vite:error", (_error: unknown) => {
-      // Force reload on error
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      scheduleReload("Vite HMR error");
     });
   }
+
+  // Listen for global errors that indicate module loading failures
+  // These happen when the browser gets HTML instead of JS for a module request
+  setupGlobalErrorHandler();
+}
+
+/**
+ * Callback registry for module cache clearing
+ * Modules can register their cache clear functions here
+ */
+const moduleCacheClearCallbacks: Array<() => void> = [];
+
+/**
+ * Register a callback to clear a module's cache when HMR updates happen
+ */
+export function registerModuleCacheClear(callback: () => void) {
+  moduleCacheClearCallbacks.push(callback);
+}
+
+/**
+ * Clear all registered module caches
+ */
+function clearModuleCache() {
+  for (const callback of moduleCacheClearCallbacks) {
+    try {
+      callback();
+    } catch (e) {
+      console.warn("[HMR] Error clearing module cache:", e);
+    }
+  }
+}
+
+/**
+ * Set up global error handler for module loading failures
+ * This catches MIME type errors when Vite serves HTML instead of JS
+ */
+function setupGlobalErrorHandler() {
+  if (typeof window === "undefined" || !import.meta.env.DEV) return;
+
+  // Handle error events (catches synchronous errors)
+  window.addEventListener("error", (event) => {
+    const message = event.message || "";
+    const error = event.error;
+
+    // Check for MIME type errors indicating corrupted module loads
+    if (
+      message.includes("MIME type") ||
+      message.includes("Failed to load module script") ||
+      (error?.message && error.message.includes("MIME type"))
+    ) {
+      console.error("[HMR] Module script MIME error detected, reloading...");
+      scheduleReload("Module MIME type error");
+      event.preventDefault();
+    }
+  });
+
+  // Handle unhandled promise rejections (catches async import failures)
+  window.addEventListener("unhandledrejection", (event) => {
+    const reason = event.reason;
+    const message = reason?.message || String(reason) || "";
+
+    // Check for dynamic import failures
+    if (
+      message.includes("Failed to fetch dynamically imported module") ||
+      message.includes("MIME type") ||
+      message.includes("is not a valid JavaScript")
+    ) {
+      console.error("[HMR] Dynamic import failure detected, reloading...");
+      scheduleReload("Dynamic import failure");
+      event.preventDefault();
+    }
+  });
 }
 
 /**
@@ -69,5 +165,135 @@ export function handleHMRInit() {
 export function onBeforeHMR(cleanup: () => void) {
   if (import.meta.hot) {
     import.meta.hot.on("vite:beforeUpdate", cleanup);
+  }
+}
+
+// Patterns that indicate files critical for navigation/reactivity
+// HMR updates to these files often break Svelte reactivity
+const CRITICAL_FILE_PATTERNS = [
+  /navigation.*state/i,
+  /navigation-coordinator/i,
+  /layout-state/i,
+  /ModuleRenderer/i,
+  /MainInterface/i,
+  /CreateModule/i,
+  /StandardWorkspaceLayout/i,
+  /CreationToolPanelSlot/i,
+];
+
+/**
+ * Check if any updated modules are critical for navigation
+ * If so, force a full reload to avoid broken reactivity
+ */
+function checkReactivityHealth() {
+  // This is called after HMR update - we can't easily get the updated file list
+  // from Vite's afterUpdate event, so we use a different strategy:
+  //
+  // We expose a global that tracks the last HMR-updated files
+  // and check it here
+  const updatedFiles = (window as any).__VITE_HMR_UPDATED_FILES__ as string[] | undefined;
+
+  if (!updatedFiles || updatedFiles.length === 0) {
+    // Even without knowing which files updated, check for state/UI desync
+    checkStateUISync();
+    return;
+  }
+
+  const hasCriticalUpdate = updatedFiles.some(file =>
+    CRITICAL_FILE_PATTERNS.some(pattern => pattern.test(file))
+  );
+
+  if (hasCriticalUpdate) {
+    console.warn("[HMR] Critical navigation file updated, reloading to ensure reactivity...");
+    scheduleReload("Critical navigation file HMR update");
+  } else {
+    // For non-critical updates, still check for state/UI desync
+    checkStateUISync();
+  }
+
+  // Clear the tracking array
+  (window as any).__VITE_HMR_UPDATED_FILES__ = [];
+}
+
+/**
+ * Check if navigation state and URL are in sync
+ * If they've drifted apart, reactivity is likely broken
+ */
+async function checkStateUISync() {
+  if (reloadScheduled) return;
+
+  try {
+    // Dynamic import to get fresh module reference
+    const { navigationState } = await import(
+      "./navigation/state/navigation-state.svelte"
+    );
+
+    const stateTab = navigationState.activeTab;
+    const stateModule = navigationState.currentModule;
+
+    // Get current URL path
+    const urlPath = window.location.pathname;
+    const urlParts = urlPath.split('/').filter(Boolean);
+    const urlModule = urlParts[0];
+    const urlTab = urlParts[1];
+
+    // Only check for Create module where tab desync is common
+    if (stateModule !== 'create') return;
+
+    // If URL has a tab and it doesn't match state, we have a problem
+    // But only if URL was recently updated (indicating user navigated)
+    if (urlTab && stateTab && urlTab !== stateTab) {
+      // Give Svelte a moment to sync
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Re-check after delay
+      const newStateTab = navigationState.activeTab;
+      const newUrlPath = window.location.pathname;
+      const newUrlTab = newUrlPath.split('/').filter(Boolean)[1];
+
+      if (newUrlTab && newStateTab && newUrlTab !== newStateTab) {
+        console.error(`[HMR] State/URL desync detected: state=${newStateTab}, url=${newUrlTab}`);
+        scheduleReload("State/UI desync after HMR");
+      }
+    }
+  } catch (error) {
+    // Don't fail loudly - this is a best-effort check
+    console.warn("[HMR] State sync check failed:", error);
+  }
+}
+
+/**
+ * Restore theme CSS variables from persisted settings after HMR
+ * HMR can clear CSS variables - this restores the --theme-* variables.
+ *
+ * Note: BackgroundController handles its own HMR persistence via import.meta.hot.data,
+ * but theme CSS variables (for panels, accents, text) need to be restored here.
+ */
+export async function restoreThemeFromSettings() {
+  if (typeof window === "undefined") return;
+
+  // Check if theme variables are missing (sign of HMR clearing them)
+  const root = document.documentElement;
+  const currentPanelBg = getComputedStyle(root)
+    .getPropertyValue("--theme-panel-bg")
+    .trim();
+
+  // If we still have theme variables, no need to restore
+  if (currentPanelBg && currentPanelBg !== "") {
+    return;
+  }
+
+  console.log("[HMR] Theme variables missing, restoring from settings...");
+
+  try {
+    // Restore theme CSS variables (--theme-panel-bg, --theme-accent, etc.)
+    const { ensureThemeApplied } = await import(
+      "./settings/utils/background-theme-calculator"
+    );
+    ensureThemeApplied();
+
+    console.log("[HMR] Theme variables restored");
+  } catch (error) {
+    console.warn("[HMR] Failed to restore theme:", error);
   }
 }

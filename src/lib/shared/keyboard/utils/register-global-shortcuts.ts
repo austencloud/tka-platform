@@ -28,6 +28,7 @@ import { toast } from "../../toast/state/toast-state.svelte";
 import { backgroundsConfig } from "../../settings/components/tabs/background/background-config";
 import { BackgroundType } from "../../background/shared/domain/enums/background-enums";
 import { applyThemeFromColors } from "../../settings/utils/background-theme-calculator";
+import { updateBodyBackground } from "../../background/shared/background-preloader";
 import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 
 export function registerGlobalShortcuts(
@@ -356,14 +357,19 @@ export function registerGlobalShortcuts(
       scope: "action",
       priority: "high",
       action: () => {
+        console.log('[Keyboard] Theme shortcut triggered:', bgConfig.type, bgConfig.name);
+
         // Block changes in preview mode
         if (isSettingsPreviewMode()) {
+          console.log('[Keyboard] Blocked - in preview mode');
           return;
         }
 
-        // Apply theme colors for UI
+        // Apply theme colors for UI AND body background
+        // ALWAYS apply both - CSS variables may have been cleared by HMR
         if (bgConfig.type === BackgroundType.SOLID_COLOR && bgConfig.color) {
           applyThemeFromColors(bgConfig.color);
+          updateBodyBackground(bgConfig.type, { color: bgConfig.color });
           void updateSettings({
             backgroundType: bgConfig.type,
             backgroundColor: bgConfig.color,
@@ -373,6 +379,10 @@ export function registerGlobalShortcuts(
           bgConfig.colors
         ) {
           applyThemeFromColors(undefined, bgConfig.colors);
+          updateBodyBackground(bgConfig.type, {
+            colors: bgConfig.colors,
+            direction: bgConfig.direction || 135,
+          });
           void updateSettings({
             backgroundType: bgConfig.type,
             gradientColors: bgConfig.colors,
@@ -381,6 +391,7 @@ export function registerGlobalShortcuts(
         } else if (bgConfig.themeColors) {
           // Animated backgrounds
           applyThemeFromColors(undefined, bgConfig.themeColors);
+          updateBodyBackground(bgConfig.type);
           void updateSettings({
             backgroundType: bgConfig.type,
           });
