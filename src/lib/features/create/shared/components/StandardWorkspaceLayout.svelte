@@ -30,6 +30,7 @@
     panelState,
     currentDisplayWord,
     currentLetterSources = null,
+    isInputMode = false,
     // Bindable props
     animatingStepNumber = $bindable(null),
     toolPanelRef = $bindable(null),
@@ -49,6 +50,8 @@
     currentDisplayWord: string;
     /** Letter sources for spell tab - enables original vs bridge letter styling */
     currentLetterSources?: LetterSource[] | null;
+    /** Input mode active - collapse workspace to maximize space for word input */
+    isInputMode?: boolean;
     animatingStepNumber?: number | null;
     toolPanelRef?: IToolPanelMethods | null;
     buttonPanelElement?: HTMLElement | null;
@@ -93,9 +96,10 @@
   const isGeneratorTab = $derived(navigationState.activeTab === "generator");
 
   // Workspace should be visible if:
+  // - NOT in input mode (keyboard up on mobile)
   // - Generator tab (always visible with empty prompt)
   // - Other tabs only when there's content
-  const shouldShowWorkspace = $derived(isGeneratorTab || hasWorkspaceContent);
+  const shouldShowWorkspace = $derived(!isInputMode && (isGeneratorTab || hasWorkspaceContent));
 
   // Color border based on active CREATE tab (for visual workspace distinction)
   const workspaceBorderColor = $derived.by(() => {

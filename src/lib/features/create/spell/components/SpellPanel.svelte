@@ -2,9 +2,14 @@
 SpellPanel.svelte - Word-to-Sequence Generation Panel (Preferences-First Flow)
 
 New UX flow (preferences-first):
-1. PREFERENCES: Collect ALL preferences upfront (word, grid, length, motion, reversals, loop)
+1. PREFERENCES: Collect ALL preferences upfront (word, grid, motion, flow, loop)
 2. GENERATING: Progress bar while generating
 3. HAS-SEQUENCE: Show action buttons (Shuffle, Transform, New Word, Refine)
+
+Keyboard-aware input mode:
+- On touch devices, focusing the word input triggers "input mode"
+- Header and preferences collapse to maximize space for word entry
+- Keyboard toolbar appears above virtual keyboard with Generate/Done buttons
 
 Sequences go directly into sequenceState, and the workspace displays them automatically.
 This component only shows controls - no preview. Same pattern as Generator tab.
@@ -17,11 +22,13 @@ This component only shows controls - no preview. Same pattern as Generator tab.
   import type { IVariationExplorationOrchestrator } from "../services/contracts/IVariationExplorationOrchestrator";
   import type { IRandomSequenceGenerator } from "../services/contracts/IRandomSequenceGenerator";
   import type { ISpellServiceLoader } from "../services/contracts/ISpellServiceLoader";
-  import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+  import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+  import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import { UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
   import PreferencesPage from "./PreferencesPage.svelte";
+  import SpellInputToolbar from "./SpellInputToolbar.svelte";
   import { loadSpellState, saveSpellState } from "../state/spell-persistence.svelte";
   import { createConstraintSet } from "$lib/shared/sequence-engine/constraints";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
@@ -37,14 +44,28 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     isDesktop?: boolean;
   } = $props();
 
+  // Touch device and input focus tracking
+  const deviceDetector = container.items.deviceDetector as IDeviceDetector;
+  let isTouchDevice = $state(false);
+  let isInputFocused = $state(false);
+  let keyboardHeight = $state(0);
+  let isKeyboardVisible = $state(false);
+
+  // Input mode: distraction-free typing on touch devices
+  const isInputMode = $derived(isInputFocused && isTouchDevice);
+
   // Get context at component initialization (not in event handlers)
   const createModuleContext = tryGetCreateModuleContext();
+
+  // Notify parent layout when input mode changes (collapses workspace on mobile)
+  $effect(() => {
+    createModuleContext?.layout?.setInputMode(isInputMode);
+  });
 
   // Lazy-resolved services
   let orchestrator: IVariationExplorationOrchestrator | null = null;
   let serviceLoader: ISpellServiceLoader | null = null;
   let randomGenerator: IRandomSequenceGenerator | null = null;
-  let startPositionDeriver: IStartPositionDeriver | null = null;
 
   function getServiceLoader(): ISpellServiceLoader {
     if (!serviceLoader) {
@@ -68,15 +89,10 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     return randomGenerator;
   }
 
-  function getStartPositionDeriver(): IStartPositionDeriver {
-    if (!startPositionDeriver) {
-      startPositionDeriver = container.items.startPositionDeriver as IStartPositionDeriver;
-    }
-    return startPositionDeriver;
-  }
-
-  // Load persisted state on mount
+  // Load persisted state on mount and detect touch device
   onMount(() => {
+    isTouchDevice = deviceDetector.isTouchDevice();
+
     const persisted = loadSpellState();
     if (persisted.inputWord) {
       spellState.setInputWord(persisted.inputWord);
@@ -91,6 +107,23 @@ This component only shows controls - no preview. Same pattern as Generator tab.
       spellState.setWizardPhase(persisted.wizardPhase === "results" ? "preferences" : persisted.wizardPhase);
     }
   });
+
+  function handleInputFocusChange(focused: boolean) {
+    isInputFocused = focused;
+  }
+
+  function handleToolbarDone() {
+    isInputFocused = false;
+    // Blur any focused element
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }
+
+  function handleKeyboardVisibilityChange(visible: boolean, height: number) {
+    isKeyboardVisible = visible;
+    keyboardHeight = height;
+  }
 
   // Auto-save state when phase changes (sequence is persisted via sequenceState)
   $effect(() => {
@@ -121,11 +154,10 @@ This component only shows controls - no preview. Same pattern as Generator tab.
     if (!firstStep) return sequence;
 
     try {
-      const deriver = getStartPositionDeriver();
-      const startPosition = deriver.deriveFromFirstBeat(firstStep);
+      const derivedStartPosition = startPositionDeriver.deriveFromFirstBeat(firstStep);
       return {
         ...sequence,
-        startPosition,
+        startPosition: derivedStartPosition,
       };
     } catch (error) {
       console.warn("Failed to derive start position:", error);
@@ -322,9 +354,8 @@ This component only shows controls - no preview. Same pattern as Generator tab.
       });
 
       // Derive new start position
-      const deriver = getStartPositionDeriver();
       const newStartPosition = mergedSteps.length > 0
-        ? deriver.deriveFromFirstBeat(mergedSteps[0])
+        ? startPositionDeriver.deriveFromFirstBeat(mergedSteps[0])
         : existingSequence.startPosition;
 
       // Update sequence in place - same ID, new data
@@ -431,7 +462,23 @@ This component only shows controls - no preview. Same pattern as Generator tab.
       onGenerate={handleGenerate}
       estimatedCount={null}
       isEstimating={false}
+      {isInputMode}
+      {keyboardHeight}
+      onInputFocusChange={handleInputFocusChange}
     />
+
+    <!-- Keyboard toolbar for touch devices -->
+    {#if isTouchDevice}
+      <SpellInputToolbar
+        visible={isInputFocused}
+        canGenerate={spellState.inputWord.length > 0}
+        isGenerating={spellState.isGenerating}
+        word={spellState.inputWord}
+        onDone={handleToolbarDone}
+        onGenerate={handleGenerate}
+        onKeyboardVisibilityChange={handleKeyboardVisibilityChange}
+      />
+    {/if}
 
   {:else if spellState.wizardPhase === "generating"}
     <!-- GENERATING PHASE -->
@@ -472,14 +519,21 @@ This component only shows controls - no preview. Same pattern as Generator tab.
 
 <style>
   .spell-panel {
-    container-type: size;
+    container-type: inline-size;
     container-name: spell-panel;
     position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
     width: 100%;
+    min-height: 0;
     overflow: hidden;
+  }
+
+  /* Ensure child phases fill the available space */
+  .spell-panel > :global(*) {
+    flex: 1;
+    min-height: 0;
   }
 
   /* Error Banner */

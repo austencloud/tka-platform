@@ -1,16 +1,22 @@
 <!--
 PreferencesPage.svelte - Single-page preference collection
 
-New "preferences-first" flow:
-- User sets ALL preferences upfront before generation
-- Word input + Grid mode + Length + Motion + Reversals + Loop
-- "Generate Matching" button triggers constrained exploration
-- Shows count of variations that will match (estimated)
+Simplified preferences:
+- Word input (primary focus)
+- Grid mode (Diamond/Box)
+- Motion style (dash preferences)
+- Generation style (reversal/flow preferences)
+- Loop toggle
+
+Keyboard-aware input mode:
+- On touch devices, focusing the input triggers "input mode"
+- Header and other preferences collapse to give more room
+- Keyboard toolbar appears above virtual keyboard
 -->
 <script lang="ts">
   import type { SpellPreferences } from "../domain/models/spell-models";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { CONSTRAINT_PRESETS, type ConstraintPresetId } from "$lib/shared/sequence-engine/constraints";
+  import { CONSTRAINT_PRESETS } from "$lib/shared/sequence-engine/constraints";
   import WordInput from "./WordInput.svelte";
 
   let {
@@ -23,6 +29,9 @@ New "preferences-first" flow:
     onGenerate,
     estimatedCount = null,
     isEstimating = false,
+    isInputMode = false,
+    keyboardHeight = 0,
+    onInputFocusChange,
   }: {
     word: string;
     onWordChange: (word: string) => void;
@@ -36,7 +45,18 @@ New "preferences-first" flow:
     onGenerate: () => void;
     estimatedCount?: number | null;
     isEstimating?: boolean;
+    /** When true, form is in distraction-free input mode */
+    isInputMode?: boolean;
+    /** Keyboard height in pixels (for smart positioning) */
+    keyboardHeight?: number;
+    /** Called when input focus changes */
+    onInputFocusChange?: (focused: boolean) => void;
   } = $props();
+
+  // Calculate available space and center the input when keyboard is visible
+  // Toolbar is ~60px, so total bottom inset = keyboardHeight + 60
+  const toolbarHeight = 60;
+  const bottomInset = $derived(keyboardHeight > 0 ? keyboardHeight + toolbarHeight : 0);
 
   // Grid mode options
   const gridModes: { value: GridMode; label: string }[] = [
@@ -44,55 +64,41 @@ New "preferences-first" flow:
     { value: "box" as GridMode, label: "Box" },
   ];
 
-  // Length options - these will be populated from actual variation data
-  const lengthOptions = [
-    { value: null, label: "Any Length" },
-    { value: 3, label: "3 steps" },
-    { value: 6, label: "6 steps" },
-    { value: 9, label: "9 steps" },
-    { value: 12, label: "12 steps" },
-  ];
-
-  // Motion options
+  // Motion options - controls dash letter inclusion
   const motionOptions = [
-    { value: null, label: "Any Motion" },
+    { value: null, label: "Any" },
     { value: "dash" as const, label: "Dashes Only" },
     { value: "no-dash" as const, label: "No Dashes" },
-  ];
-
-  // Reversal options
-  const reversalOptions = [
-    { value: null, label: "Any" },
-    { value: 0, label: "None" },
-    { value: 2, label: "Few (1-2)" },
   ];
 
   const canGenerate = $derived(word.length > 0);
 </script>
 
-<div class="preferences-page">
-  <!-- Header -->
-  <div class="page-header">
-    <h2 class="page-title">Set Your Preferences</h2>
-    <p class="page-subtitle">
-      Choose your word and constraints. We'll generate only matching variations.
-    </p>
-  </div>
+<div
+  class="preferences-page"
+  class:input-mode={isInputMode}
+  style:--keyboard-bottom-inset="{bottomInset}px"
+>
+  <!-- Header - collapses in input mode -->
+  <header class="page-header" class:collapsed={isInputMode}>
+    <h2 class="page-title">Spell a Word</h2>
+    <p class="page-subtitle">Enter your word and we'll generate a sequence</p>
+  </header>
 
-  <!-- Content Card -->
-  <div class="content-card">
-    <!-- Word Input Section -->
-    <section class="preference-section">
-      <h3 class="section-title">Word</h3>
-      <WordInput
-        value={word}
-        onInput={onWordChange}
-      />
-    </section>
+  <!-- Word Input Section - centered in available space when keyboard is up -->
+  <section class="word-section" class:keyboard-active={isInputMode && keyboardHeight > 0}>
+    <WordInput
+      value={word}
+      onInput={onWordChange}
+      onFocusChange={onInputFocusChange}
+    />
+  </section>
 
-    <!-- Grid Mode Section -->
+  <!-- Options Card - collapses in input mode -->
+  <div class="options-card" class:collapsed={isInputMode}>
+    <!-- Grid Mode -->
     <section class="preference-section">
-      <h3 class="section-title">Grid Mode</h3>
+      <h3 class="section-title">Grid</h3>
       <div class="chip-group" role="radiogroup" aria-label="Grid mode">
         {#each gridModes as mode}
           <button
@@ -108,28 +114,10 @@ New "preferences-first" flow:
       </div>
     </section>
 
-    <!-- Length Section -->
+    <!-- Motion Style -->
     <section class="preference-section">
-      <h3 class="section-title">Length</h3>
-      <div class="chip-group" role="radiogroup" aria-label="Sequence length">
-        {#each lengthOptions as option}
-          <button
-            class="chip"
-            class:active={preferences.targetStepCount === option.value}
-            onclick={() => onPreferenceChange("targetStepCount", option.value)}
-            role="radio"
-            aria-checked={preferences.targetStepCount === option.value}
-          >
-            {option.label}
-          </button>
-        {/each}
-      </div>
-    </section>
-
-    <!-- Motion Style Section -->
-    <section class="preference-section">
-      <h3 class="section-title">Motion Style</h3>
-      <div class="chip-group" role="radiogroup" aria-label="Motion style">
+      <h3 class="section-title">Dashes</h3>
+      <div class="chip-group" role="radiogroup" aria-label="Dash preference">
         {#each motionOptions as option}
           <button
             class="chip"
@@ -144,10 +132,10 @@ New "preferences-first" flow:
       </div>
     </section>
 
-    <!-- Generation Style Section -->
+    <!-- Generation Style (controls reversals) -->
     <section class="preference-section">
-      <h3 class="section-title">Generation Style</h3>
-      <div class="chip-group" role="radiogroup" aria-label="Generation style">
+      <h3 class="section-title">Flow</h3>
+      <div class="chip-group" role="radiogroup" aria-label="Flow style">
         {#each CONSTRAINT_PRESETS as preset}
           <button
             class="chip chip-with-icon"
@@ -162,136 +150,157 @@ New "preferences-first" flow:
           </button>
         {/each}
       </div>
-      <p class="style-hint">
-        {CONSTRAINT_PRESETS.find(p => p.id === preferences.constraintPreset)?.description || ""}
-      </p>
     </section>
 
-    <!-- Reversals Section -->
-    <section class="preference-section">
-      <h3 class="section-title">Reversals</h3>
-      <div class="chip-group" role="radiogroup" aria-label="Maximum reversals">
-        {#each reversalOptions as option}
-          <button
-            class="chip"
-            class:active={preferences.maxReversals === option.value}
-            onclick={() => onPreferenceChange("maxReversals", option.value)}
-            role="radio"
-            aria-checked={preferences.maxReversals === option.value}
-          >
-            {option.label}
-          </button>
-        {/each}
-      </div>
-    </section>
-
-    <!-- Loop Toggle Section -->
+    <!-- Loop Toggle -->
     <section class="preference-section">
       <button
         class="loop-toggle"
         class:active={preferences.makeCircular}
-        onclick={() =>
-          onPreferenceChange("makeCircular", !preferences.makeCircular)}
+        onclick={() => onPreferenceChange("makeCircular", !preferences.makeCircular)}
         aria-pressed={preferences.makeCircular}
       >
         <span class="loop-icon" aria-hidden="true">
           {#if preferences.makeCircular}
             <i class="fas fa-check-circle"></i>
           {:else}
-            <i class="fas fa-circle"></i>
+            <i class="far fa-circle"></i>
           {/if}
         </span>
-        <span class="loop-label">Make Loopable</span>
+        <span class="loop-label">Loop</span>
       </button>
-      <p class="loop-hint">
-        {#if preferences.makeCircular}
-          Sequence will connect end to start
-        {:else}
-          Turn on to create a looping sequence
-        {/if}
-      </p>
     </section>
   </div>
 
-  <!-- Generate Button Section -->
-  <div class="generate-section">
-    {#if estimatedCount !== null}
-      <p class="estimate-text">
-        {#if isEstimating}
-          Estimating variations...
-        {:else}
-          ~{estimatedCount} variations match
-        {/if}
-      </p>
-    {/if}
+  <!-- Generate Button - hidden in input mode (toolbar has it) -->
+  {#if !isInputMode}
+    <div class="generate-section">
+      {#if estimatedCount !== null}
+        <p class="estimate-text">
+          {#if isEstimating}
+            Estimating...
+          {:else}
+            ~{estimatedCount} variations
+          {/if}
+        </p>
+      {/if}
 
-    <button
-      class="generate-button"
-      onclick={onGenerate}
-      disabled={!canGenerate}
-      aria-label={canGenerate
-        ? "Generate matching variations"
-        : "Enter a word to generate"}
-    >
-      <span class="button-icon" aria-hidden="true">
-        <i class="fas fa-magic"></i>
-      </span>
-      <span class="button-text">Generate Matching</span>
-    </button>
-  </div>
+      <button
+        class="generate-button"
+        onclick={onGenerate}
+        disabled={!canGenerate}
+        aria-label={canGenerate ? "Generate sequence" : "Enter a word first"}
+      >
+        <i class="fas fa-magic" aria-hidden="true"></i>
+        <span>Generate</span>
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>
   .preferences-page {
+    container-type: inline-size;
+    container-name: preferences-page;
     display: flex;
     flex-direction: column;
-    gap: var(--settings-spacing-lg, 24px);
+    gap: var(--settings-spacing-md, 16px);
     padding: var(--settings-spacing-md, 16px);
+    width: 100%;
     max-width: 600px;
     margin: 0 auto;
-    min-height: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* Input mode - focused on word entry, intelligently positioned */
+  .preferences-page.input-mode {
+    /* Account for keyboard + toolbar at bottom */
+    padding-bottom: var(--keyboard-bottom-inset, 0px);
+    /* Center content in remaining space */
     justify-content: center;
+    gap: var(--settings-spacing-sm, 8px);
   }
 
   /* Header */
   .page-header {
     text-align: center;
+    transition:
+      max-height 150ms ease-out,
+      opacity 150ms ease-out,
+      margin 150ms ease-out;
+    max-height: 100px;
+    overflow: hidden;
+  }
+
+  .page-header.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
   }
 
   .page-title {
-    margin: 0 0 var(--settings-spacing-xs, 4px) 0;
-    font-size: var(--font-size-xl, 24px);
+    margin: 0;
+    font-size: var(--font-size-lg, 18px);
     font-weight: 700;
     color: var(--theme-text, #ffffff);
   }
 
   .page-subtitle {
-    margin: 0;
+    margin: 4px 0 0 0;
     font-size: var(--font-size-min, 14px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    line-height: 1.5;
   }
 
-  /* Content Card */
-  .content-card {
+  /* Word Section - always visible and prominent */
+  .word-section {
+    flex-shrink: 0;
+    transition: transform 200ms ease-out;
+  }
+
+  /* When keyboard is active, the word input is the star of the show */
+  .word-section.keyboard-active {
+    /* Slight scale up to emphasize focus */
+    transform: scale(1.02);
+  }
+
+  /* Options Card */
+  .options-card {
     display: flex;
     flex-direction: column;
-    gap: var(--settings-spacing-lg, 24px);
-    padding: var(--settings-spacing-lg, 24px);
+    gap: var(--settings-spacing-md, 16px);
+    padding: var(--settings-spacing-md, 16px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--settings-radius-lg, 16px);
+    transition:
+      max-height 150ms ease-out,
+      opacity 150ms ease-out,
+      padding 150ms ease-out,
+      margin 150ms ease-out;
+    max-height: 400px;
+    overflow: hidden;
+  }
+
+  .options-card.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+    margin: 0;
+    border-width: 0;
   }
 
   /* Preference Sections */
   .preference-section {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: var(--settings-spacing-sm, 8px);
   }
 
   .section-title {
     margin: 0;
+    min-width: 60px;
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
@@ -304,13 +313,14 @@ New "preferences-first" flow:
     display: flex;
     flex-wrap: wrap;
     gap: var(--settings-spacing-xs, 4px);
+    flex: 1;
   }
 
   .chip {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 16px);
+    padding: 10px 16px;
     min-height: 48px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -319,7 +329,7 @@ New "preferences-first" flow:
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    transition: all 150ms ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
@@ -345,22 +355,35 @@ New "preferences-first" flow:
     border-color: var(--theme-accent-hover, #4f46e5);
   }
 
-  /* Loop Toggle */
+  /* Chips with icons */
+  .chip-with-icon {
+    gap: 4px;
+  }
+
+  .chip-with-icon i {
+    font-size: 11px;
+    opacity: 0.7;
+  }
+
+  .chip-with-icon.active i {
+    opacity: 1;
+  }
+
+  /* Loop Toggle - compact inline style */
   .loop-toggle {
     display: flex;
     align-items: center;
-    gap: var(--settings-spacing-sm, 8px);
-    width: 100%;
-    min-height: 56px;
-    padding: var(--settings-spacing-md, 16px);
+    gap: 8px;
+    padding: 10px 16px;
+    min-height: 48px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--settings-radius-md, 12px);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 24px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-md, 16px);
-    font-weight: 600;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    transition: all 150ms ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
@@ -371,13 +394,9 @@ New "preferences-first" flow:
   }
 
   .loop-toggle.active {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent) 0%,
-      color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent) 100%
-    );
+    background: var(--theme-accent, #6366f1);
     border-color: var(--theme-accent, #6366f1);
-    color: var(--theme-text, #ffffff);
+    color: white;
   }
 
   .loop-toggle:focus-visible {
@@ -386,47 +405,11 @@ New "preferences-first" flow:
   }
 
   .loop-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--font-size-lg, 18px);
-    color: var(--theme-accent, #6366f1);
+    font-size: 14px;
   }
 
   .loop-label {
-    flex: 1;
-    text-align: left;
-  }
-
-  .loop-hint {
-    margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    line-height: 1.4;
-    padding-left: var(--settings-spacing-sm, 8px);
-  }
-
-  /* Style hint for generation style */
-  .style-hint {
-    margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    line-height: 1.4;
-    min-height: 1.4em;
-  }
-
-  /* Chips with icons */
-  .chip-with-icon {
-    gap: var(--settings-spacing-xs, 4px);
-  }
-
-  .chip-with-icon i {
-    font-size: var(--font-size-compact, 12px);
-    opacity: 0.7;
-  }
-
-  .chip-with-icon.active i {
-    opacity: 1;
+    font-weight: 600;
   }
 
   /* Generate Section */
@@ -435,24 +418,25 @@ New "preferences-first" flow:
     flex-direction: column;
     gap: var(--settings-spacing-sm, 8px);
     align-items: center;
+    margin-top: auto;
+    padding-top: var(--settings-spacing-md, 16px);
   }
 
   .estimate-text {
     margin: 0;
-    font-size: var(--font-size-min, 14px);
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    font-weight: 500;
   }
 
   .generate-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--settings-spacing-sm, 8px);
+    gap: 8px;
     width: 100%;
-    max-width: 400px;
-    min-height: 56px;
-    padding: var(--settings-spacing-md, 16px) var(--settings-spacing-lg, 24px);
+    max-width: 300px;
+    min-height: 52px;
+    padding: 14px 24px;
     background: var(--theme-accent, #6366f1);
     border: none;
     border-radius: var(--settings-radius-md, 12px);
@@ -460,7 +444,7 @@ New "preferences-first" flow:
     font-size: var(--font-size-md, 16px);
     font-weight: 700;
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    transition: all 150ms ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
@@ -485,41 +469,21 @@ New "preferences-first" flow:
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
     cursor: not-allowed;
     opacity: 0.6;
-    box-shadow: none;
-  }
-
-  .generate-button:disabled .button-icon {
-    opacity: 0.5;
-  }
-
-  .button-icon {
-    font-size: var(--font-size-lg, 18px);
-  }
-
-  .button-text {
-    font-size: var(--font-size-md, 16px);
-  }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .preferences-page {
-      padding: var(--settings-spacing-sm, 8px);
-    }
-
-    .content-card {
-      padding: var(--settings-spacing-md, 16px);
-    }
   }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
+    .page-header,
+    .options-card,
     .chip,
     .loop-toggle,
-    .generate-button {
+    .generate-button,
+    .word-section {
       transition: none;
     }
 
-    .generate-button:hover:not(:disabled) {
+    .generate-button:hover:not(:disabled),
+    .word-section.keyboard-active {
       transform: none;
     }
   }

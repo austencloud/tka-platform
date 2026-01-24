@@ -130,6 +130,7 @@
   let panelHeightTrackerCleanup: (() => void) | null = null;
   let currentDisplayWord = $state<string>(""); // Current word with contextual messages
   let currentLetterSources = $state<LetterSource[] | null>(null); // Letter sources for spell tab styling
+  let isInputMode = $state(false); // Input mode - collapse workspace when word input is focused on mobile
 
   // ============================================================================
   // CONTEXT PROVISION
@@ -142,6 +143,12 @@
     },
     isMobilePortrait() {
       return services?.layoutService?.isMobilePortrait() ?? false;
+    },
+    get isInputMode() {
+      return isInputMode;
+    },
+    setInputMode(mode: boolean) {
+      isInputMode = mode;
     },
   };
 
@@ -589,6 +596,7 @@
       {panelState}
       {currentDisplayWord}
       {currentLetterSources}
+      {isInputMode}
       bind:animatingStepNumber
       bind:toolPanelRef
       bind:buttonPanelElement

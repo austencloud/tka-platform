@@ -45,6 +45,10 @@ export interface CreateModuleContext {
   layout: {
     shouldUseSideBySideLayout: boolean;
     isMobilePortrait: () => boolean;
+    /** Input mode active - keyboard is up, collapse workspace */
+    isInputMode: boolean;
+    /** Set input mode (called by SpellPanel when word input is focused) */
+    setInputMode: (mode: boolean) => void;
   };
 
   // Assembly tab reset key (increments on clear to force remount)
