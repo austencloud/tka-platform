@@ -246,3 +246,6 @@ export class CsvLoader implements ICSVLoader {
     }
   }
 }
+
+// Direct singleton export for HMR-friendly imports
+export const csvLoader = new CsvLoader();

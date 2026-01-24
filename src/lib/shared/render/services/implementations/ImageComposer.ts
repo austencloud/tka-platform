@@ -17,6 +17,7 @@ import { createStartPositionFromBeatStart } from "../../../../features/create/sh
 import { getVisibilityStateManager } from "../../../pictograph/shared/state/visibility-state.svelte";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+import { pictographPreparer } from "../../../pictograph/shared/services/implementations/PictographPreparer";
 
 import { SequenceDifficultyCalculator } from "$lib/features/explore/sequences/display/services/implementations/SequenceDifficultyCalculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
@@ -1006,14 +1007,9 @@ export class ImageComposer implements IImageComposer {
     // Ensure pictograph has prepared data
     await this.ensureCanvas2DInitialized();
 
-    // Get prepared pictograph data
-    const { container } = await import("../../../di");
-    const preparer = container.items.pictographPreparer as {
-      prepareSingle: (data: PictographData | StepData, opts: object) => Promise<PictographData>;
-    };
-
+    // Get prepared pictograph data - use direct singleton import
     const themeMode = visibilitySettings.darkMode ? "dark" : "light";
-    const preparedPictograph = await preparer.prepareSingle(pictographData, {
+    const preparedPictograph = await pictographPreparer.prepareSingle(pictographData, {
       themeMode,
       bluePropType: visibilitySettings.bluePropType,
       redPropType: visibilitySettings.redPropType,

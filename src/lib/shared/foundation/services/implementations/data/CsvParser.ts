@@ -286,3 +286,6 @@ export class CSVParser implements ICSVParser {
     return mapping;
   }
 }
+
+// Direct singleton export for HMR-friendly imports
+export const csvParser = new CSVParser();

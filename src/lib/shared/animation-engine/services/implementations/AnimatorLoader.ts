@@ -8,6 +8,7 @@
 import { container } from "$lib/shared/di";
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import { Canvas2DAnimationRenderer } from "$lib/features/compose/services/implementations/Canvas2DAnimationRenderer";
+import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type {
   IAnimatorLoader,
   AnimatorServices,
@@ -24,7 +25,7 @@ export class AnimatorLoader implements IAnimatorLoader {
         settingsService: container.items.settingsState,
         orchestrator: container.items.sequenceAnimationOrchestrator,
         TrailCapturer: container.items.trailCapturer,
-        turnsTupleGenerator: container.items.turnsTupleGenerator,
+        turnsTupleGenerator: turnsTupleGenerator,
       };
 
       if (!services.svgGenerator) {

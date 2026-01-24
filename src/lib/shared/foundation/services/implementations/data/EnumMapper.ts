@@ -176,3 +176,6 @@ export class EnumMapper implements IEnumMapper {
     return turns === "fl" ? 0.5 : Number(turns) || 0;
   }
 }
+
+// Direct singleton export for HMR-friendly imports
+export const enumMapper = new EnumMapper();

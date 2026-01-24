@@ -40,8 +40,7 @@ import type {
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
 import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import { LayerKeyDeriver } from "./LayerKeyDeriver";
-import { container } from "../../../di";
-import type { ITurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
+import { turnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 import type { Letter } from "../../../foundation/domain/models/Letter";
 import { GridMode } from "../../../pictograph/grid/domain/enums/grid-enums";
 import { TurnColorInterpreter } from "../../../pictograph/tka-glyph/services/implementations/TurnColorInterpreter";
@@ -996,10 +995,7 @@ export class LayerCompositor implements ILayerCompositor {
 
   private getTurnsTuple(pictograph: PreparedPictographData): string {
     try {
-      const generator = container.items.turnsTupleGenerator as ITurnsTupleGenerator;
-      if (generator) {
-        return generator.generateTurnsTuple(pictograph);
-      }
+      return turnsTupleGenerator.generateTurnsTuple(pictograph);
     } catch {
       // Fallback
     }
