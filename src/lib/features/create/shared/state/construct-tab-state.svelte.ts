@@ -301,11 +301,22 @@ export function createConstructTabState(
       syncPickerStateWithSequence();
     });
 
-    // Initialize persistence and restore state if available
-    // BUT skip if there's a pending edit from Discover gallery - that takes priority
+    // Check for pending edit from Discover gallery - that takes priority
     const hasPendingEdit =
       localStorage.getItem("tka-pending-edit-sequence") !== null;
 
+    // CRITICAL FIX: Set a default state and mark initialized BEFORE async operations.
+    // This allows the UI to render immediately with the start position picker shown,
+    // rather than showing a loading spinner while waiting for persistence.
+    // The persisted state will update this after loading if needed.
+    if (!hasPendingEdit) {
+      // Default: show start position picker (safe default for new sequences)
+      setShowStartPositionPicker(true);
+    }
+    // Mark as initialized EARLY so UI can render while we load persisted state
+    isInitialized = true;
+
+    // Now load persisted state asynchronously - this may update the picker state
     if (hasPendingEdit) {
       // Just initialize without loading saved state
       if (sequenceState) {
@@ -347,11 +358,10 @@ export function createConstructTabState(
             );
           }
         } else {
-          // No saved state, set default to show start position picker
+          // No saved state - we already set the default above, just clear any stale state
           debug.log(
-            "No persisted start position, setting showStartPositionPicker = true"
+            "No persisted start position, keeping showStartPositionPicker = true"
           );
-          setShowStartPositionPicker(true);
           startPositionStateService.clearSelectedPosition();
         }
       } catch (error) {
@@ -359,16 +369,14 @@ export function createConstructTabState(
           "❌ ConstructTabState: Failed to restore persisted state:",
           error
         );
-        // On error, default to showing start position picker
-        setShowStartPositionPicker(true);
+        // On error, default is already set to show start position picker
         startPositionStateService.clearSelectedPosition();
       }
     } else {
-      // No persistence service, default to showing start position picker
+      // No persistence service - we already set the default above
       debug.log(
-        "No persistence service, setting showStartPositionPicker = true"
+        "No persistence service, keeping showStartPositionPicker = true"
       );
-      setShowStartPositionPicker(true);
       startPositionStateService.clearSelectedPosition();
     }
 
@@ -397,9 +405,6 @@ export function createConstructTabState(
       "init complete: showStartPositionPicker =",
       showStartPositionPicker
     );
-
-    // Mark as initialized after all setup is complete
-    isInitialized = true;
   }
 
   // ============================================================================
