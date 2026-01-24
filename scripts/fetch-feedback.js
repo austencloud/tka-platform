@@ -2297,7 +2297,7 @@ async function main() {
     }
     await unclaimFeedback(args[1]);
   } else if (args[0] === "add") {
-    // Add with flags: add --title "X" --description "Y" [options]
+    // Alias for "create" with flags - kept for backwards compatibility
     await addFeedback(args.slice(1));
   } else if (args[0] === "delete") {
     // Delete: delete <id>
@@ -2312,54 +2312,62 @@ async function main() {
     const jsonOutput = args.includes("--json");
     await prioritizeFeedback(dryRun, jsonOutput);
   } else if (args[0] === "create") {
-    // Create new feedback: create "title" "description" [type] [module] [tab]
-    const title = args[1];
-    const description = args[2];
-    const type = args[3] || "enhancement";
-    const module = args[4] || "Unknown";
-    const tab = args[5] || "Unknown";
+    // Create new feedback - supports BOTH styles:
+    // Positional: create "title" "description" [type] [module] [tab]
+    // Flags:      create --title "X" --description "Y" --type bug --priority high
 
-    if (!title || !description) {
-      console.log(
-        '\n  Usage: node scripts/fetch-feedback.js.js create "title" "description" [type] [module] [tab]'
-      );
-      console.log("  Types: bug, feature, enhancement, general");
-      console.log(
-        '  Example: node scripts/fetch-feedback.js.js create "Fix trail jank" "Trails appear janky..." enhancement compose playback\n'
-      );
-      return;
+    // Detect style by checking if any arg starts with --
+    const hasFlags = args.slice(1).some(a => a.startsWith("--"));
+
+    if (hasFlags) {
+      // Use flag-based parsing (delegate to addFeedback)
+      await addFeedback(args.slice(1));
+    } else {
+      // Positional argument style
+      const title = args[1];
+      const description = args[2];
+      const type = args[3] || "enhancement";
+      const module = args[4] || "Unknown";
+      const tab = args[5] || "Unknown";
+
+      if (!title || !description) {
+        console.log("\n  Usage (two styles supported):\n");
+        console.log("  Positional:");
+        console.log('    create "title" "description" [type] [module] [tab]');
+        console.log('    Example: create "Fix trail jank" "Trails janky" bug compose playback\n');
+        console.log("  Flags:");
+        console.log('    create --title "Title" --description "Desc" [--type bug] [--priority high]');
+        console.log('    Example: create --title "Fix jank" --description "Trails janky" --type bug\n');
+        console.log("  Types: bug, feature, enhancement, general");
+        console.log("  Priorities: low, medium, high\n");
+        return;
+      }
+
+      // Use admin user from config
+      const docRef = await db.collection("feedback").add({
+        title,
+        description: description,
+        type,
+        capturedModule: module,
+        capturedTab: tab,
+        status: "new",
+        source: "terminal",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        userId: ADMIN_USER.userId,
+        userDisplayName: ADMIN_USER.displayName,
+        userEmail: ADMIN_USER.email,
+        userPhotoURL: ADMIN_USER.photoURL,
+      });
+
+      console.log("\n" + "=".repeat(70));
+      console.log("\n  ✅ FEEDBACK CREATED\n");
+      console.log("─".repeat(70));
+      console.log(`  ID: ${docRef.id}`);
+      console.log(`  Title: ${title}`);
+      console.log(`  Type: ${type}`);
+      console.log(`  Module: ${module} / ${tab}`);
+      console.log("\n" + "=".repeat(70) + "\n");
     }
-
-    // Use admin user from config
-    const docRef = await db.collection("feedback").add({
-      title,
-      description: description,
-      type,
-      capturedModule: module,
-      capturedTab: tab,
-      status: "new",
-      source: "terminal", // Created via CLI, not app feedback form
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      userId: ADMIN_USER.userId,
-      userDisplayName: ADMIN_USER.displayName,
-      userEmail: ADMIN_USER.email,
-      userPhotoURL: ADMIN_USER.photoURL,
-    });
-
-    console.log(
-      "\n======================================================================"
-    );
-    console.log("\n  ✅ FEEDBACK CREATED\n");
-    console.log(
-      "──────────────────────────────────────────────────────────────────────"
-    );
-    console.log(`  ID: ${docRef.id}`);
-    console.log(`  Title: ${title}`);
-    console.log(`  Type: ${type}`);
-    console.log(`  Module: ${module} / ${tab}`);
-    console.log(
-      "\n======================================================================\n"
-    );
   } else {
     // All remaining commands use args[0] as a document ID
     // Resolve partial ID to full ID before proceeding
