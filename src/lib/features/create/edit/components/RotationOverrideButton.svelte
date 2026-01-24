@@ -2,12 +2,11 @@
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-  import type { IRotationOverrideManager } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/RotationOverrideManager";
+  import { rotationOverrideManager } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/RotationOverrideManager";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import { onMount } from "svelte";
 
   let hapticService: IHapticFeedback;
-  let rotationOverrideManager: IRotationOverrideManager;
 
   // Props
   const {
@@ -94,7 +93,6 @@
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
-    rotationOverrideManager = container.items.rotationOverrideManager;
   });
 </script>
 
