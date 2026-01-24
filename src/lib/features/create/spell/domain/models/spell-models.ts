@@ -33,8 +33,8 @@ export interface LetterSource {
 export interface SpellPreferences {
   /** Target step count (exact length), or null for any length */
   targetStepCount: number | null;
-  /** Motion type filter: 'dash' = only dash motions, 'no-dash' = no dash motions, null = any */
-  motionTypeFilter: "dash" | "no-dash" | null;
+  /** Motion type filter: 'prefer-dash' = favor dashes when available, 'no-dash' = no dash motions, null = any */
+  motionTypeFilter: "prefer-dash" | "no-dash" | null;
   /** Maximum allowed reversals: 0 = none, 1-2 = few, null = any */
   maxReversals: number | null;
   /** Prefer high continuity (same rotation direction) */
@@ -54,8 +54,8 @@ export interface SpellPreferences {
 export interface VariationConstraints {
   /** Exact step count to target, or null for any */
   targetStepCount: number | null;
-  /** Motion type filter: 'dash' only, 'no-dash' excluded, or null for any */
-  motionTypeFilter: "dash" | "no-dash" | null;
+  /** Motion type filter: 'prefer-dash' favors dashes, 'no-dash' excluded, or null for any */
+  motionTypeFilter: "prefer-dash" | "no-dash" | null;
   /** Maximum allowed reversals: 0 = none, 1-2 = few, null = any */
   maxReversals: number | null;
   /** Minimum continuity score (0-1), or null for any */

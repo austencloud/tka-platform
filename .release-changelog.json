@@ -1,16 +1,3 @@
 [
-  { "category": "added", "text": "New fullscreen Sequence Viewer with tap-to-show controls and animation playback" },
-  { "category": "added", "text": "Share sequences with QR codes that work offline" },
-  { "category": "added", "text": "Shareable links for sequence modals across tabs and devices" },
-  { "category": "added", "text": "Step editor on mobile shows single pictograph for easier viewing" },
-  { "category": "added", "text": "Contextual help tooltips in the Generator tab" },
-  { "category": "fixed", "text": "Play button now starts from where you stopped when using step controls" },
-  { "category": "fixed", "text": "Arrow colors in exported images match dark/light mode correctly" },
-  { "category": "fixed", "text": "Trail animation no longer shows stray lines after long playback" },
-  { "category": "fixed", "text": "Keyboard padding on mobile no longer jumps when typing" },
-  { "category": "fixed", "text": "Links with specific tabs now open the correct section" },
-  { "category": "fixed", "text": "Generate panel layout improved on foldable phones" },
-  { "category": "improved", "text": "Success toast after submitting feedback is easier to read" },
-  { "category": "improved", "text": "Feedback drawer animation smoother on foldable phones" },
-  { "category": "improved", "text": "Module switcher buttons resize better for regular users" }
+  { "category": "added", "text": "Spell tab - type a word, generate a sequence" }
 ]

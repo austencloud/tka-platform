@@ -259,7 +259,8 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     const chosenPictograph = this.selectWithConstraints(
       validOptions,
       state.previousConstraintSteps,
-      constraintSet
+      constraintSet,
+      constraints
     );
     if (!chosenPictograph) return false;
 
@@ -286,15 +287,11 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
   ): boolean {
     if (!constraints) return true;
 
-    // Motion type filter
-    if (constraints.motionTypeFilter) {
+    // Motion type filter - only "no-dash" is a hard constraint
+    // "prefer-dash" is a soft preference handled in selectWithConstraints
+    if (constraints.motionTypeFilter === "no-dash") {
       const hasDash = this.hasDashMotion(pictograph);
-
-      if (constraints.motionTypeFilter === "dash" && !hasDash) {
-        return false;
-      }
-
-      if (constraints.motionTypeFilter === "no-dash" && hasDash) {
+      if (hasDash) {
         return false;
       }
     }
@@ -333,16 +330,33 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
   /**
    * Select a candidate using weighted scoring based on soft constraints.
    * If no constraintSet is provided, falls back to random selection.
+   * Also applies preference boosts (e.g., prefer-dash).
    */
   private selectWithConstraints(
     candidates: PictographData[],
     previousSteps: ConstraintStep[],
-    constraintSet?: ConstraintSet
+    constraintSet?: ConstraintSet,
+    variationConstraints?: VariationConstraints
   ): PictographData | null {
     if (candidates.length === 0) return null;
 
-    // No soft constraints - use pure random selection
-    if (!constraintSet?.soft || constraintSet.soft.length === 0) {
+    const preferDash = variationConstraints?.motionTypeFilter === "prefer-dash";
+
+    // If prefer-dash is on, filter to only dash options when available
+    if (preferDash) {
+      const dashCandidates = candidates.filter((c) => this.hasDashMotion(c));
+      if (dashCandidates.length > 0) {
+        // Use only dash candidates for the rest of selection
+        candidates = dashCandidates;
+      }
+      // If no dash candidates exist, fall through to use all candidates
+    }
+
+    // Check if we need to apply any scoring
+    const hasSoftConstraints = constraintSet?.soft && constraintSet.soft.length > 0;
+
+    // No soft constraints - use pure random selection from remaining candidates
+    if (!hasSoftConstraints) {
       return this.pickRandom(candidates);
     }
 
@@ -351,8 +365,7 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       const candidateStep = this.pictographToConstraintStep(candidate);
       let score = 0;
 
-      for (const constraint of constraintSet.soft!) {
-        // Each constraint scores this candidate given the sequence so far
+      for (const constraint of constraintSet!.soft!) {
         const constraintScore = constraint.score(candidateStep, previousSteps);
         score += constraintScore * (constraint.weight ?? 1);
       }

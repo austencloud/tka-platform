@@ -45,7 +45,7 @@ Selecting an option collapses that accordion.
 
   const dashOptions = [
     { value: null, label: "Any" },
-    { value: "dash", label: "Dashes Only" },
+    { value: "prefer-dash", label: "Prefer Dashes" },
     { value: "no-dash", label: "No Dashes" },
   ];
 
@@ -67,7 +67,7 @@ Selecting an option collapses that accordion.
   }
 
   function handleDashSelect(value: string | null | boolean) {
-    onPreferenceChange("motionTypeFilter", value as "dash" | "no-dash" | null);
+    onPreferenceChange("motionTypeFilter", value as "prefer-dash" | "no-dash" | null);
     expandedId = null;
   }
 

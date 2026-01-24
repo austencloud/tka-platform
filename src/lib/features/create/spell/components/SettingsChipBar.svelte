@@ -44,16 +44,16 @@ Used when container height is limited (mobile with beat grid visible).
       id: "dashes",
       label: "Dashes",
       getValue: () => {
-        if (preferences.motionTypeFilter === "dash") return "Only";
+        if (preferences.motionTypeFilter === "prefer-dash") return "Prefer";
         if (preferences.motionTypeFilter === "no-dash") return "None";
         return "Any";
       },
       options: [
         { value: null, label: "Any" },
-        { value: "dash", label: "Dashes Only" },
+        { value: "prefer-dash", label: "Prefer Dashes" },
         { value: "no-dash", label: "No Dashes" },
       ],
-      onSelect: (v: string | null) => onPreferenceChange("motionTypeFilter", v as "dash" | "no-dash" | null),
+      onSelect: (v: string | null) => onPreferenceChange("motionTypeFilter", v as "prefer-dash" | "no-dash" | null),
     },
     {
       id: "flow",
