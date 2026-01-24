@@ -421,7 +421,12 @@
       "WebFetch(domain:ishadeed.com)",
       "WebFetch(domain:saricden.com)",
       "WebFetch(domain:tkte.ch)",
-      "Bash(start \"\" \"F:\\\\tka-platform\\\\feedback-images\\\\feedback-0qai89PqCGl0ekUooUn5-1.png\")"
+      "Bash(start \"\" \"F:\\\\tka-platform\\\\feedback-images\\\\feedback-0qai89PqCGl0ekUooUn5-1.png\")",
+      "WebFetch(domain:vite.dev)",
+      "WebFetch(domain:easings.net)",
+      "WebFetch(domain:theorangeduck.com)",
+      "mcp__tka-domain__generate_sequence",
+      "mcp__tka-domain__get_sequence_data"
     ]
   },
   "enableAllProjectMcpServers": true,

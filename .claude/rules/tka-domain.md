@@ -40,21 +40,44 @@ The "-" suffix does NOT mean "letter with dash motion type". It's a naming conve
 
 ## MCP Server Tools
 
-### Showing Pictographs to Users
+### CRITICAL: Word Feasibility Check (ALWAYS FIRST)
 
-- **`view_pictograph`** - Opens a single pictograph in system image viewer (~100 tokens)
-- **`view_sequence`** - Opens a choreo card in system image viewer (~100 tokens)
+**Before generating ANY sequence from a word, ALWAYS call `analyze_word_feasibility` first.**
 
-These open images externally so the user sees them without burning context.
+```
+analyze_word_feasibility(word: "YOURWORD")
+```
 
-### Data & Reference Tools
+This tells you which transitions need bridge letters. **Then proceed with generation anyway** - the system auto-inserts bridge letters for impossible transitions.
+
+**DO NOT:**
+- Refuse to generate because of impossible transitions
+- Try to find alternative words or spellings
+- Suggest the user change their word
+- Attempt multiple rephrasing attempts
+
+**DO:**
+- Inform user: "X→Y needs a bridge letter, so the sequence will be slightly longer"
+- Proceed directly to generation
+- Let the system handle bridges automatically
+
+### Primary Tools
+
+- **`generate_sequence`** - Generate and open choreo card in viewer (~50 tokens) - **DEFAULT CHOICE**
+- **`generate_pictograph`** - Generate and open single pictograph in viewer (~50 tokens)
+
+### Data Tools (when Claude needs to analyze without showing)
+
+- **`get_sequence_data`** - Sequence step data without image
+- **`get_pictograph_data`** - Raw motion data without image
+
+### Reference Tools
 
 - **`list_available_letters`** - All letters organized by type
 - **`get_alphabet_info`** - Comprehensive domain reference
 - **`list_letter_variations`** - Variations for a specific letter
 - **`get_letter_explanation`** - Detailed explanation for teaching
-- **`get_pictograph_data`** - Raw motion data without image
-- **`generate_sequence_data`** - Sequence data without image
+- **`analyze_word_feasibility`** - Check constraint feasibility (rarely needed - constraints are checked inline)
 
 **If unsure about a letter**, call `list_available_letters` first.
 

@@ -33,6 +33,22 @@ Still suggest `/compact` at 70% context. The budget is generous, not infinite.
 
 ---
 
+## CRITICAL: Sequence Generation = Humor Training
+
+**When generating sequences with creative freedom (no specific tagline given), this is a humor training opportunity.**
+
+1. **Ask for tagline FIRST** - present 4 options across preferred lenses
+2. **Generate sequence AFTER** - with the chosen tagline
+3. **Save the training pair** - `node scripts/add-humor-pair.cjs`
+
+**Humor profile:** `mcp-server/src/core/humor-profile.json`
+**Full workflow:** `.claude/rules/sequence-generation.md`
+
+Austen's preferred lenses: DEADPAN (primary), ABSURDIST, SARDONIC, DICTIONARY, DOMAIN, ACRONYM
+Avoid: SELF_DEPRECATING
+
+---
+
 ## CRITICAL: MCP-Only for TKA Rendering
 
 **On January 22, 2026, Claude wasted massive tokens trying to render a sequence via bash scripts and manual code instead of using the MCP tools. This is forbidden.**
@@ -42,8 +58,8 @@ Still suggest `/compact` at 70% context. The budget is generous, not infinite.
 **NEVER render TKA pictographs or sequences via bash scripts, inline code, or base64 encoding.**
 
 The ONLY allowed methods are the MCP tools:
-- `mcp__tka-domain__view_pictograph` - single pictograph (~50 tokens)
-- `mcp__tka-domain__view_sequence` - choreo card (~50 tokens)
+- `mcp__tka-domain__generate_pictograph` - single pictograph (~50 tokens)
+- `mcp__tka-domain__generate_sequence` - choreo card (~50 tokens)
 
 These tools render the image, save to temp, open in system viewer, and return only a text confirmation.
 
@@ -220,6 +236,7 @@ If you wouldn't say it out loud without cringing, rewrite it.
 - `testing.md` - Earned tests philosophy
 - `workflows.md` - /fb, /release, /done commands
 - `project-patterns.md` - Module checklist
+- `sequence-generation.md` - **READ THIS when generating sequences** - humor profile workflow
 
 ---
 

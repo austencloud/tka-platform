@@ -15,26 +15,18 @@
       "command": "cmd",
       "args": [
         "/c",
-        "cd /d F:\\_THE KINETIC ALPHABET\\_TKA-SCRIBE\\mcp-server && npx -y tsx index.ts"
+        "cd /d F:\\tka-platform\\mcp-server && npx -y tsx index.ts"
       ],
       "env": {}
     },
     "game-controller": {
       "command": "node",
       "args": [
-        "F:\\_THE KINETIC ALPHABET\\_TKA-SCRIBE\\packages\\mcp-game-controller\\dist\\index.js"
+        "F:\\tka-platform\\packages\\mcp-game-controller\\dist\\index.js"
       ],
       "env": {
         "GAME_WS_PORT": "9876"
       }
-    },
-    "zoom-recorder": {
-      "command": "cmd",
-      "args": [
-        "/c",
-        "cd /d F:\\_THE KINETIC ALPHABET\\zoom-recorder\\mcp-server && npx -y tsx index.ts"
-      ],
-      "env": {}
     }
   }
 }
