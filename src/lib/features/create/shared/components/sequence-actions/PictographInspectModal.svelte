@@ -15,6 +15,7 @@
   import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
   import { SpecialPlacementOriKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
   import { container } from "$lib/shared/di";
+  import { gridModeDeriver as gridModeDeriverDirect } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 
   import InspectModalHeader from "./pictograph-inspect/InspectModalHeader.svelte";
   import BasicInfoColumn from "./pictograph-inspect/BasicInfoColumn.svelte";
@@ -100,7 +101,6 @@
   function calculateLookupKeys(pictographData: PictographData) {
     try {
       const tupleGenerator = container.items.turnsTupleGenerator;
-      const gridModeDeriver = container.items.gridModeDeriver;
       const rotationKeyGenerator = container.items.rotationAngleOverrideKeyGenerator;
       const oriKeyGenerator = new SpecialPlacementOriKeyGenerator();
 
@@ -109,7 +109,7 @@
 
       let gridMode = "diamond";
       if (blueMotionData && redMotionData) {
-        gridMode = gridModeDeriver.deriveGridMode(
+        gridMode = gridModeDeriverDirect.deriveGridMode(
           blueMotionData,
           redMotionData
         );

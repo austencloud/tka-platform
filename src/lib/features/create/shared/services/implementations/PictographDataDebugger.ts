@@ -8,17 +8,8 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { container } from "$lib/shared/di";
-
-// Temporary interface definitions
-interface IBetaDetector {
-  detectBeta(data: unknown): boolean;
-  endsWithBeta(pictographData: PictographData): boolean;
-}
-
-interface IGridModeDeriver {
-  deriveGridMode(blueMotion: MotionData, redMotion: MotionData): GridMode;
-}
+import { betaDetector as betaDetectorDirect } from "$lib/shared/pictograph/prop/services/implementations/BetaDetector";
+import { gridModeDeriver as gridModeDeriverDirect } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 
 export interface DataFlowTrace {
   step: string;
@@ -93,8 +84,7 @@ export class PictographDataDebugger {
     const identifier = `${pictographData.letter}_${Date.now()}`;
 
     // Analyze the pictograph data using the new beta detection
-    const BetaDetector = container.items.betaDetector as unknown as IBetaDetector;
-    const endsWithBetaPosition = BetaDetector.endsWithBeta(pictographData);
+    const endsWithBetaPosition = betaDetectorDirect.endsWithBeta(pictographData);
     const hasValidMotionData = this.validateMotionData(pictographData);
     const hasValidPropPlacementData =
       this.validatePropPlacementData(pictographData);
@@ -120,10 +110,9 @@ export class PictographDataDebugger {
     }
 
     // Compute gridMode from motion data
-    const gridModeService = container.items.gridModeDeriver as unknown as IGridModeDeriver;
     const gridMode =
       pictographData.motions.blue && pictographData.motions.red
-        ? gridModeService.deriveGridMode(
+        ? gridModeDeriverDirect.deriveGridMode(
             pictographData.motions.blue,
             pictographData.motions.red
           )

@@ -8,13 +8,12 @@ import type { StepData } from "../../../domain/models/StepData";
 import type { StartPositionData } from "../../../domain/models/StartPositionData";
 import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import {
   createMotionData,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { container } from "$lib/shared/di";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
   getStepDataFromState,
@@ -47,7 +46,6 @@ export function updateStepOrientation(
   }
 
   // Recalculate endOrientation for this beat based on its turns/motion type
-  const orientationCalculator = container.items.orientationCalculator as IOrientationCalculator;
 
   const tempMotionData = createMotionData({
     ...currentMotion,
@@ -181,8 +179,6 @@ export function calculatePropagatedSteps(
     logger.log("No sequence steps to propagate through");
     return [...currentSequence.steps];
   }
-
-  const orientationCalculator = container.items.orientationCalculator as IOrientationCalculator;
 
   // Get the starting beat's endOrientation
   let previousEndOrientation: MotionData["endOrientation"] | undefined;

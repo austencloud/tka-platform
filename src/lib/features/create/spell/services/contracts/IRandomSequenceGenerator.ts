@@ -9,12 +9,15 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
 import type { VariationConstraints } from "../../domain/models/spell-models";
+import type { ConstraintSet } from "$lib/shared/sequence-engine/constraints/types";
 
 export interface RandomSequenceGenerationOptions {
   /** Grid mode to use */
   gridMode: GridMode;
   /** Optional constraints to respect during generation */
   constraints?: VariationConstraints;
+  /** Optional soft constraint set for scoring variations (smooth, natural, high-reversal) */
+  constraintSet?: ConstraintSet;
   /** Optional abort signal to cancel generation */
   signal?: AbortSignal;
   /** Max attempts before giving up (default: 100) */

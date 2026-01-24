@@ -52,8 +52,8 @@ import {
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { container } from "$lib/shared/di";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { createStepData } from "../../domain/factories/createStepData";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
@@ -369,7 +369,7 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     // Note: DASH, STATIC don't flip
 
     // Recalculate end orientation
-    const orientationCalculator = container.items.orientationCalculator;
+    // Using direct import instead of container for HMR performance
     const tempMotion = createMotionData({
       ...currentMotion,
       rotationDirection: newRotationDirection,
@@ -457,7 +457,7 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     newStartOrientation: Orientation,
     color: MotionColor
   ): MotionData {
-    const orientationCalculator = container.items.orientationCalculator;
+    // Using direct import instead of container for HMR performance
 
     const tempMotion = createMotionData({
       ...motion,

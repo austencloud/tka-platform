@@ -23,6 +23,7 @@ This component only shows controls - no preview. Same pattern as Generator tab.
   import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
   import PreferencesPage from "./PreferencesPage.svelte";
   import { loadSpellState, saveSpellState } from "../state/spell-persistence.svelte";
+  import { createConstraintSet } from "$lib/shared/sequence-engine/constraints";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
 
   // Props
@@ -177,6 +178,11 @@ This component only shows controls - no preview. Same pattern as Generator tab.
       const letters = parseResult.expandedLetters;
       spellState.setExpandedWord(parseResult.expandedWord || spellState.inputWord);
 
+      // Update letter sources for word label styling (original vs bridge letters)
+      if (parseResult.letterSources) {
+        spellState.setLetterSources(parseResult.letterSources);
+      }
+
       // Build constraints from preferences
       const loader = getServiceLoader();
       const constraintBuilder = await loader.getVariationConstraintBuilder();
@@ -185,12 +191,16 @@ This component only shows controls - no preview. Same pattern as Generator tab.
         letters
       );
 
+      // Create soft constraint set for flow preferences (smooth, natural, high-reversal)
+      const constraintSet = createConstraintSet(spellState.preferences.constraintPreset);
+
       // Generate ONE random valid sequence
       const sequence = await generator.generateRandomSequence(
         letters,
         {
           gridMode: spellState.selectedGridMode,
           constraints,
+          constraintSet,
         }
       );
 
@@ -204,10 +214,19 @@ This component only shows controls - no preview. Same pattern as Generator tab.
       const sequenceWithStart = deriveStartPosition(sequence);
 
       // Set sequence directly on sequenceState - workspace will display it
+      // Include spellData in metadata for word label styling persistence
       sequenceState.setCurrentSequence({
         ...sequenceWithStart,
         name: spellState.inputWord,
         word: spellState.expandedWord || spellState.inputWord,
+        metadata: {
+          ...sequenceWithStart.metadata,
+          spellData: {
+            originalWord: spellState.inputWord,
+            expandedWord: spellState.expandedWord || spellState.inputWord,
+            letterSources: parseResult.letterSources || [],
+          },
+        },
       });
 
       // Also set the display start position
@@ -263,6 +282,11 @@ This component only shows controls - no preview. Same pattern as Generator tab.
 
       const letters = parseResult.expandedLetters;
 
+      // Update letter sources for word label styling
+      if (parseResult.letterSources) {
+        spellState.setLetterSources(parseResult.letterSources);
+      }
+
       // Build constraints from preferences
       const constraintBuilder = await loader.getVariationConstraintBuilder();
       const constraints = constraintBuilder.buildConstraints(
@@ -270,12 +294,16 @@ This component only shows controls - no preview. Same pattern as Generator tab.
         letters
       );
 
+      // Create soft constraint set for flow preferences
+      const constraintSet = createConstraintSet(spellState.preferences.constraintPreset);
+
       // Generate new sequence
       const newSequence = await generator.generateRandomSequence(
         letters,
         {
           gridMode: spellState.selectedGridMode,
           constraints,
+          constraintSet,
         }
       );
 
@@ -300,10 +328,19 @@ This component only shows controls - no preview. Same pattern as Generator tab.
         : existingSequence.startPosition;
 
       // Update sequence in place - same ID, new data
+      // Include spellData in metadata for word label styling persistence
       sequenceState.setCurrentSequence({
         ...existingSequence,
         steps: mergedSteps,
         startPosition: newStartPosition,
+        metadata: {
+          ...existingSequence.metadata,
+          spellData: {
+            originalWord: spellState.inputWord,
+            expandedWord: spellState.expandedWord || spellState.inputWord,
+            letterSources: parseResult.letterSources || [],
+          },
+        },
       });
 
       // Also update the display start position (separate from sequence.startPosition)

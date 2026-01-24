@@ -33,7 +33,12 @@ Features:
 
   function handleInput(event: Event) {
     const target = event.target as HTMLInputElement;
-    onInput(target.value);
+    // Auto-capitalize letters for TKA alphabet consistency
+    const uppercased = target.value.toUpperCase();
+    if (target.value !== uppercased) {
+      target.value = uppercased;
+    }
+    onInput(uppercased);
   }
 
   function handleClear() {

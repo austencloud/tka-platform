@@ -23,6 +23,7 @@ import type { ISequenceExtender } from "$lib/features/create/shared/services/con
 import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
 import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+import type { ConstraintSet, ConstraintStep } from "$lib/shared/sequence-engine/constraints/types";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
@@ -32,6 +33,8 @@ interface RandomWalkState {
   pictographs: PictographData[];
   letterIndex: number;
   startPositionPictograph: PictographData;
+  /** Track previous steps for constraint scoring (reversals, continuity) */
+  previousConstraintSteps: ConstraintStep[];
 }
 
 export class RandomSequenceGenerator implements IRandomSequenceGenerator {
@@ -49,7 +52,7 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     letters: Letter[],
     options: RandomSequenceGenerationOptions
   ): Promise<SequenceData | null> {
-    const { gridMode, constraints, signal, maxAttempts = 100 } = options;
+    const { gridMode, constraints, constraintSet, signal, maxAttempts = 100 } = options;
 
     if (letters.length === 0) {
       return null;
@@ -66,6 +69,7 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
           letters,
           gridMode,
           constraints,
+          constraintSet,
           signal
         );
 
@@ -99,6 +103,7 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     letters: Letter[],
     gridMode: GridMode,
     constraints?: VariationConstraints,
+    constraintSet?: ConstraintSet,
     signal?: AbortSignal
   ): Promise<SequenceData | null> {
     // Get ALL pictograph variations for this grid mode (cached by letterQueryHandler)
@@ -153,12 +158,16 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       gridMode
     );
 
+    // Convert first letter variation to ConstraintStep for soft constraint scoring
+    const firstConstraintStep = this.pictographToConstraintStep(firstLetterVariation);
+
     // Initialize walk state with first letter and start position
     const state: RandomWalkState = {
       steps: [firstLetterStep],
       pictographs: [firstLetterVariation],
       letterIndex: 1, // Start from second letter (index 1) since first is already placed
       startPositionPictograph,
+      previousConstraintSteps: [firstConstraintStep],
     };
 
     // Walk through remaining letters
@@ -172,7 +181,8 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
         state,
         gridMode,
         allPictographs,
-        constraints
+        constraints,
+        constraintSet
       );
 
       if (!success) {
@@ -206,7 +216,8 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     state: RandomWalkState,
     gridMode: GridMode,
     allPictographs: PictographData[],
-    constraints?: VariationConstraints
+    constraints?: VariationConstraints,
+    constraintSet?: ConstraintSet
   ): boolean {
     const letter = letters[state.letterIndex];
     if (!letter) return false;
@@ -244,8 +255,12 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       return false; // No valid options - this path is blocked
     }
 
-    // Randomly pick one valid option
-    const chosenPictograph = this.pickRandom(validOptions);
+    // Use constraint-weighted selection if soft constraints are provided
+    const chosenPictograph = this.selectWithConstraints(
+      validOptions,
+      state.previousConstraintSteps,
+      constraintSet
+    );
     if (!chosenPictograph) return false;
 
     // Convert to step and add to state
@@ -257,6 +272,10 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
 
     state.steps.push(step);
     state.pictographs.push(chosenPictograph);
+
+    // Track this step for constraint scoring in next iteration
+    const constraintStep = this.pictographToConstraintStep(chosenPictograph);
+    state.previousConstraintSteps.push(constraintStep);
 
     return true;
   }
@@ -294,6 +313,73 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       blueMotion?.motionType === MotionType.DASH ||
       redMotion?.motionType === MotionType.DASH
     );
+  }
+
+  /**
+   * Convert a pictograph to the ConstraintStep format used for scoring.
+   */
+  private pictographToConstraintStep(pictograph: PictographData): ConstraintStep {
+    return {
+      letter: pictograph.letter ?? "",
+      blueMotionType: pictograph.blueMotion?.motionType ?? "static",
+      redMotionType: pictograph.redMotion?.motionType ?? "static",
+      bluePropRotation: pictograph.blueMotion?.propRotationDirection ?? "cw",
+      redPropRotation: pictograph.redMotion?.propRotationDirection ?? "cw",
+      startPosition: pictograph.startPosition ?? "",
+      endPosition: pictograph.endPosition ?? "",
+    };
+  }
+
+  /**
+   * Select a candidate using weighted scoring based on soft constraints.
+   * If no constraintSet is provided, falls back to random selection.
+   */
+  private selectWithConstraints(
+    candidates: PictographData[],
+    previousSteps: ConstraintStep[],
+    constraintSet?: ConstraintSet
+  ): PictographData | null {
+    if (candidates.length === 0) return null;
+
+    // No soft constraints - use pure random selection
+    if (!constraintSet?.soft || constraintSet.soft.length === 0) {
+      return this.pickRandom(candidates);
+    }
+
+    // Score each candidate based on soft constraints
+    const scored = candidates.map((candidate) => {
+      const candidateStep = this.pictographToConstraintStep(candidate);
+      let score = 0;
+
+      for (const constraint of constraintSet.soft!) {
+        // Each constraint scores this candidate given the sequence so far
+        const constraintScore = constraint.score(candidateStep, previousSteps);
+        score += constraintScore * (constraint.weight ?? 1);
+      }
+
+      return { candidate, score };
+    });
+
+    // Weighted random selection based on scores
+    // Convert scores to positive weights (higher score = better = higher weight)
+    const minScore = Math.min(...scored.map((s) => s.score));
+    const weights = scored.map((s) => ({
+      candidate: s.candidate,
+      weight: Math.max(0.01, s.score - minScore + 1), // Ensure positive weights
+    }));
+
+    const totalWeight = weights.reduce((sum, w) => sum + w.weight, 0);
+    let random = Math.random() * totalWeight;
+
+    for (const { candidate, weight } of weights) {
+      random -= weight;
+      if (random <= 0) {
+        return candidate;
+      }
+    }
+
+    // Fallback to last candidate (shouldn't happen with proper weights)
+    return candidates[candidates.length - 1] ?? null;
   }
 
   private buildSequence(

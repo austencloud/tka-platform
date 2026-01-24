@@ -7,7 +7,6 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { StartPositionData } from "../../../domain/models/StartPositionData";
 import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import {
   createMotionData,
   type MotionData,
@@ -20,6 +19,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { IReversalDetector } from "../../../services/contracts/IReversalDetector";
 import { container } from "$lib/shared/di";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
   getStepDataFromState,
@@ -109,7 +109,6 @@ export function updateStepTurns(
   }
 
   // Recalculate endOrientation based on new turn amount and updated rotation direction
-  const orientationCalculator = container.items.orientationCalculator as IOrientationCalculator;
   const tempMotionData = createMotionData({
     ...currentMotion,
     turns: turnAmount,

@@ -40,8 +40,7 @@ import {
   RotationDirection,
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { container } from "$lib/shared/di";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("TurnPatternManager");
@@ -232,7 +231,7 @@ export class TurnPatternManager implements ITurnPatternManager {
     newStartOrientation: Orientation,
     color: MotionColor
   ): MotionData {
-    const orientationCalculator = container.items.orientationCalculator;
+    // Using direct import instead of container for HMR performance
 
     const tempMotion = createMotionData({
       ...motion,
@@ -407,7 +406,7 @@ export class TurnPatternManager implements ITurnPatternManager {
     }
 
     // Recalculate end orientation
-    const orientationCalculator = container.items.orientationCalculator;
+    // Using direct import instead of container for HMR performance
     const tempMotion = createMotionData({
       ...currentMotion,
       turns: turnValue,

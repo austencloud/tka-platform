@@ -14,7 +14,6 @@ import type { StepData } from "../../../domain/models/StepData";
 import type { StartPositionData } from "../../../domain/models/StartPositionData";
 import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -29,6 +28,7 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { container } from "$lib/shared/di";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
   getStepDataFromState,
@@ -98,7 +98,6 @@ export function updateRotationDirection(
   // Note: DASH, STATIC, FLOAT don't flip
 
   // Recalculate endOrientation based on new rotation direction and motion type
-  const orientationCalculator = container.items.orientationCalculator as IOrientationCalculator;
   const tempMotionData = createMotionData({
     ...currentMotion,
     rotationDirection: newRotationDirection,

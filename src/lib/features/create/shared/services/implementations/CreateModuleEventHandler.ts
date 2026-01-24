@@ -13,6 +13,7 @@ import type { IBuildConstructSectionCoordinator } from "../contracts/IConstructC
 import type { PictographData } from "../../../../../shared/pictograph/shared/domain/models/PictographData";
 import type { IOrientationCalculator } from "../../../../../shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { IReversalDetector } from "../contracts/IReversalDetector";
+import { orientationCalculator as orientationCalculatorDirect } from "../../../../../shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { StepData } from "../../domain/models/StepData";
 import { createStepData } from "../../domain/factories/createStepData";
 
@@ -53,11 +54,8 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
       this.constructCoordinator = null;
     }
 
-    try {
-      this.OrientationCalculator = container.items.orientationCalculator as unknown as IOrientationCalculator | undefined ?? null;
-    } catch {
-      this.OrientationCalculator = null;
-    }
+    // Use direct import instead of container for HMR performance
+    this.OrientationCalculator = orientationCalculatorDirect;
 
     try {
       this.ReversalDetector = container.items.reversalDetector as unknown as IReversalDetector | undefined ?? null;
