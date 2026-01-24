@@ -14,9 +14,9 @@
   import { fly, fade, scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import PictographWithVisibility from "$lib/shared/pictograph/shared/components/PictographWithVisibility.svelte";
-  import { examplePictographData } from "./example-data";
+  import { examplePictographData, exampleStartPositionData } from "./example-data";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+    import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
 
   interface Props {
     // Content visibility toggles
@@ -143,10 +143,10 @@
 
     <!-- Grid section with pictograph -->
     <div class="grid-section">
-      <!-- Start position indicator -->
+      <!-- Start position pictograph -->
       {#if includeStartPosition}
         <div class="start-position-cell" transition:fade={{ duration: 200 }}>
-          <div class="start-label">Start</div>
+          <PictographWithVisibility pictographData={exampleStartPositionData} forceShowAll={true} />
         </div>
       {/if}
 
@@ -283,12 +283,21 @@
     color: #ffffff;
   }
 
-  /* Grid section */
+  /* Grid section - uses CSS grid for proper sizing */
   .grid-section {
-    display: flex;
-    align-items: stretch;
+    display: grid;
     background: rgba(255, 255, 255, 1);
     min-height: 0;
+  }
+
+  /* When start position is shown: 2 equal columns */
+  .grid-section:has(.start-position-cell) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* When start position is hidden: single column */
+  .grid-section:not(:has(.start-position-cell)) {
+    grid-template-columns: 1fr;
   }
 
   .dark-mode .grid-section {
@@ -299,10 +308,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: clamp(40px, 15cqi, 80px);
     background: rgba(250, 250, 250, 1);
     border-right: 1px solid rgba(0, 0, 0, 0.08);
-    flex-shrink: 0;
+    aspect-ratio: 1;
+    padding: 2px;
+    box-sizing: border-box;
   }
 
   .dark-mode .start-position-cell {
@@ -310,22 +320,17 @@
     border-right-color: rgba(255, 255, 255, 0.1);
   }
 
-  .start-label {
-    font-family: Georgia, serif;
-    font-weight: bold;
-    font-size: clamp(8px, 2.5cqi, 12px);
-    color: #231f20;
-    transform: rotate(-90deg);
-    white-space: nowrap;
-  }
-
-  .dark-mode .start-label {
-    color: #ffffff;
+  .start-position-cell :global(.pictograph-with-visibility),
+  .start-position-cell :global(.pictograph),
+  .start-position-cell :global(svg.pictograph) {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
   }
 
   .pictograph-cell {
     position: relative;
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;

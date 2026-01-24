@@ -19,6 +19,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 
 /** Example pictograph data showing Letter A with blue and red motions */
 export const examplePictographData = {
@@ -78,4 +79,46 @@ export const exampleSequenceData: SequenceData = {
   isCircular: false,
   tags: [],
   metadata: {},
+};
+
+/**
+ * Example start position data derived from the example pictograph.
+ * Shows the starting configuration (Alpha 1 - hands at opposite points: blue at south, red at north).
+ * Used in the Image Export preview to show what the start position cell looks like.
+ */
+export const exampleStartPositionData: StartPositionData = {
+  isStartPosition: true,
+  id: "visibility-preview-start",
+  letter: Letter.ALPHA,
+  startPosition: GridPosition.ALPHA1,
+  endPosition: GridPosition.ALPHA1,
+  gridPosition: GridPosition.ALPHA1,
+  motions: {
+    blue: createMotionData({
+      motionType: MotionType.STATIC,
+      rotationDirection: RotationDirection.NO_ROTATION,
+      startLocation: GridLocation.SOUTH,
+      endLocation: GridLocation.SOUTH,
+      turns: 0,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.IN,
+      color: MotionColor.BLUE,
+      isVisible: true,
+      arrowLocation: GridLocation.SOUTH,
+      gridMode: GridMode.DIAMOND,
+    }),
+    red: createMotionData({
+      motionType: MotionType.STATIC,
+      rotationDirection: RotationDirection.NO_ROTATION,
+      startLocation: GridLocation.NORTH,
+      endLocation: GridLocation.NORTH,
+      turns: 0,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.IN,
+      color: MotionColor.RED,
+      isVisible: true,
+      arrowLocation: GridLocation.NORTH,
+      gridMode: GridMode.DIAMOND,
+    }),
+  },
 };
