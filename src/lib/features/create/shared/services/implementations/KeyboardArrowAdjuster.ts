@@ -138,3 +138,8 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
     return updatedStepData;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const keyboardArrowAdjuster = new KeyboardArrowAdjuster();

@@ -156,3 +156,8 @@ export class CreateModuleEffectCoordinator implements ICreateModuleEffectCoordin
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const createModuleEffectCoordinator = new CreateModuleEffectCoordinator();

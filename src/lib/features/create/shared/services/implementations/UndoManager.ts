@@ -482,3 +482,8 @@ export class UndoManager implements IUndoManager {
     return OPERATION_DESCRIPTIONS[type] || "Unknown Action";
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const undoManager = new UndoManager();

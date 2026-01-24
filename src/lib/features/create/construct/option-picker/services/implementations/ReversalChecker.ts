@@ -203,3 +203,8 @@ export class ReversalChecker implements IReversalChecker {
     return reversalCount;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const reversalChecker = new ReversalChecker();

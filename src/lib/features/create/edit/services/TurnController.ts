@@ -124,3 +124,8 @@ export class TurnController implements ITurnController {
     return turnAmount > 0 ? `+${turnAmount}` : `${turnAmount}`;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const turnController = new TurnController();

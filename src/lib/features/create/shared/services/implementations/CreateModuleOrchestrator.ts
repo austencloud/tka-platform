@@ -106,3 +106,8 @@ export class CreateModuleOrchestrator implements ICreateModuleOrchestrator {
     this.tabStates.set(tabId, state);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const createModuleOrchestrator = new CreateModuleOrchestrator();

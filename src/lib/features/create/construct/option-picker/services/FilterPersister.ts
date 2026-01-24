@@ -140,3 +140,8 @@ export class FilterPersister implements IFilterPersister {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const filterPersister = new FilterPersister();

@@ -118,3 +118,8 @@ export class NavigationSyncer implements INavigationSyncer {
     return "construct";
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const navigationSyncer = new NavigationSyncer();

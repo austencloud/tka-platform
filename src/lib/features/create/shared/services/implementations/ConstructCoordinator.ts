@@ -228,3 +228,8 @@ export class ConstructCoordinator implements IConstructCoordinator {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const constructCoordinator = new ConstructCoordinator();
