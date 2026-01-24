@@ -45,6 +45,8 @@ Props:
     // Dark mode override for preview isolation
     // When provided, uses static colors instead of CSS-variable-derived colors
     darkMode = undefined,
+    // Disable opacity transition (for animation canvas overlay where parent handles transitions)
+    instantAppear = false,
   } = $props<{
     turnsTuple: string;
     letter: string | null | undefined;
@@ -65,6 +67,8 @@ Props:
     onToggle?: () => void;
     /** Dark mode override - when provided, uses static colors for preview isolation */
     darkMode?: boolean;
+    /** When true, appears instantly without opacity transition */
+    instantAppear?: boolean;
   }>();
 
   // Get centralized visibility manager for cached colors (no getComputedStyle per component)
@@ -253,6 +257,7 @@ Props:
     class:visible
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
+    class:instant={instantAppear}
     data-letter={letter}
     transform="translate({x}, {y}) scale({scale})"
     onclick={onToggle}
@@ -351,6 +356,12 @@ Props:
 
   .turns-column.visible {
     opacity: 1;
+  }
+
+  /* Instant appearance - no transition (for animation canvas overlay) */
+  .turns-column.instant {
+    opacity: 1;
+    transition: none;
   }
 
   /* Preview mode: show "off" state at 40% opacity instead of hidden */

@@ -156,10 +156,6 @@ Last audit: 2025-12-27
   const displayedTurnsTuple = $derived(engine.state.displayedTurnsTuple);
   const displayedStepNumber = $derived(engine.state.displayedStepNumber);
   const displayedMusicalPosition = $derived(engine.state.displayedMusicalPosition);
-  const fadingOutLetter = $derived(engine.state.fadingOutLetter);
-  const fadingOutTurnsTuple = $derived(engine.state.fadingOutTurnsTuple);
-  const fadingOutStepNumber = $derived(engine.state.fadingOutStepNumber);
-  const isNewLetter = $derived(engine.state.isNewLetter);
 
   // Initialize engine when container mounts
   onMount(() => {
@@ -253,10 +249,6 @@ Last audit: 2025-12-27
         {displayedTurnsTuple}
         {displayedStepNumber}
         {displayedMusicalPosition}
-        {fadingOutLetter}
-        {fadingOutTurnsTuple}
-        {fadingOutStepNumber}
-        {isNewLetter}
         tkaGlyphVisible={effectiveTkaGlyphVisible}
         stepNumbersVisible={effectiveBeatNumbersVisible}
         beatPositionVisible={effectiveBeatPositionVisible}

@@ -2,7 +2,10 @@
 GlyphOverlay.svelte
 
 Cross-fading glyph overlay for AnimatorCanvas.
-Displays TKA glyph and beat number with fade transitions.
+Displays TKA glyph and beat number with smooth fade transitions.
+
+Uses {#key} blocks to ensure each unique letter/step triggers proper
+in/out transitions, creating a true cross-fade effect.
 
 Dark mode: Uses prop-based approach for preview isolation.
 When darkMode prop is provided, it overrides global state.
@@ -25,12 +28,6 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     displayedTurnsTuple = "(s, 0, 0)",
     displayedStepNumber = null,
     displayedMusicalPosition = null,
-    // Fading out state
-    fadingOutLetter = null,
-    fadingOutTurnsTuple = null,
-    fadingOutStepNumber = null,
-    // Transition flag
-    isNewLetter = false,
     // Visibility
     tkaGlyphVisible = true,
     stepNumbersVisible = true,
@@ -45,10 +42,6 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     displayedTurnsTuple?: string;
     displayedStepNumber?: number | null;
     displayedMusicalPosition?: string | null;
-    fadingOutLetter?: Letter | null;
-    fadingOutTurnsTuple?: string | null;
-    fadingOutStepNumber?: number | null;
-    isNewLetter?: boolean;
     tkaGlyphVisible?: boolean;
     stepNumbersVisible?: boolean;
     beatPositionVisible?: boolean;
@@ -56,11 +49,13 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     isAtStartPosition?: boolean;
   } = $props();
 
+  // Cross-fade duration in ms
+  const FADE_DURATION = 200;
+
   // Track letter dimensions with reactive state that updates when cache is populated
   // We use $state + $effect because $derived only evaluates once per change,
   // but the cache is populated asynchronously by TKAGlyph after SVG loads
   let letterDimensions = $state({ width: 100, height: 100 });
-  let fadingOutLetterDimensions = $state({ width: 100, height: 100 });
 
   // Watch for letter changes and poll for dimensions until they're loaded
   $effect(() => {
@@ -68,6 +63,10 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       letterDimensions = { width: 100, height: 100 };
       return;
     }
+
+    // IMPORTANT: Reset to default first to prevent using stale dimensions from previous letter
+    // This ensures TurnsColumn won't render until we have the correct dimensions
+    letterDimensions = { width: 100, height: 100 };
 
     // Check cache immediately
     const cached = getLetterDimensions(letter);
@@ -89,42 +88,35 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     return () => clearInterval(interval);
   });
 
-  $effect(() => {
-    if (!fadingOutLetter) {
-      fadingOutLetterDimensions = { width: 100, height: 100 };
-      return;
-    }
+  // Create a composite key for glyph changes to trigger cross-fade
+  // Includes letter and turns tuple so changing either triggers a transition
+  const glyphKey = $derived(
+    letter ? `${letter}-${displayedTurnsTuple}` : null
+  );
 
-    const cached = getLetterDimensions(fadingOutLetter);
-    if (cached.width !== 100 || cached.height !== 100) {
-      fadingOutLetterDimensions = cached;
-      return;
-    }
-
-    const interval = setInterval(() => {
-      const dims = getLetterDimensions(fadingOutLetter);
-      if (dims.width !== 100 || dims.height !== 100) {
-        fadingOutLetterDimensions = dims;
-        clearInterval(interval);
-      }
-    }, 16);
-
-    return () => clearInterval(interval);
-  });
+  // Create a key for step number changes
+  const stepKey = $derived(
+    isAtStartPosition ? "start" : displayedStepNumber?.toString() ?? null
+  );
 </script>
 
 <div class="glyph-overlay" class:dark-mode={darkMode} data-controlled="true">
-  <!-- Fading out glyph (previous letter + beat number) -->
-  {#if fadingOutLetter || fadingOutStepNumber !== null}
-    <div class="glyph-wrapper fade-out">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 950 950"
-        class="glyph-svg"
-      >
-        {#if fadingOutLetter && tkaGlyphVisible}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 950 950"
+    class="glyph-svg"
+  >
+    <!-- TKA Glyph with cross-fade using {#key} block -->
+    <!-- When glyphKey changes, old element fades out while new element fades in simultaneously -->
+    {#if letter && tkaGlyphVisible}
+      {#key glyphKey}
+        <g
+          class="glyph-group"
+          in:fade={{ duration: FADE_DURATION, easing: cubicOut }}
+          out:fade={{ duration: FADE_DURATION, easing: cubicOut }}
+        >
           <TKAGlyph
-            letter={fadingOutLetter}
+            {letter}
             pictographData={null}
             x={50}
             y={800}
@@ -134,95 +126,55 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
             disableChangeAnimation={true}
           />
           <TurnsColumn
-            turnsTuple={fadingOutTurnsTuple ?? "(s, 0, 0)"}
-            letter={fadingOutLetter}
-            letterDimensions={fadingOutLetterDimensions}
+            turnsTuple={displayedTurnsTuple}
+            {letter}
+            {letterDimensions}
             pictographData={null}
             x={50}
             y={800}
             scale={1}
             visible={true}
             {darkMode}
+            instantAppear={true}
           />
-        {/if}
-        {#if stepNumbersVisible}
-          <StepNumber stepNumber={fadingOutStepNumber} {darkMode} />
-        {/if}
-      </svg>
-    </div>
-  {/if}
+        </g>
+      {/key}
+    {/if}
 
-  <!-- Current glyph (fades in when letter/beat changes) -->
-  <!-- Show when: there's a letter, OR beat number is set, OR at start position -->
-  {#if letter || displayedStepNumber !== null || isAtStartPosition}
-    <div class="glyph-wrapper" class:fade-in={isNewLetter}>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 950 950"
-        class="glyph-svg"
-      >
-        {#if letter && tkaGlyphVisible}
-          <!-- Glyph group with cross-fade transition -->
-          <g
-            class="glyph-group"
-            in:fade={{ duration: 200, easing: cubicOut }}
-            out:fade={{ duration: 150, easing: cubicOut }}
-          >
-            <TKAGlyph
-              {letter}
-              pictographData={null}
-              x={50}
-              y={800}
-              scale={1}
-              visible={true}
-              {darkMode}
-              disableChangeAnimation={true}
-            />
-            <TurnsColumn
-              turnsTuple={displayedTurnsTuple}
-              {letter}
-              {letterDimensions}
-              pictographData={null}
-              x={50}
-              y={800}
-              scale={1}
-              visible={true}
-              {darkMode}
-            />
-          </g>
-        {/if}
-        {#if stepNumbersVisible || isAtStartPosition}
-          <!-- Beat number with cross-fade transition -->
-          <!-- Always show "Start" indicator when at start position, even if beat numbers toggled off -->
-          <g
-            class="beat-number-group"
-            in:fade={{ duration: 200, easing: cubicOut }}
-            out:fade={{ duration: 150, easing: cubicOut }}
-          >
-            <StepNumber
-              stepNumber={isAtStartPosition ? 0 : displayedStepNumber}
-              {darkMode}
-            />
-          </g>
-        {/if}
-        {#if beatPositionVisible && !isAtStartPosition && displayedMusicalPosition}
-          <!-- Beat position with cross-fade transition -->
-          <g
-            class="beat-position-group"
-            in:fade={{ duration: 200, easing: cubicOut }}
-            out:fade={{ duration: 150, easing: cubicOut }}
-          >
-            <BeatPositionGlyph
-              musicalPosition={displayedMusicalPosition}
-              visible={true}
-              hasValidData={true}
-              {darkMode}
-            />
-          </g>
-        {/if}
-      </svg>
-    </div>
-  {/if}
+    <!-- Step number with cross-fade -->
+    {#if stepNumbersVisible || isAtStartPosition}
+      {#key stepKey}
+        <g
+          class="beat-number-group"
+          in:fade={{ duration: FADE_DURATION, easing: cubicOut }}
+          out:fade={{ duration: FADE_DURATION, easing: cubicOut }}
+        >
+          <StepNumber
+            stepNumber={isAtStartPosition ? 0 : displayedStepNumber}
+            {darkMode}
+          />
+        </g>
+      {/key}
+    {/if}
+
+    <!-- Beat position with cross-fade -->
+    {#if beatPositionVisible && !isAtStartPosition && displayedMusicalPosition}
+      {#key displayedMusicalPosition}
+        <g
+          class="beat-position-group"
+          in:fade={{ duration: FADE_DURATION, easing: cubicOut }}
+          out:fade={{ duration: FADE_DURATION, easing: cubicOut }}
+        >
+          <BeatPositionGlyph
+            musicalPosition={displayedMusicalPosition}
+            visible={true}
+            hasValidData={true}
+            {darkMode}
+          />
+        </g>
+      {/key}
+    {/if}
+  </svg>
 </div>
 
 <style>
@@ -236,39 +188,21 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     z-index: 5;
   }
 
-  .glyph-wrapper {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 1;
-  }
-
-  /* Override TKAGlyph's internal opacity transitions - we control fade at wrapper level */
-  /* Only disable opacity transition, allow filter transition for dark mode */
-  .glyph-wrapper :global(.tka-glyph) {
-    opacity: 1 !important;
-    transition: filter var(--duration-fast) ease-out !important;
-  }
-
-  .glyph-wrapper :global(.turns-column) {
-    opacity: 1 !important;
-    transition: filter var(--duration-fast) ease-out !important;
-  }
-
-  /* Instant transitions - no fade animation for step playback sync */
-  .glyph-wrapper.fade-out {
-    opacity: 0;
-  }
-
-  .glyph-wrapper.fade-in {
-    opacity: 1;
-  }
-
   .glyph-svg {
     width: 100%;
     height: 100%;
+  }
+
+  /* Override TKAGlyph's internal opacity transitions - we control fade at group level */
+  /* Only disable opacity transition, allow filter transition for dark mode */
+  .glyph-group :global(.tka-glyph) {
+    opacity: 1 !important;
+    transition: filter var(--duration-fast) ease-out !important;
+  }
+
+  .glyph-group :global(.turns-column) {
+    opacity: 1 !important;
+    transition: filter var(--duration-fast) ease-out !important;
   }
 
   /* Dark Mode via prop (preview isolation) */
@@ -285,7 +219,8 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   /* Accessibility: reduced motion users get instant transitions */
   @media (prefers-reduced-motion: reduce) {
     .glyph-group,
-    .beat-number-group {
+    .beat-number-group,
+    .beat-position-group {
       transition: none !important;
     }
   }
