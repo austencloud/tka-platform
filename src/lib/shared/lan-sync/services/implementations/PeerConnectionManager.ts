@@ -28,6 +28,11 @@ export class PeerConnectionManager implements IPeerConnectionManager {
 
 	async createRoom(): Promise<string> {
 		const roomCode = generateRoomCode();
+		await this.createRoomWithCode(roomCode);
+		return roomCode;
+	}
+
+	async createRoomWithCode(roomCode: string): Promise<void> {
 		const peerId = `tka-sync-${roomCode}`;
 
 		this.updateState({
@@ -44,8 +49,6 @@ export class PeerConnectionManager implements IPeerConnectionManager {
 				status: 'waiting-for-peer',
 				peerId
 			});
-
-			return roomCode;
 		} catch (error) {
 			this.updateState({
 				status: 'error',

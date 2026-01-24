@@ -26,6 +26,27 @@ export interface ILanSyncCoordinator {
 	/** Disconnect from sync */
 	disconnect(): void;
 
+	/**
+	 * Toggle sync for a sequence - the simple one-tap API.
+	 * If not syncing: tries to join existing room, or creates one if none exists.
+	 * If already syncing: disconnects.
+	 * Returns true if now syncing, false if disconnected.
+	 *
+	 * @param sequenceId - The sequence ID to sync
+	 * @param sequenceWord - Human-readable sequence word for display in discovery banners
+	 * @param initialState - Optional initial playback state
+	 */
+	toggleSync(
+		sequenceId: string,
+		sequenceWord: string,
+		initialState?: Partial<SyncedPlaybackState>
+	): Promise<boolean>;
+
+	/**
+	 * Join a room by its PeerJS room code (used when joining from discovery banner).
+	 */
+	joinRoomByCode(peerJsRoomCode: string): Promise<void>;
+
 	/** Update playback state (will broadcast to peers) */
 	updatePlaybackState(update: Partial<SyncedPlaybackState>): void;
 

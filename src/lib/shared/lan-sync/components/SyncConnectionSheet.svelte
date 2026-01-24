@@ -11,13 +11,17 @@
 	import { lanSyncState, getConnectionStatusText } from '../state/lan-sync-state.svelte';
 	import SyncStatusIndicator from './SyncStatusIndicator.svelte';
 
+	interface Props {
+		open?: boolean;
+		sequenceId?: string;
+		onclose?: () => void;
+	}
+
 	let {
-		show = false,
-		onClose
-	}: {
-		show?: boolean;
-		onClose?: () => void;
-	} = $props();
+		open = $bindable(false),
+		sequenceId = '',
+		onclose
+	}: Props = $props();
 
 	const hapticService = container.items.hapticFeedback;
 
@@ -90,7 +94,8 @@
 	function handleClose() {
 		hapticService?.trigger('selection');
 		errorMessage = null;
-		onClose?.();
+		open = false;
+		onclose?.();
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
@@ -101,7 +106,7 @@
 </script>
 
 <Drawer
-	isOpen={show}
+	isOpen={open}
 	labelledBy="sync-connection-title"
 	onclose={handleClose}
 	closeOnBackdrop={true}

@@ -134,3 +134,29 @@ export function createInitialPlaybackState(): SyncedPlaybackState {
 		timestamp: Date.now()
 	};
 }
+
+/**
+ * Sync room data stored in Firebase RTDB for discovery.
+ * Path: /sync-rooms/{uniqueRoomId}
+ * uniqueRoomId = `${userId}_${sequenceId}`
+ */
+export interface SyncRoom {
+	/** Firebase auth UID of the host */
+	hostUserId: string;
+	/** Display name of the host */
+	hostDisplayName: string;
+	/** The sequence being shared */
+	sequenceId: string;
+	/** Human-readable sequence word for display (e.g., "AΔUSTY-EΘ-N") */
+	sequenceWord: string;
+	/** Timestamp when room was created */
+	createdAt: number;
+	/** PeerJS room code derived from sequenceId */
+	peerJsRoomCode: string;
+}
+
+/** Sync room with its Firebase key */
+export interface SyncRoomWithId extends SyncRoom {
+	/** The room ID (key in Firebase) */
+	roomId: string;
+}

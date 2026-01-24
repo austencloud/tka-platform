@@ -3,10 +3,12 @@
  *
  * Orchestrates LAN playback synchronization between devices.
  * Manages the sync protocol, state updates, heartbeats, and conflict resolution.
+ * Now also manages Firebase RTDB broadcasting for discovery.
  */
 
 import type { ILanSyncCoordinator } from '../contracts/ILanSyncCoordinator';
 import type { IPeerConnectionManager } from '../contracts/IPeerConnectionManager';
+import type { ISyncRoomBroadcaster } from '../contracts/ISyncRoomBroadcaster';
 import type {
 	SyncedPlaybackState,
 	PeerConnectionState,
@@ -34,6 +36,7 @@ export class LanSyncCoordinator implements ILanSyncCoordinator {
 
 	constructor(
 		private peerManager: IPeerConnectionManager,
+		private broadcaster: ISyncRoomBroadcaster,
 		config: Partial<LanSyncConfig> = {}
 	) {
 		this.config = { ...DEFAULT_LAN_SYNC_CONFIG, ...config };
@@ -82,7 +85,81 @@ export class LanSyncCoordinator implements ILanSyncCoordinator {
 	disconnect(): void {
 		this.stopHeartbeat();
 		this.peerManager.disconnect();
+		// Stop broadcasting to Firebase when disconnecting
+		this.broadcaster.stopBroadcasting().catch((err) => {
+			console.warn('[LanSyncCoordinator] Error stopping broadcast:', err);
+		});
 		this._playbackState = createInitialPlaybackState();
+	}
+
+	async toggleSync(
+		sequenceId: string,
+		sequenceWord: string,
+		initialState: Partial<SyncedPlaybackState> = {}
+	): Promise<boolean> {
+		// If already syncing, disconnect
+		if (this.isActive) {
+			this.disconnect();
+			return false;
+		}
+
+		// Derive room code from sequence ID (first 6 chars, uppercase)
+		const roomCode = this.deriveRoomCode(sequenceId);
+
+		// Try to join first (maybe someone else is already hosting)
+		try {
+			await this.peerManager.joinRoom(roomCode);
+			this.startHeartbeat();
+
+			// Request full state from host
+			this.peerManager.broadcast({
+				type: 'REQUEST_FULL_STATE',
+				timestamp: Date.now(),
+				senderId: this.connectionState.peerId || 'unknown'
+			});
+
+			return true;
+		} catch {
+			// No one hosting - become the host
+			this._playbackState = {
+				...createInitialPlaybackState(),
+				...initialState,
+				sequenceId,
+				timestamp: Date.now()
+			};
+
+			await this.peerManager.createRoomWithCode(roomCode);
+			this.startHeartbeat();
+
+			// Broadcast to Firebase for discovery
+			await this.broadcaster.broadcast(sequenceId, sequenceWord, roomCode);
+
+			return true;
+		}
+	}
+
+	async joinRoomByCode(peerJsRoomCode: string): Promise<void> {
+		// Stop any existing sync first
+		if (this.isActive) {
+			this.disconnect();
+		}
+
+		await this.peerManager.joinRoom(peerJsRoomCode);
+		this.startHeartbeat();
+
+		// Request full state from host
+		this.peerManager.broadcast({
+			type: 'REQUEST_FULL_STATE',
+			timestamp: Date.now(),
+			senderId: this.connectionState.peerId || 'unknown'
+		});
+	}
+
+	/** Derive a deterministic room code from sequence ID */
+	private deriveRoomCode(sequenceId: string): string {
+		// Use first 6 chars of sequence ID, uppercase
+		// This ensures same sequence = same room
+		return sequenceId.substring(0, 6).toUpperCase();
 	}
 
 	updatePlaybackState(update: Partial<SyncedPlaybackState>): void {
@@ -131,6 +208,7 @@ export class LanSyncCoordinator implements ILanSyncCoordinator {
 
 	destroy(): void {
 		this.disconnect();
+		this.broadcaster.destroy();
 		for (const unsub of this.unsubscribers) {
 			unsub();
 		}

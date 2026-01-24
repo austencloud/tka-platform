@@ -6,7 +6,8 @@
  */
 
 import type { ILanSyncCoordinator } from '../services/contracts/ILanSyncCoordinator';
-import type { SyncedPlaybackState, PeerConnectionState } from '../domain/models/lan-sync-models';
+import type { ISyncRoomDiscovery } from '../services/contracts/ISyncRoomDiscovery';
+import type { SyncedPlaybackState, PeerConnectionState, SyncRoomWithId } from '../domain/models/lan-sync-models';
 import { createInitialConnectionState, createInitialPlaybackState } from '../domain/models/lan-sync-models';
 
 /** Reactive state for LAN sync */
@@ -14,7 +15,10 @@ class LanSyncState {
 	private _connectionState = $state<PeerConnectionState>(createInitialConnectionState());
 	private _playbackState = $state<SyncedPlaybackState>(createInitialPlaybackState());
 	private _sequenceMismatchWarning = $state<string | null>(null);
+	private _nearbyRooms = $state<SyncRoomWithId[]>([]);
+	private _dismissedRoomIds = $state<Set<string>>(new Set());
 	private _coordinator: ILanSyncCoordinator | null = null;
+	private _discovery: ISyncRoomDiscovery | null = null;
 	private unsubscribers: Array<() => void> = [];
 
 	/** Current connection state */
@@ -51,6 +55,17 @@ class LanSyncState {
 	/** Sequence mismatch warning from peer */
 	get sequenceMismatchWarning(): string | null {
 		return this._sequenceMismatchWarning;
+	}
+
+	/** Nearby sync rooms available to join (filtered, excluding dismissed) */
+	get nearbyRooms(): SyncRoomWithId[] {
+		return this._nearbyRooms.filter((room) => !this._dismissedRoomIds.has(room.roomId));
+	}
+
+	/** The most recent nearby room (for showing a single banner) */
+	get topNearbyRoom(): SyncRoomWithId | null {
+		const filtered = this.nearbyRooms;
+		return filtered.length > 0 ? filtered[0] : null;
 	}
 
 	/** Initialize with a coordinator instance */
@@ -104,6 +119,35 @@ class LanSyncState {
 		this._sequenceMismatchWarning = null;
 	}
 
+	/**
+	 * One-tap sync toggle - the simple API.
+	 * Tap once to start syncing, tap again to stop.
+	 *
+	 * @param sequenceId - The sequence ID to sync
+	 * @param sequenceWord - Human-readable sequence word for display in discovery banners
+	 * @param initialState - Optional initial playback state
+	 */
+	async toggleSync(
+		sequenceId: string,
+		sequenceWord: string,
+		initialState: Partial<SyncedPlaybackState> = {}
+	): Promise<boolean> {
+		if (!this._coordinator) {
+			throw new Error('LAN sync not initialized');
+		}
+		return this._coordinator.toggleSync(sequenceId, sequenceWord, initialState);
+	}
+
+	/**
+	 * Join a room by its PeerJS room code (used when joining from discovery banner).
+	 */
+	async joinRoomByCode(peerJsRoomCode: string): Promise<void> {
+		if (!this._coordinator) {
+			throw new Error('LAN sync not initialized');
+		}
+		return this._coordinator.joinRoomByCode(peerJsRoomCode);
+	}
+
 	/** Update playback state (broadcasts to peers) */
 	updatePlayback(update: Partial<SyncedPlaybackState>): void {
 		this._coordinator?.updatePlaybackState(update);
@@ -119,6 +163,37 @@ class LanSyncState {
 		this._sequenceMismatchWarning = null;
 	}
 
+	/** Initialize discovery service */
+	initializeDiscovery(discovery: ISyncRoomDiscovery): void {
+		if (this._discovery) {
+			// Already initialized
+			return;
+		}
+
+		this._discovery = discovery;
+
+		// Subscribe to room changes
+		const unsub = discovery.onNearbyRoomsChange((rooms) => {
+			this._nearbyRooms = rooms;
+		});
+		this.unsubscribers.push(unsub);
+
+		// Start discovery
+		discovery.startDiscovery().catch((err) => {
+			console.error('[LanSyncState] Failed to start discovery:', err);
+		});
+	}
+
+	/** Dismiss a room banner (won't show again this session) */
+	dismissRoom(roomId: string): void {
+		this._dismissedRoomIds = new Set([...this._dismissedRoomIds, roomId]);
+	}
+
+	/** Clear dismissed rooms (e.g., on new session) */
+	clearDismissedRooms(): void {
+		this._dismissedRoomIds = new Set();
+	}
+
 	/** Clean up subscriptions */
 	cleanup(): void {
 		for (const unsub of this.unsubscribers) {
@@ -126,9 +201,13 @@ class LanSyncState {
 		}
 		this.unsubscribers = [];
 		this._coordinator = null;
+		this._discovery?.stopDiscovery();
+		this._discovery = null;
 		this._connectionState = createInitialConnectionState();
 		this._playbackState = createInitialPlaybackState();
 		this._sequenceMismatchWarning = null;
+		this._nearbyRooms = [];
+		this._dismissedRoomIds = new Set();
 	}
 }
 

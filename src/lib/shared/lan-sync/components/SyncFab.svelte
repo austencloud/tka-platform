@@ -8,13 +8,12 @@
 <script lang="ts">
 	import type { PeerConnectionStatus } from '../domain/models/lan-sync-models';
 
-	let {
-		status = 'disconnected' as PeerConnectionStatus,
-		onClick
-	}: {
+	interface Props {
 		status?: PeerConnectionStatus;
-		onClick?: () => void;
-	} = $props();
+		onclick?: () => void;
+	}
+
+	let { status = 'disconnected', onclick }: Props = $props();
 
 	const isActive = $derived(status === 'connected' || status === 'waiting-for-peer');
 	const isConnecting = $derived(
@@ -22,7 +21,7 @@
 	);
 
 	function handleClick() {
-		onClick?.();
+		onclick?.();
 	}
 </script>
 

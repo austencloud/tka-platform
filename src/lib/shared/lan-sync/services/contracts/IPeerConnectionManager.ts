@@ -11,8 +11,11 @@ export interface IPeerConnectionManager {
 	/** Current connection state */
 	readonly connectionState: PeerConnectionState;
 
-	/** Create a new room and become the host */
+	/** Create a new room and become the host (generates random code) */
 	createRoom(): Promise<string>; // Returns room code
+
+	/** Create a room with a specific code (for sequence-based auto-discovery) */
+	createRoomWithCode(roomCode: string): Promise<void>;
 
 	/** Join an existing room by code */
 	joinRoom(roomCode: string): Promise<void>;
