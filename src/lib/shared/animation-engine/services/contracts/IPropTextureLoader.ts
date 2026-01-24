@@ -50,8 +50,7 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   bigbuugeng: { width: 600, height: 293.1 },
   fractalgeng: { width: 300, height: 228.36 },
 
-  // Hand - uses static SVG dimensions (75×100) to match pictograph sizing
-  // The animated SVG is 300×400 but gets scaled down to match static appearance
+  // Hand - matches animated/hand.svg viewBox (same as static version)
   hand: { width: 75, height: 100 },
 
   // Triquetra family

@@ -1,35 +1,56 @@
 # TKA Scribe - Claude Code Guidelines
 
-## Development Philosophy: Build for the Decade
+## Development Philosophy: Build for Generations
 
-**This project is not an MVP. Build what you'd wish you had done in 10 years.**
+**This software must outlast its creator. Build what future generations will study in awe.**
 
-When implementing features, don't reach for the quick solution. Research the current state of the art - your training data may be outdated. Ask yourself:
+Austen's explicit directive: "I'm not interested in quick fixes. Not the low-tier approach, not the mid-tier, not even the high-tier. Only the AAA+ approach. Zero wiggle room. This needs to be the most exceptional piece of technology ever built."
 
-1. **Will this still work well in a decade?** Choose patterns that have stood the test of time AND leverage modern capabilities that solve real problems.
+### The Generational Standard
 
-2. **Balance proven with cutting-edge.** Tried-and-true architectural patterns (dependency injection, composition, single responsibility) combined with the latest advancements that have demonstrated real value.
+Every implementation decision must answer: **"In 20 years, will this still be the right choice?"**
 
-3. **Research before implementing.** When facing non-trivial problems, use web search to find what the community has learned since your training cutoff. The ecosystem evolves fast - don't rely on stale knowledge.
+1. **No quick fixes. Ever.** Claude must never offer simplified implementations, temporary solutions, or "good enough for now" approaches. If the proper solution takes 10x the tokens, use 10x the tokens.
 
-4. **Production-quality from day one.** No "we'll fix it later" code. No shortcuts that accumulate technical debt. Every feature should be something you'd be proud to maintain for years.
+2. **Research the 2026 state of the art.** Your training data may be outdated. Before implementing anything non-trivial, use web search to find what the community has learned. The "best practice" from 2024 may already be obsolete.
 
-5. **Thorough, not bloated.** Engineering for scale is not over-engineering. Design architecture that accommodates growth, but don't add features nobody asked for. The goal is robust foundations, not gold-plating.
+3. **Zero technical debt tolerance.** Every line of code must be something you'd be proud to maintain for decades. No "we'll fix it later" comments. No shortcuts. No compromises.
 
-**The question to ask:** "If I come back to this code in 10 years, will I thank past-me or curse them?"
+4. **Proper architecture always.** Use dependency injection, composition, single responsibility, and whatever patterns the current year's best engineers recommend. If you're unsure of the proper pattern, research it first.
 
-### Token Budget: Generous
+5. **Build the full product.** Never suggest an MVP approach. Never say "here's a simplified version." Never offer tiers of implementation quality. There is only one tier: flawless.
 
-**Think "one-percenter, not billionaire." Be generous, not stingy - but not wasteful.**
+### What Claude Must NEVER Say
 
-- Take time to understand fully before changing - don't rush to save tokens
-- Read the files you need, research when facing unfamiliar territory
-- Explore approaches when the decision matters
-- Default to building the full product, not an MVP
-- If unsure whether user wants quick-and-dirty vs production-quality, ask
-- Stay concise in output - generous tokens for *research*, not verbosity
+| FORBIDDEN | WHY |
+|-----------|-----|
+| "Here's a simplified implementation..." | There are no simplified implementations |
+| "For now, we could just..." | There is no "for now" |
+| "A quick fix would be..." | Quick fixes don't exist here |
+| "To save time/tokens..." | Time/tokens are not constraints |
+| "This might be overkill, but..." | Nothing is overkill |
+| "A simpler approach..." | Simpler is not the goal |
+| "We could revisit this later..." | We do it right the first time |
 
-Still suggest `/compact` at 70% context. The budget is generous, not infinite.
+### What Claude Must Say Instead
+
+> "The proper way to implement this in 2026, using current best practices, is..."
+
+> "Let me research the current state of the art before implementing..."
+
+> "This requires [X pattern] to be architecturally sound. Here's the full implementation..."
+
+### Token Budget: Unlimited for Quality
+
+**Spend whatever tokens are necessary to do it right.**
+
+- Research extensively before implementing
+- Read every file you need to understand the full context
+- Explore multiple approaches and choose the best one
+- Never rush. Never cut corners. Never compromise.
+- The only constraint is `/compact` at 70% context to preserve session continuity
+
+**The cost of tokens is nothing compared to the cost of technical debt.**
 
 ---
 

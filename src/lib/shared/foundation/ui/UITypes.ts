@@ -1,32 +1,11 @@
 /**
  * Application UI Types
  *
- * Core UI state and navigation types for the application.
- * These represent domain concepts related to user interface navigation and theming.
+ * Core UI state and component types for the application.
+ *
+ * NOTE: Navigation types (ModuleId, TabId, LegacyTabId) live in:
+ * $lib/shared/navigation/domain/types.ts
  */
-
-// Re-export ModuleId from navigation domain types (single source of truth)
-export type { ModuleId } from "../../navigation/domain/types";
-import type { ModuleId as ImportedModuleId } from "../../navigation/domain/types";
-
-/**
- * Legacy tab IDs (for backwards compatibility during migration)
- * Maps old tab names to module concepts
- */
-export type LegacyTabId =
-  | "construct" // Legacy ID that maps to "build" module
-  | "browse" // Legacy ID for browse/explore
-  | "word-card" // Legacy hyphenated version (now choreo_card)
-  | "word_card" // Legacy underscore version (now choreo_card)
-  | "choreo-card" // Legacy hyphenated version of choreo_card
-  | "about" // About page (not a proper module)
-  | "animator"; // Animator feature
-
-/**
- * All possible tab/module IDs (includes both new ModuleId and legacy IDs)
- * @deprecated Prefer using ModuleId for new code
- */
-export type TabId = ImportedModuleId | LegacyTabId;
 
 /**
  * Available sections/tabs within the Create module

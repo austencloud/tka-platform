@@ -9,8 +9,8 @@ export type Dimensions = {
   height: number;
 };
 
-// Re-export QualitySettings from models for convenient access
-export type { QualitySettings } from "../models/background-models";
+// NOTE: QualitySettings lives in ../models/background-models.ts
+// Import it from there directly, not from this file.
 
 export type PerformanceMetrics = {
   fps: number;

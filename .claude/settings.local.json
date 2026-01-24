@@ -433,7 +433,8 @@
       "WebFetch(domain:nikiforovall.blog)",
       "WebFetch(domain:claude-plugins.dev)",
       "Bash(do if git diff ac82bc5b5 HEAD -- \"$file\")",
-      "Bash(do echo \"=== $exp ===\")"
+      "Bash(do echo \"=== $exp ===\")",
+      "Bash(./node_modules/.bin/madge:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -2,10 +2,8 @@
  * Navigation Domain Types
  *
  * Core types for the navigation system.
+ * This is the canonical source for ModuleId, TabId, and related navigation types.
  */
-
-// Re-export TabId from foundation UI types for convenience
-export type { TabId } from "../../foundation/ui/UITypes";
 
 /**
  * Tab within a module
@@ -68,3 +66,22 @@ export interface ModuleSelectorState {
   isOpen: boolean;
   showDiscoveryHint: boolean;
 }
+
+/**
+ * Legacy tab IDs (for backwards compatibility during migration)
+ * Maps old tab names to module concepts
+ */
+export type LegacyTabId =
+  | "construct" // Legacy ID that maps to "build" module
+  | "browse" // Legacy ID for browse/explore
+  | "word-card" // Legacy hyphenated version (now choreo_card)
+  | "word_card" // Legacy underscore version (now choreo_card)
+  | "choreo-card" // Legacy hyphenated version of choreo_card
+  | "about" // About page (not a proper module)
+  | "animator"; // Animator feature
+
+/**
+ * All possible tab/module IDs (includes both new ModuleId and legacy IDs)
+ * @deprecated Prefer using ModuleId for new code
+ */
+export type TabId = ModuleId | LegacyTabId;
