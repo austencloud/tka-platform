@@ -12,6 +12,7 @@
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { container } from "$lib/shared/di";
+  import { turnPatternManager } from "$lib/features/create/shared/services/implementations/TurnPatternManager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -192,9 +193,6 @@
       }
 
       // Create and apply 1,1 turn pattern to get visible trails
-      type ITurnPatternManager =
-        import("$lib/features/create/shared/services/contracts/ITurnPatternManager").ITurnPatternManager;
-      const turnPatternManager = container.items.turnPatternManager as ITurnPatternManager;
       const turnPattern = createOneTurnPattern(baseSequence.steps.length);
       const result = turnPatternManager.applyPattern(turnPattern, baseSequence);
 

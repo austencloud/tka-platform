@@ -6,13 +6,13 @@ Uses IStartPositionManager to load variations and displays actual pictographs
 <script lang="ts">
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IStartPositionManager } from "$lib/features/create/construct/start-position-picker/services/contracts/IStartPositionManager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import { createStartPositionVariations } from "./start-position-utils";
+  import { startPositionManager } from "$lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager";
 
   let {
     currentPosition = null,
@@ -28,15 +28,10 @@ Uses IStartPositionManager to load variations and displays actual pictographs
   let variations = $state<PictographData[]>([]);
   let hapticService: IHapticFeedback | null = $state(null);
   let isLoading = $state(true);
-  let StartPositionManager: IStartPositionManager | null = $state(null);
 
   // Load variations based on grid mode (reactive to prop changes)
   function loadVariations(mode: GridMode) {
-    if (StartPositionManager) {
-      variations = StartPositionManager.getAllStartPositionVariations(mode);
-    } else {
-      variations = createStartPositionVariations(mode);
-    }
+    variations = startPositionManager.getAllStartPositionVariations(mode);
   }
 
   // React to gridMode prop changes
@@ -48,20 +43,13 @@ Uses IStartPositionManager to load variations and displays actual pictographs
 
   onMount(async () => {
     try {
-      // Load haptic service
       hapticService = container.items.hapticFeedback ?? null;
-
-      // Try to use StartPositionManager if available (in Create module)
-      StartPositionManager = container.items.startPositionManager ?? null;
-
-      // Load initial variations
       loadVariations(gridModeProp);
     } catch (error) {
       console.warn(
         "PositionPickerGrid: Failed to load variations, using fallback:",
         error
       );
-      // Fallback on any error
       variations = createStartPositionVariations(gridModeProp);
     } finally {
       isLoading = false;

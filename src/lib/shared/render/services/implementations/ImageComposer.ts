@@ -1054,3 +1054,28 @@ export class ImageComposer implements IImageComposer {
     ctx.drawImage(result.canvas, x, y, stepSize, stepSize);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { layoutCalculator } from "./LayoutCalculator";
+import { textRenderer } from "./TextRenderer";
+import { dimensionCalculator } from "./DimensionCalculator";
+import { pictographBlobCache } from "./PictographBlobCache";
+import { pictographKeyHasher } from "./PictographKeyHasher";
+import { pictographMemoryCache } from "./PictographMemoryCache";
+import { stepNumberRenderer } from "./StepNumberRenderer";
+import { canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
+import { layerCompositor } from "./LayerCompositor";
+
+export const imageComposer = new ImageComposer(
+  layoutCalculator,
+  textRenderer,
+  dimensionCalculator,
+  pictographBlobCache,
+  pictographKeyHasher,
+  pictographMemoryCache,
+  stepNumberRenderer,
+  canvas2DDirectRenderer,
+  layerCompositor
+);

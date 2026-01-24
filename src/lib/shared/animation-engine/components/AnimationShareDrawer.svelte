@@ -24,6 +24,7 @@
 
   // Services
   import { container } from "$lib/shared/di";
+  import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
   import type { IKeyboardShortcutManager } from "$lib/shared/keyboard/services/contracts/IKeyboardShortcutManager";
   import { registerAnimationShortcuts } from "../utils/register-animation-shortcuts";
@@ -282,7 +283,7 @@
   let detectedSideBySide = $state(false);
 
   onMount(() => {
-    layoutService = container.items.responsiveLayoutManager ?? null;
+    layoutService = responsiveLayoutManager;
     if (layoutService) {
       detectedSideBySide = layoutService.shouldUseSideBySideLayout();
     }

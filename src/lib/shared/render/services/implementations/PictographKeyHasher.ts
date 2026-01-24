@@ -175,3 +175,8 @@ export class PictographKeyHasher implements IPictographKeyHasher {
     return value;
   };
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const pictographKeyHasher = new PictographKeyHasher();

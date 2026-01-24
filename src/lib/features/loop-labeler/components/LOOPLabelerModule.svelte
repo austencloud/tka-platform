@@ -7,6 +7,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
+  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import type { IStepDataConverter } from "../services/contracts/IStepDataConverter";
   import type {
     ILOOPDetector,
@@ -62,22 +63,7 @@
 
       // loop-labeler services available synchronously via ITI
 
-      // Store reference to detection service
-      let resolvedService: ILOOPDetector | null = null;
-      try {
-        resolvedService = container.items.loopDetector as ILOOPDetector | null;
-      } catch (err) {
-        // Silent - will try direct import
-      }
-
-      // If resolution failed, log error - LOOPDetector has too many dependencies for manual instantiation
-      if (!resolvedService) {
-        console.error(
-          "[LOOPLabelerModule] Failed to resolve LOOPDetector from DI container. Detection features will be unavailable."
-        );
-      }
-
-      detectionService = resolvedService;
+      detectionService = loopDetector;
 
       // Also cache the conversion service for beat parsing
       conversionService =

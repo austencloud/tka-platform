@@ -22,8 +22,7 @@
     type PatternComplexity,
     type TurnValue,
   } from "../../domain/templates/turn-pattern-templates";
-  import { container } from "$lib/shared/di";
-  import type { ITurnPatternManager } from "../../services/contracts/ITurnPatternManager";
+  import { turnPatternManager } from "../../services/implementations/TurnPatternManager";
   import type { TargetHand } from "../../state/panel-coordination-state.svelte";
   import PatternItemCard from "./PatternItemCard.svelte";
 
@@ -65,7 +64,6 @@
   let errorMessage = $state<string | null>(null);
   let complexityFilter = $state<PatternComplexity | "all">("simple"); // Default to "simple" for mobile-first
 
-  const turnPatternManager = container.items.turnPatternManager;
 
   // Load patterns when drawer opens and set appropriate default filter
   $effect(() => {

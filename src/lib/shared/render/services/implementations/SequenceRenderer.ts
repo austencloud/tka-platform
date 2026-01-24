@@ -264,3 +264,14 @@ export class SequenceRenderer implements ISequenceRenderer {
     return { ...defaults, ...options };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { imageComposer } from "./ImageComposer";
+import { imageFormatConverter } from "./ImageFormatConverter";
+
+export const sequenceRenderer = new SequenceRenderer(
+  imageComposer,
+  imageFormatConverter
+);

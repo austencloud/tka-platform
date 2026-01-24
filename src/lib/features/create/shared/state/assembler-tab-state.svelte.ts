@@ -19,13 +19,11 @@ import type { ISequenceValidator } from "../services/contracts/ISequenceValidato
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
 import type {
-  UndoOperationType} from "../services/contracts/IUndoManager";
-import {
-  type IUndoManager,
-  type UndoMetadata
+  UndoOperationType,
+  UndoMetadata
 } from "../services/contracts/IUndoManager";
 import { createUndoController } from "./create-module/undo-controller.svelte";
-import { container } from "$lib/shared/di";
+import { undoManager } from "../services/implementations/UndoManager";
 
 /**
  * Creates assembler tab state for assembler-specific concerns
@@ -67,10 +65,9 @@ export function createAssemblerTabState(
     : null;
 
   // Assembler tab has its own independent undo controller
-  const UndoManager = container.items.undoManager as IUndoManager;
   const undoController = sequenceState
     ? createUndoController({
-        UndoManager,
+        UndoManager: undoManager,
         sequenceState,
         getActiveSection: () => "assembler",
         setActiveSectionInternal: async (_panel, _addToHistory) => {

@@ -11,6 +11,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import { container } from "$lib/shared/di";
 import type { GenerationOptions } from "../shared/domain/models/generate-models";
 import type { IGenerationOrchestrator } from "../shared/services/contracts/IGenerationOrchestrator";
+import { generationOrchestrator } from "../shared/services/implementations/GenerationOrchestrator";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
 
 export function createGenerationActionsState(
@@ -30,7 +31,7 @@ export function createGenerationActionsState(
 
     try {
       if (!orchestrationService) {
-        orchestrationService = container.items.generationOrchestrator;
+        orchestrationService = generationOrchestrator;
       }
 
       const generatedSequence =

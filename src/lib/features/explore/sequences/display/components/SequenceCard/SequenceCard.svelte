@@ -23,7 +23,7 @@ LOOP badge:
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
-  import { container } from "$lib/shared/di";
+  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import PropAwareThumbnail from "../PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
@@ -90,7 +90,6 @@ LOOP badge:
     }
 
     try {
-      const loopDetector = container.items.loopDetector;
       const result = loopDetector.detectLOOPType(seq);
 
       if (result.loopType && result.loopType !== "freeform") {

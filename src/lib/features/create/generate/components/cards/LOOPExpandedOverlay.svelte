@@ -6,8 +6,8 @@ Animates forward in z-axis and expands to fill the container space
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ILOOPTypeResolver } from "$lib/features/create/generate/shared/services/contracts/ILOOPTypeResolver";
   import { container } from "$lib/shared/di";
+  import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { onMount } from "svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import { LOOPExplanationTextGenerator } from "$lib/features/create/generate/shared/services/implementations/LOOPExplanationTextGenerator";
@@ -28,14 +28,12 @@ Animates forward in z-axis and expands to fill the container space
   }>();
 
   let hapticService: IHapticFeedback | null = null;
-  let LOOPTypeResolver: ILOOPTypeResolver | null = null;
   let isMultiSelectMode = $state(false);
   let localSelectedComponents = $state(new Set<LOOPComponent>(selectedComponents));
   const explanationGenerator = new LOOPExplanationTextGenerator();
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
-    LOOPTypeResolver = container.items.loopTypeResolver;
   });
 
   // Generate explanation text based on selected components
@@ -45,8 +43,8 @@ Animates forward in z-axis and expands to fill the container space
 
   // Check if the current combination is implemented
   const isImplemented = $derived.by(() => {
-    if (!LOOPTypeResolver || selectionCount === 0) return true;
-    return LOOPTypeResolver.isImplemented(localSelectedComponents);
+    if (selectionCount === 0) return true;
+    return loopTypeResolver.isImplemented(localSelectedComponents);
   });
 
   // Derive selection count
@@ -90,9 +88,9 @@ Animates forward in z-axis and expands to fill the container space
   }
 
   function applyAndClose() {
-    if (!LOOPTypeResolver || selectionCount === 0) return;
+    if (selectionCount === 0) return;
 
-    const newLoopType = LOOPTypeResolver.generateLOOPType(localSelectedComponents);
+    const newLoopType = loopTypeResolver.generateLOOPType(localSelectedComponents);
     onChange(newLoopType);
     onClose();
   }

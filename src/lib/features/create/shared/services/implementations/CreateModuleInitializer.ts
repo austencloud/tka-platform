@@ -287,5 +287,43 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
   async loadStartPositions(gridMode: GridMode): Promise<void> {
     await this.StartPositionManager.getDefaultStartPositions(gridMode);
   }
-
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { sequenceRepository } from "./SequenceRepository";
+import { sequencePersister } from "./SequencePersister";
+import { startPositionManager } from "$lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager";
+import { createModuleOrchestrator } from "./CreateModuleOrchestrator";
+import { responsiveLayoutManager } from "./ResponsiveLayoutManager";
+import { navigationSyncer } from "./NavigationSyncer";
+import { stepOperator } from "./StepOperator";
+import { deepLinkSequenceHandler } from "./DeepLinkSequenceHandler";
+import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
+import { createModuleHandlers } from "./CreateModuleHandlers";
+import { createModuleEffectCoordinator } from "./CreateModuleEffectCoordinator";
+import { sharer } from "$lib/shared/share/services/implementations/Sharer";
+import { panelPersister } from "./PanelPersister.svelte";
+import { sequenceStatsCalculator } from "./SequenceStatsCalculator";
+import { sequenceTransformer } from "./sequence-transforms/SequenceTransformer";
+import { sequenceValidator } from "./SequenceValidator";
+
+export const createModuleInitializer = new CreateModuleInitializer(
+  sequenceRepository,
+  sequencePersister,
+  startPositionManager,
+  createModuleOrchestrator,
+  responsiveLayoutManager,
+  navigationSyncer,
+  stepOperator,
+  deepLinkSequenceHandler,
+  deepLinker,
+  createModuleHandlers,
+  createModuleEffectCoordinator,
+  sharer,
+  panelPersister,
+  sequenceStatsCalculator,
+  sequenceTransformer,
+  sequenceValidator
+);

@@ -11,6 +11,7 @@ Delegates all rendering to child components.
   import { onMount } from "svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+  import { optionGridFitCalculator } from "../services/implementations/OptionGridFitCalculator";
 
   import { createFadeState } from "../state/fade-state.svelte";
   import { createOptionPickerState } from "../state/option-picker-state.svelte";
@@ -170,7 +171,7 @@ Delegates all rendering to child components.
       const sorter = container.items.optionSorter as IOptionSorter;
 
       organizerService = container.items.optionOrganizer as IOptionOrganizer;
-      sizerService = container.items.optionGridFitCalculator as IOptionGridFitCalculator;
+      sizerService = optionGridFitCalculator;
       preparer = pictographPreparer as IPictographPreparer;
       hapticService = container.items.hapticFeedback as IHapticFeedback;
 

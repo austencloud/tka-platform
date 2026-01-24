@@ -743,3 +743,16 @@ export class TextRenderer implements ITextRenderer {
     return gradient;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { dimensionCalculator } from "./DimensionCalculator";
+import { loopGlyphRenderer } from "./LOOPGlyphRenderer";
+import { loopIconStripRenderer } from "./LOOPIconStripRenderer";
+
+export const textRenderer = new TextRenderer(
+  dimensionCalculator,
+  loopGlyphRenderer,
+  loopIconStripRenderer
+);

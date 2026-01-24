@@ -316,3 +316,8 @@ export class LOOPIconStripRenderer implements ILOOPIconStripRenderer {
     ctx.stroke();
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const loopIconStripRenderer = new LOOPIconStripRenderer();

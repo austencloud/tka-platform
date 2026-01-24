@@ -192,3 +192,10 @@ export class ImageFormatConverter implements IImageFormatConverter {
     return mimeTypes[format] || "image/png";
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { fileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
+
+export const imageFormatConverter = new ImageFormatConverter(fileDownloader);

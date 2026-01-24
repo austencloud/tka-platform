@@ -12,7 +12,8 @@
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { SequenceState } from "../SequenceStateOrchestrator.svelte";
 import type { ISequencePersister } from "../../services/contracts/ISequencePersister";
-import type { IDeepLinker } from "$lib/shared/navigation/services/contracts/IDeepLinker";
+import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
+import { container } from "$lib/shared/di";
 import type { IDeepLinkSequenceHandler } from "../../services/contracts/IDeepLinkSequenceHandler";
 import type { OptionHistoryManager } from "./option-history-manager.svelte";
 
@@ -124,9 +125,7 @@ export function createCreateModulePersistenceController({
     let hasPendingEdit = false;
     let pendingEditWasProcessed = false;
     try {
-      const { container } = await import("$lib/shared/di");
-      const deepLinkService = container.items.deepLinker as IDeepLinker;
-      hasDeepLink = deepLinkService.hasDataForModule("create") ?? false;
+      hasDeepLink = deepLinker.hasDataForModule("create") ?? false;
 
       // Also check for pending edit from Discover gallery (stored in localStorage)
       hasPendingEdit =

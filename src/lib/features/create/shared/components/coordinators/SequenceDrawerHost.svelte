@@ -27,6 +27,7 @@
   import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
   import type { IShareHubExportOrchestrator } from "$lib/shared/share-hub/services/contracts/IShareHubExportOrchestrator";
   import { container } from "$lib/shared/di";
+  import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -287,7 +288,7 @@
       playbackController = container.items.animationPlaybackController;
       videoExportOrchestrator = container.items.videoExportOrchestrator;
       loopabilityChecker = container.items.sequenceLoopabilityChecker;
-      layoutService = container.items.responsiveLayoutManager;
+      layoutService = responsiveLayoutManager;
       setAnimationPlaybackRef(playbackController);
 
       // Pass video orchestrator to export orchestrator for animation exports

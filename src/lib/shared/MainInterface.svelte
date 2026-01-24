@@ -48,7 +48,7 @@
   import SidebarTourOverlay from "./onboarding/components/sidebar-tour/SidebarTourOverlay.svelte";
   // Keyboard shortcuts
 
-  import type { IDeepLinker } from "./navigation/services/contracts/IDeepLinker";
+  import { deepLinker } from "./navigation/services/implementations/DeepLinker";
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
   import { exploreScrollState } from "../features/explore/shared/state/ExploreScrollState.svelte";
   import type { IViewportManager } from "./device/services/contracts/IViewportManager";
@@ -159,8 +159,7 @@
 
     // Initialize deep linking for shareable sequence URLs
     try {
-      const deepLinkService = container.items.deepLinker as IDeepLinker;
-      deepLinkService.initialize();
+      deepLinker.initialize();
     } catch (error) {
       console.warn("Failed to initialize deep link service:", error);
     }

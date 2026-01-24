@@ -148,3 +148,8 @@ export class FileDownloader implements IFileDownloader {
     return mimeTypeMap[mimeType.toLowerCase()] || "bin";
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const fileDownloader = new FileDownloader();

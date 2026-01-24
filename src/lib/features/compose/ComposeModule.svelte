@@ -18,7 +18,7 @@
   import { getComposeModuleState } from "./shared/state/compose-module-state.svelte.ts";
   import type { ComposeTab } from "./shared/state/compose-module-state.svelte.ts";
   import type { IURLSyncer } from "$lib/shared/navigation/services/contracts/IURLSyncer";
-  import type { IDeepLinker } from "$lib/shared/navigation/services/contracts/IDeepLinker";
+  import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
 
   // Import tab components
   // CompositionBuilder replaces old ArrangeTab with unified layout-first composition builder
@@ -34,7 +34,6 @@
 
   // Services
   let urlSyncService: IURLSyncer | null = $state(null);
-  let deepLinkService: IDeepLinker | null = $state(null);
 
   // Track if deep link has been processed
   let deepLinkProcessed = $state(false);
@@ -65,7 +64,6 @@
     // Resolve services
     try {
       urlSyncService = container.items.urlSyncer;
-      deepLinkService = container.items.deepLinker;
     } catch (error) {
       console.warn("Failed to resolve navigation services:", error);
     }
@@ -80,7 +78,7 @@
     }
 
     // Check for deep link (e.g., shared composition URL)
-    const deepLinkData = deepLinkService?.consumeData("compose");
+    const deepLinkData = deepLinker.consumeData("compose");
     if (deepLinkData) {
       try {
         // TODO: Load composition by ID and open playback overlay

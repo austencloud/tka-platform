@@ -9,9 +9,9 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ILOOPDetector } from "$lib/features/loop-labeler/services/contracts/ILOOPDetector";
   import type { ISequenceToEntryConverter } from "../services/contracts/ISequenceToEntryConverter";
   import { container } from "$lib/shared/di";
+  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { onMount } from "svelte";
   import PropAwareThumbnail from "$lib/features/explore/sequences/display/components/PropAwareThumbnail.svelte";
   import ChoreoCardQR from "./ChoreoCardQR.svelte";
@@ -44,12 +44,10 @@
   }: Props = $props();
 
   let hapticService: IHapticFeedback;
-  let loopDetector: ILOOPDetector;
   let sequenceToEntryConverter: ISequenceToEntryConverter;
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
-    loopDetector = container.items.loopDetector;
     sequenceToEntryConverter = container.items.sequenceToEntryConverter;
   });
 
@@ -68,7 +66,7 @@
 
   // Detect LOOP pattern from sequence steps algorithmically
   const loopComponents = $derived.by(() => {
-    if (!loopDetector || !sequenceToEntryConverter || !sequence.steps?.length) {
+    if (!sequenceToEntryConverter || !sequence.steps?.length) {
       return new Set<LOOPComponent>();
     }
 

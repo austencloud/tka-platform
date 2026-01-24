@@ -18,6 +18,7 @@
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
+  import { generationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
   import { startPositionDeriver as startPositionDeriverDirect } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { orientationCalculator as orientationCalculatorDirect } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { gridPositionDeriver as gridPositionDeriverDirect } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
@@ -166,13 +167,12 @@
         .animationPlaybackController as IAnimationPlaybackController;
       startPositionDeriver = startPositionDeriverDirect;
       const exploreLoader = container.items.exploreLoader;
-      const generationOrchestrator = container.items.generationOrchestrator;
       const sequenceTransformer = container.items.sequenceTransformer;
 
       // Create the spinner orchestrator
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
         exploreLoader as any,
-        generationOrchestrator as any,
+        generationOrchestrator,
         sequenceTransformer as any,
         startPositionDeriverDirect,
         orientationCalculatorDirect as any,

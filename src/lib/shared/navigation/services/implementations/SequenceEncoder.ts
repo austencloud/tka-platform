@@ -742,3 +742,8 @@ export class SequenceEncoder implements ISequenceEncoder {
     return LZString.decompressFromEncodedURIComponent(compressed);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sequenceEncoder = new SequenceEncoder();

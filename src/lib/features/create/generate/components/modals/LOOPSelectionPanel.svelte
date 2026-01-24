@@ -14,7 +14,7 @@ with exported sequence cards.
   import { LOOP_COMPONENTS } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
   import { LOOPExplanationTextGenerator } from "$lib/features/create/generate/shared/services/implementations/LOOPExplanationTextGenerator";
   import { loopFavoritesManager } from "$lib/features/create/generate/shared/services/implementations/LOOPFavoritesManager";
-  import type { ILOOPTypeResolver } from "$lib/features/create/generate/shared/services/contracts/ILOOPTypeResolver";
+  import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import type { LOOPPreset } from "../../shared/domain/constants/loop-presets";
   import LOOPGlyph from "$lib/shared/components/LOOPGlyph.svelte";
   import LOOPComponentGrid from "./LOOPComponentGrid.svelte";
@@ -35,7 +35,6 @@ with exported sequence cards.
     }>();
 
   let hapticService: IHapticFeedback | null = null;
-  let LOOPTypeResolver: ILOOPTypeResolver | null = null;
   let isMultiSelectMode = $state(false);
   let showPresets = $state(false);
   let favorites = $state<string[]>([]);
@@ -43,7 +42,6 @@ with exported sequence cards.
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
-    LOOPTypeResolver = container.items.loopTypeResolver;
     favorites = loopFavoritesManager.getFavorites();
   });
 
@@ -54,8 +52,8 @@ with exported sequence cards.
 
   // Check if the current combination is implemented
   const isImplemented = $derived.by(() => {
-    if (!LOOPTypeResolver || selectionCount === 0) return true;
-    return LOOPTypeResolver.isImplemented(selectedComponents);
+    if (selectionCount === 0) return true;
+    return loopTypeResolver.isImplemented(selectedComponents);
   });
 
   // Derive selection count and adaptive button text

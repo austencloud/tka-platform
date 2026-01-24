@@ -312,3 +312,10 @@ export class Sharer implements ISharer {
     return await response.blob();
   };
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { sequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
+
+export const sharer = new Sharer(sequenceRenderer);

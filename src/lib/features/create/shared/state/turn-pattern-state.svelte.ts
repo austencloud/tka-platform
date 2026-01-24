@@ -6,8 +6,7 @@
  */
 
 import type { TurnPattern } from "../domain/models/TurnPatternData";
-import type { ITurnPatternManager } from "../services/contracts/ITurnPatternManager";
-import { container } from "$lib/shared/di";
+import { turnPatternManager } from "../services/implementations/TurnPatternManager";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -20,14 +19,6 @@ let _selectedPattern: TurnPattern | null = null;
 let _error: string | null = null;
 let _initialized = false;
 
-// Lazy service resolution (resolved on first use)
-let _turnPatternManager: ITurnPatternManager | null = null;
-function getTurnPatternManager(): ITurnPatternManager {
-  if (!_turnPatternManager) {
-    _turnPatternManager = container.items.turnPatternManager as ITurnPatternManager;
-  }
-  return _turnPatternManager;
-}
 
 export const turnPatternState = {
   // Getters
@@ -62,7 +53,7 @@ export const turnPatternState = {
     _error = null;
 
     try {
-      _patterns = await getTurnPatternManager().loadPatterns(userId);
+      _patterns = await turnPatternManager.loadPatterns(userId);
       _initialized = true;
       logger.log(`Loaded ${_patterns.length} patterns`);
     } catch (err) {
@@ -87,11 +78,11 @@ export const turnPatternState = {
     _error = null;
 
     try {
-      const patternData = getTurnPatternManager().extractPattern(
+      const patternData = turnPatternManager.extractPattern(
         sequence,
         name
       );
-      const saved = await getTurnPatternManager().savePattern(
+      const saved = await turnPatternManager.savePattern(
         patternData,
         userId
       );
@@ -119,7 +110,7 @@ export const turnPatternState = {
     _error = null;
 
     try {
-      await getTurnPatternManager().deletePattern(patternId, userId);
+      await turnPatternManager.deletePattern(patternId, userId);
 
       // Remove from local state
       _patterns = _patterns.filter((p) => p.id !== patternId);

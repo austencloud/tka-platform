@@ -147,3 +147,8 @@ export class LOOPGlyphRenderer implements ILOOPGlyphRenderer {
     ctx.stroke();
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const loopGlyphRenderer = new LOOPGlyphRenderer();

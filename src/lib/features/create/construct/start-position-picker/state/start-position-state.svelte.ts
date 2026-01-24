@@ -9,19 +9,10 @@ import { container } from "$lib/shared/di";
 import { GridMode } from "../../../../../shared/pictograph/grid/domain/enums/grid-enums";
 import type { PictographData } from "../../../../../shared/pictograph/shared/domain/models/PictographData";
 import type { ISettingsState } from "../../../../../shared/settings/services/contracts/ISettingsState";
-import type { IStartPositionManager } from "../services/contracts/IStartPositionManager";
+import { startPositionManager } from "../services/implementations/StartPositionManager";
 
 export function createSimplifiedStartPositionState() {
-  // Lazy service resolution to avoid effect_orphan error
-  let startPositionManagerInstance: IStartPositionManager | null = null;
   let settingsService: ISettingsState | null = null;
-
-  function getService(): IStartPositionManager {
-    if (!startPositionManagerInstance) {
-      startPositionManagerInstance = container.items.startPositionManager;
-    }
-    return startPositionManagerInstance;
-  }
 
   function getSettingsServiceSync(): ISettingsState {
     if (!settingsService) {
@@ -55,8 +46,7 @@ export function createSimplifiedStartPositionState() {
   // Load positions on initialization - always succeeds with hardcoded positions
   async function loadPositions(gridMode: GridMode = currentGridMode) {
     currentGridMode = gridMode;
-    const service = getService();
-    positions = await service.getStartPositions(gridMode);
+    positions = await startPositionManager.getStartPositions(gridMode);
 
     // Persist grid mode to settings when it changes
     try {
@@ -78,8 +68,7 @@ export function createSimplifiedStartPositionState() {
   // Load all 16 start position variations for the current grid mode
   async function loadAllVariations(gridMode: GridMode = currentGridMode) {
     currentGridMode = gridMode;
-    const service = getService();
-    allVariations = await service.getAllStartPositionVariations(gridMode);
+    allVariations = await startPositionManager.getAllStartPositionVariations(gridMode);
 
     // Persist grid mode to settings when it changes
     try {
@@ -92,8 +81,7 @@ export function createSimplifiedStartPositionState() {
 
   // Select a position
   async function selectPosition(position: PictographData) {
-    const service = getService();
-    service.selectStartPosition(position);
+    startPositionManager.selectStartPosition(position);
     selectedPosition = position;
     notifySelectionChange(position, "user");
   }

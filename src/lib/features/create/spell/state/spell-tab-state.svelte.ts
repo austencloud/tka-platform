@@ -19,13 +19,11 @@ import type { ISequenceValidator } from "$lib/features/create/shared/services/co
 import { createSequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
 import type {
-  UndoOperationType} from "$lib/features/create/shared/services/contracts/IUndoManager";
-import {
-  type IUndoManager,
-  type UndoMetadata
+  UndoOperationType,
+  UndoMetadata
 } from "$lib/features/create/shared/services/contracts/IUndoManager";
 import { createUndoController } from "$lib/features/create/shared/state/create-module/undo-controller.svelte";
-import { container } from "$lib/shared/di";
+import { undoManager } from "$lib/features/create/shared/services/implementations/UndoManager";
 import { browser } from "$app/environment";
 import type {
   LetterSource,
@@ -124,10 +122,9 @@ export function createSpellTabState(
     : null;
 
   // Spell tab has its own independent undo controller
-  const UndoManager = container.items.undoManager as IUndoManager;
   const undoController = sequenceState
     ? createUndoController({
-        UndoManager,
+        UndoManager: undoManager,
         sequenceState,
         getActiveSection: () => "spell",
         setActiveSectionInternal: async () => {

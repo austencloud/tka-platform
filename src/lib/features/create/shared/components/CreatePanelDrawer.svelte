@@ -16,7 +16,7 @@
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { tryGetCreateModuleContext } from "../context/create-module-context";
-  import { container } from "$lib/shared/di";
+  import { responsiveLayoutManager } from "../services/implementations/ResponsiveLayoutManager";
   import type { IResponsiveLayoutManager } from "../services/contracts/IResponsiveLayoutManager";
   import type { Snippet } from "svelte";
 
@@ -64,14 +64,10 @@
 
   onMount(() => {
     if (!createModuleContext && browser) {
-      // Try to use the layout service if available
-      try {
-        layoutService = container.items.responsiveLayoutManager;
-        if (layoutService) {
-          fallbackIsSideBySide = layoutService.shouldUseSideBySideLayout();
-        }
-      } catch {
-        // Direct viewport check as last resort
+      layoutService = responsiveLayoutManager;
+      if (layoutService) {
+        fallbackIsSideBySide = layoutService.shouldUseSideBySideLayout();
+      } else {
         fallbackIsSideBySide = window.innerWidth >= 1024;
       }
     }

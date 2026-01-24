@@ -88,9 +88,7 @@
     "build": {
       "file": "build-container.ts",
       "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\build-container.ts",
-      "services": [
-        "createModuleInitializer"
-      ],
+      "services": [],
       "migrated": [
         "createModuleOrchestrator",
         "createModuleEffectCoordinator",
@@ -193,9 +191,11 @@
         "arrowAdjustmentOrchestrator",
         "partialSequenceGenerator",
         "generationOrchestrator",
-        "workbench"
+        "workbench",
+        "createModuleInitializer"
       ],
-      "status": "pending"
+      "status": "completed",
+      "completedAt": "2026-01-24T11:07:53.622Z"
     },
     "community": {
       "file": "community-container.ts",

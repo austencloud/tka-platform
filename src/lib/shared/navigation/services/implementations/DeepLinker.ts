@@ -240,3 +240,10 @@ export class DeepLinker implements IDeepLinker {
     return this.SequenceEncoder.parseDeepLink(url);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { sequenceEncoder } from "./SequenceEncoder";
+
+export const deepLinker = new DeepLinker(sequenceEncoder);

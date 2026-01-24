@@ -11,8 +11,7 @@
     TYPE_CONFIG,
     STATUS_CONFIG,
   } from "../../domain/models/feedback-models";
-  import { container } from "$lib/shared/di";
-  import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
+  import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import { onMount } from "svelte";
 
   interface Props {
@@ -33,7 +32,7 @@
   }: Props = $props();
 
   // Responsive layout
-  const layoutService = container.items.responsiveLayoutManager;
+  const layoutService = responsiveLayoutManager;
   let isSideBySide = $state(false);
 
   onMount(() => {

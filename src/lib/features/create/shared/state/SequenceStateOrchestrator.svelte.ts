@@ -23,7 +23,7 @@ import type { StartPositionData } from "$lib/features/create/shared/domain/model
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ValidationResult } from "$lib/shared/validation/ValidationResult";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { IDeepLinker } from "$lib/shared/navigation/services/contracts/IDeepLinker";
+import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
 import type { TargetHand } from "./panel-coordination-state.svelte";
 import { container } from "$lib/shared/di";
 import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
@@ -117,8 +117,7 @@ export function createSequenceState(services: SequenceStateServices) {
     let hasDeepLink = false;
     let hasPendingEdit = false;
     try {
-      const deepLinkService = container.items.deepLinker as IDeepLinker | null;
-      hasDeepLink = deepLinkService?.hasDataForModule("create") ?? false;
+      hasDeepLink = deepLinker.hasDataForModule("create") ?? false;
 
       // Also check for pending edit from Discover gallery (stored in localStorage)
       hasPendingEdit =

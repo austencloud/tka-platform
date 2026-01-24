@@ -15,6 +15,7 @@ Renders a section with:
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IOptionGridFitCalculator } from "../../services/contracts/IGridFitCalculator";
   import { container } from "$lib/shared/di";
+  import { optionGridFitCalculator } from "../../services/implementations/OptionGridFitCalculator";
   import { onMount } from "svelte";
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import OptionPictographCell from "./OptionPictographCell.svelte";
@@ -58,8 +59,7 @@ Renders a section with:
   // gridFitCalculator must be available immediately for correct initial sizing
   let hapticService: IHapticFeedback | null = null;
   let reversalDetector: IReversalDetector | null = null;
-  const gridFitCalculator: IOptionGridFitCalculator | null =
-    container.items.optionGridFitCalculator ?? null;
+  const gridFitCalculator: IOptionGridFitCalculator | null = optionGridFitCalculator;
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;

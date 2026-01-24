@@ -4,12 +4,12 @@ Always opens selector panel when clicked
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ILOOPTypeResolver } from "$lib/features/create/generate/shared/services/contracts/ILOOPTypeResolver";
   import {
     LOOP_TYPE_LABELS,
     LOOPType,
   } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { container } from "$lib/shared/di";
+  import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import { onMount, getContext } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
@@ -32,7 +32,6 @@ Always opens selector panel when clicked
   }>();
 
   let hapticService: IHapticFeedback;
-  let LOOPTypeResolver: ILOOPTypeResolver = container.items.loopTypeResolver;
 
   // Get panel coordination state from context (provided by CreateModule)
   const panelState = getContext<PanelCoordinationState>("panelState");
@@ -43,7 +42,7 @@ Always opens selector panel when clicked
 
   // Get current selected components using service
   const selectedComponents = $derived(
-    LOOPTypeResolver.parseComponents(currentLOOPType)
+    loopTypeResolver.parseComponents(currentLOOPType)
   );
 
   // Open LOOP panel via coordinator (renders at CreateModule level)

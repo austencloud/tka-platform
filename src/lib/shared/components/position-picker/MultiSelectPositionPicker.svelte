@@ -10,7 +10,6 @@ Uses blocklist approach: positions in blockedPositions are excluded.
 <script lang="ts">
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IStartPositionManager } from "$lib/features/create/construct/start-position-picker/services/contracts/IStartPositionManager";
   import {
     GridMode,
     GridPosition,
@@ -20,6 +19,7 @@ Uses blocklist approach: positions in blockedPositions are excluded.
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import { createStartPositionVariations } from "./start-position-utils";
+  import { startPositionManager } from "$lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager";
 
   let {
     blockedPositions = [],
@@ -35,18 +35,13 @@ Uses blocklist approach: positions in blockedPositions are excluded.
   let variations = $state<PictographData[]>([]);
   let hapticService: IHapticFeedback | null = $state(null);
   let isLoading = $state(true);
-  let StartPositionManager: IStartPositionManager | null = $state(null);
 
   // Convert blockedPositions to Set for O(1) lookup
   const blockedSet = $derived(new Set(blockedPositions));
 
   // Load variations based on grid mode (reactive to prop changes)
   function loadVariations(mode: GridMode) {
-    if (StartPositionManager) {
-      variations = StartPositionManager.getAllStartPositionVariations(mode);
-    } else {
-      variations = createStartPositionVariations(mode);
-    }
+    variations = startPositionManager.getAllStartPositionVariations(mode);
   }
 
   // React to gridMode prop changes
@@ -59,7 +54,6 @@ Uses blocklist approach: positions in blockedPositions are excluded.
   onMount(async () => {
     try {
       hapticService = container.items.hapticFeedback ?? null;
-      StartPositionManager = container.items.startPositionManager ?? null;
       loadVariations(gridModeProp);
     } catch (error) {
       console.warn(

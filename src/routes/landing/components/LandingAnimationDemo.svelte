@@ -17,6 +17,7 @@
   import { gridPositionDeriver as gridPositionDeriverInstance } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { orientationCalculator as orientationCalculatorInstance } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+  import { generationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import {
     animationSettings,
@@ -230,12 +231,11 @@
       gridPositionDeriver = gridPositionDeriverInstance;
 
       // Create and initialize the spinner orchestrator for endless chaining
-      const generationOrchestrator = container.items.generationOrchestrator;
       const sequenceTransformer = container.items.sequenceTransformer;
 
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
         exploreLoader as any,
-        generationOrchestrator as any,
+        generationOrchestrator,
         sequenceTransformer as any,
         startPositionDeriverInstance,
         orientationCalculatorInstance as any,

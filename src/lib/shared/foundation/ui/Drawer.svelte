@@ -17,8 +17,7 @@
 <script lang="ts">
   import "./drawer/Drawer.css";
   import { onMount, onDestroy, untrack, type Snippet } from "svelte";
-  import { container } from "../../di";
-  import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
+  import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import { SwipeToDismiss } from "./drawer/SwipeToDismiss";
   import { FocusTrap } from "./drawer/FocusTrap";
   import { SnapPoints, type SnapPointValue } from "./drawer/SnapPoints";
@@ -117,7 +116,7 @@
     children?: Snippet;
   } = $props();
 
-  let layoutService: IResponsiveLayoutManager | null = null;
+  let layoutService = responsiveLayoutManager;
   let isSideBySideLayout = $state(false);
   let mounted = $state(false);
   let wasOpen = $state(false);
@@ -312,28 +311,12 @@
   // Initialize layout service if responsive layout is enabled
   onMount(() => {
     mounted = true;
-    if (respectLayoutMode) {
-      // Try to resolve layout service (optional dependency)
-      // Will be null if create module hasn't loaded yet
-      layoutService = container.items.responsiveLayoutManager;
+    if (respectLayoutMode && layoutService) {
+      isSideBySideLayout = layoutService.shouldUseSideBySideLayout();
 
-      if (layoutService) {
-        // Get initial value
-        isSideBySideLayout = layoutService.shouldUseSideBySideLayout();
-
-        // Subscribe to layout changes for reactive updates on resize
-        layoutUnsubscribe = layoutService.onLayoutChange(() => {
-          isSideBySideLayout = layoutService!.shouldUseSideBySideLayout();
-        });
-      } else {
-        // Fallback: direct resize listener when layoutService not available
-        const handleResize = () => {
-          isSideBySideLayout = window.innerWidth >= 1024;
-        };
-        handleResize(); // Initial value
-        window.addEventListener("resize", handleResize);
-        layoutUnsubscribe = () => window.removeEventListener("resize", handleResize);
-      }
+      layoutUnsubscribe = layoutService.onLayoutChange(() => {
+        isSideBySideLayout = layoutService!.shouldUseSideBySideLayout();
+      });
     }
   });
 

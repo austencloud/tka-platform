@@ -1,6 +1,5 @@
 import { onMount, onDestroy, untrack } from "svelte";
-import { container } from "../../../di";
-import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
+import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
 import { SwipeToDismiss } from "./SwipeToDismiss";
 import { FocusTrap } from "./FocusTrap";
 import { SnapPoints } from "./SnapPoints";
@@ -44,7 +43,7 @@ export function useDrawer(props: any) {
     children,
   } = props;
 
-  let layoutService: IResponsiveLayoutManager | null = null;
+  let layoutService = responsiveLayoutManager;
   let isSideBySideLayout = $state(false);
   let mounted = $state(false);
   let wasOpen = $state(false);
@@ -172,11 +171,6 @@ export function useDrawer(props: any) {
   // Initialize layout service if responsive layout is enabled
   onMount(() => {
     mounted = true;
-    if (respectLayoutMode) {
-      // Try to resolve layout service (optional dependency)
-      // Will be null if create module hasn't loaded yet
-      layoutService = container.items.responsiveLayoutManager;
-    }
   });
 
   // Reactive layout detection
