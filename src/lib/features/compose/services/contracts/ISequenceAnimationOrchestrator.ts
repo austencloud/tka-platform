@@ -39,9 +39,21 @@ export interface ISequenceAnimationOrchestrator {
 
   /**
    * Get the total duration of all steps (sum of individual beat durations).
-   * This is the proper "end time" for duration-aware playback.
+   * Does NOT include start position duration.
    */
   getTotalDuration(): number;
+
+  /**
+   * Get the duration of the start position (default: 1 beat).
+   * Start position is shown as a beat before motion begins.
+   */
+  getStartPositionDuration(): number;
+
+  /**
+   * Get the total duration INCLUDING start position.
+   * This is the proper "end time" for duration-aware playback.
+   */
+  getTotalDurationWithStartPosition(): number;
 
   /**
    * Calculate animation state using duration-aware timing.

@@ -35,9 +35,12 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
   // Duration-aware timing: track time position separately from beat number
   // timePosition: 0 to totalDuration (accounts for variable beat durations)
-  // currentStep in state: 1-based beat number for UI display
+  // currentStep in state: 0 for start pos, 1+ for motion beats (for UI display)
   private timePosition: number = 0;
-  private totalDuration: number = 0;
+  private totalDuration: number = 0; // Includes start position duration
+
+  // Track if this is the first loop (for loopable sequences that skip start pos on subsequent loops)
+  private isFirstLoop: boolean = true;
 
   constructor(
     private readonly animationEngine: ISequenceAnimationOrchestrator,
@@ -80,9 +83,10 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     state.setTotalSteps(metadata.totalSteps);
     state.setSequenceMetadata(metadata.word, metadata.author);
 
-    // Store total duration for duration-aware playback
-    this.totalDuration = this.animationEngine.getTotalDuration();
+    // Store total duration for duration-aware playback (includes start position)
+    this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition();
     this.timePosition = 0;
+    this.isFirstLoop = true;
 
     // Set sequence data on state (data arrives already normalized from SequenceService)
     state.setSequenceData(sequenceData);
@@ -123,8 +127,8 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.state.setTotalSteps(metadata.totalSteps);
     this.state.setSequenceMetadata(metadata.word, metadata.author);
 
-    // Update total duration
-    this.totalDuration = this.animationEngine.getTotalDuration();
+    // Update total duration (includes start position)
+    this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition();
 
     // Clamp time position to new duration range
     this.timePosition = Math.min(currentTimePos, this.totalDuration);
@@ -177,11 +181,12 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     // Reset to start (both time position and beat number)
     this.timePosition = 0;
     this.syncCurrentStep(0);
+    this.isFirstLoop = true;
 
     // Re-initialize engine if we have sequence data
     if (this.sequenceData) {
       this.animationEngine.initializeWithDomainData(this.sequenceData);
-      this.totalDuration = this.animationEngine.getTotalDuration();
+      this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition();
     }
 
     // Update prop states
@@ -411,6 +416,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.sequenceData = null;
     this.timePosition = 0;
     this.totalDuration = 0;
+    this.isFirstLoop = true;
   }
 
   /**
@@ -522,28 +528,29 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     const newTimePosition = this.timePosition + timeDelta;
 
     // Animation timing with duration-aware playback:
-    // - timePosition 0: start position
-    // - timePosition 0 to totalDuration: animating through steps
-    // - Each beat takes its own duration (variable)
+    // - timePosition 0 to startPosDuration: start position
+    // - timePosition startPosDuration to totalDuration: motion beats
     //
-    // For seamlessly loopable sequences (circular patterns):
-    // - Skip showing start position entirely in continuous playback
-    // - Loop from end back to first beat's start time
-    //
-    // For non-loopable sequences:
-    // - Show start position at the end before looping
-    // - Loop back to 0 (start position)
+    // Start position behavior:
+    // - Loopable sequences: Show start position ONLY on first loop, skip on subsequent loops
+    // - Freeform sequences: Show start position EVERY time when looping back
 
     if (newTimePosition > this.totalDuration) {
       if (this.state.shouldLoop) {
-        // For seamlessly loopable sequences, skip start position
-        // For non-loopable, show start position briefly
-        this.timePosition = this._isSeamlesslyLoopable ? 0.01 : 0; // Small offset to skip exact start
+        // Get start position duration to know where motion beats begin
+        const startPosDuration = this.animationEngine.getStartPositionDuration();
+
+        // Mark that we've completed the first loop
+        this.isFirstLoop = false;
+
+        // For seamlessly loopable sequences: skip start position on subsequent loops
+        // For freeform sequences: show start position every time
+        this.timePosition = this._isSeamlesslyLoopable ? startPosDuration : 0;
 
         // Re-initialize engine if needed
         if (this.sequenceData) {
           this.animationEngine.initializeWithDomainData(this.sequenceData);
-          this.totalDuration = this.animationEngine.getTotalDuration();
+          this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition();
         }
       } else {
         // Stop at end
@@ -556,7 +563,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     }
 
     // Calculate state using duration-aware timing
-    // Returns the 1-based beat number for UI sync
+    // Returns the beat number (0 for start pos, 1+ for motion beats) with fractional progress
     const currentStepNumber = this.animationEngine.calculateStateDurationAware(this.timePosition);
 
     // Sync the beat number (not time position) for UI highlighting

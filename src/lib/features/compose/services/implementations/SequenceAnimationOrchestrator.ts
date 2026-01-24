@@ -367,10 +367,26 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
 
   /**
    * Get the total duration of all steps (sum of individual beat durations).
-   * This is the proper "end time" for duration-aware playback.
+   * Does NOT include start position duration.
    */
   getTotalDuration(): number {
     return this.stepCalculationService.calculateTotalDuration(this.steps);
+  }
+
+  /**
+   * Get the duration of the start position (default: 1 beat).
+   * Start position is shown as a beat before motion begins.
+   */
+  getStartPositionDuration(): number {
+    return 1; // Start position always lasts 1 beat
+  }
+
+  /**
+   * Get the total duration INCLUDING start position.
+   * This is the proper "end time" for duration-aware playback.
+   */
+  getTotalDurationWithStartPosition(): number {
+    return this.getStartPositionDuration() + this.getTotalDuration();
   }
 
   /**
@@ -378,29 +394,34 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
    * Maps a time position to the correct beat and progress within that beat,
    * accounting for variable beat durations.
    *
-   * @param timePosition - Position in sequence time (0 to totalDuration)
-   * @returns The beat number (1-based) currently being animated, for UI sync
+   * Timeline with start position:
+   * - Time 0 to startPositionDuration: Start position (beat 0)
+   * - Time startPositionDuration onwards: Motion beats (beat 1, 2, 3...)
+   *
+   * @param timePosition - Position in sequence time (0 to totalDurationWithStartPosition)
+   * @returns The beat number (0 for start position, 1+ for motion beats), with fractional progress
    */
   calculateStateDurationAware(timePosition: number): number {
     if (this.steps.length === 0) {
       return 0;
     }
 
-    // Time position 0 to ~1 (first beat's duration) = start position / first beat
-    // We use a small threshold to determine if we're at the start position
-    const totalDuration = this.getTotalDuration();
-    const firstBeatDuration = this.steps[0]?.duration ?? 1;
+    const startPosDuration = this.getStartPositionDuration();
 
-    // At start position if timePosition < first beat duration threshold
-    // (using 0.01 as threshold to handle floating point)
-    if (timePosition < 0.01) {
+    // Time 0 to startPositionDuration = start position (beat 0)
+    if (timePosition < startPosDuration) {
       this.calculateStartPositionState();
-      return 0;
+      // Return 0 with fractional progress within start position
+      return timePosition / startPosDuration; // 0.0 to ~0.99
     }
+
+    // Adjust time position to account for start position duration
+    // Now timePosition is relative to after start position
+    const adjustedTimePosition = timePosition - startPosDuration;
 
     // Use duration-aware beat calculation
     const stepState = this.stepCalculationService.calculateBeatStateDurationAware(
-      timePosition,
+      adjustedTimePosition,
       this.steps
     );
 
@@ -514,23 +535,35 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
   }
 
   /**
-   * Convert a beat number (1-based) to a time position for duration-aware playback.
+   * Convert a beat number (0 for start position, 1+ for motion beats) to a time position.
    * Handles fractional beats by interpolating within the beat's duration.
    *
-   * @param beat - The beat number (1-based, can be fractional like 2.5)
+   * Timeline with start position:
+   * - Beat 0 to <1: Start position
+   * - Beat 1+: Motion beats
+   *
+   * @param beat - The beat number (0 for start pos, 1-based for motion, can be fractional)
    * @returns The time position in duration units
    */
   getTimePositionForBeat(beat: number): number {
-    if (beat <= 0 || this.steps.length === 0) {
+    if (this.steps.length === 0) {
       return 0;
     }
 
+    const startPosDuration = this.getStartPositionDuration();
+
+    // Beat 0 to <1 = within start position
+    if (beat < 1) {
+      return beat * startPosDuration; // 0 to startPosDuration
+    }
+
+    // Beat 1+ = motion beats
     // Get the integer beat index (0-based) and fractional progress
     const beatIndex = Math.floor(beat) - 1; // Convert 1-based to 0-based
     const beatProgress = beat - Math.floor(beat);
 
-    // Calculate time position: sum of all previous beat durations + progress within current beat
-    let timePosition = this.stepCalculationService.getBeatStartTime(beatIndex, this.steps);
+    // Calculate time position: startPosDuration + sum of all previous beat durations + progress
+    let timePosition = startPosDuration + this.stepCalculationService.getBeatStartTime(beatIndex, this.steps);
 
     // Add progress within current beat
     if (beatIndex >= 0 && beatIndex < this.steps.length) {
