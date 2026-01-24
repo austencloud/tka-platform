@@ -9,9 +9,12 @@
    * - Coordinate with child module components via callbacks
    * - Provide loading states
    * - Code-split modules to reduce initial bundle size
+   * - Handle HMR-related module loading failures gracefully
    */
   import { isModuleActive } from "../application/state/ui/ui-state.svelte";
+  import { registerModuleCacheClear } from "../hmr-helper";
   import type { Component } from "svelte";
+  import { onMount } from "svelte";
 
   interface Props {
     activeModule: string | null;
@@ -31,6 +34,14 @@
 
   // Cache for loaded modules to avoid re-importing
   const moduleCache = new Map<string, Component<any>>();
+
+  // Register cache clearing callback for HMR
+  // When Vite does an HMR update, clear our cache to prevent stale chunk issues
+  onMount(() => {
+    registerModuleCacheClear(() => {
+      moduleCache.clear();
+    });
+  });
 
   // Dynamic import functions for each module (enables code-splitting)
   // NOTE: Dashboard removed - Create is now the default landing module
@@ -84,6 +95,8 @@
     compose: () => import("../../features/compose/ComposeModule.svelte"),
     // watch module - video browsing hub
     watch: () => import("../../features/watch/WatchModule.svelte"),
+    // connect module - collaborative sync
+    connect: () => import("../../features/connect/ConnectModule.svelte"),
     // settings module - accessed via gear icon in sidebar footer
     settings: () => import("../../features/settings/SettingsModule.svelte"),
     // Realm module - Unified 3D destination hub (Stage, Gallery, Worlds, etc.)
@@ -175,6 +188,13 @@
           <div class="module-error" role="alert">
             <p>Failed to load module</p>
             <p class="error-details">{error?.message || "Unknown error"}</p>
+            <button
+              class="reload-button"
+              onclick={() => window.location.reload()}
+              type="button"
+            >
+              Reload Page
+            </button>
           </div>
         {/await}
       </div>
@@ -259,6 +279,30 @@
   .module-error .error-details {
     font-size: var(--font-size-compact);
     opacity: 0.7;
+  }
+
+  .module-error .reload-button {
+    margin-top: 16px;
+    padding: 12px 24px;
+    min-height: 48px;
+    min-width: 120px;
+    background: var(--theme-accent, #6366f1);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .module-error .reload-button:hover {
+    background: var(--theme-accent-hover, #4f46e5);
+  }
+
+  .module-error .reload-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {

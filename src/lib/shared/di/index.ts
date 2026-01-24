@@ -54,6 +54,7 @@ import { createModerationContainer } from "./containers/moderation-container";
 import { createHallOfShameContainer } from "./containers/hall-of-shame-container";
 import { createWatchContainer } from "./containers/watch-container";
 import { createLanSyncContainer } from "./containers/lan-sync-container";
+import { createConnectContainer } from "./containers/connect-container";
 
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
@@ -226,6 +227,11 @@ const watchContainer = typeof window !== 'undefined' ? createWatchContainer({
 // LAN Sync container - self-contained, no external dependencies
 const lanSyncContainer = typeof window !== 'undefined' ? createLanSyncContainer() : null as any;
 
+// Connect container - needs lanSyncCoordinator from lan-sync
+const connectContainer = typeof window !== 'undefined' ? createConnectContainer({
+  lanSyncCoordinator: lanSyncContainer.items.lanSyncCoordinator,
+}) : null as any;
+
 // DeepLinkResolver - needs sequenceRepository from data and exploreLoader from explore
 const deepLinkResolver = typeof window !== 'undefined' ? new DeepLinkResolver(
   dataContainer.items.sequenceRepository,
@@ -293,6 +299,7 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(hallOfShameContainer.items)
   .add(watchContainer.items)
   .add(lanSyncContainer.items)
+  .add(connectContainer.items)
   // Cross-container services (depend on multiple container outputs)
   .add({ deepLinkResolver: () => deepLinkResolver }) : null as any;
 

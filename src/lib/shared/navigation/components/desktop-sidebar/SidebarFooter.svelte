@@ -5,11 +5,15 @@
   import { container } from "$lib/shared/di";
   import { releaseNotesDrawerState } from "../../../settings/state/release-notes-drawer-state.svelte";
   import { inboxState } from "../../../inbox/state/inbox-state.svelte";
+  import { featureFlagService } from "../../../auth/services/FeatureFlagService.svelte";
   import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
+  import ModuleQuickToggle from "./ModuleQuickToggle.svelte";
 
   let { isCollapsed } = $props<{
     isCollapsed: boolean;
   }>();
+
+  const isAdmin = $derived(featureFlagService.isAdmin);
 
   const hasUnread = $derived(inboxState.totalUnreadCount > 0);
   const badgeCount = $derived(
@@ -71,6 +75,11 @@
 
   <!-- Network Status Indicator (between inbox and version) -->
   <NetworkStatusIndicator variant="desktop" />
+
+  <!-- Module Quick Toggle (admin only) -->
+  {#if isAdmin}
+    <ModuleQuickToggle {isCollapsed} />
+  {/if}
 
   <!-- Version Number (below inbox) -->
   <button

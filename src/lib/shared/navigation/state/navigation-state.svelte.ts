@@ -388,12 +388,28 @@ export function createNavigationState() {
   }
 
   function setActiveTab(tabId: string) {
+    // Debug logging - enable via: window.__DEBUG_NAV__ = true
+    const debug = typeof window !== "undefined" && (window as any).__DEBUG_NAV__;
+
     const moduleDefinition = MODULE_DEFINITIONS.find(
       (m) => m.id === currentModule
     );
     const tabExists = moduleDefinition?.sections.some(
       (tab) => tab.id === tabId
     );
+
+    if (debug) {
+      console.log("[NavState] setActiveTab called:", {
+        tabId,
+        currentModule,
+        moduleFound: !!moduleDefinition,
+        tabExists,
+        availableTabs: moduleDefinition?.sections.map((s) => s.id),
+      });
+      // Show stack trace to find the culprit
+      console.trace("[NavState] setActiveTab stack trace");
+    }
+
     if (moduleDefinition && tabExists) {
       const previousTab = activeTab;
       activeTab = tabId;
@@ -627,3 +643,19 @@ export type NavigationState = ReturnType<typeof createNavigationState>;
 
 // Global navigation state instance
 export const navigationState = createNavigationState();
+
+// ============================================================================
+// HMR: Force full reload when this module changes
+// ============================================================================
+// Svelte 5's reactive proxies don't survive HMR well. Components that import
+// navigationState hold references to the OLD reactive proxy after HMR replaces
+// this module. State updates, but components don't re-render.
+//
+// The pragmatic fix: Don't HMR this file. A full reload is fast and reliable.
+// This is the recommended approach for core state modules in modern apps.
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {
+    // Accepting the update but immediately invalidating forces a full reload
+    import.meta.hot?.invalidate();
+  });
+}

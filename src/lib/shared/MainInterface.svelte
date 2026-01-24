@@ -8,7 +8,7 @@
    */
   import { onMount } from "svelte";
   import { getActiveTab } from "./application/state/ui/ui-state.svelte";
-  // import { handleHMRInit } from "./hmr-helper"; // No longer needed
+  import { handleHMRInit } from "./hmr-helper";
   import {
     layoutState,
     moduleHasPrimaryNav,
@@ -77,6 +77,15 @@
   import ToastContainer from "./toast/components/ToastContainer.svelte";
   import ReleaseNotesDrawer from "./settings/components/ReleaseNotesDrawer.svelte";
 
+  // LAN Sync
+  import NearbySyncBanner from "./lan-sync/components/NearbySyncBanner.svelte";
+  import { lanSyncState } from "./lan-sync/state/lan-sync-state.svelte";
+  import type { ISyncRoomDiscovery } from "./lan-sync/services/contracts/ISyncRoomDiscovery";
+  import type { ILanSyncCoordinator } from "./lan-sync/services/contracts/ILanSyncCoordinator";
+
+  // Connect module - Invite overlay for app-wide invite notifications
+  import InviteOverlay from "../features/connect/components/InviteOverlay.svelte";
+
   // Toast notifications
 
   // Initialize user preview context for app-wide access
@@ -137,7 +146,8 @@
 
   onMount(() => {
     if (typeof window === "undefined") return;
-    // handleHMRInit(); // Disabled - causing HMR verification loops
+    // Initialize HMR error handling - detects module MIME errors and reloads
+    handleHMRInit();
 
     // 🚀 PERFORMANCE: Preload critical modules during idle time
     // Only prefetch from Dashboard - prefetching on Settings/other modules
@@ -170,8 +180,20 @@
       );
     }
 
+    // Initialize LAN sync services (coordinator and discovery)
+    try {
+      const lanSyncCoordinator = container.items.lanSyncCoordinator as ILanSyncCoordinator;
+      const syncRoomDiscovery = container.items.syncRoomDiscovery as ISyncRoomDiscovery;
+
+      lanSyncState.initialize(lanSyncCoordinator);
+      lanSyncState.initializeDiscovery(syncRoomDiscovery);
+    } catch (error) {
+      console.warn("MainInterface: Failed to initialize LAN sync services", error);
+    }
+
     return () => {
       desktopSidebarVisibility?.cleanup();
+      lanSyncState.cleanup();
     };
   });
 </script>
@@ -181,6 +203,12 @@
 
 <!-- Admin Toolbar (F9) -->
 <AdminToolbar />
+
+<!-- LAN Sync Nearby Banner -->
+<NearbySyncBanner />
+
+<!-- Connect Module Invite Overlay -->
+<InviteOverlay />
 
 <div
   class="main-interface"

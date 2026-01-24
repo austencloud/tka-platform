@@ -355,6 +355,13 @@ const TAB_ORDERS: Record<string, string[]> = {
   ],
 };
 
+// Debug flag - enable via: window.__DEBUG_NAV__ = true
+function navDebug(...args: unknown[]) {
+  if (typeof window !== "undefined" && (window as any).__DEBUG_NAV__) {
+    console.log("[NavCoord]", ...args);
+  }
+}
+
 // Section change handler with View Transitions
 // Now that Svelte transitions are removed from #key blocks, View Transitions work smoothly
 export function handleSectionChange(
@@ -365,9 +372,17 @@ export function handleSectionChange(
   const currentSectionId = currentSection();
   const shouldSkipHistory = options?.skipHistory === true;
 
+  navDebug("handleSectionChange called:", {
+    targetSection: sectionId,
+    currentSection: currentSectionId,
+    module,
+    skipHistory: shouldSkipHistory,
+  });
+
   // Validate section accessibility via feature flags
   if (!featureFlagService.canAccessTab(module, sectionId)) {
     console.warn(`⚠️ User does not have access to ${module}:${sectionId} tab`);
+    navDebug("BLOCKED: Feature flag denied access");
     // Redirect to a default accessible section
     if (module === "create") {
       navigationState.setActiveTab("constructor");
@@ -376,7 +391,10 @@ export function handleSectionChange(
   }
 
   // Don't switch if same section
-  if (sectionId === currentSectionId) return;
+  if (sectionId === currentSectionId) {
+    navDebug("SKIPPED: Already on this section");
+    return;
+  }
 
   const doc = document as DocumentWithViewTransition;
   const tabOrder = TAB_ORDERS[module] || [];
@@ -386,11 +404,16 @@ export function handleSectionChange(
 
   // Helper to update the navigation state
   const updateState = () => {
+    navDebug("updateState() executing for:", sectionId);
     if (module === "learn") {
       navigationState.setLearnMode(sectionId);
     } else {
       navigationState.setActiveTab(sectionId);
     }
+    navDebug("State after update:", {
+      activeTab: navigationState.activeTab,
+      currentSection: navigationState.currentSection,
+    });
   };
 
   // Use View Transitions if available

@@ -130,6 +130,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     // Feed tab now has TikTok-style scroll experience
   },
   {
+    id: "connect",
+    label: "Connect",
+    icon: '<i class="fas fa-users" style="color: #10b981;" aria-hidden="true"></i>',
+    color: "#10b981", // Emerald - connection/sync
+    description: "Sync with nearby spinners",
+    isMain: true,
+    sections: [], // Tabs handled internally
+  },
+  {
     id: "train",
     label: "Train",
     icon: '<i class="fas fa-running" style="color: #ef4444;" aria-hidden="true"></i>',

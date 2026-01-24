@@ -157,6 +157,7 @@ export const deepOceanContainer = createContainer()
   // NOTE: This MUST be a singleton - multiple components share the same fish state
   .add((deps) => {
     // Create singleton instance eagerly to ensure all components share the same fish
+    console.log('[DeepOceanContainer] Creating DeepOceanBackgroundOrchestrator singleton');
     const orchestratorInstance = new DeepOceanBackgroundOrchestrator(
       // Physics services
       deps.bubblePhysics,
@@ -173,6 +174,7 @@ export const deepOceanContainer = createContainer()
       deps.fishRenderer,
       deps.jellyfishRenderer
     );
+    console.log('[DeepOceanContainer] Orchestrator created:', orchestratorInstance?.constructor?.name);
     return {
       deepOceanBackgroundSystem: orchestratorInstance,
     };
