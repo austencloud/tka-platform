@@ -5,13 +5,13 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
 <script lang="ts">
   import type { Type1LetterData } from "./Type1LetterData";
   import { container } from "$lib/shared/di";
+  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import {
     GridMode,
     GridPositionGroup,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { onMount } from "svelte";
@@ -38,8 +38,6 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
   // Load pictograph data for the letter
   onMount(async () => {
     try {
-      const letterQueryHandler = container.items.letterQueryHandler;
-
       const data = await letterQueryHandler.getPictographByLetter(
         letterData.letter,
         GridMode.DIAMOND

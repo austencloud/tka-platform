@@ -10,7 +10,7 @@
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import {
     generateChooChoo,
@@ -30,7 +30,6 @@
 
   // Animation state
   let playbackController: IAnimationPlaybackController | null = null;
-  let motionQueryHandler: IMotionQueryHandler | null = null;
   const animationState = createAnimationPanelState();
   let isPlaying = $state(false);
   let loading = $state(false);
@@ -47,7 +46,6 @@
       try {
         // ITI container is ready synchronously - get services directly
         playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
-        motionQueryHandler = container.items.motionQueryHandler as IMotionQueryHandler;
         servicesReady = true;
 
         // Generate initial variations after services are ready

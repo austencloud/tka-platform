@@ -8,14 +8,13 @@
   import type { StepData } from "../../domain/models/StepData";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { IArrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
-  import type { ISpecialPlacer } from "$lib/shared/pictograph/arrow/positioning/placement/services/contracts/ISpecialPlacer";
-  import type { IRotationAngleOverrideKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
-  import type { ITurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
-  import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
   import { SpecialPlacementOriKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
   import { container } from "$lib/shared/di";
-  import { gridModeDeriver as gridModeDeriverDirect } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+  import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+  import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
+  import { specialPlacer } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacer";
+  import { rotationAngleOverrideKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
+  import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 
   import InspectModalHeader from "./pictograph-inspect/InspectModalHeader.svelte";
   import BasicInfoColumn from "./pictograph-inspect/BasicInfoColumn.svelte";
@@ -67,8 +66,6 @@
 
     isCalculating = true;
     try {
-      const arrowOrchestrator = container.items.arrowPositioningOrchestrator;
-
       const pictographData: PictographData = {
         id: stepData.id,
         letter: stepData.letter,
@@ -81,7 +78,7 @@
       pictographDataState = pictographData;
 
       const calculated =
-        await arrowOrchestrator.calculateAllArrowPoints(pictographData);
+        await arrowPositioningOrchestrator.calculateAllArrowPoints(pictographData);
 
       calculatedData = {
         ...stepData,
@@ -100,8 +97,6 @@
 
   function calculateLookupKeys(pictographData: PictographData) {
     try {
-      const tupleGenerator = container.items.turnsTupleGenerator;
-      const rotationKeyGenerator = container.items.rotationAngleOverrideKeyGenerator;
       const oriKeyGenerator = new SpecialPlacementOriKeyGenerator();
 
       const blueMotionData = pictographData.motions?.[MotionColor.BLUE];
@@ -109,7 +104,7 @@
 
       let gridMode = "diamond";
       if (blueMotionData && redMotionData) {
-        gridMode = gridModeDeriverDirect.deriveGridMode(
+        gridMode = gridModeDeriver.deriveGridMode(
           blueMotionData,
           redMotionData
         );
@@ -123,7 +118,7 @@
         );
       }
 
-      const turnsTuple = tupleGenerator.generateTurnsTuple(pictographData);
+      const turnsTuple = turnsTupleGenerator.generateTurnsTuple(pictographData);
 
       let blueRotationOverrideKey: string | null = null;
       let redRotationOverrideKey: string | null = null;
@@ -132,7 +127,7 @@
         const motionType = blueMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
           blueRotationOverrideKey =
-            rotationKeyGenerator.generateRotationAngleOverrideKey(
+            rotationAngleOverrideKeyGenerator.generateRotationAngleOverrideKey(
               blueMotionData,
               pictographData
             );
@@ -143,7 +138,7 @@
         const motionType = redMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
           redRotationOverrideKey =
-            rotationKeyGenerator.generateRotationAngleOverrideKey(
+            rotationAngleOverrideKeyGenerator.generateRotationAngleOverrideKey(
               redMotionData,
               pictographData
             );
@@ -165,14 +160,11 @@
 
   async function checkRotationOverrides(pictographData: PictographData) {
     try {
-      const specialPlacer = container.items.specialPlacer;
-      const rotationKeyGenerator = container.items.rotationAngleOverrideKeyGenerator;
-
       const blueMotionData = pictographData.motions?.[MotionColor.BLUE];
       if (blueMotionData) {
         const motionType = blueMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
-          const blueKey = rotationKeyGenerator.generateRotationAngleOverrideKey(
+          const blueKey = rotationAngleOverrideKeyGenerator.generateRotationAngleOverrideKey(
             blueMotionData,
             pictographData
           );
@@ -191,7 +183,7 @@
       if (redMotionData) {
         const motionType = redMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
-          const redKey = rotationKeyGenerator.generateRotationAngleOverrideKey(
+          const redKey = rotationAngleOverrideKeyGenerator.generateRotationAngleOverrideKey(
             redMotionData,
             pictographData
           );

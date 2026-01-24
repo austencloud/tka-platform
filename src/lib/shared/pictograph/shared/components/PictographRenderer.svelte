@@ -38,6 +38,7 @@ Usage:
   import BeatPositionGlyph from "./BeatPositionGlyph.svelte";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import type { IGridModeDeriver } from "../../grid/services/contracts/IGridModeDeriver";
+  import { turnsTupleGenerator } from "../../arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
   import type { ITurnsTupleGenerator } from "../../arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import { calculateVTGFromPictograph } from "../domain/utils/vtg-calculator";
@@ -198,7 +199,7 @@ Usage:
     return calculateVTGFromPictograph(pictograph, gridMode);
   });
 
-  // Turns tuple generation (lazy resolve to avoid init race)
+  // Turns tuple generation
   // NOTE: Fallback must be "(0, 0)" not "(s, 0, 0)" - the "s" prefix would cause
   // DirectionDot to show incorrectly on all pictographs
   const turnsTuple = $derived.by(() => {
@@ -206,9 +207,7 @@ Usage:
       return "(0, 0)";
     }
     try {
-      const generator = container.items.turnsTupleGenerator;
-      if (!generator) return "(0, 0)";
-      return generator.generateTurnsTuple(pictograph);
+      return turnsTupleGenerator.generateTurnsTuple(pictograph);
     } catch {
       return "(0, 0)";
     }

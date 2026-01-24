@@ -9,7 +9,7 @@
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import { container } from "$lib/shared/di";
   import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
-  import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+  import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
@@ -35,8 +35,7 @@
       let derivedStartPosition = undefined;
       if (compositionManager.includeStartPosition) {
         try {
-          const startPosDeriver = container.items.startPositionDeriver as IStartPositionDeriver;
-          derivedStartPosition = startPosDeriver.deriveFromFirstBeat(stepData);
+          derivedStartPosition = startPositionDeriver.deriveFromFirstBeat(stepData);
         } catch (e) {
           console.warn("Failed to derive start position for preview:", e);
         }

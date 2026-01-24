@@ -6,14 +6,13 @@
  * the selected example will show a visible change when transformed.
  */
 
-import { container } from "$lib/shared/di";
-import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { IArrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
+import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
 
 export type TransformId = "mirror" | "flip" | "invert" | "rotate" | "swap" | "rewind";
 
@@ -112,8 +111,7 @@ async function enhancePictographForInvert(pictograph: PictographData): Promise<P
 
   // Recalculate arrow placement for the enhanced pictograph
   try {
-    const arrowOrchestrator = container.items.arrowPositioningOrchestrator as IArrowPositioningOrchestrator;
-    return await arrowOrchestrator.calculateAllArrowPoints(enhancedPictograph);
+    return await arrowPositioningOrchestrator.calculateAllArrowPoints(enhancedPictograph);
   } catch (error) {
     console.warn("Failed to recalculate arrow placement for invert demo:", error);
     return enhancedPictograph; // Return without recalculated placement as fallback
@@ -172,7 +170,6 @@ export async function loadAllPictographs(): Promise<PictographData[]> {
 
   loadingPromise = (async () => {
     try {
-      const letterQueryHandler = container.items.letterQueryHandler as ILetterQueryHandler;
       const pictographs = await letterQueryHandler.getAllPictographVariations(
         GridMode.DIAMOND
       );

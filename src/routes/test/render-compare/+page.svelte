@@ -11,8 +11,7 @@
    * (NOT letterQueryHandler which goes to Codex - that's for the Learn tab only)
    */
   import { onMount } from 'svelte';
-  import { container } from '$lib/shared/di';
-  import type { IMotionQueryHandler } from '$lib/shared/foundation/services/contracts/data/data-contracts';
+  import { motionQueryHandler } from '$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler';
   import type { PictographData } from '$lib/shared/pictograph/shared/domain/models/PictographData';
   import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
   import { GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
@@ -121,12 +120,6 @@
   onMount(async () => {
     try {
       status = 'Loading pictographs from CSV dataframe...';
-
-      // Use motionQueryHandler to load from CSV dataframe (NOT letterQueryHandler/Codex)
-      const motionQueryHandler = container.items.motionQueryHandler as IMotionQueryHandler;
-      if (!motionQueryHandler) {
-        throw new Error('MotionQueryHandler not available');
-      }
 
       // Query pictographs from the diamond dataframe
       const pictographs = await motionQueryHandler.queryMotions({ gridMode: GridMode.DIAMOND });

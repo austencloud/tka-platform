@@ -51,8 +51,7 @@ import {
   RotationDirection,
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { container } from "$lib/shared/di";
-import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { createStepData } from "../../domain/factories/createStepData";
@@ -248,23 +247,6 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     modifiedBeatIndices: number[],
     gridMode: GridMode
   ): Promise<void> {
-    let motionQueryHandler: IMotionQueryHandler | null = null;
-    try {
-      motionQueryHandler = container.items.motionQueryHandler;
-    } catch {
-      logger.warn(
-        "Could not resolve IMotionQueryHandler - letters will not be updated"
-      );
-      return;
-    }
-
-    if (!motionQueryHandler) {
-      logger.warn(
-        "IMotionQueryHandler is null - letters will not be updated"
-      );
-      return;
-    }
-
     for (const stepIndex of modifiedBeatIndices) {
       const beat = steps[stepIndex];
       if (!beat) continue;

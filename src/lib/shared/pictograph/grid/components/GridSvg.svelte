@@ -6,7 +6,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 -->
 <script lang="ts">
   import { GridMode, GridLocation } from "../domain/enums/grid-enums";
-  import { container } from "$lib/shared/di";
+  import { svgPreloader } from "$lib/shared/pictograph/shared/services/implementations/SvgPreloader";
   import { getGridRotationDirection } from "../state/grid-rotation-state.svelte";
 
   let {
@@ -72,9 +72,6 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   // Track previous gridMode for change detection (null = first render)
   let previousGridMode: GridMode | null = null;
 
-  // Get SVG preload service
-  const SvgPreloader = container.items.svgPreloader;
-
   // Track which grid is currently loaded
   let loadedGridType = $state<"diamond" | "skewed" | null>(null);
 
@@ -90,7 +87,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     if (loadedGridType === gridType && baseGridSvg) return;
 
     try {
-      const svgText = await SvgPreloader.getSvgContent("grid", gridFileName);
+      const svgText = await svgPreloader.getSvgContent("grid", gridFileName);
       baseGridSvg = svgText;
       loadedGridType = gridType;
       onLoaded?.();

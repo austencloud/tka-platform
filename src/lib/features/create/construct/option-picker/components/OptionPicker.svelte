@@ -10,6 +10,7 @@ Delegates all rendering to child components.
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 
   import { createFadeState } from "../state/fade-state.svelte";
   import { createOptionPickerState } from "../state/option-picker-state.svelte";
@@ -170,7 +171,7 @@ Delegates all rendering to child components.
 
       organizerService = container.items.optionOrganizer as IOptionOrganizer;
       sizerService = container.items.optionGridFitCalculator as IOptionGridFitCalculator;
-      preparer = container.items.pictographPreparer as IPictographPreparer;
+      preparer = pictographPreparer as IPictographPreparer;
       hapticService = container.items.hapticFeedback as IHapticFeedback;
 
       // Subscribe to Dark Mode changes for prop color updates

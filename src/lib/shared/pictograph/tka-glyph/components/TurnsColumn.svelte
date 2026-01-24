@@ -115,25 +115,35 @@ Props:
   // This allows async loading to trigger re-renders when dimensions become available
   let loadedLetterDimensions = $state<Dimensions>({ width: 100, height: 100 });
 
+  // Track whether dimensions are ready (not default 100x100)
+  let dimensionsReady = $state(false);
+
   // Load letter dimensions when letter changes
   // Uses the same cache as TKAGlyph to ensure consistency
   $effect(() => {
     const currentLetter = letter;
     if (!currentLetter) {
       loadedLetterDimensions = { width: 100, height: 100 };
+      dimensionsReady = false;
       return;
     }
+
+    // Reset ready state when letter changes
+    dimensionsReady = false;
 
     // Check cache first (synchronous)
     const cachedDims = getLetterDimensions(currentLetter);
     if (cachedDims.width !== 100 || cachedDims.height !== 100) {
       // Already cached - use immediately
       loadedLetterDimensions = cachedDims;
+      dimensionsReady = true;
     } else {
       // Not cached yet - trigger async load and wait for it
       preloadLetterDimensions([currentLetter]).then(() => {
         // After loading completes, get from cache and update state
-        loadedLetterDimensions = getLetterDimensions(currentLetter);
+        const dims = getLetterDimensions(currentLetter);
+        loadedLetterDimensions = dims;
+        dimensionsReady = dims.width !== 100 || dims.height !== 100;
       });
     }
   });
@@ -234,8 +244,10 @@ Props:
 <!-- Turns Column Group - only render when visible (or in preview mode) AND dimensions are loaded
      NOTE: We check visibility here (not just CSS) because when exporting to SVG/image,
      CSS classes don't carry over - only the raw SVG markup is captured.
-     We also wait for valid dimensions to avoid positioning flash when letter loads. -->
-{#if (visible || previewMode) && (effectiveLetterDimensions().width !== 100 || effectiveLetterDimensions().height !== 100)}
+     We wait for valid dimensions to avoid positioning flash when letter loads.
+     dimensionsReady is true only after actual letter SVG dimensions are loaded (not default 100x100).
+     Also check if letterDimensions prop has valid values (passed from parent with pre-cached dims). -->
+{#if (visible || previewMode) && (dimensionsReady || (letterDimensions.width !== 100 || letterDimensions.height !== 100))}
   <g
     class="turns-column"
     class:visible

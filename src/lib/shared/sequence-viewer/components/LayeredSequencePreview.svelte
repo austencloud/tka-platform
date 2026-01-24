@@ -20,8 +20,8 @@
   import type { LayerRenderOptions, LayerVisibility } from "$lib/shared/render/services/contracts/ILayerCompositor";
   import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
   import { onMount, onDestroy, untrack } from "svelte";
-  import { container } from "$lib/shared/di";
   import { layerCompositor } from "$lib/shared/render/services/implementations/LayerCompositor";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { SequenceDifficultyCalculator } from "$lib/features/explore/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
@@ -284,7 +284,6 @@
     isDark: boolean
   ): Promise<string> {
     const compositor = layerCompositor;
-    const pictographPreparer = container.items.pictographPreparer as IPictographPreparer;
 
     // Prepare the pictograph data
     const prepared = await pictographPreparer.prepareSingle(pictographData, {

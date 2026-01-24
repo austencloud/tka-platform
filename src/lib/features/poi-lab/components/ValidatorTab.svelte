@@ -7,13 +7,13 @@
    */
 
   import { container } from "$lib/shared/di";
+  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { PoiValidationResult } from "../domain/poi-models";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   // Services
   const sequenceValidator = container.items.poiSequenceValidator;
-  const letterQueryHandler = container.items.letterQueryHandler;
 
   // State
   let sequenceInput = $state("");

@@ -10,7 +10,7 @@
   import { container } from "$lib/shared/di";
   import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
   import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
-  import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+  import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 
   import { galleryGeneratorState } from "../state/gallery-generator-state.svelte";
   import { GalleryRenderer } from "../services/implementations/GalleryRenderer";
@@ -57,12 +57,11 @@
       // Get services from ITI container
       const loaderService = container.items.exploreLoader;
       const renderService = container.items.sequenceRenderer;
-      const startPosDeriver = container.items.startPositionDeriver;
 
       galleryRenderer = new GalleryRenderer(
         renderService,
         loaderService,
-        startPosDeriver
+        startPositionDeriver
       );
       galleryWriter = new GalleryWriter();
       cloudUploader = new CloudGalleryUploader();

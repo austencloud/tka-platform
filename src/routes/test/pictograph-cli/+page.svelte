@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import { browser } from "$app/environment";
-  import { container } from "$lib/shared/di";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import { Canvas2DDirectRenderer } from "$lib/shared/render/services/implementations/Canvas2DDirectRenderer";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { OrientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
@@ -44,11 +45,9 @@
 
   async function init() {
     try {
-      const preparer = container.items.pictographPreparer;
-      renderer = new Canvas2DDirectRenderer(preparer);
+      renderer = new Canvas2DDirectRenderer(pictographPreparer);
       await renderer.initialize();
 
-      const letterQueryHandler = container.items.letterQueryHandler;
       allPictographs = await letterQueryHandler.getAllPictographVariations(GridMode.DIAMOND);
 
       isLoading = false;

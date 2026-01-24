@@ -7,8 +7,7 @@
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { container } from "$lib/shared/di";
-import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   QuizAnswerFormat,
@@ -21,7 +20,6 @@ import {
 } from "../../domain/models/quiz-models";
 
 export class QuestionGeneratorService {
-  private static letterQueryHandler: ILetterQueryHandler | null = null;
   private static previousCorrectLetter: Letter | null = null;
   private static allPictographs: PictographData[] = [];
   private static pictographsByLetter: Map<Letter, PictographData[]> = new Map();
@@ -36,11 +34,9 @@ export class QuestionGeneratorService {
     if (this.isInitialized) return;
 
     try {
-      this.letterQueryHandler = container.items.letterQueryHandler;
-
       // Load ALL pictograph variations from CSV (Diamond mode)
       this.allPictographs =
-        await this.letterQueryHandler.getAllPictographVariations(
+        await letterQueryHandler.getAllPictographVariations(
           GridMode.DIAMOND
         );
 

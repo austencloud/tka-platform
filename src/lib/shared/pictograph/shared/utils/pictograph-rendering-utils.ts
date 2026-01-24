@@ -7,17 +7,16 @@
 
 import type { MotionColor } from "../domain/enums/pictograph-enums";
 import { GridMode } from "../../grid/domain/enums/grid-enums";
-import { container } from "../../../di";
-import type { IArrowPositioningOrchestrator } from "../../arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
 import { gridModeDeriver } from "../../grid/services/implementations/GridModeDeriver";
+import { arrowPositioningOrchestrator } from "../../arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
+import { gridRenderer } from "../../grid/services/implementations/GridRenderer";
+import { arrowRenderer } from "../../arrow/rendering/services/implementations/ArrowRenderer";
 import type { PictographData } from "../domain/models/PictographData";
 import { Point } from "fabric";
 // TODO: These services have been archived - need to refactor this file
 // import type { IOverlayRenderer } from "../../../../features/animator/services/contracts/IOverlayRenderer";
 // import type { ISvgUtilityService } from "../../../../features/animator/services/implementations/SvgUtilityService";
 import type { ArrowPosition } from "../../arrow/orchestration/domain/arrow-models";
-import type { IArrowRenderer } from "../../arrow/rendering/services/contracts/IArrowRenderer";
-import type { IGridRenderer } from "../../grid/services/contracts/IGridRenderer";
 
 // Archived services - using inline stub implementations
 // These services were archived but the rendering utils still need them
@@ -68,14 +67,14 @@ export async function renderPictograph(
   data: PictographData
 ): Promise<SVGElement> {
   try {
-    // Use stub for archived services, resolve others from container
+    // Use stub for archived services, direct imports for others
     const svgUtility = stubSvgUtility;
-    const gridRendering = container.items.gridRenderer as IGridRenderer;
-    const arrowRendering = container.items.arrowRenderer as IArrowRenderer;
+    const gridRendering = gridRenderer;
+    const arrowRendering = arrowRenderer;
     const overlayRendering = stubOverlayRenderer;
 
-    // Get arrow positioning from container
-    const arrowPositioning = container.items.arrowPositioningOrchestrator as IArrowPositioningOrchestrator;
+    // Use direct singleton for arrow positioning
+    const arrowPositioning = arrowPositioningOrchestrator;
 
     // Create base SVG
     const svg = svgUtility.createBaseSVG();

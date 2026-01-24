@@ -5,8 +5,8 @@ Shows pictograph, user identifies the motion pattern (Pro-Pro, Anti-Anti, or Hyb
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { container } from "$lib/shared/di";
+  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { onMount } from "svelte";
   import {
@@ -45,7 +45,6 @@ Shows pictograph, user identifies the motion pattern (Pro-Pro, Anti-Anti, or Hyb
     lastLoadedQuestionIndex = questionIndex;
 
     try {
-      const letterQueryHandler = container.items.letterQueryHandler as ILetterQueryHandler;
       const currentQuestion = questions[questionIndex];
       if (!currentQuestion) return;
 

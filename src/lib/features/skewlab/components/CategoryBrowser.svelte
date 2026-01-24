@@ -18,7 +18,7 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { container } from "$lib/shared/di";
+  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { selectedArrowState } from "$lib/features/create/shared/state/selected-arrow-state.svelte";
 
@@ -95,7 +95,6 @@
   // Load data on mount
   onMount(async () => {
     try {
-      const letterQueryHandler = container.items.letterQueryHandler;
       allPictographs = await letterQueryHandler.getAllPictographVariations(
         GridMode.SKEWED
       );

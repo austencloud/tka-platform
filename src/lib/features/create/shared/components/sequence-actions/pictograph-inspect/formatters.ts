@@ -8,8 +8,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/Mot
 import DefaultPropPositioner from "$lib/shared/pictograph/prop/services/implementations/DefaultPropPositioner";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { container } from "$lib/shared/di";
-import type { IPropPlacer } from "$lib/shared/pictograph/prop/services/contracts/IPropPlacer";
+import { propPlacer } from "$lib/shared/pictograph/prop/services/implementations/PropPlacer";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
@@ -33,7 +32,6 @@ export async function formatMotionText(
   } | null = null;
   if (pictographData) {
     try {
-      const propPlacer = container.items.propPlacer;
       const settings = getSettings();
       const propTypeOverride =
         color === "blue" ? settings.bluePropType : settings.redPropType;

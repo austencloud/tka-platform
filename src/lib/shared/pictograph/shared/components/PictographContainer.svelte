@@ -28,11 +28,11 @@ with pre-prepared data for better performance.
 
 <script lang="ts">
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
   import type { IPictographPreparer } from "../services/contracts/IPictographPreparer";
+  import { pictographPreparer } from "../services/implementations/PictographPreparer";
   import type { PreparedPictographData } from "../domain/models/PreparedPictographData";
   import type { PictographData } from "../domain/models/PictographData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -250,7 +250,6 @@ with pre-prepared data for better performance.
   // Prepared data state
   let preparedData = $state<PreparedPictographData | null>(null);
   let isLoading = $state(false);
-  const preparer = container.items.pictographPreparer;
 
   // Create a stable key for data preparation dependencies
   // Include effectiveDarkMode so that when it changes (via prop OR global toggle), we re-prepare with correct colors
@@ -341,7 +340,7 @@ with pre-prepared data for better performance.
           bluePropType: bluePropTypeOverride,
           redPropType: redPropTypeOverride,
         };
-        const result = await preparer.prepareSingle(data as PictographData, prepareOptions);
+        const result = await pictographPreparer.prepareSingle(data as PictographData, prepareOptions);
         if (!cancelled) {
           preparedData = result;
         }

@@ -14,8 +14,8 @@ import type { StartPositionData } from "$lib/features/create/shared/domain/model
 import type { IArrowRotationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowRotationCalculator";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { container } from "$lib/shared/di";
 import { isStartPosition } from "../../shared/domain/type-guards/pictograph-type-guards";
+import { arrowRotationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowRotationCalculator";
 
 /**
  * Debug data for a start position pictograph
@@ -150,7 +150,6 @@ export async function exportBeatDebugData(
 async function exportStartPositionDebugData(
   startPosition: StartPositionData
 ): Promise<StartPositionDebugData> {
-  const rotationCalculator = container.items.arrowRotationCalculator;
 
   const debugData: StartPositionDebugData = {
     type: "start-position",
@@ -164,7 +163,7 @@ async function exportStartPositionDebugData(
   if (startPosition.motions.blue) {
     debugData.propStates.blue = await exportPropStateDebugData(
       startPosition.motions.blue,
-      rotationCalculator,
+      arrowRotationCalculator,
       startPosition
     );
   }
@@ -173,7 +172,7 @@ async function exportStartPositionDebugData(
   if (startPosition.motions.red) {
     debugData.propStates.red = await exportPropStateDebugData(
       startPosition.motions.red,
-      rotationCalculator,
+      arrowRotationCalculator,
       startPosition
     );
   }
@@ -218,7 +217,6 @@ async function exportActualBeatDebugData(
   stepData: StepData,
   pictographData?: PictographData
 ): Promise<StepDebugData> {
-  const rotationCalculator = container.items.arrowRotationCalculator;
 
   const debugData: StepDebugData = {
     type: "beat",
@@ -238,7 +236,7 @@ async function exportActualBeatDebugData(
   if (stepData.motions.blue) {
     debugData.motions.blue = await exportMotionDebugData(
       stepData.motions.blue,
-      rotationCalculator,
+      arrowRotationCalculator,
       pictographData || stepData
     );
   }
@@ -247,7 +245,7 @@ async function exportActualBeatDebugData(
   if (stepData.motions.red) {
     debugData.motions.red = await exportMotionDebugData(
       stepData.motions.red,
-      rotationCalculator,
+      arrowRotationCalculator,
       pictographData || stepData
     );
   }
