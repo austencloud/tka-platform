@@ -23,7 +23,7 @@ import type { ISequenceExtender } from "$lib/features/create/shared/services/con
 import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
 import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { ConstraintSet, ConstraintStep } from "$lib/shared/sequence-engine/constraints/types";
+import type { ConstraintSet, ConstraintStep, ConstraintPictographData } from "$lib/shared/sequence-engine/constraints/types";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
@@ -324,6 +324,73 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       redPropRotation: pictograph.redMotion?.propRotationDirection ?? "cw",
       startPosition: pictograph.startPosition ?? "",
       endPosition: pictograph.endPosition ?? "",
+      // Location data for hand path constraint
+      blueStartLocation: pictograph.blueMotion?.startLocation ?? "",
+      blueEndLocation: pictograph.blueMotion?.endLocation ?? "",
+      redStartLocation: pictograph.redMotion?.startLocation ?? "",
+      redEndLocation: pictograph.redMotion?.endLocation ?? "",
+    };
+  }
+
+  /**
+   * Convert a pictograph to the ConstraintPictographData format for constraint evaluation.
+   */
+  private pictographToConstraintPictograph(pictograph: PictographData): ConstraintPictographData {
+    return {
+      letter: pictograph.letter ?? "",
+      startPosition: pictograph.startPosition ?? "",
+      endPosition: pictograph.endPosition ?? "",
+      timing: pictograph.timing ?? "",
+      direction: pictograph.direction ?? "",
+      blueMotion: {
+        color: "blue",
+        startLocation: pictograph.blueMotion?.startLocation ?? "",
+        endLocation: pictograph.blueMotion?.endLocation ?? "",
+        motionType: pictograph.blueMotion?.motionType ?? "static",
+        rotationDirection: pictograph.blueMotion?.propRotationDirection ?? "cw",
+        startOrientation: pictograph.blueMotion?.startOrientation ?? "",
+        endOrientation: pictograph.blueMotion?.endOrientation ?? "",
+      },
+      redMotion: {
+        color: "red",
+        startLocation: pictograph.redMotion?.startLocation ?? "",
+        endLocation: pictograph.redMotion?.endLocation ?? "",
+        motionType: pictograph.redMotion?.motionType ?? "static",
+        rotationDirection: pictograph.redMotion?.propRotationDirection ?? "cw",
+        startOrientation: pictograph.redMotion?.startOrientation ?? "",
+        endOrientation: pictograph.redMotion?.endOrientation ?? "",
+      },
+    };
+  }
+
+  /**
+   * Convert a ConstraintStep to ConstraintPictographData for constraint evaluation.
+   */
+  private constraintStepToConstraintPictograph(step: ConstraintStep): ConstraintPictographData {
+    return {
+      letter: step.letter,
+      startPosition: step.startPosition,
+      endPosition: step.endPosition,
+      timing: "",
+      direction: "",
+      blueMotion: {
+        color: "blue",
+        startLocation: step.blueStartLocation ?? "",
+        endLocation: step.blueEndLocation ?? "",
+        motionType: step.blueMotionType,
+        rotationDirection: step.bluePropRotation,
+        startOrientation: "",
+        endOrientation: "",
+      },
+      redMotion: {
+        color: "red",
+        startLocation: step.redStartLocation ?? "",
+        endLocation: step.redEndLocation ?? "",
+        motionType: step.redMotionType,
+        rotationDirection: step.redPropRotation,
+        startOrientation: "",
+        endOrientation: "",
+      },
     };
   }
 
@@ -361,13 +428,27 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     }
 
     // Score each candidate based on soft constraints
-    const scored = candidates.map((candidate) => {
-      const candidateStep = this.pictographToConstraintStep(candidate);
+    const scored = candidates.map((candidate, index) => {
+      const candidatePictograph = this.pictographToConstraintPictograph(candidate);
+      const previousPictographs = previousSteps.map((step) =>
+        this.constraintStepToConstraintPictograph(step)
+      );
+
       let score = 0;
 
       for (const constraint of constraintSet!.soft!) {
-        const constraintScore = constraint.score(candidateStep, previousSteps);
-        score += constraintScore * (constraint.weight ?? 1);
+        // Build ConstraintContext for the evaluate method
+        const context = {
+          stepIndex: previousSteps.length,
+          totalSteps: previousSteps.length + 1,
+          previousSteps: previousPictographs,
+          candidate: candidatePictograph,
+          letter: candidate.letter ?? "",
+        };
+
+        const result = constraint.evaluate(context);
+        const weight = constraintSet!.weights?.get(constraint.type) ?? 1;
+        score += result.score * weight;
       }
 
       return { candidate, score };

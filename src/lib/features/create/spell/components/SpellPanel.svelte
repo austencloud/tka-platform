@@ -22,12 +22,14 @@ Same functionality, different density.
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
   import WordInput from "./WordInput.svelte";
-  import SettingsAccordion from "./SettingsAccordion.svelte";
-  import SettingsChipBar from "./SettingsChipBar.svelte";
+  import SpellSettingsBar from "./SpellSettingsBar.svelte";
   import SpellInputToolbar from "./SpellInputToolbar.svelte";
+  import SpellSequenceStats from "./SpellSequenceStats.svelte";
   import { loadSpellState, saveSpellState } from "../state/spell-persistence.svelte";
   import { createConstraintSet } from "$lib/shared/sequence-engine/constraints";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
+  import { spellStatsCalculator } from "../services/implementations/SpellStatsCalculator";
+  import type { SequenceStats } from "../domain/models/spell-models";
 
   // Props
   let {
@@ -125,6 +127,19 @@ Same functionality, different density.
   // Derived
   const canGenerate = $derived(spellState.inputWord.trim().length > 0 && !spellState.isGenerating);
 
+  // Stats computed from current sequence
+  let sequenceStats = $state<SequenceStats | null>(null);
+
+  // Recompute stats when sequence changes
+  $effect(() => {
+    const currentSeq = sequenceState?.currentSequence;
+    if (currentSeq && currentSeq.steps && currentSeq.steps.length > 0) {
+      sequenceStats = spellStatsCalculator.calculateStats(currentSeq);
+    } else {
+      sequenceStats = null;
+    }
+  });
+
   // ============================================================================
   // HELPERS
   // ============================================================================
@@ -202,7 +217,9 @@ Same functionality, different density.
         letters
       );
 
-      const constraintSet = createConstraintSet(spellState.preferences.constraintPreset);
+      const constraintSet = createConstraintSet(spellState.preferences.constraintPreset, {
+        handPathMode: spellState.preferences.handPathMode,
+      });
 
       // Generate sequence
       const sequence = await generator.generateRandomSequence(
@@ -279,25 +296,15 @@ Same functionality, different density.
     />
   </section>
 
-  <!-- Settings: Accordion for tall viewports, Chip bar for constrained -->
-  <div class="settings-container">
-    <div class="settings-accordion">
-      <SettingsAccordion
-        gridMode={spellState.selectedGridMode}
-        preferences={spellState.preferences}
-        onGridModeChange={handleGridModeChange}
-        onPreferenceChange={handlePreferenceChange}
-      />
-    </div>
-    <div class="settings-chips">
-      <SettingsChipBar
-        gridMode={spellState.selectedGridMode}
-        preferences={spellState.preferences}
-        onGridModeChange={handleGridModeChange}
-        onPreferenceChange={handlePreferenceChange}
-      />
-    </div>
-  </div>
+  <!-- Settings -->
+  <section class="settings-section">
+    <SpellSettingsBar
+      gridMode={spellState.selectedGridMode}
+      preferences={spellState.preferences}
+      onGridModeChange={handleGridModeChange}
+      onPreferenceChange={handlePreferenceChange}
+    />
+  </section>
 
   <!-- Generate Button -->
   <button
@@ -314,6 +321,11 @@ Same functionality, different density.
       <span>Generate</span>
     {/if}
   </button>
+
+  <!-- Sequence Stats (shown after generation) -->
+  {#if sequenceStats}
+    <SpellSequenceStats stats={sequenceStats} />
+  {/if}
 
   <!-- Keyboard toolbar for touch devices -->
   {#if isTouchDevice}
@@ -350,8 +362,9 @@ Same functionality, different density.
     padding-bottom: calc(12px + 70px + env(safe-area-inset-bottom, 0px));
   }
 
-  /* Word Section */
-  .word-section {
+  /* Sections */
+  .word-section,
+  .settings-section {
     flex-shrink: 0;
   }
 
@@ -390,47 +403,6 @@ Same functionality, different density.
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
     cursor: not-allowed;
-  }
-
-  /* Settings Container - switches between accordion and chips based on available height */
-  .settings-container {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Default: show accordion, hide chips */
-  .settings-accordion {
-    display: block;
-  }
-
-  .settings-chips {
-    display: none;
-  }
-
-  /*
-   * Container query: switch to chips only when height is severely constrained.
-   *
-   * Accordion minimum: 4 collapsed items × 48px + 3 gaps × 8px = 216px
-   * Chips minimum: 2 rows × 56px + 1 gap × 8px = 120px
-   *
-   * Other panel content: input(~70px) + button(~60px) + gaps(~36px) = ~166px
-   * Bottom padding for nav: ~82px (70px nav + 12px padding)
-   *
-   * Total for accordion: 166 + 216 + 82 = ~464px
-   * Total for chips: 166 + 120 + 82 = ~368px
-   *
-   * Use chips only when container height < 400px
-   * This accounts for the bottom nav padding in the container measurement.
-   */
-  @container spell-panel (max-height: 400px) {
-    .settings-accordion {
-      display: none;
-    }
-
-    .settings-chips {
-      display: block;
-    }
   }
 
   /* Error Banner */

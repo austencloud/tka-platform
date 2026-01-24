@@ -53,6 +53,13 @@ export interface ILetterTransitionGraph {
   findBridgeLetters(letterA: Letter, letterB: Letter): Letter[];
 
   /**
+   * Find ALL possible single-letter bridges between two letters.
+   * Unlike findBridgeLetters which returns one random choice, this returns all options
+   * for filtering/sorting by preferences.
+   */
+  findAllBridgeOptions(letterA: Letter, letterB: Letter): Letter[];
+
+  /**
    * Get the start position group for a letter
    */
   getStartPositionGroup(letter: Letter): GridPositionGroup | null;

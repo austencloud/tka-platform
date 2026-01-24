@@ -7,14 +7,15 @@
 
 import { ContinuityConstraint } from "../implementations/ContinuityConstraint";
 import { ReversalConstraint } from "../implementations/ReversalConstraint";
+import { HandPathConstraint } from "../implementations/HandPathConstraint";
 import type { ConstraintSet } from "../types";
 
 /**
  * Preset identifier for UI selection.
  */
 export type ConstraintPresetId =
-  | "natural"
   | "smooth"
+  | "mixed"
   | "high-reversal"
   | "random"
   | "custom";
@@ -40,58 +41,77 @@ export const CONSTRAINT_PRESETS: ConstraintPresetMeta[] = [
     icon: "fa-water",
   },
   {
-    id: "natural",
-    label: "Natural",
+    id: "mixed",
+    label: "Mixed",
     description: "Balanced flow with occasional direction changes",
     icon: "fa-leaf",
   },
   {
     id: "high-reversal",
-    label: "High Reversal",
+    label: "High",
     description: "Maximize direction changes for dynamic movement",
     icon: "fa-bolt",
   },
 ];
 
 /**
- * Create a constraint set from a preset ID.
+ * Options for creating a constraint set.
  */
-export function createConstraintSet(presetId: ConstraintPresetId): ConstraintSet {
+export interface ConstraintSetOptions {
+  /** Hand path reversal mode: 'smooth' = minimize, 'mixed' = balanced, 'high' = maximize */
+  handPathMode?: "smooth" | "mixed" | "high";
+}
+
+/**
+ * Create a constraint set from a preset ID with optional customizations.
+ */
+export function createConstraintSet(
+  presetId: ConstraintPresetId,
+  options?: ConstraintSetOptions
+): ConstraintSet {
+  const softConstraints: ConstraintSet["soft"] = [];
+
+  // Base constraints from preset
   switch (presetId) {
     case "smooth":
-      return {
-        hard: [],
-        soft: [
-          new ContinuityConstraint("maximize"),
-          new ReversalConstraint("minimize"),
-        ],
-      };
+      softConstraints.push(
+        new ContinuityConstraint("maximize"),
+        new ReversalConstraint("minimize")
+      );
+      break;
 
     case "high-reversal":
-      return {
-        hard: [],
-        soft: [
-          new ReversalConstraint("every"),
-        ],
-      };
+      softConstraints.push(new ReversalConstraint("every"));
+      break;
 
-    case "natural":
-      return {
-        hard: [],
-        soft: [
-          new ContinuityConstraint("allow"),
-          new ReversalConstraint("minimize"),
-        ],
-      };
+    case "mixed":
+      softConstraints.push(
+        new ContinuityConstraint("allow"),
+        new ReversalConstraint("minimize")
+      );
+      break;
 
     case "random":
     case "custom":
     default:
-      return {
-        hard: [],
-        soft: [],
-      };
+      // No base constraints
+      break;
   }
+
+  // Add hand path constraint based on user preference
+  // Spectrum: smooth (minimize) → mixed (allow) → high (maximize reversals)
+  if (options?.handPathMode === "smooth") {
+    softConstraints.push(new HandPathConstraint("maximize")); // maximize continuity = minimize reversals
+  } else if (options?.handPathMode === "mixed") {
+    softConstraints.push(new HandPathConstraint("allow")); // balanced, no strong preference
+  } else if (options?.handPathMode === "high") {
+    softConstraints.push(new HandPathConstraint("every")); // maximize reversals
+  }
+
+  return {
+    hard: [],
+    soft: softConstraints,
+  };
 }
 
 /**

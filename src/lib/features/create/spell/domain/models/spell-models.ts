@@ -39,12 +39,32 @@ export interface SpellPreferences {
   maxReversals: number | null;
   /** Prefer high continuity (same rotation direction) */
   highContinuity: boolean;
+  /** Hand path reversal mode: 'smooth' = minimize, 'mixed' = balanced, 'high' = maximize */
+  handPathMode: "smooth" | "mixed" | "high";
   /** Generate a circular (LOOP) sequence that returns to start */
   makeCircular: boolean;
   /** Selected LOOP type when makeCircular is true (null = show options after generation) */
   selectedLOOPType: LOOPType | null;
   /** Constraint preset for variation selection */
   constraintPreset: ConstraintPresetId;
+}
+
+/**
+ * Statistics calculated from a generated sequence
+ */
+export interface SequenceStats {
+  /** Total number of steps (beats) */
+  totalSteps: number;
+  /** Number of prop reversals (blue + red combined) */
+  propReversals: number;
+  /** Number of dash motions in the sequence */
+  dashCount: number;
+  /** Number of hand path direction changes */
+  handPathChanges: number;
+  /** Percentage of steps with prop continuity (no reversal) */
+  propContinuityPercent: number;
+  /** Percentage of steps with hand path continuity (no change) */
+  handPathContinuityPercent: number;
 }
 
 /**

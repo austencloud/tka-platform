@@ -107,6 +107,11 @@ export class LetterTransitionGraph implements ILetterTransitionGraph {
     return this.sharedGraph.findBridgeLetters(letterA, letterB) as Letter[];
   }
 
+  findAllBridgeOptions(letterA: Letter, letterB: Letter): Letter[] {
+    if (!this.sharedGraph) return [];
+    return this.sharedGraph.findAllBridgeOptions(letterA, letterB) as Letter[];
+  }
+
   isInitialized(): boolean {
     return this.initialized;
   }

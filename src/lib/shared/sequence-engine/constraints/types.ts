@@ -33,6 +33,28 @@ export interface ConstraintPictographData {
 }
 
 /**
+ * Simplified step data for constraint tracking between evaluations.
+ * Used internally by generators to track previous steps without full pictograph data.
+ */
+export interface ConstraintStep {
+  letter: string;
+  blueMotionType: string;
+  redMotionType: string;
+  bluePropRotation: string;
+  redPropRotation: string;
+  startPosition: string;
+  endPosition: string;
+  /** Blue hand start location (grid point) */
+  blueStartLocation?: string;
+  /** Blue hand end location (grid point) */
+  blueEndLocation?: string;
+  /** Red hand start location (grid point) */
+  redStartLocation?: string;
+  /** Red hand end location (grid point) */
+  redEndLocation?: string;
+}
+
+/**
  * Context passed to constraints for evaluation.
  */
 export interface ConstraintContext {

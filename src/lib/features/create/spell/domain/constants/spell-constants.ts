@@ -20,8 +20,10 @@ export const DEFAULT_SPELL_PREFERENCES: SpellPreferences = {
   motionTypeFilter: null,
   maxReversals: null,
   highContinuity: true,
+  handPathMode: "smooth",
   makeCircular: false,
   selectedLOOPType: null,
+  constraintPreset: "mixed",
 };
 
 /**

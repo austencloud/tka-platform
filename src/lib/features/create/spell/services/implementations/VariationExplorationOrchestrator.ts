@@ -13,10 +13,14 @@ import type {
   WordParseOptions,
 } from "../contracts/IVariationExplorationOrchestrator";
 
-// Dash-type letters (Type 4 and Type 5)
+// Letters with dash motions (Type 3, 4, and 5)
 const DASH_LETTERS: Set<string> = new Set([
-  "Φ", "Ψ", "Λ",      // Type 4: Dash
-  "Φ-", "Ψ-", "Λ-",   // Type 5: Dual-Dash
+  // Type 3: Cross-Shift (one hand shifts, one dashes)
+  "W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-",
+  // Type 4: Dash (one hand dashes, one static)
+  "Φ", "Ψ", "Λ",
+  // Type 5: Dual-Dash (both hands dash)
+  "Φ-", "Ψ-", "Λ-",
 ]);
 
 export class VariationExplorationOrchestrator implements IVariationExplorationOrchestrator {
@@ -41,6 +45,7 @@ export class VariationExplorationOrchestrator implements IVariationExplorationOr
       }
 
       const preferDash = options?.preferences?.motionTypeFilter === "prefer-dash";
+      const avoidDash = options?.preferences?.motionTypeFilter === "no-dash";
 
       // Build expanded letters with bridge letters AND track letter sources
       const expandedLetters: Letter[] = [];
@@ -60,15 +65,26 @@ export class VariationExplorationOrchestrator implements IVariationExplorationOr
         } else {
           const prevLetter = expandedLetters[expandedLetters.length - 1];
           if (prevLetter) {
-            let bridgeLetters = graph.findBridgeLetters(prevLetter, letter);
+            // Get ALL bridge options (not just a random one)
+            let bridgeLetters = graph.findAllBridgeOptions(prevLetter, letter);
 
-            // If prefer-dash is set, sort bridge letters to put dash-type letters first
-            if (preferDash && bridgeLetters.length > 1) {
-              bridgeLetters = this.sortBridgesByDashPreference(bridgeLetters);
-            }
-
-            if (bridgeLetters.length > 0 && bridgeLetters[0]) {
-              const bridgeLetter = bridgeLetters[0];
+            // Select from available options based on dash preference
+            if (bridgeLetters.length > 0) {
+              let bridgeLetter: Letter;
+              if (preferDash) {
+                // Pick randomly from dash options only, fall back to all if no dash options
+                const dashOptions = bridgeLetters.filter(b => DASH_LETTERS.has(b));
+                const pool = dashOptions.length > 0 ? dashOptions : bridgeLetters;
+                bridgeLetter = pool[Math.floor(Math.random() * pool.length)]!;
+              } else if (avoidDash) {
+                // Pick randomly from non-dash options only, fall back to all if no non-dash options
+                const nonDashOptions = bridgeLetters.filter(b => !DASH_LETTERS.has(b));
+                const pool = nonDashOptions.length > 0 ? nonDashOptions : bridgeLetters;
+                bridgeLetter = pool[Math.floor(Math.random() * pool.length)]!;
+              } else {
+                // No preference - pick randomly from all options
+                bridgeLetter = bridgeLetters[Math.floor(Math.random() * bridgeLetters.length)]!;
+              }
               expandedLetters.push(bridgeLetter);
               letterSources.push({
                 letter: bridgeLetter,
