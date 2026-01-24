@@ -326,3 +326,29 @@ export class PropSvgLoader implements IPropSvgLoader {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.propSvgLoader to avoid DI container rebuilds.
+// PropSvgLoader has no constructor dependencies.
+// ============================================================================
+
+// HMR-aware singleton instance
+let hmrPropSvgLoader: PropSvgLoader | null =
+  import.meta.hot?.data?.propSvgLoaderInstance ?? null;
+
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.propSvgLoaderInstance = hmrPropSvgLoader;
+  });
+}
+
+function getPropSvgLoader(): PropSvgLoader {
+  if (!hmrPropSvgLoader) {
+    hmrPropSvgLoader = new PropSvgLoader();
+  }
+  return hmrPropSvgLoader;
+}
+
+export const propSvgLoader = getPropSvgLoader();

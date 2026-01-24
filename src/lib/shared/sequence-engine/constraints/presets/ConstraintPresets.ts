@@ -15,7 +15,7 @@ import type { ConstraintSet } from "../types";
 export type ConstraintPresetId =
   | "natural"
   | "smooth"
-  | "alternating"
+  | "high-reversal"
   | "random"
   | "custom";
 
@@ -34,28 +34,22 @@ export interface ConstraintPresetMeta {
  */
 export const CONSTRAINT_PRESETS: ConstraintPresetMeta[] = [
   {
+    id: "smooth",
+    label: "Smooth",
+    description: "Minimize direction changes for continuous flow",
+    icon: "fa-water",
+  },
+  {
     id: "natural",
     label: "Natural",
     description: "Balanced flow with occasional direction changes",
     icon: "fa-leaf",
   },
   {
-    id: "smooth",
-    label: "Smooth",
-    description: "Minimize reversals for continuous flow",
-    icon: "fa-water",
-  },
-  {
-    id: "alternating",
-    label: "Alternating",
-    description: "Maximize reversals for dynamic movement",
+    id: "high-reversal",
+    label: "High Reversal",
+    description: "Maximize direction changes for dynamic movement",
     icon: "fa-bolt",
-  },
-  {
-    id: "random",
-    label: "Random",
-    description: "No constraints, pure random selection",
-    icon: "fa-shuffle",
   },
 ];
 
@@ -73,7 +67,7 @@ export function createConstraintSet(presetId: ConstraintPresetId): ConstraintSet
         ],
       };
 
-    case "alternating":
+    case "high-reversal":
       return {
         hard: [],
         soft: [

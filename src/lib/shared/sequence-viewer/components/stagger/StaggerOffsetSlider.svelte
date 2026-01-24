@@ -29,17 +29,16 @@
   <label class="slider-label">
     <span class="label-text">Offset:</span>
     <span class="label-value">{displayValue}</span>
+    <input
+      type="range"
+      class="offset-slider"
+      min="0"
+      max={maxBeats}
+      step="0.5"
+      value={offsetBeats}
+      oninput={handleInput}
+    />
   </label>
-  <input
-    type="range"
-    class="offset-slider"
-    min="0"
-    max={maxBeats}
-    step="0.5"
-    value={offsetBeats}
-    oninput={handleInput}
-    aria-label="Custom stagger offset in beats"
-  />
 </div>
 
 <style>
@@ -54,10 +53,17 @@
 
   .slider-label {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     font-size: var(--font-size-min, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+  }
+
+  .slider-label .offset-slider {
+    width: 100%;
   }
 
   .label-text {

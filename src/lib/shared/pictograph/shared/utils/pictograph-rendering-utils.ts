@@ -9,7 +9,7 @@ import type { MotionColor } from "../domain/enums/pictograph-enums";
 import { GridMode } from "../../grid/domain/enums/grid-enums";
 import { container } from "../../../di";
 import type { IArrowPositioningOrchestrator } from "../../arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
-import type { IGridModeDeriver } from "../../grid/services/contracts/IGridModeDeriver";
+import { gridModeDeriver } from "../../grid/services/implementations/GridModeDeriver";
 import type { PictographData } from "../domain/models/PictographData";
 import { Point } from "fabric";
 // TODO: These services have been archived - need to refactor this file
@@ -73,7 +73,6 @@ export async function renderPictograph(
     const gridRendering = container.items.gridRenderer as IGridRenderer;
     const arrowRendering = container.items.arrowRenderer as IArrowRenderer;
     const overlayRendering = stubOverlayRenderer;
-    const gridModeService = container.items.gridModeDeriver as IGridModeDeriver;
 
     // Get arrow positioning from container
     const arrowPositioning = container.items.arrowPositioningOrchestrator as IArrowPositioningOrchestrator;
@@ -81,10 +80,10 @@ export async function renderPictograph(
     // Create base SVG
     const svg = svgUtility.createBaseSVG();
 
-    // Determine grid mode
+    // Determine grid mode (using direct import instead of container)
     const gridMode: GridMode =
       data.motions.blue && data.motions.red
-        ? gridModeService.deriveGridMode(data.motions.blue, data.motions.red)
+        ? gridModeDeriver.deriveGridMode(data.motions.blue, data.motions.red)
         : GridMode.DIAMOND;
 
     // Render grid

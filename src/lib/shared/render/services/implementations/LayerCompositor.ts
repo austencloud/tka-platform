@@ -53,6 +53,7 @@ import {
 } from "../../../pictograph/tka-glyph/utils/turn-tuple-parser";
 import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn-position-calculator";
 import { isDashLetter } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
+import { calculateReversalPositions } from "../../core";
 
 // Constants matching Canvas2DDirectRenderer
 const VIEWBOX_SIZE = 950;
@@ -682,6 +683,14 @@ export class LayerCompositor implements ILayerCompositor {
 
   /**
    * Render reversal overlay: blue/red dots
+   *
+   * Uses the shared core calculateReversalPositions for consistent positioning
+   * across all renderers (Svelte, Canvas2D, LayerCompositor, MCP).
+   *
+   * Positioning (from unified core, matching ReversalIndicators.svelte):
+   * - Single reversal: dot is centered vertically at CENTER_Y (475)
+   * - Both reversals: RED on top, BLUE on bottom, spaced by DOT_SPACING
+   * - All dots are at X_POSITION (71.5) on the left edge
    */
   private renderReversalOverlayInternal(stepData: StepData, size: number, darkMode: boolean): HTMLCanvasElement {
     const canvas = document.createElement("canvas");
@@ -692,27 +701,21 @@ export class LayerCompositor implements ILayerCompositor {
     // Transparent background
     ctx.clearRect(0, 0, size, size);
 
-    // Draw reversal indicators
-    const indicatorSize = size * 0.04;
-    const margin = size * 0.02;
-    const y = size - indicatorSize - margin;
+    // Use shared core calculation for positioning
+    const { dots } = calculateReversalPositions(
+      stepData.blueReversal ?? false,
+      stepData.redReversal ?? false,
+      darkMode
+    );
 
-    // Use bright colors in dark mode, darker colors in light mode for visibility
-    const blueColor = darkMode ? BLUE_COLOR_DARK : BLUE_COLOR_LIGHT;
-    const redColor = darkMode ? RED_COLOR_DARK : RED_COLOR_LIGHT;
+    // Scale from viewbox coordinates (950x950) to canvas size
+    const scale = size / VIEWBOX_SIZE;
 
-    if (stepData.blueReversal) {
-      ctx.fillStyle = blueColor;
+    // Draw each dot at its calculated position
+    for (const dot of dots) {
+      ctx.fillStyle = dot.color;
       ctx.beginPath();
-      ctx.arc(margin + indicatorSize / 2, y + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    if (stepData.redReversal) {
-      ctx.fillStyle = redColor;
-      const x = stepData.blueReversal ? margin * 2 + indicatorSize : margin;
-      ctx.beginPath();
-      ctx.arc(x + indicatorSize / 2, y + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2);
+      ctx.arc(dot.cx * scale, dot.cy * scale, dot.r * scale, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -1007,3 +1010,7 @@ export class LayerCompositor implements ILayerCompositor {
     return "blueReversal" in pictograph || "redReversal" in pictograph;
   }
 }
+
+// DIRECT EXPORT - Use this instead of container.items.layerCompositor
+// This avoids DI container rebuilds when this file changes
+export const layerCompositor = new LayerCompositor();

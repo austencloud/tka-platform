@@ -36,7 +36,7 @@ Usage:
   import PositionGlyph from "./PositionGlyph.svelte";
   import StepNumber from "./StepNumber.svelte";
   import BeatPositionGlyph from "./BeatPositionGlyph.svelte";
-  import { container } from "$lib/shared/di";
+  import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import type { IGridModeDeriver } from "../../grid/services/contracts/IGridModeDeriver";
   import type { ITurnsTupleGenerator } from "../../arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
@@ -164,8 +164,7 @@ Usage:
         return GridMode.DIAMOND;
       }
       try {
-        const service = container.items.gridModeDeriver;
-        return service.deriveGridMode(
+        return gridModeDeriver.deriveGridMode(
           pictograph.motions.blue,
           pictograph.motions.red
         );
@@ -200,16 +199,18 @@ Usage:
   });
 
   // Turns tuple generation (lazy resolve to avoid init race)
+  // NOTE: Fallback must be "(0, 0)" not "(s, 0, 0)" - the "s" prefix would cause
+  // DirectionDot to show incorrectly on all pictographs
   const turnsTuple = $derived.by(() => {
     if (!pictograph?.motions?.blue || !pictograph?.motions?.red) {
-      return "(s, 0, 0)";
+      return "(0, 0)";
     }
     try {
       const generator = container.items.turnsTupleGenerator;
-      if (!generator) return "(s, 0, 0)";
+      if (!generator) return "(0, 0)";
       return generator.generateTurnsTuple(pictograph);
     } catch {
-      return "(s, 0, 0)";
+      return "(0, 0)";
     }
   });
 

@@ -49,7 +49,7 @@
  * 9. VTG Glyph (bottom-right corner, Type1 letters only)
  * 10. Elemental Glyph (top-right corner, Type1 letters only)
  * 11. Position Glyph (top center, shows α→β etc)
- * 12. ReversalIndicators (bottom-left, blue/red dots)
+ * 12. ReversalIndicators (left edge, vertically centered, blue/red dots)
  *
  * Transform order for arrows/props (matching SVG):
  * translate(x, y) → rotate(angle) → scale(-1, 1) if mirror → translate(-center.x, -center.y)
@@ -75,6 +75,7 @@ import { parseTurnsTuple, shouldDisplayTurn, getTurnNumberImagePath, getTurnNumb
 import { TurnColorInterpreter } from "../../../pictograph/tka-glyph/services/implementations/TurnColorInterpreter";
 import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn-position-calculator";
 import { calculateVTGFromPictograph } from "../../../pictograph/shared/domain/utils/vtg-calculator";
+import { calculateReversalPositions } from "../../core";
 
 // Constants matching the SVG system
 const VIEWBOX_SIZE = 950;
@@ -392,15 +393,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       this.drawReversalIndicators(ctx, preparedPictograph, size, isDarkMode);
     }
 
-    // Log timing breakdown for slow renders
-    const totalTime = performance.now() - totalStart;
-    if (totalTime > 50) {
-      console.log(
-        `[Canvas2D] Slow render ${totalTime.toFixed(0)}ms: ` +
-        `prepare=${prepareTime.toFixed(0)}ms, grid=${gridTime.toFixed(0)}ms, ` +
-        `props=${propsTime.toFixed(0)}ms, arrows=${arrowsTime.toFixed(0)}ms, glyph=${glyphTime.toFixed(0)}ms`
-      );
-    }
+
   }
 
   /**
@@ -1390,7 +1383,13 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   }
 
   /**
-   * Draw reversal indicators
+   * Draw reversal indicators using shared core calculations
+   *
+   * Positioning (from unified core, matching ReversalIndicators.svelte):
+   * - Single reversal: dot is centered vertically at CENTER_Y (475)
+   * - Both reversals: RED on top, BLUE on bottom, spaced by DOT_SPACING
+   * - All dots are at X_POSITION (71.5) on the left edge
+   *
    * Works with both StepData (has blueReversal/redReversal properties)
    * and PictographData (check motions for reversals)
    */
@@ -1400,10 +1399,6 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     size: number,
     isDarkMode: boolean
   ): void {
-    const indicatorSize = size * 0.04;
-    const margin = size * 0.02;
-    const y = size - indicatorSize - margin;
-
     // Check for reversals - handle both StepData and PictographData
     let blueReversal = false;
     let redReversal = false;
@@ -1418,22 +1413,19 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       redReversal = pictograph.motions?.red?.isReversal ?? false;
     }
 
-    // Use bright colors in dark mode, darker colors in light mode for visibility
-    const blueColor = isDarkMode ? BLUE_COLOR_DARK : BLUE_COLOR_LIGHT;
-    const redColor = isDarkMode ? RED_COLOR_DARK : RED_COLOR_LIGHT;
+    // Use shared core calculation for positioning
+    const { dots } = calculateReversalPositions(blueReversal, redReversal, isDarkMode);
 
-    if (blueReversal) {
-      ctx.fillStyle = blueColor;
-      ctx.beginPath();
-      ctx.arc(margin + indicatorSize / 2, y + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    if (dots.length === 0) return;
 
-    if (redReversal) {
-      ctx.fillStyle = redColor;
-      const x = blueReversal ? margin * 2 + indicatorSize : margin;
+    // Scale from viewbox coordinates (950x950) to canvas size
+    const scale = size / VIEWBOX_SIZE;
+
+    // Draw each dot at its calculated position
+    for (const dot of dots) {
+      ctx.fillStyle = dot.color;
       ctx.beginPath();
-      ctx.arc(x + indicatorSize / 2, y + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2);
+      ctx.arc(dot.cx * scale, dot.cy * scale, dot.r * scale, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -1469,3 +1461,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     this.initialized = false;
   }
 }
+
+// DIRECT EXPORT - Use this instead of container.items.canvas2DRenderer
+// This avoids DI container rebuilds when this file changes
+export const canvas2DDirectRenderer = new Canvas2DDirectRenderer();

@@ -236,3 +236,29 @@ export class PictographBlobCache implements IPictographBlobCache {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.pictographBlobCache to avoid DI container rebuilds.
+// IndexedDB connection is managed internally, so no HMR concerns for the instance itself.
+// ============================================================================
+
+// HMR-aware singleton instance
+let hmrPictographBlobCacheInstance: PictographBlobCache | null =
+  import.meta.hot?.data?.pictographBlobCacheInstance ?? null;
+
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.pictographBlobCacheInstance = hmrPictographBlobCacheInstance;
+  });
+}
+
+function getPictographBlobCache(): PictographBlobCache {
+  if (!hmrPictographBlobCacheInstance) {
+    hmrPictographBlobCacheInstance = new PictographBlobCache();
+  }
+  return hmrPictographBlobCacheInstance;
+}
+
+export const pictographBlobCache = getPictographBlobCache();

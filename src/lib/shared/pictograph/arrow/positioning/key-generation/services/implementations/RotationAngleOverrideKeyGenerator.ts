@@ -146,3 +146,7 @@ export class RotationAngleOverrideKeyGenerator implements IRotationAngleOverride
     }
   }
 }
+
+// DIRECT EXPORT - Use this instead of container.items.rotationAngleOverrideKeyGenerator
+// This avoids DI container rebuilds when this file changes
+export const rotationAngleOverrideKeyGenerator = new RotationAngleOverrideKeyGenerator();

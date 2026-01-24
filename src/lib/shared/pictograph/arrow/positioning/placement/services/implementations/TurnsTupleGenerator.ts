@@ -648,3 +648,7 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
     return turns; // Already a string ("fl")
   }
 }
+
+// DIRECT EXPORT - Use this instead of container.items.turnsTupleGenerator
+// This avoids DI container rebuilds when this file changes
+export const turnsTupleGenerator = new TurnsTupleGenerator();

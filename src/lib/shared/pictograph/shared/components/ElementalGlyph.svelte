@@ -83,6 +83,29 @@ Based on legacy elemental_glyph.py implementation.
   // Position in top-right corner (with x-offset for expanded cells)
   const xPosition = $derived(PICTOGRAPH_SIZE - GLYPH_WIDTH - offsetWidth + xOffset);
   const yPosition = offsetHeight;
+
+  // Center point for scale animation
+  const centerX = $derived(xPosition + GLYPH_WIDTH / 2);
+  const centerY = yPosition + GLYPH_HEIGHT / 2;
+
+  // ============================================================================
+  // ELEMENTAL TYPE CHANGE ANIMATION
+  // ============================================================================
+  // Track when elemental type changes to trigger a subtle scale-pulse animation.
+
+  let prevElementalType = $state<ElementalType | null | undefined>(undefined);
+  let isAnimating = $state(false);
+
+  $effect(() => {
+    // Skip initial mount (prevElementalType is undefined)
+    // Animate when type changes to a new value
+    if (prevElementalType !== undefined && elementalType !== prevElementalType && elementalType !== null) {
+      isAnimating = true;
+      const timeout = setTimeout(() => { isAnimating = false; }, 180);
+      return () => clearTimeout(timeout);
+    }
+    prevElementalType = elementalType;
+  });
 </script>
 
 {#if shouldRender}
@@ -103,11 +126,14 @@ Based on legacy elemental_glyph.py implementation.
         }}
   >
     <image
+      class="elemental-image"
+      class:animating={isAnimating}
       href={svgPath}
       x={xPosition}
       y={yPosition}
       width={GLYPH_WIDTH}
       height={GLYPH_HEIGHT}
+      style="transform-origin: {centerX}px {centerY}px"
     />
   </g>
 {/if}
@@ -141,5 +167,29 @@ Based on legacy elemental_glyph.py implementation.
   /* When not visible in preview mode, dim on hover */
   .elemental-glyph.preview-mode:not(.visible).interactive:hover {
     opacity: 0.5;
+  }
+
+  /* Scale-pulse animation when elemental type changes */
+  @keyframes elemental-pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.91);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .elemental-image.animating {
+    animation: elemental-pulse 180ms ease-in-out;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .elemental-image.animating {
+      animation: none;
+    }
   }
 </style>

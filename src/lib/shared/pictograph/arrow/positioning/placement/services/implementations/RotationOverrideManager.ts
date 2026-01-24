@@ -230,3 +230,37 @@ export class RotationOverrideManager implements IRotationOverrideManager {
     return "diamond";
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.rotationOverrideManager to avoid DI container rebuilds.
+// Dependencies are imported from their direct exports.
+// ============================================================================
+
+import { turnsTupleGenerator } from "./TurnsTupleGenerator";
+import { rotationAngleOverrideKeyGenerator } from "../../../key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
+import { gridModeDeriver } from "../../../../../grid/services/implementations/GridModeDeriver";
+
+// HMR-aware singleton instance (persists localStorage state across HMR)
+let hmrRotationOverrideManager: RotationOverrideManager | null =
+  import.meta.hot?.data?.rotationOverrideManagerInstance ?? null;
+
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.rotationOverrideManagerInstance = hmrRotationOverrideManager;
+  });
+}
+
+function getRotationOverrideManager(): RotationOverrideManager {
+  if (!hmrRotationOverrideManager) {
+    hmrRotationOverrideManager = new RotationOverrideManager(
+      turnsTupleGenerator,
+      rotationAngleOverrideKeyGenerator,
+      gridModeDeriver
+    );
+  }
+  return hmrRotationOverrideManager;
+}
+
+export const rotationOverrideManager = getRotationOverrideManager();

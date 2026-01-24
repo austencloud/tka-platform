@@ -85,3 +85,7 @@ export class StepNumberRenderer implements IStepNumberRenderer {
     ctx.restore();
   }
 }
+
+// DIRECT EXPORT - Use this instead of container.items.beatNumberRenderer
+// This avoids DI container rebuilds when this file changes
+export const stepNumberRenderer = new StepNumberRenderer();

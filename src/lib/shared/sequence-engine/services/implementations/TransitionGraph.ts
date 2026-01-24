@@ -133,7 +133,16 @@ export class TransitionGraph implements ITransitionGraph {
       return [];
     }
 
-    // Use BFS to find shortest path from A's end group to B's start group
+    // First, try to find all single-letter bridges (most common case)
+    const singleBridges = this.findAllBridgeOptions(letterA, letterB);
+
+    if (singleBridges.length > 0) {
+      // Randomly select one bridge letter for variety
+      const randomIndex = Math.floor(Math.random() * singleBridges.length);
+      return [singleBridges[randomIndex]!];
+    }
+
+    // Fallback to BFS for multi-letter bridges (rare case)
     const startGroup = infoA.endPositionGroup;
     const targetGroup = infoB.startPositionGroup;
 

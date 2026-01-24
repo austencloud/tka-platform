@@ -455,3 +455,9 @@ class HandpathCalculator {
     return this.handRotDirMap.get(key) || "NO HAND ROTATION FOUND";
   }
 }
+
+// ============================================================================
+// DIRECT EXPORT - Use this instead of container.items.orientationCalculator
+// This avoids DI container rebuilds when this file changes
+// ============================================================================
+export const orientationCalculator = new OrientationCalculator();

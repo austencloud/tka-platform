@@ -30,6 +30,7 @@
   import type { ISequenceRenderer } from "$lib/shared/share/services/contracts/ISequenceRenderer";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { container } from "$lib/shared/di";
+  import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { createAnimationPanelState, type PlaybackMode, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
@@ -46,8 +47,6 @@
     type CompositeOrientation,
   } from "../state/export-options-state.svelte";
   // LAN Sync
-  import SyncFab from "$lib/shared/lan-sync/components/SyncFab.svelte";
-  import SyncConnectionSheet from "$lib/shared/lan-sync/components/SyncConnectionSheet.svelte";
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
   import {
     setSequenceModalUrl,
@@ -98,11 +97,18 @@
   let isExportMode = $state(false);
   const exportOptions = getExportOptionsState();
 
-  // LAN Sync state
-  let syncSheetOpen = $state(false);
+  // LAN Sync - just a toggle, no complex UI
+  let isSyncToggling = $state(false);
 
   // Which pane is in edit mode: null, 'animation', or 'image'
   let editingPane = $state<'animation' | 'image' | null>(null);
+
+  // Export button label based on focused pane
+  const exportButtonLabel = $derived.by(() => {
+    if (editingPane === 'image') return 'Export Image';
+    if (editingPane === 'animation') return 'Export Animation';
+    return 'Export'; // Both visible (split view)
+  });
 
   function enterEditMode(pane: 'animation' | 'image') {
     hapticService?.trigger("impact"); // Heavier feedback for mode expansion
@@ -127,6 +133,35 @@
   function exitExportMode() {
     hapticService?.trigger("selection");
     isExportMode = false;
+  }
+
+  // Simple sync toggle - one tap to connect/disconnect
+  async function handleSyncToggle() {
+    if (isSyncToggling) return;
+    isSyncToggling = true;
+    hapticService?.trigger("selection");
+
+    try {
+      // Use sequence.word for display in discovery banners
+      const sequenceWord = sequence.word || sequence.name || "Sequence";
+      const isNowSyncing = await lanSyncState.toggleSync(
+        sequence.id,
+        sequenceWord,
+        {
+          sequenceId: sequence.id,
+          currentStep: currentStepLocal,
+          isPlaying: isPlayingLocal,
+          speed: bpmLocal / 60, // Convert BPM to speed multiplier
+          shouldLoop: true
+        }
+      );
+      hapticService?.trigger(isNowSyncing ? "success" : "selection");
+    } catch (err) {
+      console.error("[Sync] Toggle failed:", err);
+      hapticService?.trigger("error");
+    } finally {
+      isSyncToggling = false;
+    }
   }
 
   // Fullscreen state (morph-to-fullscreen instead of SpotlightViewer)
@@ -227,6 +262,7 @@
   let imgShowCreatorName = $state(loadImageSetting("creatorName", true));
   let imgShowNotes = $state(loadImageSetting("notes", true));
   let imgDarkMode = $state(loadImageSetting("darkMode", false));
+  let imgColumnCount = $state<number | null>(loadColumnCountSetting());
 
   function loadImageSetting(key: string, defaultValue: boolean): boolean {
     if (typeof localStorage !== "undefined") {
@@ -236,10 +272,34 @@
     return defaultValue;
   }
 
+  function loadColumnCountSetting(): number | null {
+    if (typeof localStorage !== "undefined") {
+      const saved = localStorage.getItem("tka_seq_details_img_columnCount");
+      if (saved !== null && saved !== "null") return parseInt(saved, 10);
+    }
+    return null; // Auto
+  }
+
   function saveImageSetting(key: string, value: boolean) {
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(`tka_seq_details_img_${key}`, String(value));
     }
+  }
+
+  function saveColumnCountSetting(value: number | null) {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("tka_seq_details_img_columnCount", String(value));
+    }
+  }
+
+  function cycleColumnCount() {
+    hapticService?.trigger("selection");
+    // Cycle through: Auto -> 3 -> 4 -> 5 -> 6 -> Auto
+    const options: (number | null)[] = [null, 3, 4, 5, 6];
+    const currentIndex = options.indexOf(imgColumnCount);
+    const nextIndex = (currentIndex + 1) % options.length;
+    imgColumnCount = options[nextIndex];
+    saveColumnCountSetting(imgColumnCount);
   }
 
   function toggleAnimSetting(key: "trailStyle" | "tkaGlyph" | "wordHeader") {
@@ -325,9 +385,13 @@
   let bpmLocal = $state(60);
   let cleanupAnimationStateSubscription: (() => void) | undefined;
 
-  // Step highlighting for LayeredSequencePreview (0-indexed)
+  // Step highlighting for LayeredSequencePreview
+  // -1 = start position, 0+ = motion steps
   let highlightedStepIndex = $derived.by(() => {
-    if (!isPlayingLocal || currentStepLocal < 1) return null;
+    if (!isPlayingLocal) return null;
+    // Start position (currentStep 0 to <1)
+    if (currentStepLocal < 1) return -1;
+    // Motion steps (currentStep 1+ maps to index 0+)
     return Math.floor(currentStepLocal) - 1;
   });
 
@@ -420,6 +484,11 @@
       hapticService = container.items.hapticFeedback;
       videoExportOrchestrator = container.items.videoExportOrchestrator;
       sequenceRenderer = container.items.sequenceRenderer;
+
+      // Initialize LAN sync state with coordinator from container
+      const lanSyncCoordinator = container.items.lanSyncCoordinator as ILanSyncCoordinator;
+      lanSyncState.initialize(lanSyncCoordinator);
+
       animationServicesReady = true;
     } catch (error) {
       console.error("[SequenceDetailsModal] Failed to load services:", error);
@@ -775,7 +844,7 @@
   let previewAspectRatio = $derived.by(() => {
     if (!sequence?.steps?.length) return 1;
 
-    const layoutService = container.items.layoutCalculator;
+    const layoutService = layoutCalculator;
     const stepCount = sequence.steps.length;
 
     // Use the existing calculateThumbnailAspectRatio method which accounts for header/footer
@@ -818,7 +887,7 @@
         </div>
 
         <div class="header-center">
-          <h2 class="export-title">
+          <h2 class="mode-title">
             Export {viewMode === "image" ? "Image" : "Video"}
           </h2>
         </div>
@@ -842,11 +911,31 @@
         </div>
 
         <div class="header-center">
-          <h2 class="sequence-title">{sequence?.word || "Sequence"}</h2>
+          <h2 class="sequence-title">Sequence Viewer</h2>
         </div>
 
         <div class="header-right">
-          <SyncFab onclick={() => { syncSheetOpen = true; }} />
+          <button
+            type="button"
+            class="header-icon-btn sync-btn"
+            class:syncing={lanSyncState.isActive}
+            class:connected={lanSyncState.isConnected}
+            class:toggling={isSyncToggling}
+            onclick={handleSyncToggle}
+            disabled={isSyncToggling}
+            aria-label={lanSyncState.isConnected ? "Synced - tap to disconnect" : lanSyncState.isActive ? "Looking for devices..." : "Tap to sync with nearby device"}
+            title={lanSyncState.isConnected ? "Connected - tap to disconnect" : lanSyncState.isActive ? "Waiting for device..." : "Sync"}
+          >
+            {#if isSyncToggling}
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            {:else if lanSyncState.isConnected}
+              <i class="fas fa-link" aria-hidden="true"></i>
+            {:else if lanSyncState.isActive}
+              <i class="fas fa-broadcast-tower" aria-hidden="true"></i>
+            {:else}
+              <i class="fas fa-broadcast-tower" aria-hidden="true"></i>
+            {/if}
+          </button>
           <button
             type="button"
             class="header-icon-btn"
@@ -870,11 +959,13 @@
     {/if}
   {/snippet}
 
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <div
     class="modal-body-content"
     data-view-mode={viewMode}
     data-fullscreen={isFullscreen}
     onclick={isFullscreen ? handleFullscreenTap : undefined}
+    onkeydown={isFullscreen ? (e) => { if (e.key === 'Enter' || e.key === ' ') handleFullscreenTap(e); } : undefined}
     role={isFullscreen ? "button" : undefined}
     tabindex={isFullscreen ? 0 : undefined}
   >
@@ -891,7 +982,8 @@
         </button>
 
         {#if viewMode !== "image"}
-          <div class="fs-transport" onclick={(e) => e.stopPropagation()}>
+          <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+          <div class="fs-transport" role="presentation" onclick={(e) => e.stopPropagation()}>
             <TransportControls
               isPlaying={isPlayingLocal}
               onPlaybackToggle={handlePlaybackToggle}
@@ -1114,12 +1206,14 @@
         out:fade={{ duration: 150, easing: cubicOut }}
       >
         <!-- Animation pane -->
-        <button
-          type="button"
+        <div
           class="split-column animation-column"
           class:focused={editingPane === 'animation'}
           data-hidden={editingPane === 'image'}
+          role="button"
+          tabindex="0"
           onclick={() => editingPane === 'animation' ? exitEditMode() : enterEditMode('animation')}
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editingPane === 'animation' ? exitEditMode() : enterEditMode('animation'); }}}
           aria-label={editingPane === 'animation' ? "Exit focus mode" : "Focus on animation"}
           aria-expanded={editingPane === 'animation'}
         >
@@ -1162,68 +1256,77 @@
 
           <!-- Visibility chips - shown when this pane is focused -->
           {#if editingPane === 'animation'}
-            <div class="focus-mode-chips" onclick={(e) => e.stopPropagation()}>
-              <button type="button" class="chip" class:active={animTrailStyle === "on"} onclick={() => toggleAnimSetting("trailStyle")} aria-pressed={animTrailStyle === "on"}>Trails</button>
-              <button type="button" class="chip" class:active={animTkaGlyph} onclick={() => toggleAnimSetting("tkaGlyph")} aria-pressed={animTkaGlyph}>TKA</button>
-              <button type="button" class="chip" class:active={animWordHeader} onclick={() => toggleAnimSetting("wordHeader")} aria-pressed={animWordHeader}>Word</button>
+            <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+            <div class="focus-mode-chips" role="presentation" onclick={(e) => e.stopPropagation()}>
+              <button type="button" class="chip" class:active={animTrailStyle === "on"} onclick={(e) => { e.stopPropagation(); toggleAnimSetting("trailStyle"); }} aria-pressed={animTrailStyle === "on"}>Trails</button>
+              <button type="button" class="chip" class:active={animTkaGlyph} onclick={(e) => { e.stopPropagation(); toggleAnimSetting("tkaGlyph"); }} aria-pressed={animTkaGlyph}>TKA</button>
+              <button type="button" class="chip" class:active={animWordHeader} onclick={(e) => { e.stopPropagation(); toggleAnimSetting("wordHeader"); }} aria-pressed={animWordHeader}>Word</button>
             </div>
           {/if}
-        </button>
+        </div>
 
         <!-- Image/Preview pane -->
-        <button
-          type="button"
+        <div
           class="split-column preview-column"
           class:focused={editingPane === 'image'}
           data-hidden={editingPane === 'animation'}
+          role="button"
+          tabindex="0"
           onclick={() => editingPane === 'image' ? exitEditMode() : enterEditMode('image')}
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editingPane === 'image' ? exitEditMode() : enterEditMode('image'); }}}
           aria-label={editingPane === 'image' ? "Exit focus mode" : "Focus on image"}
           aria-expanded={editingPane === 'image'}
         >
-          <div class="media-pane preview-pane">
-            <!-- Close button - shown when focused -->
+          <!-- Inner wrapper for horizontal layout on wide screens -->
+          <div class="preview-column-inner" class:focused={editingPane === 'image'}>
+            <div class="media-pane preview-pane">
+              <!-- Close button - shown when focused -->
+              {#if editingPane === 'image'}
+                <div
+                  class="pane-close-btn"
+                  role="button"
+                  tabindex="0"
+                  onclick={(e) => { e.stopPropagation(); exitEditMode(); }}
+                  onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); exitEditMode(); }}}
+                  aria-label="Exit focus mode"
+                >
+                  <i class="fas fa-times" aria-hidden="true"></i>
+                </div>
+              {/if}
+
+              <LayeredSequencePreview
+                {sequence}
+                highlightedStepIndex={highlightedStepIndex}
+                showHighlight={isPlayingLocal}
+                onStepClick={handleStepClick}
+                showWord={imgShowWord}
+                showStepNumbers={true}
+                showDifficultyLevel={imgShowDifficulty}
+                includeStartPosition={imgShowStartPos}
+                showCreatorName={imgShowCreatorName}
+                showNotes={imgShowNotes}
+                showBirthday={true}
+                showLoopGlyph={true}
+                darkMode={imgDarkMode}
+                userName={authState.user?.displayName || ""}
+                columnCount={imgColumnCount}
+              />
+            </div>
+
+            <!-- Visibility chips - shown when this pane is focused -->
             {#if editingPane === 'image'}
-              <div
-                class="pane-close-btn"
-                role="button"
-                tabindex="0"
-                onclick={(e) => { e.stopPropagation(); exitEditMode(); }}
-                onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); exitEditMode(); }}}
-                aria-label="Exit focus mode"
-              >
-                <i class="fas fa-times" aria-hidden="true"></i>
+              <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+              <div class="focus-mode-chips" role="presentation" onclick={(e) => e.stopPropagation()}>
+                <button type="button" class="chip" class:active={imgShowWord} onclick={(e) => { e.stopPropagation(); toggleImgSetting("word"); }} aria-pressed={imgShowWord}>Word</button>
+                <button type="button" class="chip" class:active={imgShowStartPos} onclick={(e) => { e.stopPropagation(); toggleImgSetting("startPos"); }} aria-pressed={imgShowStartPos}>Start</button>
+                <button type="button" class="chip" class:active={imgShowDifficulty} onclick={(e) => { e.stopPropagation(); toggleImgSetting("difficulty"); }} aria-pressed={imgShowDifficulty}>Level</button>
+                <button type="button" class="chip" class:active={imgShowCreatorName} onclick={(e) => { e.stopPropagation(); toggleImgSetting("creatorName"); }} aria-pressed={imgShowCreatorName}>Name</button>
+                <button type="button" class="chip" class:active={imgShowNotes} onclick={(e) => { e.stopPropagation(); toggleImgSetting("notes"); }} aria-pressed={imgShowNotes}>Notes</button>
+                <button type="button" class="chip column-chip" onclick={(e) => { e.stopPropagation(); cycleColumnCount(); }} aria-label="Column count: {imgColumnCount ?? 'Auto'}">{imgColumnCount ?? 'Auto'} cols</button>
               </div>
             {/if}
-
-            <LayeredSequencePreview
-              {sequence}
-              highlightedStepIndex={highlightedStepIndex}
-              showHighlight={isPlayingLocal}
-              onStepClick={handleStepClick}
-              showWord={imgShowWord}
-              showStepNumbers={true}
-              showDifficultyLevel={imgShowDifficulty}
-              includeStartPosition={imgShowStartPos}
-              showCreatorName={imgShowCreatorName}
-              showNotes={imgShowNotes}
-              showBirthday={true}
-              showLoopGlyph={true}
-              darkMode={imgDarkMode}
-              userName={authState.user?.displayName || ""}
-            />
           </div>
-
-          <!-- Visibility chips - shown when this pane is focused -->
-          {#if editingPane === 'image'}
-            <div class="focus-mode-chips" onclick={(e) => e.stopPropagation()}>
-              <button type="button" class="chip" class:active={imgShowWord} onclick={() => toggleImgSetting("word")} aria-pressed={imgShowWord}>Word</button>
-              <button type="button" class="chip" class:active={imgShowStartPos} onclick={() => toggleImgSetting("startPos")} aria-pressed={imgShowStartPos}>Start</button>
-              <button type="button" class="chip" class:active={imgShowDifficulty} onclick={() => toggleImgSetting("difficulty")} aria-pressed={imgShowDifficulty}>Level</button>
-              <button type="button" class="chip" class:active={imgShowCreatorName} onclick={() => toggleImgSetting("creatorName")} aria-pressed={imgShowCreatorName}>Name</button>
-              <button type="button" class="chip" class:active={imgShowNotes} onclick={() => toggleImgSetting("notes")} aria-pressed={imgShowNotes}>Notes</button>
-            </div>
-          {/if}
-        </button>
+        </div>
       </div>
     {/if}
   </div>
@@ -1333,11 +1436,11 @@
               type="button"
               class="export-btn-prominent"
               onclick={enterExportMode}
-              aria-label="Export"
-              title="Export"
+              aria-label={exportButtonLabel}
+              title={exportButtonLabel}
             >
               <i class="fas fa-download" aria-hidden="true"></i>
-              <span>Export</span>
+              <span>{exportButtonLabel}</span>
             </button>
           </div>
           </div>
@@ -1358,10 +1461,6 @@
   }}
 />
 
-<SyncConnectionSheet
-  bind:open={syncSheetOpen}
-  sequenceId={sequence?.id || sequence?.word || "unknown"}
-/>
 
 <style>
   /* ===== FULLSCREEN MORPH STYLES ===== */
@@ -1441,19 +1540,12 @@
     position: relative;
   }
 
-  .modal-body-content[data-fullscreen="true"] .split-view,
-  .modal-body-content[data-fullscreen="true"] .single-view {
+  .modal-body-content[data-fullscreen="true"] .split-view {
     padding: 0;
   }
 
-  .modal-body-content[data-fullscreen="true"] .media-pane,
-  .modal-body-content[data-fullscreen="true"] .media-container {
+  .modal-body-content[data-fullscreen="true"] .media-pane {
     padding: 0;
-  }
-
-  /* Hide settings buttons in fullscreen mode */
-  .modal-body-content[data-fullscreen="true"] .pane-settings-btn {
-    display: none;
   }
 
   /* Fullscreen split layout: Horizontal stack (animation left, preview right) - for tall/square sequences */
@@ -1659,6 +1751,15 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
+  /* Inner wrapper for preview column - enables horizontal layout on wide screens */
+  .preview-column-inner {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
   .media-pane {
     flex: 1;
     min-height: 0;
@@ -1784,6 +1885,54 @@
   .focus-mode-chips .chip:nth-child(3) { animation-delay: 0.14s; }
   .focus-mode-chips .chip:nth-child(4) { animation-delay: 0.17s; }
   .focus-mode-chips .chip:nth-child(5) { animation-delay: 0.20s; }
+  .focus-mode-chips .chip:nth-child(6) { animation-delay: 0.23s; }
+
+  /* Column count chip - distinct styling */
+  .focus-mode-chips .chip.column-chip {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+  }
+
+  .focus-mode-chips .chip.column-chip:hover {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+  }
+
+  /* Wide screen: chips on right side when focused */
+  @media (min-width: 1024px) {
+    .preview-column-inner.focused {
+      flex-direction: row;
+    }
+
+    .preview-column-inner.focused .focus-mode-chips {
+      flex-direction: column;
+      justify-content: center;
+      align-items: stretch;
+      border-top: none;
+      border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+      padding: 24px 16px;
+      min-width: 120px;
+      max-width: 140px;
+      /* Slide in from right animation */
+      animation: slideInFromRight 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .preview-column-inner.focused .focus-mode-chips .chip {
+      width: 100%;
+      justify-content: center;
+    }
+
+    @keyframes slideInFromRight {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  }
 
   @keyframes chipPopIn {
     from {
@@ -1814,26 +1963,6 @@
   .media-pane > :global(*) {
     max-width: 100%;
     max-height: 100%;
-  }
-
-  /* Single view (animation or image only) */
-  .single-view {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    padding: 16px;
-  }
-
-  .media-container {
-    flex: 1;
-    min-height: 0;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    /* Establish container for child container queries */
-    container-type: size;
   }
 
   /* Loading/Error states */
@@ -1911,56 +2040,9 @@
     gap: 12px;
   }
 
-  .image-footer-row {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0;
-  }
-
   /* Footer content wrapper for view transitions */
   .footer-content {
     display: contents;
-  }
-
-  .footer-spacer {
-    flex: 1;
-  }
-
-  .export-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    background: var(--theme-accent, #6366f1);
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-    flex-shrink: 0;
-  }
-
-  .export-btn:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 85%, white);
-    transform: scale(1.02);
-  }
-
-  .export-btn:active:not(:disabled) {
-    transform: scale(0.98);
-  }
-
-  .export-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .export-btn:focus-visible {
-    outline: 2px solid white;
-    outline-offset: 2px;
   }
 
   /* Prominent export button - shown in footer when not in export mode */
@@ -2092,14 +2174,6 @@
       margin: 0 !important;
     }
 
-    .mode-label {
-      display: none;
-    }
-
-    .mode-button {
-      padding: 10px 12px;
-    }
-
     .controls-footer {
       padding: 12px;
       gap: 8px;
@@ -2135,14 +2209,36 @@
     color: var(--theme-text, white);
   }
 
-  .header-icon-btn.active {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
-    color: var(--theme-accent, #6366f1);
-  }
-
   .header-icon-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
+  }
+
+  /* Sync button states */
+  .header-icon-btn.sync-btn.syncing {
+    color: var(--theme-accent, #6366f1);
+    animation: sync-pulse 2s ease-in-out infinite;
+  }
+
+  .header-icon-btn.sync-btn.connected {
+    color: var(--semantic-success, #22c55e);
+    animation: none;
+  }
+
+  .header-icon-btn.sync-btn.toggling {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  @keyframes sync-pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.1);
+    }
   }
 
   /* Split view needs relative positioning */
@@ -2150,15 +2246,7 @@
     position: relative;
   }
 
-  .single-view {
-    position: relative;
-  }
-
   /* ===== EXPORT MODE STYLES ===== */
-
-  .export-header {
-    /* Inherits from .details-header */
-  }
 
   .export-title {
     margin: 0;

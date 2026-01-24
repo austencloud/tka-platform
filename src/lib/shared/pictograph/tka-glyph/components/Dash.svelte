@@ -41,6 +41,30 @@ DO NOT add dark mode color logic here - it would cause double-inversion!
   // Position dash to the right of the letter, vertically centered
   const dashX = $derived(letterWidth + DASH_GAP);
   const dashY = $derived((letterHeight - DASH_HEIGHT) / 2);
+
+  // Center point for scale animation
+  const centerX = $derived(dashX + DASH_WIDTH / 2);
+  const centerY = $derived(dashY + DASH_HEIGHT / 2);
+
+  // ============================================================================
+  // DASH APPEARANCE ANIMATION
+  // ============================================================================
+  // Track when dash appears (visibility goes from false to true).
+  // Note: The parent TKAGlyph handles letter change animations, so we only
+  // animate when the dash itself appears (non-dash → dash letter change).
+
+  let prevVisible = $state<boolean | undefined>(undefined);
+  let isAnimating = $state(false);
+
+  $effect(() => {
+    // Animate when dash appears (visibility becomes true after being false)
+    if (prevVisible === false && visible === true) {
+      isAnimating = true;
+      const timeout = setTimeout(() => { isAnimating = false; }, 180);
+      return () => clearTimeout(timeout);
+    }
+    prevVisible = visible;
+  });
 </script>
 
 <!-- Dash - only render when visible (or in preview mode) -->
@@ -53,6 +77,8 @@ DO NOT add dark mode color logic here - it would cause double-inversion!
   >
     <!-- Always black fill - TKAGlyph's filter handles dark mode inversion -->
     <rect
+      class="dash-rect"
+      class:animating={isAnimating}
       x="0"
       y="0"
       width={DASH_WIDTH}
@@ -60,6 +86,7 @@ DO NOT add dark mode color logic here - it would cause double-inversion!
       rx="9.5"
       ry="9.5"
       fill={DASH_FILL}
+      style="transform-origin: {DASH_WIDTH / 2}px {DASH_HEIGHT / 2}px"
     />
   </g>
 {/if}
@@ -78,5 +105,29 @@ DO NOT add dark mode color logic here - it would cause double-inversion!
   /* Preview mode: show at reduced opacity */
   .letter-dash.preview-mode:not(.visible) {
     opacity: 0.4;
+  }
+
+  /* Scale-pulse animation when dash appears */
+  @keyframes dash-pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.88);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .dash-rect.animating {
+    animation: dash-pulse 180ms ease-in-out;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .dash-rect.animating {
+      animation: none;
+    }
   }
 </style>

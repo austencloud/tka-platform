@@ -117,3 +117,9 @@ export class GridModeDeriver implements IGridModeDeriver {
     return gridData;
   }
 }
+
+// ============================================================================
+// DIRECT EXPORT - Use this instead of container.items.gridModeDeriver
+// This avoids DI container rebuilds when this file changes
+// ============================================================================
+export const gridModeDeriver = new GridModeDeriver();

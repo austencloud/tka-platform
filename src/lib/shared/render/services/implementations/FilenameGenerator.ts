@@ -175,3 +175,7 @@ export class FilenameGenerator implements IFilenameGenerator {
     return true;
   }
 }
+
+// DIRECT EXPORT - Use this instead of container.items.filenameGenerator
+// This avoids DI container rebuilds when this file changes
+export const filenameGenerator = new FilenameGenerator();

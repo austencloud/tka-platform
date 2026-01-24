@@ -138,7 +138,7 @@ Uses pure runes instead of stores for reactivity.
     getLetterImagePath,
     isDashLetter,
   } from "../utils/letter-image-getter";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import Dash from "./Dash.svelte";
 
   let {
@@ -301,6 +301,42 @@ Uses pure runes instead of stores for reactivity.
 
   // Check if this letter needs a separate dash rendered
   const showDash = $derived(isDashLetter(letter));
+
+  // ============================================================================
+  // LETTER CHANGE ANIMATION
+  // ============================================================================
+  // Track letter changes to trigger a subtle scale-pulse animation.
+  // When the letter swaps, we briefly scale down then back up to draw
+  // attention to the change without being jarring.
+
+  let previousLetter = $state<string | null>(null);
+  let isAnimatingChange = $state(false);
+
+  // Center point for scale animation (so it pops "towards" the user, not from an edge)
+  const centerX = $derived(letterDimensions.width / 2);
+  const centerY = $derived(letterDimensions.height / 2);
+
+  $effect(() => {
+    const currentLetter = letter ?? null;
+
+    // Skip animation on initial mount (previousLetter is null)
+    // Only animate when letter actually changes to a different value
+    if (previousLetter !== null && currentLetter !== previousLetter && currentLetter !== null) {
+      // Trigger the scale-pulse animation
+      isAnimatingChange = true;
+
+      // Remove the animation class after the animation completes (200ms)
+      const timeout = setTimeout(() => {
+        isAnimatingChange = false;
+      }, 200);
+
+      // Cleanup timeout if effect re-runs
+      return () => clearTimeout(timeout);
+    }
+
+    // Update previous letter for next comparison
+    previousLetter = currentLetter;
+  });
 </script>
 
 <!-- TKA Glyph Group - only render when dimensions are loaded AND when visible
@@ -329,28 +365,35 @@ Uses pure runes instead of stores for reactivity.
         }
       : {}}
   >
-    <!-- Main letter with exact legacy dimensions -->
-    <!-- Uses cached data URL if available for instant rendering, otherwise falls back to file path -->
-    <image
-      x="0"
-      y="0"
-      href={imageSrc}
-      width={letterDimensions.width}
-      height={letterDimensions.height}
-      preserveAspectRatio="xMinYMin meet"
-      class="letter-image"
-    />
-
-    <!-- Dash for Type3/Type5 letters (rendered separately for dot centering) -->
-    <!-- Note: Dash is inside this TKAGlyph group, so the filter: invert() handles dark mode -->
-    {#if showDash}
-      <Dash
-        letterWidth={letterDimensions.width}
-        letterHeight={letterDimensions.height}
-        {visible}
-        {previewMode}
+    <!-- Inner group for scale animation - scales from center of letter -->
+    <g
+      class="letter-content"
+      class:animating-change={isAnimatingChange}
+      style="transform-origin: {centerX}px {centerY}px"
+    >
+      <!-- Main letter with exact legacy dimensions -->
+      <!-- Uses cached data URL if available for instant rendering, otherwise falls back to file path -->
+      <image
+        x="0"
+        y="0"
+        href={imageSrc}
+        width={letterDimensions.width}
+        height={letterDimensions.height}
+        preserveAspectRatio="xMinYMin meet"
+        class="letter-image"
       />
-    {/if}
+
+      <!-- Dash for Type3/Type5 letters (rendered separately for dot centering) -->
+      <!-- Note: Dash is inside this TKAGlyph group, so the filter: invert() handles dark mode -->
+      {#if showDash}
+        <Dash
+          letterWidth={letterDimensions.width}
+          letterHeight={letterDimensions.height}
+          {visible}
+          {previewMode}
+        />
+      {/if}
+    </g>
   </g>
 {/if}
 
@@ -360,7 +403,38 @@ Uses pure runes instead of stores for reactivity.
     z-index: 4;
     /* Beautiful fade in/out effect */
     opacity: 0;
-    transition: opacity var(--duration-fast) ease-out, filter var(--duration-fast) ease-out;
+    transition:
+      opacity var(--duration-fast) ease-out,
+      filter var(--duration-fast) ease-out;
+  }
+
+  /* Inner content group for scale animation */
+  .letter-content {
+    /* transform-origin is set inline based on letter dimensions */
+  }
+
+  /* Subtle scale-pulse animation when letter changes - pops "towards" user */
+  @keyframes letter-change-pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.91);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .letter-content.animating-change {
+    animation: letter-change-pulse 180ms ease-in-out;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .letter-content.animating-change {
+      animation: none;
+    }
   }
 
   .tka-glyph.visible {

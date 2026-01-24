@@ -101,6 +101,29 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
 
     return { x: dotX, y: 0 };
   });
+
+  // Center point for scale animation
+  const dotCenterX = $derived(dotPosition.x + DOT_SIZE / 2);
+  const dotCenterY = $derived(dotPosition.y + DOT_SIZE / 2);
+
+  // ============================================================================
+  // DIRECTION CHANGE ANIMATION
+  // ============================================================================
+  // Track when direction changes to trigger a subtle scale-pulse animation.
+
+  let prevDirection = $state<DirectionValue | undefined>(undefined);
+  let isAnimating = $state(false);
+
+  $effect(() => {
+    // Skip initial mount (prevDirection is undefined)
+    // Animate when direction changes to a new value
+    if (prevDirection !== undefined && direction !== prevDirection && direction !== null) {
+      isAnimating = true;
+      const timeout = setTimeout(() => { isAnimating = false; }, 180);
+      return () => clearTimeout(timeout);
+    }
+    prevDirection = direction;
+  });
 </script>
 
 <!-- Direction Dot - only render when direction is same or opp -->
@@ -116,10 +139,12 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
   >
     <!-- Fill color via CSS variable or explicit override for export -->
     <circle
-      cx={dotPosition.x + DOT_SIZE / 2}
-      cy={dotPosition.y + DOT_SIZE / 2}
+      class:animating={isAnimating}
+      cx={dotCenterX}
+      cy={dotCenterY}
       r={DOT_SIZE / 2}
       fill={fillColor}
+      style="transform-origin: {dotCenterX}px {dotCenterY}px"
     />
   </g>
 {/if}
@@ -143,5 +168,29 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
   /* Animate fill color changes for dark mode transition */
   .direction-dot circle {
     transition: fill var(--duration-fast) ease-out;
+  }
+
+  /* Scale-pulse animation when direction changes */
+  @keyframes direction-dot-pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.88);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .direction-dot circle.animating {
+    animation: direction-dot-pulse 180ms ease-in-out;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .direction-dot circle.animating {
+      animation: none;
+    }
   }
 </style>

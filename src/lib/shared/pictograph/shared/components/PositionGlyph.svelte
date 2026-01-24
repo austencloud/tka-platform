@@ -163,6 +163,36 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     scaledLetterWidth + scaledArrowWidth + scaledLetterWidth + SPACING;
   // Use centerX prop for horizontal centering (supports expanded timeline cells)
   const groupX = $derived(centerX - totalWidth / 2);
+
+  // Center point for scale animation
+  const animCenterX = $derived(groupX + totalWidth / 2);
+  const animCenterY = Y_POSITION + scaledLetterHeight / 2;
+
+  // ============================================================================
+  // POSITION CHANGE ANIMATION
+  // ============================================================================
+  // Track when start/end positions change to trigger a subtle scale-pulse animation.
+
+  let prevStartPosition = $state<GridPosition | null | undefined>(undefined);
+  let prevEndPosition = $state<GridPosition | null | undefined>(undefined);
+  let isAnimating = $state(false);
+
+  $effect(() => {
+    const changed =
+      (prevStartPosition !== undefined && startPosition !== prevStartPosition) ||
+      (prevEndPosition !== undefined && endPosition !== prevEndPosition);
+
+    if (changed && (startPosition !== null || endPosition !== null)) {
+      isAnimating = true;
+      const timeout = setTimeout(() => { isAnimating = false; }, 180);
+      prevStartPosition = startPosition;
+      prevEndPosition = endPosition;
+      return () => clearTimeout(timeout);
+    }
+
+    prevStartPosition = startPosition;
+    prevEndPosition = endPosition;
+  });
 </script>
 
 {#if shouldRender}
@@ -171,7 +201,9 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     class:visible
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
+    class:animating={isAnimating}
     transform="translate({groupX}, {Y_POSITION})"
+    style="transform-origin: {animCenterX}px {animCenterY}px"
     onclick={onToggle}
     {...onToggle
       ? {
@@ -254,5 +286,29 @@ Based on legacy start_to_end_pos_glyph.py implementation.
   /* Uses CSS-first approach - triggered by .dark class on <html> element */
   :global(:root.dark) .position-glyph {
     filter: invert(0.9);
+  }
+
+  /* Scale-pulse animation when position changes */
+  @keyframes position-pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.91);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .position-glyph.animating {
+    animation: position-pulse 180ms ease-in-out;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .position-glyph.animating {
+      animation: none;
+    }
   }
 </style>

@@ -80,11 +80,30 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     }
     return stepNumber?.toString() || "";
   });
+
+  // ============================================================================
+  // STEP NUMBER CHANGE ANIMATION
+  // ============================================================================
+  // Track when step number changes to trigger a subtle scale-pulse animation.
+
+  let prevStepNumber = $state<number | null | undefined>(undefined);
+  let isAnimating = $state(false);
+
+  $effect(() => {
+    // Skip initial mount, animate when step number changes
+    if (prevStepNumber !== undefined && stepNumber !== prevStepNumber && stepNumber !== null) {
+      isAnimating = true;
+      const timeout = setTimeout(() => { isAnimating = false; }, 180);
+      return () => clearTimeout(timeout);
+    }
+    prevStepNumber = stepNumber;
+  });
 </script>
 
 {#if shouldRender}
   <text
     class="beat-number"
+    class:animating={isAnimating}
     x="50"
     y="50"
     dominant-baseline="hanging"
@@ -93,12 +112,14 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     font-family="Georgia, serif"
     font-weight="bold"
     fill={fillColor}
+    style="transform-origin: 50px 50px"
   >
     {displayText}
   </text>
 {:else if shouldRenderStartText}
   <text
     class="beat-number"
+    class:animating={isAnimating}
     x="50"
     y="50"
     dominant-baseline="hanging"
@@ -107,6 +128,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     font-family="Georgia, serif"
     font-weight="bold"
     fill={fillColor}
+    style="transform-origin: 50px 50px"
   >
     {displayText}
   </text>
@@ -116,5 +138,29 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
   /* Smooth color transitions for dark mode toggle */
   .beat-number {
     transition: fill var(--duration-fast) ease-out;
+  }
+
+  /* Scale-pulse animation when step number changes */
+  @keyframes step-number-pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.91);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .beat-number.animating {
+    animation: step-number-pulse 180ms ease-in-out;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .beat-number.animating {
+      animation: none;
+    }
   }
 </style>

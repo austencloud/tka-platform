@@ -373,3 +373,7 @@ export class DimensionCalculator implements IDimensionCalculator {
     return results;
   }
 }
+
+// DIRECT EXPORT - Use this instead of container.items.dimensionCalculator
+// This avoids DI container rebuilds when this file changes
+export const dimensionCalculator = new DimensionCalculator();

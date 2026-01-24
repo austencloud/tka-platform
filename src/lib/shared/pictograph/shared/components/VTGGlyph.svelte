@@ -82,6 +82,25 @@ that adapt to dark/light mode automatically.
     if (darkMode === false) return "rgba(0, 0, 0, 0.7)";
     return undefined;
   });
+
+  // ============================================================================
+  // VTG MODE CHANGE ANIMATION
+  // ============================================================================
+  // Track when VTG mode changes to trigger a subtle scale-pulse animation.
+
+  let prevVtgMode = $state<VTGMode | null | undefined>(undefined);
+  let isAnimating = $state(false);
+
+  $effect(() => {
+    // Skip initial mount (prevVtgMode is undefined)
+    // Animate when mode changes to a new value
+    if (prevVtgMode !== undefined && vtgMode !== prevVtgMode && vtgMode !== null) {
+      isAnimating = true;
+      const timeout = setTimeout(() => { isAnimating = false; }, 180);
+      return () => clearTimeout(timeout);
+    }
+    prevVtgMode = vtgMode;
+  });
 </script>
 
 {#if shouldRender}
@@ -105,9 +124,10 @@ that adapt to dark/light mode automatically.
       x={xPosition}
       y={yPosition}
       class="vtg-label"
+      class:animating={isAnimating}
       text-anchor="end"
       dominant-baseline="text-bottom"
-      style={explicitFill ? `fill: ${explicitFill}` : undefined}
+      style="transform-origin: {xPosition}px {yPosition}px; {explicitFill ? `fill: ${explicitFill}` : ''}"
     >
       {vtgMode}
     </text>
@@ -153,6 +173,30 @@ that adapt to dark/light mode automatically.
     /* Light mode default - dark text */
     fill: rgba(0, 0, 0, 0.7);
     transition: fill 150ms ease-out;
+  }
+
+  /* Scale-pulse animation when VTG mode changes */
+  @keyframes vtg-pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.91);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .vtg-label.animating {
+    animation: vtg-pulse 180ms ease-in-out;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .vtg-label.animating {
+      animation: none;
+    }
   }
 
   /* Dark mode: light text for dark backgrounds */

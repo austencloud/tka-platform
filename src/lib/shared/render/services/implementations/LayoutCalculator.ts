@@ -449,3 +449,7 @@ export class LayoutCalculator implements ILayoutCalculator {
     };
   }
 }
+
+// DIRECT EXPORT - Use this instead of container.items.layoutCalculator
+// This avoids DI container rebuilds when this file changes
+export const layoutCalculator = new LayoutCalculator();

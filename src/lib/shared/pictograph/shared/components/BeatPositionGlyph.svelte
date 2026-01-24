@@ -103,6 +103,24 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
       onToggle();
     }
   }
+
+  // ============================================================================
+  // BEAT POSITION CHANGE ANIMATION
+  // ============================================================================
+  // Track when musical position changes to trigger a subtle scale-pulse animation.
+
+  let prevMusicalPosition = $state<string | undefined>(undefined);
+  let isAnimating = $state(false);
+
+  $effect(() => {
+    // Skip initial mount, animate when position changes
+    if (prevMusicalPosition !== undefined && musicalPosition !== prevMusicalPosition && musicalPosition) {
+      isAnimating = true;
+      const timeout = setTimeout(() => { isAnimating = false; }, 180);
+      return () => clearTimeout(timeout);
+    }
+    prevMusicalPosition = musicalPosition;
+  });
 </script>
 
 {#if shouldRender}
@@ -116,6 +134,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
   >
     <text
       class="beat-position-text"
+      class:animating={isAnimating}
       x={centerX}
       y="900"
       dominant-baseline="auto"
@@ -124,6 +143,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
       font-family="Georgia, serif"
       font-weight="bold"
       fill={fillColor}
+      style="transform-origin: {centerX}px 900px"
     >
       {musicalPosition}
     </text>
@@ -146,5 +166,29 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
 
   .beat-position-glyph.clickable:hover {
     opacity: 0.8 !important;
+  }
+
+  /* Scale-pulse animation when beat position changes */
+  @keyframes beat-position-pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.91);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .beat-position-text.animating {
+    animation: beat-position-pulse 180ms ease-in-out;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .beat-position-text.animating {
+      animation: none;
+    }
   }
 </style>

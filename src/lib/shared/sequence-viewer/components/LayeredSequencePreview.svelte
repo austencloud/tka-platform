@@ -1,13 +1,15 @@
 <!--
   LayeredSequencePreview.svelte
 
-  Renders a sequence preview with individually animated overlay layers.
-  Instead of re-rendering the entire image when toggles change, this component
-  composites DOM elements around a base image for instant, animated transitions.
+  Renders a sequence preview with individually animated pictograph cells.
+  Each pictograph is rendered separately, enabling:
+  - Per-cell selection animation (scale + glow) during playback
+  - Smooth start position toggle animation (cell slides in/out)
+  - Independent visibility toggles without full re-render
 
   Structure:
   - Header section (word + difficulty badge) - animates in/out
-  - Grid section (base image with beat number overlays)
+  - Grid section (individual pictograph cells, each animatable)
   - Footer section (name, notes, birthday) - each animates independently
 -->
 <script lang="ts">
@@ -15,17 +17,19 @@
   import { cubicOut } from "svelte/easing";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import type { LayerRenderOptions, LayerVisibility } from "$lib/shared/render/services/contracts/ILayerCompositor";
+  import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
   import { onMount, onDestroy, untrack } from "svelte";
   import { container } from "$lib/shared/di";
-  import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
-  import type { ILayoutCalculator } from "$lib/shared/render/services/contracts/ILayoutCalculator";
+  import { layerCompositor } from "$lib/shared/render/services/implementations/LayerCompositor";
+  import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { SequenceDifficultyCalculator } from "$lib/features/explore/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
-  import { clearSvgImageCache } from "$lib/shared/render/services/implementations/SvgImageCache";
+  import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
 
   interface Props {
     sequence: SequenceData;
@@ -51,6 +55,8 @@
     showHighlight?: boolean;               // Enable highlighting (default: false)
     // Click handler for step seeking
     onStepClick?: (stepIndex: number) => void;  // 0-indexed step that was clicked
+    // Layout override
+    columnCount?: number | null;  // Override auto-calculated column count (null = auto)
   }
 
   const {
@@ -72,7 +78,11 @@
     highlightedStepIndex = null,
     showHighlight = false,
     onStepClick,
+    columnCount = null,
   }: Props = $props();
+
+  // Constants
+  const CELL_SIZE = 240; // Render size for each pictograph
 
   // LOOP type resolver for parsing loopType to components
   const loopTypeResolver = new LOOPTypeResolver();
@@ -85,13 +95,11 @@
    * Uses caching to avoid repeated analysis.
    */
   function detectLoopComponents(seq: SequenceData): Set<LOOPComponent> | null {
-    // Check cache first
     const cacheKey = seq.id;
     if (loopDetectionCache.has(cacheKey)) {
       return loopDetectionCache.get(cacheKey)!;
     }
 
-    // Need full sequence data with steps for detection
     if (!seq.steps || seq.steps.length < 2) {
       loopDetectionCache.set(cacheKey, null);
       return null;
@@ -111,71 +119,31 @@
       loopDetectionCache.set(cacheKey, null);
       return null;
     } catch {
-      // Detection failed - cache null to avoid repeated attempts
       loopDetectionCache.set(cacheKey, null);
       return null;
     }
   }
 
-  // Dual image state for crossfade animation between light/dark modes
-  // Both images are pre-rendered on mount, then we crossfade by changing opacity
-  let lightImageUrl = $state<string | null>(null);
-  let darkImageUrl = $state<string | null>(null);
+  // Individual cell data
+  interface CellData {
+    index: number;          // -1 for start position, 0+ for steps
+    label: string;          // "Start" or step number
+    lightUrl: string;       // Light mode image URL
+    darkUrl: string;        // Dark mode image URL
+    gridColumn: number;     // 1-based CSS grid column
+    gridRow: number;        // 1-based CSS grid row
+  }
+
+  // State
+  let cells = $state<CellData[]>([]);
+  let columns = $state(0);
+  let rows = $state(0);
   let isLoading = $state(true);
-  let isRendering = false; // Guard against concurrent renders
-  let imageElement: HTMLImageElement | undefined = $state();
-  let renderedImageWidth = $state(0);
-  let renderedImageHeight = $state(0);
-
-  // Derived: current visible image URL (for overlays positioning)
-  const baseImageUrl = $derived(darkMode ? darkImageUrl : lightImageUrl);
-
-  function clearImageUrls() {
-    if (lightImageUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(lightImageUrl);
-    }
-    if (darkImageUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(darkImageUrl);
-    }
-    lightImageUrl = null;
-    darkImageUrl = null;
-  }
-
-  // Track image element dimensions after render
-  function handleImageLoad() {
-    // Use requestAnimationFrame to ensure layout is complete
-    requestAnimationFrame(() => {
-      if (imageElement) {
-        renderedImageWidth = imageElement.clientWidth;
-        renderedImageHeight = imageElement.clientHeight;
-      }
-    });
-  }
-
-  // Also update dimensions when imageElement changes (new image URL)
-  $effect(() => {
-    const el = imageElement;
-    const url = baseImageUrl;
-    if (el && url) {
-      // Re-measure when URL changes
-      requestAnimationFrame(() => {
-        // Guard against component being destroyed
-        if (el) {
-          renderedImageWidth = el.clientWidth;
-          renderedImageHeight = el.clientHeight;
-        }
-      });
-    }
-  });
+  let isRendering = false;
+  let cellWidth = $state(0);
 
   // Layout calculations
   const difficultyCalculator = new SequenceDifficultyCalculator();
-
-  // Layout dimensions
-  let columns = $state(0);
-  let rows = $state(0);
-  let imageWidth = $state(0);
-  let imageHeight = $state(0);
 
   // Derive word from sequence (with null safety)
   const derivedWord = $derived.by(() => {
@@ -189,22 +157,18 @@
   // Calculate difficulty level (with null safety)
   const difficultyLevel = $derived.by(() => {
     if (!sequence?.steps?.length) return 1;
-    // Spread to convert readonly array to mutable for the calculator
     return difficultyCalculator.calculateDifficultyLevel([...sequence.steps]);
   });
 
   // Parse LOOP components for the glyph
-  // Priority: 1) Use existing loopType if set, 2) Detect on-demand if steps available
   const loopComponents = $derived.by(() => {
     const loopType = sequence.loopType;
 
-    // If loopType is explicitly set, use it
     if (loopType && loopType !== "freeform") {
       const components = loopTypeResolver.parseComponents(loopType);
       return components.size > 0 ? components : null;
     }
 
-    // If no loopType, try to detect it on-demand
     if (!loopType && sequence.steps) {
       return detectLoopComponents(sequence);
     }
@@ -220,7 +184,7 @@
   // Show footer when any footer element is enabled
   const showFooter = $derived(showCreatorName || showNotes || showBirthday);
 
-  // Format birthday date (current date when export is created)
+  // Format birthday date
   const birthdayDate = $derived.by(() => {
     const date = new Date();
     const month = date.getMonth() + 1;
@@ -244,261 +208,333 @@
 
   const currentLevelStyle = $derived(levelStyles[difficultyLevel] ?? defaultLevelStyle);
 
-  // Calculate beat positions for beat number overlays (percentage-based for scaling)
-  // Matches StepNumber.svelte: x="50", y="50" in 950x950 viewBox = ~5.26% from top-left
-  // Font sizes: 100/950 = 10.526% for numbers, 80/950 = 8.42% for "Start"
-  const beatPositions = $derived.by(() => {
-    if (!columns || !rows) return [];
-    const steps = sequence.steps ?? [];
-    if (!steps.length) return [];
-
-    const cellWidthPct = 100 / columns;
-    const cellHeightPct = 100 / rows;
-    // Position within cell: 50/950 ≈ 5.26%
-    const inCellOffsetPct = 5.26;
-    const positions: Array<{ leftPct: number; topPct: number; label: string; isStart: boolean; stepIndex: number }> = [];
-    const startColumn = includeStartPosition ? 1 : 0;
-    const stepsPerRow = columns - startColumn;
-
-    // Start position (stepIndex = -1 for start position, won't match highlight)
-    if (includeStartPosition && sequence.startPosition) {
-      positions.push({
-        leftPct: cellWidthPct * (inCellOffsetPct / 100),
-        topPct: cellHeightPct * (inCellOffsetPct / 100),
-        label: "Start",
-        isStart: true,
-        stepIndex: -1
-      });
+  // Filtered cells based on includeStartPosition
+  const visibleCells = $derived.by(() => {
+    if (includeStartPosition) {
+      return cells;
     }
-
-    // Beat positions
-    for (let i = 0; i < steps.length; i++) {
-      const col = startColumn + (i % stepsPerRow);
-      const row = Math.floor(i / stepsPerRow);
-      positions.push({
-        leftPct: col * cellWidthPct + cellWidthPct * (inCellOffsetPct / 100),
-        topPct: row * cellHeightPct + cellHeightPct * (inCellOffsetPct / 100),
-        label: String(i + 1),
-        isStart: false,
-        stepIndex: i
-      });
-    }
-
-    return positions;
+    // Filter out start position (index === -1)
+    return cells.filter(cell => cell.index !== -1);
   });
 
-  // Calculate font sizes based on cell dimensions
-  // StepNumber.svelte uses font-size 100 in 950x950 viewBox = 10.526%
-  // "Start" uses font-size 80 = 8.42%
-  const beatFontSize = $derived.by(() => {
-    if (!renderedImageWidth || !columns) return 12;
-    const cellWidth = renderedImageWidth / columns;
-    return Math.max(8, cellWidth * 0.10526); // 10.526% of cell width, min 8px
+  // Effective columns (changes when start position is toggled off)
+  const effectiveColumns = $derived.by(() => {
+    if (!columns) return 0;
+    if (includeStartPosition) return columns;
+    // When start position is hidden, first row might have one less item
+    // But we keep the same column count for layout consistency
+    return columns;
+  });
+
+  // Compute aspect ratio for the entire preview (width / height)
+  // This ensures the preview maintains correct proportions regardless of container size
+  const previewAspectRatio = $derived.by(() => {
+    if (!columns || !rows) return 1;
+
+    // Grid aspect: columns (width) / rows (height) of square cells
+    const gridWidth = columns;
+    const gridHeight = rows;
+
+    // Header adds ~1/3 cell height, footer adds ~1/7 cell height
+    const headerFraction = showHeader ? 1/3 : 0;
+    const footerFraction = showFooter ? 1/7 : 0;
+
+    // Total height in cell-height units
+    const totalHeight = gridHeight + headerFraction + footerFraction;
+
+    // Aspect ratio = width / height
+    return gridWidth / totalHeight;
+  });
+
+  // Scaled sizes based on grid element width
+  const scaledHeaderHeight = $derived.by(() => {
+    if (!cellWidth) return 0;
+    return Math.floor(cellWidth / 3);
+  });
+
+  const scaledFooterHeight = $derived.by(() => {
+    if (!cellWidth) return 0;
+    return Math.floor(cellWidth / 7);
+  });
+
+  const wordFontSize = $derived(Math.max(10, scaledHeaderHeight * 0.9));
+  const badgeSize = $derived(Math.max(16, scaledHeaderHeight * 0.9));
+  const badgePadding = $derived(Math.max(2, scaledHeaderHeight * 0.05));
+  const badgeNumberFontSize = $derived(Math.max(8, Math.floor(badgeSize / 1.75)));
+  const footerFontSize = $derived(Math.max(10, Math.floor(scaledFooterHeight * 0.55)));
+  const footerMargin = $derived(Math.max(8, Math.floor(scaledFooterHeight * 0.3)));
+
+  // Beat number font size (10.526% of cell width, matching StepNumber.svelte)
+  const beatNumberFontSize = $derived.by(() => {
+    if (!cellWidth) return 12;
+    return Math.max(8, cellWidth * 0.10526);
   });
 
   const startFontSize = $derived.by(() => {
-    if (!renderedImageWidth || !columns) return 10;
-    const cellWidth = renderedImageWidth / columns;
-    return Math.max(7, cellWidth * 0.0842); // 8.42% of cell width, min 7px
+    if (!cellWidth) return 10;
+    return Math.max(7, cellWidth * 0.0842);
   });
 
-  // ===== PIXEL-PERFECT SIZING TO MATCH EXPORT =====
-  // ImageComposer uses stepSize=240 (same as our render), then calculates:
-  // - headerHeight = Math.floor(stepSize / 3)
-  // - footerHeight = Math.floor(stepSize / 7)
-  // TextRenderer then uses these heights to calculate font sizes.
-  // We need to apply the same formulas, scaled by the display ratio.
+  /**
+   * Render a single pictograph to a data URL
+   */
+  async function renderPictograph(
+    pictographData: any,
+    stepNumber: number | undefined,
+    isDark: boolean
+  ): Promise<string> {
+    const compositor = layerCompositor;
+    const pictographPreparer = container.items.pictographPreparer as IPictographPreparer;
 
-  const RENDER_BEAT_SIZE = 240; // Must match renderBaseImage stepSize
-
-  // Scale factor: how much the rendered image is scaled from original
-  const scaleFactor = $derived.by(() => {
-    if (!renderedImageWidth || !columns) return 1;
-    const originalWidth = columns * RENDER_BEAT_SIZE;
-    return renderedImageWidth / originalWidth;
-  });
-
-  // Header height: stepSize / 3 (matches ImageComposer.calculateHeaderHeight)
-  const scaledHeaderHeight = $derived.by(() => {
-    const baseHeaderHeight = Math.floor(RENDER_BEAT_SIZE / 3); // 80px at full size
-    return Math.floor(baseHeaderHeight * scaleFactor);
-  });
-
-  // Footer height: stepSize / 7 (matches ImageComposer.calculateFooterHeight)
-  const scaledFooterHeight = $derived.by(() => {
-    const baseFooterHeight = Math.floor(RENDER_BEAT_SIZE / 7); // 34px at full size
-    return Math.floor(baseFooterHeight * scaleFactor);
-  });
-
-  // Word font size: headerHeight * 0.9 (matches TextRenderer.renderWordHeader)
-  const wordFontSize = $derived(Math.max(10, scaledHeaderHeight * 0.9));
-
-  // Badge size: headerHeight * 0.9 (matches TextRenderer.renderWordHeader)
-  const badgeSize = $derived(Math.max(16, scaledHeaderHeight * 0.9));
-
-  // Badge padding from edge: headerHeight * 0.05
-  const badgePadding = $derived(Math.max(2, scaledHeaderHeight * 0.05));
-
-  // Badge number font size: badgeSize / 1.75 (matches TextRenderer.renderLevelBadge)
-  const badgeNumberFontSize = $derived(Math.max(8, Math.floor(badgeSize / 1.75)));
-
-  // Footer font size: Math.max(10, floor(footerHeight * 0.55)) (matches TextRenderer.renderUserInfo)
-  const footerFontSize = $derived(Math.max(10, Math.floor(scaledFooterHeight * 0.55)));
-
-  // Footer margin: Math.max(8, floor(footerHeight * 0.3))
-  const footerMargin = $derived(Math.max(8, Math.floor(scaledFooterHeight * 0.3)));
-
-  // Helper to render a single image variant
-  async function renderImageVariant(isDark: boolean): Promise<{ url: string; width: number; height: number }> {
-    const renderer = container.items.sequenceRenderer;
-
-    const blob = await renderer.renderSequenceToBlob(sequence, {
-      stepSize: 240,
-      format: "PNG",
-      quality: 1.0,
-      includeStartPosition,
-      addStepNumbers: false, // We overlay these
-      addWord: false, // We overlay this
-      addDifficultyLevel: false, // We overlay this
-      addUserInfo: false, // We overlay this
-      addReversalSymbols: true,
-      visibilityOverrides: {
-        darkMode: isDark,
-      },
+    // Prepare the pictograph data
+    const prepared = await pictographPreparer.prepareSingle(pictographData, {
+      themeMode: isDark ? "dark" : "light",
+      bluePropType: bluePropType,
+      redPropType: catDogModeEnabled ? redPropType : bluePropType,
     });
 
-    const url = URL.createObjectURL(blob);
+    // Render options
+    const options: LayerRenderOptions = {
+      size: CELL_SIZE,
+      darkMode: isDark,
+      showNonRadialPoints: true,
+      handPointVisibility: "all",
+      bluePropType: bluePropType,
+      redPropType: catDogModeEnabled ? redPropType : bluePropType,
+    };
 
-    // Preload the image
-    const img = new Image();
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = reject;
-      img.src = url;
-    });
+    // Visibility settings
+    const visibility: LayerVisibility = {
+      showTKA: true,
+      showReversals: true,
+    };
 
-    return { url, width: img.width, height: img.height };
+    // Compose the pictograph
+    const result = await compositor.compose(
+      prepared,
+      options,
+      visibility,
+      showStepNumbers ? stepNumber : undefined
+    );
+
+    // Convert canvas to data URL
+    return result.canvas.toDataURL("image/png");
   }
 
-  // Render both light and dark images on mount for instant crossfade
-  async function renderBothImages() {
-    // Guard: need valid sequence with steps
+  /**
+   * Calculate grid position for a step index.
+   * With start position: first row has all columns, subsequent rows offset by 1.
+   * Layout example for 16 steps (5 cols × 4 rows):
+   *   Row 1: Start(col 1), 1(col 2), 2(col 3), 3(col 4), 4(col 5)
+   *   Row 2: 5(col 2), 6(col 3), 7(col 4), 8(col 5)
+   *   Row 3: 9(col 2), 10(col 3), 11(col 4), 12(col 5)
+   *   Row 4: 13(col 2), 14(col 3), 15(col 4), 16(col 5)
+   */
+  function calculateGridPosition(stepIndex: number, cols: number): { gridColumn: number; gridRow: number } {
+    // Start position is always at column 1, row 1
+    if (stepIndex === -1) {
+      return { gridColumn: 1, gridRow: 1 };
+    }
+
+    // Steps per row (excluding the start column after row 1)
+    const stepsPerRow = cols - 1;
+
+    // First row after start position
+    const firstRowSteps = cols - 1; // How many steps fit in row 1 after start
+
+    if (stepIndex < firstRowSteps) {
+      // This step is in the first row (same row as start)
+      // Column is offset by 2 (col 1 is start)
+      return { gridColumn: stepIndex + 2, gridRow: 1 };
+    }
+
+    // Steps after the first row
+    const remainingIndex = stepIndex - firstRowSteps;
+    const row = Math.floor(remainingIndex / stepsPerRow) + 2; // +2 because row 1 is start row
+    const col = (remainingIndex % stepsPerRow) + 2; // +2 because col 1 is start column
+
+    return { gridColumn: col, gridRow: row };
+  }
+
+  /**
+   * Render all cells (start position + steps)
+   */
+  async function renderAllCells() {
     if (!sequence?.steps?.length) {
       isLoading = false;
       return;
     }
 
-    // Guard against concurrent renders
-    if (isRendering) {
-      return;
-    }
+    if (isRendering) return;
     isRendering = true;
-    // Don't set isLoading = true here - we want no spinner
 
     try {
-      // Clear ALL caches to ensure fresh renders with correct theme colors
-      // This prevents stale cache entries from causing wrong colors
-      // 1. PictographPreparer cache (arrow/prop positions + colored SVGs)
-      const preparer = container.items.pictographPreparer as { clearCache?: () => void } | undefined;
-      if (preparer?.clearCache) {
-        preparer.clearCache();
-      }
-      // 2. LayerCompositor cache (composited pictograph layers)
-      const layerCompositor = container.items.layerCompositor as { clearCache?: () => void } | undefined;
-      if (layerCompositor?.clearCache) {
-        layerCompositor.clearCache();
-      }
-      // 3. SvgImageCache (HTMLImageElement cache for arrow/prop SVGs)
-      // CRITICAL: The old hash function only hashed first 100 chars, causing
-      // light/dark mode arrows with same prefix to collide
-      clearSvgImageCache();
-
-      const layoutService = container.items.layoutCalculator;
+      const layoutService = layoutCalculator;
 
       // Calculate layout
       const stepCount = sequence.steps.length;
-      const [cols, rws] = layoutService.calculateLayout(stepCount, includeStartPosition);
+      let cols: number;
+      let rws: number;
+
+      if (columnCount !== null && columnCount > 0) {
+        // User-specified column count
+        cols = columnCount;
+        // Calculate rows: first row has (cols - 1) steps, subsequent rows have (cols - 1) each
+        // Total items = 1 (start) + stepCount
+        const stepsPerRow = cols - 1;
+        const firstRowSteps = Math.min(stepsPerRow, stepCount);
+        const remainingSteps = stepCount - firstRowSteps;
+        rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
+      } else {
+        // Auto-calculate layout
+        [cols, rws] = layoutService.calculateLayout(stepCount, true);
+      }
+
       columns = cols;
       rows = rws;
 
-      // Render both light and dark versions in parallel
-      const [lightResult, darkResult] = await Promise.all([
-        renderImageVariant(false),
-        renderImageVariant(true),
-      ]);
+      const newCells: CellData[] = [];
 
-      // Store dimensions from whichever matches current mode
-      imageWidth = darkMode ? darkResult.width : lightResult.width;
-      imageHeight = darkMode ? darkResult.height : lightResult.height;
+      // Render start position
+      if (sequence.startPosition || sequence.steps[0]) {
+        const startData = sequence.startPosition || createStartPositionFromBeatStart(sequence.steps[0]);
 
-      // Clear old URLs before setting new ones
-      clearImageUrls();
+        const [lightUrl, darkUrl] = await Promise.all([
+          renderPictograph(startData, undefined, false),
+          renderPictograph(startData, undefined, true),
+        ]);
 
-      // Set both URLs - crossfade handled by CSS
-      lightImageUrl = lightResult.url;
-      darkImageUrl = darkResult.url;
+        const { gridColumn, gridRow } = calculateGridPosition(-1, cols);
+        newCells.push({
+          index: -1,
+          label: "Start",
+          lightUrl,
+          darkUrl,
+          gridColumn,
+          gridRow,
+        });
+      }
 
+      // Render each step
+      for (let i = 0; i < sequence.steps.length; i++) {
+        const step = sequence.steps[i];
+        const [lightUrl, darkUrl] = await Promise.all([
+          renderPictograph(step, i + 1, false),
+          renderPictograph(step, i + 1, true),
+        ]);
+
+        const { gridColumn, gridRow } = calculateGridPosition(i, cols);
+        newCells.push({
+          index: i,
+          label: String(i + 1),
+          lightUrl,
+          darkUrl,
+          gridColumn,
+          gridRow,
+        });
+      }
+
+      // Clear old URLs
+      clearCellUrls();
+
+      cells = newCells;
     } catch (error) {
-      console.error("Failed to render images:", error);
+      console.error("Failed to render cells:", error);
     } finally {
       isLoading = false;
       isRendering = false;
     }
   }
 
-  // Track if initial render is complete (to skip effect on mount)
+  function clearCellUrls() {
+    // Data URLs don't need to be revoked, but if we switch to blob URLs we'd do it here
+    cells = [];
+  }
+
+  // Track the preview stack element for ResizeObserver
+  let previewStackElement: HTMLDivElement | undefined = $state();
+  let resizeObserver: ResizeObserver | undefined;
+
+  // Track cell width for responsive sizing using ResizeObserver
+  function updateCellWidth() {
+    if (previewStackElement && columns > 0) {
+      // Calculate cell width from the preview stack width
+      const stackWidth = previewStackElement.clientWidth;
+      cellWidth = stackWidth / columns;
+    }
+  }
+
+  // Track if initial render is complete
   let hasMounted = false;
 
-  // Re-render both images when props OTHER than darkMode change
-  // (darkMode toggle is handled by CSS crossfade, no re-render needed)
+  // Re-render when relevant props change
   $effect(() => {
-    // Access props to create reactive dependencies (these trigger the effect)
-    // NOTE: darkMode is NOT included - we pre-render both modes
     const _bluePropType = bluePropType;
     const _redPropType = redPropType;
     const _catDogModeEnabled = catDogModeEnabled;
-    const _includeStartPosition = includeStartPosition;
+    const _showStepNumbers = showStepNumbers;
+    const _columnCount = columnCount;
 
-    // Skip initial mount - handled by onMount
-    // Use untrack to prevent renderBothImages from creating additional dependencies
     if (hasMounted) {
       untrack(() => {
-        renderBothImages();
+        renderAllCells();
       });
     }
   });
 
+  // Set up ResizeObserver for proper responsive sizing
+  $effect(() => {
+    if (previewStackElement) {
+      // Clean up previous observer
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+
+      // Create new observer
+      resizeObserver = new ResizeObserver(() => {
+        updateCellWidth();
+      });
+      resizeObserver.observe(previewStackElement);
+
+      // Initial measurement
+      updateCellWidth();
+    }
+
+    return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  });
+
   onMount(() => {
-    renderBothImages().then(() => {
-      // Mark as mounted AFTER first render completes
+    renderAllCells().then(() => {
       hasMounted = true;
     });
   });
 
   onDestroy(() => {
-    // Clear all image URLs on component destroy
-    clearImageUrls();
+    clearCellUrls();
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+    }
   });
 </script>
 
 <div class="layered-preview" class:dark-mode={darkMode}>
-  {#if isLoading && !lightImageUrl && !darkImageUrl}
+  {#if isLoading && cells.length === 0}
     <div class="loading-placeholder">
       <div class="spinner"></div>
     </div>
-  {:else if lightImageUrl || darkImageUrl}
-    <div
-      class="preview-stack"
-      style={renderedImageWidth > 0 ? `width: ${renderedImageWidth}px;` : ''}
-    >
-      <!-- Header section - matches TextRenderer.renderWordHeader layout -->
+  {:else if cells.length > 0}
+    <div class="preview-stack" style="aspect-ratio: {previewAspectRatio};" bind:this={previewStackElement}>
+      <!-- Header section -->
       {#if showHeader}
         <div
           class="header-section"
           style="height: {scaledHeaderHeight}px;"
           transition:fly={{ y: -20, duration: 250, easing: cubicOut }}
         >
-          <!-- Difficulty badge - absolute positioned at top-left -->
           {#if showDifficultyLevel}
             <div
               class="difficulty-badge"
@@ -517,7 +553,6 @@
             </div>
           {/if}
 
-          <!-- Word text - centered across full width -->
           {#if showWord && derivedWord}
             <span
               class="word-text"
@@ -528,14 +563,10 @@
             </span>
           {/if}
 
-          <!-- LOOP icon strip - absolute positioned at top-right -->
           {#if showLoopGlyph && loopComponents}
             <div
               class="loop-icon-badge"
-              style="
-                height: {badgeSize}px;
-                right: {badgePadding}px;
-              "
+              style="height: {badgeSize}px; right: {badgePadding}px;"
               transition:scale={{ duration: 200, easing: cubicOut }}
             >
               <LOOPIconStrip
@@ -549,60 +580,47 @@
         </div>
       {/if}
 
-      <!-- Grid section with dual images for crossfade -->
-      <div class="grid-section">
-        <!-- Light mode image (fades out when dark mode active) -->
-        {#if lightImageUrl}
-          <img
-            class="base-image light-image"
-            class:hidden={darkMode}
-            src={lightImageUrl}
-            alt="Sequence preview (light)"
-            draggable="false"
-            bind:this={imageElement}
-            onload={handleImageLoad}
-          />
-        {/if}
-        <!-- Dark mode image (fades in when dark mode active) -->
-        {#if darkImageUrl}
-          <img
-            class="base-image dark-image"
-            class:visible={darkMode}
-            src={darkImageUrl}
-            alt="Sequence preview (dark)"
-            draggable="false"
-          />
-        {/if}
-
-        <!-- Beat numbers overlay - centered to align with centered image -->
-        {#if showStepNumbers && renderedImageWidth > 0}
+      <!-- Grid section with individual pictograph cells -->
+      <div
+        class="grid-section"
+        style="grid-template-columns: repeat({effectiveColumns}, 1fr); grid-template-rows: repeat({rows}, 1fr);"
+      >
+        {#each visibleCells as cell (cell.index)}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
-            class="beat-numbers-overlay"
-            style="width: {renderedImageWidth}px; height: {renderedImageHeight}px; top: 50%; left: 50%; transform: translate(-50%, -50%);"
-            transition:fade={{ duration: 200 }}
+            class="pictograph-cell"
+            class:current={showHighlight && highlightedStepIndex === cell.index}
+            class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
+            class:clickable={onStepClick && cell.index >= 0}
+            style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
+            onclick={() => onStepClick && cell.index >= 0 && onStepClick(cell.index)}
+            onkeydown={(e) => e.key === 'Enter' && onStepClick && cell.index >= 0 && onStepClick(cell.index)}
+            role={onStepClick && cell.index >= 0 ? 'button' : undefined}
+            tabindex={onStepClick && cell.index >= 0 ? 0 : undefined}
+            aria-label={onStepClick && cell.index >= 0 ? `Go to step ${cell.label}` : undefined}
+            transition:scale={{ duration: 250, easing: cubicOut }}
           >
-            {#each beatPositions as pos}
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div
-                class="beat-number"
-                class:highlighted={showHighlight && highlightedStepIndex === pos.stepIndex}
-                class:played={showHighlight && highlightedStepIndex !== null && pos.stepIndex < highlightedStepIndex && pos.stepIndex !== -1}
-                class:clickable={onStepClick && pos.stepIndex >= 0}
-                style="left: {pos.leftPct}%; top: {pos.topPct}%; font-size: {pos.isStart ? startFontSize : beatFontSize}px;"
-                onclick={() => onStepClick && pos.stepIndex >= 0 && onStepClick(pos.stepIndex)}
-                onkeydown={(e) => e.key === 'Enter' && onStepClick && pos.stepIndex >= 0 && onStepClick(pos.stepIndex)}
-                role={onStepClick && pos.stepIndex >= 0 ? 'button' : undefined}
-                tabindex={onStepClick && pos.stepIndex >= 0 ? 0 : undefined}
-                aria-label={onStepClick && pos.stepIndex >= 0 ? `Go to step ${pos.label}` : undefined}
-              >
-                {pos.label}
-              </div>
-            {/each}
+            <!-- Light mode image -->
+            <img
+              class="cell-image light-image"
+              class:hidden={darkMode}
+              src={cell.lightUrl}
+              alt={cell.label}
+              draggable="false"
+            />
+            <!-- Dark mode image -->
+            <img
+              class="cell-image dark-image"
+              class:visible={darkMode}
+              src={cell.darkUrl}
+              alt={cell.label}
+              draggable="false"
+            />
           </div>
-        {/if}
+        {/each}
       </div>
 
-      <!-- Footer section - matches TextRenderer.renderUserInfo layout -->
+      <!-- Footer section -->
       {#if showFooter}
         <div
           class="footer-section"
@@ -651,6 +669,9 @@
     min-height: 0;
     min-width: 0;
     overflow: hidden;
+    box-sizing: border-box;
+    /* Padding to accommodate highlight scale + glow on edge cells */
+    padding: 12px;
   }
 
   .loading-placeholder {
@@ -678,22 +699,25 @@
   .preview-stack {
     display: flex;
     flex-direction: column;
+    /* Constrain to fit within container while maintaining aspect ratio */
     max-width: 100%;
     max-height: 100%;
-    /* Width is set via inline style from renderedImageWidth */
+    width: auto;
+    height: auto;
+    /* Allow highlight glow to show on edges */
+    overflow: visible;
   }
 
-  /* Header section - matches TextRenderer.renderWordHeader */
+  /* Header section */
   .header-section {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Height set via inline style from scaledHeaderHeight() */
     background: rgba(245, 245, 245, 0.98);
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     flex-shrink: 0;
-    width: 100%; /* Fill parent (preview-stack) width */
+    width: 100%;
     box-sizing: border-box;
   }
 
@@ -702,13 +726,10 @@
     border-bottom-color: rgba(255, 255, 255, 0.15);
   }
 
-  /* Difficulty badge - absolute positioned, size set via inline style */
   .difficulty-badge {
     position: absolute;
-    /* left set via inline style from badgePadding() */
     top: 50%;
     transform: translateY(-50%);
-    /* width, height, font-size set via inline style */
     border-radius: 50%;
     border: 1px solid black;
     display: flex;
@@ -719,11 +740,9 @@
     flex-shrink: 0;
   }
 
-  /* Word text - centered across full width, font-size set via inline style */
   .word-text {
     font-family: Georgia, serif;
     font-weight: 700;
-    /* font-size set via inline style from wordFontSize() */
     color: #1f2937;
   }
 
@@ -731,13 +750,10 @@
     color: #ffffff;
   }
 
-  /* LOOP icon strip badge - absolute positioned at top-right */
   .loop-icon-badge {
     position: absolute;
-    /* right set via inline style from badgePadding() */
     top: 50%;
     transform: translateY(-50%);
-    /* height set via inline style */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -751,30 +767,49 @@
     background: rgba(255, 255, 255, 0.1);
   }
 
-  /* Grid section */
+  /* Grid section - CSS Grid layout */
   .grid-section {
-    position: relative;
+    display: grid;
+    gap: 0;
     min-height: 0;
     min-width: 0;
-    width: 100%; /* Fill parent (preview-stack) width */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+    width: 100%;
+    /* Fill remaining space in flex column */
+    flex: 1;
+    /* Ensure grid doesn't overflow container */
+    max-width: 100%;
+    /* Allow highlight overflow to be visible */
+    overflow: visible;
   }
 
-  .base-image {
+  /* Individual pictograph cell */
+  .pictograph-cell {
+    position: relative;
+    /* Use padding-bottom trick for aspect ratio to prevent overflow */
+    aspect-ratio: 1;
+    overflow: visible; /* Allow selection scale to show */
+    transition:
+      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 0.2s ease;
+    /* Subtle border for cell separation */
+    box-sizing: border-box;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .dark-mode .pictograph-cell {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .cell-image {
     display: block;
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
     -webkit-user-drag: none;
     user-select: none;
   }
 
-  /* Crossfade animation for light/dark mode toggle */
+  /* Light/dark mode crossfade */
   .light-image {
     opacity: 1;
     transition: opacity 0.25s ease-out;
@@ -786,9 +821,8 @@
 
   .dark-image {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: 0;
+    left: 0;
     opacity: 0;
     transition: opacity 0.25s ease-out;
   }
@@ -797,90 +831,68 @@
     opacity: 1;
   }
 
-  /* Respect reduced motion preference */
-  @media (prefers-reduced-motion: reduce) {
-    .light-image,
-    .dark-image {
-      transition: none;
+  /* Clickable cells */
+  .pictograph-cell.clickable {
+    cursor: pointer;
+  }
+
+  .pictograph-cell.clickable:hover {
+    z-index: 5;
+    transform: scale(1.02);
+  }
+
+  .pictograph-cell.clickable:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: -2px;
+    z-index: 5;
+  }
+
+  /* Current step - "Elevated Luxury" selection with scale + glow */
+  .pictograph-cell.current {
+    z-index: 10;
+    transform: scale(1.06);
+    box-shadow:
+      0 0 12px rgba(251, 191, 36, 0.6),
+      0 0 0 3px rgba(251, 191, 36, 0.9);
+    animation: cellSelectionGlowIn 0.4s ease-out forwards;
+  }
+
+  @keyframes cellSelectionGlowIn {
+    0% {
+      box-shadow:
+        0 0 0 rgba(251, 191, 36, 0),
+        0 0 0 0 rgba(251, 191, 36, 0);
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.08);
+    }
+    100% {
+      box-shadow:
+        0 0 12px rgba(251, 191, 36, 0.6),
+        0 0 0 3px rgba(251, 191, 36, 0.9);
+      transform: scale(1.06);
     }
   }
 
-  .beat-numbers-overlay {
-    position: absolute;
-    /* Allow pointer events to pass through to clickable beat numbers */
-  }
-
-  .beat-number {
-    position: absolute;
-    font-family: Georgia, serif;
-    font-weight: bold;
-    color: #231f20;
-    white-space: nowrap;
-    line-height: 1;
-    pointer-events: none;
-  }
-
-  .dark-mode .beat-number {
-    color: #ffffff;
-  }
-
-  /* Clickable beat numbers for seeking */
-  .beat-number.clickable {
-    pointer-events: auto;
-    cursor: pointer;
-    border-radius: 4px;
-    padding: 2px 4px;
-    margin: -2px -4px;
-    transition: background-color 0.15s ease, transform 0.1s ease;
-  }
-
-  .beat-number.clickable:hover {
-    background: rgba(99, 102, 241, 0.2);
-    transform: scale(1.1);
-  }
-
-  .beat-number.clickable:focus-visible {
-    outline: 2px solid rgba(99, 102, 241, 0.8);
-    outline-offset: 2px;
-  }
-
-  /* Step highlighting for animation sync */
-  .beat-number.highlighted {
-    background: rgba(251, 191, 36, 0.15);
-    border: 2px solid rgba(251, 191, 36, 0.8);
-    box-shadow:
-      0 0 12px rgba(251, 191, 36, 0.4),
-      0 0 24px rgba(251, 191, 36, 0.2);
-    border-radius: 4px;
-    padding: 2px 4px;
-    margin: -2px -4px; /* Offset padding to maintain position */
-    color: #fbbf24; /* Golden amber text for highlighted */
-    transition: all 0.15s ease-out;
-  }
-
-  .dark-mode .beat-number.highlighted {
-    color: #fbbf24;
-  }
-
-  /* Played beats (already passed) are dimmed */
-  .beat-number.played {
-    opacity: 0.5;
+  /* Played cells (already passed) - subtle dim */
+  .pictograph-cell.played {
+    opacity: 0.6;
     transition: opacity 0.15s ease-out;
   }
 
-  /* Footer section - height, padding, font-size set via inline style */
+  /* Footer section */
   .footer-section {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    /* height, padding-left, padding-right, font-size set via inline style */
     background: rgba(245, 245, 245, 0.98);
     border-top: 1px solid rgba(0, 0, 0, 0.1);
     font-family: Georgia, serif;
     color: black;
     flex-shrink: 0;
-    width: 100%; /* Fill parent (preview-stack) width */
+    width: 100%;
     box-sizing: border-box;
   }
 
@@ -904,12 +916,24 @@
     margin-left: auto;
   }
 
-  /* Responsive adjustments no longer needed - scaling is handled via JS calculations */
-
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
     .spinner {
       animation: none;
+    }
+
+    .pictograph-cell {
+      transition: none;
+    }
+
+    .pictograph-cell.current {
+      animation: none;
+      transform: scale(1);
+    }
+
+    .light-image,
+    .dark-image {
+      transition: none;
     }
   }
 </style>

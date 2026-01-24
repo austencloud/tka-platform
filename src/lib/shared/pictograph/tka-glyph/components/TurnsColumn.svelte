@@ -31,7 +31,7 @@ Props:
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 
   let {
-    turnsTuple = "(s, 0, 0)",
+    turnsTuple = "(0, 0)",
     letter = null,
     letterDimensions = { width: 100, height: 100 },
     pictographData = undefined,
@@ -197,6 +197,38 @@ Props:
   const bottomImagePath = $derived(() =>
     getTurnNumberImagePath(parsedTurns().bottom)
   );
+
+  // ============================================================================
+  // TURNS CHANGE ANIMATION
+  // ============================================================================
+  // Track when turn values change to trigger subtle scale-pulse animations.
+
+  let prevTopTurn = $state<number | null | undefined>(undefined);
+  let prevBottomTurn = $state<number | null | undefined>(undefined);
+  let isTopAnimating = $state(false);
+  let isBottomAnimating = $state(false);
+
+  $effect(() => {
+    const currentTop = parsedTurns().top;
+    // Skip initial mount, animate when value changes
+    if (prevTopTurn !== undefined && currentTop !== prevTopTurn && currentTop !== null) {
+      isTopAnimating = true;
+      const timeout = setTimeout(() => { isTopAnimating = false; }, 180);
+      return () => clearTimeout(timeout);
+    }
+    prevTopTurn = currentTop;
+  });
+
+  $effect(() => {
+    const currentBottom = parsedTurns().bottom;
+    // Skip initial mount, animate when value changes
+    if (prevBottomTurn !== undefined && currentBottom !== prevBottomTurn && currentBottom !== null) {
+      isBottomAnimating = true;
+      const timeout = setTimeout(() => { isBottomAnimating = false; }, 180);
+      return () => clearTimeout(timeout);
+    }
+    prevBottomTurn = currentBottom;
+  });
 </script>
 
 <!-- Turns Column Group - only render when visible (or in preview mode)
@@ -259,7 +291,9 @@ Props:
     {#if showTop()}
       <g
         class="turn-number top"
+        class:animating={isTopAnimating}
         transform="translate({positions().top.x}, {positions().top.y})"
+        style="transform-origin: {positions().top.x + columnWidth() / 2}px {positions().top.y + numberHeight / 2}px"
       >
         <image
           href={topImagePath()}
@@ -277,7 +311,9 @@ Props:
     {#if showBottom()}
       <g
         class="turn-number bottom"
+        class:animating={isBottomAnimating}
         transform="translate({positions().bottom.x}, {positions().bottom.y})"
+        style="transform-origin: {positions().bottom.x + columnWidth() / 2}px {positions().bottom.y + numberHeight / 2}px"
       >
         <image
           href={bottomImagePath()}
@@ -327,5 +363,29 @@ Props:
   .turn-number image {
     /* Smooth rendering for number SVGs */
     image-rendering: optimizeQuality;
+  }
+
+  /* Scale-pulse animation when turn value changes */
+  @keyframes turn-pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.88);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .turn-number.animating {
+    animation: turn-pulse 180ms ease-in-out;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .turn-number.animating {
+      animation: none;
+    }
   }
 </style>

@@ -133,9 +133,112 @@ Color-coded dots indicate which motion (blue/red) is reversing between pictograp
     }
     return CENTER_Y;
   });
+
+  // ============================================================================
+  // REVERSAL CHANGE ANIMATION
+  // ============================================================================
+  // Track reversal state changes to trigger CSS animations.
+  // Use untracked previous values to avoid reactivity loops.
+
+  let prevBlue: boolean | null = null;
+  let prevRed: boolean | null = null;
+  let isBlueExiting = $state(false);
+  let isRedExiting = $state(false);
+
+  // Blue dot state change detection
+  $effect(() => {
+    const current = effectiveBlueReversal;
+
+    // Skip initial mount
+    if (prevBlue === null) {
+      prevBlue = current;
+      return;
+    }
+
+    // Only react to actual changes
+    if (prevBlue !== current) {
+      if (prevBlue && !current) {
+        // Was visible, now hidden - trigger exit animation
+        isBlueExiting = true;
+        const timeout = setTimeout(() => { isBlueExiting = false; }, 200);
+        prevBlue = current;
+        return () => clearTimeout(timeout);
+      }
+      prevBlue = current;
+    }
+  });
+
+  // Red dot state change detection
+  $effect(() => {
+    const current = effectiveRedReversal;
+
+    // Skip initial mount
+    if (prevRed === null) {
+      prevRed = current;
+      return;
+    }
+
+    // Only react to actual changes
+    if (prevRed !== current) {
+      if (prevRed && !current) {
+        // Was visible, now hidden - trigger exit animation
+        isRedExiting = true;
+        const timeout = setTimeout(() => { isRedExiting = false; }, 200);
+        prevRed = current;
+        return () => clearTimeout(timeout);
+      }
+      prevRed = current;
+    }
+  });
+
+  // For smooth exit animations, we need to keep dots in DOM but hide them with CSS
+  // We use a delayed unmount pattern - keep component mounted briefly after reversals disappear
+  const hasAnyReversal = $derived(blueReversal || redReversal);
+
+  // Track if we should keep the component mounted for exit animation
+  let keepMountedForExit = $state(false);
+  let exitTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  // Track previous state to detect when reversals disappear
+  let hadReversalsBefore = $state(false);
+
+  $effect(() => {
+    const currentHasReversals = hasAnyReversal;
+
+    if (currentHasReversals) {
+      // Reversals present - clear any pending unmount and ensure mounted
+      if (exitTimeoutId) {
+        clearTimeout(exitTimeoutId);
+        exitTimeoutId = null;
+      }
+      keepMountedForExit = false;
+      hadReversalsBefore = true;
+    } else if (!currentHasReversals && hadReversalsBefore) {
+      // Reversals just disappeared - keep mounted briefly for exit animation
+      keepMountedForExit = true;
+      exitTimeoutId = setTimeout(() => {
+        keepMountedForExit = false;
+        hadReversalsBefore = false;
+        exitTimeoutId = null;
+      }, 300); // Match transition duration (250ms + buffer)
+    }
+
+    return () => {
+      if (exitTimeoutId) {
+        clearTimeout(exitTimeoutId);
+      }
+    };
+  });
+
+  // Render if we have reversals OR we're in exit animation
+  // NOTE: We do NOT check `visible` here - we always render and use CSS opacity
+  // to animate visibility changes. Checking `visible` would unmount instantly.
+  const shouldRenderGroup = $derived(
+    hasValidData && (hasAnyReversal || keepMountedForExit)
+  );
 </script>
 
-{#if shouldRender()}
+{#if shouldRenderGroup}
   <g
     class="reversal-indicators"
     class:visible
@@ -150,34 +253,99 @@ Color-coded dots indicate which motion (blue/red) is reversing between pictograp
         }
       : {}}
   >
-    {#if effectiveRedReversal}
-      <circle
-        cx={X_POSITION}
-        cy={redDotY}
-        r={DOT_RADIUS}
-        fill={RED_COLOR}
-      />
-    {/if}
-    {#if effectiveBlueReversal}
-      <circle
-        cx={X_POSITION}
-        cy={blueDotY}
-        r={DOT_RADIUS}
-        fill={BLUE_COLOR}
-      />
-    {/if}
+    <!-- Always render both dots, use CSS classes to animate in/out smoothly -->
+    <circle
+      class="reversal-dot red-dot"
+      class:dot-visible={effectiveRedReversal}
+      class:dot-exiting={isRedExiting}
+      cx={X_POSITION}
+      cy={redDotY}
+      r={DOT_RADIUS}
+      fill={RED_COLOR}
+      style="transform-origin: {X_POSITION}px {redDotY}px"
+    />
+    <circle
+      class="reversal-dot blue-dot"
+      class:dot-visible={effectiveBlueReversal}
+      class:dot-exiting={isBlueExiting}
+      cx={X_POSITION}
+      cy={blueDotY}
+      r={DOT_RADIUS}
+      fill={BLUE_COLOR}
+      style="transform-origin: {X_POSITION}px {blueDotY}px"
+    />
   </g>
 {/if}
 
 <style>
   .reversal-indicators {
-    /* Beautiful fade in/out effect */
+    /* Fade the container in/out */
     opacity: 0;
-    transition: opacity var(--duration-normal) ease;
+    transition: opacity var(--duration-normal, 200ms) ease;
   }
 
   .reversal-indicators.visible {
     opacity: 1;
+  }
+
+  /* Individual dot styling - default hidden state */
+  .reversal-dot {
+    opacity: 0;
+    transform: scale(0);
+    /* transform-origin set inline for proper SVG center-point scaling */
+  }
+
+  /* Scale-in animation */
+  @keyframes dot-appear {
+    from {
+      transform: scale(0);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* Scale-out animation */
+  @keyframes dot-disappear {
+    from {
+      transform: scale(1);
+      opacity: 1;
+    }
+    to {
+      transform: scale(0);
+      opacity: 0;
+    }
+  }
+
+  /* When dot is visible, show it with entrance animation */
+  .reversal-dot.dot-visible {
+    opacity: 1;
+    transform: scale(1);
+    animation: dot-appear 180ms ease-out forwards;
+  }
+
+  /* When dot is exiting, play exit animation */
+  .reversal-dot.dot-exiting {
+    animation: dot-disappear 150ms ease-in forwards;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .reversal-dot {
+      transition: opacity 100ms ease;
+    }
+    .reversal-dot.dot-visible {
+      animation: none;
+      opacity: 1;
+      transform: scale(1);
+    }
+    .reversal-dot.dot-exiting {
+      animation: none;
+      opacity: 0;
+      transform: scale(0);
+    }
   }
 
   /* Preview mode: show "off" state at 40% opacity instead of hidden */

@@ -15,8 +15,8 @@
     Orientation,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
-  import { container } from "$lib/shared/di";
   import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
+  import { orientationCalculator as orientationCalculatorDirect } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 
   interface Props {
     sequence: SequenceEntry | null;
@@ -164,8 +164,7 @@
   let orientationCalculator: IOrientationCalculator | null = null;
   function getOrientationCalculator(): IOrientationCalculator {
     if (!orientationCalculator) {
-      orientationCalculator =
-        container.items.orientationCalculator as IOrientationCalculator;
+      orientationCalculator = orientationCalculatorDirect;
     }
     return orientationCalculator;
   }

@@ -151,3 +151,10 @@ export class StartPositionDeriver implements IStartPositionDeriver {
     return Letter.ALPHA;
   }
 }
+
+// ============================================================================
+// DIRECT EXPORT - Use this instead of container.items.startPositionDeriver
+// This avoids DI container rebuilds when this file changes
+// ============================================================================
+import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+export const startPositionDeriver = new StartPositionDeriver(gridPositionDeriver);

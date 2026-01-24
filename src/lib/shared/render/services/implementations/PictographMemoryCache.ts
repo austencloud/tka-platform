@@ -135,3 +135,29 @@ export class PictographMemoryCache {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.pictographMemoryCache to avoid DI container rebuilds.
+// The cache data itself is already HMR-aware via hmrImageCache and hmrAccessOrder.
+// ============================================================================
+
+// HMR-aware singleton instance
+let hmrPictographMemoryCacheInstance: PictographMemoryCache | null =
+  import.meta.hot?.data?.pictographMemoryCacheInstance ?? null;
+
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.pictographMemoryCacheInstance = hmrPictographMemoryCacheInstance;
+  });
+}
+
+function getPictographMemoryCache(): PictographMemoryCache {
+  if (!hmrPictographMemoryCacheInstance) {
+    hmrPictographMemoryCacheInstance = new PictographMemoryCache();
+  }
+  return hmrPictographMemoryCacheInstance;
+}
+
+export const pictographMemoryCache = getPictographMemoryCache();
