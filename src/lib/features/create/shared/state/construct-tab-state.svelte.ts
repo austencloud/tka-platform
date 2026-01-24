@@ -15,6 +15,7 @@ import { createHMRState } from "$lib/shared/utils/hmr-state-backup";
 import { createSimplifiedStartPositionState } from "../../construct/start-position-picker/state/start-position-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { container } from "$lib/shared/di";
 
 const debug = createComponentLogger("ConstructTabState");
 import { createStartPositionData } from "../domain/factories/createStartPositionData";
