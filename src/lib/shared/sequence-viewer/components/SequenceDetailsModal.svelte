@@ -921,21 +921,6 @@
         <div class="header-left">
           <button
             type="button"
-            class="close-button"
-            onclick={handleClose}
-            aria-label="Close"
-          >
-            <i class="fas fa-times" aria-hidden="true"></i>
-          </button>
-        </div>
-
-        <div class="header-center">
-          <h2 class="sequence-title">Sequence Viewer</h2>
-        </div>
-
-        <div class="header-right">
-          <button
-            type="button"
             class="header-icon-btn sync-btn"
             class:syncing={lanSyncState.isActive}
             class:connected={lanSyncState.isConnected}
@@ -972,6 +957,21 @@
             title="Fullscreen"
           >
             <i class="fas fa-expand" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="header-center">
+          <h2 class="sequence-title">Sequence Viewer</h2>
+        </div>
+
+        <div class="header-right">
+          <button
+            type="button"
+            class="close-button"
+            onclick={handleClose}
+            aria-label="Close"
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
           </button>
         </div>
       </header>
@@ -1668,11 +1668,18 @@
 
   /* ===== END FULLSCREEN MORPH STYLES ===== */
 
-  .header-left,
+  .header-left {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
   .header-right {
     flex: 0 0 48px;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
   }
 
   .header-center {
@@ -2203,14 +2210,7 @@
     }
   }
 
-  /* Header icon buttons (lights + settings) */
-  .header-right {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
+  /* Header icon buttons (sync, dark mode, fullscreen) */
   .header-icon-btn {
     display: flex;
     align-items: center;
