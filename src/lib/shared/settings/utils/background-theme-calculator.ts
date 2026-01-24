@@ -332,6 +332,13 @@ export function extractAccentColor(colors: string[]): string | undefined {
   return colors[1];
 }
 
+// Store applied theme in HMR data for persistence across module reloads
+interface HMRThemeData {
+  backgroundType?: BackgroundType;
+  solidColor?: string;
+  gradientColors?: string[];
+}
+
 /**
  * Apply theme CSS variables to document root based on colors
  * Can be called with solid color OR gradient/theme colors
@@ -341,6 +348,11 @@ export function applyThemeFromColors(
   gradientColors?: string[]
 ): void {
   if (typeof document === "undefined") return;
+
+  // Store in HMR data for persistence across module reloads
+  if (import.meta.hot) {
+    import.meta.hot.data.appliedTheme = { solidColor, gradientColors } as HMRThemeData;
+  }
 
   // Calculate luminance
   const luminance = solidColor
@@ -524,8 +536,70 @@ export function applyThemeFromColors(
  * Convenience function that looks up theme colors and applies them
  */
 export function applyThemeForBackground(backgroundType: BackgroundType): void {
+  // Store in HMR data for persistence across module reloads
+  if (import.meta.hot) {
+    import.meta.hot.data.appliedTheme = { backgroundType } as HMRThemeData;
+  }
+
   const themeColors = BACKGROUND_THEME_COLORS[backgroundType];
   if (themeColors) {
     applyThemeFromColors(undefined, themeColors);
   }
+}
+
+/**
+ * Ensure theme CSS variables are applied based on localStorage settings.
+ * Call this when CSS variables may have been cleared (HMR, remount, etc.)
+ * This ALWAYS applies - no "skip if same" optimization.
+ *
+ * Unlike applyThemeForBackground/applyThemeFromColors, this function:
+ * 1. Reads directly from localStorage (not reactive state)
+ * 2. Always applies, even if values appear unchanged
+ * 3. Is safe to call from anywhere (checks for browser environment)
+ */
+export function ensureThemeApplied(): void {
+  if (typeof localStorage === "undefined" || typeof document === "undefined") return;
+
+  try {
+    const stored = localStorage.getItem("tka-modern-web-settings");
+    if (!stored) {
+      // No settings - apply default dark theme
+      applyThemeForBackground(BackgroundType.SOLID_COLOR);
+      return;
+    }
+
+    const settings = JSON.parse(stored);
+    const bgType = settings.backgroundType as BackgroundType | undefined;
+
+    if (bgType === BackgroundType.SOLID_COLOR && settings.backgroundColor) {
+      applyThemeFromColors(settings.backgroundColor);
+    } else if (bgType === BackgroundType.LINEAR_GRADIENT && settings.gradientColors) {
+      applyThemeFromColors(undefined, settings.gradientColors);
+    } else if (bgType) {
+      applyThemeForBackground(bgType);
+    } else {
+      // Fallback to solid color default
+      applyThemeForBackground(BackgroundType.SOLID_COLOR);
+    }
+  } catch (e) {
+    console.warn("[Theme] Failed to ensure theme applied:", e);
+    // On error, apply default theme
+    applyThemeForBackground(BackgroundType.SOLID_COLOR);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HMR RECOVERY: Restore theme from import.meta.hot.data on module reload
+// This runs when this module is re-evaluated during HMR
+// ═══════════════════════════════════════════════════════════════════════════
+if (import.meta.hot?.data?.appliedTheme) {
+  const theme = import.meta.hot.data.appliedTheme as HMRThemeData;
+  // Use setTimeout to avoid blocking module evaluation
+  setTimeout(() => {
+    if (theme.backgroundType) {
+      applyThemeForBackground(theme.backgroundType);
+    } else if (theme.solidColor || theme.gradientColors) {
+      applyThemeFromColors(theme.solidColor, theme.gradientColors);
+    }
+  }, 0);
 }

@@ -18,6 +18,10 @@ import {
   type CustomBackgroundOptions,
 } from "../../background/shared/background-preloader";
 import { ThemeService } from "../../theme/services/ThemeService";
+import {
+  applyThemeFromColors,
+  applyThemeForBackground,
+} from "../../settings/utils/background-theme-calculator";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import type { AppSettings, PropPreset } from "../domain/AppSettings";
@@ -212,6 +216,14 @@ class SettingsState implements ISettingsState {
               firebaseSettings.backgroundType,
               getCustomBackgroundOptions(firebaseSettings)
             );
+            // Apply theme colors properly based on background type
+            if (firebaseSettings.backgroundType === BackgroundType.SOLID_COLOR && firebaseSettings.backgroundColor) {
+              applyThemeFromColors(firebaseSettings.backgroundColor);
+            } else if (firebaseSettings.backgroundType === BackgroundType.LINEAR_GRADIENT && firebaseSettings.gradientColors) {
+              applyThemeFromColors(undefined, firebaseSettings.gradientColors);
+            } else {
+              applyThemeForBackground(firebaseSettings.backgroundType);
+            }
             ThemeService.updateTheme(firebaseSettings.backgroundType);
             this.saveSettingsToStorage(settingsState);
             debug.success("Applied background from Firebase on initial login");
@@ -349,13 +361,19 @@ class SettingsState implements ISettingsState {
     // Track when this change was made locally
     settingsState._localTimestamp = Date.now();
 
-    // Update body background immediately if background type changed
+    // Update body background and theme immediately if background type changed
     if (key === "backgroundType") {
-      updateBodyBackground(
-        value as BackgroundType,
-        getCustomBackgroundOptions(settingsState)
-      );
-      ThemeService.updateTheme(value as string);
+      const bgType = value as BackgroundType;
+      updateBodyBackground(bgType, getCustomBackgroundOptions(settingsState));
+      // Apply theme colors properly based on background type
+      if (bgType === BackgroundType.SOLID_COLOR && settingsState.backgroundColor) {
+        applyThemeFromColors(settingsState.backgroundColor);
+      } else if (bgType === BackgroundType.LINEAR_GRADIENT && settingsState.gradientColors) {
+        applyThemeFromColors(undefined, settingsState.gradientColors);
+      } else {
+        applyThemeForBackground(bgType);
+      }
+      ThemeService.updateTheme(bgType);
     }
 
     this.saveSettings();
@@ -395,12 +413,26 @@ class SettingsState implements ISettingsState {
     // Track when these changes were made locally
     settingsState._localTimestamp = Date.now();
 
-    // Update body background immediately ONLY if background type actually changed
-    if (backgroundTypeChanged) {
-      updateBodyBackground(
-        newBackgroundType,
-        getCustomBackgroundOptions(newSettings)
-      );
+    // ALWAYS apply theme colors when a background type is specified in newSettings
+    // This ensures CSS variables are restored even if type "didn't change"
+    // (the type may be the same but CSS vars may have been cleared by HMR)
+    if (newBackgroundType) {
+      // Only update body background if type actually changed (to avoid visual glitch)
+      if (backgroundTypeChanged) {
+        updateBodyBackground(
+          newBackgroundType,
+          getCustomBackgroundOptions(newSettings)
+        );
+      }
+      // ALWAYS apply theme colors - CSS variables may have been cleared
+      // Use settingsState since newSettings might not have all color fields
+      if (newBackgroundType === BackgroundType.SOLID_COLOR && settingsState.backgroundColor) {
+        applyThemeFromColors(settingsState.backgroundColor);
+      } else if (newBackgroundType === BackgroundType.LINEAR_GRADIENT && settingsState.gradientColors) {
+        applyThemeFromColors(undefined, settingsState.gradientColors);
+      } else {
+        applyThemeForBackground(newBackgroundType);
+      }
       ThemeService.updateTheme(newBackgroundType);
     }
 

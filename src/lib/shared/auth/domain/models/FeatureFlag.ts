@@ -61,6 +61,8 @@ export interface UserFeatureOverrides {
   enabledFeatures: FeatureId[];
   /** Features explicitly disabled for this user (overrides role) */
   disabledFeatures: FeatureId[];
+  /** Custom module order for sidebar (module IDs in desired order) */
+  moduleOrder?: string[];
 }
 
 /**

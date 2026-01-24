@@ -93,6 +93,7 @@ const _state = $state<FeatureFlagState>({
   userOverrides: {
     enabledFeatures: [],
     disabledFeatures: [],
+    moduleOrder: undefined,
   },
   globalOverrides: {},
   initialized: false,
@@ -234,6 +235,16 @@ export const featureFlagService = {
   /** Current user role */
   get userRole(): UserRole {
     return _state.userRole;
+  },
+
+  /** Current user ID (needed for setUserFeatureOverrides) */
+  get userId(): string | null {
+    return _state.userId;
+  },
+
+  /** Current user's feature overrides */
+  get userOverrides(): UserFeatureOverrides {
+    return _state.userOverrides;
   },
 
   /** Whether the service has been initialized */
@@ -386,6 +397,7 @@ export const featureFlagService = {
         _state.userOverrides = {
           enabledFeatures: [],
           disabledFeatures: [],
+          moduleOrder: undefined,
         };
       }
 
@@ -431,6 +443,7 @@ export const featureFlagService = {
             enabledFeatures: data["featureOverrides"]["enabledFeatures"] || [],
             disabledFeatures:
               data["featureOverrides"]["disabledFeatures"] || [],
+            moduleOrder: data["featureOverrides"]["moduleOrder"] || undefined,
           };
         }
       }
@@ -465,6 +478,8 @@ export const featureFlagService = {
                   data["featureOverrides"]["enabledFeatures"] || [],
                 disabledFeatures:
                   data["featureOverrides"]["disabledFeatures"] || [],
+                moduleOrder:
+                  data["featureOverrides"]["moduleOrder"] || undefined,
               };
             }
           }
@@ -576,7 +591,7 @@ export const featureFlagService = {
     const userDoc = await getDoc(userDocRef);
     const previousOverrides = userDoc.exists()
       ? userDoc.data()?.featureOverrides
-      : undefined;
+      : null; // Use null instead of undefined for Firestore compatibility
 
     await setDoc(
       userDocRef,
@@ -590,7 +605,7 @@ export const featureFlagService = {
     await this.logAuditEntry({
       action: "user_override_update",
       targetUserId,
-      previousValue: previousOverrides,
+      previousValue: previousOverrides ?? null, // Ensure no undefined
       newValue: overrides,
     });
   },

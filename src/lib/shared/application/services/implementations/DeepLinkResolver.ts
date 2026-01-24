@@ -12,7 +12,7 @@ import type {
   DeepLinkResult,
 } from "../contracts/IDeepLinkResolver";
 import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
-import type { PublicSequencesLoader } from "$lib/features/discover/sequences/display/services/implementations/PublicSequencesLoader";
+import type { PublicSequencesLoader } from "$lib/features/explore/sequences/display/services/implementations/PublicSequencesLoader";
 import { getCachedSequence } from "../../state/ui/modal-url-state.svelte";
 
 export class DeepLinkResolver implements IDeepLinkResolver {
