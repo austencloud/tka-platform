@@ -188,3 +188,10 @@ export class LOOPParameterProvider implements ILOOPParameterProvider {
     return array[Math.floor(Math.random() * array.length)]!;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { pictographFilter } from "./PictographFilter";
+
+export const loopParameterProvider = new LOOPParameterProvider(pictographFilter);

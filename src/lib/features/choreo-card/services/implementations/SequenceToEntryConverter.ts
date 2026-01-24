@@ -80,3 +80,8 @@ export class SequenceToEntryConverter implements ISequenceToEntryConverter {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sequenceToEntryConverter = new SequenceToEntryConverter();

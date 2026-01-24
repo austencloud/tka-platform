@@ -126,3 +126,8 @@ export class OptionOrganizer implements IOptionOrganizer {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const optionOrganizer = new OptionOrganizer();

@@ -128,3 +128,18 @@ export class SequenceTransformer implements ISequenceTransformer {
     return deriveSequenceLetters(sequence, this.motionQueryHandler);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { reversalDetector } from "../ReversalDetector";
+import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+
+export const sequenceTransformer = new SequenceTransformer(
+  motionQueryHandler,
+  orientationCalculator,
+  reversalDetector,
+  gridPositionDeriver
+);

@@ -37,3 +37,8 @@ export class TypographyScaler implements ITypographyScaler {
     return window.innerWidth;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const typographyScaler = new TypographyScaler();

@@ -234,3 +234,8 @@ export class DurationPatternManager implements IDurationPatternManager {
     return { valid: true };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const durationPatternManager = new DurationPatternManager();

@@ -274,3 +274,14 @@ export class StrictSwappedLOOPExecutor {
     return swappedMotion;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+
+export const strictSwappedLOOPExecutor = new StrictSwappedLOOPExecutor(
+  orientationCalculator,
+  gridPositionDeriver
+);

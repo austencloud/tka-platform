@@ -127,3 +127,8 @@ export class StepConverter implements IStepConverter {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const stepConverter = new StepConverter();

@@ -101,3 +101,8 @@ export class WordCyclicEquivalenceDetector
     return result.rotationOffset;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const wordCyclicEquivalenceDetector = new WordCyclicEquivalenceDetector();

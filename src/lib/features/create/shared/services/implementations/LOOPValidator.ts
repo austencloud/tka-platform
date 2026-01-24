@@ -233,3 +233,10 @@ export class LOOPValidator implements ILOOPValidator {
     return options;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { loopExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
+
+export const loopValidator = new LOOPValidator(loopExecutorSelector);

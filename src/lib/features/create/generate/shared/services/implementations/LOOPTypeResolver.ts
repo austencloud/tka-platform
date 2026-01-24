@@ -172,3 +172,8 @@ export class LOOPTypeResolver implements ILOOPTypeResolver {
     return readable;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const loopTypeResolver = new LOOPTypeResolver();

@@ -76,3 +76,8 @@ export class SequenceJsonExporter implements ISequenceJsonExporter {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sequenceJsonExporter = new SequenceJsonExporter();

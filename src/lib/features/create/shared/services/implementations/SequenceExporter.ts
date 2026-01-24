@@ -137,3 +137,8 @@ export class SequenceExporter implements ISequenceExporter {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sequenceExporter = new SequenceExporter();

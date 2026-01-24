@@ -520,3 +520,8 @@ export class TurnPatternManager implements ITurnPatternManager {
     return { valid: true };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const turnPatternManager = new TurnPatternManager();

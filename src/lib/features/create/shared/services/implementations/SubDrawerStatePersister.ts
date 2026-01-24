@@ -45,3 +45,8 @@ export class SubDrawerStatePersister implements ISubDrawerStatePersister {
     sessionStorage.removeItem(SUB_DRAWER_KEY);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const subDrawerStatePersister = new SubDrawerStatePersister();

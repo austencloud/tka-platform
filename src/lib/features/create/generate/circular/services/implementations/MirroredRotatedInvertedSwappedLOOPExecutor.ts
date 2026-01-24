@@ -70,3 +70,14 @@ export class MirroredRotatedInvertedSwappedLOOPExecutor implements ILOOPExecutor
     return finalSequence;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { strictRotatedLOOPExecutor } from "./StrictRotatedLOOPExecutor";
+import { mirroredSwappedInvertedLOOPExecutor } from "./MirroredSwappedInvertedLOOPExecutor";
+
+export const mirroredRotatedInvertedSwappedLOOPExecutor = new MirroredRotatedInvertedSwappedLOOPExecutor(
+  strictRotatedLOOPExecutor,
+  mirroredSwappedInvertedLOOPExecutor
+);

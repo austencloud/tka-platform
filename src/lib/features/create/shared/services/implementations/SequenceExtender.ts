@@ -336,3 +336,26 @@ export class SequenceExtender implements ISequenceExtender {
     return this.extendSequence(sequenceWithBridge, { loopType });
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { loopExecutorSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPExecutorSelector";
+import { reversalDetector } from "./ReversalDetector";
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { stepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { loopValidator } from "./LOOPValidator";
+import { sequenceAnalyzer } from "./SequenceAnalyzer";
+import { bridgeFinder } from "./BridgeFinder";
+
+export const sequenceExtender = new SequenceExtender(
+  loopExecutorSelector,
+  reversalDetector,
+  letterQueryHandler,
+  stepConverter,
+  orientationCalculator,
+  loopValidator,
+  sequenceAnalyzer,
+  bridgeFinder
+);

@@ -116,3 +116,8 @@ export class OptionTransitionCoordinator implements IOptionTransitionCoordinator
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const optionTransitionCoordinator = new OptionTransitionCoordinator();

@@ -192,3 +192,8 @@ export class TurnManager implements ITurnManager {
     return options[Math.floor(Math.random() * options.length)]!;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const turnManager = new TurnManager();

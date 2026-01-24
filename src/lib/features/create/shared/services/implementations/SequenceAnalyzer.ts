@@ -564,3 +564,10 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
     return result;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { betaDetector } from "$lib/shared/pictograph/prop/services/implementations/BetaDetector";
+
+export const sequenceAnalyzer = new SequenceAnalyzer(betaDetector);

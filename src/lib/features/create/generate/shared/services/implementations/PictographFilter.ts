@@ -283,3 +283,8 @@ export class PictographFilter implements IPictographFilter {
     return selected;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const pictographFilter = new PictographFilter();

@@ -692,3 +692,14 @@ export class LOOPDetector implements ILOOPDetector {
     return null;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
+import { loopTypeResolver } from "../../../shared/services/implementations/LOOPTypeResolver";
+
+export const loopDetector = new LOOPDetector(
+  sequenceLoopabilityChecker,
+  loopTypeResolver
+);

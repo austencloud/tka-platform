@@ -60,3 +60,11 @@ export class OptionSorter implements IOptionSorter {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { reversalChecker } from "./ReversalChecker";
+import { positionAnalyzer } from "./PositionAnalyzer";
+
+export const optionSorter = new OptionSorter(reversalChecker, positionAnalyzer);

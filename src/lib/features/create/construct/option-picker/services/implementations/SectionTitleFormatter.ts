@@ -46,3 +46,8 @@ export class SectionTitleFormatter implements ISectionTitleFormatter {
     return this.typeDescriptions[typeKey as keyof typeof this.typeDescriptions];
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sectionTitleFormatter = new SectionTitleFormatter();

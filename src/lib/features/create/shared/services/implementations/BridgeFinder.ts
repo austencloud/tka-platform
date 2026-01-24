@@ -292,3 +292,20 @@ export class BridgeFinder implements IBridgeFinder {
     return options;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { positionAnalyzer } from "$lib/features/create/construct/option-picker/services/implementations/PositionAnalyzer";
+import { loopValidator } from "./LOOPValidator";
+import { sequenceAnalyzer } from "./SequenceAnalyzer";
+import { orientationAlignmentCalculator } from "./OrientationAlignmentCalculator";
+
+export const bridgeFinder = new BridgeFinder(
+  letterQueryHandler,
+  positionAnalyzer,
+  loopValidator,
+  sequenceAnalyzer,
+  orientationAlignmentCalculator
+);

@@ -82,3 +82,8 @@ export class SequenceStatsCalculator implements ISequenceStatsCalculator {
     return this.calculateSequenceDuration(sequence) / sequence.steps.length;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sequenceStatsCalculator = new SequenceStatsCalculator();

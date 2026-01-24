@@ -157,3 +157,10 @@ export class SequencePersister implements ISequencePersister {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { dexiePersistenceService } from "$lib/shared/persistence/services/implementations/DexiePersistenceService";
+
+export const sequencePersister = new SequencePersister(dexiePersistenceService);

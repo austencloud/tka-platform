@@ -58,3 +58,8 @@ export class FirstStepAnalyzer implements IFirstStepAnalyzer {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const firstStepAnalyzer = new FirstStepAnalyzer();

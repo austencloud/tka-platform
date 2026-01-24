@@ -290,3 +290,12 @@ export class StrictMirroredLOOPExecutor {
     return propRotDir;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+
+export const strictMirroredLOOPExecutor = new StrictMirroredLOOPExecutor(
+  orientationCalculator
+);

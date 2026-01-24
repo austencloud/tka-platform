@@ -231,3 +231,8 @@ export class CardConfigurator implements ICardConfigurator {
     return cardList;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const cardConfigurator = new CardConfigurator();

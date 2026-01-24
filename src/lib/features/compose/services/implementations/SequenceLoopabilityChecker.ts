@@ -51,3 +51,8 @@ export class SequenceLoopabilityChecker implements ISequenceLoopabilityChecker {
     return startPos === endPos;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sequenceLoopabilityChecker = new SequenceLoopabilityChecker();

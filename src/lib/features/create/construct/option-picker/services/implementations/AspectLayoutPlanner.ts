@@ -100,3 +100,8 @@ export class AspectLayoutPlanner implements IAspectLayoutPlanner {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const aspectLayoutPlanner = new AspectLayoutPlanner();

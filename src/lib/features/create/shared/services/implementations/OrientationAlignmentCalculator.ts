@@ -150,3 +150,8 @@ export class OrientationAlignmentCalculator implements IOrientationAlignmentCalc
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const orientationAlignmentCalculator = new OrientationAlignmentCalculator();

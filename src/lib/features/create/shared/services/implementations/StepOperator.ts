@@ -137,3 +137,11 @@ export class StepOperator implements IStepOperator {
     updateStepDuration(stepNumber, newDuration, createModuleState);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+
+export const stepOperator = new StepOperator(motionQueryHandler, gridModeDeriver);

@@ -104,3 +104,8 @@ export class SequenceValidator implements ISequenceValidator {
     return { isValid: true };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sequenceValidator = new SequenceValidator();

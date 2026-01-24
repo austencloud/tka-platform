@@ -159,3 +159,8 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
     return direction; // NO_ROTATION stays NO_ROTATION
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const rewoundLOOPExecutor = new RewoundLOOPExecutor();

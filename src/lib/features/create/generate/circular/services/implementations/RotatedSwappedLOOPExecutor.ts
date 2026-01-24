@@ -353,3 +353,14 @@ export class RotatedSwappedLOOPExecutor {
     return rotatedSwappedMotion;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+
+export const rotatedSwappedLOOPExecutor = new RotatedSwappedLOOPExecutor(
+  orientationCalculator,
+  gridPositionDeriver
+);

@@ -148,3 +148,8 @@ export class OrientationCycleDetector {
     return "isStartPosition" in data && data.isStartPosition === true;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const orientationCycleDetector = new OrientationCycleDetector();

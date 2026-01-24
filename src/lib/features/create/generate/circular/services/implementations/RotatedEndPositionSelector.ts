@@ -66,3 +66,8 @@ export class RotatedEndPositionSelector {
     return endPosition === cwEndPosition || endPosition === ccwEndPosition;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const rotatedEndPositionSelector = new RotatedEndPositionSelector();

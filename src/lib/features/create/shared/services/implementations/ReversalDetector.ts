@@ -360,3 +360,8 @@ export class ReversalDetector implements IReversalDetector {
     return null;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const reversalDetector = new ReversalDetector();

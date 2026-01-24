@@ -186,3 +186,8 @@ export class PanelPersister implements IPanelPersister {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const panelPersister = new PanelPersister();

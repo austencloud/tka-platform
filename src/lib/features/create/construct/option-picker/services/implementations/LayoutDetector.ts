@@ -74,3 +74,10 @@ export class LayoutDetector implements ILayoutDetector {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { deviceDetector } from "$lib/shared/device/services/implementations/DeviceDetector";
+
+export const layoutDetector = new LayoutDetector(deviceDetector);

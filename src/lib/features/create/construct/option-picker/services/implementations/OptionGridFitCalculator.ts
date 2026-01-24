@@ -196,3 +196,8 @@ export class OptionGridFitCalculator implements IOptionGridFitCalculator {
     return "desktop";
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const optionGridFitCalculator = new OptionGridFitCalculator();

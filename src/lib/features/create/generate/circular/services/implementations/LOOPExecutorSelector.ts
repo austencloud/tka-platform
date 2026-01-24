@@ -103,3 +103,38 @@ export class LOOPExecutorSelector implements ILOOPExecutorSelector {
     ].includes(loopType);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { strictRotatedLOOPExecutor } from "./StrictRotatedLOOPExecutor";
+import { strictMirroredLOOPExecutor } from "./StrictMirroredLOOPExecutor";
+import { strictSwappedLOOPExecutor } from "./StrictSwappedLOOPExecutor";
+import { strictInvertedLOOPExecutor } from "./StrictInvertedLOOPExecutor";
+import { mirroredSwappedLOOPExecutor } from "./MirroredSwappedLOOPExecutor";
+import { swappedInvertedLOOPExecutor } from "./SwappedInvertedLOOPExecutor";
+import { mirroredInvertedLOOPExecutor } from "./MirroredInvertedLOOPExecutor";
+import { rotatedSwappedLOOPExecutor } from "./RotatedSwappedLOOPExecutor";
+import { rotatedInvertedLOOPExecutor } from "./RotatedInvertedLOOPExecutor";
+import { mirroredRotatedLOOPExecutor } from "./MirroredRotatedLOOPExecutor";
+import { mirroredRotatedInvertedLOOPExecutor } from "./MirroredRotatedInvertedLOOPExecutor";
+import { mirroredSwappedInvertedLOOPExecutor } from "./MirroredSwappedInvertedLOOPExecutor";
+import { mirroredRotatedInvertedSwappedLOOPExecutor } from "./MirroredRotatedInvertedSwappedLOOPExecutor";
+import { rewoundLOOPExecutor } from "./RewoundLOOPExecutor";
+
+export const loopExecutorSelector = new LOOPExecutorSelector(
+  strictRotatedLOOPExecutor,
+  strictMirroredLOOPExecutor,
+  strictSwappedLOOPExecutor,
+  strictInvertedLOOPExecutor,
+  mirroredSwappedLOOPExecutor,
+  swappedInvertedLOOPExecutor,
+  mirroredInvertedLOOPExecutor,
+  rotatedSwappedLOOPExecutor,
+  rotatedInvertedLOOPExecutor,
+  mirroredRotatedLOOPExecutor,
+  mirroredRotatedInvertedLOOPExecutor,
+  mirroredSwappedInvertedLOOPExecutor,
+  mirroredRotatedInvertedSwappedLOOPExecutor,
+  rewoundLOOPExecutor
+);

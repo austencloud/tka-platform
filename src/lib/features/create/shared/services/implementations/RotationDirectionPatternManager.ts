@@ -561,3 +561,8 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     return { valid: true };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const rotationDirectionPatternManager = new RotationDirectionPatternManager();

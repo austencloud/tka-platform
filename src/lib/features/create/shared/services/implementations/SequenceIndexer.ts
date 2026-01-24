@@ -322,3 +322,8 @@ export class SequenceIndexer implements ISequenceIndexer {
     return Array.from(suggestions).slice(0, maxSuggestions);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+export const sequenceIndexer = new SequenceIndexer();

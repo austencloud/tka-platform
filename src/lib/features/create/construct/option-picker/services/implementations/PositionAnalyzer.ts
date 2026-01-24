@@ -122,3 +122,10 @@ export class PositionAnalyzer implements IPositionAnalyzer {
     return group1 !== null && group1 === group2;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+
+export const positionAnalyzer = new PositionAnalyzer(gridPositionDeriver);

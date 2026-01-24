@@ -24,3 +24,10 @@ export class TurnAllocator implements ITurnAllocator {
     return this.loopParams.allocateTurns(stepsToGenerate, level, turnIntensity);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { loopParameterProvider } from "./LOOPParameterProvider";
+
+export const turnAllocator = new TurnAllocator(loopParameterProvider);

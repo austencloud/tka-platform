@@ -310,3 +310,14 @@ export class MirroredInvertedLOOPExecutor {
     return motionType;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { loopParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
+
+export const mirroredInvertedLOOPExecutor = new MirroredInvertedLOOPExecutor(
+  orientationCalculator,
+  loopParameterProvider
+);

@@ -151,3 +151,11 @@ export class OptionFilter implements IOptionFilter {
     return this.getLetterType(letter);
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+import { reversalChecker } from "./ReversalChecker";
+import { positionAnalyzer } from "./PositionAnalyzer";
+
+export const optionFilter = new OptionFilter(reversalChecker, positionAnalyzer);
