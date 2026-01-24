@@ -27,21 +27,16 @@ Every extraction MUST follow this structure:
 ```
 1. Interface:      services/contracts/I{Name}.ts
 2. Implementation: services/implementations/{Name}.ts
-3. Direct export:  export const serviceName = new ServiceName() at bottom of file
-4. Usage:          import { serviceName } from '$lib/path/to/ServiceName';
+3. Registration:   Add to appropriate DI container
+4. Usage:          container.items.serviceName
 ```
 
-**⛔ DO NOT register in DI containers - DI is deprecated. See di-migration.md.**
+**Register in DI containers - see code-style.md for the full pattern.**
 
-**Direct Singleton Export:**
+**Container Registration:**
 ```typescript
-// At bottom of services/implementations/MyService.ts
-
-// Import dependencies (also direct exports)
-import { dependency } from '../other/Dependency';
-
-// Export singleton
-export const myService = new MyService(dependency);
+// In the appropriate container file (e.g., pictograph-container.ts)
+.add({ myService: () => new MyService(deps.otherService) })
 ```
 
 ### Service Naming (no "Service" suffix):
@@ -142,7 +137,7 @@ After analyzing a file, you must reach one of two conclusions:
 
 If decomposition is warranted:
 1. Get user confirmation
-2. Extract services following the mandatory pattern
+2. Extract services following the mandatory pattern (with DI registration)
 3. Release claim when done: `node scripts/find-monoliths.cjs --release "lib/path/to/File.svelte"`
 
 ### Option B: Mark as Audited (Leave It Alone)

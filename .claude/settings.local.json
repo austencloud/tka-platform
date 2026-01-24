@@ -431,7 +431,9 @@
       "mcp__tka-domain__get_sequence_data",
       "WebFetch(domain:renatogalera.github.io)",
       "WebFetch(domain:nikiforovall.blog)",
-      "WebFetch(domain:claude-plugins.dev)"
+      "WebFetch(domain:claude-plugins.dev)",
+      "Bash(do if git diff ac82bc5b5 HEAD -- \"$file\")",
+      "Bash(do echo \"=== $exp ===\")"
     ]
   },
   "enableAllProjectMcpServers": true,

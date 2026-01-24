@@ -1,22 +1,11 @@
 /**
- * ⛔ DEPRECATED - MIGRATION IN PROGRESS ⛔
+ * Pictograph Container
  *
- * This container is being eliminated. Do NOT add new services here.
- * See: .claude/rules/di-migration.md
+ * ITI dependency injection container for pictograph rendering services.
+ * Contains arrow positioning, rotation, placement, and rendering services.
  *
- * ALREADY MIGRATED (use direct imports instead):
- * - letterQueryHandler → import from LetterQueryHandler.ts
- * - motionQueryHandler → import from MotionQueryHandler.ts
- * - gridRenderer → import from GridRenderer.ts
- * - arrowRenderer → import from ArrowRenderer.ts
- * - svgPreloader → import from SvgPreloader.ts
- * - startPositionDeriver → import from StartPositionDeriver.ts
- * - gridPositionDeriver → import from GridPositionDeriver.ts
- * - csvLoader → import from CsvLoader.ts
- * - csvParser → import from CsvParser.ts
- * - csvPictographParser → import from CSVPictographParser.ts
- *
- * STILL NEEDS MIGRATION: See di-migration.md for full list
+ * Usage: import { pictographContainer } from "$lib/shared/di";
+ *        const service = pictographContainer.items.serviceName;
  */
 
 import { createContainer } from "iti";
