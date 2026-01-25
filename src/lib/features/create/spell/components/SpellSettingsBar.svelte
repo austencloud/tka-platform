@@ -1,14 +1,18 @@
 <!--
-SpellSettingsBar.svelte - Morphing pill-based settings
+SpellSettingsBar.svelte - Responsive settings UI
 
-The panel transforms organically:
-- Default: All 4 chips shown in a row (taller, comfortable height)
-- Expanded: Tapped chip stretches to fill row, others shrink to zero
-- Loop: Direct toggle (no expansion needed)
+Container-aware responsive design:
+- Mobile (<500px): Compact morphing chips
+- Desktop (≥500px): Expanded sections with all options visible
 
-No external drawers - everything morphs within the component.
+Features:
+- 48px minimum touch targets for WCAG AAA accessibility
+- Design token system for consistent spacing/sizing
+- Scales with --spell-scale from parent container
 -->
 <script lang="ts">
+  import { container } from "$lib/shared/di";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SpellPreferences } from "../domain/models/spell-models";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
@@ -27,23 +31,13 @@ No external drawers - everything morphs within the component.
     ) => void;
   } = $props();
 
+  const haptic = container.items.hapticFeedback as IHapticFeedback;
+
   // Which setting is expanded (null = all collapsed)
   let expandedId = $state<string | null>(null);
 
   // Setting definitions
   const settings = [
-    {
-      id: "grid",
-      label: "Grid",
-      expandedLabel: "Grid Mode",
-      getValue: () => (gridMode === "diamond" ? "Diamond" : "Box"),
-      options: [
-        { value: "diamond", label: "Diamond" },
-        { value: "box", label: "Box" },
-      ],
-      isSelected: (v: unknown) => gridMode === v,
-      onSelect: (v: string) => onGridModeChange(v as GridMode),
-    },
     {
       id: "dashes",
       label: "Dashes",
@@ -100,43 +94,94 @@ No external drawers - everything morphs within the component.
   ];
 
   function handleSelect(setting: (typeof settings)[0], value: unknown) {
+    haptic.trigger("selection");
     setting.onSelect(value as never);
     expandedId = null;
   }
 
+  function handleChipExpand(settingId: string) {
+    haptic.trigger("selection");
+    expandedId = settingId;
+  }
+
+  function handleChipCollapse() {
+    haptic.trigger("selection");
+    expandedId = null;
+  }
+
   function toggleLoop() {
+    haptic.trigger("selection");
     onPreferenceChange("makeCircular", !preferences.makeCircular);
+  }
+
+  function toggleGridMode() {
+    haptic.trigger("selection");
+    const newMode = gridMode === "diamond" ? "box" : "diamond";
+    onGridModeChange(newMode as GridMode);
   }
 </script>
 
-<div class="morph-bar">
-  {#each settings as setting}
-    {@const isExpanded = expandedId === setting.id}
-    {@const isHidden = expandedId !== null && expandedId !== setting.id}
+<div class="settings-container">
+  <!-- ============================================================ -->
+  <!-- MOBILE LAYOUT: Compact morphing chips -->
+  <!-- ============================================================ -->
+  <div class="mobile-layout">
+    {#if expandedId === null}
+      <!-- Collapsed: show both rows -->
+      <div class="chips-row">
+        {#each settings as setting}
+          <button
+            class="chip"
+            onclick={() => handleChipExpand(setting.id)}
+            aria-expanded={false}
+            aria-haspopup="listbox"
+          >
+            <span class="chip-label">{setting.label}</span>
+            <span class="chip-value">{setting.getValue()}</span>
+          </button>
+        {/each}
+      </div>
 
-    <div
-      class="chip-slot"
-      class:expanded={isExpanded}
-      class:hidden={isHidden}
-    >
-      {#if isExpanded}
-        <!-- Expanded: options inside the morphed chip -->
-        <div class="expanded-content">
+      <div class="chips-row">
+        <button
+          class="chip grid-chip"
+          onclick={toggleGridMode}
+          aria-label="Toggle grid mode between Diamond and Box"
+        >
+          <span class="chip-label">Grid</span>
+          <span class="chip-value">{gridMode === "diamond" ? "Diamond" : "Box"}</span>
+        </button>
+
+        <button
+          class="chip loop-chip"
+          class:loop-active={preferences.makeCircular}
+          onclick={toggleLoop}
+          aria-pressed={preferences.makeCircular}
+        >
+          <span class="chip-label">Loop</span>
+          <span class="chip-value">{preferences.makeCircular ? "On" : "Off"}</span>
+        </button>
+      </div>
+    {:else}
+      <!-- Expanded: single overlay covers both rows -->
+      {@const expandedSetting = settings.find(s => s.id === expandedId)}
+      {#if expandedSetting}
+        <div class="expanded-overlay">
           <button
             class="back-tap"
-            onclick={() => (expandedId = null)}
+            onclick={handleChipCollapse}
             aria-label="Back to settings"
           >
             <i class="fas fa-chevron-left" aria-hidden="true"></i>
-            <span>{setting.expandedLabel}</span>
+            <span>{expandedSetting.expandedLabel}</span>
           </button>
-          <div class="options-inline" role="radiogroup" aria-label="{setting.label} options">
-            {#each setting.options as option}
-              {@const selected = setting.isSelected(option.value)}
+          <div class="options-row" role="radiogroup" aria-label="{expandedSetting.label} options">
+            {#each expandedSetting.options as option}
+              {@const selected = expandedSetting.isSelected(option.value)}
               <button
                 class="option-btn"
                 class:selected
-                onclick={() => handleSelect(setting, option.value)}
+                onclick={() => handleSelect(expandedSetting, option.value)}
                 role="radio"
                 aria-checked={selected}
               >
@@ -145,91 +190,156 @@ No external drawers - everything morphs within the component.
             {/each}
           </div>
         </div>
-      {:else}
-        <!-- Default chip -->
-        <button
-          class="chip"
-          onclick={() => (expandedId = setting.id)}
-          disabled={isHidden}
-          aria-expanded={isExpanded}
-          aria-haspopup="listbox"
-        >
-          <span class="chip-label">{setting.label}</span>
-          <span class="chip-value">{setting.getValue()}</span>
-        </button>
       {/if}
-    </div>
-  {/each}
+    {/if}
+  </div>
 
-  <!-- Loop: always a toggle, shrinks when others expand -->
-  <div class="chip-slot loop-slot" class:hidden={expandedId !== null}>
-    <button
-      class="chip loop-chip"
-      class:loop-active={preferences.makeCircular}
-      onclick={toggleLoop}
-      disabled={expandedId !== null}
-      aria-pressed={preferences.makeCircular}
-    >
-      <span class="chip-label">Loop</span>
-      <span class="chip-value">{preferences.makeCircular ? "On" : "Off"}</span>
-    </button>
+  <!-- ============================================================ -->
+  <!-- DESKTOP LAYOUT: Expanded sections with all options visible -->
+  <!-- ============================================================ -->
+  <div class="desktop-layout">
+    {#each settings as setting}
+      <div class="setting-section">
+        <span class="section-label">{setting.expandedLabel}</span>
+        <div class="section-options" role="radiogroup" aria-label="{setting.label} options">
+          {#each setting.options as option}
+            {@const selected = setting.isSelected(option.value)}
+            <button
+              class="section-option"
+              class:selected
+              onclick={() => handleSelect(setting, option.value)}
+              role="radio"
+              aria-checked={selected}
+            >
+              {option.label}
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/each}
+
+    <!-- Grid and Loop row -->
+    <div class="setting-section toggles-section">
+      <div class="toggle-group">
+        <span class="section-label">Grid</span>
+        <div class="section-options" role="radiogroup" aria-label="Grid mode">
+          <button
+            class="section-option"
+            class:selected={gridMode === "diamond"}
+            onclick={() => { haptic.trigger("selection"); onGridModeChange("diamond" as GridMode); }}
+            role="radio"
+            aria-checked={gridMode === "diamond"}
+          >
+            ◇ Diamond
+          </button>
+          <button
+            class="section-option"
+            class:selected={gridMode === "box"}
+            onclick={() => { haptic.trigger("selection"); onGridModeChange("box" as GridMode); }}
+            role="radio"
+            aria-checked={gridMode === "box"}
+          >
+            ▢ Box
+          </button>
+        </div>
+      </div>
+
+      <div class="toggle-group">
+        <span class="section-label">Loop</span>
+        <div class="section-options" role="radiogroup" aria-label="Loop mode">
+          <button
+            class="section-option"
+            class:selected={!preferences.makeCircular}
+            onclick={() => { haptic.trigger("selection"); onPreferenceChange("makeCircular", false); }}
+            role="radio"
+            aria-checked={!preferences.makeCircular}
+          >
+            Off
+          </button>
+          <button
+            class="section-option loop-on"
+            class:selected={preferences.makeCircular}
+            onclick={() => { haptic.trigger("selection"); onPreferenceChange("makeCircular", true); }}
+            role="radio"
+            aria-checked={preferences.makeCircular}
+          >
+            On
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <style>
-  .morph-bar {
+  .settings-container {
     display: flex;
-    gap: 8px;
-    height: 72px; /* Base comfortable height */
+    flex-direction: column;
+    gap: var(--settings-spacing-sm, 8px);
+
+    /* Inherit scale from parent spell-panel */
+    --scale: var(--spell-scale, 1);
   }
 
-  /* Desktop: allow more height when there's room */
-  @media (min-height: 700px) {
-    .morph-bar {
-      height: 80px;
+  /* ============================================================ */
+  /* LAYOUT SWITCHING: Mobile vs Desktop */
+  /* ============================================================ */
+
+  .mobile-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--settings-spacing-sm, 8px);
+  }
+
+  .desktop-layout {
+    display: none;
+  }
+
+  /*
+   * Switch to desktop layout based on HEIGHT (not width).
+   * The expanded layout grows vertically, so we need sufficient height.
+   * Width is less relevant - if we have the vertical space, show expanded.
+   *
+   * 500px height threshold = enough for all expanded sections without scrolling
+   */
+  @container tool-panel (min-height: 500px) {
+    .mobile-layout {
+      display: none;
+    }
+
+    .desktop-layout {
+      display: flex;
+      flex-direction: column;
+      gap: calc(var(--settings-spacing-md, 12px) * var(--scale));
     }
   }
 
-  @media (min-height: 900px) {
-    .morph-bar {
-      height: 88px;
-    }
+  /* ============================================================ */
+  /* MOBILE: Compact morphing chips */
+  /* ============================================================ */
+
+  .chips-row {
+    display: flex;
+    gap: var(--settings-spacing-sm, 8px);
   }
 
-  .chip-slot {
-    flex: 1;
-    min-width: 0;
-    transition: all 280ms cubic-bezier(0.4, 0, 0.2, 1);
-    overflow: hidden;
+  .chips-row.hidden {
+    display: none;
   }
 
-  .chip-slot.expanded {
-    flex: 100; /* Take all available space */
-  }
-
-  .chip-slot.hidden {
-    flex: 0;
-    min-width: 0;
-    max-width: 0;
-    opacity: 0;
-    padding: 0;
-    margin-left: -8px; /* Collapse the gap */
-  }
-
-  /* Default chip - fills its slot */
   .chip {
-    width: 100%;
-    height: 100%;
+    flex: 1;
+    min-height: 48px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 10px 14px;
-    background: var(--chip-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--chip-border, rgba(255, 255, 255, 0.08));
-    border-radius: 18px;
-    color: var(--theme-text, #ffffff);
+    gap: var(--settings-spacing-xs, 4px);
+    padding: var(--settings-spacing-sm, 8px);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--settings-radius-lg, 18px);
+    color: var(--theme-text);
     cursor: pointer;
     transition: all 150ms ease;
     user-select: none;
@@ -238,8 +348,8 @@ No external drawers - everything morphs within the component.
 
   @media (hover: hover) {
     .chip:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.15);
+      background: var(--theme-card-hover-bg);
+      border-color: var(--theme-stroke-strong);
     }
   }
 
@@ -255,87 +365,91 @@ No external drawers - everything morphs within the component.
   .chip-label {
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    color: var(--theme-text-muted);
     white-space: nowrap;
   }
 
   .chip-value {
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
-    color: var(--theme-text, #ffffff);
+    color: var(--theme-text);
     white-space: nowrap;
   }
 
-  /* Loop active state */
   .loop-chip.loop-active {
-    --chip-bg: rgba(6, 182, 212, 0.2);
-    --chip-border: rgba(6, 182, 212, 0.5);
-    box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+    background: color-mix(in srgb, var(--theme-accent) 20%, var(--theme-card-bg));
+    border-color: var(--theme-accent);
   }
 
   .loop-chip.loop-active .chip-value {
-    color: #67e8f9;
+    color: var(--theme-accent-light, var(--theme-accent));
   }
 
-  /* Expanded content - fills the morphed slot */
-  .expanded-content {
-    height: 100%;
+  /* Expanded overlay: replaces row 1 when a setting is expanded */
+  .expanded-overlay {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-accent, #6366f1);
-    border-radius: 18px;
-    box-shadow: 0 0 16px rgba(99, 102, 241, 0.15);
+    gap: var(--settings-spacing-sm, 8px);
+    min-height: 48px;
+    padding: var(--settings-spacing-sm, 8px);
+    background: var(--theme-card-bg);
+    border: 1.5px solid var(--theme-accent);
+    border-radius: var(--settings-radius-lg, 18px);
+  }
+
+  .expanded-overlay .option-btn {
+    min-height: 48px;
+    flex: 1;
   }
 
   .back-tap {
     display: flex;
     align-items: center;
-    gap: 6px;
-    height: calc(100% - 4px); /* Fill available height minus padding */
-    padding: 0 14px;
+    justify-content: center;
+    gap: var(--settings-spacing-xs, 4px);
+    min-width: 48px;
+    min-height: 48px;
+    padding: var(--settings-spacing-xs, 4px) var(--settings-spacing-sm, 8px);
     background: transparent;
     border: none;
-    color: var(--theme-accent-light, #a5b4fc);
-    font-size: var(--font-size-min, 14px);
+    color: var(--theme-accent);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
-    border-radius: 12px;
+    border-radius: var(--settings-radius-sm, 8px);
     flex-shrink: 0;
     transition: background 150ms ease;
     white-space: nowrap;
   }
 
   .back-tap:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-hover-bg);
   }
 
   .back-tap:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
+    outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
 
   .back-tap i {
-    font-size: 11px;
+    font-size: 10px;
   }
 
-  .options-inline {
+  .options-row {
     display: flex;
-    gap: 6px;
+    gap: var(--settings-spacing-xs, 4px);
     flex: 1;
     min-width: 0;
   }
 
   .option-btn {
     flex: 1;
-    height: calc(100% - 4px); /* Fill available height minus padding */
-    padding: 0 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1.5px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+    min-height: 48px;
+    padding: var(--settings-spacing-sm, 8px);
+    background: var(--theme-card-bg);
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: var(--settings-radius-md, 12px);
+    color: var(--theme-text-muted);
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
@@ -347,29 +461,119 @@ No external drawers - everything morphs within the component.
 
   @media (hover: hover) {
     .option-btn:hover:not(.selected) {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--theme-text, #ffffff);
+      background: var(--theme-card-hover-bg);
+      color: var(--theme-text);
     }
   }
 
   .option-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
+    outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
 
   .option-btn.selected {
-    background: rgba(99, 102, 241, 0.25);
-    border-color: var(--theme-accent, #6366f1);
-    color: var(--theme-text, #ffffff);
-    box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+    background: color-mix(in srgb, var(--theme-accent) 25%, var(--theme-card-bg));
+    border-color: var(--theme-accent);
+    color: var(--theme-text);
   }
 
+  /* ============================================================ */
+  /* DESKTOP: Expanded sections with all options visible */
+  /* ============================================================ */
+
+  .setting-section {
+    display: flex;
+    flex-direction: column;
+    gap: calc(8px * var(--scale));
+    padding: calc(16px * var(--scale));
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: calc(var(--settings-radius-lg, 18px) * var(--scale));
+  }
+
+  .section-label {
+    font-size: calc(var(--font-size-compact, 12px) * var(--scale));
+    font-weight: 600;
+    color: var(--theme-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .section-options {
+    display: flex;
+    gap: calc(8px * var(--scale));
+  }
+
+  .section-option {
+    flex: 1;
+    min-height: calc(56px * var(--scale));
+    padding: calc(12px * var(--scale)) calc(16px * var(--scale));
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.6));
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: calc(var(--settings-radius-md, 12px) * var(--scale));
+    color: var(--theme-text-muted);
+    font-size: calc(var(--font-size-min, 14px) * var(--scale));
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 150ms ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (hover: hover) {
+    .section-option:hover:not(.selected) {
+      background: var(--theme-card-hover-bg);
+      border-color: var(--theme-stroke-strong);
+      color: var(--theme-text);
+    }
+  }
+
+  .section-option:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .section-option.selected {
+    background: color-mix(in srgb, var(--theme-accent) 25%, var(--theme-card-bg));
+    border-color: var(--theme-accent);
+    color: var(--theme-text);
+  }
+
+  /* Loop "On" button special styling when selected */
+  .section-option.loop-on.selected {
+    background: color-mix(in srgb, var(--theme-accent) 30%, var(--theme-card-bg));
+  }
+
+  /* Grid and Loop side by side */
+  .toggles-section {
+    display: flex;
+    flex-direction: row;
+    gap: calc(16px * var(--scale));
+    padding: calc(16px * var(--scale));
+  }
+
+  .toggle-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: calc(8px * var(--scale));
+  }
+
+  .toggle-group .section-options {
+    flex: 1;
+  }
+
+  /* ============================================================ */
   /* Reduced motion */
+  /* ============================================================ */
+
   @media (prefers-reduced-motion: reduce) {
     .chip-slot,
     .chip,
     .option-btn,
-    .back-tap {
+    .back-tap,
+    .toggles-row,
+    .section-option {
       transition: none;
     }
   }

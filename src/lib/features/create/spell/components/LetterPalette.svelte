@@ -3,8 +3,11 @@ LetterPalette.svelte - Greek letter click-to-insert palette
 
 Displays all available Greek letters organized by category.
 Clicking a letter inserts it into the word input.
+Haptic feedback on letter selection.
 -->
 <script lang="ts">
+  import { container } from "$lib/shared/di";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import {
     GREEK_LETTER_PALETTE,
     GREEK_LETTER_DISPLAY,
@@ -17,6 +20,8 @@ Clicking a letter inserts it into the word input.
     onSelect: (letter: string) => void;
   } = $props();
 
+  const haptic = container.items.hapticFeedback as IHapticFeedback;
+
   // Get display label for a letter
   function getDisplayLabel(letter: Letter): string {
     return GREEK_LETTER_DISPLAY[letter] || letter;
@@ -24,6 +29,7 @@ Clicking a letter inserts it into the word input.
 
   // Handle letter click
   function handleLetterClick(letter: Letter) {
+    haptic.trigger("selection");
     onSelect(letter);
   }
 

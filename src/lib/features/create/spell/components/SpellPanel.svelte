@@ -13,6 +13,7 @@ Same functionality, different density.
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
   import type { SpellTabState } from "../state/spell-tab-state.svelte";
   import { container as diContainer } from "$lib/shared/di";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IVariationExplorationOrchestrator } from "../services/contracts/IVariationExplorationOrchestrator";
   import type { IRandomSequenceGenerator } from "../services/contracts/IRandomSequenceGenerator";
   import type { ISpellServiceLoader } from "../services/contracts/ISpellServiceLoader";
@@ -24,12 +25,9 @@ Same functionality, different density.
   import WordInput from "./WordInput.svelte";
   import SpellSettingsBar from "./SpellSettingsBar.svelte";
   import SpellInputToolbar from "./SpellInputToolbar.svelte";
-  import SpellSequenceStats from "./SpellSequenceStats.svelte";
   import { loadSpellState, saveSpellState } from "../state/spell-persistence.svelte";
   import { createConstraintSet } from "$lib/shared/sequence-engine/constraints";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
-  import { spellStatsCalculator } from "../services/implementations/SpellStatsCalculator";
-  import type { SequenceStats } from "../domain/models/spell-models";
 
   // Props
   let {
@@ -44,6 +42,7 @@ Same functionality, different density.
 
   // Touch device and input focus tracking
   const deviceDetector = diContainer.items.deviceDetector as IDeviceDetector;
+  const haptic = diContainer.items.hapticFeedback as IHapticFeedback;
   let isTouchDevice = $state(false);
   let isInputFocused = $state(false);
 
@@ -127,19 +126,6 @@ Same functionality, different density.
   // Derived
   const canGenerate = $derived(spellState.inputWord.trim().length > 0 && !spellState.isGenerating);
 
-  // Stats computed from current sequence
-  let sequenceStats = $state<SequenceStats | null>(null);
-
-  // Recompute stats when sequence changes
-  $effect(() => {
-    const currentSeq = sequenceState?.currentSequence;
-    if (currentSeq && currentSeq.steps && currentSeq.steps.length > 0) {
-      sequenceStats = spellStatsCalculator.calculateStats(currentSeq);
-    } else {
-      sequenceStats = null;
-    }
-  });
-
   // ============================================================================
   // HELPERS
   // ============================================================================
@@ -186,6 +172,7 @@ Same functionality, different density.
   async function handleGenerate() {
     if (!spellState.inputWord.trim() || !sequenceState) return;
 
+    haptic.trigger("selection");
     spellState.setGenerating(true);
     spellState.clearError();
 
@@ -198,6 +185,7 @@ Same functionality, different density.
         preferences: spellState.preferences,
       });
       if (!parseResult.success || !parseResult.expandedLetters) {
+        haptic.trigger("error");
         spellState.setError(parseResult.error || "Could not parse word");
         return;
       }
@@ -232,6 +220,7 @@ Same functionality, different density.
       );
 
       if (!sequence) {
+        haptic.trigger("error");
         spellState.setError("Could not generate a valid sequence. Try different settings.");
         return;
       }
@@ -261,13 +250,20 @@ Same functionality, different density.
       });
 
       spellState.markHasGeneratedOnce();
+      haptic.trigger("success");
 
     } catch (error) {
       console.error("Failed to generate sequence:", error);
+      haptic.trigger("error");
       spellState.setError(error instanceof Error ? error.message : "Generation failed");
     } finally {
       spellState.setGenerating(false);
     }
+  }
+
+  function handleDismissError() {
+    haptic.trigger("selection");
+    spellState.clearError();
   }
 </script>
 
@@ -279,7 +275,7 @@ Same functionality, different density.
       <span class="error-message">{spellState.error}</span>
       <button
         class="error-dismiss"
-        onclick={() => spellState.clearError()}
+        onclick={handleDismissError}
         aria-label="Dismiss error"
       >
         <i class="fas fa-times" aria-hidden="true"></i>
@@ -322,10 +318,7 @@ Same functionality, different density.
     {/if}
   </button>
 
-  <!-- Sequence Stats (shown after generation) -->
-  {#if sequenceStats}
-    <SpellSequenceStats stats={sequenceStats} />
-  {/if}
+  <!-- Stats removed - "8 prop rev", "2 dashes" was confusing and unhelpful -->
 
   <!-- Keyboard toolbar for touch devices -->
   {#if isTouchDevice}
@@ -342,24 +335,47 @@ Same functionality, different density.
 
 <style>
   .spell-panel {
-    container-type: size;
+    /* Query the parent tool-panel container, not self */
+    container-type: inline-size;
     container-name: spell-panel;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 12px;
-    padding: 12px;
+    justify-content: safe center;
     width: 100%;
-    max-width: 500px;
     margin: 0 auto;
     height: 100%;
     min-height: 0;
     overflow-y: auto;
+
+    /* Fluid spacing: 1vh scales naturally with viewport */
+    /* 667px viewport → 6.67px, 900px → 9px, 1200px → 12px */
+    --fluid-space: clamp(4px, 1vh, 12px);
+    gap: var(--fluid-space);
+    padding: var(--fluid-space);
+
+    /* Scale factor for large screens - used by child components */
+    --spell-scale: 1;
+
+    /* Default max-width for mobile/small screens */
+    max-width: 500px;
   }
 
-  /* Mobile: add bottom nav padding */
-  .spell-panel:not([data-is-desktop="true"]) {
-    padding-bottom: calc(12px + 70px + env(safe-area-inset-bottom, 0px));
+  /* Medium height: show expanded layout with modest scaling */
+  @container tool-panel (min-height: 500px) {
+    .spell-panel {
+      max-width: 520px;
+      --spell-scale: 1;
+      --fluid-space: clamp(6px, 1vh, 12px);
+    }
+  }
+
+  /* Large height: slightly more room to breathe */
+  @container tool-panel (min-height: 700px) {
+    .spell-panel {
+      max-width: 560px;
+      --spell-scale: 1.02;
+      --fluid-space: clamp(6px, 1.2vh, 14px);
+    }
   }
 
   /* Sections */
@@ -368,26 +384,30 @@ Same functionality, different density.
     flex-shrink: 0;
   }
 
-  /* Generate Button */
+  /* Generate Button - scales with container */
   .generate-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: calc(8px * var(--spell-scale));
     width: 100%;
-    min-height: 48px;
-    padding: 12px 16px;
+    min-height: calc(48px * var(--spell-scale));
+    padding: calc(12px * var(--spell-scale)) calc(16px * var(--spell-scale));
     background: var(--theme-accent, #6366f1);
     border: none;
-    border-radius: var(--settings-radius-md, 12px);
+    border-radius: calc(var(--settings-radius-md, 12px) * var(--spell-scale));
     color: white;
-    font-size: var(--font-size-min, 14px);
+    font-size: calc(var(--font-size-min, 14px) * var(--spell-scale));
     font-weight: 700;
     cursor: pointer;
     transition: all 150ms ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     flex-shrink: 0;
+  }
+
+  .generate-button i {
+    font-size: calc(16px * var(--spell-scale));
   }
 
   .generate-button:hover:not(:disabled) {
@@ -405,23 +425,24 @@ Same functionality, different density.
     cursor: not-allowed;
   }
 
-  /* Error Banner */
+  /* Error Banner - scales with container */
   .error-banner {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    gap: calc(8px * var(--spell-scale));
+    padding: calc(8px * var(--spell-scale)) calc(12px * var(--spell-scale));
     background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
     border: 1.5px solid var(--semantic-error, #ef4444);
-    border-radius: var(--settings-radius-md, 12px);
+    border-radius: calc(var(--settings-radius-md, 12px) * var(--spell-scale));
     color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-min, 14px);
+    font-size: calc(var(--font-size-min, 14px) * var(--spell-scale));
     flex-shrink: 0;
   }
 
   .error-banner i:first-child {
     color: var(--semantic-error, #ef4444);
     flex-shrink: 0;
+    font-size: calc(16px * var(--spell-scale));
   }
 
   .error-message {
@@ -433,9 +454,9 @@ Same functionality, different density.
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
-    margin: -8px -8px -8px 0;
+    width: calc(48px * var(--spell-scale));
+    height: calc(48px * var(--spell-scale));
+    margin: calc(-8px * var(--spell-scale)) calc(-8px * var(--spell-scale)) calc(-8px * var(--spell-scale)) 0;
     padding: 0;
     background: transparent;
     border: none;

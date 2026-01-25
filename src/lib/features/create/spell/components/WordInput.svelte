@@ -5,8 +5,12 @@ Features:
 - Text input with placeholder
 - Button to toggle letter palette
 - Backspace/clear functionality
+- Haptic feedback on button interactions
 -->
 <script lang="ts">
+  import { container } from "$lib/shared/di";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+
   let {
     value = "",
     onInput,
@@ -19,6 +23,8 @@ Features:
     /** Called when input focus state changes */
     onFocusChange?: (focused: boolean) => void;
   } = $props();
+
+  const haptic = container.items.hapticFeedback as IHapticFeedback;
 
   function handleFocus() {
     onFocusChange?.(true);
@@ -42,11 +48,13 @@ Features:
   }
 
   function handleClear() {
+    haptic.trigger("selection");
     onInput("");
   }
 
   function handleBackspace() {
     if (value.length > 0) {
+      haptic.trigger("selection");
       onInput(value.slice(0, -1));
     }
   }
@@ -120,16 +128,19 @@ Features:
     display: flex;
     flex-direction: column;
     gap: var(--settings-spacing-xs, 4px);
+
+    /* Inherit scale from parent spell-panel */
+    --scale: var(--spell-scale, 1);
   }
 
   .input-wrapper {
     display: flex;
     align-items: center;
-    gap: var(--settings-spacing-sm, 8px);
+    gap: calc(var(--settings-spacing-sm, 8px) * var(--scale));
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--settings-radius-md, 12px);
-    padding: var(--settings-spacing-sm, 8px);
+    border-radius: calc(var(--settings-radius-md, 12px) * var(--scale));
+    padding: calc(var(--settings-spacing-sm, 8px) * var(--scale));
     transition: border-color var(--duration-normal) ease;
   }
 
@@ -142,9 +153,9 @@ Features:
     background: transparent;
     border: none;
     color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-lg, 18px);
+    font-size: calc(var(--font-size-lg, 18px) * var(--scale));
     font-family: inherit;
-    padding: var(--settings-spacing-sm, 8px);
+    padding: calc(var(--settings-spacing-sm, 8px) * var(--scale));
     outline: none;
     min-width: 0;
   }
@@ -159,7 +170,7 @@ Features:
 
   .input-actions {
     display: flex;
-    gap: var(--settings-spacing-xs, 4px);
+    gap: calc(var(--settings-spacing-xs, 4px) * var(--scale));
     flex-shrink: 0;
   }
 
@@ -167,14 +178,19 @@ Features:
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: calc(48px * var(--scale));
+    height: calc(48px * var(--scale));
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--settings-radius-sm, 8px);
+    border-radius: calc(var(--settings-radius-sm, 8px) * var(--scale));
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
     cursor: pointer;
     transition: all var(--duration-normal) ease;
+  }
+
+  .action-button svg {
+    width: calc(20px * var(--scale));
+    height: calc(20px * var(--scale));
   }
 
   .action-button:hover:not(:disabled) {

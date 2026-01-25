@@ -3,6 +3,7 @@
 
   Shows above the virtual keyboard when input is focused.
   Provides Done button to dismiss keyboard and Generate button for quick action.
+  Haptic feedback on all button interactions.
 
   Uses:
   - VirtualKeyboard API (Chrome Android 94+) for keyboard-inset-height
@@ -12,6 +13,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
+  import { container } from "$lib/shared/di";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   let {
     visible = false,
@@ -35,6 +38,8 @@
     /** Called when keyboard visibility changes with the raw keyboard height */
     onKeyboardVisibilityChange?: (visible: boolean, height: number) => void;
   }>();
+
+  const haptic = container.items.hapticFeedback as IHapticFeedback;
 
   let keyboardHeight = $state(0);
   let isKeyboardVisible = $state(false);
@@ -164,6 +169,16 @@
   });
 
   const shouldShow = $derived(visible && isKeyboardVisible);
+
+  function handleGenerate() {
+    haptic.trigger("selection");
+    onGenerate?.();
+  }
+
+  function handleDone() {
+    haptic.trigger("selection");
+    onDone();
+  }
 </script>
 
 {#if shouldShow}
@@ -190,11 +205,11 @@
             class="generate-button"
             onmousedown={(e) => {
               e.preventDefault();
-              onGenerate();
+              handleGenerate();
             }}
             ontouchstart={(e) => {
               e.preventDefault();
-              onGenerate();
+              handleGenerate();
             }}
             disabled={disabled || !canGenerate || isGenerating}
             aria-label="Generate sequence"
@@ -211,7 +226,7 @@
         <button
           type="button"
           class="done-button"
-          onclick={onDone}
+          onclick={handleDone}
           {disabled}
           aria-label="Done - dismiss keyboard"
         >

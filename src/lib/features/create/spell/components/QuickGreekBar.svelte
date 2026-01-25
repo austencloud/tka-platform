@@ -3,8 +3,11 @@ QuickGreekBar.svelte - Always-visible compact row of common Greek letters
 
 Displays the most frequently used Greek letters for quick insertion.
 "More" button expands to show full palette.
+Haptic feedback on all interactions.
 -->
 <script lang="ts">
+  import { container } from "$lib/shared/di";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { GREEK_LETTER_DISPLAY } from "../domain/constants/spell-constants";
   import { slide } from "svelte/transition";
@@ -18,6 +21,7 @@ Displays the most frequently used Greek letters for quick insertion.
    * - Horizontal scrollable row
    * - Compact 40px buttons
    * - "More" button expands full palette
+   * - Haptic feedback on interactions
    */
 
   interface Props {
@@ -25,6 +29,8 @@ Displays the most frequently used Greek letters for quick insertion.
   }
 
   let { onSelect }: Props = $props();
+
+  const haptic = container.items.hapticFeedback as IHapticFeedback;
 
   // Most common Greek letters for quick access
   const QUICK_LETTERS: Letter[] = [
@@ -45,10 +51,12 @@ Displays the most frequently used Greek letters for quick insertion.
   }
 
   function handleLetterClick(letter: Letter) {
+    haptic.trigger("selection");
     onSelect(letter);
   }
 
   function toggleFullPalette() {
+    haptic.trigger("selection");
     showFullPalette = !showFullPalette;
   }
 </script>
