@@ -12,7 +12,6 @@
  * - Zero dependencies - uses native Intl APIs
  */
 
-import enMessages from "../../../../messages/en.json";
 import type { TranslationKey } from "./i18n-types.js";
 
 // Available locales - must match messages/*.json files
@@ -56,13 +55,79 @@ type Messages = Record<string, string>;
 const LOCALE_COOKIE_NAME = "PARAGLIDE_LOCALE";
 const LOCALE_COOKIE_MAX_AGE = 34560000; // ~400 days
 
-// Reactive state
-let currentLocale = $state<Locale>(getInitialLocale());
-let messages = $state<Messages>(enMessages as Messages);
+// English messages - mutable for HMR support
+let enMessages: Messages = {};
 
 // Cache for loaded locales
 const localeCache = new Map<Locale, Messages>();
-localeCache.set("en", enMessages as Messages);
+
+// Reactive state (initialized after enMessages is ready)
+let currentLocale = $state<Locale>("en");
+let messages = $state<Messages>({});
+let i18nInitialized = false;
+
+/**
+ * Load English messages dynamically (enables HMR)
+ */
+async function loadEnglishMessages(): Promise<Messages> {
+  const module = await import("../../../../messages/en.json");
+  return module.default as Messages;
+}
+
+/**
+ * Initialize English messages and reactive state
+ * Called once on module load
+ */
+async function initializeEnglishMessages(): Promise<void> {
+  enMessages = await loadEnglishMessages();
+  localeCache.set("en", enMessages);
+
+  if (!i18nInitialized) {
+    currentLocale = getInitialLocale();
+    messages = enMessages;
+    i18nInitialized = true;
+  } else if (currentLocale === "en") {
+    // HMR case - update messages if English is active
+    messages = enMessages;
+  }
+}
+
+// Initial load (async but runs immediately)
+initializeEnglishMessages();
+
+// HMR support - reload messages when any locale JSON changes
+if (import.meta.hot) {
+  import.meta.hot.on("vite:beforeUpdate", async (payload) => {
+    for (const update of payload.updates) {
+      // Check if this is a messages/*.json file
+      const match = update.path.match(/messages\/(\w+(?:-\w+)?)\.json/);
+      if (match) {
+        const locale = match[1] as Locale;
+        console.log(`[i18n] Reloading ${locale} messages...`);
+
+        if (locale === "en") {
+          await initializeEnglishMessages();
+        } else if (localeCache.has(locale)) {
+          // Reload this locale - clear cache and re-fetch
+          localeCache.delete(locale);
+          try {
+            const freshMessages = await loadLocaleMessages(locale);
+            localeCache.set(locale, freshMessages);
+
+            // Update active messages if this is the current locale
+            if (currentLocale === locale) {
+              messages = freshMessages;
+            }
+          } catch (e) {
+            console.error(`[i18n] Failed to reload ${locale}:`, e);
+          }
+        }
+
+        console.log(`[i18n] ${locale} messages hot-reloaded ✓`);
+      }
+    }
+  });
+}
 
 /**
  * Get initial locale from cookie or browser preference

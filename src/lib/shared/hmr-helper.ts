@@ -6,6 +6,10 @@
 // Track if we've already scheduled a reload to prevent multiple reloads
 let reloadScheduled = false;
 
+// Track if we've detected a MIME error in this session
+// MIME errors corrupt Svelte's reactivity, so we need to reload
+let mimeErrorDetected = false;
+
 /**
  * Check if we're in HMR mode and the page needs a full reload
  */
@@ -120,6 +124,11 @@ function clearModuleCache() {
 /**
  * Set up global error handler for module loading failures
  * This catches MIME type errors when Vite serves HTML instead of JS
+ *
+ * Strategy: Mark the error but don't immediately reload.
+ * Instead, we detect the broken state when the user tries to interact
+ * (e.g., switch tabs) and the UI doesn't update. This avoids jarring
+ * reloads when the user might still be able to work.
  */
 function setupGlobalErrorHandler() {
   if (typeof window === "undefined" || !import.meta.env.DEV) return;
@@ -135,8 +144,14 @@ function setupGlobalErrorHandler() {
       message.includes("Failed to load module script") ||
       (error?.message && error.message.includes("MIME type"))
     ) {
-      console.error("[HMR] Module script MIME error detected, reloading...");
-      scheduleReload("Module MIME type error");
+      console.warn(
+        "[HMR] Module script MIME error detected - Svelte reactivity may be corrupted. " +
+          "Will reload on next tab switch if UI fails to update."
+      );
+      // Mark the error so we can detect it later
+      mimeErrorDetected = true;
+      // Don't reload immediately - let the user continue if possible
+      // We'll catch the broken state when they try to switch tabs
       event.preventDefault();
     }
   });
@@ -152,8 +167,11 @@ function setupGlobalErrorHandler() {
       message.includes("MIME type") ||
       message.includes("is not a valid JavaScript")
     ) {
-      console.error("[HMR] Dynamic import failure detected, reloading...");
-      scheduleReload("Dynamic import failure");
+      console.warn(
+        "[HMR] Dynamic import failure detected - Svelte reactivity may be corrupted. " +
+          "Will reload on next tab switch if UI fails to update."
+      );
+      mimeErrorDetected = true;
       event.preventDefault();
     }
   });
@@ -295,5 +313,74 @@ export async function restoreThemeFromSettings() {
     console.log("[HMR] Theme variables restored");
   } catch (error) {
     console.warn("[HMR] Failed to restore theme:", error);
+  }
+}
+
+/**
+ * Check if a MIME error has been detected in this session.
+ * MIME errors corrupt Svelte's reactivity, causing state changes
+ * to not reflect in the UI.
+ */
+export function hasMimeErrorOccurred(): boolean {
+  return mimeErrorDetected;
+}
+
+/**
+ * Mark that a MIME error has occurred.
+ * Called from the global error handler when MIME errors are detected.
+ */
+export function markMimeError() {
+  mimeErrorDetected = true;
+}
+
+/**
+ * Verify that a tab switch actually rendered the new tab.
+ * Call this after setActiveTab() to detect reactivity failures.
+ *
+ * @param expectedTab - The tab ID that should now be active
+ * @param timeout - How long to wait before checking (ms)
+ * @returns Promise that resolves to true if tab rendered, false if desync detected
+ */
+export async function verifyTabSwitch(
+  expectedTab: string,
+  timeout = 150
+): Promise<boolean> {
+  if (typeof window === "undefined" || !import.meta.env.DEV) {
+    return true; // Skip in production or SSR
+  }
+
+  // Wait for Svelte to process the state change and re-render
+  await new Promise((resolve) => setTimeout(resolve, timeout));
+
+  // Check if a MIME error occurred - if so, reactivity is likely broken
+  if (mimeErrorDetected) {
+    console.error(
+      "[HMR] MIME error detected earlier - tab switch may have failed"
+    );
+
+    // Check DOM for evidence of the expected tab
+    const tabContent = document.querySelector(
+      `[data-tab="${expectedTab}"], [data-active-tab="${expectedTab}"]`
+    );
+
+    if (!tabContent) {
+      console.error(
+        `[HMR] Tab "${expectedTab}" not found in DOM after MIME error - reloading`
+      );
+      scheduleReload("Tab switch failed after MIME error");
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Force a page reload if reactivity appears broken.
+ * Use this as a last resort when state changes don't reflect in UI.
+ */
+export function forceReloadIfNeeded(reason: string) {
+  if (mimeErrorDetected && !reloadScheduled) {
+    scheduleReload(reason);
   }
 }

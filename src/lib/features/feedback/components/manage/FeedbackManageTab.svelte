@@ -47,6 +47,18 @@
         setNotificationTargetFeedback(null);
       }
     }
+
+    // Cleanup: Clear openFeedback param when leaving this tab
+    return () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("openFeedback")) {
+        params.delete("openFeedback");
+        const newUrl = params.toString()
+          ? `${window.location.pathname}?${params.toString()}`
+          : window.location.pathname;
+        window.history.replaceState({}, "", newUrl);
+      }
+    };
   });
 
   // Sync URL with selected item for persistence across refresh/navigation

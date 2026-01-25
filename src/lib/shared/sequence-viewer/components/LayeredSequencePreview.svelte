@@ -723,37 +723,60 @@
         style="grid-template-columns: repeat({effectiveColumns}, 1fr); grid-template-rows: repeat({rows}, 1fr);"
       >
         {#each visibleCells as cell (cell.index)}
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="pictograph-cell"
-            class:current={showHighlight && highlightedStepIndex === cell.index}
-            class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-            class:clickable={onStepClick && cell.index >= 0}
-            style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-            onclick={() => onStepClick && cell.index >= 0 && onStepClick(cell.index)}
-            onkeydown={(e) => e.key === 'Enter' && onStepClick && cell.index >= 0 && onStepClick(cell.index)}
-            role={onStepClick && cell.index >= 0 ? 'button' : undefined}
-            tabindex={onStepClick && cell.index >= 0 ? 0 : undefined}
-            aria-label={onStepClick && cell.index >= 0 ? `Go to step ${cell.label}` : undefined}
-            transition:scale={{ duration: 250, easing: cubicOut }}
-          >
-            <!-- Light mode image -->
-            <img
-              class="cell-image light-image"
-              class:hidden={darkMode}
-              src={cell.lightUrl}
-              alt={cell.label}
-              draggable="false"
-            />
-            <!-- Dark mode image -->
-            <img
-              class="cell-image dark-image"
-              class:visible={darkMode}
-              src={cell.darkUrl}
-              alt={cell.label}
-              draggable="false"
-            />
-          </div>
+          {#if onStepClick && cell.index >= 0}
+            <button
+              class="pictograph-cell clickable"
+              class:current={showHighlight && highlightedStepIndex === cell.index}
+              class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
+              style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
+              onclick={() => onStepClick(cell.index)}
+              type="button"
+              aria-label="Go to step {cell.label}"
+              transition:scale={{ duration: 250, easing: cubicOut }}
+            >
+              <!-- Light mode image -->
+              <img
+                class="cell-image light-image"
+                class:hidden={darkMode}
+                src={cell.lightUrl}
+                alt={cell.label}
+                draggable="false"
+              />
+              <!-- Dark mode image -->
+              <img
+                class="cell-image dark-image"
+                class:visible={darkMode}
+                src={cell.darkUrl}
+                alt={cell.label}
+                draggable="false"
+              />
+            </button>
+          {:else}
+            <div
+              class="pictograph-cell"
+              class:current={showHighlight && highlightedStepIndex === cell.index}
+              class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
+              style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
+              transition:scale={{ duration: 250, easing: cubicOut }}
+            >
+              <!-- Light mode image -->
+              <img
+                class="cell-image light-image"
+                class:hidden={darkMode}
+                src={cell.lightUrl}
+                alt={cell.label}
+                draggable="false"
+              />
+              <!-- Dark mode image -->
+              <img
+                class="cell-image dark-image"
+                class:visible={darkMode}
+                src={cell.darkUrl}
+                alt={cell.label}
+                draggable="false"
+              />
+            </div>
+          {/if}
         {/each}
       </div>
 
@@ -933,6 +956,17 @@
     /* Subtle border for cell separation */
     box-sizing: border-box;
     border: 1px solid rgba(0, 0, 0, 0.08);
+    /* Button reset for clickable variant */
+    background: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: default;
+  }
+
+  button.pictograph-cell {
+    cursor: pointer;
   }
 
   .dark-mode .pictograph-cell {

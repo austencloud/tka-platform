@@ -26,6 +26,7 @@
   --modal-width-sm: 360px;
   --modal-width-md: 480px;
   --modal-width-lg: 640px;
+  --modal-width-xl: min(90vw, 1400px);
   --modal-width-full: min(95vw, 900px);
   --modal-width-fit: 480px;
 
@@ -83,6 +84,16 @@ dialog.base-modal[open] {
   transform: scale(1) translateY(0);
 }
 
+/* ===== Drag Mode - Disable transforms to fix position:fixed =====
+   When a drag operation is in progress, we need to remove transforms
+   because CSS transforms create a new containing block that breaks
+   position: fixed calculations for drag overlays.
+   ================================================================= */
+dialog.base-modal[data-dragging="true"] {
+  transform: none !important;
+  transition: none !important;
+}
+
 /* ===== Entry Animation - @starting-style (2026) ===== */
 @starting-style {
   dialog.base-modal[open] {
@@ -111,6 +122,11 @@ dialog.base-modal[data-size="md"] {
 dialog.base-modal[data-size="lg"] {
   width: var(--modal-width-lg);
   max-height: min(85vh, 800px);
+}
+
+dialog.base-modal[data-size="xl"] {
+  width: var(--modal-width-xl);
+  max-height: 90vh;
 }
 
 dialog.base-modal[data-size="full"] {

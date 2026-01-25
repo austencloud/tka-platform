@@ -62,7 +62,6 @@ export class SyncRoomDiscovery implements ISyncRoomDiscovery {
 		);
 
 		this._isDiscovering = true;
-		console.log('[SyncRoomDiscovery] Started discovery');
 	}
 
 	stopDiscovery(): void {
@@ -79,8 +78,6 @@ export class SyncRoomDiscovery implements ISyncRoomDiscovery {
 		this._nearbyRooms = [];
 		this._isDiscovering = false;
 		this.notifyCallbacks();
-
-		console.log('[SyncRoomDiscovery] Stopped discovery');
 	}
 
 	onNearbyRoomsChange(callback: (rooms: SyncRoomWithId[]) => void): () => void {
