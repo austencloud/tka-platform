@@ -5,7 +5,7 @@
   a 1,1 turn pattern to create visible trails during playback.
 
   Uses proper infrastructure:
-  - DiscoverLoader to load valid sequence data
+  - BrowseLoader to load valid sequence data
   - TurnPatternManager to apply turn modifications
 -->
 <script lang="ts">
@@ -16,7 +16,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import type { IExploreLoader } from "$lib/features/explore/gallery/display/services/contracts/IExploreLoader";
+  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   // TurnPatternManager is loaded dynamically to avoid pulling in entire Create module at startup
@@ -31,8 +31,8 @@
   let gridVisible = $state(visibilityManager.isGridVisible());
 
   // Services
-  let playbackController: IAnimationPlaybackController | null = null;
-  let exploreLoader: IExploreLoader | null = null;
+  let playbackController: IAnimationPlaybackController;
+  let browseLoader: IBrowseLoader;
 
   // Component state
   let loading = $state(true);
@@ -177,15 +177,15 @@
       error = null;
 
       // Get services from container
-      playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
-      exploreLoader = container.items.exploreLoader as IExploreLoader;
+      playbackController = container.items.animationPlaybackController;
+      browseLoader = container.items.browseLoader;
 
       // Ensure sequence metadata is loaded (populates the cache) - with retry
-      await withRetry(() => exploreLoader!.loadSequenceMetadata());
+      await withRetry(() => browseLoader.loadSequenceMetadata());
 
       // Load the base "B" sequence - with retry
       const baseSequence = await withRetry(() =>
-        exploreLoader!.loadFullSequenceData("B")
+        browseLoader.loadFullSequenceData("B")
       );
 
       if (!baseSequence) {

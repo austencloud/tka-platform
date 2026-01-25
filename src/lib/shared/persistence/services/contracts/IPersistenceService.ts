@@ -7,7 +7,7 @@
  */
 
 import type { AppSettings } from "../../../settings/domain/AppSettings";
-import type { CompleteExploreState } from "../../../../features/explore/shared/domain/models/explore-models";
+import type { CompleteBrowseState } from "../../../../features/browse/shared/domain/models/browse-models";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
 import type { TabId } from "../../../navigation/domain/types";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
@@ -122,18 +122,18 @@ export interface IPersistenceService {
   loadTabState<T = unknown>(tabId: TabId): Promise<T | null>;
 
   // ============================================================================
-  // Discover STATE PERSISTENCE
+  // Browse STATE PERSISTENCE
   // ============================================================================
 
   /**
-   * Save complete Explore state (filters, sorts, scroll position, etc.)
+   * Save complete Browse state (filters, sorts, scroll position, etc.)
    */
-  saveExploreState(state: CompleteExploreState): Promise<void>;
+  saveBrowseState(state: CompleteBrowseState): Promise<void>;
 
   /**
-   * Load Explore state
+   * Load Browse state
    */
-  loadExploreState(): Promise<CompleteExploreState | null>;
+  loadBrowseState(): Promise<CompleteBrowseState | null>;
 
   // ============================================================================
   // SETTINGS PERSISTENCE

@@ -65,7 +65,7 @@ export class CreateModuleEffectCoordinator implements ICreateModuleEffectCoordin
       })
     );
 
-    // Pending edit processing (from Discover gallery)
+    // Pending edit processing (from Browse gallery)
     cleanups.push(
       createPendingEditEffect({
         getDeepLinker,

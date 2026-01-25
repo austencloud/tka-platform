@@ -4,7 +4,7 @@
  * Manages AI model selection across multiple providers (Anthropic, DeepSeek).
  */
 
-import type { LanguageModelV1 } from "ai";
+import type { LanguageModel } from "ai";
 
 export interface ModelConfig {
   provider: "anthropic" | "deepseek";
@@ -19,7 +19,7 @@ export interface ITikaModelProvider {
    * @param modelKey - Model key (e.g., "sonnet-4", "deepseek")
    * @returns Language model instance
    */
-  getModel(modelKey: string): LanguageModelV1;
+  getModel(modelKey: string): LanguageModel;
 
   /**
    * Get available model configurations.

@@ -17,7 +17,7 @@ import { MediaBundler } from "$lib/shared/share/services/implementations/MediaBu
 import { FirebaseVideoUploader } from "$lib/shared/share/services/implementations/FirebaseVideoUploader";
 import { RecordingPersister } from "$lib/shared/video-record/services/implementations/RecordingPersister";
 import { CollaborativeVideoManager } from "$lib/shared/video-collaboration/services/implementations/CollaborativeVideoManager";
-import { CloudThumbnailCache } from "$lib/features/explore/sequences/display/services/implementations/CloudThumbnailCache";
+import { CloudThumbnailCache } from "$lib/features/browse/sequences/display/services/implementations/CloudThumbnailCache";
 import { SequenceImageSharer } from "$lib/shared/share/services/implementations/SequenceImageSharer";
 
 /**

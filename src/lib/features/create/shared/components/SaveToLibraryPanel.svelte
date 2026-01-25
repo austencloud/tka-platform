@@ -313,12 +313,12 @@
         sourceSequenceId: sequence.id || `temp-${Date.now()}`,
         userId: currentUser.uid,
         word: tkaName,
-        thumbnails: sequence.thumbnailUrl ? [sequence.thumbnailUrl] : [],
+        thumbnails: sequence.thumbnails || [],
         sequenceLength: sequence.steps?.length || 0,
         flaggedTerms: moderationResult?.flaggedTerms || [],
         category,
         displayName: sequence.displayName,
-        difficulty: sequence.difficulty,
+        difficulty: sequence.level,
       });
 
       logger.success("Submitted to Hall of Shame successfully");

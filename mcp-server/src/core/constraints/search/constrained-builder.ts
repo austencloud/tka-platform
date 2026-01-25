@@ -88,8 +88,8 @@ export interface ConstrainedSequenceResult {
   /** Error message if not successful */
   error?: string;
 
-  /** Number of search states explored */
-  statesExplored?: number;
+  /** Number of search states browsed */
+  statesBrowsed?: number;
 
   /** Information about bridge letters used (deprecated - use bridgeStepIndices) */
   bridges?: BridgeInfo[];
@@ -197,7 +197,7 @@ export function buildConstrainedSequence(
 
   // Initialize beam with top-scored first variations
   let beam: SearchState[] = [];
-  let statesExplored = 0;
+  let statesBrowsed = 0;
 
   for (const scored of firstLetterScores.slice(0, config.beamWidth)) {
     if (!scored.hardConstraintsSatisfied) continue;
@@ -213,7 +213,7 @@ export function buildConstrainedSequence(
       const initialState = createInitialState(startPictograph.variation, startPictograph.index);
       const state = extendState(initialState, scored.variation, scored);
       beam.push(state);
-      statesExplored++;
+      statesBrowsed++;
     }
   }
 
@@ -313,7 +313,7 @@ export function buildConstrainedSequence(
 
             // Extend state with this bridge letter
             currentState = extendState(currentState, bestBridgeScore.variation, bestBridgeScore, true);
-            statesExplored++;
+            statesBrowsed++;
           }
 
           if (!bridgeSuccess) {
@@ -347,7 +347,7 @@ export function buildConstrainedSequence(
 
             const newState = extendState(currentState, scored.variation, scored);
             nextBeam.push(newState);
-            statesExplored++;
+            statesBrowsed++;
           }
         } else {
           // Single-letter bridge: score and pick the best one
@@ -382,7 +382,7 @@ export function buildConstrainedSequence(
 
           // Extend state with bridge letter (marked as bridge)
           const stateWithBridge = extendState(state, bestBridgeScore.variation, bestBridgeScore, true);
-          statesExplored++;
+          statesBrowsed++;
 
           // Now find target letter variations from bridge's end position
           validVariations = allPictographs.filter(
@@ -412,7 +412,7 @@ export function buildConstrainedSequence(
 
             const newState = extendState(stateWithBridge, scored.variation, scored);
             nextBeam.push(newState);
-            statesExplored++;
+            statesBrowsed++;
           }
         }
       } else {
@@ -434,7 +434,7 @@ export function buildConstrainedSequence(
 
           const newState = extendState(state, scored.variation, scored);
           nextBeam.push(newState);
-          statesExplored++;
+          statesBrowsed++;
         }
       }
     }
@@ -457,7 +457,7 @@ export function buildConstrainedSequence(
           details: [],
         },
         error: `No valid path found after letter "${letter}" (position ${i + 1})`,
-        statesExplored,
+        statesBrowsed,
       };
     }
   }
@@ -471,7 +471,7 @@ export function buildConstrainedSequence(
     if (config.allowPartial && beam.length > 0) {
       const partial = beam.sort((a, b) => b.cumulativeScore - a.cumulativeScore)[0];
       if (partial) {
-        return buildResult(partial, word, constraintSet, statesExplored, true);
+        return buildResult(partial, word, constraintSet, statesBrowsed, true);
       }
     }
 
@@ -488,11 +488,11 @@ export function buildConstrainedSequence(
         details: [],
       },
       error: `No sequence met minimum score threshold (${config.minAcceptableScore})`,
-      statesExplored,
+      statesBrowsed,
     };
   }
 
-  return buildResult(bestState, word, constraintSet, statesExplored, false);
+  return buildResult(bestState, word, constraintSet, statesBrowsed, false);
 }
 
 /**
@@ -595,7 +595,7 @@ function buildResult(
   state: SearchState,
   word: string,
   constraintSet: ConstraintSet,
-  statesExplored: number,
+  statesBrowsed: number,
   isPartial: boolean
 ): ConstrainedSequenceResult {
   const report = generateConstraintReport(state, constraintSet);
@@ -616,7 +616,7 @@ function buildResult(
     startPosition: stepsWithOrientations[0]?.startPosition || "",
     endPosition: state.currentEndPosition,
     constraintReport: report,
-    statesExplored,
+    statesBrowsed,
     error: isPartial ? "Partial result (minimum score not met)" : undefined,
     bridgeStepIndices: bridgeStepIndices && bridgeStepIndices.length > 0 ? bridgeStepIndices : undefined,
   };

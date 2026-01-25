@@ -23,7 +23,7 @@ export class UserDocumentManager implements IUserDocumentManager {
    * Create or update a user document in Firestore.
    *
    * This ensures every authenticated user has a corresponding Firestore document
-   * that can be displayed in the users explore panel.
+   * that can be displayed in the users browse panel.
    *
    * Creates new document with initial fields if doesn't exist.
    * Updates existing document with latest auth data if exists.

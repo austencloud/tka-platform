@@ -55,9 +55,6 @@ interface VisibilitySettings {
 
   // Beat numbers overlay (appears on pictographs in sequences)
   stepNumbers: boolean;
-
-  // Beat position glyph (musical timeline position at bottom-center)
-  beatPositionGlyph: boolean;
 }
 
 export class VisibilityStateManager {
@@ -100,9 +97,6 @@ export class VisibilityStateManager {
 
       // Beat numbers default
       stepNumbers: true, // Show beat numbers by default
-
-      // Beat position glyph default (musical timeline position)
-      beatPositionGlyph: true, // Show beat position by default
 
       // Override with any provided settings
       ...this.convertAppSettingsToVisibility(initialSettings),
@@ -176,8 +170,6 @@ export class VisibilityStateManager {
           this.settings.handPointVisibility = v.handPointVisibility;
         if (v.stepNumbers !== undefined)
           this.settings.stepNumbers = v.stepNumbers;
-        if (v.beatPositionGlyph !== undefined)
-          this.settings.beatPositionGlyph = v.beatPositionGlyph;
 
         debug.log(
           "loadPersistedSettings: Applied settings, result:",
@@ -221,7 +213,6 @@ export class VisibilityStateManager {
       nonRadialPoints: this.settings.nonRadialPoints,
       handPointVisibility: this.settings.handPointVisibility,
       stepNumbers: this.settings.stepNumbers,
-      beatPositionGlyph: this.settings.beatPositionGlyph,
     };
 
     debug.log("Persisting visibility settings", visibilitySettings);
@@ -537,28 +528,6 @@ export class VisibilityStateManager {
    */
   setBeatNumbersVisibility(visible: boolean): void {
     this.settings.stepNumbers = visible;
-    this.notifyObservers(["all"]);
-    // Persist to storage (async, non-blocking)
-    void this.persistSettings();
-  }
-
-  // ============================================================================
-  // BEAT POSITION GLYPH
-  // ============================================================================
-
-  /**
-   * Get beat position glyph visibility
-   * Beat position shows the musical timeline position (1, 1.5, 2e) at bottom-center
-   */
-  getBeatPositionGlyphVisibility(): boolean {
-    return this.settings.beatPositionGlyph;
-  }
-
-  /**
-   * Set beat position glyph visibility
-   */
-  setBeatPositionGlyphVisibility(visible: boolean): void {
-    this.settings.beatPositionGlyph = visible;
     this.notifyObservers(["all"]);
     // Persist to storage (async, non-blocking)
     void this.persistSettings();

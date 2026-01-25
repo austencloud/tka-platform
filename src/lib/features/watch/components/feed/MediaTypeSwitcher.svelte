@@ -25,7 +25,7 @@
 
   // Only show switcher if more than one type is available
   const availableTypes = $derived.by(() => {
-    const types: FeedContentType[] = [];
+    const types: Array<Exclude<FeedContentType, "all">> = [];
     if (hasVideo) types.push("video");
     if (hasAnimation) types.push("animation");
     if (hasPictograph) types.push("pictograph");
@@ -34,7 +34,7 @@
 
   const showSwitcher = $derived(availableTypes.length > 1);
 
-  const typeConfig: Record<FeedContentType, { icon: string; label: string }> = {
+  const typeConfig: Record<Exclude<FeedContentType, "all">, { icon: string; label: string }> = {
     video: { icon: "fas fa-play", label: "Video" },
     animation: { icon: "fas fa-film", label: "Animation" },
     pictograph: { icon: "fas fa-th", label: "Card" },

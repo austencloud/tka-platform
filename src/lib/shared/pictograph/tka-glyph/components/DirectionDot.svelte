@@ -115,14 +115,15 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
   let isAnimating = $state(false);
 
   $effect(() => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     // Skip initial mount (prevDirection is undefined)
     // Animate when direction changes to a new value
     if (prevDirection !== undefined && direction !== prevDirection && direction !== null) {
       isAnimating = true;
-      const timeout = setTimeout(() => { isAnimating = false; }, 180);
-      return () => clearTimeout(timeout);
+      timeout = setTimeout(() => { isAnimating = false; }, 180);
     }
     prevDirection = direction;
+    return () => { if (timeout) clearTimeout(timeout); };
   });
 </script>
 

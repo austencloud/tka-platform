@@ -34,7 +34,7 @@ Add the debug button to any component that displays pictographs:
 Good places to add this:
 
 - `src/lib/modules/build/animate/components/AnimationPanel.svelte`
-- `src/lib/modules/discover/shared/components/DiscoverModule.svelte`
+- `src/lib/modules/browse/shared/components/BrowseModule.svelte`
 - `src/lib/shared/pictograph/shared/components/Pictograph.svelte`
 
 ### Method 2: Svelte 5 Composable (Runes-based)

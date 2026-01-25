@@ -86,7 +86,7 @@ export function getUserTagPath(userId: string, tagId: string): string {
 // ============================================================================
 
 /**
- * Path to the public sequences collection (denormalized for Explore)
+ * Path to the public sequences collection (denormalized for Browse)
  * @example "publicSequences"
  */
 export function getPublicSequencesPath(): string {

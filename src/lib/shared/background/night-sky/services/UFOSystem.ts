@@ -1,7 +1,7 @@
 /**
  * UFOSystem - Intelligent Wandering UFO Easter Egg
  *
- * A rare visitor that explores the night sky with curiosity and purpose.
+ * A rare visitor that browses the night sky with curiosity and purpose.
  * Features:
  * - Wandering behavior with pauses and direction changes
  * - Intelligent tractor beam that scans stars, tracks celestial events, or observes ground

@@ -43,7 +43,12 @@ export type ModuleId =
   | "skewlab" // Experimental skewed positions (admin-only, temporary)
   | "poi-lab" // Poi physics constraints with VTG terminology (admin-only)
   | "background-builder" // Design and iterate on deep ocean background elements
-  | "landing-preview"; // Preview and iterate on landing page designs
+  | "landing-preview" // Preview and iterate on landing page designs
+  | "watch" // Watch videos and performances
+  | "connect" // Multiplayer sessions
+  | "moderation" // Content moderation (admin)
+  | "lab" // Experimental features lab
+  | "terrain-research"; // Terrain research lab
 
 /**
  * Module Definition
@@ -73,7 +78,7 @@ export interface ModuleSelectorState {
  */
 export type LegacyTabId =
   | "construct" // Legacy ID that maps to "build" module
-  | "browse" // Legacy ID for browse/explore
+  | "browse" // Legacy ID for browse/browse
   | "word-card" // Legacy hyphenated version (now choreo_card)
   | "word_card" // Legacy underscore version (now choreo_card)
   | "choreo-card" // Legacy hyphenated version of choreo_card

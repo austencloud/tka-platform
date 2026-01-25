@@ -42,8 +42,8 @@
     gray: { bg: "rgba(107, 114, 128, 0.15)", text: "#9ca3af", glow: "rgba(107, 114, 128, 0.1)" },
   };
 
-  function getChipStyle(color: string = "gray") {
-    const c = chipColors[color] ?? chipColors.gray;
+  function getChipStyle(color: "cyan" | "blue" | "green" | "orange" | "red" | "purple" | "gray" = "gray") {
+    const c = chipColors[color] ?? chipColors.gray!;
     return `background: ${c.bg}; color: ${c.text}; box-shadow: 0 0 8px ${c.glow};`;
   }
 </script>

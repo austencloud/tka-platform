@@ -38,7 +38,7 @@ export interface FishPersonality {
   /**
    * Curiosity: Interest in novel stimuli
    * Low = ignores changes, predictable paths
-   * High = investigates, explores, changes direction often
+   * High = investigates, browses, changes direction often
    */
   curiosity: number;
 }
@@ -150,7 +150,7 @@ export interface BehaviorModifiers {
   schoolChance: number;
 
   /** Multiplier for exploring behavior */
-  exploreChance: number;
+  browseChance: number;
 
   /** Multiplier for resting behavior */
   restChance: number;

@@ -25,12 +25,19 @@
       const response = await fetch(csvPath);
       const csvData = await response.text();
       const lines = csvData.split('\n');
-      const headers = lines[0].split(',');
+      const headerLine = lines[0];
+      if (!headerLine) {
+        status = 'Error: CSV header not found';
+        return;
+      }
+      const headers = headerLine.split(',');
 
       // Find letter
       let row: string[] | null = null;
       for (let i = 1; i < lines.length; i++) {
-        const r = lines[i].split(',');
+        const line = lines[i];
+        if (!line) continue;
+        const r = line.split(',');
         if (r[0] === letter) {
           row = r;
           break;
@@ -75,15 +82,17 @@
       // Render
       const canvas = await renderer.renderPictograph(pictographData as any, {
         size: 950,
-        showGrid: true,
-        showTKA: true,
-        showVTG: false,
-        showElemental: false,
-        showPositions: false,
-        showReversals: false,
-        showNonRadialPoints: false,
-        darkMode: false,
-        handPointVisibility: 'active',
+        visibility: {
+          showGrid: true,
+          showTKA: true,
+          showVTG: false,
+          showElemental: false,
+          showPositions: false,
+          showReversals: false,
+          showNonRadialPoints: false,
+          darkMode: false,
+          handPointVisibility: 'active',
+        }
       });
 
       // Add canvas to page so script can access it

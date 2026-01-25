@@ -12,7 +12,7 @@ export type AchievementCategory =
   | "creator" // Building sequences
   | "scholar" // Learning concepts
   | "practitioner" // Daily streaks & practice
-  | "explorer" // Browsing gallery
+  | "browser" // Browsing gallery
   | "performer" // Video submissions (Phase 3)
   | "trainer" // Training challenges
   | "contributor"; // Feedback submission
@@ -49,7 +49,7 @@ export interface AchievementRequirement {
     | "sequence_count" // Create X sequences
     | "concept_completion" // Complete X concepts
     | "daily_streak" // Login/practice X days in a row
-    | "gallery_exploration" // Discover X sequences
+    | "gallery_exploration" // Browse X sequences
     | "letter_usage" // Create sequence with specific letters
     | "sequence_length" // Create sequence of X steps
     | "generation_count" // Generate X sequences
@@ -162,7 +162,7 @@ export type ChallengeType =
   | "use_letters" // Use specific letters
   | "sequence_length" // Create X-beat sequence
   | "complete_concept" // Complete specific concept
-  | "explore_gallery" // Discover X sequences
+  | "browse_gallery" // Browse X sequences
   | "generation_challenge"; // Generate sequences with criteria
 
 export type ChallengeDifficulty =

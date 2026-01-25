@@ -1,7 +1,7 @@
 <!--
   NearbyTab.svelte
 
-  Displays nearby sessions discovered via Firebase presence.
+  Displays nearby sessions browseed via Firebase presence.
   Auto-refreshes and shows sessions available to join.
 -->
 <script lang="ts">

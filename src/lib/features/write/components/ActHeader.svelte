@@ -4,11 +4,12 @@
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-  import type { ActData } from "../domain/types/write";
+  import type { ActData, MusicPlayerState } from "../domain/types/write";
   import { onMount } from "svelte";
 
   interface Props {
     act: ActData;
+    musicPlayerState?: MusicPlayerState;
     disabled?: boolean;
     onActInfoChanged?: (name: string, description: string) => void;
     onMusicLoadRequested?: () => void;
@@ -16,6 +17,7 @@
 
   let {
     act,
+    musicPlayerState,
     disabled = false,
     onActInfoChanged,
     onMusicLoadRequested,
@@ -151,11 +153,11 @@
     >
       <i class="fas fa-music" aria-hidden="true"></i>
       <span class="music-label">
-        {#if act.musicFile}
-          {act.musicFile.name}
-          {#if act.musicFile.duration}
+        {#if musicPlayerState?.filename}
+          {musicPlayerState.filename}
+          {#if musicPlayerState.duration}
             <span class="duration"
-              >({formatDuration(act.musicFile.duration)})</span
+              >({formatDuration(musicPlayerState.duration / 1000)})</span
             >
           {/if}
         {:else}

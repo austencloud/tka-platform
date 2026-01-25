@@ -8,7 +8,9 @@
   import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "$lib/shared/foundation/domain/models/StepData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
+  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
 
@@ -19,8 +21,8 @@
     isPlaying: boolean;
     currentLetter: string | null;
     currentStepData: StepData | null;
-    bluePropState: unknown;
-    redPropState: unknown;
+    bluePropState: PropState | null;
+    redPropState: PropState | null;
     animationLoading: boolean;
     animationError: string | null;
     highlightedStepIndex: number | null;
@@ -166,7 +168,7 @@
           blueProp={bluePropState}
           redProp={redPropState}
           gridMode={sequence?.gridMode}
-          letter={currentLetter}
+          letter={currentLetter as Letter | null}
           stepData={currentStepData}
           onCanvasReady={onCanvasReady}
         />

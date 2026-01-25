@@ -10,9 +10,9 @@
    * Much simpler than the fence post method!
    */
 
-  import { MapboxTerrainLoader } from "../terrain/MapboxTerrainLoader";
-  import { MapboxSatelliteLoader } from "../terrain/MapboxSatelliteLoader";
-  import type { GeoBounds, HeightmapData } from "../terrain/terrain-types";
+  import { MapboxTerrainLoader } from "../../terrain/MapboxTerrainLoader";
+  import { MapboxSatelliteLoader } from "../../terrain/MapboxSatelliteLoader";
+  import type { GeoBounds, HeightmapData } from "../../terrain/terrain-types";
 
   interface Props {
     /** Current center coordinates */
@@ -42,14 +42,23 @@
   }: Props = $props();
 
   // Form state
-  let lat = $state(initialLat);
-  let lng = $state(initialLng);
+  let lat = $state(0);
+  let lng = $state(0);
   let sizeMeters = $state(500); // Default 500m x 500m
   let resolution = $state(512);
 
   // API tokens - use same key as the loaders
-  let mapboxToken = $state(localStorage.getItem("mapbox-access-token") || "");
-  let showTokenInput = $state(!mapboxToken);
+  let mapboxToken = $state("");
+  let showTokenInput = $state(false);
+
+  // Initialize from props and localStorage
+  $effect(() => {
+    lat = initialLat;
+    lng = initialLng;
+    const token = localStorage.getItem("mapbox-access-token") || "";
+    mapboxToken = token;
+    showTokenInput = !token;
+  });
 
   // Loading state
   let isCapturing = $state(false);
@@ -208,15 +217,15 @@
       {:else}
         <!-- Location input -->
         <div class="section">
-          <label class="section-label">Location</label>
+          <span class="section-label">Location</span>
           <div class="coord-inputs">
             <div class="coord-field">
-              <label>Latitude</label>
-              <input type="number" step="0.0001" bind:value={lat} />
+              <label for="lat-input">Latitude</label>
+              <input id="lat-input" type="number" step="0.0001" bind:value={lat} />
             </div>
             <div class="coord-field">
-              <label>Longitude</label>
-              <input type="number" step="0.0001" bind:value={lng} />
+              <label for="lng-input">Longitude</label>
+              <input id="lng-input" type="number" step="0.0001" bind:value={lng} />
             </div>
           </div>
 
@@ -236,9 +245,9 @@
 
         <!-- Size input -->
         <div class="section">
-          <label class="section-label">Capture Size</label>
+          <label for="size-input" class="section-label">Capture Size</label>
           <div class="size-input">
-            <input type="range" min="100" max="2000" step="50" bind:value={sizeMeters} />
+            <input id="size-input" type="range" min="100" max="2000" step="50" bind:value={sizeMeters} />
             <span class="size-value">{sizeMeters}m × {sizeMeters}m</span>
           </div>
         </div>
@@ -438,6 +447,7 @@
   .size-input input[type="range"] {
     flex: 1;
     height: 4px;
+    appearance: none;
     -webkit-appearance: none;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 2px;
@@ -445,6 +455,7 @@
   }
 
   .size-input input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
     -webkit-appearance: none;
     width: 16px;
     height: 16px;

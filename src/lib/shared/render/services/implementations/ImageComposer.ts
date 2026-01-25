@@ -19,7 +19,7 @@ import { getAnimationVisibilityManager } from "../../../animation-engine/state/a
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { pictographPreparer } from "../../../pictograph/shared/services/implementations/PictographPreparer";
 
-import { SequenceDifficultyCalculator } from "$lib/features/explore/sequences/display/services/implementations/SequenceDifficultyCalculator";
+import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
 import type { IDimensionCalculator } from "../contracts/IDimensionCalculator";
 import type {
@@ -1016,11 +1016,15 @@ export class ImageComposer implements IImageComposer {
     });
 
     // Build layer render options
+    // Convert handPointVisibility: LayerRenderOptions doesn't support "none", map it to "active"
+    const rawHandVisibility = visibilitySettings.handPointVisibility ?? "all";
+    const handVisibility: "all" | "active" = rawHandVisibility === "none" ? "active" : rawHandVisibility;
+
     const layerOptions = {
       size: stepSize,
       darkMode: visibilitySettings.darkMode ?? false,
       showNonRadialPoints: visibilitySettings.showNonRadialPoints ?? false,
-      handPointVisibility: visibilitySettings.handPointVisibility ?? "all",
+      handPointVisibility: handVisibility,
       bluePropType: visibilitySettings.bluePropType,
       redPropType: visibilitySettings.redPropType,
     };

@@ -21,7 +21,7 @@ export class TikaMarkdownParser implements ITikaMarkdownParser {
 				if (lines.length < 2) return tableMatch;
 
 				// Parse header row
-				const headerCells = lines[0].split('|').slice(1, -1).map((c) => c.trim());
+				const headerCells = lines[0]!.split('|').slice(1, -1).map((c) => c.trim());
 				// Skip separator row (line[1])
 				// Parse data rows
 				const dataRows = lines.slice(2).map((row) => row.split('|').slice(1, -1).map((c) => c.trim()));
@@ -78,7 +78,7 @@ export class TikaMarkdownParser implements ITikaMarkdownParser {
 
 		// Restore tables
 		for (let i = 0; i < tableBlocks.length; i++) {
-			processed = processed.replace(`__TABLE_${i}__`, tableBlocks[i]);
+			processed = processed.replace(`__TABLE_${i}__`, tableBlocks[i] ?? '');
 		}
 
 		// Wrap consecutive <li> in <ul>

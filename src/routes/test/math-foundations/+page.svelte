@@ -1,6 +1,6 @@
 <!--
   Mathematical Foundations Page
-  Navigate to /test/math-foundations to explore the mathematical patterns in TKA
+  Navigate to /test/math-foundations to browse the mathematical patterns in TKA
 -->
 <script lang="ts">
   import HeroSection from "$lib/features/math-foundations/components/HeroSection.svelte";
@@ -34,7 +34,7 @@
 
   <section class="more-levels">
     <div class="container">
-      <h2>More Levels to Explore</h2>
+      <h2>More Levels to Browse</h2>
       <p class="intro">
         The pattern continues. As you learn more, you'll recognize it in:
       </p>

@@ -38,8 +38,8 @@ interface AutoSyncConfig {
  *
  * @example
  * ```typescript
- * // In your existing createExploreState factory
- * export function createExploreState(services) {
+ * // In your existing createBrowseState factory
+ * export function createBrowseState(services) {
  *   const autoSyncState = createAutoSyncState<BrowseState>({
  *     key: 'tka-browse-state-v3',
  *     debounceMs: 300,
@@ -103,8 +103,8 @@ export function createAutoSyncState<T>(config: AutoSyncConfig) {
     if (!browser) return defaultValue;
 
     try {
-      const storageService = container.items.storageManager;
-      const stored = storageService.safeLocalStorageGet<unknown>(key, null);
+      const storageService = container.items.storageManager as IStorageManager;
+      const stored = storageService.safeLocalStorageGet(key, null);
 
       if (stored === null) {
         return defaultValue;
@@ -213,12 +213,12 @@ export function createAutoSyncState<T>(config: AutoSyncConfig) {
 // ============================================================================
 
 /**
- * Auto-sync factory specifically for Explore state
+ * Auto-sync factory specifically for Browse state
  */
-export function createExploreAutoSync() {
+export function createBrowseAutoSync() {
   return createAutoSyncState({
-    key: "tka-Explore-state-v3",
-    debounceMs: 300, // Faster saves for Explore interactions
+    key: "tka-Browse-state-v3",
+    debounceMs: 300, // Faster saves for Browse interactions
     validate: (state: unknown) =>
       Boolean(state && typeof state === "object" && state !== null),
     beforeSave: (state: unknown) => {

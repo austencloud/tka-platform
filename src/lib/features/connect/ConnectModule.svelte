@@ -3,7 +3,7 @@
 	 * ConnectModule
 	 *
 	 * Collaborative sync for viewing sequences together.
-	 * Auto-discover nearby sessions, invite friends, or search by username.
+	 * Auto-browse nearby sessions, invite friends, or search by username.
 	 */
 	import { onMount, onDestroy } from 'svelte';
 	import { container } from '$lib/shared/di';

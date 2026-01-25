@@ -10,7 +10,7 @@ import type {
 export interface ITextRenderer {
   /**
    * Render sequence word/title text at the top
-   * @deprecated Use renderWordFooter for Explorer Gallery style
+   * @deprecated Use renderWordFooter for Browser Gallery style
    */
   renderWordText(
     canvas: HTMLCanvasElement,
@@ -21,7 +21,7 @@ export interface ITextRenderer {
 
   /**
    * Render word in a footer at the bottom of the canvas
-   * Uses Explorer Gallery style: color-coded gradient background based on difficulty level
+   * Uses Browser Gallery style: color-coded gradient background based on difficulty level
    */
   renderWordFooter(
     canvas: HTMLCanvasElement,

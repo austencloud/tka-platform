@@ -63,6 +63,7 @@
     Group,
     Object3D,
     Vector3,
+    PerspectiveCamera,
     type Scene,
     type Material,
   } from "three";
@@ -992,7 +993,7 @@
     vegetationManager?.rebuildDirtyBatches();
 
     // Update atmosphere
-    if (camera.current) {
+    if (camera.current && camera.current instanceof PerspectiveCamera) {
       atmosphereManager?.update(camera.current);
     }
 

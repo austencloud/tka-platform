@@ -20,8 +20,8 @@ export class ExhibitLoader implements IExhibitLoader {
     layout: GalleryLayout,
     options: ExhibitLoadOptions
   ): Promise<Exhibit[]> {
-    // Collect all slots from all walls
-    const allSlots = layout.walls.flatMap((wall) => wall.exhibitSlots);
+    // Get all exhibit slots from the layout
+    const allSlots = layout.exhibitSlots;
 
     if (allSlots.length === 0) {
       return [];

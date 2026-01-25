@@ -4,7 +4,7 @@
  * These types represent the core parameters that define a sequence,
  * used by both:
  * - Generate module (to create new sequences)
- * - Discover module (to filter existing sequences)
+ * - Browse module (to filter existing sequences)
  *
  * Keeping these unified ensures consistency across the app.
  */

@@ -15,7 +15,7 @@
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
-    import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
   // BPM/Speed conversion constant
@@ -158,11 +158,8 @@
   onMount(async () => {
     try {
       // Load animator module
-      
-      sequenceService = resolve<ISequenceRepository>(TYPES.ISequenceRepository);
-      playbackController = resolve<IAnimationPlaybackController>(
-        TYPES.IAnimationPlaybackController
-      );
+      sequenceService = container.items.sequenceRepository;
+      playbackController = container.items.animationPlaybackController;
       servicesReady = true;
     } catch (err) {
       console.error("Failed to initialize animation player:", err);

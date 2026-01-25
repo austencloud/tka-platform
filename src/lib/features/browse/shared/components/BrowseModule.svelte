@@ -2,7 +2,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import { container } from "$lib/shared/di";
-    import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
+  import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { onMount, setContext, untrack } from "svelte";
   import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
@@ -19,7 +19,7 @@
   import { creatorsViewState } from "../../creators/state/creators-view-state.svelte";
   import { createBrowseState } from "../state/browse-state-factory.svelte";
   import BrowseDeleteDialog from "./BrowseDeleteDialog.svelte";
-  import BrowseSequencesTab from "./BrowseSequencesTab.svelte";
+  import GalleryTab from "./GalleryTab.svelte";
   import { browseScrollState } from "../state/BrowseScrollState.svelte";
   import {
     browseNavigationState,
@@ -365,13 +365,15 @@
     // Initialize DeviceDetector service
     let cleanup: (() => void) | undefined;
     try {
-      deviceDetector = container.items.deviceDetector as IDeviceDetector;
-      responsiveSettings = deviceDetector.getResponsiveSettings();
+      deviceDetector = container.items.deviceDetector;
+      if (deviceDetector) {
+        responsiveSettings = deviceDetector.getResponsiveSettings();
 
-      // Store cleanup function from onCapabilitiesChanged
-      cleanup = deviceDetector.onCapabilitiesChanged(() => {
-        responsiveSettings = deviceDetector!.getResponsiveSettings();
-      });
+        // Store cleanup function from onCapabilitiesChanged
+        cleanup = deviceDetector.onCapabilitiesChanged(() => {
+          responsiveSettings = deviceDetector!.getResponsiveSettings();
+        });
+      }
     } catch (err) {
       console.warn("BrowseModule: Failed to resolve DeviceDetector", err);
     }
@@ -460,7 +462,7 @@
         }}
       >
         {#if activeTab === "gallery"}
-          <BrowseSequencesTab
+          <GalleryTab
             {isMobile}
             {isUIVisible}
             {showDesktopSidebar}

@@ -129,9 +129,11 @@ export class SvgImageCache {
         let processedSvg = svgString;
         if (!svgString.includes('width=') || !svgString.includes('height=')) {
           const viewBoxMatch = svgString.match(/viewBox\s*=\s*["']([^"']+)["']/);
-          if (viewBoxMatch) {
+          if (viewBoxMatch?.[1]) {
             // viewBox format: "x y width height" (e.g., "0 0 950 950")
-            const [x, y, width, height] = viewBoxMatch[1].split(/\s+/).map(Number);
+            const parts = viewBoxMatch[1].split(/\s+/).map(Number);
+            const width = parts[2];
+            const height = parts[3];
             if (width && height) {
               // Add width and height attributes to the <svg> tag
               processedSvg = svgString.replace(

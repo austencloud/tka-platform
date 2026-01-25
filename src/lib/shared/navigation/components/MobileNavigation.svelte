@@ -55,13 +55,15 @@
     try {
       deviceDetector = container.items.deviceDetector;
 
-      // Get initial responsive settings
-      responsiveSettings = deviceDetector.getResponsiveSettings();
+      if (deviceDetector) {
+        // Get initial responsive settings
+        responsiveSettings = deviceDetector.getResponsiveSettings();
 
-      // Return cleanup function from onCapabilitiesChanged
-      deviceCleanup = deviceDetector.onCapabilitiesChanged(() => {
-        responsiveSettings = deviceDetector!.getResponsiveSettings();
-      });
+        // Return cleanup function from onCapabilitiesChanged
+        deviceCleanup = deviceDetector.onCapabilitiesChanged(() => {
+          responsiveSettings = deviceDetector!.getResponsiveSettings();
+        });
+      }
     } catch (error) {
       console.warn("MobileNavigation: Failed to resolve DeviceDetector", error);
     }

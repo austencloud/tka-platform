@@ -65,7 +65,7 @@
     onclick,
   }: Props = $props();
 
-  const iconOnly = !label && icon;
+  const iconOnly = $derived(!label && !!icon);
 </script>
 
 <button

@@ -113,7 +113,7 @@
     (async () => {
       try {
         const { CloudThumbnailCache } = await import(
-          "$lib/features/explore/sequences/display/services/implementations/CloudThumbnailCache"
+          "$lib/features/browse/sequences/display/services/implementations/CloudThumbnailCache"
         );
         const cache = new CloudThumbnailCache();
         await cache.loadManifest();

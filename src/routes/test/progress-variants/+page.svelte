@@ -2,30 +2,31 @@
   import SegmentedSequenceProgressBar from "$lib/shared/animation-engine/components/layers/SegmentedSequenceProgressBar.svelte";
   import { createStepData } from "$lib/features/create/shared/domain/factories/createStepData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+  import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
   // Mock sequence data with varied durations
   const mockSequence1: StepData[] = [
-    createStepData({ stepNumber: 1, duration: 1.0, letter: "A" }),
-    createStepData({ stepNumber: 2, duration: 2.0, letter: "B" }),
-    createStepData({ stepNumber: 3, duration: 0.5, letter: "C" }),
-    createStepData({ stepNumber: 4, duration: 1.5, letter: "D" }),
+    createStepData({ stepNumber: 1, duration: 1.0, letter: Letter.A }),
+    createStepData({ stepNumber: 2, duration: 2.0, letter: Letter.B }),
+    createStepData({ stepNumber: 3, duration: 0.5, letter: Letter.C }),
+    createStepData({ stepNumber: 4, duration: 1.5, letter: Letter.D }),
   ];
 
   const mockSequence2: StepData[] = [
-    createStepData({ stepNumber: 1, duration: 1.0, letter: "X" }),
-    createStepData({ stepNumber: 2, duration: 1.0, letter: "Ψ" }),
-    createStepData({ stepNumber: 3, duration: 1.0, letter: "Δ" }),
-    createStepData({ stepNumber: 4, duration: 1.0, letter: "T" }),
-    createStepData({ stepNumber: 5, duration: 1.0, letter: "Γ" }),
-    createStepData({ stepNumber: 6, duration: 1.0, letter: "S" }),
+    createStepData({ stepNumber: 1, duration: 1.0, letter: Letter.X }),
+    createStepData({ stepNumber: 2, duration: 1.0, letter: Letter.PSI }),
+    createStepData({ stepNumber: 3, duration: 1.0, letter: Letter.DELTA }),
+    createStepData({ stepNumber: 4, duration: 1.0, letter: Letter.T }),
+    createStepData({ stepNumber: 5, duration: 1.0, letter: Letter.GAMMA }),
+    createStepData({ stepNumber: 6, duration: 1.0, letter: Letter.S }),
   ];
 
   const mockSequence3: StepData[] = [
-    createStepData({ stepNumber: 1, duration: 0.5, letter: "A" }),
-    createStepData({ stepNumber: 2, duration: 0.5, letter: "B" }),
-    createStepData({ stepNumber: 3, duration: 2.0, letter: "C" }),
-    createStepData({ stepNumber: 4, duration: 0.5, letter: "D" }),
-    createStepData({ stepNumber: 5, duration: 0.5, letter: "E" }),
+    createStepData({ stepNumber: 1, duration: 0.5, letter: Letter.A }),
+    createStepData({ stepNumber: 2, duration: 0.5, letter: Letter.B }),
+    createStepData({ stepNumber: 3, duration: 2.0, letter: Letter.C }),
+    createStepData({ stepNumber: 4, duration: 0.5, letter: Letter.D }),
+    createStepData({ stepNumber: 5, duration: 0.5, letter: Letter.E }),
   ];
 
   // Animation state for each demo

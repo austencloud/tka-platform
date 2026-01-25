@@ -50,7 +50,7 @@
 
   import { deepLinker } from "./navigation/services/implementations/DeepLinker";
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
-  import { exploreScrollState } from "../features/explore/shared/state/ExploreScrollState.svelte";
+  import { browseScrollState } from "../features/browse/shared/state/BrowseScrollState.svelte";
   import type { IViewportManager } from "./device/services/contracts/IViewportManager";
   import { container } from "./di";
   import type { IDeviceDetector } from "./device/services/contracts/IDeviceDetector";
@@ -105,11 +105,11 @@
   > | null = null;
   const showDesktopSidebar = $derived(desktopSidebarState.isVisible);
 
-  // Primary navigation visibility - hide during Discover module scroll
+  // Primary navigation visibility - hide during Browse module scroll
   const isPrimaryNavVisible = $derived(() => {
     const module = currentModule();
-    if (module === "explore") {
-      return exploreScrollState.isUIVisible;
+    if (module === "browse") {
+      return browseScrollState.isUIVisible;
     }
     return true;
   });
@@ -131,7 +131,7 @@
 
   // Handle reveal navigation from peek indicator
   function handleRevealNav() {
-    exploreScrollState.forceShowUI();
+    browseScrollState.forceShowUI();
   }
 
 

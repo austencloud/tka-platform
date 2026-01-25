@@ -194,7 +194,7 @@ export class HallOfShameSubmitter implements IHallOfShameSubmitter {
 				userId,
 				date: todayKey,
 				count: currentCount + 1
-			});
+			} as Record<string, unknown>);
 		} catch (error) {
 			console.error('[HallOfShameSubmitter] Error incrementing daily count:', error);
 			// Don't throw - rate limiting is best-effort
@@ -203,6 +203,7 @@ export class HallOfShameSubmitter implements IHallOfShameSubmitter {
 
 	private getTodayKey(): string {
 		const now = new Date();
-		return now.toISOString().split('T')[0]; // YYYY-MM-DD in UTC
+		const datePart = now.toISOString().split('T')[0];
+		return datePart ?? ''; // YYYY-MM-DD in UTC
 	}
 }

@@ -116,6 +116,10 @@ export const GET: RequestHandler = async () => {
 
 		// Load the most recent report
 		const latestFile = files[0];
+		if (!latestFile) {
+			return json({ items: [], summary: { total: 0, pending: 0, resolved: 0 } });
+		}
+
 		const reportPath = path.join(REPORTS_DIR, latestFile);
 		const report: EvaluationReport = JSON.parse(fs.readFileSync(reportPath, 'utf-8'));
 
@@ -179,9 +183,9 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		resolutions[itemId] = {
 			resolvedAt: new Date().toISOString(),
-			resolvedBy: resolvedBy || 'austen',
-			notes: notes || '',
-			correctedResponse
+			resolvedBy: (resolvedBy as string | undefined) || 'austen',
+			notes: (notes as string | undefined) || '',
+			correctedResponse: correctedResponse as string | undefined
 		};
 
 		saveResolutions(resolutions);

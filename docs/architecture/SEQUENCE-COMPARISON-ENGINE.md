@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document describes a comprehensive, future-proof architecture for comparing TKA sequences. The system draws from established algorithms in bioinformatics ([Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm), [Smith-Waterman](https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm)), music information retrieval ([symbolic melodic similarity](https://dl.acm.org/doi/10.1162/COMJ_a_00359)), and dance notation ([Labanotation motion comparison](https://ieeexplore.ieee.org/document/8891607/)).
+This document describes a comprehensive, future-proof architecture for comparing TKA sequences. The system draws from established algorithms in bioinformatics ([Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm), [Smith-Waterman](https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm)), music information retrieval ([symbolic melodic similarity](https://dl.acm.org/doi/10.1162/COMJ_a_00359)), and dance notation ([Labanotation motion comparison](https://ieebrowse.ieee.org/document/8891607/)).
 
 The architecture is designed to:
 1. Handle exact equivalence detection (same sequence, different orientation/start)
@@ -617,4 +617,4 @@ This architecture supports future additions:
 - [Smith-Waterman Algorithm](https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm) - Local sequence alignment
 - [Symbolic Melodic Similarity](https://dl.acm.org/doi/10.1162/COMJ_a_00359) - Music sequence comparison
 - [Booth's Algorithm](https://en.wikipedia.org/wiki/Lexicographically_minimal_string_rotation) - Canonical rotation
-- [Labanotation Motion Learning](https://ieeexplore.ieee.org/document/8891607/) - Dance movement comparison
+- [Labanotation Motion Learning](https://ieebrowse.ieee.org/document/8891607/) - Dance movement comparison

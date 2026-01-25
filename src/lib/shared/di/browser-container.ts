@@ -25,6 +25,12 @@ import { orientationCalculator } from "$lib/shared/pictograph/prop/services/impl
 import { betaDetector } from "$lib/shared/pictograph/prop/services/implementations/BetaDetector";
 import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+import { screenSpaceAdjustmentTransformer } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
+import { arrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
+import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
+import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import { sequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
 import { analyticsContainer } from "./containers/analytics-container";
 import { presenceContainer } from "./containers/presence-container";
 import { communityContainer } from "./containers/community-container";
@@ -38,7 +44,7 @@ import { mandalaContainer } from "./containers/mandala-container";
 import { createBuildContainer } from "./containers/build-container";
 import { createAnimatorContainer } from "./containers/animator-container";
 import { createLoopLabelerContainer } from "./containers/loop-labeler-container";
-import { createExploreContainer } from "./containers/browse-container";
+import { createBrowseContainer } from "./containers/browse-container";
 import { createNavigationContainer } from "./containers/navigation-container";
 import { createRenderContainer } from "./containers/render-container";
 import { createTrainContainer } from "./containers/train-container";
@@ -84,8 +90,8 @@ const navigationContainer = createNavigationContainer({
 // Share container needs sequenceRenderer from render
 const shareContainer = createShareContainer(renderContainer.items.sequenceRenderer);
 
-// Discover container needs multiple external deps
-const exploreContainer = createExploreContainer({
+// Browse container needs multiple external deps
+const browseContainer = createBrowseContainer({
   wordDeriver: coreContainer.items.wordDeriver,
   deviceDetector: coreContainer.items.deviceDetector,
   sequenceRenderer: renderContainer.items.sequenceRenderer,
@@ -112,7 +118,13 @@ const buildContainer = createBuildContainer({
   betaDetector,
   arrowPositioningOrchestrator,
   letterQueryHandler,
+  screenSpaceAdjustmentTransformer,
+  arrowAdjustmentCalculator,
+  arrowLocationCalculator,
+  pictographPreparer,
+  turnsTupleGenerator,
   sharer: shareContainer.items.sharer,
+  sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
 });
 
 // Animator container needs multiple external deps
@@ -124,7 +136,7 @@ const animatorContainer = createAnimatorContainer({
   fileDownloader: coreContainer.items.fileDownloader,
   sequenceRepository: dataContainer.items.sequenceRepository,
   sequenceTransformer: buildContainer.items.sequenceTransformer,
-  exploreLoader: exploreContainer.items.exploreLoader,
+  browseLoader: browseContainer.items.browseLoader,
   sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
 });
 
@@ -162,12 +174,15 @@ const libraryContainer = createLibraryContainer({
   },
 });
 
-// QR container needs exploreLoader for loading full sequence data
-const qrContainer = createQRContainer(exploreContainer.items.exploreLoader);
+// QR container needs browseLoader and sequenceEncoder
+const qrContainer = createQRContainer({
+  browseLoader: browseContainer.items.browseLoader,
+  sequenceEncoder,
+});
 
-// Animation 3D container needs exploreLoader
+// Animation 3D container needs browseLoader
 const animation3DContainer = createAnimation3DContainer({
-  exploreLoader: exploreContainer.items.exploreLoader,
+  browseLoader: browseContainer.items.browseLoader,
 });
 
 // Gallery container needs libraryRepository
@@ -209,9 +224,9 @@ export const container = createContainer()
   .add(animatorContainer.items)
   // Features
   .add(buildContainer.items)
-  // NOTE: exploreContainer has naming conflicts (filterPersister, navigator)
+  // NOTE: browseContainer has naming conflicts (filterPersister, navigator)
   // Using upsert to allow overwriting - these should be renamed in a follow-up
-  .upsert(exploreContainer.items)
+  .upsert(browseContainer.items)
   .add(trainContainer.items)
   .add(learnContainer.items)
   .add(libraryContainer.items)

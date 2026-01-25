@@ -14,7 +14,7 @@ import type {
 	FeedItemIntent,
 } from "../../domain/models/feed-models";
 import type { IPublicVideoLoader } from "$lib/features/watch/services/contracts/IPublicVideoLoader";
-import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -24,7 +24,7 @@ const LOAD_BATCH_SIZE = 30;
 export class FeedLoader implements IFeedLoader {
 	constructor(
 		private videoLoader: IPublicVideoLoader,
-		private sequenceLoader: IExploreLoader
+		private sequenceLoader: IBrowseLoader
 	) {}
 
 	async loadFeedPage(query: FeedQuery): Promise<FeedPage> {
@@ -46,10 +46,7 @@ export class FeedLoader implements IFeedLoader {
 			(a, b) => b.createdAt.getTime() - a.createdAt.getTime()
 		);
 
-		// Apply content type filter
-		if (filter && filter !== "all") {
-			allItems = allItems.filter((item) => item.contentType === filter);
-		}
+		// Filter already applied during load, no need to filter again here
 
 		// Ensure content variety in first batch (interleave if needed)
 		if (!query.cursor) {
@@ -73,7 +70,7 @@ export class FeedLoader implements IFeedLoader {
 		filter?: FeedContentType
 	): Promise<CollaborativeVideo[]> {
 		// Skip if filter excludes videos
-		if (filter && filter !== "all" && filter !== "video") {
+		if (filter && filter !== "video") {
 			return [];
 		}
 
@@ -191,8 +188,11 @@ export class FeedLoader implements IFeedLoader {
 		if (items.length < 5) return items;
 
 		const firstFive = items.slice(0, 5);
+		const firstItem = firstFive[0];
+		if (!firstItem) return items;
+
 		const allSameType = firstFive.every(
-			(i) => i.contentType === firstFive[0].contentType
+			(i) => i.contentType === firstItem.contentType
 		);
 
 		if (!allSameType) return items;
@@ -207,8 +207,10 @@ export class FeedLoader implements IFeedLoader {
 		const maxLen = Math.max(videos.length, others.length);
 
 		for (let i = 0; i < maxLen; i++) {
-			if (i < videos.length) interleaved.push(videos[i]);
-			if (i < others.length) interleaved.push(others[i]);
+			const video = videos[i];
+			const other = others[i];
+			if (video) interleaved.push(video);
+			if (other) interleaved.push(other);
 		}
 
 		return interleaved;

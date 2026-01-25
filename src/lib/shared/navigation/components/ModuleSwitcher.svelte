@@ -31,7 +31,7 @@
     onModuleChange?: (moduleId: ModuleId) => void;
   }>();
 
-  let hapticService: IHapticFeedback;
+  let hapticService: IHapticFeedback = null!;
   let deviceDetector: IDeviceDetector | null = null;
   let isOpen = $state(false);
 
@@ -56,20 +56,22 @@
   }
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = container.items.hapticFeedback as IHapticFeedback;
 
     // Resolve DeviceDetector service (same pattern as MobileNavigation)
     let deviceCleanup: (() => void) | undefined;
     try {
       deviceDetector = container.items.deviceDetector;
 
-      // Get initial responsive settings
-      responsiveSettings = deviceDetector.getResponsiveSettings();
+      if (deviceDetector) {
+        // Get initial responsive settings
+        responsiveSettings = deviceDetector.getResponsiveSettings();
 
-      // Subscribe to device capability changes
-      deviceCleanup = deviceDetector.onCapabilitiesChanged(() => {
-        responsiveSettings = deviceDetector!.getResponsiveSettings();
-      });
+        // Subscribe to device capability changes
+        deviceCleanup = deviceDetector.onCapabilitiesChanged(() => {
+          responsiveSettings = deviceDetector!.getResponsiveSettings();
+        });
+      }
     } catch (error) {
       console.warn("ModuleSwitcher: Failed to resolve DeviceDetector", error);
     }

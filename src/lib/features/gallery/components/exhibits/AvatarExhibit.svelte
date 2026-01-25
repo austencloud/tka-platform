@@ -33,13 +33,16 @@
     $props();
 
   // Create dedicated state for this avatar with proper config and deps
-  const avatarState = createAvatarInstanceState(
-    {
-      id: `gallery-exhibit-${exhibit.id}`,
-      positionX: exhibit.avatarPosition.x,
-      positionZ: exhibit.avatarPosition.z,
-    },
-    serviceDeps
+  // Wrapped in $derived to properly react to prop changes
+  const avatarState = $derived(
+    createAvatarInstanceState(
+      {
+        id: `gallery-exhibit-${exhibit.id}`,
+        positionX: exhibit.avatarPosition.x,
+        positionZ: exhibit.avatarPosition.z,
+      },
+      serviceDeps
+    )
   );
 
   // Calculate distance from player for LOD

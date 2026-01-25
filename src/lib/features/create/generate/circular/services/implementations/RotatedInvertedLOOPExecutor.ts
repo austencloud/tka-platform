@@ -409,7 +409,10 @@ export class RotatedInvertedLOOPExecutor {
 import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 
+import { loopParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
+
 export const rotatedInvertedLOOPExecutor = new RotatedInvertedLOOPExecutor(
   orientationCalculator,
-  gridPositionDeriver
+  gridPositionDeriver,
+  loopParameterProvider
 );

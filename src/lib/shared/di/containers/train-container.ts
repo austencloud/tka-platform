@@ -114,7 +114,7 @@ export function createTrainContainer(achievementManager: IAchievementManager) {
       },
     })
     .add((ctx) => ({
-      // === SERVICES WITH DEPENDENCIES ===
+      // === SERVICES WITH DEPENDENCIES (Layer 1) ===
 
       // HandAssigner depends on HandTrackingStabilizer
       handAssigner: (): IHandAssigner => {
@@ -146,6 +146,9 @@ export function createTrainContainer(achievementManager: IAchievementManager) {
         }
         return trainChallengeManagerInstance;
       },
+    }))
+    .add((ctx) => ({
+      // === SERVICES WITH DEPENDENCIES (Layer 2 - depends on trainChallengeManager) ===
 
       // SessionCompletionProcessor depends on history, achievements, and challenges
       sessionCompletionProcessor: (): ISessionCompletionProcessor => {

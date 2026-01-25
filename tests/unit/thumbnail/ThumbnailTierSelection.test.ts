@@ -9,13 +9,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ThumbnailRenderOrchestrator } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailRenderOrchestrator";
-import type { IThumbnailKeyDeriver, ThumbnailCacheKey, ThumbnailRenderInput } from "$lib/features/discover/sequences/display/services/contracts/IThumbnailKeyDeriver";
-import type { IThumbnailRenderQueue } from "$lib/features/discover/sequences/display/services/contracts/IThumbnailRenderQueue";
-import type { IThumbnailRenderer } from "$lib/features/discover/sequences/display/services/contracts/IThumbnailRenderer";
-import type { ICloudThumbnailCache } from "$lib/features/discover/sequences/display/services/contracts/ICloudThumbnailCache";
-import type { IThumbnailLocalCache } from "$lib/features/discover/sequences/display/services/contracts/IThumbnailLocalCache";
-import type { ThumbnailRequest } from "$lib/features/discover/sequences/display/services/contracts/IThumbnailRenderOrchestrator";
+import { ThumbnailRenderOrchestrator } from "$lib/features/browse/sequences/display/services/implementations/ThumbnailRenderOrchestrator";
+import type { IThumbnailKeyDeriver, ThumbnailCacheKey, ThumbnailRenderInput } from "$lib/features/browse/sequences/display/services/contracts/IThumbnailKeyDeriver";
+import type { IThumbnailRenderQueue } from "$lib/features/browse/sequences/display/services/contracts/IThumbnailRenderQueue";
+import type { IThumbnailRenderer } from "$lib/features/browse/sequences/display/services/contracts/IThumbnailRenderer";
+import type { ICloudThumbnailCache } from "$lib/features/browse/sequences/display/services/contracts/ICloudThumbnailCache";
+import type { IThumbnailLocalCache } from "$lib/features/browse/sequences/display/services/contracts/IThumbnailLocalCache";
+import type { ThumbnailRequest } from "$lib/features/browse/sequences/display/services/contracts/IThumbnailRenderOrchestrator";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 // Mock implementations

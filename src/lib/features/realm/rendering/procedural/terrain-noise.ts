@@ -45,9 +45,10 @@ import {
   dFdx,
   dFdy,
   cross,
-  type ShaderNodeObject,
-  type Node,
 } from "three/tsl";
+// TSL types - using any due to incomplete type exports
+type ShaderNodeObject<T> = any;
+type Node = any;
 
 // ============================================================================
 // BASIC NOISE PRIMITIVES

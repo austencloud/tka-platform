@@ -7,7 +7,7 @@
  * Hand path is DERIVED from startLocation → endLocation, not read from a field.
  */
 
-import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceStats } from "../../domain/models/spell-models";
 import { MotionType, HandPath } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -126,7 +126,7 @@ export class SpellStatsCalculator implements ISpellStatsCalculator {
     // Calculate continuity percentages
     // For prop: steps without any reversal / total steps
     const stepsWithoutPropReversal = steps.filter(
-      (s) => !s.blueReversal && !s.redReversal
+      (s: StepData) => !s.blueReversal && !s.redReversal
     ).length;
     const propContinuityPercent =
       totalSteps > 0

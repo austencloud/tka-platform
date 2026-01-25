@@ -98,6 +98,10 @@
     videos.filter((v) => v.title && v.title.length > 0 && v.linkedSequences.length === 0)
   );
 
+  const unnamedVideos = $derived.by(() =>
+    videos.filter((v) => !v.title || v.title.length === 0)
+  );
+
   const filteredVideos = $derived.by(() => {
     let result = videos;
     if (filterCategory !== "all") {
@@ -176,6 +180,11 @@
     }
   }
 
+  function enterRenameMode() {
+    // TODO: Implement rename mode if needed
+    console.log("Rename mode not yet implemented");
+  }
+
   function selectVideo(video: ShowcaseVideo) {
     if (editorController) {
       editorController.openBrowse(video);
@@ -243,7 +252,7 @@
   function updateLocalVideo(shortcode: string, updates: Partial<ShowcaseVideo>) {
     const index = videos.findIndex((v) => v.shortcode === shortcode);
     if (index !== -1) {
-      videos[index] = { ...videos[index], ...updates };
+      videos[index] = { ...videos[index], ...updates } as ShowcaseVideo;
       videos = [...videos];
     }
   }
@@ -349,6 +358,7 @@
     {loading}
     uncuratedCount={uncuratedVideos.length}
     unlinkableCount={unlinkableVideos.length}
+    unnamedCount={unnamedVideos.length}
     filteredCount={filteredVideos.length}
     totalCount={videos.length}
     {showAddCategory}
@@ -362,6 +372,7 @@
     onRefresh={loadVideos}
     onEnterCurationMode={enterCurationMode}
     onEnterLinkingMode={enterLinkingMode}
+    onEnterRenameMode={enterRenameMode}
     onToggleAddCategory={(show) => (showAddCategory = show)}
     onAddCategory={addCategory}
     onUpdateCategoryLabel={(label) => (newCategoryLabel = label)}
@@ -415,7 +426,7 @@
             {#if video.category}
               {@const cat = categories.find((c) => c.id === video.category)}
               {#if cat}
-                <div class="category-badge" style="background: {cat.color}">
+                <div class="category-badge" style:background={cat.color}>
                   {cat.label}
                 </div>
               {/if}

@@ -22,19 +22,19 @@ The pictograph system has complex interdependencies:
 ```typescript
 import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
 import { TYPES } from "$lib/shared/inversify/types";
-import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 
-// Load the discover module first
-await loadFeatureModule("discover");
+// Load the browse module first
+await loadFeatureModule("browse");
 
 // Get the loader service
-const discoverLoader = resolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
+const browseLoader = resolve<IBrowseLoader>(TYPES.IBrowseLoader);
 
 // IMPORTANT: Must call this first to populate the cache
-await discoverLoader.loadSequenceMetadata();
+await browseLoader.loadSequenceMetadata();
 
 // Then load a specific sequence by word (e.g., "A", "B", "HELLO")
-const sequence = await discoverLoader.loadFullSequenceData("B");
+const sequence = await browseLoader.loadFullSequenceData("B");
 ```
 
 ### Option 2: Modify Existing Sequence with Turn Patterns
@@ -159,7 +159,7 @@ If you need sequence data for tests, previews, or examples:
 - **SequenceData model**: `src/lib/shared/foundation/domain/models/SequenceData.ts`
 - **TurnPatternService**: `src/lib/features/create/shared/services/implementations/TurnPatternService.ts`
 - **OrientationCalculator**: `src/lib/shared/pictograph/prop/services/implementations/OrientationCalculator.ts`
-- **DiscoverLoader**: `src/lib/features/discover/sequences/display/services/implementations/DiscoverLoader.ts`
+- **BrowseLoader**: `src/lib/features/browse/sequences/display/services/implementations/BrowseLoader.ts`
 
 ## Example: Creating a B(1,1) Sequence for Animation Preview
 
@@ -167,10 +167,10 @@ This is the correct way to get a B sequence with 1 turn on each beat:
 
 ```typescript
 // 1. Load base sequence
-await loadFeatureModule("discover");
-const discoverLoader = resolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
-await discoverLoader.loadSequenceMetadata();
-const baseB = await discoverLoader.loadFullSequenceData("B");
+await loadFeatureModule("browse");
+const browseLoader = resolve<IBrowseLoader>(TYPES.IBrowseLoader);
+await browseLoader.loadSequenceMetadata();
+const baseB = await browseLoader.loadFullSequenceData("B");
 
 // 2. Create turn pattern
 const pattern: TurnPattern = {
@@ -197,7 +197,7 @@ const bWithOneTurn = result.sequence;
 
 ## Summary
 
-1. **Load** sequences from the database using DiscoverLoader
+1. **Load** sequences from the database using BrowseLoader
 2. **Modify** sequences using TurnPatternService
 3. **Generate** circular sequences using LOOP executors
 4. **NEVER** hand-craft MotionData, BeatData, or SequenceData

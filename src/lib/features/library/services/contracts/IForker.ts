@@ -42,7 +42,7 @@ export interface IForkService {
   ): Promise<ForkResult>;
 
   /**
-   * Fork from explore/public feed
+   * Fork from browse/public feed
    * Handles lookup of the source sequence and user
    * @param publicSequenceId The public sequence ID
    * @returns Fork result

@@ -418,7 +418,7 @@ export function applyErosion(
   for (let iter = 0; iter < iterations; iter++) {
     // Step 1: Rain - add water uniformly with slight noise
     for (let i = 0; i < heights.length; i++) {
-      water[i] += rainAmount * (0.8 + rng() * 0.4);
+      water[i] = (water[i] ?? 0) + rainAmount * (0.8 + rng() * 0.4);
     }
 
     // Step 2: Flow simulation - water moves downhill carrying sediment

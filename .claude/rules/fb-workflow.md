@@ -6,7 +6,7 @@ Users may use vague or incorrect terminology. Here's the actual structure:
 
 **Modules** (main nav items):
 - `create` - Build sequences (tabs: assembler, constructor, generator)
-- `discover` - Browse sequences (tabs: gallery, collections, creators)
+- `browse` - Browse sequences (tabs: gallery, collections, creators)
 - `compose` - Animate sequences (tabs: arrange, browse)
 - `learn` - Educational content (tabs: concepts, play, codex)
 - `train` - Practice with camera (tabs: practice, challenges, progress)
@@ -15,8 +15,8 @@ Users may use vague or incorrect terminology. Here's the actual structure:
 - `dashboard` - Home/launcher
 
 **Common user confusions:**
-- "main screen" / "home" -> likely `discover` gallery or `dashboard`
-- "my sequences" / "saved" -> `discover/gallery` with "My Library" scope toggle
+- "main screen" / "home" -> likely `browse` gallery or `dashboard`
+- "my sequences" / "saved" -> `browse/gallery` with "My Library" scope toggle
 - "practice mode" / "camera thing" -> `train`
 - "generator" / "random" -> `create/generator` tab
 - "builder" / "manual" -> `create/constructor` tab

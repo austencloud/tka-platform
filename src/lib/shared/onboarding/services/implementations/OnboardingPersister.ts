@@ -33,7 +33,7 @@ import {
 const LAST_SEEN_VERSION_KEY = "tka-last-seen-version";
 
 const MODULES_WITH_ONBOARDING = [
-  "explore",
+  "browse",
   "learn",
   "create",
   "compose",
@@ -550,7 +550,7 @@ export class OnboardingPersister implements IOnboardingPersister {
   }
 
   /**
-   * Mark sidebar tour as skipped (user chose "Explore on my own").
+   * Mark sidebar tour as skipped (user chose "Browse on my own").
    */
   async markSidebarTourSkipped(): Promise<void> {
     const status = this.cachedStatus || (await this.loadStatus());

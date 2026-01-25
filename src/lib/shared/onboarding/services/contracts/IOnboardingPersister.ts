@@ -106,7 +106,7 @@ export interface IOnboardingPersister {
   markSidebarTourCompleted(): Promise<void>;
 
   /**
-   * Mark sidebar tour as skipped (user chose "Explore on my own").
+   * Mark sidebar tour as skipped (user chose "Browse on my own").
    */
   markSidebarTourSkipped(): Promise<void>;
 

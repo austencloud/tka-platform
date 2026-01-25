@@ -32,7 +32,7 @@ export const EVENT_TYPE_CONFIG: Record<string, AnalyticsDisplayConfig> = {
 export const MODULE_USAGE_CONFIG: Record<string, AnalyticsDisplayConfig> = {
   // Main modules
   create: { label: "Create", color: "#f59e0b" },
-  explore: { label: "Discover", color: "#a855f7" },
+  browse: { label: "Browse", color: "#a855f7" },
   learn: { label: "Learn", color: "#3b82f6" },
   library: { label: "Library", color: "#10b981" },
   animate: { label: "Animate", color: "#ec4899" },
@@ -48,9 +48,9 @@ export const MODULE_USAGE_CONFIG: Record<string, AnalyticsDisplayConfig> = {
   "learn:concepts": { label: "Learn → Concepts", color: "#60a5fa" },
   "learn:play": { label: "Learn → Play", color: "#f472b6" },
 
-  // Discover tabs
-  "explore:gallery": { label: "Explore → Gallery", color: "#a855f7" },
-  "explore:collections": { label: "Explore → Collections", color: "#f59e0b" },
+  // Browse tabs
+  "browse:gallery": { label: "Browse → Gallery", color: "#a855f7" },
+  "browse:collections": { label: "Browse → Collections", color: "#f59e0b" },
 
   // Community tabs
   "community:leaderboards": {

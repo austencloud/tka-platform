@@ -1,6 +1,6 @@
 <!--
 ParameterCardBase.svelte - Base component for parameter cards
-Used by both Generate and Discover for consistent Bento card styling
+Used by both Generate and Browse for consistent Bento card styling
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";

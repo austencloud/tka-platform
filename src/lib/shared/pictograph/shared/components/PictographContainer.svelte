@@ -76,7 +76,6 @@ with pre-prepared data for better performance.
     onTogglePositions = undefined,
     onToggleReversals = undefined,
     onToggleNonRadial = undefined,
-    onToggleBeatPosition = undefined,
     // Dark Mode override for export (when set, overrides CSS-based detection)
     darkMode = undefined,
     // Print Mode: pure white background for professional print output
@@ -85,8 +84,6 @@ with pre-prepared data for better performance.
     // When provided, passed to PictographPreparer for consistency during async operations
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
-    // Musical position string for beat number display
-    musicalPosition = undefined,
     // Width multiplier for expanded timeline cells (1 = normal square, >1 = wider)
     widthMultiplier = 1,
     // Cell index for position caching (enables smooth transitions on regeneration)
@@ -114,7 +111,6 @@ with pre-prepared data for better performance.
     onTogglePositions?: () => void;
     onToggleReversals?: () => void;
     onToggleNonRadial?: () => void;
-    onToggleBeatPosition?: () => void;
     /** Dark Mode override for export. When set, overrides CSS-based detection. */
     darkMode?: boolean;
     /** Print Mode: pure white background for professional print output (Choreo Cards). */
@@ -123,8 +119,6 @@ with pre-prepared data for better performance.
     bluePropTypeOverride?: PropType;
     /** Explicit prop type for red hand. Export/thumbnail rendering provides this for consistency. */
     redPropTypeOverride?: PropType;
-    /** Musical position string (e.g., "1", "1.5", "2e") - overrides beat number display when present */
-    musicalPosition?: string;
     /** Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox) */
     widthMultiplier?: number;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
@@ -155,7 +149,6 @@ with pre-prepared data for better performance.
     elementalGlyph: visibilityManager.getGlyphVisibility("elementalGlyph"),
     positionsGlyph: visibilityManager.getGlyphVisibility("positionsGlyph"),
     handPointVisibility: visibilityManager.getHandPointVisibility(),
-    beatPositionGlyph: visibilityManager.getBeatPositionGlyphVisibility(),
     darkMode: animVisibilityManager.isDarkMode(),
   });
 
@@ -171,7 +164,6 @@ with pre-prepared data for better performance.
       elementalGlyph: visibilityManager.getGlyphVisibility("elementalGlyph"),
       positionsGlyph: visibilityManager.getGlyphVisibility("positionsGlyph"),
       handPointVisibility: visibilityManager.getHandPointVisibility(),
-      beatPositionGlyph: visibilityManager.getBeatPositionGlyphVisibility(),
       darkMode: syncedVisibility.darkMode, // Keep dark mode unchanged
     };
   }
@@ -228,9 +220,6 @@ with pre-prepared data for better performance.
 
   // Hand point visibility mode
   const effectiveHandPointVisibility = $derived(syncedVisibility.handPointVisibility);
-
-  // Beat position glyph visibility (musical timeline position at bottom-center)
-  const effectiveShowBeatPosition = $derived(syncedVisibility.beatPositionGlyph);
 
   // Active locations (where props are positioned)
   // Extract from pictograph motion data - use endLocation for prop positioning
@@ -393,8 +382,6 @@ with pre-prepared data for better performance.
         {activeLocations}
         {stepNumber}
         {showStepNumber}
-        {musicalPosition}
-        showBeatPosition={effectiveShowBeatPosition}
         {previewMode}
         gridModeOverride={overrideGridMode}
         {visibleHand}
@@ -407,7 +394,6 @@ with pre-prepared data for better performance.
         {onTogglePositions}
         {onToggleReversals}
         {onToggleNonRadial}
-        {onToggleBeatPosition}
         {widthMultiplier}
         {cellIndex}
       />
@@ -433,8 +419,6 @@ with pre-prepared data for better performance.
             {activeLocations}
             {stepNumber}
             {showStepNumber}
-            {musicalPosition}
-            showBeatPosition={effectiveShowBeatPosition}
             {previewMode}
             gridModeOverride={overrideGridMode}
             {visibleHand}
@@ -447,7 +431,6 @@ with pre-prepared data for better performance.
             {onTogglePositions}
             {onToggleReversals}
             {onToggleNonRadial}
-            {onToggleBeatPosition}
             {widthMultiplier}
             {cellIndex}
           />

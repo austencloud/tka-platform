@@ -22,7 +22,7 @@ export interface TourStep {
  * Tour steps in display order.
  * Only includes core user-facing modules.
  *
- * Updated Jan 2026: Removed dashboard (deleted) and library (merged into Explore).
+ * Updated Jan 2026: Removed dashboard (deleted) and library (merged into Browse).
  */
 export const SIDEBAR_TOUR_STEPS: TourStep[] = [
   {
@@ -34,8 +34,8 @@ export const SIDEBAR_TOUR_STEPS: TourStep[] = [
     color: "#f59e0b",
   },
   {
-    moduleId: "explore",
-    heading: "Explore",
+    moduleId: "browse",
+    heading: "Browse",
     description:
       "Browse sequences from the community or your own library. Find creators and get inspired.",
     icon: "compass",

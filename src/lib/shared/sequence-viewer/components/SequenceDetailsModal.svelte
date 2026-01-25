@@ -27,6 +27,7 @@
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+  import type { ILanSyncCoordinator } from "$lib/shared/lan-sync/services/contracts/ILanSyncCoordinator";
   import { sequenceModalExporter } from "../services/implementations/SequenceModalExporter";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { container } from "$lib/shared/di";
@@ -120,6 +121,7 @@
       window.addEventListener("resize", checkMobile);
       return () => window.removeEventListener("resize", checkMobile);
     }
+    return undefined;
   });
 
   // Swipe-to-dismiss state (mobile only)
@@ -132,7 +134,7 @@
     if (!isMobile || isFullscreen) return;
     // Only start swipe from the top portion of the modal
     const touch = e.touches[0];
-    if (touch.clientY < 150) {
+    if (touch && touch.clientY < 150) {
       swipeStartY = touch.clientY;
       isSwiping = true;
     }
@@ -141,10 +143,12 @@
   function handleTouchMove(e: TouchEvent) {
     if (!isSwiping) return;
     const touch = e.touches[0];
-    const delta = touch.clientY - swipeStartY;
-    // Only allow downward swipe
-    if (delta > 0) {
-      swipeY = delta;
+    if (touch) {
+      const delta = touch.clientY - swipeStartY;
+      // Only allow downward swipe
+      if (delta > 0) {
+        swipeY = delta;
+      }
     }
   }
 
@@ -170,7 +174,7 @@
   });
 
   function enterEditMode(pane: 'animation' | 'image') {
-    hapticService?.trigger("impact"); // Heavier feedback for mode expansion
+    hapticService?.trigger("selection"); // Haptic feedback for mode expansion
     editingPane = pane;
   }
 
@@ -452,9 +456,9 @@
     hapticService?.trigger("selection");
     // Cycle through: Auto -> 3 -> 4 -> 5 -> 6 -> Auto
     const options: (number | null)[] = [null, 3, 4, 5, 6];
-    const currentIndex = options.indexOf(imgColumnCount);
+    const currentIndex = options.indexOf(imgColumnCount ?? null);
     const nextIndex = (currentIndex + 1) % options.length;
-    imgColumnCount = options[nextIndex];
+    imgColumnCount = options[nextIndex] ?? null;
     saveColumnCountSetting(imgColumnCount);
   }
 
@@ -1043,7 +1047,7 @@
     data-view-mode={viewMode}
     data-fullscreen={isFullscreen}
     onclick={isFullscreen ? handleFullscreenTap : undefined}
-    onkeydown={isFullscreen ? (e) => { if (e.key === 'Enter' || e.key === ' ') handleFullscreenTap(e); } : undefined}
+    onkeydown={isFullscreen ? (e) => { if (e.key === 'Enter' || e.key === ' ') handleFullscreenTap(); } : undefined}
     role={isFullscreen ? "button" : undefined}
     tabindex={isFullscreen ? 0 : undefined}
   >

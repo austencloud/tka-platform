@@ -29,8 +29,9 @@
 
       if (sequences.length > 0) {
         // Use the first sequence found
-        sequenceData = sequences[0]!;
-        console.log("Loaded sequence:", sequenceData.word || sequenceData.name);
+        const seq = sequences[0]!;
+        sequenceData = seq;
+        console.log("Loaded sequence:", seq.word || seq.name);
       } else {
         console.warn("No sequences found - you need to create a sequence first");
       }
@@ -178,15 +179,14 @@
       <!-- Animation canvas -->
       <div class="canvas-container">
         <AnimatorCanvas
+          blueProp={null}
+          redProp={null}
           {sequenceData}
           {currentStep}
           {isPlaying}
           bluePropType={bluePropType}
           redPropType={redPropType}
           gridVisible={true}
-          wordHeaderVisible={true}
-          tkaGlyphVisible={true}
-          beatNumbersVisible={true}
           backgroundAlpha={1}
           previewDarkMode={true}
           progressBarVariant={progressBarVariant}

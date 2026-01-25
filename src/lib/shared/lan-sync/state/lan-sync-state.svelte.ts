@@ -65,7 +65,7 @@ class LanSyncState {
 	/** The most recent nearby room (for showing a single banner) */
 	get topNearbyRoom(): SyncRoomWithId | null {
 		const filtered = this.nearbyRooms;
-		return filtered.length > 0 ? filtered[0] : null;
+		return filtered.length > 0 ? (filtered[0] ?? null) : null;
 	}
 
 	/** Initialize with a coordinator instance */

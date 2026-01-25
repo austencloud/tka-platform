@@ -82,6 +82,10 @@
 
     try {
       orchestrator = container.items.promoOrchestrator;
+      if (!orchestrator) {
+        console.error("[PromoGenerator] Failed to resolve orchestrator from DI container");
+        return;
+      }
 
       // Get container dimensions for responsive canvas
       const rect = canvasContainer.getBoundingClientRect();

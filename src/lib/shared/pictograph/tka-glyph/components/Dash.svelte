@@ -58,12 +58,13 @@ DO NOT add dark mode color logic here - it would cause double-inversion!
 
   $effect(() => {
     // Animate when dash appears (visibility becomes true after being false)
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     if (prevVisible === false && visible === true) {
       isAnimating = true;
-      const timeout = setTimeout(() => { isAnimating = false; }, 180);
-      return () => clearTimeout(timeout);
+      timeout = setTimeout(() => { isAnimating = false; }, 180);
     }
     prevVisible = visible;
+    return () => { if (timeout) clearTimeout(timeout); };
   });
 </script>
 

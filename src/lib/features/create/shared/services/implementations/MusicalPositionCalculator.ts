@@ -49,7 +49,8 @@ export function calculateSubdivisionIndex(
 	const subdivisions = getSubdivisions(timeSignature);
 	let total = 0;
 	for (let i = 0; i < stepIndex && i < steps.length; i++) {
-		const duration = steps[i].duration ?? 1;
+		const step = steps[i];
+		const duration = step?.duration ?? 1;
 		total += duration * subdivisions;
 	}
 	return Math.round(total); // Round to handle floating point imprecision

@@ -10,7 +10,7 @@
    * - Render SpotlightViewer component
    */
   import { onMount } from "svelte";
-  import SpotlightViewer from "../../features/explore/sequences/spotlight/components/SpotlightViewer.svelte";
+  import SpotlightViewer from "../../features/browse/sequences/spotlight/components/SpotlightViewer.svelte";
   import {
     closeSpotlightViewer,
     getShowSpotlight,
@@ -54,7 +54,7 @@
     const cleanupFns: Array<() => void> = [];
 
     // Listen for route changes (spotlight, etc.)
-    const cleanupRouteListener = sheetRouterService.onRouteChange(
+    const cleanupRouteListener = sheetRouterService!.onRouteChange(
       (state: RouteState) => {
         spotlightSequenceId = state.spotlight || null;
 
@@ -70,7 +70,7 @@
     cleanupFns.push(cleanupRouteListener);
 
     // Initialize spotlight from URL on mount
-    const initialSpotlight = sheetRouterService.getCurrentSpotlight();
+    const initialSpotlight = sheetRouterService!.getCurrentSpotlight();
     if (initialSpotlight) {
       spotlightSequenceId = initialSpotlight;
     }

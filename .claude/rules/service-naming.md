@@ -10,13 +10,13 @@
 | Manage/coordinate | `*Manager` | `TurnManager` |
 | Persist/store | `*Persister` | `SequencePersister` |
 | Load data | `*Loader` | `OptionLoader` |
-| Filter/sort | `*Filter`, `*Sorter` | `DiscoverFilter` |
+| Filter/sort | `*Filter`, `*Sorter` | `BrowseFilter` |
 | Validate | `*Validator` | `SequenceValidator` |
 | Transform | `*Transformer` | `SequenceTransformer` |
 | Analyze/calculate | `*Analyzer`, `*Calculator` | `PositionAnalyzer` |
 | Export/import | `*Exporter`, `*Importer` | `SequenceExporter` |
 | CRUD operations | `*Repository` | `LibraryRepository` |
-| Cache | `*Cache` | `DiscoverCache` |
+| Cache | `*Cache` | `BrowseCache` |
 | Orchestrate | `*Orchestrator` | `GenerationOrchestrator` |
 
 Interfaces use `I` prefix: `ISequencePersister`, `ILOOPDetector`

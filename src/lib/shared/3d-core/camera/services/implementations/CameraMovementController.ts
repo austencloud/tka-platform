@@ -9,7 +9,8 @@
  */
 
 import { PerspectiveCamera, Vector3 as ThreeVector3 } from "three";
-import type { CameraMode, PhysicsProvider, Vector3 } from "../../types";
+import { CameraMode } from "../../types";
+import type { PhysicsProvider, Vector3 } from "../../types";
 import type {
 	ICameraMovementController,
 	MovementInput,
@@ -38,7 +39,7 @@ export class CameraMovementController implements ICameraMovementController {
 	private config: Required<CameraMovementConfig>;
 
 	// Camera state
-	private mode: CameraMode = "orbit";
+	private mode: CameraMode = CameraMode.ORBIT;
 	private yaw = 0;
 	private pitch = 0;
 	private pointerLocked = false;
@@ -85,7 +86,7 @@ export class CameraMovementController implements ICameraMovementController {
 		this.updateLook(lookInput);
 
 		// Update movement based on mode
-		if (this.mode === "orbit") {
+		if (this.mode === CameraMode.ORBIT) {
 			this.updateOrbitCamera();
 		} else {
 			this.updatePlayerMovement(deltaTime, movementInput);
@@ -94,7 +95,7 @@ export class CameraMovementController implements ICameraMovementController {
 	}
 
 	private updateLook(lookInput: LookInput): void {
-		if (!this.pointerLocked && this.mode !== "orbit") return;
+		if (!this.pointerLocked && this.mode !== CameraMode.ORBIT) return;
 
 		this.yaw -= lookInput.deltaYaw * this.config.lookSensitivity;
 		this.pitch -= lookInput.deltaPitch * this.config.lookSensitivity;
@@ -129,15 +130,15 @@ export class CameraMovementController implements ICameraMovementController {
 		if (input.crouch) speed *= this.config.crouchMultiplier;
 
 		if (this.physicsProvider) {
-			// Physics-based movement
-			const desiredVelocity: Vector3 = {
-				x: moveDir.x * speed,
-				y: input.jump && this.isGrounded ? this.config.jumpForce : 0,
-				z: moveDir.z * speed,
+			// Physics-based movement using movePlayer interface
+			const desiredMovement: Vector3 = {
+				x: moveDir.x * speed * deltaTime,
+				y: input.jump && this.isGrounded ? this.config.jumpForce * deltaTime : 0,
+				z: moveDir.z * speed * deltaTime,
 			};
 
-			this.physicsProvider.setVelocity(desiredVelocity);
-			const pos = this.physicsProvider.getPosition();
+			this.physicsProvider.movePlayer(desiredMovement, deltaTime);
+			const pos = this.physicsProvider.getPlayerPosition();
 			this.playerPosition.set(pos.x, pos.y, pos.z);
 			this.isGrounded = this.physicsProvider.isGrounded();
 		} else {
@@ -185,7 +186,7 @@ export class CameraMovementController implements ICameraMovementController {
 	private updateFollowCamera(): void {
 		if (!this.camera) return;
 
-		if (this.mode === "first_person") {
+		if (this.mode === CameraMode.FIRST_PERSON) {
 			// Camera at player eye level
 			this.camera.position.set(
 				this.playerPosition.x,
@@ -201,7 +202,7 @@ export class CameraMovementController implements ICameraMovementController {
 			);
 			const lookTarget = this.camera.position.clone().add(lookDir);
 			this.camera.lookAt(lookTarget);
-		} else if (this.mode === "third_person") {
+		} else if (this.mode === CameraMode.THIRD_PERSON) {
 			// Camera behind and above player
 			const offsetX = -Math.sin(this.yaw) * this.config.thirdPersonDistance;
 			const offsetZ = -Math.cos(this.yaw) * this.config.thirdPersonDistance;
@@ -244,15 +245,15 @@ export class CameraMovementController implements ICameraMovementController {
 	}
 
 	cycleMode(): CameraMode {
-		const modes: CameraMode[] = ["orbit", "third_person", "first_person"];
+		const modes: CameraMode[] = [CameraMode.ORBIT, CameraMode.THIRD_PERSON, CameraMode.FIRST_PERSON];
 		const currentIndex = modes.indexOf(this.mode);
 		const nextIndex = (currentIndex + 1) % modes.length;
-		this.mode = modes[nextIndex] as CameraMode;
+		this.mode = modes[nextIndex]!;
 		return this.mode;
 	}
 
 	returnToOrbit(): void {
-		this.mode = "orbit";
+		this.mode = CameraMode.ORBIT;
 	}
 
 	setPointerLocked(locked: boolean): void {
@@ -270,7 +271,7 @@ export class CameraMovementController implements ICameraMovementController {
 	teleport(position: Vector3): void {
 		this.playerPosition.set(position.x, position.y, position.z);
 		this.velocity.set(0, 0, 0);
-		if (this.physicsProvider) {
+		if (this.physicsProvider?.teleport) {
 			this.physicsProvider.teleport(position);
 		}
 	}

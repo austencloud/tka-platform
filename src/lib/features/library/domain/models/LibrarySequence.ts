@@ -17,7 +17,7 @@ export type SequenceSource = "created" | "forked" | "imported";
  * Visibility level for library sequences
  * - private: Only visible to the owner
  * - unlisted: Accessible via direct link, not in public feeds
- * - public: Discoverable in Explore and public feeds
+ * - public: Browseable in Browse and public feeds
  */
 export type SequenceVisibility = "private" | "unlisted" | "public";
 

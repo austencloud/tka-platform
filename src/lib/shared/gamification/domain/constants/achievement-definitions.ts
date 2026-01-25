@@ -237,8 +237,8 @@ const TRAINER_ACHIEVEMENTS: Achievement[] = [
 ];
 
 // ============================================================================
-// EXPLORER ACHIEVEMENTS (Browsing Gallery)
-// Removed: explore_10/50/100 were pure quantity spam with no skill component
+// BROWSER ACHIEVEMENTS (Browsing Gallery)
+// Removed: browse_10/50/100 were pure quantity spam with no skill component
 // ============================================================================
 
 // ============================================================================

@@ -153,13 +153,16 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       }> | undefined;
 
       if (designations && designations.length > 0) {
-        // Take the first designation's components and join them
-        const components = designations[0].components;
-        if (components && components.length > 0) {
-          return components.join("+");
+        const firstDesignation = designations[0];
+        if (firstDesignation) {
+          // Take the first designation's components and join them
+          const components = firstDesignation.components;
+          if (components && components.length > 0) {
+            return components.join("+");
+          }
+          // Or use the loopType directly if no components
+          return firstDesignation.loopType || "freeform";
         }
-        // Or use the loopType directly if no components
-        return designations[0].loopType || "freeform";
       }
 
       return null;

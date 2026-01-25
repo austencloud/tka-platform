@@ -1282,8 +1282,12 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     if (!startSvgPath || !endSvgPath) return;
 
     // Get dimensions for each letter (respecting their actual SVG dimensions)
-    const startDims = POSITION_LETTER_DIMENSIONS[startGroup] || POSITION_LETTER_DIMENSIONS.alpha;
-    const endDims = POSITION_LETTER_DIMENSIONS[endGroup] || POSITION_LETTER_DIMENSIONS.alpha;
+    const startDims = POSITION_LETTER_DIMENSIONS[startGroup];
+    const endDims = POSITION_LETTER_DIMENSIONS[endGroup];
+
+    // Early return if dimensions not found (TypeScript needs explicit check before usage)
+    if (!startDims) return;
+    if (!endDims) return;
 
     // Calculate scaled dimensions for each element
     const scaledStartWidth = startDims.width * POSITION_SCALE_FACTOR;
@@ -1407,11 +1411,9 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       // StepData has explicit reversal flags
       blueReversal = pictograph.blueReversal ?? false;
       redReversal = pictograph.redReversal ?? false;
-    } else {
-      // PictographData - check motions for reversal flag
-      blueReversal = pictograph.motions?.blue?.isReversal ?? false;
-      redReversal = pictograph.motions?.red?.isReversal ?? false;
     }
+    // PictographData doesn't have reversal flags - reversals are only computed
+    // when comparing to previous steps, which happens in StepData conversion
 
     // Use shared core calculation for positioning
     const { dots } = calculateReversalPositions(blueReversal, redReversal, isDarkMode);

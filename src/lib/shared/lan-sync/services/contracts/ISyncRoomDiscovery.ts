@@ -1,7 +1,7 @@
 /**
  * ISyncRoomDiscovery
  *
- * Interface for discovering nearby sync rooms from Firebase RTDB.
+ * Interface for browseing nearby sync rooms from Firebase RTDB.
  * Watches for rooms and notifies when they appear/disappear.
  */
 
@@ -9,19 +9,19 @@ import type { SyncRoomWithId } from '../../domain/models/lan-sync-models';
 
 export interface ISyncRoomDiscovery {
 	/** Whether discovery is currently active */
-	readonly isDiscovering: boolean;
+	readonly isBrowseing: boolean;
 
-	/** Currently discovered nearby rooms (excluding own rooms) */
+	/** Currently browseed nearby rooms (excluding own rooms) */
 	readonly nearbyRooms: SyncRoomWithId[];
 
 	/**
-	 * Start discovering sync rooms.
+	 * Start browseing sync rooms.
 	 * Watches Firebase RTDB for rooms and filters out own rooms.
 	 */
 	startDiscovery(): Promise<void>;
 
 	/**
-	 * Stop discovering rooms.
+	 * Stop browseing rooms.
 	 * Unsubscribes from Firebase listener.
 	 */
 	stopDiscovery(): void;

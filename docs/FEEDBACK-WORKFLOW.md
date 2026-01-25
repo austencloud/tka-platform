@@ -317,7 +317,7 @@ Good example:
 
 ```bash
 node scripts/fetch-feedback.js <id> in-review "Testing:
-1. Go to Discover → Gallery
+1. Go to Browse → Gallery
 2. Resize browser to 375px width
 3. Thumbnails should be 120px tall
 4. Check text is readable"  # ✅ Clear and actionable

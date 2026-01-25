@@ -4,29 +4,29 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
-import type { IExploreThumbnailProvider } from "$lib/features/explore/sequences/display/services/contracts/IExploreThumbnailProvider";
-import type { IExploreFilter } from "$lib/features/explore/sequences/display/services/contracts/IExploreFilter";
-import type { IExploreSorter } from "$lib/features/explore/sequences/display/services/contracts/IExploreSorter";
-import type { ExploreFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
-import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+import type { IBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
+import type { IBrowseFilter } from "$lib/features/browse/sequences/display/services/contracts/IBrowseFilter";
+import type { IBrowseSorter } from "$lib/features/browse/sequences/display/services/contracts/IBrowseSorter";
+import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";
-import { ExploreSortMethod } from "$lib/features/explore/shared/domain/enums/explore-enums";
+import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
 import { container } from "$lib/shared/di";
 
 const BATCH_SIZE = 24;
 
 export interface MediaFilter {
   type: string;
-  value: ExploreFilterValue;
+  value: BrowseFilterValue;
 }
 
 export function createMediaBrowserState() {
   // Services
-  let loaderService = $state<IExploreLoader | null>(null);
-  let thumbnailService = $state<IExploreThumbnailProvider | null>(null);
-  let filterService = $state<IExploreFilter | null>(null);
-  let sortService = $state<IExploreSorter | null>(null);
+  let loaderService = $state<IBrowseLoader | null>(null);
+  let thumbnailService = $state<IBrowseThumbnailProvider | null>(null);
+  let filterService = $state<IBrowseFilter | null>(null);
+  let sortService = $state<IBrowseSorter | null>(null);
   let servicesReady = $state(false);
 
   // Core state
@@ -43,8 +43,8 @@ export function createMediaBrowserState() {
   let currentFilter = $state<MediaFilter>({ type: "all", value: null });
 
   // Sort state
-  let currentSortMethod = $state<ExploreSortMethod>(
-    ExploreSortMethod.ALPHABETICAL
+  let currentSortMethod = $state<BrowseSortMethod>(
+    BrowseSortMethod.ALPHABETICAL
   );
   let sortDirection = $state<"asc" | "desc">("asc");
 
@@ -78,7 +78,7 @@ export function createMediaBrowserState() {
     if (filterService && currentFilter.type !== "all") {
       filtered = filterService.applyFilter(
         allSequences,
-        currentFilter.type as ExploreFilterType,
+        currentFilter.type as BrowseFilterType,
         currentFilter.value
       );
     }
@@ -111,11 +111,11 @@ export function createMediaBrowserState() {
   // Initialize services
   function initializeServices(): boolean {
     try {
-      loaderService = container.items.exploreLoader as IExploreLoader;
+      loaderService = container.items.browseLoader as IBrowseLoader;
       thumbnailService = container.items
-        .discoverThumbnailProvider as IExploreThumbnailProvider;
-      filterService = container.items.discoverFilter as IExploreFilter;
-      sortService = container.items.discoverSorter as IExploreSorter;
+        .browseThumbnailProvider as IBrowseThumbnailProvider;
+      filterService = container.items.browseFilter as IBrowseFilter;
+      sortService = container.items.browseSorter as IBrowseSorter;
       servicesReady = !!(loaderService && thumbnailService);
       return servicesReady;
     } catch (err) {
@@ -214,7 +214,7 @@ export function createMediaBrowserState() {
   }
 
   // Sort handler
-  function setSortMethod(method: ExploreSortMethod): void {
+  function setSortMethod(method: BrowseSortMethod): void {
     if (currentSortMethod === method) {
       sortDirection = sortDirection === "asc" ? "desc" : "asc";
     } else {

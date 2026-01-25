@@ -76,7 +76,7 @@ function extractIconClass(iconHtml: string): string {
  * Get feature icon and color from module definitions
  * Uses structured color property directly, extracts icon class from HTML
  */
-export function getFeatureIconAndColor(featureId: FeatureId): {
+export function getFeatureIconAndColor(featureId: string): {
   icon: string;
   color: string;
 } {
@@ -276,7 +276,7 @@ export interface QuickPreset {
   description: string;
   icon: string;
   color: string;
-  features: FeatureId[];
+  features: string[];
 }
 
 export const QUICK_PRESETS: QuickPreset[] = [

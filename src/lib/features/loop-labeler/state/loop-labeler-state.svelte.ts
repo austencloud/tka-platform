@@ -20,6 +20,9 @@ import type { LabelingMode, SyncStatus } from "../domain/types/labeler-types";
 // Re-export for backwards compatibility
 export type { LabelingMode, SyncStatus } from "../domain/types/labeler-types";
 
+// Service locator instance for accessing DI services
+const loopLabelerServices = new LOOPLabelerServiceLocator();
+
 interface LOOPLabelerStateData {
   sequences: SequenceEntry[];
   labels: Map<string, LabeledSequence>;

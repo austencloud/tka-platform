@@ -49,7 +49,7 @@ export interface IKeyboardShortcutManager {
   disable(id: string): void;
 
   /**
-   * Set the current context (e.g., "create", "explore", etc.)
+   * Set the current context (e.g., "create", "browse", etc.)
    * @param context Current context
    */
   setContext(context: ShortcutContext): void;

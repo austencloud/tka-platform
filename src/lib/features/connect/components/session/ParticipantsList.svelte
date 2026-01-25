@@ -28,14 +28,10 @@
 	{#each sortedParticipants as participant (participant.userId)}
 		<div class="participant-item" role="listitem">
 			<div class="participant-avatar">
-				{#if participant.avatarUrl}
-					<img src={participant.avatarUrl} alt="" />
-				{:else}
-					<div class="avatar-placeholder">
-						{participant.displayName.charAt(0).toUpperCase()}
-					</div>
-				{/if}
-				<span class="status-dot" class:connected={participant.isConnected}></span>
+				<div class="avatar-placeholder">
+					{participant.displayName.charAt(0).toUpperCase()}
+				</div>
+				<span class="status-dot connected"></span>
 			</div>
 
 			<div class="participant-info">
@@ -46,7 +42,7 @@
 					{/if}
 				</span>
 				<span class="participant-status">
-					{participant.isConnected ? 'Connected' : 'Connecting...'}
+					{participant.isSynced ? 'Synced' : 'Solo practice'}
 				</span>
 			</div>
 		</div>
@@ -82,13 +78,6 @@
 		width: 36px;
 		height: 36px;
 		flex-shrink: 0;
-	}
-
-	.participant-avatar img {
-		width: 100%;
-		height: 100%;
-		border-radius: 50%;
-		object-fit: cover;
 	}
 
 	.avatar-placeholder {

@@ -2,7 +2,7 @@
  * Multiplayer Virtual Museum - Domain Models
  *
  * Defines types for real-time gallery sessions where multiple users
- * can explore the 3D museum together.
+ * can browse the 3D museum together.
  */
 
 // ============================================================================

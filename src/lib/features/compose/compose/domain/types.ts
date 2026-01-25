@@ -85,8 +85,10 @@ export interface TunnelLayerConfig {
 /**
  * Get default prop colors for a tunnel layer index
  */
+const DEFAULT_PROP_COLORS: PropColors = { left: "#3b82f6", right: "#ef4444" };
+
 export function getTunnelLayerColors(layerIndex: number): PropColors {
-  return TUNNEL_LAYER_COLORS[layerIndex % TUNNEL_LAYER_COLORS.length];
+  return TUNNEL_LAYER_COLORS[layerIndex % TUNNEL_LAYER_COLORS.length] ?? DEFAULT_PROP_COLORS;
 }
 
 // ============================================================================

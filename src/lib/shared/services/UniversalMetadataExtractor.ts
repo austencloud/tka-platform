@@ -121,7 +121,7 @@ export class UniversalMetadataExtractor {
    */
   private static buildSidecarPath(sequenceName: string): string {
     // Parse sequence name to determine directory structure
-    // e.g., "ΩNZΣ-YΨ-II_ver1" → "/Explore/ΩNZΣ-YΨ-II/ΩNZΣ-YΨ-II_ver1.meta.json"
+    // e.g., "ΩNZΣ-YΨ-II_ver1" → "/Browse/ΩNZΣ-YΨ-II/ΩNZΣ-YΨ-II_ver1.meta.json"
 
     // Extract base name (remove version suffix)
     const baseName = sequenceName.replace(/_ver\d+$/, "");
@@ -365,5 +365,5 @@ export class UniversalMetadataExtractor {
   }
 }
 
-// Export the extractor for use in Explore
+// Export the extractor for use in Browse
 export const modernMetadataExtractor = UniversalMetadataExtractor;

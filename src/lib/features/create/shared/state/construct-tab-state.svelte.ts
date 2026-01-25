@@ -301,7 +301,7 @@ export function createConstructTabState(
       syncPickerStateWithSequence();
     });
 
-    // Check for pending edit from Discover gallery - that takes priority
+    // Check for pending edit from Browse gallery - that takes priority
     const hasPendingEdit =
       localStorage.getItem("tka-pending-edit-sequence") !== null;
 

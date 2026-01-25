@@ -2,7 +2,7 @@
 AnimationGrid.svelte
 
 Responsive grid for displaying animation cards.
-Adapted from DiscoverGrid with animate-css-grid for smooth transitions.
+Adapted from BrowseGrid with animate-css-grid for smooth transitions.
 
 Features:
 - Responsive 2-4 column layout based on container width

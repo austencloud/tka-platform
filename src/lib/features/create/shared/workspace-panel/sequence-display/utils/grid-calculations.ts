@@ -217,7 +217,8 @@ export function calculateTimelineRows(
   };
 
   for (let i = 0; i < steps.length; i++) {
-    const duration = steps[i].duration ?? 1;
+    const step = steps[i];
+    const duration = step?.duration ?? 1;
 
     // Would adding this step exceed capacity?
     // Always add at least one step per row (handles edge case of step > capacity)

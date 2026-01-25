@@ -17,8 +17,8 @@ import { LOOPGlyphRenderer } from "./implementations/LOOPGlyphRenderer";
 import { LOOPIconStripRenderer } from "./implementations/LOOPIconStripRenderer";
 import { PictographKeyHasher } from "./implementations/PictographKeyHasher";
 import { StepNumberRenderer } from "./implementations/StepNumberRenderer";
-import { getPictographMemoryCache } from "./implementations/PictographMemoryCache";
-import { getPictographBlobCache } from "./implementations/PictographBlobCache";
+import { PictographMemoryCache } from "./implementations/PictographMemoryCache";
+import { PictographBlobCache } from "./implementations/PictographBlobCache";
 
 let _layoutCalculator: LayoutCalculator | null = null;
 let _dimensionCalculator: DimensionCalculator | null = null;
@@ -29,8 +29,8 @@ let _loopGlyphRenderer: LOOPGlyphRenderer | null = null;
 let _loopIconStripRenderer: LOOPIconStripRenderer | null = null;
 let _pictographKeyHasher: PictographKeyHasher | null = null;
 let _stepNumberRenderer: StepNumberRenderer | null = null;
-let _pictographMemoryCache: ReturnType<typeof getPictographMemoryCache> | null = null;
-let _pictographBlobCache: ReturnType<typeof getPictographBlobCache> | null = null;
+let _pictographMemoryCache: PictographMemoryCache | null = null;
+let _pictographBlobCache: PictographBlobCache | null = null;
 
 export const layoutCalculator: LayoutCalculator = new Proxy({} as LayoutCalculator, {
   get(_, prop) {
@@ -95,16 +95,16 @@ export const stepNumberRenderer: StepNumberRenderer = new Proxy({} as StepNumber
   }
 });
 
-export const pictographMemoryCache = new Proxy({} as ReturnType<typeof getPictographMemoryCache>, {
+export const pictographMemoryCache = new Proxy({} as PictographMemoryCache, {
   get(_, prop) {
-    if (!_pictographMemoryCache) _pictographMemoryCache = getPictographMemoryCache();
+    if (!_pictographMemoryCache) _pictographMemoryCache = new PictographMemoryCache();
     return (_pictographMemoryCache as any)[prop];
   }
 });
 
-export const pictographBlobCache = new Proxy({} as ReturnType<typeof getPictographBlobCache>, {
+export const pictographBlobCache = new Proxy({} as PictographBlobCache, {
   get(_, prop) {
-    if (!_pictographBlobCache) _pictographBlobCache = getPictographBlobCache();
+    if (!_pictographBlobCache) _pictographBlobCache = new PictographBlobCache();
     return (_pictographBlobCache as any)[prop];
   }
 });

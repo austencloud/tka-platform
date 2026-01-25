@@ -33,13 +33,13 @@
 
 		if (event.shiftKey) {
 			// Shift+Tab: if on first element, wrap to last
-			if (document.activeElement === firstElement) {
+			if (document.activeElement === firstElement && lastElement) {
 				event.preventDefault();
 				lastElement.focus();
 			}
 		} else {
 			// Tab: if on last element, wrap to first
-			if (document.activeElement === lastElement) {
+			if (document.activeElement === lastElement && firstElement) {
 				event.preventDefault();
 				firstElement.focus();
 			}
@@ -53,7 +53,7 @@
 			// Focus the first focusable element after render
 			requestAnimationFrame(() => {
 				const focusable = getFocusableElements();
-				if (focusable.length > 0) {
+				if (focusable.length > 0 && focusable[0]) {
 					focusable[0].focus();
 				}
 			});

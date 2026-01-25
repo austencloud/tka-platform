@@ -132,12 +132,14 @@ Responsive behavior:
     // Initialize DeviceDetector
     let cleanup: (() => void) | undefined;
     try {
-      deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
-      responsiveSettings = deviceDetector.getResponsiveSettings();
+      deviceDetector = container.items.deviceDetector;
+      if (deviceDetector) {
+        responsiveSettings = deviceDetector.getResponsiveSettings();
 
-      cleanup = deviceDetector.onCapabilitiesChanged(() => {
-        responsiveSettings = deviceDetector!.getResponsiveSettings();
-      });
+        cleanup = deviceDetector.onCapabilitiesChanged(() => {
+          responsiveSettings = deviceDetector!.getResponsiveSettings();
+        });
+      }
     } catch (error) {
       console.warn(
         "ViewPresetsDropdown: Failed to resolve DeviceDetector",

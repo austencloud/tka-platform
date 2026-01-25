@@ -32,7 +32,7 @@
   }
 
   function cycleSetting(key: 'dashes' | 'props' | 'hands') {
-    const cycles = {
+    const cycles: Record<'dashes' | 'props' | 'hands', string[]> = {
       dashes: ['Low', 'Mixed', 'High'],
       props: ['Smooth', 'Mixed', 'High'],
       hands: ['Smooth', 'Mixed', 'High'],
@@ -40,7 +40,11 @@
     const options = cycles[key];
     const current = settings[key];
     const idx = options.indexOf(current);
-    settings[key] = options[(idx + 1) % options.length];
+    const nextIndex = (idx + 1) % options.length;
+    const nextValue = options[nextIndex];
+    if (nextValue) {
+      settings[key] = nextValue;
+    }
   }
 </script>
 
@@ -90,7 +94,7 @@
               placeholder="Enter word..."
               class="bar-word-input"
             />
-            <button class="bar-clear" onclick={() => word = ''}>
+            <button class="bar-clear" onclick={() => word = ''} aria-label="Clear word">
               <i class="fas fa-backspace"></i>
             </button>
           </div>
@@ -150,22 +154,23 @@
 
         <aside class="wide-panel">
           <div class="panel-section">
-            <label class="panel-label">Word</label>
+            <label class="panel-label" for="panel-word-input">Word</label>
             <div class="panel-input-group">
               <input
+                id="panel-word-input"
                 type="text"
                 bind:value={word}
                 placeholder="Enter word..."
                 class="panel-word-input"
               />
-              <button class="panel-clear" onclick={() => word = ''}>
+              <button class="panel-clear" onclick={() => word = ''} aria-label="Clear word">
                 <i class="fas fa-backspace"></i>
               </button>
             </div>
           </div>
 
           <div class="panel-section">
-            <label class="panel-label">Settings</label>
+            <div class="panel-label">Settings</div>
             <div class="panel-settings-grid">
               <button class="panel-chip" onclick={() => cycleSetting('dashes')}>
                 <span class="chip-label">Dashes</span>
@@ -207,7 +212,7 @@
     {#if activeLayout === 'header'}
       <div class="layout-header">
         <header class="integrated-header">
-          <button class="header-back">
+          <button class="header-back" aria-label="Go back">
             <i class="fas fa-arrow-left"></i>
           </button>
 
@@ -247,7 +252,7 @@
             {/if}
           </button>
 
-          <button class="header-save">
+          <button class="header-save" aria-label="Save sequence">
             <i class="fas fa-bookmark"></i>
           </button>
         </header>

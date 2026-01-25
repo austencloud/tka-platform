@@ -90,7 +90,7 @@
 
       // Remove from pending list
       pendingEntries = pendingEntries.filter(
-        (e) => e.sequenceId !== entry.id
+        (e) => e.id !== entry.id
       );
       categoryOverride = null;
     } catch (e) {
@@ -132,7 +132,7 @@
 
       // Remove from pending list
       pendingEntries = pendingEntries.filter(
-        (e) => e.sequenceId !== rejectingEntry?.sequenceId
+        (e) => e.id !== rejectingEntry?.id
       );
       closeRejectModal();
     } catch (e) {
@@ -153,7 +153,7 @@
 
       // Remove from reported list (it's now hidden)
       reportedEntries = reportedEntries.filter(
-        (e) => e.sequenceId !== entry.id
+        (e) => e.id !== entry.id
       );
     } catch (e) {
       console.error("[ShameQueuePanel] Failed to hide:", e);
@@ -177,7 +177,7 @@
 
       // Update in list
       reportedEntries = reportedEntries.map((e) =>
-        e.sequenceId === entry.id ? { ...e, featured } : e
+        e.id === entry.id ? { ...e, featured } : e
       );
     } catch (e) {
       console.error("[ShameQueuePanel] Failed to update featured:", e);

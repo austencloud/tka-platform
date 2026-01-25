@@ -23,7 +23,7 @@
   import { layerCompositor } from "$lib/shared/render/services/implementations/LayerCompositor";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
-  import { SequenceDifficultyCalculator } from "$lib/features/explore/sequences/display/services/implementations/SequenceDifficultyCalculator";
+  import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -110,7 +110,7 @@
     try {
       const result = loopDetector.detectLOOPType(seq);
 
-      if (result.loopType && result.loopType !== "freeform") {
+      if (result.loopType) {
         const components = loopTypeResolver.parseComponents(result.loopType);
         const resultSet = components.size > 0 ? components : null;
         loopDetectionCache.set(cacheKey, resultSet);
@@ -170,7 +170,7 @@
   const loopComponents = $derived.by(() => {
     const loopType = sequence.loopType;
 
-    if (loopType && loopType !== "freeform") {
+    if (loopType) {
       const components = loopTypeResolver.parseComponents(loopType);
       return components.size > 0 ? components : null;
     }
@@ -466,8 +466,9 @@
       const newCells: CellData[] = [];
 
       // Render start position
-      if (sequence.startPosition || sequence.steps[0]) {
-        const startData = sequence.startPosition || createStartPositionFromBeatStart(sequence.steps[0]);
+      const firstStep = sequence.steps[0];
+      if (sequence.startPosition || firstStep) {
+        const startData = sequence.startPosition || createStartPositionFromBeatStart(firstStep!);
 
         const [lightUrl, darkUrl] = await Promise.all([
           renderPictograph(startData, undefined, false),

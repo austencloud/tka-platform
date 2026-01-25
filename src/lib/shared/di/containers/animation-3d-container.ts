@@ -27,13 +27,13 @@ import { DuetPersister } from "$lib/shared/3d-animation/services/implementations
 import { createPerformerSynchronizer } from "$lib/shared/3d-animation/services/implementations/PerformerSynchronizer";
 
 // External dependency types
-import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 
 /**
  * External dependencies required by the animation-3d container.
  */
 export interface Animation3DContainerDeps {
-  exploreLoader: IExploreLoader;
+  browseLoader: IBrowseLoader;
 }
 
 /**
@@ -78,7 +78,7 @@ export function createAnimation3DContainer(deps: Animation3DContainerDeps) {
 
   // Tier 3: Duet and multi-performer systems
   const container = tier2.add({
-    duetPersister: () => new DuetPersister(deps.exploreLoader),
+    duetPersister: () => new DuetPersister(deps.browseLoader),
     // Factory function - creates new instance each time (not singleton)
     // Use container.items.performerSynchronizerFactory() to create instances
     performerSynchronizerFactory: () => createPerformerSynchronizer,

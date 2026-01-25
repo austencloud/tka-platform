@@ -13,7 +13,7 @@
   import { onMount, onDestroy } from "svelte";
   import type { FeedContentType, FeedItem } from "../../domain/models/feed-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import PropAwareThumbnail from "$lib/features/explore/sequences/display/components/PropAwareThumbnail.svelte";
+  import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
   import { container } from "$lib/shared/di";
   import type { IVideoPlaybackController } from "../../services/contracts/IVideoPlaybackController";
 

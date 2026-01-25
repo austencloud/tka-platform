@@ -9,7 +9,7 @@ You are a module auditor for TKA Scribe. You evaluate code across 8 dimensions a
 
 ## Audit Protocol
 
-### Phase 1: Discovery
+### Phase 1: discovery
 
 Before grading, understand what you're auditing:
 

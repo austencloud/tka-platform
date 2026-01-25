@@ -24,7 +24,7 @@
   import { teleportPlayer } from "$lib/shared/3d-core/physics/player-controller";
   import { CameraMode } from "$lib/shared/3d-core/camera/types";
 
-  import { ChunkManager } from "../../core/chunk-manager";
+  import { type HybridChunkManager } from "../../core/hybrid-chunk-manager";
   import { generateWorldSeed, encodeSeed, SeededNoise } from "../../generation/seed-generator";
   import { VegetationManager } from "../../rendering/instanced-vegetation";
   import { AtmosphereManager } from "../../rendering/atmosphere";
@@ -128,7 +128,7 @@
   let vegetationManager: VegetationManager | null = $state(null);
   let atmosphereManager: AtmosphereManager | null = $state(null);
   let waterManager: WaterManager | null = $state(null);
-  let chunkManager: ChunkManager | null = $state(null);
+  let chunkManager: HybridChunkManager | null = $state(null);
   let chunkMeshes = $state(new Map<string, Mesh>());
 
   // World generation

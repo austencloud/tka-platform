@@ -4,15 +4,15 @@
  * Just the essential models for basic filtering.
  */
 
-import type { ExploreFilterType } from "../enums/FilteringEnums";
-import type { ExploreFilterValue } from "../types/FilteringTypes";
+import type { BrowseFilterType } from "../enums/FilteringEnums";
+import type { BrowseFilterValue } from "../types/FilteringTypes";
 
 /**
  * Simple active filter - just type and value
  */
 export interface ActiveFilter {
-  type: ExploreFilterType;
-  value: ExploreFilterValue;
+  type: BrowseFilterType;
+  value: BrowseFilterValue;
   appliedAt: Date;
 }
 
@@ -21,6 +21,6 @@ export interface ActiveFilter {
  */
 export interface FilterOptionItem {
   label: string;
-  value: ExploreFilterValue;
+  value: BrowseFilterValue;
   count: number;
 }

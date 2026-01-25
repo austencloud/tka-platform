@@ -130,14 +130,16 @@
     try {
       backgroundSystem = container.items.deepOceanBackgroundSystem;
 
-      const dimensions = { width: canvas.width, height: canvas.height };
-      await backgroundSystem.initialize(dimensions, quality, { spawnFishOnScreen: true });
+      if (backgroundSystem) {
+        const dimensions = { width: canvas.width, height: canvas.height };
+        await backgroundSystem.initialize(dimensions, quality, { spawnFishOnScreen: true });
 
-      backgroundSystem.setLayerVisibility(layers);
-      stats = backgroundSystem.getStats();
-      updateFishList();
+        backgroundSystem.setLayerVisibility(layers);
+        stats = backgroundSystem.getStats();
+        updateFishList();
 
-      startAnimation();
+        startAnimation();
+      }
       isLoading = false;
     } catch (error) {
       isLoading = false;
@@ -356,7 +358,9 @@
   function spawnFish() {
     if (!backgroundSystem || !canvas) return;
     const dimensions = { width: canvas.width, height: canvas.height };
-    backgroundSystem.spawnFish?.(dimensions);
+    const fishAnimator = backgroundSystem.getFishAnimator();
+    const newFish = fishAnimator.createFish(dimensions, true, true);
+    backgroundSystem.getFish().push(newFish);
     stats = backgroundSystem.getStats();
     updateFishList();
   }
@@ -364,7 +368,9 @@
   function spawnJellyfish() {
     if (!backgroundSystem || !canvas) return;
     const dimensions = { width: canvas.width, height: canvas.height };
-    backgroundSystem.spawnJellyfish?.(dimensions);
+    const jellyfishAnimator = backgroundSystem.getJellyfishAnimator();
+    const newJellyfish = jellyfishAnimator.createJellyfish(dimensions);
+    backgroundSystem.getJellyfish().push(newJellyfish);
     stats = backgroundSystem.getStats();
   }
 

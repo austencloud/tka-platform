@@ -65,14 +65,17 @@ export function createToggleCardState<T>(props: {
       deviceDetector = container.items.deviceDetector;
 
       // Set initial layout state
-      isLandscapeMobile = deviceDetector.isLandscapeMobile();
+      if (deviceDetector) {
+        isLandscapeMobile = deviceDetector.isLandscapeMobile();
+      }
 
       // Subscribe to device capability changes
-      const cleanupDeviceListener = deviceDetector.onCapabilitiesChanged(() => {
-        if (deviceDetector) {
-          isLandscapeMobile = deviceDetector.isLandscapeMobile();
+      const cleanupDeviceListener = deviceDetector?.onCapabilitiesChanged(() => {
+        const detector = deviceDetector;
+        if (detector) {
+          isLandscapeMobile = detector.isLandscapeMobile();
         }
-      });
+      }) ?? (() => {});
 
       // Track card dimensions to determine if options are side-by-side
       let resizeObserver: ResizeObserver | null = null;

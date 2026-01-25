@@ -24,7 +24,13 @@
   let mainVideoRef: HTMLVideoElement | null = $state(null);
   let thumbnailVideos: HTMLVideoElement[] = $state([]);
 
-  const activeVideo = $derived(videos[activeIndex]);
+  const activeVideo = $derived.by(() => {
+    const video = videos[activeIndex] ?? videos[0];
+    if (!video) {
+      return { url: '', word: '' };
+    }
+    return video;
+  });
 
   onMount(() => {
     // Start playing main video
@@ -40,14 +46,10 @@
     }, 50);
   }
 
-  function handleThumbnailRef(index: number) {
-    return (el: HTMLVideoElement | null) => {
-      if (el) {
-        thumbnailVideos[index] = el;
-        // Seek to a frame for preview
-        el.currentTime = 1;
-      }
-    };
+  // Action to set up thumbnail video refs
+  function thumbnailRef(el: HTMLVideoElement, index: number) {
+    thumbnailVideos[index] = el;
+    el.currentTime = 1;
   }
 </script>
 
@@ -86,7 +88,7 @@
           aria-label="Select video: {video.word}"
         >
           <video
-            use:handleThumbnailRef={i}
+            use:thumbnailRef={i}
             muted
             playsinline
             preload="metadata"

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Deep Linking system allows users to create shareable URLs that open TKA Scribe with a specific sequence pre-loaded in any module (Create, Animate, or Explore). This enables easy sharing of sequences without requiring database storage.
+The Deep Linking system allows users to create shareable URLs that open TKA Scribe with a specific sequence pre-loaded in any module (Create, Animate, or Browse). This enables easy sharing of sequences without requiring database storage.
 
 ## How It Works
 
@@ -46,7 +46,7 @@ https://your-app.com/?open=<module>:<encoded-sequence>
 | `tunnel`                     | `animate`      | `tunnel`      | Opens Tunnel mode in Animate module    |
 | `mirror`                     | `animate`      | `mirror`      | Opens Mirror mode in Animate module    |
 | `grid`                       | `animate`      | `grid`        | Opens Grid mode in Animate module      |
-| `explore` or `gallery`       | `explore`      | `gallery`     | Opens Gallery in Explore module        |
+| `browse` or `gallery`       | `browse`      | `gallery`     | Opens Gallery in Browse module        |
 
 ## Encoding Specification
 
@@ -311,7 +311,7 @@ User edits sequence in CreateModule
 - **Chrome/Edge**: ~32,000 characters (practical limit ~2,000)
 - **Firefox**: ~65,000 characters (practical limit ~2,000)
 - **Safari**: ~80,000 characters (practical limit ~2,000)
-- **Internet Explorer**: 2,083 characters (legacy)
+- **Internet Browser**: 2,083 characters (legacy)
 
 **Recommendation:** Keep URLs under 1,500 characters for best compatibility.
 

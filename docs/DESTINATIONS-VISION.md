@@ -45,7 +45,7 @@ This document defines the purpose, UX model, and future direction for each 3D de
 
 **Purpose:** Open-ended explorable environment. Originally conceived as procedurally-expanding gallery, now evolving toward more ambitious world-building.
 
-**User role:** Explorer in an expansive space.
+**User role:** Browser in an expansive space.
 
 **Camera:** First-person with free movement.
 
@@ -59,7 +59,7 @@ This document defines the purpose, UX model, and future direction for each 3D de
 
 3. **Flow City** - Urban environment themed around the flow community.
 
-4. **Real-world terrain import** - Recreate actual flow festival locations using Google Maps/terrain data. Specific candidate: **Kinetic Fire** at Hannon's Camp America - a real festival that could be virtually recreated for the community to explore.
+4. **Real-world terrain import** - Recreate actual flow festival locations using Google Maps/terrain data. Specific candidate: **Kinetic Fire** at Hannon's Camp America - a real festival that could be virtually recreated for the community to browse.
 
 **Technical considerations for terrain import:**
 - Google Maps 3D data export (Cesium, Google Earth Studio, photogrammetry)
@@ -75,7 +75,7 @@ This document defines the purpose, UX model, and future direction for each 3D de
 |-------------|---------------|-----------|----------------|
 | Stage | Orbit (3rd person) | Director | Author/edit |
 | Gallery | First-person | Visitor | Browse/view |
-| Endless World | First-person | Explorer | Explore/discover |
+| Endless World | First-person | Browser | Browse/browse |
 
 ---
 

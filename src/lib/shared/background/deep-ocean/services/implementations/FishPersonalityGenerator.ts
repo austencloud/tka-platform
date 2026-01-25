@@ -75,7 +75,7 @@ export class FishPersonalityGenerator implements IFishPersonalityGenerator {
       schoolChance: 0.3 + sociability * 1.4,
 
       // High curiosity = more exploring
-      exploreChance: 0.2 + curiosity * 1.2,
+      browseChance: 0.2 + curiosity * 1.2,
 
       // Low activity = more resting
       restChance: 1.2 - activity * 0.8,

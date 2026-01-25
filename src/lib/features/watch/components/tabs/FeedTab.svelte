@@ -131,7 +131,7 @@
       case "demo":
       case "sequence":
         if (item.sequenceId) {
-          handleModuleChange("explore" as ModuleId, { sequenceId: item.sequenceId });
+          handleModuleChange("browse" as ModuleId, { sequenceId: item.sequenceId });
         }
         break;
       case "composition":

@@ -235,7 +235,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: "Poi Lab",
     icon: '<i class="fas fa-circle-notch" style="color: #22d3ee;" aria-hidden="true"></i>',
     color: "#22d3ee", // Cyan - circular/spinning motion
-    description: "Explore poi constraints with VTG terminology",
+    description: "Browse poi constraints with VTG terminology",
     isMain: true, // Visibility controlled by getModuleDefinitions() based on admin status
     sections: [], // Tabs handled internally
     adminOnly: true,

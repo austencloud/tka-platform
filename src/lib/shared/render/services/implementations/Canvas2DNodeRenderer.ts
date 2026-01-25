@@ -392,4 +392,9 @@ export class Canvas2DNodeRenderer implements IDirectRenderer {
   clearCache(): void {
     // No-op for now
   }
+
+  dispose(): void {
+    this.memoryUsage = 0;
+    this.initialized = false;
+  }
 }

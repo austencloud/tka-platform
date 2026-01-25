@@ -98,7 +98,7 @@
 
       // Convert localCurrentStep to accumulated time
       for (let i = 0; i < sequence.steps.length && i < Math.floor(localCurrentStep); i++) {
-        accumulatedDuration += sequence.steps[i].duration ?? 1.0;
+        accumulatedDuration += sequence.steps[i]?.duration ?? 1.0;
       }
 
       // Add fractional part of current step
@@ -120,7 +120,7 @@
       let remaining = accumulatedDuration;
       stepIndex = 0;
       while (stepIndex < sequence.steps.length) {
-        const stepDuration = sequence.steps[stepIndex].duration ?? 1.0;
+        const stepDuration = sequence.steps[stepIndex]?.duration ?? 1.0;
         if (remaining < stepDuration) {
           break;
         }
@@ -129,7 +129,7 @@
       }
 
       if (stepIndex < sequence.steps.length) {
-        const stepDuration = sequence.steps[stepIndex].duration ?? 1.0;
+        const stepDuration = sequence.steps[stepIndex]?.duration ?? 1.0;
         localCurrentStep = stepIndex + (remaining / stepDuration);
       } else {
         localCurrentStep = 0; // Wrap to start

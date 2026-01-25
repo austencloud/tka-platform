@@ -92,7 +92,7 @@ export function calculateSnapPoints(context: SnapContext): SnapPoint[] {
   const points: SnapPoint[] = [];
 
   // Beat markers
-  if (settings.snapToBeats && audioBpm && audioDuration > 0) {
+  if (settings.snapToSteps && audioBpm && audioDuration > 0) {
     const beatTimes = generateStepTimestamps(audioBpm, audioDuration);
     beatTimes.forEach((time, index) => {
       const isDownbeat = index % 4 === 0;

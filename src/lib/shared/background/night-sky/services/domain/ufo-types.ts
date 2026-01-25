@@ -301,5 +301,5 @@ export interface UFO extends UFORenderState {
   buddyOffset: number;
 
   // Rare discovery tracking
-  rareDiscoveries: number;
+  rareBrowseies: number;
 }

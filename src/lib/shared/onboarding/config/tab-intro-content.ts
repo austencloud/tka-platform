@@ -125,10 +125,10 @@ export const LEARN_TAB_INTROS: Record<string, TabIntroContent> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Discover Module Tabs
+// Browse Module Tabs
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const DISCOVER_TAB_INTROS: Record<string, TabIntroContent> = {
+export const BROWSE_TAB_INTROS: Record<string, TabIntroContent> = {
   sequences: {
     icon: "fa-compass",
     color: "#a855f7",
@@ -238,7 +238,7 @@ export const COMPOSE_TAB_INTROS: Record<string, TabIntroContent> = {
 const ALL_INTROS: Record<string, Record<string, TabIntroContent>> = {
   create: CREATE_TAB_INTROS,
   learn: LEARN_TAB_INTROS,
-  discover: DISCOVER_TAB_INTROS,
+  browse: BROWSE_TAB_INTROS,
   library: LIBRARY_TAB_INTROS,
   compose: COMPOSE_TAB_INTROS,
 };

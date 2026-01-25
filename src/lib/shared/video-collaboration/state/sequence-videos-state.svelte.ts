@@ -118,7 +118,7 @@ export function createVideoPresenceCheck(sequenceId: string): {
   if (videoService) {
     videoService
       .getVideosForSequence(sequenceId)
-      .then((videos) => {
+      .then((videos: CollaborativeVideo[]) => {
         hasVideos = videos.length > 0;
       })
       .catch(() => {

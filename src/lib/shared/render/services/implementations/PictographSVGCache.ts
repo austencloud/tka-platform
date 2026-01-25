@@ -4,7 +4,7 @@
  * Layer 1 of the two-layer pictograph caching system.
  * Persists base pictograph SVGs (without beat numbers) to IndexedDB.
  *
- * Follows the ExploreThumbnailCache pattern exactly for consistency.
+ * Follows the BrowseThumbnailCache pattern exactly for consistency.
  */
 
 import { browser } from "$app/environment";

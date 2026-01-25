@@ -141,7 +141,7 @@
       "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"PictographFilter.ts\")",
       "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"ArrowSvg.svelte\")",
       "Bash(do grep -H \">\\\\s*[A-Z][a-zA-Z ]*<\\\\|placeholder=\"\"\\\\|aria-label=\"\"\" \"$file\")",
-      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\features\\\\discover\" -Recurse -Filter \"*SequenceDetail*\")",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\features\\\\browse\" -Recurse -Filter \"*SequenceDetail*\")",
       "Bash(do tail -5 \"$file\")",
       "WebFetch(domain:www.manuelsanchezdev.com)",
       "WebFetch(domain:algorithmicbotany.org)",
@@ -434,7 +434,10 @@
       "WebFetch(domain:claude-plugins.dev)",
       "Bash(do if git diff ac82bc5b5 HEAD -- \"$file\")",
       "Bash(do echo \"=== $exp ===\")",
-      "Bash(./node_modules/.bin/madge:*)"
+      "Bash(./node_modules/.bin/madge:*)",
+      "WebFetch(domain:www.xhtmlteam.com)",
+      "Bash(./node_modules/.bin/svelte-check:*)",
+      "Bash(set +o onecmd)"
     ]
   },
   "enableAllProjectMcpServers": true,

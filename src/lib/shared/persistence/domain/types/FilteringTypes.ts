@@ -7,14 +7,14 @@
 /**
  * Simple filter value - just strings, numbers, or booleans
  */
-export type ExploreFilterValue = string | number | boolean | string[] | null;
+export type BrowseFilterValue = string | number | boolean | string[] | null;
 
 /**
- * Explore Filter Interface
+ * Browse Filter Interface
  *
- * Represents the current filter state in the discover module.
+ * Represents the current filter state in the browse module.
  */
-export interface ExploreFilter {
+export interface BrowseFilter {
   showFavoritesOnly?: boolean;
   sortBy?: string;
   difficultyLevels?: number[];

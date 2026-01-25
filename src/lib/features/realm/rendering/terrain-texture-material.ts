@@ -370,11 +370,11 @@ export function createTerrainTextureMaterial(
     );
 
     // Store modified shader for debugging if needed
-    (material as Record<string, unknown>).customShader = shader;
+    (material as unknown as Record<string, unknown>).customShader = shader;
   };
 
   // Store config for potential updates
-  (material as Record<string, unknown>).terrainConfig = cfg;
+  (material as unknown as Record<string, unknown>).terrainConfig = cfg;
 
   return material;
 }

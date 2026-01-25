@@ -72,9 +72,9 @@
       "notes": "Well-architected composition root with clean service separation. Minor code quality issues (helper files, some any types). Svelte 5 100% compliant. Accessibility gaps in focus styling (outline:none without focus-visible). Good UX states. Theme variables used correctly. No barrel exports. Security safe.",
       "issues": []
     },
-    "features/discover/creators": {
+    "features/browse/creators": {
       "lastAuditedAt": "2026-01-17T10:24:56.281Z",
-      "name": "Discover > Creators",
+      "name": "Browse > Creators",
       "type": "feature",
       "grades": {
         "architecture": "A",

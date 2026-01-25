@@ -34,7 +34,7 @@ export const FEATURES: FeatureCard[] = [
   },
   {
     icon: "🔍",
-    title: "Discover",
+    title: "Browse",
     description:
       "Browse community sequences, follow creators, and share your work.",
     color: "#14b8a6",

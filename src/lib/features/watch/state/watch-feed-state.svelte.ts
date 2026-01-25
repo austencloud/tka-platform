@@ -16,7 +16,7 @@ export type FeedStatus = "idle" | "loading" | "loaded" | "error";
  * Creates reactive feed state for Watch > Feed.
  */
 export function createWatchFeedState() {
-	let items = $state<FeedItem[]>([]);
+	let items: FeedItem[] = $state([]);
 	let status = $state<FeedStatus>("idle");
 	let error = $state<string | null>(null);
 	let _hasMore = $state(true);
@@ -57,7 +57,7 @@ export function createWatchFeedState() {
 			if (isLoadMore) {
 				items = [...items, ...page.items];
 			} else {
-				items = page.items;
+				items = [...page.items];
 			}
 			nextCursor = page.nextCursor;
 			_hasMore = page.hasMore;

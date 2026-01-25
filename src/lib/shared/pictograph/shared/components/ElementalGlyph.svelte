@@ -105,6 +105,7 @@ Based on legacy elemental_glyph.py implementation.
       return () => clearTimeout(timeout);
     }
     prevElementalType = elementalType;
+    return undefined;
   });
 </script>
 

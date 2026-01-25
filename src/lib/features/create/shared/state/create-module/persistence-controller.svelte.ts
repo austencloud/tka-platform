@@ -127,7 +127,7 @@ export function createCreateModulePersistenceController({
     try {
       hasDeepLink = deepLinker.hasDataForModule("create") ?? false;
 
-      // Also check for pending edit from Discover gallery (stored in localStorage)
+      // Also check for pending edit from Browse gallery (stored in localStorage)
       hasPendingEdit =
         localStorage.getItem("tka-pending-edit-sequence") !== null;
 

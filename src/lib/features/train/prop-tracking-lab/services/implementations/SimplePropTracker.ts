@@ -136,11 +136,11 @@ export class SimplePropTracker implements IPropTracker {
 		for (let y = startY; y < endY; y++) {
 			for (let x = startX; x < endX; x++) {
 				const idx = (y * width + x) * 4;
-				const r = Math.floor(data[idx] / 32); // 0-7
-				const g = Math.floor(data[idx + 1] / 32); // 0-7
-				const b = Math.floor(data[idx + 2] / 32); // 0-7
+				const r = Math.floor(data[idx]! / 32); // 0-7
+				const g = Math.floor(data[idx + 1]! / 32); // 0-7
+				const b = Math.floor(data[idx + 2]! / 32); // 0-7
 				const binIdx = r * 64 + g * 8 + b;
-				histogram[binIdx]++;
+				histogram[binIdx]!++;
 				pixelCount++;
 			}
 		}
@@ -162,7 +162,7 @@ export class SimplePropTracker implements IPropTracker {
 	private compareHistograms(h1: number[], h2: number[]): number {
 		let sum = 0;
 		for (let i = 0; i < h1.length; i++) {
-			sum += Math.sqrt(h1[i] * h2[i]);
+			sum += Math.sqrt(h1[i]! * h2[i]!);
 		}
 		return sum;
 	}
@@ -242,7 +242,7 @@ export class SimplePropTracker implements IPropTracker {
 		for (let y = startY; y < endY; y++) {
 			for (let x = startX; x < endX; x++) {
 				const idx = (y * width + x) * 4;
-				const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+				const brightness = (data[idx]! + data[idx + 1]! + data[idx + 2]!) / 3;
 				totalBrightness += brightness;
 				pixelCount++;
 			}
@@ -255,7 +255,7 @@ export class SimplePropTracker implements IPropTracker {
 		for (let y = startY; y < endY; y++) {
 			for (let x = startX; x < endX; x++) {
 				const idx = (y * width + x) * 4;
-				const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+				const brightness = (data[idx]! + data[idx + 1]! + data[idx + 2]!) / 3;
 
 				// Check if this pixel is "prop" (significantly different from avg)
 				if (Math.abs(brightness - avgBrightness) > 30) {

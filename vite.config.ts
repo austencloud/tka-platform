@@ -263,13 +263,12 @@ export default defineConfig({
         mode: "production",
         disableDevLogs: true,
         // Cache strategies for different asset types
-        // In dev mode, use minimal patterns to avoid "no files matched" warnings
+        // In dev mode, skip glob patterns entirely - SW handles caching at runtime
         // In production, glob against actual build output structure
         globPatterns: process.env.NODE_ENV === "production"
           ? [
-              "**/*.{js,css,html,ico,png,svg,woff2,woff,webp}",
-              "prerendered/**/*.{html,json}",
-              "client/**/*.{js,css,ico,png,svg,webp,webmanifest}",
+              // Only use root-level pattern - prerendered/ and client/ don't exist in adapter-static output
+              "**/*.{js,css,html,ico,png,svg,woff2,woff,webp,webmanifest}",
             ]
           : [], // Empty in dev - SW handles caching at runtime
         // Exclude files from precaching that shouldn't be cached
@@ -550,7 +549,7 @@ export default defineConfig({
       // WebGPU renderer: pre-bundle to avoid 504 "Outdated Optimize Dep" errors
       "three/webgpu",
 
-      // Prevent mid-session optimization reloads (lightweight deps discovered late)
+      // Prevent mid-session optimization reloads (lightweight deps browseed late)
       "animate-css-grid",
       "@tanstack/svelte-virtual",
       "realtime-bpm-analyzer",

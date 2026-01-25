@@ -388,11 +388,14 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           ),
       }))
 
-      // === Layer 3: Services with Layer 1/2 deps ===
+      // === Layer 3: beatSignatureGenerator (depends on motionSignatureGenerator) ===
       .add((ctx) => ({
-        // Sequence Comparison Engine - Layer 2 (depends on Layer 1)
         beatSignatureGenerator: () =>
           new BeatSignatureGenerator(ctx.motionSignatureGenerator),
+      }))
+
+      // === Layer 3.1: Services that depend on beatSignatureGenerator ===
+      .add((ctx) => ({
         sequenceCanonicalizer: () =>
           new SequenceCanonicalizer(
             ctx.beatSignatureGenerator,
@@ -403,6 +406,10 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.beatSignatureGenerator,
             ctx.spatialTransformDetector
           ),
+      }))
+
+      // === Layer 3.2: Services that depend on sequenceCanonicalizer ===
+      .add((ctx) => ({
         sequenceEquivalenceDetector: () =>
           new SequenceEquivalenceDetector(
             ctx.sequenceCanonicalizer,
@@ -613,9 +620,13 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.letterTransitionGraph,
             deps.letterQueryHandler
           ),
+        spellServiceLoader: () => new SpellServiceLoader(),
+      }))
+
+      // Layer 4.5a1: variationConstraintBuilder (depends on letterTypeClassifier)
+      .add((ctx) => ({
         variationConstraintBuilder: () =>
           new VariationConstraintBuilder(ctx.letterTypeClassifier),
-        spellServiceLoader: () => new SpellServiceLoader(),
       }))
 
       // Layer 4.5b: Spell generation services (need validators from Layer 4.5a)

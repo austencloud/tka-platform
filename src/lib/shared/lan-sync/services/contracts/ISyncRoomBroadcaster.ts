@@ -2,7 +2,7 @@
  * ISyncRoomBroadcaster
  *
  * Interface for broadcasting sync room presence to Firebase RTDB.
- * Allows other devices to discover active sync sessions.
+ * Allows other devices to browse active sync sessions.
  */
 
 import type { SyncRoom } from '../../domain/models/lan-sync-models';

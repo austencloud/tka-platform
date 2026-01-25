@@ -6,7 +6,7 @@
  */
 
 import type { AppSettings } from "$lib/shared/settings/domain/models/app-settings-models";
-import type { CompleteExploreState } from "$lib/features/discover/shared/domain/models/discover-models";
+import type { CompleteBrowseState } from "$lib/features/browse/shared/domain/models/browse-models";
 import type { IPersistenceService } from "$lib/shared/persistence/services/contracts/IPersistenceService";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -24,7 +24,7 @@ export class MockPersistenceService implements IPersistenceService {
   private userWork = new Map<string, unknown>();
   private activeTab: TabId | null = null;
   private tabStates = new Map<TabId, unknown>();
-  private ExploreState: CompleteExploreState | null = null;
+  private BrowseState: CompleteBrowseState | null = null;
   private currentSequenceState: unknown | null = null;
 
   private _isInitialized = false;
@@ -139,15 +139,15 @@ export class MockPersistenceService implements IPersistenceService {
   }
 
   // ============================================================================
-  // Discover STATE PERSISTENCE
+  // Browse STATE PERSISTENCE
   // ============================================================================
 
-  saveExploreState(state: CompleteExploreState): Promise<void> {
-    this.ExploreState = state;
+  saveBrowseState(state: CompleteBrowseState): Promise<void> {
+    this.BrowseState = state;
   }
 
-  loadExploreState(): Promise<CompleteExploreState | null> {
-    return this.ExploreState;
+  loadBrowseState(): Promise<CompleteBrowseState | null> {
+    return this.BrowseState;
   }
 
   // ============================================================================
@@ -215,7 +215,7 @@ export class MockPersistenceService implements IPersistenceService {
     this.userWork.clear();
     this.activeTab = null;
     this.tabStates.clear();
-    this.ExploreState = null;
+    this.BrowseState = null;
     this.currentSequenceState = null;
   }
 

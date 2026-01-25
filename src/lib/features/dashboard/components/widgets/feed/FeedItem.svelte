@@ -88,8 +88,8 @@
       item.eventType === "sequence_create" ||
       item.eventType === "sequence_favorite"
     ) {
-      // Navigate to discover to find the sequence
-      await handleModuleChange("explore", "gallery");
+      // Navigate to browse to find the sequence
+      await handleModuleChange("browse", "gallery");
     }
   }
 </script>

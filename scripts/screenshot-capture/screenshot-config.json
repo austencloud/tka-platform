@@ -17,12 +17,12 @@
   },
   "screens": [
     {
-      "id": "discover-gallery",
-      "name": "Discover Gallery",
+      "id": "browse-gallery",
+      "name": "Browse Gallery",
       "priority": 1,
-      "moduleId": "discover",
+      "moduleId": "browse",
       "tabId": "gallery",
-      "waitFor": ".sequence-card, .discover-grid",
+      "waitFor": ".sequence-card, .browse-grid",
       "description": "Main gallery showing all sequences - first impression"
     },
     {
@@ -107,10 +107,10 @@
       "description": "Personal saved sequences"
     },
     {
-      "id": "discover-creators",
-      "name": "Discover - Creators",
+      "id": "browse-creators",
+      "name": "Browse - Creators",
       "priority": 3,
-      "moduleId": "discover",
+      "moduleId": "browse",
       "tabId": "creators",
       "waitFor": ".creators-panel",
       "description": "Community creators"

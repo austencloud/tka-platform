@@ -170,7 +170,7 @@ export class UFOFactory implements IUFOFactory {
       buddyOffset: 50,
 
       // Rare discovery tracking
-      rareDiscoveries: 0,
+      rareBrowseies: 0,
     };
   }
 

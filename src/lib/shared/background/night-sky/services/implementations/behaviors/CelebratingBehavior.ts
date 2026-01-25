@@ -19,7 +19,7 @@ export class CelebratingBehavior implements IUFOBehavior {
     u.narrativePhase = "detection";
     u.narrativeTimer = 0;
     u.targetZ = 0.2; // Come close to show off
-    u.rareDiscoveries++;
+    u.rareBrowseies++;
     ctx.moodManager.markInterest(u);
   }
 

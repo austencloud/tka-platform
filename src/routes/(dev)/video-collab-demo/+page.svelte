@@ -22,21 +22,21 @@
     {
       userId: "user1",
       displayName: "Austen Cloud",
-      avatarUrl: null,
+      avatarUrl: undefined,
       role: "creator",
       joinedAt: new Date(),
     },
     {
       userId: "user2",
       displayName: "Jane Doe",
-      avatarUrl: null,
+      avatarUrl: undefined,
       role: "collaborator",
       joinedAt: new Date(),
     },
     {
       userId: "user3",
       displayName: "Flow Master",
-      avatarUrl: null,
+      avatarUrl: undefined,
       role: "collaborator",
       joinedAt: new Date(),
     },
@@ -47,7 +47,7 @@
     sequenceId: "seq-123",
     sequenceName: "Example Flow Sequence",
     videoUrl: "",
-    thumbnailUrl: null,
+    thumbnailUrl: undefined,
     duration: 125,
     fileSize: 15000000,
     mimeType: "video/mp4",
@@ -55,7 +55,6 @@
     collaborators: mockCollaborators,
     pendingInvites: [
       {
-        id: "invite-1",
         videoId: "demo-video-1",
         userId: "user4",
         displayName: "New Collaborator",
@@ -73,8 +72,8 @@
     word: "FLOW",
     name: "Example Flow Sequence",
     beats: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     difficulty: "beginner",
   };
 

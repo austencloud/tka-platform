@@ -22,7 +22,7 @@ import type {
   SequenceVisibility,
 } from "../domain/models/LibrarySequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { compareKineticLetters } from "$lib/features/explore/shared/utils/kinetic-alphabet-sort";
+import { compareKineticLetters } from "$lib/features/browse/shared/utils/kinetic-alphabet-sort";
 
 export type LibraryViewSection =
   | "sequences"

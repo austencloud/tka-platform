@@ -7,7 +7,7 @@
  */
 
 import type { AppSettings } from "../../../settings/domain/AppSettings";
-import type { CompleteExploreState } from "../../../../features/explore/shared/domain/models/explore-models";
+import type { CompleteBrowseState } from "../../../../features/browse/shared/domain/models/browse-models";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
 import type { TabId } from "../../../navigation/domain/types";
 import {
@@ -219,26 +219,26 @@ export class DexiePersistenceService implements IPersistenceService {
   }
 
   // ============================================================================
-  // Discover STATE PERSISTENCE
+  // Browse STATE PERSISTENCE
   // ============================================================================
 
-  async saveExploreState(state: CompleteExploreState): Promise<void> {
+  async saveBrowseState(state: CompleteBrowseState): Promise<void> {
     try {
-      await this.saveUserWork(UserWorkType.Explore_STATE, "browse", state);
+      await this.saveUserWork(UserWorkType.Browse_STATE, "browse", state);
     } catch (error) {
-      console.error("❌ Failed to save Explore state:", error);
+      console.error("❌ Failed to save Browse state:", error);
       throw error;
     }
   }
 
-  async loadExploreState(): Promise<CompleteExploreState | null> {
+  async loadBrowseState(): Promise<CompleteBrowseState | null> {
     try {
       return (await this.loadUserWork(
-        UserWorkType.Explore_STATE,
+        UserWorkType.Browse_STATE,
         "browse"
-      )) as CompleteExploreState | null;
+      )) as CompleteBrowseState | null;
     } catch (error) {
-      console.error("❌ Failed to load Explore state:", error);
+      console.error("❌ Failed to load Browse state:", error);
       return null;
     }
   }

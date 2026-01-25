@@ -2,7 +2,7 @@
   SaveSequencePanelButton.svelte
 
   Save sequence button for ButtonPanel (panel-style, not floating).
-  Saves the current sequence to the Explore.
+  Saves the current sequence to the Browse.
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";

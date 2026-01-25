@@ -513,7 +513,7 @@ Edit `messages/en.json`:
 
 **Key naming conventions:**
 - Use `snake_case`
-- Prefix with module/feature: `generator_`, `discover_`, `settings_`
+- Prefix with module/feature: `generator_`, `browse_`, `settings_`
 - Be specific: `generator_level_no_turns` not `level_1`
 
 ### Step 2: Regenerate TypeScript types

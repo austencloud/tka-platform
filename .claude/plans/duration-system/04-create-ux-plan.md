@@ -73,7 +73,7 @@ Tap "1" → cycles through: 4 → 2 → 1 → 6 → 8 → 4
 **Pros:**
 - Zero new UI
 - Very fast for common cases
-- Discoverable via position indicator
+- Browseable via position indicator
 
 **Cons:**
 - Limited to presets (can't set arbitrary values like 5 or 7)
@@ -157,7 +157,7 @@ Combine **Swipe/Drag** for quick adjustments with **Inline Stepper** for precisi
 3. Fine-tune exact subdivision count
 4. Close by tapping elsewhere
 
-### First-Time Discovery
+### First-Time discovery
 
 On first use, show subtle tooltip:
 > "Long-press and drag to adjust timing"
@@ -550,7 +550,7 @@ export interface IBeatOperator {
 
 ## First-Time User Guidance
 
-### Discovery Tooltip
+### discovery Tooltip
 
 Show once when user first enters Create module after duration feature is added:
 

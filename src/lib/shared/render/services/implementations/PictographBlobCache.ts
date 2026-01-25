@@ -10,7 +10,7 @@
  * - Benchmark showed SVG cache had 0.1% speedup vs 91.9% for memory cache
  *   because the bottleneck was SVG parsing, not generation
  *
- * Follows the ExploreThumbnailCache pattern exactly for consistency.
+ * Follows the BrowseThumbnailCache pattern exactly for consistency.
  */
 
 import { browser } from "$app/environment";

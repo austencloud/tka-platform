@@ -132,15 +132,15 @@
         break;
       }
       case "sequence-liked": {
-        // Navigate to discover gallery
+        // Navigate to browse gallery
         inboxState.close();
-        await handleModuleChange("explore" as ModuleId, "gallery");
+        await handleModuleChange("browse" as ModuleId, "gallery");
         break;
       }
       case "user-followed": {
-        // Navigate to discover creators
+        // Navigate to browse creators
         inboxState.close();
-        await handleModuleChange("explore" as ModuleId, "creators");
+        await handleModuleChange("browse" as ModuleId, "creators");
         break;
       }
       case "achievement-unlocked": {

@@ -341,7 +341,7 @@ export class FishMovementController implements IFishMovementController {
 
   /**
    * Ascending - swimming upward with vertical focus.
-   * Fish explores toward the surface with angled body rotation.
+   * Fish browses toward the surface with angled body rotation.
    */
   private applyAscending(
     fish: FishMarineLife,
@@ -367,7 +367,7 @@ export class FishMovementController implements IFishMovementController {
 
   /**
    * Descending - swimming downward with vertical focus.
-   * Fish explores toward the depths with angled body rotation.
+   * Fish browses toward the depths with angled body rotation.
    */
   private applyDescending(
     fish: FishMarineLife,

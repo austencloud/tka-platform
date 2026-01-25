@@ -128,7 +128,7 @@
   }
 
   function handleViewProfile(userId: string) {
-    goto(`/explore/creators/${userId}`);
+    goto(`/browse/creators/${userId}`);
   }
 
   function closePopup() {
@@ -157,7 +157,12 @@
   <div bind:this={mapContainer} class="map-container"></div>
 
   {#if selectedUser}
-    <div class="popup-overlay" onclick={closePopup}></div>
+    <button
+      class="popup-overlay"
+      onclick={closePopup}
+      aria-label="Close popup"
+      type="button"
+    ></button>
     <div class="popup-wrapper">
       <UserProfileMarker
         user={selectedUser}
@@ -197,6 +202,18 @@
     bottom: 0;
     background: rgba(0, 0, 0, 0.3);
     z-index: 10;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .popup-overlay:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .popup-overlay:focus-visible {
+    outline: 2px solid var(--theme-accent, #4a9eff);
+    outline-offset: -2px;
   }
 
   .popup-wrapper {

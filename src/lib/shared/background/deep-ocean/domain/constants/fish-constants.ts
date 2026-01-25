@@ -174,7 +174,7 @@ export const BEHAVIOR_CONFIG = {
 
   /**
    * Ascending: Swimming upward with focus on vertical movement
-   * Fish explores toward the surface
+   * Fish browses toward the surface
    */
   ascending: {
     /** Duration range [min, max] in seconds */
@@ -189,7 +189,7 @@ export const BEHAVIOR_CONFIG = {
 
   /**
    * Descending: Swimming downward with focus on vertical movement
-   * Fish explores toward the depths
+   * Fish browses toward the depths
    */
   descending: {
     /** Duration range [min, max] in seconds */

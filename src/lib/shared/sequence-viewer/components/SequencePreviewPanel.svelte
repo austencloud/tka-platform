@@ -6,7 +6,7 @@
   should use SequenceDetailsModal with its split view and export capabilities.
 
   Legacy description (for reference):
-  Internal sequence preview panel used within Create module and Discover gallery.
+  Internal sequence preview panel used within Create module and Browse gallery.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

@@ -292,7 +292,7 @@ export function contextsCanConflict(
   const modulePanelMap: Record<string, string[]> = {
     create: ["edit-panel"],
     compose: ["animation-panel", "share-panel"],
-    discover: ["share-panel"],
+    browse: ["share-panel"],
   };
 
   for (const a of contextsA) {

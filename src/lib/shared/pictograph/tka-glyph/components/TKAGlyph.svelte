@@ -322,6 +322,7 @@ Uses pure runes instead of stores for reactivity.
 
   $effect(() => {
     const currentLetter = letter ?? null;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
 
     // Skip animation on initial mount (previousLetter is null)
     // Only animate when letter actually changes to a different value
@@ -336,16 +337,18 @@ Uses pure runes instead of stores for reactivity.
       isAnimatingChange = true;
 
       // Remove the animation class after the animation completes (200ms)
-      const timeout = setTimeout(() => {
+      timeout = setTimeout(() => {
         isAnimatingChange = false;
       }, 200);
-
-      // Cleanup timeout if effect re-runs
-      return () => clearTimeout(timeout);
     }
 
     // Update previous letter for next comparison
     previousLetter = currentLetter;
+
+    // Cleanup timeout if effect re-runs
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
   });
 </script>
 

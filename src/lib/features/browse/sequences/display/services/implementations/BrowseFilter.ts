@@ -205,7 +205,7 @@ export class BrowseFilter implements IBrowseFilter {
 
       // Finally, calculate from steps (library sequences often don't have level stored)
       if (seq.steps && seq.steps.length > 0) {
-        const calculatedLevel = this.difficultyCalculator.calculateDifficultyLevel(seq.steps);
+        const calculatedLevel = this.difficultyCalculator.calculateDifficultyLevel([...seq.steps]);
         return calculatedLevel === targetLevel;
       }
 

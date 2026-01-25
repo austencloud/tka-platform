@@ -7,7 +7,7 @@
  */
 
 import { createContainer } from "iti";
-import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
 import { ShortCodeManager } from "$lib/shared/qr/services/implementations/ShortCodeManager";
 import { QRCodeGenerator } from "$lib/shared/qr/services/implementations/QRCodeGenerator";
@@ -17,7 +17,7 @@ import { QRCodeGenerator } from "$lib/shared/qr/services/implementations/QRCodeG
  */
 export interface QRContainerDeps {
   /** For loading full sequence data from Firebase (online mode) */
-  exploreLoader: IExploreLoader;
+  browseLoader: IBrowseLoader;
   /** For encoding/decoding sequences (offline mode) */
   sequenceEncoder: ISequenceEncoder;
 }
@@ -28,10 +28,10 @@ export interface QRContainerDeps {
  * @param deps - Required dependencies from other containers
  */
 export function createQRContainer(deps: QRContainerDeps) {
-  // Layer 1: ShortCodeManager (depends on external exploreLoader + sequenceEncoder)
+  // Layer 1: ShortCodeManager (depends on external browseLoader + sequenceEncoder)
   const baseContainer = createContainer().add({
     shortCodeManager: () =>
-      new ShortCodeManager(deps.exploreLoader, deps.sequenceEncoder),
+      new ShortCodeManager(deps.browseLoader, deps.sequenceEncoder),
   });
 
   // Layer 2: QRCodeGenerator (depends on shortCodeManager)

@@ -17,7 +17,7 @@
   } from "../services/contracts/IVideoRecorder";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createVideoRecordSettings } from "../state/video-record-settings.svelte";
-  import InlineAnimationPlayer from "$lib/features/explore/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";
+  import InlineAnimationPlayer from "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";
   import GridPreview from "./GridPreview.svelte";
   import VideoRecordSettingsSheet from "./VideoRecordSettingsSheet.svelte";
 
@@ -73,12 +73,12 @@
   // Extract prop types from sequence for bilateral toggle
   const bluePropType = $derived.by(() => {
     const firstStep = sequence?.steps?.[0];
-    return firstStep?.motions?.blue?.propType ?? sequence?.propType ?? null;
+    return firstStep?.motions?.blue?.propType ?? null;
   });
 
   const redPropType = $derived.by(() => {
     const firstStep = sequence?.steps?.[0];
-    return firstStep?.motions?.red?.propType ?? sequence?.propType ?? null;
+    return firstStep?.motions?.red?.propType ?? null;
   });
 
   // Computed: Which reference view to show?

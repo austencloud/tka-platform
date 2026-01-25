@@ -8,7 +8,7 @@ Drop the "Service" suffix in favor of names that describe what the class actuall
 | ---------------- | ------------------------ | --------------- | ------------------------------------------------------------- |
 | CRUD/Data Access | `*Service`               | `*Repository`   | `FeedbackService` → `FeedbackRepository`                      |
 | Queries          | `*QueryService`          | `*Querier`      | `FeedbackQueryService` → `FeedbackQuerier`                    |
-| Filtering        | `*FilterService`         | `*Filter`       | `DiscoverFilterService` → `DiscoverFilter`                    |
+| Filtering        | `*FilterService`         | `*Filter`       | `BrowseFilterService` → `BrowseFilter`                    |
 | Transformation   | `*TransformationService` | `*Transformer`  | `SequenceTransformationService` → `SequenceTransformer`       |
 | Conversion       | `*ConversionService`     | `*Converter`    | `BeatConverterService` → `BeatConverter`                      |
 | Rendering        | `*RenderingService`      | `*Renderer`     | `GridRenderingService` → `GridRenderer`                       |
@@ -145,23 +145,23 @@ Drop the "Service" suffix in favor of names that describe what the class actuall
 | ---------------------- | ----------------------- |
 | `FollowingFeedService` | `FollowingFeedProvider` |
 
-### Discover Feature
+### Browse Feature
 
 | Current                         | Proposed                    |
 | ------------------------------- | --------------------------- |
-| `DiscoverCacheService`          | `DiscoverCache`             |
-| `DiscoverDeleteService`         | `DiscoverDeleter`           |
-| `DiscoverEventHandlerService`   | `DiscoverEventHandler`      |
-| `DiscoverFilterService`         | `DiscoverFilter`            |
-| `DiscoverPersistenceService`    | `DiscoverPersister`         |
-| `DiscoverScrollBehaviorService` | `DiscoverScrollBehavior`    |
-| `DiscoverSectionService`        | `DiscoverSectionManager`    |
-| `DiscoverSortService`           | `DiscoverSorter`            |
-| `DiscoverThumbnailService`      | `DiscoverThumbnailProvider` |
+| `BrowseCacheService`          | `BrowseCache`             |
+| `BrowseDeleteService`         | `BrowseDeleter`           |
+| `BrowseEventHandlerService`   | `BrowseEventHandler`      |
+| `BrowseFilterService`         | `BrowseFilter`            |
+| `BrowsePersistenceService`    | `BrowsePersister`         |
+| `BrowseScrollBehaviorService` | `BrowseScrollBehavior`    |
+| `BrowseSectionService`        | `BrowseSectionManager`    |
+| `BrowseSortService`           | `BrowseSorter`            |
+| `BrowseThumbnailService`      | `BrowseThumbnailProvider` |
 | `NavigationService`             | `Navigator`                 |
 | `SpotlightService`              | `SpotlightManager`          |
 | `FavoritesService`              | `FavoritesManager`          |
-| `OptimizedDiscoverService`      | `OptimizedDiscoverer`       |
+| `OptimizedBrowseService`      | `OptimizedBrowseer`       |
 | `SectionService`                | `SectionManager`            |
 
 ### Feedback Feature

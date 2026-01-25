@@ -16,10 +16,11 @@
   import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
   import { GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
   import { Letter } from '$lib/shared/foundation/domain/models/Letter';
+  import { PropType } from '$lib/shared/pictograph/prop/domain/enums/PropType';
   import { renderPictographToSVG } from '$lib/shared/render/utils/pictograph-to-svg';
   import { Canvas2DDirectRenderer } from '$lib/shared/render/services/implementations/Canvas2DDirectRenderer';
   import PictographContainer from '$lib/shared/pictograph/shared/components/PictographContainer.svelte';
-  import { PublicSequencesLoader } from '$lib/features/explore/sequences/display/services/implementations/PublicSequencesLoader';
+  import { PublicSequencesLoader } from '$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader';
 
   const STORAGE_KEY = 'render-compare-state';
 
@@ -412,9 +413,9 @@
           }
 
           // Convert beat to PictographData format
-          // PropType is viewer preference - use 'staff' as default for testing
+          // PropType is viewer preference - use STAFF as default for testing
           // Each motion may have its own propType; if not, use default
-          const defaultPropType = 'staff';
+          const defaultPropType = PropType.STAFF;
 
           const motionsWithPropType = beat.motions ? {
             blue: beat.motions.blue ? { ...beat.motions.blue, propType: beat.motions.blue.propType || defaultPropType } : undefined,
@@ -426,10 +427,8 @@
             letter: beat.letter as Letter,
             startPosition: beat.startPosition,
             endPosition: beat.endPosition,
-            timing: beat.timing,
-            direction: beat.direction,
             gridMode: sequence.gridMode || GridMode.DIAMOND,
-            motions: motionsWithPropType
+            motions: motionsWithPropType || {}
           };
 
           try {
@@ -636,7 +635,7 @@
       </ul>
     </div>
 
-  {:else}
+  {:else if mode === 'bulk'}
     <!-- Bulk Compare Mode -->
     <div class="controls">
       <button onclick={renderBulk} disabled={isLoading}>

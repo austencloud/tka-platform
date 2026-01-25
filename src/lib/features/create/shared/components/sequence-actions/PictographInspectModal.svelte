@@ -224,6 +224,21 @@
     return JSON.stringify(displayData ?? stepData, null, 2);
   }
 
+  // Track copied section for visual feedback
+  let copiedSection = $state<string | null>(null);
+
+  async function copyToClipboard(section: string, text: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(text);
+      copiedSection = section;
+      setTimeout(() => {
+        copiedSection = null;
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy to clipboard:", err);
+    }
+  }
+
   function handleBackdropClick(e: MouseEvent) {
     if (e.target === e.currentTarget) {
       onClose();

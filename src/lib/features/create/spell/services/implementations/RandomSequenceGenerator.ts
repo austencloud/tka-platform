@@ -7,7 +7,7 @@
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { VariationConstraints } from "../../domain/models/spell-models";
@@ -15,16 +15,17 @@ import type {
   IRandomSequenceGenerator,
   RandomSequenceGenerationOptions,
 } from "../contracts/IRandomSequenceGenerator";
-import type { ILetterQueryHandler } from "$lib/shared/pictograph/shared/services/contracts/ILetterQueryHandler";
+import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { IStartPositionValidator } from "../contracts/IStartPositionValidator";
 import type { IOrientationContinuityValidator } from "../contracts/IOrientationContinuityValidator";
-import type { IOrientationCalculator } from "$lib/shared/pictograph/orientation/services/contracts/IOrientationCalculator";
+import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
 import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
+import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { ConstraintSet, ConstraintStep, ConstraintPictographData } from "$lib/shared/sequence-engine/constraints/types";
-import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
 
@@ -117,7 +118,7 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
 
     // Step 1: Pick a random variation of the first letter
     const firstLetterVariations = allPictographs.filter(
-      (p) => p.letter === firstLetter
+      (p: PictographData) => p.letter === firstLetter
     );
 
     if (firstLetterVariations.length === 0) {
@@ -303,8 +304,8 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
   }
 
   private hasDashMotion(pictograph: PictographData): boolean {
-    const blueMotion = pictograph.blueMotion;
-    const redMotion = pictograph.redMotion;
+    const blueMotion = pictograph.motions[MotionColor.BLUE];
+    const redMotion = pictograph.motions[MotionColor.RED];
 
     return (
       blueMotion?.motionType === MotionType.DASH ||
@@ -316,19 +317,22 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
    * Convert a pictograph to the ConstraintStep format used for scoring.
    */
   private pictographToConstraintStep(pictograph: PictographData): ConstraintStep {
+    const blueMotion = pictograph.motions[MotionColor.BLUE];
+    const redMotion = pictograph.motions[MotionColor.RED];
+
     return {
       letter: pictograph.letter ?? "",
-      blueMotionType: pictograph.blueMotion?.motionType ?? "static",
-      redMotionType: pictograph.redMotion?.motionType ?? "static",
-      bluePropRotation: pictograph.blueMotion?.propRotationDirection ?? "cw",
-      redPropRotation: pictograph.redMotion?.propRotationDirection ?? "cw",
+      blueMotionType: blueMotion?.motionType ?? "static",
+      redMotionType: redMotion?.motionType ?? "static",
+      bluePropRotation: blueMotion?.rotationDirection ?? "cw",
+      redPropRotation: redMotion?.rotationDirection ?? "cw",
       startPosition: pictograph.startPosition ?? "",
       endPosition: pictograph.endPosition ?? "",
       // Location data for hand path constraint
-      blueStartLocation: pictograph.blueMotion?.startLocation ?? "",
-      blueEndLocation: pictograph.blueMotion?.endLocation ?? "",
-      redStartLocation: pictograph.redMotion?.startLocation ?? "",
-      redEndLocation: pictograph.redMotion?.endLocation ?? "",
+      blueStartLocation: blueMotion?.startLocation ?? "",
+      blueEndLocation: blueMotion?.endLocation ?? "",
+      redStartLocation: redMotion?.startLocation ?? "",
+      redEndLocation: redMotion?.endLocation ?? "",
     };
   }
 
@@ -336,29 +340,32 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
    * Convert a pictograph to the ConstraintPictographData format for constraint evaluation.
    */
   private pictographToConstraintPictograph(pictograph: PictographData): ConstraintPictographData {
+    const blueMotion = pictograph.motions[MotionColor.BLUE];
+    const redMotion = pictograph.motions[MotionColor.RED];
+
     return {
       letter: pictograph.letter ?? "",
       startPosition: pictograph.startPosition ?? "",
       endPosition: pictograph.endPosition ?? "",
-      timing: pictograph.timing ?? "",
-      direction: pictograph.direction ?? "",
+      timing: "", // PictographData doesn't have timing - only available on compound letters
+      direction: "", // PictographData doesn't have direction - only available on compound letters
       blueMotion: {
         color: "blue",
-        startLocation: pictograph.blueMotion?.startLocation ?? "",
-        endLocation: pictograph.blueMotion?.endLocation ?? "",
-        motionType: pictograph.blueMotion?.motionType ?? "static",
-        rotationDirection: pictograph.blueMotion?.propRotationDirection ?? "cw",
-        startOrientation: pictograph.blueMotion?.startOrientation ?? "",
-        endOrientation: pictograph.blueMotion?.endOrientation ?? "",
+        startLocation: blueMotion?.startLocation ?? "",
+        endLocation: blueMotion?.endLocation ?? "",
+        motionType: blueMotion?.motionType ?? "static",
+        rotationDirection: blueMotion?.rotationDirection ?? "cw",
+        startOrientation: blueMotion?.startOrientation ?? "",
+        endOrientation: blueMotion?.endOrientation ?? "",
       },
       redMotion: {
         color: "red",
-        startLocation: pictograph.redMotion?.startLocation ?? "",
-        endLocation: pictograph.redMotion?.endLocation ?? "",
-        motionType: pictograph.redMotion?.motionType ?? "static",
-        rotationDirection: pictograph.redMotion?.propRotationDirection ?? "cw",
-        startOrientation: pictograph.redMotion?.startOrientation ?? "",
-        endOrientation: pictograph.redMotion?.endOrientation ?? "",
+        startLocation: redMotion?.startLocation ?? "",
+        endLocation: redMotion?.endLocation ?? "",
+        motionType: redMotion?.motionType ?? "static",
+        rotationDirection: redMotion?.rotationDirection ?? "cw",
+        startOrientation: redMotion?.startOrientation ?? "",
+        endOrientation: redMotion?.endOrientation ?? "",
       },
     };
   }
@@ -526,10 +533,10 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
 
     try {
       // Use specified LOOP type, or default to REWOUND
-      const loopType = constraints.loopType ?? "REWOUND";
+      const loopType = constraints.loopType ?? LOOPType.REWOUND;
       const extended = await this.sequenceExtender.extendSequence(
         sequence,
-        loopType
+        { loopType }
       );
 
       return extended || sequence;

@@ -46,15 +46,15 @@
 
 	// Synced playback state from lanSyncState
 	const playbackState = $derived(lanSyncState.playbackState);
-	const currentBeat = $derived(playbackState.currentBeat);
+	const currentBeat = $derived(playbackState.currentStep);
 	const isPlaying = $derived(playbackState.isPlaying);
-	const playbackSpeed = $derived(playbackState.playbackSpeed);
+	const playbackSpeed = $derived(playbackState.speed);
 
 	// Load sequence data
 	onMount(async () => {
 		try {
-			const exploreLoader = container.items.exploreLoader;
-			const loadedSequence = await exploreLoader.loadSequenceById(session.sequenceId);
+			const browseLoader = container.items.browseLoader;
+			const loadedSequence = await browseLoader.loadSequenceById(session.sequenceId);
 
 			if (loadedSequence) {
 				sequence = loadedSequence;
@@ -101,33 +101,33 @@
 
 	function handleSeek(beat: number) {
 		if (!isSoloMode) {
-			lanSyncState.updatePlayback({ currentBeat: beat });
+			lanSyncState.updatePlayback({ currentStep: beat });
 		}
 	}
 
 	function handlePrevious() {
 		if (!isSoloMode && currentBeat > 0) {
-			lanSyncState.updatePlayback({ currentBeat: currentBeat - 1, isPlaying: false });
+			lanSyncState.updatePlayback({ currentStep: currentBeat - 1, isPlaying: false });
 		}
 	}
 
 	function handleNext() {
 		const maxBeat = sequence?.steps?.length ?? 0;
 		if (!isSoloMode && currentBeat < maxBeat) {
-			lanSyncState.updatePlayback({ currentBeat: currentBeat + 1, isPlaying: false });
+			lanSyncState.updatePlayback({ currentStep: currentBeat + 1, isPlaying: false });
 		}
 	}
 
 	function handleFirst() {
 		if (!isSoloMode) {
-			lanSyncState.updatePlayback({ currentBeat: 0, isPlaying: false });
+			lanSyncState.updatePlayback({ currentStep: 0, isPlaying: false });
 		}
 	}
 
 	function handleLast() {
 		const maxBeat = sequence?.steps?.length ?? 0;
 		if (!isSoloMode) {
-			lanSyncState.updatePlayback({ currentBeat: maxBeat, isPlaying: false });
+			lanSyncState.updatePlayback({ currentStep: maxBeat, isPlaying: false });
 		}
 	}
 </script>

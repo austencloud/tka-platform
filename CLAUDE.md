@@ -1,5 +1,31 @@
 # TKA Scribe - Claude Code Guidelines
 
+## ⛔️ CRITICAL: Windows Git Bash Bug - NPX Output Lost ⛔️
+
+**There is a known Claude Code bug on Windows where `npx` commands return empty output.**
+
+This is caused by the `onecmd` shell option. See: https://github.com/anthropics/claude-code/issues/19217
+
+### The Rule
+
+**ALWAYS prefix npm/npx commands with `set +o onecmd;`**
+
+```bash
+# WRONG - will return empty output
+npx svelte-check
+npm run check
+npm run build
+
+# CORRECT - will return actual output
+set +o onecmd; npx svelte-check
+set +o onecmd; npm run check
+set +o onecmd; npm run build
+```
+
+This applies to ALL npm and npx commands. If you see "(No content)" or empty output from any npm/npx command, you forgot the prefix.
+
+---
+
 ## Development Philosophy: Build for Generations
 
 **This software must outlast its creator. Build what future generations will study in awe.**
@@ -46,7 +72,7 @@ Every implementation decision must answer: **"In 20 years, will this still be th
 
 - Research extensively before implementing
 - Read every file you need to understand the full context
-- Explore multiple approaches and choose the best one
+- Browse multiple approaches and choose the best one
 - Never rush. Never cut corners. Never compromise.
 - The only constraint is `/compact` at 70% context to preserve session continuity
 

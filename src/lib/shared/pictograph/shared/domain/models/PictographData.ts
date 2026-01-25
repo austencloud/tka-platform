@@ -20,6 +20,9 @@ export interface PictographData {
   // Movement data - explicitly allow undefined values
   readonly motions: Partial<Record<MotionColor, MotionData | undefined>>;
 
+  // Grid mode (diamond, box, skewed) - can be pre-set from sequence data
+  readonly gridMode?: import("../../../grid/domain/enums/grid-enums").GridMode;
+
   // Skewed mode category (1-4, see docs/SKEW-AUDIT-FINDINGS.md)
   // 1 = normal→skewed (one hand skews)
   // 2 = normal→normal (both hands skew)

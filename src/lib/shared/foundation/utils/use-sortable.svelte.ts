@@ -82,7 +82,9 @@ export function reorder<T>(
 
   // Remove the item from old position and insert at new position
   const [movedItem] = workArray.splice(oldIndex, 1);
-  workArray.splice(newIndex, 0, movedItem);
+  if (movedItem !== undefined) {
+    workArray.splice(newIndex, 0, movedItem);
+  }
 
   return workArray;
 }

@@ -8,17 +8,17 @@
  */
 
 import { container } from "$lib/shared/di";
-import type { IExploreCache } from "../../features/explore/sequences/display/services/contracts/IExploreCache";
-import type { IOptimizedDiscoverer } from "../../features/explore/shared/services/contracts/IOptimizedDiscoverer";
+import type { IBrowseCache } from "../../features/browse/sequences/display/services/contracts/IBrowseCache";
+import type { IOptimizedBrowser } from "../../features/browse/shared/services/contracts/IOptimizedBrowser";
 
 export async function clearAllGalleryCaches(): Promise<void> {
   try {
-    // 1. Clear ExploreCache
-    const exploreCacheService = container.items.discoverCache as IExploreCache;
-    exploreCacheService.clearCache();
+    // 1. Clear BrowseCache
+    const browseCacheService = container.items.browseCache as IBrowseCache;
+    browseCacheService.clearCache();
 
-    // 2. Clear OptimizedDiscoverer
-    const optimizedService = container.items.optimizedDiscoverer as IOptimizedDiscoverer;
+    // 2. Clear OptimizedBrowser
+    const optimizedService = container.items.optimizedBrowser as IOptimizedBrowser;
     optimizedService.clearCache();
 
     // 3. Clear IndexedDB/Dexie cache if it exists
@@ -41,7 +41,7 @@ export async function clearAllGalleryCaches(): Promise<void> {
     const galleryKeys = Object.keys(localStorage).filter(
       (key) =>
         key.includes("gallery") ||
-        key.includes("explore") ||
+        key.includes("browse") ||
         key.includes("sequence")
     );
     galleryKeys.forEach((key) => localStorage.removeItem(key));

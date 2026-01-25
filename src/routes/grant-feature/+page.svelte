@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  let canvasWidth = 0;
-  let canvasHeight = 0;
+  let canvasWidth = $state(0);
+  let canvasHeight = $state(0);
 
   async function renderToCanvas() {
     return new Promise<string>((resolve, reject) => {
@@ -63,15 +63,26 @@
         ctx.font = `bold ${72 * scale}px "Palatino Linotype", Georgia, serif`;
         ctx.fillText('The Kinetic Alphabet', centerX, 100 * scale);
 
-        // Tagline
+        // Tagline (letter spacing handled manually)
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         ctx.font = `${32 * scale}px system-ui, sans-serif`;
-        ctx.letterSpacing = `${5 * scale}px`;
-        ctx.fillText('A FLOW ARTS CHOREOGRAPHY TOOLBOX', centerX, 160 * scale);
+
+        // Manual letter spacing for tagline
+        const tagline = 'A FLOW ARTS CHOREOGRAPHY TOOLBOX';
+        const taglineLetterSpacing = 5 * scale;
+        const taglineMetrics = ctx.measureText(tagline);
+        const taglineTotalWidth = taglineMetrics.width + (tagline.length - 1) * taglineLetterSpacing;
+        let taglineX = centerX - taglineTotalWidth / 2;
+
+        for (let i = 0; i < tagline.length; i++) {
+          const char = tagline.charAt(i);
+          ctx.fillText(char, taglineX, 160 * scale);
+          taglineX += ctx.measureText(char).width + taglineLetterSpacing;
+        }
         ctx.restore();
 
         // === FEATURE CHIPS - BOTTOM ROW WITH EVEN PADDING ===
-        const chips = ['Create choreography', 'Visualize patterns', 'Discover creators', 'Share sequences'];
+        const chips = ['Create choreography', 'Visualize patterns', 'Browse creators', 'Share sequences'];
         const edgePadding = 80 * scale; // Padding from edges
         const chipGap = 24 * scale; // Fixed gap between chips
         const chipY = height - edgePadding - 30 * scale;

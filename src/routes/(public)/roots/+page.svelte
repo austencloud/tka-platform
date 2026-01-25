@@ -223,7 +223,7 @@
     <!-- CTA -->
     <footer class="roots-footer">
       <div class="cta-card">
-        <h3>Explore TKA</h3>
+        <h3>Browse TKA</h3>
         <p>See how these ideas come together in practice.</p>
         <a href={APP_DOMAIN} class="cta-button">
           <span>Open TKA Scribe</span>

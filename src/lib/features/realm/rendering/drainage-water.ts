@@ -390,7 +390,9 @@ export class DrainageWaterManager {
       (texture) => {
         texture.wrapS = texture.wrapT = RepeatWrapping;
         this.normalMap0 = texture;
-        this.sharedMaterial.uniforms.uNormalMap0.value = texture;
+        if (this.sharedMaterial.uniforms.uNormalMap0) {
+          this.sharedMaterial.uniforms.uNormalMap0.value = texture;
+        }
         this.sharedMaterial.defines = this.sharedMaterial.defines || {};
         this.sharedMaterial.defines.USE_NORMAL_MAPS = "";
         this.sharedMaterial.needsUpdate = true;
@@ -406,7 +408,9 @@ export class DrainageWaterManager {
       (texture) => {
         texture.wrapS = texture.wrapT = RepeatWrapping;
         this.normalMap1 = texture;
-        this.sharedMaterial.uniforms.uNormalMap1.value = texture;
+        if (this.sharedMaterial.uniforms.uNormalMap1) {
+          this.sharedMaterial.uniforms.uNormalMap1.value = texture;
+        }
         this.sharedMaterial.needsUpdate = true;
       },
       undefined,
@@ -430,19 +434,45 @@ export class DrainageWaterManager {
     });
 
     // Apply config values to uniforms
-    material.uniforms.uDeepColor.value = new Color(this.config.deepColor);
-    material.uniforms.uShallowColor.value = new Color(this.config.shallowColor);
-    material.uniforms.uReflectionColor.value = new Color(this.config.reflectionColor);
-    material.uniforms.uWaveAmplitude.value = this.config.enableWaves ? this.config.waveAmplitude : 0;
-    material.uniforms.uWaveSteepness.value = this.config.waveSteepness;
-    material.uniforms.uWaveSpeed.value = this.config.waveSpeed;
-    material.uniforms.uNormalMapScale.value = this.config.normalMapScale;
-    material.uniforms.uNormalStrength.value = this.config.normalStrength;
-    material.uniforms.uReflectivity.value = this.config.reflectivity;
-    material.uniforms.uRefractionStrength.value = this.config.refractionStrength;
-    material.uniforms.uSpecularIntensity.value = this.config.specularIntensity;
-    material.uniforms.uSpecularPower.value = this.config.specularPower;
-    material.uniforms.uOpacity.value = this.config.deepOpacity;
+    if (material.uniforms.uDeepColor) {
+      material.uniforms.uDeepColor.value = new Color(this.config.deepColor);
+    }
+    if (material.uniforms.uShallowColor) {
+      material.uniforms.uShallowColor.value = new Color(this.config.shallowColor);
+    }
+    if (material.uniforms.uReflectionColor) {
+      material.uniforms.uReflectionColor.value = new Color(this.config.reflectionColor);
+    }
+    if (material.uniforms.uWaveAmplitude) {
+      material.uniforms.uWaveAmplitude.value = this.config.enableWaves ? this.config.waveAmplitude : 0;
+    }
+    if (material.uniforms.uWaveSteepness) {
+      material.uniforms.uWaveSteepness.value = this.config.waveSteepness;
+    }
+    if (material.uniforms.uWaveSpeed) {
+      material.uniforms.uWaveSpeed.value = this.config.waveSpeed;
+    }
+    if (material.uniforms.uNormalMapScale) {
+      material.uniforms.uNormalMapScale.value = this.config.normalMapScale;
+    }
+    if (material.uniforms.uNormalStrength) {
+      material.uniforms.uNormalStrength.value = this.config.normalStrength;
+    }
+    if (material.uniforms.uReflectivity) {
+      material.uniforms.uReflectivity.value = this.config.reflectivity;
+    }
+    if (material.uniforms.uRefractionStrength) {
+      material.uniforms.uRefractionStrength.value = this.config.refractionStrength;
+    }
+    if (material.uniforms.uSpecularIntensity) {
+      material.uniforms.uSpecularIntensity.value = this.config.specularIntensity;
+    }
+    if (material.uniforms.uSpecularPower) {
+      material.uniforms.uSpecularPower.value = this.config.specularPower;
+    }
+    if (material.uniforms.uOpacity) {
+      material.uniforms.uOpacity.value = this.config.deepOpacity;
+    }
 
     return material;
   }
@@ -612,7 +642,7 @@ export class DrainageWaterManager {
     geometry.setAttribute("normal", new Float32BufferAttribute(normals, 3));
     geometry.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
     geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
-    geometry.setIndex(new Uint32BufferAttribute(new Uint32Array(indices), 1));
+    geometry.setIndex(new Uint32BufferAttribute(new Uint32Array(indices), 1) as any);
 
     return geometry;
   }
@@ -635,21 +665,27 @@ export class DrainageWaterManager {
    * Update water animation
    */
   update(time: number, _cameraX: number, _cameraZ: number): void {
-    this.sharedMaterial.uniforms.uTime.value = time;
+    if (this.sharedMaterial.uniforms.uTime) {
+      this.sharedMaterial.uniforms.uTime.value = time;
+    }
   }
 
   /**
    * Set sun direction for specular highlights
    */
   setSunDirection(direction: Vector3): void {
-    this.sharedMaterial.uniforms.uSunDirection.value.copy(direction).normalize();
+    if (this.sharedMaterial.uniforms.uSunDirection) {
+      this.sharedMaterial.uniforms.uSunDirection.value.copy(direction).normalize();
+    }
   }
 
   /**
    * Set sun color
    */
   setSunColor(color: Color): void {
-    this.sharedMaterial.uniforms.uSunColor.value.copy(color);
+    if (this.sharedMaterial.uniforms.uSunColor) {
+      this.sharedMaterial.uniforms.uSunColor.value.copy(color);
+    }
   }
 
   /**

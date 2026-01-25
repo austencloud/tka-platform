@@ -66,7 +66,7 @@
       content: [
         "TKA changes how you teach. Instead of demonstrating repeatedly, show them the pictograph. Share notated sequences with students anywhere in the world. The visual system works across languages.",
         "Once you internalize the pictographs and vocabulary, you gain building blocks for thinking about movement.",
-        "TKA breaks prop movement into building blocks. Once you understand how pictographs work, you can create your own sequences with them and call them yours. The letter system shows you what you've already explored and what's still undiscovered, giving you a fountain of novelty to pull from.",
+        "TKA breaks prop movement into building blocks. Once you understand how pictographs work, you can create your own sequences with them and call them yours. The letter system shows you what you've already browsed and what's still unbrowseed, giving you a fountain of novelty to pull from.",
         "The goal is greater collaboration and more ambitious live performances. The Kinetic Alphabet has already gained momentum. The movement is growing.",
       ],
     },
@@ -198,7 +198,7 @@
     <!-- CTA -->
     <footer class="about-footer">
       <div class="cta-card">
-        <h3>Ready to explore?</h3>
+        <h3>Ready to browse?</h3>
         <p>TKA Scribe is free to use. No download required.</p>
         <a href={APP_DOMAIN} class="cta-button">
           <span>Open TKA Scribe</span>

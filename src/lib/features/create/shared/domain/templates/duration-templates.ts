@@ -144,9 +144,10 @@ function generateRepeatingPattern(
 ): DurationPatternEntry[] {
   const entries: DurationPatternEntry[] = [];
   for (let i = 0; i < stepCount; i++) {
+    const duration = template[i % template.length] ?? 1.0;
     entries.push({
       stepIndex: i,
-      duration: template[i % template.length],
+      duration,
     });
   }
   return entries;
@@ -683,7 +684,8 @@ export function getTemplatesByCategory(
 export function templateToPattern(
   template: DurationTemplateDefinition,
   userId: string,
-  stepCount: number
+  stepCount: number,
+  createdAt?: Timestamp
 ): DurationPattern {
   return {
     id: template.id,
@@ -691,7 +693,7 @@ export function templateToPattern(
     userId,
     stepCount,
     entries: template.generator(stepCount),
-    createdAt: null as unknown as Timestamp, // Not stored in Firebase
+    createdAt: createdAt ?? (null as unknown as Timestamp), // Not stored in Firebase unless provided
   };
 }
 

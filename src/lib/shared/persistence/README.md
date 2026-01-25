@@ -114,11 +114,11 @@ await persistenceService.saveTabState("browse", {
 const browseState = await persistenceService.loadTabState("browse");
 ```
 
-### **4. Explore State (Complex Example)**
+### **4. Browse State (Complex Example)**
 
 ```typescript
-// Save complete Explore state
-const ExploreState: CompleteExploreState = {
+// Save complete Browse state
+const BrowseState: CompleteBrowseState = {
   filter: { startingLetter: "A", difficulty: "beginner" },
   sort: { method: "name_asc", direction: "asc", appliedAt: new Date() },
   view: { mode: "grid", itemsPerPage: 20 },
@@ -128,10 +128,10 @@ const ExploreState: CompleteExploreState = {
   version: 1,
 };
 
-await persistenceService.saveExploreState(ExploreState);
+await persistenceService.saveBrowseState(BrowseState);
 
 // Load it back
-const restored = await persistenceService.loadExploreState();
+const restored = await persistenceService.loadBrowseState();
 ```
 
 ## 🔧 Initialization
@@ -257,7 +257,7 @@ this.version(2)
 
 1. **Start Simple**: Use tab persistence first
 2. **Add Sequences**: Save/load your sequence data
-3. **Complex State**: Add Explore state persistence
+3. **Complex State**: Add Browse state persistence
 4. **User Projects**: Implement project collections
 5. **Backup/Sync**: Add export/import features
 

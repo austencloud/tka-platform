@@ -91,7 +91,7 @@ Card-based architecture with integrated Generate button:
   }
 
   function closeHelpModal() {
-    // Return to selection state so user can explore other controls
+    // Return to selection state so user can browse other controls
     helpMode = "selecting";
     selectedControl = null;
   }

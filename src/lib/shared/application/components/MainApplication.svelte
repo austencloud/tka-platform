@@ -248,7 +248,7 @@
             break;
           case "2":
             event.preventDefault();
-            switchModule("explore");
+            switchModule("browse");
             break;
           case "3":
             event.preventDefault();

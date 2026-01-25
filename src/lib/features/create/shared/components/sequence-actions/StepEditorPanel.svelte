@@ -186,7 +186,9 @@
     return sequence.steps.reduce((acc, step, idx) => {
       const blue = step?.motions?.[MotionColor.BLUE];
       const red = step?.motions?.[MotionColor.RED];
-      return acc + idx * 1000 + (blue?.turns ?? 0) * 100 + (red?.turns ?? 0) * 10;
+      const blueTurnsNum = blue?.turns === "fl" ? -0.5 : Number(blue?.turns ?? 0);
+      const redTurnsNum = red?.turns === "fl" ? -0.5 : Number(red?.turns ?? 0);
+      return acc + idx * 1000 + blueTurnsNum * 100 + redTurnsNum * 10;
     }, sequence.steps.length);
   });
 
@@ -207,6 +209,7 @@
       const timeout = setTimeout(() => {
         showCascadePulse = false;
       }, 300);
+      lastSequenceVersion = sequenceVersion;
       return () => clearTimeout(timeout);
     }
     lastSequenceVersion = sequenceVersion;

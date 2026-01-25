@@ -9,7 +9,7 @@
   - Only shows modules the user has role-based access to
   - Uses svelte-dnd-action for drag-and-drop (handles CSS transform issues in modals)
   - Order persists to Firestore and affects sidebar display
-  - Core modules (create, explore, settings, admin) shown with lock icon, cannot be hidden
+  - Core modules (create, browse, settings, admin) shown with lock icon, cannot be hidden
 -->
 <script lang="ts">
   import { onMount } from "svelte";
@@ -30,7 +30,7 @@
 
   let { isCollapsed }: Props = $props();
 
-  let hapticService: IHapticFeedback | null = null;
+  let hapticService: IHapticFeedback = null!;
   let open = $state(false);
   let saving = $state(false);
 
@@ -38,7 +38,7 @@
   const FLIP_DURATION_MS = 200;
 
   // Core modules that cannot be toggled (always visible, shown but not clickable)
-  const CORE_MODULES: ModuleId[] = ["create", "explore", "settings", "admin"];
+  const CORE_MODULES: ModuleId[] = ["create", "browse", "settings", "admin"];
 
   // Helper to check if a module is a core module
   function isCoreModule(moduleId: ModuleId): boolean {
@@ -121,7 +121,7 @@
 
   function handleDndFinalize(e: CustomEvent<{ items: ModuleDefinition[] }>) {
     visibleModules = e.detail.items;
-    hapticService?.trigger("impact");
+    hapticService?.trigger("success");
 
     // Persist to Firestore
     saveOrder(visibleModules.map((m) => m.id));
@@ -267,7 +267,7 @@
   }
 
   onMount(() => {
-    hapticService = container.items.hapticFeedback;
+    hapticService = container.items.hapticFeedback as IHapticFeedback;
   });
 </script>
 

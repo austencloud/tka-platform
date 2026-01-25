@@ -203,7 +203,7 @@ service cloud.firestore {
     //    - Privacy: visibility field ("public"/"private") controls UI access
     //
     // 4. /sequences - Public sequences index
-    //    - Enables: Discover page, search, gallery browsing
+    //    - Enables: Browse page, search, gallery browsing
     //    - Only contains sequences users explicitly published
     //
     // 5. /collections - Public collections index
@@ -266,7 +266,7 @@ service cloud.firestore {
       // USER GAMIFICATION SUBCOLLECTIONS (Private - admin can read for preview)
       // -------------------------------------------------------------------------
 
-      // User achievements - PUBLIC read for creator profiles in Discover
+      // User achievements - PUBLIC read for creator profiles in Browse
       match /achievements/{achievementId} {
         // Anyone can read achievements (for viewing creator profiles)
         // Only owner can write, admins can delete
@@ -696,7 +696,7 @@ service cloud.firestore {
     // PUBLIC SEQUENCES INDEX
     // ============================================================================
 
-    // Public sequences - denormalized for Discover page browsing
+    // Public sequences - denormalized for Browse page browsing
     match /publicSequences/{sequenceId} {
       // ANYONE can read public sequences (no authentication required)
       // See documentation at top of file for security rationale

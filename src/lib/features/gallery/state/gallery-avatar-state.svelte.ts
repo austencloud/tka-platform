@@ -62,6 +62,10 @@ export function createGalleryAvatarState(galleryState: GalleryState): AvatarStat
 				facingAngle = cameraAngle + Math.atan2(moveInput.x, moveInput.z);
 			}
 		},
+
+		setFacingAngle(angle: number) {
+			facingAngle = angle;
+		},
 	};
 }
 

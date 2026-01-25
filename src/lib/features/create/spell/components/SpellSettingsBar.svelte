@@ -54,7 +54,7 @@ Features:
       ],
       isSelected: (v: unknown) => preferences.motionTypeFilter === v,
       onSelect: (v: string | null) =>
-        onPreferenceChange("motionTypeFilter", v as "prefer-dash" | "no-dash" | null),
+        onPreferenceChange("motionTypeFilter", v as SpellPreferences["motionTypeFilter"]),
     },
     {
       id: "props",
@@ -71,7 +71,7 @@ Features:
         { value: "high-reversal", label: "High" },
       ],
       isSelected: (v: unknown) => preferences.constraintPreset === v,
-      onSelect: (v: string) => onPreferenceChange("constraintPreset", v),
+      onSelect: (v: string) => onPreferenceChange("constraintPreset", v as SpellPreferences["constraintPreset"]),
     },
     {
       id: "hands",
@@ -89,7 +89,7 @@ Features:
       ],
       isSelected: (v: unknown) => preferences.handPathMode === v,
       onSelect: (v: string) =>
-        onPreferenceChange("handPathMode", v as "smooth" | "mixed" | "high"),
+        onPreferenceChange("handPathMode", v as SpellPreferences["handPathMode"]),
     },
   ];
 
@@ -323,9 +323,6 @@ Features:
     gap: var(--settings-spacing-sm, 8px);
   }
 
-  .chips-row.hidden {
-    display: none;
-  }
 
   .chip {
     flex: 1;
@@ -568,11 +565,9 @@ Features:
   /* ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
-    .chip-slot,
     .chip,
     .option-btn,
     .back-tap,
-    .toggles-row,
     .section-option {
       transition: none;
     }

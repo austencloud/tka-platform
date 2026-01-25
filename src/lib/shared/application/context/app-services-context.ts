@@ -15,7 +15,7 @@ import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDet
 import type { IHapticFeedback } from "../services/contracts/IHapticFeedback";
 import type { ICollaborativeVideoManager } from "../../video-collaboration/services/contracts/ICollaborativeVideoManager";
 import type { IUserRepository } from "../../community/services/contracts/IUserRepository";
-import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import type { ICodex } from "$lib/features/learn/codex/services/contracts/ICodex";
 // TODO: IQuizRepoManager contract doesn't exist yet - uncomment when created
 // import type { IQuizRepoManager } from "$lib/features/learn/quiz/services/contracts/IQuizRepoManager";
@@ -36,7 +36,7 @@ export interface AppServicesContext {
   // Feature services (lazy-loaded, may be null initially)
   videoService?: ICollaborativeVideoManager;
   userService?: IUserRepository;
-  exploreLoader?: IExploreLoader;
+  browseLoader?: IBrowseLoader;
   codexService?: ICodex;
   // quizRepo?: IQuizRepoManager; // TODO: uncomment when IQuizRepoManager contract is created
   LOOPTypeResolver?: ILOOPTypeResolver;

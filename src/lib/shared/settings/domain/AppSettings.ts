@@ -87,6 +87,7 @@ export interface AppSettings {
     nonRadialPoints?: boolean;
     handPointVisibility?: "all" | "active"; // Show all hand points or only where props are
     stepNumbers?: boolean; // Show beat numbers on pictographs in sequences
+    beatPositionGlyph?: boolean; // Show beat position glyph (musical timeline position)
   };
 
   // Community/Privacy Settings
@@ -105,7 +106,7 @@ export interface AppSettings {
   musicianMode?: boolean; // Show positions as "1 e & a" instead of decimals (1.25, 1.5)
   defaultTimeSignature?: TimeSignatureKey; // Default time signature for sequences (default: "4/4")
 
-  // Discover Grid Settings
+  // Browse Grid Settings
   gridZoomLevel?: number; // Mobile pinch-to-zoom: columns 2-6, default 2
 
   // Image Export Settings

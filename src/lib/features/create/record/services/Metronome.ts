@@ -93,11 +93,11 @@ export class Metronome {
           this.createClick(this.nextClickTime, isAccent);
         }
 
-        if (onStep) {
+        if (onBeat) {
           // Schedule callback at the same time as the click
           const callbackDelay =
             (this.nextClickTime - this.audioContext.currentTime) * 1000;
-          setTimeout(() => onStep(stepIndex), Math.max(0, callbackDelay));
+          setTimeout(() => onBeat(stepIndex), Math.max(0, callbackDelay));
         }
 
         this.nextClickTime += secondsPerBeat;

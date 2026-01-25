@@ -1,5 +1,5 @@
 /**
- * Variation Explorer Implementation
+ * Variation Browser Implementation
  *
  * Enumerates all valid sequence variations for a word using AsyncGenerator pattern.
  * Yields sequences one at a time for memory efficiency.
@@ -15,7 +15,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
-  IVariationExplorer,
+  IVariationBrowser,
   SequenceVariation,
   ExplorationOptions,
 } from "../contracts/IVariationExplorer";
@@ -26,7 +26,7 @@ import { recalculateAllOrientations } from "$lib/features/create/shared/services
 /** Default maximum variations (Infinity = no limit, user can cancel) */
 const DEFAULT_MAX_VARIATIONS = Infinity;
 
-export class VariationExplorer implements IVariationExplorer {
+export class VariationBrowser implements IVariationBrowser {
   constructor(
     private transitionGraph: ILetterTransitionGraph,
     private letterQueryHandler: ILetterQueryHandler,
@@ -35,10 +35,10 @@ export class VariationExplorer implements IVariationExplorer {
   ) {}
 
   /**
-   * Explore all valid sequence variations for the given letters.
+   * Browse all valid sequence variations for the given letters.
    * Uses AsyncGenerator for lazy evaluation - sequences are yielded one at a time.
    */
-  async *exploreVariations(
+  async *browseVariations(
     letters: Letter[],
     options: ExplorationOptions
   ): AsyncGenerator<SequenceVariation, void, unknown> {
@@ -70,7 +70,7 @@ export class VariationExplorer implements IVariationExplorer {
 
     if (startPositions.length === 0) return;
 
-    // Explore from each start position
+    // Browse from each start position
     for (let startIdx = 0; startIdx < startPositions.length; startIdx++) {
       // Check for cancellation
       if (signal?.aborted) return;
@@ -78,8 +78,8 @@ export class VariationExplorer implements IVariationExplorer {
 
       const startPosition = startPositions[startIdx]!;
 
-      // Use recursive generator to explore all paths from this start
-      for await (const variation of this.exploreFromStart(
+      // Use recursive generator to browse all paths from this start
+      for await (const variation of this.browseFromStart(
         letters,
         startPosition,
         allPictographs,
@@ -160,9 +160,9 @@ export class VariationExplorer implements IVariationExplorer {
   }
 
   /**
-   * Recursive generator that explores all paths from a given start position.
+   * Recursive generator that browses all paths from a given start position.
    */
-  private async *exploreFromStart(
+  private async *browseFromStart(
     letters: Letter[],
     startPosition: PictographData,
     allPictographs: PictographData[],
@@ -171,7 +171,7 @@ export class VariationExplorer implements IVariationExplorer {
     signal?: AbortSignal
   ): AsyncGenerator<SequenceVariation, void, unknown> {
     // Build the sequence by exploring all pictograph choices at each letter
-    for await (const result of this.exploreLetterSequence(
+    for await (const result of this.browseLetterSequence(
       letters,
       0,
       startPosition,
@@ -186,9 +186,9 @@ export class VariationExplorer implements IVariationExplorer {
   }
 
   /**
-   * Recursive generator that explores all pictograph choices for each letter.
+   * Recursive generator that browses all pictograph choices for each letter.
    */
-  private async *exploreLetterSequence(
+  private async *browseLetterSequence(
     letters: Letter[],
     letterIndex: number,
     lastPictograph: PictographData,
@@ -229,7 +229,7 @@ export class VariationExplorer implements IVariationExplorer {
       return;
     }
 
-    // Explore each option
+    // Browse each option
     for (let optIdx = 0; optIdx < options.length; optIdx++) {
       if (signal?.aborted) return;
 
@@ -241,7 +241,7 @@ export class VariationExplorer implements IVariationExplorer {
       );
 
       // Recurse with this choice
-      for await (const result of this.exploreLetterSequence(
+      for await (const result of this.browseLetterSequence(
         letters,
         letterIndex + 1,
         option,

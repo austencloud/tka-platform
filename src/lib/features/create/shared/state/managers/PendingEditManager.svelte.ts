@@ -1,8 +1,8 @@
 /**
  * Pending Edit Manager
  *
- * Handles pending edits from Discover gallery.
- * When user clicks "Edit" on a sequence in Discover, it's stored
+ * Handles pending edits from Browse gallery.
+ * When user clicks "Edit" on a sequence in Browse, it's stored
  * and processed when Create module mounts.
  */
 

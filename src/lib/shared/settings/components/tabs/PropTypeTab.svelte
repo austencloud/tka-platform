@@ -94,7 +94,7 @@
   function updateDeviceCapabilities() {
     if (!deviceDetector) return;
     const caps = deviceDetector.getCapabilities();
-    hasKeyboard = caps.inputMethod !== "touch";
+    hasKeyboard = caps.hasKeyboard ?? false;
   }
 
   // Sync from settings
@@ -212,20 +212,22 @@
 
     // Apply the first preset's props
     const firstPreset = DEFAULT_PRESETS[0];
-    selectedBluePropType = firstPreset.bluePropType;
-    selectedRedPropType = firstPreset.redPropType;
-    catDogMode = firstPreset.catDogMode;
-    blueBuugengFlipped = false;
-    redBuugengFlipped = false;
+    if (firstPreset) {
+      selectedBluePropType = firstPreset.bluePropType;
+      selectedRedPropType = firstPreset.redPropType;
+      catDogMode = firstPreset.catDogMode;
+      blueBuugengFlipped = false;
+      redBuugengFlipped = false;
 
-    // Persist all changes
-    onUpdate?.({ key: "propPresets", value: [...DEFAULT_PRESETS] });
-    onUpdate?.({ key: "selectedPresetIndex", value: 0 });
-    onUpdate?.({ key: "bluePropType", value: firstPreset.bluePropType });
-    onUpdate?.({ key: "redPropType", value: firstPreset.redPropType });
-    onUpdate?.({ key: "catDogMode", value: false });
-    onUpdate?.({ key: "blueBuugengFlipped", value: false });
-    onUpdate?.({ key: "redBuugengFlipped", value: false });
+      // Persist all changes
+      onUpdate?.({ key: "propPresets", value: [...DEFAULT_PRESETS] });
+      onUpdate?.({ key: "selectedPresetIndex", value: 0 });
+      onUpdate?.({ key: "bluePropType", value: firstPreset.bluePropType });
+      onUpdate?.({ key: "redPropType", value: firstPreset.redPropType });
+      onUpdate?.({ key: "catDogMode", value: false });
+      onUpdate?.({ key: "blueBuugengFlipped", value: false });
+      onUpdate?.({ key: "redBuugengFlipped", value: false });
+    }
   }
 
   function updateCurrentPreset() {

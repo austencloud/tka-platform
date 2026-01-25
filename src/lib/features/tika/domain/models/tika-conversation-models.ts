@@ -197,7 +197,7 @@ function getTextFromMessage(message: UIMessage): string {
       .map((p) => (p as { type: "text"; text: string }).text)
       .join("");
   }
-  return message.content || "";
+  return (message as unknown as { content?: string }).content || "";
 }
 
 /**

@@ -55,13 +55,13 @@
   }: Props = $props();
 
   type CopyState = "idle" | "loading" | "success" | "error";
-  let state = $state<CopyState>("idle");
+  let copyState = $state<CopyState>("idle");
   let errorMessage = $state<string | null>(null);
   let resetTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const isLoading = $derived(state === "loading");
-  const isSuccess = $derived(state === "success");
-  const isError = $derived(state === "error");
+  const isLoading = $derived(copyState === "loading");
+  const isSuccess = $derived(copyState === "success");
+  const isError = $derived(copyState === "error");
 
   const defaultLabels = {
     idle: "Copy for AI",
@@ -70,7 +70,7 @@
     error: "Failed",
   } as const;
 
-  const currentLabel = $derived(labels[state] ?? defaultLabels[state]);
+  const currentLabel = $derived(labels[copyState] ?? defaultLabels[copyState]);
 
   const currentIcon = $derived(
     isLoading
@@ -158,30 +158,30 @@
     // Fire activation callback immediately (for haptic feedback)
     onActivate?.();
 
-    state = "loading";
+    copyState = "loading";
     errorMessage = null;
 
     try {
       const text = await Promise.resolve(getData());
       await copyToClipboard(text);
 
-      state = "success";
+      copyState = "success";
       onSuccess?.();
       if (useToast) toast.success(labels.success ?? defaultLabels.success);
 
       resetTimer = setTimeout(() => {
-        state = "idle";
+        copyState = "idle";
       }, successDuration);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       errorMessage = error.message || "Copy failed";
-      state = "error";
+      copyState = "error";
       console.error("[CopyForAIButton]", error);
       onError?.(error);
       if (useToast) toast.error(labels.error ?? defaultLabels.error);
 
       resetTimer = setTimeout(() => {
-        state = "idle";
+        copyState = "idle";
         errorMessage = null;
       }, 3000);
     }

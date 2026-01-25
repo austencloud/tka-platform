@@ -69,7 +69,7 @@ export const LOOP_PRESETS: readonly LOOPPreset[] = [
     id: "shadow-self",
     name: "Shadow Self",
     description: "Inverted motion types create the 'opposite energy' version",
-    useCase: "Explore the complementary version of your flow. Pro becomes anti, static becomes dash.",
+    useCase: "Browse the complementary version of your flow. Pro becomes anti, static becomes dash.",
     components: [LOOPComponent.INVERTED],
     difficulty: 2,
     icon: "👤",

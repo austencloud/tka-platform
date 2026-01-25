@@ -103,8 +103,8 @@ After recording an audit:
 - **Claims use file locking** to prevent race conditions between parallel agents
 - **Large modules (>30 files or >3 sub-features) must be audited as sub-features** - the script will refuse to claim them
 - Grade order for `--grades` flag: Architecture, Code Quality, Svelte 5, Accessibility, UX States, UI Consistency, Performance, Security
-- Targets are auto-discovered from `src/lib/features/` and `src/lib/shared/`
-- Sub-features are auto-discovered within large modules (e.g., `create/assemble`, `create/generate`)
+- Targets are auto-browseed from `src/lib/features/` and `src/lib/shared/`
+- Sub-features are auto-browseed within large modules (e.g., `create/assemble`, `create/generate`)
 - Audits older than 30 days are flagged as stale
 - Claims expire after 4 hours if not released
 - The goal is **A+ across all dimensions**

@@ -32,9 +32,10 @@ export class BrowserDataProvider implements ISequenceDataProvider {
       throw new Error(`Failed to load letter mappings: ${response.statusText}`);
     }
 
-    this.letterMappings = await response.json();
+    const mappings = await response.json();
+    this.letterMappings = mappings;
     this.initialized = true;
-    return this.letterMappings;
+    return mappings;
   }
 
   async loadLetterVariations(letter: string): Promise<LetterVariationData[]> {
@@ -49,18 +50,21 @@ export class BrowserDataProvider implements ISequenceDataProvider {
   }
 
   private pictographToVariationData(p: PictographData): LetterVariationData {
+    const blueMotion = p.motions?.blue;
+    const redMotion = p.motions?.red;
+
     return {
       letter: p.letter as string,
       startPosition: p.startPosition || "",
       endPosition: p.endPosition || "",
-      blueMotionType: p.blueMotion?.motionType || "static",
-      blueStartLocation: p.blueMotion?.startLocation || "",
-      blueEndLocation: p.blueMotion?.endLocation || "",
-      blueRotationDirection: p.blueMotion?.rotationDirection || "cw",
-      redMotionType: p.redMotion?.motionType || "static",
-      redStartLocation: p.redMotion?.startLocation || "",
-      redEndLocation: p.redMotion?.endLocation || "",
-      redRotationDirection: p.redMotion?.rotationDirection || "cw",
+      blueMotionType: blueMotion?.motionType || "static",
+      blueStartLocation: blueMotion?.startLocation || "",
+      blueEndLocation: blueMotion?.endLocation || "",
+      blueRotationDirection: blueMotion?.rotationDirection || "cw",
+      redMotionType: redMotion?.motionType || "static",
+      redStartLocation: redMotion?.startLocation || "",
+      redEndLocation: redMotion?.endLocation || "",
+      redRotationDirection: redMotion?.rotationDirection || "cw",
       gridMode: p.gridMode,
     };
   }

@@ -21,13 +21,22 @@ export const GET: RequestHandler = async ({ params }) => {
     const csvPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv');
     const csvData = fs.readFileSync(csvPath, 'utf-8');
     const lines = csvData.split('\n');
-    const headers = lines[0].split(',');
+    const firstLine = lines[0];
+
+    if (!firstLine) {
+      return new Response(JSON.stringify({ error: 'Empty CSV file' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const headers = firstLine.split(',');
 
     // Find the letter
     let row: string[] | null = null;
     for (let i = 1; i < lines.length; i++) {
-      const r = lines[i].split(',');
-      if (r[0] === letter) {
+      const r = lines[i]?.split(',');
+      if (r && r[0] === letter) {
         row = r;
         break;
       }

@@ -99,11 +99,11 @@
       description: "Browse videos",
     },
     {
-      id: "explore",
-      label: "Explore",
+      id: "browse",
+      label: "Browse",
       icon: "fa-compass",
       color: "#a855f7",
-      description: "Discover sequences",
+      description: "Browse sequences",
     },
     {
       id: "learn",

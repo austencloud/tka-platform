@@ -57,12 +57,6 @@
     // library module retired - backwards compat redirects to browse
     library: () =>
       import("../../features/browse/shared/components/BrowseModule.svelte"),
-    // discover module renamed to browse - backwards compat alias
-    discover: () =>
-      import("../../features/browse/shared/components/BrowseModule.svelte"),
-    // explore module renamed to browse - backwards compat alias
-    explore: () =>
-      import("../../features/browse/shared/components/BrowseModule.svelte"),
     community: () =>
       import("../../features/community/Community.svelte"),
     learn: () => import("../../features/learn/LearnTab.svelte"),
@@ -70,7 +64,7 @@
     // "animate" is a backwards-compat alias - deep links and old bookmarks may use it
     animate: () => import("../../features/compose/ComposeModule.svelte"),
     train: () => import("../../features/train/components/TrainModule.svelte"),
-    // library module retired - functionality now in Explore > Sequences via scope toggle
+    // library module retired - functionality now in Browse > Sequences via scope toggle
     // inbox module retired - Messages/notifications accessible via Dashboard widget drawer
     // edit module retired - Edit is now a slide-out panel, not a standalone module
     choreo_card: () =>
@@ -79,7 +73,7 @@
     word_card: () =>
       import("../../features/choreo-card/components/ChoreoCardTab.svelte"),
     write: () => import("../../features/write/components/WriteTab.svelte"),
-    // account module retired - merged into dashboard (profile widget handles auth, library is a Discover tab)
+    // account module retired - merged into dashboard (profile widget handles auth, library is a Browse tab)
     feedback: () =>
       import("../../features/feedback/components/FeedbackModule.svelte"),
     admin: () =>

@@ -57,7 +57,7 @@ export function createDashboardFeedState() {
 			if (isLoadMore) {
 				items = [...items, ...page.items];
 			} else {
-				items = page.items;
+				items = [...page.items];
 			}
 			nextCursor = page.nextCursor;
 			_hasMore = page.hasMore;

@@ -48,7 +48,7 @@
         filePath: "/acts/sample1.json",
         sequenceCount: 3,
         hasMusic: true,
-        lastModified: new Date(Date.now() - 86400000), // 1 day ago
+        updatedAt: new Date(Date.now() - 86400000), // 1 day ago
       },
       {
         id: "2",
@@ -57,7 +57,7 @@
         filePath: "/acts/sample2.json",
         sequenceCount: 1,
         hasMusic: false,
-        lastModified: new Date(Date.now() - 172800000), // 2 days ago
+        updatedAt: new Date(Date.now() - 172800000), // 2 days ago
       },
     ];
   });
@@ -89,11 +89,9 @@
         name: actInfo.name,
         description: actInfo.description,
         sequences: [], // TODO: Load actual sequences
-        metadata: {
-          created: new Date(),
-          modified: actInfo.lastModified,
-        },
-        filePath: actInfo.filePath,
+        duration: 0,
+        createdAt: actInfo.createdAt || new Date(),
+        updatedAt: actInfo.updatedAt || new Date(),
       };
       hasUnsavedChanges = false;
     }
@@ -132,17 +130,14 @@
   // Music player handlers
   function handlePlayRequested() {
     musicPlayerState.isPlaying = true;
-    musicPlayerState.isPaused = false;
   }
 
   function handlePauseRequested() {
     musicPlayerState.isPlaying = false;
-    musicPlayerState.isPaused = true;
   }
 
   function handleStopRequested() {
     musicPlayerState.isPlaying = false;
-    musicPlayerState.isPaused = false;
     musicPlayerState.currentTime = 0;
   }
 

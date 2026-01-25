@@ -23,9 +23,9 @@ export enum UserWorkType {
   USER_PREFERENCES = "user-preferences",
 
   /**
-   * Explore view state (filters, sorts, scroll position)
+   * Browse view state (filters, sorts, scroll position)
    */
-  Explore_STATE = "Explore-state",
+  Browse_STATE = "Browse-state",
 }
 
 /**

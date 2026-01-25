@@ -1,7 +1,7 @@
 /**
  * SyncRoomDiscovery
  *
- * Discovers nearby sync rooms by watching Firebase RTDB.
+ * Browses nearby sync rooms by watching Firebase RTDB.
  * Filters out the current user's own rooms to avoid self-discovery.
  */
 
@@ -20,14 +20,14 @@ import type { ISyncRoomDiscovery } from '../contracts/ISyncRoomDiscovery';
 import type { SyncRoom, SyncRoomWithId } from '../../domain/models/lan-sync-models';
 
 export class SyncRoomDiscovery implements ISyncRoomDiscovery {
-	private _isDiscovering = false;
+	private _isBrowseing = false;
 	private _nearbyRooms: SyncRoomWithId[] = [];
 	private roomsRef: DatabaseReference | null = null;
 	private unsubscribeListener: (() => void) | null = null;
 	private callbacks: Set<(rooms: SyncRoomWithId[]) => void> = new Set();
 
-	get isDiscovering(): boolean {
-		return this._isDiscovering;
+	get isBrowseing(): boolean {
+		return this._isBrowseing;
 	}
 
 	get nearbyRooms(): SyncRoomWithId[] {
@@ -35,7 +35,7 @@ export class SyncRoomDiscovery implements ISyncRoomDiscovery {
 	}
 
 	async startDiscovery(): Promise<void> {
-		if (this._isDiscovering) {
+		if (this._isBrowseing) {
 			return;
 		}
 
@@ -61,11 +61,11 @@ export class SyncRoomDiscovery implements ISyncRoomDiscovery {
 			}
 		);
 
-		this._isDiscovering = true;
+		this._isBrowseing = true;
 	}
 
 	stopDiscovery(): void {
-		if (!this._isDiscovering) {
+		if (!this._isBrowseing) {
 			return;
 		}
 
@@ -76,7 +76,7 @@ export class SyncRoomDiscovery implements ISyncRoomDiscovery {
 
 		this.roomsRef = null;
 		this._nearbyRooms = [];
-		this._isDiscovering = false;
+		this._isBrowseing = false;
 		this.notifyCallbacks();
 	}
 

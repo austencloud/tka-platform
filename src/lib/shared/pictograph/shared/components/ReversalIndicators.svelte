@@ -148,47 +148,43 @@ Color-coded dots indicate which motion (blue/red) is reversing between pictograp
   // Blue dot state change detection
   $effect(() => {
     const current = effectiveBlueReversal;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
 
     // Skip initial mount
     if (prevBlue === null) {
       prevBlue = current;
-      return;
-    }
-
-    // Only react to actual changes
-    if (prevBlue !== current) {
+    } else if (prevBlue !== current) {
+      // Only react to actual changes
       if (prevBlue && !current) {
         // Was visible, now hidden - trigger exit animation
         isBlueExiting = true;
-        const timeout = setTimeout(() => { isBlueExiting = false; }, 200);
-        prevBlue = current;
-        return () => clearTimeout(timeout);
+        timeout = setTimeout(() => { isBlueExiting = false; }, 200);
       }
       prevBlue = current;
     }
+
+    return () => { if (timeout) clearTimeout(timeout); };
   });
 
   // Red dot state change detection
   $effect(() => {
     const current = effectiveRedReversal;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
 
     // Skip initial mount
     if (prevRed === null) {
       prevRed = current;
-      return;
-    }
-
-    // Only react to actual changes
-    if (prevRed !== current) {
+    } else if (prevRed !== current) {
+      // Only react to actual changes
       if (prevRed && !current) {
         // Was visible, now hidden - trigger exit animation
         isRedExiting = true;
-        const timeout = setTimeout(() => { isRedExiting = false; }, 200);
-        prevRed = current;
-        return () => clearTimeout(timeout);
+        timeout = setTimeout(() => { isRedExiting = false; }, 200);
       }
       prevRed = current;
     }
+
+    return () => { if (timeout) clearTimeout(timeout); };
   });
 
   // For smooth exit animations, we need to keep dots in DOM but hide them with CSS

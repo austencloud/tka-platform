@@ -158,9 +158,12 @@
     // Number keys 1-7 for tab switching
     const num = parseInt(e.key, 10);
     if (num >= 1 && num <= tabs.length) {
-      e.preventDefault();
-      activeTab = tabs[num - 1].id;
-      panelExpanded = true;
+      const selectedTab = tabs[num - 1];
+      if (selectedTab) {
+        e.preventDefault();
+        activeTab = selectedTab.id;
+        panelExpanded = true;
+      }
       return;
     }
 

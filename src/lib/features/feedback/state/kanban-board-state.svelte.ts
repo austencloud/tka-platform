@@ -47,8 +47,8 @@ export interface KanbanBoardState {
   canRedo: boolean;
   showUndoHint: boolean;
   pushUndo(action: UndoableAction, clearRedo?: boolean): void;
-  popUndo(): UndoableAction | null;
-  popRedo(): UndoableAction | null;
+  popUndo(): UndoableAction | undefined;
+  popRedo(): UndoableAction | undefined;
   pushRedo(action: UndoableAction): void;
   clearRedoStack(): void;
   dismissUndoHint(): void;
@@ -189,8 +189,8 @@ export function createKanbanBoardState(
     }
   }
 
-  function popUndo(): UndoableAction | null {
-    if (undoStack.length === 0) return null;
+  function popUndo(): UndoableAction | undefined {
+    if (undoStack.length === 0) return undefined;
     const action = undoStack[undoStack.length - 1];
     undoStack = undoStack.slice(0, -1);
     return action;
@@ -200,8 +200,8 @@ export function createKanbanBoardState(
     redoStack = [...redoStack, action].slice(-MAX_UNDO_HISTORY);
   }
 
-  function popRedo(): UndoableAction | null {
-    if (redoStack.length === 0) return null;
+  function popRedo(): UndoableAction | undefined {
+    if (redoStack.length === 0) return undefined;
     const action = redoStack[redoStack.length - 1];
     redoStack = redoStack.slice(0, -1);
     return action;

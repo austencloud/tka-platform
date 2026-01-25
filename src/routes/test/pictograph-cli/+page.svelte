@@ -69,7 +69,9 @@
       const canvas = canvasRefs[i];
       if (!canvas) continue;
 
-      const pictograph = JSON.parse(JSON.stringify(variations[i])) as PictographData;
+      // Deep clone to get a mutable copy
+      const original = variations[i];
+      const pictograph: any = JSON.parse(JSON.stringify(original));
 
       // Apply turns overrides and recalculate endOrientation
       // (endOrientation determines prop rotation angle)

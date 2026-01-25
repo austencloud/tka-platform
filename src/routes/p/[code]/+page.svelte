@@ -140,7 +140,7 @@
         <h1>Animation Not Found</h1>
         <p>{error || "This QR code link appears to be invalid."}</p>
         <button class="home-button" onclick={handleGoHome}>
-          Explore TKA Scribe
+          Browse TKA Scribe
         </button>
       </div>
     </div>

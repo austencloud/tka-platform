@@ -27,7 +27,7 @@ export class UniversalMetadataExtractor {
   /**
    * Extract sequence metadata with bulletproof fallback strategy
    * @param sequenceName - Name of the sequence
-   * @param basePath - Base path without extension (e.g., '/static/Explore/ABC/ABC_ver1')
+   * @param basePath - Base path without extension (e.g., '/static/Browse/ABC/ABC_ver1')
    * @returns Promise<MetadataExtractionResult> - Complete metadata with extraction info
    */
   static async extractMetadata(
@@ -326,20 +326,22 @@ export class UniversalMetadataExtractor {
           step["letter"] && !step["sequence_start_position"]
       );
 
-      if (webpMetadata.sequenceLength !== pngBeats.length) {
+      if (webpMetadata.sequenceLength !== pngSteps.length) {
         differences.push(
-          `sequenceLength: WebP=${webpMetadata.sequenceLength}, PNG=${pngBeats.length}`
+          `sequenceLength: WebP=${webpMetadata.sequenceLength}, PNG=${pngSteps.length}`
         );
       }
 
-      if (webpMetadata.beats.length !== pngBeats.length) {
+      // WebP may have 'beats' or 'steps' field depending on format version
+      const webpBeatsArray = (webpMetadata as any).beats || webpMetadata.steps || [];
+      if (webpBeatsArray.length !== pngSteps.length) {
         differences.push(
-          `beats.length: WebP=${webpMetadata.beats.length}, PNG=${pngBeats.length}`
+          `beats.length: WebP=${webpBeatsArray.length}, PNG=${pngSteps.length}`
         );
       }
 
       // Deep comparison of steps array
-      const webpBeatsJson = JSON.stringify(webpMetadata.beats);
+      const webpBeatsJson = JSON.stringify(webpBeatsArray);
       const pngBeatsJson = JSON.stringify(pngSteps);
 
       if (webpBeatsJson !== pngBeatsJson) {

@@ -1,6 +1,6 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { TabId } from "../../../navigation/domain/types";
-import type { IExploreThumbnailProvider } from "../../../../features/explore/sequences/display/services/contracts/IExploreThumbnailProvider";
+import type { IBrowseThumbnailProvider } from "../../../../features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
 import {
   setSpotlightModalUrl,
   clearModalUrlState,
@@ -26,7 +26,7 @@ export const uiState = $state({
   isWaitingForModuleLoad: false,
   showSpotlight: false,
   spotlightSequence: null as SequenceData | null,
-  spotlightThumbnailService: null as IExploreThumbnailProvider | null,
+  spotlightThumbnailService: null as IBrowseThumbnailProvider | null,
   spotlightImageUrl: null as string | null, // Direct image URL (for Create module spotlight)
   spotlightVideoUrl: null as string | null, // Direct video URL (for Dashboard feed spotlight)
   spotlightDisplayMode: "image" as SpotlightDisplayMode, // "image", "stepgrid", "animation", or "video"
@@ -204,7 +204,7 @@ export function getSpotlightSequence(): SequenceData | null {
   return uiState.spotlightSequence;
 }
 
-export function getSpotlightThumbnailService(): IExploreThumbnailProvider | null {
+export function getSpotlightThumbnailService(): IBrowseThumbnailProvider | null {
   return uiState.spotlightThumbnailService;
 }
 
@@ -222,7 +222,7 @@ export function getSpotlightDisplayMode(): SpotlightDisplayMode {
 
 export function openSpotlightViewer(
   sequence: SequenceData,
-  thumbnailService: IExploreThumbnailProvider
+  thumbnailService: IBrowseThumbnailProvider
 ): void {
   uiState.spotlightSequence = sequence;
   uiState.spotlightThumbnailService = thumbnailService;

@@ -586,7 +586,7 @@ import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
   }
 
   function closeDetailModal() {
-    // Return to selection state so user can explore other transforms
+    // Return to selection state so user can browse other transforms
     helpMode = "selecting";
     selectedTransform = null;
   }

@@ -31,7 +31,7 @@ export class TextRenderer implements ITextRenderer {
 
   /**
    * Render sequence word/title text at the top center of the canvas
-   * @deprecated Use renderWordFooter instead for Explorer Gallery style
+   * @deprecated Use renderWordFooter instead for Browser Gallery style
    */
   renderWordText(
     canvas: HTMLCanvasElement,
@@ -83,7 +83,7 @@ export class TextRenderer implements ITextRenderer {
 
   /**
    * Render word in a footer at the bottom of the canvas
-   * Uses Explorer Gallery style: color-coded gradient background based on difficulty level
+   * Uses Browser Gallery style: color-coded gradient background based on difficulty level
    */
   renderWordFooter(
     canvas: HTMLCanvasElement,
@@ -101,7 +101,7 @@ export class TextRenderer implements ITextRenderer {
       return;
     }
 
-    // Get level style (gradient colors and text color) matching Explorer Gallery
+    // Get level style (gradient colors and text color) matching Browser Gallery
     const levelStyle = this.getLevelStyle(difficultyLevel);
 
     // Calculate footer position (at the bottom of the canvas)
@@ -362,7 +362,7 @@ export class TextRenderer implements ITextRenderer {
   }
 
   /**
-   * Get level style (colors) matching Explorer Gallery SequenceCard
+   * Get level style (colors) matching Browser Gallery SequenceCard
    * 1=white, 2=silver, 3=gold, 4=red, 5=purple
    */
   private getLevelStyle(level: number): {
@@ -447,7 +447,7 @@ export class TextRenderer implements ITextRenderer {
     // Create linear gradient at 135 degrees (matching CSS gradient)
     const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
 
-    // Add color stops matching the Explorer Gallery CSS gradients
+    // Add color stops matching the Browser Gallery CSS gradients
     gradient.addColorStop(0, levelStyle.background[0] ?? "#374151");
     gradient.addColorStop(0.3, levelStyle.background[1] ?? "#1f2937");
     gradient.addColorStop(0.6, levelStyle.background[2] ?? "#111827");

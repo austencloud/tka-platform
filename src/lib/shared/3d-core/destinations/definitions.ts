@@ -49,7 +49,7 @@ export const DESTINATIONS: Destination[] = [
 		id: "gallery",
 		name: "Gallery",
 		description:
-			"Explore sequences in a procedural museum with friends. Multiplayer social experience",
+			"Browse sequences in a procedural museum with friends. Multiplayer social experience",
 		icon: "fa-building-columns",
 		color: "#06b6d4",
 		supportsMultiplayer: true,
@@ -117,7 +117,7 @@ export const DESTINATION_CATEGORIES: DestinationCategory[] = [
 	{
 		id: "exploration",
 		name: "Exploration",
-		description: "Discover new worlds",
+		description: "Browse new worlds",
 		icon: "fa-compass",
 		color: "#10b981",
 	},

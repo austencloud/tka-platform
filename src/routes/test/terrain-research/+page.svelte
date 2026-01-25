@@ -284,36 +284,36 @@
 								<div class="dimension-card">
 									<h3>{dim.icon} {dim.label}</h3>
 									<div class="approach-box">
-										<label>Approach</label>
+										<span class="box-label">Approach</span>
 										<p>{data.approach}</p>
 									</div>
 									{#if data.dataStructure}
 										<div class="detail-box">
-											<label>Data Structure</label>
+											<span class="box-label">Data Structure</span>
 											<code>{data.dataStructure}</code>
 										</div>
 									{/if}
 									{#if data.dataFlow}
 										<div class="detail-box">
-											<label>Data Flow</label>
+											<span class="box-label">Data Flow</span>
 											<code>{data.dataFlow}</code>
 										</div>
 									{/if}
 									{#if data.transitions}
 										<div class="detail-box">
-											<label>Transitions</label>
+											<span class="box-label">Transitions</span>
 											<p>{data.transitions}</p>
 										</div>
 									{/if}
 									{#if data.biomes}
 										<div class="detail-box">
-											<label>Biomes</label>
+											<span class="box-label">Biomes</span>
 											<p>{data.biomes}</p>
 										</div>
 									{/if}
 									{#if data.highlights?.length}
 										<div class="highlights-box">
-											<label>Highlights</label>
+											<span class="box-label">Highlights</span>
 											<ul>
 												{#each data.highlights as h}
 													<li class="pro">{h}</li>
@@ -323,7 +323,7 @@
 									{/if}
 									{#if data.limitations?.length}
 										<div class="limitations-box">
-											<label>Limitations</label>
+											<span class="box-label">Limitations</span>
 											<ul>
 												{#each data.limitations as l}
 													<li class="con">{l}</li>
@@ -723,7 +723,7 @@
 		margin-bottom: 1rem;
 	}
 
-	.dimension-card label {
+	.dimension-card .box-label {
 		font-size: 0.75rem;
 		text-transform: uppercase;
 		color: var(--theme-text-muted, #888);

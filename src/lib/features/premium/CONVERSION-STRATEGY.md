@@ -139,7 +139,7 @@ components/checkout/
 
 | What You Get                    | Why It Matters                                     | Free  | Premium   |
 | ------------------------------- | -------------------------------------------------- | ----- | --------- |
-| **Unlimited Sequence Creation** | Explore every idea without daily limits            | 5/day | Unlimited |
+| **Unlimited Sequence Creation** | Browse every idea without daily limits            | 5/day | Unlimited |
 | **Video Composition Tools**     | Share your choreography with the world             | ❌    | ✅        |
 | **AI-Powered Training**         | Master new moves faster with personalized feedback | ❌    | ✅        |
 

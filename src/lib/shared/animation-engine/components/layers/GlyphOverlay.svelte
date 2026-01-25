@@ -18,7 +18,6 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   import TKAGlyph from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
   import StepNumber from "$lib/shared/pictograph/shared/components/StepNumber.svelte";
-  import BeatPositionGlyph from "$lib/shared/pictograph/shared/components/BeatPositionGlyph.svelte";
   import { getLetterDimensions } from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
 
   let {
@@ -27,11 +26,9 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     displayedLetter = null,
     displayedTurnsTuple = "(s, 0, 0)",
     displayedStepNumber = null,
-    displayedMusicalPosition = null,
     // Visibility
     tkaGlyphVisible = true,
     stepNumbersVisible = true,
-    beatPositionVisible = true,
     // Dark mode - when provided, overrides global state (for preview isolation)
     darkMode = false,
     // Start position indicator - shows "Start" in top-left when at start position
@@ -41,10 +38,8 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     displayedLetter?: Letter | null;
     displayedTurnsTuple?: string;
     displayedStepNumber?: number | null;
-    displayedMusicalPosition?: string | null;
     tkaGlyphVisible?: boolean;
     stepNumbersVisible?: boolean;
-    beatPositionVisible?: boolean;
     darkMode?: boolean;
     isAtStartPosition?: boolean;
   } = $props();
@@ -157,24 +152,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       {/key}
     {/if}
 
-    <!-- Beat position with cross-fade -->
-    {#if beatPositionVisible && !isAtStartPosition && displayedMusicalPosition}
-      {#key displayedMusicalPosition}
-        <g
-          class="beat-position-group"
-          in:fade={{ duration: FADE_DURATION, easing: cubicOut }}
-          out:fade={{ duration: FADE_DURATION, easing: cubicOut }}
-        >
-          <BeatPositionGlyph
-            musicalPosition={displayedMusicalPosition}
-            visible={true}
-            hasValidData={true}
-            {darkMode}
-          />
-        </g>
-      {/key}
-    {/if}
-  </svg>
+    </svg>
 </div>
 
 <style>
@@ -219,8 +197,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   /* Accessibility: reduced motion users get instant transitions */
   @media (prefers-reduced-motion: reduce) {
     .glyph-group,
-    .beat-number-group,
-    .beat-position-group {
+    .beat-number-group {
       transition: none !important;
     }
   }

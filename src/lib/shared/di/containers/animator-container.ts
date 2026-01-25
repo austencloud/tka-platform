@@ -47,7 +47,7 @@ import type { ISvgImageConverter } from "$lib/shared/foundation/services/contrac
 import type { IFileDownloader } from "$lib/shared/foundation/services/contracts/IFileDownloader";
 import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
 import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
-import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
 
 /**
@@ -61,14 +61,14 @@ export interface AnimatorContainerDependencies {
   fileDownloader: IFileDownloader;
   sequenceRepository: ISequenceRepository;
   sequenceTransformer: ISequenceTransformer;
-  exploreLoader: IExploreLoader;
+  browseLoader: IBrowseLoader;
   sequenceLoopabilityChecker: ISequenceLoopabilityChecker;
 }
 
 /**
  * Create the animator container with all animation-related services.
  *
- * @param externalDeps - Dependencies from other containers (render, foundation, create, discover)
+ * @param externalDeps - Dependencies from other containers (render, foundation, create, browse)
  * @returns ITI container with all animator services
  */
 export function createAnimatorContainer(externalDeps: AnimatorContainerDependencies) {
@@ -142,7 +142,7 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
     }))
     .add(() => ({
       sequenceMotionLoader: () =>
-        new SequenceMotionLoader(externalDeps.exploreLoader),
+        new SequenceMotionLoader(externalDeps.browseLoader),
     }));
 }
 

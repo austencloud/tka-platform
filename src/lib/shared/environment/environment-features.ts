@@ -114,7 +114,7 @@ export function getEnvironmentName(): string {
 export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   dashboard: true,
   create: true,
-  discover: true,
+  browse: true,
   community: false, // Global TKA community map (unreleased)
   feedback: true,
   premium: true, // Premium upsell shown to non-premium users
@@ -137,4 +137,9 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   "background-builder": false, // Background builder internal tool
   // "infinite-worlds" removed - now part of "realm"
   "landing-preview": false, // Landing page preview/iteration (admin-only)
+  watch: false, // Watch videos/performances (unreleased)
+  connect: false, // Multiplayer sessions (unreleased)
+  moderation: false, // Content moderation (admin-only)
+  lab: false, // Experimental features lab (admin-only)
+  "terrain-research": false, // Terrain research (admin-only)
 };

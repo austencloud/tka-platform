@@ -3,7 +3,7 @@
    * SequenceMessageCard
    *
    * Renders a sequence as a tappable card within a message.
-   * Links directly to the sequence in Discover for viewing.
+   * Links directly to the sequence in Browse for viewing.
    * Shows deleted state if the sequence no longer exists.
    */
 
@@ -11,7 +11,7 @@
   import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
   import { inboxState } from "../../state/inbox-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
-  import { setPendingSequenceView } from "$lib/features/explore/state/pending-sequence.svelte";
+  import { setPendingSequenceView } from "$lib/features/browse/state/pending-sequence.svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
@@ -58,8 +58,8 @@
     // Set the pending sequence to view
     setPendingSequenceView(sequenceId);
 
-    // Navigate to Discover sequences tab
-    await handleModuleChange("explore", "sequences");
+    // Navigate to Browse gallery tab
+    await handleModuleChange("browse", "gallery");
   }
 </script>
 

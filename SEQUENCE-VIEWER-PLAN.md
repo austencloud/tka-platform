@@ -316,7 +316,7 @@ async function handleOpenInCompose(preset?: 'stagger' | 'mirror') {
 **Keep:** All visibility controls in `{#if isExportMode}` block remain unchanged.
 
 **Settings module update (Phase 2.5):**
-Ensure Animation Appearance settings are discoverable:
+Ensure Animation Appearance settings are browseable:
 - Add link in viewer: "Customize appearance in Settings" (shown once, dismissible)
 - Verify Settings/Visibility tab has all relevant options
 

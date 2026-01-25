@@ -7,7 +7,7 @@
  * Supported URL format:
  * ?open=construct:encoded_sequence
  * ?open=animate:encoded_sequence
- * ?open=explore:encoded_sequence
+ * ?open=browse:encoded_sequence
  *
  * Domain: Navigation - Deep Linking
  */

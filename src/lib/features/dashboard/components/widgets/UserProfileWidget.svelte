@@ -61,8 +61,8 @@
 
   function navigateToLibrary() {
     hapticService?.trigger("selection");
-    // Library is now a tab within Discover module
-    handleModuleChange("explore", "gallery");
+    // Library is now a tab within Browse module
+    handleModuleChange("browse", "gallery");
   }
 
   async function handleSignOut() {

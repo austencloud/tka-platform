@@ -699,7 +699,7 @@ export class LOOPDetector implements ILOOPDetector {
         : `MODULAR: Rotated 90° ${rotationDirection?.toUpperCase() || ""}`;
 
     const quarteredGroups =
-      this.analysisService.groupBeatPairsByPattern(quarteredBeatPairs);
+      this.analysisService.groupStepPairsByPattern(quarteredStepPairs);
 
     return {
       loopType,

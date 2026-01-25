@@ -48,7 +48,7 @@ export class LOOPLabelerServiceLocator {
 
   get detector(): ILOOPDetector | null {
     if (!this.cachedDetector) {
-      this.cachedDetector = loopDetectorInstance;
+      this.cachedDetector = loopDetectorInstance as unknown as ILOOPDetector;
     }
     return this.cachedDetector;
   }

@@ -20,7 +20,7 @@ The MVP enables users to **create, save, navigate, and share sequences** in anim
 | ------------- | --------- | ---------------------------------------- |
 | **Dashboard** | ✅ In MVP | Landing page, navigation hub             |
 | **Create**    | ✅ In MVP | Assemble, Construct, Generate (no Spell) |
-| **Discover**  | ✅ In MVP | Gallery, Collections, Creators           |
+| **Browse**  | ✅ In MVP | Gallery, Collections, Creators           |
 | **Premium**   | ✅ In MVP | Upsell page for non-premium users        |
 
 ### What's Hidden from Regular Users (Admin/Tester Only)
@@ -153,8 +153,8 @@ User creates sequence → Opens Share Hub → Selects format → Exports/shares
 
 | Issue                          | Location                    | Impact                          | Effort |
 | ------------------------------ | --------------------------- | ------------------------------- | ------ |
-| Console.logs in DiscoverFilter | `DiscoverFilter.ts:217-278` | Debug noise in production       | 5 min  |
-| Edit button discoverability    | `ButtonPanel.svelte`        | Users don't know editing exists | 15 min |
+| Console.logs in BrowseFilter | `BrowseFilter.ts:217-278` | Debug noise in production       | 5 min  |
+| Edit button browseability    | `ButtonPanel.svelte`        | Users don't know editing exists | 15 min |
 | Filter result count            | `HybridFilterPanel.svelte`  | Users can't see filter impact   | 30 min |
 
 ### P2 - Nice to Have
@@ -162,7 +162,7 @@ User creates sequence → Opens Share Hub → Selects format → Exports/shares
 | Issue                     | Location              | Impact              | Effort |
 | ------------------------- | --------------------- | ------------------- | ------ |
 | Animation MP4 export      | Compose services      | Full share workflow | 4 hrs  |
-| Sort direction in service | `DiscoverSorter.ts`   | Clean architecture  | 30 min |
+| Sort direction in service | `BrowseSorter.ts`   | Clean architecture  | 30 min |
 | Favorites toggle toast    | `SequenceCard.svelte` | User feedback       | 15 min |
 
 ---
@@ -188,7 +188,7 @@ User creates sequence → Opens Share Hub → Selects format → Exports/shares
 
 ---
 
-### DISCOVER Module: ✅ MVP Ready
+### BROWSE Module: ✅ MVP Ready
 
 | Tab         | Status   | Notes                   |
 | ----------- | -------- | ----------------------- |
@@ -230,7 +230,7 @@ User creates sequence → Opens Share Hub → Selects format → Exports/shares
 
 ### Regular User (MVP Target)
 
-- Dashboard, Create (3 tabs), Discover (3 tabs)
+- Dashboard, Create (3 tabs), Browse (3 tabs)
 - PNG export (when fixed)
 - Social sharing via Web Share API
 
@@ -281,7 +281,7 @@ User creates sequence → Opens Share Hub → Selects format → Exports/shares
   - [ ] Confirm save
   - [ ] Verify success message
 
-### Discover Module Tests
+### Browse Module Tests
 
 - [ ] **Gallery Browsing**
   - [ ] Page loads with sequences
@@ -332,7 +332,7 @@ These issues are acceptable for MVP:
 1. **No multi-select filters** - Can only filter by one criteria at a time
 2. **Manual sort direction** - Code reverses array instead of service
 3. **No sequence import** - Users can't import from file (tester-only)
-4. **No delete from Discover** - Stub only, not implemented
+4. **No delete from Browse** - Stub only, not implemented
 5. **Tablet breakpoint unclear** - May show desktop UI on smaller tablets
 6. **No offline support** - Requires network connection
 
@@ -365,11 +365,11 @@ These issues are acceptable for MVP:
 ### Before Tagging
 
 - [ ] All P0 blockers resolved
-- [ ] Console.logs removed from DiscoverFilter
+- [ ] Console.logs removed from BrowseFilter
 - [ ] Performance video hidden from UI
 - [ ] Composite mode hidden from UI
 - [ ] Create module tests pass
-- [ ] Discover module tests pass
+- [ ] Browse module tests pass
 - [ ] Share (static) test passes
 
 ### Release Process
@@ -410,7 +410,7 @@ npx tsc --noEmit
 | Share Hub sync   | `src/lib/shared/share-hub/components/ShareHubPanel.svelte`                             |
 | Static export    | `src/lib/shared/share-hub/components/single-media/SingleMediaView.svelte`              |
 | Hide Performance | `src/lib/shared/share-hub/state/share-hub-state.svelte.ts`                             |
-| Console.logs     | `src/lib/features/discover/gallery/display/services/implementations/DiscoverFilter.ts` |
+| Console.logs     | `src/lib/features/browse/gallery/display/services/implementations/BrowseFilter.ts` |
 
 ---
 

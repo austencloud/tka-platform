@@ -12,7 +12,7 @@
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PoiValidationResult } from "../domain/poi-models";
-  import SequenceCard from "$lib/features/explore/sequences/display/components/SequenceCard/SequenceCard.svelte";
+  import SequenceCard from "$lib/features/browse/sequences/display/components/SequenceCard/SequenceCard.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   // State
@@ -23,8 +23,8 @@
   let currentPage = $state(0);
   const perPage = 24;
 
-  // Services - use exploreLoader for community sequences
-  const exploreLoader = container.items.exploreLoader;
+  // Services - use browseLoader for community sequences
+  const browseLoader = container.items.browseLoader;
   const sequenceValidator = container.items.poiSequenceValidator;
 
   // Get user's prop settings for prop-aware thumbnails
@@ -130,7 +130,7 @@
   onMount(async () => {
     try {
       // Load community sequences - these have thumbnails but steps are loaded on-demand
-      const all = await exploreLoader.loadSequenceMetadata();
+      const all = await browseLoader.loadSequenceMetadata();
       allSequences = all;
       isLoading = false;
     } catch (e) {

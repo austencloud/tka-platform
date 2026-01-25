@@ -103,14 +103,16 @@
     <!-- Review Status Badge -->
     {#if reviewBadge()}
       {@const badge = reviewBadge()}
-      <button
-        class="review-badge review-badge-{badge.color}"
-        title={reviewMetadata?.aiNotes || `Status: ${reviewStatus}`}
-        aria-label={`Review status: ${badge.label}`}
-      >
-        <i class="fas {badge.icon}" aria-hidden="true"></i>
-        <span>{badge.label}</span>
-      </button>
+      {#if badge}
+        <button
+          class="review-badge review-badge-{badge.color}"
+          title={reviewMetadata?.aiNotes || `Status: ${reviewStatus}`}
+          aria-label={`Review status: ${badge.label}`}
+        >
+          <i class="fas {badge.icon}" aria-hidden="true"></i>
+          <span>{badge.label}</span>
+        </button>
+      {/if}
     {/if}
   </div>
   <div class="header-actions">

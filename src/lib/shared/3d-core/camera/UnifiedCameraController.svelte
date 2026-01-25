@@ -19,7 +19,7 @@
    */
   import { onMount, onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
-  import { Vector3, Raycaster, Mesh } from "three";
+  import { Vector3, Raycaster, Mesh, PerspectiveCamera } from "three";
   import { CameraMode, getNextCameraMode, isGameMode, type PhysicsProvider, type AvatarState } from "./types";
   import { cameraPreferences } from "./camera-preferences.svelte";
   import { SCALE } from "../scale/scale-constants";
@@ -413,9 +413,11 @@
     }
 
     // Ensure far plane is large enough
-    if ("far" in camera.current && camera.current.far < 10000) {
-      camera.current.far = 10000;
-      camera.current.updateProjectionMatrix();
+    if (camera.current instanceof PerspectiveCamera) {
+      if (camera.current.far < 10000) {
+        camera.current.far = 10000;
+        camera.current.updateProjectionMatrix();
+      }
     }
 
     // Game modes: WASD movement

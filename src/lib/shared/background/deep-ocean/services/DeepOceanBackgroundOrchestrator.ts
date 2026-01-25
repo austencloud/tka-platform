@@ -5,7 +5,7 @@ import type {
   QualityLevel,
 } from "../../shared/domain/types/background-types";
 import type { IBackgroundSystem } from "../../shared/services/contracts/IBackgroundSystem";
-import type { DeepOceanState, FishMarineLife } from "../domain/models/DeepOceanModels";
+import type { DeepOceanState, FishMarineLife, JellyfishMarineLife } from "../domain/models/DeepOceanModels";
 
 // Physics & Animation contracts
 import type { IBubblePhysics } from "./contracts/IBubblePhysics";
@@ -347,6 +347,20 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
    */
   getFishAnimator(): IFishAnimator {
     return this.fishAnimator;
+  }
+
+  /**
+   * Get the jellyfish animator for external access (e.g., Fish Behavior Lab)
+   */
+  getJellyfishAnimator(): IJellyfishAnimator {
+    return this.jellyfishAnimator;
+  }
+
+  /**
+   * Get the current jellyfish array for external access (e.g., Fish Behavior Lab)
+   */
+  getJellyfish(): JellyfishMarineLife[] {
+    return this.state.jellyfish;
   }
 
   getMetrics(): PerformanceMetrics {

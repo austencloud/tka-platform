@@ -2,14 +2,14 @@
   MediaSortRow.svelte - Sort options and advanced filter toggle
 -->
 <script lang="ts">
-  import { ExploreSortMethod } from "$lib/features/explore/shared/domain/enums/explore-enums";
+  import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
-    currentSortMethod: ExploreSortMethod;
+    currentSortMethod: BrowseSortMethod;
     sortDirection: "asc" | "desc";
     showFilters: boolean;
-    onSortChange: (method: ExploreSortMethod) => void;
+    onSortChange: (method: BrowseSortMethod) => void;
     onToggleFilters: () => void;
   }
 
@@ -23,21 +23,21 @@
 
   const sortOptions = $derived([
     {
-      id: ExploreSortMethod.ALPHABETICAL,
+      id: BrowseSortMethod.ALPHABETICAL,
       label: t("sort_alphabetical"),
       icon: "fa-arrow-down-a-z",
     },
     {
-      id: ExploreSortMethod.SEQUENCE_LENGTH,
+      id: BrowseSortMethod.SEQUENCE_LENGTH,
       label: t("sort_length"),
       icon: "fa-ruler",
     },
     {
-      id: ExploreSortMethod.DIFFICULTY_LEVEL,
+      id: BrowseSortMethod.DIFFICULTY_LEVEL,
       label: t("sort_difficulty"),
       icon: "fa-signal",
     },
-    { id: ExploreSortMethod.DATE_ADDED, label: t("sort_recent"), icon: "fa-clock" },
+    { id: BrowseSortMethod.DATE_ADDED, label: t("sort_recent"), icon: "fa-clock" },
   ]);
 </script>
 

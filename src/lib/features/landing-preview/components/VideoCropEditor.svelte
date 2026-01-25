@@ -12,14 +12,25 @@
 
   let { videoUrl, initialCrop, onApply, onCancel }: Props = $props();
 
-  // Crop state
-  let position = $state({ x: initialCrop?.position.x ?? 0, y: initialCrop?.position.y ?? 0 });
-  let scale = $state(initialCrop?.scale ?? 1);
-  let aspectLabel = $state<AspectRatioPreset>(initialCrop?.aspectLabel ?? "original");
+  // Crop state - initialized from props in $effect to avoid reactivity warnings
+  let position = $state<{ x: number; y: number }>({ x: 0, y: 0 });
+  let scale = $state<number>(1);
+  let aspectLabel = $state<AspectRatioPreset>("original");
+
+  // Initialize from initialCrop once
+  let initialized = false;
+  $effect(() => {
+    if (!initialized && initialCrop) {
+      position = { x: initialCrop.position.x, y: initialCrop.position.y };
+      scale = initialCrop.scale;
+      aspectLabel = initialCrop.aspectLabel;
+      initialized = true;
+    }
+  });
 
   // Video element and dimensions
-  let videoEl: HTMLVideoElement | undefined = $state();
-  let containerEl: HTMLDivElement | undefined = $state();
+  let videoEl = $state<HTMLVideoElement | undefined>();
+  let containerEl = $state<HTMLDivElement | undefined>();
   let videoNativeAspect = $state(16 / 9); // Default until video loads
   let videoLoaded = $state(false);
   let isPaused = $state(false);
@@ -170,7 +181,9 @@
   }
 
   function handlePinchZoom() {
-    const [p1, p2] = pointerCache;
+    const p1 = pointerCache[0];
+    const p2 = pointerCache[1];
+    if (!p1 || !p2) return;
 
     // Calculate distance between pointers
     const curDist = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
@@ -193,8 +206,10 @@
         const dy = (curMidpoint.y - prevMidpoint.y) / rect.height;
 
         // Apply pan with bounds checking
-        position.x = clampPosition(position.x + dx, newScale);
-        position.y = clampPosition(position.y + dy, newScale);
+        position = {
+          x: clampPosition(position.x + dx, newScale),
+          y: clampPosition(position.y + dy, newScale)
+        };
       }
 
       scale = newScale;
@@ -211,8 +226,10 @@
     const dx = (ev.clientX - panStart.x) / rect.width;
     const dy = (ev.clientY - panStart.y) / rect.height;
 
-    position.x = clampPosition(positionStart.x + dx, scale);
-    position.y = clampPosition(positionStart.y + dy, scale);
+    position = {
+      x: clampPosition(positionStart.x + dx, scale),
+      y: clampPosition(positionStart.y + dy, scale)
+    };
   }
 
   function clampPosition(value: number, currentScale: number): number {
@@ -250,8 +267,10 @@
         const rect = containerEl.getBoundingClientRect();
         const dx = -ev.deltaX / rect.width;
         const dy = -ev.deltaY / rect.height;
-        position.x = clampPosition(position.x + dx * 0.5, scale);
-        position.y = clampPosition(position.y + dy * 0.5, scale);
+        position = {
+          x: clampPosition(position.x + dx * 0.5, scale),
+          y: clampPosition(position.y + dy * 0.5, scale)
+        };
       }
     }
   }

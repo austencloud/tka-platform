@@ -105,6 +105,7 @@
 	function handleTouchStart(event: TouchEvent) {
 		if (event.touches.length === 1) {
 			const touch = event.touches[0];
+			if (!touch) return;
 			const pos = pageToNormalized(touch.pageX, touch.pageY);
 			if (!pos) return;
 
@@ -119,6 +120,7 @@
 		if (!isDrawing || !drawStart || event.touches.length !== 1) return;
 
 		const touch = event.touches[0];
+		if (!touch) return;
 		const pos = pageToNormalized(touch.pageX, touch.pageY);
 		if (!pos) return;
 

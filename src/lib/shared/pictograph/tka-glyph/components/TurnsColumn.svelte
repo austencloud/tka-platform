@@ -217,31 +217,33 @@ Props:
   // ============================================================================
   // Track when turn values change to trigger subtle scale-pulse animations.
 
-  let prevTopTurn = $state<number | null | undefined>(undefined);
-  let prevBottomTurn = $state<number | null | undefined>(undefined);
+  let prevTopTurn = $state<ReturnType<typeof parsedTurns>["top"] | undefined>(undefined);
+  let prevBottomTurn = $state<ReturnType<typeof parsedTurns>["bottom"] | undefined>(undefined);
   let isTopAnimating = $state(false);
   let isBottomAnimating = $state(false);
 
   $effect(() => {
     const currentTop = parsedTurns().top;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     // Skip initial mount, animate when value changes
     if (prevTopTurn !== undefined && currentTop !== prevTopTurn && currentTop !== null) {
       isTopAnimating = true;
-      const timeout = setTimeout(() => { isTopAnimating = false; }, 180);
-      return () => clearTimeout(timeout);
+      timeout = setTimeout(() => { isTopAnimating = false; }, 180);
     }
     prevTopTurn = currentTop;
+    return () => { if (timeout) clearTimeout(timeout); };
   });
 
   $effect(() => {
     const currentBottom = parsedTurns().bottom;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     // Skip initial mount, animate when value changes
     if (prevBottomTurn !== undefined && currentBottom !== prevBottomTurn && currentBottom !== null) {
       isBottomAnimating = true;
-      const timeout = setTimeout(() => { isBottomAnimating = false; }, 180);
-      return () => clearTimeout(timeout);
+      timeout = setTimeout(() => { isBottomAnimating = false; }, 180);
     }
     prevBottomTurn = currentBottom;
+    return () => { if (timeout) clearTimeout(timeout); };
   });
 </script>
 

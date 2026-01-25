@@ -64,7 +64,7 @@
   // ========================
   // Split mode state
   // ========================
-  let splitAnimationState = displayMode === "split" ? createAnimationPanelState() : null;
+  let splitAnimationState = $state<ReturnType<typeof createAnimationPanelState> | null>(null);
   let splitPlaybackController: IAnimationPlaybackController | null = null;
   let splitSequenceRepository: ISequenceRepository | null = null;
   let splitAnimationReady = $state(false);
@@ -532,7 +532,14 @@
       </button>
     {:else if displayMode === "video" && videoUrl}
       <!-- Video mode: fullscreen video with tap to play/pause, close button -->
-      <div class="spotlight-video" onclick={toggleVideoPlayback}>
+      <div
+        class="spotlight-video"
+        onclick={toggleVideoPlayback}
+        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleVideoPlayback(); }}}
+        role="button"
+        tabindex="0"
+        aria-label="Toggle video playback"
+      >
         <video
           bind:this={videoElement}
           src={videoUrl}
@@ -681,7 +688,7 @@
             <div class="loading-state">
               <div class="spinner"></div>
             </div>
-          {:else if splitAnimationState?.error}
+          {:else if splitAnimationState && splitAnimationState.error}
             <div class="error-state">
               <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
               <span>{splitAnimationState.error}</span>
@@ -719,7 +726,12 @@
 
       <!-- Split mode controls (tap to show, auto-hide) -->
       {#if splitControlsVisible}
-        <div class="split-controls" onclick={(e) => { e.stopPropagation(); handleSplitControlInteraction(); }}>
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <div
+          class="split-controls"
+          onclick={(e) => { e.stopPropagation(); handleSplitControlInteraction(); }}
+          role="none"
+        >
           <!-- Close button -->
           <button
             class="close-button"

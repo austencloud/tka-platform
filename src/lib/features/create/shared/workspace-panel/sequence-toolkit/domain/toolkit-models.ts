@@ -32,7 +32,7 @@ export interface DeleteOperationResult extends ToolOperationResult {
  */
 export interface ExportOperationResult extends ToolOperationResult {
   exportData?: string;
-  exportFormat?: "json" | "fullscreen" | "Explore";
+  exportFormat?: "json" | "fullscreen" | "Browse";
 }
 
 /**
@@ -61,7 +61,7 @@ export interface DeleteOperationParams {
 export interface ExportOperationParams {
   sequence: SequenceData;
   operation: ToolOperationType;
-  format?: "json" | "fullscreen" | "Explore";
+  format?: "json" | "fullscreen" | "Browse";
 }
 
 /**

@@ -6,14 +6,14 @@
   should use SequenceDetailsModal which provides split view with export capabilities.
 
   Legacy description (for reference):
-  Unified sequence viewer panel that works in both Browse (Discover) and Edit (Create) modes.
+  Unified sequence viewer panel that works in both Browse (Browse) and Edit (Create) modes.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ISequenceImageSharer } from "$lib/shared/share/services/contracts/ISequenceImageSharer";
-  import type { ISequenceDetailLoader } from "$lib/features/explore/sequences/display/services/contracts/ISequenceDetailLoader";
-  import type { IVideoCountManager } from "$lib/features/explore/sequences/display/services/contracts/IVideoCountManager";
+  import type { ISequenceDetailLoader } from "$lib/features/browse/sequences/display/services/contracts/ISequenceDetailLoader";
+  import type { IVideoCountManager } from "$lib/features/browse/sequences/display/services/contracts/IVideoCountManager";
   import type { MediaType, ExportProgress, MediaFormat, ExportSettings } from "../domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
@@ -27,12 +27,12 @@
   import ExportControlsSection from "./ExportControlsSection.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { exploreNavigationState } from "$lib/features/explore/shared/state/explore-navigation-state.svelte";
+  import { browseNavigationState } from "$lib/features/browse/shared/state/browse-navigation-state.svelte";
   import { openSpotlightWithAnimation } from "$lib/shared/application/state/ui/ui-state.svelte";
 
   /**
    * Panel mode determines which features and actions are available
-   * - browse: Viewing sequences in Discover (creator info, variations, favorite, fork)
+   * - browse: Viewing sequences in Browse (creator info, variations, favorite, fork)
    * - edit: Working with sequences in Create (export controls, save to library)
    */
   export type PanelMode = "browse" | "edit";
@@ -128,8 +128,13 @@
   let isShareCopying = $state(false);
   let shareSuccess = $state(false);
 
-  // Current media type for export format sync
-  let currentMediaType = $state<MediaType>(initialMediaType);
+  // Current media type for export format sync (track changes reactively)
+  let currentMediaType = $state<MediaType>("image");
+
+  // Sync with initialMediaType prop
+  $effect(() => {
+    currentMediaType = initialMediaType;
+  });
 
   // Browse mode: video state
   let videoCount = $state(0);
@@ -277,8 +282,10 @@
 
   function handleVariationClick(index: number) {
     if (index === variationIndex) return;
+    const selectedVariation = variations[index];
+    if (!selectedVariation) return;
     hapticService?.trigger("selection");
-    onVariationSelect?.(index, variations[index]);
+    onVariationSelect?.(index, selectedVariation);
   }
 
   function handleMaximize() {
@@ -294,7 +301,7 @@
     if (!creatorInfo?.ownerId) return;
     hapticService?.trigger("selection");
     onClose?.();
-    exploreNavigationState.viewCreatorProfile(
+    browseNavigationState.viewCreatorProfile(
       creatorInfo.ownerId,
       creatorInfo.displayName
     );

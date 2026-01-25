@@ -64,7 +64,7 @@ export const HANNONS_CAMP_CONFIG: RealmConfig = {
 /**
  * Performance Stage
  *
- * Spawn in a natural campground clearing, then explore procedural forest.
+ * Spawn in a natural campground clearing, then browse procedural forest.
  * The clearing is a grassy meadow above water level with campground objects
  * (fire pit, tent, log seating, torches). Forest blends in at the perimeter.
  */

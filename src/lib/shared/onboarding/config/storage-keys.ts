@@ -46,7 +46,7 @@ export const ONBOARDING_SKIPPED_KEY = "tka-onboarding-skipped";
 /** localStorage key for sidebar tour completion status */
 export const SIDEBAR_TOUR_COMPLETED_KEY = "tka-sidebar-tour-completed";
 
-/** localStorage key for sidebar tour skip (user chose "Explore on my own") */
+/** localStorage key for sidebar tour skip (user chose "Browse on my own") */
 export const SIDEBAR_TOUR_SKIPPED_KEY = "tka-sidebar-tour-skipped";
 
 /**
@@ -90,7 +90,7 @@ export function markSidebarTourCompleted(): void {
 }
 
 /**
- * Mark sidebar tour as skipped (user chose "Explore on my own").
+ * Mark sidebar tour as skipped (user chose "Browse on my own").
  * Updates localStorage immediately and syncs to Firebase via OnboardingPersister.
  */
 export function markSidebarTourSkipped(): void {
@@ -141,7 +141,7 @@ export function getModuleOnboardingTimestampKey(moduleId: string): string {
 
 /** Pre-defined keys for each module */
 export const MODULE_ONBOARDING_KEYS = {
-  discover: "tka-discover-onboarding-completed",
+  browse: "tka-browse-onboarding-completed",
   learn: "tka-learn-onboarding-completed",
   compose: "tka-compose-onboarding-completed",
   train: "tka-train-onboarding-completed",

@@ -101,7 +101,7 @@ export class DeepLinkSequenceHandler implements IDeepLinkSequenceHandler {
       setSequence(sequence);
 
       // Enrich sequence with derived positions/letters in background
-      // This is critical for imported sequences from Discover which have null positions
+      // This is critical for imported sequences from Browse which have null positions
       this.enrichSequenceAsync(sequence, setSequence);
 
       // Set session flag BEFORE clearing localStorage

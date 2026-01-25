@@ -58,7 +58,7 @@
   const createModuleContext = tryGetCreateModuleContext();
 
   // Fallback layout detection for when CreateModuleContext isn't available
-  // (e.g., when AnimationSheetCoordinator is used in Discover module)
+  // (e.g., when AnimationSheetCoordinator is used in Browse module)
   let fallbackIsSideBySide = $state(false);
   let layoutService: IResponsiveLayoutManager | null = null;
 

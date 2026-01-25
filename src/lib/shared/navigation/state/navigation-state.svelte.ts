@@ -45,7 +45,7 @@ import {
   CREATE_TABS,
   DEFAULT_CREATE_TAB,
   LEARN_TABS,
-  EXPLORE_TABS,
+  BROWSE_TABS,
   LIBRARY_TABS,
   COMMUNITY_TABS,
   ADMIN_TABS,
@@ -80,7 +80,7 @@ import {
 export {
   CREATE_TABS,
   LEARN_TABS,
-  EXPLORE_TABS,
+  BROWSE_TABS,
   LIBRARY_TABS,
   COMMUNITY_TABS,
   COMPOSE_TABS,
@@ -244,7 +244,7 @@ export function createNavigationState() {
               ? urlModuleDefinition.sections.find((s) => s.id === urlTab)
               : null;
 
-            if (validTab) {
+            if (validTab && urlTab) {
               // URL has valid tab - use it
               activeTab = urlTab;
             } else {
@@ -535,8 +535,8 @@ export function createNavigationState() {
     get learnTabs() {
       return LEARN_TABS;
     },
-    get discoverTabs() {
-      return EXPLORE_TABS;
+    get browseTabs() {
+      return BROWSE_TABS;
     },
     get communityTabs() {
       return COMMUNITY_TABS;
@@ -578,13 +578,13 @@ export function createNavigationState() {
     get learnModes() {
       return LEARN_TABS;
     },
-    /** @deprecated Use discoverTabs instead */
-    get discoverModes() {
-      return EXPLORE_TABS;
+    /** @deprecated Use browseTabs instead */
+    get browseModes() {
+      return BROWSE_TABS;
     },
-    /** @deprecated Use discoverTabs instead */
-    get DiscoverModes() {
-      return EXPLORE_TABS;
+    /** @deprecated Use browseTabs instead */
+    get BrowseModes() {
+      return BROWSE_TABS;
     },
     /** @deprecated Use activeTab instead */
     get currentSection() {

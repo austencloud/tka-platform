@@ -4,7 +4,7 @@ When asked to "audit" a module or tab, follow this standardized protocol to eval
 
 ---
 
-## Phase 1: Discovery
+## Phase 1: discovery
 
 Before grading, understand what you're auditing:
 

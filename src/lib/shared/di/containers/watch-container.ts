@@ -18,11 +18,11 @@ import { FeedPreloader } from "$lib/features/watch/services/implementations/Feed
 import { PublicVideoLoader } from "$lib/features/watch/services/implementations/PublicVideoLoader";
 import { feedScrollState } from "$lib/features/watch/state/feed-scroll-state.svelte";
 import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
-import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 
 export interface WatchContainerDeps {
 	collaborativeVideoManager: ICollaborativeVideoManager;
-	exploreLoader: IExploreLoader;
+	browseLoader: IBrowseLoader;
 }
 
 export function createWatchContainer(deps: WatchContainerDeps) {
@@ -35,7 +35,7 @@ export function createWatchContainer(deps: WatchContainerDeps) {
 			feedPreloader: () => new FeedPreloader(),
 		})
 		.add((ctx) => ({
-			feedLoader: () => new FeedLoader(ctx.publicVideoLoader, deps.exploreLoader),
+			feedLoader: () => new FeedLoader(ctx.publicVideoLoader, deps.browseLoader),
 		}));
 }
 

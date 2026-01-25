@@ -112,8 +112,8 @@
 				{#each searchResults as user (user.userId)}
 					<article class="user-card">
 						<div class="user-avatar">
-							{#if user.avatarUrl}
-								<img src={user.avatarUrl} alt="" />
+							{#if user.photoURL}
+								<img src={user.photoURL} alt="" />
 							{:else}
 								<div class="avatar-placeholder">
 									{user.displayName.charAt(0).toUpperCase()}
@@ -123,9 +123,6 @@
 
 						<div class="user-info">
 							<span class="user-name">{user.displayName}</span>
-							{#if user.username}
-								<span class="user-username">@{user.username}</span>
-							{/if}
 						</div>
 
 						<div class="user-actions">
@@ -135,7 +132,11 @@
 									Invite
 								</button>
 							{/if}
-							<button class="add-friend-button" onclick={() => handleAddFriend(user)}>
+							<button
+								class="add-friend-button"
+								onclick={() => handleAddFriend(user)}
+								aria-label="Add friend"
+							>
 								<i class="fas fa-user-plus" aria-hidden="true"></i>
 							</button>
 						</div>
@@ -156,7 +157,7 @@
 					<article class="invite-card">
 						<div class="invite-info">
 							<span class="invite-from">
-								<strong>{invite.senderDisplayName}</strong> invited you to join
+								<strong>{invite.fromDisplayName}</strong> invited you to join
 							</span>
 							<span class="invite-sequence">"{invite.sequenceWord}"</span>
 						</div>
@@ -166,7 +167,11 @@
 								<i class="fas fa-check" aria-hidden="true"></i>
 								Join
 							</button>
-							<button class="decline-button" onclick={() => handleDeclineInvite(invite)}>
+							<button
+								class="decline-button"
+								onclick={() => handleDeclineInvite(invite)}
+								aria-label="Decline invite"
+							>
 								<i class="fas fa-times" aria-hidden="true"></i>
 							</button>
 						</div>
@@ -334,11 +339,6 @@
 		font-size: var(--font-size-sm, 14px);
 		font-weight: 600;
 		color: var(--theme-text, white);
-	}
-
-	.user-username {
-		font-size: var(--font-size-compact, 12px);
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
 	}
 
 	.user-actions {

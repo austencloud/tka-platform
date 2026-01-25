@@ -25,6 +25,8 @@ import {
 interface PropPlacerSettings {
   bluePropType?: string;
   redPropType?: string;
+  blueBuugengFlipped?: boolean;
+  redBuugengFlipped?: boolean;
 }
 
 import { createPropPlacementFromPosition } from "../../domain/factories/createPropPlacementData";

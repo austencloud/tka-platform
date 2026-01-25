@@ -79,7 +79,7 @@ export class HMRDebugger {
   private checkContainerInitialized(): boolean {
     return (
       typeof globalThis !== "undefined" &&
-      globalThis.__TKA_CONTAINER_INITIALIZED__ === true
+      (globalThis as any).__TKA_CONTAINER_INITIALIZED__ === true
     );
   }
 
@@ -87,7 +87,7 @@ export class HMRDebugger {
    * Check if global container exists
    */
   private checkGlobalContainer(): boolean {
-    return globalThis.__TKA_CONTAINER__ !== undefined;
+    return (globalThis as any).__TKA_CONTAINER__ !== undefined;
   }
 
   /**

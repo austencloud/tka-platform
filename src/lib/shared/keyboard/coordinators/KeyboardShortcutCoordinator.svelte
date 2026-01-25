@@ -29,23 +29,27 @@
     (async () => {
       try {
         // Resolve services
-        shortcutManager = container.items.keyboardShortcutManager;
-        commandPalette = container.items.commandPalette;
+        const manager = container.items.keyboardShortcutManager;
+        const palette = container.items.commandPalette;
+
+        // Assign to component variables for cleanup
+        shortcutManager = manager;
+        commandPalette = palette;
 
         // Initialize the shortcut manager
-        shortcutManager.initialize();
+        manager.initialize();
 
         // Register global shortcuts
-        registerGlobalShortcuts(shortcutManager, keyboardShortcutState);
+        registerGlobalShortcuts(manager, keyboardShortcutState);
 
         // Register command palette commands
-        registerCommandPaletteCommands(commandPalette, keyboardShortcutState);
+        registerCommandPaletteCommands(palette, keyboardShortcutState);
 
         // Register CREATE module shortcuts
-        registerCreateShortcuts(shortcutManager, keyboardShortcutState);
+        registerCreateShortcuts(manager, keyboardShortcutState);
 
         // Register 3D Viewer shortcuts (static, handlers bound dynamically)
-        register3DViewerShortcuts(shortcutManager);
+        register3DViewerShortcuts(manager);
       } catch (error) {
         console.error("Failed to initialize keyboard shortcuts:", error);
       }

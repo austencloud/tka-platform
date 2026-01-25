@@ -158,7 +158,7 @@ export const NightSkyConfig = {
       beamGlow: "rgba(251, 191, 36, 0.3)",
       lights: ["#ff6b6b", "#4ecdc4", "#ffe66d", "#95e1d3", "#a78bfa", "#f472b6"],
     },
-    // Movement - curious explorer, moves in gentle curves
+    // Movement - curious browser, moves in gentle curves
     speed: 0.0006, // Gentle cruising speed
     bounceMargin: 0.1, // Stay 10% away from edges
     // Curved exploration - alien moves in gentle arcs, not straight lines
@@ -170,7 +170,7 @@ export const NightSkyConfig = {
     exitDuration: 90, // 1.5 second fade out
     minActiveDuration: 2400, // Stay at least 40 seconds
     maxActiveDuration: 4200, // Stay at most 70 seconds
-    // Behavior - explorer that occasionally pauses
+    // Behavior - browser that occasionally pauses
     pauseChance: 0.004, // Pauses occasionally, not constantly
     pauseDuration: { min: 90, max: 180 }, // 1.5-3 seconds pause (brief looks around)
     // Movement style

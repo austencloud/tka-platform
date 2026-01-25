@@ -7,9 +7,9 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
-  import type { IExploreLoader } from "../../explore/sequences/display/services/contracts/IExploreLoader";
+  import type { IBrowseLoader } from "../../browse/sequences/display/services/contracts/IBrowseLoader";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
-  import { SequenceDifficultyCalculator } from "../../explore/sequences/display/services/implementations/SequenceDifficultyCalculator";
+  import { SequenceDifficultyCalculator } from "../../browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import ChoreoCardNavigation from "./Navigation.svelte";
   import ChoreoCardFilters from "./ChoreoCardFilters.svelte";
   import ChoreoCardVisibility from "./ChoreoCardVisibility.svelte";
@@ -20,7 +20,7 @@
   const difficultyCalculator = new SequenceDifficultyCalculator();
 
   // Services
-  let loaderService = $state<IExploreLoader | null>(null);
+  let loaderService = $state<IBrowseLoader | null>(null);
 
   // Storage keys (migrated from wordCard.* to choreoCard.*)
   const STORAGE_KEY_LENGTH = "choreoCard.selectedLength";
@@ -299,7 +299,7 @@
   });
 
   onMount(async () => {
-    loaderService = container.items.exploreLoader;
+    loaderService = container.items.browseLoader;
     await loadSequences();
   });
 

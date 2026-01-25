@@ -8,7 +8,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { StepData } from "$lib/shared/pictograph/shared/domain/models/StepData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type {
   ISequenceAligner,
   AlignmentResult,
@@ -189,13 +189,17 @@ export class SequenceAligner implements ISequenceAligner {
 
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < m; j++) {
+        const stepA = stepsA[i];
+        const stepB = stepsB[j];
+        if (!stepA || !stepB) continue;
+
         const { similarity, transform } = this.computeBeatSimilarity(
-          stepsA[i],
-          stepsB[j],
+          stepA,
+          stepB,
           opts
         );
-        scores[i][j] = similarity;
-        transforms[i][j] = transform;
+        scores[i]![j] = similarity;
+        transforms[i]![j] = transform;
       }
     }
 
@@ -215,8 +219,8 @@ export class SequenceAligner implements ISequenceAligner {
       return { similarity: 1.0, transform: null };
     }
 
-    const directResult = this.beatSignatureGenerator.computeSimilarity(sigA, sigB);
-    let bestSimilarity = directResult.score;
+    const directResult = this.beatSignatureGenerator.compareSignatures(sigA, sigB);
+    let bestSimilarity = directResult.similarity;
     let bestTransform: SpatialTransform | null = null;
 
     // Try spatial transforms if enabled
@@ -258,10 +262,10 @@ export class SequenceAligner implements ISequenceAligner {
     const sigA = this.beatSignatureGenerator.generateSignature(stepA);
     const sigB = this.beatSignatureGenerator.generateSignature(stepB);
 
-    const result = this.beatSignatureGenerator.computeSimilarity(sigA, sigB);
+    const result = this.beatSignatureGenerator.compareSignatures(sigA, sigB);
 
     // Give a small bonus for potential transform relationship
-    return Math.min(1.0, result.score * 1.1);
+    return Math.min(1.0, result.similarity * 1.1);
   }
 
   // ============================================================================
@@ -289,34 +293,34 @@ export class SequenceAligner implements ISequenceAligner {
 
     // Initialize first row and column (gap penalties)
     for (let i = 1; i <= n; i++) {
-      dpMatrix[i][0] = opts.gapOpenPenalty + (i - 1) * opts.gapExtendPenalty;
-      traceMatrix[i][0] = "up";
+      dpMatrix[i]![0] = opts.gapOpenPenalty + (i - 1) * opts.gapExtendPenalty;
+      traceMatrix[i]![0] = "up";
     }
     for (let j = 1; j <= m; j++) {
-      dpMatrix[0][j] = opts.gapOpenPenalty + (j - 1) * opts.gapExtendPenalty;
-      traceMatrix[0][j] = "left";
+      dpMatrix[0]![j] = opts.gapOpenPenalty + (j - 1) * opts.gapExtendPenalty;
+      traceMatrix[0]![j] = "left";
     }
 
     // Fill DP matrix
     for (let i = 1; i <= n; i++) {
       for (let j = 1; j <= m; j++) {
-        const match = dpMatrix[i - 1][j - 1] + simMatrix.scores[i - 1][j - 1];
+        const match = dpMatrix[i - 1]![j - 1]! + simMatrix.scores[i - 1]![j - 1]!;
         const gapA =
-          dpMatrix[i - 1][j] +
-          (traceMatrix[i - 1][j] === "up" ? opts.gapExtendPenalty : opts.gapOpenPenalty);
+          dpMatrix[i - 1]![j]! +
+          (traceMatrix[i - 1]![j] === "up" ? opts.gapExtendPenalty : opts.gapOpenPenalty);
         const gapB =
-          dpMatrix[i][j - 1] +
-          (traceMatrix[i][j - 1] === "left" ? opts.gapExtendPenalty : opts.gapOpenPenalty);
+          dpMatrix[i]![j - 1]! +
+          (traceMatrix[i]![j - 1] === "left" ? opts.gapExtendPenalty : opts.gapOpenPenalty);
 
         if (match >= gapA && match >= gapB) {
-          dpMatrix[i][j] = match;
-          traceMatrix[i][j] = "diag";
+          dpMatrix[i]![j] = match;
+          traceMatrix[i]![j] = "diag";
         } else if (gapA >= gapB) {
-          dpMatrix[i][j] = gapA;
-          traceMatrix[i][j] = "up";
+          dpMatrix[i]![j] = gapA;
+          traceMatrix[i]![j] = "up";
         } else {
-          dpMatrix[i][j] = gapB;
-          traceMatrix[i][j] = "left";
+          dpMatrix[i]![j] = gapB;
+          traceMatrix[i]![j] = "left";
         }
       }
     }
@@ -356,14 +360,14 @@ export class SequenceAligner implements ISequenceAligner {
         });
         i--;
       } else {
-        const trace = traceMatrix[i][j];
+        const trace = traceMatrix[i]![j]!;
 
         if (trace === "diag") {
           alignment.unshift({
             indexA: i - 1,
             indexB: j - 1,
-            similarity: simMatrix.scores[i - 1][j - 1],
-            transform: simMatrix.transforms[i - 1][j - 1],
+            similarity: simMatrix.scores[i - 1]![j - 1]!,
+            transform: simMatrix.transforms[i - 1]![j - 1]!,
           });
           i--;
           j--;
@@ -419,27 +423,27 @@ export class SequenceAligner implements ISequenceAligner {
     // Fill DP matrix (no negative scores in Smith-Waterman)
     for (let i = 1; i <= n; i++) {
       for (let j = 1; j <= m; j++) {
-        const match = dpMatrix[i - 1][j - 1] + simMatrix.scores[i - 1][j - 1];
+        const match = dpMatrix[i - 1]![j - 1]! + simMatrix.scores[i - 1]![j - 1]!;
         const gapA =
-          dpMatrix[i - 1][j] +
-          (traceMatrix[i - 1][j] === "up" ? opts.gapExtendPenalty : opts.gapOpenPenalty);
+          dpMatrix[i - 1]![j]! +
+          (traceMatrix[i - 1]![j] === "up" ? opts.gapExtendPenalty : opts.gapOpenPenalty);
         const gapB =
-          dpMatrix[i][j - 1] +
-          (traceMatrix[i][j - 1] === "left" ? opts.gapExtendPenalty : opts.gapOpenPenalty);
+          dpMatrix[i]![j - 1]! +
+          (traceMatrix[i]![j - 1] === "left" ? opts.gapExtendPenalty : opts.gapOpenPenalty);
 
         const scores = [0, match, gapA, gapB];
         const maxLocalScore = Math.max(...scores);
 
-        dpMatrix[i][j] = maxLocalScore;
+        dpMatrix[i]![j] = maxLocalScore;
 
         if (maxLocalScore === 0) {
-          traceMatrix[i][j] = "stop";
+          traceMatrix[i]![j] = "stop";
         } else if (maxLocalScore === match) {
-          traceMatrix[i][j] = "diag";
+          traceMatrix[i]![j] = "diag";
         } else if (maxLocalScore === gapA) {
-          traceMatrix[i][j] = "up";
+          traceMatrix[i]![j] = "up";
         } else {
-          traceMatrix[i][j] = "left";
+          traceMatrix[i]![j] = "left";
         }
 
         if (maxLocalScore > maxScore) {
@@ -472,15 +476,15 @@ export class SequenceAligner implements ISequenceAligner {
     const endA = i - 1;
     const endB = j - 1;
 
-    while (i > 0 && j > 0 && traceMatrix[i][j] !== "stop") {
-      const trace = traceMatrix[i][j];
+    while (i > 0 && j > 0 && traceMatrix[i]![j] !== "stop") {
+      const trace = traceMatrix[i]![j]!;
 
       if (trace === "diag") {
         alignment.unshift({
           indexA: i - 1,
           indexB: j - 1,
-          similarity: simMatrix.scores[i - 1][j - 1],
-          transform: simMatrix.transforms[i - 1][j - 1],
+          similarity: simMatrix.scores[i - 1]![j - 1]!,
+          transform: simMatrix.transforms[i - 1]![j - 1]!,
         });
         i--;
         j--;

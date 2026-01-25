@@ -406,7 +406,14 @@ function createTikaTools() {
         required: ["topic"],
       }),
       execute: async ({ topic, quizType = "multiple-choice", difficulty = "medium" }) => {
-        const result = quizGenerator.generateQuiz(topic, quizType, difficulty);
+        // Map the incoming quiz type to the expected QuizType
+        const mappedQuizType: "pick-letter" | "pick-type" | "odd-one-out" | "match-motion" | "true-false" =
+          quizType === "multiple-choice" ? "pick-letter" :
+          quizType === "identify-letter" ? "pick-letter" :
+          quizType === "true-false" ? "true-false" :
+          "pick-letter"; // default fallback
+
+        const result = quizGenerator.generateQuiz(topic, mappedQuizType, difficulty);
         return filterQuiz(result);
       },
     }),
@@ -461,18 +468,15 @@ export const POST: RequestHandler = async ({ request }) => {
     // Handle both new streaming format (messages array) and legacy format (question string)
     let messages: UIMessage[];
 
+    // Convert to model messages format
+    let modelMessages;
+
     if (body.messages && Array.isArray(body.messages)) {
       messages = body.messages;
+      modelMessages = await convertToModelMessages(messages);
     } else if (body.question) {
-      messages = [
-        {
-          id: crypto.randomUUID(),
-          role: "user",
-          content: body.question,
-          parts: [{ type: "text", text: body.question }],
-          createdAt: new Date(),
-        },
-      ];
+      // Legacy format - convert question string directly to model message
+      modelMessages = [{ role: "user" as const, content: body.question }];
     } else {
       return new Response(JSON.stringify({ error: "Missing messages or question" }), {
         status: 400,
@@ -484,9 +488,8 @@ export const POST: RequestHandler = async ({ request }) => {
     const result = streamText({
       model: modelProvider.getModel(selectedModel),
       system: systemPrompt,
-      messages: await convertToModelMessages(messages),
+      messages: modelMessages,
       tools: createTikaTools(),
-      maxSteps: 5,
       experimental_telemetry: {
         isEnabled: false,
       },

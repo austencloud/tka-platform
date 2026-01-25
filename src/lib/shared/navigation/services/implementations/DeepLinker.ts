@@ -44,15 +44,14 @@ const MODULE_MAPPINGS: Record<string, ModuleMapping> = {
   // Compose module - arrange is the main tab
   compose: { moduleId: "compose", tabId: "arrange" },
   arrange: { moduleId: "compose", tabId: "arrange" },
-  browse: { moduleId: "compose", tabId: "browse" },
   // Legacy animation mode deep links - redirect to compose module arrange tab
   animate: { moduleId: "compose", tabId: "arrange" },
   single: { moduleId: "compose", tabId: "arrange" },
   tunnel: { moduleId: "compose", tabId: "arrange" },
   mirror: { moduleId: "compose", tabId: "arrange" },
   grid: { moduleId: "compose", tabId: "arrange" },
-  explore: { moduleId: "explore", tabId: "gallery" },
-  gallery: { moduleId: "explore", tabId: "gallery" },
+  browse: { moduleId: "browse", tabId: "gallery" },
+  gallery: { moduleId: "browse", tabId: "gallery" },
   // View module uses standalone route
   view: { moduleId: "view" },
   sequence: { moduleId: "view" },
@@ -74,11 +73,11 @@ export class DeepLinker implements IDeepLinker {
 
     const urlParams = new URLSearchParams(window.location.search);
 
-    // Check for spotlight parameter (Explorer module)
+    // Check for spotlight parameter (Browse module)
     const spotlightId = urlParams.get("spotlight");
     if (spotlightId) {
-      // User is viewing a sequence in Explorer - ensure we're in the discover module
-      navigationState.setCurrentModule("explore");
+      // User is viewing a sequence in Browse - ensure we're in the browse module
+      navigationState.setCurrentModule("browse");
       navigationState.setActiveTab("gallery");
       return;
     }

@@ -105,7 +105,7 @@ export const SEED_CHALLENGES: Omit<TrainChallenge, "id" | "createdAt">[] = [
   {
     title: "Variety Challenge",
     description:
-      "Complete 5 different sequences to explore diverse movement patterns.",
+      "Complete 5 different sequences to browse diverse movement patterns.",
     difficulty: "medium",
     xpReward: 180,
     requirement: {

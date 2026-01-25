@@ -10,7 +10,6 @@
    * actual route navigation. This keeps the user inside the preview module.
    */
   import { onMount } from "svelte";
-  import BackgroundCanvas from "$lib/shared/background/shared/components/BackgroundCanvas.svelte";
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -92,7 +91,7 @@
     if (tabId) {
       event.preventDefault();
       event.stopPropagation();
-      navigationState.setSection(tabId);
+      navigationState.setActiveTab(tabId);
       return;
     }
 

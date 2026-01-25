@@ -5,8 +5,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
-  import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import type {
     IEndlessSpinnerOrchestrator,
     EndState,
@@ -15,7 +14,6 @@
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
-  import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
   import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
   import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
   import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
@@ -60,9 +58,7 @@
   // Animation state
   const animationState = createAnimationPanelState();
   let playbackController: IAnimationPlaybackController | null = null;
-  let exploreLoader: IExploreLoader | null = null;
-  let startPositionDeriver: IStartPositionDeriver | null = null;
-  let gridPositionDeriver: IGridPositionDeriver | null = null;
+  let browseLoader: IBrowseLoader | null = null;
   let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
   let servicesReady = $state(false);
   let animationReady = $state(false);
@@ -211,7 +207,7 @@
       animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS);
       visibilityManager.setDarkMode(true);
 
-      exploreLoader = container.items.exploreLoader as IExploreLoader;
+      browseLoader = container.items.browseLoader as IBrowseLoader;
       playbackController = container.items
         .animationPlaybackController as IAnimationPlaybackController;
 
@@ -221,7 +217,7 @@
         .sequenceTransformer as ISequenceTransformer;
 
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
-        exploreLoader,
+        browseLoader,
         generationOrchestrator,
         sequenceTransformer,
         startPositionDeriver,

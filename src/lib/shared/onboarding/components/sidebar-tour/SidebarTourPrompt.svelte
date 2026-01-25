@@ -3,19 +3,19 @@
    * SidebarTourPrompt
    *
    * Initial modal asking "Want a quick tour of the modules?"
-   * Two options: "Take the tour" / "Explore on my own"
+   * Two options: "Take the tour" / "Browse on my own"
    */
 
   interface Props {
     onTakeTour: () => void;
-    onExploreOwn: () => void;
+    onBrowseOwn: () => void;
   }
 
-  const { onTakeTour, onExploreOwn }: Props = $props();
+  const { onTakeTour, onBrowseOwn }: Props = $props();
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Escape") {
-      onExploreOwn();
+      onBrowseOwn();
     } else if (event.key === "Enter") {
       onTakeTour();
     }
@@ -24,7 +24,7 @@
   function handleBackdropClick(event: MouseEvent) {
     // Only dismiss if clicking the backdrop itself, not the modal content
     if (event.target === event.currentTarget) {
-      onExploreOwn();
+      onBrowseOwn();
     }
   }
 </script>
@@ -60,8 +60,8 @@
         <i class="fas fa-play" aria-hidden="true"></i>
         Take the tour
       </button>
-      <button class="tour-button secondary" onclick={onExploreOwn}>
-        Explore on my own
+      <button class="tour-button secondary" onclick={onBrowseOwn}>
+        Browse on my own
       </button>
     </div>
 

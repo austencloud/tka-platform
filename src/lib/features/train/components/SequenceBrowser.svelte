@@ -1,7 +1,7 @@
 <!--
   SequenceBrowser.svelte - Simple sequence browser for Train module
 
-  Uses Library service instead of Discover to avoid dependency issues.
+  Uses Library service instead of Browse to avoid dependency issues.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

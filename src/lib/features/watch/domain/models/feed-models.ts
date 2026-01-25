@@ -5,7 +5,7 @@
  * Normalizes videos, animations, and pictographs into a single FeedItem type.
  */
 
-export type FeedContentType = "video" | "animation" | "pictograph";
+export type FeedContentType = "all" | "video" | "animation" | "pictograph";
 export type FeedItemIntent = "tutorial" | "demo" | "sequence" | "composition";
 export type FeedSourceType = "video" | "sequence";
 

@@ -92,8 +92,9 @@ function getPreloadedSettings(): AppSettings {
       return DEFAULT_SETTINGS;
     }
     const parsed = JSON.parse(stored);
-    preloadedSettingsCache = { ...DEFAULT_SETTINGS, ...parsed };
-    return preloadedSettingsCache;
+    const merged: AppSettings = { ...DEFAULT_SETTINGS, ...parsed };
+    preloadedSettingsCache = merged;
+    return merged;
   } catch {
     preloadedSettingsCache = DEFAULT_SETTINGS;
     return DEFAULT_SETTINGS;

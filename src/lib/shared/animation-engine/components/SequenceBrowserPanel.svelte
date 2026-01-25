@@ -2,7 +2,7 @@
   SequenceBrowserPanel.svelte - Sequence Selection Panel
 
   A slide-in panel for selecting sequences to animate.
-  Reuses Discover module's sequence grid/display logic.
+  Reuses Browse module's sequence grid/display logic.
 
   Props:
   - mode: Which sequence slot we're filling (primary, secondary, grid-0, etc.)
@@ -16,19 +16,19 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
 
   import { onMount } from "svelte";
-  import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
-  import type { IExploreThumbnailProvider } from "$lib/features/explore/sequences/display/services/contracts/IExploreThumbnailProvider";
+  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+  import type { IBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
   import type { ISequenceNormalizer } from "$lib/features/compose/services/contracts/ISequenceNormalizer";
-  import type { IExploreSorter } from "$lib/features/explore/sequences/display/services/contracts/IExploreSorter";
-  import { ExploreSortMethod } from "$lib/features/explore/shared/domain/enums/explore-enums";
-  import SequenceCard from "$lib/features/explore/sequences/display/components/SequenceCard/SequenceCard.svelte";
+  import type { IBrowseSorter } from "$lib/features/browse/sequences/display/services/contracts/IBrowseSorter";
+  import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
+  import SequenceCard from "$lib/features/browse/sequences/display/components/SequenceCard/SequenceCard.svelte";
 
   // Sort options for dropdown
   const sortOptions = [
-    { id: ExploreSortMethod.ALPHABETICAL, label: "A-Z", icon: "fa-font" },
-    { id: ExploreSortMethod.DIFFICULTY_LEVEL, label: "Difficulty", icon: "fa-signal" },
-    { id: ExploreSortMethod.DATE_ADDED, label: "Recent", icon: "fa-clock" },
-    { id: ExploreSortMethod.SEQUENCE_LENGTH, label: "Length", icon: "fa-ruler" },
+    { id: BrowseSortMethod.ALPHABETICAL, label: "A-Z", icon: "fa-font" },
+    { id: BrowseSortMethod.DIFFICULTY_LEVEL, label: "Difficulty", icon: "fa-signal" },
+    { id: BrowseSortMethod.DATE_ADDED, label: "Recent", icon: "fa-clock" },
+    { id: BrowseSortMethod.SEQUENCE_LENGTH, label: "Length", icon: "fa-ruler" },
   ];
 
   // Props
@@ -70,10 +70,10 @@
   });
 
   // Services - resolved lazily after module is loaded
-  let loaderService = $state<IExploreLoader | null>(null);
-  let thumbnailService = $state<IExploreThumbnailProvider | null>(null);
+  let loaderService = $state<IBrowseLoader | null>(null);
+  let thumbnailService = $state<IBrowseThumbnailProvider | null>(null);
   let normalizationService = $state<ISequenceNormalizer | null>(null);
-  let sorterService = $state<IExploreSorter | null>(null);
+  let sorterService = $state<IBrowseSorter | null>(null);
   let servicesReady = $state(false);
 
   // Auto-detect placement based on screen size if not provided
@@ -104,13 +104,19 @@
   let searchQuery = $state("");
 
   // Sort state
-  let currentSort = $state<ExploreSortMethod>(ExploreSortMethod.ALPHABETICAL);
+  let currentSort = $state<BrowseSortMethod>(BrowseSortMethod.ALPHABETICAL);
   let showSortDropdown = $state(false);
 
   // Column count control (2-5 columns, persisted to localStorage)
   const STORAGE_KEY_COLUMNS = "sequence-browser-columns";
   const MIN_COLUMNS = 2;
   const MAX_COLUMNS = 5;
+
+  // Thumbnail size control (removed - using column count instead)
+  // These constants are kept for legacy zoom functions but not actively used
+  const MIN_THUMB_SIZE = 100;
+  const MAX_THUMB_SIZE = 300;
+  let thumbnailSize = $state(200); // Not used in grid, but kept for zoom handlers
 
   // Get default columns based on screen width
   function getDefaultColumns(): number {
@@ -199,7 +205,7 @@
     // Convert to array format for rendering
     // For alphabetical sort, also create length sub-groups within each section
     return Object.entries(grouped).map(([key, seqs]) => {
-      if (currentSort === ExploreSortMethod.ALPHABETICAL && seqs.length > 1) {
+      if (currentSort === BrowseSortMethod.ALPHABETICAL && seqs.length > 1) {
         // Group by length within this letter section
         const byLength: Record<number, SequenceData[]> = {};
         for (const seq of seqs) {
@@ -224,7 +230,7 @@
   );
 
   // Handle sort change
-  function handleSortChange(method: ExploreSortMethod) {
+  function handleSortChange(method: BrowseSortMethod) {
     currentSort = method;
     showSortDropdown = false;
   }
@@ -241,9 +247,9 @@
   function initializeServices() {
     try {
       // With ITI, all containers are already composed - no need for async module loading
-      loaderService = container.items.exploreLoader ?? null;
-      thumbnailService = container.items.exploreThumbnailProvider ?? null;
-      sorterService = container.items.exploreSorter ?? null;
+      loaderService = container.items.browseLoader ?? null;
+      thumbnailService = container.items.browseThumbnailProvider ?? null;
+      sorterService = container.items.browseSorter ?? null;
       // Note: ISequenceNormalizer may not be in the container yet - check build container
       normalizationService = (container.items as any).sequenceNormalizer ?? null;
 
@@ -387,7 +393,7 @@
   let lastPinchDistance = 0;
 
   function handleTouchStart(e: TouchEvent) {
-    if (e.touches.length === 2) {
+    if (e.touches.length === 2 && e.touches[0] && e.touches[1]) {
       lastPinchDistance = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
@@ -396,7 +402,7 @@
   }
 
   function handleTouchMove(e: TouchEvent) {
-    if (e.touches.length !== 2) return;
+    if (e.touches.length !== 2 || !e.touches[0] || !e.touches[1]) return;
 
     const currentDistance = Math.hypot(
       e.touches[0].clientX - e.touches[1].clientX,
@@ -645,7 +651,7 @@
   <BaseModal
     open={show}
     onclose={() => onClose()}
-    size="xl"
+    size="lg"
     class="sequence-browser-modal"
     labelledBy="sequence-browser-title"
   >

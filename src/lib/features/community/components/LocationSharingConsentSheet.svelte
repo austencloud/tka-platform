@@ -57,7 +57,7 @@
       </div>
       <div class="benefit-item">
         <i class="fas fa-globe" aria-hidden="true"></i>
-        <span>Discover the global TKA community</span>
+        <span>Browse the global TKA community</span>
       </div>
       <div class="benefit-item">
         <i class="fas fa-graduation-cap" aria-hidden="true"></i>

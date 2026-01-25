@@ -74,7 +74,8 @@ function hasMovement(motion: MotionData): boolean {
  * This makes the rotation visible so the invert effect can be demonstrated.
  */
 function enhanceMotionForInvert(motion: MotionData): MotionData {
-  if (!hasRotation(motion) || motion.turns > 0) {
+  const currentTurns = typeof motion.turns === 'number' ? motion.turns : 0;
+  if (!hasRotation(motion) || currentTurns > 0) {
     return motion; // Already has turns or no rotation - no change needed
   }
   // Add 1 turn to make rotation visible
@@ -93,8 +94,10 @@ async function enhancePictographForInvert(pictograph: PictographData): Promise<P
   const red = pictograph.motions?.red;
 
   // Check if any motion needs enhancement
-  const blueNeedsEnhancement = blue && hasRotation(blue) && blue.turns === 0;
-  const redNeedsEnhancement = red && hasRotation(red) && red.turns === 0;
+  const blueTurns = blue && typeof blue.turns === 'number' ? blue.turns : 0;
+  const redTurns = red && typeof red.turns === 'number' ? red.turns : 0;
+  const blueNeedsEnhancement = blue && hasRotation(blue) && blueTurns === 0;
+  const redNeedsEnhancement = red && hasRotation(red) && redTurns === 0;
 
   if (!blueNeedsEnhancement && !redNeedsEnhancement) {
     return pictograph; // No enhancement needed
@@ -204,10 +207,12 @@ export async function getRandomPictographForTransform(
     // Fallback to any pictograph if no suitable ones found
     if (allPictographs.length === 0) return null;
     const randomIndex = Math.floor(Math.random() * allPictographs.length);
-    selected = allPictographs[randomIndex] ?? null;
+    const fallback = allPictographs[randomIndex];
+    selected = fallback ?? null;
   } else {
     const randomIndex = Math.floor(Math.random() * suitable.length);
-    selected = suitable[randomIndex] ?? null;
+    const candidate = suitable[randomIndex];
+    selected = candidate ?? null;
   }
 
   // For invert demos, enhance the pictograph by adding turns to motions with rotation

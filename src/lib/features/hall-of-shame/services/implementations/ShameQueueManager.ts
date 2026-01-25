@@ -75,7 +75,7 @@ export class ShameQueueManager implements IShameQueueManager {
 				throw new Error('Only pending entries can be approved');
 			}
 
-			const updates: Partial<HallOfShameEntry> & { approvedAt: ReturnType<typeof serverTimestamp> } = {
+			const updates: Record<string, unknown> = {
 				status: 'approved',
 				approvedAt: serverTimestamp(),
 				approvedBy: adminId

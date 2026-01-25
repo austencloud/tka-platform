@@ -1,5 +1,5 @@
 /**
- * Variation Explorer Interface
+ * Variation Browser Interface
  *
  * Enumerates all valid sequence variations for a word using generator pattern.
  * Yields sequences one at a time for memory efficiency.
@@ -32,19 +32,19 @@ export interface ExplorationOptions {
 }
 
 /**
- * Service that explores all valid sequence variations for a word.
+ * Service that browses all valid sequence variations for a word.
  * Uses AsyncGenerator for lazy evaluation - sequences are yielded one at a time.
  */
-export interface IVariationExplorer {
+export interface IVariationBrowser {
   /**
-   * Explore all valid sequence variations for the given letters.
+   * Browse all valid sequence variations for the given letters.
    * Yields sequences one at a time for memory efficiency.
    *
    * @param letters - Expanded letter sequence (including bridge letters)
    * @param options - Exploration options
    * @yields SequenceVariation for each valid combination
    */
-  exploreVariations(
+  browseVariations(
     letters: Letter[],
     options: ExplorationOptions
   ): AsyncGenerator<SequenceVariation, void, unknown>;

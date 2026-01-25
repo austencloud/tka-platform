@@ -92,7 +92,7 @@ src/lib/features/hall-of-shame/
 
 ### Overview
 
-Add an age-gated section of the Discover gallery specifically for flagged content. When content is caught by moderation, users can opt to submit it to the Hall of Shame instead of appealing.
+Add an age-gated section of the Browse gallery specifically for flagged content. When content is caught by moderation, users can opt to submit it to the Hall of Shame instead of appealing.
 
 ### Firestore Structure
 

@@ -56,7 +56,7 @@ export interface ISessionManager {
 
 	/**
 	 * Get nearby sessions (sessions from other users).
-	 * Uses Firebase to discover active sessions.
+	 * Uses Firebase to browse active sessions.
 	 */
 	getNearbySessions(): SyncSession[];
 

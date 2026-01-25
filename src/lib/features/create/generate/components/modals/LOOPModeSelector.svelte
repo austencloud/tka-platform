@@ -1,6 +1,6 @@
 <!--
 LOOPModeSelector.svelte - Clear segmented control for single vs multi-select mode
-Makes the two modes immediately discoverable and self-explanatory
+Makes the two modes immediately browseable and self-explanatory
 -->
 <script lang="ts">
   let { isMultiSelectMode, onModeChange } = $props<{

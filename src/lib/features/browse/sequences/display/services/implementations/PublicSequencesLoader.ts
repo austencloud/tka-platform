@@ -142,7 +142,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
       thumbnails: [...data.thumbnails],
       sequenceLength: data.sequenceLength,
       difficultyLevel: data.difficultyLevel,
-      loopType: data.loopType ?? undefined,
+      loopType: data.loopType as SequenceData["loopType"],
       isFavorite: false,
       isCircular: false,
       tags: [...data.tags],

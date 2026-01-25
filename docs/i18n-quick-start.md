@@ -192,7 +192,7 @@ Shows what % of components use translations.
 {
   "generator_level": "Level",
   "generator_mode": "Mode",
-  "discover_title": "Discover",
+  "browse_title": "Browse",
   "settings_profile": "Profile"
 }
 ```

@@ -4,8 +4,8 @@
  * Just saves/loads basic filter history - no complex state management.
  */
 
-import { ExploreFilterType } from "../../domain/enums/FilteringEnums";
-import type { ExploreFilterValue } from "../../domain/types/FilteringTypes";
+import { BrowseFilterType } from "../../domain/enums/FilteringEnums";
+import type { BrowseFilterValue } from "../../domain/types/FilteringTypes";
 import type {
   FilterHistoryEntry,
   IFilterPersister,
@@ -110,8 +110,8 @@ export class FilterPersister implements IFilterPersister {
         )
         .filter((filter) => this.isValidFilterHistoryEntry(filter))
         .map((filter) => ({
-          type: filter["type"] as ExploreFilterType,
-          value: filter["value"] as ExploreFilterValue,
+          type: filter["type"] as BrowseFilterType,
+          value: filter["value"] as BrowseFilterValue,
           appliedAt: new Date(filter["appliedAt"] as string),
         }));
     } catch (error) {
@@ -208,7 +208,7 @@ export class FilterPersister implements IFilterPersister {
   loadFilterState(): FilterHistoryEntry {
     // Return a default filter state matching the interface
     return {
-      type: ExploreFilterType.ALL_SEQUENCES,
+      type: BrowseFilterType.ALL_SEQUENCES,
       value: null,
       appliedAt: new Date(),
     };

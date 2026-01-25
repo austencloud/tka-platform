@@ -184,7 +184,9 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 
 	private getPointerDistance(): number {
 		if (this.pointerCache.length < 2) return -1;
-		const [p1, p2] = this.pointerCache;
+		const p1 = this.pointerCache[0];
+		const p2 = this.pointerCache[1];
+		if (!p1 || !p2) return -1;
 		return Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
 	}
 

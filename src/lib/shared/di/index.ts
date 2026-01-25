@@ -271,7 +271,7 @@ const landingPreviewContainer = typeof window !== 'undefined' ? createLandingPre
 const hallOfShameContainer = typeof window !== 'undefined' ? createHallOfShameContainer() : null as any;
 
 
-// Watch container - needs collaborativeVideoManager from share and browseLoader from explore
+// Watch container - needs collaborativeVideoManager from share and browseLoader from browse
 const watchContainer = typeof window !== 'undefined' ? createWatchContainer({
   collaborativeVideoManager: shareContainer.items.collaborativeVideoManager,
   browseLoader: browseContainer.items.browseLoader,
@@ -285,7 +285,7 @@ const connectContainer = typeof window !== 'undefined' ? createConnectContainer(
   lanSyncCoordinator: lanSyncContainer.items.lanSyncCoordinator,
 }) : null as any;
 
-// DeepLinkResolver - needs sequenceRepository from data and browseLoader from explore
+// DeepLinkResolver - needs sequenceRepository from data and browseLoader from browse
 const deepLinkResolver = typeof window !== 'undefined' ? new DeepLinkResolver(
   dataContainer.items.sequenceRepository,
   browseContainer.items.browseLoader

@@ -94,12 +94,13 @@ export class ConnectOrchestrator implements IConnectOrchestrator {
 		await this.presenceTracker.setCurrentSession(sessionId);
 
 		// Start PeerJS sync via LanSyncCoordinator
-		const session = this.sessionManager.currentSession!;
 		await this.lanSyncCoordinator.toggleSync(sequenceId, sequenceWord, {
 			sequenceId,
-			currentBeat: 0,
+			currentStep: 0,
 			isPlaying: false,
-			playbackSpeed: 1
+			speed: 1,
+			shouldLoop: true,
+			timestamp: Date.now()
 		});
 
 		console.log('[ConnectOrchestrator] Started sharing:', sessionId);

@@ -84,8 +84,8 @@
 	// Use optional chaining to handle potential timing issues where ctx might not be ready
 	const isPlaying = $derived(useContext ? ctx?.state?.isPlaying ?? false : animState?.isPlaying ?? false);
 	const currentStep = $derived(useContext ? ctx?.state?.currentStep ?? 0 : animState?.currentStep ?? 0);
-	const bluePropState = $derived(useContext ? ctx?.state?.bluePropState : animState?.bluePropState);
-	const redPropState = $derived(useContext ? ctx?.state?.redPropState : animState?.redPropState);
+	const bluePropState = $derived(useContext ? ctx?.state?.bluePropState ?? null : animState?.bluePropState ?? null);
+	const redPropState = $derived(useContext ? ctx?.state?.redPropState ?? null : animState?.redPropState ?? null);
 	const sequenceData = $derived(useContext ? ctx?.state?.sequenceData ?? sequence : animState?.sequenceData ?? sequence);
 	const playbackMode = $derived(useContext ? ctx?.state?.playbackMode ?? "continuous" : "continuous" as const);
 	const stepSize = $derived(useContext ? ctx?.state?.stepPlaybackStepSize ?? 1 : 1 as const);
@@ -167,7 +167,7 @@
 		// Create content hash to detect edits (same ID, different content)
 		// Include steps data to detect any beat modifications
 		const stepsHash = sequence?.steps?.map(s =>
-			`${s.letter}:${s.duration}:${s.startPosition?.letter || ''}`
+			`${s.letter}:${s.duration}:${s.startPosition ? 'start' : ''}`
 		).join('|') ?? '';
 
 		const seqId = sequence?.id

@@ -226,59 +226,69 @@ export class FriendshipManager implements IFriendshipManager {
 		this.friendsUnsubscribe = createHMRSafeDatabaseListener(
 			'friends-listener',
 			`${FIREBASE_PATHS.FRIENDS}/${user.uid}`,
-			async () => {
-				const database = await getDatabaseInstance();
-				this.friendsRef = ref(database, `${FIREBASE_PATHS.FRIENDS}/${user.uid}`);
+			() => {
+				let cleanup: (() => void) | null = null;
 
-				const handleValue = (snapshot: {
-					val: () => Record<string, FriendFirebaseData> | null;
-				}) => {
-					const data = snapshot.val();
+				// Setup async - IIFE to avoid returning Promise
+				(async () => {
+					const database = await getDatabaseInstance();
+					this.friendsRef = ref(database, `${FIREBASE_PATHS.FRIENDS}/${user.uid}`);
 
-					if (!data) {
-						this._friends = [];
+					const handleValue = (snapshot: {
+						val: () => Record<string, FriendFirebaseData> | null;
+					}) => {
+						const data = snapshot.val();
+
+						if (!data) {
+							this._friends = [];
+							this._isLoaded = true;
+							this.notifyFriendsChange();
+							return;
+						}
+
+						// Convert to array
+						const friends: Friend[] = Object.entries(data).map(([userId, f]) => ({
+							userId,
+							displayName: f.displayName,
+							addedAt: f.addedAt,
+							nickname: f.nickname
+						}));
+
+						// Update presence watchers
+						const oldFriendIds = new Set(this._friends.map((f) => f.userId));
+						const newFriendIds = new Set(friends.map((f) => f.userId));
+
+						// Start watching new friends
+						for (const friend of friends) {
+							if (!oldFriendIds.has(friend.userId)) {
+								this.presenceTracker.watchUser(friend.userId);
+							}
+						}
+
+						// Stop watching removed friends
+						for (const oldFriend of this._friends) {
+							if (!newFriendIds.has(oldFriend.userId)) {
+								this.presenceTracker.unwatchUser(oldFriend.userId);
+							}
+						}
+
+						this._friends = friends;
 						this._isLoaded = true;
 						this.notifyFriendsChange();
-						return;
-					}
+					};
 
-					// Convert to array
-					const friends: Friend[] = Object.entries(data).map(([userId, f]) => ({
-						userId,
-						displayName: f.displayName,
-						addedAt: f.addedAt,
-						nickname: f.nickname
-					}));
+					onValue(this.friendsRef, handleValue);
 
-					// Update presence watchers
-					const oldFriendIds = new Set(this._friends.map((f) => f.userId));
-					const newFriendIds = new Set(friends.map((f) => f.userId));
-
-					// Start watching new friends
-					for (const friend of friends) {
-						if (!oldFriendIds.has(friend.userId)) {
-							this.presenceTracker.watchUser(friend.userId);
+					cleanup = () => {
+						if (this.friendsRef) {
+							off(this.friendsRef, 'value', handleValue);
 						}
-					}
+					};
+				})();
 
-					// Stop watching removed friends
-					for (const oldFriend of this._friends) {
-						if (!newFriendIds.has(oldFriend.userId)) {
-							this.presenceTracker.unwatchUser(oldFriend.userId);
-						}
-					}
-
-					this._friends = friends;
-					this._isLoaded = true;
-					this.notifyFriendsChange();
-				};
-
-				onValue(this.friendsRef, handleValue);
-
+				// Return sync cleanup that defers to async setup
 				return () => {
-					if (this.friendsRef) {
-						off(this.friendsRef, 'value', handleValue);
-					}
+					if (cleanup) cleanup();
 				};
 			}
 		);

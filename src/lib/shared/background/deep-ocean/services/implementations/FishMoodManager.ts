@@ -169,13 +169,13 @@ export class FishMoodManager implements IFishMoodManager {
   private checkAutomaticTransitions(fish: FishMarineLife): void {
     const energy = fish.energy ?? 0.8;
     const hunger = fish.hunger ?? 0;
-    const currentMood = fish.mood ?? "calm";
+    const currentMood: FishMood = fish.mood ?? "calm";
     const moodTimer = fish.moodTimer ?? 0;
 
     // Don't override moods that were just set (within 2 seconds)
     // This allows manual mood changes from the lab to persist
     if (moodTimer < 2 && currentMood !== "calm") {
-      if (FishMoodManager.DEBUG_MOOD && currentMood !== "calm") {
+      if (FishMoodManager.DEBUG_MOOD) {
         // Only log occasionally to avoid spam
         if (Math.random() < 0.01) {
           console.log(`🛡️ GUARD PROTECTED: ${currentMood} (timer: ${moodTimer.toFixed(3)})`);

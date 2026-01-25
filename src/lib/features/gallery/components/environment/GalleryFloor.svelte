@@ -35,11 +35,11 @@
 
   // Floor is positioned at Y=0, centered on X, extending in +Z direction
   const centerX = 0;
-  const centerZ = depth / 2;
+  const centerZ = $derived(depth / 2);
 
   // Carpet dimensions
-  const carpetWidth = width * CARPET_WIDTH_RATIO;
-  const sideFloorWidth = (width - carpetWidth) / 2;
+  const carpetWidth = $derived(width * CARPET_WIDTH_RATIO);
+  const sideFloorWidth = $derived((width - carpetWidth) / 2);
 
   // Small Y offset to prevent z-fighting
   const carpetY = 0.5;

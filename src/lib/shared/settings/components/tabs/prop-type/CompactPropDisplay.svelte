@@ -45,10 +45,18 @@
 
 <div class="compact-prop-display" class:dual={catDogMode}>
   <!-- Blue / Single prop row -->
-  <button
+  <div
     class="prop-row"
     class:blue={catDogMode}
     onclick={() => onOpenSheet?.("blue")}
+    role="button"
+    tabindex="0"
+    onkeydown={(e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onOpenSheet?.("blue");
+      }
+    }}
     aria-label={catDogMode
       ? `${t("settings_left_hand")}: ${blueInfo.label}. Tap to change.`
       : `${blueInfo.label}. Tap to change.`}
@@ -86,13 +94,21 @@
         </button>
       {/if}
     </span>
-  </button>
+  </div>
 
   <!-- Red prop row (Cat Dog mode only) -->
   {#if catDogMode}
-    <button
+    <div
       class="prop-row red"
       onclick={() => onOpenSheet?.("red")}
+      role="button"
+      tabindex="0"
+      onkeydown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpenSheet?.("red");
+        }
+      }}
       aria-label={`${t("settings_right_hand")}: ${redInfo.label}. Tap to change.`}
     >
       <span class="hand-indicator red">
@@ -126,7 +142,7 @@
           </button>
         {/if}
       </span>
-    </button>
+    </div>
   {/if}
 </div>
 

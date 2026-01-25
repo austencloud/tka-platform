@@ -230,7 +230,7 @@ export function castRay(
 		// Handle both castRay (returns {collider, timeOfImpact}) and
 		// castRayAndGetNormal (returns {collider, timeOfImpact, normal})
 		const point = ray.pointAt(hit.timeOfImpact);
-		const normal = hit.normal ?? { x: 0, y: 1, z: 0 };
+		const normal = (hit as { normal?: { x: number; y: number; z: number } }).normal ?? { x: 0, y: 1, z: 0 };
 
 		return {
 			point: { x: point.x, y: point.y, z: point.z },

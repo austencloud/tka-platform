@@ -48,7 +48,7 @@
 	const isAuthenticated = $derived(authState.isAuthenticated);
 
 	// Filter sessions by active tab
-	const filteredSessions = $derived(() => {
+	const filteredSessions = $derived.by(() => {
 		if (activeTab === 'all') return sessions;
 		if (activeTab === 'pending') {
 			return sessions.filter(s => s.reviewStatus === 'pending');
@@ -70,7 +70,7 @@
 	});
 
 	// Count by status for tab badges
-	const statusCounts = $derived(() => {
+	const statusCounts = $derived.by(() => {
 		const pending = sessions.filter(s => s.reviewStatus === 'pending').length;
 		const inReview = sessions.filter(s =>
 			s.reviewStatus === 'claimed' ||
@@ -152,14 +152,18 @@
 			// Update local state
 			const idx = sessions.findIndex(s => s.id === selectedSession!.id);
 			if (idx >= 0) {
-				sessions[idx] = {
-					...sessions[idx],
-					reviewMetadata: {
-						...sessions[idx].reviewMetadata,
-						notes: notesInput,
-					}
-				};
-				selectedSession = sessions[idx];
+				const currentSession = sessions[idx];
+				if (currentSession) {
+					const updatedSession: TikaSession = {
+						...currentSession,
+						reviewMetadata: {
+							...(currentSession.reviewMetadata || {}),
+							notes: notesInput,
+						}
+					};
+					sessions = [...sessions.slice(0, idx), updatedSession, ...sessions.slice(idx + 1)];
+					selectedSession = updatedSession;
+				}
 			}
 		} catch (e) {
 			console.error('[TikaReviewPanel] Failed to save notes:', e);
@@ -177,10 +181,14 @@
 			// Update local state
 			const idx = sessions.findIndex(s => s.id === sessionId);
 			if (idx >= 0) {
-				sessions[idx] = { ...sessions[idx], reviewStatus: 'archived' };
-			}
-			if (selectedSession?.id === sessionId) {
-				selectedSession = sessions[idx];
+				const currentSession = sessions[idx];
+				if (currentSession) {
+					const updatedSession: TikaSession = { ...currentSession, reviewStatus: 'archived' as const };
+					sessions = [...sessions.slice(0, idx), updatedSession, ...sessions.slice(idx + 1)];
+					if (selectedSession?.id === sessionId) {
+						selectedSession = updatedSession;
+					}
+				}
 			}
 		} catch (e) {
 			console.error('[TikaReviewPanel] Failed to archive session:', e);
@@ -196,10 +204,14 @@
 			// Update local state
 			const idx = sessions.findIndex(s => s.id === sessionId);
 			if (idx >= 0) {
-				sessions[idx] = { ...sessions[idx], reviewStatus: 'approved' };
-			}
-			if (selectedSession?.id === sessionId) {
-				selectedSession = sessions[idx];
+				const currentSession = sessions[idx];
+				if (currentSession) {
+					const updatedSession: TikaSession = { ...currentSession, reviewStatus: 'approved' as const };
+					sessions = [...sessions.slice(0, idx), updatedSession, ...sessions.slice(idx + 1)];
+					if (selectedSession?.id === sessionId) {
+						selectedSession = updatedSession;
+					}
+				}
 			}
 		} catch (e) {
 			console.error('[TikaReviewPanel] Failed to approve session:', e);
@@ -221,9 +233,9 @@
 	}
 
 	// Reference for image capture - will be set by the TikaConversationReadOnly component
-	let conversationReadOnlyComponent: TikaConversationReadOnly | null = $state(null);
+	let conversationReadOnlyComponent = $state<any>(null);
 	let conversationPreviewEl: HTMLElement | null = $derived(
-		conversationReadOnlyComponent?.getContainerElement() ?? null
+		conversationReadOnlyComponent?.getContainerElement?.() ?? null
 	);
 
 	// Generate comprehensive conversation data for AI review (delegated to service)
@@ -267,8 +279,8 @@
 				<i class="fas fa-flag" aria-hidden="true"></i>
 			</span>
 			Pending
-			{#if statusCounts().pending > 0}
-				<span class="badge pending">{statusCounts().pending}</span>
+			{#if statusCounts.pending > 0}
+				<span class="badge pending">{statusCounts.pending}</span>
 			{/if}
 		</button>
 		<button
@@ -279,8 +291,8 @@
 				<i class="fas fa-user-check" aria-hidden="true"></i>
 			</span>
 			In Review
-			{#if statusCounts().inReview > 0}
-				<span class="badge in-review">{statusCounts().inReview}</span>
+			{#if statusCounts.inReview > 0}
+				<span class="badge in-review">{statusCounts.inReview}</span>
 			{/if}
 		</button>
 		<button
@@ -291,8 +303,8 @@
 				<i class="fas fa-check-circle" aria-hidden="true"></i>
 			</span>
 			Completed
-			{#if statusCounts().completed > 0}
-				<span class="badge completed">{statusCounts().completed}</span>
+			{#if statusCounts.completed > 0}
+				<span class="badge completed">{statusCounts.completed}</span>
 			{/if}
 		</button>
 		<button
@@ -325,7 +337,7 @@
 					<i class="fas fa-lock"></i>
 					<span>Sign in to access review queue</span>
 				</div>
-			{:else if filteredSessions().length === 0}
+			{:else if filteredSessions.length === 0}
 				<div class="state-message">
 					<i class="fas fa-inbox"></i>
 					<span>No conversations in this view</span>
@@ -334,7 +346,7 @@
 					{/if}
 				</div>
 			{:else}
-				{#each filteredSessions() as session (session.id)}
+				{#each filteredSessions as session (session.id)}
 					{@const statusInfo = getStatusInfo(session.reviewStatus)}
 					<button
 						class="session-card"
@@ -393,7 +405,7 @@
 					<div class="detail-actions">
 						<button
 							class="action-btn primary"
-							onclick={() => openInChat(selectedSession)}
+							onclick={() => selectedSession && openInChat(selectedSession)}
 							title="Open in chat"
 						>
 							<i class="fas fa-external-link-alt" aria-hidden="true"></i>
@@ -402,7 +414,7 @@
 						{#if selectedSession.reviewStatus === 'in-review' || selectedSession.reviewStatus === 'needs-correction'}
 							<button
 								class="action-btn success"
-								onclick={() => approveSession(selectedSession.id)}
+								onclick={() => selectedSession && approveSession(selectedSession.id)}
 								title="Approve"
 							>
 								<i class="fas fa-check" aria-hidden="true"></i>
@@ -412,7 +424,7 @@
 						{#if selectedSession.reviewStatus !== 'archived'}
 							<button
 								class="action-btn neutral"
-								onclick={() => archiveSession(selectedSession.id)}
+								onclick={() => selectedSession && archiveSession(selectedSession.id)}
 								title="Archive"
 							>
 								<i class="fas fa-archive" aria-hidden="true"></i>

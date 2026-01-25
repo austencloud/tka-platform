@@ -37,17 +37,24 @@
 	}: Props = $props();
 
 	// Minimap sizing
-	const MINIMAP_SIZE = expanded ? 280 : 140;
+	const MINIMAP_SIZE = $derived(expanded ? 280 : 140);
 	const PADDING = 10;
 
-	// Calculate scale from layout bounds
+	// Calculate scale from layout floor size
 	const bounds = $derived.by(() => {
-		const b = layout.bounds;
-		const width = b.maxX - b.minX;
-		const depth = b.maxZ - b.minZ;
+		const width = layout.floorSize.width;
+		const depth = layout.floorSize.depth;
 		const maxDimension = Math.max(width, depth);
 		const scale = (MINIMAP_SIZE - PADDING * 2) / maxDimension;
-		return { ...b, width, depth, scale };
+		return {
+			minX: -width / 2,
+			maxX: width / 2,
+			minZ: 0,
+			maxZ: depth,
+			width,
+			depth,
+			scale
+		};
 	});
 
 	// Transform world position to minimap coordinates
@@ -59,14 +66,22 @@
 	}
 
 	// Generate wall segments for SVG
+	// Note: GalleryLayout currently uses GLB models without explicit wall data
+	// Walls are part of the 3D model. For minimap, we just show the floor bounds.
 	const wallPaths = $derived.by(() => {
+		const b = bounds;
+		// Draw a rectangle representing the gallery bounds
 		const paths: string[] = [];
+		const topLeft = worldToMinimap({ x: b.minX, z: b.minZ });
+		const topRight = worldToMinimap({ x: b.maxX, z: b.minZ });
+		const bottomRight = worldToMinimap({ x: b.maxX, z: b.maxZ });
+		const bottomLeft = worldToMinimap({ x: b.minX, z: b.maxZ });
 
-		for (const wall of layout.walls) {
-			const start = worldToMinimap({ x: wall.startPos.x, z: wall.startPos.z });
-			const end = worldToMinimap({ x: wall.endPos.x, z: wall.endPos.z });
-			paths.push(`M ${start.x} ${start.y} L ${end.x} ${end.y}`);
-		}
+		paths.push(`M ${topLeft.x} ${topLeft.y}`);
+		paths.push(`L ${topRight.x} ${topRight.y}`);
+		paths.push(`L ${bottomRight.x} ${bottomRight.y}`);
+		paths.push(`L ${bottomLeft.x} ${bottomLeft.y}`);
+		paths.push(`Z`);
 
 		return paths.join(' ');
 	});

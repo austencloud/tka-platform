@@ -180,9 +180,26 @@ export class HybridChunkManager extends ChunkManager {
    * Convert GPUChunkResult to ChunkMeshData format
    */
   private convertGPUResult(gpuResult: GPUChunkResult): ChunkMeshData {
+    // Map GPU vegetation types to worker vegetation types
+    const mapVegetationType = (
+      gpuType: "tree" | "bush" | "grass" | "flower" | "rock"
+    ): "tree1" | "tree2" | "tree3" | "rock1" | "rock2" | "bush1" | "bush2" | "grass" => {
+      switch (gpuType) {
+        case "tree":
+          return "tree1";
+        case "bush":
+          return "bush1";
+        case "rock":
+          return "rock1";
+        case "grass":
+        case "flower":
+          return "grass";
+      }
+    };
+
     // Convert GPUVegetationData[] to VegetationData[]
     const vegetation: VegetationData[] = gpuResult.vegetation.map((v: GPUVegetationData) => ({
-      type: v.type,
+      type: mapVegetationType(v.type),
       x: v.x,
       y: v.y,
       z: v.z,

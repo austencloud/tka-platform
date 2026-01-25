@@ -92,14 +92,15 @@ that adapt to dark/light mode automatically.
   let isAnimating = $state(false);
 
   $effect(() => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     // Skip initial mount (prevVtgMode is undefined)
     // Animate when mode changes to a new value
     if (prevVtgMode !== undefined && vtgMode !== prevVtgMode && vtgMode !== null) {
       isAnimating = true;
-      const timeout = setTimeout(() => { isAnimating = false; }, 180);
-      return () => clearTimeout(timeout);
+      timeout = setTimeout(() => { isAnimating = false; }, 180);
     }
     prevVtgMode = vtgMode;
+    return () => { if (timeout) clearTimeout(timeout); };
   });
 </script>
 

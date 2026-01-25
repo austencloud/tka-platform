@@ -18,7 +18,7 @@ export function createSimplifiedStartPositionState() {
     if (!settingsService) {
       settingsService = container.items.settingsState;
     }
-    return settingsService;
+    return settingsService!;
   }
 
   // Simple reactive state - just what we need

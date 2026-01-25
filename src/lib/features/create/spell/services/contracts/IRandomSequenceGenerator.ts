@@ -7,7 +7,7 @@
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { VariationConstraints } from "../../domain/models/spell-models";
 import type { ConstraintSet } from "$lib/shared/sequence-engine/constraints/types";
 

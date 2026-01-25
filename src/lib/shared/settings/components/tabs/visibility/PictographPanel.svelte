@@ -20,7 +20,6 @@
     nonRadialVisible: boolean;
     handPointVisibility: "all" | "active";
     stepNumbersVisible: boolean;
-    beatPositionVisible: boolean;
     onToggle: (key: string) => void;
     isMobileHidden?: boolean;
   }
@@ -35,7 +34,6 @@
     nonRadialVisible,
     handPointVisibility,
     stepNumbersVisible,
-    beatPositionVisible,
     onToggle,
     isMobileHidden = false,
   }: Props = $props();
@@ -109,13 +107,6 @@
           aria-pressed={stepNumbersVisible}
           onclick={() => onToggle("stepNumbers")}
           >{t("visibility_step_numbers")}</button
-        >
-        <button
-          class="toggle-btn"
-          class:active={beatPositionVisible}
-          aria-pressed={beatPositionVisible}
-          onclick={() => onToggle("beatPosition")}
-          >{t("visibility_beat_position")}</button
         >
         <button
           class="toggle-btn"

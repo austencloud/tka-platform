@@ -4,8 +4,6 @@ StepNumber.svelte - Step Number Overlay Component
 Renders step numbers (sequential index: 1, 2, 3...) as SVG text overlays on pictographs.
 Displays at top-left corner. Shows "Start" for step 0.
 
-Note: Musical beat position (1.5, 2e, etc.) is handled by BeatPositionGlyph at bottom-center.
-
 Dark mode: Polls visibility manager for dark mode state (supports pictograph
 dark mode independent of app dark mode). Export uses explicit darkMode prop.
 -->
@@ -90,13 +88,14 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
   let isAnimating = $state(false);
 
   $effect(() => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     // Skip initial mount, animate when step number changes
     if (prevStepNumber !== undefined && stepNumber !== prevStepNumber && stepNumber !== null) {
       isAnimating = true;
-      const timeout = setTimeout(() => { isAnimating = false; }, 180);
-      return () => clearTimeout(timeout);
+      timeout = setTimeout(() => { isAnimating = false; }, 180);
     }
     prevStepNumber = stepNumber;
+    return () => { if (timeout) clearTimeout(timeout); };
   });
 </script>
 

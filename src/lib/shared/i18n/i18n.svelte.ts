@@ -272,29 +272,32 @@ export async function setLocale(locale: Locale): Promise<void> {
  */
 async function loadLocaleMessages(locale: Locale): Promise<Messages> {
   // Base locales - always have full translation files
-  switch (locale as BaseLocale) {
-    case "en":
-      return enMessages as Messages;
-    case "es":
-      return (await import("../../../../messages/es.json")).default as Messages;
-    case "fr":
-      return (await import("../../../../messages/fr.json")).default as Messages;
-    case "de":
-      return (await import("../../../../messages/de.json")).default as Messages;
-    case "pt":
-      return (await import("../../../../messages/pt.json")).default as Messages;
-    case "zh":
-      return (await import("../../../../messages/zh.json")).default as Messages;
-    case "ja":
-      return (await import("../../../../messages/ja.json")).default as Messages;
-    case "ko":
-      return (await import("../../../../messages/ko.json")).default as Messages;
-    case "ar":
-      return (await import("../../../../messages/ar.json")).default as Messages;
-    case "ru":
-      return (await import("../../../../messages/ru.json")).default as Messages;
-    case "it":
-      return (await import("../../../../messages/it.json")).default as Messages;
+  const asBaseLocale = locale as BaseLocale;
+  if (locales.includes(asBaseLocale)) {
+    switch (asBaseLocale) {
+      case "en":
+        return enMessages as Messages;
+      case "es":
+        return (await import("../../../../messages/es.json")).default as Messages;
+      case "fr":
+        return (await import("../../../../messages/fr.json")).default as Messages;
+      case "de":
+        return (await import("../../../../messages/de.json")).default as Messages;
+      case "pt":
+        return (await import("../../../../messages/pt.json")).default as Messages;
+      case "zh":
+        return (await import("../../../../messages/zh.json")).default as Messages;
+      case "ja":
+        return (await import("../../../../messages/ja.json")).default as Messages;
+      case "ko":
+        return (await import("../../../../messages/ko.json")).default as Messages;
+      case "ar":
+        return (await import("../../../../messages/ar.json")).default as Messages;
+      case "ru":
+        return (await import("../../../../messages/ru.json")).default as Messages;
+      case "it":
+        return (await import("../../../../messages/it.json")).default as Messages;
+    }
   }
 
   // Regional locales - attempt to load override file, fall back to base

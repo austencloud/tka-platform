@@ -2,7 +2,7 @@
  * Browse Metadata Types
  *
  * Essential metadata types needed for Browse tab functionality.
- * These are the core types needed for sequence browsey and metadata extraction.
+ * These are the core types needed for sequence discovery and metadata extraction.
  */
 
 // ============================================================================

@@ -20,10 +20,14 @@ export class LOOPExplanationTextGenerator implements ILOOPExplanationTextGenerat
       "Rotates the entire sequence 180° around the grid center. North becomes South, East becomes West. The sequence plays out in the opposite quadrants while maintaining the same motion patterns.",
     [LOOPComponent.MIRRORED]:
       "Mirrors the sequence across the vertical axis. Left becomes Right and vice versa. Creates a reflection of your original movement pattern, like seeing it in a mirror.",
+    [LOOPComponent.FLIPPED]:
+      "Flips the sequence across the horizontal axis. Top becomes Bottom and vice versa. Creates a vertical reflection of your original movement pattern.",
     [LOOPComponent.SWAPPED]:
       "Exchanges which hand performs each movement. Your blue hand does what red was doing, and red does what blue was doing. The spatial positions stay the same.",
     [LOOPComponent.INVERTED]:
       "Transforms each motion to its complement. Pro motions become anti, static becomes dash. Creates the 'opposite energy' version of your sequence.",
+    [LOOPComponent.REWOUND]:
+      "Reverses the sequence direction. The last beat becomes the first, playing backward to create a perfect loop back to the start position.",
   };
 
   /**

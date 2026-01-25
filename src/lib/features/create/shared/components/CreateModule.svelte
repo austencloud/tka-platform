@@ -92,9 +92,7 @@
   let services: CreateModuleOrchestrators | null = $state(null);
   let handlers: ICreateModuleHandlers | null = $state(null);
   let effectCoordinator: ICreateModuleEffectCoordinator | null = $state(null);
-  let deepLinkService:
-    | import("../services/contracts/IDeepLinkSequenceHandler").IDeepLinkSequenceHandler
-    | null = $state(null);
+  let deepLinkService: any = $state(null);
   let panelPersistenceService: IPanelPersister | null = $state(null);
   let CreateModuleState: CreateModuleState | null = $state(null);
   let constructTabState: ConstructTabState | null = $state(null);
@@ -295,7 +293,7 @@
         initService.configureEventCallbacks(CreateModuleState, panelState);
 
         // Start panel persistence tracking (handles navigation changes, panel close detection)
-        panelPersistenceCleanup = panelPersistenceService.startTracking({
+        panelPersistenceCleanup = panelPersistenceService?.startTracking({
           panelState,
           canRestorePanels: () => CreateModuleState?.canAccessEditTab ?? false,
         });
@@ -346,7 +344,7 @@
         await tick(); // Ensure DOM is ready
         const loadResult =
           await initService.loadSequenceAndInitializePersistence(
-            (sequence) =>
+            (sequence: any) =>
               CreateModuleState!.sequenceState.setCurrentSequence(sequence),
             () => CreateModuleState!.initializeWithPersistence()
           );
@@ -372,7 +370,7 @@
           );
           if (
             savedPanel &&
-            panelPersistenceService.isPanelSupportedForTab(
+            panelPersistenceService?.isPanelSupportedForTab(
               savedPanel as any,
               currentTab
             )
@@ -381,7 +379,7 @@
               `Restoring saved panel "${savedPanel}" for tab "create:${currentTab}"`
             );
             await tick();
-            panelPersistenceService.restoreSavedPanel(
+            panelPersistenceService?.restoreSavedPanel(
               panelState,
               savedPanel as any
             );

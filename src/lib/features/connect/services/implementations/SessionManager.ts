@@ -418,61 +418,71 @@ export class SessionManager implements ISessionManager {
 		this.sessionUnsubscribe = createHMRSafeDatabaseListener(
 			`session-watcher-${sessionId}`,
 			`${FIREBASE_PATHS.SESSIONS}/${sessionId}`,
-			async () => {
-				const database = await getDatabaseInstance();
-				const sessionRef = ref(database, `${FIREBASE_PATHS.SESSIONS}/${sessionId}`);
+			() => {
+				let cleanup: (() => void) | null = null;
 
-				const handleValue = (snapshot: { val: () => SessionFirebaseData | null }) => {
-					const data = snapshot.val();
+				// Setup async - IIFE to avoid returning Promise
+				(async () => {
+					const database = await getDatabaseInstance();
+					const sessionRef = ref(database, `${FIREBASE_PATHS.SESSIONS}/${sessionId}`);
 
-					if (!data) {
-						// Session was deleted (host left)
-						this.handleSessionClosed('host_left');
-						return;
-					}
+					const handleValue = (snapshot: { val: () => SessionFirebaseData | null }) => {
+						const data = snapshot.val();
 
-					// Update participants
-					const newParticipants: SessionParticipant[] = Object.entries(
-						data.participants || {}
-					).map(([id, p]) => ({
-						userId: id,
-						displayName: p.displayName,
-						joinedAt: typeof p.joinedAt === 'number' ? p.joinedAt : Date.now(),
-						displayPreference: p.displayPreference,
-						isSynced: p.isSynced
-					}));
-
-					// Detect joins and leaves
-					const oldIds = new Set(this._participants.map((p) => p.userId));
-					const newIds = new Set(newParticipants.map((p) => p.userId));
-
-					for (const p of newParticipants) {
-						if (!oldIds.has(p.userId) && p.userId !== currentUserId) {
-							this.notifyParticipantJoin(p);
+						if (!data) {
+							// Session was deleted (host left)
+							this.handleSessionClosed('host_left');
+							return;
 						}
-					}
 
-					for (const oldP of this._participants) {
-						if (!newIds.has(oldP.userId) && oldP.userId !== currentUserId) {
-							this.notifyParticipantLeave(oldP.userId);
+						// Update participants
+						const newParticipants: SessionParticipant[] = Object.entries(
+							data.participants || {}
+						).map(([id, p]) => ({
+							userId: id,
+							displayName: p.displayName,
+							joinedAt: typeof p.joinedAt === 'number' ? p.joinedAt : Date.now(),
+							displayPreference: p.displayPreference,
+							isSynced: p.isSynced
+						}));
+
+						// Detect joins and leaves
+						const oldIds = new Set(this._participants.map((p) => p.userId));
+						const newIds = new Set(newParticipants.map((p) => p.userId));
+
+						for (const p of newParticipants) {
+							if (!oldIds.has(p.userId) && p.userId !== currentUserId) {
+								this.notifyParticipantJoin(p);
+							}
 						}
-					}
 
-					this._participants = newParticipants;
+						for (const oldP of this._participants) {
+							if (!newIds.has(oldP.userId) && oldP.userId !== currentUserId) {
+								this.notifyParticipantLeave(oldP.userId);
+							}
+						}
 
-					// Update session participant count
-					if (this._currentSession) {
-						this._currentSession = {
-							...this._currentSession,
-							participantCount: newParticipants.length
-						};
-					}
-				};
+						this._participants = newParticipants;
 
-				onValue(sessionRef, handleValue);
+						// Update session participant count
+						if (this._currentSession) {
+							this._currentSession = {
+								...this._currentSession,
+								participantCount: newParticipants.length
+							};
+						}
+					};
 
+					onValue(sessionRef, handleValue);
+
+					cleanup = () => {
+						off(sessionRef, 'value', handleValue);
+					};
+				})();
+
+				// Return sync cleanup that defers to async setup
 				return () => {
-					off(sessionRef, 'value', handleValue);
+					if (cleanup) cleanup();
 				};
 			}
 		);
@@ -485,54 +495,64 @@ export class SessionManager implements ISessionManager {
 		this.nearbySessionsUnsubscribe = createHMRSafeDatabaseListener(
 			'nearby-sessions-discovery',
 			FIREBASE_PATHS.SESSIONS,
-			async () => {
-				const database = await getDatabaseInstance();
-				const sessionsRef = ref(database, FIREBASE_PATHS.SESSIONS);
+			() => {
+				let cleanup: (() => void) | null = null;
 
-				const handleValue = (snapshot: {
-					val: () => Record<string, SessionFirebaseData> | null;
-				}) => {
-					const data = snapshot.val();
+				// Setup async - IIFE to avoid returning Promise
+				(async () => {
+					const database = await getDatabaseInstance();
+					const sessionsRef = ref(database, FIREBASE_PATHS.SESSIONS);
 
-					if (!data) {
-						this._nearbySessions = [];
+					const handleValue = (snapshot: {
+						val: () => Record<string, SessionFirebaseData> | null;
+					}) => {
+						const data = snapshot.val();
+
+						if (!data) {
+							this._nearbySessions = [];
+							this.notifyNearbySessionsChange();
+							return;
+						}
+
+						// Convert to array, filter out own sessions
+						const sessions: SyncSession[] = Object.entries(data)
+							.map(([sessionId, s]) => ({
+								sessionId,
+								hostUserId: s.hostUserId,
+								hostDisplayName: s.hostDisplayName,
+								sequenceId: s.sequenceId,
+								sequenceWord: s.sequenceWord,
+								peerJsRoomCode: s.peerJsRoomCode,
+								createdAt: typeof s.createdAt === 'number' ? s.createdAt : Date.now(),
+								participantCount: Object.keys(s.participants || {}).length
+							}))
+							.filter((s) => {
+								// Filter out own hosted sessions
+								if (currentUserId && s.hostUserId === currentUserId) {
+									return false;
+								}
+								// Filter out full sessions
+								if (s.participantCount >= SESSION_CONFIG.MAX_PARTICIPANTS) {
+									return false;
+								}
+								return true;
+							})
+							.sort((a, b) => b.createdAt - a.createdAt);
+
+						this._nearbySessions = sessions;
 						this.notifyNearbySessionsChange();
-						return;
-					}
+					};
 
-					// Convert to array, filter out own sessions
-					const sessions: SyncSession[] = Object.entries(data)
-						.map(([sessionId, s]) => ({
-							sessionId,
-							hostUserId: s.hostUserId,
-							hostDisplayName: s.hostDisplayName,
-							sequenceId: s.sequenceId,
-							sequenceWord: s.sequenceWord,
-							peerJsRoomCode: s.peerJsRoomCode,
-							createdAt: typeof s.createdAt === 'number' ? s.createdAt : Date.now(),
-							participantCount: Object.keys(s.participants || {}).length
-						}))
-						.filter((s) => {
-							// Filter out own hosted sessions
-							if (currentUserId && s.hostUserId === currentUserId) {
-								return false;
-							}
-							// Filter out full sessions
-							if (s.participantCount >= SESSION_CONFIG.MAX_PARTICIPANTS) {
-								return false;
-							}
-							return true;
-						})
-						.sort((a, b) => b.createdAt - a.createdAt);
+					onValue(sessionsRef, handleValue);
 
-					this._nearbySessions = sessions;
-					this.notifyNearbySessionsChange();
-				};
+					cleanup = () => {
+						off(sessionsRef, 'value', handleValue);
+					};
+				})();
 
-				onValue(sessionsRef, handleValue);
-
+				// Return sync cleanup that defers to async setup
 				return () => {
-					off(sessionsRef, 'value', handleValue);
+					if (cleanup) cleanup();
 				};
 			}
 		);

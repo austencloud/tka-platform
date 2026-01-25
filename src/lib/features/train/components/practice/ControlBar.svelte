@@ -347,7 +347,7 @@
     color: var(--theme-accent);
   }
 
-  /* Sequence button (Blue) - Browse/explore vibe */
+  /* Sequence button (Blue) - Browse/browse vibe */
   .sequence-btn {
     background: linear-gradient(
       135deg,

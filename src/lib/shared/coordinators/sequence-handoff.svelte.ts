@@ -1,7 +1,7 @@
 /**
  * Sequence Handoff Coordinator
  *
- * Manages handoff of sequences between modules (e.g., from Discover's SequenceDetailsModal
+ * Manages handoff of sequences between modules (e.g., from Browse's SequenceDetailsModal
  * to Compose for stagger/multi-performer visualization).
  *
  * Uses sessionStorage to persist handoff data across navigation.
@@ -28,7 +28,7 @@ export interface SequenceHandoff {
 	/** Which visualization preset to open (stagger for multi-performer, mirror for mirrored view) */
 	preferredPreset?: 'stagger' | 'mirror';
 
-	/** Path to return to when closing Compose (e.g., "/discover") */
+	/** Path to return to when closing Compose (e.g., "/browse") */
 	returnPath?: string;
 }
 

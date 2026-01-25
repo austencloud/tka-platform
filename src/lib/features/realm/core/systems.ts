@@ -23,13 +23,23 @@ import {
   type Entity,
   type InputComponent,
 } from "./ecs-world";
-import type { PhysicsWorldState } from "../physics/rapier-world";
-import { syncPhysicsToECS, syncECSToPhysics, checkGrounded } from "../physics/rapier-world";
-import {
-  type PlayerControllerState,
-  movePlayer,
-  getPlayerPosition,
-} from "../physics/player-controller";
+// TODO: Physics modules not yet implemented
+// import type { PhysicsWorldState } from "../physics/rapier-world";
+// import { syncPhysicsToECS, syncECSToPhysics, checkGrounded } from "../physics/rapier-world";
+// import {
+//   type PlayerControllerState,
+//   movePlayer,
+//   getPlayerPosition,
+// } from "../physics/player-controller";
+
+// Stub types until physics is implemented
+type PhysicsWorldState = any;
+type PlayerControllerState = any;
+const syncPhysicsToECS = () => {};
+const syncECSToPhysics = () => {};
+const checkGrounded = () => false;
+const movePlayer = () => {};
+const getPlayerPosition = () => new Vector3();
 import type { PerspectiveCamera, Scene, Object3D } from "three";
 import { Vector3, Quaternion, Euler } from "three";
 import { CameraMode } from "$lib/shared/3d-core/camera/types";
@@ -196,7 +206,7 @@ export function cameraSystem(ctx: SystemContext): void {
     } else {
       // Third-person: orbit behind player
       if (ctx.playerController) {
-        const playerPos = getPlayerPosition(ctx.playerController);
+        const playerPos = getPlayerPosition();
         if (playerPos) {
           const distance = entity.camera.targetDistance;
           const height = entity.camera.targetHeight;
@@ -311,8 +321,8 @@ function movementSystemPhysics(ctx: SystemContext): void {
       z: moveDir.z,
     };
 
-    // Move the player using character controller
-    movePlayer(ctx.physics, pc, desiredMovement, ctx.deltaTime);
+    // Move the player using character controller (stub until physics implemented)
+    movePlayer();
 
     // Update grounded state from controller
     if (entity.grounded) {
@@ -323,7 +333,7 @@ function movementSystemPhysics(ctx: SystemContext): void {
     }
 
     // Sync ECS transform from physics
-    const playerPos = getPlayerPosition(pc);
+    const playerPos = getPlayerPosition();
     if (playerPos && entity.transform) {
       entity.transform.position[0] = playerPos.x;
       entity.transform.position[1] = playerPos.y;

@@ -3,7 +3,7 @@
  *
  * Handles loading sequences from:
  * - Deep link URLs (shareable links)
- * - Pending edit transfers from Explorer module
+ * - Pending edit transfers from Browser module
  *
  * Encapsulates the complex sequence enrichment logic
  * (position derivation, letter derivation, merging).
@@ -29,7 +29,7 @@ export interface IDeepLinkSequenceHandler {
   hasDeepLink(): boolean;
 
   /**
-   * Check if there's a pending edit sequence from Explorer
+   * Check if there's a pending edit sequence from Browser
    */
   hasPendingEdit(): boolean;
 
@@ -53,7 +53,7 @@ export interface IDeepLinkSequenceHandler {
 
   /**
    * Load sequence from localStorage pending edit transfer.
-   * Used when user clicks "Edit" on a sequence in Explorer.
+   * Used when user clicks "Edit" on a sequence in Browser.
    *
    * @param setSequence Callback to set the sequence in state
    * @returns Result indicating if sequence was loaded

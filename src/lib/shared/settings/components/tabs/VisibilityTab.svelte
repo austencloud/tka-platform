@@ -50,7 +50,6 @@
   let nonRadialVisible = $state(false);
   let handPointVisibility = $state<"all" | "active">("all");
   let stepNumbersVisible = $state(true);
-  let beatPositionVisible = $state(true);
 
   // Animation visibility state
   let animTrailStyle = $state<TrailStyle>("on");
@@ -129,10 +128,6 @@
       case "stepNumbers":
         stepNumbersVisible = !stepNumbersVisible;
         visibilityManager.setBeatNumbersVisibility(stepNumbersVisible);
-        break;
-      case "beatPosition":
-        beatPositionVisible = !beatPositionVisible;
-        visibilityManager.setBeatPositionGlyphVisibility(beatPositionVisible);
         break;
     }
   }
@@ -234,7 +229,6 @@
     nonRadialVisible = visibilityManager.getNonRadialVisibility();
     handPointVisibility = visibilityManager.getHandPointVisibility();
     stepNumbersVisible = visibilityManager.getBeatNumbersVisibility();
-    beatPositionVisible = visibilityManager.getBeatPositionGlyphVisibility();
 
     // Load initial animation visibility
     animTrailStyle = animationVisibilityManager.getTrailStyle();
@@ -269,7 +263,6 @@
       nonRadialVisible = visibilityManager.getNonRadialVisibility();
       handPointVisibility = visibilityManager.getHandPointVisibility();
       stepNumbersVisible = visibilityManager.getBeatNumbersVisibility();
-      beatPositionVisible = visibilityManager.getBeatPositionGlyphVisibility();
     };
 
     const animationObserver = () => {
@@ -330,7 +323,6 @@
       {nonRadialVisible}
       {handPointVisibility}
       {stepNumbersVisible}
-      {beatPositionVisible}
       onToggle={handlePictographToggle}
       isMobileHidden={mobileMode !== "pictograph"}
     />

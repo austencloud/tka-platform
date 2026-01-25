@@ -75,7 +75,7 @@
     sidebarTourState.startTour(sidebarCollapsed);
   }
 
-  function handleExploreOwn() {
+  function handleBrowseOwn() {
     sidebarTourState.skipTour();
   }
 
@@ -104,7 +104,7 @@
 {#if sidebarTourState.phase === "prompt"}
   <SidebarTourPrompt
     onTakeTour={handleTakeTour}
-    onExploreOwn={handleExploreOwn}
+    onBrowseOwn={handleBrowseOwn}
   />
 {/if}
 

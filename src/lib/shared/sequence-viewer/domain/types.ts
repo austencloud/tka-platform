@@ -2,7 +2,7 @@
  * SequenceViewer Domain Types
  *
  * Types for the unified SequenceViewer component that works in both
- * Create (preview mode) and Discover (full mode) contexts.
+ * Create (preview mode) and Browse (full mode) contexts.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -74,7 +74,7 @@ export interface SequenceViewerProps {
 	/** Sequence data to display */
 	sequence: SequenceData;
 
-	/** Viewer mode: preview (Create) or full (Discover) */
+	/** Viewer mode: preview (Create) or full (Browse) */
 	mode: ViewerMode;
 
 	/** Initial media type to show */

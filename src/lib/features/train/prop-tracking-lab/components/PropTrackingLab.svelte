@@ -194,7 +194,7 @@
 	function seekToFrame(index: number) {
 		if (index >= 0 && index < trackedFrames.length) {
 			currentFrameIndex = index;
-			if (videoElement) {
+			if (videoElement && trackedFrames[index]) {
 				videoElement.currentTime = trackedFrames[index].timestamp / 1000;
 			}
 		}
@@ -210,7 +210,7 @@
 
 	function nextKeyframe() {
 		for (let i = currentFrameIndex + 1; i < trackedFrames.length; i++) {
-			if (trackedFrames[i].isKeyframe) {
+			if (trackedFrames[i]?.isKeyframe) {
 				seekToFrame(i);
 				return;
 			}
@@ -219,7 +219,7 @@
 
 	function prevKeyframe() {
 		for (let i = currentFrameIndex - 1; i >= 0; i--) {
-			if (trackedFrames[i].isKeyframe) {
+			if (trackedFrames[i]?.isKeyframe) {
 				seekToFrame(i);
 				return;
 			}

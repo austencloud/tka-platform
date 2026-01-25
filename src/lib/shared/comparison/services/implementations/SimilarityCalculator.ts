@@ -257,14 +257,14 @@ export class SimilarityCalculator implements ISimilarityCalculator {
     for (let i = 1; i <= m; i++) {
       for (let j = 1; j <= n; j++) {
         if (a[i - 1] === b[j - 1]) {
-          dp[i][j] = dp[i - 1][j - 1];
+          dp[i]![j] = dp[i - 1]![j - 1]!;
         } else {
-          dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+          dp[i]![j] = 1 + Math.min(dp[i - 1]![j]!, dp[i]![j - 1]!, dp[i - 1]![j - 1]!);
         }
       }
     }
 
-    return dp[m][n];
+    return dp[m]![n]!;
   }
 
   private computeMotionSimilarity(
@@ -303,8 +303,12 @@ export class SimilarityCalculator implements ISimilarityCalculator {
     let matches = 0;
 
     for (let i = 0; i < minLen; i++) {
-      const sigA = this.beatSignatureGenerator.generateSignature(stepsA[i]);
-      const sigB = this.beatSignatureGenerator.generateSignature(stepsB[i]);
+      const stepA = stepsA[i];
+      const stepB = stepsB[i];
+      if (!stepA || !stepB) continue;
+
+      const sigA = this.beatSignatureGenerator.generateSignature(stepA);
+      const sigB = this.beatSignatureGenerator.generateSignature(stepB);
 
       if (sigA.startPositionGroup === sigB.startPositionGroup) {
         matches += 0.5;
@@ -353,10 +357,17 @@ export class SimilarityCalculator implements ISimilarityCalculator {
     const minLen = Math.min(stepsA.length, stepsB.length);
 
     for (let i = 0; i < minLen; i++) {
-      const sigA = this.beatSignatureGenerator.generateSignature(stepsA[i]);
-      const sigB = this.beatSignatureGenerator.generateSignature(stepsB[i]);
-      const result = this.beatSignatureGenerator.computeSimilarity(sigA, sigB);
-      scores.push(result.score);
+      const stepA = stepsA[i];
+      const stepB = stepsB[i];
+      if (!stepA || !stepB) {
+        scores.push(0);
+        continue;
+      }
+
+      const sigA = this.beatSignatureGenerator.generateSignature(stepA);
+      const sigB = this.beatSignatureGenerator.generateSignature(stepB);
+      const result = this.beatSignatureGenerator.compareSignatures(sigA, sigB);
+      scores.push(result.similarity);
     }
 
     // Pad with zeros for length difference
@@ -393,6 +404,7 @@ export class SimilarityCalculator implements ISimilarityCalculator {
     for (let i = 0; i < minLen; i++) {
       const stepA = stepsA[i];
       const stepB = stepsB[i];
+      if (!stepA || !stepB) continue;
 
       // Motion type comparison
       const blueA = stepA.motions[MotionColor.BLUE];
@@ -482,10 +494,14 @@ export class SimilarityCalculator implements ISimilarityCalculator {
     let matches = 0;
 
     for (let i = 0; i < minLen; i++) {
-      const blueA = stepsA[i].motions[MotionColor.BLUE];
-      const redA = stepsA[i].motions[MotionColor.RED];
-      const blueB = stepsB[i].motions[MotionColor.BLUE];
-      const redB = stepsB[i].motions[MotionColor.RED];
+      const stepA = stepsA[i];
+      const stepB = stepsB[i];
+      if (!stepA || !stepB) continue;
+
+      const blueA = stepA.motions[MotionColor.BLUE];
+      const redA = stepA.motions[MotionColor.RED];
+      const blueB = stepB.motions[MotionColor.BLUE];
+      const redB = stepB.motions[MotionColor.RED];
 
       if (blueA && blueB && blueA.motionType === blueB.motionType) {
         matches++;
@@ -532,9 +548,11 @@ export class SimilarityCalculator implements ISimilarityCalculator {
     // Common subsequences
     if (commonSubsequences.length > 0) {
       const longest = commonSubsequences[0];
-      parts.push(
-        `Longest matching section: ${longest.length} beat${longest.length === 1 ? "" : "s"}`
-      );
+      if (longest) {
+        parts.push(
+          `Longest matching section: ${longest.length} beat${longest.length === 1 ? "" : "s"}`
+        );
+      }
     }
 
     // Perfect matches

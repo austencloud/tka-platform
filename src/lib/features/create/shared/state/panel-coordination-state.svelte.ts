@@ -129,6 +129,8 @@ export interface PanelCoordinationState {
   get requestedShareHubFormat(): "animation" | "static" | null;
   /** View ID that increments on each open - use with {#key} to force component remount */
   get shareHubViewId(): number;
+  /** Guard flag to prevent transient close effects when reopening */
+  get isShareHubReopening(): boolean;
 
   openShareHubPanel(format?: "animation" | "static"): void;
   closeShareHubPanel(): void;

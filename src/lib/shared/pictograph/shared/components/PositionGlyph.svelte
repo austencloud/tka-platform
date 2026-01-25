@@ -178,20 +178,20 @@ Based on legacy start_to_end_pos_glyph.py implementation.
   let isAnimating = $state(false);
 
   $effect(() => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     const changed =
       (prevStartPosition !== undefined && startPosition !== prevStartPosition) ||
       (prevEndPosition !== undefined && endPosition !== prevEndPosition);
 
     if (changed && (startPosition !== null || endPosition !== null)) {
       isAnimating = true;
-      const timeout = setTimeout(() => { isAnimating = false; }, 180);
-      prevStartPosition = startPosition;
-      prevEndPosition = endPosition;
-      return () => clearTimeout(timeout);
+      timeout = setTimeout(() => { isAnimating = false; }, 180);
     }
 
     prevStartPosition = startPosition;
     prevEndPosition = endPosition;
+
+    return () => { if (timeout) clearTimeout(timeout); };
   });
 </script>
 

@@ -211,9 +211,12 @@ export function createVideoEditorController(options: VideoEditorControllerOption
   function updateLocalVideo(shortcode: string, updates: Partial<ShowcaseVideo>) {
     const index = videos.findIndex((v) => v.shortcode === shortcode);
     if (index !== -1) {
-      videos[index] = { ...videos[index], ...updates };
-      videos = [...videos];
-      onVideosUpdate(videos);
+      const existingVideo = videos[index];
+      if (existingVideo) {
+        videos[index] = { ...existingVideo, ...updates };
+        videos = [...videos];
+        onVideosUpdate(videos);
+      }
     }
   }
 
@@ -465,7 +468,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
       const results = await sequenceMatcher.searchByWord(video.title);
       matchedSequences = results;
       if (results.length === 1) {
-        selectedSequenceForLink = results[0];
+        selectedSequenceForLink = results[0] ?? null;
       }
     } catch (e) {
       console.error("Failed to search sequences:", e);
@@ -564,7 +567,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
 
   async function updateTitle(newTitle: string) {
     if (!currentVideo || saving) return;
-    const trimmedTitle = newTitle.trim() || null;
+    const trimmedTitle = newTitle.trim() || undefined;
     // Optimistic update for responsiveness
     updateLocalVideo(currentVideo.shortcode, { title: trimmedTitle });
     try {
@@ -623,7 +626,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
     if (!currentVideo) return;
     saving = true;
     try {
-      await persister.updateVideo(currentVideo.shortcode, { crop: null });
+      await persister.updateVideo(currentVideo.shortcode, { crop: undefined });
       updateLocalVideo(currentVideo.shortcode, { crop: undefined });
     } catch (e) {
       console.error("Failed to clear crop:", e);
@@ -658,7 +661,7 @@ export function createVideoEditorController(options: VideoEditorControllerOption
     if (!currentVideo) return;
     saving = true;
     try {
-      await persister.updateVideo(currentVideo.shortcode, { snip: null });
+      await persister.updateVideo(currentVideo.shortcode, { snip: undefined });
       updateLocalVideo(currentVideo.shortcode, { snip: undefined });
     } catch (e) {
       console.error("Failed to clear snip:", e);
@@ -685,14 +688,17 @@ export function createVideoEditorController(options: VideoEditorControllerOption
     const num = parseInt(e.key);
     if (num >= 1 && num <= categories.length && mode !== "link") {
       e.preventDefault();
-      setCategory(categories[num - 1].id);
+      const category = categories[num - 1];
+      if (category) {
+        setCategory(category.id);
+      }
       return;
     }
 
     // In link mode, number keys select sequence
     if (mode === "link" && num >= 1 && num <= matchedSequences.length) {
       e.preventDefault();
-      selectedSequenceForLink = matchedSequences[num - 1];
+      selectedSequenceForLink = matchedSequences[num - 1] ?? null;
       return;
     }
 
@@ -701,7 +707,10 @@ export function createVideoEditorController(options: VideoEditorControllerOption
       const letterIndex = PERFORMER_KEYS.indexOf(e.key.toLowerCase());
       if (letterIndex >= 0 && letterIndex < quickPerformers.length) {
         e.preventDefault();
-        togglePerformer(quickPerformers[letterIndex]);
+        const performer = quickPerformers[letterIndex];
+        if (performer) {
+          togglePerformer(performer);
+        }
         return;
       }
     }

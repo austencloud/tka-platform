@@ -192,24 +192,29 @@ export class SequenceMatcher implements ISequenceMatcher {
       matrix[i] = [i];
     }
     for (let j = 0; j <= a.length; j++) {
-      matrix[0][j] = j;
+      matrix[0]![j] = j;
     }
 
     for (let i = 1; i <= b.length; i++) {
       for (let j = 1; j <= a.length; j++) {
+        const prevRow = matrix[i - 1];
+        const currRow = matrix[i];
+        if (!prevRow || !currRow) continue;
+
         if (b[i - 1] === a[j - 1]) {
-          matrix[i][j] = matrix[i - 1][j - 1];
+          currRow[j] = prevRow[j - 1] ?? 0;
         } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1, // substitution
-            matrix[i][j - 1] + 1, // insertion
-            matrix[i - 1][j] + 1 // deletion
+          currRow[j] = Math.min(
+            (prevRow[j - 1] ?? 0) + 1, // substitution
+            (currRow[j - 1] ?? 0) + 1, // insertion
+            (prevRow[j] ?? 0) + 1 // deletion
           );
         }
       }
     }
 
-    return matrix[b.length][a.length];
+    const lastRow = matrix[b.length];
+    return lastRow?.[a.length] ?? 0;
   }
 
   private async getAllSequences(): Promise<MatchedSequence[]> {
@@ -233,11 +238,11 @@ export class SequenceMatcher implements ISequenceMatcher {
       seenIds.add(doc.id);
       results.push({
         id: doc.id,
-        word: data.word || "",
-        name: data.name || data.word || "Untitled",
-        ownerId: data.ownerId || "",
-        ownerName: data.author || data.ownerName || "Unknown",
-        thumbnail: data.thumbnails?.[0] || null,
+        word: (data["word"] as string | undefined) || "",
+        name: (data["name"] as string | undefined) || (data["word"] as string | undefined) || "Untitled",
+        ownerId: (data["ownerId"] as string | undefined) || "",
+        ownerName: (data["author"] as string | undefined) || (data["ownerName"] as string | undefined) || "Unknown",
+        thumbnail: (data["thumbnails"] as string[] | undefined)?.[0] ?? null,
         isPublic: true,
       });
     }
@@ -254,12 +259,12 @@ export class SequenceMatcher implements ISequenceMatcher {
       const data = doc.data();
       results.push({
         id: doc.id,
-        word: data.word || "",
-        name: data.name || data.word || "Untitled",
+        word: (data["word"] as string | undefined) || "",
+        name: (data["name"] as string | undefined) || (data["word"] as string | undefined) || "Untitled",
         ownerId: AUSTEN_USER_ID,
-        ownerName: data.author || "Austen",
-        thumbnail: data.thumbnails?.[0] || null,
-        isPublic: data.visibility === "public",
+        ownerName: (data["author"] as string | undefined) || "Austen",
+        thumbnail: (data["thumbnails"] as string[] | undefined)?.[0] ?? null,
+        isPublic: (data["visibility"] as string | undefined) === "public",
       });
     }
 

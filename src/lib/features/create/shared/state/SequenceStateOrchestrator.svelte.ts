@@ -119,7 +119,7 @@ export function createSequenceState(services: SequenceStateServices) {
     try {
       hasDeepLink = deepLinker.hasDataForModule("create") ?? false;
 
-      // Also check for pending edit from Discover gallery (stored in localStorage)
+      // Also check for pending edit from Browse gallery (stored in localStorage)
       hasPendingEdit =
         localStorage.getItem("tka-pending-edit-sequence") !== null;
     } catch {
@@ -279,12 +279,12 @@ export function createSequenceState(services: SequenceStateServices) {
 
     // Update start position from sequence
     // Check both startingPosition (full beat format) and startPosition (raw position data)
-    // Sequences from Discover gallery may only have startPosition
+    // Sequences from Browse gallery may only have startPosition
     let startPosBeat: StartPositionData | null =
       sequence?.startingPosition || sequence?.startPosition || null;
 
     // If no explicit start position but sequence has steps, derive from the first beat
-    // This handles sequences loaded from Discover where start position info is stored
+    // This handles sequences loaded from Browse where start position info is stored
     // in the first beat's startPosition field rather than on the sequence itself
     if (!startPosBeat && sequence?.steps?.length) {
       try {

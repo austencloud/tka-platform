@@ -3,7 +3,7 @@
    * Viewer3DModule
    *
    * Main 3D animation viewer module. Load sequences from the library
-   * and explore them in 3D space with camera controls.
+   * and browse them in 3D space with camera controls.
    *
    * Admin-only (Level 6 feature).
    */

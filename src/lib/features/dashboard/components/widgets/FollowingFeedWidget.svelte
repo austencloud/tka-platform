@@ -68,7 +68,7 @@
   });
 
   async function viewCreators() {
-    await handleModuleChange("discover", "creators");
+    await handleModuleChange("browse", "creators");
   }
 </script>
 
@@ -126,7 +126,7 @@
   </div>
 
   <button class="view-all-btn" onclick={viewCreators}>
-    <span>Discover Creators</span>
+    <span>Browse Creators</span>
     <i class="fas fa-arrow-right" aria-hidden="true"></i>
   </button>
 </div>

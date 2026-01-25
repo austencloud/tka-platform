@@ -838,7 +838,7 @@
     color: white;
   }
 
-  /* On mobile, always show the overlay slightly for discoverability */
+  /* On mobile, always show the overlay slightly for browseability */
   @media (max-width: 768px) {
     .screenshot-overlay {
       opacity: 0.4;

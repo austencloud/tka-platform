@@ -146,6 +146,10 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
       const stepA = seqA.steps[i];
       const stepB = seqB.steps[i];
 
+      if (!stepA || !stepB) {
+        return false;
+      }
+
       const blueA = stepA.motions[MotionColor.BLUE];
       const redA = stepA.motions[MotionColor.RED];
       const blueB = stepB.motions[MotionColor.BLUE];
@@ -218,6 +222,10 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
       const stepBIndex = (i + offset) % len;
       const stepB = seqB.steps[stepBIndex];
 
+      if (!stepA || !stepB) {
+        return false;
+      }
+
       const sigA = this.beatSignatureGenerator.generateSignature(stepA);
       const sigB = this.beatSignatureGenerator.generateSignature(stepB);
 
@@ -259,6 +267,10 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
     for (let i = 0; i < seqA.steps.length; i++) {
       const stepA = seqA.steps[i];
       const stepB = seqB.steps[i];
+
+      if (!stepA || !stepB) {
+        return false;
+      }
 
       if (!this.spatialTransformDetector.isRotationOf(stepA, stepB, rotationSteps)) {
         return false;
@@ -306,6 +318,10 @@ export class SequenceEquivalenceDetector implements ISequenceEquivalenceDetector
       const stepA = seqA.steps[i];
       const stepBIndex = (i + circularOffset) % len;
       const stepB = seqB.steps[stepBIndex];
+
+      if (!stepA || !stepB) {
+        return false;
+      }
 
       // If spatial steps is 0, just compare signatures
       if (spatialSteps === 0) {

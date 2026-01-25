@@ -25,17 +25,17 @@ const IS_DEV =
 /**
  * Navigation patterns: most likely next modules from each module
  * Based on user behavior analysis:
- * - Dashboard → Create (start building), Discover (browse)
- * - Discover → Create (fork/modify)
- * - Create → Compose (animate), Discover (share)
+ * - Dashboard → Create (start building), Browse (browse)
+ * - Browse → Create (fork/modify)
+ * - Create → Compose (animate), Browse (share)
  * - Compose → Create (edit more)
  * - Learn → Create (try it), Train (practice)
  * - Train → Create (compose), Learn (review)
  */
 const NAVIGATION_PATTERNS: Record<string, string[]> = {
-  dashboard: ["create", "explore"],
-  create: ["compose", "explore"],
-  discover: ["create"],
+  dashboard: ["create", "browse"],
+  create: ["compose", "browse"],
+  browse: ["create"],
   compose: ["create"],
   learn: ["create", "train"],
   train: ["create", "learn"],
@@ -54,8 +54,7 @@ const NAVIGATION_PATTERNS: Record<string, string[]> = {
 const MODULE_PATHS: Record<string, string> = {
   // dashboard removed - Create is now the default landing module
   create: "/src/lib/features/create/shared/components/CreateModule.svelte",
-  discover:
-    "/src/lib/features/explore/shared/components/ExploreModule.svelte",
+  browse: "/src/lib/features/browse/shared/components/BrowseModule.svelte",
   compose: "/src/lib/features/compose/ComposeModule.svelte",
   learn: "/src/lib/features/learn/LearnTab.svelte",
   train: "/src/lib/features/train/components/TrainModule.svelte",
@@ -162,9 +161,9 @@ export function preloadCriticalModules(currentModuleId?: string): void {
 
   schedulePrefetch(
     () => {
-      // Most users start on Dashboard and go to Create or Discover
+      // Most users start on Dashboard and go to Create or Browse
       prefetchModule("create");
-      prefetchModule("explore");
+      prefetchModule("browse");
     },
     { timeout: 3000 }
   );

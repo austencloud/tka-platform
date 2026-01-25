@@ -130,7 +130,7 @@ export function subscribeToNewReports(): void {
 	}
 
 	const reportQuerier = container.items.reportQuerier;
-	unsubscribe = reportQuerier.subscribeToNew((reports) => {
+	unsubscribe = reportQuerier.subscribeToNew((reports: UserReport[]) => {
 		// Only update if we're filtering by 'new' or no filter
 		if (!_state.filters.status || _state.filters.status === 'new') {
 			_state.reports = reports;

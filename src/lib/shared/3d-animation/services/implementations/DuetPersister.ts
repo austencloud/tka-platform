@@ -2,10 +2,10 @@
  * DuetPersister Implementation
  *
  * Persists duet sequences to localStorage and resolves sequence IDs
- * to full SequenceData using the discover loader.
+ * to full SequenceData using the browse loader.
  */
 
-import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IDuetPersister } from "../contracts/IDuetPersister";
 import type {
@@ -27,7 +27,7 @@ interface StoredDuet extends Omit<DuetSequence, "createdAt"> {
 export class DuetPersister implements IDuetPersister {
   private sequenceCache: Map<string, SequenceData> | null = null;
 
-  constructor(private exploreLoader: IExploreLoader) {}
+  constructor(private browseLoader: IBrowseLoader) {}
 
   /**
    * Save a new duet sequence
@@ -156,7 +156,7 @@ export class DuetPersister implements IDuetPersister {
     if (this.sequenceCache) return;
 
     try {
-      const sequences = await this.exploreLoader.loadSequenceMetadata();
+      const sequences = await this.browseLoader.loadSequenceMetadata();
       this.sequenceCache = new Map();
       for (const seq of sequences) {
         this.sequenceCache.set(seq.id, seq);

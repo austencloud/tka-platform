@@ -70,7 +70,7 @@ export function calculateDrainage(
   const maxAccumulation = Math.max(...drainageAccumulation);
   const normalizedAccumulation = new Float32Array(vertexCount);
   for (let i = 0; i < vertexCount; i++) {
-    normalizedAccumulation[i] = maxAccumulation > 0 ? drainageAccumulation[i] / maxAccumulation : 0;
+    normalizedAccumulation[i] = maxAccumulation > 0 ? (drainageAccumulation[i] ?? 0) / maxAccumulation : 0;
   }
 
   // Step 4: Calculate water mask based on drainage + height
@@ -177,7 +177,7 @@ function calculateFlowAccumulation(flowDirection: Uint8Array, resolution: number
       const nz = z + DIRECTION_DZ[dir]!;
       if (nx >= 0 && nx < resolution && nz >= 0 && nz < resolution) {
         const neighborIdx = nz * resolution + nx;
-        upstreamCount[neighborIdx]++;
+        upstreamCount[neighborIdx] = (upstreamCount[neighborIdx] ?? 0) + 1;
       }
     }
   }
@@ -210,11 +210,11 @@ function calculateFlowAccumulation(flowDirection: Uint8Array, resolution: number
       const neighborIdx = nz * resolution + nx;
 
       // Add our accumulation to downstream neighbor
-      accumulation[neighborIdx] += accumulation[idx]!;
+      accumulation[neighborIdx] = (accumulation[neighborIdx] ?? 0) + (accumulation[idx] ?? 0);
 
       // Decrease upstream count and add to queue if ready
-      upstreamCount[neighborIdx]--;
-      if (upstreamCount[neighborIdx] === 0) {
+      upstreamCount[neighborIdx] = (upstreamCount[neighborIdx] ?? 0) - 1;
+      if ((upstreamCount[neighborIdx] ?? 0) === 0) {
         queue.push(neighborIdx);
       }
     }

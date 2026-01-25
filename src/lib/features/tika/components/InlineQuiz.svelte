@@ -22,15 +22,15 @@
 
   // State
   type QuizState = "unanswered" | "processing" | "correct" | "incorrect";
-  let state = $state<QuizState>("unanswered");
-  let selectedOptionId = $state<string | null>(null);
-  let showConfetti = $state(false);
+  let quizState: QuizState = $state("unanswered");
+  let selectedOptionId: string | null = $state(null);
+  let showConfetti: boolean = $state(false);
 
   // Find the correct option
   const correctOption = $derived(quiz.options.find(opt => opt.correct));
 
   // Check if reduced motion is preferred
-  let prefersReducedMotion = $state(false);
+  let prefersReducedMotion: boolean = $state(false);
 
   $effect(() => {
     if (typeof window !== "undefined") {
@@ -53,21 +53,21 @@
 
   // Handle option selection
   function selectOption(option: QuizOption) {
-    if (state !== "unanswered") return;
+    if (quizState !== "unanswered") return;
 
     selectedOptionId = option.id;
-    state = "processing";
+    quizState = "processing";
 
     // Brief delay for processing feel (100ms)
     setTimeout(() => {
       if (option.correct) {
-        state = "correct";
+        quizState = "correct";
         if (!prefersReducedMotion) {
           showConfetti = true;
           setTimeout(() => showConfetti = false, 1500);
         }
       } else {
-        state = "incorrect";
+        quizState = "incorrect";
       }
     }, 100);
   }
@@ -80,9 +80,9 @@
     }
   }
 
-  // Get option state class
+  // Get option quizState class
   function getOptionClass(option: QuizOption): string {
-    if (state === "unanswered" || state === "processing") {
+    if (quizState === "unanswered" || quizState === "processing") {
       return selectedOptionId === option.id ? "selected" : "";
     }
 
@@ -152,7 +152,7 @@
             class="quiz-pictograph-option {getOptionClass(option)}"
             onclick={() => selectOption(option)}
             onkeydown={(e) => handleKeydown(e, option)}
-            disabled={state !== "unanswered"}
+            disabled={quizState !== "unanswered"}
             role="radio"
             aria-checked={selectedOptionId === option.id}
             aria-label="Letter {option.letter}"
@@ -168,7 +168,7 @@
               />
             </div>
             <span class="pictograph-label">{option.letter}</span>
-            {#if state !== "unanswered"}
+            {#if quizState !== "unanswered"}
               <span class="option-overlay" aria-hidden="true">
                 {#if option.correct}
                   <i class="fas fa-check"></i>
@@ -195,7 +195,7 @@
             class="quiz-motion-chip {getOptionClass(option)}"
             onclick={() => selectOption(option)}
             onkeydown={(e) => handleKeydown(e, option)}
-            disabled={state !== "unanswered"}
+            disabled={quizState !== "unanswered"}
             role="radio"
             aria-checked={selectedOptionId === option.id}
             aria-label="Blue {option.blueMotion}, Red {option.redMotion}"
@@ -209,7 +209,7 @@
               <span class="motion-dot red"></span>
               {option.redMotion}
             </span>
-            {#if state !== "unanswered"}
+            {#if quizState !== "unanswered"}
               <span class="chip-indicator" aria-hidden="true">
                 {#if option.correct}
                   <i class="fas fa-check"></i>
@@ -236,19 +236,19 @@
             class="quiz-option {getOptionClass(option)}"
             onclick={() => selectOption(option)}
             onkeydown={(e) => handleKeydown(e, option)}
-            disabled={state !== "unanswered"}
+            disabled={quizState !== "unanswered"}
             role="radio"
             aria-checked={selectedOptionId === option.id}
-            aria-disabled={state !== "unanswered"}
+            aria-disabled={quizState !== "unanswered"}
           >
             <span class="option-letter" aria-hidden="true">
               {String.fromCharCode(65 + index)}
             </span>
             <span class="option-text">{option.text}</span>
             <span class="option-indicator" aria-hidden="true">
-              {#if state !== "unanswered" && option.correct}
+              {#if quizState !== "unanswered" && option.correct}
                 <i class="fas fa-check"></i>
-              {:else if state === "incorrect" && selectedOptionId === option.id}
+              {:else if quizState === "incorrect" && selectedOptionId === option.id}
                 <i class="fas fa-times"></i>
               {/if}
             </span>
@@ -259,14 +259,14 @@
   {/if}
 
   <!-- Feedback -->
-  {#if state === "correct" || state === "incorrect"}
+  {#if quizState === "correct" || quizState === "incorrect"}
     <div
-      class="quiz-feedback {state}"
+      class="quiz-feedback {quizState}"
       role="status"
       aria-live="polite"
     >
       <div class="feedback-header">
-        {#if state === "correct"}
+        {#if quizState === "correct"}
           <span class="feedback-icon correct" aria-hidden="true">
             <i class="fas fa-check-circle"></i>
           </span>
@@ -279,9 +279,9 @@
         {/if}
       </div>
       <p class="feedback-message">
-        {state === "correct" ? quiz.correctFeedback : quiz.incorrectFeedback}
+        {quizState === "correct" ? quiz.correctFeedback : quiz.incorrectFeedback}
       </p>
-      {#if quiz.explanation && state === "incorrect"}
+      {#if quiz.explanation && quizState === "incorrect"}
         <p class="feedback-explanation">{quiz.explanation}</p>
       {/if}
     </div>

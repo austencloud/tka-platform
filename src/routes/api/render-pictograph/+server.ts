@@ -22,12 +22,21 @@ export const GET: RequestHandler = async ({ url }) => {
     const csvPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv');
     const csvData = fs.readFileSync(csvPath, 'utf-8');
     const lines = csvData.split('\n');
-    const headers = lines[0].split(',');
+    const firstLine = lines[0];
+
+    if (!firstLine) {
+      return new Response('Empty CSV file', { status: 500 });
+    }
+
+    const headers = firstLine.split(',');
 
     // Find the letter
     let row: string[] | null = null;
     for (let i = 1; i < lines.length; i++) {
-      const r = lines[i].split(',');
+      const currentLine = lines[i];
+      if (!currentLine) continue;
+
+      const r = currentLine.split(',');
       if (r[0] === letter) {
         row = r;
         break;
@@ -75,25 +84,30 @@ export const GET: RequestHandler = async ({ url }) => {
     // Render using real Canvas2DDirectRenderer with Node.js canvas
     const canvas = await renderer.renderPictograph(pictographData as any, {
       size: 950,
-      showGrid: true,
-      showTKA: true,
-      showVTG: false,
-      showElemental: false,
-      showPositions: false,
-      showReversals: false,
-      showNonRadialPoints: false,
-      darkMode: false,
-      handPointVisibility: 'active',
+      visibility: {
+        showTKA: true,
+        showVTG: false,
+        showElemental: false,
+        showPositions: false,
+        showReversals: false,
+        showNonRadialPoints: false,
+        darkMode: false,
+      }
     });
 
     // Convert to PNG buffer (works with both browser and Node.js canvas)
-    const buffer = canvas.toBuffer ? canvas.toBuffer('image/png') : await new Promise<Buffer>((resolve) => {
-      canvas.toBlob((blob: Blob) => {
-        blob.arrayBuffer().then(ab => resolve(Buffer.from(ab)));
-      }, 'image/png');
-    });
+    const buffer = 'toBuffer' in canvas && typeof canvas.toBuffer === 'function'
+      ? (canvas.toBuffer as (type: string) => Buffer)('image/png')
+      : await new Promise<Buffer>((resolve) => {
+          canvas.toBlob((blob: Blob | null) => {
+            if (!blob) {
+              throw new Error('Failed to convert canvas to blob');
+            }
+            blob.arrayBuffer().then(ab => resolve(Buffer.from(ab)));
+          }, 'image/png');
+        });
 
-    return new Response(buffer, {
+    return new Response(buffer as BodyInit, {
       headers: {
         'Content-Type': 'image/png',
         'Content-Disposition': `attachment; filename="pictograph-${letter}.png"`,

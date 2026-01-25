@@ -154,7 +154,7 @@ Removed zero-value tests that provided no automated testing benefit:
 
 This test structure provides:
 
-- **Discoverability**: Easy to find relevant tests
+- **Browseability**: Easy to find relevant tests
 - **Maintainability**: Clear separation of concerns
 - **Performance**: Fast test execution (~11 seconds for 309 tests)
 - **CI/CD**: Better pipeline organization

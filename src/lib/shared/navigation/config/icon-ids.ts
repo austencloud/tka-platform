@@ -10,7 +10,7 @@
 export const MODULE_ICONS = {
   dashboard: "fa-home",
   create: "fa-tools",
-  discover: "fa-compass",
+  browse: "fa-compass",
   learn: "fa-graduation-cap",
   compose: "fa-layer-group",
   train: "fa-running",
@@ -35,8 +35,8 @@ export const LEARN_TAB_ICONS = {
   codex: "fa-book-open",
 } as const;
 
-/** Icon IDs for discover tabs */
-export const DISCOVER_TAB_ICONS = {
+/** Icon IDs for browse tabs */
+export const BROWSE_TAB_ICONS = {
   gallery: "fa-layer-group",
   collections: "fa-folder",
   creators: "fa-users",

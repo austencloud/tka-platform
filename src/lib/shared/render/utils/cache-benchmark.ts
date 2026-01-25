@@ -112,7 +112,7 @@ export async function runCacheBenchmark(
     const { container } = await import("$lib/shared/di");
     const imageComposer = container.items.imageComposer;
 
-    // Load real sequences from the discover index
+    // Load real sequences from the browse index
     const sequences = await loadRealSequences(sequenceCount);
     if (sequences.length === 0) {
       console.error("[CacheBenchmark] No valid sequences found");
@@ -293,12 +293,12 @@ async function runPass(
 }
 
 /**
- * Load real sequences from the discover index using ExploreLoader
+ * Load real sequences from the browse index using BrowseLoader
  */
 async function loadRealSequences(count: number): Promise<SequenceData[]> {
   try {
     const { container } = await import("$lib/shared/di");
-    const exploreLoader = container.items.exploreLoader as {
+    const browseLoader = container.items.browseLoader as {
       loadSequenceMetadata: () => Promise<SequenceData[]>;
       loadFullSequenceData: (name: string) => Promise<SequenceData | null>;
     };
@@ -306,7 +306,7 @@ async function loadRealSequences(count: number): Promise<SequenceData[]> {
     // Ensure sequences are loaded first (populates the cache)
     console.log("[CacheBenchmark] Loading sequence metadata...");
     try {
-      await exploreLoader.loadSequenceMetadata();
+      await browseLoader.loadSequenceMetadata();
       console.log("[CacheBenchmark] ✓ Index loaded");
     } catch (indexErr) {
       const msg = indexErr instanceof Error ? indexErr.message : String(indexErr);
@@ -338,7 +338,7 @@ async function loadRealSequences(count: number): Promise<SequenceData[]> {
 
       loadAttempts++;
       try {
-        const fullSeq = await exploreLoader.loadFullSequenceData(name);
+        const fullSeq = await browseLoader.loadFullSequenceData(name);
         if (fullSeq && fullSeq.steps && fullSeq.steps.length > 0) {
           // Just accept sequences with steps - the renderer will show what works
           loadedSequences.push(fullSeq);

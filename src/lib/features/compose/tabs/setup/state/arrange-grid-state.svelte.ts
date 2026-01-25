@@ -61,7 +61,9 @@ function calculateCellBeats(cell: GridCell): number {
     return layer.sequence.steps?.length || 1;
   });
 
-  return beatCounts.reduce((acc, count) => lcm(acc, count), beatCounts[0]);
+  const firstCount = beatCounts[0];
+  if (firstCount === undefined) return 1;
+  return beatCounts.reduce((acc, count) => lcm(acc, count), firstCount);
 }
 
 function calculateTotalBeats(cells: GridCell[]): number {
@@ -73,7 +75,9 @@ function calculateTotalBeats(cells: GridCell[]): number {
   const beatCounts = enabledCellsWithLayers.map((cell) =>
     calculateCellBeats(cell)
   );
-  return beatCounts.reduce((acc, count) => lcm(acc, count), beatCounts[0]);
+  const firstCount = beatCounts[0];
+  if (firstCount === undefined) return 0;
+  return beatCounts.reduce((acc, count) => lcm(acc, count), firstCount);
 }
 
 function generateCellId(row: number, col: number): string {
@@ -402,8 +406,11 @@ function createArrangeGridState() {
       if (!cell || layerIndex < 0 || layerIndex >= cell.layers.length) return;
 
       const newLayers = [...cell.layers];
+      const existingLayer = newLayers[layerIndex];
+      if (!existingLayer) return;
+
       newLayers[layerIndex] = {
-        ...newLayers[layerIndex],
+        ...existingLayer,
         beatOffset: Math.max(0, offset),
       };
 

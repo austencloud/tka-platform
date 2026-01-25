@@ -248,7 +248,7 @@ export function generateStepTimestamps(
   let time = offset;
   while (time <= duration) {
     timestamps.push(time);
-    time += stepInterval;
+    time += beatInterval;
   }
 
   return timestamps;

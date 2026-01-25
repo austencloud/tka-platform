@@ -269,55 +269,65 @@ export class InviteHandler implements IInviteHandler {
 		this.invitesUnsubscribe = createHMRSafeDatabaseListener(
 			'invites-listener',
 			`${FIREBASE_PATHS.INVITES}/${user.uid}`,
-			async () => {
-				const database = await getDatabaseInstance();
-				this.invitesRef = ref(database, `${FIREBASE_PATHS.INVITES}/${user.uid}`);
+			() => {
+				let cleanup: (() => void) | null = null;
 
-				const handleValue = (snapshot: {
-					val: () => Record<string, InviteFirebaseData> | null;
-				}) => {
-					const data = snapshot.val();
+				// Setup async - IIFE to avoid returning Promise
+				(async () => {
+					const database = await getDatabaseInstance();
+					this.invitesRef = ref(database, `${FIREBASE_PATHS.INVITES}/${user.uid}`);
 
-					if (!data) {
-						this._pendingInvites = [];
-						return;
-					}
+					const handleValue = (snapshot: {
+						val: () => Record<string, InviteFirebaseData> | null;
+					}) => {
+						const data = snapshot.val();
 
-					const now = Date.now();
-					const oldPendingIds = new Set(this._pendingInvites.map((i) => i.inviteId));
-
-					// Convert to array, filter for pending only
-					const invites: Invite[] = Object.entries(data)
-						.map(([inviteId, inv]) => ({
-							inviteId,
-							fromUserId: inv.fromUserId,
-							fromDisplayName: inv.fromDisplayName,
-							toUserId: user.uid,
-							sessionId: inv.sessionId,
-							sequenceId: inv.sequenceId,
-							sequenceWord: inv.sequenceWord,
-							createdAt: inv.createdAt,
-							expiresAt: inv.expiresAt,
-							status: inv.status
-						}))
-						.filter((inv) => inv.status === 'pending' && inv.expiresAt > now);
-
-					// Detect new invites
-					for (const invite of invites) {
-						if (!oldPendingIds.has(invite.inviteId)) {
-							this.notifyInviteReceived(invite);
+						if (!data) {
+							this._pendingInvites = [];
+							return;
 						}
-					}
 
-					this._pendingInvites = invites;
-				};
+						const now = Date.now();
+						const oldPendingIds = new Set(this._pendingInvites.map((i) => i.inviteId));
 
-				onValue(this.invitesRef, handleValue);
+						// Convert to array, filter for pending only
+						const invites: Invite[] = Object.entries(data)
+							.map(([inviteId, inv]) => ({
+								inviteId,
+								fromUserId: inv.fromUserId,
+								fromDisplayName: inv.fromDisplayName,
+								toUserId: user.uid,
+								sessionId: inv.sessionId,
+								sequenceId: inv.sequenceId,
+								sequenceWord: inv.sequenceWord,
+								createdAt: inv.createdAt,
+								expiresAt: inv.expiresAt,
+								status: inv.status
+							}))
+							.filter((inv) => inv.status === 'pending' && inv.expiresAt > now);
 
+						// Detect new invites
+						for (const invite of invites) {
+							if (!oldPendingIds.has(invite.inviteId)) {
+								this.notifyInviteReceived(invite);
+							}
+						}
+
+						this._pendingInvites = invites;
+					};
+
+					onValue(this.invitesRef, handleValue);
+
+					cleanup = () => {
+						if (this.invitesRef) {
+							off(this.invitesRef, 'value', handleValue);
+						}
+					};
+				})();
+
+				// Return sync cleanup that defers to async setup
 				return () => {
-					if (this.invitesRef) {
-						off(this.invitesRef, 'value', handleValue);
-					}
+					if (cleanup) cleanup();
 				};
 			}
 		);
@@ -371,47 +381,57 @@ export class InviteHandler implements IInviteHandler {
 		createHMRSafeDatabaseListener(
 			`invite-response-${inviteId}`,
 			`${FIREBASE_PATHS.INVITES}/${toUserId}/${inviteId}`,
-			async () => {
-				const database = await getDatabaseInstance();
-				const inviteRef = ref(
-					database,
-					`${FIREBASE_PATHS.INVITES}/${toUserId}/${inviteId}`
-				);
+			() => {
+				let cleanup: (() => void) | null = null;
 
-				const handleValue = (snapshot: { val: () => InviteFirebaseData | null }) => {
-					const data = snapshot.val();
+				// Setup async - IIFE to avoid returning Promise
+				(async () => {
+					const database = await getDatabaseInstance();
+					const inviteRef = ref(
+						database,
+						`${FIREBASE_PATHS.INVITES}/${toUserId}/${inviteId}`
+					);
 
-					if (!data) {
-						// Invite was deleted
-						this._sentInvites = this._sentInvites.filter(
-							(i) => i.inviteId !== inviteId
-						);
-						return;
-					}
+					const handleValue = (snapshot: { val: () => InviteFirebaseData | null }) => {
+						const data = snapshot.val();
 
-					if (data.status === 'accepted' || data.status === 'declined') {
-						// Update local state
-						const invite = this._sentInvites.find((i) => i.inviteId === inviteId);
-						if (invite) {
-							invite.status = data.status;
-						}
-
-						// Notify
-						this.notifyInviteResponse(inviteId, data.status === 'accepted', toUserId);
-
-						// Clean up after a delay
-						setTimeout(() => {
+						if (!data) {
+							// Invite was deleted
 							this._sentInvites = this._sentInvites.filter(
 								(i) => i.inviteId !== inviteId
 							);
-						}, 5000);
-					}
-				};
+							return;
+						}
 
-				onValue(inviteRef, handleValue);
+						if (data.status === 'accepted' || data.status === 'declined') {
+							// Update local state
+							const invite = this._sentInvites.find((i) => i.inviteId === inviteId);
+							if (invite) {
+								invite.status = data.status;
+							}
 
+							// Notify
+							this.notifyInviteResponse(inviteId, data.status === 'accepted', toUserId);
+
+							// Clean up after a delay
+							setTimeout(() => {
+								this._sentInvites = this._sentInvites.filter(
+									(i) => i.inviteId !== inviteId
+								);
+							}, 5000);
+						}
+					};
+
+					onValue(inviteRef, handleValue);
+
+					cleanup = () => {
+						off(inviteRef, 'value', handleValue);
+					};
+				})();
+
+				// Return sync cleanup that defers to async setup
 				return () => {
-					off(inviteRef, 'value', handleValue);
+					if (cleanup) cleanup();
 				};
 			}
 		);

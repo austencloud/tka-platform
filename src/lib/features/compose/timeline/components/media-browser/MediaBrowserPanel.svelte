@@ -2,7 +2,7 @@
   MediaBrowserPanel.svelte - Inline media browser for timeline
 
   Orchestrator component that composes smaller UI pieces.
-  Uses the existing Discover filter/sort system for consistency.
+  Uses the existing Browse filter/sort system for consistency.
 -->
 <script module lang="ts">
   export type MediaImportType = "animation" | "image" | "recording";

@@ -7,7 +7,7 @@
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
   import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
@@ -72,7 +72,7 @@
   // Animation state
   const animationState = createAnimationPanelState();
   let playbackController: IAnimationPlaybackController | null = null;
-  let exploreLoader: IExploreLoader | null = null;
+  let browseLoader: IBrowseLoader | null = null;
   let startPositionDeriver: IStartPositionDeriver | null = null;
   let gridPositionDeriver: IGridPositionDeriver | null = null;
   let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
@@ -225,7 +225,7 @@
       visibilityManager.setDarkMode(darkMode);
 
       // Get services from DI container (some still need container, others use direct imports)
-      exploreLoader = container.items.exploreLoader as IExploreLoader;
+      browseLoader = container.items.browseLoader as IBrowseLoader;
       playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
       startPositionDeriver = startPositionDeriverInstance;
       gridPositionDeriver = gridPositionDeriverInstance;
@@ -234,7 +234,7 @@
       const sequenceTransformer = container.items.sequenceTransformer;
 
       spinnerOrchestrator = new EndlessSpinnerOrchestrator(
-        exploreLoader as any,
+        browseLoader as any,
         generationOrchestrator,
         sequenceTransformer as any,
         startPositionDeriverInstance,

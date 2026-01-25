@@ -35,7 +35,6 @@ Usage:
   import ElementalGlyph from "./ElementalGlyph.svelte";
   import PositionGlyph from "./PositionGlyph.svelte";
   import StepNumber from "./StepNumber.svelte";
-  import BeatPositionGlyph from "./BeatPositionGlyph.svelte";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import type { IGridModeDeriver } from "../../grid/services/contracts/IGridModeDeriver";
   import { turnsTupleGenerator } from "../../arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
@@ -64,9 +63,6 @@ Usage:
     // Beat number display
     stepNumber = null,
     showStepNumber = false,
-    musicalPosition = undefined,
-    // Beat position glyph (musical timeline position at bottom-center)
-    showBeatPosition = true,
     previewMode = false,
     // Grid mode override (if provided, takes precedence over calculated mode)
     gridModeOverride = null,
@@ -112,10 +108,6 @@ Usage:
     activeLocations?: GridLocation[];
     stepNumber?: number | null;
     showStepNumber?: boolean;
-    /** Musical position string (e.g., "1", "1.5", "2e") for beat position display */
-    musicalPosition?: string;
-    /** Show beat position glyph at bottom-center (musical timeline position) */
-    showBeatPosition?: boolean;
     previewMode?: boolean;
     gridModeOverride?: GridMode | null;
     visibleHand?: "blue" | "red" | null;
@@ -133,7 +125,6 @@ Usage:
     onTogglePositions?: () => void;
     onToggleReversals?: () => void;
     onToggleNonRadial?: () => void;
-    onToggleBeatPosition?: () => void;
     /** Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox) */
     widthMultiplier?: number;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
@@ -372,19 +363,6 @@ Usage:
         {hasValidData}
         {darkMode}
       />
-
-      <!-- Beat position glyph (musical timeline position at bottom-center) -->
-      {#if !isStartPosition && musicalPosition}
-        <BeatPositionGlyph
-          {musicalPosition}
-          visible={showBeatPosition}
-          {previewMode}
-          {hasValidData}
-          {darkMode}
-          onToggle={onToggleBeatPosition}
-          centerX={expandedWidth / 2}
-        />
-      {/if}
 
       <!-- Reversal indicators -->
       <ReversalIndicators

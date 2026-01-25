@@ -6,7 +6,7 @@
 
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
-  import type { IExploreLoader } from "$lib/features/explore/sequences/display/services/contracts/IExploreLoader";
+  import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
@@ -18,14 +18,14 @@
 
   onMount(async () => {
     try {
-      const loader = container.items.discoverLoader;
+      const loader = container.items.browseLoader;
       if (loader) {
         const allSequences = await loader.loadSequenceMetadata();
         // Filter to sequences from other users and sort by most recent
         const currentUserId = authState.user?.uid;
         recentSequences = allSequences
-          .filter((seq) => seq.ownerId !== currentUserId)
-          .sort((a, b) => {
+          .filter((seq: SequenceData) => seq.ownerId !== currentUserId)
+          .sort((a: SequenceData, b: SequenceData) => {
             const aDate =
               a.dateAdded instanceof Date
                 ? a.dateAdded
@@ -54,11 +54,11 @@
   }
 
   async function viewSequence(seq: SequenceData) {
-    await handleModuleChange("discover", "gallery");
+    await handleModuleChange("browse", "gallery");
   }
 
   async function viewAll() {
-    await handleModuleChange("discover", "gallery");
+    await handleModuleChange("browse", "gallery");
   }
 </script>
 
@@ -115,7 +115,7 @@
   </div>
 
   <button class="view-all-btn" onclick={viewAll}>
-    <span>Explore Gallery</span>
+    <span>Browse Gallery</span>
     <i class="fas fa-arrow-right" aria-hidden="true"></i>
   </button>
 </div>

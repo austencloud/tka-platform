@@ -106,15 +106,15 @@ The word "Service" is redundant - everything in `services/` is already a service
 | Orchestration           | `*Orchestrator` | `GenerationOrchestrator`               |
 | Persistence/storage     | `*Persister`    | `SequencePersister`, `FilterPersister` |
 | Loading data            | `*Loader`       | `SequenceLoader`, `OptionLoader`       |
-| Filtering               | `*Filter`       | `OptionFilter`, `DiscoverFilter`       |
-| Sorting                 | `*Sorter`       | `OptionSorter`, `DiscoverSorter`       |
+| Filtering               | `*Filter`       | `OptionFilter`, `BrowseFilter`       |
+| Sorting                 | `*Sorter`       | `OptionSorter`, `BrowseSorter`       |
 | Validation              | `*Validator`    | `SequenceValidator`                    |
 | Transformation          | `*Transformer`  | `SequenceTransformer`                  |
 | Analysis                | `*Analyzer`     | `SequenceAnalyzer`, `PositionAnalyzer` |
 | Calculation             | `*Calculator`   | `SequenceStatsCalculator`              |
 | Export/conversion       | `*Exporter`     | `SequenceExporter`, `CocoExporter`     |
 | Repository/CRUD         | `*Repository`   | `LibraryRepository`                    |
-| Caching                 | `*Cache`        | `DiscoverCache`, `SequenceCache`       |
+| Caching                 | `*Cache`        | `BrowseCache`, `SequenceCache`       |
 
 ```typescript
 // ✅ CORRECT

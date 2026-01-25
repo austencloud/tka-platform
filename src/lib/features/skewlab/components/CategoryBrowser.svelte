@@ -26,6 +26,10 @@
   let isSideBySide = $state(false);
   let resizeCleanup: (() => void) | null = null;
 
+  // Editor panel state - declare before use in isPanelOpen
+  let editorOpen = $state(false);
+  let selectedIndex = $state<number>(-1); // Index in filtered list
+
   onMount(() => {
     const checkLayout = () => {
       isSideBySide = window.innerWidth >= 1024;
@@ -49,10 +53,6 @@
   let selectedCategory = $state<1 | 2 | 3 | 4 | "all">("all");
   let currentPage = $state(0);
   const perPage = 24;
-
-  // Editor panel state
-  let editorOpen = $state(false);
-  let selectedIndex = $state<number>(-1); // Index in filtered list
 
   // Currently selected pictograph for editor
   const selectedPictograph = $derived.by(() => {
@@ -103,10 +103,11 @@
       error = e instanceof Error ? e.message : "Failed to load pictographs";
       isLoading = false;
     }
+  });
 
-    return () => {
-      selectedArrowState.clearSelection();
-    };
+  // Cleanup on destroy
+  onDestroy(() => {
+    selectedArrowState.clearSelection();
   });
 
   // Handle clicking on a pictograph card - opens editor panel
@@ -328,7 +329,7 @@
 <!-- Editor Panel -->
 <SkewLabEditorPanel
   bind:isOpen={editorOpen}
-  pictographData={selectedPictograph}
+  pictographData={selectedPictograph ?? null}
   currentIndex={selectedIndex}
   totalCount={filtered.length}
   onClose={handleEditorClose}

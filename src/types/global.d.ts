@@ -15,7 +15,7 @@ declare global {
 
     // Module visibility flags
     readonly PUBLIC_ENABLE_CREATE_MODULE: string;
-    readonly PUBLIC_ENABLE_DISCOVER_MODULE: string;
+    readonly PUBLIC_ENABLE_BROWSE_MODULE: string;
     readonly PUBLIC_ENABLE_FEEDBACK_MODULE: string;
     readonly PUBLIC_ENABLE_LEARN_MODULE: string;
     readonly PUBLIC_ENABLE_LIBRARY_MODULE: string;
@@ -46,6 +46,71 @@ declare global {
     // Web Speech API
     SpeechRecognition?: typeof SpeechRecognition;
     webkitSpeechRecognition?: typeof SpeechRecognition;
+  }
+
+  // Google Maps API type declarations (loaded dynamically)
+  namespace google {
+    namespace maps {
+      class Map {
+        constructor(element: HTMLElement, options?: MapOptions);
+        panTo(latLng: LatLngLiteral): void;
+        setZoom(zoom: number): void;
+      }
+
+      interface MapOptions {
+        center?: LatLngLiteral;
+        zoom?: number;
+        mapId?: string;
+        disableDefaultUI?: boolean;
+        zoomControl?: boolean;
+        mapTypeControl?: boolean;
+        streetViewControl?: boolean;
+        fullscreenControl?: boolean;
+      }
+
+      interface LatLngLiteral {
+        lat: number;
+        lng: number;
+      }
+
+      interface MapsLibrary {
+        Map: typeof Map;
+      }
+
+      interface MarkerLibrary {
+        AdvancedMarkerElement: typeof marker.AdvancedMarkerElement;
+        PinElement: typeof marker.PinElement;
+      }
+
+      function importLibrary(name: "maps"): Promise<MapsLibrary>;
+      function importLibrary(name: "marker"): Promise<MarkerLibrary>;
+
+      namespace marker {
+        class AdvancedMarkerElement {
+          constructor(options: AdvancedMarkerElementOptions);
+          map: Map | null;
+          addListener(eventName: string, handler: () => void): void;
+        }
+
+        interface AdvancedMarkerElementOptions {
+          map?: Map;
+          position?: LatLngLiteral;
+          content?: HTMLElement;
+          title?: string;
+        }
+
+        class PinElement {
+          constructor(options?: PinElementOptions);
+          element: HTMLElement;
+        }
+
+        interface PinElementOptions {
+          background?: string;
+          borderColor?: string;
+          glyphColor?: string;
+        }
+      }
+    }
   }
 
   // Custom events

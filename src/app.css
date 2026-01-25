@@ -406,7 +406,7 @@ h6 {
      Enhanced visibility for light backgrounds (Aurora)
      ======================================== */
 
-  /* Panel Background Colors (for explore panels, settings, etc.) */
+  /* Panel Background Colors (for browse panels, settings, etc.) */
   --panel-bg-nightSky: rgba(255, 255, 255, 0.05);
   --panel-bg-aurora: rgba(
     20,

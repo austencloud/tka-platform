@@ -2,7 +2,7 @@
  * PublicSequenceIndex - Denormalized document for efficient public browsing
  *
  * This is a subset of LibrarySequence fields optimized for:
- * - Fast queries on the global public sequence feed (Explore)
+ * - Fast queries on the global public sequence feed (Browse)
  * - Reducing document reads when browsing
  * - Supporting search and filtering without reading full sequence data
  *
@@ -15,7 +15,7 @@
  */
 
 /**
- * PublicSequenceIndex - Denormalized public sequence for Explore
+ * PublicSequenceIndex - Denormalized public sequence for Browse
  */
 export interface PublicSequenceIndex {
   /** Sequence ID (same as document ID and source sequence ID) */

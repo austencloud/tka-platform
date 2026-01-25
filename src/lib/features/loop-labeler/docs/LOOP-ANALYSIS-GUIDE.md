@@ -1,6 +1,6 @@
 ﻿# LOOP Analysis Guide
 
-> **Living Document**: This guide captures insights about LOOP (Linked Orbital Offset Pattern) analysis discovered during labeling sessions. Future AI agents and users should update this as new patterns are understood.
+> **Living Document**: This guide captures insights about LOOP (Linked Orbital Offset Pattern) analysis browseed during labeling sessions. Future AI agents and users should update this as new patterns are understood.
 
 ---
 
@@ -83,7 +83,7 @@ Use to analyze specific beat-to-beat relationships. Best for:
 
 ## Session Insights Log
 
-_Add dated entries as new patterns are discovered:_
+_Add dated entries as new patterns are browseed:_
 
 ### 2024-12-20
 

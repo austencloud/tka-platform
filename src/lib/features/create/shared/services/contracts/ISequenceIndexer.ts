@@ -2,7 +2,7 @@
  * Sequence Index Service Contract
  *
  * Interface for sequence indexing and search functionality.
- * Based on the existing ISequenceIndexer from browse/Explore.
+ * Based on the existing ISequenceIndexer from browse/Browse.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

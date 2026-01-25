@@ -31,11 +31,17 @@
 
         // Parse CSV to find the letter
         const lines = csvData.split('\n');
-        const headers = lines[0].split(',');
+        const headerLine = lines[0];
+        if (!headerLine) {
+          throw new Error('CSV header not found');
+        }
+        const headers = headerLine.split(',');
         let row: string[] | null = null;
 
         for (let i = 1; i < lines.length; i++) {
-          const r = lines[i].split(',');
+          const line = lines[i];
+          if (!line) continue;
+          const r = line.split(',');
           if (r[0] === letter) {
             row = r;
             break;
@@ -83,15 +89,17 @@
         // Render using the REAL Canvas2DDirectRenderer
         const canvas = await renderer.renderPictograph(pictographData as any, {
           size: 950,
-          showGrid: true,
-          showTKA: true,
-          showVTG: false,
-          showElemental: false,
-          showPositions: false,
-          showReversals: false,
-          showNonRadialPoints: false,
-          darkMode: false, // Light background
-          handPointVisibility: 'active',
+          visibility: {
+            showGrid: true,
+            showTKA: true,
+            showVTG: false,
+            showElemental: false,
+            showPositions: false,
+            showReversals: false,
+            showNonRadialPoints: false,
+            darkMode: false, // Light background
+            handPointVisibility: 'active',
+          }
         });
 
         // Return as base64 data URL

@@ -8,7 +8,7 @@
  */
 
 import * as THREE from "three";
-import { Timeline } from "../../animation/Timeline";
+import { Timeline, type TweenOptions } from "../../animation/Timeline";
 import type {
   IPromoAnimationController,
   AnimationPlaybackState,
@@ -184,7 +184,7 @@ export class PromoAnimationController implements IPromoAnimationController {
       if (keyframe.device?.position && this.device) {
         if (isCut) {
           this.timeline.set(
-            this.device.position,
+            this.device.position as any,
             {
               x: keyframe.device.position[0],
               y: keyframe.device.position[1],
@@ -194,14 +194,14 @@ export class PromoAnimationController implements IPromoAnimationController {
           );
         } else {
           this.timeline.to(
-            this.device.position,
+            this.device.position as unknown as Record<string, unknown>,
             {
               x: keyframe.device.position[0],
               y: keyframe.device.position[1],
               z: keyframe.device.position[2],
               duration: animDuration,
               ease,
-            },
+            } as unknown as Record<string, number> & TweenOptions,
             startTime
           );
         }
@@ -211,7 +211,7 @@ export class PromoAnimationController implements IPromoAnimationController {
       if (keyframe.device?.rotation && this.device) {
         if (isCut) {
           this.timeline.set(
-            this.device.rotation,
+            this.device.rotation as any,
             {
               x: keyframe.device.rotation[0],
               y: keyframe.device.rotation[1],
@@ -221,14 +221,14 @@ export class PromoAnimationController implements IPromoAnimationController {
           );
         } else {
           this.timeline.to(
-            this.device.rotation,
+            this.device.rotation as unknown as Record<string, unknown>,
             {
               x: keyframe.device.rotation[0],
               y: keyframe.device.rotation[1],
               z: keyframe.device.rotation[2],
               duration: animDuration,
               ease,
-            },
+            } as unknown as Record<string, number> & TweenOptions,
             startTime
           );
         }
@@ -238,7 +238,7 @@ export class PromoAnimationController implements IPromoAnimationController {
       if (keyframe.device?.scale !== undefined && this.device) {
         if (isCut) {
           this.timeline.set(
-            this.device.scale,
+            this.device.scale as any,
             {
               x: keyframe.device.scale,
               y: keyframe.device.scale,
@@ -248,14 +248,14 @@ export class PromoAnimationController implements IPromoAnimationController {
           );
         } else {
           this.timeline.to(
-            this.device.scale,
+            this.device.scale as unknown as Record<string, unknown>,
             {
               x: keyframe.device.scale,
               y: keyframe.device.scale,
               z: keyframe.device.scale,
               duration: animDuration,
               ease,
-            },
+            } as unknown as Record<string, number> & TweenOptions,
             startTime
           );
         }
@@ -266,7 +266,7 @@ export class PromoAnimationController implements IPromoAnimationController {
         const scale = this.cameraDistanceScale;
         if (isCut) {
           this.timeline.set(
-            this.camera.position,
+            this.camera.position as any,
             {
               x: keyframe.camera.position[0] * scale,
               y: keyframe.camera.position[1] * scale,
@@ -276,14 +276,14 @@ export class PromoAnimationController implements IPromoAnimationController {
           );
         } else {
           this.timeline.to(
-            this.camera.position,
+            this.camera.position as unknown as Record<string, unknown>,
             {
               x: keyframe.camera.position[0] * scale,
               y: keyframe.camera.position[1] * scale,
               z: keyframe.camera.position[2] * scale,
               duration: animDuration,
               ease,
-            },
+            } as unknown as Record<string, number> & TweenOptions,
             startTime
           );
         }
@@ -293,12 +293,12 @@ export class PromoAnimationController implements IPromoAnimationController {
       if (keyframe.camera?.fov !== undefined && this.camera) {
         const camera = this.camera;
         if (isCut) {
-          this.timeline.set(this.camera, { fov: keyframe.camera.fov }, startTime);
+          this.timeline.set(this.camera as any, { fov: keyframe.camera.fov }, startTime);
           // Need to update projection matrix after set
           this.timeline.call(() => camera.updateProjectionMatrix(), [], startTime);
         } else {
           this.timeline.to(
-            this.camera,
+            this.camera as unknown as Record<string, unknown>,
             {
               fov: keyframe.camera.fov,
               duration: animDuration,
@@ -306,7 +306,7 @@ export class PromoAnimationController implements IPromoAnimationController {
               onUpdate: () => {
                 camera.updateProjectionMatrix();
               },
-            },
+            } as unknown as Record<string, number> & TweenOptions,
             startTime
           );
         }
@@ -339,7 +339,7 @@ export class PromoAnimationController implements IPromoAnimationController {
           };
 
           this.timeline.to(
-            lookAtProxy,
+            lookAtProxy as Record<string, unknown>,
             {
               x: targetLookAt.x,
               y: targetLookAt.y,
@@ -349,7 +349,7 @@ export class PromoAnimationController implements IPromoAnimationController {
               onUpdate: () => {
                 camera.lookAt(lookAtProxy.x, lookAtProxy.y, lookAtProxy.z);
               },
-            },
+            } as unknown as Record<string, number> & TweenOptions,
             startTime
           );
         }

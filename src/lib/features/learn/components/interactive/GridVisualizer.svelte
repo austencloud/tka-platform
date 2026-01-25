@@ -245,7 +245,7 @@ Shows box and diamond grids side-by-side with animations
 
   <!-- Helper text -->
   <div class="helper-text">
-    <p>💡 Click points to highlight them and explore the grid structure</p>
+    <p>💡 Click points to highlight them and browse the grid structure</p>
   </div>
 </div>
 

@@ -86,7 +86,8 @@ export class HallOfShameLoader implements IHallOfShameLoader {
 
 			const items = snapshot.docs.slice(0, params.limit).map((doc) => doc.data() as HallOfShameEntry);
 			const hasMore = snapshot.docs.length > params.limit;
-			const nextCursor = hasMore && items.length > 0 ? items[items.length - 1].id : undefined;
+			const lastItem = items[items.length - 1];
+			const nextCursor = hasMore && lastItem ? lastItem.id : undefined;
 
 			return {
 				items,

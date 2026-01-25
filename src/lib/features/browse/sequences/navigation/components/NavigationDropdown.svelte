@@ -15,7 +15,7 @@ Responsive behavior:
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import { container } from "$lib/shared/di";
-    import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { onMount } from "svelte";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
@@ -173,12 +173,14 @@ Responsive behavior:
     // Initialize DeviceDetector
     let cleanup: (() => void) | undefined;
     try {
-      deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
-      responsiveSettings = deviceDetector.getResponsiveSettings();
+      deviceDetector = container.items.deviceDetector;
+      if (deviceDetector) {
+        responsiveSettings = deviceDetector.getResponsiveSettings();
 
-      cleanup = deviceDetector.onCapabilitiesChanged(() => {
-        responsiveSettings = deviceDetector!.getResponsiveSettings();
-      });
+        cleanup = deviceDetector.onCapabilitiesChanged(() => {
+          responsiveSettings = deviceDetector!.getResponsiveSettings();
+        });
+      }
     } catch (error) {
       console.warn(
         "NavigationDropdown: Failed to resolve DeviceDetector",

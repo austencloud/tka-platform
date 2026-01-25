@@ -13,7 +13,7 @@
   import { container } from "$lib/shared/di";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import { onMount } from "svelte";
-  import PropAwareThumbnail from "$lib/features/explore/sequences/display/components/PropAwareThumbnail.svelte";
+  import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
   import ChoreoCardQR from "./ChoreoCardQR.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";

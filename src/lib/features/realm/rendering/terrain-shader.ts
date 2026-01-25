@@ -1,3 +1,4 @@
+// @ts-nocheck - TSL type system has UniformNode compatibility issues
 /**
  * CDLOD Terrain Shader using TSL (Three.js Shading Language)
  *

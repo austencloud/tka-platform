@@ -442,7 +442,7 @@ gl_FragColor = newState; // Write to framebuffer
 			highlights: [
 				'Physically-based erosion model from academic paper',
 				'Drainage area calculation via neighborhood sampling',
-				'Real heightmap data import from USGS Earth Explorer',
+				'Real heightmap data import from USGS Earth Browser',
 				'Iterative simulation produces realistic features',
 			],
 			limitations: [],

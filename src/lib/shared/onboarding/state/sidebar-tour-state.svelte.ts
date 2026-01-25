@@ -33,8 +33,8 @@ interface SidebarTourState {
  * This ensures the tour doesn't try to highlight modules the user can't see.
  */
 function getVisibleTourSteps(): TourStep[] {
-  const visibleModuleIds = new Set(getModuleDefinitions().map((m) => m.id));
-  return SIDEBAR_TOUR_STEPS.filter((step) => visibleModuleIds.has(step.moduleId));
+  const visibleModuleIds = new Set<string>(getModuleDefinitions().map((m) => m.id));
+  return SIDEBAR_TOUR_STEPS.filter((step) => visibleModuleIds.has(step.moduleId as string));
 }
 
 /**
@@ -111,7 +111,7 @@ function createSidebarTourState() {
     },
 
     /**
-     * Skip the tour (user chose "Explore on my own")
+     * Skip the tour (user chose "Browse on my own")
      */
     skipTour(): void {
       markSidebarTourSkipped();
