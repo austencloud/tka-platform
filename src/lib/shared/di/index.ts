@@ -116,8 +116,8 @@ const navigationContainer = typeof window !== 'undefined' ? createNavigationCont
 // Share container needs sequenceRenderer from render
 const shareContainer = typeof window !== 'undefined' ? createShareContainer(renderContainer.items.sequenceRenderer) : null as any;
 
-// Explore container needs multiple external deps
-const exploreContainer = typeof window !== 'undefined' ? createExploreContainer({
+// Browse container needs multiple external deps
+const browseContainer = typeof window !== 'undefined' ? createBrowseContainer({
   wordDeriver: coreContainer.items.wordDeriver,
   deviceDetector: coreContainer.items.deviceDetector,
   sequenceRenderer: renderContainer.items.sequenceRenderer,
@@ -193,7 +193,7 @@ const animatorContainer = typeof window !== 'undefined' ? createAnimatorContaine
   fileDownloader: coreContainer.items.fileDownloader,
   sequenceRepository: dataContainer.items.sequenceRepository,
   sequenceTransformer: buildContainer.items.sequenceTransformer,
-  exploreLoader: exploreContainer.items.exploreLoader,
+  browseLoader: browseContainer.items.browseLoader,
   sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
 }) : null as any;
 
@@ -240,15 +240,15 @@ const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer(
   },
 }) : null as any;
 
-// QR container needs exploreLoader and sequenceEncoder for dual-mode (online/offline)
+// QR container needs browseLoader and sequenceEncoder for dual-mode (online/offline)
 const qrContainer = typeof window !== 'undefined' ? createQRContainer({
-  exploreLoader: exploreContainer.items.exploreLoader,
+  browseLoader: browseContainer.items.browseLoader,
   sequenceEncoder: navigationContainer.items.sequenceEncoder,
 }) : null as any;
 
-// Animation 3D container needs exploreLoader
+// Animation 3D container needs browseLoader
 const animation3DContainer = typeof window !== 'undefined' ? createAnimation3DContainer({
-  exploreLoader: exploreContainer.items.exploreLoader,
+  browseLoader: browseContainer.items.browseLoader,
 }) : null as any;
 
 // Gallery container needs libraryRepository
@@ -271,10 +271,10 @@ const landingPreviewContainer = typeof window !== 'undefined' ? createLandingPre
 const hallOfShameContainer = typeof window !== 'undefined' ? createHallOfShameContainer() : null as any;
 
 
-// Watch container - needs collaborativeVideoManager from share and exploreLoader from explore
+// Watch container - needs collaborativeVideoManager from share and browseLoader from explore
 const watchContainer = typeof window !== 'undefined' ? createWatchContainer({
   collaborativeVideoManager: shareContainer.items.collaborativeVideoManager,
-  exploreLoader: exploreContainer.items.exploreLoader,
+  browseLoader: browseContainer.items.browseLoader,
 }) : null as any;
 
 // LAN Sync container - self-contained, no external dependencies
@@ -285,10 +285,10 @@ const connectContainer = typeof window !== 'undefined' ? createConnectContainer(
   lanSyncCoordinator: lanSyncContainer.items.lanSyncCoordinator,
 }) : null as any;
 
-// DeepLinkResolver - needs sequenceRepository from data and exploreLoader from explore
+// DeepLinkResolver - needs sequenceRepository from data and browseLoader from explore
 const deepLinkResolver = typeof window !== 'undefined' ? new DeepLinkResolver(
   dataContainer.items.sequenceRepository,
-  exploreContainer.items.exploreLoader
+  browseContainer.items.browseLoader
 ) : null as any;
 
 // ============================================================================
@@ -319,9 +319,9 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(animatorContainer.items)
   // Features
   .add(buildContainer.items)
-  // NOTE: exploreContainer has naming conflicts (filterPersister, navigator)
+  // NOTE: browseContainer has naming conflicts (filterPersister, navigator)
   // Using upsert to allow overwriting - these should be renamed in a follow-up
-  .upsert(exploreContainer.items)
+  .upsert(browseContainer.items)
   .add(trainContainer.items)
   .add(learnContainer.items)
   .add(libraryContainer.items)

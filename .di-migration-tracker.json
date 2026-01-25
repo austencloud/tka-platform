@@ -338,8 +338,8 @@
       "status": "pending"
     },
     "explore": {
-      "file": "explore-container.ts",
-      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\explore-container.ts",
+      "file": "browse-container.ts",
+      "path": "F:\\tka-platform\\src\\lib\\shared\\di\\containers\\browse-container.ts",
       "services": [
         "sequenceDifficultyCalculator",
         "exploreCache",
