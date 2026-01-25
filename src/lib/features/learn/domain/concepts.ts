@@ -481,7 +481,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     prerequisites: ["caps-intro"],
     estimatedMinutes: 25,
     concepts: [
-      "Hand reversals (simplest)",
+      "Handpath reversals (simplest)",
       "Prop reversals (R/R notation)",
       "Full reversals (backwards in time)",
       "Reversal placement in LOOPs",

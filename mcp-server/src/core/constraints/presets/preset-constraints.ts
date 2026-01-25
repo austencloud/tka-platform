@@ -77,7 +77,7 @@ export const PRESETS: PresetDefinition[] = [
   },
   {
     name: "smooth-props",
-    description: "Maximize prop spin continuity - allow hand reversals if prop spins stay consistent",
+    description: "Maximize prop spin continuity - allow handpath reversals if prop spins stay consistent",
     constraintSet: {
       hard: [],
       soft: [new ContinuityConstraint("maximize")],

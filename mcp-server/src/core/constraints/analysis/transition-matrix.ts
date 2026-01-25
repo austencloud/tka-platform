@@ -6,9 +6,9 @@
  * the entire pictograph dataset each time.
  *
  * The matrix answers questions like:
- * - Can A→B be done without hand reversals?
+ * - Can A→B be done without handpath reversals?
  * - Does C→D always require a prop reversal?
- * - What's the minimum number of hand reversals for word "XYZ"?
+ * - What's the minimum number of handpath reversals for word "XYZ"?
  */
 
 import type { PictographData } from "../types.js";
@@ -97,7 +97,7 @@ export interface WordFeasibility {
   word: string;
   letters: string[];
 
-  /** Can the word be done with NO hand reversals? */
+  /** Can the word be done with NO handpath reversals? */
   canAvoidAllHandReversals: boolean;
   /** Can the word be done with NO prop reversals? */
   canAvoidAllPropReversals: boolean;
@@ -115,9 +115,9 @@ export interface WordFeasibility {
   /** Transitions that can NEVER produce prop reversal */
   noPropReversalPossible: string[];
 
-  /** Minimum possible hand reversals for this word */
+  /** Minimum possible handpath reversals for this word */
   minHandReversals: number;
-  /** Maximum possible hand reversals for this word */
+  /** Maximum possible handpath reversals for this word */
   maxHandReversals: number;
   /** Minimum possible prop reversals */
   minPropReversals: number;
@@ -240,14 +240,14 @@ export function analyzeWordFeasibility(
 export function suggestAlternatives(feasibility: WordFeasibility): string[] {
   const suggestions: string[] = [];
 
-  // If "no hand reversals" is impossible but "no prop reversals" is possible
+  // If "no handpath reversals" is impossible but "no prop reversals" is possible
   if (!feasibility.canAvoidAllHandReversals && feasibility.canAvoidAllPropReversals) {
     suggestions.push(
       `Try "smooth-props" preset instead - this word CAN maintain consistent prop spin direction.`
     );
   }
 
-  // If "no prop reversals" is impossible but "no hand reversals" is possible
+  // If "no prop reversals" is impossible but "no handpath reversals" is possible
   if (!feasibility.canAvoidAllPropReversals && feasibility.canAvoidAllHandReversals) {
     suggestions.push(
       `Try "smooth-hands" preset instead - this word CAN maintain continuous hand paths.`
@@ -290,7 +290,7 @@ export function explainConstraintImpossibility(
       if (feasibility.handReversalBlockers.length === 1) {
         return `The transition ${feasibility.handReversalBlockers[0]} always requires a hand reversal - there's no variation combination that avoids it.`;
       }
-      return `${feasibility.handReversalBlockers.length} transitions always require hand reversals: ${feasibility.handReversalBlockers.join(", ")}.`;
+      return `${feasibility.handReversalBlockers.length} transitions always require handpath reversals: ${feasibility.handReversalBlockers.join(", ")}.`;
 
     case "no-prop-reversals":
       if (feasibility.canAvoidAllPropReversals) return null;
@@ -304,7 +304,7 @@ export function explainConstraintImpossibility(
       if (feasibility.noHandReversalPossible.length === 1) {
         return `The transition ${feasibility.noHandReversalPossible[0]} can never produce a hand reversal - all its variations maintain the same hand path direction.`;
       }
-      return `${feasibility.noHandReversalPossible.length} transitions can never produce hand reversals: ${feasibility.noHandReversalPossible.join(", ")}. Maximum achievable: ${feasibility.maxHandReversals}/${feasibility.letters.length - 1} beats.`;
+      return `${feasibility.noHandReversalPossible.length} transitions can never produce handpath reversals: ${feasibility.noHandReversalPossible.join(", ")}. Maximum achievable: ${feasibility.maxHandReversals}/${feasibility.letters.length - 1} beats.`;
 
     case "prop-reversal-every-beat":
       if (feasibility.canHavePropReversalEveryBeat) return null;

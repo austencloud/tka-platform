@@ -368,16 +368,16 @@ function createRotationPattern(direction: string): ConstraintPattern {
  * This is distinct from prop rotation direction.
  *
  * Examples:
- * - "no hand reversals" / "no hand path reversals"
+ * - "no handpath reversals" / "no hand path reversals"
  * - "maximize hand continuity" / "smooth hand paths"
  * - "hand reversal every beat"
- * - "allow hand reversals but no prop reversals"
+ * - "allow handpath reversals but no prop reversals"
  */
 
 const maximizeHandPathContinuityPattern: ConstraintPattern = {
   id: "maximize-hand-path-continuity",
   type: ConstraintType.HAND_PATH,
-  description: "Maximize hand path continuity (minimize hand reversals)",
+  description: "Maximize hand path continuity (minimize handpath reversals)",
   matches(text: string): boolean {
     // Must mention hand path or hand reversal concept
     if (!containsConcept(text, "handpath")) {
@@ -387,7 +387,7 @@ const maximizeHandPathContinuityPattern: ConstraintPattern = {
     if (containsConcept(text, "maximize") || containsConcept(text, "continuity")) {
       return true;
     }
-    // "minimize hand reversals" implies maximize continuity
+    // "minimize handpath reversals" implies maximize continuity
     if (containsConcept(text, "minimize")) {
       return true;
     }
@@ -401,12 +401,12 @@ const maximizeHandPathContinuityPattern: ConstraintPattern = {
 const enforceHandPathContinuityPattern: ConstraintPattern = {
   id: "enforce-hand-path-continuity",
   type: ConstraintType.HAND_PATH,
-  description: "Require continuous hand paths (no hand reversals allowed)",
+  description: "Require continuous hand paths (no handpath reversals allowed)",
   matches(text: string): boolean {
     if (!containsConcept(text, "handpath")) {
       return false;
     }
-    // "no hand reversals", "never reverse hand", "require continuous hand paths"
+    // "no handpath reversals", "never reverse hand", "require continuous hand paths"
     if (containsConcept(text, "exclude")) {
       return true;
     }
@@ -428,7 +428,7 @@ const handPathReversalEveryBeatPattern: ConstraintPattern = {
     if (!containsConcept(text, "handpath")) {
       return false;
     }
-    // "hand reversal every beat", "maximize hand reversals"
+    // "hand reversal every beat", "maximize handpath reversals"
     return (
       text.toLowerCase().includes("every") ||
       (containsConcept(text, "maximize") && containsConcept(text, "reversal"))
@@ -449,7 +449,7 @@ const handPathReversalEveryBeatPattern: ConstraintPattern = {
  *
  * Examples:
  * - "no prop reversals" / "no spin reversals"
- * - "allow hand reversals but no prop reversals"
+ * - "allow handpath reversals but no prop reversals"
  */
 
 const noPropReversalsPattern: ConstraintPattern = {

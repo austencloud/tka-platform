@@ -32,7 +32,7 @@ Designed to be minimal and informative without being intrusive.
       <span class="stat-label">dashes</span>
     </div>
 
-    <div class="stat" title="Hand reversals: hand changes travel direction around the grid">
+    <div class="stat" title="Handpath reversals: hand changes travel direction around the grid">
       <i class="fas fa-route" aria-hidden="true"></i>
       <span class="stat-value">{stats.handPathChanges}</span>
       <span class="stat-label">hand rev</span>

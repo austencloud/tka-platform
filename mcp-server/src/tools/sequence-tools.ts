@@ -210,12 +210,12 @@ export function registerSequenceTools(server: McpServer): void {
       sections.push(`| Constraint | Achievable | Details |`);
       sections.push(`|------------|------------|---------|`);
 
-      // No hand reversals
+      // No handpath reversals
       const noHandStatus = feasibility.canAvoidAllHandReversals ? "✅ Yes" : "❌ No";
       const noHandDetails = feasibility.canAvoidAllHandReversals
         ? "All transitions can maintain continuous hand paths"
         : `${feasibility.handReversalBlockers.length} blocking transition(s)`;
-      sections.push(`| No hand reversals | ${noHandStatus} | ${noHandDetails} |`);
+      sections.push(`| No handpath reversals | ${noHandStatus} | ${noHandDetails} |`);
 
       // No prop reversals
       const noPropStatus = feasibility.canAvoidAllPropReversals ? "✅ Yes" : "❌ No";
@@ -233,7 +233,7 @@ export function registerSequenceTools(server: McpServer): void {
 
       // Reversal range
       sections.push(`\n### Reversal Range\n`);
-      sections.push(`- **Hand reversals:** ${feasibility.minHandReversals} (minimum) to ${feasibility.maxHandReversals} (maximum) out of ${letters.length - 1} transitions`);
+      sections.push(`- **Handpath reversals:** ${feasibility.minHandReversals} (minimum) to ${feasibility.maxHandReversals} (maximum) out of ${letters.length - 1} transitions`);
       sections.push(`- **Prop reversals:** ${feasibility.minPropReversals} (minimum) to ${feasibility.maxPropReversals} (maximum) out of ${letters.length - 1} transitions`);
 
       // Blocking transitions
@@ -379,7 +379,7 @@ export function registerSequenceTools(server: McpServer): void {
             );
           }
 
-          // Warning for smooth-hands if no hand reversals is impossible
+          // Warning for smooth-hands if no handpath reversals is impossible
           if (hasHandPathContinuityConstraint && !feasibility.canAvoidAllHandReversals) {
             feasibilityWarnings.push(
               `Zero hand path reversals is not achievable for "${word}". ` +

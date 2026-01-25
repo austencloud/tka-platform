@@ -29,7 +29,7 @@ export interface TransitionAnalysis {
   noPropReversalCount: number;
   /** How many have both hands reverse */
   bothHandsReverseCount: number;
-  /** Can this transition satisfy "no hand reversals"? */
+  /** Can this transition satisfy "no handpath reversals"? */
   canAvoidHandReversal: boolean;
   /** Can this transition satisfy "no prop reversals"? */
   canAvoidPropReversal: boolean;
@@ -47,7 +47,7 @@ export interface WordAnalysis {
   word: string;
   letters: string[];
   transitions: TransitionAnalysis[];
-  /** Can the entire word be done with no hand reversals? */
+  /** Can the entire word be done with no handpath reversals? */
   canAvoidAllHandReversals: boolean;
   /** Can the entire word be done with no prop reversals? */
   canAvoidAllPropReversals: boolean;
@@ -242,9 +242,9 @@ export function explainImpossibility(analysis: WordAnalysis, constraint: "no-han
   if (constraint === "no-hand-reversals" && !analysis.canAvoidAllHandReversals) {
     const blockers = analysis.handReversalBlockers;
     if (blockers.length === 1) {
-      return `The word "${analysis.word}" cannot be done without hand reversals because the transition ${blockers[0]} always requires at least one hand to reverse direction.`;
+      return `The word "${analysis.word}" cannot be done without handpath reversals because the transition ${blockers[0]} always requires at least one hand to reverse direction.`;
     }
-    return `The word "${analysis.word}" cannot be done without hand reversals. ${blockers.length} transitions always require hand reversals: ${blockers.join(", ")}.`;
+    return `The word "${analysis.word}" cannot be done without handpath reversals. ${blockers.length} transitions always require handpath reversals: ${blockers.join(", ")}.`;
   }
 
   if (constraint === "no-prop-reversals" && !analysis.canAvoidAllPropReversals) {

@@ -44,10 +44,10 @@ export interface PositionDominance {
  * Tracks reversals (direction changes) for blue and red hands.
  */
 export interface ReversalAnalysis {
-  /** Number of blue hand reversals */
+  /** Number of blue handpath reversals */
   readonly blueReversalCount: number;
 
-  /** Number of red hand reversals */
+  /** Number of red handpath reversals */
   readonly redReversalCount: number;
 
   /** Total reversal count */

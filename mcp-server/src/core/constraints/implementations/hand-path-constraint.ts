@@ -169,10 +169,10 @@ export class HandPathReversalConstraint implements IVariationConstraint {
 
     switch (handPathMode) {
       case "maximize":
-        this.description = "Maximize hand path continuity (minimize hand reversals)";
+        this.description = "Maximize hand path continuity (minimize handpath reversals)";
         break;
       case "enforce":
-        this.description = "Require continuous hand paths (no hand reversals)";
+        this.description = "Require continuous hand paths (no handpath reversals)";
         break;
       case "allow":
         this.description = "No hand path preference";

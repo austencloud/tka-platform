@@ -33,7 +33,7 @@ export const SYNONYMS: Record<string, string[]> = {
   // Constraint concepts
   continuity: ["continuous", "flow", "smooth", "flowing", "seamless", "unbroken"],
   reversal: ["reversals", "direction-change", "break", "breaks", "flip", "flips"],
-  handpath: ["hand-path", "hand path", "hand reversal", "hand reversals", "path reversal", "path reversals", "hand direction"],
+  handpath: ["hand-path", "hand path", "hand reversal", "handpath reversals", "path reversal", "path reversals", "hand direction"],
   propreversal: ["prop reversal", "prop reversals", "spin reversal", "spin reversals", "rotation reversal"],
 
   // Positions
