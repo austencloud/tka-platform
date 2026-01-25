@@ -1,14 +1,14 @@
 /**
- * Explore Cache Service
+ * Browse Cache Service
  *
  * Simple in-memory cache for gallery sequences.
  * Prevents redundant loading and metadata extraction operations.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IExploreCache } from "../contracts/IExploreCache";
+import type { IBrowseCache } from "../contracts/IBrowseCache";
 
-export class ExploreCache implements IExploreCache {
+export class BrowseCache implements IBrowseCache {
   private cachedSequences: SequenceData[] | null = null;
 
   getCached(): SequenceData[] | null {

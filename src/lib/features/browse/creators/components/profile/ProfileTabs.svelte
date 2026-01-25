@@ -11,10 +11,10 @@
     UserProfile,
   } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import AvatarImage from "./AvatarImage.svelte";
-  import PropAwareThumbnail from "$lib/features/explore/sequences/display/components/PropAwareThumbnail.svelte";
+  import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
-  type ProfileTab = "sequences" | "followers" | "following" | "achievements";
+  type ProfileTab = "gallery" | "followers" | "following" | "achievements";
 
   let {
     activeTab,
@@ -101,7 +101,7 @@
   <PanelTabs
     tabs={[
       {
-        value: "sequences",
+        value: "gallery",
         label: `Sequences (${userSequences.length})`,
         icon: "fa-list",
       },
@@ -127,7 +127,7 @@
 </div>
 
 <div class="profile-tab-content">
-  {#if activeTab === "sequences"}
+  {#if activeTab === "gallery"}
     {#if userSequences.length === 0}
       <PanelState
         type="empty"

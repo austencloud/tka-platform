@@ -7,7 +7,7 @@ Uses shared parameter cards from $lib/shared/components/parameter-cards
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
     import { onMount } from "svelte";
-  import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+  import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";
 
   // Shared parameter cards
@@ -30,11 +30,11 @@ Uses shared parameter cards from $lib/shared/components/parameter-cards
     onOpenLetterSheet = () => {},
     onOpenOptionsSheet = () => {},
   } = $props<{
-    currentFilter?: { type: string; value: ExploreFilterValue };
+    currentFilter?: { type: string; value: BrowseFilterValue };
     startPosition?: PictographData | null;
     endPosition?: PictographData | null;
     loopTypeCounts?: Record<string, number>;
-    onFilterChange?: (type: string, value?: ExploreFilterValue) => void;
+    onFilterChange?: (type: string, value?: BrowseFilterValue) => void;
     onOpenLetterSheet?: () => void;
     onOpenOptionsSheet?: () => void;
   }>();

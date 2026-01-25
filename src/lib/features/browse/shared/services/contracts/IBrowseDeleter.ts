@@ -4,7 +4,7 @@ import type {
 } from "../../../../create/shared/domain/models/sequence-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
-export interface IExploreDeleter {
+export interface IBrowseDeleter {
   /** Prepare deletion data for confirmation dialog */
   prepareDeleteConfirmation(
     sequence: SequenceData,

@@ -1,5 +1,5 @@
 <!--
-Explore Top Bar - Unified navigation bar for all Explore tabs
+Browse Top Bar - Unified navigation bar for all Browse tabs
 
 Structure:
 ┌─────────────────────────────────────────────────────────────┐
@@ -13,7 +13,7 @@ Structure:
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import { exploreNavigationState } from "../state/explore-navigation-state.svelte";
+  import { browseNavigationState } from "../state/browse-navigation-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
     import { onMount } from "svelte";
@@ -37,14 +37,14 @@ Structure:
   });
 
   // Reactive state from navigation
-  const canGoBack = $derived(exploreNavigationState.canGoBack);
-  const canGoForward = $derived(exploreNavigationState.canGoForward);
+  const canGoBack = $derived(browseNavigationState.canGoBack);
+  const canGoForward = $derived(browseNavigationState.canGoForward);
 
   // Only show nav buttons if there's history to navigate
   const showNavButtons = $derived(canGoBack || canGoForward);
 
   function handleBack() {
-    const location = exploreNavigationState.goBack();
+    const location = browseNavigationState.goBack();
     if (location) {
       hapticService?.trigger("selection");
       onNavigate?.(location);
@@ -52,7 +52,7 @@ Structure:
   }
 
   function handleForward() {
-    const location = exploreNavigationState.goForward();
+    const location = browseNavigationState.goForward();
     if (location) {
       hapticService?.trigger("selection");
       onNavigate?.(location);
@@ -60,7 +60,7 @@ Structure:
   }
 </script>
 
-<div class="explore-topbar">
+<div class="browse-topbar">
   <div class="topbar-content">
     <!-- Left: Navigation buttons -->
     <div class="nav-section">
@@ -105,7 +105,7 @@ Structure:
 </div>
 
 <style>
-  .explore-topbar {
+  .browse-topbar {
     display: flex;
     align-items: center;
     padding: 10px 16px;
@@ -189,7 +189,7 @@ Structure:
 
   /* Responsive adjustments */
   @media (max-width: 480px) {
-    .explore-topbar {
+    .browse-topbar {
       padding: 8px 12px;
     }
 

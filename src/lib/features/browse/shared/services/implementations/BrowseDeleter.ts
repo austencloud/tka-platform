@@ -10,9 +10,9 @@ import type {
   DeleteResult,
 } from "$lib/features/create/shared/domain/models/sequence-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IExploreDeleter } from "../contracts/IExploreDeleter";
+import type { IBrowseDeleter } from "../contracts/IBrowseDeleter";
 
-export class ExploreDeleter implements IExploreDeleter {
+export class BrowseDeleter implements IBrowseDeleter {
   prepareDeleteConfirmation(
     sequence: SequenceData,
     allSequences: SequenceData[]

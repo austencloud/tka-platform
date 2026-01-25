@@ -17,9 +17,9 @@ import { safeParseOrNull } from "$lib/shared/validation/validation-utils";
 import { SequenceDataSchema } from "$lib/shared/foundation/domain/schemas";
 
 /**
- * Standalone Explore persistence - no interface inheritance needed.
+ * Standalone Browse persistence - no interface inheritance needed.
  */
-export class ExplorePersister {
+export class BrowsePersister {
   private readonly CACHE_VERSION = "v2.1"; // ✅ ROBUST: Cache versioning
   private readonly SEQUENCES_KEY = `tka-${this.CACHE_VERSION}-sequences`;
   private readonly SEQUENCE_PREFIX = `tka-${this.CACHE_VERSION}-sequence-`;

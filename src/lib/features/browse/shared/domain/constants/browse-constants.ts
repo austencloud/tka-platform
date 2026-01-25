@@ -1,35 +1,35 @@
-import { ExploreSortMethod } from "../enums/explore-enums";
+import { BrowseSortMethod } from "../enums/browse-enums";
 import type { SortConfig } from "../models/sort-models";
 
 // Predefined sort configurations
-export const SORT_CONFIGS: Record<ExploreSortMethod, SortConfig> = {
-  [ExploreSortMethod.ALPHABETICAL]: {
-    method: ExploreSortMethod.ALPHABETICAL,
+export const SORT_CONFIGS: Record<BrowseSortMethod, SortConfig> = {
+  [BrowseSortMethod.ALPHABETICAL]: {
+    method: BrowseSortMethod.ALPHABETICAL,
     direction: "asc",
     displayName: "Name A-Z",
   },
-  [ExploreSortMethod.DATE_ADDED]: {
-    method: ExploreSortMethod.DATE_ADDED,
+  [BrowseSortMethod.DATE_ADDED]: {
+    method: BrowseSortMethod.DATE_ADDED,
     direction: "desc",
     displayName: "Recently Added",
   },
-  [ExploreSortMethod.DIFFICULTY_LEVEL]: {
-    method: ExploreSortMethod.DIFFICULTY_LEVEL,
+  [BrowseSortMethod.DIFFICULTY_LEVEL]: {
+    method: BrowseSortMethod.DIFFICULTY_LEVEL,
     direction: "asc",
     displayName: "Difficulty",
   },
-  [ExploreSortMethod.SEQUENCE_LENGTH]: {
-    method: ExploreSortMethod.SEQUENCE_LENGTH,
+  [BrowseSortMethod.SEQUENCE_LENGTH]: {
+    method: BrowseSortMethod.SEQUENCE_LENGTH,
     direction: "asc",
     displayName: "Length",
   },
-  [ExploreSortMethod.AUTHOR]: {
-    method: ExploreSortMethod.AUTHOR,
+  [BrowseSortMethod.AUTHOR]: {
+    method: BrowseSortMethod.AUTHOR,
     direction: "asc",
     displayName: "Author",
   },
-  [ExploreSortMethod.POPULARITY]: {
-    method: ExploreSortMethod.POPULARITY,
+  [BrowseSortMethod.POPULARITY]: {
+    method: BrowseSortMethod.POPULARITY,
     direction: "desc",
     displayName: "Popularity",
   },

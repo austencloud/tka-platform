@@ -7,13 +7,13 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
-  ExploreNavigationConfig,
-  ExploreNavigationItem,
+  BrowseNavigationConfig,
+  BrowseNavigationItem,
 } from "../../domain/models/navigation-models";
 import type { INavigator } from "../contracts/INavigator";
 
 // Local type alias for NavigationSection
-type NavigationSection = ExploreNavigationConfig;
+type NavigationSection = BrowseNavigationConfig;
 
 // All interfaces now imported from domain and contracts
 
@@ -70,7 +70,7 @@ export class Navigator implements INavigator {
   }
 
   getSequencesForNavigationItem(
-    item: ExploreNavigationItem,
+    item: BrowseNavigationItem,
     sectionType: NavigationSection["type"],
     allSequences: SequenceData[]
   ): SequenceData[] {
@@ -183,7 +183,7 @@ export class Navigator implements INavigator {
       }
     });
 
-    const items: ExploreNavigationItem[] = Array.from(dateGroups.entries())
+    const items: BrowseNavigationItem[] = Array.from(dateGroups.entries())
       .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
       .slice(0, 50) // Show last 50 dates (increased from 10)
       .map(([date, seqs]) => ({
@@ -222,7 +222,7 @@ export class Navigator implements INavigator {
       }
     });
 
-    const items: ExploreNavigationItem[] = Array.from(lengthGroups.entries())
+    const items: BrowseNavigationItem[] = Array.from(lengthGroups.entries())
       .sort(([a], [b]) => a - b)
       .map(([length, seqs]) => ({
         id: `length-${length}`,
@@ -266,7 +266,7 @@ export class Navigator implements INavigator {
       }
     });
 
-    const items: ExploreNavigationItem[] = Array.from(letterGroups.entries())
+    const items: BrowseNavigationItem[] = Array.from(letterGroups.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([letter, seqs]) => ({
         id: `letter-${letter}`,
@@ -302,7 +302,7 @@ export class Navigator implements INavigator {
     });
 
     const levelOrder = ["beginner", "intermediate", "advanced", "unknown"];
-    const items: ExploreNavigationItem[] = levelOrder
+    const items: BrowseNavigationItem[] = levelOrder
       .filter((level) => levelGroups.has(level))
       .map((level) => ({
         id: `level-${level}`,
@@ -337,7 +337,7 @@ export class Navigator implements INavigator {
       }
     });
 
-    const items: ExploreNavigationItem[] = Array.from(authorGroups.entries())
+    const items: BrowseNavigationItem[] = Array.from(authorGroups.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([author, seqs]) => ({
         id: `author-${author}`,
@@ -402,7 +402,7 @@ export class Navigator implements INavigator {
   // Additional methods required by browse-interfaces.ts
   buildNavigationStructure(
     sequences: SequenceData[]
-  ): ExploreNavigationConfig[] {
+  ): BrowseNavigationConfig[] {
     // Use the existing generateNavigationSections method
     return this.generateNavigationSections(sequences, []);
   }
@@ -410,7 +410,7 @@ export class Navigator implements INavigator {
   getNavigationItem(
     _sectionId: string,
     _itemId: string
-  ): ExploreNavigationItem | null {
+  ): BrowseNavigationItem | null {
     // This would need to be implemented based on the current navigation state
     // For now, return null as a placeholder
     return null;

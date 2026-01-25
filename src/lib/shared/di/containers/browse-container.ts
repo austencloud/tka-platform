@@ -1,7 +1,7 @@
 /**
- * Explore Module ITI Container
+ * Browse Module ITI Container
  *
- * Provides all services for the explore/browse feature including:
+ * Provides all services for the browse feature including:
  * - Sequence loading, caching, filtering, sorting
  * - Favorites management
  * - Thumbnail rendering pipeline
@@ -11,47 +11,47 @@
 import { createContainer } from "iti";
 
 // Service implementations
-import { SequenceDifficultyCalculator } from "$lib/features/explore/sequences/display/services/implementations/SequenceDifficultyCalculator";
-import { ExploreMetadataExtractor } from "$lib/features/explore/sequences/display/services/implementations/ExploreMetadataExtractor";
-import { ExploreCache } from "$lib/features/explore/sequences/display/services/implementations/ExploreCache";
-import { ExploreFilter } from "$lib/features/explore/sequences/display/services/implementations/ExploreFilter";
-import { ExploreSorter } from "$lib/features/explore/sequences/display/services/implementations/ExploreSorter";
-import { PublicSequencesLoader } from "$lib/features/explore/sequences/display/services/implementations/PublicSequencesLoader";
-import { ExploreSectionManager } from "$lib/features/explore/sequences/display/services/implementations/ExploreSectionManager";
-import { VariationGrouper } from "$lib/features/explore/sequences/display/services/implementations/VariationGrouper";
-import { ExploreThumbnailProvider } from "$lib/features/explore/sequences/display/services/implementations/ExploreThumbnailProvider";
-import { ThumbnailKeyDeriver } from "$lib/features/explore/sequences/display/services/implementations/ThumbnailKeyDeriver";
-import { ThumbnailRenderQueue } from "$lib/features/explore/sequences/display/services/implementations/ThumbnailRenderQueue";
-import { ThumbnailRenderer } from "$lib/features/explore/sequences/display/services/implementations/ThumbnailRenderer";
-import { ThumbnailRenderOrchestrator } from "$lib/features/explore/sequences/display/services/implementations/ThumbnailRenderOrchestrator";
-import { ThumbnailLocalCache } from "$lib/features/explore/sequences/display/services/implementations/ThumbnailLocalCache";
-import { ThumbnailMetricsCollector } from "$lib/features/explore/sequences/display/services/implementations/ThumbnailMetricsCollector";
-import { FavoritesManager } from "$lib/features/explore/shared/services/implementations/FavoritesManager";
-import { FilterPersister as ExploreFilterPersister } from "$lib/shared/persistence/services/implementations/FilterPersister";
-import { Navigator } from "$lib/features/explore/sequences/navigation/services/implementations/Navigator";
-import { ExploreDeleter } from "$lib/features/explore/shared/services/implementations/ExploreDeleter";
-import { ExploreEventHandler } from "$lib/features/explore/shared/services/implementations/ExploreEventHandler";
-import { OptimizedExploreer } from "$lib/features/explore/shared/services/implementations/OptimizedExploreer";
+import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
+import { BrowseMetadataExtractor } from "$lib/features/browse/sequences/display/services/implementations/BrowseMetadataExtractor";
+import { BrowseCache } from "$lib/features/browse/sequences/display/services/implementations/BrowseCache";
+import { BrowseFilter } from "$lib/features/browse/sequences/display/services/implementations/BrowseFilter";
+import { BrowseSorter } from "$lib/features/browse/sequences/display/services/implementations/BrowseSorter";
+import { PublicSequencesLoader } from "$lib/features/browse/sequences/display/services/implementations/PublicSequencesLoader";
+import { BrowseSectionManager } from "$lib/features/browse/sequences/display/services/implementations/BrowseSectionManager";
+import { VariationGrouper } from "$lib/features/browse/sequences/display/services/implementations/VariationGrouper";
+import { BrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/implementations/BrowseThumbnailProvider";
+import { ThumbnailKeyDeriver } from "$lib/features/browse/sequences/display/services/implementations/ThumbnailKeyDeriver";
+import { ThumbnailRenderQueue } from "$lib/features/browse/sequences/display/services/implementations/ThumbnailRenderQueue";
+import { ThumbnailRenderer } from "$lib/features/browse/sequences/display/services/implementations/ThumbnailRenderer";
+import { ThumbnailRenderOrchestrator } from "$lib/features/browse/sequences/display/services/implementations/ThumbnailRenderOrchestrator";
+import { ThumbnailLocalCache } from "$lib/features/browse/sequences/display/services/implementations/ThumbnailLocalCache";
+import { ThumbnailMetricsCollector } from "$lib/features/browse/sequences/display/services/implementations/ThumbnailMetricsCollector";
+import { FavoritesManager } from "$lib/features/browse/shared/services/implementations/FavoritesManager";
+import { FilterPersister as BrowseFilterPersister } from "$lib/shared/persistence/services/implementations/FilterPersister";
+import { Navigator } from "$lib/features/browse/sequences/navigation/services/implementations/Navigator";
+import { BrowseDeleter } from "$lib/features/browse/shared/services/implementations/BrowseDeleter";
+import { BrowseEventHandler } from "$lib/features/browse/shared/services/implementations/BrowseEventHandler";
+import { OptimizedBrowser } from "$lib/features/browse/shared/services/implementations/OptimizedBrowser";
 
 // Sequence detail services
-import { SequenceDetailLoader } from "$lib/features/explore/sequences/display/services/implementations/SequenceDetailLoader";
-import { VideoCountManager } from "$lib/features/explore/sequences/display/services/implementations/VideoCountManager";
-import { ClaudeCodeCopier } from "$lib/features/explore/sequences/display/services/implementations/ClaudeCodeCopier";
+import { SequenceDetailLoader } from "$lib/features/browse/sequences/display/services/implementations/SequenceDetailLoader";
+import { VideoCountManager } from "$lib/features/browse/sequences/display/services/implementations/VideoCountManager";
+import { ClaudeCodeCopier } from "$lib/features/browse/sequences/display/services/implementations/ClaudeCodeCopier";
 
 // External dependency types
 import type { IWordDeriver } from "$lib/shared/foundation/services/contracts/IWordDeriver";
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
-import type { ICloudThumbnailCache } from "$lib/features/explore/sequences/display/services/contracts/ICloudThumbnailCache";
+import type { ICloudThumbnailCache } from "$lib/features/browse/sequences/display/services/contracts/ICloudThumbnailCache";
 import type { ISheetRouter } from "$lib/shared/navigation/services/contracts/ISheetRouter";
 import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
 
 /**
- * External dependencies required by the explore container.
+ * External dependencies required by the browse container.
  * These must be provided when creating the container.
  */
-export interface ExploreContainerDeps {
+export interface BrowseContainerDeps {
   wordDeriver: IWordDeriver;
   deviceDetector: IDeviceDetector;
   sequenceRenderer: ISequenceRenderer;
@@ -62,11 +62,11 @@ export interface ExploreContainerDeps {
 }
 
 /**
- * Creates the explore container with all required dependencies.
+ * Creates the browse container with all required dependencies.
  *
  * @param deps - External dependencies from the root container
  */
-export function createExploreContainer(deps: ExploreContainerDeps) {
+export function createBrowseContainer(deps: BrowseContainerDeps) {
   // Tier 0: Services with no internal dependencies (singletons where noted)
   const tier0 = createContainer()
     .add({
@@ -75,9 +75,9 @@ export function createExploreContainer(deps: ExploreContainerDeps) {
     })
     .add({
       // Caching and filtering (stateless, can be shared)
-      exploreCache: () => new ExploreCache(),
-      exploreFilter: () => new ExploreFilter(),
-      exploreSorter: () => new ExploreSorter(),
+      browseCache: () => new BrowseCache(),
+      browseFilter: () => new BrowseFilter(),
+      browseSorter: () => new BrowseSorter(),
     })
     .add({
       // Variation grouping (singleton - caches variation map)
@@ -85,7 +85,7 @@ export function createExploreContainer(deps: ExploreContainerDeps) {
     })
     .add({
       // Thumbnail URL handling
-      exploreThumbnailProvider: () => new ExploreThumbnailProvider(),
+      browseThumbnailProvider: () => new BrowseThumbnailProvider(),
     })
     .add({
       // IndexedDB cache for ALL thumbnails (unified local cache, singleton)
@@ -113,41 +113,38 @@ export function createExploreContainer(deps: ExploreContainerDeps) {
     .add({
       // User preferences
       favoritesManager: () => new FavoritesManager(),
-      exploreFilterPersister: () => new ExploreFilterPersister(),
+      browseFilterPersister: () => new BrowseFilterPersister(),
     })
     .add({
-      // Navigation (named exploreNavigator to avoid conflict with loop-labeler)
-      exploreNavigator: () => new Navigator(),
+      // Navigation (named browseNavigator to avoid conflict with loop-labeler)
+      browseNavigator: () => new Navigator(),
     })
     .add({
       // Deletion
-      exploreDeleter: () => new ExploreDeleter(),
-    })
-;
+      browseDeleter: () => new BrowseDeleter(),
+    });
 
   // Tier 1: Services depending on tier 0
   const tier1 = tier0.add((ctx) => ({
-    exploreMetadataExtractor: () =>
-      new ExploreMetadataExtractor(ctx.sequenceDifficultyCalculator),
+    browseMetadataExtractor: () =>
+      new BrowseMetadataExtractor(ctx.sequenceDifficultyCalculator),
   }));
 
   // Tier 2: Sequence loader (singleton - caches loaded sequences)
   // Now loads from Firestore publicSequences collection instead of static manifest
   const tier2 = tier1.add({
-    exploreLoader: () => new PublicSequencesLoader(),
+    browseLoader: () => new PublicSequencesLoader(),
   });
 
   // Tier 3: Services depending on external dependencies
   const tier3 = tier2
     .add({
       // Section manager needs external WordDeriver
-      exploreSectionManager: () =>
-        new ExploreSectionManager(deps.wordDeriver),
+      browseSectionManager: () => new BrowseSectionManager(deps.wordDeriver),
     })
     .add({
-      // Optimized exploreer needs external DeviceDetector
-      optimizedExploreer: () =>
-        new OptimizedExploreer(deps.deviceDetector),
+      // Optimized browser needs external DeviceDetector
+      optimizedBrowser: () => new OptimizedBrowser(deps.deviceDetector),
     });
 
   // Tier 4: Thumbnail rendering pipeline (depends on tier 2 + external)
@@ -156,7 +153,7 @@ export function createExploreContainer(deps: ExploreContainerDeps) {
       new ThumbnailRenderer(
         deps.sequenceRenderer,
         deps.startPositionDeriver,
-        ctx.exploreLoader
+        ctx.browseLoader
       ),
   }));
 
@@ -175,19 +172,20 @@ export function createExploreContainer(deps: ExploreContainerDeps) {
 
   // Tier 6: Event handler (depends on multiple services)
   const tier6 = tier5.add((ctx) => ({
-    exploreEventHandler: () =>
-      new ExploreEventHandler(
-        ctx.exploreThumbnailProvider,
+    browseEventHandler: () =>
+      new BrowseEventHandler(
+        ctx.browseThumbnailProvider,
         deps.sheetRouter,
-        ctx.exploreLoader
+        ctx.browseLoader
       ),
   }));
 
   // Tier 7: Sequence detail services (for SequencePanel)
   // Note: sequenceImageSharer moved to share-container for unified access
   const tier7 = tier6.add((ctx) => ({
-    sequenceDetailLoader: () => new SequenceDetailLoader(ctx.exploreLoader),
-    videoCountManager: () => new VideoCountManager(deps.collaborativeVideoManager),
+    sequenceDetailLoader: () => new SequenceDetailLoader(ctx.browseLoader),
+    videoCountManager: () =>
+      new VideoCountManager(deps.collaborativeVideoManager),
   }));
 
   // Tier 8: Services depending on tier 7
@@ -198,4 +196,9 @@ export function createExploreContainer(deps: ExploreContainerDeps) {
   return container;
 }
 
-export type ExploreContainer = ReturnType<typeof createExploreContainer>;
+export type BrowseContainer = ReturnType<typeof createBrowseContainer>;
+
+// Backwards compatibility aliases
+export type ExploreContainerDeps = BrowseContainerDeps;
+export const createExploreContainer = createBrowseContainer;
+export type ExploreContainer = BrowseContainer;

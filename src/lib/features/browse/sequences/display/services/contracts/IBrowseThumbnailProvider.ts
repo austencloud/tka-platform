@@ -3,7 +3,7 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType
 /**
  * Thumbnail management service
  */
-export interface IExploreThumbnailProvider {
+export interface IBrowseThumbnailProvider {
   getThumbnailUrl(sequenceId: string, thumbnailPath: string): string;
 
   /**

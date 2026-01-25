@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * UserProfilePanel (Explore Module)
+   * UserProfilePanel (Browse Module)
    * Comprehensive user profile view with sequences, stats, and achievements
    * Responsive design for mobile and desktop
    */
@@ -8,7 +8,7 @@
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IExploreThumbnailProvider } from "$lib/features/explore/sequences/display/services/contracts/IExploreThumbnailProvider";
+  import type { IBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
   import { openSpotlightViewer } from "$lib/shared/application/state/ui/ui-state.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
@@ -18,7 +18,7 @@
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { creatorsViewState } from "../state/creators-view-state.svelte";
-  import { exploreNavigationState } from "../../shared/state/explore-navigation-state.svelte";
+  import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import ProfileHeaderBar from "./profile/ProfileHeaderBar.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
@@ -48,15 +48,15 @@
   let error = $state<string | null>(null);
   let followInProgress = $state(false);
   let activeTab = $state<
-    "sequences" | "followers" | "following" | "achievements"
-  >("sequences");
+    "gallery" | "followers" | "following" | "achievements"
+  >("gallery");
 
   // Services
   let userService: IUserRepository;
   let libraryService: ILibraryRepository;
   let hapticService: IHapticFeedback;
   let leaderboardService: ILeaderboardManager;
-  let thumbnailService: IExploreThumbnailProvider;
+  let thumbnailService: IBrowseThumbnailProvider;
 
   // Personal rankings state (only for own profile)
   interface UserRanks {
@@ -105,7 +105,7 @@
       libraryService = container.items.libraryRepository;
       hapticService = container.items.hapticFeedback;
       leaderboardService = container.items.leaderboardManager;
-      thumbnailService = container.items.exploreThumbnailProvider;
+      thumbnailService = container.items.browseThumbnailProvider;
 
       // Load user profile with current user context for follow status
       userProfile = await userService.getUserProfile(userId, currentUserId);
@@ -136,7 +136,7 @@
   function handleBack() {
     hapticService?.trigger("selection");
     // Use unified navigation state to go back to previous location
-    const location = exploreNavigationState.goBack();
+    const location = browseNavigationState.goBack();
 
     if (!location || location.view === "list") {
       // No history or going back to list view
@@ -238,7 +238,7 @@
   function handleUserCardClick(user: UserProfile) {
     hapticService?.trigger("selection");
     // Navigate to user profile using unified navigation state
-    exploreNavigationState.viewCreatorProfile(user.id, user.displayName);
+    browseNavigationState.viewCreatorProfile(user.id, user.displayName);
   }
 
   // Load following/followers when tabs are selected
@@ -261,7 +261,7 @@
         await Promise.all([
           leaderboardService.getUserRank(userId, "xp"),
           leaderboardService.getUserRank(userId, "level"),
-          leaderboardService.getUserRank(userId, "sequences"),
+          leaderboardService.getUserRank(userId, "gallery"),
           leaderboardService.getUserRank(userId, "achievements"),
           leaderboardService.getUserRank(userId, "streak"),
         ]);

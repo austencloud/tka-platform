@@ -1,5 +1,5 @@
 /**
- * ExploreEventHandler - Handles all explore module events and actions
+ * BrowseEventHandler - Handles all browse module events and actions
  *
  * Coordinates sequence actions, detail panel interactions, and navigation
  * following the service-based architecture pattern.
@@ -7,37 +7,37 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
-  IExploreEventHandler,
-  ExploreEventHandlerParams,
+  IBrowseEventHandler,
+  BrowseEventHandlerParams,
   DeleteConfirmationData,
-} from "../contracts/IExploreEventHandler";
+} from "../contracts/IBrowseEventHandler";
 import { openSpotlightViewer } from "../../../../../shared/application/state/ui/ui-state.svelte";
-import type { IExploreThumbnailProvider } from "../../../sequences/display/services/contracts/IExploreThumbnailProvider";
-import type { IExploreLoader } from "../../../sequences/display/services/contracts/IExploreLoader";
+import type { IBrowseThumbnailProvider } from "../../../sequences/display/services/contracts/IBrowseThumbnailProvider";
+import type { IBrowseLoader } from "../../../sequences/display/services/contracts/IBrowseLoader";
 import { sequencePanelManager } from "../../state/sequence-panel-state.svelte";
 import type { ISheetRouter } from "../../../../../shared/navigation/services/contracts/ISheetRouter";
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
 
-export class ExploreEventHandler implements IExploreEventHandler {
-  private params: ExploreEventHandlerParams | null = null;
+export class BrowseEventHandler implements IBrowseEventHandler {
+  private params: BrowseEventHandlerParams | null = null;
 
   constructor(
-    private thumbnailService: IExploreThumbnailProvider,
+    private thumbnailService: IBrowseThumbnailProvider,
     private sheetRouterService: ISheetRouter | null,
-    private loaderService: IExploreLoader | null
+    private loaderService: IBrowseLoader | null
   ) {}
 
   /**
    * Initialize the service with required parameters
-   * Called by ExploreModule on mount
+   * Called by BrowseModule on mount
    */
-  initialize(params: ExploreEventHandlerParams): void {
+  initialize(params: BrowseEventHandlerParams): void {
     this.params = params;
   }
 
   private ensureInitialized(): void {
     if (!this.params) {
-      throw new Error("ExploreEventHandler not initialized");
+      throw new Error("BrowseEventHandler not initialized");
     }
   }
 

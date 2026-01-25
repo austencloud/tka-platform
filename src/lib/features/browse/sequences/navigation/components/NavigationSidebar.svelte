@@ -16,8 +16,8 @@ Follows Svelte 5 runes + microservices architecture.
   import { slide } from "svelte/transition";
   import { container } from "$lib/shared/di";
     import type {
-    ExploreNavigationConfig,
-    ExploreNavigationItem,
+    BrowseNavigationConfig,
+    BrowseNavigationItem,
   } from "../domain/models/navigation-models";
   import type { IHapticFeedback } from "../../../../../shared/application/services/contracts/IHapticFeedback";
 
@@ -29,7 +29,7 @@ Follows Svelte 5 runes + microservices architecture.
     isCollapsed = false,
     onToggleCollapse: _onToggleCollapse = () => {},
   } = $props<{
-    sections?: ExploreNavigationConfig[];
+    sections?: BrowseNavigationConfig[];
     onSectionToggle?: (sectionId: string) => void;
     onItemClick?: (sectionId: string, itemId: string) => void;
     isCollapsed?: boolean;
@@ -44,15 +44,15 @@ Follows Svelte 5 runes + microservices architecture.
   });
 
   // Handle section header click
-  function handleSectionClick(section: ExploreNavigationConfig) {
+  function handleSectionClick(section: BrowseNavigationConfig) {
     hapticService?.trigger("selection");
     onSectionToggle(section.id);
   }
 
   // Handle navigation item click
   function handleItemClick(
-    section: ExploreNavigationConfig,
-    item: ExploreNavigationItem
+    section: BrowseNavigationConfig,
+    item: BrowseNavigationItem
   ) {
     hapticService?.trigger("selection");
     onItemClick(section.id, item.id);
@@ -142,12 +142,12 @@ Follows Svelte 5 runes + microservices architecture.
     <!-- Footer Stats -->
     {#if sections.length > 0}
       {@const totalSequences = sections.reduce(
-        (sum: number, section: ExploreNavigationConfig) =>
+        (sum: number, section: BrowseNavigationConfig) =>
           sum + section.totalCount,
         0
       )}
       {@const expandedCount = sections.filter(
-        (s: ExploreNavigationConfig) => s.isExpanded
+        (s: BrowseNavigationConfig) => s.isExpanded
       ).length}
       <div class="sidebar-footer">
         <div class="footer-stats">

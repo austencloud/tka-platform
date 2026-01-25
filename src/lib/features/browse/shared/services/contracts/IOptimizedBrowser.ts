@@ -1,5 +1,5 @@
 /**
- * Optimized Explore Service - Mobile-First Performance
+ * Optimized Browse Service - Mobile-First Performance
  *
  * Implements progressive loading, virtual scrolling, and image optimization
  * to dramatically improve mobile gallery performance.
@@ -24,7 +24,7 @@ export interface PaginatedSequences {
   nextPage: number;
 }
 
-export interface ExploreLoadingState {
+export interface BrowseLoadingState {
   isInitialLoading: boolean;
   isLoadingMore: boolean;
   error: string | null;
@@ -32,7 +32,7 @@ export interface ExploreLoadingState {
   totalCount: number;
 }
 
-export interface IOptimizedExploreer {
+export interface IOptimizedBrowser {
   /**
    * Load initial batch of sequences (first 20-30 for mobile)
    */

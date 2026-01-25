@@ -5,7 +5,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IExploreThumbnailProvider } from "../../display/services/contracts/IExploreThumbnailProvider";
+import type { IBrowseThumbnailProvider } from "../../display/services/contracts/IBrowseThumbnailProvider";
 import type {
   SpotlightDisplayState,
   SpotlightImageState,
@@ -32,7 +32,7 @@ export function createSpotlightState() {
     createDefaultNavigationState()
   );
   let currentSequence = $state<SequenceData | null>(null);
-  let thumbnailService = $state<IExploreThumbnailProvider | null>(null);
+  let thumbnailService = $state<IBrowseThumbnailProvider | null>(null);
 
   // Helper functions
   function updateNavigationState(): void {
@@ -146,7 +146,7 @@ export function createSpotlightState() {
     // Methods
     initializeSpotlight(
       sequence: SequenceData,
-      service: IExploreThumbnailProvider,
+      service: IBrowseThumbnailProvider,
       show: boolean
     ): void {
       currentSequence = sequence;
@@ -289,7 +289,7 @@ export class SpotlightState {
 
   initializeSpotlight(
     sequence: SequenceData,
-    service: IExploreThumbnailProvider,
+    service: IBrowseThumbnailProvider,
     show: boolean
   ): void {
     this.state.initializeSpotlight(sequence, service, show);

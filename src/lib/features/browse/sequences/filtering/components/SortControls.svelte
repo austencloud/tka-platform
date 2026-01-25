@@ -1,7 +1,7 @@
 <!--
 SortControls.svelte
 
-Sort controls component for the Explore module.
+Sort controls component for the Browse module.
 Provides sort dropdown, direction toggle, and filter button in the top section.
 
 Follows Svelte 5 runes + microservices architecture.
@@ -10,19 +10,19 @@ Follows Svelte 5 runes + microservices architecture.
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
     import { onMount } from "svelte";
-  import { ExploreSortMethod } from "$lib/features/explore/shared/domain/enums/explore-enums";
+  import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
   const {
-    currentSort = ExploreSortMethod.ALPHABETICAL,
+    currentSort = BrowseSortMethod.ALPHABETICAL,
     sortDirection = "asc",
     onSortChange = () => {},
     onFilterClick = () => {},
   } = $props<{
-    currentSort?: ExploreSortMethod;
+    currentSort?: BrowseSortMethod;
     sortDirection?: "asc" | "desc";
     onSortChange?: (
-      method: ExploreSortMethod,
+      method: BrowseSortMethod,
       direction: "asc" | "desc"
     ) => void;
     onFilterClick?: () => void;
@@ -37,14 +37,14 @@ Follows Svelte 5 runes + microservices architecture.
 
   // Sort options matching legacy app
   const sortOptions = [
-    { id: ExploreSortMethod.ALPHABETICAL, label: "Alphabetical" },
-    { id: ExploreSortMethod.DIFFICULTY_LEVEL, label: "Difficulty" },
-    { id: ExploreSortMethod.DATE_ADDED, label: "Date Added" },
-    { id: ExploreSortMethod.SEQUENCE_LENGTH, label: "Length" },
+    { id: BrowseSortMethod.ALPHABETICAL, label: "Alphabetical" },
+    { id: BrowseSortMethod.DIFFICULTY_LEVEL, label: "Difficulty" },
+    { id: BrowseSortMethod.DATE_ADDED, label: "Date Added" },
+    { id: BrowseSortMethod.SEQUENCE_LENGTH, label: "Length" },
   ];
 
   // Local state for controlled component - initialized with default, $effect syncs from prop
-  let localSort = $state<ExploreSortMethod>(ExploreSortMethod.ALPHABETICAL);
+  let localSort = $state<BrowseSortMethod>(BrowseSortMethod.ALPHABETICAL);
 
   // Sync localSort with prop changes
   $effect(() => {

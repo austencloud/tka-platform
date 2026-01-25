@@ -2,10 +2,10 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
-  import type { FilterPreset } from "../domain/types/explore-types";
+  import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+  import type { FilterPreset } from "../domain/types/browse-types";
 
-  import ExploreLayout from "./ExploreLayout.svelte";
+  import BrowseLayout from "./BrowseLayout.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
@@ -74,7 +74,7 @@
   );
 
   // Handler functions
-  function handleFilterChange(type: string, value?: ExploreFilterValue) {
+  function handleFilterChange(type: string, value?: BrowseFilterValue) {
     galleryState.handleFilterChange(type, value);
   }
 
@@ -136,7 +136,7 @@
   }
 </script>
 
-<ExploreLayout>
+<BrowseLayout>
   {#snippet centerPanel()}
     <div class="sequences-with-detail">
       <div
@@ -158,7 +158,7 @@
       </div>
     </div>
   {/snippet}
-</ExploreLayout>
+</BrowseLayout>
 
 <!-- View Presets Sheet (Mobile) -->
 {#if isMobile}

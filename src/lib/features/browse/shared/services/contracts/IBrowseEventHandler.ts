@@ -1,7 +1,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { createExploreState } from "../../state/explore-state-factory.svelte";
+import type { createBrowseState } from "../../state/browse-state-factory.svelte";
 
-type ExploreState = ReturnType<typeof createExploreState>;
+type BrowseState = ReturnType<typeof createBrowseState>;
 
 /**
  * Data for delete confirmation dialog
@@ -15,22 +15,22 @@ export interface DeleteConfirmationData {
 /**
  * Parameters required to initialize the event handler service
  */
-export interface ExploreEventHandlerParams {
-  galleryState: ExploreState;
+export interface BrowseEventHandlerParams {
+  galleryState: BrowseState;
   setSelectedSequence: (sequence: SequenceData | null) => void;
   setDeleteConfirmationData: (data: DeleteConfirmationData | null) => void;
   setError: (error: string | null) => void;
 }
 
 /**
- * Service for handling explore module events and actions
+ * Service for handling browse module events and actions
  */
-export interface IExploreEventHandler {
+export interface IBrowseEventHandler {
   /**
    * Initialize the service with required parameters
-   * Called by ExploreModule on mount
+   * Called by BrowseModule on mount
    */
-  initialize(params: ExploreEventHandlerParams): void;
+  initialize(params: BrowseEventHandlerParams): void;
 
   /**
    * Handle sequence selection

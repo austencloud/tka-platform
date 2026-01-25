@@ -1,5 +1,5 @@
 /**
- * Optimized Explore Service Implementation
+ * Optimized Browse Service Implementation
  *
  * Mobile-first gallery loading with:
  * - Progressive pagination (20 items per page on mobile)
@@ -10,10 +10,10 @@
 
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
 import type {
-  IOptimizedExploreer,
+  IOptimizedBrowser,
   PaginatedSequences,
   SequenceMetadata,
-} from "../contracts/IOptimizedExploreer";
+} from "../contracts/IOptimizedBrowser";
 
 // API Response types
 interface PaginatedSequencesResponse {
@@ -26,7 +26,7 @@ interface SequenceCountResponse {
   count: number;
 }
 
-export class OptimizedExploreer implements IOptimizedExploreer {
+export class OptimizedBrowser implements IOptimizedBrowser {
   private cache = new Map<number, SequenceMetadata[]>();
   private totalCount: number = 0;
   private readonly MOBILE_PAGE_SIZE = 20;

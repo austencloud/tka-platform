@@ -10,22 +10,22 @@
   import ErrorBanner from "../../../create/shared/components/ErrorBanner.svelte";
 
   import type {
-    IExploreEventHandler,
+    IBrowseEventHandler,
     DeleteConfirmationData,
-  } from "../services/contracts/IExploreEventHandler";
-  import CollectionsExplorePanel from "../../collections/components/CollectionsExplorePanel.svelte";
+  } from "../services/contracts/IBrowseEventHandler";
+  import CollectionsBrowsePanel from "../../collections/components/CollectionsBrowsePanel.svelte";
   import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
   import UserProfilePanel from "../../creators/components/UserProfilePanel.svelte";
   import { creatorsViewState } from "../../creators/state/creators-view-state.svelte";
-  import { createExploreState } from "../state/explore-state-factory.svelte";
-  import ExploreDeleteDialog from "./ExploreDeleteDialog.svelte";
-  import ExploreSequencesTab from "./ExploreSequencesTab.svelte";
-  import { exploreScrollState } from "../state/ExploreScrollState.svelte";
+  import { createBrowseState } from "../state/browse-state-factory.svelte";
+  import BrowseDeleteDialog from "./BrowseDeleteDialog.svelte";
+  import BrowseSequencesTab from "./BrowseSequencesTab.svelte";
+  import { browseScrollState } from "../state/BrowseScrollState.svelte";
   import {
-    exploreNavigationState,
-    type ExploreLocation,
-  } from "../state/explore-navigation-state.svelte";
-  import { ExploreScrollBehavior } from "../services/implementations/ExploreScrollBehavior";
+    browseNavigationState,
+    type BrowseLocation,
+  } from "../state/browse-navigation-state.svelte";
+  import { BrowseScrollBehavior } from "../services/implementations/BrowseScrollBehavior";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
   import { sequenceControlsManager } from "../state/sequence-controls-state.svelte";
   import { sequenceSourceManager } from "../state/sequence-source-state.svelte";
@@ -37,10 +37,10 @@
   import HallOfShameGallery from "$lib/features/hall-of-shame/components/HallOfShameGallery.svelte";
 
   // Note: Library tab removed - now integrated into Sequences via scope toggle (Community / My Library)
-  type ExploreModuleType = "sequences" | "collections" | "creators" | "hall-of-shame";
+  type BrowseModuleType = "gallery" | "collections" | "creators" | "hall-of-shame";
 
   // Tab order for determining slide direction (left-to-right in bottom nav)
-  const TAB_ORDER: ExploreModuleType[] = ["sequences", "collections", "creators", "hall-of-shame"];
+  const TAB_ORDER: BrowseModuleType[] = ["gallery", "collections", "creators", "hall-of-shame"];
 
   // Transition configuration
   const SLIDE_DISTANCE = 30; // pixels
@@ -50,21 +50,21 @@
   // STATE MANAGEMENT (Shared Coordination)
   // ============================================================================
 
-  const galleryState = createExploreState();
+  const galleryState = createBrowseState();
 
   // Service resolved lazily in onMount to ensure feature module is loaded
-  let eventHandlerService: IExploreEventHandler | null = null;
+  let eventHandlerService: IBrowseEventHandler | null = null;
 
   // ✅ PURE RUNES: Local state
   let _selectedSequence = $state<SequenceData | null>(null);
   let deleteConfirmationData = $state<DeleteConfirmationData | null>(null);
   let error = $state<string | null>(null);
-  let activeTab = $state<ExploreModuleType>("sequences");
+  let activeTab = $state<BrowseModuleType>("gallery");
   let showAnimator = $state<boolean>(false);
 
   // Slide direction for tab transitions (1 = right, -1 = left)
   let slideDirection = $state<1 | -1>(1);
-  let previousTab = $state<ExploreModuleType | null>(null);
+  let previousTab = $state<BrowseModuleType | null>(null);
 
   // Services
   let deviceDetector: IDeviceDetector | null = null;
@@ -96,17 +96,17 @@
   // This effect syncs the local tab state with the global navigation state
   $effect(() => {
     const navTab = navigationState.activeTab;
-    let newTab: ExploreModuleType = "sequences";
+    let newTab: BrowseModuleType = "gallery";
 
-    // Map navigation state to local explore tab
-    // Note: "library" now redirects to "sequences" (Gallery) with scope toggle
+    // Map navigation state to local browse tab
+    // Note: "library" now redirects to "gallery" (Gallery) with scope toggle
     if (
-      navTab === "sequences" ||
-      navTab === "explore" ||
+      navTab === "gallery" ||
+      navTab === "browse" ||
       navTab === "gallery" ||
       navTab === "library"
     ) {
-      newTab = "sequences";
+      newTab = "gallery";
     } else if (navTab === "collections") {
       newTab = "collections";
     } else if (navTab === "creators") {
@@ -116,13 +116,13 @@
     }
 
     // Only push to history if this is a user-initiated tab change (not from history nav)
-    if (newTab !== activeTab && !exploreNavigationState.isNavigating) {
-      // Map to the explore navigation tab format
-      const exploreTab =
-        newTab === "sequences"
+    if (newTab !== activeTab && !browseNavigationState.isNavigating) {
+      // Map to the browse navigation tab format
+      const browseTab =
+        newTab === "gallery"
           ? "gallery"
           : (newTab as "collections" | "creators");
-      exploreNavigationState.navigateTo({ tab: exploreTab, view: "list" });
+      browseNavigationState.navigateTo({ tab: browseTab, view: "list" });
     }
 
     // Calculate slide direction based on tab order
@@ -149,10 +149,10 @@
     if (
       creatorsViewState.currentView === "user-profile" &&
       creatorsViewState.viewingUserId &&
-      !exploreNavigationState.isNavigating
+      !browseNavigationState.isNavigating
     ) {
       // Check if navigation state already shows this profile (avoid duplicate push)
-      const current = exploreNavigationState.currentLocation;
+      const current = browseNavigationState.currentLocation;
       if (
         current?.tab === "creators" &&
         current?.view === "profile" &&
@@ -161,7 +161,7 @@
         return; // Already at this location, don't push again
       }
 
-      exploreNavigationState.navigateTo({
+      browseNavigationState.navigateTo({
         tab: "creators",
         view: "profile",
         contextId: creatorsViewState.viewingUserId,
@@ -170,19 +170,19 @@
   });
 
   // ✅ SYNC UI FROM NAVIGATION STATE
-  // When exploreNavigationState.currentLocation changes, update the UI accordingly
+  // When browseNavigationState.currentLocation changes, update the UI accordingly
   // This handles the new unified navigation API (viewCreatorProfile, etc.)
   $effect(() => {
-    const location = exploreNavigationState.currentLocation;
+    const location = browseNavigationState.currentLocation;
     if (!location) return;
 
     // Map the location tab to internal activeTab
-    const internalTab = location.tab === "gallery" ? "sequences" : location.tab;
+    const internalTab = location.tab === "gallery" ? "gallery" : location.tab;
 
     // Update tab if needed (this will trigger bottom nav sync)
     if (internalTab !== activeTab) {
       navigationState.setActiveTab(
-        location.tab === "gallery" ? "sequences" : location.tab
+        location.tab === "gallery" ? "gallery" : location.tab
       );
     }
 
@@ -202,14 +202,14 @@
   /**
    * Handle navigation from history back/forward buttons
    */
-  function handleHistoryNavigation(location: ExploreLocation) {
+  function handleHistoryNavigation(location: BrowseLocation) {
     // Map gallery tab back to sequences for internal state
-    const internalTab = location.tab === "gallery" ? "sequences" : location.tab;
+    const internalTab = location.tab === "gallery" ? "gallery" : location.tab;
 
     // Navigate to the tab via global navigation state
     if (internalTab !== activeTab) {
       navigationState.setActiveTab(
-        location.tab === "gallery" ? "sequences" : location.tab
+        location.tab === "gallery" ? "gallery" : location.tab
       );
     }
 
@@ -277,28 +277,28 @@
   // ============================================================================
 
   // Create scroll behavior service instance
-  const scrollBehaviorService = new ExploreScrollBehavior(exploreScrollState);
+  const scrollBehaviorService = new BrowseScrollBehavior(browseScrollState);
 
   // Track last scroll position for the container
   let lastContainerScrollTop = $state(0);
 
   // Reactive UI visibility state
-  const isUIVisible = $derived(exploreScrollState.isUIVisible);
+  const isUIVisible = $derived(browseScrollState.isUIVisible);
 
   // Provide scroll visibility context for child components
-  setContext("explorerScrollVisibility", {
-    getVisible: () => exploreScrollState.isUIVisible,
+  setContext("browserScrollVisibility", {
+    getVisible: () => browseScrollState.isUIVisible,
     hide: () => scrollBehaviorService.forceHideUI(),
     show: () => scrollBehaviorService.forceShowUI(),
   });
 
   // Provide navigation context for back/forward buttons and cross-tab navigation
-  setContext("exploreNavigation", {
+  setContext("browseNavigation", {
     onNavigate: handleHistoryNavigation,
-    navigateToCreatorProfile: exploreNavigationState.viewCreatorProfile,
-    navigateToSequenceDetail: exploreNavigationState.viewSequenceDetail,
-    navigateToCollectionDetail: exploreNavigationState.viewCollectionDetail,
-    navigateToCreatorSequences: exploreNavigationState.viewCreatorSequences,
+    navigateToCreatorProfile: browseNavigationState.viewCreatorProfile,
+    navigateToSequenceDetail: browseNavigationState.viewSequenceDetail,
+    navigateToCollectionDetail: browseNavigationState.viewCollectionDetail,
+    navigateToCreatorSequences: browseNavigationState.viewCreatorSequences,
   });
 
   // Provide gallery state for TopBar controls via global reactive state
@@ -339,11 +339,11 @@
 
   onMount(() => {
     // Initialize navigation state (restores from localStorage if available)
-    exploreNavigationState.initialize("gallery");
+    browseNavigationState.initialize("gallery");
 
     // Resolve event handler service from ITI container
     try {
-      eventHandlerService = container.items.exploreEventHandler as IExploreEventHandler;
+      eventHandlerService = container.items.browseEventHandler as IBrowseEventHandler;
 
       // Initialize event handler service with required parameters
       eventHandlerService.initialize({
@@ -356,10 +356,10 @@
       });
     } catch (err) {
       console.error(
-        "ExploreModule: Failed to resolve IExploreEventHandler",
+        "BrowseModule: Failed to resolve IBrowseEventHandler",
         err
       );
-      error = "Failed to initialize explore module services";
+      error = "Failed to initialize browse module services";
     }
 
     // Initialize DeviceDetector service
@@ -373,7 +373,7 @@
         responsiveSettings = deviceDetector!.getResponsiveSettings();
       });
     } catch (err) {
-      console.warn("ExploreModule: Failed to resolve DeviceDetector", err);
+      console.warn("BrowseModule: Failed to resolve DeviceDetector", err);
     }
 
     // Load initial data through gallery state (non-blocking)
@@ -393,7 +393,7 @@
             sequencePanelManager.openDetail(sequence);
           } else {
             console.warn(
-              "[ExploreModule] Pending sequence not found:",
+              "[BrowseModule] Pending sequence not found:",
               pendingSequenceId
             );
           }
@@ -426,7 +426,7 @@
 
 <!-- Delete confirmation dialog -->
 {#if deleteConfirmationData}
-  <ExploreDeleteDialog
+  <BrowseDeleteDialog
     show={true}
     confirmationData={deleteConfirmationData}
     onConfirm={() =>
@@ -442,9 +442,9 @@
 />
 
 <!-- Main layout - shows immediately with skeletons while data loads -->
-<div class="explore-content">
+<div class="browse-content">
   <!-- Tab Content - uses {#key} with directional slide transitions (like Learn module) -->
-  <div class="explore-tab-content">
+  <div class="browse-tab-content">
     {#key activeTab}
       <div
         class="tab-panel"
@@ -459,8 +459,8 @@
           easing: cubicOut,
         }}
       >
-        {#if activeTab === "sequences"}
-          <ExploreSequencesTab
+        {#if activeTab === "gallery"}
+          <BrowseSequencesTab
             {isMobile}
             {isUIVisible}
             {showDesktopSidebar}
@@ -478,7 +478,7 @@
             onContainerScroll={handleContainerScroll}
           />
         {:else if activeTab === "collections"}
-          <CollectionsExplorePanel />
+          <CollectionsBrowsePanel />
         {:else if activeTab === "creators"}
           {#if creatorsViewState.currentView === "user-profile" && creatorsViewState.viewingUserId}
             <UserProfilePanel userId={creatorsViewState.viewingUserId} />
@@ -494,14 +494,14 @@
 </div>
 
 <style>
-  .explore-content {
+  .browse-content {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
   }
 
-  .explore-tab-content {
+  .browse-tab-content {
     position: relative;
     flex: 1;
     min-height: 0;

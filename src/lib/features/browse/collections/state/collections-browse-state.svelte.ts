@@ -1,7 +1,7 @@
 /**
  * Collections Browse State
  *
- * Manages cached data for browsing creator libraries in the Explore module.
+ * Manages cached data for browsing creator libraries in the Browse module.
  * Data is cached at module level to prevent reloading on tab switches.
  */
 
@@ -27,7 +27,7 @@ export interface CreatorLibraryData {
 /**
  * Content tab types for viewing a creator's library
  */
-export type CreatorContentTab = "sequences" | "collections" | "compositions";
+export type CreatorContentTab = "gallery" | "collections" | "compositions";
 
 function createCollectionsBrowseState() {
   // Data cache
@@ -39,7 +39,7 @@ function createCollectionsBrowseState() {
   // UI state
   let searchQuery = $state("");
   let expandedCreatorId = $state<string | null>(null);
-  let activeContentTab = $state<CreatorContentTab>("sequences");
+  let activeContentTab = $state<CreatorContentTab>("gallery");
 
   /**
    * Load creator libraries data if not already cached
@@ -141,7 +141,7 @@ function createCollectionsBrowseState() {
    */
   function expandCreator(creatorId: string) {
     expandedCreatorId = creatorId;
-    activeContentTab = "sequences";
+    activeContentTab = "gallery";
   }
 
   /**

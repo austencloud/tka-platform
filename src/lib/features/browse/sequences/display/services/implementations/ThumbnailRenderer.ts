@@ -5,7 +5,7 @@
  * Extracted from PropAwareThumbnail's renderThumbnailWithProps().
  *
  * Handles:
- * - Loading full sequence data if needed (via IExploreLoader)
+ * - Loading full sequence data if needed (via IBrowseLoader)
  * - Deriving start position if missing (via IStartPositionDeriver)
  * - Applying prop type overrides
  * - Rendering via ISequenceRenderer pipeline
@@ -14,7 +14,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
-import type { IExploreLoader } from "../contracts/IExploreLoader";
+import type { IBrowseLoader } from "../contracts/IBrowseLoader";
 import type {
   IThumbnailRenderer,
   RenderOptions,
@@ -49,7 +49,7 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
   constructor(
     private sequenceRenderer: ISequenceRenderer,
     private startPositionDeriver: IStartPositionDeriver,
-    private exploreLoader: IExploreLoader | null
+    private browseLoader: IBrowseLoader | null
   ) {}
 
   async render(
@@ -95,14 +95,14 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
       return sequence;
     }
 
-    // No beat data - try loading from Explore index
-    if (!this.exploreLoader) {
+    // No beat data - try loading from Browse index
+    if (!this.browseLoader) {
       throw new Error(
-        `Cannot render thumbnail for "${sequenceName}": sequence has no beat data and IExploreLoader is not available.`
+        `Cannot render thumbnail for "${sequenceName}": sequence has no beat data and IBrowseLoader is not available.`
       );
     }
 
-    const loadedSequence = await this.exploreLoader.loadFullSequenceData(sequenceName);
+    const loadedSequence = await this.browseLoader.loadFullSequenceData(sequenceName);
     if (!loadedSequence) {
       throw new Error(`Sequence not found: ${sequenceName}`);
     }

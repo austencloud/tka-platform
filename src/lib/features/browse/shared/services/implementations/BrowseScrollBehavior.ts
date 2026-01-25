@@ -1,7 +1,7 @@
 /**
- * ExploreScrollBehavior.ts
+ * BrowseScrollBehavior.ts
  *
- * Service that handles scroll behavior for the Explorer module.
+ * Service that handles scroll behavior for the Browser module.
  * Determines when to hide/show UI elements (TopBar, Navigation, Filters)
  * based on scroll direction and position.
  *
@@ -17,13 +17,13 @@
  *    - Scrolling UP → SHOW UI
  */
 
-import type { ExploreScrollState } from "../../state/ExploreScrollState.svelte";
+import type { BrowseScrollState } from "../../state/BrowseScrollState.svelte";
 
-export class ExploreScrollBehavior {
+export class BrowseScrollBehavior {
   private scrollThreshold = 50; // Minimum scroll distance to trigger hide/show
   private minScrollForHide = 100; // Minimum scroll position before hiding UI
 
-  constructor(private scrollState: ExploreScrollState) {}
+  constructor(private scrollState: BrowseScrollState) {}
 
   /**
    * Handle scroll events on a container element (like the sequences grid)

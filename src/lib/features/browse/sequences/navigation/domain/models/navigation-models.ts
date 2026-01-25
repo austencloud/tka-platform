@@ -1,6 +1,6 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
-export interface ExploreNavigationItem {
+export interface BrowseNavigationItem {
   id: string;
   label: string;
   value: string | number;
@@ -9,11 +9,11 @@ export interface ExploreNavigationItem {
   sequences: SequenceData[];
 }
 
-export interface ExploreNavigationConfig {
+export interface BrowseNavigationConfig {
   id: string;
   title: string;
   type: "date" | "length" | "letter" | "level" | "author" | "favorites";
-  items: ExploreNavigationItem[];
+  items: BrowseNavigationItem[];
   isExpanded: boolean;
   totalCount: number;
 }

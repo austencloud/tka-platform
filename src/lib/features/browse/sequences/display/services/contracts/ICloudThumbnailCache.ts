@@ -15,7 +15,7 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType
 
 /**
  * Thumbnail variant determines what metadata is baked into the image:
- * - 'gallery': No user data footer (for Explore browsing)
+ * - 'gallery': No user data footer (for Browse browsing)
  * - 'wordcard': With user data footer (for print cards)
  */
 export type ThumbnailVariant = "gallery" | "wordcard";

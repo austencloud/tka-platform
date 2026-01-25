@@ -2,19 +2,19 @@
   import { onMount } from "svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-  import { ExploreSortMethod } from "../../../shared/domain/enums/explore-enums";
+  import { BrowseSortMethod } from "../../../shared/domain/enums/browse-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
   const {
-    sortBy = ExploreSortMethod.ALPHABETICAL,
+    sortBy = BrowseSortMethod.ALPHABETICAL,
     viewMode = "grid",
     onSortChange = () => {},
     onViewModeChange = () => {},
   } = $props<{
-    sortBy?: ExploreSortMethod;
+    sortBy?: BrowseSortMethod;
     viewMode?: "grid" | "list";
-    onSortChange?: (sortBy: ExploreSortMethod) => void;
+    onSortChange?: (sortBy: BrowseSortMethod) => void;
     onViewModeChange?: (viewMode: "grid" | "list") => void;
   }>();
 
@@ -27,17 +27,17 @@
 
   // Sort options (reactive for i18n)
   const sortOptions = $derived([
-    { value: ExploreSortMethod.ALPHABETICAL, label: t("explore_sort_name") },
-    { value: ExploreSortMethod.DIFFICULTY_LEVEL, label: t("explore_sort_difficulty") },
-    { value: ExploreSortMethod.SEQUENCE_LENGTH, label: t("explore_sort_length") },
-    { value: ExploreSortMethod.DATE_ADDED, label: t("explore_sort_recent") },
-    { value: ExploreSortMethod.AUTHOR, label: t("explore_sort_author") },
+    { value: BrowseSortMethod.ALPHABETICAL, label: t("browse_sort_name") },
+    { value: BrowseSortMethod.DIFFICULTY_LEVEL, label: t("browse_sort_difficulty") },
+    { value: BrowseSortMethod.SEQUENCE_LENGTH, label: t("browse_sort_length") },
+    { value: BrowseSortMethod.DATE_ADDED, label: t("browse_sort_recent") },
+    { value: BrowseSortMethod.AUTHOR, label: t("browse_sort_author") },
   ]);
 
   // Handle sort change
   function handleSortChange(event: Event) {
     const target = event.target as HTMLSelectElement;
-    const newSortBy = target.value as ExploreSortMethod;
+    const newSortBy = target.value as BrowseSortMethod;
     hapticService?.trigger("selection");
     onSortChange(newSortBy);
   }
@@ -52,7 +52,7 @@
 <div class="header-right">
   <div class="view-controls">
     <label class="sort-control">
-      {t("explore_controls_sort")}
+      {t("browse_controls_sort")}
       <select value={sortBy} onchange={handleSortChange}>
         {#each sortOptions as option}
           <option value={option.value}>{option.label}</option>
@@ -65,8 +65,8 @@
         class="view-button"
         class:active={viewMode === "grid"}
         onclick={() => handleViewModeChange("grid")}
-        title={t("explore_view_grid")}
-        aria-label={t("explore_view_grid")}
+        title={t("browse_view_grid")}
+        aria-label={t("browse_view_grid")}
         type="button"
       >
         <svg width="16" height="16" viewBox="0 0 16 16">
@@ -80,8 +80,8 @@
         class="view-button"
         class:active={viewMode === "list"}
         onclick={() => handleViewModeChange("list")}
-        title={t("explore_view_list")}
-        aria-label={t("explore_view_list")}
+        title={t("browse_view_list")}
+        aria-label={t("browse_view_list")}
         type="button"
       >
         <svg width="16" height="16" viewBox="0 0 16 16">

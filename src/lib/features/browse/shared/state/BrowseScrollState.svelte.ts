@@ -1,16 +1,16 @@
 /**
- * ExploreScrollState.svelte.ts
+ * BrowseScrollState.svelte.ts
  *
- * Manages the reactive state for UI visibility in the Explorer module
+ * Manages the reactive state for UI visibility in the Browser module
  * based on scroll behavior. Controls visibility of:
  * - TopBar (header)
  * - DesktopNavigationSidebar (bottom navigation)
- * - Filtering controls (top section in Explorer)
+ * - Filtering controls (top section in Browser)
  *
  * Inspired by TabScroll's LayoutState pattern.
  */
 
-export class ExploreScrollState {
+export class BrowseScrollState {
   // UI visibility state
   isUIVisible = $state(true);
 
@@ -54,6 +54,6 @@ export class ExploreScrollState {
 }
 
 /**
- * Singleton instance for global Explorer scroll state
+ * Singleton instance for global Browser scroll state
  */
-export const exploreScrollState = new ExploreScrollState();
+export const browseScrollState = new BrowseScrollState();

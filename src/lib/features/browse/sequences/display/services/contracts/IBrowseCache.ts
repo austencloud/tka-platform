@@ -4,7 +4,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
-export interface IExploreCache {
+export interface IBrowseCache {
   /**
    * Get cached sequences if available
    */

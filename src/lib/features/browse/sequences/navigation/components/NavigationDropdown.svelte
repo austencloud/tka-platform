@@ -18,7 +18,7 @@ Responsive behavior:
     import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { onMount } from "svelte";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
-  import { ExploreSortMethod } from "$lib/features/explore/shared/domain/enums/explore-enums";
+  import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
 
   let hapticService: IHapticFeedback;
   let deviceDetector: IDeviceDetector | null = null;
@@ -34,26 +34,26 @@ Responsive behavior:
     onSectionClick = () => {},
     onSortMethodChange = () => {},
   } = $props<{
-    currentSortMethod?: ExploreSortMethod;
+    currentSortMethod?: BrowseSortMethod;
     availableSections?: string[];
     onSectionClick?: (section: string) => void;
-    onSortMethodChange?: (method: ExploreSortMethod) => void;
+    onSortMethodChange?: (method: BrowseSortMethod) => void;
   }>();
 
   // Available sort methods
   const sortMethods = [
     {
-      value: ExploreSortMethod.ALPHABETICAL,
+      value: BrowseSortMethod.ALPHABETICAL,
       label: "Letter",
       icon: "fa-font",
     },
     {
-      value: ExploreSortMethod.SEQUENCE_LENGTH,
+      value: BrowseSortMethod.SEQUENCE_LENGTH,
       label: "Length",
       icon: "fa-ruler-horizontal",
     },
     {
-      value: ExploreSortMethod.DATE_ADDED,
+      value: BrowseSortMethod.DATE_ADDED,
       label: "Date",
       icon: "fa-calendar",
     },
@@ -64,15 +64,15 @@ Responsive behavior:
   let dropdownRef = $state<HTMLDivElement | null>(null);
 
   // Get header text based on sort method
-  function getHeaderText(sortMethod: ExploreSortMethod): string {
+  function getHeaderText(sortMethod: BrowseSortMethod): string {
     switch (sortMethod) {
-      case ExploreSortMethod.ALPHABETICAL:
+      case BrowseSortMethod.ALPHABETICAL:
         return "Jump to Letter";
-      case ExploreSortMethod.DIFFICULTY_LEVEL:
+      case BrowseSortMethod.DIFFICULTY_LEVEL:
         return "Jump to Level";
-      case ExploreSortMethod.SEQUENCE_LENGTH:
+      case BrowseSortMethod.SEQUENCE_LENGTH:
         return "Jump to Length";
-      case ExploreSortMethod.DATE_ADDED:
+      case BrowseSortMethod.DATE_ADDED:
         return "Jump to Date";
       default:
         return "Quick Navigation";
@@ -80,13 +80,13 @@ Responsive behavior:
   }
 
   // Get button label - simplified
-  function getButtonLabel(sortMethod: ExploreSortMethod): string {
+  function getButtonLabel(sortMethod: BrowseSortMethod): string {
     const method = sortMethods.find((m) => m.value === sortMethod);
     return `Sort: ${method?.label || "Letter"}`;
   }
 
   // Handle sort method change
-  function handleSortMethodChange(method: ExploreSortMethod) {
+  function handleSortMethodChange(method: BrowseSortMethod) {
     hapticService?.trigger("selection");
     onSortMethodChange(method);
     // Keep dropdown open so user can then navigate to a section
@@ -120,18 +120,18 @@ Responsive behavior:
   // Get display text for section button
   function getSectionDisplayText(
     section: string,
-    sortMethod: ExploreSortMethod
+    sortMethod: BrowseSortMethod
   ): string {
     let cleanText = section.replace(/\s*\(\d+\s+sequences?\)$/, "");
 
     if (
-      sortMethod === ExploreSortMethod.DIFFICULTY_LEVEL &&
+      sortMethod === BrowseSortMethod.DIFFICULTY_LEVEL &&
       cleanText.startsWith("Level ")
     ) {
       return cleanText.replace("Level ", "");
     }
 
-    if (sortMethod === ExploreSortMethod.ALPHABETICAL) {
+    if (sortMethod === BrowseSortMethod.ALPHABETICAL) {
       const parts = cleanText.split(" - ");
       if (parts.length > 1 && parts[0]) {
         return parts[0].trim();
@@ -140,11 +140,11 @@ Responsive behavior:
       return match ? match[1] || cleanText : cleanText;
     }
 
-    if (sortMethod === ExploreSortMethod.DIFFICULTY_LEVEL) {
+    if (sortMethod === BrowseSortMethod.DIFFICULTY_LEVEL) {
       cleanText = cleanText.replace(/^[🟢🟡🔴⚪]\s*/, "");
-    } else if (sortMethod === ExploreSortMethod.AUTHOR) {
+    } else if (sortMethod === BrowseSortMethod.AUTHOR) {
       cleanText = cleanText.replace(/^👤\s*/, "");
-    } else if (sortMethod === ExploreSortMethod.DATE_ADDED) {
+    } else if (sortMethod === BrowseSortMethod.DATE_ADDED) {
       cleanText = cleanText.replace(/^📅\s*/, "");
     }
 
@@ -153,7 +153,7 @@ Responsive behavior:
 
   // Deduplicate sections when sorting alphabetically
   const uniqueSections = $derived(() => {
-    if (currentSortMethod === ExploreSortMethod.ALPHABETICAL) {
+    if (currentSortMethod === BrowseSortMethod.ALPHABETICAL) {
       const seen = new Set<string>();
       return availableSections.filter((section: string) => {
         const letter = getSectionDisplayText(section, currentSortMethod);

@@ -1,5 +1,5 @@
 /**
- * Explore Metadata Extractor Service
+ * Browse Metadata Extractor Service
  *
  * Extracts metadata from sequence files (PNG, WebP, or JSON sidecars)
  * with proper error handling and type safety.
@@ -23,9 +23,9 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { UniversalMetadataExtractor } from "$lib/shared/services/UniversalMetadataExtractor";
 import type {
-  IExploreMetadataExtractor,
+  IBrowseMetadataExtractor,
   SequenceMetadata,
-} from "../contracts/IExploreMetadataExtractor";
+} from "../contracts/IBrowseMetadataExtractor";
 import type { ISequenceDifficultyCalculator } from "../contracts/ISequenceDifficultyCalculator";
 // Constants for metadata extraction
 // Using function to avoid module-level enum reference (fixes test initialization)
@@ -49,7 +49,7 @@ const DATE_FIELD_NAMES = [
   "timestamp",
 ] as const;
 
-export class ExploreMetadataExtractor implements IExploreMetadataExtractor {
+export class BrowseMetadataExtractor implements IBrowseMetadataExtractor {
   constructor(
     private readonly difficultyCalculator: ISequenceDifficultyCalculator
   ) {}

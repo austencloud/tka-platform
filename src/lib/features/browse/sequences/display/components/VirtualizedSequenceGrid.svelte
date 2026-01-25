@@ -6,7 +6,7 @@
   } from "@tanstack/svelte-virtual";
   import { onMount, onDestroy, untrack } from "svelte";
   import { get } from "svelte/store";
-  import type { IExploreThumbnailProvider } from "../services/contracts/IExploreThumbnailProvider";
+  import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
   import type { IVariationGrouper } from "../services/contracts/IVariationGrouper";
   import SequenceCard from "./SequenceCard/SequenceCard.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -33,7 +33,7 @@
     onAction = () => {},
   } = $props<{
     sequences: SequenceData[];
-    thumbnailService: IExploreThumbnailProvider | null;
+    thumbnailService: IBrowseThumbnailProvider | null;
     onAction?: (action: string, sequence: SequenceData) => void;
   }>();
 

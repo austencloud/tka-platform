@@ -2,9 +2,9 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type {
   SectionConfig,
   SequenceSection,
-} from "$lib/features/explore/shared/domain/models/explore-models";
+} from "$lib/features/browse/shared/domain/models/browse-models";
 
-export interface IExploreSectionManager {
+export interface IBrowseSectionManager {
   /** Organize sequences into sections based on configuration */
   organizeSections(
     sequences: SequenceData[],

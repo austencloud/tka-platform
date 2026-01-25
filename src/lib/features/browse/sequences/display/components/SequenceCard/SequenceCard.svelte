@@ -1,7 +1,7 @@
 <!--
 SequenceCard.svelte
 
-Ultra-minimal card component for the Explore grid.
+Ultra-minimal card component for the Browse grid.
 Clicking the card opens the sequence detail viewer.
 
 Uses PropAwareThumbnail for cloud-cached rendering:

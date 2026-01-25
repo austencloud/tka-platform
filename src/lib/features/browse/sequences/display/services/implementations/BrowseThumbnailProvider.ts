@@ -6,9 +6,9 @@
  */
 
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { IExploreThumbnailProvider } from "../contracts/IExploreThumbnailProvider";
+import type { IBrowseThumbnailProvider } from "../contracts/IBrowseThumbnailProvider";
 
-export class ExploreThumbnailProvider implements IExploreThumbnailProvider {
+export class BrowseThumbnailProvider implements IBrowseThumbnailProvider {
   private thumbnailCache = new Map<string, Promise<void>>();
   private metadataCache = new Map<string, { width: number; height: number }>();
   private baseUrl = "/gallery";
@@ -16,9 +16,9 @@ export class ExploreThumbnailProvider implements IExploreThumbnailProvider {
   getThumbnailUrl(_sequenceId: string, thumbnailPath: string): string {
     // Handle different thumbnail path formats
 
-    // Convert legacy /Explore/ paths to /gallery/ paths
-    if (thumbnailPath.startsWith("/Explore/")) {
-      const correctedPath = thumbnailPath.replace(/^\/Explore\//, "/gallery/");
+    // Convert legacy /Browse/ paths to /gallery/ paths
+    if (thumbnailPath.startsWith("/Browse/")) {
+      const correctedPath = thumbnailPath.replace(/^\/Browse\//, "/gallery/");
       return this.getOptimizedUrl(correctedPath);
     }
 

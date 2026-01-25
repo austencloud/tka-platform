@@ -8,13 +8,13 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceDetailLoader } from "../contracts/ISequenceDetailLoader";
-import type { IExploreLoader } from "../contracts/IExploreLoader";
+import type { IBrowseLoader } from "../contracts/IBrowseLoader";
 
 export class SequenceDetailLoader implements ISequenceDetailLoader {
   // In-flight loads to prevent duplicates
   private loadPromises = new Map<string, Promise<SequenceData | null>>();
 
-  constructor(private readonly exploreLoader: IExploreLoader) {}
+  constructor(private readonly browseLoader: IBrowseLoader) {}
 
   async loadFullSequence(sequence: SequenceData): Promise<SequenceData | null> {
     // If sequence already has steps, use it directly
@@ -31,7 +31,7 @@ export class SequenceDetailLoader implements ISequenceDetailLoader {
     }
 
     // Start new load
-    const loadPromise = this.exploreLoader
+    const loadPromise = this.browseLoader
       .loadFullSequenceData(sequenceName)
       .finally(() => {
         // Clean up after load completes

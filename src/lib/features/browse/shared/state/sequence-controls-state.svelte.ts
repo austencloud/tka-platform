@@ -1,22 +1,22 @@
 /**
  * Sequence Controls State
  *
- * to access the same state/handlers as ExploreTab without context issues.
+ * to access the same state/handlers as BrowseTab without context issues.
  *
  * Using Svelte 5 runes pattern - module-level reactive state
  */
 
-import type { ExploreSortMethod } from "../domain/enums/explore-enums";
-import type { ExploreFilterValue } from "../domain/types/explore-types";
+import type { BrowseSortMethod } from "../domain/enums/browse-enums";
+import type { BrowseFilterValue } from "../domain/types/browse-types";
 
-type SequenceFilter = { type: string; value: ExploreFilterValue };
+type SequenceFilter = { type: string; value: BrowseFilterValue };
 
 export interface SequenceControlsState {
   currentFilter: SequenceFilter;
-  currentSortMethod: ExploreSortMethod;
+  currentSortMethod: BrowseSortMethod;
   availableNavigationSections: string[];
   onFilterChange: (filter: SequenceFilter) => void;
-  onSortMethodChange: (method: ExploreSortMethod) => void;
+  onSortMethodChange: (method: BrowseSortMethod) => void;
   scrollToSection: (sectionId: string) => void;
   openFilterModal: () => void;
 }

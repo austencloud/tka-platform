@@ -1,7 +1,7 @@
 <!--
-SearchExplorePanel.svelte
+SearchBrowsePanel.svelte
 
-AI-powered search panel for the Explore module.
+AI-powered search panel for the Browse module.
 Allows natural language queries to find sequences, users, and collections.
 -->
 <script lang="ts">
@@ -114,7 +114,7 @@ Allows natural language queries to find sequences, users, and collections.
   }
 </script>
 
-<div class="search-explore-panel">
+<div class="search-browse-panel">
   <!-- Search header -->
   <div class="search-header">
     <h2 class="search-title">
@@ -300,7 +300,7 @@ Allows natural language queries to find sequences, users, and collections.
     border: 0;
   }
 
-  .search-explore-panel {
+  .search-browse-panel {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -661,7 +661,7 @@ Allows natural language queries to find sequences, users, and collections.
 
   /* Responsive design */
   @media (max-width: 480px) {
-    .search-explore-panel {
+    .search-browse-panel {
       padding: 16px;
       gap: 16px;
     }

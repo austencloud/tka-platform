@@ -1,7 +1,7 @@
 <!--
-ExploreModuleNavigation.svelte
+BrowseModuleNavigation.svelte
 
-Tab-based navigation for the Explore module.
+Tab-based navigation for the Browse module.
 Tabs: Sequences, Collections, Creators
 -->
 <script lang="ts">
@@ -9,25 +9,25 @@ Tabs: Sequences, Collections, Creators
   import { container } from "$lib/shared/di";
     import { onMount } from "svelte";
   import type {
-    ExploreModuleType,
-    ExploreTabConfig,
-  } from "./types/explore-tab-types";
+    BrowseModuleType,
+    BrowseTabConfig,
+  } from "./types/browse-tab-types";
 
-  const { currentTab = "sequences", onTabChange = () => {} } = $props<{
-    currentTab?: ExploreModuleType;
-    onTabChange?: (tab: ExploreModuleType) => void;
+  const { currentTab = "gallery", onTabChange = () => {} } = $props<{
+    currentTab?: BrowseModuleType;
+    onTabChange?: (tab: BrowseModuleType) => void;
   }>();
 
   let hapticService: IHapticFeedback;
 
   // Note: Library is now integrated into Sequences via scope toggle (Community / My Library)
-  const tabs: ExploreTabConfig[] = [
-    { id: "sequences", label: "Sequences", icon: "fa-layer-group" },
+  const tabs: BrowseTabConfig[] = [
+    { id: "gallery", label: "Sequences", icon: "fa-layer-group" },
     { id: "collections", label: "Collections", icon: "fa-folder" },
     { id: "creators", label: "Creators", icon: "fa-users" },
   ];
 
-  function handleTabClick(tabId: ExploreModuleType) {
+  function handleTabClick(tabId: BrowseModuleType) {
     hapticService?.trigger("selection");
     onTabChange(tabId);
   }
@@ -37,7 +37,7 @@ Tabs: Sequences, Collections, Creators
   });
 </script>
 
-<nav class="explore-tab-navigation" aria-label="Explore navigation">
+<nav class="browse-tab-navigation" aria-label="Browse navigation">
   <div class="tabs-container">
     {#each tabs as tab}
       <button
@@ -57,7 +57,7 @@ Tabs: Sequences, Collections, Creators
 </nav>
 
 <style>
-  .explore-tab-navigation {
+  .browse-tab-navigation {
     width: 100%;
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(10px);
@@ -68,7 +68,7 @@ Tabs: Sequences, Collections, Creators
     -ms-overflow-style: none; /* IE/Edge */
   }
 
-  .explore-tab-navigation::-webkit-scrollbar {
+  .browse-tab-navigation::-webkit-scrollbar {
     display: none; /* Chrome/Safari */
   }
 

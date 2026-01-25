@@ -20,7 +20,7 @@ export interface SequenceMetadata {
   startPosition?: StartPositionData; // Full start position data with motions
 }
 
-export interface IExploreMetadataExtractor {
+export interface IBrowseMetadataExtractor {
   /**
    * Extract metadata from a sequence file (PNG, WebP, or JSON sidecar)
    */

@@ -1,34 +1,34 @@
 /**
- * Explore Sort Service
+ * Browse Sort Service
  *
  * Handles sorting and grouping of gallery sequences.
  * Provides consistent sorting behavior across the gallery.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { ExploreSortMethod } from "$lib/features/explore/shared/domain/enums/explore-enums";
-import type { IExploreSorter } from "../contracts/IExploreSorter";
-import { sortSequencesByKineticAlphabet } from "$lib/features/explore/shared/utils/kinetic-alphabet-sort";
+import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
+import type { IBrowseSorter } from "../contracts/IBrowseSorter";
+import { sortSequencesByKineticAlphabet } from "$lib/features/browse/shared/utils/kinetic-alphabet-sort";
 
-export class ExploreSorter implements IExploreSorter {
+export class BrowseSorter implements IBrowseSorter {
   sortSequences(
     sequences: SequenceData[],
-    sortMethod: ExploreSortMethod
+    sortMethod: BrowseSortMethod
   ): SequenceData[] {
     const sorted = [...sequences];
 
     switch (sortMethod) {
-      case ExploreSortMethod.ALPHABETICAL:
+      case BrowseSortMethod.ALPHABETICAL:
         return this.sortAlphabetically(sorted);
-      case ExploreSortMethod.DATE_ADDED:
+      case BrowseSortMethod.DATE_ADDED:
         return this.sortByDateAdded(sorted);
-      case ExploreSortMethod.DIFFICULTY_LEVEL:
+      case BrowseSortMethod.DIFFICULTY_LEVEL:
         return this.sortByDifficulty(sorted);
-      case ExploreSortMethod.SEQUENCE_LENGTH:
+      case BrowseSortMethod.SEQUENCE_LENGTH:
         return this.sortByLength(sorted);
-      case ExploreSortMethod.AUTHOR:
+      case BrowseSortMethod.AUTHOR:
         return this.sortByAuthor(sorted);
-      case ExploreSortMethod.POPULARITY:
+      case BrowseSortMethod.POPULARITY:
         return this.sortByPopularity(sorted);
       default:
         return sorted;
@@ -37,7 +37,7 @@ export class ExploreSorter implements IExploreSorter {
 
   groupSequencesIntoSections(
     sequences: SequenceData[],
-    sortMethod: ExploreSortMethod
+    sortMethod: BrowseSortMethod
   ): Record<string, SequenceData[]> {
     const sections: Record<string, SequenceData[]> = {};
 
@@ -103,16 +103,16 @@ export class ExploreSorter implements IExploreSorter {
 
   private getSectionKey(
     sequence: SequenceData,
-    sortMethod: ExploreSortMethod
+    sortMethod: BrowseSortMethod
   ): string {
     switch (sortMethod) {
-      case ExploreSortMethod.ALPHABETICAL:
+      case BrowseSortMethod.ALPHABETICAL:
         return this.getAlphabeticalSection(sequence);
-      case ExploreSortMethod.DIFFICULTY_LEVEL:
+      case BrowseSortMethod.DIFFICULTY_LEVEL:
         return sequence.difficultyLevel ?? "Unknown";
-      case ExploreSortMethod.AUTHOR:
+      case BrowseSortMethod.AUTHOR:
         return sequence.author ?? "Unknown";
-      case ExploreSortMethod.SEQUENCE_LENGTH:
+      case BrowseSortMethod.SEQUENCE_LENGTH:
         return this.getLengthSection(sequence);
       default:
         return "All";

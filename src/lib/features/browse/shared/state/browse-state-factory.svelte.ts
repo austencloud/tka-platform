@@ -1,5 +1,5 @@
 ﻿/**
- * Simple Explore State
+ * Simple Browse State
  *
  * Essential gallery functionality without over-engineering.
  * Load sequences → Filter sequences → Display grid + Spotlight
@@ -7,40 +7,40 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { container } from "$lib/shared/di";
-import type { ExploreFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
-import type { IExploreFilter } from "../../sequences/display/services/contracts/IExploreFilter";
-import type { IExploreLoader } from "../../sequences/display/services/contracts/IExploreLoader";
-import type { IExploreSorter } from "../../sequences/display/services/contracts/IExploreSorter";
-import type { ExploreNavigationConfig } from "../../sequences/navigation/domain/models/navigation-models";
-import type { ExploreNavigationItem } from "../../sequences/navigation/domain/models/navigation-models";
+import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+import type { IBrowseFilter } from "../../sequences/display/services/contracts/IBrowseFilter";
+import type { IBrowseLoader } from "../../sequences/display/services/contracts/IBrowseLoader";
+import type { IBrowseSorter } from "../../sequences/display/services/contracts/IBrowseSorter";
+import type { BrowseNavigationConfig } from "../../sequences/navigation/domain/models/navigation-models";
+import type { BrowseNavigationItem } from "../../sequences/navigation/domain/models/navigation-models";
 import type { INavigator } from "../../sequences/navigation/services/contracts/INavigator";
-import { ExploreSortMethod } from "../domain/enums/explore-enums";
+import { BrowseSortMethod } from "../domain/enums/browse-enums";
 import type {
   SectionConfig,
   SequenceSection,
-} from "../domain/models/explore-models";
-import type { ExploreFilterValue } from "../domain/types/explore-types";
+} from "../domain/models/browse-models";
+import type { BrowseFilterValue } from "../domain/types/browse-types";
 import type { ISectionManager } from "../services/contracts/ISectionManager";
 import type { ILibraryRepository } from "../../../library/services/contracts/ILibraryRepository";
 import type { SequenceSource } from "../state/sequence-source-state.svelte";
 import type { IFavoritesManager } from "../services/contracts/IFavoritesManager";
 import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
 
-const STORAGE_KEY = "tka-explore-gallery-controls";
+const STORAGE_KEY = "tka-browse-gallery-controls";
 
 interface PersistedControlsState {
-  sortMethod: ExploreSortMethod;
+  sortMethod: BrowseSortMethod;
   sortDirection: "asc" | "desc";
-  filter: { type: string; value: ExploreFilterValue };
+  filter: { type: string; value: BrowseFilterValue };
 }
 
-export function createExploreState() {
+export function createBrowseState() {
   // Services - Use specialized services directly instead of orchestration layer
-  const loaderService = container.items.exploreLoader;
-  const filterService = container.items.exploreFilter;
-  const sortService = container.items.exploreSorter;
-  const Navigator = container.items.exploreNavigator;
-  const SectionManager = container.items.exploreSectionManager;
+  const loaderService = container.items.browseLoader;
+  const filterService = container.items.browseFilter;
+  const sortService = container.items.browseSorter;
+  const Navigator = container.items.browseNavigator;
+  const SectionManager = container.items.browseSectionManager;
   const FavoritesManager = container.items.favoritesManager;
 
   // Library service for "My Library" mode - lazily resolved
@@ -59,7 +59,7 @@ export function createExploreState() {
       if (!stored) return null;
       return JSON.parse(stored);
     } catch (error) {
-      console.warn("[ExploreState] Failed to load persisted controls:", error);
+      console.warn("[BrowseState] Failed to load persisted controls:", error);
       return null;
     }
   }
@@ -74,7 +74,7 @@ export function createExploreState() {
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (error) {
-      console.warn("[ExploreState] Failed to persist controls:", error);
+      console.warn("[BrowseState] Failed to persist controls:", error);
     }
   }
 
@@ -87,14 +87,14 @@ export function createExploreState() {
   let displayedSequences = $state<SequenceData[]>([]);
   let allSequences = $state<SequenceData[]>([]);
   let selectedSequence = $state<SequenceData | null>(null);
-  let navigationSections = $state<ExploreNavigationConfig[]>([]);
+  let navigationSections = $state<BrowseNavigationConfig[]>([]);
   let sequenceSections = $state<SequenceSection[]>([]);
-  let currentSortMethod = $state<ExploreSortMethod>(
-    persisted?.sortMethod || ExploreSortMethod.ALPHABETICAL
+  let currentSortMethod = $state<BrowseSortMethod>(
+    persisted?.sortMethod || BrowseSortMethod.ALPHABETICAL
   );
   let sortDirection = $state<"asc" | "desc">(persisted?.sortDirection || "asc");
   const showSections = $state<boolean>(true);
-  let currentFilter = $state<{ type: string; value: ExploreFilterValue }>(
+  let currentFilter = $state<{ type: string; value: BrowseFilterValue }>(
     persisted?.filter || {
       type: "all",
       value: null,
@@ -235,14 +235,14 @@ export function createExploreState() {
     if (!section) return;
 
     const item = section.items.find(
-      (i: ExploreNavigationItem) => i.id === itemId
+      (i: BrowseNavigationItem) => i.id === itemId
     );
     if (!item) return;
 
     // Update active state
     navigationSections = navigationSections.map((s) => ({
       ...s,
-      items: s.items.map((i: ExploreNavigationItem) => ({
+      items: s.items.map((i: BrowseNavigationItem) => ({
         ...i,
         isActive: s.id === sectionId && i.id === itemId,
       })),
@@ -316,7 +316,7 @@ export function createExploreState() {
       if (currentFilter.type !== "all") {
         filtered = filterService.applyFilter(
           allSequences,
-          currentFilter.type as ExploreFilterType,
+          currentFilter.type as BrowseFilterType,
           currentFilter.value
         );
       }
@@ -342,16 +342,16 @@ export function createExploreState() {
       // Map sort method to groupBy strategy
       let groupBy: SectionConfig["groupBy"];
       switch (currentSortMethod) {
-        case ExploreSortMethod.ALPHABETICAL:
+        case BrowseSortMethod.ALPHABETICAL:
           groupBy = "letter";
           break;
-        case ExploreSortMethod.DIFFICULTY_LEVEL:
+        case BrowseSortMethod.DIFFICULTY_LEVEL:
           groupBy = "difficulty";
           break;
-        case ExploreSortMethod.SEQUENCE_LENGTH:
+        case BrowseSortMethod.SEQUENCE_LENGTH:
           groupBy = "length";
           break;
-        case ExploreSortMethod.DATE_ADDED:
+        case BrowseSortMethod.DATE_ADDED:
           groupBy = "date";
           break;
         default:
@@ -378,7 +378,7 @@ export function createExploreState() {
   // Handle filter changes
   async function handleFilterChange(
     type: string,
-    value?: ExploreFilterValue
+    value?: BrowseFilterValue
   ): Promise<void> {
     currentFilter = { type, value: value || null };
     sectionsReady = false;
@@ -391,7 +391,7 @@ export function createExploreState() {
 
   // Handle sort changes
   async function handleSortChange(
-    method: ExploreSortMethod,
+    method: BrowseSortMethod,
     direction: "asc" | "desc"
   ): Promise<void> {
     currentSortMethod = method;

@@ -7,7 +7,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
-export interface IExploreSelectionState {
+export interface IBrowseSelectionState {
   // Reactive state getters
   readonly selectedSequence: SequenceData | null;
   readonly hasSelection: boolean;
@@ -21,7 +21,7 @@ export interface IExploreSelectionState {
  * Factory function to create gallery selection state
  * Uses Svelte 5 runes for reactivity
  */
-export function createGallerySelectionState(): IExploreSelectionState {
+export function createGallerySelectionState(): IBrowseSelectionState {
   // Private reactive state using Svelte 5 runes
   let selectedSequence = $state<SequenceData | null>(null);
 
@@ -47,7 +47,7 @@ export function createGallerySelectionState(): IExploreSelectionState {
 }
 
 // For backward compatibility, export a class-like interface
-export class ExploreSelectionState implements IExploreSelectionState {
+export class BrowseSelectionState implements IBrowseSelectionState {
   private state = createGallerySelectionState();
 
   get selectedSequence() {

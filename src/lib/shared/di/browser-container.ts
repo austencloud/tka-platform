@@ -38,7 +38,7 @@ import { mandalaContainer } from "./containers/mandala-container";
 import { createBuildContainer } from "./containers/build-container";
 import { createAnimatorContainer } from "./containers/animator-container";
 import { createLoopLabelerContainer } from "./containers/loop-labeler-container";
-import { createExploreContainer } from "./containers/explore-container";
+import { createExploreContainer } from "./containers/browse-container";
 import { createNavigationContainer } from "./containers/navigation-container";
 import { createRenderContainer } from "./containers/render-container";
 import { createTrainContainer } from "./containers/train-container";

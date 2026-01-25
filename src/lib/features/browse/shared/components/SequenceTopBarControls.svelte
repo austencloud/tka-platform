@@ -13,7 +13,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
-  import { ExploreSortMethod } from "../domain/enums/explore-enums";
+  import { BrowseSortMethod } from "../domain/enums/browse-enums";
 
   interface Props {
     onSourceChange?: (source: SequenceSource) => void;
@@ -59,15 +59,15 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
 
   // Sort options
   const sortOptions = [
-    { id: ExploreSortMethod.ALPHABETICAL, label: "A-Z", icon: "fa-font" },
-    { id: ExploreSortMethod.DATE_ADDED, label: "New", icon: "fa-clock" },
+    { id: BrowseSortMethod.ALPHABETICAL, label: "A-Z", icon: "fa-font" },
+    { id: BrowseSortMethod.DATE_ADDED, label: "New", icon: "fa-clock" },
     {
-      id: ExploreSortMethod.DIFFICULTY_LEVEL,
+      id: BrowseSortMethod.DIFFICULTY_LEVEL,
       label: "Level",
       icon: "fa-signal",
     },
     {
-      id: ExploreSortMethod.SEQUENCE_LENGTH,
+      id: BrowseSortMethod.SEQUENCE_LENGTH,
       label: "Length",
       icon: "fa-ruler",
     },
@@ -77,7 +77,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     hapticService = container.items.hapticFeedback;
   });
 
-  function handleSortChange(method: ExploreSortMethod) {
+  function handleSortChange(method: BrowseSortMethod) {
     hapticService?.trigger("selection");
     if (sequenceControls) {
       sequenceControls.onSortMethodChange(method);

@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type { SequenceSection } from "./../../../shared/domain/models/explore-models.ts";
+  import type { SequenceSection } from "./../../../shared/domain/models/browse-models.ts";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
-  import type { IExploreThumbnailProvider } from "../services/contracts/IExploreThumbnailProvider";
+  import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
   import { PinchZoomGridController } from "../services/implementations/PinchZoomGridController";
-  import ExploreGrid from "./ExploreGrid.svelte";
-  import ExploreThumbnailSkeleton from "./ExploreThumbnailSkeleton.svelte";
+  import BrowseGrid from "./BrowseGrid.svelte";
+  import BrowseThumbnailSkeleton from "./BrowseThumbnailSkeleton.svelte";
   import SequenceTopBarControls from "../../../shared/components/SequenceTopBarControls.svelte";
   import { gridZoomManager } from "../../../shared/state/grid-zoom-state.svelte";
 
@@ -34,7 +34,7 @@
   }>();
 
   // ✅ RESOLVE SERVICES: Get services from DI container (lazy resolution)
-  let thumbnailService: IExploreThumbnailProvider | null = $state(null);
+  let thumbnailService: IBrowseThumbnailProvider | null = $state(null);
 
   // Pinch-to-zoom state
   let pinchController: PinchZoomGridController | null = null;
@@ -62,7 +62,7 @@
   }
 
   onMount(async () => {
-    thumbnailService = container.items.exploreThumbnailProvider as IExploreThumbnailProvider;
+    thumbnailService = container.items.browseThumbnailProvider as IBrowseThumbnailProvider;
 
     // Initialize from settings
     gridZoomManager.initFromSettings();
@@ -115,7 +115,7 @@
   <div class="display-content" bind:this={displayContentEl} onscroll={handleScroll}>
     {#if isInitializing}
       <!-- Show skeletons until sections are fully ready -->
-      <ExploreThumbnailSkeleton viewMode="grid" count={12} />
+      <BrowseThumbnailSkeleton viewMode="grid" count={12} />
     {:else if error}
       <div class="error-state" role="alert" aria-live="assertive">
         <p class="error-message">{error}</p>
@@ -126,7 +126,7 @@
         <p>{emptyMessage}</p>
       </div>
     {:else if hasSequences}
-      <ExploreGrid
+      <BrowseGrid
         {sequences}
         {sections}
         viewMode="grid"

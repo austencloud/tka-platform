@@ -1,15 +1,15 @@
 ﻿/**
- * Explore Filter Service
+ * Browse Filter Service
  *
  * Handles all filtering operations for gallery sequences.
  * Each filter type has its own dedicated method for clarity.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { ExploreFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
-import type { IExploreFilter } from "../contracts/IExploreFilter";
+import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+import type { IBrowseFilter } from "../contracts/IBrowseFilter";
 import type {
   LOOPType} from "$lib/features/create/generate/circular/domain/models/circular-models";
 import {
@@ -25,40 +25,40 @@ const LENGTH_OPTIONS = ["3", "4", "5", "6", "7", "8+"];
 const DIFFICULTY_OPTIONS = ["beginner", "intermediate", "advanced"];
 const GRID_MODE_OPTIONS = [GridMode.DIAMOND, GridMode.BOX];
 
-export class ExploreFilter implements IExploreFilter {
+export class BrowseFilter implements IBrowseFilter {
   private difficultyCalculator = new SequenceDifficultyCalculator();
 
   applyFilter(
     sequences: SequenceData[],
-    filterType: ExploreFilterType,
-    filterValue: ExploreFilterValue
+    filterType: BrowseFilterType,
+    filterValue: BrowseFilterValue
   ): SequenceData[] {
-    if (filterType === ExploreFilterType.ALL_SEQUENCES) {
+    if (filterType === BrowseFilterType.ALL_SEQUENCES) {
       return sequences;
     }
 
     switch (filterType) {
-      case ExploreFilterType.STARTING_LETTER:
+      case BrowseFilterType.STARTING_LETTER:
         return this.filterByStartingLetter(sequences, filterValue);
-      case ExploreFilterType.CONTAINS_LETTERS:
+      case BrowseFilterType.CONTAINS_LETTERS:
         return this.filterByContainsLetters(sequences, filterValue);
-      case ExploreFilterType.LENGTH:
+      case BrowseFilterType.LENGTH:
         return this.filterByLength(sequences, filterValue);
-      case ExploreFilterType.DIFFICULTY:
+      case BrowseFilterType.DIFFICULTY:
         return this.filterByDifficulty(sequences, filterValue);
-      case ExploreFilterType.STARTING_POSITION:
+      case BrowseFilterType.STARTING_POSITION:
         return this.filterByStartingPosition(sequences, filterValue);
-      case ExploreFilterType.END_POSITION:
+      case BrowseFilterType.END_POSITION:
         return this.filterByEndPosition(sequences, filterValue);
-      case ExploreFilterType.AUTHOR:
+      case BrowseFilterType.AUTHOR:
         return this.filterByAuthor(sequences, filterValue);
-      case ExploreFilterType.GRID_MODE:
+      case BrowseFilterType.GRID_MODE:
         return this.filterByGridMode(sequences, filterValue);
-      case ExploreFilterType.FAVORITES:
+      case BrowseFilterType.FAVORITES:
         return this.filterByFavorites(sequences);
-      case ExploreFilterType.RECENT:
+      case BrowseFilterType.RECENT:
         return this.filterByRecent(sequences);
-      case ExploreFilterType.LOOP_TYPE:
+      case BrowseFilterType.LOOP_TYPE:
         return this.filterByLOOPType(sequences, filterValue);
       default:
         return sequences;
@@ -66,21 +66,21 @@ export class ExploreFilter implements IExploreFilter {
   }
 
   getFilterOptions(
-    filterType: ExploreFilterType,
+    filterType: BrowseFilterType,
     sequences: SequenceData[]
   ): string[] {
     switch (filterType) {
-      case ExploreFilterType.STARTING_LETTER:
+      case BrowseFilterType.STARTING_LETTER:
         return STARTING_LETTER_RANGES;
-      case ExploreFilterType.LENGTH:
+      case BrowseFilterType.LENGTH:
         return LENGTH_OPTIONS;
-      case ExploreFilterType.DIFFICULTY:
+      case BrowseFilterType.DIFFICULTY:
         return DIFFICULTY_OPTIONS;
-      case ExploreFilterType.AUTHOR:
+      case BrowseFilterType.AUTHOR:
         return this.getUniqueAuthors(sequences);
-      case ExploreFilterType.GRID_MODE:
+      case BrowseFilterType.GRID_MODE:
         return GRID_MODE_OPTIONS;
-      case ExploreFilterType.LOOP_TYPE:
+      case BrowseFilterType.LOOP_TYPE:
         return this.getLOOPTypeOptions(sequences);
       default:
         return [];
@@ -93,7 +93,7 @@ export class ExploreFilter implements IExploreFilter {
 
   private filterByStartingLetter(
     sequences: SequenceData[],
-    filterValue: ExploreFilterValue
+    filterValue: BrowseFilterValue
   ): SequenceData[] {
     if (!filterValue || typeof filterValue !== "string") {
       return sequences;
@@ -127,7 +127,7 @@ export class ExploreFilter implements IExploreFilter {
 
   private filterByContainsLetters(
     sequences: SequenceData[],
-    filterValue: ExploreFilterValue
+    filterValue: BrowseFilterValue
   ): SequenceData[] {
     if (!filterValue || typeof filterValue !== "string") {
       return sequences;
@@ -143,7 +143,7 @@ export class ExploreFilter implements IExploreFilter {
 
   private filterByLength(
     sequences: SequenceData[],
-    filterValue: ExploreFilterValue
+    filterValue: BrowseFilterValue
   ): SequenceData[] {
     if (!filterValue) {
       return sequences;
@@ -165,7 +165,7 @@ export class ExploreFilter implements IExploreFilter {
 
   private filterByDifficulty(
     sequences: SequenceData[],
-    filterValue: ExploreFilterValue
+    filterValue: BrowseFilterValue
   ): SequenceData[] {
     if (!filterValue) {
       return sequences;
@@ -215,7 +215,7 @@ export class ExploreFilter implements IExploreFilter {
 
   private filterByStartingPosition(
     sequences: SequenceData[],
-    filterValue: ExploreFilterValue
+    filterValue: BrowseFilterValue
   ): SequenceData[] {
     if (!filterValue) {
       return sequences;
@@ -274,7 +274,7 @@ export class ExploreFilter implements IExploreFilter {
 
   private filterByEndPosition(
     sequences: SequenceData[],
-    filterValue: ExploreFilterValue
+    filterValue: BrowseFilterValue
   ): SequenceData[] {
     if (!filterValue) {
       return sequences;
@@ -334,7 +334,7 @@ export class ExploreFilter implements IExploreFilter {
 
   private filterByAuthor(
     sequences: SequenceData[],
-    filterValue: ExploreFilterValue
+    filterValue: BrowseFilterValue
   ): SequenceData[] {
     if (!filterValue) {
       return sequences;
@@ -345,7 +345,7 @@ export class ExploreFilter implements IExploreFilter {
 
   private filterByGridMode(
     sequences: SequenceData[],
-    filterValue: ExploreFilterValue
+    filterValue: BrowseFilterValue
   ): SequenceData[] {
     if (!filterValue) {
       return sequences;
@@ -376,7 +376,7 @@ export class ExploreFilter implements IExploreFilter {
    */
   private filterByLOOPType(
     sequences: SequenceData[],
-    filterValue: ExploreFilterValue
+    filterValue: BrowseFilterValue
   ): SequenceData[] {
     if (!filterValue) {
       return sequences;

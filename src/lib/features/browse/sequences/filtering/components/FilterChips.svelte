@@ -9,13 +9,13 @@ Shows visual feedback of active filters with easy removal.
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
     import { onMount } from "svelte";
-  import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+  import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 
   const {
     currentFilter = { type: "all", value: null },
     onRemoveFilter = () => {},
   } = $props<{
-    currentFilter?: { type: string; value: ExploreFilterValue };
+    currentFilter?: { type: string; value: BrowseFilterValue };
     onRemoveFilter?: () => void;
   }>();
 

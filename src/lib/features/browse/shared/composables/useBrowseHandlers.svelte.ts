@@ -1,33 +1,33 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IExploreThumbnailProvider } from "../../sequences/display/services/contracts/IExploreThumbnailProvider";
+import type { IBrowseThumbnailProvider } from "../../sequences/display/services/contracts/IBrowseThumbnailProvider";
 import type { ISheetRouter } from "$lib/shared/navigation/services/contracts/ISheetRouter";
-import type { IExploreLoader } from "../../sequences/display/services/contracts/IExploreLoader";
-import type { DeleteConfirmationData } from "../services/contracts/IExploreEventHandler";
+import type { IBrowseLoader } from "../../sequences/display/services/contracts/IBrowseLoader";
+import type { DeleteConfirmationData } from "../services/contracts/IBrowseEventHandler";
 import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
 import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
-import type { createExploreState } from "../state/explore-state-factory.svelte";
+import type { createBrowseState } from "../state/browse-state-factory.svelte";
 import { openSpotlightViewer } from "../../../../shared/application/state/ui/ui-state.svelte";
 import { container } from "$lib/shared/di";
 
-type ExploreState = ReturnType<typeof createExploreState>;
+type BrowseState = ReturnType<typeof createBrowseState>;
 
-interface ExploreHandlersParams {
-  galleryState: ExploreState;
+interface BrowseHandlersParams {
+  galleryState: BrowseState;
   setSelectedSequence: (sequence: SequenceData | null) => void;
   setDeleteConfirmationData: (data: DeleteConfirmationData | null) => void;
   setError: (error: string | null) => void;
-  thumbnailService: IExploreThumbnailProvider;
+  thumbnailService: IBrowseThumbnailProvider;
   sheetRouterService?: ISheetRouter | null;
 }
 
-export function useExploreHandlers({
+export function useBrowseHandlers({
   galleryState,
   setSelectedSequence,
   setDeleteConfirmationData,
   setError,
   thumbnailService,
   sheetRouterService,
-}: ExploreHandlersParams) {
+}: BrowseHandlersParams) {
   function handleSequenceSelect(sequence: SequenceData) {
     setSelectedSequence(sequence);
     galleryState.selectSequence(sequence);
@@ -85,7 +85,7 @@ export function useExploreHandlers({
       // Gallery sequences have empty steps - need to load full sequence data
       let fullSequence = sequence;
       if (!sequence.steps || sequence.steps.length === 0) {
-        const loaderService = container.items.exploreLoader;
+        const loaderService = container.items.browseLoader;
         if (loaderService) {
           const sequenceName = sequence.word || sequence.id;
           const loaded = await loaderService.loadFullSequenceData(sequenceName);

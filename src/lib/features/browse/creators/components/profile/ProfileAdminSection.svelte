@@ -149,7 +149,7 @@
         "xp",
         "streak",
         "achievements",
-        "sequences", // User's library sequences
+        "gallery", // User's library sequences
         "activityLog", // Activity logging
         "notifications",
         "settings",

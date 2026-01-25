@@ -3,7 +3,7 @@
   import { browser } from "$app/environment";
   import { onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IExploreThumbnailProvider } from "../../display/services/contracts/IExploreThumbnailProvider";
+  import type { IBrowseThumbnailProvider } from "../../display/services/contracts/IBrowseThumbnailProvider";
   import type { SpotlightDisplayMode } from "$lib/shared/application/state/ui/ui-state.svelte";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
@@ -32,7 +32,7 @@
   } = $props<{
     show?: boolean;
     sequence?: SequenceData;
-    thumbnailService?: IExploreThumbnailProvider;
+    thumbnailService?: IBrowseThumbnailProvider;
     displayMode?: SpotlightDisplayMode;
     videoUrl?: string;
     posterUrl?: string;

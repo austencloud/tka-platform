@@ -34,7 +34,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   import SequenceActionButtons from "./SequenceActionButtons.svelte";
 
   // State imports
-  import { exploreNavigationState } from "../../../shared/state/explore-navigation-state.svelte";
+  import { browseNavigationState } from "../../../shared/state/browse-navigation-state.svelte";
   import { sequencePanelManager } from "../../../shared/state/sequence-panel-state.svelte";
   import { openSpotlightWithAnimation } from "$lib/shared/application/state/ui/ui-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -212,7 +212,7 @@ Used by both desktop side panel and mobile slide-up overlay.
     if (!sequence.ownerId) return;
     hapticService?.trigger("selection");
     sequencePanelManager.close();
-    exploreNavigationState.viewCreatorProfile(
+    browseNavigationState.viewCreatorProfile(
       sequence.ownerId,
       sequence.ownerDisplayName
     );

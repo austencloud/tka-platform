@@ -16,7 +16,7 @@ Displays:
   const {
     data,
     isExpanded = false,
-    activeTab = "sequences",
+    activeTab = "gallery",
     onExpand,
     onCollapse,
     onTabChange,
@@ -152,11 +152,11 @@ Displays:
           role="tab"
           id="tab-sequences-{profile.userId}"
           class="tab"
-          class:active={activeTab === "sequences"}
-          aria-selected={activeTab === "sequences"}
+          class:active={activeTab === "gallery"}
+          aria-selected={activeTab === "gallery"}
           aria-controls="panel-sequences-{profile.userId}"
-          tabindex={activeTab === "sequences" ? 0 : -1}
-          onclick={(e) => handleTabClick("sequences", e)}
+          tabindex={activeTab === "gallery" ? 0 : -1}
+          onclick={(e) => handleTabClick("gallery", e)}
         >
           Sequences
           <span class="count">{sequenceCount}</span>
@@ -198,7 +198,7 @@ Displays:
         id="panel-{activeTab}-{profile.userId}"
         aria-labelledby="tab-{activeTab}-{profile.userId}"
       >
-        {#if activeTab === "sequences"}
+        {#if activeTab === "gallery"}
           {#if previewSequences.length > 0}
             <div class="sequence-grid">
               {#each previewSequences as sequence (sequence.id)}

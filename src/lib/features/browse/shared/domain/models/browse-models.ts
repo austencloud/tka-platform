@@ -1,5 +1,5 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ExploreSortMethod } from "../enums/explore-enums";
+import type { BrowseSortMethod } from "../enums/browse-enums";
 
 /**
  * Essential Browse Models - Keep It Simple!
@@ -8,7 +8,7 @@ import type { ExploreSortMethod } from "../enums/explore-enums";
  * No over-engineering, no complex state management.
  */
 
-export interface ExploreSection {
+export interface BrowseSection {
   id: string;
   title: string;
   count: number;
@@ -32,7 +32,7 @@ export interface SectionConfig {
     | "difficulty"
     | "date"
     | "none";
-  sortMethod: ExploreSortMethod;
+  sortMethod: BrowseSortMethod;
   showEmptySections: boolean;
   expandedSections?: Set<string>;
   sortOrder?: "asc" | "desc";
@@ -49,20 +49,20 @@ export interface SequenceSection {
 }
 
 // Simple display state for components that need it
-export interface ExploreDisplayState {
+export interface BrowseDisplayState {
   currentView: "filter_selection" | "sequence_browser";
   selectedSequence: SequenceData | null;
   isSequenceDetailOpen: boolean;
 }
 
-export interface ExploreLoadingState {
+export interface BrowseLoadingState {
   isLoading: boolean;
   hasError: boolean;
   errorMessage: string | null;
 }
 
 // Factory functions
-export function createDefaultDisplayState(): ExploreDisplayState {
+export function createDefaultDisplayState(): BrowseDisplayState {
   return {
     currentView: "filter_selection",
     selectedSequence: null,
@@ -70,7 +70,7 @@ export function createDefaultDisplayState(): ExploreDisplayState {
   };
 }
 
-export function createDefaultLoadingState(): ExploreLoadingState {
+export function createDefaultLoadingState(): BrowseLoadingState {
   return {
     isLoading: false,
     hasError: false,
@@ -79,7 +79,7 @@ export function createDefaultLoadingState(): ExploreLoadingState {
 }
 
 // Simple state for persistence (if needed)
-export interface CompleteExploreState {
+export interface CompleteBrowseState {
   lastUpdated: Date;
   version: number;
 }

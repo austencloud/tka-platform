@@ -1,17 +1,17 @@
 <script lang="ts">
   import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
-  import { ExploreSortMethod } from "../domain/enums/explore-enums";
+  import { BrowseSortMethod } from "../domain/enums/browse-enums";
   import ViewPresetsDropdown from "../../sequences/filtering/components/ViewPresetsDropdown.svelte";
   import NavigationDropdown from "../../sequences/navigation/components/NavigationDropdown.svelte";
-  import type { ExploreFilter } from "$lib/shared/persistence/domain/types/FilteringTypes";
+  import type { BrowseFilter } from "$lib/shared/persistence/domain/types/FilteringTypes";
 
   interface Props {
     isMobile: boolean;
-    currentFilter: ExploreFilter;
-    currentSortMethod: ExploreSortMethod;
+    currentFilter: BrowseFilter;
+    currentSortMethod: BrowseSortMethod;
     availableSections: string[];
-    onFilterChange: (filter: Partial<ExploreFilter>) => void;
-    onSortMethodChange: (method: ExploreSortMethod) => void;
+    onFilterChange: (filter: Partial<BrowseFilter>) => void;
+    onSortMethodChange: (method: BrowseSortMethod) => void;
     onSectionClick: (sectionId: string) => void;
   }
 
@@ -26,7 +26,7 @@
   }: Props = $props();
 </script>
 
-<div class="explore-controls">
+<div class="browse-controls">
   <!-- View Presets Control -->
   <div class="control-item">
     {#if isMobile}
@@ -85,7 +85,7 @@
 </div>
 
 <style>
-  .explore-controls {
+  .browse-controls {
     display: flex;
     gap: 12px;
     align-items: center;
@@ -170,7 +170,7 @@
 
   /* Small mobile adjustments */
   @media (max-width: 380px) {
-    .explore-controls {
+    .browse-controls {
       gap: 8px;
     }
 

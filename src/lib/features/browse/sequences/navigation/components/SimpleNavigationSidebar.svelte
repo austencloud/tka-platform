@@ -11,7 +11,7 @@ Provides simple navigation matching desktop functionality:
 Matches the desktop Python app navigation pattern exactly.
 -->
 <script lang="ts">
-  import { ExploreSortMethod } from "./../../../shared/domain/enums/explore-enums.ts";
+  import { BrowseSortMethod } from "./../../../shared/domain/enums/browse-enums.ts";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
     import { onMount } from "svelte";
@@ -25,22 +25,22 @@ Matches the desktop Python app navigation pattern exactly.
     onSectionClick = () => {},
     isHorizontal = false, // New prop for layout mode
   } = $props<{
-    currentSortMethod?: ExploreSortMethod;
+    currentSortMethod?: BrowseSortMethod;
     availableSections?: string[];
     onSectionClick?: (section: string) => void;
     isHorizontal?: boolean; // true = horizontal (portrait mobile), false = vertical (wider screens)
   }>();
 
   // Get header text based on sort method
-  function getHeaderText(sortMethod: ExploreSortMethod): string {
+  function getHeaderText(sortMethod: BrowseSortMethod): string {
     switch (sortMethod) {
-      case ExploreSortMethod.ALPHABETICAL:
+      case BrowseSortMethod.ALPHABETICAL:
         return "Letter";
-      case ExploreSortMethod.DIFFICULTY_LEVEL:
+      case BrowseSortMethod.DIFFICULTY_LEVEL:
         return "Level";
-      case ExploreSortMethod.SEQUENCE_LENGTH:
+      case BrowseSortMethod.SEQUENCE_LENGTH:
         return "Length";
-      case ExploreSortMethod.DATE_ADDED:
+      case BrowseSortMethod.DATE_ADDED:
         return "Date";
       default:
         return "Navigation";
@@ -60,20 +60,20 @@ Matches the desktop Python app navigation pattern exactly.
   // Get display text for section button - remove counts and extract clean text
   function getSectionDisplayText(
     section: string,
-    sortMethod: ExploreSortMethod
+    sortMethod: BrowseSortMethod
   ): string {
     // Remove count information like "(15 sequences)" from the section title
     let cleanText = section.replace(/\s*\(\d+\s+sequences?\)$/, "");
 
     if (
-      sortMethod === ExploreSortMethod.DIFFICULTY_LEVEL &&
+      sortMethod === BrowseSortMethod.DIFFICULTY_LEVEL &&
       cleanText.startsWith("Level ")
     ) {
       return cleanText.replace("Level ", "");
     }
 
     // For alphabetical sorting, extract just the letter (remove emoji prefixes if any)
-    if (sortMethod === ExploreSortMethod.ALPHABETICAL) {
+    if (sortMethod === BrowseSortMethod.ALPHABETICAL) {
       // Extract the letter portion before the hyphen (handles "A - 4 steps" format)
       const parts = cleanText.split(" - ");
       if (parts.length > 1 && parts[0]) {
@@ -86,11 +86,11 @@ Matches the desktop Python app navigation pattern exactly.
     }
 
     // For other sort methods, remove emoji prefixes but keep the main text
-    if (sortMethod === ExploreSortMethod.DIFFICULTY_LEVEL) {
+    if (sortMethod === BrowseSortMethod.DIFFICULTY_LEVEL) {
       cleanText = cleanText.replace(/^[🟢🟡🔴⚪]\s*/, "");
-    } else if (sortMethod === ExploreSortMethod.AUTHOR) {
+    } else if (sortMethod === BrowseSortMethod.AUTHOR) {
       cleanText = cleanText.replace(/^👤\s*/, "");
-    } else if (sortMethod === ExploreSortMethod.DATE_ADDED) {
+    } else if (sortMethod === BrowseSortMethod.DATE_ADDED) {
       cleanText = cleanText.replace(/^📅\s*/, "");
     }
 
@@ -99,7 +99,7 @@ Matches the desktop Python app navigation pattern exactly.
 
   // Deduplicate sections when sorting alphabetically (to handle sub-grouped sections like "A - 4 steps", "A - 8 steps")
   const uniqueSections = $derived(() => {
-    if (currentSortMethod === ExploreSortMethod.ALPHABETICAL) {
+    if (currentSortMethod === BrowseSortMethod.ALPHABETICAL) {
       const seen = new Set<string>();
       return availableSections.filter((section: string) => {
         const letter = getSectionDisplayText(section, currentSortMethod);

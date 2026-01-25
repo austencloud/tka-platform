@@ -4,7 +4,7 @@
   import { onMount, onDestroy } from "svelte";
   // NOTE: animate-css-grid disabled - causes layout chaos with async thumbnail loading
   // import { wrapGrid } from "animate-css-grid";
-  import type { IExploreThumbnailProvider } from "../services/contracts/IExploreThumbnailProvider";
+  import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
   import type { IVariationGrouper } from "../services/contracts/IVariationGrouper";
   import SequenceCard from "./SequenceCard/SequenceCard.svelte";
   import SectionHeader from "./SectionHeader.svelte";
@@ -36,7 +36,7 @@
     sequences?: SequenceData[];
     sections?: SequenceData[];
     viewMode?: "grid" | "list";
-    thumbnailService: IExploreThumbnailProvider | null;
+    thumbnailService: IBrowseThumbnailProvider | null;
     showSections?: boolean;
     onAction?: (action: string, sequence: SequenceData) => void;
     /** Pinch-to-zoom column override (2-6). Active on any touch device. */
@@ -214,7 +214,7 @@
       return thumbnailService.getThumbnailUrl(sequence.id, firstThumbnail);
     } catch (error) {
       console.warn(
-        "ExploreGrid: Failed to resolve thumbnail for sequence",
+        "BrowseGrid: Failed to resolve thumbnail for sequence",
         sequence.id,
         error
       );

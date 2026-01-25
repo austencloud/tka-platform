@@ -1,7 +1,7 @@
 /**
  * Creators Data State
  *
- * Manages cached data for the Creators tab in the Explore module.
+ * Manages cached data for the Creators tab in the Browse module.
  * Data is cached at module level to prevent reloading on tab switches.
  */
 

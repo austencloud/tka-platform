@@ -1,23 +1,23 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
-  ExploreNavigationConfig,
-  ExploreNavigationItem,
+  BrowseNavigationConfig,
+  BrowseNavigationItem,
 } from "../../domain/models/navigation-models";
 
 export interface INavigator {
   buildNavigationStructure(
     sequences: SequenceData[]
-  ): ExploreNavigationConfig[];
+  ): BrowseNavigationConfig[];
   getNavigationItem(
     sectionId: string,
     itemId: string
-  ): ExploreNavigationItem | null;
+  ): BrowseNavigationItem | null;
   generateNavigationSections(
     sequences: SequenceData[],
     favorites: string[]
-  ): ExploreNavigationConfig[];
+  ): BrowseNavigationConfig[];
   getSequencesForNavigationItem(
-    item: ExploreNavigationItem,
+    item: BrowseNavigationItem,
     sectionType:
       | "letter"
       | "author"
@@ -29,13 +29,13 @@ export interface INavigator {
   ): SequenceData[];
   toggleSectionExpansion(
     sectionId: string,
-    sections: ExploreNavigationConfig[]
-  ): ExploreNavigationConfig[];
+    sections: BrowseNavigationConfig[]
+  ): BrowseNavigationConfig[];
   setActiveItem(
     sectionId: string,
     itemId: string,
-    sections: ExploreNavigationConfig[]
-  ): ExploreNavigationConfig[];
+    sections: BrowseNavigationConfig[]
+  ): BrowseNavigationConfig[];
   filterSequencesByNavigation(
     sequences: SequenceData[],
     item: unknown,

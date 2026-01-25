@@ -1,21 +1,21 @@
 /**
- * Explore Navigation State
+ * Browse Navigation State
  *
- * Unified, persistent navigation state for the Explore module.
+ * Unified, persistent navigation state for the Browse module.
  * Handles all navigation within Gallery, Collections, and Creators tabs
  * with full back/forward support and localStorage persistence.
  */
 
-// Tab types matching the Explore module structure
-export type ExploreTab = "gallery" | "collections" | "creators";
-export type ExploreView = "list" | "detail" | "profile";
+// Tab types matching the Browse module structure
+export type BrowseTab = "gallery" | "collections" | "creators";
+export type BrowseView = "list" | "detail" | "profile";
 
 /**
- * Represents a location within the Explore module
+ * Represents a location within the Browse module
  */
-export interface ExploreLocation {
-  tab: ExploreTab;
-  view: ExploreView;
+export interface BrowseLocation {
+  tab: BrowseTab;
+  view: BrowseView;
   contextId?: string; // userId, collectionId, sequenceId
   filter?: {
     // For filtered views (e.g., creator's sequences)
@@ -25,18 +25,18 @@ export interface ExploreLocation {
   };
 }
 
-interface ExploreNavigationStateData {
-  history: ExploreLocation[];
+interface BrowseNavigationStateData {
+  history: BrowseLocation[];
   currentIndex: number;
 }
 
-const STORAGE_KEY = "tka-explore-nav-state";
+const STORAGE_KEY = "tka-browse-nav-state";
 const MAX_HISTORY_SIZE = 50;
 
 /**
  * Check if two locations are equivalent (to prevent duplicate entries)
  */
-function locationsEqual(a: ExploreLocation, b: ExploreLocation): boolean {
+function locationsEqual(a: BrowseLocation, b: BrowseLocation): boolean {
   return (
     a.tab === b.tab &&
     a.view === b.view &&
@@ -46,9 +46,9 @@ function locationsEqual(a: ExploreLocation, b: ExploreLocation): boolean {
   );
 }
 
-function createExploreNavigationState() {
+function createBrowseNavigationState() {
   // Initialize with default state
-  const state = $state<ExploreNavigationStateData>({
+  const state = $state<BrowseNavigationStateData>({
     history: [],
     currentIndex: -1,
   });
@@ -59,7 +59,7 @@ function createExploreNavigationState() {
   // Derived values
   const canGoBack = $derived(state.currentIndex > 0);
   const canGoForward = $derived(state.currentIndex < state.history.length - 1);
-  const currentLocation = $derived<ExploreLocation | null>(
+  const currentLocation = $derived<BrowseLocation | null>(
     state.currentIndex >= 0 && state.currentIndex < state.history.length
       ? (state.history[state.currentIndex] ?? null)
       : null
@@ -70,13 +70,13 @@ function createExploreNavigationState() {
    */
   function persistState() {
     try {
-      const data: ExploreNavigationStateData = {
+      const data: BrowseNavigationStateData = {
         history: state.history,
         currentIndex: state.currentIndex,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (error) {
-      console.warn("[ExploreNav] Failed to persist state:", error);
+      console.warn("[BrowseNav] Failed to persist state:", error);
     }
   }
 
@@ -88,7 +88,7 @@ function createExploreNavigationState() {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return false;
 
-      const data = JSON.parse(stored) as ExploreNavigationStateData;
+      const data = JSON.parse(stored) as BrowseNavigationStateData;
       if (
         data.history &&
         Array.isArray(data.history) &&
@@ -102,7 +102,7 @@ function createExploreNavigationState() {
         return true;
       }
     } catch (error) {
-      console.warn("[ExploreNav] Failed to restore state:", error);
+      console.warn("[BrowseNav] Failed to restore state:", error);
     }
     return false;
   }
@@ -128,7 +128,7 @@ function createExploreNavigationState() {
     /**
      * Navigate to a new location (pushes to history)
      */
-    navigateTo(location: ExploreLocation) {
+    navigateTo(location: BrowseLocation) {
       // Don't push duplicate consecutive entries
       const current = state.history[state.currentIndex];
       if (current && locationsEqual(current, location)) {
@@ -156,7 +156,7 @@ function createExploreNavigationState() {
      * Go back in history
      * Returns the location navigated to, or null if can't go back
      */
-    goBack(): ExploreLocation | null {
+    goBack(): BrowseLocation | null {
       if (state.currentIndex <= 0) return null;
 
       isNavigating = true;
@@ -176,7 +176,7 @@ function createExploreNavigationState() {
      * Go forward in history
      * Returns the location navigated to, or null if can't go forward
      */
-    goForward(): ExploreLocation | null {
+    goForward(): BrowseLocation | null {
       if (state.currentIndex >= state.history.length - 1) return null;
 
       isNavigating = true;
@@ -196,7 +196,7 @@ function createExploreNavigationState() {
      * Replace current location without adding to history
      * Useful for updating view state without creating new history entry
      */
-    replace(location: ExploreLocation) {
+    replace(location: BrowseLocation) {
       if (state.currentIndex >= 0) {
         state.history[state.currentIndex] = location;
         persistState();
@@ -301,7 +301,7 @@ function createExploreNavigationState() {
      * Initialize state - call on module mount
      * Restores from localStorage or initializes with default location
      */
-    initialize(defaultTab: ExploreTab = "gallery") {
+    initialize(defaultTab: BrowseTab = "gallery") {
       const restored = restoreState();
       if (!restored) {
         // Initialize with default location
@@ -331,4 +331,4 @@ function createExploreNavigationState() {
 }
 
 // Export singleton instance
-export const exploreNavigationState = createExploreNavigationState();
+export const browseNavigationState = createBrowseNavigationState();

@@ -1,5 +1,5 @@
 /**
- * Optimized Explore State - Mobile Performance
+ * Optimized Browse State - Mobile Performance
  *
  * Progressive loading gallery state with:
  * - Pagination and virtual scrolling
@@ -11,16 +11,16 @@
 
 import { container } from "$lib/shared/di";
 import type {
-  ExploreLoadingState,
-  IOptimizedExploreer,
+  BrowseLoadingState,
+  IOptimizedBrowser,
   SequenceMetadata,
-} from "../services/contracts/IOptimizedExploreer";
+} from "../services/contracts/IOptimizedBrowser";
 import { adjustQueueForConnection } from "../utils/image-request-queue";
 import { getConnectionInfo } from "../utils/connection-quality";
 
-export function createOptimizedExploreState() {
+export function createOptimizedBrowseState() {
   // Services
-  const galleryService = container.items.optimizedExploreer;
+  const galleryService = container.items.optimizedBrowser;
 
   // Initialize connection-aware image request throttling
   const connectionInfo = getConnectionInfo();
@@ -28,7 +28,7 @@ export function createOptimizedExploreState() {
 
   // Core state
   let sequences = $state<SequenceMetadata[]>([]);
-  let loadingState = $state<ExploreLoadingState>({
+  let loadingState = $state<BrowseLoadingState>({
     isInitialLoading: false,
     isLoadingMore: false,
     error: null,

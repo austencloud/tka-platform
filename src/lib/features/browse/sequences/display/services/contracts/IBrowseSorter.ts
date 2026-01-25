@@ -3,15 +3,15 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ExploreSortMethod } from "$lib/features/explore/shared/domain/enums/explore-enums";
+import type { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
 
-export interface IExploreSorter {
+export interface IBrowseSorter {
   /**
    * Sort sequences by the specified method
    */
   sortSequences(
     sequences: SequenceData[],
-    sortMethod: ExploreSortMethod
+    sortMethod: BrowseSortMethod
   ): SequenceData[];
 
   /**
@@ -19,6 +19,6 @@ export interface IExploreSorter {
    */
   groupSequencesIntoSections(
     sequences: SequenceData[],
-    sortMethod: ExploreSortMethod
+    sortMethod: BrowseSortMethod
   ): Record<string, SequenceData[]>;
 }

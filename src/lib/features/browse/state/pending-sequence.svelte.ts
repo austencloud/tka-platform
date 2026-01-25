@@ -2,13 +2,13 @@
  * Pending Sequence Navigation State
  *
  * Handles cross-module navigation to view a specific sequence.
- * Used when navigating from inbox messages to Explore.
+ * Used when navigating from inbox messages to Browse.
  */
 
 let pendingSequenceId = $state<string | null>(null);
 
 /**
- * Set a sequence ID to be viewed when Explore loads
+ * Set a sequence ID to be viewed when Browse loads
  */
 export function setPendingSequenceView(sequenceId: string): void {
   pendingSequenceId = sequenceId;

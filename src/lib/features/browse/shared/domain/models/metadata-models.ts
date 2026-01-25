@@ -2,14 +2,14 @@
  * Browse Metadata Types
  *
  * Essential metadata types needed for Browse tab functionality.
- * These are the core types needed for sequence explorey and metadata extraction.
+ * These are the core types needed for sequence browsey and metadata extraction.
  */
 
 // ============================================================================
 // ESSENTIAL BROWSE METADATA TYPES
 // ============================================================================
 
-export interface ExploreThumbnailFile {
+export interface BrowseThumbnailFile {
   name: string;
   path: string;
   size: number;

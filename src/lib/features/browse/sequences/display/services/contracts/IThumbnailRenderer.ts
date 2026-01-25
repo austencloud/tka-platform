@@ -5,7 +5,7 @@
  * Extracts the rendering responsibility from PropAwareThumbnail.
  *
  * Handles:
- * - Loading full sequence data if needed (via IExploreLoader)
+ * - Loading full sequence data if needed (via IBrowseLoader)
  * - Deriving start position if missing (via IStartPositionDeriver)
  * - Applying prop type overrides
  * - Rendering via ISequenceRenderer pipeline

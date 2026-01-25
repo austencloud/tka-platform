@@ -8,7 +8,7 @@ about the sequence being deleted and potential consequences.
   import { onMount } from "svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-    import type { SequenceDeleteConfirmationData } from "../domain/models/explore-models";
+    import type { SequenceDeleteConfirmationData } from "../domain/models/browse-models";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
   const {

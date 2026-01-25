@@ -1,5 +1,5 @@
 /**
- * Creators View State (for Explore module)
+ * Creators View State (for Browse module)
  * Manages the current view state of the creators tab
  * Handles navigation between creators list and user profiles
  */

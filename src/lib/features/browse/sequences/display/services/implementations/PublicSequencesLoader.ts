@@ -1,7 +1,7 @@
 /**
  * PublicSequencesLoader - Load community sequences from Firestore
  *
- * Replaces ExploreLoader which loaded from static manifest files.
+ * Replaces BrowseLoader which loaded from static manifest files.
  * Now loads from the publicSequences Firestore collection.
  *
  * Features:
@@ -21,10 +21,10 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { getPublicSequencesPath } from "$lib/features/library/data/firestore-paths";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IExploreLoader } from "../contracts/IExploreLoader";
+import type { IBrowseLoader } from "../contracts/IBrowseLoader";
 import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
 
-export class PublicSequencesLoader implements IExploreLoader {
+export class PublicSequencesLoader implements IBrowseLoader {
   private cachedSequences: SequenceData[] | null = null;
   private loadPromise: Promise<SequenceData[]> | null = null;
   // Map from word/name to sourceRef for efficient full data lookup

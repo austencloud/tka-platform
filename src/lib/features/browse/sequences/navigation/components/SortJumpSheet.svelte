@@ -7,8 +7,8 @@ Touch-friendly interface for changing sort method and jumping to sections
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { NavigationSection } from "$lib/features/explore/shared/domain/types/explore-types";
-  import { ExploreSortMethod } from "$lib/features/explore/shared/domain/enums/explore-enums";
+  import type { NavigationSection } from "$lib/features/browse/shared/domain/types/browse-types";
+  import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
 
   let {
     currentSortMethod,
@@ -16,9 +16,9 @@ Touch-friendly interface for changing sort method and jumping to sections
     onSortMethodChange,
     onSectionClick,
   } = $props<{
-    currentSortMethod: ExploreSortMethod;
+    currentSortMethod: BrowseSortMethod;
     availableSections: NavigationSection[];
-    onSortMethodChange: (method: ExploreSortMethod) => void;
+    onSortMethodChange: (method: BrowseSortMethod) => void;
     onSectionClick: (sectionId: string) => void;
   }>();
 

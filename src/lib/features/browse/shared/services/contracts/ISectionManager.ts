@@ -1,9 +1,9 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ExploreSortMethod } from "../../domain/enums/explore-enums";
+import type { BrowseSortMethod } from "../../domain/enums/browse-enums";
 import type {
   SectionConfig,
   SequenceSection,
-} from "../../domain/models/explore-models";
+} from "../../domain/models/browse-models";
 
 /**
  * Service for organizing sequences into sections
@@ -13,7 +13,7 @@ export interface ISectionManager {
     sequences: SequenceData[],
     config: SectionConfig
   ): Promise<SequenceSection[]>;
-  getSectionConfig(sortMethod: ExploreSortMethod): Promise<SectionConfig>;
+  getSectionConfig(sortMethod: BrowseSortMethod): Promise<SectionConfig>;
   organizeSections(
     sequences: SequenceData[],
     config: SectionConfig

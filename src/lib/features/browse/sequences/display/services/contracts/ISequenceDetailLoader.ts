@@ -2,7 +2,7 @@
  * ISequenceDetailLoader - Load full sequence data for detail views
  *
  * Handles lazy-loading of complete sequence data (including steps)
- * when viewing sequence details. Wraps the underlying IExploreLoader
+ * when viewing sequence details. Wraps the underlying IBrowseLoader
  * with additional caching and state management.
  */
 
@@ -18,7 +18,7 @@ export interface ISequenceDetailLoader {
   /**
    * Load full sequence data for a sequence.
    * If the sequence already has steps, returns it directly.
-   * Otherwise fetches from the explore loader.
+   * Otherwise fetches from the browse loader.
    *
    * @param sequence - The sequence to load full data for
    * @returns The complete sequence with steps, or null if loading failed

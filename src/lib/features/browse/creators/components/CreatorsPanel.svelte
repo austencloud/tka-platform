@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
-   * CreatorsPanel (Explore Module)
-   * Community creator browser for exploreing users
+   * CreatorsPanel (Browse Module)
+   * Community creator browser for browseing users
    * Displays user profiles with their contributions and stats.
    *
    * Uses singleton data state for caching - data persists across tab switches.
@@ -12,7 +12,7 @@
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { authState, isEffectiveAdmin } from "$lib/shared/auth/state/authState.svelte.ts";
-  import { exploreNavigationState } from "../../shared/state/explore-navigation-state.svelte";
+  import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";
   import { creatorsDataState } from "../state/creators-data-state.svelte";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
@@ -110,7 +110,7 @@
   function handleUserClick(user: UserProfile) {
     hapticService?.trigger("selection");
     // Navigate to user profile using unified navigation state
-    exploreNavigationState.viewCreatorProfile(user.id, user.displayName);
+    browseNavigationState.viewCreatorProfile(user.id, user.displayName);
   }
 
   /**
@@ -215,26 +215,26 @@
       <div class="header-section">
         <h2 class="panel-title">
           <i class="fas fa-users" aria-hidden="true"></i>
-          {t("explore_creators_title")}
+          {t("browse_creators_title")}
         </h2>
       </div>
     </div>
 
-    <PanelSearch placeholder={t("explore_search_creators")} bind:value={searchQuery} />
+    <PanelSearch placeholder={t("browse_search_creators")} bind:value={searchQuery} />
 
     <PanelContent>
       {#if error}
-        <PanelState type="error" title={t("explore_error")} message={error} />
+        <PanelState type="error" title={t("browse_error")} message={error} />
       {:else if isLoading}
-        <PanelState type="loading" message={t("explore_loading_creators")} />
+        <PanelState type="loading" message={t("browse_loading_creators")} />
       {:else if filteredUsers.length === 0}
         <PanelState
           type="empty"
           icon="fa-users"
-          title={t("explore_no_creators")}
+          title={t("browse_no_creators")}
           message={searchQuery
-            ? t("explore_no_match")
-            : t("explore_no_members")}
+            ? t("browse_no_match")
+            : t("browse_no_members")}
         />
       {:else}
         <PanelGrid minCardWidth="240px" gap="20px">
@@ -326,7 +326,7 @@
                     {#if followingInProgress.has(user.id)}
                       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
                     {:else}
-                      {user.isFollowing ? t("explore_following") : t("explore_follow")}
+                      {user.isFollowing ? t("browse_following") : t("browse_follow")}
                     {/if}
                   </button>
                 </div>

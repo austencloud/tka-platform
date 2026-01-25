@@ -4,7 +4,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
-export interface IExploreLoader {
+export interface IBrowseLoader {
   /**
    * Load all sequence metadata from the sequence index
    * (lightweight - no beat data, optimized for gallery display)

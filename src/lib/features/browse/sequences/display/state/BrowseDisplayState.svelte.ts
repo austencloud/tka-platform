@@ -6,18 +6,18 @@
  */
 
 import type {
-  ExploreDisplayState,
-  ExploreLoadingState,
-} from "$lib/features/explore/shared/domain/models/explore-models";
+  BrowseDisplayState,
+  BrowseLoadingState,
+} from "$lib/features/browse/shared/domain/models/browse-models";
 import {
   createDefaultDisplayState,
   createDefaultLoadingState,
-} from "$lib/features/explore/shared/domain/models/explore-models";
+} from "$lib/features/browse/shared/domain/models/browse-models";
 
-export interface IExploreDisplayStateService {
+export interface IBrowseDisplayStateService {
   // Reactive state getters
-  readonly loadingState: ExploreLoadingState;
-  readonly displayState: ExploreDisplayState;
+  readonly loadingState: BrowseLoadingState;
+  readonly displayState: BrowseDisplayState;
   readonly isLoading: boolean;
   readonly hasError: boolean;
 
@@ -27,7 +27,7 @@ export interface IExploreDisplayStateService {
   clearError(): void;
 
   // Display actions
-  updateDisplaySettings(settings: Partial<ExploreDisplayState>): void;
+  updateDisplaySettings(settings: Partial<BrowseDisplayState>): void;
   resetDisplayState(): void;
 }
 
@@ -35,10 +35,10 @@ export interface IExploreDisplayStateService {
  * Factory function to create gallery display state
  * Uses Svelte 5 runes for reactivity
  */
-export function createGalleryDisplayStateService(): IExploreDisplayStateService {
+export function createGalleryDisplayStateService(): IBrowseDisplayStateService {
   // Private reactive state using Svelte 5 runes
-  const loadingState = $state<ExploreLoadingState>(createDefaultLoadingState());
-  let displayState = $state<ExploreDisplayState>(createDefaultDisplayState());
+  const loadingState = $state<BrowseLoadingState>(createDefaultLoadingState());
+  let displayState = $state<BrowseDisplayState>(createDefaultDisplayState());
 
   return {
     // Reactive getters
@@ -56,7 +56,7 @@ export function createGalleryDisplayStateService(): IExploreDisplayStateService 
 
     get hasError() {
       return (
-        (loadingState as ExploreLoadingState & { error: string | null })
+        (loadingState as BrowseLoadingState & { error: string | null })
           .error !== null
       );
     },
@@ -66,28 +66,28 @@ export function createGalleryDisplayStateService(): IExploreDisplayStateService 
       loadingState.isLoading = loading;
       if (operation) {
         (
-          loadingState as ExploreLoadingState & { currentOperation: string }
+          loadingState as BrowseLoadingState & { currentOperation: string }
         ).currentOperation = operation;
       }
       if (loading) {
-        (loadingState as ExploreLoadingState & { error: string | null }).error =
+        (loadingState as BrowseLoadingState & { error: string | null }).error =
           null; // Clear error when starting new operation
       }
     },
 
     setError(error: string | null): void {
-      (loadingState as ExploreLoadingState & { error: string | null }).error =
+      (loadingState as BrowseLoadingState & { error: string | null }).error =
         error;
       loadingState.isLoading = false; // Stop loading on error
     },
 
     clearError(): void {
-      (loadingState as ExploreLoadingState & { error: string | null }).error =
+      (loadingState as BrowseLoadingState & { error: string | null }).error =
         null;
     },
 
     // Display actions
-    updateDisplaySettings(settings: Partial<ExploreDisplayState>): void {
+    updateDisplaySettings(settings: Partial<BrowseDisplayState>): void {
       displayState = { ...displayState, ...settings };
     },
 
@@ -98,7 +98,7 @@ export function createGalleryDisplayStateService(): IExploreDisplayStateService 
 }
 
 // For backward compatibility, export a class-like interface
-export class ExploreDisplayStateService implements IExploreDisplayStateService {
+export class BrowseDisplayStateService implements IBrowseDisplayStateService {
   private state = createGalleryDisplayStateService();
 
   get loadingState() {
@@ -126,7 +126,7 @@ export class ExploreDisplayStateService implements IExploreDisplayStateService {
     this.state.clearError();
   }
 
-  updateDisplaySettings(settings: Partial<ExploreDisplayState>): void {
+  updateDisplaySettings(settings: Partial<BrowseDisplayState>): void {
     this.state.updateDisplaySettings(settings);
   }
 

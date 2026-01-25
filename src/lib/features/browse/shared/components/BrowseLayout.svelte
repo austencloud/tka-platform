@@ -19,7 +19,7 @@ Provides responsive layout with clean 3-button interface:
 
 <div class="gallery-layout">
   <!-- Main Content Area (Full Width) -->
-  <div class="explore-content">
+  <div class="browse-content">
     <!-- Center Panel: Content -->
     <div class="center-panel">
       {@render centerPanel()}
@@ -39,7 +39,7 @@ Provides responsive layout with clean 3-button interface:
   }
 
   /* Main Content Area - Full width content */
-  .explore-content {
+  .browse-content {
     display: flex;
     flex: 1;
     overflow: hidden;

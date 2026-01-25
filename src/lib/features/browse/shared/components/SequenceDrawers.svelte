@@ -9,28 +9,28 @@
   import ViewPresetsSheet from "../../sequences/filtering/components/ViewPresetsSheet.svelte";
   import SortJumpSheet from "../../sequences/navigation/components/SortJumpSheet.svelte";
   import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
-  import { ExploreSortMethod } from "../domain/enums/explore-enums";
-  import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+  import { BrowseSortMethod } from "../domain/enums/browse-enums";
+  import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import BentoFilterPanel from "../../sequences/filtering/components/bento-filter/BentoFilterPanel.svelte";
   import LetterSelectionSheet from "../../sequences/filtering/components/bento-filter/LetterSelectionSheet.svelte";
   import PositionOptionsSheet from "../../sequences/filtering/components/bento-filter/PositionOptionsSheet.svelte";
-  import type { FilterPreset } from "../domain/types/explore-types";
+  import type { FilterPreset } from "../domain/types/browse-types";
 
   interface CurrentFilter {
     type: FilterPreset | string;
-    value: ExploreFilterValue;
+    value: BrowseFilterValue;
   }
 
   interface Props {
     isMobile: boolean;
     drawerWidth: string;
     currentFilter: CurrentFilter;
-    currentSortMethod: ExploreSortMethod;
+    currentSortMethod: BrowseSortMethod;
     availableSections: string[];
     loopTypeCounts?: Record<string, number>;
     isNavVisible?: boolean;
-    onFilterChange: (type: string, value?: ExploreFilterValue) => void;
-    onSortMethodChange: (method: ExploreSortMethod) => void;
+    onFilterChange: (type: string, value?: BrowseFilterValue) => void;
+    onSortMethodChange: (method: BrowseSortMethod) => void;
     onSectionClick: (sectionId: string) => void;
     onDetailPanelAction: (action: string, sequence: SequenceData) => void;
     onCloseDetailPanel: () => void;
@@ -69,7 +69,7 @@
   );
 
   // Handler functions
-  function handleBentoFilterChange(type: string, value?: ExploreFilterValue) {
+  function handleBentoFilterChange(type: string, value?: BrowseFilterValue) {
     onFilterChange(type, value);
   }
 

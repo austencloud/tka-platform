@@ -3,24 +3,24 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { ExploreFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
-import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
+import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 
-export interface IExploreFilter {
+export interface IBrowseFilter {
   /**
    * Apply a filter to a list of sequences
    */
   applyFilter(
     sequences: SequenceData[],
-    filterType: ExploreFilterType,
-    filterValue: ExploreFilterValue
+    filterType: BrowseFilterType,
+    filterValue: BrowseFilterValue
   ): SequenceData[];
 
   /**
    * Get available filter options for a given filter type
    */
   getFilterOptions(
-    filterType: ExploreFilterType,
+    filterType: BrowseFilterType,
     sequences: SequenceData[]
   ): string[];
 }

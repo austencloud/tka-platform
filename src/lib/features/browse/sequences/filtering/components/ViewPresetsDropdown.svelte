@@ -15,7 +15,7 @@ Responsive behavior:
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import { container } from "$lib/shared/di";
     import { onMount } from "svelte";
-  import type { ExploreFilter } from "$lib/shared/persistence/domain/types/FilteringTypes";
+  import type { BrowseFilter } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
@@ -28,8 +28,8 @@ Responsive behavior:
 
   // ✅ PURE RUNES: Props
   const { currentFilter, onFilterChange = () => {} } = $props<{
-    currentFilter: ExploreFilter;
-    onFilterChange?: (filter: Partial<ExploreFilter>) => void;
+    currentFilter: BrowseFilter;
+    onFilterChange?: (filter: Partial<BrowseFilter>) => void;
   }>();
 
   // Dropdown state
@@ -42,40 +42,40 @@ Responsive behavior:
       id: "all",
       label: "All Sequences",
       icon: "fa-th",
-      filter: {} as Partial<ExploreFilter>,
+      filter: {} as Partial<BrowseFilter>,
     },
     {
       id: "favorites",
       label: "Favorites",
       icon: "fa-heart",
-      filter: { showFavoritesOnly: true } as Partial<ExploreFilter>,
+      filter: { showFavoritesOnly: true } as Partial<BrowseFilter>,
     },
     {
       id: "recent",
       label: "Recent",
       icon: "fa-clock",
-      filter: { sortBy: "dateAdded" as const } as Partial<ExploreFilter>,
+      filter: { sortBy: "dateAdded" as const } as Partial<BrowseFilter>,
     },
     {
       id: "easy",
       label: "Easy",
       icon: "fa-circle",
       iconColor: "#4ade80",
-      filter: { difficultyLevels: [1] } as Partial<ExploreFilter>,
+      filter: { difficultyLevels: [1] } as Partial<BrowseFilter>,
     },
     {
       id: "medium",
       label: "Medium",
       icon: "fa-circle",
       iconColor: "var(--semantic-warning)",
-      filter: { difficultyLevels: [2] } as Partial<ExploreFilter>,
+      filter: { difficultyLevels: [2] } as Partial<BrowseFilter>,
     },
     {
       id: "hard",
       label: "Hard",
       icon: "fa-circle",
       iconColor: "var(--semantic-error)",
-      filter: { difficultyLevels: [3] } as Partial<ExploreFilter>,
+      filter: { difficultyLevels: [3] } as Partial<BrowseFilter>,
     },
   ];
 

@@ -7,7 +7,7 @@ Modern, touch-friendly interface for selecting view presets
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { FilterPreset } from "$lib/features/explore/shared/domain/types/explore-types";
+  import type { FilterPreset } from "$lib/features/browse/shared/domain/types/browse-types";
 
   let { currentFilter, onFilterChange } = $props<{
     currentFilter: FilterPreset;

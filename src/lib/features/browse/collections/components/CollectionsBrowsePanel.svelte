@@ -1,5 +1,5 @@
 <!--
-CollectionsExplorePanel - Browse Creator Libraries
+CollectionsBrowsePanel - Browse Creator Libraries
 
 Displays creators with their content (sequences, collections) inline.
 Users can browse what others have created without navigating away.
@@ -14,7 +14,7 @@ Uses singleton state for caching - data persists across tab switches.
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-  import { exploreNavigationState } from "../../shared/state/explore-navigation-state.svelte";
+  import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";
   import {
     collectionsBrowseState,
     type CreatorContentTab,
@@ -80,7 +80,7 @@ Uses singleton state for caching - data persists across tab switches.
         currentUserId
       );
     } catch (err) {
-      console.error("[CollectionsExplorePanel] Error loading:", err);
+      console.error("[CollectionsBrowsePanel] Error loading:", err);
     }
   });
 
@@ -101,7 +101,7 @@ Uses singleton state for caching - data persists across tab switches.
   function handleViewProfile(creatorId: string) {
     hapticService?.trigger("selection");
     // Navigate to creator profile using unified navigation state
-    exploreNavigationState.viewCreatorProfile(creatorId);
+    browseNavigationState.viewCreatorProfile(creatorId);
   }
 
   function handleSequenceClick(sequenceId: string) {
@@ -114,7 +114,7 @@ Uses singleton state for caching - data persists across tab switches.
   }
 </script>
 
-<div class="collections-explore-panel">
+<div class="collections-browse-panel">
   <!-- Header -->
   <div class="collections-topbar">
     <div class="header-section">
@@ -165,7 +165,7 @@ Uses singleton state for caching - data persists across tab switches.
 </div>
 
 <style>
-  .collections-explore-panel {
+  .collections-browse-panel {
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -223,7 +223,7 @@ Uses singleton state for caching - data persists across tab switches.
   }
 
   @media (max-width: 480px) {
-    .collections-explore-panel {
+    .collections-browse-panel {
       padding: 0 12px;
     }
 

@@ -6,16 +6,16 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { ExploreSortMethod } from "$lib/features/explore/shared/domain/enums/explore-enums";
+import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
 import type {
   SectionConfig,
   SequenceSection,
-} from "$lib/features/explore/shared/domain/models/explore-models";
-import type { IExploreSectionManager } from "../contracts/IExploreSectionManager";
-import { sortSequencesByKineticAlphabet } from "$lib/features/explore/shared/utils/kinetic-alphabet-sort";
+} from "$lib/features/browse/shared/domain/models/browse-models";
+import type { IBrowseSectionManager } from "../contracts/IBrowseSectionManager";
+import { sortSequencesByKineticAlphabet } from "$lib/features/browse/shared/utils/kinetic-alphabet-sort";
 import type { IWordDeriver } from "$lib/shared/foundation/services/contracts/IWordDeriver";
 
-export class ExploreSectionManager implements IExploreSectionManager {
+export class BrowseSectionManager implements IBrowseSectionManager {
   constructor(
     private wordDeriver: IWordDeriver
   ) {}
@@ -56,7 +56,7 @@ export class ExploreSectionManager implements IExploreSectionManager {
   getDefaultSectionConfig(): SectionConfig {
     return {
       groupBy: "letter",
-      sortMethod: "alphabetical" as ExploreSortMethod,
+      sortMethod: "alphabetical" as BrowseSortMethod,
       showEmptySections: false,
     };
   }
@@ -246,7 +246,7 @@ export class ExploreSectionManager implements IExploreSectionManager {
 
   private sortSequencesInSection(
     sequences: SequenceData[],
-    sortMethod: ExploreSortMethod
+    sortMethod: BrowseSortMethod
   ): SequenceData[] {
     const sorted = [...sequences];
 
@@ -269,7 +269,7 @@ export class ExploreSectionManager implements IExploreSectionManager {
         });
       }
 
-      case ExploreSortMethod.DIFFICULTY_LEVEL:
+      case BrowseSortMethod.DIFFICULTY_LEVEL:
         return sorted.sort((a, b) => {
           const getDifficultyOrder = (level?: string) => {
             switch (level) {
@@ -293,14 +293,14 @@ export class ExploreSectionManager implements IExploreSectionManager {
           return diffCompare;
         });
 
-      case ExploreSortMethod.SEQUENCE_LENGTH:
+      case BrowseSortMethod.SEQUENCE_LENGTH:
         return sorted.sort((a, b) => {
           const lengthA = getLength(a);
           const lengthB = getLength(b);
           return lengthA - lengthB;
         });
 
-      case ExploreSortMethod.DATE_ADDED:
+      case BrowseSortMethod.DATE_ADDED:
         // Primary: most recent first, Secondary: length for visual consistency
         return sorted.sort((a, b) => {
           const dateA = a.dateAdded ? new Date(a.dateAdded).getTime() : 0;
@@ -482,7 +482,7 @@ export class ExploreSectionManager implements IExploreSectionManager {
     return this.organizeSections(sequences, config);
   }
 
-  getSectionConfig(sortMethod: ExploreSortMethod): SectionConfig {
+  getSectionConfig(sortMethod: BrowseSortMethod): SectionConfig {
     // Return a basic configuration based on sort method
     return {
       groupBy: "letter" as const,
