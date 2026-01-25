@@ -90,20 +90,9 @@
 
 	// React to background type changes
 	$effect(() => {
-		// Log BEFORE the guard to see if effect is triggering
-		console.log('[BackgroundHost] Effect check:', {
-			backgroundType,
-			hasInitialized,
-			hasBrowser: browser,
-			hasController: !!controller
-		});
-
 		if (!browser || !controller || !hasInitialized) {
-			console.log('[BackgroundHost] Effect skipped - guards failed');
 			return;
 		}
-
-		console.log('[BackgroundHost] Effect passed guards, setting background:', backgroundType);
 
 		// This effect runs when backgroundType or options change
 		// The controller handles "same type" no-op internally
