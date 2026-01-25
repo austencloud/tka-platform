@@ -52,7 +52,7 @@ import { mandalaContainer } from "./containers/mandala-container";
 // FACTORY CONTAINERS (export function createXyzContainer(deps)...)
 // These need to be called with their dependencies
 // ============================================================================
-import { createBuildContainer } from "./containers/build-container";
+import { createBuildContainer, configureLazyBuildContainer } from "./containers/build-container";
 import { createAnimatorContainer } from "./containers/animator-container";
 import { createLoopLabelerContainer } from "./containers/loop-labeler-container";
 import { createExploreContainer } from "./containers/explore-container";
@@ -154,6 +154,35 @@ const buildContainer = typeof window !== 'undefined' ? createBuildContainer({
   // Animation services (from data container to avoid circular deps)
   sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
 }) : null as any;
+
+// Configure lazy build container for HMR-optimized access pattern
+// Components can use getBuildContainer() instead of container.items for better HMR
+if (typeof window !== 'undefined') {
+  configureLazyBuildContainer(() => ({
+    deviceDetector: coreContainer.items.deviceDetector,
+    viewportManager: coreContainer.items.viewportManager,
+    gridPositionDeriver,
+    gridModeDeriver,
+    motionQueryHandler,
+    sequenceRepository: dataContainer.items.sequenceRepository,
+    persistenceService: dataContainer.items.persistenceService,
+    reversalDetector: dataContainer.items.reversalDetector,
+    deepLinker: navigationContainer.items.deepLinker,
+    letterDeriver: navigationContainer.items.letterDeriver,
+    positionDeriver: navigationContainer.items.positionDeriver,
+    orientationCalculator,
+    betaDetector,
+    arrowPositioningOrchestrator,
+    letterQueryHandler,
+    screenSpaceAdjustmentTransformer,
+    arrowAdjustmentCalculator,
+    arrowLocationCalculator,
+    pictographPreparer,
+    turnsTupleGenerator,
+    sharer: shareContainer.items.sharer,
+    sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
+  }));
+}
 
 // Animator container needs multiple external deps
 const animatorContainer = typeof window !== 'undefined' ? createAnimatorContainer({

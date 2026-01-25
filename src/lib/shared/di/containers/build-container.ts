@@ -692,3 +692,71 @@ export function resetBuildContainerSingletons(): void {
   startPositionManagerInstance = null;
   letterTransitionGraphInstance = null;
 }
+
+// ============================================================================
+// LAZY CONTAINER PATTERN (HMR Optimization)
+// ============================================================================
+
+import { createLazyContainer } from "../lazy-container";
+
+/**
+ * Cached lazy container instance and its dependencies resolver.
+ * The lazy pattern breaks the HMR invalidation chain - editing a service
+ * in this container won't invalidate the composition root (di/index.ts).
+ */
+let _lazyDepsResolver: (() => BuildContainerDependencies) | null = null;
+let _lazyContainer: ReturnType<typeof createLazyContainer<BuildContainer>> | null = null;
+
+/**
+ * Configure the lazy container with a dependencies resolver function.
+ * Call this once from di/index.ts before using getBuildContainer().
+ *
+ * The resolver is called lazily (only when getBuildContainer() is first invoked),
+ * which means dependencies don't need to exist at configuration time.
+ */
+export function configureLazyBuildContainer(
+  depsResolver: () => BuildContainerDependencies
+): void {
+  _lazyDepsResolver = depsResolver;
+  _lazyContainer = createLazyContainer(() => {
+    if (!_lazyDepsResolver) {
+      throw new Error("Build container dependencies resolver not configured");
+    }
+    return createBuildContainer(_lazyDepsResolver());
+  });
+}
+
+/**
+ * Get the build container lazily.
+ *
+ * This is the recommended way to access build container services for better HMR:
+ * ```typescript
+ * import { getBuildContainer } from "$lib/shared/di/containers/build-container";
+ * const sequenceAnalyzer = getBuildContainer().items.sequenceAnalyzer;
+ * ```
+ *
+ * @throws Error if configureLazyBuildContainer() hasn't been called
+ */
+export function getBuildContainer(): BuildContainer {
+  if (!_lazyContainer) {
+    throw new Error(
+      "Build container not configured. Call configureLazyBuildContainer() first."
+    );
+  }
+  return _lazyContainer();
+}
+
+/**
+ * Check if the lazy container has been initialized.
+ * Useful for debugging HMR behavior.
+ */
+export function isBuildContainerInitialized(): boolean {
+  return _lazyContainer?.isInitialized() ?? false;
+}
+
+/**
+ * Reset the lazy container (useful for testing or forcing re-initialization).
+ */
+export function resetLazyBuildContainer(): void {
+  _lazyContainer?.reset();
+}
