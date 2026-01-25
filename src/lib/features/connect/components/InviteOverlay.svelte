@@ -36,7 +36,7 @@
 		aria-describedby="invite-description"
 		transition:fade={{ duration: 200 }}
 	>
-		<div class="overlay-backdrop" onclick={handleDismiss}></div>
+		<button class="overlay-backdrop" onclick={handleDismiss} type="button" aria-label="Dismiss invite overlay"></button>
 
 		<div class="invite-card" transition:fly={{ y: 100, duration: 300 }}>
 			<!-- Header -->
@@ -113,6 +113,10 @@
 		position: absolute;
 		inset: 0;
 		background: rgba(0, 0, 0, 0.7);
+		border: none;
+		padding: 0;
+		margin: 0;
+		cursor: default;
 	}
 
 	.invite-card {
