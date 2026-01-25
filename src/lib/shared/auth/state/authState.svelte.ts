@@ -511,16 +511,8 @@ export async function signOut() {
     // Clear sessionStorage entirely
     sessionStorage.clear();
 
-    // Clear sensitive form state (dynamic import to avoid circular deps)
-    try {
-      const { resetPasswordForm, resetEmailChangeForm, resetUIState } =
-        await import("../../navigation/state/profile-settings-state.svelte");
-      resetPasswordForm();
-      resetEmailChangeForm();
-      resetUIState();
-    } catch {
-      // Profile settings may not be loaded - that's ok
-    }
+    // Note: Profile settings state is now context-based (profile-settings-context.svelte.ts)
+    // State is automatically cleaned up when the component unmounts, no manual reset needed
 
     // Reset first-run cloud sync so next signin will sync fresh
     try {

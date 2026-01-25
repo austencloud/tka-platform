@@ -40,6 +40,11 @@
       isOpen = false;
       onSuccess();
     } catch (e: unknown) {
+      // User cancelled the WebAuthn dialog - not an error, just exit silently
+      if (e instanceof Error && e.name === "NotAllowedError") {
+        return;
+      }
+
       const code =
         typeof e === "object" && e && "code" in e
           ? String((e as { code: unknown }).code)
@@ -67,6 +72,10 @@
       isOpen = false;
       onSuccess();
     } catch (e: unknown) {
+      // User cancelled the WebAuthn dialog - not an error, just exit silently
+      if (e instanceof Error && e.name === "NotAllowedError") {
+        return;
+      }
       error = e instanceof Error ? e.message : "Failed to create passkey";
     } finally {
       isSubmitting = false;

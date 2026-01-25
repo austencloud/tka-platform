@@ -46,6 +46,10 @@
       hapticService?.trigger("success");
       await refresh();
     } catch (e: unknown) {
+      // User cancelled the WebAuthn dialog - not an error, just exit silently
+      if (e instanceof Error && e.name === "NotAllowedError") {
+        return;
+      }
       hapticService?.trigger("error");
       error = e instanceof Error ? e.message : "Setup failed";
     } finally {
