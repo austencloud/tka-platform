@@ -295,8 +295,6 @@
     const key = backgroundSettingsKey;
     const initialized = isInitialized;
 
-    console.log('[MainApplication] Background effect, key:', key, 'initialized:', initialized);
-
     if (!initialized) return;
 
     // Parse the key back to get values (avoids re-reading reactive state)

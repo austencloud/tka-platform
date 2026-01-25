@@ -52,14 +52,17 @@
     // dashboard removed - redirect to create via module ID migrations
     create: () =>
       import("../../features/create/shared/components/CreateModule.svelte"),
-    explore: () =>
-      import("../../features/explore/shared/components/ExploreModule.svelte"),
-    // library module retired - backwards compat redirects to explore
+    browse: () =>
+      import("../../features/browse/shared/components/BrowseModule.svelte"),
+    // library module retired - backwards compat redirects to browse
     library: () =>
-      import("../../features/explore/shared/components/ExploreModule.svelte"),
-    // discover module renamed to explore - backwards compat alias
+      import("../../features/browse/shared/components/BrowseModule.svelte"),
+    // discover module renamed to browse - backwards compat alias
     discover: () =>
-      import("../../features/explore/shared/components/ExploreModule.svelte"),
+      import("../../features/browse/shared/components/BrowseModule.svelte"),
+    // explore module renamed to browse - backwards compat alias
+    explore: () =>
+      import("../../features/browse/shared/components/BrowseModule.svelte"),
     community: () =>
       import("../../features/community/Community.svelte"),
     learn: () => import("../../features/learn/LearnTab.svelte"),
@@ -117,9 +120,8 @@
     tika: () => import("../../features/tika/TikaModule.svelte"),
     // Moderation module - user reports dashboard (admin-only)
     moderation: () => import("../../features/moderation/ModerationModule.svelte"),
-    // LOOP Design Lab - icon design playground (admin-only)
-    "loop-design-lab": () =>
-      import("../../features/loop-design-lab/LOOPDesignLab.svelte"),
+    // Lab module - consolidated experiments (Spell Layouts, Skew, Poi tabs)
+    lab: () => import("../../features/lab/LabModule.svelte"),
     // ========================================================================
     // REMOVED: Standalone 3D modules (now accessible via Realm destinations)
     // ========================================================================

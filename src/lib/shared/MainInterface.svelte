@@ -75,7 +75,6 @@
   import { adminToolbarState } from "./debug/state/admin-toolbar-state.svelte";
   import { featureFlagService } from "./auth/services/FeatureFlagService.svelte";
   import ToastContainer from "./toast/components/ToastContainer.svelte";
-  import ReleaseNotesDrawer from "./settings/components/ReleaseNotesDrawer.svelte";
 
   // LAN Sync
   import NearbySyncBanner from "./lan-sync/components/NearbySyncBanner.svelte";
@@ -287,8 +286,6 @@
   <ShortcutsHelp />
   <!-- Toast Notifications -->
   <ToastContainer />
-  <!-- Release Notes Drawer -->
-  <ReleaseNotesDrawer />
 </div>
 
 <style>
