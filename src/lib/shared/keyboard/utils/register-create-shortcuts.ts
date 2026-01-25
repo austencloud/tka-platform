@@ -64,7 +64,8 @@ export function registerCreateShortcuts(
     context: ["create", "share-hub"], // Works in both contexts
     scope: "animation",
     priority: "high",
-    forceExecute: true, // Always execute, even when focus is on interactive elements like steps
+    // Note: forceExecute removed - let shouldIgnore() handle text inputs naturally
+    // Space should type a space when focused on input/textarea, not trigger playback
     condition: () => {
       // Only check for single-key shortcuts enabled - sequence check is in action
       return state.settings.enableSingleKeyShortcuts;

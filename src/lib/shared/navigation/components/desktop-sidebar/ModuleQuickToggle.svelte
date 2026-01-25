@@ -129,8 +129,9 @@
 
   // Transformer to prevent dragging core modules
   function transformDraggedElement(
-    element: HTMLElement | undefined,
-    data: ModuleDefinition | undefined
+    element?: HTMLElement,
+    data?: any,
+    index?: number
   ): void {
     if (!element || !data) return;
 

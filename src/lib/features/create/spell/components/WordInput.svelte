@@ -16,12 +16,15 @@ Features:
     onInput,
     disabled = false,
     onFocusChange,
+    onSubmit,
   }: {
     value: string;
     onInput: (value: string) => void;
     disabled?: boolean;
     /** Called when input focus state changes */
     onFocusChange?: (focused: boolean) => void;
+    /** Called when user presses Enter to submit */
+    onSubmit?: () => void;
   } = $props();
 
   const haptic = container.items.hapticFeedback as IHapticFeedback;
@@ -58,6 +61,13 @@ Features:
       onInput(value.slice(0, -1));
     }
   }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === "Enter" && value.trim() && !disabled) {
+      event.preventDefault();
+      onSubmit?.();
+    }
+  }
 </script>
 
 <div class="word-input-container">
@@ -68,6 +78,7 @@ Features:
       placeholder="Type your word..."
       {value}
       oninput={handleInput}
+      onkeydown={handleKeydown}
       onfocus={handleFocus}
       onblur={handleBlur}
       {disabled}

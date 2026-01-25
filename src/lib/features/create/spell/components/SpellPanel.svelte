@@ -289,6 +289,7 @@ Same functionality, different density.
       value={spellState.inputWord}
       onInput={handleWordChange}
       onFocusChange={handleInputFocusChange}
+      onSubmit={handleGenerate}
     />
   </section>
 
