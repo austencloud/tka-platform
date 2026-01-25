@@ -80,14 +80,14 @@ export const LEARN_TABS: Section[] = [
   },
 ];
 
-// Explore tabs configuration (browsing sequences, creators, collections)
-// Note: Library functionality is now integrated into Sequences via scope toggle (Community / My Library)
-export const EXPLORE_TABS: Section[] = [
+// Browse tabs configuration (browsing sequences, creators, collections)
+// Note: Library functionality is now integrated into Gallery via scope toggle (Community / My Library)
+export const BROWSE_TABS: Section[] = [
   {
-    id: "sequences",
-    label: "Sequences",
+    id: "gallery",
+    label: "Gallery",
     icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
-    description: "Browse and explore sequences",
+    description: "Browse and discover sequences",
     color: "#a855f7",
     gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
   },
@@ -118,10 +118,16 @@ export const EXPLORE_TABS: Section[] = [
 ];
 
 /**
- * @deprecated Library module removed - functionality now in Explore > Sequences via scope toggle.
+ * @deprecated Library module removed - functionality now in Browse > Gallery via scope toggle.
  * Kept for backwards compatibility only.
  */
 export const LIBRARY_TABS: Section[] = [];
+
+/**
+ * @deprecated Explore module renamed to Browse (Jan 2026).
+ * Kept for backwards compatibility only.
+ */
+export const EXPLORE_TABS = BROWSE_TABS;
 
 // Inbox tabs configuration - Messages and notifications
 export const INBOX_TABS: Section[] = [
@@ -172,7 +178,7 @@ export const COMMUNITY_TABS: Section[] = [
 ];
 
 /**
- * @deprecated Collect and Library modules removed - functionality now in Explore > Sequences.
+ * @deprecated Collect and Library modules removed - functionality now in Browse > Gallery.
  */
 export const COLLECT_TABS: Section[] = [];
 
@@ -183,7 +189,7 @@ export const COLLECTION_TABS = LIBRARY_TABS; // Legacy name
 // Compose module tabs configuration
 // Arrange (mode selection + sequence config) | Browse (saved compositions) | Timeline (DAW-style editor)
 // Note: Playback is an overlay, not a tab - triggered from Arrange or Browse
-export const ANIMATE_TABS: Section[] = [
+export const COMPOSE_TABS: Section[] = [
   {
     id: "arrange",
     label: "Arrange",

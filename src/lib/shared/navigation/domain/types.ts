@@ -24,7 +24,7 @@ export interface Section {
 export type ModuleId =
   | "dashboard"
   | "create"
-  | "explore"
+  | "browse"
   | "community" // Global TKA community map
   | "learn"
   | "tika" // Tika AI tutor (TKA Intelligent Knowledge Assistant)

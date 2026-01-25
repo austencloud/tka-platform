@@ -9,8 +9,8 @@ import type { ModuleDefinition, ModuleId } from "../domain/types";
 import {
   CREATE_TABS,
   LEARN_TABS,
-  EXPLORE_TABS,
-  ANIMATE_TABS,
+  BROWSE_TABS,
+  COMPOSE_TABS,
   TRAIN_TABS,
   FEEDBACK_TABS,
   ML_TRAINING_TABS,
@@ -30,7 +30,8 @@ import {
  */
 const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   TIKA: "tika", // Module renamed back to lowercase for cleaner URLs
-  discover: "explore", // Module renamed from Discover to Explore (Jan 2026)
+  discover: "browse", // Module renamed from Discover to Browse (Jan 2026)
+  explore: "browse", // Module renamed from Explore to Browse (Jan 2026)
   dashboard: "create", // Dashboard removed - Create is now the default landing (Jan 2026)
 };
 
@@ -67,20 +68,20 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: CREATE_TABS,
   },
   {
-    id: "explore",
-    label: "Explore",
+    id: "browse",
+    label: "Browse",
     icon: '<i class="fas fa-compass" style="color: #a855f7;" aria-hidden="true"></i>',
-    color: "#a855f7", // Purple - exploration
+    color: "#a855f7", // Purple - browsing
     description: "Browse sequences and creators",
     isMain: true,
-    sections: EXPLORE_TABS,
+    sections: BROWSE_TABS,
   },
   {
     id: "community",
     label: "Community",
     icon: '<i class="fas fa-globe" style="color: #14b8a6;" aria-hidden="true"></i>',
     color: "#14b8a6", // Teal - global/community
-    description: "Explore the global TKA community map",
+    description: "Browse the global TKA community map",
     isMain: true,
     sections: [], // Single-tab module - no sub-tabs
   },
@@ -118,7 +119,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     color: "#ec4899", // Pink - composition/choreography
     description: "Compose sequences into animations",
     isMain: true,
-    sections: ANIMATE_TABS, // TODO: Rename to COMPOSE_TABS
+    sections: COMPOSE_TABS, // TODO: Rename to COMPOSE_TABS
   },
   {
     id: "watch",
@@ -148,7 +149,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true,
     sections: TRAIN_TABS,
   },
-  // REMOVED: Library module - functionality now integrated into Discover > Sequences via scope toggle
+  // REMOVED: Library module - functionality now integrated into Browse > Gallery via scope toggle
   // Removed: inbox module (Messages/notifications accessible via Dashboard widget drawer)
   // Removed: account module (merged into Dashboard - profile widget handles auth)
   // Removed: edit module (Edit functionality is now a slide-out panel accessible from Create and Sequence Viewer)
