@@ -588,7 +588,7 @@
 
 {#if error}
   <ErrorBanner message={error} onDismiss={clearError} />
-{:else if CreateModuleState && constructTabState && services && CreateModuleState.isPersistenceInitialized}
+{:else if CreateModuleState && constructTabState && services}
   <div class="create-tab">
     <StandardWorkspaceLayout
       {shouldUseSideBySideLayout}
@@ -658,6 +658,11 @@
     onCancel={cancelClearSequence}
     onDontAskAgainChange={handleSkipClearConfirmationChange}
   />
+{:else}
+  <!-- Loading state while async initialization completes -->
+  <div class="create-tab create-loading">
+    <div class="loading-spinner"></div>
+  </div>
 {/if}
 
 <style>
@@ -668,5 +673,32 @@
     width: 100%;
     overflow: hidden;
     transition: background-color var(--duration-normal) ease-out;
+  }
+
+  .create-loading {
+    align-items: center;
+    justify-content: center;
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-top-color: var(--theme-accent, #6366f1);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loading-spinner {
+      animation: none;
+      opacity: 0.6;
+    }
   }
 </style>

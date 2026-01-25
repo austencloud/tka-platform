@@ -151,9 +151,9 @@
     </div>
   {:else if activeToolPanel}
     <!-- Render the appropriate tool panel based on active tab -->
-    <div class="creation-tool-content">
+    <div class="creation-tool-content" data-active-tab={activeToolPanel}>
       {#key `${activeToolPanel}-${assemblyTabKey}`}
-        <div class="sub-tab-content">
+        <div class="sub-tab-content" data-tab={activeToolPanel}>
           {#if activeToolPanel === "assembler"}
             <!-- Assembler Mode - Simplified tap-based hand path builder -->
             {@const assemblerTabState = createModuleState.assemblerTabState}
@@ -381,6 +381,11 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
+
+    /* Container for child components to query available space */
+    /* Use 'size' (not 'inline-size') to enable height queries */
+    container-type: size;
+    container-name: tool-panel;
   }
 
   /* Loading states */
