@@ -482,6 +482,35 @@ export const WATCH_TABS: Section[] = [
   },
 ];
 
+// Lab tabs configuration (admin-only, temporary experiments)
+// This replaces scattered individual lab modules (Skew Lab, Poi Lab, etc.)
+export const LAB_TABS: Section[] = [
+  {
+    id: "spell-layouts",
+    label: "Spell Layouts",
+    icon: '<i class="fas fa-columns" aria-hidden="true"></i>',
+    description: "Test large-screen layout options for Spell tab",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
+  {
+    id: "skew",
+    label: "Skew",
+    icon: '<i class="fas fa-bezier-curve" aria-hidden="true"></i>',
+    description: "Skewed positions development",
+    color: "#f97316",
+    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+  },
+  {
+    id: "poi",
+    label: "Poi",
+    icon: '<i class="fas fa-circle-notch" aria-hidden="true"></i>',
+    description: "Poi constraints with VTG terminology",
+    color: "#22d3ee",
+    gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
+  },
+];
+
 // Landing Page tabs configuration (admin-only, for iterating on public pages)
 // These mirror the actual public routes: /landing, /about, /terms, /privacy, /roots
 export const LANDING_PAGE_TABS: Section[] = [

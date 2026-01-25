@@ -69,6 +69,13 @@ import {
 // Import panel persistence state (extracted for single responsibility)
 import { panelPersistenceState } from "./panel-persistence-state.svelte";
 
+// Import HMR helper for MIME error detection (dev only)
+// We need to verify tab switches after MIME errors corrupt Svelte reactivity
+import {
+  hasMimeErrorOccurred,
+  verifyTabSwitch,
+} from "../../hmr-helper";
+
 // Re-export for backwards compatibility
 export {
   CREATE_TABS,
@@ -459,6 +466,14 @@ export function createNavigationState() {
         setCreateMode(tabId);
       } else if (module === "learn") {
         setLearnMode(tabId);
+      }
+
+      // In dev mode, verify the tab switch worked after MIME errors
+      // MIME errors corrupt Svelte's reactivity, causing state to change
+      // but the UI to not update. This detects that case and forces a reload.
+      if (import.meta.env.DEV && previousTab !== tabId && hasMimeErrorOccurred()) {
+        // Non-blocking verification - will reload if UI didn't update
+        void verifyTabSwitch(tabId, 200);
       }
     }
   }

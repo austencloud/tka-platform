@@ -1,16 +1,18 @@
 <!-- Sidebar Footer Component -->
-<!-- Footer with inbox button, network status, and version badge -->
+<!-- Footer with settings, inbox, network status, and version badge -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-  import { releaseNotesDrawerState } from "../../../settings/state/release-notes-drawer-state.svelte";
+  import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
   import { inboxState } from "../../../inbox/state/inbox-state.svelte";
   import { featureFlagService } from "../../../auth/services/FeatureFlagService.svelte";
   import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
   import ModuleQuickToggle from "./ModuleQuickToggle.svelte";
 
-  let { isCollapsed } = $props<{
+  let { isCollapsed, onSettingsClick, isInSettings = false } = $props<{
     isCollapsed: boolean;
+    onSettingsClick?: () => void;
+    isInSettings?: boolean;
   }>();
 
   const isAdmin = $derived(featureFlagService.isAdmin);
@@ -21,6 +23,18 @@
       ? "99+"
       : String(inboxState.totalUnreadCount)
   );
+
+  function handleSettingsClick() {
+    // Haptic feedback
+    try {
+      const hapticService = container.items.hapticFeedback as IHapticFeedback;
+      hapticService?.trigger("selection");
+    } catch {
+      // Ignore if not available
+    }
+
+    onSettingsClick?.();
+  }
 
   function handleInboxClick() {
     // Haptic feedback
@@ -43,42 +57,59 @@
       // Ignore if not available
     }
 
-    // Open the release notes drawer
-    releaseNotesDrawerState.open();
+    // Open the What's New modal in manual mode
+    void whatsNewState.openManual();
   }
 </script>
 
-<!-- Footer with inbox -->
+<!-- Footer with settings, inbox (hidden when in settings mode) -->
 <div
   class="sidebar-footer"
   class:collapsed={isCollapsed}
   style="--button-accent-color: #64748b;"
 >
-  <!-- Inbox Button -->
-  <button
-    class="inbox-button"
-    class:collapsed={isCollapsed}
-    class:has-unread={hasUnread}
-    onclick={handleInboxClick}
-    aria-label="Open inbox{hasUnread ? `, ${inboxState.totalUnreadCount} unread` : ''}"
-  >
-    <div class="button-icon">
-      <i class="fas fa-inbox" aria-hidden="true"></i>
-      {#if hasUnread}
-        <span class="unread-badge" aria-hidden="true">{badgeCount}</span>
+  {#if !isInSettings}
+    <!-- Settings Button -->
+    <button
+      class="footer-button settings-button"
+      class:collapsed={isCollapsed}
+      onclick={handleSettingsClick}
+      aria-label="Open settings"
+    >
+      <div class="button-icon">
+        <i class="fas fa-cog" aria-hidden="true"></i>
+      </div>
+      {#if !isCollapsed}
+        <span class="button-label">Settings</span>
       {/if}
-    </div>
-    {#if !isCollapsed}
-      <span class="button-label">Inbox</span>
+    </button>
+
+    <!-- Inbox Button -->
+    <button
+      class="footer-button inbox-button"
+      class:collapsed={isCollapsed}
+      class:has-unread={hasUnread}
+      onclick={handleInboxClick}
+      aria-label="Open inbox{hasUnread ? `, ${inboxState.totalUnreadCount} unread` : ''}"
+    >
+      <div class="button-icon">
+        <i class="fas fa-inbox" aria-hidden="true"></i>
+        {#if hasUnread}
+          <span class="unread-badge" aria-hidden="true">{badgeCount}</span>
+        {/if}
+      </div>
+      {#if !isCollapsed}
+        <span class="button-label">Inbox</span>
+      {/if}
+    </button>
+
+    <!-- Network Status Indicator -->
+    <NetworkStatusIndicator variant="desktop" />
+
+    <!-- Module Quick Toggle (admin only) -->
+    {#if isAdmin}
+      <ModuleQuickToggle {isCollapsed} />
     {/if}
-  </button>
-
-  <!-- Network Status Indicator (between inbox and version) -->
-  <NetworkStatusIndicator variant="desktop" />
-
-  <!-- Module Quick Toggle (admin only) -->
-  {#if isAdmin}
-    <ModuleQuickToggle {isCollapsed} />
   {/if}
 
   <!-- Version Number (below inbox) -->
@@ -115,9 +146,9 @@
   }
 
   /* ============================================================================
-     INBOX BUTTON
+     FOOTER BUTTONS (shared styles for settings + inbox)
      ============================================================================ */
-  .inbox-button {
+  .footer-button {
     width: 100%;
     display: flex;
     align-items: center;
@@ -133,22 +164,30 @@
     font-weight: 500;
   }
 
-  .inbox-button:hover {
+  .footer-button:hover {
     background: var(--theme-card-hover-bg);
     border-color: var(--theme-stroke-strong);
     color: var(--theme-text);
   }
 
-  .inbox-button.has-unread {
-    border-color: color-mix(in srgb, var(--semantic-info) 40%, var(--theme-accent));
-  }
-
-  .inbox-button.collapsed {
+  .footer-button.collapsed {
     width: var(--min-touch-target);
     height: var(--min-touch-target);
     padding: 0;
     justify-content: center;
     border-radius: 12px;
+  }
+
+  .footer-button:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    outline-offset: 2px;
+  }
+
+  /* ============================================================================
+     INBOX BUTTON
+     ============================================================================ */
+  .inbox-button.has-unread {
+    border-color: color-mix(in srgb, var(--semantic-info) 40%, var(--theme-accent));
   }
 
   .button-icon {
@@ -233,14 +272,9 @@
   /* ============================================================================
      ACCESSIBILITY
      ============================================================================ */
-  .inbox-button:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
-    outline-offset: 2px;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .sidebar-footer,
-    .inbox-button,
+    .footer-button,
     .button-icon {
       transition: none !important;
     }

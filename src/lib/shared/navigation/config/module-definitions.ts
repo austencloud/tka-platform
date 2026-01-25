@@ -20,6 +20,7 @@ import {
   SKEWLAB_TABS,
   LANDING_PAGE_TABS,
   WATCH_TABS,
+  LAB_TABS,
 } from "./tab-definitions";
 
 /**
@@ -208,6 +209,17 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: ADMIN_TABS,
   },
   {
+    id: "lab",
+    label: "Lab",
+    icon: '<i class="fas fa-flask" style="color: #10b981;" aria-hidden="true"></i>',
+    color: "#10b981", // Emerald - experimental
+    description: "Temporary experiments and UI prototypes",
+    isMain: true,
+    sections: LAB_TABS,
+    adminOnly: true,
+  },
+  // DEPRECATED: Individual lab modules now consolidated into Lab module above
+  {
     id: "skewlab",
     label: "Skew Lab",
     icon: '<i class="fas fa-flask" style="color: #f97316;" aria-hidden="true"></i>',
@@ -268,16 +280,6 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     adminOnly: true,
   },
   {
-    id: "loop-design-lab",
-    label: "LOOP Lab",
-    icon: '<i class="fas fa-palette" style="color: #f472b6;" aria-hidden="true"></i>',
-    color: "#f472b6", // Pink - design/creative
-    description: "Design the LOOP primitive icon system",
-    isMain: true,
-    sections: [],
-    adminOnly: true,
-  },
-  {
     id: "landing-preview",
     label: "Landing Page",
     icon: '<i class="fas fa-rocket" style="color: #f472b6;" aria-hidden="true"></i>',
@@ -293,7 +295,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     icon: '<i class="fas fa-cog" style="color: #64748b;" aria-hidden="true"></i>',
     color: "#64748b", // Slate - neutral settings color
     description: "Configure app preferences",
-    isMain: true, // Main module button on dashboard
+    isMain: false, // Settings is in sidebar footer, not main module list
     sections: SETTINGS_TABS, // Profile, Props, Background, Visibility, Misc, AI tabs
   },
   // ============================================================================

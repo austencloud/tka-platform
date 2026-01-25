@@ -119,12 +119,13 @@
   });
 
   // Filter to main modules and dev modules, then sort by usage
+  // Settings is always shown in main modules on mobile (it's user-facing, not dev-only)
   const mainModulesFiltered = $derived(
-    modules.filter((m: ModuleDefinition) => m.isMain)
+    modules.filter((m: ModuleDefinition) => m.isMain || m.id === "settings")
   );
   const mainModules = $derived(sortByUsage(mainModulesFiltered));
   const devModules = $derived(
-    modules.filter((m: ModuleDefinition) => !m.isMain)
+    modules.filter((m: ModuleDefinition) => !m.isMain && m.id !== "settings")
   );
 
   // Determine grid layout class based on module count
@@ -366,10 +367,15 @@
     grid-auto-rows: minmax(72px, auto); /* Min row height with auto expansion */
   }
 
-  /* Developer grid - single column if only one item */
+  /* Developer grid - full width for any number of items */
   .dev-grid {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     flex: 0; /* Don't grow dev section */
+  }
+
+  /* Single item in dev grid expands to full width */
+  .dev-grid .module-cell:only-child {
+    grid-column: 1 / -1;
   }
 
   /* ============================================================================

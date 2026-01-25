@@ -7,12 +7,14 @@
 
   Features:
   - Only shows modules the user has role-based access to
-  - Drag-and-drop reordering within Visible section
+  - Uses svelte-dnd-action for drag-and-drop (handles CSS transform issues in modals)
   - Order persists to Firestore and affects sidebar display
   - Core modules (create, explore, settings, admin) shown with lock icon, cannot be hidden
 -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { flip } from "svelte/animate";
+  import { dragHandleZone, dragHandle } from "svelte-dnd-action";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import { featureFlagService } from "../../../auth/services/FeatureFlagService.svelte";
   import { getModuleDefinitions } from "../../../navigation-coordinator/navigation-coordinator.svelte";
@@ -32,6 +34,9 @@
   let open = $state(false);
   let saving = $state(false);
 
+  // DND configuration
+  const FLIP_DURATION_MS = 200;
+
   // Core modules that cannot be toggled (always visible, shown but not clickable)
   const CORE_MODULES: ModuleId[] = ["create", "explore", "settings", "admin"];
 
@@ -41,29 +46,17 @@
   }
 
   // Get modules currently visible in sidebar (what getModuleDefinitions returns)
-  // This is the source of truth for what the sidebar shows
   const sidebarModules = $derived(getModuleDefinitions());
 
   // Get all modules the user CAN access based on ROLE only
-  // For the module toggle UI, we ignore:
-  // - User's disabled features (they should be able to re-enable them)
-  // - Environment restrictions (admin should see all modules they have role access to)
-  // We only check role-based access from the module definition
   const allAccessibleModules = $derived.by(() => {
     const effectiveRole = featureFlagService.effectiveRole;
 
     const result = MODULE_DEFINITIONS.filter((module) => {
-      // Skip non-main modules
       if (!module.isMain) return false;
-
-      // For adminOnly modules, check if user is admin
       if (module.adminOnly && effectiveRole !== "admin") {
         return false;
       }
-
-      // All other main modules are accessible
-      // (role-based restrictions from feature flags would be checked here,
-      // but for now we just show all non-adminOnly modules to all users)
       return true;
     });
 
@@ -71,52 +64,86 @@
   });
 
   // Get modules that are accessible but NOT currently visible in the sidebar
-  // These should appear in the "Hidden" section so users can enable them
   const hiddenModules = $derived.by(() => {
     const visibleIds = new Set(sidebarModules.map((m) => m.id));
 
     const hidden = allAccessibleModules.filter((module) => {
-      // Skip core modules (they're always visible and can't be toggled)
       if (isCoreModule(module.id)) return false;
-
-      // Show modules that the user can access but aren't in the sidebar
       return !visibleIds.has(module.id);
     });
 
     return hidden;
   });
 
-  // Visible modules = what's in the sidebar (excluding core, which are handled separately)
-  const visibleModules = $derived.by(() => {
+  // Visible modules - mutable state for reordering
+  // svelte-dnd-action requires items to have an `id` property
+  let visibleModules = $state<ModuleDefinition[]>([]);
+
+  // Sync visibleModules when source data changes
+  $effect(() => {
     const overrides = featureFlagService.userOverrides;
     const moduleOrder = overrides.moduleOrder || [];
-
-    // Start with sidebar modules (already filtered by role and enabled status)
     const enabledModules = sidebarModules.filter((m) => m.isMain);
 
-    // Sort by custom order, then by default order for unordered ones
     const ordered: ModuleDefinition[] = [];
+    const seenIds = new Set<string>();
 
-    // First, add modules in the custom order
+    // First, add modules in the custom order (skip duplicates)
     for (const id of moduleOrder) {
+      if (seenIds.has(id)) continue;
       const mod = enabledModules.find((m) => m.id === id);
-      if (mod) ordered.push(mod);
+      if (mod) {
+        ordered.push(mod);
+        seenIds.add(id);
+      }
     }
 
     // Then add remaining enabled modules not in the order
     for (const mod of enabledModules) {
-      if (!ordered.includes(mod)) {
+      if (!seenIds.has(mod.id)) {
         ordered.push(mod);
+        seenIds.add(mod.id);
       }
     }
 
-    return ordered;
+    visibleModules = ordered;
   });
 
-  // Drag state
-  let draggedModule = $state<ModuleDefinition | null>(null);
-  let dragOverIndex = $state<number | null>(null);
+  // ============================================================================
+  // DRAG AND DROP with svelte-dnd-action
+  // ============================================================================
 
+  // Handle drag events from svelte-dnd-action
+  function handleDndConsider(e: CustomEvent<{ items: ModuleDefinition[] }>) {
+    visibleModules = e.detail.items;
+    hapticService?.trigger("selection");
+  }
+
+  function handleDndFinalize(e: CustomEvent<{ items: ModuleDefinition[] }>) {
+    visibleModules = e.detail.items;
+    hapticService?.trigger("impact");
+
+    // Persist to Firestore
+    saveOrder(visibleModules.map((m) => m.id));
+  }
+
+  // Transformer to prevent dragging core modules
+  function transformDraggedElement(
+    element: HTMLElement | undefined,
+    data: ModuleDefinition | undefined
+  ): void {
+    if (!element || !data) return;
+
+    // Style the dragged element
+    element.style.boxShadow =
+      "0 25px 50px rgba(0, 0, 0, 0.5), 0 10px 20px rgba(0, 0, 0, 0.3)";
+    element.style.transform = "scale(1.05) rotate(2deg)";
+    element.style.zIndex = "999999";
+  }
+
+  // ============================================================================
+  // MODAL CONTROLS
+  // ============================================================================
   function openModal() {
     hapticService?.trigger("selection");
     open = true;
@@ -127,12 +154,13 @@
     open = false;
   }
 
-  // Move a module from Hidden to Visible
+  // ============================================================================
+  // MODULE VISIBILITY
+  // ============================================================================
   async function showModule(module: ModuleDefinition) {
     const userId = featureFlagService.userId;
     if (!userId) {
       console.error("[ModuleQuickToggle] No userId, cannot save");
-      saving = false;
       return;
     }
 
@@ -143,17 +171,14 @@
       const currentOverrides = featureFlagService.userOverrides;
       const featureId = moduleIdToFeatureId(module.id);
 
-      // Remove from disabled list (if it was there)
       const newDisabledFeatures = currentOverrides.disabledFeatures.filter(
         (f) => f !== featureId
       );
 
-      // Add to enabled list (this overrides environment restrictions)
       const newEnabledFeatures = currentOverrides.enabledFeatures.includes(featureId)
         ? currentOverrides.enabledFeatures
         : [...currentOverrides.enabledFeatures, featureId];
 
-      // Add to end of module order
       const currentOrder = currentOverrides.moduleOrder || visibleModules.map((m) => m.id);
       const newOrder = currentOrder.includes(module.id)
         ? currentOrder
@@ -173,12 +198,10 @@
     }
   }
 
-  // Move a module from Visible to Hidden
   async function hideModule(module: ModuleDefinition) {
     const userId = featureFlagService.userId;
     if (!userId) {
       console.error("[ModuleQuickToggle] No userId, cannot save");
-      saving = false;
       return;
     }
 
@@ -189,17 +212,14 @@
       const currentOverrides = featureFlagService.userOverrides;
       const featureId = moduleIdToFeatureId(module.id);
 
-      // Add to disabled list
       const newDisabledFeatures = currentOverrides.disabledFeatures.includes(featureId)
         ? currentOverrides.disabledFeatures
         : [...currentOverrides.disabledFeatures, featureId];
 
-      // Remove from enabled list
       const newEnabledFeatures = currentOverrides.enabledFeatures.filter(
         (f) => f !== featureId
       );
 
-      // Remove from module order
       const currentOrder = currentOverrides.moduleOrder || visibleModules.map((m) => m.id);
       const newOrder = currentOrder.filter((id) => id !== module.id);
 
@@ -217,51 +237,23 @@
     }
   }
 
-  // Drag and drop handlers
-  function handleDragStart(e: DragEvent, module: ModuleDefinition) {
-    if (!e.dataTransfer) return;
-    draggedModule = module;
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", module.id);
-    hapticService?.trigger("selection");
-  }
-
-  function handleDragOver(e: DragEvent, index: number) {
-    e.preventDefault();
-    if (!e.dataTransfer) return;
-    e.dataTransfer.dropEffect = "move";
-    dragOverIndex = index;
-  }
-
-  function handleDragLeave() {
-    dragOverIndex = null;
-  }
-
-  async function handleDrop(e: DragEvent, targetIndex: number) {
-    e.preventDefault();
-    dragOverIndex = null;
-
-    if (!draggedModule) return;
-
+  async function saveOrder(newOrder: string[]) {
     const userId = featureFlagService.userId;
     if (!userId) return;
 
-    const currentIndex = visibleModules.findIndex((m) => m.id === draggedModule!.id);
-    if (currentIndex === targetIndex || currentIndex === -1) {
-      draggedModule = null;
-      return;
-    }
+    const currentOverrides = featureFlagService.userOverrides;
+    const oldOrder = currentOverrides.moduleOrder || [];
+
+    // Check if order changed
+    const orderChanged =
+      newOrder.length !== oldOrder.length ||
+      newOrder.some((id, i) => oldOrder[i] !== id);
+
+    if (!orderChanged) return;
 
     saving = true;
-    hapticService?.trigger("impact");
 
     try {
-      // Create new order
-      const newOrder = visibleModules.map((m) => m.id);
-      newOrder.splice(currentIndex, 1);
-      newOrder.splice(targetIndex, 0, draggedModule.id);
-
-      const currentOverrides = featureFlagService.userOverrides;
       await featureFlagService.setUserFeatureOverrides(userId, {
         ...currentOverrides,
         moduleOrder: newOrder,
@@ -270,65 +262,8 @@
       console.error("Failed to reorder modules:", error);
       hapticService?.trigger("error");
     } finally {
-      draggedModule = null;
       saving = false;
     }
-  }
-
-  function handleDragEnd() {
-    draggedModule = null;
-    dragOverIndex = null;
-  }
-
-  // Touch-based reordering (for mobile)
-  let touchDragModule = $state<ModuleDefinition | null>(null);
-  let touchStartY = $state(0);
-  let touchCurrentY = $state(0);
-  let touchDragElement = $state<HTMLElement | null>(null);
-
-  function handleTouchStart(e: TouchEvent, module: ModuleDefinition, element: HTMLElement) {
-    // Long press to start drag
-    touchDragModule = module;
-    touchStartY = e.touches[0].clientY;
-    touchCurrentY = e.touches[0].clientY;
-    touchDragElement = element;
-    hapticService?.trigger("selection");
-  }
-
-  function handleTouchMove(e: TouchEvent) {
-    if (!touchDragModule) return;
-    e.preventDefault();
-    touchCurrentY = e.touches[0].clientY;
-
-    // Calculate which index we're over
-    const elements = document.querySelectorAll(".visible-module-cell");
-    const currentY = e.touches[0].clientY;
-
-    for (let i = 0; i < elements.length; i++) {
-      const rect = elements[i].getBoundingClientRect();
-      if (currentY >= rect.top && currentY <= rect.bottom) {
-        dragOverIndex = i;
-        break;
-      }
-    }
-  }
-
-  async function handleTouchEnd() {
-    if (!touchDragModule || dragOverIndex === null) {
-      touchDragModule = null;
-      touchDragElement = null;
-      dragOverIndex = null;
-      return;
-    }
-
-    const currentIndex = visibleModules.findIndex((m) => m.id === touchDragModule!.id);
-    if (currentIndex !== dragOverIndex && currentIndex !== -1) {
-      await handleDrop(new DragEvent("drop"), dragOverIndex);
-    }
-
-    touchDragModule = null;
-    touchDragElement = null;
-    dragOverIndex = null;
   }
 
   onMount(() => {
@@ -386,15 +321,15 @@
         </div>
       {:else}
         <div class="module-grid hidden-grid" role="list" aria-label="Hidden modules">
-          {#each hiddenModules as module, index (module.id)}
+          {#each hiddenModules as module (module.id)}
             <button
               class="module-cell hidden-module-cell"
               onclick={() => showModule(module)}
               type="button"
-              style="--module-color: {module.color}; --stagger-index: {index}"
-              role="listitem"
+              style="--module-color: {module.color}"
               aria-label="{module.label}, tap to show in sidebar"
               disabled={saving}
+              role="listitem"
             >
               <div class="cell-background"></div>
               <div class="cell-content">
@@ -426,7 +361,7 @@
           <i class="fas fa-eye" aria-hidden="true"></i>
           Visible in Sidebar
         </h3>
-        <span class="section-hint">Drag to reorder</span>
+        <span class="section-hint">Drag handle to reorder, tap × to hide</span>
       </div>
 
       {#if visibleModules.length === 0}
@@ -435,66 +370,65 @@
           <p class="empty-hint">Tap a hidden module to add it</p>
         </div>
       {:else}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="module-grid visible-grid"
           role="list"
           aria-label="Visible modules in sidebar order, drag to reorder"
+          use:dragHandleZone={{
+            items: visibleModules,
+            flipDurationMs: FLIP_DURATION_MS,
+            dropTargetStyle: {},
+            transformDraggedElement,
+          }}
+          onconsider={handleDndConsider}
+          onfinalize={handleDndFinalize}
         >
-          {#each visibleModules as module, index (module.id)}
+          {#each visibleModules as module (module.id)}
             {@const isCore = isCoreModule(module.id)}
-            {@const isDragging = !isCore && draggedModule?.id === module.id}
-            {@const isDropTarget = dragOverIndex === index && !isDragging}
-            {#if isCore}
-              <!-- Core module - always visible, not toggleable -->
-              <div
-                class="module-cell visible-module-cell core-module"
-                style="--module-color: {module.color}; --stagger-index: {index + hiddenModules.length}"
-                role="listitem"
-                aria-label="{module.label}, always visible"
-              >
-                <div class="cell-background"></div>
-                <div class="cell-glow"></div>
-                <div class="cell-content">
-                  <span class="cell-icon">{@html module.icon}</span>
-                  <span class="cell-label">{module.label}</span>
-                </div>
+            <div
+              class="module-cell visible-module-cell"
+              class:core-module={isCore}
+              style="--module-color: {module.color}"
+              role="listitem"
+              aria-label="{module.label}{isCore ? ', always visible' : ', drag to reorder or tap to hide'}"
+              animate:flip={{ duration: FLIP_DURATION_MS }}
+            >
+              <div class="cell-background"></div>
+              <div class="cell-glow"></div>
+              <div class="cell-content">
+                {#if !isCore}
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <div
+                    class="drag-handle"
+                    use:dragHandle
+                    aria-label="Drag to reorder {module.label}"
+                  >
+                    <i class="fas fa-grip-vertical" aria-hidden="true"></i>
+                  </div>
+                {/if}
+                <span class="cell-icon">{@html module.icon}</span>
+                <span class="cell-label">{module.label}</span>
+              </div>
+              {#if isCore}
                 <div class="lock-indicator">
                   <i class="fas fa-lock" aria-hidden="true"></i>
                 </div>
-              </div>
-            {:else}
-              <!-- Toggleable module -->
-              <button
-                class="module-cell visible-module-cell"
-                class:dragging={isDragging}
-                class:drop-target={isDropTarget}
-                draggable="true"
-                ondragstart={(e) => handleDragStart(e, module)}
-                ondragover={(e) => handleDragOver(e, index)}
-                ondragleave={handleDragLeave}
-                ondrop={(e) => handleDrop(e, index)}
-                ondragend={handleDragEnd}
-                onclick={() => hideModule(module)}
-                type="button"
-                style="--module-color: {module.color}; --stagger-index: {index + hiddenModules.length}"
-                role="listitem"
-                aria-label="{module.label}, tap to hide from sidebar"
-                disabled={saving}
-              >
-                <div class="cell-background"></div>
-                <div class="cell-glow"></div>
-                <div class="cell-content">
-                  <div class="drag-handle">
-                    <i class="fas fa-grip-vertical" aria-hidden="true"></i>
-                  </div>
-                  <span class="cell-icon">{@html module.icon}</span>
-                  <span class="cell-label">{module.label}</span>
-                </div>
-                <div class="remove-indicator">
+              {:else}
+                <button
+                  class="remove-button"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    hideModule(module);
+                  }}
+                  type="button"
+                  aria-label="Hide {module.label} from sidebar"
+                  disabled={saving}
+                >
                   <i class="fas fa-minus-circle" aria-hidden="true"></i>
-                </div>
-              </button>
-            {/if}
+                </button>
+              {/if}
+            </div>
           {/each}
         </div>
       {/if}
@@ -718,7 +652,7 @@
      ============================================================================ */
   .module-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 12px;
     flex: 1;
     align-content: start;
@@ -736,7 +670,7 @@
   }
 
   /* ============================================================================
-     MODULE CELLS
+     MODULE CELLS - Uniform sizing
      ============================================================================ */
   .module-cell {
     position: relative;
@@ -744,19 +678,23 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 80px;
+    /* UNIFORM SIZE - fixed dimensions */
+    width: 100%;
+    height: 90px;
     padding: 0;
     background: transparent;
     border: none;
     border-radius: 12px;
     color: var(--theme-text);
-    cursor: pointer;
     text-align: center;
     overflow: hidden;
     isolation: isolate;
     transition:
-      transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-      opacity 0.2s ease;
+      transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 0.15s ease,
+      opacity 0.15s ease;
+    user-select: none;
+    touch-action: none; /* Prevent scroll during drag */
   }
 
   .cell-background {
@@ -787,15 +725,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 10px 6px;
+    gap: 6px;
+    padding: 12px 8px;
     width: 100%;
     height: 100%;
     z-index: 2;
   }
 
   .cell-icon {
-    font-size: 22px;
+    font-size: 24px;
     width: 32px;
     height: 32px;
     display: flex;
@@ -814,6 +752,10 @@
     font-weight: 600;
     color: var(--theme-text);
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   /* ============================================================================
@@ -860,44 +802,63 @@
     position: absolute;
     top: 6px;
     left: 6px;
-    color: rgba(255, 255, 255, 0.3);
-    font-size: 10px;
-    opacity: 0;
-    transition: opacity var(--duration-fast) ease;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    cursor: grab;
+    padding: 4px;
+    transition: color var(--duration-fast) ease;
+  }
+
+  .drag-handle:hover {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .drag-handle:active {
+    cursor: grabbing;
   }
 
   .visible-module-cell:hover .drag-handle {
-    opacity: 1;
+    color: rgba(255, 255, 255, 0.8);
   }
 
-  /* Remove indicator */
-  .remove-indicator {
+  /* Remove button */
+  .remove-button {
     position: absolute;
-    top: 6px;
-    right: 6px;
-    color: rgba(239, 68, 68, 0.6);
+    top: 4px;
+    right: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    border: none;
+    border-radius: 6px;
+    color: rgba(239, 68, 68, 0.8);
     font-size: 14px;
+    cursor: pointer;
     opacity: 0;
-    transition: opacity var(--duration-fast) ease;
+    transition: all var(--duration-fast) ease;
+    z-index: 10;
   }
 
-  .visible-module-cell:hover .remove-indicator {
+  .remove-button:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  .visible-module-cell:hover .remove-button {
     opacity: 1;
   }
 
-  /* Dragging state */
-  .visible-module-cell.dragging {
-    opacity: 0.5;
-    transform: scale(0.95);
+  /* Always show remove button on touch devices */
+  @media (hover: none) {
+    .remove-button {
+      opacity: 1;
+    }
   }
 
-  /* Drop target state */
-  .visible-module-cell.drop-target .cell-background {
-    border-color: var(--theme-accent);
-    box-shadow: 0 0 20px color-mix(in srgb, var(--theme-accent) 30%, transparent);
-  }
-
-  /* Core module - always visible, not toggleable */
+  /* Core module - always visible, not toggleable, not draggable */
   .visible-module-cell.core-module {
     cursor: default;
   }
@@ -924,11 +885,32 @@
   }
 
   /* ============================================================================
-     HIDDEN MODULE CELLS - Available to add (not currently in sidebar)
-     Styled to look tappable/clickable, not disabled
+     DRAG STATES (svelte-dnd-action)
+     ============================================================================ */
+
+  /* Shadow element (placeholder where item was) */
+  :global([data-is-dnd-shadow-item]) {
+    opacity: 0.3;
+    transform: scale(0.95);
+  }
+
+  :global([data-is-dnd-shadow-item] .cell-background) {
+    border-style: dashed;
+  }
+
+  /* Dragged item styling is handled by transformDraggedElement */
+
+  /* During drag - disable hover effects on other items */
+  :global(.svelte-dnd-action-dragging .module-cell) {
+    pointer-events: none;
+  }
+
+  /* ============================================================================
+     HIDDEN MODULE CELLS
      ============================================================================ */
   .hidden-module-cell {
     opacity: 0.85;
+    cursor: pointer;
   }
 
   .hidden-module-cell .cell-background {
@@ -938,10 +920,6 @@
       color-mix(in srgb, var(--module-color) 6%, rgba(255, 255, 255, 0.02)) 100%
     );
     border: 1.5px solid color-mix(in srgb, var(--module-color) 25%, rgba(255, 255, 255, 0.1));
-  }
-
-  .hidden-module-cell .cell-glow {
-    opacity: 0.05;
   }
 
   .hidden-module-cell .cell-icon {
@@ -970,17 +948,12 @@
     opacity: 1;
   }
 
-  .hidden-module-cell:hover .cell-glow,
-  .hidden-module-cell:active .cell-glow {
-    opacity: 0.12;
-  }
-
   .hidden-module-cell .cell-label {
     color: var(--theme-text);
     opacity: 0.85;
   }
 
-  /* Add indicator - always visible on hidden cells to show they're tappable */
+  /* Add indicator */
   .add-indicator {
     position: absolute;
     top: 6px;
@@ -1015,15 +988,18 @@
   /* ============================================================================
      DISABLED STATE
      ============================================================================ */
-  .module-cell:disabled {
+  .module-cell:disabled,
+  .remove-button:disabled {
     cursor: not-allowed;
     pointer-events: none;
+    opacity: 0.5;
   }
 
   /* ============================================================================
      FOCUS STYLES
      ============================================================================ */
-  .module-cell:focus-visible {
+  .module-cell:focus-visible,
+  .remove-button:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
@@ -1033,12 +1009,12 @@
      ============================================================================ */
   @media (min-width: 768px) {
     .module-grid {
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
       gap: 12px;
     }
 
     .module-cell {
-      min-height: 85px;
+      height: 90px;
     }
 
     .sections-container {
@@ -1070,7 +1046,7 @@
     }
 
     .module-grid {
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     }
   }
 
@@ -1085,13 +1061,11 @@
     }
 
     .module-cell {
-      min-height: 75px;
+      height: 80px;
     }
 
     .cell-icon {
       font-size: 22px;
-      width: 32px;
-      height: 32px;
     }
 
     .cell-label {
@@ -1125,14 +1099,13 @@
     .cell-glow,
     .cell-icon,
     .drag-handle,
-    .remove-indicator,
+    .remove-button,
     .add-indicator {
       transition: none !important;
     }
 
     .module-cell:hover,
-    .module-cell:active,
-    .module-cell.dragging {
+    .module-cell:active {
       transform: none !important;
     }
   }

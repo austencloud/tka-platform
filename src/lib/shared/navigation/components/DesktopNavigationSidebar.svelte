@@ -428,10 +428,12 @@
     {/if}
   </div>
 
-  <!-- Sidebar Footer - only shown when NOT in settings (inbox button + version) -->
-  {#if !isInSettings}
-    <SidebarFooter {isCollapsed} />
-  {/if}
+  <!-- Sidebar Footer - settings, inbox, version -->
+  <SidebarFooter
+    {isCollapsed}
+    {isInSettings}
+    onSettingsClick={handleSettingsTap}
+  />
 </nav>
 
 <style>
@@ -510,7 +512,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     cursor: pointer;
     transition: all var(--duration-normal) ease;
     font-size: var(--font-size-sm);
@@ -539,7 +541,7 @@
     justify-content: center;
     font-size: var(--font-size-base);
     border-radius: 8px;
-    background: var(--theme-card-bg, var(--theme-card-bg));
+    background: var(--theme-card-bg);
     transition: all var(--duration-normal) ease;
   }
 
@@ -558,8 +560,6 @@
     flex: 1;
     text-align: left;
     font-weight: 500;
-
-    /* Delayed fade-in animation when sidebar expands (Google Calendar-style) */
     animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
   }
 
