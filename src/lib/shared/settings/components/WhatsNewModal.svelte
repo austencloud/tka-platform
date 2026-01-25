@@ -7,12 +7,17 @@
 <script lang="ts">
   import { whatsNewState } from "../state/whats-new-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import {
     CATEGORY_ICONS,
     CATEGORY_LABELS,
   } from "$lib/features/feedback/domain/constants/changelog-constants";
   import type { ChangelogCategory } from "$lib/features/feedback/domain/models/version-models";
+
+  // Detect if user is on desktop (has mouse/keyboard) for showing keyboard hint
+  const isDesktop = $derived(
+    typeof window !== "undefined" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches
+  );
 
   // Category display order and colors
   const CATEGORY_CONFIG: Record<
@@ -39,6 +44,9 @@
   // Derived state
   const version = $derived(whatsNewState.version);
   const isOpen = $derived(whatsNewState.isOpen);
+  const mode = $derived(whatsNewState.mode);
+  const isLoading = $derived(whatsNewState.isLoading);
+  const error = $derived(whatsNewState.error);
 
   // Group changelog entries by category
   const groupedChangelog = $derived.by(() => {
@@ -84,14 +92,18 @@
 
   async function handleViewAllReleases() {
     whatsNewState.close();
-    navigationState.setActiveTab("release-notes");
-    await handleModuleChange("settings");
+    await handleModuleChange("settings", "release-notes");
+  }
+
+  async function handleSubmitFeedback() {
+    whatsNewState.close();
+    await handleModuleChange("feedback", "submit");
   }
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
-{#if isOpen && version}
+{#if isOpen}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
     class="modal-overlay"
@@ -113,13 +125,15 @@
       <header class="modal-header">
         <div class="version-badge">
           <i class="fas fa-rocket" aria-hidden="true"></i>
-          <span>v{version.version}</span>
+          <span>v{version?.version ?? __APP_VERSION__}</span>
         </div>
         <h1 id="whats-new-title">What's New</h1>
-        <p class="subtitle">
-          {totalChanges}
-          {totalChanges === 1 ? "update" : "updates"} in this release
-        </p>
+        {#if version}
+          <p class="subtitle">
+            {totalChanges}
+            {totalChanges === 1 ? "update" : "updates"} in this release
+          </p>
+        {/if}
         <button
           class="close-btn"
           onclick={handleClose}
@@ -132,76 +146,142 @@
 
       <!-- Body -->
       <div class="modal-body themed-scrollbar">
-        <!-- Curated Highlights (optional - only shown if explicitly set during release) -->
-        {#if highlights.length > 0}
-          <div class="highlights-section">
-            {#each highlights as highlight, i}
-              <div class="hero-feature">
-                <div class="hero-icon">
-                  <i class="fas fa-star" aria-hidden="true"></i>
+        {#if isLoading}
+          <!-- Loading state (manual mode) -->
+          <div class="loading-state">
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton short"></div>
+          </div>
+        {:else if error}
+          <!-- Error state -->
+          <div class="error-state">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            <p>{error}</p>
+          </div>
+        {:else if version}
+          <!-- Curated Highlights (optional - only shown if explicitly set during release) -->
+          {#if highlights.length > 0}
+            <div class="highlights-section">
+              {#each highlights as highlight, i}
+                <div class="hero-feature">
+                  <div class="hero-icon">
+                    <i class="fas fa-star" aria-hidden="true"></i>
+                  </div>
+                  <div class="hero-content">
+                    <span class="hero-label"
+                      >{highlights.length > 1
+                        ? `Highlight ${i + 1}`
+                        : "Highlight"}</span
+                    >
+                    <p class="hero-text">{highlight}</p>
+                  </div>
                 </div>
-                <div class="hero-content">
-                  <span class="hero-label"
-                    >{highlights.length > 1
-                      ? `Highlight ${i + 1}`
-                      : "Highlight"}</span
-                  >
-                  <p class="hero-text">{highlight}</p>
+              {/each}
+            </div>
+          {/if}
+
+          <!-- Category Cards -->
+          <div class="category-grid">
+            {#each groupedChangelog as group}
+              <div
+                class="category-card"
+                style="--cat-color: {group.color}; --cat-bg: {group.bgColor};"
+              >
+                <div class="category-header">
+                  <div class="category-icon">
+                    <i
+                      class="fas {CATEGORY_ICONS[group.category]}"
+                      aria-hidden="true"
+                    ></i>
+                  </div>
+                  <h3>{CATEGORY_LABELS[group.category]}</h3>
+                  <span class="category-count">{group.items.length}</span>
                 </div>
+                <ul class="category-list">
+                  {#each group.items as item}
+                    <li>{item}</li>
+                  {/each}
+                </ul>
               </div>
             {/each}
           </div>
-        {/if}
 
-        <!-- Category Cards -->
-        <div class="category-grid">
-          {#each groupedChangelog as group}
-            <div
-              class="category-card"
-              style="--cat-color: {group.color}; --cat-bg: {group.bgColor};"
-            >
-              <div class="category-header">
-                <div class="category-icon">
-                  <i
-                    class="fas {CATEGORY_ICONS[group.category]}"
-                    aria-hidden="true"
-                  ></i>
-                </div>
-                <h3>{CATEGORY_LABELS[group.category]}</h3>
-                <span class="category-count">{group.items.length}</span>
-              </div>
-              <ul class="category-list">
-                {#each group.items as item}
-                  <li>{item}</li>
-                {/each}
-              </ul>
+          <!-- Empty state -->
+          {#if groupedChangelog.length === 0}
+            <div class="empty-state">
+              <i class="fas fa-box-open" aria-hidden="true"></i>
+              <p>No detailed changelog for this version.</p>
             </div>
-          {/each}
-        </div>
-
-        <!-- Empty state -->
-        {#if groupedChangelog.length === 0}
+          {/if}
+        {:else}
+          <!-- No version data -->
           <div class="empty-state">
-            <i class="fas fa-box-open" aria-hidden="true"></i>
-            <p>No detailed changelog for this version.</p>
+            <i class="fas fa-info-circle" aria-hidden="true"></i>
+            <p>Version information not available.</p>
           </div>
         {/if}
       </div>
 
+      <!-- Feedback reminder (manual mode only) -->
+      {#if mode === "manual"}
+        <div class="feedback-reminder">
+          <div class="reminder-icon">
+            <i class="fas fa-lightbulb" aria-hidden="true"></i>
+          </div>
+          <div class="reminder-content">
+            <p class="reminder-heading">Have ideas or found a bug?</p>
+            <p class="reminder-subtext">
+              Your feedback shapes TKA Scribe. I read every submission!
+            </p>
+          </div>
+          {#if isDesktop}
+            <p class="keyboard-hint">
+              Press <kbd>F</kbd> anytime for quick feedback
+            </p>
+          {/if}
+        </div>
+      {/if}
+
       <!-- Footer -->
       <footer class="modal-footer">
-        <button
-          class="footer-btn secondary"
-          onclick={handleViewAllReleases}
-          type="button"
-        >
-          <i class="fas fa-history" aria-hidden="true"></i>
-          All Releases
-        </button>
-        <button class="footer-btn primary" onclick={handleClose} type="button">
-          <i class="fas fa-check" aria-hidden="true"></i>
-          Got it
-        </button>
+        {#if mode === "manual"}
+          <!-- Manual mode: Submit Feedback + View All Releases -->
+          <button
+            class="footer-btn secondary"
+            onclick={handleViewAllReleases}
+            type="button"
+          >
+            <i class="fas fa-history" aria-hidden="true"></i>
+            All Releases
+          </button>
+          <button
+            class="footer-btn primary"
+            onclick={handleSubmitFeedback}
+            type="button"
+          >
+            <i class="fas fa-comment" aria-hidden="true"></i>
+            Submit Feedback
+          </button>
+        {:else}
+          <!-- Auto mode: All Releases + Got it -->
+          <button
+            class="footer-btn secondary"
+            onclick={handleViewAllReleases}
+            type="button"
+          >
+            <i class="fas fa-history" aria-hidden="true"></i>
+            All Releases
+          </button>
+          <button
+            class="footer-btn primary"
+            onclick={handleClose}
+            type="button"
+          >
+            <i class="fas fa-check" aria-hidden="true"></i>
+            Got it
+          </button>
+        {/if}
       </footer>
     </div>
   </div>
@@ -518,6 +598,126 @@
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--theme-text-dim);
+  }
+
+  /* Loading State */
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px 0;
+  }
+
+  .skeleton {
+    height: 80px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 14px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .skeleton.short {
+    height: 50px;
+    width: 60%;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  /* Error State */
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 40px 20px;
+    text-align: center;
+  }
+
+  .error-state i {
+    font-size: var(--font-size-3xl);
+    color: var(--semantic-error);
+  }
+
+  .error-state p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--theme-text-dim);
+  }
+
+  /* Feedback Reminder */
+  .feedback-reminder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: 0 24px 16px;
+    padding: 20px;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-accent) 10%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent) 5%, transparent) 100%
+    );
+    border: 1.5px solid
+      color-mix(in srgb, var(--theme-accent) 25%, transparent);
+    border-radius: 14px;
+  }
+
+  .reminder-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border-radius: 12px;
+  }
+
+  .reminder-icon i {
+    font-size: var(--font-size-lg);
+    color: var(--theme-accent);
+  }
+
+  .reminder-content {
+    text-align: center;
+  }
+
+  .reminder-heading {
+    margin: 0 0 4px 0;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--theme-text);
+  }
+
+  .reminder-subtext {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    line-height: 1.4;
+  }
+
+  .keyboard-hint {
+    margin: 4px 0 0 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .keyboard-hint kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
   }
 
   /* ============================================================================

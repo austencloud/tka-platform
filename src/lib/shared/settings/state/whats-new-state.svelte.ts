@@ -6,13 +6,20 @@
  *
  * Uses OnboardingPersister for Firebase sync so the seen version
  * persists across devices and browser data clearing.
+ *
+ * Supports two modes:
+ * - "auto": Triggered on app load for new versions (shows "Got it" button)
+ * - "manual": Triggered by clicking version number (shows feedback + View All Releases)
  */
 
 import type { AppVersion } from "$lib/features/feedback/domain/models/version-models";
 import { container } from "$lib/shared/di";
 import type { IOnboardingPersister } from "$lib/shared/onboarding/services/contracts/IOnboardingPersister";
+import { versionService } from "$lib/features/feedback/services/implementations/VersionManager";
 
 const STORAGE_KEY = "tka-last-seen-version";
+
+export type WhatsNewMode = "auto" | "manual";
 
 // Lazy service resolution to avoid circular dependencies
 let _onboardingService: IOnboardingPersister | null = null;
@@ -33,6 +40,7 @@ class WhatsNewState {
   version = $state<AppVersion | null>(null);
   isLoading = $state(false);
   error = $state<string | null>(null);
+  mode = $state<WhatsNewMode>("auto");
 
   /**
    * Check if user has seen the current version.
@@ -69,11 +77,34 @@ class WhatsNewState {
   }
 
   /**
-   * Open the modal with version data
+   * Open the modal with version data (auto mode - triggered by version check on load)
    */
   open(version: AppVersion) {
+    this.mode = "auto";
     this.version = version;
     this.isOpen = true;
+  }
+
+  /**
+   * Open the modal manually (triggered by clicking version number)
+   * Loads the current version data first, then opens modal to prevent layout shift
+   */
+  async openManual() {
+    this.mode = "manual";
+    this.error = null;
+
+    try {
+      const versions = await versionService.getVersions();
+      const currentVersion = versions.find((v) => v.version === __APP_VERSION__);
+      this.version = currentVersion || null;
+      // Open modal only after data is ready - prevents layout shift
+      this.isOpen = true;
+    } catch (err) {
+      this.error = "Failed to load release notes";
+      console.error("Failed to load version:", err);
+      // Still open modal to show error state
+      this.isOpen = true;
+    }
   }
 
   /**
@@ -112,6 +143,7 @@ class WhatsNewState {
     this.version = null;
     this.isLoading = false;
     this.error = null;
+    this.mode = "auto";
   }
 }
 
