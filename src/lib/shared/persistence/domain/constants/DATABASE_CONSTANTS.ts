@@ -19,8 +19,9 @@ export const DATABASE_NAME = "TKADatabase";
  * Version 2: Added gamification tables (achievements, XP, challenges, streaks, notifications)
  * Version 3: Added weekly challenges and skill progressions
  * Version 4: Added train module tables (performances, calibration profiles)
+ * Version 5: Added compositions table for Compose module
  */
-export const DATABASE_VERSION = 4;
+export const DATABASE_VERSION = 5;
 
 // ============================================================================
 // TABLE NAMES
@@ -48,6 +49,8 @@ export const TABLE_NAMES = {
   // Train module tables (v4)
   TRAIN_PERFORMANCES: "trainPerformances",
   TRAIN_CALIBRATION_PROFILES: "trainCalibrationProfiles",
+  // Compose module tables (v5)
+  COMPOSITIONS: "compositions",
 } as const;
 
 // ============================================================================
@@ -90,6 +93,9 @@ export const TABLE_INDEXES = {
   [TABLE_NAMES.TRAIN_PERFORMANCES]:
     "++id, sequenceId, performedAt, grade, [sequenceId+performedAt], score.percentage",
   [TABLE_NAMES.TRAIN_CALIBRATION_PROFILES]: "++id, name, createdAt, isDefault",
+  // Compose module tables (v5)
+  [TABLE_NAMES.COMPOSITIONS]:
+    "++id, name, createdAt, updatedAt, creator, isFavorite",
 } as const;
 
 // ============================================================================

@@ -29,6 +29,7 @@ import type {
   StoredPerformance,
   StoredCalibrationProfile,
 } from "$lib/features/train/domain/models/TrainDatabaseModels";
+import type { Composition } from "$lib/features/compose/compose/domain/types";
 import {
   DATABASE_NAME,
   DATABASE_VERSION,
@@ -74,6 +75,9 @@ export class TKADatabase extends Dexie {
   // Train module tables (v4)
   trainPerformances!: EntityTable<StoredPerformance, "id">;
   trainCalibrationProfiles!: EntityTable<StoredCalibrationProfile, "id">;
+
+  // Compose module tables (v5)
+  compositions!: EntityTable<Composition, "id">;
 
   constructor() {
     super(DATABASE_NAME);
@@ -142,6 +146,7 @@ export async function clearAllData(): Promise<void> {
       db.userSkillProgress,
       db.trainPerformances,
       db.trainCalibrationProfiles,
+      db.compositions,
     ],
     async () => {
       await db.sequences.clear();
@@ -162,6 +167,7 @@ export async function clearAllData(): Promise<void> {
       await db.userSkillProgress.clear();
       await db.trainPerformances.clear();
       await db.trainCalibrationProfiles.clear();
+      await db.compositions.clear();
     }
   );
 }
@@ -192,6 +198,8 @@ export async function getDatabaseInfo() {
     // Train module stats (v4)
     trainPerformances: await db.trainPerformances.count(),
     trainCalibrationProfiles: await db.trainCalibrationProfiles.count(),
+    // Compose module stats (v5)
+    compositions: await db.compositions.count(),
   };
   return info;
 }
