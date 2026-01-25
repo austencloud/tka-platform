@@ -2,7 +2,7 @@
  * Browse State - State management for browsing saved animations
  *
  * Manages:
- * - Loading saved animations from storage
+ * - Loading saved compositions from Dexie storage
  * - Filtering by mode, favorites, creator
  * - Sorting by date, name, popularity
  * - Selected animation for detail view
@@ -10,6 +10,8 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ComposeMode } from "../../../shared/state/compose-module-state.svelte";
+import type { Composition } from "../../../compose/domain/types";
+import { dexieCompositionRepository } from "../../../services/implementations/DexieCompositionRepository";
 
 export interface SavedAnimation {
   id: string;
@@ -34,6 +36,58 @@ export interface AnimationFilter {
 
 export type SortMethod = "date" | "name" | "popularity";
 export type SortDirection = "asc" | "desc";
+
+/**
+ * Infer ComposeMode from a Composition's layout
+ * Maps grid dimensions to the corresponding compose mode
+ */
+function inferModeFromComposition(composition: Composition): ComposeMode {
+  const { rows, cols } = composition.layout;
+  const totalCells = rows * cols;
+
+  // Check if it's a mirror (2x1 layout with mirrored cells)
+  if (rows === 2 && cols === 1) {
+    const hasMirror = composition.cells.some((c) => c.isMirrored);
+    if (hasMirror) return "mirror";
+  }
+
+  // Single cell
+  if (totalCells === 1) return "single";
+
+  // Side by side (1x2)
+  if (rows === 1 && cols === 2) return "side-by-side";
+
+  // Tunnel (cells with type "tunnel")
+  const hasTunnelCells = composition.cells.some((c) => c.type === "tunnel");
+  if (hasTunnelCells) return "tunnel";
+
+  // Default to grid for any multi-cell layout
+  return "grid";
+}
+
+/**
+ * Convert a Composition to SavedAnimation format for display
+ */
+function compositionToAnimation(composition: Composition): SavedAnimation {
+  // Collect all sequences from all cells
+  const allSequences: SequenceData[] = composition.cells.flatMap(
+    (c) => c.sequences
+  );
+
+  return {
+    id: composition.id,
+    name: composition.name,
+    mode: inferModeFromComposition(composition),
+    sequences: allSequences,
+    thumbnailUrl: composition.thumbnailUrl,
+    createdAt: composition.createdAt,
+    updatedAt: composition.updatedAt,
+    creator: composition.creator,
+    isFavorite: composition.isFavorite,
+    viewCount: 0, // Not stored in Composition yet
+    shareCount: 0, // Not stored in Composition yet
+  };
+}
 
 /**
  * Create browse state instance
@@ -113,60 +167,13 @@ export function createBrowseState() {
       isLoading = true;
       error = null;
 
-      // TODO: Replace with actual service call when persistence is ready
-      // For now, return mock data
-      const mockAnimations: SavedAnimation[] = [
-        {
-          id: "anim-1",
-          name: "Hello World",
-          mode: "single",
-          sequences: [],
-          createdAt: new Date("2025-01-15"),
-          updatedAt: new Date("2025-01-15"),
-          creator: "You",
-          isFavorite: true,
-          viewCount: 45,
-          shareCount: 3,
-        },
-        {
-          id: "anim-2",
-          name: "Mirror Dance",
-          mode: "mirror",
-          sequences: [],
-          createdAt: new Date("2025-01-14"),
-          updatedAt: new Date("2025-01-14"),
-          creator: "You",
-          isFavorite: false,
-          viewCount: 23,
-          shareCount: 1,
-        },
-        {
-          id: "anim-3",
-          name: "Tunnel Vision",
-          mode: "tunnel",
-          sequences: [],
-          createdAt: new Date("2025-01-13"),
-          updatedAt: new Date("2025-01-13"),
-          creator: "You",
-          isFavorite: true,
-          viewCount: 67,
-          shareCount: 5,
-        },
-        {
-          id: "anim-4",
-          name: "Grid Performance",
-          mode: "grid",
-          sequences: [],
-          createdAt: new Date("2025-01-12"),
-          updatedAt: new Date("2025-01-12"),
-          creator: "You",
-          isFavorite: false,
-          viewCount: 12,
-          shareCount: 0,
-        },
-      ];
+      // Load compositions from Dexie and convert to SavedAnimation format
+      const compositions = await dexieCompositionRepository.getCompositions({
+        sortBy: "updatedAt",
+        sortDirection: "desc",
+      });
 
-      animations = mockAnimations;
+      animations = compositions.map(compositionToAnimation);
     } catch (err) {
       console.error("Failed to load animations:", err);
       error = err instanceof Error ? err.message : "Failed to load animations";
@@ -197,16 +204,28 @@ export function createBrowseState() {
   }
 
   async function toggleFavorite(animationId: string): Promise<void> {
-    const animation = animations.find((a) => a.id === animationId);
-    if (animation) {
-      animation.isFavorite = !animation.isFavorite;
-      // TODO: Persist to storage
+    try {
+      const newFavoriteStatus =
+        await dexieCompositionRepository.toggleFavorite(animationId);
+
+      // Update local state
+      const animation = animations.find((a) => a.id === animationId);
+      if (animation) {
+        animation.isFavorite = newFavoriteStatus;
+        // Force reactivity by reassigning
+        animations = [...animations];
+      }
+    } catch (err) {
+      console.error("Failed to toggle favorite:", err);
+      error = err instanceof Error ? err.message : "Failed to toggle favorite";
     }
   }
 
   async function deleteAnimation(animationId: string): Promise<void> {
     try {
-      // TODO: Call delete service
+      await dexieCompositionRepository.deleteComposition(animationId);
+
+      // Update local state
       animations = animations.filter((a) => a.id !== animationId);
       if (selectedAnimation?.id === animationId) {
         selectedAnimation = null;

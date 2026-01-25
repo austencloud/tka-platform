@@ -2,14 +2,14 @@
   ComposeModule.svelte - Choreography & Arrangement Module
 
   Tabs:
-  - Arrange (Compose): Unified composition builder with inline playback
+  - Arrange: Tunnel mode - layer sequences on canvas with split-view controls
   - Browse: Saved compositions gallery
+  - Timeline: Timeline-based composition editor
 
   Architecture:
-  - CompositionBuilder replaces old ArrangeTab with layout-first approach
-  - Each cell in the grid can be single or tunnel (multiple overlaid sequences)
-  - Playback happens inline - no separate overlay needed for new compositions
-  - PlaybackOverlay still used for Browse tab (legacy saved compositions)
+  - ArrangeTab: Desktop-first split-view (canvas left, controls right)
+  - Tunnel mode: Add up to 4 sequences, play them together
+  - PlaybackOverlay used for Browse tab saved compositions
 -->
 <script lang="ts">
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -21,8 +21,7 @@
   import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
 
   // Import tab components
-  // CompositionBuilder replaces old ArrangeTab with unified layout-first composition builder
-  import CompositionBuilder from "./compose/CompositionBuilder.svelte";
+  import ArrangeTab from "./tabs/setup/ArrangeTab.svelte";
   import BrowseTab from "./tabs/browse/BrowseTab.svelte";
   import TimelinePanel from "./timeline/components/TimelinePanel.svelte";
 
@@ -112,7 +111,7 @@
     {#key composeState.currentTab}
       <div class="tab-panel">
         {#if isTabActive("arrange")}
-          <CompositionBuilder />
+          <ArrangeTab />
         {:else if isTabActive("browse")}
           <BrowseTab />
         {:else if isTabActive("timeline")}

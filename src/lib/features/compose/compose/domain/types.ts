@@ -42,13 +42,61 @@ export const LAYOUT_PRESETS = {
 export type LayoutPresetKey = keyof typeof LAYOUT_PRESETS;
 
 // ============================================================================
+// Tunnel (Layered Sequence) Configuration
+// ============================================================================
+
+/**
+ * Prop color configuration for a tunnel layer
+ */
+export interface PropColors {
+  left: string; // CSS color for left prop
+  right: string; // CSS color for right prop
+}
+
+/**
+ * Default prop color sets for tunnel layers
+ * Layer 1: blue/red (primary)
+ * Layer 2: purple/orange (secondary)
+ * Layer 3: emerald/pink
+ * Layer 4: cyan/yellow
+ */
+export const TUNNEL_LAYER_COLORS: PropColors[] = [
+  { left: "#3b82f6", right: "#ef4444" }, // blue/red
+  { left: "#8b5cf6", right: "#f97316" }, // purple/orange
+  { left: "#10b981", right: "#ec4899" }, // emerald/pink
+  { left: "#06b6d4", right: "#eab308" }, // cyan/yellow
+];
+
+/**
+ * Configuration for a single sequence layer in a tunnel
+ * Tunnels overlay multiple sequences with individual timing and colors
+ */
+export interface TunnelLayerConfig {
+  /** The sequence data for this layer */
+  sequence: SequenceData;
+
+  /** Beat offset for stagger timing (0 = in sync) */
+  beatOffset: number;
+
+  /** Prop colors for this layer */
+  propColors: PropColors;
+}
+
+/**
+ * Get default prop colors for a tunnel layer index
+ */
+export function getTunnelLayerColors(layerIndex: number): PropColors {
+  return TUNNEL_LAYER_COLORS[layerIndex % TUNNEL_LAYER_COLORS.length];
+}
+
+// ============================================================================
 // Cell Configuration
 // ============================================================================
 
 /**
  * Cell content type
  * - single: One sequence plays in this cell
- * - tunnel: Multiple sequences overlaid (2-4)
+ * - tunnel: Multiple sequences overlaid (2-4) with individual timing/colors
  */
 export type CellType = "single" | "tunnel";
 
@@ -74,6 +122,13 @@ export interface CellConfig {
 
   /** Sequences assigned to this cell (1 for single, 2-4 for tunnel) */
   sequences: SequenceData[];
+
+  /**
+   * Tunnel layer configurations (used when type === "tunnel")
+   * Contains detailed per-layer settings: beatOffset, propColors
+   * If not provided for tunnel type, defaults are derived from sequences array
+   */
+  tunnelLayers?: TunnelLayerConfig[];
 
   /** Trail effect settings for this cell */
   trailSettings: TrailSettings;

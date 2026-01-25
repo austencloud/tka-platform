@@ -14,6 +14,7 @@ import {
   isCompositionComplete,
 } from "../domain/types";
 import { createCellsFromTemplate, getTemplateById } from "../domain/templates";
+import { dexieCompositionRepository } from "../../services/implementations/DexieCompositionRepository";
 
 // Import types and helpers
 import type { WorkflowPhase } from "./composition-types";
@@ -328,6 +329,100 @@ export function createCompositionState() {
   }
 
   // =========================================================================
+  // Persistence Operations
+  // =========================================================================
+
+  /** Persistence state for async operations */
+  let isSaving = $state(false);
+  let isLoading = $state(false);
+  let lastSaveError = $state<string | null>(null);
+
+  /**
+   * Save the current composition to IndexedDB.
+   * Creates a new composition if it doesn't exist, or updates if it does.
+   * @returns The saved composition
+   */
+  async function saveComposition(): Promise<Composition> {
+    isSaving = true;
+    lastSaveError = null;
+
+    try {
+      const saved = await dexieCompositionRepository.saveComposition(
+        composition
+      );
+      composition = saved;
+      return saved;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to save composition";
+      lastSaveError = message;
+      throw error;
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  /**
+   * Load a composition by ID from IndexedDB.
+   * @param compositionId The composition ID to load
+   * @returns The loaded composition, or null if not found
+   */
+  async function loadCompositionById(
+    compositionId: string
+  ): Promise<Composition | null> {
+    isLoading = true;
+
+    try {
+      const loaded =
+        await dexieCompositionRepository.getComposition(compositionId);
+      if (loaded) {
+        loadComposition(loaded);
+      }
+      return loaded;
+    } catch (error) {
+      console.error(`Failed to load composition ${compositionId}:`, error);
+      return null;
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  /**
+   * Delete the current composition from IndexedDB.
+   */
+  async function deleteCurrentComposition(): Promise<void> {
+    try {
+      await dexieCompositionRepository.deleteComposition(composition.id);
+      reset();
+    } catch (error) {
+      console.error("Failed to delete composition:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all saved compositions from IndexedDB.
+   */
+  async function getAllCompositions(): Promise<Composition[]> {
+    try {
+      return await dexieCompositionRepository.getCompositions({
+        sortBy: "updatedAt",
+        sortDirection: "desc",
+      });
+    } catch (error) {
+      console.error("Failed to get all compositions:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Check if the current composition has been saved (exists in DB).
+   */
+  async function isCompositionSaved(): Promise<boolean> {
+    return await dexieCompositionRepository.exists(composition.id);
+  }
+
+  // =========================================================================
   // BPM at Time (combines audio and tempo region managers)
   // =========================================================================
 
@@ -417,6 +512,17 @@ export function createCompositionState() {
       return maxStepCount;
     },
 
+    // Persistence state getters
+    get isSaving() {
+      return isSaving;
+    },
+    get isLoading() {
+      return isLoading;
+    },
+    get lastSaveError() {
+      return lastSaveError;
+    },
+
     // Layout mutations
     setLayout,
     applyTemplate,
@@ -495,6 +601,13 @@ export function createCompositionState() {
     toggleFavorite,
     reset,
     loadComposition,
+
+    // Persistence operations
+    saveComposition,
+    loadCompositionById,
+    deleteCurrentComposition,
+    getAllCompositions,
+    isCompositionSaved,
   };
 }
 

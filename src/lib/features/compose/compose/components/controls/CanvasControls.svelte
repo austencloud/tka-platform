@@ -23,6 +23,8 @@
   const bpm = $derived(compState.bpm);
   const canPlay = $derived(compState.canPlay);
   const layout = $derived(compState.composition.layout);
+  const isSaving = $derived(compState.isSaving);
+  const compositionName = $derived(compState.composition.name);
 
   // Current layout key
   const currentLayoutKey = $derived(
@@ -63,6 +65,14 @@
 
   function handleFullscreen() {
     compState.enterFullscreen();
+  }
+
+  async function handleSave() {
+    try {
+      await compState.saveComposition();
+    } catch (error) {
+      console.error("Failed to save composition:", error);
+    }
   }
 
   // Close dropdowns on outside click
@@ -165,6 +175,7 @@
 
       <!-- Templates Button -->
       <button
+        type="button"
         class="control-btn templates-btn"
         onclick={handleOpenTemplates}
         title="Browse templates"
@@ -172,6 +183,23 @@
       >
         <i class="fas fa-magic" aria-hidden="true"></i>
         <span class="templates-label">Templates</span>
+      </button>
+
+      <!-- Save Button -->
+      <button
+        type="button"
+        class="control-btn save-btn"
+        onclick={handleSave}
+        disabled={isSaving || !canPlay}
+        title={isSaving ? "Saving..." : `Save "${compositionName}"`}
+        aria-label={isSaving ? "Saving composition" : "Save composition"}
+      >
+        {#if isSaving}
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        {:else}
+          <i class="fas fa-save" aria-hidden="true"></i>
+        {/if}
+        <span class="save-label">{isSaving ? "Saving" : "Save"}</span>
       </button>
 
       <!-- Fullscreen Button -->
@@ -387,15 +415,32 @@
     border-radius: clamp(1px, 0.3cqi, 3px);
   }
 
+  /* Save button */
+  .save-btn {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.4);
+  }
+
+  .save-btn:hover:not(:disabled) {
+    background: rgba(16, 185, 129, 0.4);
+    border-color: rgba(16, 185, 129, 0.6);
+  }
+
+  .save-btn:disabled {
+    opacity: 0.5;
+  }
+
   /* Labels hidden on small containers */
   .preview-label,
-  .templates-label {
+  .templates-label,
+  .save-label {
     display: none;
   }
 
   @container controls (min-width: 500px) {
     .preview-label,
-    .templates-label {
+    .templates-label,
+    .save-label {
       display: inline;
     }
   }
