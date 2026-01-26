@@ -14,6 +14,7 @@
     "dev:kill": "kill-port 5173 && npm run dev",
     "dev:mobile": "node scripts/adb-connect.js && vite dev --host",
     "adb:connect": "node scripts/adb-connect.js",
+    "adb:watch": "node scripts/adb-connect.js --watch",
     "build": "svelte-kit sync && vite build",
     "build:analyze": "vite-bundle-visualizer",
     "size": "size-limit",

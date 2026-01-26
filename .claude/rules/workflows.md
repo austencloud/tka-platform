@@ -163,6 +163,31 @@ When first arg is a title (has spaces or descriptive text):
 
 ## Playwright Usage
 
+### ⛔ STOP. Ask the user first. ⛔
+
+**Before using Playwright for verification, ask: "Can you check [X] and tell me what you see?"**
+
+The user looking at their screen and telling you "yes it works" costs ~10 tokens.
+You taking a screenshot costs ~15,000 tokens.
+You clicking through the app costs 30,000+ tokens.
+
+**"Test it e2e" does NOT mean "use Playwright."** It means verify it works. The cheapest verification is asking the user.
+
+### When to use Playwright
+
+1. User explicitly says "use Playwright" or "automate this"
+2. You need runtime state the user can't see (console errors, network requests, JS evaluation)
+3. User is unavailable and has pre-authorized autonomous testing
+
+### When NOT to use Playwright
+
+- "Let's test this" → Ask user to test and report back
+- "Verify it works" → Ask user to check and confirm
+- "Test e2e" → Ask user to walk through the flow
+- Anything visual → User can see it faster and cheaper than a screenshot
+
+---
+
 ### ⛔ CRITICAL: NEVER USE INTERACTIVE PLAYWRIGHT WITHOUT EXPLICIT PERMISSION ⛔
 
 **Default mode: User navigates, Claude observes.**

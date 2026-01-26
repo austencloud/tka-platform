@@ -3,6 +3,11 @@
  * ADB Auto-Connect Script
  * Ensures wireless debugging is connected and port forwarding is set up.
  * Run before starting dev server for mobile testing.
+ *
+ * Behavior:
+ * - If device is available: connects and sets up port forwarding
+ * - If no device: prints warning but exits successfully (allows server to start)
+ * - Background watcher mode: continuously monitors for devices and auto-connects
  */
 
 import { execSync, spawn } from "child_process";
@@ -10,6 +15,10 @@ import { execSync, spawn } from "child_process";
 const PORT = 5173;
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
+const WATCH_INTERVAL_MS = 5000; // Check for devices every 5 seconds
+
+// Check if running in watch mode
+const WATCH_MODE = process.argv.includes("--watch");
 
 function exec(cmd) {
   try {
@@ -79,7 +88,9 @@ async function main() {
     console.log("   To pair a new device:");
     console.log("   adb pair <ip>:<pairing-port>");
     console.log("   adb connect <ip>:<connect-port>");
-    process.exit(1);
+    console.log("");
+    console.log("📡 Server will start anyway. Device will auto-connect when available.");
+    return { success: false, devices: [] };
   }
 
   console.log(`📱 Found ${devices.length} device(s):`);
@@ -114,10 +125,83 @@ async function main() {
   console.log("");
   if (successCount > 0) {
     console.log(`✅ Ready! Open http://localhost:${PORT} on your phone`);
+    return { success: true, devices };
   } else {
-    console.log("❌ No devices configured successfully");
-    process.exit(1);
+    console.log("⚠️  No devices configured successfully, but server will start anyway.");
+    return { success: false, devices };
   }
 }
 
-main().catch(console.error);
+// Track which devices we've already set up (for watch mode)
+const configuredDevices = new Set();
+
+async function watchForDevices() {
+  console.log("");
+  console.log("👀 Watching for devices... (Ctrl+C to stop)");
+  console.log("─".repeat(40));
+
+  while (true) {
+    await sleep(WATCH_INTERVAL_MS);
+
+    const devices = getConnectedDevices();
+    const newDevices = devices.filter((d) => !configuredDevices.has(d));
+
+    if (newDevices.length > 0) {
+      console.log("");
+      console.log(`📱 New device(s) detected: ${newDevices.join(", ")}`);
+
+      for (const device of newDevices) {
+        console.log(`🔧 Setting up port ${PORT} for ${device}...`);
+
+        let success = false;
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          if (setupReversePort(device) && verifyReversePort(device)) {
+            success = true;
+            break;
+          }
+          if (attempt < MAX_RETRIES) {
+            console.log(`   Retry ${attempt}/${MAX_RETRIES}...`);
+            await sleep(RETRY_DELAY_MS);
+          }
+        }
+
+        if (success) {
+          console.log(`   ✅ localhost:${PORT} → phone`);
+          configuredDevices.add(device);
+        } else {
+          console.log(`   ❌ Failed to set up port forwarding`);
+        }
+      }
+    }
+
+    // Clean up disconnected devices from our tracking
+    for (const configured of configuredDevices) {
+      if (!devices.includes(configured)) {
+        configuredDevices.delete(configured);
+        console.log(`📴 Device disconnected: ${configured}`);
+      }
+    }
+  }
+}
+
+async function run() {
+  const result = await main();
+
+  // In watch mode, continue monitoring for devices
+  if (WATCH_MODE) {
+    // Add already-configured devices to our tracking
+    if (result && result.devices) {
+      result.devices.forEach((d) => configuredDevices.add(d));
+    }
+    await watchForDevices();
+  }
+
+  // Always exit successfully so the dev server can start
+  process.exit(0);
+}
+
+run().catch((err) => {
+  console.error("Error:", err.message);
+  // Still exit successfully - don't block the dev server
+  process.exit(0);
+});
