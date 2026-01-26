@@ -15,9 +15,17 @@
   Mobile Split View:
   - Tap either media to expand it temporarily with visibility controls
   - Uses existing TransportControls and BpmChips primitives
+
+  Accessibility (WCAG AAA):
+  - Focus trap within modal when open
+  - Focus restoration to trigger element on close
+  - aria-live regions for dynamic content (playback state, export progress)
+  - All interactive elements have 48px minimum touch targets
+  - Full keyboard navigation support
+  - Screen reader announcements for mode changes
 -->
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import { fade, scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
@@ -34,11 +42,7 @@
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { createAnimationPanelState, type PlaybackMode, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
   import ViewerFooter from "./ViewerFooter.svelte";
-  import ViewerHeader from "./ViewerHeader.svelte";
-  import ExportModeContent from "./ExportModeContent.svelte";
-  import ExportFooter from "./ExportFooter.svelte";
   import FullscreenControls from "./FullscreenControls.svelte";
-  import SplitViewContent from "./SplitViewContent.svelte";
   import { sequenceModalPersistence } from "../services/implementations/SequenceModalPersistence";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
@@ -59,8 +63,6 @@
   import {
     getExportOptionsState,
     type VideoFps,
-    type GridStepSize,
-    type CompositeOrientation,
   } from "../state/export-options-state.svelte";
   // LAN Sync
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
@@ -104,10 +106,72 @@
 
   // Export mode state
   let isExportMode = $state(false);
+  // What to export: animation, image, or both (redirects to Compose)
+  type ExportType = "animation" | "image" | "both";
+  let exportType = $state<ExportType | null>(null);
   const exportOptions = getExportOptionsState();
 
   // LAN Sync - just a toggle, no complex UI
   let isSyncToggling = $state(false);
+
+  // ========== ACCESSIBILITY STATE ==========
+  // Screen reader announcement for dynamic content changes
+  let srAnnouncement = $state("");
+  // Reference to trigger element for focus restoration
+  let triggerElement: HTMLElement | null = null;
+  // Reference to modal container for focus management
+  let modalContainer: HTMLElement | null = null;
+
+  /**
+   * Announce a message to screen readers via aria-live region.
+   * Uses assertive for important changes, polite for status updates.
+   */
+  function announceToScreenReader(message: string, priority: "polite" | "assertive" = "polite") {
+    // Clear first to ensure repeated announcements are read
+    srAnnouncement = "";
+    // Use tick to ensure the DOM updates
+    tick().then(() => {
+      srAnnouncement = message;
+    });
+  }
+
+  /**
+   * Focus the first focusable element within the modal.
+   */
+  async function focusFirstElement() {
+    await tick();
+    if (!modalContainer) return;
+
+    const focusable = modalContainer.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusable[0];
+    if (firstElement) {
+      firstElement.focus();
+    }
+  }
+
+  /**
+   * Restore focus to the trigger element when modal closes.
+   */
+  function restoreFocus() {
+    if (triggerElement && typeof triggerElement.focus === "function") {
+      triggerElement.focus();
+    }
+  }
+
+  // Capture trigger element when modal opens
+  $effect(() => {
+    if (open && browser) {
+      // Store the currently focused element as the trigger
+      triggerElement = document.activeElement as HTMLElement | null;
+      // Focus first element after modal renders
+      focusFirstElement();
+      // Announce modal opened
+      const sequenceWord = sequence?.word || "sequence";
+      announceToScreenReader(`Sequence viewer opened for ${sequenceWord}`, "assertive");
+    }
+  });
 
   // Mobile detection for responsive behaviors
   let isMobile = $state(false);
@@ -176,26 +240,50 @@
   function enterEditMode(pane: 'animation' | 'image') {
     hapticService?.trigger("selection"); // Haptic feedback for mode expansion
     editingPane = pane;
+    announceToScreenReader(`${pane === 'animation' ? 'Animation' : 'Image'} expanded. Tap to collapse.`);
   }
 
   function exitEditMode() {
     hapticService?.trigger("selection"); // Lighter feedback for collapse
     editingPane = null;
+    announceToScreenReader("Split view restored");
   }
 
   // Export mode functions
   function enterExportMode() {
     hapticService?.trigger("selection");
     isExportMode = true;
+    exportType = null; // Reset to show type selector
     // Pause playback when entering export mode
     if (isPlayingLocal && playbackController) {
       playbackController.togglePlayback();
     }
+    announceToScreenReader("Export mode. Choose Video, Image, or Combined format.", "assertive");
   }
 
   function exitExportMode() {
     hapticService?.trigger("selection");
     isExportMode = false;
+    exportType = null;
+    announceToScreenReader("Returned to viewer");
+  }
+
+  function selectExportType(type: ExportType) {
+    hapticService?.trigger("selection");
+    if (type === "both") {
+      // Redirect to Compose with combo-export preset
+      announceToScreenReader("Opening Compose for combined export");
+      handleOpenInCompose("combo-export");
+    } else {
+      exportType = type;
+      announceToScreenReader(`${type === 'animation' ? 'Video' : 'Image'} export selected. Configure options below.`);
+    }
+  }
+
+  function backToExportTypeSelection() {
+    hapticService?.trigger("selection");
+    exportType = null;
+    announceToScreenReader("Back to export format selection");
   }
 
   // Simple sync toggle - one tap to connect/disconnect
@@ -219,19 +307,21 @@
         }
       );
       hapticService?.trigger(isNowSyncing ? "success" : "selection");
+      announceToScreenReader(isNowSyncing ? "Sync enabled. Searching for peers." : "Sync disabled");
     } catch (err) {
       console.error("[Sync] Toggle failed:", err);
       hapticService?.trigger("error");
+      announceToScreenReader("Sync failed. Please try again.");
     } finally {
       isSyncToggling = false;
     }
   }
 
   /**
-   * Open sequence in Compose module for multi-performer visualization.
+   * Open sequence in Compose module for multi-performer visualization or combo export.
    * Disconnects LAN sync if active, saves handoff data, and navigates to Compose.
    */
-  async function handleOpenInCompose(preset: 'stagger' | 'mirror' = 'stagger') {
+  async function handleOpenInCompose(preset: 'stagger' | 'mirror' | 'combo-export' = 'stagger') {
     hapticService?.trigger("selection");
 
     // Disconnect LAN sync if active
@@ -252,8 +342,11 @@
     });
 
     // Show feedback toast
+    const message = preset === 'combo-export'
+      ? "Opening in Compose for combined export..."
+      : "Opening in Compose...";
     showToast({
-      message: "Opening in Compose...",
+      message,
       type: "info",
       duration: 2000,
     });
@@ -272,6 +365,7 @@
     hapticService?.trigger("selection");
     isFullscreen = true;
     showFullscreenControls();
+    announceToScreenReader("Fullscreen mode. Tap to show controls, press Escape to exit.", "assertive");
   }
 
   function exitFullscreen() {
@@ -279,6 +373,7 @@
     isFullscreen = false;
     fullscreenControlsVisible = false;
     clearControlsTimeout();
+    announceToScreenReader("Exited fullscreen");
   }
 
   function showFullscreenControls() {
@@ -773,7 +868,16 @@
 
   function handlePlaybackToggle() {
     playbackController?.togglePlayback();
+    // Announcement handled by isPlayingLocal state change below
   }
+
+  // Announce playback state changes
+  $effect(() => {
+    // Only announce after initial load (when services are ready)
+    if (animationServicesReady) {
+      announceToScreenReader(isPlayingLocal ? "Playing" : "Paused");
+    }
+  });
 
   function handleBpmChange(newBpm: number) {
     hapticService?.trigger("selection");
@@ -804,6 +908,8 @@
     if (lanSyncState.isConnected) {
       lanSyncState.disconnect();
     }
+    // Restore focus to the element that triggered the modal
+    restoreFocus();
     onclose();
   }
 
@@ -811,10 +917,12 @@
   const exportCallbacks = {
     onSuccess: (message: string) => {
       showToast(message, "success");
+      announceToScreenReader(message, "assertive");
       exitExportMode();
     },
     onError: (message: string) => {
       // Error is already tracked in exporter state
+      announceToScreenReader(`Export failed: ${message}`, "assertive");
     },
     onHaptic: (type: "success" | "error" | "selection") => {
       hapticService?.trigger(type);
@@ -823,33 +931,20 @@
 
   // Export handlers - delegate to service
   async function handleExport() {
-    if (isExporting) return;
+    if (isExporting || !exportType) return;
 
     hapticService?.trigger("selection");
 
-    // Route to appropriate export based on view mode
-    switch (viewMode) {
-      case "split":
-        await handleSplitExport();
-        break;
+    // Route to appropriate export based on exportType (not viewMode)
+    switch (exportType) {
       case "animation":
         await handleAnimationExport();
         break;
       case "image":
         await handleImageExport();
         break;
+      // "both" is handled by selectExportType -> redirects to Compose
     }
-  }
-
-  async function handleSplitExport() {
-    if (!playbackController || !animationCanvas) return;
-
-    const opts = exportOptions.getSplitOptions();
-    await sequenceModalExporter.exportSplit(
-      opts,
-      { canvas: animationCanvas, playbackController, panelState: modalAnimationState },
-      exportCallbacks
-    );
   }
 
   async function handleAnimationExport() {
@@ -942,6 +1037,16 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
+<!-- Screen reader announcements (visually hidden) -->
+<div
+  class="sr-only"
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+>
+  {srAnnouncement}
+</div>
+
 <BaseModal
   bind:open
   onclose={() => handleClose()}
@@ -959,8 +1064,8 @@
           <button
             type="button"
             class="close-button"
-            onclick={exitExportMode}
-            aria-label="Back to viewer"
+            onclick={exportType ? backToExportTypeSelection : exitExportMode}
+            aria-label={exportType ? "Back to export options" : "Back to viewer"}
           >
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
           </button>
@@ -968,7 +1073,13 @@
 
         <div class="header-center">
           <h2 class="mode-title">
-            Export {viewMode === "image" ? "Image" : "Video"}
+            {#if !exportType}
+              Export
+            {:else if exportType === "animation"}
+              Export Video
+            {:else}
+              Export Image
+            {/if}
           </h2>
         </div>
 
@@ -1043,6 +1154,7 @@
 
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <div
+    bind:this={modalContainer}
     class="modal-body-content"
     data-view-mode={viewMode}
     data-fullscreen={isFullscreen}
@@ -1050,6 +1162,7 @@
     onkeydown={isFullscreen ? (e) => { if (e.key === 'Enter' || e.key === ' ') handleFullscreenTap(); } : undefined}
     role={isFullscreen ? "button" : undefined}
     tabindex={isFullscreen ? 0 : undefined}
+    aria-label={isFullscreen ? "Fullscreen viewer. Tap to show controls." : undefined}
   >
     <!-- Fullscreen floating controls overlay -->
     {#if isFullscreen}
@@ -1085,201 +1198,192 @@
     {/if}
 
     {#if isExportMode}
-      <!-- Export mode: show preview and export options -->
+      <!-- Export mode: show type selector or preview/options -->
       <div
         class="export-mode-container view-container"
         in:fade={{ duration: 250, delay: 50, easing: cubicOut }}
         out:fade={{ duration: 150, easing: cubicOut }}
       >
-        <!-- Preview area (smaller) -->
-        <div class="export-preview-area">
-          {#if viewMode === "image"}
-            <LayeredSequencePreview
-              {sequence}
-              showHighlight={false}
-              showWord={exportOptions.imageShowWord}
-              showStepNumbers={exportOptions.imageShowStepNumbers}
-              showDifficultyLevel={exportOptions.imageShowDifficulty}
-              includeStartPosition={exportOptions.imageIncludeStartPosition}
-              showCreatorName={exportOptions.imageShowCreatorName}
-              showNotes={exportOptions.imageShowNotes}
-              showBirthday={true}
-              showLoopGlyph={true}
-              darkMode={exportOptions.imageDarkMode}
-              userName={authState.user?.displayName || ""}
-            />
-          {:else}
-            <!-- For video exports, show the animation canvas -->
-            {#if animationLoading}
-              <div class="loading-state">
-                <div class="spinner"></div>
-              </div>
-            {:else if modalAnimationState.error}
-              <div class="error-state">
-                <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-                <span>{modalAnimationState.error}</span>
-              </div>
-            {:else}
-              <AnimatorCanvas
-                sequenceData={modalAnimationState.sequenceData}
-                currentStep={currentStepLocal}
-                isPlaying={false}
-                blueProp={modalAnimationState.bluePropState}
-                redProp={modalAnimationState.redPropState}
-                gridMode={sequence?.gridMode}
-                letter={currentLetter}
-                stepData={currentStepData}
-                word={sequence?.word}
-                onCanvasReady={handleCanvasReady}
-              />
-            {/if}
-          {/if}
-        </div>
+        {#if !exportType}
+          <!-- Export type selector -->
+          <div class="export-type-selector">
+            <p class="selector-hint">What would you like to export?</p>
 
-        <!-- Export options -->
-        <div class="export-options-area">
-          <!-- Guidance hint -->
-          <p class="export-hint">
-            <i class="fas fa-info-circle" aria-hidden="true"></i>
-            Customize your export, then tap the button below.
-          </p>
-          <div class="export-options-card">
-            {#if viewMode === "image"}
-              <!-- Image export options -->
-              <div class="option-group">
-                <span class="option-label">Include</span>
-                <div class="option-chips">
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.imageShowWord}
-                    onclick={() => exportOptions.setImageShowWord(!exportOptions.imageShowWord)}
-                    aria-pressed={exportOptions.imageShowWord}
-                  >Word</button>
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.imageIncludeStartPosition}
-                    onclick={() => exportOptions.setImageIncludeStartPosition(!exportOptions.imageIncludeStartPosition)}
-                    aria-pressed={exportOptions.imageIncludeStartPosition}
-                  >Start</button>
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.imageShowDifficulty}
-                    onclick={() => exportOptions.setImageShowDifficulty(!exportOptions.imageShowDifficulty)}
-                    aria-pressed={exportOptions.imageShowDifficulty}
-                  >Level</button>
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.imageShowCreatorName}
-                    onclick={() => exportOptions.setImageShowCreatorName(!exportOptions.imageShowCreatorName)}
-                    aria-pressed={exportOptions.imageShowCreatorName}
-                  >Name</button>
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.imageShowNotes}
-                    onclick={() => exportOptions.setImageShowNotes(!exportOptions.imageShowNotes)}
-                    aria-pressed={exportOptions.imageShowNotes}
-                  >Notes</button>
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.imageDarkMode}
-                    onclick={() => exportOptions.setImageDarkMode(!exportOptions.imageDarkMode)}
-                    aria-pressed={exportOptions.imageDarkMode}
-                  >Dark</button>
+            <div class="export-type-cards" role="group" aria-label="Export format options">
+              <button
+                type="button"
+                class="export-type-card"
+                onclick={() => selectExportType("animation")}
+                aria-describedby="video-desc"
+              >
+                <div class="card-icon animation" aria-hidden="true">
+                  <i class="fas fa-play-circle"></i>
                 </div>
-              </div>
-            {:else if viewMode === "split"}
-              <!-- Split video export options -->
-              <div class="option-group">
-                <span class="option-label">FPS</span>
-                <div class="option-chips">
-                  {#each [30, 50, 60] as fps}
-                    <button
-                      type="button"
-                      class="chip"
-                      class:active={exportOptions.splitFps === fps}
-                      onclick={() => exportOptions.setSplitFps(fps as VideoFps)}
-                      aria-pressed={exportOptions.splitFps === fps}
-                    >{fps}</button>
-                  {/each}
+                <div class="card-content">
+                  <span class="card-title">Video</span>
+                  <span class="card-desc" id="video-desc">Animated sequence as MP4</span>
                 </div>
-              </div>
-              <div class="option-group">
-                <span class="option-label">Layout</span>
-                <div class="option-chips">
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.splitOrientation === "horizontal"}
-                    onclick={() => exportOptions.setSplitOrientation("horizontal")}
-                    aria-pressed={exportOptions.splitOrientation === "horizontal"}
-                  >Horizontal</button>
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.splitOrientation === "vertical"}
-                    onclick={() => exportOptions.setSplitOrientation("vertical")}
-                    aria-pressed={exportOptions.splitOrientation === "vertical"}
-                  >Vertical</button>
+                <i class="fas fa-chevron-right card-arrow" aria-hidden="true"></i>
+              </button>
+
+              <button
+                type="button"
+                class="export-type-card"
+                onclick={() => selectExportType("image")}
+                aria-describedby="image-desc"
+              >
+                <div class="card-icon image" aria-hidden="true">
+                  <i class="fas fa-image"></i>
                 </div>
-              </div>
-              <div class="option-group">
-                <span class="option-label">Grid Size</span>
-                <div class="option-chips">
-                  {#each [80, 120, 160] as size}
-                    <button
-                      type="button"
-                      class="chip"
-                      class:active={exportOptions.splitGridStepSize === size}
-                      onclick={() => exportOptions.setSplitGridStepSize(size as GridStepSize)}
-                      aria-pressed={exportOptions.splitGridStepSize === size}
-                    >{size === 80 ? "S" : size === 120 ? "M" : "L"}</button>
-                  {/each}
+                <div class="card-content">
+                  <span class="card-title">Image</span>
+                  <span class="card-desc" id="image-desc">Choreo card as PNG</span>
                 </div>
-              </div>
-              <div class="option-group">
-                <span class="option-label">Include</span>
-                <div class="option-chips">
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.splitIncludeStartPosition}
-                    onclick={() => exportOptions.setSplitIncludeStartPosition(!exportOptions.splitIncludeStartPosition)}
-                    aria-pressed={exportOptions.splitIncludeStartPosition}
-                  >Start</button>
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.splitShowStepNumbers}
-                    onclick={() => exportOptions.setSplitShowStepNumbers(!exportOptions.splitShowStepNumbers)}
-                    aria-pressed={exportOptions.splitShowStepNumbers}
-                  >Numbers</button>
+                <i class="fas fa-chevron-right card-arrow" aria-hidden="true"></i>
+              </button>
+
+              <button
+                type="button"
+                class="export-type-card combo"
+                onclick={() => selectExportType("both")}
+                aria-describedby="combo-desc"
+              >
+                <div class="card-icon combo" aria-hidden="true">
+                  <i class="fas fa-layer-group"></i>
                 </div>
-              </div>
+                <div class="card-content">
+                  <span class="card-title">Combined</span>
+                  <span class="card-desc" id="combo-desc">Video with choreo card overlay. Opens in Compose.</span>
+                </div>
+                <div class="card-badge" aria-hidden="true">
+                  <i class="fas fa-external-link-alt"></i>
+                  Compose
+                </div>
+              </button>
+            </div>
+          </div>
+        {:else}
+          <!-- Preview area -->
+          <div class="export-preview-area">
+            {#if exportType === "image"}
+              <LayeredSequencePreview
+                {sequence}
+                showHighlight={false}
+                showWord={exportOptions.imageShowWord}
+                showStepNumbers={exportOptions.imageShowStepNumbers}
+                showDifficultyLevel={exportOptions.imageShowDifficulty}
+                includeStartPosition={exportOptions.imageIncludeStartPosition}
+                showCreatorName={exportOptions.imageShowCreatorName}
+                showNotes={exportOptions.imageShowNotes}
+                showBirthday={true}
+                showLoopGlyph={true}
+                darkMode={exportOptions.imageDarkMode}
+                userName={authState.user?.displayName || ""}
+              />
             {:else}
-              <!-- Animation-only video export options -->
-              <div class="option-group">
-                <span class="option-label">FPS</span>
-                <div class="option-chips">
-                  {#each [30, 50, 60] as fps}
-                    <button
-                      type="button"
-                      class="chip"
-                      class:active={exportOptions.videoFps === fps}
-                      onclick={() => exportOptions.setVideoFps(fps as VideoFps)}
-                      aria-pressed={exportOptions.videoFps === fps}
-                    >{fps}</button>
-                  {/each}
+              <!-- For video exports, show the animation canvas -->
+              {#if animationLoading}
+                <div class="loading-state">
+                  <div class="spinner"></div>
                 </div>
-              </div>
+              {:else if modalAnimationState.error}
+                <div class="error-state">
+                  <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                  <span>{modalAnimationState.error}</span>
+                </div>
+              {:else}
+                <AnimatorCanvas
+                  sequenceData={modalAnimationState.sequenceData}
+                  currentStep={currentStepLocal}
+                  isPlaying={false}
+                  blueProp={modalAnimationState.bluePropState}
+                  redProp={modalAnimationState.redPropState}
+                  gridMode={sequence?.gridMode}
+                  letter={currentLetter}
+                  stepData={currentStepData}
+                  word={sequence?.word}
+                  onCanvasReady={handleCanvasReady}
+                />
+              {/if}
             {/if}
           </div>
-        </div>
+
+          <!-- Export options -->
+          <div class="export-options-area">
+            <p class="export-hint">
+              <i class="fas fa-info-circle" aria-hidden="true"></i>
+              Customize your export, then tap the button below.
+            </p>
+            <div class="export-options-card">
+              {#if exportType === "image"}
+                <!-- Image export options -->
+                <div class="option-group">
+                  <span class="option-label">Include</span>
+                  <div class="option-chips">
+                    <button
+                      type="button"
+                      class="chip"
+                      class:active={exportOptions.imageShowWord}
+                      onclick={() => exportOptions.setImageShowWord(!exportOptions.imageShowWord)}
+                      aria-pressed={exportOptions.imageShowWord}
+                    >Word</button>
+                    <button
+                      type="button"
+                      class="chip"
+                      class:active={exportOptions.imageIncludeStartPosition}
+                      onclick={() => exportOptions.setImageIncludeStartPosition(!exportOptions.imageIncludeStartPosition)}
+                      aria-pressed={exportOptions.imageIncludeStartPosition}
+                    >Start</button>
+                    <button
+                      type="button"
+                      class="chip"
+                      class:active={exportOptions.imageShowDifficulty}
+                      onclick={() => exportOptions.setImageShowDifficulty(!exportOptions.imageShowDifficulty)}
+                      aria-pressed={exportOptions.imageShowDifficulty}
+                    >Level</button>
+                    <button
+                      type="button"
+                      class="chip"
+                      class:active={exportOptions.imageShowCreatorName}
+                      onclick={() => exportOptions.setImageShowCreatorName(!exportOptions.imageShowCreatorName)}
+                      aria-pressed={exportOptions.imageShowCreatorName}
+                    >Name</button>
+                    <button
+                      type="button"
+                      class="chip"
+                      class:active={exportOptions.imageShowNotes}
+                      onclick={() => exportOptions.setImageShowNotes(!exportOptions.imageShowNotes)}
+                      aria-pressed={exportOptions.imageShowNotes}
+                    >Notes</button>
+                    <button
+                      type="button"
+                      class="chip"
+                      class:active={exportOptions.imageDarkMode}
+                      onclick={() => exportOptions.setImageDarkMode(!exportOptions.imageDarkMode)}
+                      aria-pressed={exportOptions.imageDarkMode}
+                    >Dark</button>
+                  </div>
+                </div>
+              {:else}
+                <!-- Animation video export options -->
+                <div class="option-group">
+                  <span class="option-label">FPS</span>
+                  <div class="option-chips">
+                    {#each [30, 50, 60] as fps}
+                      <button
+                        type="button"
+                        class="chip"
+                        class:active={exportOptions.videoFps === fps}
+                        onclick={() => exportOptions.setVideoFps(fps as VideoFps)}
+                        aria-pressed={exportOptions.videoFps === fps}
+                      >{fps}</button>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/if}
       </div>
     {:else}
       <!-- Split view: Animation and Image side by side, tap to focus -->
@@ -1400,8 +1504,8 @@
 
   {#snippet footer()}
     {#if !isFullscreen}
-      {#if isExportMode}
-        <!-- Export mode: prominent export button with progress -->
+      {#if isExportMode && exportType}
+        <!-- Export mode: prominent export button with progress (only when export type is selected) -->
         <footer class="controls-footer" data-hidden={isFullscreen}>
           <div
             class="export-footer-content"
@@ -1455,13 +1559,18 @@
                 class="primary-export-btn"
                 onclick={handleExport}
                 disabled={isExporting}
-                aria-label={isExporting ? "Export in progress" : `Export ${viewMode === "image" ? "image" : "video"}`}
+                aria-label={isExporting ? "Export in progress" : `Export ${exportType === "image" ? "image" : "video"}`}
               >
                 <i class="fas fa-download" aria-hidden="true"></i>
-                Export {viewMode === "image" ? "Image" : "Video"}
+                Export {exportType === "image" ? "Image" : "Video"}
               </button>
             {/if}
           </div>
+        </footer>
+      {:else if isExportMode && !exportType}
+        <!-- Export type selection mode: no footer needed, choices are in the content area -->
+        <footer class="controls-footer export-type-footer" data-hidden={isFullscreen}>
+          <p class="footer-hint">Select an export format above</p>
         </footer>
       {:else}
         <!-- New unified footer with actions + playback -->
@@ -1489,6 +1598,19 @@
 <!-- NOTE: Stagger mode now handled by Compose module via sequence handoff -->
 
 <style>
+  /* ===== ACCESSIBILITY: Screen reader only ===== */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   /* ===== FULLSCREEN MORPH STYLES ===== */
 
   /* Base modal transition for morphing effect - keep margin:auto for centering */
@@ -2357,6 +2479,174 @@
     .pane-close-btn,
     .chip.active {
       animation: none !important;
+    }
+  }
+
+  /* ===== EXPORT TYPE SELECTOR ===== */
+
+  .export-type-selector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 24px;
+    height: 100%;
+    min-height: 300px;
+  }
+
+  .selector-hint {
+    margin: 0;
+    font-size: var(--font-size-md, 16px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    text-align: center;
+  }
+
+  .export-type-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .export-type-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    padding: 16px 20px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    color: var(--theme-text, white);
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+    text-align: left;
+  }
+
+  .export-type-card:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    transform: translateX(4px);
+  }
+
+  .export-type-card:active {
+    transform: scale(0.98);
+  }
+
+  .export-type-card:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .card-icon.animation {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+  }
+
+  .card-icon.image {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+  }
+
+  .card-icon.combo {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+  }
+
+  .card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .card-title {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text, white);
+  }
+
+  .card-desc {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  .card-arrow {
+    font-size: 14px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    flex-shrink: 0;
+  }
+
+  .card-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(168, 85, 247, 0.2);
+    border-radius: 8px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: #c084fc;
+    flex-shrink: 0;
+  }
+
+  .card-badge i {
+    font-size: 10px;
+  }
+
+  .export-type-card.combo {
+    border-color: rgba(168, 85, 247, 0.3);
+  }
+
+  .export-type-card.combo:hover {
+    border-color: rgba(168, 85, 247, 0.5);
+    background: rgba(168, 85, 247, 0.1);
+  }
+
+  /* Export type footer hint */
+  .export-type-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .footer-hint {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-align: center;
+  }
+
+  @media (max-width: 767px) {
+    .export-type-selector {
+      padding: 16px;
+      gap: 20px;
+    }
+
+    .export-type-cards {
+      max-width: none;
+    }
+
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      font-size: 18px;
     }
   }
 </style>

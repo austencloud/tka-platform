@@ -4,7 +4,6 @@ import type {
   ExportCallbacks,
   VideoExportDependencies,
   ImageExportDependencies,
-  SplitExportOptions,
   VideoExportOptions,
   ImageExportOptions,
 } from "../contracts/ISequenceModalExporter";
@@ -13,8 +12,8 @@ import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/IS
 import { container } from "$lib/shared/di";
 
 /**
- * Orchestrates sequence exports (image, video, split video).
- * Extracts export logic from SequenceDetailsModal for cleaner separation.
+ * Orchestrates sequence exports (image, video).
+ * Combined exports (animation + choreo card) are handled by Compose module.
  */
 export class SequenceModalExporter implements ISequenceModalExporter {
   private _isExporting = false;
@@ -45,57 +44,6 @@ export class SequenceModalExporter implements ISequenceModalExporter {
       progress: this._progress,
       error: this._error,
     };
-  }
-
-  async exportSplit(
-    options: SplitExportOptions,
-    deps: VideoExportDependencies,
-    callbacks: ExportCallbacks
-  ): Promise<void> {
-    if (!this.videoExportOrchestrator) {
-      this._error = "Export services not ready. Please try again.";
-      return;
-    }
-
-    this._isExporting = true;
-    this._error = null;
-    this._progress = { progress: 0, stage: "capturing" };
-
-    try {
-      await this.videoExportOrchestrator.executeExport(
-        deps.canvas,
-        deps.playbackController,
-        deps.panelState,
-        (progress) => {
-          this._progress = progress;
-          if (progress.stage === "complete") {
-            callbacks.onHaptic("success");
-            callbacks.onSuccess("Video exported!");
-          } else if (progress.stage === "error") {
-            callbacks.onHaptic("error");
-            this._error = progress.error || "Export failed. Please try again.";
-            callbacks.onError(this._error);
-          }
-        },
-        {
-          compositeMode: options.compositeOrientation,
-          gridStepSize: options.gridStepSize,
-          showStepNumbers: options.showStepNumbers,
-          includeStartPosition: options.includeStartPosition,
-          fps: options.fps,
-          loopCount: options.loopCount,
-        }
-      );
-    } catch (error) {
-      if ((error as Error).message !== "Export cancelled") {
-        console.error("[SequenceModalExporter] Split export failed:", error);
-        this._error = "Export failed. Please try again.";
-        callbacks.onError(this._error);
-      }
-    } finally {
-      this._isExporting = false;
-      this._progress = null;
-    }
   }
 
   async exportAnimation(

@@ -3,18 +3,6 @@ import type { VideoExportProgress } from "$lib/features/compose/services/contrac
 import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 
-/**
- * Export options for different export modes
- */
-export interface SplitExportOptions {
-  compositeOrientation: "horizontal" | "vertical";
-  gridStepSize: number;
-  showStepNumbers: boolean;
-  includeStartPosition: boolean;
-  fps: number;
-  loopCount: number;
-}
-
 export interface VideoExportOptions {
   fps: number;
   loopCount: number;
@@ -66,23 +54,14 @@ export interface ImageExportDependencies {
 }
 
 /**
- * Orchestrates sequence exports (image, video, split video).
- * Manages export state and progress reporting.
+ * Orchestrates sequence exports (image, video).
+ * Combined exports (animation + choreo card) are handled by Compose module.
  */
 export interface ISequenceModalExporter {
   /**
    * Current export state for UI binding
    */
   readonly state: ExportState;
-
-  /**
-   * Export as split video (animation + choreo card side by side)
-   */
-  exportSplit(
-    options: SplitExportOptions,
-    deps: VideoExportDependencies,
-    callbacks: ExportCallbacks
-  ): Promise<void>;
 
   /**
    * Export as animation-only video
