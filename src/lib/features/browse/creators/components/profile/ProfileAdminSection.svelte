@@ -37,6 +37,11 @@
   let confirmAction = $state<{ type: string; message: string } | null>(null);
   let editNameModal = $state<{ open: boolean; value: string }>({ open: false, value: "" });
 
+  // Admin notes state
+  let adminNotes = $state(userProfile.adminNotes ?? "");
+  let notesSaveStatus = $state<"idle" | "saving" | "saved">("idle");
+  let notesDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
   async function changeRole(newRole: UserRole) {
     if (isActionPending || userProfile.role === newRole) return;
 
@@ -238,6 +243,38 @@
     editNameModal = { open: true, value: userProfile.displayName || "" };
   }
 
+  async function saveAdminNotes() {
+    if (notesSaveStatus === "saving") return;
+
+    notesSaveStatus = "saving";
+
+    try {
+      const firestore = await getFirestoreInstance();
+      const userRef = doc(firestore, "users", userProfile.id);
+      await updateDoc(userRef, { adminNotes: adminNotes.trim() || null });
+      onUserUpdated?.({ adminNotes: adminNotes.trim() || undefined });
+      notesSaveStatus = "saved";
+      // Reset to idle after showing "saved" briefly
+      setTimeout(() => {
+        notesSaveStatus = "idle";
+      }, 1500);
+    } catch (err) {
+      console.error("[ProfileAdminSection] Failed to save admin notes:", err);
+      actionError = "Failed to save notes";
+      notesSaveStatus = "idle";
+    }
+  }
+
+  function handleNotesInput() {
+    // Debounce auto-save
+    if (notesDebounceTimer) {
+      clearTimeout(notesDebounceTimer);
+    }
+    notesDebounceTimer = setTimeout(() => {
+      saveAdminNotes();
+    }, 1000);
+  }
+
   async function saveDisplayName() {
     if (isActionPending) return;
 
@@ -298,6 +335,32 @@
         </button>
       {/each}
     </div>
+  </div>
+
+  <!-- Admin Notes -->
+  <div class="control-group" role="group" aria-labelledby="notes-label">
+    <span id="notes-label" class="control-label">
+      Admin Notes
+      {#if notesSaveStatus === "saving"}
+        <span class="save-status saving">
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          Saving...
+        </span>
+      {:else if notesSaveStatus === "saved"}
+        <span class="save-status saved">
+          <i class="fas fa-check" aria-hidden="true"></i>
+          Saved
+        </span>
+      {/if}
+    </span>
+    <textarea
+      class="admin-notes-input"
+      bind:value={adminNotes}
+      oninput={handleNotesInput}
+      onblur={saveAdminNotes}
+      placeholder="Private notes about this user (real name, how you know them, etc.)"
+      rows="3"
+    ></textarea>
   </div>
 
   <!-- Account Actions -->
@@ -510,13 +573,56 @@
   }
 
   .control-label {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 8px;
     font-size: var(--font-size-compact);
     font-weight: 500;
     color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+  }
+
+  .save-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-xs);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .save-status.saving {
+    color: var(--theme-text-dim);
+  }
+
+  .save-status.saved {
+    color: var(--semantic-success);
+  }
+
+  .admin-notes-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 80px;
+    outline: none;
+    transition: border-color var(--duration-normal) ease;
+  }
+
+  .admin-notes-input:focus {
+    border-color: var(--theme-accent);
+  }
+
+  .admin-notes-input::placeholder {
+    color: var(--theme-text-dim);
   }
 
   .role-buttons {

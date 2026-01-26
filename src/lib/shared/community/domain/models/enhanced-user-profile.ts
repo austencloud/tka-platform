@@ -33,6 +33,9 @@ export interface UserProfile {
   hasActiveWarning?: boolean;
   lastWarningAt?: Date;
   lastWarningReportId?: string;
+
+  // Admin-only fields (never shown to users)
+  adminNotes?: string;
 }
 
 export interface EnhancedUserProfile extends UserProfile {

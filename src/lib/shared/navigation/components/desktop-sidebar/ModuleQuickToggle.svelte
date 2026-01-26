@@ -330,7 +330,6 @@
               style="--module-color: {module.color}"
               aria-label="{module.label}, tap to show in sidebar"
               disabled={saving}
-              role="listitem"
             >
               <div class="cell-background"></div>
               <div class="cell-content">

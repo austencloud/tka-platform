@@ -320,20 +320,6 @@
     padding: 0;
   }
 
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--spacing-sm);
-  }
-
-  .section-header h3 {
-    margin: 0;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    color: var(--theme-text, white);
-  }
-
   .no-selection {
     display: flex;
     flex-direction: column;

@@ -3,6 +3,7 @@
   import InAppBrowserPrompt from "$lib/shared/auth/components/InAppBrowserPrompt.svelte";
   import ReportUserModal from "$lib/features/moderation/components/ReportUserModal.svelte";
   import WarningBanner from "$lib/features/moderation/components/WarningBanner.svelte";
+  import EmailVerificationBanner from "$lib/shared/auth/components/EmailVerificationBanner.svelte";
   import ModalUrlRestorer from "$lib/shared/application/components/ModalUrlRestorer.svelte";
   import { container } from "$lib/shared/di";
   import type { Snippet } from "svelte";
@@ -166,6 +167,9 @@
 {:else if containerReady}
   <!-- Warning banner for users who have received a moderation warning -->
   <WarningBanner />
+
+  <!-- Email verification banner for unverified email/password users -->
+  <EmailVerificationBanner />
 
   <!-- ITI container is ready synchronously - render children immediately -->
   {@render children()}

@@ -33,6 +33,8 @@ import {
   INVERTED_LETTER_MAP,
 } from "../../domain/constants/strict-loop-position-maps";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { gridPositionDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
 import {
   MotionColor,
   MotionType,
@@ -43,6 +45,54 @@ export class LOOPDetector implements ILOOPDetector {
     private loopabilityChecker: ISequenceLoopabilityChecker,
     private LOOPTypeResolver: ILOOPTypeResolver
   ) {}
+
+  // ============ POSITION DERIVATION ============
+
+  /**
+   * Derive start position from motion locations
+   * Position is determined by blue and red hand start locations
+   */
+  private deriveStartPosition(step: StepData): GridPosition | null {
+    const blueMotion = step.motions?.[MotionColor.BLUE];
+    const redMotion = step.motions?.[MotionColor.RED];
+
+    if (!blueMotion?.startLocation || !redMotion?.startLocation) {
+      return null;
+    }
+
+    try {
+      return gridPositionDeriver.getGridPositionFromLocations(
+        blueMotion.startLocation as GridLocation,
+        redMotion.startLocation as GridLocation
+      );
+    } catch {
+      // Unknown location combination
+      return null;
+    }
+  }
+
+  /**
+   * Derive end position from motion locations
+   * Position is determined by blue and red hand end locations
+   */
+  private deriveEndPosition(step: StepData): GridPosition | null {
+    const blueMotion = step.motions?.[MotionColor.BLUE];
+    const redMotion = step.motions?.[MotionColor.RED];
+
+    if (!blueMotion?.endLocation || !redMotion?.endLocation) {
+      return null;
+    }
+
+    try {
+      return gridPositionDeriver.getGridPositionFromLocations(
+        blueMotion.endLocation as GridLocation,
+        redMotion.endLocation as GridLocation
+      );
+    } catch {
+      // Unknown location combination
+      return null;
+    }
+  }
 
   /**
    * Analyze a sequence and detect its LOOP type
@@ -197,25 +247,31 @@ export class LOOPDetector implements ILOOPDetector {
 
     const quarterLength = length / 4;
 
-    // Get start positions of first beat of each quarter
-    const q1Start = steps[0]?.startPosition;
-    const q2Start = steps[quarterLength]?.startPosition;
-    const q3Start = steps[quarterLength * 2]?.startPosition;
-    const q4Start = steps[quarterLength * 3]?.startPosition;
+    // Derive start positions of first beat of each quarter from motion locations
+    const q1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
+    const q2Start = steps[quarterLength]
+      ? this.deriveStartPosition(steps[quarterLength])
+      : null;
+    const q3Start = steps[quarterLength * 2]
+      ? this.deriveStartPosition(steps[quarterLength * 2])
+      : null;
+    const q4Start = steps[quarterLength * 3]
+      ? this.deriveStartPosition(steps[quarterLength * 3])
+      : null;
 
     if (!q1Start || !q2Start || !q3Start || !q4Start) return false;
 
     // Check clockwise rotation: q1 -> q2 -> q3 -> q4 follows QUARTER_CW
     const cwMatch =
-      QUARTER_POSITION_MAP_CW[q1Start as GridPosition] === q2Start &&
-      QUARTER_POSITION_MAP_CW[q2Start as GridPosition] === q3Start &&
-      QUARTER_POSITION_MAP_CW[q3Start as GridPosition] === q4Start;
+      QUARTER_POSITION_MAP_CW[q1Start] === q2Start &&
+      QUARTER_POSITION_MAP_CW[q2Start] === q3Start &&
+      QUARTER_POSITION_MAP_CW[q3Start] === q4Start;
 
     // Check counter-clockwise rotation
     const ccwMatch =
-      QUARTER_POSITION_MAP_CCW[q1Start as GridPosition] === q2Start &&
-      QUARTER_POSITION_MAP_CCW[q2Start as GridPosition] === q3Start &&
-      QUARTER_POSITION_MAP_CCW[q3Start as GridPosition] === q4Start;
+      QUARTER_POSITION_MAP_CCW[q1Start] === q2Start &&
+      QUARTER_POSITION_MAP_CCW[q2Start] === q3Start &&
+      QUARTER_POSITION_MAP_CCW[q3Start] === q4Start;
 
     return cwMatch || ccwMatch;
   }
@@ -240,13 +296,16 @@ export class LOOPDetector implements ILOOPDetector {
     // Halved rotation: compare START positions of first beat of each half
     if (sliceSize === SliceSize.HALVED && length >= 2 && length % 2 === 0) {
       const halfLength = length / 2;
-      const h1Start = steps[0]?.startPosition;
-      const h2Start = steps[halfLength]?.startPosition;
+      // Derive positions from motion locations
+      const h1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
+      const h2Start = steps[halfLength]
+        ? this.deriveStartPosition(steps[halfLength])
+        : null;
 
       if (!h1Start || !h2Start) return false;
 
       // Check if h2 start is 180 degree rotated from h1 start
-      return HALF_POSITION_MAP[h1Start as GridPosition] === h2Start;
+      return HALF_POSITION_MAP[h1Start] === h2Start;
     }
 
     return false;
@@ -260,23 +319,34 @@ export class LOOPDetector implements ILOOPDetector {
     if (length < 2 || length % 2 !== 0) return false;
 
     const halfLength = length / 2;
+    let validComparisons = 0;
 
     // Check if position pattern matches vertical mirror
     for (let i = 0; i < halfLength; i++) {
       const firstStep = steps[i];
       const secondStep = steps[halfLength + i];
 
-      if (!firstStep?.endPosition || !secondStep?.endPosition) continue;
+      // Derive end positions from motion locations
+      const firstEndPosition = firstStep
+        ? this.deriveEndPosition(firstStep)
+        : null;
+      const secondEndPosition = secondStep
+        ? this.deriveEndPosition(secondStep)
+        : null;
 
-      const expectedPosition =
-        VERTICAL_MIRROR_POSITION_MAP[firstStep.endPosition as GridPosition];
+      if (!firstEndPosition || !secondEndPosition) continue;
 
-      if (secondStep.endPosition !== expectedPosition) {
+      validComparisons++;
+
+      const expectedPosition = VERTICAL_MIRROR_POSITION_MAP[firstEndPosition];
+
+      if (secondEndPosition !== expectedPosition) {
         return false;
       }
     }
 
-    return true;
+    // Only return true if we actually made at least one valid comparison
+    return validComparisons > 0;
   }
 
   /**
@@ -340,6 +410,7 @@ export class LOOPDetector implements ILOOPDetector {
     if (length < 2 || length % 2 !== 0) return false;
 
     const halfLength = length / 2;
+    let validComparisons = 0;
 
     for (let i = 0; i < halfLength; i++) {
       const firstStep = steps[i];
@@ -349,6 +420,7 @@ export class LOOPDetector implements ILOOPDetector {
 
       // Check letter inversion if both have letters
       if (firstStep.letter && secondStep.letter) {
+        validComparisons++;
         const expectedLetter = INVERTED_LETTER_MAP[firstStep.letter];
         if (expectedLetter && secondStep.letter !== expectedLetter) {
           return false;
@@ -362,6 +434,7 @@ export class LOOPDetector implements ILOOPDetector {
       const secondRed = secondStep.motions?.[MotionColor.RED];
 
       if (firstBlue && secondBlue) {
+        validComparisons++;
         if (
           !this.isMotionTypeInverted(
             firstBlue.motionType,
@@ -373,6 +446,7 @@ export class LOOPDetector implements ILOOPDetector {
       }
 
       if (firstRed && secondRed) {
+        validComparisons++;
         if (
           !this.isMotionTypeInverted(firstRed.motionType, secondRed.motionType)
         ) {
@@ -381,7 +455,8 @@ export class LOOPDetector implements ILOOPDetector {
       }
     }
 
-    return true;
+    // Only return true if we actually made at least one valid comparison
+    return validComparisons > 0;
   }
 
   /**
@@ -443,10 +518,13 @@ export class LOOPDetector implements ILOOPDetector {
     const halfLength = length / 2;
 
     // Check for 180 degree rotation at halved interval
-    const h1Start = steps[0]?.startPosition;
-    const h2Start = steps[halfLength]?.startPosition;
+    // Derive positions from motion locations
+    const h1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
+    const h2Start = steps[halfLength]
+      ? this.deriveStartPosition(steps[halfLength])
+      : null;
     if (h1Start && h2Start) {
-      if (HALF_POSITION_MAP[h1Start as GridPosition] === h2Start) {
+      if (HALF_POSITION_MAP[h1Start] === h2Start) {
         components.push(LOOPComponent.ROTATED);
       }
     }
@@ -530,6 +608,7 @@ export class LOOPDetector implements ILOOPDetector {
     if (interval <= 0 || interval >= length) return false;
 
     const pairsToCheck = Math.min(4, length - interval);
+    let validComparisons = 0;
 
     for (let i = 0; i < pairsToCheck; i++) {
       const firstStep = steps[i];
@@ -539,6 +618,7 @@ export class LOOPDetector implements ILOOPDetector {
 
       // Check letter inversion
       if (firstStep.letter && secondStep.letter) {
+        validComparisons++;
         const expectedLetter = INVERTED_LETTER_MAP[firstStep.letter];
         if (expectedLetter && secondStep.letter !== expectedLetter) {
           return false;
@@ -552,6 +632,7 @@ export class LOOPDetector implements ILOOPDetector {
       const secondRed = secondStep.motions?.[MotionColor.RED];
 
       if (firstBlue && secondBlue) {
+        validComparisons++;
         if (
           !this.isMotionTypeInverted(
             firstBlue.motionType,
@@ -563,6 +644,7 @@ export class LOOPDetector implements ILOOPDetector {
       }
 
       if (firstRed && secondRed) {
+        validComparisons++;
         if (
           !this.isMotionTypeInverted(firstRed.motionType, secondRed.motionType)
         ) {
@@ -571,7 +653,8 @@ export class LOOPDetector implements ILOOPDetector {
       }
     }
 
-    return true;
+    // Only return true if we actually made at least one valid comparison
+    return validComparisons > 0;
   }
 
   /**
@@ -674,18 +757,21 @@ export class LOOPDetector implements ILOOPDetector {
 
     const quarterLength = length / 4;
 
-    const q1Start = steps[0]?.startPosition;
-    const q2Start = steps[quarterLength]?.startPosition;
+    // Derive positions from motion locations
+    const q1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
+    const q2Start = steps[quarterLength]
+      ? this.deriveStartPosition(steps[quarterLength])
+      : null;
 
     if (!q1Start || !q2Start) return null;
 
     // Check clockwise
-    if (QUARTER_POSITION_MAP_CW[q1Start as GridPosition] === q2Start) {
+    if (QUARTER_POSITION_MAP_CW[q1Start] === q2Start) {
       return "cw";
     }
 
     // Check counter-clockwise
-    if (QUARTER_POSITION_MAP_CCW[q1Start as GridPosition] === q2Start) {
+    if (QUARTER_POSITION_MAP_CCW[q1Start] === q2Start) {
       return "ccw";
     }
 

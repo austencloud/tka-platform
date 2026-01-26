@@ -25,8 +25,8 @@ export interface SequenceHandoff {
 		isPlaying: boolean;
 	};
 
-	/** Which visualization preset to open (stagger for multi-performer, mirror for mirrored view) */
-	preferredPreset?: 'stagger' | 'mirror';
+	/** Which visualization preset to open */
+	preferredPreset?: 'stagger' | 'mirror' | 'combo-export';
 
 	/** Path to return to when closing Compose (e.g., "/browse") */
 	returnPath?: string;

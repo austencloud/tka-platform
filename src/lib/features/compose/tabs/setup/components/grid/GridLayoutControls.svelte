@@ -73,7 +73,7 @@
           class="grid-cell"
           class:enabled
           role="gridcell"
-          aria-pressed={enabled}
+          aria-selected={enabled}
           aria-label="Cell row {pos.row + 1}, column {pos.col + 1}, {enabled ? 'enabled' : 'disabled'}"
           onclick={() => handleCellClick(pos.row, pos.col)}
           onkeydown={(e) => handleCellKeyDown(e, pos.row, pos.col)}

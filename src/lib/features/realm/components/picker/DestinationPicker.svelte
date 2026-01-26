@@ -125,7 +125,7 @@
 			<span>All Destinations</span>
 		</button>
 
-		{#each DESTINATION_CATEGORIES as category}
+		{#each DESTINATION_CATEGORIES as category} 
 			<button
 				class="category-chip"
 				class:active={selectedCategory === category.id}
