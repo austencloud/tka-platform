@@ -18,6 +18,7 @@
     "spell-layouts": () => import("./tabs/SpellLayoutsLab.svelte"),
     skew: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
     poi: () => import("$lib/features/poi-lab/PoiLabModule.svelte"),
+    avatar: () => import("./tabs/ProfileAvatarLab.svelte"),
   };
 
   // Get current tab, default to first tab

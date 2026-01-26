@@ -515,6 +515,14 @@ export const LAB_TABS: Section[] = [
     color: "#22d3ee",
     gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
   },
+  {
+    id: "avatar",
+    label: "Avatar",
+    icon: '<i class="fas fa-user-circle" aria-hidden="true"></i>',
+    description: "Generated profile avatar designs",
+    color: "#a855f7",
+    gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
+  },
 ];
 
 // Landing Page tabs configuration (admin-only, for iterating on public pages)
