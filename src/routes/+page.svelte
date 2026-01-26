@@ -1,26 +1,46 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { detectSiteMode, type SiteMode } from "../config/domains";
+  import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
+  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import HeroSection from "./landing/components/HeroSection.svelte";
+  import NotationShowcaseSection from "./landing/components/NotationShowcaseSection.svelte";
   import WhatIsTKASection from "./landing/components/WhatIsTKASection.svelte";
-  import FeaturesSection from "./landing/components/FeaturesSection.svelte";
-  import NotationSection from "./landing/components/NotationSection.svelte";
-  import LOOPsSection from "./landing/components/LOOPsSection.svelte";
-  import PropsSection from "./landing/components/PropsSection.svelte";
-  import EducatorsSection from "./landing/components/EducatorsSection.svelte";
-  import FAQSection from "./landing/components/FAQSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
+  import LandingBackgroundPicker from "./landing/components/LandingBackgroundPicker.svelte";
   import MainApplication from "$lib/shared/application/components/MainApplication.svelte";
+
+  const STORAGE_KEY = "tka-landing-theme";
+  const DEFAULT_BACKGROUND = BackgroundType.NIGHT_SKY;
 
   /**
    * Site mode determines which experience to render based on domain.
    * Extensible for future portals (embed, kiosk, edu, etc.)
    */
   let siteMode = $state<SiteMode>("loading");
+  let currentBackground = $state<BackgroundType>(DEFAULT_BACKGROUND);
+  let mounted = $state(false);
 
   onMount(() => {
     siteMode = detectSiteMode(window.location.origin);
+
+    // For landing mode, load saved background preference
+    if (siteMode === "landing") {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved && Object.values(BackgroundType).includes(saved as BackgroundType)) {
+        currentBackground = saved as BackgroundType;
+      }
+      applyThemeForBackground(currentBackground);
+    }
+    mounted = true;
   });
+
+  function handleBackgroundChange(type: BackgroundType) {
+    currentBackground = type;
+    applyThemeForBackground(type);
+    localStorage.setItem(STORAGE_KEY, type);
+  }
 </script>
 
 <svelte:head>
@@ -323,20 +343,34 @@
   <MainApplication />
 {:else if siteMode === "landing"}
   <!-- Landing domain: render the marketing page -->
-  <a href="#main-content" class="skip-link">Skip to main content</a>
-
   <div class="landing-page">
-    <HeroSection />
-    <main id="main-content">
-      <WhatIsTKASection />
-      <FeaturesSection />
-      <NotationSection />
-      <LOOPsSection />
-      <PropsSection />
-      <EducatorsSection />
-      <FAQSection />
-    </main>
-    <LandingFooter />
+    <!-- Background layer -->
+    {#if mounted}
+      <div class="background-layer">
+        <BackgroundHost
+          backgroundType={currentBackground}
+          quality="medium"
+        />
+      </div>
+    {/if}
+
+    <!-- Content layer -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <div class="content-layer">
+      <HeroSection />
+      <main id="main-content">
+        <NotationShowcaseSection />
+        <WhatIsTKASection />
+      </main>
+      <LandingFooter />
+    </div>
+
+    <!-- Background picker -->
+    <LandingBackgroundPicker
+      {currentBackground}
+      onSelect={handleBackgroundChange}
+    />
   </div>
 {:else}
   <!-- Future: other site modes (embed, kiosk, edu, etc.) -->
@@ -392,25 +426,23 @@
   }
 
   .landing-page {
-    --primary: #6366f1;
-    --primary-light: #818cf8;
-    --bg-dark: #0a0a0f;
-    --bg-card: rgba(255, 255, 255, 0.03);
-    --bg-card-hover: rgba(255, 255, 255, 0.06);
-    --text: #ffffff;
-    --text-muted: rgba(255, 255, 255, 0.6);
-    --border: rgba(255, 255, 255, 0.1);
-    --border-strong: rgba(255, 255, 255, 0.2);
-
-    font-family:
-      system-ui,
-      -apple-system,
-      sans-serif;
-    background: var(--bg-dark);
-    color: var(--text);
+    position: relative;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, sans-serif;
+    color: var(--theme-text, #ffffff);
     line-height: 1.6;
     overflow-x: hidden;
-    scroll-behavior: smooth;
+  }
+
+  .background-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .content-layer {
+    position: relative;
+    z-index: 1;
   }
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
