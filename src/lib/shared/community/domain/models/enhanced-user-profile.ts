@@ -35,6 +35,7 @@ export interface UserProfile {
   lastWarningReportId?: string;
 
   // Admin-only fields (never shown to users)
+  adminLabel?: string; // Quick identifier (e.g., "Jake from Tuesday jam")
   adminNotes?: string;
 }
 

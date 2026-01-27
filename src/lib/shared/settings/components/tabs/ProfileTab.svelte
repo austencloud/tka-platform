@@ -28,6 +28,10 @@
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
   import StorageSection from "./profile/StorageSection.svelte";
   import AuthPrompt from "./profile/AuthPrompt.svelte";
+  import ProfilePhotoPicker, {
+    type PhotoSelection,
+  } from "../ProfilePhotoPicker.svelte";
+  import { updateProfile } from "firebase/auth";
 
   import type { PreviewUserProfile } from "../../../debug/state/user-preview-state.svelte";
   import type { User } from "firebase/auth";
@@ -83,6 +87,9 @@
 
   // Cache clearing state
   let clearingCache = $state(false);
+
+  // Photo picker state
+  let showPhotoPicker = $state(false);
 
   // Entry animation
   let isVisible = $state(false);
@@ -181,6 +188,56 @@
       await accountManager.clearCache();
     } catch (error) {
       clearingCache = false;
+    }
+  }
+
+  function handleOpenPhotoPicker() {
+    hapticService?.trigger("selection");
+    showPhotoPicker = true;
+  }
+
+  async function handlePhotoSelected(selection: PhotoSelection) {
+    const user = authState.user;
+    if (!user) return;
+
+    hapticService?.trigger("selection");
+
+    try {
+      switch (selection.type) {
+        case "upload":
+          // TODO: Implement file upload to Firebase Storage
+          // For now, we'll show an alert that this needs implementation
+          if (selection.file) {
+            console.log("File upload selected:", selection.file.name);
+            // Future: Upload to storage, get URL, update profile
+            alert("Photo upload coming soon! For now, try using your Google or Facebook photo.");
+          }
+          break;
+
+        case "google":
+        case "facebook":
+          if (selection.url) {
+            await updateProfile(user, { photoURL: selection.url });
+            // Force auth state to refresh
+            await user.reload();
+          }
+          break;
+
+        case "generated":
+          if (selection.generatedData) {
+            // Store the generated avatar data
+            // For now, we'll create a data URL placeholder
+            // In production, you'd generate a proper image and upload it
+            const { gradient, propType } = selection.generatedData;
+            console.log("Generated avatar:", { gradient, propType });
+            // TODO: Generate actual image and upload to storage
+            alert("Generated avatars coming soon! For now, try using your Google or Facebook photo.");
+          }
+          break;
+      }
+    } catch (error) {
+      console.error("Failed to update profile photo:", error);
+      hapticService?.trigger("error");
     }
   }
 </script>
@@ -289,7 +346,11 @@
     <!-- Signed In State -->
     <div class="profile-content">
       <!-- Profile Hero -->
-      <ProfileHeroSection user={authState.user} onSignOut={handleSignOut} />
+      <ProfileHeroSection
+        user={authState.user}
+        onSignOut={handleSignOut}
+        onAvatarClick={handleOpenPhotoPicker}
+      />
 
       <!-- Settings Grid - Flexbox for natural fill behavior -->
       <div class="settings-grid">
@@ -389,6 +450,13 @@
     onCancel={() => stepUpCoordinator?.handleCancel()}
   />
 {/if}
+
+<!-- Profile Photo Picker Drawer -->
+<ProfilePhotoPicker
+  bind:isOpen={showPhotoPicker}
+  onClose={() => (showPhotoPicker = false)}
+  onPhotoSelected={handlePhotoSelected}
+/>
 
 <style>
   /* ═══════════════════════════════════════════════════════════════════════════

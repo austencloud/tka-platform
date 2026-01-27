@@ -63,6 +63,7 @@ interface FirestoreUserData extends DocumentData {
   // Admin-related fields
   role?: UserRole;
   isDisabled?: boolean;
+  adminLabel?: string;
   adminNotes?: string;
 }
 
@@ -665,6 +666,7 @@ export class UserRepository implements IUserRepository {
       // Admin-related fields
       const role = data.role ?? "user";
       const isDisabled = data.isDisabled ?? false;
+      const adminLabel = data.adminLabel ?? undefined;
       const adminNotes = data.adminNotes ?? undefined;
 
       // Only fetch achievements for single profile views (avoid N+1 in list views)
@@ -695,6 +697,7 @@ export class UserRepository implements IUserRepository {
         bio,
         role,
         isDisabled,
+        adminLabel,
         adminNotes,
       };
     } catch (error) {

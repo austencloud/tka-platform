@@ -37,6 +37,10 @@
   let confirmAction = $state<{ type: string; message: string } | null>(null);
   let editNameModal = $state<{ open: boolean; value: string }>({ open: false, value: "" });
 
+  // Admin label state (quick identifier like "Jake from Tuesday jam")
+  let adminLabel = $state(userProfile.adminLabel ?? "");
+  let labelSaveStatus = $state<"idle" | "saving" | "saved">("idle");
+
   // Admin notes state
   let adminNotes = $state(userProfile.adminNotes ?? "");
   let notesSaveStatus = $state<"idle" | "saving" | "saved">("idle");
@@ -243,6 +247,27 @@
     editNameModal = { open: true, value: userProfile.displayName || "" };
   }
 
+  async function saveAdminLabel() {
+    if (labelSaveStatus === "saving") return;
+
+    labelSaveStatus = "saving";
+
+    try {
+      const firestore = await getFirestoreInstance();
+      const userRef = doc(firestore, "users", userProfile.id);
+      await updateDoc(userRef, { adminLabel: adminLabel.trim() || null });
+      onUserUpdated?.({ adminLabel: adminLabel.trim() || undefined });
+      labelSaveStatus = "saved";
+      setTimeout(() => {
+        labelSaveStatus = "idle";
+      }, 1500);
+    } catch (err) {
+      console.error("[ProfileAdminSection] Failed to save admin label:", err);
+      actionError = "Failed to save label";
+      labelSaveStatus = "idle";
+    }
+  }
+
   async function saveAdminNotes() {
     if (notesSaveStatus === "saving") return;
 
@@ -307,6 +332,35 @@
     <i class="fas fa-shield-halved" aria-hidden="true"></i>
     Admin Controls
   </h3>
+
+  <!-- Admin Label (prominent quick identifier) -->
+  <div class="admin-label-row">
+    <label class="admin-label-label" for="admin-label-input">
+      <i class="fas fa-user-tag" aria-hidden="true"></i>
+      Known As
+    </label>
+    <div class="admin-label-input-wrapper">
+      <input
+        id="admin-label-input"
+        type="text"
+        class="admin-label-input"
+        bind:value={adminLabel}
+        onblur={saveAdminLabel}
+        onkeydown={(e) => e.key === "Enter" && saveAdminLabel()}
+        placeholder="Real name or identifier..."
+        maxlength="100"
+      />
+      {#if labelSaveStatus === "saving"}
+        <span class="label-status saving">
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        </span>
+      {:else if labelSaveStatus === "saved"}
+        <span class="label-status saved">
+          <i class="fas fa-check" aria-hidden="true"></i>
+        </span>
+      {/if}
+    </div>
+  </div>
 
   {#if actionError}
     <div class="error-banner">
@@ -536,6 +590,71 @@
     font-size: var(--font-size-base);
     font-weight: 600;
     color: var(--semantic-error);
+  }
+
+  .admin-label-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--semantic-error) 15%, transparent);
+  }
+
+  .admin-label-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--theme-text-dim);
+    white-space: nowrap;
+  }
+
+  .admin-label-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .admin-label-input {
+    width: 100%;
+    padding: 10px 14px;
+    padding-right: 36px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    outline: none;
+    transition: border-color var(--duration-normal) ease;
+  }
+
+  .admin-label-input:focus {
+    border-color: var(--theme-accent);
+  }
+
+  .admin-label-input::placeholder {
+    color: var(--theme-text-dim);
+    font-weight: 400;
+  }
+
+  .label-status {
+    position: absolute;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    font-size: var(--font-size-compact);
+  }
+
+  .label-status.saving {
+    color: var(--theme-text-dim);
+  }
+
+  .label-status.saved {
+    color: var(--semantic-success);
   }
 
   .error-banner {

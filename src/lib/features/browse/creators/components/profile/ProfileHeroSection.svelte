@@ -94,11 +94,14 @@
 
 <style>
   .hero-section {
+    container-type: inline-size;
+    container-name: hero-section;
+
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 20px;
-    padding: 20px;
+    padding: clamp(20px, 4cqi, 32px);
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 16px;
@@ -161,10 +164,10 @@
   .bio {
     margin: 8px 0 0 0;
     font-size: var(--font-size-sm);
-    line-height: 1.5;
+    line-height: 1.6;
     color: var(--theme-text-dim);
     text-align: center;
-    max-width: 400px;
+    max-width: min(400px, 90%);
   }
 
   .instagram-link {
@@ -266,7 +269,8 @@
     outline-offset: 2px;
   }
 
-  @media (max-width: 768px) {
+  /* Tablet */
+  @container hero-section (max-width: 600px) {
     .hero-section {
       padding: 16px;
     }
@@ -278,6 +282,35 @@
 
     .display-name {
       font-size: var(--font-size-2xl);
+    }
+  }
+
+  /* Mobile */
+  @container hero-section (max-width: 400px) {
+    .hero-section {
+      padding: 14px;
+      gap: 16px;
+    }
+
+    .avatar-container {
+      width: 88px;
+      height: 88px;
+    }
+
+    .display-name {
+      font-size: var(--font-size-xl);
+    }
+
+    .username {
+      font-size: var(--font-size-sm);
+    }
+
+    .action-buttons {
+      margin-top: 12px;
+    }
+
+    .follow-button {
+      padding: 10px 24px;
     }
   }
 

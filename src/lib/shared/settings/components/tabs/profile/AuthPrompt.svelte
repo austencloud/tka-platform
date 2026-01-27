@@ -1,7 +1,7 @@
 <!-- AuthPrompt.svelte - Sign-in/sign-up prompt for unauthenticated users -->
 <script lang="ts">
   import SocialAuthCompact from "../../../../auth/components/SocialAuthCompact.svelte";
-  import EmailPasswordAuth from "../../../../auth/components/EmailPasswordAuth.svelte";
+  import EmailAuthTabs from "../../../../auth/components/EmailAuthTabs.svelte";
 
   interface Props {
     onFacebookAuth: () => Promise<void>;
@@ -30,7 +30,7 @@
       <span>or {authMode === "signin" ? "sign in" : "sign up"} with email</span>
     </div>
 
-    <EmailPasswordAuth bind:mode={authMode} />
+    <EmailAuthTabs bind:mode={authMode} />
   </div>
 </div>
 

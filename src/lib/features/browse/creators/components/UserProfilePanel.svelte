@@ -26,6 +26,7 @@
   import ProfileRankings from "./profile/ProfileRankings.svelte";
   import ProfileTabs from "./profile/ProfileTabs.svelte";
   import ProfileAdminSection from "./profile/ProfileAdminSection.svelte";
+  import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
 
   interface Props {
     userId: string;
@@ -326,6 +327,14 @@
         onUserClick={handleUserCardClick}
       />
 
+      <!-- Your Connection Section (only when logged in, viewing someone else) -->
+      {#if currentUserId && !isOwnProfile}
+        <ProfileConnectionSection
+          targetUserId={userId}
+          targetUserName={userProfile.displayName}
+        />
+      {/if}
+
       <!-- Admin Controls (only visible to admins, not on own profile) -->
       {#if isAdmin && !isOwnProfile}
         <ProfileAdminSection
@@ -339,7 +348,13 @@
 </div>
 
 <style>
+  /* ═══════════════════════════════════════════════════════════════════════════
+     USER PROFILE PANEL - Centered content layout matching Settings pattern
+     ═══════════════════════════════════════════════════════════════════════════ */
   .profile-panel {
+    container-type: inline-size;
+    container-name: profile-panel;
+
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -361,13 +376,41 @@
   .profile-content {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
+    overflow-x: hidden;
     min-height: 0;
+
+    /* Centered content container - matches Settings ProfileTab */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(16px, 4cqi, 32px);
   }
 
-  @media (max-width: 768px) {
+  /* Inner content wrapper for max-width constraint */
+  .profile-content > :global(*) {
+    width: 100%;
+    max-width: 900px;
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     RESPONSIVE BREAKPOINTS
+     ════════════════════════════════════════════════════════════════════════ */
+  @container profile-panel (max-width: 768px) {
     .profile-content {
-      padding: 16px;
+      padding: clamp(12px, 3cqi, 20px);
+    }
+  }
+
+  @container profile-panel (max-width: 480px) {
+    .profile-content {
+      padding: 12px;
+    }
+  }
+
+  /* Large screens - generous breathing room */
+  @container profile-panel (min-width: 1400px) {
+    .profile-content {
+      padding: clamp(32px, 5cqi, 48px);
     }
   }
 </style>

@@ -7,21 +7,40 @@
     user: User;
     onSignOut: () => void;
     disabled?: boolean;
+    onAvatarClick?: () => void;
   }
 
-  let { user, onSignOut, disabled = false }: Props = $props();
+  let { user, onSignOut, disabled = false, onAvatarClick }: Props = $props();
 </script>
 
 <section class="glass-card profile-card">
   <div class="profile-hero">
-    <div class="avatar-wrapper">
-      <RobustAvatar
-        src={user.photoURL}
-        name={user.displayName || user.email}
-        alt={user.displayName || "User"}
-        size="xl"
-      />
-    </div>
+    {#if onAvatarClick && !disabled}
+      <button
+        class="avatar-wrapper clickable"
+        onclick={onAvatarClick}
+        aria-label="Change profile photo"
+      >
+        <RobustAvatar
+          src={user.photoURL}
+          name={user.displayName || user.email}
+          alt={user.displayName || "User"}
+          size="xl"
+        />
+        <div class="avatar-edit-badge">
+          <i class="fas fa-camera" aria-hidden="true"></i>
+        </div>
+      </button>
+    {:else}
+      <div class="avatar-wrapper">
+        <RobustAvatar
+          src={user.photoURL}
+          name={user.displayName || user.email}
+          alt={user.displayName || "User"}
+          size="xl"
+        />
+      </div>
+    {/if}
     <div class="profile-info">
       <h2 class="profile-name">{user.displayName || "User"}</h2>
       {#if user.email}
@@ -74,10 +93,11 @@
   }
 
   .avatar-wrapper {
+    position: relative;
     width: clamp(64px, 14cqi, 100px);
     height: clamp(64px, 14cqi, 100px);
     border-radius: 50%;
-    overflow: hidden;
+    overflow: visible;
     padding: 3px;
     background: linear-gradient(
       135deg,
@@ -87,11 +107,54 @@
     box-shadow: 0 0 32px
       color-mix(in srgb, var(--theme-accent) 25%, transparent);
     flex-shrink: 0;
+    border: none;
+  }
+
+  .avatar-wrapper.clickable {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .avatar-wrapper.clickable:hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 40px
+      color-mix(in srgb, var(--theme-accent) 35%, transparent);
+  }
+
+  .avatar-wrapper.clickable:hover .avatar-edit-badge {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .avatar-wrapper.clickable:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--theme-accent) 90%, transparent);
+    outline-offset: 3px;
+  }
+
+  .avatar-edit-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--theme-accent, #6366f1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    border: 3px solid var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    opacity: 0.85;
+    transform: scale(0.95);
+    transition: opacity 0.15s ease, transform 0.15s ease;
   }
 
   .avatar-wrapper :global(.robust-avatar) {
     width: 100% !important;
     height: 100% !important;
+    border-radius: 50%;
+    overflow: hidden;
   }
 
   .avatar-wrapper :global(img),

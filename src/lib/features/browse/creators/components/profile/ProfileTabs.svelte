@@ -292,19 +292,32 @@
 
 <style>
   .tabs-wrapper {
+    container-type: inline-size;
+    container-name: tabs-wrapper;
+
     display: flex;
     justify-content: center;
     margin-bottom: 16px;
   }
 
   .profile-tab-content {
-    min-height: 400px;
+    container-type: inline-size;
+    container-name: tab-content;
+
+    min-height: 300px;
   }
 
   .sequences-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 16px;
+  }
+
+  /* Wide screens: cap at 3 columns for readability */
+  @container tab-content (min-width: 800px) {
+    .sequences-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 
   .sequence-card {
@@ -458,8 +471,15 @@
 
   .user-profile-achievements-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 16px;
+  }
+
+  /* Wide screens: cap at 2 columns for achievements */
+  @container tab-content (min-width: 700px) {
+    .user-profile-achievements-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   .achievement-card {
@@ -576,13 +596,43 @@
     font-size: var(--font-size-compact);
   }
 
-  @media (max-width: 768px) {
+  /* Narrow: single column */
+  @container tab-content (max-width: 500px) {
     .sequences-grid {
       grid-template-columns: 1fr;
+      gap: 12px;
     }
 
     .user-profile-achievements-grid {
       grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .sequence-card {
+      padding: 12px;
+    }
+
+    .achievement-card {
+      padding: 16px;
+    }
+  }
+
+  /* Very narrow: tighter spacing */
+  @container tab-content (max-width: 360px) {
+    .sequence-card,
+    .user-list-card {
+      padding: 10px;
+      gap: 10px;
+    }
+
+    .achievement-card {
+      padding: 12px;
+      gap: 12px;
+    }
+
+    .achievement-icon {
+      width: 48px;
+      height: 48px;
     }
   }
 

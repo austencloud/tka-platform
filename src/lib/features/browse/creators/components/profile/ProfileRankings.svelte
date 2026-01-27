@@ -79,6 +79,9 @@
 
 <style>
   .rankings-section {
+    container-type: inline-size;
+    container-name: rankings;
+
     margin-bottom: 24px;
     text-align: center;
   }
@@ -112,11 +115,12 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 12px 18px;
+    padding: 12px 16px;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
-    min-width: 80px;
+    min-width: 72px;
+    flex: 0 1 auto;
   }
 
   .rank-value {
@@ -141,6 +145,22 @@
     padding: 16px;
     color: var(--theme-text-dim);
     font-size: var(--font-size-sm);
+  }
+
+  /* Narrow: compact badges */
+  @container rankings (max-width: 400px) {
+    .rankings-badges {
+      gap: 8px;
+    }
+
+    .rank-badge {
+      padding: 10px 12px;
+      min-width: 64px;
+    }
+
+    .rank-value {
+      font-size: var(--font-size-base);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
