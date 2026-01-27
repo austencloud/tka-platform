@@ -112,7 +112,6 @@ export function getEnvironmentName(): string {
  * Module visibility map for production (what's publicly released)
  */
 export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
-  dashboard: true,
   create: true,
   browse: true,
   community: false, // Global TKA community map (unreleased)

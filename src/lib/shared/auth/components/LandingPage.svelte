@@ -20,7 +20,7 @@
   import { cubicOut } from "svelte/easing";
   import { onMount } from "svelte";
   import SocialAuthCompact from "./SocialAuthCompact.svelte";
-  import EmailPasswordAuth from "./EmailPasswordAuth.svelte";
+  import EmailAuthTabs from "./EmailAuthTabs.svelte";
   import AuthFooter from "./AuthFooter.svelte";
   import GoogleOneTap from "./GoogleOneTap.svelte";
   import LegalSheet from "../../legal/components/LegalSheet.svelte";
@@ -153,7 +153,7 @@
             <span>or use email</span>
           </div>
           <div class="email-auth-wrapper" in:fly={{ y: 10, duration: 200 }}>
-            <EmailPasswordAuth bind:mode={authMode} />
+            <EmailAuthTabs bind:mode={authMode} />
           </div>
         {/if}
       </div>

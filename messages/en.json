@@ -1302,6 +1302,9 @@
 
   "admin_user_activity": "User Activity",
   "admin_analytics_overview": "Analytics Overview",
+  "admin_users_overview": "User Management",
+  "admin_user_details": "User Details",
+  "admin_user_not_found": "User not found",
   "admin_active_users": "Active Users",
   "admin_total_users": "Total Users",
   "admin_active_this_week": "Active This Week",

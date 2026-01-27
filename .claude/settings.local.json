@@ -437,7 +437,9 @@
       "Bash(./node_modules/.bin/madge:*)",
       "WebFetch(domain:www.xhtmlteam.com)",
       "Bash(./node_modules/.bin/svelte-check:*)",
-      "Bash(set +o onecmd)"
+      "Bash(set +o onecmd)",
+      "WebFetch(domain:itnext.io)",
+      "Bash(cmd.exe /c \"cd /d F:\\\\tka-platform\\\\functions && npm install\")"
     ]
   },
   "enableAllProjectMcpServers": true,
