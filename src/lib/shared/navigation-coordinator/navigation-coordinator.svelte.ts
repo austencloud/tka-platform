@@ -169,7 +169,6 @@ export function moduleSections() {
 // Module order for determining slide direction
 // Settings is included for transition support but accessed via footer gear icon
 const MODULE_ORDER = [
-  "dashboard",
   "create",
   "browse",
   "learn",
@@ -212,27 +211,17 @@ export async function handleModuleChange(
 
   const doc = document as DocumentWithViewTransition;
 
-  // Coming FROM dashboard - skip (Dashboard.svelte handles dive-in animation)
-  // Exception: settings portal has its own animation that should always play
-  // Exception: forceViewTransition (keyboard shortcuts) should always animate
-  const isLeavingDashboard = currentMod === "dashboard";
-
-  // Going TO dashboard - use pull-out animation
-  const isGoingToDashboard = moduleId === "dashboard";
-
   // Settings portal transitions - special "dimension" feel
   const isEnteringSettings = moduleId === "settings";
   const isExitingSettings = currentMod === "settings";
 
-  // Allow view transitions when:
-  // 1. Not leaving dashboard (normal case)
-  // 2. OR entering/exiting settings (settings portal always animates)
-  // 3. OR forceViewTransition is set (keyboard shortcuts)
+  // Allow view transitions for most navigation
+  // Exception: forceViewTransition (keyboard shortcuts) should always animate
   const shouldUseViewTransition =
-    !isLeavingDashboard ||
     isEnteringSettings ||
     isExitingSettings ||
-    forceTransition;
+    forceTransition ||
+    true; // Always use view transitions for module changes
 
   if (
     typeof doc.startViewTransition === "function" &&
@@ -276,21 +265,6 @@ export async function handleModuleChange(
           pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
         }
       });
-    } else if (isGoingToDashboard) {
-      // Pull-out effect when going back to dashboard
-      document.documentElement.classList.add("back-transition");
-
-      const transition = doc.startViewTransition(async () => {
-        navigationState.setCurrentModule(moduleId, targetTab);
-        await switchModule(moduleId);
-      });
-
-      transition.finished.finally(() => {
-        document.documentElement.classList.remove("back-transition");
-        if (!shouldSkipHistory) {
-          pushHistoryState(moduleId, targetTab ?? navigationState.activeTab);
-        }
-      });
     } else {
       // Module-to-module: horizontal slide
       document.documentElement.classList.remove(
@@ -317,7 +291,7 @@ export async function handleModuleChange(
       });
     }
   } else {
-    // Fallback or leaving dashboard (Dashboard handles its own animation)
+    // Fallback for browsers without View Transitions
     navigationState.setCurrentModule(moduleId, targetTab);
     await switchModule(moduleId);
     if (!shouldSkipHistory) {
@@ -472,7 +446,7 @@ export function getModuleDefinitions() {
     // This prevents layout shifts while waiting for auth
     if (!isAuthInitialized || !isFeatureFlagsInitialized) {
       // Only show these core modules before auth is ready
-      return ["dashboard", "create", "browse"].includes(module.id);
+      return ["create", "browse"].includes(module.id);
     }
 
     // Use feature flag service for all access checks
@@ -540,17 +514,19 @@ function parsePathNavigation(): {
     // Section can come from path (/admin/loop-labeler) OR query param (?section=loop-labeler)
     const sectionId = parts[1] || searchParams.get("section") || undefined;
 
-    // Redirect legacy /library URLs to /browse with "My Library" source active
-    // Library is now integrated into Gallery via Community/My Library toggle
-    // (Note: "library" is not in ModuleId type but may exist in legacy URLs)
+    // Redirect legacy module URLs to their new locations
+    // (Note: these IDs are not in ModuleId type but may exist in legacy URLs)
     if (moduleId === ("library" as any)) {
+      // Library is now integrated into Gallery via Community/My Library toggle
       moduleId = "browse" as ModuleId;
-      // Set gallery source to my-library (uses same localStorage key as gallerySourceManager)
       try {
         localStorage.setItem("tka-gallery-source", "my-library");
       } catch {
         // Ignore storage errors
       }
+    } else if (moduleId === ("dashboard" as any)) {
+      // Dashboard removed Jan 2026 - Create is now the default landing
+      moduleId = "create" as ModuleId;
     }
 
     // Validate module exists
@@ -579,8 +555,8 @@ function parsePathNavigation(): {
     let moduleId = parts[0] as ModuleId;
     const sectionId = parts[1];
 
-    // Redirect legacy #library URLs to browse with "My Library" source active
-    // (Note: "library" is not in ModuleId type but may exist in legacy hash URLs)
+    // Redirect legacy hash URLs to their new locations
+    // (Note: these IDs are not in ModuleId type but may exist in legacy hash URLs)
     if (moduleId === ("library" as any)) {
       moduleId = "browse" as ModuleId;
       try {
@@ -588,6 +564,9 @@ function parsePathNavigation(): {
       } catch {
         // Ignore storage errors
       }
+    } else if (moduleId === ("dashboard" as any)) {
+      // Dashboard removed Jan 2026 - Create is now the default landing
+      moduleId = "create" as ModuleId;
     }
 
     const moduleDefinition = MODULE_DEFINITIONS.find((m) => m.id === moduleId);
@@ -639,18 +618,29 @@ export function initializeNavigationHistory() {
     const state = event.state as HistoryState | null;
     if (!state?.moduleId) return;
 
-    // Redirect legacy library history entries to browse with my-library source
+    // Redirect legacy history entries to their new locations
+    // (Note: these IDs are not in ModuleId type but may exist in legacy history)
     let targetModule = state.moduleId;
     let targetSection = state.sectionId;
-    // (Note: "library" is not in ModuleId type but may exist in legacy history)
+    let needsHistoryUpdate = false;
+
     if (targetModule === ("library" as any)) {
       targetModule = "browse" as ModuleId;
       targetSection = undefined;
+      needsHistoryUpdate = true;
       try {
         localStorage.setItem("tka-gallery-source", "my-library");
       } catch {
         // Ignore storage errors
       }
+    } else if (targetModule === ("dashboard" as any)) {
+      // Dashboard removed Jan 2026 - Create is now the default landing
+      targetModule = "create" as ModuleId;
+      targetSection = undefined;
+      needsHistoryUpdate = true;
+    }
+
+    if (needsHistoryUpdate) {
       // Update URL to new path
       replaceHistoryState(targetModule, targetSection);
     }

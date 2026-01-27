@@ -55,11 +55,15 @@
 
   function handleClick() {
     hapticService?.trigger("selection");
-    handleModuleChange("dashboard");
+    // Navigate to settings/profile tab (dashboard module was removed)
+    handleModuleChange("settings", "profile");
   }
 
-  // Check if dashboard is active
-  const isActive = $derived(navigationState.currentModule === "dashboard");
+  // Check if settings/profile is active
+  const isActive = $derived(
+    navigationState.currentModule === "settings" &&
+      navigationState.activeTab === "profile"
+  );
 </script>
 
 <button

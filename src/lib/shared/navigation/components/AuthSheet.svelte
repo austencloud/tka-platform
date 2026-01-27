@@ -12,7 +12,7 @@
   import { onMount } from "svelte";
   import AuthFooter from "../../auth/components/AuthFooter.svelte";
   import AuthHeader from "../../auth/components/AuthHeader.svelte";
-  import EmailPasswordAuth from "../../auth/components/EmailPasswordAuth.svelte";
+  import EmailAuthTabs from "../../auth/components/EmailAuthTabs.svelte";
   import SocialAuthCompact from "../../auth/components/SocialAuthCompact.svelte";
   import { authState } from "../../auth/state/authState.svelte";
   import type { IAuthenticator } from "../../auth/services/contracts/IAuthenticator";
@@ -89,9 +89,9 @@
         >
       </div>
 
-      <!-- Email/Password Auth -->
+      <!-- Email Auth (Password or Magic Link) -->
       <div class="auth-sheet__email">
-        <EmailPasswordAuth bind:mode={authMode} />
+        <EmailAuthTabs bind:mode={authMode} />
       </div>
     </div>
 

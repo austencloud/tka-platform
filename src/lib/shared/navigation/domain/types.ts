@@ -22,7 +22,6 @@ export interface Section {
 // Module-based navigation types
 // Should match MODULE_DEFINITIONS in navigation-state.svelte.ts
 export type ModuleId =
-  | "dashboard"
   | "create"
   | "browse"
   | "community" // Global TKA community map

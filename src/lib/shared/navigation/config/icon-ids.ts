@@ -8,7 +8,6 @@
 
 /** Icon IDs for modules */
 export const MODULE_ICONS = {
-  dashboard: "fa-home",
   create: "fa-tools",
   browse: "fa-compass",
   learn: "fa-graduation-cap",
@@ -62,9 +61,8 @@ export const SETTINGS_TAB_ICONS = {
 
 /** Icon IDs for admin tabs */
 export const ADMIN_TAB_ICONS = {
-  users: "fa-users-cog",
+  users: "fa-users",
   content: "fa-database",
-  analytics: "fa-chart-line",
   system: "fa-server",
 } as const;
 

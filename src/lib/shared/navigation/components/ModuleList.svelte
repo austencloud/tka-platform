@@ -207,12 +207,9 @@
 
   /**
    * Get badge count for a module
-   * Dashboard shows notification count so users know where to go
+   * Currently unused - notifications are shown in inbox drawer
    */
-  function getModuleBadgeCount(moduleId: ModuleId): number {
-    if (moduleId === "dashboard") {
-      return inboxState.unreadNotificationCount;
-    }
+  function getModuleBadgeCount(_moduleId: ModuleId): number {
     return 0;
   }
 

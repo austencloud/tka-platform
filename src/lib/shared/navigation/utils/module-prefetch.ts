@@ -33,15 +33,14 @@ const IS_DEV =
  * - Train → Create (compose), Learn (review)
  */
 const NAVIGATION_PATTERNS: Record<string, string[]> = {
-  dashboard: ["create", "browse"],
   create: ["compose", "browse"],
   browse: ["create"],
   compose: ["create"],
   learn: ["create", "train"],
   train: ["create", "learn"],
   settings: [], // Settings is an endpoint, no prefetch needed
-  feedback: ["dashboard"],
-  admin: ["dashboard", "feedback"],
+  feedback: ["create"],
+  admin: ["create", "feedback"],
 };
 
 /**
@@ -150,9 +149,9 @@ export function prefetchOnIntent(targetModuleId: string): void {
 export function preloadCriticalModules(currentModuleId?: string): void {
   if (typeof window === "undefined") return;
 
-  // Only prefetch from Dashboard - other modules should only load what they need
+  // Only prefetch from Create - other modules should only load what they need
   // This prevents loading 150+ Create module files when user goes to Settings
-  if (currentModuleId && currentModuleId !== "dashboard") {
+  if (currentModuleId && currentModuleId !== "create") {
     return;
   }
 

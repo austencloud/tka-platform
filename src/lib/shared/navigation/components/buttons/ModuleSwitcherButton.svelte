@@ -58,14 +58,8 @@
     onClick();
   }
 
-  // Check if currently on Dashboard
-  const isOnDashboard = $derived(navigationState.currentModule === "dashboard");
-
-  // Inbox badge count - shows notification count (only when NOT on Dashboard)
-  // Once on Dashboard, the user sees the badge on the notification bell - no need for redundancy
-  const badgeCount = $derived(
-    isOnDashboard ? 0 : inboxState.unreadNotificationCount
-  );
+  // Inbox badge count - shows notification count
+  const badgeCount = $derived(inboxState.unreadNotificationCount);
 
   function formatBadgeCount(count: number): string {
     if (count > 99) return "99+";
