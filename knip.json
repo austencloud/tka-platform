@@ -9,7 +9,6 @@
     "src/lib/features/admin/components/AdminDashboard.svelte",
     "src/lib/features/background-builder/BackgroundBuilder.svelte",
     "src/lib/features/community/Community.svelte",
-    "src/lib/features/dashboard/components/Dashboard.svelte",
     "src/lib/shared/di/index.ts",
     "src/lib/shared/di/containers/*.ts",
     "scripts/*.js",

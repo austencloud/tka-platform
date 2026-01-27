@@ -123,15 +123,6 @@
       "tabId": "practice",
       "waitFor": ".practice-panel, .train-module",
       "description": "Real-time practice mode"
-    },
-    {
-      "id": "dashboard",
-      "name": "Dashboard",
-      "priority": 2,
-      "moduleId": "dashboard",
-      "tabId": null,
-      "waitFor": ".dashboard, .dashboard-content",
-      "description": "Home screen with widgets"
     }
   ]
 }

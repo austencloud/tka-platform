@@ -12,10 +12,9 @@ Users may use vague or incorrect terminology. Here's the actual structure:
 - `train` - Practice with camera (tabs: practice, challenges, progress)
 - `settings` - App preferences (tabs: profile, props, background, visibility, misc)
 - `feedback` - Feedback system (tabs: submit, my-feedback, manage)
-- `dashboard` - Home/launcher
 
 **Common user confusions:**
-- "main screen" / "home" -> likely `browse` gallery or `dashboard`
+- "main screen" / "home" -> likely `browse` gallery
 - "my sequences" / "saved" -> `browse/gallery` with "My Library" scope toggle
 - "practice mode" / "camera thing" -> `train`
 - "generator" / "random" -> `create/generator` tab

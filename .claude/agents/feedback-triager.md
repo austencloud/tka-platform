@@ -70,10 +70,9 @@ Users may use vague terminology. Here's the structure:
 - `train` - Practice with camera
 - `settings` - App preferences
 - `feedback` - Feedback system
-- `dashboard` - Home/launcher
 
 Common confusions:
-- "main screen" / "home" → likely `browse` or `dashboard`
+- "main screen" / "home" → likely `browse`
 - "my sequences" / "saved" → `browse/gallery`
 - "practice mode" → `train`
 - "generator" / "random" → `create/generator`

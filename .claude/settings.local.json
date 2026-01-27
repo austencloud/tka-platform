@@ -439,7 +439,11 @@
       "Bash(./node_modules/.bin/svelte-check:*)",
       "Bash(set +o onecmd)",
       "WebFetch(domain:itnext.io)",
-      "Bash(cmd.exe /c \"cd /d F:\\\\tka-platform\\\\functions && npm install\")"
+      "Bash(cmd.exe /c \"cd /d F:\\\\tka-platform\\\\functions && npm install\")",
+      "WebFetch(domain:posthog.com)",
+      "Bash(exit 0)",
+      "Bash(cmd.exe /c \"npm install\")",
+      "Bash(do git add \"$f\")"
     ]
   },
   "enableAllProjectMcpServers": true,
