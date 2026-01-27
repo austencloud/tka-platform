@@ -11,7 +11,7 @@
    * - Impact summary before saving changes
    */
 
-  import { featureFlagService } from "$lib/shared/auth/services/FeatureFlagService.svelte";
+  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import FeatureFlagHeader from "./feature-flags/FeatureFlagHeader.svelte";
   import PermissionMatrix from "./feature-flags/global-settings/PermissionMatrix.svelte";
   import UserOverrides from "./feature-flags/user-overrides/UserOverrides.svelte";

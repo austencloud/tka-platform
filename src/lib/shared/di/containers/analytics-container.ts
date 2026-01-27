@@ -2,19 +2,21 @@
  * Analytics Container - ITI Dependency Injection
  *
  * Factory-based container for analytics services.
- * SessionTracker must be created first (ActivityLogger depends on it).
+ * PostHog handles session tracking internally, so SessionTracker
+ * is still available for backward compatibility but not required
+ * by PostHogActivityLogger.
  */
 
 import { createContainer } from "iti";
 import { SessionTracker } from "../../analytics/services/implementations/SessionTracker";
-import { ActivityLogger } from "../../analytics/services/implementations/ActivityLogger";
+import { PostHogActivityLogger } from "../../analytics/services/implementations/PostHogActivityLogger";
 
 export const analyticsContainer = createContainer()
   .add({
     sessionTracker: () => new SessionTracker(),
   })
-  .add((ctx) => ({
-    activityLogger: () => new ActivityLogger(ctx.sessionTracker),
-  }));
+  .add({
+    activityLogger: () => new PostHogActivityLogger(),
+  });
 
 export type AnalyticsContainer = typeof analyticsContainer;

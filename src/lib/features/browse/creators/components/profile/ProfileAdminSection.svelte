@@ -22,6 +22,7 @@
     ROLE_HIERARCHY,
   } from "$lib/shared/auth/domain/models/UserRole";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
+  import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
 
   interface Props {
     userProfile: EnhancedUserProfile;
@@ -315,8 +316,16 @@
     try {
       const firestore = await getFirestoreInstance();
       const userRef = doc(firestore, "users", userProfile.id);
-      await updateDoc(userRef, { displayName: newName });
-      onUserUpdated?.({ displayName: newName });
+
+      // Generate new avatar with correct initials from the new name
+      const newAvatar = generateAvatarUrl(newName, 200);
+
+      await updateDoc(userRef, {
+        displayName: newName,
+        avatar: newAvatar,
+        photoURL: newAvatar,
+      });
+      onUserUpdated?.({ displayName: newName, avatar: newAvatar });
       editNameModal = { open: false, value: "" };
     } catch (err) {
       console.error("[ProfileAdminSection] Failed to update display name:", err);

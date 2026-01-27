@@ -73,7 +73,7 @@
   import { initUserPreviewContext } from "./debug/context/user-preview-context";
   import { userPreviewState } from "./debug/state/user-preview-state.svelte";
   import { adminToolbarState } from "./debug/state/admin-toolbar-state.svelte";
-  import { featureFlagService } from "./auth/services/FeatureFlagService.svelte";
+  import { featureFlagService } from "./auth/services/PostHogFeatureFlagService.svelte";
   import ToastContainer from "./toast/components/ToastContainer.svelte";
 
   // LAN Sync

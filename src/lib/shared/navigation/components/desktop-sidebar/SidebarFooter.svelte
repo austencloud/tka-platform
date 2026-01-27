@@ -5,7 +5,7 @@
   import { container } from "$lib/shared/di";
   import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
   import { inboxState } from "../../../inbox/state/inbox-state.svelte";
-  import { featureFlagService } from "../../../auth/services/FeatureFlagService.svelte";
+  import { featureFlagService } from "../../../auth/services/PostHogFeatureFlagService.svelte";
   import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
   import ModuleQuickToggle from "./ModuleQuickToggle.svelte";
 

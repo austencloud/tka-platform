@@ -22,7 +22,7 @@
     navigationState,
     SETTINGS_TABS,
   } from "../state/navigation-state.svelte";
-  import { featureFlagService } from "../../auth/services/FeatureFlagService.svelte";
+  import { featureFlagService } from "../../auth/services/PostHogFeatureFlagService.svelte";
   import { translateSettingsTab } from "../../i18n/translate";
   import { getReactiveLocale } from "../../i18n/locale-state.svelte";
 

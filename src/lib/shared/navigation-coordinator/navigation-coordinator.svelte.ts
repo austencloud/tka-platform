@@ -24,7 +24,7 @@ import {
 } from "../navigation/state/navigation-state.svelte";
 import { switchModule } from "../application/state/ui/module-state";
 import { authState } from "../auth/state/authState.svelte";
-import { featureFlagService } from "../auth/services/FeatureFlagService.svelte";
+import { featureFlagService } from "../auth/services/PostHogFeatureFlagService.svelte";
 
 // Session storage key for persisting navigation history across HMR
 const PREVIOUS_MODULE_KEY = "tka-previous-module-before-settings";

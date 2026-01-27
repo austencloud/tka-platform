@@ -16,7 +16,7 @@
   import { flip } from "svelte/animate";
   import { dragHandleZone, dragHandle } from "svelte-dnd-action";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import { featureFlagService } from "../../../auth/services/FeatureFlagService.svelte";
+  import { featureFlagService } from "../../../auth/services/PostHogFeatureFlagService.svelte";
   import { getModuleDefinitions } from "../../../navigation-coordinator/navigation-coordinator.svelte";
   import { MODULE_DEFINITIONS } from "../../config/module-definitions";
   import { moduleIdToFeatureId } from "../../../auth/domain/models/FeatureFlag";

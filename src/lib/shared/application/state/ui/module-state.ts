@@ -1,6 +1,6 @@
 import { browser } from "$app/environment";
 import type { ModuleId } from "../../../navigation/domain/types";
-import { featureFlagService } from "../../../auth/services/FeatureFlagService.svelte";
+import { featureFlagService } from "../../../auth/services/PostHogFeatureFlagService.svelte";
 import { navigationState } from "../../../navigation/state/navigation-state.svelte";
 import { normalizeModuleId } from "../../../navigation/config/module-definitions";
 import { getPersistenceService } from "../services.svelte";

@@ -41,8 +41,9 @@ import type { IActivityLogger } from "../../analytics/services/contracts/IActivi
 import type { IUsernameValidator } from "../services/contracts/IUsernameValidator";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "../firebase";
-import { featureFlagService } from "../services/FeatureFlagService.svelte";
+import { featureFlagService } from "../services/PostHogFeatureFlagService.svelte";
 import type { UserRole } from "../domain/models/UserRole";
+import { identifyUser, resetUser } from "../../analytics/services/posthog";
 
 interface AuthState {
   user: User | null;
@@ -344,6 +345,22 @@ export async function initializeAuthListener() {
         isAdmin,
         role,
       };
+
+      // 📊 PostHog user identification
+      if (user) {
+        identifyUser(user.uid, {
+          email: user.email ?? undefined,
+          name: user.displayName ?? undefined,
+          role,
+          createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime) : undefined,
+          isPremium: role === "premium" || role === "admin",
+          isTester: role === "tester" || role === "admin",
+          isAdmin,
+        });
+      } else {
+        // User logged out - reset PostHog identity
+        resetUser();
+      }
 
       // Log session start for analytics (non-blocking)
       if (user) {

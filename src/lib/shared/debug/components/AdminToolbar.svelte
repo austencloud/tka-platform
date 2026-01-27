@@ -13,7 +13,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import { featureFlagService } from "$lib/shared/auth/services/FeatureFlagService.svelte";
+  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import {
     userPreviewState,
     loadUserPreview,
