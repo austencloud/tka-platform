@@ -1,9 +1,9 @@
 <script lang="ts">
   /**
-   * AnalyticsDashboard
+   * UsersDashboard
    *
-   * Minimal analytics view for admin users.
-   * Two sections: Quick Stats + Active Users
+   * User management view for admin users.
+   * Two sections: Weekly Engagement + Active Users
    *
    * Uses SystemStateManager cached data - no wasteful Firebase queries.
    */
@@ -12,9 +12,9 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
 </script>
 
-<main class="analytics-dashboard" aria-label={t("admin_analytics_overview")}>
+<main class="users-dashboard" aria-label={t("admin_users_overview")}>
   <header class="dashboard-header">
-    <h2>{t("admin_analytics_overview")}</h2>
+    <h2>{t("admin_users_overview")}</h2>
   </header>
 
   <WeeklyEngagement />
@@ -25,7 +25,7 @@
 </main>
 
 <style>
-  .analytics-dashboard {
+  .users-dashboard {
     display: flex;
     flex-direction: column;
     gap: 24px;
@@ -58,26 +58,26 @@
   }
 
   /* Themed scrollbar */
-  .analytics-dashboard :global(::-webkit-scrollbar) {
+  .users-dashboard :global(::-webkit-scrollbar) {
     width: 6px;
     height: 6px;
   }
 
-  .analytics-dashboard :global(::-webkit-scrollbar-track) {
+  .users-dashboard :global(::-webkit-scrollbar-track) {
     background: var(--scrollbar-track);
   }
 
-  .analytics-dashboard :global(::-webkit-scrollbar-thumb) {
+  .users-dashboard :global(::-webkit-scrollbar-thumb) {
     background: var(--scrollbar-accent);
     border-radius: 3px;
   }
 
-  .analytics-dashboard :global(::-webkit-scrollbar-thumb:hover) {
+  .users-dashboard :global(::-webkit-scrollbar-thumb:hover) {
     background: var(--scrollbar-accent-hover);
   }
 
   @media (max-width: 768px) {
-    .analytics-dashboard {
+    .users-dashboard {
       padding: 16px;
       gap: 16px;
     }

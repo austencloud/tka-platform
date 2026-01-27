@@ -6,8 +6,7 @@
   import type { IUserActivityTracker } from "../services/contracts/IUserActivityTracker";
   import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
   import UserPresenceCard from "./active-users/UserPresenceCard.svelte";
-  import UserProfilePanel from "$lib/features/browse/creators/components/UserProfilePanel.svelte";
-  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import UserDetailModal from "./UserDetailModal.svelte";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
 
   // Services
@@ -18,17 +17,10 @@
   let selectedUserId = $state<string | null>(null);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
-  let drawerOpen = $state(false);
+  let modalOpen = $state(false);
 
   // Filter state: "all" | "active" | "inactive"
   let statusFilter = $state<"all" | "active" | "inactive">("all");
-
-  // Responsive layout
-  let isMobile = $state(false);
-  const drawerPlacement = $derived(isMobile ? "bottom" : "right");
-
-  // Community module is available synchronously via ITI
-  let communityModuleLoaded = $state(true);
 
   // Stats computed from activity status
   let activeCount = $derived(
@@ -51,18 +43,7 @@
   // Unsubscribe function
   let unsubscribe: (() => void) | null = null;
 
-  // Resize listener cleanup
-  let resizeListener: (() => void) | null = null;
-
   onMount(async () => {
-    // Check responsive layout
-    const checkMobile = () => {
-      isMobile = window.innerWidth < 768;
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    resizeListener = checkMobile;
-
     try {
       userActivityService = container.items.userActivityTracker;
 
@@ -82,32 +63,23 @@
     if (unsubscribe) {
       unsubscribe();
     }
-    if (resizeListener) {
-      window.removeEventListener("resize", resizeListener);
-    }
   });
 
   function selectUser(userId: string) {
-    if (selectedUserId === userId) {
-      // Clicking same user - toggle drawer
-      drawerOpen = !drawerOpen;
-    } else {
-      // Clicking different user - select and open
-      selectedUserId = userId;
-      drawerOpen = true;
-    }
+    selectedUserId = userId;
+    modalOpen = true;
   }
 
-  function closeDrawer() {
-    drawerOpen = false;
+  function closeModal() {
+    modalOpen = false;
   }
 
   function handleUserDeleted() {
-    // Remove user from local list and close drawer
+    // Remove user from local list and close modal
     if (selectedUserId) {
       users = users.filter((u) => u.userId !== selectedUserId);
       selectedUserId = null;
-      drawerOpen = false;
+      modalOpen = false;
     }
   }
 
@@ -191,7 +163,6 @@
           {#each filteredUsers as user}
             <UserPresenceCard
               {user}
-              isSelected={selectedUserId === user.userId && drawerOpen}
               onSelect={() => selectUser(user.userId)}
             />
           {/each}
@@ -200,26 +171,13 @@
     {/if}
   </div>
 
-  <!-- User Profile Drawer -->
-  <Drawer
-    bind:isOpen={drawerOpen}
-    placement={drawerPlacement}
-    showHandle={true}
-    class="user-profile-drawer"
-    ariaLabel={t("admin_user_profile")}
-  >
-    {#if selectedUserId && communityModuleLoaded}
-      <UserProfilePanel
-        userId={selectedUserId}
-        onUserDeleted={handleUserDeleted}
-      />
-    {:else if selectedUserId}
-      <div class="loading-profile">
-        <div class="spinner" aria-hidden="true"></div>
-        <span>{t("admin_loading_profile")}</span>
-      </div>
-    {/if}
-  </Drawer>
+  <!-- User Detail Modal -->
+  <UserDetailModal
+    bind:open={modalOpen}
+    userId={selectedUserId}
+    onclose={closeModal}
+    onUserDeleted={handleUserDeleted}
+  />
 </div>
 
 <style>
@@ -423,35 +381,5 @@
     padding: 1rem;
     overflow-y: auto;
     height: 100%;
-  }
-
-  /* Drawer styling - wider for full profile */
-  :global(.user-profile-drawer) {
-    max-width: 600px;
-    width: 100%;
-  }
-
-  :global(.user-profile-drawer[data-placement="bottom"]) {
-    max-width: 100%;
-    max-height: 90vh;
-  }
-
-  .loading-profile {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 40px;
-    color: var(--theme-text-dim);
-  }
-
-  .loading-profile .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
   }
 </style>

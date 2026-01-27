@@ -10,11 +10,11 @@
 
   interface Props {
     user: UserPresenceWithId;
-    isSelected: boolean;
+    isSelected?: boolean;
     onSelect: () => void;
   }
 
-  let { user, isSelected, onSelect }: Props = $props();
+  let { user, isSelected = false, onSelect }: Props = $props();
 
   // Color extracted from avatar
   let cardColor = $state<string | null>(null);

@@ -10,7 +10,7 @@
   import type { IAdminChallengeManager } from "../services/contracts/IAdminChallengeManager";
   import DailyChallengeScheduler from "./DailyChallengeScheduler.svelte";
   import TrainChallengeManager from "./TrainChallengeManager.svelte";
-  import AnalyticsDashboard from "./AnalyticsDashboard.svelte";
+  import UsersDashboard from "./UsersDashboard.svelte";
   import FeatureFlagManagement from "./FeatureFlagManagement.svelte";
   import AnnouncementManagement from "./AnnouncementManagement.svelte";
   import ShameQueuePanel from "./ShameQueuePanel.svelte";
@@ -61,13 +61,13 @@
   {:else}
     <!-- Content Area -->
     <main class="admin-content themed-scrollbar">
-      {#if !activeSection || activeSection === "analytics"}
+      {#if !activeSection || activeSection === "users"}
         <div
-          id="analytics-panel"
+          id="users-panel"
           role="tabpanel"
-          aria-labelledby="analytics-tab"
+          aria-labelledby="users-tab"
         >
-          <AnalyticsDashboard />
+          <UsersDashboard />
         </div>
       {:else if activeSection === "challenges" && adminChallengeService}
         <div

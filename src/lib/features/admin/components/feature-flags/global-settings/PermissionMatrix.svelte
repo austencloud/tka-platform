@@ -83,7 +83,7 @@
   }
 
   // Core modules that cannot be disabled
-  const coreModuleIds = ["module:admin", "module:settings", "module:dashboard"];
+  const coreModuleIds = ["module:admin", "module:settings"];
 </script>
 
 <div class="permission-matrix">
