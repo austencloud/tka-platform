@@ -475,9 +475,11 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     const scale = size / VIEWBOX_SIZE;
     const pointColor = isDarkMode ? GRID_POINT_COLOR_DARK : GRID_POINT_COLOR_LIGHT;
 
-    // Set opacity to match grid SVG rendering
+    // Set opacity for grid points
+    // Dark mode: slightly transparent white (avoids harsh pure white)
+    // Light mode: solid black for maximum clarity
     ctx.save();
-    ctx.globalAlpha = isDarkMode ? 0.85 : 0.7;
+    ctx.globalAlpha = isDarkMode ? 0.85 : 1.0;
     ctx.fillStyle = pointColor;
 
     // Draw center point

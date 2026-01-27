@@ -7,7 +7,7 @@
 <script lang="ts">
   import { fly, fade } from "svelte/transition";
   import SocialAuthCompact from "$lib/shared/auth/components/SocialAuthCompact.svelte";
-  import EmailPasswordAuth from "$lib/shared/auth/components/EmailPasswordAuth.svelte";
+  import EmailAuthTabs from "$lib/shared/auth/components/EmailAuthTabs.svelte";
   import { container } from "$lib/shared/di";
   import type { IAuthenticator } from "$lib/shared/auth/services/contracts/IAuthenticator";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -87,7 +87,7 @@
         <span>or use email</span>
       </div>
       <div class="email-auth-wrapper" in:fly={{ y: 10, duration: 200 }}>
-        <EmailPasswordAuth bind:mode={authMode} />
+        <EmailAuthTabs bind:mode={authMode} />
       </div>
     {/if}
   </div>

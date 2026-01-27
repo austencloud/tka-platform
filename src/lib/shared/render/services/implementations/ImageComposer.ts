@@ -447,18 +447,8 @@ export class ImageComposer implements IImageComposer {
       );
     }
 
-    // Log per-sequence cache effectiveness
-    const totalPictographs = this.compositionL2Hits + this.compositionL1Hits + this.compositionFreshRenders;
-    if (totalPictographs > 0) {
-      const cachedCount = this.compositionL2Hits + this.compositionL1Hits;
-      const cacheRate = ((cachedCount / totalPictographs) * 100).toFixed(0);
-      const sequenceName = derivedWord || sequence.name || "unnamed";
-      console.log(
-        `[Render] "${sequenceName}" ${totalPictographs} steps: ` +
-        `${this.compositionL2Hits} L2, ${this.compositionL1Hits} L1, ${this.compositionFreshRenders} fresh ` +
-        `(${cacheRate}% cached)`
-      );
-    }
+    // Cache stats are available via getCacheStats() for debugging
+    // Removed per-sequence logging to reduce console noise during gallery browsing
 
     return canvas;
   }

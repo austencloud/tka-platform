@@ -275,15 +275,15 @@
   }
 
   function handleModuleSwitcherTap() {
-    // Close inbox and go to dashboard
+    // Close inbox and go to create module (dashboard was removed)
     inboxState.close();
-    handleModuleChange("dashboard" as ModuleId);
+    handleModuleChange("create" as ModuleId);
   }
 
   async function handleSettingsTap() {
     inboxState.close();
     if (navigationState.currentModule === "settings") {
-      const previousModule = navigationState.previousModule || "dashboard";
+      const previousModule = navigationState.previousModule || "create";
       await handleModuleChange(previousModule as ModuleId);
     } else {
       await handleModuleChange("settings" as ModuleId);

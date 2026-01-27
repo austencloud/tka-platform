@@ -265,7 +265,7 @@
         onHeightChange={setPrimaryNavHeight}
         isUIVisible={isPrimaryNavVisible()}
         onRevealNav={handleRevealNav}
-        isDashboard={currentModule() === "dashboard"}
+        isDashboard={false}
       />
     {/if}
   </div>

@@ -14,6 +14,7 @@
   import { setNotificationTargetFeedback } from "$lib/features/feedback/state/notification-action-state.svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   interface Props {
     notification: UserNotification;
@@ -138,9 +139,11 @@
         break;
 
       case "achievement-unlocked":
-        // Navigate to dashboard (achievements are shown via gamification panel)
+        // Navigate to user's profile to see achievements
         inboxState.close();
-        await handleModuleChange("dashboard", "overview");
+        if (authState.effectiveUserId) {
+          goto(`/profile/${authState.effectiveUserId}`);
+        }
         break;
 
       case "admin-new-user-signup":

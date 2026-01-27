@@ -32,15 +32,36 @@
     const loader = tabComponents[activeTab];
     if (loader) {
       loadError = null;
-      loader()
-        .then((mod) => {
-          TabComponent = mod.default;
-        })
-        .catch((err) => {
-          console.error(`Failed to load lab tab "${activeTab}":`, err);
-          loadError = `Failed to load "${activeTab}" tab`;
-          TabComponent = null;
-        });
+      // Call the loader and handle both Promise and direct module returns (HMR edge case)
+      try {
+        const result = loader();
+        // Check if it's a Promise (has .then method)
+        if (result && typeof result.then === "function") {
+          result
+            .then((mod: { default: any }) => {
+              TabComponent = mod.default;
+            })
+            .catch((err: Error) => {
+              console.error(`Failed to load lab tab "${activeTab}":`, err);
+              loadError = `Failed to load "${activeTab}" tab`;
+              TabComponent = null;
+            });
+        } else {
+          // HMR might return the module directly instead of a Promise
+          const mod = result as unknown as { default: any };
+          if (mod && mod.default) {
+            TabComponent = mod.default;
+          } else {
+            console.error(`Unexpected loader result for "${activeTab}":`, result);
+            loadError = `Failed to load "${activeTab}" tab`;
+            TabComponent = null;
+          }
+        }
+      } catch (err) {
+        console.error(`Error calling loader for "${activeTab}":`, err);
+        loadError = `Failed to load "${activeTab}" tab`;
+        TabComponent = null;
+      }
     } else {
       loadError = `Unknown tab: ${activeTab}`;
       TabComponent = null;

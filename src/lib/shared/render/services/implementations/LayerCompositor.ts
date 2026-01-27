@@ -611,8 +611,10 @@ export class LayerCompositor implements ILayerCompositor {
     const scale = options.size / VIEWBOX_SIZE;
     const pointColor = options.darkMode ? GRID_POINT_COLOR_DARK : GRID_POINT_COLOR_LIGHT;
 
-    // Set opacity to match grid SVG rendering
-    ctx.globalAlpha = options.darkMode ? 0.85 : 0.7;
+    // Set opacity for grid points
+    // Dark mode: slightly transparent white (avoids harsh pure white)
+    // Light mode: solid black for maximum clarity
+    ctx.globalAlpha = options.darkMode ? 0.85 : 1.0;
     ctx.fillStyle = pointColor;
 
     // Select grid points based on grid mode (box vs diamond)

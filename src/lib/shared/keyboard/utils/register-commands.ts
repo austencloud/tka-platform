@@ -75,7 +75,7 @@ export function registerCommandPaletteCommands(
     action: async () => {
       // Toggle behavior: if in settings, go back to previous module
       if (navigationState.currentModule === "settings") {
-        const previousModule = navigationState.previousModule || "dashboard";
+        const previousModule = navigationState.previousModule || "create";
         await handleModuleChange(previousModule as ModuleId);
       } else {
         await handleModuleChange("settings" as ModuleId);

@@ -76,6 +76,7 @@
     cacheSequence,
     type SequenceViewMode,
   } from "$lib/shared/application/state/ui/modal-url-state.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   // Types
   export type ViewMode = "animation" | "image" | "split";
@@ -113,6 +114,12 @@
 
   // LAN Sync - just a toggle, no complex UI
   let isSyncToggling = $state(false);
+
+  // Prop type settings for LayeredSequencePreview
+  const settings = $derived(getSettings());
+  const bluePropType = $derived(settings.bluePropType);
+  const redPropType = $derived(settings.redPropType);
+  const catDogModeEnabled = $derived(settings.catDogMode);
 
   // ========== ACCESSIBILITY STATE ==========
   // Screen reader announcement for dynamic content changes
@@ -240,12 +247,21 @@
   function enterEditMode(pane: 'animation' | 'image') {
     hapticService?.trigger("selection"); // Haptic feedback for mode expansion
     editingPane = pane;
+    // On desktop, also enter fullscreen for maximum screen real estate
+    if (!isMobile && !isFullscreen) {
+      isFullscreen = true;
+    }
     announceToScreenReader(`${pane === 'animation' ? 'Animation' : 'Image'} expanded. Tap to collapse.`);
   }
 
   function exitEditMode() {
     hapticService?.trigger("selection"); // Lighter feedback for collapse
     editingPane = null;
+    // On desktop, also exit fullscreen when unfocusing
+    if (!isMobile && isFullscreen) {
+      isFullscreen = false;
+      fullscreenControlsVisible = false;
+    }
     announceToScreenReader("Split view restored");
   }
 
@@ -485,10 +501,14 @@
   }
 
   // Sync fullscreen state to dialog element (BaseModal doesn't pass data attributes through)
+  // This effect tracks isFullscreen and updates the dialog's data-fullscreen attribute
   $effect(() => {
+    // Track isFullscreen dependency explicitly
+    const fullscreenState = isFullscreen;
+
     const dialog = document.querySelector("dialog.sequence-details-modal") as HTMLDialogElement | null;
     if (dialog) {
-      if (isFullscreen) {
+      if (fullscreenState) {
         dialog.setAttribute("data-fullscreen", "true");
       } else {
         dialog.removeAttribute("data-fullscreen");
@@ -1279,6 +1299,9 @@
                 showLoopGlyph={true}
                 darkMode={exportOptions.imageDarkMode}
                 userName={authState.user?.displayName || ""}
+                {bluePropType}
+                {redPropType}
+                {catDogModeEnabled}
               />
             {:else}
               <!-- For video exports, show the animation canvas -->
@@ -1493,6 +1516,9 @@
                 darkMode={imgDarkMode}
                 userName={authState.user?.displayName || ""}
                 columnCount={imgColumnCount}
+                {bluePropType}
+                {redPropType}
+                {catDogModeEnabled}
               />
             </div>
 
@@ -2176,6 +2202,17 @@
 
     .media-pane {
       padding: 24px;
+    }
+
+    /* Desktop fullscreen: Override the padding to fill entire viewport */
+    :global(.sequence-details-modal.base-modal[data-size="full"][data-fullscreen="true"]) {
+      padding: 0 !important;
+      border-radius: 0 !important;
+    }
+
+    :global(.sequence-details-modal.base-modal[data-size="full"][data-fullscreen="true"] .modal-content-wrapper) {
+      border-radius: 0 !important;
+      box-shadow: none !important;
     }
   }
 

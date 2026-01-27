@@ -84,7 +84,9 @@
   }: Props = $props();
 
   // Constants
-  const CELL_SIZE = 240; // Render size for each pictograph
+  // Render at high resolution for crisp display on 4K monitors
+  // Images scale down cleanly on lower-resolution displays
+  const CELL_SIZE = 480; // Render size for each pictograph
 
   // LOOP type resolver for parsing loopType to components
   const loopTypeResolver = new LOOPTypeResolver();
@@ -721,7 +723,7 @@
       <!-- Grid section with individual pictograph cells -->
       <div
         class="grid-section"
-        style="grid-template-columns: repeat({effectiveColumns}, 1fr); grid-template-rows: repeat({rows}, 1fr);"
+        style="grid-template-columns: repeat({effectiveColumns}, 1fr);"
       >
         {#each visibleCells as cell (cell.index)}
           {#if onStepClick && cell.index >= 0}
@@ -937,8 +939,8 @@
     min-height: 0;
     min-width: 0;
     width: 100%;
-    /* Fill remaining space in flex column */
-    flex: 1;
+    /* Let rows size to content - prevents gaps from 1fr row sizing */
+    grid-auto-rows: auto;
     /* Ensure grid doesn't overflow container */
     max-width: 100%;
     /* Allow highlight overflow to be visible */
@@ -978,7 +980,10 @@
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    /* Use 'cover' to fill the cell completely - images are rendered as squares
+       so there should be no cropping. 'contain' was causing gaps when images
+       had slightly different aspect ratios. */
+    object-fit: cover;
     -webkit-user-drag: none;
     user-select: none;
   }

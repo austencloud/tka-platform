@@ -124,8 +124,8 @@ function createDashboardState() {
   const moduleCards = $derived.by(() =>
     navigationState.moduleDefinitions
       .filter((m) => {
-        // Only show main modules (exclude dashboard and settings)
-        if (!m.isMain || m.id === "dashboard") return false;
+        // Only show main modules (exclude settings)
+        if (!m.isMain) return false;
 
         // Filter out modules the user cannot access
         const canAccess = featureFlagService.canAccessModule(m.id);

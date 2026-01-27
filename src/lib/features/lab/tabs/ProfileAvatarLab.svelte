@@ -1,15 +1,13 @@
 <!--
   ProfileAvatarLab.svelte - Experiment with generated avatar designs
 
-  Visualize combinations of:
-  - Avatar shapes (circle, rounded square, hexagon, squircle)
-  - Theme-derived gradient backgrounds
-  - Prop silhouettes as center elements
-  - Size variations
+  Simulates the signup experience:
+  - User has already picked their favorite prop
+  - They see their generated avatar
+  - Shuffle button cycles through gradient options
+  - "Upload photo instead" option available
 -->
 <script lang="ts">
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
-  import { BACKGROUND_THEME_COLORS } from "$lib/shared/settings/utils/background-theme-calculator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import {
     PROP_TYPE_DISPLAY_REGISTRY,
@@ -18,18 +16,10 @@
 
   // ============ TYPES ============
 
-  type AvatarShape = "circle" | "rounded-square" | "hexagon" | "squircle";
-
-  interface ShapeOption {
-    id: AvatarShape;
-    label: string;
-    icon: string;
-  }
-
-  interface ThemeOption {
-    id: BackgroundType;
-    label: string;
-    colors: string[];
+  interface GradientOption {
+    id: string;
+    name: string;
+    gradient: string;
   }
 
   interface PropOption {
@@ -38,62 +28,133 @@
     image: string;
   }
 
-  // ============ CONFIGURATION ============
+  // ============ GRADIENT LIBRARY ============
 
-  const SHAPES: ShapeOption[] = [
-    { id: "circle", label: "Circle", icon: "fa-circle" },
-    { id: "rounded-square", label: "Rounded Square", icon: "fa-square" },
-    { id: "hexagon", label: "Hexagon", icon: "fa-hexagon" },
-    { id: "squircle", label: "Squircle", icon: "fa-stop" },
+  // Visually interesting multi-stop gradients
+  // These are independent of the app's theme system
+  const GRADIENT_LIBRARY: GradientOption[] = [
+    // Warm gradients
+    {
+      id: "sunset",
+      name: "Sunset",
+      gradient: "linear-gradient(135deg, #ff6b6b 0%, #feca57 50%, #ff9ff3 100%)",
+    },
+    {
+      id: "ember",
+      name: "Ember",
+      gradient: "linear-gradient(135deg, #7c2d12 0%, #ea580c 50%, #fbbf24 100%)",
+    },
+    {
+      id: "autumn",
+      name: "Autumn",
+      gradient: "linear-gradient(135deg, #92400e 0%, #dc2626 50%, #f59e0b 100%)",
+    },
+    {
+      id: "coral",
+      name: "Coral",
+      gradient: "linear-gradient(135deg, #f43f5e 0%, #fb7185 50%, #fda4af 100%)",
+    },
+
+    // Cool gradients
+    {
+      id: "ocean",
+      name: "Ocean",
+      gradient: "linear-gradient(135deg, #0c4a6e 0%, #0891b2 50%, #22d3ee 100%)",
+    },
+    {
+      id: "twilight",
+      name: "Twilight",
+      gradient: "linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #818cf8 100%)",
+    },
+    {
+      id: "arctic",
+      name: "Arctic",
+      gradient: "linear-gradient(135deg, #1e3a5f 0%, #3b82f6 50%, #93c5fd 100%)",
+    },
+    {
+      id: "mint",
+      name: "Mint",
+      gradient: "linear-gradient(135deg, #064e3b 0%, #10b981 50%, #6ee7b7 100%)",
+    },
+
+    // Vibrant multi-color gradients
+    {
+      id: "rainbow",
+      name: "Rainbow",
+      gradient: "linear-gradient(135deg, #ef4444 0%, #f59e0b 20%, #22c55e 40%, #3b82f6 60%, #8b5cf6 80%, #ec4899 100%)",
+    },
+    {
+      id: "neon",
+      name: "Neon",
+      gradient: "linear-gradient(135deg, #f472b6 0%, #c084fc 33%, #60a5fa 66%, #34d399 100%)",
+    },
+    {
+      id: "aurora",
+      name: "Aurora",
+      gradient: "linear-gradient(135deg, #0f766e 0%, #22d3ee 25%, #a78bfa 50%, #f472b6 75%, #fbbf24 100%)",
+    },
+    {
+      id: "cosmic",
+      name: "Cosmic",
+      gradient: "linear-gradient(135deg, #1e1b4b 0%, #7c3aed 30%, #ec4899 60%, #fbbf24 100%)",
+    },
+
+    // Earthy/natural gradients
+    {
+      id: "forest",
+      name: "Forest",
+      gradient: "linear-gradient(135deg, #0d3320 0%, #166534 50%, #84cc16 100%)",
+    },
+    {
+      id: "sakura",
+      name: "Sakura",
+      gradient: "linear-gradient(135deg, #831843 0%, #db2777 50%, #fbcfe8 100%)",
+    },
+    {
+      id: "lavender",
+      name: "Lavender",
+      gradient: "linear-gradient(135deg, #4c1d95 0%, #8b5cf6 50%, #ddd6fe 100%)",
+    },
+    {
+      id: "earth",
+      name: "Earth",
+      gradient: "linear-gradient(135deg, #78350f 0%, #a16207 50%, #84cc16 100%)",
+    },
+
+    // Dark/moody gradients
+    {
+      id: "midnight",
+      name: "Midnight",
+      gradient: "linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #3b82f6 100%)",
+    },
+    {
+      id: "void",
+      name: "Void",
+      gradient: "linear-gradient(135deg, #18181b 0%, #3f3f46 50%, #a855f7 100%)",
+    },
+    {
+      id: "shadow",
+      name: "Shadow",
+      gradient: "linear-gradient(135deg, #1c1917 0%, #44403c 50%, #78716c 100%)",
+    },
+    {
+      id: "obsidian",
+      name: "Obsidian",
+      gradient: "linear-gradient(135deg, #0c0a09 0%, #292524 40%, #dc2626 100%)",
+    },
   ];
 
-  // Build theme options from background types (excluding solid/gradient which need user colors)
-  const THEMES: ThemeOption[] = [
-    {
-      id: BackgroundType.NIGHT_SKY,
-      label: "Night Sky",
-      colors: BACKGROUND_THEME_COLORS[BackgroundType.NIGHT_SKY],
-    },
-    {
-      id: BackgroundType.DEEP_OCEAN,
-      label: "Deep Ocean",
-      colors: BACKGROUND_THEME_COLORS[BackgroundType.DEEP_OCEAN],
-    },
-    {
-      id: BackgroundType.EMBER_GLOW,
-      label: "Ember Glow",
-      colors: BACKGROUND_THEME_COLORS[BackgroundType.EMBER_GLOW],
-    },
-    {
-      id: BackgroundType.SAKURA_DRIFT,
-      label: "Sakura",
-      colors: BACKGROUND_THEME_COLORS[BackgroundType.SAKURA_DRIFT],
-    },
-    {
-      id: BackgroundType.FIREFLY_FOREST,
-      label: "Forest",
-      colors: BACKGROUND_THEME_COLORS[BackgroundType.FIREFLY_FOREST],
-    },
-    {
-      id: BackgroundType.AUTUMN_DRIFT,
-      label: "Autumn",
-      colors: BACKGROUND_THEME_COLORS[BackgroundType.AUTUMN_DRIFT],
-    },
-    {
-      id: BackgroundType.SNOWFALL,
-      label: "Snowfall",
-      colors: BACKGROUND_THEME_COLORS[BackgroundType.SNOWFALL],
-    },
-    {
-      id: BackgroundType.PRIDE,
-      label: "Pride",
-      colors: BACKGROUND_THEME_COLORS[BackgroundType.PRIDE],
-    },
-  ];
+  // ============ PROP OPTIONS ============
 
-  // Build prop options - exclude variants, just show base props
+  // Props that are NOT actual spinning props (excluded from avatar options)
+  const NON_PROP_TYPES = new Set([PropType.HAND]);
+
+  // Build prop options - exclude variants and non-props
   const PROPS: PropOption[] = Object.entries(PROP_TYPE_DISPLAY_REGISTRY)
-    .filter(([propType]) => !VARIANT_PROP_TYPES.includes(propType as PropType))
+    .filter(([propType]) => {
+      const pt = propType as PropType;
+      return !VARIANT_PROP_TYPES.includes(pt) && !NON_PROP_TYPES.has(pt);
+    })
     .map(([propType, info]) => ({
       id: propType as PropType,
       label: info.label,
@@ -102,405 +163,369 @@
 
   // ============ STATE ============
 
-  let selectedShape = $state<AvatarShape>("circle");
-  let selectedTheme = $state<BackgroundType>(BackgroundType.NIGHT_SKY);
+  let selectedGradientIndex = $state<number>(0);
   let selectedProp = $state<PropType>(PropType.STAFF);
-  let previewSize = $state<number>(96);
+  let showUploadPrompt = $state<boolean>(false);
+
+  // Simulated user name for the preview
+  const userName = "Austen Cloud";
 
   // ============ DERIVED ============
 
-  const currentThemeColors = $derived(
-    THEMES.find((t) => t.id === selectedTheme)?.colors ?? ["#1e1b4b", "#4338ca"]
+  const currentGradient = $derived(
+    GRADIENT_LIBRARY[selectedGradientIndex] ?? GRADIENT_LIBRARY[0]!
   );
 
   const currentPropImage = $derived(
     PROPS.find((p) => p.id === selectedProp)?.image ?? ""
   );
 
-  // Generate gradient CSS from theme colors
-  function buildGradient(colors: string[]): string {
-    if (colors.length === 1) return colors[0]!;
-    if (colors.length === 2) {
-      return `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)`;
-    }
-    // For 3+ colors, distribute evenly
-    const stops = colors
-      .map((c, i) => `${c} ${Math.round((i / (colors.length - 1)) * 100)}%`)
-      .join(", ");
-    return `linear-gradient(135deg, ${stops})`;
+  // ============ ACTIONS ============
+
+  function shuffle() {
+    // Pick a random gradient that's different from current
+    let newIndex: number;
+    do {
+      newIndex = Math.floor(Math.random() * GRADIENT_LIBRARY.length);
+    } while (newIndex === selectedGradientIndex && GRADIENT_LIBRARY.length > 1);
+    selectedGradientIndex = newIndex;
   }
 
-  // Get clip-path for shape
-  function getClipPath(shape: AvatarShape): string {
-    switch (shape) {
-      case "circle":
-        return "circle(50% at 50% 50%)";
-      case "rounded-square":
-        return "inset(0 round 16%)";
-      case "hexagon":
-        return "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)";
-      case "squircle":
-        // Superellipse approximation
-        return "inset(0 round 30%)";
-      default:
-        return "circle(50% at 50% 50%)";
-    }
+  function nextGradient() {
+    selectedGradientIndex = (selectedGradientIndex + 1) % GRADIENT_LIBRARY.length;
   }
 
-  // Get border-radius for shape (used alongside clip-path for better anti-aliasing)
-  function getBorderRadius(shape: AvatarShape): string {
-    switch (shape) {
-      case "circle":
-        return "50%";
-      case "rounded-square":
-        return "16%";
-      case "hexagon":
-        return "0";
-      case "squircle":
-        return "30%";
-      default:
-        return "50%";
-    }
+  function prevGradient() {
+    selectedGradientIndex =
+      (selectedGradientIndex - 1 + GRADIENT_LIBRARY.length) % GRADIENT_LIBRARY.length;
   }
 </script>
 
 <div class="avatar-lab">
-  <header class="lab-header">
-    <h1>Profile Avatar Lab</h1>
-    <p>Experiment with generated avatar designs for users without photos</p>
-  </header>
+  <!-- Signup Simulation -->
+  <section class="signup-preview">
+    <header class="preview-header">
+      <h2>Almost done!</h2>
+      <p>Here's how your profile will look</p>
+    </header>
 
-  <div class="lab-content">
-    <!-- Large Preview -->
-    <section class="preview-section">
-      <div
-        class="avatar-preview"
-        style="
-          width: {previewSize}px;
-          height: {previewSize}px;
-          background: {buildGradient(currentThemeColors)};
-          clip-path: {getClipPath(selectedShape)};
-          border-radius: {getBorderRadius(selectedShape)};
-        "
+    <div class="profile-card">
+      <div class="avatar-container">
+        <div
+          class="avatar-preview"
+          style="background: {currentGradient.gradient};"
+        >
+          {#if currentPropImage}
+            <img
+              src={currentPropImage}
+              alt="Prop silhouette"
+              class="prop-silhouette"
+            />
+          {/if}
+        </div>
+      </div>
+
+      <div class="user-info">
+        <span class="user-name">{userName}</span>
+        <span class="gradient-name">{currentGradient.name}</span>
+      </div>
+
+      <div class="avatar-controls">
+        <button class="control-btn" onclick={prevGradient} title="Previous">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="shuffle-btn" onclick={shuffle}>
+          <i class="fas fa-random"></i>
+          <span>Shuffle</span>
+        </button>
+        <button class="control-btn" onclick={nextGradient} title="Next">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <button
+        class="upload-btn"
+        onclick={() => (showUploadPrompt = !showUploadPrompt)}
       >
-        {#if currentPropImage}
-          <img
-            src={currentPropImage}
-            alt="Prop silhouette"
-            class="prop-silhouette"
-          />
-        {/if}
-      </div>
+        <i class="fas fa-camera"></i>
+        <span>Upload photo instead</span>
+      </button>
 
-      <!-- Size slider -->
-      <div class="size-control">
-        <label>
-          <span>Size: {previewSize}px</span>
-          <input
-            type="range"
-            min="48"
-            max="200"
-            step="8"
-            bind:value={previewSize}
-          />
-        </label>
-      </div>
-    </section>
-
-    <!-- Controls -->
-    <section class="controls-section">
-      <!-- Shape Selection -->
-      <div class="control-group">
-        <h3>Shape</h3>
-        <div class="shape-options">
-          {#each SHAPES as shape}
-            <button
-              class="shape-option"
-              class:selected={selectedShape === shape.id}
-              onclick={() => (selectedShape = shape.id)}
-            >
-              <i class="fas {shape.icon}"></i>
-              <span>{shape.label}</span>
-            </button>
-          {/each}
+      {#if showUploadPrompt}
+        <div class="upload-prompt">
+          <p>Photo upload would appear here</p>
         </div>
-      </div>
+      {/if}
+    </div>
+  </section>
 
-      <!-- Theme Selection -->
-      <div class="control-group">
-        <h3>Theme (Background)</h3>
-        <div class="theme-options">
-          {#each THEMES as theme}
-            <button
-              class="theme-option"
-              class:selected={selectedTheme === theme.id}
-              onclick={() => (selectedTheme = theme.id)}
-              style="background: {buildGradient(theme.colors)};"
-              title={theme.label}
-            >
-              {#if selectedTheme === theme.id}
-                <i class="fas fa-check"></i>
-              {/if}
-            </button>
-          {/each}
-        </div>
-      </div>
+  <!-- Prop Selection (simulating "favorite prop" from earlier in signup) -->
+  <section class="prop-section">
+    <h3>Your Favorite Prop</h3>
+    <p class="section-hint">This was selected earlier in signup</p>
+    <div class="prop-options">
+      {#each PROPS as prop}
+        <button
+          class="prop-option"
+          class:selected={selectedProp === prop.id}
+          onclick={() => (selectedProp = prop.id)}
+          title={prop.label}
+        >
+          <img src={prop.image} alt={prop.label} />
+        </button>
+      {/each}
+    </div>
+  </section>
 
-      <!-- Prop Selection -->
-      <div class="control-group">
-        <h3>Favorite Prop</h3>
-        <div class="prop-options">
-          {#each PROPS as prop}
-            <button
-              class="prop-option"
-              class:selected={selectedProp === prop.id}
-              onclick={() => (selectedProp = prop.id)}
-              title={prop.label}
-            >
-              <img src={prop.image} alt={prop.label} />
-            </button>
-          {/each}
-        </div>
-      </div>
-    </section>
-
-    <!-- Grid Preview: Show all themes with selected shape and prop -->
-    <section class="grid-section">
-      <h3>All Themes Preview</h3>
-      <div class="avatar-grid">
-        {#each THEMES as theme}
-          <div class="grid-item">
-            <div
-              class="avatar-preview small"
-              style="
-                width: 64px;
-                height: 64px;
-                background: {buildGradient(theme.colors)};
-                clip-path: {getClipPath(selectedShape)};
-                border-radius: {getBorderRadius(selectedShape)};
-              "
-            >
-              {#if currentPropImage}
-                <img
-                  src={currentPropImage}
-                  alt="Prop silhouette"
-                  class="prop-silhouette"
-                />
-              {/if}
-            </div>
-            <span class="theme-label">{theme.label}</span>
+  <!-- All Gradients Grid -->
+  <section class="gradient-gallery">
+    <h3>All Gradient Options ({GRADIENT_LIBRARY.length})</h3>
+    <div class="gradient-grid">
+      {#each GRADIENT_LIBRARY as gradient, index}
+        <button
+          class="gradient-preview"
+          class:selected={selectedGradientIndex === index}
+          onclick={() => (selectedGradientIndex = index)}
+          title={gradient.name}
+        >
+          <div
+            class="gradient-avatar"
+            style="background: {gradient.gradient};"
+          >
+            {#if currentPropImage}
+              <img
+                src={currentPropImage}
+                alt="Prop"
+                class="prop-silhouette small"
+              />
+            {/if}
           </div>
-        {/each}
-      </div>
-    </section>
+          <span class="gradient-label">{gradient.name}</span>
+        </button>
+      {/each}
+    </div>
+  </section>
 
-    <!-- Shape Comparison: Show all shapes with selected theme and prop -->
-    <section class="grid-section">
-      <h3>All Shapes Preview</h3>
-      <div class="avatar-grid">
-        {#each SHAPES as shape}
-          <div class="grid-item">
-            <div
-              class="avatar-preview small"
-              style="
-                width: 64px;
-                height: 64px;
-                background: {buildGradient(currentThemeColors)};
-                clip-path: {getClipPath(shape.id)};
-                border-radius: {getBorderRadius(shape.id)};
-              "
-            >
-              {#if currentPropImage}
-                <img
-                  src={currentPropImage}
-                  alt="Prop silhouette"
-                  class="prop-silhouette"
-                />
-              {/if}
-            </div>
-            <span class="theme-label">{shape.label}</span>
+  <!-- Size Variations -->
+  <section class="size-demo">
+    <h3>Size Variations</h3>
+    <div class="size-row">
+      {#each [32, 48, 64, 96, 128] as size}
+        <div class="size-item">
+          <div
+            class="avatar-preview"
+            style="
+              width: {size}px;
+              height: {size}px;
+              background: {currentGradient.gradient};
+            "
+          >
+            {#if currentPropImage}
+              <img
+                src={currentPropImage}
+                alt="Prop"
+                class="prop-silhouette"
+              />
+            {/if}
           </div>
-        {/each}
-      </div>
-    </section>
-  </div>
+          <span class="size-label">{size}px</span>
+        </div>
+      {/each}
+    </div>
+  </section>
 </div>
 
 <style>
   .avatar-lab {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    gap: 32px;
     padding: 24px;
     overflow-y: auto;
+    height: 100%;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     color: var(--theme-text, #ffffff);
   }
 
-  .lab-header {
-    margin-bottom: 24px;
+  /* Signup Preview Section */
+  .signup-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
   }
 
-  .lab-header h1 {
+  .preview-header {
+    text-align: center;
+  }
+
+  .preview-header h2 {
     font-size: 24px;
     font-weight: 600;
     margin: 0 0 8px 0;
   }
 
-  .lab-header p {
+  .preview-header p {
     font-size: 14px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     margin: 0;
   }
 
-  .lab-content {
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
-  }
-
-  /* Preview Section */
-  .preview-section {
+  .profile-card {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 16px;
     padding: 32px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-radius: 12px;
+    border-radius: 16px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    max-width: 320px;
+    width: 100%;
+  }
+
+  .avatar-container {
+    position: relative;
   }
 
   .avatar-preview {
-    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  }
-
-  .avatar-preview.small {
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   .prop-silhouette {
-    width: 60%;
-    height: 60%;
+    width: 55%;
+    height: 55%;
     object-fit: contain;
-    filter: brightness(0) invert(1) opacity(0.85);
+    filter: brightness(0) invert(1) opacity(0.9);
   }
 
-  .size-control {
-    width: 100%;
-    max-width: 300px;
+  .prop-silhouette.small {
+    width: 50%;
+    height: 50%;
   }
 
-  .size-control label {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  .size-control input[type="range"] {
-    width: 100%;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    appearance: none;
-  }
-
-  .size-control input[type="range"]::-webkit-slider-thumb {
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--theme-accent, #6366f1);
-    cursor: pointer;
-  }
-
-  /* Controls Section */
-  .controls-section {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .control-group h3 {
-    font-size: 14px;
-    font-weight: 600;
-    margin: 0 0 12px 0;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  /* Shape Options */
-  .shape-options {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .shape-option {
+  .user-info {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 12px 16px;
+    gap: 4px;
+  }
+
+  .user-name {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .gradient-name {
+    font-size: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .avatar-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .control-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
     color: var(--theme-text, #ffffff);
     cursor: pointer;
     transition: all 0.15s ease;
-    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .shape-option:hover {
+  .control-btn:hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
-  .shape-option.selected {
-    background: var(--theme-accent, #6366f1);
-    border-color: var(--theme-accent, #6366f1);
-  }
-
-  .shape-option i {
-    font-size: 20px;
-  }
-
-  /* Theme Options */
-  .theme-options {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .theme-option {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: all 0.15s ease;
+  .shuffle-btn {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--theme-accent, #6366f1);
+    border: none;
+    border-radius: 8px;
     color: white;
-    font-size: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
   }
 
-  .theme-option:hover {
-    transform: scale(1.05);
+  .shuffle-btn:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
   }
 
-  .theme-option.selected {
-    border-color: white;
-    box-shadow: 0 0 0 2px var(--theme-accent, #6366f1);
+  .shuffle-btn:active {
+    transform: scale(0.98);
   }
 
-  /* Prop Options */
+  .upload-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .upload-btn:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .upload-prompt {
+    padding: 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 8px;
+    width: 100%;
+    text-align: center;
+    font-size: 13px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  /* Prop Section */
+  .prop-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .prop-section h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  .section-hint {
+    font-size: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    margin: 0 0 8px 0;
+  }
+
   .prop-options {
     display: flex;
     gap: 8px;
@@ -508,8 +533,8 @@
   }
 
   .prop-option {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     padding: 8px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -535,35 +560,93 @@
     filter: brightness(0) invert(1);
   }
 
-  /* Grid Section */
-  .grid-section {
+  /* Gradient Gallery */
+  .gradient-gallery {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .grid-section h3 {
+  .gradient-gallery h3 {
     font-size: 14px;
     font-weight: 600;
     margin: 0;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
-  .avatar-grid {
+  .gradient-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 12px;
+  }
+
+  .gradient-preview {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .gradient-preview:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .gradient-preview.selected {
+    border-color: var(--theme-accent, #6366f1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .gradient-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .gradient-label {
+    font-size: 11px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  /* Size Demo */
+  .size-demo {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .size-demo h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  .size-row {
+    display: flex;
+    align-items: flex-end;
     gap: 16px;
     flex-wrap: wrap;
   }
 
-  .grid-item {
+  .size-item {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
   }
 
-  .theme-label {
-    font-size: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  .size-label {
+    font-size: 11px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 </style>

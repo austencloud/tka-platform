@@ -104,7 +104,7 @@ export class PresenceTracker implements IPresenceTracker {
       activityStatus: "active",
       lastActivity: now,
       lastSeen: now,
-      currentModule: "dashboard",
+      currentModule: "create",
       currentTab: null,
       sessionId: sessionInfo.sessionId,
       device: sessionInfo.device,
