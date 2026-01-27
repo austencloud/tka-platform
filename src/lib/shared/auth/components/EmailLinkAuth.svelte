@@ -2,18 +2,19 @@
   /**
    * Passwordless Email Link Authentication
    *
-   * Sends a magic link to the user's email for passwordless sign-in
+   * Sends a branded magic link via Cloud Function + Resend,
+   * then completes sign-in using Firebase Auth.
    */
 
   import {
-    sendSignInLinkToEmail,
     isSignInWithEmailLink,
     signInWithEmailLink,
     browserLocalPersistence,
     indexedDBLocalPersistence,
     setPersistence,
   } from "firebase/auth";
-  import { auth } from "../firebase";
+  import { httpsCallable } from "firebase/functions";
+  import { auth, getFunctionsInstance } from "../firebase";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -46,32 +47,40 @@
     success = null;
 
     try {
-      // Configure the email action handler
-      const actionCodeSettings = {
-        // URL where the user will be redirected after clicking the link
-        url: window.location.origin + "/auth/login",
-        handleCodeInApp: true,
-      };
+      // Get Functions instance and call Cloud Function
+      const functions = await getFunctionsInstance();
+      const sendMagicLink = httpsCallable<
+        { email: string; continueUrl: string },
+        { success: boolean; message?: string; error?: string }
+      >(functions, "sendMagicLink");
 
-      // Send the email link
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      const result = await sendMagicLink({
+        email,
+        continueUrl: window.location.origin + "/auth/login",
+      });
 
-      // Save the email locally so we can complete sign-in on the same device
-      window.localStorage.setItem("emailForSignIn", email);
-
-      success = `Magic link sent! Check your email at ${email}`;
+      if (result.data.success) {
+        // Save the email locally so we can complete sign-in on the same device
+        window.localStorage.setItem("emailForSignIn", email);
+        success = `Magic link sent! Check your email at ${email}`;
+      } else {
+        throw new Error(result.data.error || "Failed to send magic link");
+      }
     } catch (err: any) {
       console.error(`❌ [email-link] Error sending email:`, err);
-      console.error(`❌ [email-link] Error code:`, err.code);
 
-      if (err.code === "auth/invalid-email") {
+      // Handle Cloud Function errors
+      const errorCode = err.code || "";
+      const errorMessage = err.message || "";
+
+      if (errorCode.includes("invalid-argument") || errorMessage.includes("Invalid email")) {
         error = "Invalid email address.";
         toast.error("Invalid email address.");
-      } else if (err.code === "auth/missing-email") {
-        error = "Please enter your email address.";
-        toast.error("Please enter your email address.");
+      } else if (errorCode.includes("failed-precondition")) {
+        error = "Email service temporarily unavailable. Please try again later.";
+        toast.error("Email service unavailable. Please try again.");
       } else {
-        error = err.message || "Failed to send email. Please try again.";
+        error = "Failed to send email. Please try again.";
         toast.error("Failed to send magic link. Please try again.");
       }
     } finally {
@@ -149,10 +158,7 @@
   }}
   class="email-link-form"
 >
-  <div class="form-header">
-    <h3>Sign in with Email Link</h3>
-    <p>We'll send you a magic link - no password needed!</p>
-  </div>
+  <p class="magic-link-hint">No password needed - we'll email you a sign-in link.</p>
 
   <div class="form-group">
     <label for="email-link">{t("form_email")}</label>
@@ -220,26 +226,16 @@
   .email-link-form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: clamp(8px, 1.5vh, 12px);
     width: 100%;
   }
 
-  .form-header {
-    text-align: center;
-    margin-bottom: 0.5rem;
-  }
-
-  .form-header h3 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: color-mix(in srgb, var(--theme-text, white) 95%, transparent);
-    margin: 0 0 0.25rem 0;
-  }
-
-  .form-header p {
-    font-size: 0.875rem;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+  .magic-link-hint {
     margin: 0;
+    font-size: clamp(0.75rem, 1.6vh, 0.875rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    text-align: center;
+    line-height: 1.4;
   }
 
   .form-group {

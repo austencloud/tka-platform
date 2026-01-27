@@ -11,13 +11,11 @@
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import SocialAuthButton from "$lib/shared/auth/components/SocialAuthButton.svelte";
-  import EmailPasswordAuth from "$lib/shared/auth/components/EmailPasswordAuth.svelte";
-  import EmailLinkAuth from "$lib/shared/auth/components/EmailLinkAuth.svelte";
+  import EmailAuthTabs from "$lib/shared/auth/components/EmailAuthTabs.svelte";
   import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
   import { isGoogleOneTapConfigured } from "$lib/shared/auth/config/google-oauth";
   import LegalSheet from "$lib/shared/legal/components/LegalSheet.svelte";
 
-  let emailAuthMode: "password" | "link" = $state("link"); // Default to passwordless
   let hasRedirected = $state(false);
 
   // Legal sheet state
@@ -138,29 +136,8 @@
         <span>or</span>
       </div>
 
-      <!-- Toggle between passwordless and password-based auth -->
-      <div class="auth-mode-toggle">
-        <button
-          type="button"
-          class:active={emailAuthMode === "link"}
-          onclick={() => (emailAuthMode = "link")}
-        >
-          Magic Link
-        </button>
-        <button
-          type="button"
-          class:active={emailAuthMode === "password"}
-          onclick={() => (emailAuthMode = "password")}
-        >
-          Password
-        </button>
-      </div>
-
-      {#if emailAuthMode === "link"}
-        <EmailLinkAuth />
-      {:else}
-        <EmailPasswordAuth />
-      {/if}
+      <!-- Email Auth (Magic Link or Password) -->
+      <EmailAuthTabs />
 
       <div class="login-footer">
         <p>
@@ -275,38 +252,6 @@
     padding: 0 1rem;
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: 0.875rem;
-  }
-
-  .auth-mode-toggle {
-    display: flex;
-    gap: 0.5rem;
-    background: var(--theme-card-bg);
-    padding: 0.25rem;
-    border-radius: 0.5rem;
-  }
-
-  .auth-mode-toggle button {
-    flex: 1;
-    padding: 0.5rem 1rem;
-    background: transparent;
-    border: none;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .auth-mode-toggle button:hover {
-    color: var(--theme-text);
-  }
-
-  .auth-mode-toggle button.active {
-    background: var(--theme-panel-elevated-bg);
-    color: var(--theme-text);
-    box-shadow: 0 1px 3px
-      color-mix(in srgb, var(--theme-shadow) 25%, transparent);
   }
 
   .login-footer {

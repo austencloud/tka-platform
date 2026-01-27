@@ -1,8 +1,8 @@
 /**
  * Firebase Cloud Functions for TKA Scribe
  *
- * Handles subscription-related background tasks like role sync.
- * Single $10/mo premium tier.
+ * Handles subscription-related background tasks like role sync,
+ * and custom email delivery via Resend.
  */
 
 import * as functions from "firebase-functions";
@@ -10,6 +10,9 @@ import * as admin from "firebase-admin";
 
 // Initialize Firebase Admin
 admin.initializeApp();
+
+// Export magic link function
+export { sendMagicLink } from "./sendMagicLink";
 
 const db = admin.firestore();
 
