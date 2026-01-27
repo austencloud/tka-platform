@@ -266,9 +266,12 @@ class SettingsState implements ISettingsState {
     const { _localTimestamp: _remoteTs, ...remoteWithoutMeta } = remoteSettings;
     const merged = { ...DEFAULT_SETTINGS, ...remoteWithoutMeta };
 
-    // Background-related settings to exclude from real-time sync
+    // Settings to exclude from real-time sync
     // These are device-local preferences that shouldn't change while actively using the app
+    // Background: Jarring to have background change while using
+    // Props: Rapid cycling (P key) causes race conditions with Firebase sync
     const excludeFromRealtimeSync = new Set([
+      // Background settings
       "backgroundType",
       "backgroundCategory",
       "backgroundQuality",
@@ -276,6 +279,11 @@ class SettingsState implements ISettingsState {
       "backgroundColor",
       "gradientColors",
       "gradientDirection",
+      // Prop settings - prevent race condition when rapidly cycling props
+      "bluePropType",
+      "redPropType",
+      "catDogMode",
+      "selectedPresetIndex",
     ]);
 
     // Apply to state (preserve local timestamp), excluding background settings
