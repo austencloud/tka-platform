@@ -54,7 +54,7 @@ import {
   WATCH_TABS,
 } from "../config/tab-definitions";
 
-import { MODULE_DEFINITIONS } from "../config/module-definitions";
+import { MODULE_DEFINITIONS, normalizeModuleId } from "../config/module-definitions";
 
 // Import storage keys from centralized config
 import {
@@ -182,19 +182,22 @@ export function createNavigationState() {
       currentLearnMode = savedLearnMode;
     }
 
-    // Load module persistence
+    // Load module persistence - normalize to handle migrations and typos
     const savedModule = localStorage.getItem(CURRENT_MODULE_KEY);
-    if (savedModule === "community" || savedModule === "account" || savedModule === "dashboard") {
-      // Migration: community, account, and dashboard modules redirect to create
-      // Dashboard is now a minimal launcher; Create is the default landing
-      currentModule = "create";
-      activeTab = DEFAULT_CREATE_TAB;
-      localStorage.setItem(CURRENT_MODULE_KEY, "create");
-    } else if (
-      savedModule &&
-      MODULE_DEFINITIONS.some((m) => m.id === savedModule)
-    ) {
-      currentModule = savedModule as ModuleId;
+    if (savedModule) {
+      const normalizedSavedModule = normalizeModuleId(savedModule);
+      if (normalizedSavedModule) {
+        currentModule = normalizedSavedModule;
+        // Fix localStorage if it had stale/migrated value
+        if (normalizedSavedModule !== savedModule) {
+          localStorage.setItem(CURRENT_MODULE_KEY, normalizedSavedModule);
+        }
+      } else {
+        // Invalid module in localStorage - clear it and use default
+        console.warn(`Invalid module "${savedModule}" in localStorage, using default`);
+        currentModule = "create";
+        localStorage.setItem(CURRENT_MODULE_KEY, "create");
+      }
     }
 
     // Load last open panel for each tab via panelPersistenceState
@@ -224,39 +227,54 @@ export function createNavigationState() {
 
       const firstPart = pathParts[0];
       if (pathParts.length >= 1 && firstPart) {
-        const urlModule = firstPart.toLowerCase();
+        const rawUrlModule = firstPart.toLowerCase();
         // Tab can come from path (/admin/loop-labeler) OR query param (?section=loop-labeler)
         const urlTab = pathParts[1]?.toLowerCase() || searchParams.get("section")?.toLowerCase();
 
-        // Check if URL specifies a valid module
-        const urlModuleDefinition = MODULE_DEFINITIONS.find(
-          (m) => m.id === urlModule
-        );
+        // Normalize module ID (handles migrations like "dashboard" → "create", typos → undefined)
+        const normalizedModule = normalizeModuleId(rawUrlModule);
 
-        if (urlModuleDefinition) {
-          // URL has valid module - use it
-          currentModule = urlModule as ModuleId;
+        // Get the module definition (or fall back to "create" for invalid modules)
+        const urlModuleDefinition = normalizedModule
+          ? MODULE_DEFINITIONS.find((m) => m.id === normalizedModule)
+          : null;
+
+        if (urlModuleDefinition && normalizedModule) {
+          // Valid module - use it
+          currentModule = normalizedModule;
 
           // Determine the tab to use
           if (urlModuleDefinition.sections.length > 0) {
-            // Module has tabs - check if URL specifies a valid one
+            // Module has tabs - check if URL specifies a valid one FOR THIS MODULE
             const validTab = urlTab
               ? urlModuleDefinition.sections.find((s) => s.id === urlTab)
               : null;
 
             if (validTab && urlTab) {
-              // URL has valid tab - use it
+              // URL has valid tab for this module - use it
               activeTab = urlTab;
             } else {
-              // No valid tab in URL - use default tab
+              // Invalid or missing tab - use module's default tab
               activeTab =
-                urlModule === "create"
+                normalizedModule === "create"
                   ? DEFAULT_CREATE_TAB
                   : urlModuleDefinition.sections[0]?.id || "";
             }
           } else {
             // Module has no tabs
             activeTab = "";
+          }
+        } else {
+          // Invalid module ID (typo like "sdashboard") - redirect to Create
+          console.warn(`Invalid module "${rawUrlModule}" in URL, redirecting to Create`);
+          currentModule = "create";
+          const createDef = MODULE_DEFINITIONS.find((m) => m.id === "create");
+          activeTab = DEFAULT_CREATE_TAB;
+
+          // Update URL to reflect the correction (avoid bookmark of broken URL)
+          if (typeof window !== "undefined" && window.history) {
+            const correctedPath = `/${currentModule}/${activeTab}`;
+            window.history.replaceState(null, "", correctedPath);
           }
         }
       }

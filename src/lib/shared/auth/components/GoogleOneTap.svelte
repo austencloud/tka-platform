@@ -18,10 +18,11 @@
 
   import { onMount, onDestroy } from "svelte";
   import { container } from "../../di";
-  
+
   import type { IAuthenticator } from "../services/contracts/IAuthenticator";
   import { GOOGLE_CLIENT_ID } from "../config/google-oauth";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+  import { isAutomatedBrowser } from "$lib/shared/environment/environment-features";
 
   const debug = createComponentLogger("GoogleOneTap");
 
@@ -108,8 +109,16 @@
       return;
     }
 
-    // Configuration for One Tap with FedCM enabled
-    // FedCM becomes mandatory in August 2025
+    // Disable FedCM in automated browser environments (Playwright, Puppeteer, etc.)
+    // FedCM explicitly blocks automated contexts for security - it will throw
+    // IdentityCredentialError if we try to use it. Fall back to legacy flow.
+    const isAutomated = isAutomatedBrowser();
+    if (isAutomated) {
+      debug.info("Automated browser detected - disabling FedCM");
+    }
+
+    // Configuration for One Tap
+    // FedCM becomes mandatory in August 2025 for real browsers
     // With FedCM: browser controls position, shows domain instead of app name
     const config: GoogleOneTapConfig = {
       client_id: GOOGLE_CLIENT_ID,
@@ -118,8 +127,8 @@
       cancel_on_tap_outside: false,
       context: "signin",
       itp_support: true,
-      // Enable FedCM - mandatory starting August 2025
-      use_fedcm_for_prompt: true,
+      // Enable FedCM unless in automated environment where it will fail
+      use_fedcm_for_prompt: !isAutomated,
     };
 
     if (promptParentId) {
@@ -127,7 +136,9 @@
     }
 
     window.google.accounts.id.initialize(config);
-    debug.success("Google One Tap initialized with FedCM enabled");
+    debug.success(
+      `Google One Tap initialized (FedCM: ${isAutomated ? "disabled - automated browser" : "enabled"})`
+    );
 
     if (autoPrompt) {
       // Small delay to let the page settle

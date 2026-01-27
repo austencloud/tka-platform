@@ -109,6 +109,38 @@ export function getEnvironmentName(): string {
 }
 
 /**
+ * Detect if running in an automated browser environment (Playwright, Puppeteer, etc.)
+ *
+ * Used to disable features that don't work in automated contexts, like FedCM.
+ * FedCM explicitly blocks automated environments for security reasons.
+ *
+ * Detection methods:
+ * 1. navigator.webdriver - Standard WebDriver flag (Playwright, Selenium, Puppeteer)
+ * 2. window.__playwright - Playwright-specific marker
+ * 3. window.__puppeteer - Puppeteer-specific marker
+ */
+export function isAutomatedBrowser(): boolean {
+  if (!browser) return false;
+
+  // Standard WebDriver flag - set by Playwright, Selenium, Puppeteer in automation mode
+  if (navigator.webdriver === true) {
+    return true;
+  }
+
+  // Playwright-specific markers
+  if ("__playwright" in window || "__pw_manual" in window) {
+    return true;
+  }
+
+  // Puppeteer-specific marker
+  if ("__puppeteer" in window) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Module visibility map for production (what's publicly released)
  */
 export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {

@@ -230,6 +230,7 @@ Same functionality, different density.
       sequenceState.setCurrentSequence({
         ...sequenceWithStart,
         name: spellState.inputWord,
+        intendedWord: spellState.inputWord, // User's intended word (before bridges)
         word: spellState.expandedWord || spellState.inputWord,
         metadata: {
           ...sequenceWithStart.metadata,

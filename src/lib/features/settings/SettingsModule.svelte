@@ -179,7 +179,7 @@
 
     if (swipeProgress >= 1) {
       // Swipe completed - exit settings
-      const previousModule = navigationState.previousModule || "dashboard";
+      const previousModule = navigationState.previousModule || "create";
       await handleModuleChange(previousModule as ModuleId);
     }
 
@@ -196,7 +196,7 @@
   // Handle back button tap - return to previous module
   async function handleBackToModule() {
     hapticService?.trigger("selection");
-    const previousModuleId = navigationState.previousModule || "dashboard";
+    const previousModuleId = navigationState.previousModule || "create";
     await handleModuleChange(previousModuleId as ModuleId);
   }
 </script>

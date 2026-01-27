@@ -137,6 +137,8 @@ export class BrowseFilter implements IBrowseFilter {
     return sequences.filter(
       (seq) =>
         seq.word.toLowerCase().includes(searchTerm) ||
+        seq.name.toLowerCase().includes(searchTerm) ||
+        seq.intendedWord?.toLowerCase().includes(searchTerm) ||
         seq.displayName?.toLowerCase().includes(searchTerm)
     );
   }

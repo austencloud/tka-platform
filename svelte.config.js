@@ -34,6 +34,15 @@ const config = {
     },
 
     // ============================================================================
+    // POSTHOG SESSION REPLAY FIX
+    // ============================================================================
+    // PostHog session replay requires absolute paths to properly record assets.
+    // By default, Svelte uses relative paths during SSR which breaks replay.
+    paths: {
+      relative: false,
+    },
+
+    // ============================================================================
     // 2026: SECURITY & PERFORMANCE
     // ============================================================================
     // CSRF protection with origin checking is enabled by default

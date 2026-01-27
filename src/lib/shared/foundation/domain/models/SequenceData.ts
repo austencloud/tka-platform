@@ -21,7 +21,19 @@ export interface SequenceData {
   readonly name: string;
   /** User's custom display name (optional). When set, shown as primary name in UI. */
   readonly displayName?: string;
-  /** TKA word - auto-generated from sequence letters, immutable */
+  /**
+   * The user's intended word before bridge letters were inserted.
+   * For spelled sequences: "CAKE" (what user typed)
+   * For non-spelled sequences: undefined
+   *
+   * Display priority: displayName > intendedWord > word
+   */
+  readonly intendedWord?: string;
+  /**
+   * The expanded TKA word including any bridge letters.
+   * This is the actual sequence of letters performed.
+   * Example: "CABΔKE" (CAKE with bridge letters Δ inserted)
+   */
   readonly word: string;
   readonly steps: readonly StepData[]; // Only actual steps (stepNumber >= 1), never start position
 
@@ -99,6 +111,7 @@ export function createSequenceData(
     word: data.word ?? "",
     steps,
     ...(data.displayName !== undefined && { displayName: data.displayName }),
+    ...(data.intendedWord !== undefined && { intendedWord: data.intendedWord }),
     thumbnails: data.thumbnails ?? [],
     isFavorite: data.isFavorite ?? false,
     isCircular: data.isCircular ?? false,

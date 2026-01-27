@@ -129,12 +129,12 @@
 <style>
   .matrix-row {
     display: grid;
-    /* 6 columns: name | USER | PREM | TEST | ADMIN | toggle */
-    grid-template-columns: 1fr repeat(4, 60px) 56px;
+    /* 6 columns: icon | USER | PREM | TEST | ADMIN | toggle */
+    grid-template-columns: 40px repeat(4, 1fr) 48px;
     gap: 4px;
     align-items: center;
     min-height: 48px;
-    padding: 6px 12px;
+    padding: 6px 8px;
     border-radius: 8px;
     position: relative;
     transition: background var(--duration-fast) ease;
@@ -144,6 +144,7 @@
     .matrix-row {
       grid-template-columns: 1fr repeat(4, 80px) 64px;
       gap: 8px;
+      padding: 6px 12px;
     }
   }
 
@@ -184,6 +185,13 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: none; /* Hidden on mobile - icon only */
+  }
+
+  @media (min-width: 700px) {
+    .feature-name {
+      display: block;
+    }
   }
 
   .role-cell {

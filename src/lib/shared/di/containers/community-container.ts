@@ -9,7 +9,7 @@ import { LeaderboardManager } from "$lib/shared/community/services/implementatio
 import { UserRepository } from "$lib/shared/community/services/implementations/UserRepository";
 import { ConnectionManager } from "$lib/shared/community/services/implementations/ConnectionManager";
 import { UserSearcher } from "$lib/shared/user-search/services/implementations/UserSearcher";
-import { FollowingFeedProvider } from "$lib/features/dashboard/services/implementations/FollowingFeedProvider";
+import { FollowingFeedProvider } from "$lib/features/community/services/implementations/FollowingFeedProvider";
 import { LocationProvider } from "$lib/features/community/services/implementations/LocationProvider";
 import { UserLocationRepository } from "$lib/features/community/services/implementations/UserLocationRepository";
 import { GeocodingService } from "$lib/features/community/services/implementations/GeocodingService";

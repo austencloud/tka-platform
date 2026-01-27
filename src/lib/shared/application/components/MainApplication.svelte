@@ -231,7 +231,7 @@
         event.preventDefault();
         // Toggle behavior: if in settings, go back to previous module
         if (navigationState.currentModule === "settings") {
-          const previousModule = navigationState.previousModule || "dashboard";
+          const previousModule = navigationState.previousModule || "create";
           switchModule(previousModule as ModuleId);
         } else {
           switchModule("settings" as ModuleId);

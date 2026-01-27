@@ -87,6 +87,7 @@
 		class:pending={displayState === "pending"}
 		class:error={displayState === "error"}
 		class:mobile={variant === "mobile"}
+		class:desktop={variant === "desktop"}
 		role="status"
 		aria-live="polite"
 		aria-label={ariaLabel}
@@ -185,6 +186,16 @@
 
 	.network-status.error i {
 		animation: shake 0.5s ease-in-out;
+	}
+
+	/* Desktop variant - fixed overlay in bottom-left corner */
+	/* Positioned outside layout flow to avoid shifting sidebar content */
+	.network-status.desktop {
+		position: fixed;
+		bottom: 16px;
+		left: 16px;
+		z-index: 200;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 	}
 
 	/* Mobile variant - smaller, icon-only */

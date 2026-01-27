@@ -170,8 +170,8 @@
   /**
    * Determine layout mode based on available viewport space.
    * - Large: Both width (≥1400px) and height (≥900px) have room for two-column
-   * - Medium: Width is okay but height is constrained - use stacked single column
-   * - Compact: Small screens - use tabs
+   * - Medium: Enough width AND height for stacked layout without excessive scrolling
+   * - Compact: Small screens - use tabs to save vertical space
    */
   function determineLayoutMode(): "compact" | "medium" | "large" {
     const width = window.innerWidth;
@@ -182,13 +182,14 @@
       return "large";
     }
 
-    // Medium: reasonable width but not enough height for two-column
-    // Use single column stacked layout (profile + admin above, activity below)
-    if (width >= 900 && height >= 700) {
+    // Medium: need both reasonable width AND height for stacked layout
+    // The stacked layout (profile+admin above, activity below) needs ~950px height
+    // to avoid excessive scrolling
+    if (width >= 900 && height >= 950) {
       return "medium";
     }
 
-    // Compact: use tabs to save space
+    // Compact: use tabs to save vertical space when height is constrained
     return "compact";
   }
 
@@ -252,6 +253,7 @@
                 <AvatarImage
                   src={userProfile.avatar}
                   alt={userProfile.displayName}
+                  name={userProfile.displayName}
                   size={120}
                 />
                 <div class="level-badge">
@@ -400,6 +402,7 @@
                 <AvatarImage
                   src={userProfile.avatar}
                   alt={userProfile.displayName}
+                  name={userProfile.displayName}
                   size={64}
                 />
                 <div class="level-badge small">
@@ -542,6 +545,7 @@
                   <AvatarImage
                     src={userProfile.avatar}
                     alt={userProfile.displayName}
+                    name={userProfile.displayName}
                     size={72}
                   />
                   <div class="level-badge small">
@@ -740,7 +744,10 @@
   /* Body Content */
   .modal-body-content {
     padding: 20px;
-    min-height: 400px;
+    min-height: 300px;
+    /* Prevent content from overflowing modal - scroll if needed */
+    max-height: calc(90vh - 80px); /* Account for modal header */
+    overflow-y: auto;
   }
 
   .modal-body-content.layout-large {

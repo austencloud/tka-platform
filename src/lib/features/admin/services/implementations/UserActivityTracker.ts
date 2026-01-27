@@ -12,6 +12,7 @@ import {
   limit as firestoreLimit,
   where,
   Timestamp,
+  onSnapshot,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { IPresenceTracker } from "$lib/shared/presence/services/contracts/IPresenceTracker";
@@ -83,29 +84,47 @@ export class UserActivityTracker implements IUserActivityTracker {
       { displayName: string; email: string; photoURL: string | null }
     > = new Map();
     let presenceUsers: UserPresenceWithId[] = [];
-    let isInitialized = false;
+    let isFirestoreReady = false;
+    let isPresenceReady = false;
+    let unsubscribeFirestore: (() => void) | null = null;
 
-    // Fetch all users from Firestore
+    // Subscribe to Firestore users collection for real-time updates
     (async () => {
       try {
         const firestore = await getFirestoreInstance();
         const usersRef = collection(firestore, "users");
-        const snapshot = await getDocs(usersRef);
 
-        snapshot.docs.forEach((doc) => {
-          const data = doc.data();
-          allFirestoreUsers.set(doc.id, {
-            displayName: (data["displayName"] as string) ?? "Unknown",
-            email: (data["email"] as string) ?? "",
-            photoURL: (data["photoURL"] as string | null) ?? null,
-          });
-        });
+        // Use onSnapshot instead of getDocs to get real-time updates
+        unsubscribeFirestore = onSnapshot(
+          usersRef,
+          (snapshot) => {
+            // Clear and rebuild the map on each snapshot
+            allFirestoreUsers.clear();
 
-        isInitialized = true;
-        mergeAndNotify();
+            snapshot.docs.forEach((doc) => {
+              const data = doc.data();
+              allFirestoreUsers.set(doc.id, {
+                displayName: (data["displayName"] as string) ?? "Unknown",
+                email: (data["email"] as string) ?? "",
+                photoURL: (data["photoURL"] as string | null) ?? null,
+              });
+            });
+
+            isFirestoreReady = true;
+            if (isPresenceReady) {
+              mergeAndNotify();
+            }
+          },
+          (error) => {
+            console.error(
+              "[UserActivityTracker] Firestore subscription error:",
+              error
+            );
+          }
+        );
       } catch (error) {
         console.error(
-          "[UserActivityTracker] Failed to fetch all users:",
+          "[UserActivityTracker] Failed to subscribe to users:",
           error
         );
       }
@@ -115,7 +134,8 @@ export class UserActivityTracker implements IUserActivityTracker {
     const unsubscribePresence = this.presenceService.subscribeToAllPresence(
       (users) => {
         presenceUsers = users;
-        if (isInitialized) {
+        isPresenceReady = true;
+        if (isFirestoreReady) {
           mergeAndNotify();
         }
       }
@@ -131,8 +151,14 @@ export class UserActivityTracker implements IUserActivityTracker {
         const presence = presenceMap.get(userId);
 
         if (presence) {
-          // User has presence data - use it
-          merged.push(presence);
+          // User has presence data - merge with Firestore data
+          // Prefer Firestore displayName as it's the authoritative source for admin edits
+          merged.push({
+            ...presence,
+            displayName: userData.displayName || presence.displayName,
+            email: userData.email || presence.email,
+            photoURL: userData.photoURL ?? presence.photoURL,
+          });
         } else {
           // User exists in Firestore but no presence data - create default
           merged.push({
@@ -166,6 +192,9 @@ export class UserActivityTracker implements IUserActivityTracker {
     // Return cleanup function
     return () => {
       unsubscribePresence();
+      if (unsubscribeFirestore) {
+        unsubscribeFirestore();
+      }
     };
   }
 

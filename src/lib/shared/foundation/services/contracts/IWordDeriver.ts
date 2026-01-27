@@ -24,7 +24,11 @@ export interface IWordDeriver {
 
   /**
    * Get the display name for a sequence
-   * Prefers displayName > derived word > name > id
+   * Priority: displayName > intendedWord > word > name > id
+   *
+   * - displayName: User's explicit custom name (e.g., "My Fire Routine")
+   * - intendedWord: What user typed before bridges (e.g., "CAKE")
+   * - word: Expanded TKA letters with bridges (e.g., "CABΔKE")
    */
   getDisplayName(sequence: SequenceData): string;
 }

@@ -179,6 +179,18 @@
             {:else}
               <LoadedModule />
             {/if}
+          {:else if activeModule}
+            <!-- Module name is set but component didn't load - show error with retry -->
+            <div class="module-error" role="alert">
+              <p>Module "{activeModule}" failed to load</p>
+              <button
+                class="reload-button"
+                onclick={() => window.location.reload()}
+                type="button"
+              >
+                Reload Page
+              </button>
+            </div>
           {/if}
         {:catch error}
           <div class="module-error" role="alert">

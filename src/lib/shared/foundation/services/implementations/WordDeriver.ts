@@ -42,10 +42,15 @@ export class WordDeriver implements IWordDeriver {
 
   /**
    * Get the display name for a sequence
-   * Prefers displayName > derived word > name > id
+   * Priority: displayName > intendedWord > word > name > id
+   *
+   * - displayName: User's explicit custom name (e.g., "My Fire Routine")
+   * - intendedWord: What user typed before bridges (e.g., "CAKE")
+   * - word: Expanded TKA letters with bridges (e.g., "CABΔKE")
    */
   getDisplayName(sequence: SequenceData): string {
     if (sequence.displayName) return sequence.displayName;
+    if (sequence.intendedWord) return sequence.intendedWord;
     return this.derive(sequence) || sequence.name || sequence.id;
   }
 }

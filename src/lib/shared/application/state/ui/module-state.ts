@@ -311,11 +311,15 @@ export async function initializeModulePersistence(): Promise<void> {
     // - If URL specifies a module, always use URL (deep linking - user explicitly navigated here)
     // - Otherwise use saved module (normal restore)
     const isUrlNavigation = !!urlModule;
-    const effectiveModule = urlModule || savedModule;
+    const rawEffectiveModule = urlModule || savedModule;
 
-    if (effectiveModule) {
-      // Cast to ModuleId since we're checking if it's a valid module
-      const moduleId = effectiveModule as ModuleId;
+    // Normalize the module ID (handles migrations like "dashboard" → "create" and typos)
+    const normalizedModule = rawEffectiveModule
+      ? normalizeModuleId(rawEffectiveModule)
+      : undefined;
+
+    if (normalizedModule) {
+      const moduleId = normalizedModule;
 
       // IMPORTANT: During initial load, skip access check because auth might not be ready yet
       // revalidateCurrentModule() will correct this after auth loads if needed
@@ -328,11 +332,18 @@ export async function initializeModulePersistence(): Promise<void> {
       // Pass URL tab if this is URL-based navigation (deep linking)
       syncBothStateSystems(moduleId, isUrlNavigation ? urlTab ?? undefined : undefined);
 
+      // Clean up localStorage if we normalized the value
       if (browser) {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ moduleId }));
       }
     } else {
-      // No saved module
+      // No valid module (could be typo like "sdashboard" or truly empty)
+      if (rawEffectiveModule) {
+        console.warn(
+          `Invalid module "${rawEffectiveModule}" - redirecting to Create`
+        );
+      }
+
       const defaultModule = "create" as ModuleId;
 
       // Load default module's DI services
@@ -349,6 +360,11 @@ export async function initializeModulePersistence(): Promise<void> {
           LOCAL_STORAGE_KEY,
           JSON.stringify({ moduleId: defaultModule })
         );
+        // Fix the URL if it had an invalid module
+        if (rawEffectiveModule && window.history) {
+          const correctedPath = `/create/constructor`;
+          window.history.replaceState(null, "", correctedPath);
+        }
       }
     }
   } catch (_error) {

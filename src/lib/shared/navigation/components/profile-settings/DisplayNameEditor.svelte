@@ -71,6 +71,7 @@
 
 <div class="section">
   <label class="label" for="display-name">Display Name</label>
+  <p class="helper-text">This is your public identity. Other users will see this name when they view your sequences, comments, and profile.</p>
   {#if isEditing}
     <div class="input-row">
       <input
@@ -132,6 +133,13 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--theme-text);
+  }
+
+  .helper-text {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
+    line-height: 1.4;
   }
 
   .value-row {

@@ -12,6 +12,7 @@
   import { registerCacheClearShortcut } from "$lib/shared/utils/cache-buster";
   import { initI18n } from "$lib/shared/i18n/i18n.svelte.js";
   import { initModalUrlState, cleanupModalUrlState } from "$lib/shared/application/state/ui/modal-url-state.svelte";
+  import { initPostHog } from "$lib/shared/analytics/services/posthog";
   import "../app.css";
   // Import modern view transitions CSS
   import "$lib/shared/transitions/view-transitions.css";
@@ -42,6 +43,9 @@
   }
 
   onMount(() => {
+    // 📊 ANALYTICS: Initialize PostHog first for early event capture
+    initPostHog();
+
     // ⚡ CRITICAL: Initialize i18n and set HTML dir attribute
     initI18n();
 

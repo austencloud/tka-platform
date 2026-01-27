@@ -13,6 +13,36 @@ import type { IProfilePictureManager } from "../contracts/IProfilePictureManager
 import type { IUsernameValidator } from "../contracts/IUsernameValidator";
 import { formatUsername } from "../../domain/models/UsernameValidation";
 
+/**
+ * Capitalize each word in a name (e.g., "brendan freaney" -> "Brendan Freaney")
+ * Handles common edge cases like hyphenated names and apostrophes.
+ */
+function capitalizeName(name: string): string {
+  if (!name) return name;
+
+  return name
+    .split(" ")
+    .map((word) => {
+      if (!word) return word;
+      // Handle hyphenated names (e.g., "mary-jane" -> "Mary-Jane")
+      if (word.includes("-")) {
+        return word
+          .split("-")
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+          .join("-");
+      }
+      // Handle names with apostrophes (e.g., "o'brien" -> "O'Brien")
+      if (word.includes("'")) {
+        const parts = word.split("'");
+        return parts
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+          .join("'");
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ");
+}
+
 export class UserDocumentManager implements IUserDocumentManager {
   constructor(
     private readonly profilePictureService: IProfilePictureManager,
@@ -34,9 +64,9 @@ export class UserDocumentManager implements IUserDocumentManager {
       const userDocRef = doc(firestore, `users/${user.uid}`);
       const userDoc = await getDoc(userDocRef);
 
-      // Determine display name
-      const displayName =
-        user.displayName || user.email?.split("@")[0] || "Anonymous User";
+      // Determine display name and auto-capitalize
+      const rawName = user.displayName || user.email?.split("@")[0] || "Anonymous User";
+      const displayName = capitalizeName(rawName);
 
       // Get provider IDs for reliable profile picture URLs
       const providerIds = this.profilePictureService.getProviderIds(user);

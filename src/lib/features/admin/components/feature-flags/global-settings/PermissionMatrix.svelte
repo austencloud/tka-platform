@@ -251,17 +251,19 @@
 
   .matrix-row {
     display: grid;
-    /* 6 columns: name | USER | PREM | TEST | ADMIN | toggle */
-    grid-template-columns: 1fr repeat(4, 60px) 56px;
+    /* 6 columns: icon/Tab | USER | PREM | TEST | ADMIN | toggle */
+    grid-template-columns: 40px repeat(4, 1fr) 48px;
     gap: 4px;
     align-items: center;
     min-height: 44px;
+    padding: 0 8px;
   }
 
   @media (min-width: 700px) {
     .matrix-row {
       grid-template-columns: 1fr repeat(4, 80px) 64px;
       gap: 8px;
+      padding: 0 12px;
     }
   }
 
@@ -285,6 +287,13 @@
 
   .header-cell.feature-cell {
     text-align: left;
+    visibility: hidden; /* Hidden on mobile, just show icon column */
+  }
+
+  @media (min-width: 700px) {
+    .header-cell.feature-cell {
+      visibility: visible;
+    }
   }
 
   .role-cell.header-cell {

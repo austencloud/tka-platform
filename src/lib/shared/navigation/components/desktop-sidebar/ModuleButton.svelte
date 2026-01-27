@@ -76,10 +76,8 @@
       : authState.user?.displayName || "User"
   );
 
-  // Show user's profile picture for dashboard module when signed in
-  const showProfilePicture = $derived(
-    module.id === "dashboard" && authState.isAuthenticated && effectivePhotoURL
-  );
+  // Note: Dashboard module no longer exists - this code is kept for potential future use
+  const showProfilePicture = $derived(false);
   const profilePictureUrl = $derived(effectivePhotoURL || "");
   const profileDisplayName = $derived(effectiveDisplayName);
 </script>

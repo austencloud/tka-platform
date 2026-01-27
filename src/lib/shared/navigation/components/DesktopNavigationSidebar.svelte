@@ -169,7 +169,7 @@
 
     // Toggle behavior: if in settings, go back to previous module
     if (navigationState.currentModule === "settings") {
-      const previousModule = navigationState.previousModule || "dashboard";
+      const previousModule = navigationState.previousModule || "create";
       await onModuleChange?.(previousModule as ModuleId);
     } else {
       await onModuleChange?.("settings" as ModuleId);
@@ -345,8 +345,7 @@
                 !isOnTutorialChoiceStep}
               {@const forceActiveCollapsed = isCreateInTutorialCollapsed}
               {@const shouldShowGlassContainer =
-                (isModuleActive || forceActiveCollapsed) &&
-                (hasTabs || module.id === "dashboard")}
+                (isModuleActive || forceActiveCollapsed) && hasTabs}
 
               <!-- Module Context Group: Unified visual container for module + tabs -->
               <div
@@ -406,8 +405,7 @@
               module.id === "create" &&
               isCreateTutorialActive &&
               !isOnTutorialChoiceStep}
-            {@const forceActiveStyleLocal =
-              isCreateInTutorial || module.id === "dashboard"}
+            {@const forceActiveStyleLocal = isCreateInTutorial}
 
             <ModuleGroup
               module={{ ...module, sections: filteredSections }}
