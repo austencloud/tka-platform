@@ -14,6 +14,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { BrowseSortMethod } from "../domain/enums/browse-enums";
+  import ExpandableSearchBar from "./ExpandableSearchBar.svelte";
 
   interface Props {
     onSourceChange?: (source: SequenceSource) => void;
@@ -54,8 +55,14 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     if (filter.type === "startingLetter") return `Letter ${filter.value}`;
     if (filter.type === "length") return `${filter.value} steps`;
     if (filter.type === "startingPosition") return filter.value;
+    if (filter.type === "contains_letters") return `"${filter.value}"`;
     return filter.type;
   });
+
+  // Track if search is active (to avoid showing both search input and filter chip)
+  const isSearchFilter = $derived(
+    sequenceControls?.currentFilter?.type === "contains_letters"
+  );
 
   // Sort options
   const sortOptions = [
@@ -111,6 +118,26 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     hapticService?.trigger("selection");
     gridZoomManager.zoomOut();
   }
+
+  function handleSearch(query: string) {
+    if (!sequenceControls) return;
+
+    if (query.trim()) {
+      sequenceControls.onFilterChange({
+        type: "contains_letters",
+        value: query.trim(),
+      });
+    } else {
+      sequenceControls.onFilterChange({ type: "all", value: null });
+    }
+  }
+
+  function handleSearchClear() {
+    hapticService?.trigger("selection");
+    if (sequenceControls) {
+      sequenceControls.onFilterChange({ type: "all", value: null });
+    }
+  }
 </script>
 
 {#if sequenceControls}
@@ -156,8 +183,15 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
         </div>
       </div>
 
-      <!-- Right: Zoom controls + Filter controls -->
+      <!-- Right: Search + Zoom controls + Filter controls -->
       <div class="filter-section">
+        <!-- Expandable Search Bar -->
+        <ExpandableSearchBar
+          onSearch={handleSearch}
+          onClear={handleSearchClear}
+          placeholder="Search sequences..."
+        />
+
         <!-- Grid Zoom Controls -->
         <div class="zoom-controls">
           <button
@@ -183,8 +217,8 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
           </button>
         </div>
 
-        <!-- Active Filter (if any) -->
-        {#if hasActiveFilter && activeFilterLabel}
+        <!-- Active Filter (if any) - Don't show for search filters (handled by search bar) -->
+        {#if hasActiveFilter && activeFilterLabel && !isSearchFilter}
           <button class="active-filter-chip" onclick={handleClearFilter}>
             <span>{activeFilterLabel}</span>
             <i class="fas fa-times" aria-hidden="true"></i>

@@ -3,7 +3,7 @@
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import { container } from "$lib/shared/di";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
-  import { onMount, setContext, untrack } from "svelte";
+  import { onMount, onDestroy, setContext, untrack } from "svelte";
   import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -414,6 +414,19 @@
       cleanup?.();
       sequenceControlsManager.clear();
     };
+  });
+
+  // Cancel all pending thumbnail renders when leaving the browse module
+  // This prevents the render queue from continuing to process after navigation
+  onDestroy(() => {
+    try {
+      const orchestrator = container.items.thumbnailRenderOrchestrator;
+      if (orchestrator) {
+        orchestrator.cancelAll();
+      }
+    } catch {
+      // Service may not be available during HMR or early unmount
+    }
   });
 </script>
 
