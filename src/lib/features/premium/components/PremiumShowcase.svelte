@@ -4,8 +4,7 @@
   Composed from small, focused primitives for effective AI-assisted development.
 -->
 <script lang="ts">
-  import { logEvent } from "firebase/analytics";
-  import { analytics } from "../../../shared/auth/firebase";
+  import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { container } from "$lib/shared/di";
   import type { ISubscriptionManager } from "../../../shared/subscription/services/contracts/ISubscriptionManager";
   import type { IHapticFeedback } from "../../../shared/application/services/contracts/IHapticFeedback";
@@ -32,11 +31,9 @@
   const PRICE_ID =
     import.meta.env.PUBLIC_STRIPE_PRICE_ID || "price_1SgbRTLZdzgHfpQbEp99bKp7";
 
-  // Analytics tracking - sends to Firebase Analytics
+  // Analytics tracking - sends to PostHog
   function trackEvent(event: string, properties?: Record<string, unknown>) {
-    if (analytics) {
-      logEvent(analytics, event, properties);
-    }
+    captureEvent(event, properties);
   }
 
   $effect(() => {

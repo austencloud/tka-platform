@@ -20,6 +20,10 @@
   let LOOPLabelerModule: typeof import("$lib/features/loop-labeler/components/LOOPLabelerModule.svelte").default | null =
     $state(null);
 
+  // Lazy load PostHog Analytics Dashboard
+  let PostHogDashboard: typeof import("./analytics/PostHogDashboard.svelte").default | null =
+    $state(null);
+
   $effect(() => {
     if (activeSection === "loop-labeler" && !LOOPLabelerModule) {
       import("$lib/features/loop-labeler/components/LOOPLabelerModule.svelte")
@@ -28,6 +32,16 @@
         })
         .catch((err) => {
           console.error("Failed to load LOOP Labeler:", err);
+        });
+    }
+
+    if (activeSection === "analytics" && !PostHogDashboard) {
+      import("./analytics/PostHogDashboard.svelte")
+        .then((mod) => {
+          PostHogDashboard = mod.default;
+        })
+        .catch((err) => {
+          console.error("Failed to load PostHog Dashboard:", err);
         });
     }
   });
@@ -117,6 +131,21 @@
             <div class="loading-state">
               <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
               <p>Loading LOOP Labeler...</p>
+            </div>
+          {/if}
+        </div>
+      {:else if activeSection === "analytics"}
+        <div
+          id="analytics-panel"
+          role="tabpanel"
+          aria-labelledby="analytics-tab"
+        >
+          {#if PostHogDashboard}
+            <PostHogDashboard />
+          {:else}
+            <div class="loading-state">
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              <p>Loading Analytics...</p>
             </div>
           {/if}
         </div>

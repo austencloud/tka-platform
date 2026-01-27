@@ -18,9 +18,9 @@ import {
   remove,
 } from "firebase/database";
 import { doc, getDoc } from "firebase/firestore";
+import posthog from "posthog-js";
 import { database, auth, getFirestoreInstance } from "../../../auth/firebase";
 import type { IPresenceTracker } from "../contracts/IPresenceTracker";
-import type { ISessionTracker } from "../../../analytics/services/contracts/ISessionTracker";
 import type {
   UserPresence,
   UserPresenceWithId,
@@ -37,7 +37,52 @@ export class PresenceTracker implements IPresenceTracker {
   private activityTracker: ActivityTracker | null = null;
   private userDeleted = false;
 
-  constructor(private sessionTrackingService: ISessionTracker) {}
+  constructor() {}
+
+  /**
+   * Get session ID from PostHog (automatic session tracking)
+   * Falls back to generated ID if PostHog not available
+   */
+  private getSessionId(): string {
+    try {
+      const posthogSessionId = posthog.get_session_id?.();
+      if (posthogSessionId) return posthogSessionId;
+    } catch {
+      // PostHog not initialized
+    }
+
+    // Fallback: generate a simple session ID
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return `session-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  }
+
+  /**
+   * Detect device type from user agent and screen size
+   */
+  private detectDevice(): "desktop" | "mobile" | "tablet" {
+    if (typeof window === "undefined") return "desktop";
+
+    const userAgent = navigator.userAgent.toLowerCase();
+    const screenWidth = window.innerWidth;
+
+    const isMobileUA =
+      /android|webos|iphone|ipod|blackberry|iemobile|opera mini/i.test(
+        userAgent
+      );
+    const isTabletUA = /ipad|tablet|playbook|silk/i.test(userAgent);
+
+    if (isTabletUA || (isMobileUA && screenWidth >= 768)) {
+      return "tablet";
+    }
+
+    if (isMobileUA || screenWidth < 768) {
+      return "mobile";
+    }
+
+    return "desktop";
+  }
 
   /**
    * Check if the user's Firestore document exists.
@@ -93,12 +138,10 @@ export class PresenceTracker implements IPresenceTracker {
 
     this.presenceRef = ref(database, `presence/${userId}`);
 
-    // Get session info
-    const sessionInfo = this.sessionTrackingService.getSessionInfo();
-
     const now = Date.now();
 
     // Create presence data with activity tracking
+    // Session ID from PostHog (or fallback), device detected locally
     this.currentPresence = {
       online: true,
       activityStatus: "active",
@@ -106,8 +149,8 @@ export class PresenceTracker implements IPresenceTracker {
       lastSeen: now,
       currentModule: "create",
       currentTab: null,
-      sessionId: sessionInfo.sessionId,
-      device: sessionInfo.device,
+      sessionId: this.getSessionId(),
+      device: this.detectDevice(),
       displayName: user.displayName ?? undefined,
       email: user.email ?? undefined,
       photoURL: user.photoURL,

@@ -24,7 +24,6 @@ import {
   setPersistence,
 } from "firebase/auth";
 import type { Firestore } from "firebase/firestore";
-import type { Analytics } from "firebase/analytics";
 import type { Database } from "firebase/database";
 import type { FirebaseStorage } from "firebase/storage";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
@@ -466,54 +465,6 @@ export async function getFunctionsInstance(): Promise<import("firebase/functions
 // Pre-initialize functions in browser for faster first call
 if (typeof window !== "undefined") {
   getFunctionsInstance();
-}
-
-// ============================================================================
-// ANALYTICS (LAZY)
-// ============================================================================
-
-let analyticsInstance: Analytics | null = null;
-
-/**
- * Get Firebase Analytics instance (lazy)
- */
-export async function getAnalyticsInstance(): Promise<Analytics | null> {
-  if (analyticsInstance) {
-    return analyticsInstance;
-  }
-
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const { getAnalytics, isSupported } = await import("firebase/analytics");
-
-  const supported = await isSupported();
-  if (!supported) {
-    debug.warn("Firebase Analytics not supported");
-    return null;
-  }
-
-  analyticsInstance = getAnalytics(app);
-  debug.success("Firebase Analytics lazy-loaded");
-  return analyticsInstance;
-}
-
-/**
- * Legacy analytics export
- * @deprecated Use getAnalyticsInstance()
- */
-export let analytics: Analytics | null = null;
-
-// Initialize analytics (browser only)
-if (typeof window !== "undefined") {
-  getAnalyticsInstance()
-    .then((instance) => {
-      analytics = instance;
-    })
-    .catch(() => {
-      debug.info("Analytics not available");
-    });
 }
 
 // ============================================================================

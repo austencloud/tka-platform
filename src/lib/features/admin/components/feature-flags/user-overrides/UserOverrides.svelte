@@ -11,7 +11,7 @@
    * - Impact summary before save
    */
 
-  import { featureFlagService } from "$lib/shared/auth/services/FeatureFlagService.svelte";
+  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import type { FeatureId, UserFeatureOverrides } from "$lib/shared/auth/domain/models/FeatureFlag";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import AdminTwoPanelLayout from "$lib/shared/admin/components/AdminTwoPanelLayout.svelte";

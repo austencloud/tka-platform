@@ -15,11 +15,10 @@
   import { container } from "$lib/shared/di";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
-  import type { IUserActivityTracker, SessionSummary } from "../services/contracts/IUserActivityTracker";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
-  import type { ActivityEvent } from "$lib/shared/analytics/domain/models/ActivityEvent";
   import AvatarImage from "$lib/features/browse/creators/components/profile/AvatarImage.svelte";
   import ProfileAdminSection from "$lib/features/browse/creators/components/profile/ProfileAdminSection.svelte";
+  import UserActivityAnalytics from "./UserActivityAnalytics.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   interface Props {
@@ -33,24 +32,15 @@
 
   // Services
   let userService: IUserRepository | null = null;
-  let activityService: IUserActivityTracker | null = null;
 
   // Profile state
   let userProfile = $state<EnhancedUserProfile | null>(null);
   let isLoadingProfile = $state(true);
   let profileError = $state<string | null>(null);
 
-  // Activity state
-  let sessions = $state<SessionSummary[]>([]);
-  let selectedSession = $state<SessionSummary | null>(null);
-  let sessionEvents = $state<ActivityEvent[]>([]);
-  let isLoadingActivity = $state(true);
-  let isLoadingEvents = $state(false);
-
   // UI state
   let activeTab = $state<"profile" | "activity" | "admin">("profile");
   let layoutMode = $state<"compact" | "medium" | "large">("compact");
-  let modalBodyRef = $state<HTMLDivElement | null>(null);
 
   const currentUserId = $derived(authState.user?.uid);
   const isAdmin = $derived(authState.isAdmin);
@@ -64,57 +54,22 @@
 
   async function loadUserData(uid: string) {
     isLoadingProfile = true;
-    isLoadingActivity = true;
     profileError = null;
     userProfile = null;
-    sessions = [];
-    selectedSession = null;
-    sessionEvents = [];
 
     try {
       userService = container.items.userRepository;
-      activityService = container.items.userActivityTracker;
 
-      if (!userService || !activityService) {
-        throw new Error("Services not available");
+      if (!userService) {
+        throw new Error("User service not available");
       }
 
-      // Load profile and sessions in parallel
-      const [profile, userSessions] = await Promise.all([
-        userService.getUserProfile(uid, currentUserId),
-        activityService.getUserSessions(uid, 20),
-      ]);
-
-      userProfile = profile;
-      sessions = userSessions;
+      userProfile = await userService.getUserProfile(uid, currentUserId);
     } catch (err) {
       console.error("[UserDetailModal] Error loading user data:", err);
       profileError = err instanceof Error ? err.message : "Failed to load user";
     } finally {
       isLoadingProfile = false;
-      isLoadingActivity = false;
-    }
-  }
-
-  async function selectSession(session: SessionSummary) {
-    if (selectedSession?.sessionId === session.sessionId) {
-      selectedSession = null;
-      sessionEvents = [];
-      return;
-    }
-
-    selectedSession = session;
-    isLoadingEvents = true;
-
-    try {
-      if (activityService && userId) {
-        sessionEvents = await activityService.getSessionActivity(userId, session.sessionId);
-      }
-    } catch (e) {
-      console.error("Failed to load session events:", e);
-      sessionEvents = [];
-    } finally {
-      isLoadingEvents = false;
     }
   }
 
@@ -127,44 +82,6 @@
   function handleUserDeleted() {
     onUserDeleted?.();
     onclose();
-  }
-
-  function formatDuration(ms: number): string {
-    const minutes = Math.floor(ms / 60000);
-    const hours = Math.floor(minutes / 60);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes % 60}m`;
-    }
-    return `${minutes}m`;
-  }
-
-  function formatTime(date: Date): string {
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  }
-
-  function formatDate(date: Date): string {
-    return date.toLocaleDateString([], {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function getEventIcon(category: string): string {
-    switch (category) {
-      case "navigation":
-        return "fa-compass";
-      case "creation":
-        return "fa-plus";
-      case "session":
-        return "fa-clock";
-      case "interaction":
-        return "fa-hand-pointer";
-      default:
-        return "fa-circle";
-    }
   }
 
   /**
@@ -206,7 +123,7 @@
 <BaseModal
   bind:open
   onclose={() => onclose()}
-  size="xl"
+  size="lg"
   closeOnBackdrop={true}
   closeOnEscape={true}
   --modal-width="min(95vw, 1600px)"
@@ -316,79 +233,10 @@
         </div>
 
         <div class="column-secondary">
-          <!-- Activity Section -->
-          <section class="activity-section">
-            <h4 class="section-title">
-              <i class="fas fa-history" aria-hidden="true"></i>
-              Recent Activity
-            </h4>
-            {#if isLoadingActivity}
-              <div class="loading-inline">
-                <div class="spinner-small" aria-hidden="true"></div>
-              </div>
-            {:else if sessions.length === 0}
-              <div class="empty-state">
-                <i class="fas fa-clock" aria-hidden="true"></i>
-                <span>No sessions recorded</span>
-              </div>
-            {:else}
-              <div class="sessions-list themed-scrollbar">
-                {#each sessions as session}
-                  <button
-                    class="session-card"
-                    class:selected={selectedSession?.sessionId === session.sessionId}
-                    onclick={() => selectSession(session)}
-                  >
-                    <div class="session-header">
-                      <span class="session-date">{formatDate(session.startedAt)}</span>
-                      <span class="session-duration">{formatDuration(session.duration)}</span>
-                    </div>
-                    <div class="session-meta">
-                      <span class="event-count">
-                        <i class="fas fa-list" aria-hidden="true"></i>
-                        {session.eventCount} events
-                      </span>
-                      {#if session.modules.length > 0}
-                        <span class="modules">
-                          {session.modules.slice(0, 3).join(", ")}
-                          {#if session.modules.length > 3}
-                            +{session.modules.length - 3}
-                          {/if}
-                        </span>
-                      {/if}
-                    </div>
-                  </button>
-
-                  {#if selectedSession?.sessionId === session.sessionId}
-                    <div class="session-events">
-                      {#if isLoadingEvents}
-                        <div class="loading-inline">
-                          <div class="spinner-small" aria-hidden="true"></div>
-                        </div>
-                      {:else if sessionEvents.length === 0}
-                        <p class="no-events">No events recorded</p>
-                      {:else}
-                        <div class="events-timeline">
-                          {#each sessionEvents as event}
-                            <div class="event-item">
-                              <i class="fas {getEventIcon(event.category)}" aria-hidden="true"></i>
-                              <div class="event-info">
-                                <span class="event-type">{event.eventType}</span>
-                                <span class="event-time">{formatTime(event.timestamp)}</span>
-                              </div>
-                              {#if event.metadata?.module}
-                                <span class="event-module">{event.metadata.module}</span>
-                              {/if}
-                            </div>
-                          {/each}
-                        </div>
-                      {/if}
-                    </div>
-                  {/if}
-                {/each}
-              </div>
-            {/if}
-          </section>
+          <!-- Activity Analytics Section -->
+          {#if userId}
+            <UserActivityAnalytics userId={userId} />
+          {/if}
         </div>
       </div>
     {:else if layoutMode === "medium"}
@@ -458,45 +306,11 @@
           {/if}
         </div>
 
-        <!-- Activity section below -->
+        <!-- Activity Analytics section below -->
         <div class="medium-activity-row">
-          <section class="activity-section compact">
-            <h4 class="section-title">
-              <i class="fas fa-history" aria-hidden="true"></i>
-              Recent Activity
-            </h4>
-            {#if isLoadingActivity}
-              <div class="loading-inline">
-                <div class="spinner-small" aria-hidden="true"></div>
-              </div>
-            {:else if sessions.length === 0}
-              <div class="empty-state compact">
-                <i class="fas fa-clock" aria-hidden="true"></i>
-                <span>No sessions recorded</span>
-              </div>
-            {:else}
-              <div class="sessions-grid">
-                {#each sessions.slice(0, 4) as session}
-                  <button
-                    class="session-card compact"
-                    class:selected={selectedSession?.sessionId === session.sessionId}
-                    onclick={() => selectSession(session)}
-                  >
-                    <div class="session-header">
-                      <span class="session-date">{formatDate(session.startedAt)}</span>
-                      <span class="session-duration">{formatDuration(session.duration)}</span>
-                    </div>
-                    <div class="session-meta">
-                      <span class="event-count">
-                        <i class="fas fa-list" aria-hidden="true"></i>
-                        {session.eventCount} events
-                      </span>
-                    </div>
-                  </button>
-                {/each}
-              </div>
-            {/if}
-          </section>
+          {#if userId}
+            <UserActivityAnalytics userId={userId} compact={true} />
+          {/if}
         </div>
       </div>
     {:else}
@@ -602,74 +416,9 @@
             </section>
 
           {:else if activeTab === "activity"}
-            <section class="activity-section">
-              {#if isLoadingActivity}
-                <div class="loading-inline">
-                  <div class="spinner-small" aria-hidden="true"></div>
-                </div>
-              {:else if sessions.length === 0}
-                <div class="empty-state">
-                  <i class="fas fa-clock" aria-hidden="true"></i>
-                  <span>No sessions recorded</span>
-                </div>
-              {:else}
-                <div class="sessions-list">
-                  {#each sessions as session}
-                    <button
-                      class="session-card"
-                      class:selected={selectedSession?.sessionId === session.sessionId}
-                      onclick={() => selectSession(session)}
-                    >
-                      <div class="session-header">
-                        <span class="session-date">{formatDate(session.startedAt)}</span>
-                        <span class="session-duration">{formatDuration(session.duration)}</span>
-                      </div>
-                      <div class="session-meta">
-                        <span class="event-count">
-                          <i class="fas fa-list" aria-hidden="true"></i>
-                          {session.eventCount} events
-                        </span>
-                        {#if session.modules.length > 0}
-                          <span class="modules">
-                            {session.modules.slice(0, 3).join(", ")}
-                            {#if session.modules.length > 3}
-                              +{session.modules.length - 3}
-                            {/if}
-                          </span>
-                        {/if}
-                      </div>
-                    </button>
-
-                    {#if selectedSession?.sessionId === session.sessionId}
-                      <div class="session-events">
-                        {#if isLoadingEvents}
-                          <div class="loading-inline">
-                            <div class="spinner-small" aria-hidden="true"></div>
-                          </div>
-                        {:else if sessionEvents.length === 0}
-                          <p class="no-events">No events recorded</p>
-                        {:else}
-                          <div class="events-timeline">
-                            {#each sessionEvents as event}
-                              <div class="event-item">
-                                <i class="fas {getEventIcon(event.category)}" aria-hidden="true"></i>
-                                <div class="event-info">
-                                  <span class="event-type">{event.eventType}</span>
-                                  <span class="event-time">{formatTime(event.timestamp)}</span>
-                                </div>
-                                {#if event.metadata?.module}
-                                  <span class="event-module">{event.metadata.module}</span>
-                                {/if}
-                              </div>
-                            {/each}
-                          </div>
-                        {/if}
-                      </div>
-                    {/if}
-                  {/each}
-                </div>
-              {/if}
-            </section>
+            {#if userId}
+              <UserActivityAnalytics userId={userId} compact={true} />
+            {/if}
 
           {:else if activeTab === "admin" && isAdmin}
             <ProfileAdminSection
@@ -764,8 +513,7 @@
 
   /* Loading / Error States */
   .loading-state,
-  .error-state,
-  .empty-state {
+  .error-state {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -788,28 +536,12 @@
     animation: spin 1s linear infinite;
   }
 
-  .spinner-small {
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--theme-stroke);
-    border-top-color: var(--theme-accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  .loading-inline {
-    display: flex;
-    justify-content: center;
-    padding: 16px;
-  }
-
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .spinner,
-    .spinner-small {
+    .spinner {
       animation: none;
       border-top-color: var(--theme-accent);
       border-right-color: var(--theme-accent);
@@ -920,7 +652,8 @@
   }
 
   .avatar-wrapper.large {
-    /* Extra styling for large screens */
+    /* Reserved for large screen avatar styling */
+    flex-shrink: 0;
   }
 
   .level-badge {
@@ -1049,172 +782,6 @@
     line-height: 1.6;
   }
 
-  /* Activity Section */
-  .activity-section {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-
-  .section-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 0 0 20px;
-    font-size: var(--font-size-base);
-    font-weight: 600;
-    color: var(--theme-text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .section-title i {
-    font-size: 1.1rem;
-  }
-
-  .sessions-list {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .session-card {
-    display: block;
-    width: 100%;
-    padding: 16px 20px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 12px;
-    text-align: left;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .session-card:hover {
-    background: var(--theme-card-hover-bg);
-  }
-
-  .session-card:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .session-card.selected {
-    background: var(--theme-accent-bg);
-    border-color: var(--theme-accent);
-  }
-
-  .session-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-
-  .session-date {
-    font-size: var(--font-size-base);
-    font-weight: 500;
-    color: var(--theme-text);
-  }
-
-  .session-duration {
-    font-size: var(--font-size-sm);
-    color: var(--theme-accent);
-    font-weight: 600;
-    padding: 4px 10px;
-    background: var(--theme-accent-bg);
-    border-radius: 8px;
-  }
-
-  .session-meta {
-    display: flex;
-    gap: 16px;
-    font-size: var(--font-size-sm);
-    color: var(--theme-text-dim);
-  }
-
-  .event-count {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .modules {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .session-events {
-    margin-top: 12px;
-    padding: 16px;
-    background: var(--theme-panel-bg);
-    border-radius: 10px;
-  }
-
-  .no-events {
-    margin: 0;
-    text-align: center;
-    font-size: var(--font-size-sm);
-    color: var(--theme-text-dim);
-  }
-
-  .events-timeline {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-height: 300px;
-    overflow-y: auto;
-  }
-
-  .event-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: var(--font-size-sm);
-    color: var(--theme-text-dim);
-    padding: 8px 0;
-    border-bottom: 1px solid var(--theme-stroke);
-  }
-
-  .event-item:last-child {
-    border-bottom: none;
-  }
-
-  .event-item i {
-    width: 18px;
-    color: var(--theme-accent);
-    opacity: 0.8;
-    font-size: var(--font-size-base);
-  }
-
-  .event-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .event-type {
-    color: var(--theme-text);
-    font-weight: 500;
-  }
-
-  .event-time {
-    color: var(--theme-text-dim);
-  }
-
-  .event-module {
-    padding: 4px 10px;
-    background: var(--theme-accent-bg);
-    border-radius: 6px;
-    font-size: var(--font-size-sm);
-    color: var(--theme-accent);
-    font-weight: 500;
-  }
-
   /* Medium Layout - horizontal profile/admin with activity below */
   .medium-layout {
     display: flex;
@@ -1248,52 +815,6 @@
     flex-shrink: 0;
   }
 
-  .activity-section.compact {
-    padding: 0;
-  }
-
-  .activity-section.compact .section-title {
-    margin-bottom: 12px;
-    font-size: var(--font-size-sm);
-  }
-
-  .sessions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
-  }
-
-  .session-card.compact {
-    padding: 12px;
-  }
-
-  .session-card.compact .session-header {
-    margin-bottom: 4px;
-  }
-
-  .session-card.compact .session-date {
-    font-size: var(--font-size-sm);
-  }
-
-  .session-card.compact .session-duration {
-    padding: 2px 8px;
-    font-size: var(--font-size-compact);
-  }
-
-  .session-card.compact .session-meta {
-    font-size: var(--font-size-compact);
-  }
-
-  .empty-state.compact {
-    height: 80px;
-    flex-direction: row;
-    gap: 8px;
-  }
-
-  .empty-state.compact i {
-    font-size: 1.25rem;
-  }
-
   /* Compact stats for medium layout */
   .stats-row.compact {
     padding: 12px;
@@ -1325,13 +846,6 @@
 
     .tab-btn i {
       font-size: 14px;
-    }
-
-    /* Hide text, show icon only on very small screens */
-    @media (max-width: 480px) {
-      .tab-btn span {
-        display: none;
-      }
     }
   }
 </style>

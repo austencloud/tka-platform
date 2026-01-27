@@ -8,7 +8,7 @@
   import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/FeatureFlag";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
   import { ROLE_HIERARCHY, ROLE_DISPLAY, hasRolePrivilege } from "$lib/shared/auth/domain/models/UserRole";
-  import { featureFlagService } from "$lib/shared/auth/services/FeatureFlagService.svelte";
+  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import {
     buildFeatureHierarchy,
     getFeatureIconAndColor,

@@ -357,6 +357,14 @@ export const ADMIN_TABS: Section[] = [
     color: "#06b6d4",
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
+  {
+    id: "analytics",
+    label: "Analytics",
+    icon: '<i class="fas fa-chart-pie" aria-hidden="true"></i>',
+    description: "Product analytics via PostHog",
+    color: "#f97316",
+    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+  },
 ];
 
 // Skew Lab - single page module (no sub-tabs)

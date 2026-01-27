@@ -72,9 +72,9 @@ export interface UserFeatureOverrides {
  * ARCHITECTURE: Default is "admin" (secure by default).
  * - Core modules listed here = always "user" accessible
  * - Everything else = "admin" by default
- * - Use Admin UI (Feature Flags tab) to open modules to testers/users
+ * - Use PostHog Feature Flags to open modules to testers/users
  *
- * This keeps hardcoded config minimal - the database is the source of truth
+ * This keeps hardcoded config minimal - PostHog is the source of truth
  * for everything beyond these essentials.
  */
 const CORE_USER_MODULES: ModuleId[] = ["create", "browse", "settings"];
@@ -88,7 +88,7 @@ const CORE_USER_MODULES: ModuleId[] = ["create", "browse", "settings"];
  * 2. Tabs → inherit from parent module
  * 3. Everything else → "admin" (secure by default)
  *
- * To open a module/tab to testers or users, configure it in Admin > Feature Flags.
+ * To open a module/tab to testers or users, configure it in PostHog Feature Flags.
  */
 export function getDefaultFeatureRole(
   featureId: FeatureId,

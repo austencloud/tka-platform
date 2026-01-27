@@ -18,6 +18,8 @@ import { ContentQueryAnalyzer } from "$lib/features/admin/services/implementatio
 import { AnalyticsDataProvider } from "$lib/features/admin/services/implementations/AnalyticsDataProvider";
 import { AnnouncementManager } from "$lib/features/admin/services/implementations/AnnouncementManager";
 import { UserActivityTracker } from "$lib/features/admin/services/implementations/UserActivityTracker";
+import { PostHogUserAnalytics } from "$lib/features/admin/services/implementations/PostHogUserAnalytics";
+import { PostHogAnalyticsProvider } from "$lib/features/admin/services/implementations/PostHogAnalyticsProvider";
 import { QuickAccessPersister } from "$lib/shared/debug/services/implementations/QuickAccessPersister";
 
 // Service contracts
@@ -27,6 +29,8 @@ import type { IAdminChallengeManager } from "$lib/features/admin/services/contra
 import type { IAnalyticsDataProvider } from "$lib/features/admin/services/contracts/IAnalyticsDataProvider";
 import type { IAnnouncementManager } from "$lib/features/admin/services/contracts/IAnnouncementManager";
 import type { IUserActivityTracker } from "$lib/features/admin/services/contracts/IUserActivityTracker";
+import type { IPostHogUserAnalytics } from "$lib/features/admin/services/contracts/IPostHogUserAnalytics";
+import type { IPostHogAnalyticsProvider } from "$lib/features/admin/services/contracts/IPostHogAnalyticsProvider";
 import type { IQuickAccessPersister } from "$lib/shared/debug/services/contracts/IQuickAccessPersister";
 import type { IUserMetricsAnalyzer } from "$lib/features/admin/services/implementations/UserMetricsAnalyzer";
 import type { IEventActivityAnalyzer } from "$lib/features/admin/services/implementations/EventActivityAnalyzer";
@@ -58,6 +62,10 @@ export function createAdminContainer(deps: AdminContainerDeps) {
       announcementManager: (): IAnnouncementManager => new AnnouncementManager(),
       quickAccessPersister: (): IQuickAccessPersister =>
         new QuickAccessPersister(),
+      postHogUserAnalytics: (): IPostHogUserAnalytics =>
+        new PostHogUserAnalytics(),
+      postHogAnalyticsProvider: (): IPostHogAnalyticsProvider =>
+        new PostHogAnalyticsProvider(),
     })
     // Layer 2: Services depending on external deps
     .add({
