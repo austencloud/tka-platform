@@ -351,6 +351,16 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // USER CONNECTIONS (Private Notes About Other Users)
+      // -------------------------------------------------------------------------
+      // Users can only read/write their own connection data
+      // Connection data is private notes about other users, only visible to the author
+      match /connections/{connectionId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
       // SOCIAL SUBCOLLECTIONS (Following/Followers)
       // -------------------------------------------------------------------------
       // Users can read anyone's following/followers lists (public social graph)
@@ -624,9 +634,9 @@ service cloud.firestore {
     // VERSIONS COLLECTION (Release Management)
     // ============================================================================
 
-    // App versions - testers/admins can read, only admins can write
+    // App versions - all authenticated users can read release notes, only admins can write
     match /versions/{versionId} {
-      allow read: if isTester();
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
