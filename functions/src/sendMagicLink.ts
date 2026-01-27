@@ -69,8 +69,8 @@ export const sendMagicLink = functions.https.onCall(
       );
     }
 
-    // Get Resend API key from Firebase environment config
-    const resendApiKey = functions.config().resend?.api_key;
+    // Get Resend API key from environment variables
+    const resendApiKey = process.env.RESEND_API_KEY;
     if (!resendApiKey) {
       console.error("Resend API key not configured");
       throw new functions.https.HttpsError(
@@ -79,10 +79,9 @@ export const sendMagicLink = functions.https.onCall(
       );
     }
 
-    // Get sender email from config (with fallback)
-    const senderEmail =
-      functions.config().resend?.sender_email || "noreply@tkaflowarts.com";
-    const senderName = functions.config().resend?.sender_name || "TKA Scribe";
+    // Get sender email from environment (with fallback)
+    const senderEmail = process.env.RESEND_SENDER_EMAIL || "noreply@tkaflowarts.com";
+    const senderName = process.env.RESEND_SENDER_NAME || "TKA Scribe";
 
     try {
       // Generate the magic link using Firebase Admin SDK

@@ -4,7 +4,8 @@
   "description": "Firebase Cloud Functions for TKA Scribe",
   "main": "lib/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run copy-templates",
+    "copy-templates": "node -e \"require('fs').cpSync('src/templates', 'lib/templates', {recursive: true})\"",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
@@ -13,7 +14,7 @@
     "logs": "firebase functions:log"
   },
   "engines": {
-    "node": "18"
+    "node": "20"
   },
   "dependencies": {
     "firebase-admin": "^12.0.0",
