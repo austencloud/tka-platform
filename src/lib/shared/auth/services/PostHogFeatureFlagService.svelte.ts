@@ -556,20 +556,43 @@ export const postHogFeatureFlagService = {
   },
 
   /**
-   * Update global feature flag configuration
-   * Note: In PostHog implementation, use PostHog dashboard for global flags.
-   * This method is kept for interface compatibility but logs a warning.
+   * Update global feature flag configuration via PostHog API.
+   * Calls server-side endpoint which proxies to PostHog.
    */
   async updateGlobalFeatureFlag(
     featureId: FeatureId,
     updates: Partial<FeatureFlagConfig>
   ): Promise<void> {
-    console.warn(
-      "[PostHogFeatureFlagService] updateGlobalFeatureFlag is deprecated. " +
-      "Feature flags should be managed via PostHog dashboard. " +
-      `Attempted to update ${featureId} with:`,
-      updates
-    );
+    if (!browser) return;
+
+    const flagKey = featureIdToPostHogKey(featureId);
+
+    try {
+      const response = await fetch("/api/admin/feature-flags", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          flagKey,
+          enabled: updates.enabled,
+          // Note: minimumRole would need custom PostHog filters
+          // For now, we only support enabled/disabled toggle
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`[PostHogFeatureFlagService] Flag ${flagKey} ${result.action}:`, result.flag);
+
+      // Reload flags from PostHog to get updated state
+      reloadFeatureFlags();
+    } catch (err) {
+      console.error(`[PostHogFeatureFlagService] Failed to update ${flagKey}:`, err);
+      throw err;
+    }
   },
 
   /**
