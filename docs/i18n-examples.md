@@ -16,8 +16,8 @@ Quick reference for common i18n patterns in TKA Scribe.
 <h1>{t("app_name")}</h1>
 <!-- Output: "TKA Scribe" -->
 
-<p>{t("dashboard_welcome_message")}</p>
-<!-- Output: "Welcome to your sequence builder!" -->
+<p>{t("nav_create")}</p>
+<!-- Output: "Create" -->
 ```
 
 ### With Parameters
@@ -26,12 +26,11 @@ Quick reference for common i18n patterns in TKA Scribe.
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
-  let userName = $state("Austen");
   let sequenceCount = $state(42);
 </script>
 
-<p>{t("dashboard_welcome", { name: userName })}</p>
-<!-- Output: "Welcome, Austen!" -->
+<p>{t("nav_create")}</p>
+<!-- Output: "Create" -->
 
 <p>{t("library_sequence_count", { count: sequenceCount })}</p>
 <!-- Output: "You have 42 sequences" -->

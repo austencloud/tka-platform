@@ -141,7 +141,7 @@ Paraglide stored translations in `messages/{locale}.js` with this structure:
 ```javascript
 // messages/en.js (Paraglide)
 export const app_name = () => "TKA Scribe";
-export const dashboard_welcome = (params) => `Welcome, ${params.name}!`;
+export const nav_create = () => "Create";
 ```
 
 Convert to JSON:
@@ -149,7 +149,7 @@ Convert to JSON:
 ```json
 {
   "app_name": "TKA Scribe",
-  "dashboard_welcome": "Welcome, {name}!"
+  "nav_create": "Create"
 }
 ```
 
@@ -168,7 +168,7 @@ node scripts/paraglide-to-json.js messages/en.js > messages/en.json
 </script>
 
 <h1>{m.app_name()}</h1>
-<p>{m.dashboard_welcome({ name: userName })}</p>
+<p>{m.nav_create()}</p>
 ```
 
 **After (JSON-based):**
@@ -178,7 +178,7 @@ node scripts/paraglide-to-json.js messages/en.js > messages/en.json
 </script>
 
 <h1>{t("app_name")}</h1>
-<p>{t("dashboard_welcome", { name: userName })}</p>
+<p>{t("nav_create")}</p>
 ```
 
 ### Step 3: Remove Paraglide dependencies
@@ -328,12 +328,12 @@ TypeScript generates a union type from `messages/en.json`:
 // Auto-generated from messages/en.json
 export type TranslationKey =
   | "app_name"
-  | "dashboard_welcome"
+  | "nav_create"
   | "generator_level"
   // ... 1,398 more keys
 
 // Only valid keys accepted
-t("app_name"); // ✅
+t("nav_create"); // ✅
 t("invalid_key"); // ❌ TypeScript error
 ```
 
@@ -357,8 +357,8 @@ IDE autocomplete shows all 1,398 keys.
 ### With Parameters
 
 ```svelte
-<p>{t("dashboard_welcome", { name: "Austen" })}</p>
-<!-- Output: "Welcome, Austen!" -->
+<p>{t("nav_create")}</p>
+<!-- Output: "Create" -->
 ```
 
 **Security note:** Only pass **trusted values** as parameters (numbers, system strings, user IDs). Never pass unsanitized user input - XSS risk.
@@ -667,8 +667,8 @@ describe("i18n", () => {
     expect(t("app_name")).toBe("TKA Scribe");
   });
 
-  it("interpolates parameters", () => {
-    expect(t("dashboard_welcome", { name: "Test" })).toBe("Welcome, Test!");
+  it("translates nav keys", () => {
+    expect(t("nav_create")).toBe("Create");
   });
 
   it("switches locales", async () => {
@@ -688,14 +688,14 @@ test("locale switching updates UI", async ({ page }) => {
   await page.goto("/");
 
   // Check English
-  await expect(page.locator("h1")).toHaveText("TKA Scribe");
+  await expect(page.locator("button")).toHaveText("Create");
 
   // Switch to Spanish
   await page.click('[data-testid="language-selector"]');
   await page.click('text="Español"');
 
   // Check Spanish
-  await expect(page.locator("h1")).toHaveText("TKA Scribe");
+  await expect(page.locator("button")).toHaveText("Crear");
 });
 ```
 

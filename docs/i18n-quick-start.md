@@ -12,7 +12,7 @@ Get started with translations in TKA Scribe in 5 minutes.
 </script>
 
 <h1>{t("app_name")}</h1>
-<p>{t("dashboard_welcome", { name: "User" })}</p>
+<p>{t("nav_create")}</p>
 ```
 
 **That's it.** TypeScript autocomplete shows all 1,398 available keys.
