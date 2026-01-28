@@ -2,8 +2,8 @@
   SpellInputToolbar - Keyboard-aware toolbar for word input on touch devices
 
   Shows above the virtual keyboard when input is focused.
-  Provides Done button to dismiss keyboard and Generate button for quick action.
-  Haptic feedback on all button interactions.
+  Provides Done button to dismiss keyboard so user can see settings.
+  Haptic feedback on button interactions.
 
   Uses:
   - VirtualKeyboard API (Chrome Android 94+) for keyboard-inset-height
@@ -19,24 +19,24 @@
   let {
     visible = false,
     disabled = false,
+    word = "",
+    showGenerate = false,
     canGenerate = false,
     isGenerating = false,
-    word = "",
     onDone,
     onGenerate,
     onKeyboardHeightChange,
-    onKeyboardVisibilityChange,
   } = $props<{
     visible: boolean;
     disabled?: boolean;
+    word?: string;
+    /** Show Generate button (only when layout is collapsed) */
+    showGenerate?: boolean;
     canGenerate?: boolean;
     isGenerating?: boolean;
-    word?: string;
     onDone: () => void;
     onGenerate?: () => void;
     onKeyboardHeightChange?: (height: number) => void;
-    /** Called when keyboard visibility changes with the raw keyboard height */
-    onKeyboardVisibilityChange?: (visible: boolean, height: number) => void;
   }>();
 
   const haptic = container.items.hapticFeedback as IHapticFeedback;
@@ -47,6 +47,10 @@
   // Track if VirtualKeyboard API is available (Chrome Android)
   let hasVirtualKeyboardAPI = $state(false);
 
+  // Track if we're in a simulated mobile environment (Chrome DevTools)
+  // In this case, touch is detected but no actual keyboard exists
+  let isSimulatedMobile = $state(false);
+
   // Debounce timer for keyboard height updates
   let keyboardDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   let lastStableHeight = 0;
@@ -54,6 +58,36 @@
 
   onMount(() => {
     if (!browser) return;
+
+    // Detect Chrome DevTools mobile simulation:
+    // - Touch is indicated (maxTouchPoints > 0 or ontouchstart exists)
+    // - But no VirtualKeyboard API AND visualViewport matches window.innerHeight
+    //   (meaning no keyboard can push the viewport)
+    const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    const hasVKApi = "virtualKeyboard" in navigator;
+    const viewportMatchesWindow =
+      window.visualViewport &&
+      Math.abs(window.visualViewport.height - window.innerHeight) < 10;
+
+    // If touch is detected but neither keyboard API is available/working,
+    // we're likely in Chrome DevTools simulation
+    if (hasTouch && !hasVKApi && viewportMatchesWindow) {
+      // Check if this is likely a desktop browser simulating mobile
+      // Real mobile devices would have VirtualKeyboard API (Chrome) or
+      // visualViewport that differs from innerHeight when keyboard is up
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isLikelyDesktopBrowser =
+        !userAgent.includes("mobile") &&
+        !userAgent.includes("android") &&
+        !userAgent.includes("iphone") &&
+        !userAgent.includes("ipad");
+
+      if (isLikelyDesktopBrowser) {
+        isSimulatedMobile = true;
+        // In simulated mode, we won't show the toolbar since there's no keyboard
+        return;
+      }
+    }
 
     // Try VirtualKeyboard API first (Chrome Android 94+)
     if ("virtualKeyboard" in navigator) {
@@ -103,7 +137,8 @@
     keyboardDebounceTimer = setTimeout(() => {
       const heightDiff = Math.abs(pendingHeight - lastStableHeight);
 
-      if (pendingHeight > 100) {
+      // Require at least 150px for keyboard detection - real keyboards are 200-400px
+      if (pendingHeight > 150) {
         if (heightDiff > 20 || !isKeyboardVisible) {
           keyboardHeight = pendingHeight;
           isKeyboardVisible = true;
@@ -133,7 +168,10 @@
     keyboardDebounceTimer = setTimeout(() => {
       const heightDiff = Math.abs(calculatedHeight - lastStableHeight);
 
-      if (calculatedHeight > 100) {
+      // Require at least 150px for keyboard detection - this filters out
+      // small viewport changes from address bar hiding, DevTools docking, etc.
+      // Real mobile keyboards are typically 200-400px tall
+      if (calculatedHeight > 150) {
         if (heightDiff > 20 || !isKeyboardVisible) {
           keyboardHeight = calculatedHeight;
           isKeyboardVisible = true;
@@ -154,7 +192,6 @@
     const toolbarHeight = 60;
     const totalHeight = keyboardHeight > 0 ? keyboardHeight + toolbarHeight : 0;
     onKeyboardHeightChange?.(totalHeight);
-    onKeyboardVisibilityChange?.(isKeyboardVisible, keyboardHeight);
   });
 
   // Compute bottom position using CSS env() with JS fallback
@@ -168,16 +205,17 @@
     return "";
   });
 
-  const shouldShow = $derived(visible && isKeyboardVisible);
-
-  function handleGenerate() {
-    haptic.trigger("selection");
-    onGenerate?.();
-  }
+  // Don't show toolbar in simulated mobile mode (Chrome DevTools) - there's no keyboard
+  const shouldShow = $derived(visible && isKeyboardVisible && !isSimulatedMobile);
 
   function handleDone() {
     haptic.trigger("selection");
     onDone();
+  }
+
+  function handleGenerate() {
+    haptic.trigger("selection");
+    onGenerate?.();
   }
 </script>
 
@@ -194,12 +232,12 @@
         {#if word}
           <span class="word-preview">{word}</span>
         {:else}
-          <span class="word-hint">Enter a word...</span>
+          <span class="word-hint">Type your word...</span>
         {/if}
       </div>
 
       <div class="toolbar-right">
-        {#if onGenerate}
+        {#if showGenerate && onGenerate}
           <button
             type="button"
             class="generate-button"
@@ -338,7 +376,6 @@
 
   .generate-button:hover:not(:disabled) {
     background: var(--theme-accent-hover, #4f46e5);
-    transform: translateY(-1px);
   }
 
   .generate-button:active:not(:disabled) {

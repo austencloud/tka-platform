@@ -10,19 +10,34 @@
   const submitState = getSharedFeedbackSubmitState();
   const deviceDetector = container.items.deviceDetector;
 
-  // Track touch device and focus state for input mode
-  let isTouchDevice = $state(false);
+  // Track focus state for input mode
   let isInputFocused = $state(false);
 
-  // Input mode: distraction-free typing on touch devices
-  const isInputMode = $derived((isInputFocused || submitState.isSubmitting) && isTouchDevice);
+  // BULLETPROOF: Only enter input mode when a real virtual keyboard appears
+  // - Default: false (don't expand)
+  // - True only when: keyboard height > 0 reported from MobileInputToolbar
+  // - This prevents expansion in Chrome DevTools simulation
+  let hasVirtualKeyboard = $state(false);
+
+  // Input mode: distraction-free typing - ONLY when real virtual keyboard is present
+  const isInputMode = $derived(
+    (isInputFocused || submitState.isSubmitting) && hasVirtualKeyboard
+  );
+
+  // We still need to know if touch is possible (to render the toolbar that detects keyboard)
+  let hasTouchCapability = $state(false);
 
   onMount(() => {
-    isTouchDevice = deviceDetector.isTouchDevice();
+    hasTouchCapability = deviceDetector.isTouchDevice();
   });
 
   function handleInputFocusChange(focused: boolean) {
     isInputFocused = focused;
+  }
+
+  function handleKeyboardHeightChange(height: number) {
+    // When keyboard appears (height > 0), enable input mode
+    hasVirtualKeyboard = height > 0;
   }
 </script>
 
@@ -41,8 +56,9 @@
     <FeedbackForm
       formState={submitState}
       {isInputMode}
-      {isTouchDevice}
+      isTouchDevice={hasTouchCapability}
       onInputFocusChange={handleInputFocusChange}
+      onKeyboardHeightChange={handleKeyboardHeightChange}
     />
   </div>
 </div>

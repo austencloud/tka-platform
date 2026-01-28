@@ -21,7 +21,7 @@ Same functionality, different density.
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import { UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { SequenceData } from "$lib/features/create/shared/domain/models/SequenceData";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import WordInput from "./WordInput.svelte";
   import SpellSettingsBar from "./SpellSettingsBar.svelte";
   import SpellInputToolbar from "./SpellInputToolbar.svelte";
@@ -43,11 +43,41 @@ Same functionality, different density.
   // Touch device and input focus tracking
   const deviceDetector = diContainer.items.deviceDetector as IDeviceDetector;
   const haptic = diContainer.items.hapticFeedback as IHapticFeedback;
-  let isTouchDevice = $state(false);
+  let hasTouchCapability = $state(false);
   let isInputFocused = $state(false);
 
-  // Input mode for mobile keyboard
-  const isInputMode = $derived(isInputFocused && isTouchDevice);
+  // Keyboard state
+  let hasVirtualKeyboard = $state(false);
+  // Note: containerHeight ALREADY shrinks when keyboard opens (viewport pushes up)
+  // We only need to account for the toolbar (60px fixed) sitting at the bottom
+
+  // Container height tracking for smart layout decisions
+  let panelElement: HTMLElement | null = $state(null);
+  let containerHeight = $state(0);
+
+  // The toolbar is 60px fixed height. When keyboard is open, we need to reserve
+  // space for the toolbar since it sits above the keyboard.
+  const TOOLBAR_HEIGHT = 60;
+
+  // Calculate available height for content.
+  // containerHeight = panel's offsetHeight (already reduced by keyboard on most browsers)
+  // We only subtract toolbar height since that's the fixed overlay at the bottom
+  const availableHeight = $derived(
+    hasVirtualKeyboard ? containerHeight - TOOLBAR_HEIGHT : containerHeight
+  );
+
+  // Threshold: minimum height to show full layout (input + settings + generate button)
+  // Below this, we collapse to input-only mode
+  const FULL_LAYOUT_MIN_HEIGHT = 350; // ~350px fits word input + settings bar + generate button
+
+  // Should we show the collapsed input-only layout?
+  // Only collapse if: keyboard is visible AND not enough space for full layout
+  const shouldCollapseLayout = $derived(
+    isInputFocused && hasVirtualKeyboard && availableHeight < FULL_LAYOUT_MIN_HEIGHT
+  );
+
+  // Legacy name for backwards compatibility with parent layout notification
+  const isInputMode = $derived(shouldCollapseLayout);
 
   // Get context
   const createModuleContext = tryGetCreateModuleContext();
@@ -86,7 +116,7 @@ Same functionality, different density.
 
   // Load persisted state on mount
   onMount(() => {
-    isTouchDevice = deviceDetector.isTouchDevice();
+    hasTouchCapability = deviceDetector.isTouchDevice();
 
     const persisted = loadSpellState();
     if (persisted.inputWord) {
@@ -95,6 +125,22 @@ Same functionality, different density.
     if (persisted.expandedWord) {
       spellState.setExpandedWord(persisted.expandedWord);
     }
+  });
+
+  // Track container height for smart layout decisions
+  $effect(() => {
+    if (!panelElement) return;
+
+    const updateHeight = () => {
+      containerHeight = panelElement?.offsetHeight ?? 0;
+    };
+
+    updateHeight();
+
+    const resizeObserver = new ResizeObserver(updateHeight);
+    resizeObserver.observe(panelElement);
+
+    return () => resizeObserver.disconnect();
   });
 
   function handleInputFocusChange(focused: boolean) {
@@ -106,6 +152,13 @@ Same functionality, different density.
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
+  }
+
+  function handleKeyboardHeightChange(height: number) {
+    // Track keyboard visibility for smart layout decisions
+    // Note: we only care IF keyboard is visible, not exact height
+    // (container height already shrinks when keyboard opens)
+    hasVirtualKeyboard = height > 0;
   }
 
   // Auto-save state when it changes
@@ -268,9 +321,14 @@ Same functionality, different density.
   }
 </script>
 
-<div class="spell-panel" data-is-desktop={isDesktop}>
-  <!-- Error Banner -->
-  {#if spellState.error}
+<div
+  bind:this={panelElement}
+  class="spell-panel"
+  class:input-mode={shouldCollapseLayout}
+  data-is-desktop={isDesktop}
+>
+  <!-- Error Banner - hidden in collapsed mode -->
+  {#if spellState.error && !shouldCollapseLayout}
     <div class="error-banner" role="alert">
       <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
       <span class="error-message">{spellState.error}</span>
@@ -294,43 +352,46 @@ Same functionality, different density.
     />
   </section>
 
-  <!-- Settings -->
-  <section class="settings-section">
-    <SpellSettingsBar
-      gridMode={spellState.selectedGridMode}
-      preferences={spellState.preferences}
-      onGridModeChange={handleGridModeChange}
-      onPreferenceChange={handlePreferenceChange}
-    />
-  </section>
+  <!-- Settings - hidden only when collapsed (small screen + keyboard) -->
+  {#if !shouldCollapseLayout}
+    <section class="settings-section">
+      <SpellSettingsBar
+        gridMode={spellState.selectedGridMode}
+        preferences={spellState.preferences}
+        onGridModeChange={handleGridModeChange}
+        onPreferenceChange={handlePreferenceChange}
+      />
+    </section>
 
-  <!-- Generate Button -->
-  <button
-    class="generate-button"
-    onclick={handleGenerate}
-    disabled={!canGenerate}
-    aria-label={canGenerate ? "Generate sequence" : "Enter a word first"}
-  >
-    {#if spellState.isGenerating}
-      <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-      <span>Generating...</span>
-    {:else}
-      <i class="fas fa-magic" aria-hidden="true"></i>
-      <span>Generate</span>
-    {/if}
-  </button>
+    <!-- Generate Button - hidden in input mode (available in toolbar) -->
+    <button
+      class="generate-button"
+      onclick={handleGenerate}
+      disabled={!canGenerate}
+      aria-label={canGenerate ? "Generate sequence" : "Enter a word first"}
+    >
+      {#if spellState.isGenerating}
+        <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+        <span>Generating...</span>
+      {:else}
+        <i class="fas fa-magic" aria-hidden="true"></i>
+        <span>Generate</span>
+      {/if}
+    </button>
+  {/if}
 
-  <!-- Stats removed - "8 prop rev", "2 dashes" was confusing and unhelpful -->
-
-  <!-- Keyboard toolbar for touch devices -->
-  {#if isTouchDevice}
+  <!-- Keyboard toolbar for touch devices - detects actual keyboard visibility -->
+  <!-- Shows Generate+Done when collapsed, just Done when full layout visible -->
+  {#if hasTouchCapability}
     <SpellInputToolbar
       visible={isInputFocused}
+      word={spellState.inputWord}
+      showGenerate={shouldCollapseLayout}
       canGenerate={spellState.inputWord.length > 0}
       isGenerating={spellState.isGenerating}
-      word={spellState.inputWord}
       onDone={handleToolbarDone}
       onGenerate={handleGenerate}
+      onKeyboardHeightChange={handleKeyboardHeightChange}
     />
   {/if}
 </div>
@@ -360,6 +421,19 @@ Same functionality, different density.
 
     /* Default max-width for mobile/small screens */
     max-width: 500px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     INPUT MODE - Distraction-free typing on touch devices
+     When virtual keyboard is present, hide settings and center the input
+     in the available space ABOVE the toolbar (60px fixed height)
+     ═══════════════════════════════════════════════════════════════════════════ */
+  .spell-panel.input-mode {
+    /* Center the word input in the available vertical space */
+    justify-content: center;
+    gap: 8px;
+    /* Add bottom padding for the 60px toolbar so centering respects available space */
+    padding-bottom: calc(var(--fluid-space) + 60px);
   }
 
   /* Medium height: show expanded layout with modest scaling */

@@ -39,23 +39,24 @@
   const draftPersister = container.items.formDraftPersister;
   const typeResolver = container.items.feedbackTypeResolver;
 
-  // Component state - use prop if provided, otherwise detect
-  let isTouchDeviceLocal = $state(false);
-  let isSimulatedMobile = $state(false);
-  // In simulated mobile (Chrome DevTools), treat as non-touch for UX purposes
-  // (user has keyboard, no virtual keyboard will appear)
-  const isTouchDevice = $derived(
-    (isTouchDeviceProp ?? isTouchDeviceLocal) && !isSimulatedMobile
-  );
+  // Component state
   let isMobileDevice = $state(false);
   let voiceTimeoutMessage = $state(false);
   let isTextareaFocused = $state(false);
   let textareaRef = $state<{ dismissKeyboard: () => void } | null>(null);
 
+  // BULLETPROOF APPROACH: Assume keyboard exists until proven otherwise
+  // - Default: show keyboard hints (Shift+Enter)
+  // - Hide only when: virtual keyboard actually appears (not just "touch detected")
+  // - This works for: desktop, laptop, tablet with keyboard, Chrome DevTools, everything
+  let hasSeenVirtualKeyboard = $state(false);
+
+  // isTouchDevice for UX purposes = virtual keyboard has actually appeared
+  // NOT "device has touch capability" (which is true for many laptops too)
+  const isTouchDevice = $derived(isTouchDeviceProp ?? hasSeenVirtualKeyboard);
+
   onMount(() => {
     isMobileDevice = deviceDetector.isMobile();
-    isTouchDeviceLocal = deviceDetector.isTouchDevice();
-    isSimulatedMobile = deviceDetector.isSimulatedMobile();
 
     // Restore draft if form is empty and a draft exists
     if (
@@ -270,8 +271,9 @@
   </form>
 
   <!-- Touch device keyboard toolbar - rendered outside form to position above keyboard -->
-  <!-- Shows on any touch device (phone, tablet, Z Fold) not just narrow "mobile" -->
-  {#if isTouchDevice}
+  <!-- Always render on devices with touch capability - it self-manages visibility based on actual keyboard -->
+  <!-- This allows us to detect when a virtual keyboard actually appears -->
+  {#if deviceDetector.isTouchDevice()}
     <MobileInputToolbar
       visible={isTextareaFocused}
       disabled={formState.isSubmitting}
@@ -283,7 +285,13 @@
       onInterimTranscript={handleInterimTranscript}
       onRecordingEnd={handleRecordingEnd}
       onVoiceTimeout={handleVoiceTimeout}
-      {onKeyboardHeightChange}
+      onKeyboardHeightChange={(height) => {
+        // When keyboard appears, we know this is a true touch-only device
+        if (height > 0) {
+          hasSeenVirtualKeyboard = true;
+        }
+        onKeyboardHeightChange?.(height);
+      }}
     />
   {/if}
 {/if}
