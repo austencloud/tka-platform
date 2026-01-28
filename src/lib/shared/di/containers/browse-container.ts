@@ -197,11 +197,3 @@ export function createBrowseContainer(deps: BrowseContainerDeps) {
 }
 
 export type BrowseContainer = ReturnType<typeof createBrowseContainer>;
-
-/**
- * @deprecated Explore module renamed to Browse (Jan 2026).
- * Kept for backwards compatibility only.
- */
-export type ExploreContainerDeps = BrowseContainerDeps;
-export const createExploreContainer = createBrowseContainer;
-export type ExploreContainer = BrowseContainer;
