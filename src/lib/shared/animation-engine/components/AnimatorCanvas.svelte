@@ -295,11 +295,15 @@ Last audit: 2025-12-27
     /*
      * Width = canvas side = min(container_width, container_height - header - overhead)
      * Be conservative to ensure border is never clipped:
-     * - header: ~2.5rem (~40px)
+     * - word header: ~2.5rem (~40px) when visible
+     * - progress bar: ~1.5rem (~24px) when visible
      * - border: 3px
-     * - safety margin: 12px
+     * - safety margin: 24px for breathing room
+     * Total overhead: ~6rem (~96px) to be safe
      */
-    width: min(calc(100cqw - 12px), calc(100cqh - 3rem - 12px));
+    width: min(calc(100cqw - 24px), calc(100cqh - 6rem - 24px));
+    /* Cap at reasonable max to prevent stretching on ultra-wide displays */
+    max-width: calc(100cqh - 6rem);
     /* Create container query context so header font scales with THIS width, not outer container */
     container-type: inline-size;
     /* Solid opaque border for consistency across header and canvas */
