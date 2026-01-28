@@ -780,7 +780,7 @@
 <!-- Sequence Details Modal (full-screen alternative to drawer) -->
 {#if currentSequence}
   <SequenceDetailsModal
-    bind:open={panelState.isSequenceDetailsModalOpen}
+    open={panelState.isSequenceDetailsModalOpen}
     sequence={currentSequence}
     onclose={() => panelState.closeSequenceDetailsModal()}
   />
