@@ -494,14 +494,10 @@ export default defineConfig({
       "@tsparticles/basic",
       "@tsparticles/engine",
       "@tsparticles/preset-snow",
-      // Three.js ecosystem - all bundled together to avoid circular init issues
-      "three",
+      // Threlte packages need svelte export condition, keep bundled
       "@threlte/core",
       "@threlte/extras",
       "@threlte/rapier",
-      "troika-three-text",
-      "postprocessing",
-      "three-perf",
     ],
     external: [
       "pdfjs-dist",
@@ -509,6 +505,15 @@ export default defineConfig({
       // MCP server has native dependencies that can't be bundled
       /mcp-server/,
       "@resvg/resvg-js",
+      // Three.js and related WebGL packages - must be external for SSR because
+      // they access WebGL constants at module load time which don't exist in Node.js
+      // (causes "Cannot read properties of undefined (reading 'VERTEX')" error)
+      "three",
+      /^three\//,
+      "troika-three-text",
+      "postprocessing",
+      "three-perf",
+      "@dimforge/rapier3d-compat",
     ],
     // Include svelte condition for threlte packages, but node/module first for SSR
     resolve: {
