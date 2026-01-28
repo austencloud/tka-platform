@@ -87,4 +87,12 @@ export interface IDeviceDetector {
   onCapabilitiesChanged(
     callback: (caps: DeviceCapabilities) => void
   ): () => void;
+
+  /**
+   * Check if running in a simulated mobile environment (e.g., Chrome DevTools)
+   * Returns true when touch is detected but no actual virtual keyboard exists.
+   * Use this to determine if touch-specific behaviors (like hiding keyboard hints)
+   * should be skipped because the user actually has a physical keyboard.
+   */
+  isSimulatedMobile(): boolean;
 }

@@ -41,7 +41,12 @@
 
   // Component state - use prop if provided, otherwise detect
   let isTouchDeviceLocal = $state(false);
-  const isTouchDevice = $derived(isTouchDeviceProp ?? isTouchDeviceLocal);
+  let isSimulatedMobile = $state(false);
+  // In simulated mobile (Chrome DevTools), treat as non-touch for UX purposes
+  // (user has keyboard, no virtual keyboard will appear)
+  const isTouchDevice = $derived(
+    (isTouchDeviceProp ?? isTouchDeviceLocal) && !isSimulatedMobile
+  );
   let isMobileDevice = $state(false);
   let voiceTimeoutMessage = $state(false);
   let isTextareaFocused = $state(false);
@@ -50,6 +55,7 @@
   onMount(() => {
     isMobileDevice = deviceDetector.isMobile();
     isTouchDeviceLocal = deviceDetector.isTouchDevice();
+    isSimulatedMobile = deviceDetector.isSimulatedMobile();
 
     // Restore draft if form is empty and a draft exists
     if (

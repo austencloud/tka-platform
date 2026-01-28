@@ -83,6 +83,76 @@ export class DeviceDetector implements IDeviceDetector {
     return "ontouchstart" in window || navigator.maxTouchPoints > 0;
   }
 
+  /**
+   * Detect if we're in a simulated mobile environment (e.g., Chrome DevTools)
+   *
+   * Chrome DevTools touch simulation:
+   * - Sets maxTouchPoints > 0 (makes isTouchDevice() return true)
+   * - Does NOT provide VirtualKeyboard API
+   * - User agent may or may not be changed depending on device selection
+   *
+   * The key insight: if touch is enabled but no virtual keyboard will ever appear,
+   * we should treat it as desktop for UX purposes (show keyboard hints, etc.)
+   *
+   * Detection strategy:
+   * - If VirtualKeyboard API exists, it's real mobile Chrome
+   * - If no VirtualKeyboard API AND viewport is large (>1024px), it's simulated
+   * - Small viewport without VirtualKeyboard could be iOS Safari (which doesn't have VK API)
+   *   so we check for Safari-specific indicators
+   */
+  isSimulatedMobile(): boolean {
+    const hasTouch = this.isTouchDevice();
+    if (!hasTouch) return false;
+
+    // Real Chrome Android has VirtualKeyboard API
+    if ("virtualKeyboard" in navigator) return false;
+
+    // Check viewport size - real phones are typically < 500px wide in portrait
+    // If viewport is large AND no VirtualKeyboard API, it's likely desktop with touch sim
+    const viewportWidth = this.viewportService.width;
+    const viewportHeight = this.viewportService.height;
+
+    // Large viewport + touch + no VirtualKeyboard = simulated
+    // Real tablets would either have VirtualKeyboard (Chrome) or be iOS Safari
+    if (viewportWidth >= 1024 || viewportHeight >= 1024) {
+      // Check if this might be iOS Safari on iPad
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isIOSSafari =
+        (userAgent.includes("safari") && !userAgent.includes("chrome")) &&
+        (userAgent.includes("ipad") || userAgent.includes("macintosh"));
+
+      if (!isIOSSafari) {
+        this.logger.log("Detected simulated mobile (large viewport, no VK API)", {
+          viewportWidth,
+          viewportHeight,
+          hasTouch,
+        });
+        return true;
+      }
+    }
+
+    // Medium viewport - could be real mobile or narrow desktop window
+    // Check for clear desktop browser signatures
+    const userAgent = navigator.userAgent.toLowerCase();
+    const hasDesktopSignature =
+      (userAgent.includes("windows") || userAgent.includes("macintosh") || userAgent.includes("linux")) &&
+      !userAgent.includes("android") &&
+      !userAgent.includes("iphone") &&
+      !userAgent.includes("ipad");
+
+    if (hasDesktopSignature) {
+      this.logger.log("Detected simulated mobile (desktop UA with touch)", {
+        viewportWidth,
+        viewportHeight,
+        hasTouch,
+        userAgent: userAgent.substring(0, 100),
+      });
+      return true;
+    }
+
+    return false;
+  }
+
   isMobile(): boolean {
     return this.detectDeviceType() === DeviceType.MOBILE;
   }

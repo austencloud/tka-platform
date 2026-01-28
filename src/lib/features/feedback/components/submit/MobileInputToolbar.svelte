@@ -46,6 +46,10 @@
   // Track if VirtualKeyboard API is available (Chrome Android)
   let hasVirtualKeyboardAPI = $state(false);
 
+  // Track if we're in a simulated mobile environment (Chrome DevTools)
+  // In this case, touch is detected but no actual keyboard exists
+  let isSimulatedMobile = $state(false);
+
   // Debounce timer for keyboard height updates (prevents jank during keyboard animation)
   let keyboardDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   // Track last stable height to avoid micro-fluctuations
@@ -55,6 +59,36 @@
 
   onMount(() => {
     if (!browser) return;
+
+    // Detect Chrome DevTools mobile simulation:
+    // - Touch is indicated (maxTouchPoints > 0 or ontouchstart exists)
+    // - But no VirtualKeyboard API AND visualViewport matches window.innerHeight
+    //   (meaning no keyboard can push the viewport)
+    const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    const hasVKApi = "virtualKeyboard" in navigator;
+    const viewportMatchesWindow =
+      window.visualViewport &&
+      Math.abs(window.visualViewport.height - window.innerHeight) < 10;
+
+    // If touch is detected but neither keyboard API is available/working,
+    // we're likely in Chrome DevTools simulation
+    if (hasTouch && !hasVKApi && viewportMatchesWindow) {
+      // Check if this is likely a desktop browser simulating mobile
+      // Real mobile devices would have VirtualKeyboard API (Chrome) or
+      // visualViewport that differs from innerHeight when keyboard is up
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isLikelyDesktopBrowser =
+        !userAgent.includes("mobile") &&
+        !userAgent.includes("android") &&
+        !userAgent.includes("iphone") &&
+        !userAgent.includes("ipad");
+
+      if (isLikelyDesktopBrowser) {
+        isSimulatedMobile = true;
+        // In simulated mode, we won't show the toolbar since there's no keyboard
+        return;
+      }
+    }
 
     // Try VirtualKeyboard API first (Chrome Android 94+)
     if ("virtualKeyboard" in navigator) {
@@ -182,7 +216,8 @@
     return "";
   });
 
-  const shouldShow = $derived(visible && isKeyboardVisible);
+  // Don't show toolbar in simulated mobile mode (Chrome DevTools) - there's no keyboard
+  const shouldShow = $derived(visible && isKeyboardVisible && !isSimulatedMobile);
 </script>
 
 {#if shouldShow}
