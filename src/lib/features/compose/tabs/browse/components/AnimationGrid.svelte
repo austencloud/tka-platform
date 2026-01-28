@@ -14,7 +14,9 @@ Features:
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SavedAnimation } from "../state/browse-state.svelte";
   import { onMount } from "svelte";
-  import { wrapGrid } from "animate-css-grid";
+  // NOTE: animate-css-grid disabled - causes "getLayoutNode is not a function" errors
+  // when navigating away from the grid while animations are in progress
+  // import { wrapGrid } from "animate-css-grid";
   import AnimationCard from "./AnimationCard.svelte";
 
   const {
@@ -46,20 +48,11 @@ Features:
     return 2;
   });
 
-  // Initialize animate-css-grid and ResizeObserver
+  // Initialize ResizeObserver for responsive columns
   onMount(() => {
-    // Configure FLIP animation for smooth grid transitions
-    const animationConfig = {
-      duration: 300,
-      stagger: 0,
-      easing: "easeInOut" as const,
-    };
-
-    // Wrap grid
-    let unwrapFunction: (() => void) | undefined;
-    if (gridRef) {
-      unwrapFunction = wrapGrid(gridRef, animationConfig)?.unwrapGrid;
-    }
+    // NOTE: animate-css-grid FLIP animations disabled due to race condition
+    // that throws "getLayoutNode is not a function" when navigating away
+    // CSS transitions on grid-template-columns provide adequate visual feedback
 
     // ResizeObserver to track container width changes
     const resizeObserver = gridRef
@@ -100,7 +93,6 @@ Features:
     return () => {
       window.removeEventListener("resize", handleResize);
       resizeObserver?.disconnect();
-      unwrapFunction?.();
     };
   });
 
