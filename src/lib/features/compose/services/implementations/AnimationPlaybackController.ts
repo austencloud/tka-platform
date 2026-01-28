@@ -214,6 +214,33 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.updatePropStatesFromEngine();
   }
 
+  seekToStep(beat: number): void {
+    if (!this.state) return;
+
+    // Cancel any animated seek in progress
+    this.animationTarget = null;
+
+    // Clamp beat to valid range
+    const clampedStep = Math.max(0, Math.min(beat, this.state.totalSteps));
+
+    // Preserve the fractional part of the current step timing
+    // E.g., if we're at beat 1.7 and seek to beat 3, we want to be at 3.7
+    const currentFraction = this.state.currentStep - Math.floor(this.state.currentStep);
+    const targetStepWithFraction = clampedStep + currentFraction;
+
+    this.syncCurrentStep(targetStepWithFraction);
+
+    // Sync time position to match the fractional beat position
+    this.timePosition = this.animationEngine.getTimePositionForBeat(targetStepWithFraction);
+
+    // Calculate state for this beat (with fraction)
+    this.animationEngine.calculateState(targetStepWithFraction);
+    this.updatePropStatesFromEngine();
+
+    // If was playing, the loop is still running and will continue from new position
+    // No need to restart - the loop reads currentStep on each frame
+  }
+
   animateToStep(
     beat: number,
     duration: number = 300,

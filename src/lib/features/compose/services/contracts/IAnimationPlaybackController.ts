@@ -36,9 +36,18 @@ export interface IAnimationPlaybackController {
 
   /**
    * Jump to a specific beat (instant, no animation)
+   * Pauses playback.
    * @param beat Beat number to jump to
    */
   jumpToStep(beat: number): void;
+
+  /**
+   * Seek to a specific beat without affecting playback state.
+   * If playing, continues playing from the new position.
+   * If paused, stays paused at the new position.
+   * @param beat Beat number to seek to
+   */
+  seekToStep(beat: number): void;
 
   /**
    * Animate smoothly to a specific beat

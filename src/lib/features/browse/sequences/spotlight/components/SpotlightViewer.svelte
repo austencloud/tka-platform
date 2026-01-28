@@ -51,6 +51,9 @@
   let isVideoMuted = $state(false); // Start unmuted in spotlight - user wants to watch
   let isVideoPaused = $state(false);
 
+  // Animation mode playback toggle (received from AnimationPlayer)
+  let animationTogglePlayback: (() => void) | null = null;
+
   // Light mode tracking - reacts to "L" key toggle
   const visibilityManager = getAnimationVisibilityManager();
   let lightMode = $state(!visibilityManager.isDarkMode());
@@ -240,9 +243,23 @@
     }
   }
 
+  // Register keydown handler with capture phase to intercept before focused elements
+  $effect(() => {
+    if (isVisible && browser) {
+      window.addEventListener("keydown", handleKeydown, { capture: true });
+      return () => {
+        window.removeEventListener("keydown", handleKeydown, { capture: true });
+      };
+    }
+  });
+
   onDestroy(() => {
     visibilityManager.unregisterObserver(handleVisibilityChange);
     cleanupSplitMode();
+    // Ensure listener is removed
+    if (browser) {
+      window.removeEventListener("keydown", handleKeydown, { capture: true });
+    }
   });
 
   // Persist column preference to localStorage (device-specific)
@@ -457,7 +474,7 @@
     }, 300);
   }
 
-  // Handle escape key and rotation shortcut
+  // Handle escape key, rotation shortcut, and spacebar for playback
   function handleKeydown(event: KeyboardEvent) {
     if (!isVisible) return;
 
@@ -467,22 +484,46 @@
     } else if (event.key === "r" || event.key === "R") {
       event.preventDefault();
       toggleRotation();
+    } else if (event.key === " " || event.code === "Space") {
+      // Spacebar toggles playback in animation/split modes, closes in other modes
+      // CRITICAL: Must prevent default AND stop propagation to prevent browser
+      // from activating focused buttons/elements
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      if (displayMode === "animation") {
+        // Toggle playback via the callback from AnimationPlayer
+        animationTogglePlayback?.();
+      } else if (displayMode === "split") {
+        // Toggle playback via split mode's controller
+        handleSplitPlaybackToggle();
+        if (!splitControlsVisible) {
+          showSplitControls();
+        }
+      } else {
+        handleClose();
+      }
     }
   }
 
   // Handle keyboard interaction for the dialog (accessibility)
   function handleDialogKeydown(event: KeyboardEvent) {
-    // Close on Enter or Space (when focused on the dialog itself)
-    if (event.key === "Enter" || event.key === " ") {
+    // Only close on Enter (not Space) - Space is reserved for playback toggle
+    if (event.key === "Enter") {
       event.preventDefault();
-      handleClose();
+      // In animation/split modes, Enter doesn't close - only Escape does
+      if (displayMode !== "animation" && displayMode !== "split") {
+        handleClose();
+      }
     }
+    // Don't handle Space here - let it bubble to handleKeydown
   }
 
   // No Fullscreen API: viewport-only overlay, nothing to handle here
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<!-- Keydown handler is registered manually with capture phase in $effect -->
 
 {#if isVisible && (sequence || videoUrl)}
   <!-- Fullscreen overlay - clicking anywhere closes (except animation, video, split modes) -->
@@ -506,6 +547,7 @@
           showControls={true}
           controlsLevel="minimal"
           layout="vertical"
+          onTogglePlaybackRef={(fn) => { animationTogglePlayback = fn; }}
         />
       </div>
 
@@ -963,20 +1005,36 @@
   /* Animation container - fills viewport with AnimationPlayer */
   .spotlight-animation {
     width: 100vw;
-    height: 100vh;
+    /* Use 100dvh for dynamic viewport height that accounts for mobile browser chrome */
+    height: 100dvh;
+    height: 100vh; /* Fallback for older browsers */
+    max-height: -webkit-fill-available; /* iOS Safari fallback */
     display: flex;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    padding: 16px;
+    /* Reduced padding to give more room for animation content */
+    padding: 8px;
+    padding-top: max(env(safe-area-inset-top, 8px), 8px);
+    padding-bottom: max(env(safe-area-inset-bottom, 8px), 8px);
     /* Animation controls need pointer events */
     pointer-events: auto;
+  }
+
+  /* Modern browsers that support dvh */
+  @supports (height: 100dvh) {
+    .spotlight-animation {
+      height: 100dvh;
+    }
   }
 
   /* Split mode container - side-by-side animation and preview */
   .spotlight-split {
     width: 100vw;
-    height: 100vh;
+    /* Use 100dvh for dynamic viewport height that accounts for mobile browser chrome */
+    height: 100dvh;
+    height: 100vh; /* Fallback for older browsers */
+    max-height: -webkit-fill-available; /* iOS Safari fallback */
     display: flex;
     flex-direction: row;
     align-items: stretch;
@@ -984,6 +1042,13 @@
     pointer-events: auto;
     cursor: default;
     gap: 2px;
+  }
+
+  /* Modern browsers that support dvh */
+  @supports (height: 100dvh) {
+    .spotlight-split {
+      height: 100dvh;
+    }
   }
 
   .split-pane {

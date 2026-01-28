@@ -48,6 +48,7 @@
 		layout = "vertical" as "vertical" | "horizontal",
 		bluePropType = null,
 		redPropType = null,
+		onTogglePlaybackRef,
 	}: {
 		sequence: SequenceData;
 		autoPlay?: boolean;
@@ -61,6 +62,8 @@
 		layout?: "vertical" | "horizontal";
 		bluePropType?: PropType | null;
 		redPropType?: PropType | null;
+		/** Callback to receive reference to toggle playback function (for external keyboard control) */
+		onTogglePlaybackRef?: (toggleFn: () => void) => void;
 	} = $props();
 
 	// Context for external control mode
@@ -134,6 +137,8 @@
 	onMount(async () => {
 		if (useContext) {
 			loading = false;
+			// Expose toggle function to parent even in context mode
+			onTogglePlaybackRef?.(() => ctx?.actions?.onPlaybackToggle());
 			return;
 		}
 
@@ -141,6 +146,8 @@
 			motionLoader = container.items.sequenceMotionLoader;
 			controller = container.items.animationPlaybackController;
 			loading = false;
+			// Expose toggle function to parent for keyboard control
+			onTogglePlaybackRef?.(togglePlayback);
 		} catch (err) {
 			console.error("Failed to initialize animation player:", err);
 			error = "Failed to load animation";

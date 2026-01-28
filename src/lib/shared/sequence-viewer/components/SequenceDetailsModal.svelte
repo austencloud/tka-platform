@@ -94,13 +94,29 @@
   }
 
   let {
-    open = $bindable(false),
+    open,
     sequence,
     onclose,
     initialBpm,
     initialPlaybackTimeMs,
     initialViewMode,
   }: Props = $props();
+
+  // Internal open state - syncs with prop, allows BaseModal to write to it
+  let internalOpen = $state(open);
+
+  // Sync internal state when prop changes (parent opening the modal)
+  $effect(() => {
+    internalOpen = open;
+  });
+
+  // When internal state closes, notify parent via callback
+  $effect(() => {
+    if (!internalOpen && open) {
+      // BaseModal closed us - notify parent
+      onclose();
+    }
+  });
 
   // View mode state (persisted via localStorage, but prefer initialViewMode if provided)
   let viewMode = $state<ViewMode>(initialViewMode || loadViewMode());
@@ -245,6 +261,7 @@
   });
 
   function enterEditMode(pane: 'animation' | 'image') {
+    console.log('[DEBUG] enterEditMode:', pane, 'isPlaying:', isPlayingLocal, 'currentStep:', currentStepLocal);
     hapticService?.trigger("selection"); // Haptic feedback for mode expansion
     editingPane = pane;
     // On desktop, also enter fullscreen for maximum screen real estate
@@ -252,9 +269,11 @@
       isFullscreen = true;
     }
     announceToScreenReader(`${pane === 'animation' ? 'Animation' : 'Image'} expanded. Tap to collapse.`);
+    console.log('[DEBUG] enterEditMode done, isPlaying:', isPlayingLocal, 'currentStep:', currentStepLocal);
   }
 
   function exitEditMode() {
+    console.log('[DEBUG] exitEditMode, isPlaying:', isPlayingLocal, 'currentStep:', currentStepLocal);
     hapticService?.trigger("selection"); // Lighter feedback for collapse
     editingPane = null;
     // On desktop, also exit fullscreen when unfocusing
@@ -263,6 +282,7 @@
       fullscreenControlsVisible = false;
     }
     announceToScreenReader("Split view restored");
+    console.log('[DEBUG] exitEditMode done, isPlaying:', isPlayingLocal, 'currentStep:', currentStepLocal);
   }
 
   // Export mode functions
@@ -368,7 +388,7 @@
     });
 
     // Close modal and navigate
-    open = false;
+    internalOpen = false;
     await goto('/compose?handoff=true');
   }
 
@@ -493,12 +513,39 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
+    // Only handle keys when modal is open
+    if (!open) return;
+
     if (event.key === "Escape" && isFullscreen) {
       event.preventDefault();
       event.stopPropagation();
       exitFullscreen();
+      return;
+    }
+
+    // Spacebar toggles playback (capture phase prevents button activation)
+    if (event.key === " " || event.code === "Space") {
+      // Don't intercept if user is typing in an input
+      const target = event.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      playbackController?.togglePlayback();
     }
   }
+
+  // Register keydown handler with capture phase to intercept before buttons
+  $effect(() => {
+    if (open && browser) {
+      window.addEventListener("keydown", handleKeydown, { capture: true });
+      return () => {
+        window.removeEventListener("keydown", handleKeydown, { capture: true });
+      };
+    }
+  });
 
   // Sync fullscreen state to dialog element (BaseModal doesn't pass data attributes through)
   // This effect tracks isFullscreen and updates the dialog's data-fullscreen attribute
@@ -878,12 +925,8 @@
     // Sync to URL for HMR persistence
     setViewModeUrl(mode as SequenceViewMode);
 
-    if (mode === "image" && isPlayingLocal) {
-      playbackController?.togglePlayback();
-    }
-    if ((mode === "animation" || mode === "split") && !isPlayingLocal && animationServicesReady) {
-      playbackController?.togglePlayback();
-    }
+    // Playback continues seamlessly regardless of view mode change
+    // User can use spacebar or play/pause button to control playback
   }
 
   function handlePlaybackToggle() {
@@ -909,11 +952,18 @@
   }
 
   function handleStepClick(stepIndex: number) {
+    // Only seek if the image pane is already focused
+    // When clicking to focus the pane, don't interrupt playback
+    if (editingPane !== 'image') {
+      return;
+    }
+
     if (playbackController) {
       hapticService?.trigger("selection");
       const targetStep = stepIndex + 1;
       modalAnimationState.setCurrentStep(targetStep);
-      playbackController.jumpToStep(targetStep);
+      // Use seekToStep to maintain playback state (don't pause if playing)
+      playbackController.seekToStep(targetStep);
     }
   }
 
@@ -1055,8 +1105,6 @@
   let fullscreenStackVertical = $derived(previewAspectRatio > 1.3);
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 <!-- Screen reader announcements (visually hidden) -->
 <div
   class="sr-only"
@@ -1068,7 +1116,7 @@
 </div>
 
 <BaseModal
-  bind:open
+  bind:open={internalOpen}
   onclose={() => handleClose()}
   size="full"
   animation="pop"
