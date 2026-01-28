@@ -226,15 +226,17 @@ Last audit: 2025-12-27
 
 <!-- Outer container centers the content -->
 <div class="animation-container">
-  <!-- Inner wrapper constrains to canvas width so header matches -->
+  <!-- Inner wrapper: adaptive layout (vertical in portrait, horizontal in landscape) -->
   <div class="content-wrapper" data-dark-mode={darkModeEnabled ? "true" : "false"}>
-    <!-- Word header lives ABOVE the canvas (not overlaid) -->
-    <WordHeader
-      {word}
-      visible={wordHeaderVisible}
-      darkMode={darkModeEnabled}
-      activeStepNumber={isPlaying ? Math.floor(currentStep) : null}
-    />
+    <!-- Word header - position adapts to layout mode -->
+    <div class="header-slot">
+      <WordHeader
+        {word}
+        visible={wordHeaderVisible}
+        darkMode={darkModeEnabled}
+        activeStepNumber={isPlaying ? Math.floor(currentStep) : null}
+      />
+    </div>
 
     <!-- Canvas wrapper maintains 1:1 aspect ratio for animation only -->
     <div
@@ -263,21 +265,23 @@ Last audit: 2025-12-27
       />
     </div>
 
-    <!-- Progress bar BELOW the canvas (full width) -->
-    <SegmentedSequenceProgressBar
-      steps={sequenceData?.steps ?? []}
-      currentStep={currentStep}
-      visible={progressBarVisible}
-      darkMode={darkModeEnabled}
-      variant={progressBarVariant}
-      showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
-      onSeek={onProgressBarSeek}
-    />
+    <!-- Progress bar - position adapts to layout mode -->
+    <div class="progress-slot">
+      <SegmentedSequenceProgressBar
+        steps={sequenceData?.steps ?? []}
+        currentStep={currentStep}
+        visible={progressBarVisible}
+        darkMode={darkModeEnabled}
+        variant={progressBarVariant}
+        showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
+        onSeek={onProgressBarSeek}
+      />
+    </div>
   </div>
 </div>
 
 <style>
-  /* Outer container: centers content */
+  /* Outer container: centers content, establishes container query context */
   .animation-container {
     display: flex;
     align-items: center;
@@ -287,43 +291,46 @@ Last audit: 2025-12-27
     container-type: size;
   }
 
-  /* Inner wrapper: sized to canvas width, header constrained within */
+  /* ===========================================
+     PORTRAIT MODE (default): Vertical stack
+     [Header]
+     [Square Canvas]
+     [Progress Bar]
+     =========================================== */
+
   .content-wrapper {
     display: flex;
     flex-direction: column;
     align-items: stretch;
     /*
-     * Width = canvas side = min(container_width, container_height - header - overhead)
-     * Be conservative to ensure border is never clipped:
-     * - word header: ~2.5rem (~40px) when visible
-     * - progress bar: ~1.5rem (~24px) when visible
-     * - border: 3px
-     * - safety margin: 24px for breathing room
-     * Total overhead: ~6rem (~96px) to be safe
+     * Portrait mode: Width = canvas side = min(container_width, container_height - overhead)
+     * Overhead: header (~40px) + progress (~24px) + border (3px) + margin (12px) = ~80px
      */
-    width: min(calc(100cqw - 24px), calc(100cqh - 6rem - 24px));
-    /* Cap at reasonable max to prevent stretching on ultra-wide displays */
-    max-width: calc(100cqh - 6rem);
-    /* Create container query context so header font scales with THIS width, not outer container */
+    width: min(calc(100cqw - 12px), calc(100cqh - 5rem - 12px));
+    max-width: calc(100cqh - 5rem);
+    /* Container query context for header font scaling */
     container-type: inline-size;
-    /* Solid opaque border for consistency across header and canvas */
+    /* Border styling */
     border: 1.5px solid #1a1a2e;
     border-radius: 4px;
     overflow: hidden;
     transition: border-color var(--duration-fast) ease-out;
   }
 
-  /* Dark Mode: solid cyan border (not transparent) */
   .content-wrapper[data-dark-mode="true"] {
     border-color: #00b8b8;
   }
 
-  /* Canvas wrapper: square matching parent width */
+  /* Header slot: in portrait, takes natural height at top */
+  .header-slot {
+    flex-shrink: 0;
+  }
+
+  /* Canvas wrapper: square in portrait mode */
   .canvas-wrapper {
     position: relative;
-    /* Width fills parent, height matches width for square */
     width: 100%;
-    /* Use container query width (100cqw now references content-wrapper) for height */
+    /* Square: height = width using container query */
     height: 100cqw;
     flex-shrink: 0;
     display: flex;
@@ -331,10 +338,12 @@ Last audit: 2025-12-27
     justify-content: center;
   }
 
+  /* Progress slot: in portrait, takes natural height at bottom */
+  .progress-slot {
+    flex-shrink: 0;
+  }
+
   .canvas-wrapper :global(canvas) {
-    /* Background is drawn via JavaScript fillRect for smooth transitions */
-    /* CSS background is only a fallback before first render */
-    /* Uses off-white (#f5f5f5) to reduce eye strain in light mode */
     background: var(--canvas-bg, #f5f5f5);
     display: block;
     width: 100%;
@@ -345,5 +354,110 @@ Last audit: 2025-12-27
   .canvas-wrapper[data-transparent="true"] :global(canvas) {
     background: transparent !important;
     --canvas-bg: transparent;
+  }
+
+  /* ===========================================
+     LANDSCAPE MODE: Horizontal layout
+     When container is wider than tall (aspect ratio > 1.2)
+     [Header] [Square Canvas] [Progress]
+     =========================================== */
+
+  @container (min-aspect-ratio: 1.2) {
+    .content-wrapper {
+      /* Horizontal layout */
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      /*
+       * Landscape mode: Height = canvas side = min(container_height - margin, container_width/3)
+       * We want canvas to fill height, with header/progress on sides
+       */
+      width: auto;
+      max-width: none;
+      height: min(calc(100cqh - 12px), calc(100cqw * 0.6));
+      /* Reset container-type for landscape - we want height-based sizing */
+      container-type: size;
+      padding: 6px;
+    }
+
+    /* Header slot: vertical strip on left in landscape */
+    .header-slot {
+      /* Take minimum width needed */
+      flex: 0 0 auto;
+      /* Rotate content or hide based on visibility */
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    /* Hide header text in landscape - word is visible in choreo card below */
+    .header-slot :global(.word-header) {
+      display: none;
+    }
+
+    /* Canvas wrapper: square, sized by height in landscape */
+    .canvas-wrapper {
+      /* Square based on container height */
+      width: 100cqh;
+      height: 100cqh;
+      flex-shrink: 0;
+      order: 0; /* Center position */
+    }
+
+    /* Progress slot: vertical strip on right in landscape */
+    .progress-slot {
+      flex: 0 0 auto;
+      /* Progress bar rotates to vertical orientation */
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100%;
+    }
+
+    /* Hide progress bar in landscape - too cramped */
+    .progress-slot :global(.sequence-progress-bar) {
+      display: none;
+    }
+  }
+
+  /* ===========================================
+     ULTRA-WIDE LANDSCAPE: Just show the canvas
+     When very landscape (aspect > 2), hide extras
+     =========================================== */
+
+  @container (min-aspect-ratio: 2) {
+    .content-wrapper {
+      /* Just the canvas, centered */
+      padding: 0;
+      gap: 0;
+    }
+
+    .header-slot,
+    .progress-slot {
+      display: none;
+    }
+
+    .canvas-wrapper {
+      /* Fill the shorter dimension */
+      width: min(100cqh, 100cqw);
+      height: min(100cqh, 100cqw);
+    }
+  }
+
+  /* ===========================================
+     REDUCED MOTION
+     =========================================== */
+
+  @media (prefers-reduced-motion: reduce) {
+    .content-wrapper {
+      transition: none;
+    }
   }
 </style>

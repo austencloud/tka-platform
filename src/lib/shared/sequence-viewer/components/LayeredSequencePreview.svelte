@@ -13,8 +13,8 @@
   - Footer section (name, notes, birthday) - each animates independently
 -->
 <script lang="ts">
-  import { fly, fade, scale } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
+  // Transitions removed - they caused NaN keyframe errors on initial mount
+  // when the container hadn't been sized yet (aspect-ratio elements)
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import type { LayerRenderOptions, LayerVisibility } from "$lib/shared/render/services/contracts/ILayerCompositor";
@@ -673,7 +673,6 @@
         <div
           class="header-section"
           style="height: {scaledHeaderHeight}px;"
-          transition:fly={{ y: -20, duration: 250, easing: cubicOut }}
         >
           {#if showDifficultyLevel}
             <div
@@ -687,7 +686,6 @@
                 left: {badgePadding}px;
                 font-size: {badgeNumberFontSize}px;
               "
-              transition:scale={{ duration: 200, easing: cubicOut }}
             >
               {difficultyLevel}
             </div>
@@ -697,7 +695,6 @@
             <span
               class="word-text"
               style="font-size: {wordFontSize}px;"
-              transition:fade={{ duration: 200 }}
             >
               {derivedWord}
             </span>
@@ -707,7 +704,6 @@
             <div
               class="loop-icon-badge"
               style="height: {badgeSize}px; right: {badgePadding}px;"
-              transition:scale={{ duration: 200, easing: cubicOut }}
             >
               <LOOPIconStrip
                 activeComponents={loopComponents}
@@ -735,7 +731,6 @@
               onclick={() => onStepClick(cell.index)}
               type="button"
               aria-label="Go to step {cell.label}"
-              transition:scale={{ duration: 250, easing: cubicOut }}
             >
               <!-- Light mode image -->
               <img
@@ -760,7 +755,6 @@
               class:current={showHighlight && highlightedStepIndex === cell.index}
               class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
               style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-              transition:scale={{ duration: 250, easing: cubicOut }}
             >
               <!-- Light mode image -->
               <img
@@ -788,31 +782,21 @@
         <div
           class="footer-section"
           style="height: {scaledFooterHeight}px; padding-left: {footerMargin}px; padding-right: {footerMargin}px; font-size: {footerFontSize}px;"
-          transition:fly={{ y: 20, duration: 250, easing: cubicOut }}
         >
           {#if showCreatorName && effectiveUserName}
-            <span
-              class="footer-name"
-              transition:fly={{ x: -20, duration: 200, easing: cubicOut }}
-            >
+            <span class="footer-name">
               {effectiveUserName}
             </span>
           {/if}
 
           {#if showNotes}
-            <span
-              class="footer-notes"
-              transition:fade={{ duration: 200 }}
-            >
+            <span class="footer-notes">
               {customNotesText}
             </span>
           {/if}
 
           {#if showBirthday}
-            <span
-              class="footer-birthday"
-              transition:fly={{ x: 20, duration: 200, easing: cubicOut }}
-            >
+            <span class="footer-birthday">
               🎂 {birthdayDate}
             </span>
           {/if}

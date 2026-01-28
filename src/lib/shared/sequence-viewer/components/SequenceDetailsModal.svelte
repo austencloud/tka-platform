@@ -54,6 +54,7 @@
   import MultiPerformerButton from "$lib/shared/ui/components/MultiPerformerButton.svelte";
   import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
   import ExpandButton from "$lib/shared/ui/components/ExpandButton.svelte";
+  import MorphingFooter from "./MorphingFooter.svelte";
   // Animation and playback
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
@@ -130,6 +131,8 @@
 
   // LAN Sync - just a toggle, no complex UI
   let isSyncToggling = $state(false);
+
+  // Mobile: no auto-hide - controls stay visible until user collapses
 
   // Prop type settings for LayeredSequencePreview
   const settings = $derived(getSettings());
@@ -212,43 +215,159 @@
   });
 
   // Swipe-to-dismiss state (mobile only)
+  // Supports dragging from anywhere on the modal to dismiss
   let swipeY = $state(0);
   let swipeStartY = $state(0);
+  let swipeStartX = $state(0);
   let isSwiping = $state(false);
+  let isTrackingTouch = $state(false); // Track touch from anywhere initially
+  let swipeGestureStarted = $state(false); // True once we've committed to a swipe gesture
+  let blockClicksAfterSwipe = $state(false); // Temporarily block clicks after a swipe gesture
   const SWIPE_THRESHOLD = 100; // px to trigger dismiss
+  const SWIPE_COMMIT_THRESHOLD = 10; // px of vertical movement before committing to swipe
+  const HORIZONTAL_TOLERANCE = 2; // Vertical movement must be > this times horizontal movement
 
   function handleTouchStart(e: TouchEvent) {
-    if (!isMobile || isFullscreen) return;
-    // Only start swipe from the top portion of the modal
-    const touch = e.touches[0];
-    if (touch && touch.clientY < 150) {
-      swipeStartY = touch.clientY;
-      isSwiping = true;
+    console.log('[Swipe] touchstart - isMobile:', isMobile, 'isFullscreen:', isFullscreen, 'isExportMode:', isExportMode, 'windowWidth:', window.innerWidth);
+    if (!isMobile || isFullscreen || isExportMode) {
+      console.log('[Swipe] touchstart blocked by guard');
+      return;
     }
+    const touch = e.touches[0];
+    if (!touch) return;
+
+    // Track touch start from anywhere - we'll decide if it's a swipe during move
+    swipeStartY = touch.clientY;
+    swipeStartX = touch.clientX;
+    isTrackingTouch = true;
+    isSwiping = false;
+    swipeGestureStarted = false;
+    swipeY = 0;
+    console.log('[Swipe] touchstart tracking from', swipeStartX, swipeStartY);
   }
 
   function handleTouchMove(e: TouchEvent) {
-    if (!isSwiping) return;
+    if (!isTrackingTouch) {
+      console.log('[Swipe] touchmove - not tracking');
+      return;
+    }
     const touch = e.touches[0];
-    if (touch) {
-      const delta = touch.clientY - swipeStartY;
-      // Only allow downward swipe
-      if (delta > 0) {
-        swipeY = delta;
+    if (!touch) return;
+
+    const deltaY = touch.clientY - swipeStartY;
+    const deltaX = Math.abs(touch.clientX - swipeStartX);
+
+    console.log('[Swipe] touchmove - deltaY:', deltaY, 'deltaX:', deltaX, 'swipeGestureStarted:', swipeGestureStarted);
+
+    // If we haven't committed to a swipe yet, check if this looks like a vertical swipe
+    if (!swipeGestureStarted) {
+      // Only start swiping if:
+      // 1. Movement is downward (deltaY > 0)
+      // 2. Vertical movement exceeds the commit threshold
+      // 3. Vertical movement is significantly more than horizontal (to avoid interfering with horizontal scrolling)
+      if (deltaY > SWIPE_COMMIT_THRESHOLD && deltaY > deltaX * HORIZONTAL_TOLERANCE) {
+        console.log('[Swipe] committing to swipe gesture');
+        swipeGestureStarted = true;
+        isSwiping = true;
+      } else if (deltaX > SWIPE_COMMIT_THRESHOLD) {
+        // This looks like a horizontal gesture, stop tracking for swipe
+        console.log('[Swipe] horizontal gesture detected, stopping');
+        isTrackingTouch = false;
+        return;
+      } else {
+        // Not enough movement yet to decide
+        return;
+      }
+    }
+
+    // We're committed to swiping - apply the transform
+    if (isSwiping && deltaY > 0) {
+      swipeY = deltaY;
+      // Prevent default to stop any scrolling
+      e.preventDefault();
+      // Apply transform to the dialog element
+      const dialog = document.querySelector("dialog.sequence-details-modal") as HTMLDialogElement | null;
+      console.log('[Swipe] applying transform translateY:', deltaY, 'dialog found:', !!dialog);
+      if (dialog) {
+        dialog.style.transform = `translateY(${deltaY}px)`;
+        dialog.style.opacity = `${Math.max(0.3, 1 - deltaY / 300)}`;
       }
     }
   }
 
-  function handleTouchEnd() {
-    if (!isSwiping) return;
-    if (swipeY > SWIPE_THRESHOLD) {
-      // Dismiss the modal
-      handleClose();
+  function handleTouchEnd(e: TouchEvent) {
+    const wasSwipeGesture = swipeGestureStarted;
+    const currentSwipeY = swipeY;
+
+    // Reset tracking state
+    isTrackingTouch = false;
+
+    if (!wasSwipeGesture) {
+      // No swipe gesture - let the click event through
+      isSwiping = false;
+      swipeY = 0;
+      swipeGestureStarted = false;
+      return;
     }
-    // Reset
+
+    // A swipe gesture was made - block clicks temporarily to prevent step seeking
+    blockClicksAfterSwipe = true;
+    setTimeout(() => {
+      blockClicksAfterSwipe = false;
+    }, 100); // Clear after 100ms - enough to block the synthesized click
+
+    // Handle the swipe
+    const dialog = document.querySelector("dialog.sequence-details-modal") as HTMLDialogElement | null;
+
+    if (currentSwipeY > SWIPE_THRESHOLD) {
+      // Dismiss the modal with animation
+      if (dialog) {
+        dialog.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+        dialog.style.transform = 'translateY(100%)';
+        dialog.style.opacity = '0';
+        setTimeout(() => {
+          handleClose();
+          // Reset styles after close
+          if (dialog) {
+            dialog.style.transform = '';
+            dialog.style.opacity = '';
+            dialog.style.transition = '';
+          }
+        }, 200);
+      } else {
+        handleClose();
+      }
+    } else {
+      // Snap back
+      if (dialog) {
+        dialog.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+        dialog.style.transform = '';
+        dialog.style.opacity = '';
+        setTimeout(() => {
+          if (dialog) dialog.style.transition = '';
+        }, 200);
+      }
+    }
+
+    // Reset state
     swipeY = 0;
     isSwiping = false;
+    swipeGestureStarted = false;
   }
+
+  // Attach touchmove handler at document level with capture phase
+  // This ensures we catch the event before any child elements can intercept it
+  $effect(() => {
+    if (!browser || !open) return;
+
+    console.log('[Swipe] attaching document-level touchmove listener');
+    document.addEventListener("touchmove", handleTouchMove, { passive: false, capture: true });
+
+    return () => {
+      console.log('[Swipe] removing document-level touchmove listener');
+      document.removeEventListener("touchmove", handleTouchMove, { capture: true });
+    };
+  });
 
   // Which pane is in edit mode: null, 'animation', or 'image'
   let editingPane = $state<'animation' | 'image' | null>(null);
@@ -437,42 +556,6 @@
     }
   }
 
-  // Footer auto-hide state (for mobile playback)
-  let footerControlsVisible = $state(true);
-  let footerHideTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  function showFooterControls() {
-    footerControlsVisible = true;
-    scheduleFooterHide();
-  }
-
-  function scheduleFooterHide() {
-    clearFooterTimeout();
-    // Only auto-hide on mobile when playing
-    if (!isPlayingLocal) return;
-    if (typeof window !== "undefined" && window.innerWidth >= 768) return;
-
-    footerHideTimeout = setTimeout(() => {
-      footerControlsVisible = false;
-    }, 3000);
-  }
-
-  function clearFooterTimeout() {
-    if (footerHideTimeout) {
-      clearTimeout(footerHideTimeout);
-      footerHideTimeout = null;
-    }
-  }
-
-  // Keep footer visible when paused
-  $effect(() => {
-    if (!isPlayingLocal) {
-      footerControlsVisible = true;
-      clearFooterTimeout();
-    } else {
-      scheduleFooterHide();
-    }
-  });
 
   // Footer action handlers
   function handleSave() {
@@ -667,6 +750,20 @@
         saveImageSetting("darkMode", imgDarkMode);
         break;
     }
+  }
+
+  /**
+   * Unified dark mode toggle - affects both animation canvas and choreo card.
+   * Single toggle provides consistent experience across all visual elements.
+   */
+  function handleUnifiedDarkModeToggle() {
+    hapticService?.trigger("selection");
+    const newValue = !imgDarkMode;
+    // Update choreo card dark mode
+    imgDarkMode = newValue;
+    saveImageSetting("darkMode", newValue);
+    // Update animation canvas dark mode
+    animationVisibility.setDarkMode(newValue);
   }
 
   // Services (lazy-loaded)
@@ -952,9 +1049,14 @@
   }
 
   function handleStepClick(stepIndex: number) {
-    // Only seek if the image pane is already focused
-    // When clicking to focus the pane, don't interrupt playback
-    if (editingPane !== 'image') {
+    // Block clicks that follow a swipe gesture (prevents accidental step seeks when dismissing)
+    if (blockClicksAfterSwipe) {
+      return;
+    }
+
+    // Only seek if the image pane is already focused AND playback is paused
+    // When clicking to focus/unfocus the pane or during playback, don't interrupt
+    if (editingPane !== 'image' || isPlayingLocal) {
       return;
     }
 
@@ -1077,7 +1179,6 @@
   onDestroy(() => {
     cleanupAnimationStateSubscription?.();
     clearControlsTimeout();
-    clearFooterTimeout();
     if (playbackController) {
       playbackController.dispose();
     }
@@ -1161,12 +1262,8 @@
         class="details-header"
         class:mobile={isMobile}
         data-hidden={isFullscreen}
-        ontouchstart={handleTouchStart}
-        ontouchmove={handleTouchMove}
-        ontouchend={handleTouchEnd}
-        style={isSwiping ? `transform: translateY(${swipeY}px); opacity: ${1 - swipeY / 200}` : undefined}
       >
-        <!-- Mobile: Swipe handle indicator -->
+        <!-- Mobile: Swipe handle indicator for swipe-to-dismiss -->
         {#if isMobile}
           <div class="swipe-handle" aria-hidden="true"></div>
         {/if}
@@ -1186,20 +1283,19 @@
               onclick={() => handleOpenInCompose('stagger')}
               size="small"
             />
-          {/if}
-          <LightsToggleButton
-            lightsOn={!imgDarkMode}
-            onToggle={() => toggleImgSetting("darkMode")}
-            size="small"
-          />
-          {#if !isMobile}
-            <!-- Desktop only: Fullscreen button -->
+            <!-- Desktop: Quick light/dark toggle + fullscreen -->
+            <LightsToggleButton
+              lightsOn={!imgDarkMode}
+              onToggle={() => toggleImgSetting("darkMode")}
+              size="small"
+            />
             <ExpandButton
               isExpanded={isFullscreen}
               onclick={enterFullscreen}
               size="small"
             />
           {/if}
+          <!-- Mobile: No header buttons - settings moved to morphing footer -->
         </div>
 
         <div class="header-center">
@@ -1228,6 +1324,8 @@
     data-fullscreen={isFullscreen}
     onclick={isFullscreen ? handleFullscreenTap : undefined}
     onkeydown={isFullscreen ? (e) => { if (e.key === 'Enter' || e.key === ' ') handleFullscreenTap(); } : undefined}
+    ontouchstart={handleTouchStart}
+    ontouchend={handleTouchEnd}
     role={isFullscreen ? "button" : undefined}
     tabindex={isFullscreen ? 0 : undefined}
     aria-label={isFullscreen ? "Fullscreen viewer. Tap to show controls." : undefined}
@@ -1478,8 +1576,8 @@
           aria-expanded={editingPane === 'animation'}
         >
           <div class="media-pane animation-pane">
-            <!-- Close button - shown when focused -->
-            {#if editingPane === 'animation'}
+            <!-- Close button - shown when focused (desktop only, mobile uses tap to collapse) -->
+            {#if editingPane === 'animation' && !isMobile}
               <div
                 class="pane-close-btn"
                 role="button"
@@ -1534,8 +1632,8 @@
           <!-- Inner wrapper for horizontal layout on wide screens -->
           <div class="preview-column-inner" class:focused={editingPane === 'image'}>
             <div class="media-pane preview-pane">
-              <!-- Close button - shown when focused -->
-              {#if editingPane === 'image'}
+              <!-- Close button - shown when focused (desktop only, mobile uses tap to collapse) -->
+              {#if editingPane === 'image' && !isMobile}
                 <div
                   class="pane-close-btn"
                   role="button"
@@ -1647,23 +1745,42 @@
           <p class="footer-hint">Select an export format above</p>
         </footer>
       {:else}
-        <!-- New unified footer with actions + playback -->
-        <ViewerFooter
-          bpm={bpmLocal}
-          isPlaying={isPlayingLocal}
-          isLoggedIn={authState.isAuthenticated}
-          controlsVisible={footerControlsVisible}
-          onBpmChange={handleBpmChange}
-          onPlayPause={handlePlaybackToggle}
-          onStepBack={() => playbackController?.stepFullBeatBackward()}
-          onStepForward={() => playbackController?.stepFullBeatForward()}
-          onStepHalfBack={() => playbackController?.stepHalfBeatBackward()}
-          onStepHalfForward={() => playbackController?.stepHalfBeatForward()}
-          onSave={handleSave}
-          onCompose={handleCompose}
-          onShare={handleShare}
-          onExport={enterExportMode}
-        />
+        <!-- Footer: MorphingFooter on mobile, ViewerFooter on desktop -->
+        {#if isMobile}
+          <MorphingFooter
+            bpm={bpmLocal}
+            isPlaying={isPlayingLocal}
+            isLoggedIn={authState.isAuthenticated}
+            darkMode={imgDarkMode}
+            onBpmChange={handleBpmChange}
+            onPlayPause={handlePlaybackToggle}
+            onStepBack={() => playbackController?.stepFullBeatBackward()}
+            onStepForward={() => playbackController?.stepFullBeatForward()}
+            onStepHalfBack={() => playbackController?.stepHalfBeatBackward()}
+            onStepHalfForward={() => playbackController?.stepHalfBeatForward()}
+            onSave={handleSave}
+            onCompose={handleCompose}
+            onShare={handleShare}
+            onExport={enterExportMode}
+            onDarkModeToggle={handleUnifiedDarkModeToggle}
+          />
+        {:else}
+          <ViewerFooter
+            bpm={bpmLocal}
+            isPlaying={isPlayingLocal}
+            isLoggedIn={authState.isAuthenticated}
+            onBpmChange={handleBpmChange}
+            onPlayPause={handlePlaybackToggle}
+            onStepBack={() => playbackController?.stepFullBeatBackward()}
+            onStepForward={() => playbackController?.stepFullBeatForward()}
+            onStepHalfBack={() => playbackController?.stepHalfBeatBackward()}
+            onStepHalfForward={() => playbackController?.stepHalfBeatForward()}
+            onSave={handleSave}
+            onCompose={handleCompose}
+            onShare={handleShare}
+            onExport={enterExportMode}
+          />
+        {/if}
       {/if}
     {/if}
   {/snippet}
@@ -1773,7 +1890,8 @@
 
   /* Fullscreen split layout: Horizontal stack (animation left, preview right) - for tall/square sequences */
   .modal-body-content[data-fullscreen="true"] .split-view[data-fullscreen-stack="horizontal"] {
-    flex-direction: row;
+    grid-template-rows: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .modal-body-content[data-fullscreen="true"] .split-view[data-fullscreen-stack="horizontal"] .preview-column {
@@ -1783,19 +1901,13 @@
 
   /* Fullscreen split layout: Vertical stack (animation top, preview bottom) - for wide sequences */
   .modal-body-content[data-fullscreen="true"] .split-view[data-fullscreen-stack="vertical"] {
-    flex-direction: column;
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .modal-body-content[data-fullscreen="true"] .split-view[data-fullscreen-stack="vertical"] .preview-column {
     border-left: none;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  /* Ensure both columns can shrink/grow to fit in fullscreen */
-  .modal-body-content[data-fullscreen="true"] .split-column {
-    flex: 1 1 0;
-    min-height: 0;
-    min-width: 0;
   }
 
   /* Floating fullscreen controls overlay */
@@ -1964,17 +2076,21 @@
     inset: 0;
   }
 
-  /* Split view */
+  /* Split view - uses CSS Grid for smoother focus transitions */
   .split-view {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    /* Mobile: vertical stack */
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr;
     height: 100%;
     width: 100%;
+    /* Smooth grid transitions */
+    transition: grid-template-rows 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+                grid-template-columns 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   /* Split columns are tappable buttons */
   .split-column {
-    flex: 1;
     min-height: 0;
     min-width: 0;
     display: flex;
@@ -1986,12 +2102,9 @@
     font: inherit;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    /* Transitions */
-    transition:
-      flex 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-      opacity 0.25s ease,
-      transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-    transform-origin: center;
+    /* Opacity transition for smooth fade */
+    transition: opacity 0.15s ease;
+    overflow: hidden;
   }
 
   .split-column:focus-visible {
@@ -2012,6 +2125,7 @@
   .preview-column-inner {
     display: flex;
     flex-direction: column;
+    justify-content: center; /* Center content vertically when expanded */
     width: 100%;
     height: 100%;
     min-height: 0;
@@ -2024,7 +2138,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
     overflow: hidden;
     /* Establish container for child container queries */
     container-type: size;
@@ -2093,28 +2206,30 @@
 
   /* ===== FOCUS MODE TRANSITIONS ===== */
 
-  /* Hidden column animates out */
+  /* Hidden column fades out */
   .split-view[data-focused] .split-column[data-hidden="true"] {
-    flex: 0 0 0%;
     opacity: 0;
-    transform: scale(0.95);
     pointer-events: none;
-    overflow: hidden;
   }
 
-  /* Focused column expands to fill */
-  .split-view[data-focused="animation"] .animation-column,
-  .split-view[data-focused="image"] .preview-column {
-    flex: 1 1 100%;
+  /* Mobile-only: Vertical expansion (row-based) */
+  @media (max-width: 767px) {
+    /* Focus animation pane - animation expands, preview collapses */
+    .split-view[data-focused="animation"] {
+      grid-template-rows: 1fr 0fr;
+    }
+
+    /* Focus preview pane - preview expands, animation collapses */
+    .split-view[data-focused="image"] {
+      grid-template-rows: 0fr 1fr;
+    }
   }
 
-  /* Remove border between columns when in edit mode - with transition */
+  /* Remove border between columns when in edit mode */
   .preview-column {
     transition:
       border-color 0.25s ease,
-      flex 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-      opacity 0.25s ease,
-      transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+      opacity 0.15s ease;
   }
 
   .split-view[data-focused] .preview-column {
@@ -2235,12 +2350,22 @@
       overflow: hidden;
     }
 
+    /* Desktop: horizontal layout using grid columns */
     .split-view {
-      flex-direction: row;
+      grid-template-rows: 1fr;
+      grid-template-columns: 1fr 1fr;
     }
 
-    .split-column {
-      flex: 1;
+    /* Desktop: Focus animation pane - animation expands, preview collapses */
+    .split-view[data-focused="animation"] {
+      grid-template-rows: 1fr;
+      grid-template-columns: 1fr 0fr;
+    }
+
+    /* Desktop: Focus preview pane - preview expands, animation collapses */
+    .split-view[data-focused="image"] {
+      grid-template-rows: 1fr;
+      grid-template-columns: 0fr 1fr;
     }
 
     .preview-column {
