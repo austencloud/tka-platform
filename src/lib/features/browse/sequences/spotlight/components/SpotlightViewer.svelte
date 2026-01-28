@@ -536,7 +536,7 @@
     role="dialog"
     aria-modal="true"
     aria-label="Maximized sequence view"
-    tabindex="-1"
+    tabindex="0"
   >
     {#if displayMode === "animation" && sequence}
       <!-- Animation mode: fullscreen AnimationPlayer with minimal controls -->

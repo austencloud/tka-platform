@@ -67,6 +67,49 @@ Follows Svelte 5 runes + microservices architecture.
     if (count === 1) return "(1)";
     return `(${count})`;
   }
+
+  // Arrow key navigation for letter grid (WCAG AAA keyboard accessibility)
+  function handleLetterGridKeydown(
+    event: KeyboardEvent,
+    section: BrowseNavigationConfig,
+    currentIndex: number
+  ) {
+    const items = section.items;
+    const columns = 6; // Grid has 6 columns
+    let newIndex = currentIndex;
+
+    switch (event.key) {
+      case "ArrowRight":
+        newIndex = currentIndex + 1;
+        break;
+      case "ArrowLeft":
+        newIndex = currentIndex - 1;
+        break;
+      case "ArrowDown":
+        newIndex = currentIndex + columns;
+        break;
+      case "ArrowUp":
+        newIndex = currentIndex - columns;
+        break;
+      case "Home":
+        newIndex = 0;
+        break;
+      case "End":
+        newIndex = items.length - 1;
+        break;
+      default:
+        return; // Don't prevent default for other keys
+    }
+
+    // Clamp to valid range
+    if (newIndex >= 0 && newIndex < items.length) {
+      event.preventDefault();
+      // Focus the new item
+      const gridEl = (event.target as HTMLElement).closest(".letter-grid");
+      const buttons = gridEl?.querySelectorAll(".letter-item");
+      (buttons?.[newIndex] as HTMLElement)?.focus();
+    }
+  }
 </script>
 
 <div class="navigation-sidebar" class:collapsed={isCollapsed}>
@@ -106,17 +149,20 @@ Follows Svelte 5 runes + microservices architecture.
           {#if section.isExpanded && section.items.length > 0}
             <div class="section-items" transition:slide={{ duration: 200 }}>
               {#if section.type === "letter"}
-                <!-- Special grid layout for letters -->
-                <div class="letter-grid">
-                  {#each section.items as item (item.id)}
+                <!-- Special grid layout for letters with arrow key navigation -->
+                <div class="letter-grid" role="grid" aria-label="Filter by starting letter">
+                  {#each section.items as item, index (item.id)}
                     <button
                       class="letter-item"
                       class:active={item.isActive}
                       onclick={() => handleItemClick(section, item)}
+                      onkeydown={(e) => handleLetterGridKeydown(e, section, index)}
                       title="{item.label} ({item.count} sequences)"
+                      aria-label="{item.label}, {item.count} sequences"
+                      tabindex={index === 0 ? 0 : -1}
                     >
                       <span class="letter-label">{item.label}</span>
-                      <span class="letter-count">{item.count}</span>
+                      <span class="letter-count" aria-hidden="true">{item.count}</span>
                     </button>
                   {/each}
                 </div>
@@ -265,7 +311,8 @@ Follows Svelte 5 runes + microservices architecture.
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--spacing-xs) var(--spacing-lg);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    min-height: 48px; /* WCAG AAA touch target */
     background: none;
     border: none;
     color: rgba(255, 255, 255, 0.8);
@@ -273,6 +320,12 @@ Follows Svelte 5 runes + microservices architecture.
     cursor: pointer;
     transition: all var(--transition-fast);
     text-align: left;
+  }
+
+  .navigation-item:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: -2px;
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .navigation-item:hover {
@@ -321,8 +374,14 @@ Follows Svelte 5 runes + microservices architecture.
     font-size: var(--font-size-xs);
     cursor: pointer;
     transition: all var(--transition-fast);
-    min-height: var(--min-touch-target);
+    min-height: 48px; /* WCAG AAA touch target */
+    min-width: 48px;
     aspect-ratio: 1;
+  }
+
+  .letter-item:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   .letter-item:hover {

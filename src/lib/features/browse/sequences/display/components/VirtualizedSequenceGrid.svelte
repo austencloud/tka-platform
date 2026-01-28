@@ -8,7 +8,7 @@
   import { get } from "svelte/store";
   import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
   import type { IVariationGrouper } from "../services/contracts/IVariationGrouper";
-  import SequenceCard from "./SequenceCard/SequenceCard.svelte";
+  import ChoreoCard from "./ChoreoCard/ChoreoCard.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -118,37 +118,6 @@
     const startIndex = rowIndex * columnCount;
     const endIndex = Math.min(startIndex + columnCount, sequences.length);
     return sequences.slice(startIndex, endIndex);
-  }
-
-  function getCoverUrl(sequence: SequenceData) {
-    if (!thumbnailService) return undefined;
-
-    // Cat-dog mode: Return null, PropAwareThumbnail will handle lazy rendering
-    if (isCatDog) {
-      return undefined;
-    }
-
-    try {
-      // Single-prop mode: Use prop-specific pre-rendered images
-      const sequenceName = sequence.word || sequence.name;
-      const propType = propSettings.bluePropType || propSettings.redPropType;
-
-      if (sequenceName && propType) {
-        // Use prop-specific thumbnail path: /gallery/{propType}/{sequence}_{mode}.webp
-        return thumbnailService.getPropSpecificThumbnailUrl(
-          sequenceName,
-          propType,
-          false // dark mode
-        );
-      }
-
-      // Fallback to legacy thumbnail path
-      const firstThumbnail = sequence?.thumbnails?.[0];
-      if (!firstThumbnail) return undefined;
-      return thumbnailService.getThumbnailUrl(sequence.id, firstThumbnail);
-    } catch {
-      return undefined;
-    }
   }
 
   function handleSequenceAction(
@@ -267,10 +236,9 @@
         {#each getRowSequences(virtualRow.index) as sequence, colIndex (sequence.id)}
           {@const seqVariations = getVariationsForSequence(sequence)}
           <div role="gridcell" aria-colindex={colIndex + 1}>
-            <SequenceCard
+            <ChoreoCard
               {sequence}
               variations={seqVariations}
-              coverUrl={getCoverUrl(sequence)}
               onPrimaryAction={(seq) =>
                 handleSequenceAction("view-detail", seq, seqVariations)}
               bluePropType={propSettings.bluePropType}
@@ -313,6 +281,13 @@
   .virtual-content {
     position: relative;
     width: 100%;
+  }
+
+  /* Focus styles for keyboard navigation (WCAG AAA) */
+  .virtual-row [role="gridcell"]:focus-within {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+    border-radius: 8px;
   }
 
   .virtual-row {

@@ -77,6 +77,7 @@
       fill="none"
       stroke="currentColor"
       stroke-width="2.5"
+      aria-hidden="true"
     >
       <line x1="18" y1="6" x2="6" y2="18"></line>
       <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -97,7 +98,7 @@
     position: relative;
     width: 100%;
     height: 100%;
-    background: #000;
+    background: var(--theme-panel-bg, #000);
     overflow: hidden;
     touch-action: none;
   }
@@ -160,5 +161,17 @@
 
   .close-btn:active {
     transform: scale(0.92);
+  }
+
+  .close-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .close-btn:active {
+      transform: none;
+    }
   }
 </style>

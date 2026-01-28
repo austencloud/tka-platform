@@ -166,7 +166,8 @@
   <button
     class="drag-handle"
     onclick={handleDragHandleClick}
-    aria-label="Expand details"
+    aria-label={sheetState === "peek" ? "Expand details" : "Collapse details"}
+    aria-expanded={sheetState === "expanded"}
   >
     <div class="handle-bar"></div>
   </button>
@@ -206,6 +207,7 @@
             fill="none"
             stroke="currentColor"
             stroke-width="2"
+            aria-hidden="true"
           >
             <path d="M9 18l6-6-6-6" />
           </svg>
@@ -231,6 +233,7 @@
             fill="none"
             stroke="currentColor"
             stroke-width="2"
+            aria-hidden="true"
           >
             <path
               d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
@@ -247,6 +250,7 @@
             fill="none"
             stroke="currentColor"
             stroke-width="2"
+            aria-hidden="true"
           >
             <path
               d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
@@ -265,6 +269,7 @@
             fill="none"
             stroke="currentColor"
             stroke-width="2"
+            aria-hidden="true"
           >
             <polyline points="3 6 5 6 21 6" />
             <path
@@ -347,10 +352,17 @@
     align-items: center;
     justify-content: center;
     padding: 12px;
+    min-height: 48px; /* WCAG AAA touch target */
     background: none;
     border: none;
     cursor: grab;
     flex-shrink: 0;
+  }
+
+  .drag-handle:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: -2px;
+    border-radius: 12px;
   }
 
   .handle-bar {
@@ -446,6 +458,11 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
   }
 
+  .creator-row:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
   /* Actions */
   .actions {
     display: flex;
@@ -478,6 +495,11 @@
 
   .action-btn:active {
     transform: scale(0.96);
+  }
+
+  .action-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   .action-btn-danger {
@@ -549,5 +571,24 @@
     width: 24px;
     height: 24px;
     color: white;
+  }
+
+  .video-close:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .video-backdrop:focus-visible {
+    outline: none; /* Backdrop doesn't need visible focus */
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .sheet {
+      transition: none;
+    }
+    .action-btn:active {
+      transform: none;
+    }
   }
 </style>
