@@ -1,5 +1,9 @@
 import type { FeedbackItem } from "../../domain/models/feedback-models";
 import type { IFeedbackSorter } from "../contracts/IFeedbackSorter";
+import type { IClaimStatusDeriver } from "../contracts/IClaimStatusDeriver";
+import { ClaimStatusDeriver } from "./ClaimStatusDeriver";
+import { SwimLaneDeriver } from "./SwimLaneDeriver";
+import type { SwimLane } from "../contracts/ISwimLaneDeriver";
 
 export class FeedbackSorter implements IFeedbackSorter {
   private readonly PRIORITY_ORDER: Record<string, number> = {
@@ -8,6 +12,20 @@ export class FeedbackSorter implements IFeedbackSorter {
     medium: 2,
     low: 3,
   };
+
+  private readonly swimLaneDeriver = new SwimLaneDeriver();
+  private readonly claimStatusDeriver: IClaimStatusDeriver;
+
+  constructor(claimStatusDeriver?: IClaimStatusDeriver) {
+    this.claimStatusDeriver = claimStatusDeriver ?? new ClaimStatusDeriver();
+  }
+
+  /**
+   * Get the claim status deriver for external access (e.g., WIP counting)
+   */
+  getClaimStatusDeriver(): IClaimStatusDeriver {
+    return this.claimStatusDeriver;
+  }
 
   sortByPriority(items: FeedbackItem[]): FeedbackItem[] {
     return [...items].sort((a, b) => {
@@ -21,6 +39,16 @@ export class FeedbackSorter implements IFeedbackSorter {
     });
   }
 
+  /**
+   * Group items by their DERIVED status (based on claim state), not stored status.
+   *
+   * Key behavior:
+   * - Items with active claims → "in-progress" (regardless of stored status)
+   * - Items with stale/no claims but stored status "in-progress" → "new" (orphaned)
+   * - All other statuses pass through unchanged
+   *
+   * This ensures the "in-progress" column only shows items actively being worked on.
+   */
   groupByStatus(
     items: FeedbackItem[]
   ): Record<"new" | "in-progress" | "in-review" | "completed", FeedbackItem[]> {
@@ -38,9 +66,12 @@ export class FeedbackSorter implements IFeedbackSorter {
       // Filter out archived items - they don't appear in Kanban
       if (item.status === "archived") continue;
 
-      // Map to the 4 statuses
-      if (grouped[item.status]) {
-        grouped[item.status]?.push(item);
+      // Derive effective status from claim state
+      const { displayStatus } = this.claimStatusDeriver.deriveEffectiveStatus(item);
+
+      // Group by derived status
+      if (grouped[displayStatus]) {
+        grouped[displayStatus]?.push(item);
       }
     }
 
@@ -50,6 +81,19 @@ export class FeedbackSorter implements IFeedbackSorter {
       "in-progress": this.sortByPriority(grouped["in-progress"] ?? []),
       "in-review": this.sortByPriority(grouped["in-review"] ?? []),
       completed: this.sortByPriority(grouped.completed ?? []),
+    };
+  }
+
+  groupByStatusAndLane(
+    items: FeedbackItem[]
+  ): Record<"new" | "in-progress" | "in-review" | "completed", Record<SwimLane, FeedbackItem[]>> {
+    const byStatus = this.groupByStatus(items);
+
+    return {
+      new: this.swimLaneDeriver.groupByLane(byStatus.new),
+      "in-progress": this.swimLaneDeriver.groupByLane(byStatus["in-progress"]),
+      "in-review": this.swimLaneDeriver.groupByLane(byStatus["in-review"]),
+      completed: this.swimLaneDeriver.groupByLane(byStatus.completed),
     };
   }
 

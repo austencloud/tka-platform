@@ -159,6 +159,11 @@ export interface FeedbackItem {
   priority?: FeedbackPriority;
   imageUrls?: string[]; // Screenshots attached to feedback
 
+  // Original content (write-once, never overwritten)
+  // Preserved for long-term analysis of user language patterns and mental models
+  originalTitle?: string;
+  originalDescription?: string;
+
   // Context (auto-captured)
   capturedModule: string;
   capturedTab: string;
@@ -171,11 +176,16 @@ export interface FeedbackItem {
   status: FeedbackStatus;
   adminNotes?: string; // Admin-only: internal summary of what was fixed
   userFacingNotes?: string; // User-visible: friendly explanation for the submitter
+  changelogEntry?: string; // User-facing changelog text, captured at completion
   updatedAt?: Date;
 
   // Claim tracking
   claimedAt?: Date; // When an agent claimed this item
   claimedBy?: string; // userId of who claimed it (for accountability)
+  claimToken?: string; // Unique token for race-safe claiming (UUID, first 8 chars shown in UI)
+  claimSession?: string; // Session ID for this claim (for agent tracking)
+  lastActivity?: Date; // Most recent heartbeat/activity timestamp
+  lastActivityType?: string; // Type of last activity (claimed, heartbeat, file_touch, etc.)
 
   // Subtasks (optional - for complex feedback requiring prerequisites)
   subtasks?: FeedbackSubtask[];

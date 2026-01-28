@@ -28,20 +28,32 @@ Run this command to check if there are any in-progress items:
 node scripts/fetch-feedback.js mine
 ```
 
-**IMPORTANT: The `mine` command shows ALL in-progress items, including ones claimed by OTHER agents in different sessions.** The claim token (shown in brackets like `[0c8265ee]`) identifies which session owns the claim. You cannot "resume" an item claimed by another session - you must either:
-- Wait for them to finish
-- Ask the user if they want to unclaim it (if the other agent died/disconnected)
+**If items are found:**
 
-**If items are found**, tell the user:
-- How many in-progress items exist
-- Their claim tokens
-- That these may belong to other active Claude sessions
+1. **Fetch full details for EACH in-progress item** - the `mine` list is truncated, so you MUST run:
+   ```bash
+   node scripts/fetch-feedback.js <id>
+   ```
+   for each item to show the user the complete title, description, module/tab, and any images.
 
-Then ask: "Is another agent currently working on these, or should I unclaim and take over?"
+2. **Display the full details** so the user can actually understand what each item is.
 
-**If user says another agent is working on it:** Skip to STEP 2 and pick from unclaimed items only.
+3. **Then ask:** "This item is in-progress from another session (claim token `[xxxxxxxx]`). Want me to continue working on it, or skip to unclaimed items?"
 
-**If user says to take over:** Run `node scripts/fetch-feedback.js unclaim <id>` then re-claim it.
+**IMPORTANT:** The claim token identifies which session owns the claim. If another agent is actively working on it in a different terminal, they should finish. But often in-progress items are from dead/disconnected sessions.
+
+**If user says continue:**
+1. First try: `node scripts/fetch-feedback.js claim <id>`
+2. If claim succeeds → proceed with work
+3. If claim fails with "active work in progress" → the claim is still fresh (<45 min activity)
+   - **DO NOT bypass the protection** - this would steal another agent's active work
+   - Tell the user the options:
+     a. "Wait for the claim to become stale (45 min inactivity)"
+     b. "Submit a claim request: `request-claim <id> 'reason'` (starts 15-min countdown)"
+     c. "Emergency takeover: `unclaim <id> --emergency 'reason'` (audited, requires justification)"
+   - **Only the USER can decide to force or use emergency** - never do it automatically
+
+**If user says skip:** Proceed to STEP 2 and pick from unclaimed items only.
 
 **If no in-progress items found:** Proceed directly to STEP 2.
 

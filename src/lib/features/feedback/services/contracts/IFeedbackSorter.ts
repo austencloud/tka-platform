@@ -1,4 +1,5 @@
 import type { FeedbackItem } from "../../domain/models/feedback-models";
+import type { SwimLane } from "./ISwimLaneDeriver";
 
 export interface IFeedbackSorter {
   /**
@@ -14,6 +15,14 @@ export interface IFeedbackSorter {
   groupByStatus(
     items: FeedbackItem[]
   ): Record<"new" | "in-progress" | "in-review" | "completed", FeedbackItem[]>;
+
+  /**
+   * Group items by status AND swim lane
+   * Returns nested record: status -> lane -> items
+   */
+  groupByStatusAndLane(
+    items: FeedbackItem[]
+  ): Record<"new" | "in-progress" | "in-review" | "completed", Record<SwimLane, FeedbackItem[]>>;
 
   /**
    * Get deferred items (archived with deferredUntil timestamp)

@@ -44,7 +44,273 @@ admin.initializeApp({
 const db = admin.firestore();
 
 // Import config values
-const { ADMIN_USER_ID, ADMIN_USER, STALE_CLAIM_MS } = config;
+const {
+  ADMIN_USER_ID,
+  ADMIN_USER,
+  STALE_THRESHOLDS,
+  VALID_TRANSITIONS,
+  JOURNAL_TYPES,
+  WIP_LIMITS,
+  EMERGENCY_CONFIG,
+} = config;
+
+// ============================================================================
+// SESSION REGISTRATION
+// ============================================================================
+
+/**
+ * Register this CLI session on startup
+ *
+ * Creates an entry in agentSessions so other agents can see who's working.
+ * This enables the bulletproof claim coordination system.
+ */
+async function registerSession() {
+  try {
+    const hostname = process.env.COMPUTERNAME || process.env.HOSTNAME || "unknown";
+
+    await db.collection("agentSessions").doc(SESSION_ID).set({
+      sessionId: SESSION_ID,
+      agentType: "claude-cli",
+      registeredAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+      activeClaims: [],
+      userId: ADMIN_USER_ID,
+      metadata: {
+        hostname,
+        pid: process.pid,
+        cwd: process.cwd(),
+        nodeVersion: process.version,
+      },
+    });
+
+    console.log(`  📡 Session registered: ${SESSION_ID.substring(0, 8)}...`);
+    return true;
+  } catch (error) {
+    // Non-fatal - session registration is optional
+    console.error(`  ⚠️  Failed to register session: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Update session activity (called periodically during long operations)
+ */
+async function updateSessionActivity() {
+  try {
+    await db.collection("agentSessions").doc(SESSION_ID).update({
+      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch {
+    // Ignore - session may not exist
+  }
+}
+
+/**
+ * Clean up session on exit (optional - stale cleanup will handle it anyway)
+ */
+async function cleanupSession() {
+  try {
+    // Release any claims held by this session
+    const sessionDoc = await db.collection("agentSessions").doc(SESSION_ID).get();
+    if (sessionDoc.exists) {
+      const data = sessionDoc.data();
+      if (data.activeClaims && data.activeClaims.length > 0) {
+        console.log(`\n  ⚠️  Session has ${data.activeClaims.length} active claims. Use 'unclaim' to release them.`);
+      }
+    }
+    // Don't delete session - let stale cleanup handle it so other agents can see history
+  } catch {
+    // Ignore cleanup errors
+  }
+}
+
+// Legacy alias
+const STALE_CLAIM_MS = STALE_THRESHOLDS.ACTIVITY_TIMEOUT_MS;
+
+// ============================================================================
+// STALENESS & CLAIM HEALTH
+// ============================================================================
+
+/**
+ * Check if a claim is stale (abandonable by another agent)
+ *
+ * A claim is stale if:
+ * 1. No activity for ACTIVITY_TIMEOUT_MS (45 min default), OR
+ * 2. Total claim time exceeds TOTAL_CLAIM_MAX_MS (8 hours default)
+ *
+ * @param {object} item - Feedback item with claim fields
+ * @returns {{ isStale: boolean, reason: string|null, ageMs: number, activityAgeMs: number }}
+ */
+function checkClaimStaleness(item) {
+  const now = Date.now();
+
+  // Get timestamps, using claimedAt as fallback for lastActivity
+  const claimedAt = item.claimedAt?.toDate?.()?.getTime() || null;
+  const lastActivity = item.lastActivity?.toDate?.()?.getTime() || claimedAt;
+
+  if (!claimedAt) {
+    return { isStale: true, reason: "no-claim-time", ageMs: Infinity, activityAgeMs: Infinity };
+  }
+
+  const totalAgeMs = now - claimedAt;
+  const activityAgeMs = lastActivity ? now - lastActivity : totalAgeMs;
+
+  // Check hard cap first (8 hours)
+  if (totalAgeMs > STALE_THRESHOLDS.TOTAL_CLAIM_MAX_MS) {
+    return { isStale: true, reason: "exceeded-max-time", ageMs: totalAgeMs, activityAgeMs };
+  }
+
+  // Check activity timeout (45 min)
+  if (activityAgeMs > STALE_THRESHOLDS.ACTIVITY_TIMEOUT_MS) {
+    return { isStale: true, reason: "no-activity", ageMs: totalAgeMs, activityAgeMs };
+  }
+
+  return { isStale: false, reason: null, ageMs: totalAgeMs, activityAgeMs };
+}
+
+/**
+ * Format milliseconds as human-readable duration
+ */
+function formatDuration(ms) {
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  return remainingMins > 0 ? `${hours}h ${remainingMins}m` : `${hours}h`;
+}
+
+/**
+ * Check if a claim is approaching staleness (for warnings)
+ */
+function isApproachingStale(item) {
+  const { activityAgeMs } = checkClaimStaleness(item);
+  return activityAgeMs > STALE_THRESHOLDS.WARNING_THRESHOLD_MS;
+}
+
+// ============================================================================
+// WORK JOURNAL
+// ============================================================================
+
+/**
+ * Add an entry to a feedback item's work journal
+ *
+ * The journal is an append-only log of all activity on an item.
+ * Enables work recovery and audit trails.
+ *
+ * @param {string} docId - Feedback document ID
+ * @param {string} type - Entry type (from JOURNAL_TYPES)
+ * @param {string} message - Human-readable description
+ * @param {object} data - Additional structured data
+ */
+async function addJournalEntry(docId, type, message = "", data = {}) {
+  try {
+    const journalRef = db
+      .collection("feedback")
+      .doc(docId)
+      .collection("journal")
+      .doc(); // Auto-generate ID
+
+    await journalRef.set({
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      type,
+      sessionId: SESSION_ID,
+      message,
+      data,
+    });
+
+    return journalRef.id;
+  } catch (error) {
+    // Journal failures shouldn't block main operations
+    console.error(`  ⚠️  Failed to write journal entry: ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Get journal entries for a feedback item
+ *
+ * @param {string} docId - Feedback document ID
+ * @param {number} limit - Max entries to return (default 20)
+ */
+async function getJournalEntries(docId, limit = 20) {
+  try {
+    const snapshot = await db
+      .collection("feedback")
+      .doc(docId)
+      .collection("journal")
+      .orderBy("timestamp", "desc")
+      .limit(limit)
+      .get();
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      timestamp: doc.data().timestamp?.toDate?.() || null,
+    }));
+  } catch (error) {
+    console.error(`  ⚠️  Failed to read journal: ${error.message}`);
+    return [];
+  }
+}
+
+/**
+ * Refresh the lastActivity timestamp on a claimed item
+ * Called by all operations that indicate active work
+ */
+async function refreshActivity(docId, activityType = "activity") {
+  try {
+    await db.collection("feedback").doc(docId).update({
+      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+      lastActivityType: activityType,
+    });
+  } catch (error) {
+    // Non-fatal - just means stale detection might be off
+    console.error(`  ⚠️  Failed to refresh activity: ${error.message}`);
+  }
+}
+
+// ============================================================================
+// STATE MACHINE
+// ============================================================================
+
+/**
+ * Validate a status transition
+ *
+ * @param {string} fromStatus - Current status
+ * @param {string} toStatus - Desired status
+ * @param {boolean} isAdmin - Whether this is an admin operation
+ * @returns {{ valid: boolean, error: string|null }}
+ */
+function validateTransition(fromStatus, toStatus, isAdmin = false) {
+  // Same status is always valid (no-op)
+  if (fromStatus === toStatus) {
+    return { valid: true, error: null };
+  }
+
+  const allowed = VALID_TRANSITIONS[fromStatus] || [];
+
+  if (!allowed.includes(toStatus)) {
+    const allowedStr = allowed.length > 0 ? allowed.join(", ") : "none";
+    return {
+      valid: false,
+      error: `Invalid transition: ${fromStatus} → ${toStatus}. Allowed from ${fromStatus}: ${allowedStr}`,
+    };
+  }
+
+  // Special case: archived -> new requires admin
+  if (fromStatus === "archived" && toStatus === "new" && !isAdmin) {
+    return {
+      valid: false,
+      error: "Reopening archived items requires admin access",
+    };
+  }
+
+  return { valid: true, error: null };
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
 
 /**
  * Generate a deterministic conversation ID from two user IDs
@@ -333,6 +599,40 @@ async function atomicClaim(docId, isReclaim = false) {
 
     console.log(`  🔒 Attempting claim [${shortToken}] on ${docId.substring(0, 8)}...`);
 
+    // Check WIP limit based on ACTIVE CLAIMS, not stored status
+    // This is the correct model: WIP = items with active, non-stale claims
+    if (!isReclaim) {
+      const allInProgressSnapshot = await db
+        .collection("feedback")
+        .where("status", "==", "in-progress")
+        .get();
+
+      // Count only items with active (non-stale) claims
+      let activeClaimCount = 0;
+      for (const doc of allInProgressSnapshot.docs) {
+        const data = doc.data();
+        if (data.claimToken && data.claimedAt?.toDate?.()) {
+          const claimAge = Date.now() - data.claimedAt.toDate().getTime();
+          if (claimAge <= STALE_CLAIM_MS) {
+            activeClaimCount++;
+          }
+        }
+        // Items with status="in-progress" but no claim token are orphaned
+        // They don't count toward WIP - they'll be shown as available
+      }
+
+      const wipLimit = WIP_LIMITS['in-progress'];
+      if (wipLimit > 0 && activeClaimCount >= wipLimit) {
+        const forceFlag = process.argv.includes('--force');
+        if (!forceFlag) {
+          console.log(`\n  ⚠️  WIP limit reached (${activeClaimCount}/${wipLimit} active claims)`);
+          console.log(`     Add --force to claim anyway\n`);
+          return null;
+        }
+        console.log(`  ⚠️  WIP limit exceeded - proceeding with --force flag`);
+      }
+    }
+
     const result = await db.runTransaction(async (transaction) => {
       const doc = await transaction.get(docRef);
 
@@ -362,12 +662,13 @@ async function atomicClaim(docId, isReclaim = false) {
         }
       }
 
-      // For reclaims, verify it's still stale
+      // For reclaims, verify it's still stale using new staleness check
       if (isReclaim && data.status === "in-progress") {
-        const claimAge = data.claimedAt?.toDate?.()
-          ? Date.now() - data.claimedAt.toDate().getTime()
-          : 0;
-        if (claimAge < STALE_CLAIM_MS) {
+        const staleness = checkClaimStaleness(data);
+        const hasExpiredRequest = data.claimRequestedAt &&
+          (Date.now() - data.claimRequestedAt.toDate().getTime() > STALE_THRESHOLDS.REQUEST_WAIT_MS);
+
+        if (!staleness.isStale && !hasExpiredRequest) {
           const otherToken = data.claimToken?.substring(0, 8) || "unknown";
           throw new Error(`Item is no longer stale (claimed by [${otherToken}])`);
         }
@@ -379,15 +680,22 @@ async function atomicClaim(docId, isReclaim = false) {
       }
 
       // Perform atomic update with our unique claim token
+      // Also set lastActivity for the new heartbeat system
       transaction.update(docRef, {
         status: "in-progress",
         claimedAt: admin.firestore.FieldValue.serverTimestamp(),
         claimedBy: ADMIN_USER_ID,
         claimToken: claimToken, // Unique token for THIS claim attempt
         claimSession: SESSION_ID, // Session ID for this script invocation
+        lastActivity: admin.firestore.FieldValue.serverTimestamp(), // Heartbeat system
+        lastActivityType: "claimed",
+        // Clear any pending claim request (we're taking over)
+        claimRequestedAt: admin.firestore.FieldValue.delete(),
+        claimRequestedBy: admin.firestore.FieldValue.delete(),
+        claimRequestReason: admin.firestore.FieldValue.delete(),
       });
 
-      return { id: doc.id, ...data };
+      return { id: doc.id, ...data, isReclaim };
     });
 
     // POST-CLAIM VERIFICATION: Re-read to confirm we own the claim
@@ -406,6 +714,21 @@ async function atomicClaim(docId, isReclaim = false) {
     }
 
     console.log(`  ✅ Claim successful [${shortToken}]`);
+
+    // Update session's active claims (async, non-blocking)
+    db.collection("agentSessions").doc(SESSION_ID).update({
+      activeClaims: admin.firestore.FieldValue.arrayUnion(docId),
+      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+    }).catch(() => {}); // Ignore session update failures
+
+    // Journal the successful claim (async, non-blocking)
+    addJournalEntry(docId, JOURNAL_TYPES.CLAIMED, isReclaim ? "Reclaimed (was stale)" : "Claimed", {
+      claimToken: shortToken,
+      isReclaim,
+      title: result.title || "No title",
+      priority: result.priority || "unset",
+    }).catch(() => {}); // Ignore journal failures
+
     return result;
   } catch (error) {
     if (
@@ -439,29 +762,81 @@ async function listAllFeedback() {
 
     const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-    // Count by status (4 kanban columns)
-    const counts = { new: 0, "in-progress": 0, "in-review": 0, archived: 0 };
+    // Helper: Derive effective status from claim state
+    // This matches the ClaimStatusDeriver logic in the TypeScript codebase
+    function deriveEffectiveStatus(item) {
+      const storedStatus = item.status || "new";
+      const hasClaim = Boolean(item.claimToken && item.claimedAt?.toDate?.());
+
+      if (!hasClaim) {
+        // No claim - if stored is "in-progress", it's orphaned → treat as "new"
+        if (storedStatus === "in-progress") {
+          return { displayStatus: "new", isOrphaned: true };
+        }
+        return { displayStatus: storedStatus, isOrphaned: false };
+      }
+
+      // Has claim - check staleness using the new activity-based check
+      const staleness = checkClaimStaleness(item);
+
+      if (staleness.isStale) {
+        // Stale claim - treat as "new" if stored was new/in-progress
+        if (storedStatus === "new" || storedStatus === "in-progress") {
+          return { displayStatus: "new", isStale: true, staleReason: staleness.reason };
+        }
+        return { displayStatus: storedStatus, isStale: true, staleReason: staleness.reason };
+      }
+
+      // Check if approaching stale (for warning)
+      const isApproaching = isApproachingStale(item);
+
+      // Active claim → always in-progress
+      return { displayStatus: "in-progress", isActive: true, isApproachingStale: isApproaching };
+    }
+
+    // Count by DERIVED status (based on claim state, not stored status)
+    const counts = { new: 0, "in-progress": 0, "in-review": 0, completed: 0, archived: 0 };
+    let orphanedCount = 0;
+    let staleCount = 0;
+
     items.forEach((item) => {
       const status = item.status || "new";
-      // Map legacy statuses to current ones
+      // Map legacy statuses
       if (status === "resolved" || status === "deferred") {
         counts.archived++;
-      } else if (counts.hasOwnProperty(status)) {
-        counts[status]++;
+        return;
+      }
+
+      const { displayStatus, isOrphaned, isStale } = deriveEffectiveStatus(item);
+      if (isOrphaned) orphanedCount++;
+      if (isStale) staleCount++;
+
+      if (counts.hasOwnProperty(displayStatus)) {
+        counts[displayStatus]++;
       } else {
-        counts.new++; // Fallback for unknown statuses
+        counts.new++;
       }
     });
 
     console.log(
       `\n  Queue: ${counts.new} new | ${counts["in-progress"]} in progress | ${counts["in-review"]} in review | ${counts.archived} archived\n`
     );
+    if (orphanedCount > 0 || staleCount > 0) {
+      console.log(`  ℹ️  (${orphanedCount} orphaned, ${staleCount} stale - shown as available)`);
+    }
     console.log("─".repeat(70));
 
-    // Show unclaimed (new) items first
-    const newItems = items.filter((i) => i.status === "new" || !i.status);
-    const inProgressItems = items.filter((i) => i.status === "in-progress");
+    // Categorize items by DERIVED status
+    const newItems = items.filter((i) => {
+      const { displayStatus } = deriveEffectiveStatus(i);
+      return displayStatus === "new";
+    });
+    const inProgressItems = items.filter((i) => {
+      const { displayStatus } = deriveEffectiveStatus(i);
+      return displayStatus === "in-progress";
+    });
     const inReviewItems = items.filter((i) => i.status === "in-review");
+    const completedItems = items.filter((i) => i.status === "completed");
     const archivedItems = items.filter(
       (i) =>
         i.status === "archived" ||
@@ -473,8 +848,10 @@ async function listAllFeedback() {
       console.log("\n  🆕 UNCLAIMED (ready to work on):\n");
       newItems.forEach((item, idx) => {
         const title = (item.title || "No title").substring(0, 50);
+        const { isOrphaned, isStale } = deriveEffectiveStatus(item);
+        const suffix = isOrphaned ? " ⚠️ ORPHANED" : isStale ? " ⚠️ STALE" : "";
         console.log(
-          `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}`
+          `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}${suffix}`
         );
       });
     }
@@ -502,6 +879,16 @@ async function listAllFeedback() {
     if (inReviewItems.length > 0) {
       console.log("\n  👁️ IN REVIEW (awaiting tester confirmation):\n");
       inReviewItems.forEach((item) => {
+        const title = (item.title || "No title").substring(0, 50);
+        console.log(
+          `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}`
+        );
+      });
+    }
+
+    if (completedItems.length > 0) {
+      console.log("\n  ✅ COMPLETED (ready for release):\n");
+      completedItems.forEach((item) => {
         const title = (item.title || "No title").substring(0, 50);
         console.log(
           `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}`
@@ -882,13 +1269,48 @@ async function updateResolutionNotes(docId, notes) {
 }
 
 /**
+ * Update changelog entry
+ */
+async function updateChangelogEntry(docId, entry) {
+  try {
+    const docRef = db.collection("feedback").doc(docId);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      console.log(`\n  ❌ Feedback not found: ${docId}\n`);
+      return null;
+    }
+
+    await docRef.update({
+      changelogEntry: entry,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    const item = doc.data();
+    console.log("\n" + "=".repeat(70));
+    console.log(`\n  ✅ CHANGELOG ENTRY UPDATED\n`);
+    console.log("─".repeat(70));
+    console.log(`  ID: ${docId}`);
+    console.log(`  Title: ${item.title || "No title"}`);
+    console.log(`  Changelog Entry: ${entry}`);
+    console.log("\n" + "=".repeat(70) + "\n");
+
+    return { id: docId, changelogEntry: entry };
+  } catch (error) {
+    console.error("\n  Error updating changelog entry:", error.message);
+    throw error;
+  }
+}
+
+/**
  * Update feedback status by Firestore document ID
  * @param {string} docId - The document ID to update
  * @param {string} status - The new status
  * @param {string} resolutionNotes - Admin-only resolution notes
  * @param {string} userFacingNotes - Optional user-visible notes (for notifying submitter)
+ * @param {string} changelogEntry - Optional user-facing changelog text
  */
-async function updateFeedbackById(docId, status, resolutionNotes, userFacingNotes = null) {
+async function updateFeedbackById(docId, status, resolutionNotes, userFacingNotes = null, changelogEntry = null) {
   try {
     const docRef = db.collection("feedback").doc(docId);
     const doc = await docRef.get();
@@ -924,6 +1346,19 @@ async function updateFeedbackById(docId, status, resolutionNotes, userFacingNote
       return null;
     }
 
+    // STATE MACHINE: Validate the transition is allowed
+    const item = doc.data();
+    const currentStatus = item.status || "new";
+    const transition = validateTransition(currentStatus, normalizedStatus);
+
+    if (!transition.valid) {
+      console.log(`\n  ⛔ INVALID STATUS TRANSITION\n`);
+      console.log(`  ${transition.error}\n`);
+      console.log(`  Current status: ${currentStatus}`);
+      console.log(`  Attempted: ${normalizedStatus}\n`);
+      return null;
+    }
+
     const updateData = {
       status: normalizedStatus,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -949,9 +1384,34 @@ async function updateFeedbackById(docId, status, resolutionNotes, userFacingNote
       updateData.userFacingNotes = userFacingNotes;
     }
 
+    // Add changelog entry if provided
+    if (changelogEntry) {
+      updateData.changelogEntry = changelogEntry;
+    }
+
+    // Also refresh lastActivity if still in-progress (counts as activity)
+    if (normalizedStatus === "in-progress") {
+      updateData.lastActivity = admin.firestore.FieldValue.serverTimestamp();
+      updateData.lastActivityType = "status-update";
+    }
+
+    // Clear heartbeat fields when leaving in-progress
+    if (currentStatus === "in-progress" && normalizedStatus !== "in-progress") {
+      updateData.lastActivity = admin.firestore.FieldValue.delete();
+      updateData.lastActivityType = admin.firestore.FieldValue.delete();
+    }
+
     await docRef.update(updateData);
 
-    const item = doc.data();
+    // Journal the status change
+    addJournalEntry(docId, JOURNAL_TYPES.STATUS_CHANGE, `${currentStatus} → ${normalizedStatus}`, {
+      fromStatus: currentStatus,
+      toStatus: normalizedStatus,
+      adminNotes: resolutionNotes || null,
+      userFacingNotes: userFacingNotes || null,
+    }).catch(() => {}); // Non-blocking
+
+    // item was already fetched earlier for state machine validation
     console.log("\n" + "=".repeat(70));
     console.log(`\n  ✅ FEEDBACK UPDATED\n`);
     console.log("─".repeat(70));
@@ -963,6 +1423,9 @@ async function updateFeedbackById(docId, status, resolutionNotes, userFacingNote
     }
     if (userFacingNotes) {
       console.log(`  User Notes: ${userFacingNotes}`);
+    }
+    if (changelogEntry) {
+      console.log(`  Changelog Entry: ${changelogEntry}`);
     }
 
     // Send direct message to user when marking as completed or archived
@@ -1670,11 +2133,24 @@ QUEUE COMMANDS
   (no args)              Auto-claim next "new" item (by priority)
   low | medium | high    Claim next item with specific priority only
   claim <id>             Claim a specific item by ID
-  unclaim <id>           Release a claimed item back to "new" status
   mine                   Show YOUR in-progress items (for resuming after compact)
   list                   List all feedback grouped by status
   stats                  Show queue statistics summary
   search <query>         Search feedback by keyword in title/description
+
+CLAIM HEALTH (keep your claim active)
+──────────────────────────────────────────────────────────────────────────────
+  heartbeat <id> ["msg"] Send keep-alive signal (run every 30 min while working)
+  touch <id> "filepath"  Record file being edited (for work recovery)
+  journal <id>           Show activity log for an item
+
+CLAIM TAKEOVER (when you need someone else's claim)
+──────────────────────────────────────────────────────────────────────────────
+  unclaim <id>           Release a stale claim (>45 min inactive)
+  request-claim <id> "reason"
+                         Request an active claim (starts 15-min countdown)
+  unclaim <id> --emergency "reason"
+                         Emergency takeover (audited, requires justification)
 
 ITEM MANAGEMENT
 ──────────────────────────────────────────────────────────────────────────────
@@ -1736,10 +2212,279 @@ EXAMPLES
 `);
 }
 
+// ============================================================================
+// HEARTBEAT & CLAIM REQUEST COMMANDS
+// ============================================================================
+
+/**
+ * Send a heartbeat to keep a claim active
+ *
+ * @param {string} docId - Feedback document ID
+ * @param {string} message - Optional status message
+ */
+async function sendHeartbeat(docId, message = null) {
+  try {
+    const docRef = db.collection("feedback").doc(docId);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      console.log(`\n  ❌ Feedback not found: ${docId}\n`);
+      return null;
+    }
+
+    const item = doc.data();
+    if (item.status !== "in-progress") {
+      console.log(`\n  ⚠️  Item is not in-progress (current: ${item.status}). Cannot heartbeat.\n`);
+      return null;
+    }
+
+    // Update lastActivity
+    await docRef.update({
+      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+      lastActivityType: "heartbeat",
+    });
+
+    // Journal the heartbeat
+    await addJournalEntry(docId, JOURNAL_TYPES.HEARTBEAT, message || "Heartbeat", {
+      claimToken: item.claimToken?.substring(0, 8),
+    });
+
+    const staleness = checkClaimStaleness(item);
+    const wasApproachingStale = staleness.activityAgeMs > STALE_THRESHOLDS.WARNING_THRESHOLD_MS;
+
+    console.log("\n" + "=".repeat(70));
+    console.log(`\n  💓 HEARTBEAT SENT\n`);
+    console.log("─".repeat(70));
+    console.log(`  ID: ${docId}`);
+    console.log(`  Title: ${(item.title || "No title").substring(0, 50)}`);
+    if (message) console.log(`  Message: ${message}`);
+    console.log(`  Claim refreshed - next stale in: ${formatDuration(STALE_THRESHOLDS.ACTIVITY_TIMEOUT_MS)}`);
+    if (wasApproachingStale) {
+      console.log(`  ✅ Claim was approaching stale - now refreshed!`);
+    }
+    console.log("\n" + "=".repeat(70) + "\n");
+
+    return { id: docId, heartbeat: true };
+  } catch (error) {
+    console.error("\n  Error sending heartbeat:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Request to take over someone else's claim
+ *
+ * Starts a 15-minute countdown. After the countdown expires,
+ * the requester can claim the item normally.
+ *
+ * @param {string} docId - Feedback document ID
+ * @param {string} reason - Why you need the claim
+ */
+async function requestClaim(docId, reason) {
+  try {
+    const docRef = db.collection("feedback").doc(docId);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      console.log(`\n  ❌ Feedback not found: ${docId}\n`);
+      return null;
+    }
+
+    const item = doc.data();
+    if (item.status !== "in-progress") {
+      console.log(`\n  ℹ️  Item is not in-progress. You can claim it directly.\n`);
+      console.log(`  Run: node scripts/fetch-feedback.js claim ${docId}\n`);
+      return null;
+    }
+
+    // Check if already stale
+    const staleness = checkClaimStaleness(item);
+    if (staleness.isStale) {
+      console.log(`\n  ℹ️  Claim is already stale. You can claim it directly.\n`);
+      console.log(`  Run: node scripts/fetch-feedback.js claim ${docId}\n`);
+      return null;
+    }
+
+    // Check if there's already a pending request
+    if (item.claimRequestedAt) {
+      const requestAge = Date.now() - item.claimRequestedAt.toDate().getTime();
+      const remaining = STALE_THRESHOLDS.REQUEST_WAIT_MS - requestAge;
+      if (remaining > 0) {
+        console.log(`\n  ⏳ A claim request is already pending.\n`);
+        console.log(`  Requested by: ${item.claimRequestedBy || "unknown"}`);
+        console.log(`  Reason: ${item.claimRequestReason || "none"}`);
+        console.log(`  Time remaining: ${formatDuration(remaining)}`);
+        console.log(`\n  Wait for it to expire, then claim normally.\n`);
+        return null;
+      }
+    }
+
+    // Record the claim request
+    await docRef.update({
+      claimRequestedAt: admin.firestore.FieldValue.serverTimestamp(),
+      claimRequestedBy: SESSION_ID.substring(0, 8),
+      claimRequestReason: reason,
+    });
+
+    // Journal the request
+    await addJournalEntry(docId, JOURNAL_TYPES.CLAIM_REQUESTED, reason, {
+      currentToken: item.claimToken?.substring(0, 8),
+      requesterSession: SESSION_ID.substring(0, 8),
+    });
+
+    const waitMinutes = Math.ceil(STALE_THRESHOLDS.REQUEST_WAIT_MS / 60000);
+
+    console.log("\n" + "=".repeat(70));
+    console.log(`\n  ⏳ CLAIM REQUEST SUBMITTED\n`);
+    console.log("─".repeat(70));
+    console.log(`  ID: ${docId}`);
+    console.log(`  Title: ${(item.title || "No title").substring(0, 50)}`);
+    console.log(`  Current holder: [${item.claimToken?.substring(0, 8) || "unknown"}]`);
+    console.log(`  Your reason: ${reason}`);
+    console.log(`\n  Wait period: ${waitMinutes} minutes`);
+    console.log(`  After the wait, run: node scripts/fetch-feedback.js claim ${docId}`);
+    console.log("\n  The current holder can see your request and may release early.");
+    console.log("\n" + "=".repeat(70) + "\n");
+
+    return { id: docId, requested: true, waitMs: STALE_THRESHOLDS.REQUEST_WAIT_MS };
+  } catch (error) {
+    console.error("\n  Error requesting claim:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Show the work journal for a feedback item
+ *
+ * @param {string} docId - Feedback document ID
+ * @param {number} limit - Max entries to show
+ */
+async function showJournal(docId, limit = 20) {
+  try {
+    const docRef = db.collection("feedback").doc(docId);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      console.log(`\n  ❌ Feedback not found: ${docId}\n`);
+      return null;
+    }
+
+    const item = doc.data();
+    const entries = await getJournalEntries(docId, limit);
+
+    console.log("\n" + "=".repeat(70));
+    console.log(`\n  📓 WORK JOURNAL\n`);
+    console.log("─".repeat(70));
+    console.log(`  ID: ${docId}`);
+    console.log(`  Title: ${(item.title || "No title").substring(0, 50)}`);
+    console.log(`  Status: ${item.status}`);
+    console.log("─".repeat(70));
+
+    if (entries.length === 0) {
+      console.log("\n  No journal entries yet.\n");
+    } else {
+      console.log(`\n  Showing ${entries.length} most recent entries:\n`);
+      entries.forEach((entry, idx) => {
+        const time = entry.timestamp
+          ? entry.timestamp.toLocaleString()
+          : "Unknown time";
+        const icon = getJournalIcon(entry.type);
+        console.log(`  ${idx + 1}. ${icon} [${time}]`);
+        console.log(`     Type: ${entry.type}`);
+        if (entry.message) console.log(`     ${entry.message}`);
+        if (entry.data?.emergency) console.log(`     ⚠️  Emergency: ${entry.data.emergency}`);
+        if (entry.data?.filePath) console.log(`     File: ${entry.data.filePath}`);
+        console.log();
+      });
+    }
+
+    console.log("=".repeat(70) + "\n");
+    return entries;
+  } catch (error) {
+    console.error("\n  Error showing journal:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get icon for journal entry type
+ */
+function getJournalIcon(type) {
+  const icons = {
+    [JOURNAL_TYPES.CLAIMED]: "🎯",
+    [JOURNAL_TYPES.HEARTBEAT]: "💓",
+    [JOURNAL_TYPES.NOTE]: "📝",
+    [JOURNAL_TYPES.SUBTASK]: "📋",
+    [JOURNAL_TYPES.STATUS_CHANGE]: "🔄",
+    [JOURNAL_TYPES.FILE_TOUCHED]: "📁",
+    [JOURNAL_TYPES.UNCLAIMED]: "🔓",
+    [JOURNAL_TYPES.CLAIM_REQUESTED]: "⏳",
+    [JOURNAL_TYPES.CLAIM_STOLEN]: "🚨",
+  };
+  return icons[type] || "•";
+}
+
+/**
+ * Record that a file is being edited (for work recovery)
+ *
+ * @param {string} docId - Feedback document ID
+ * @param {string} filePath - Path to the file being edited
+ */
+async function touchFile(docId, filePath) {
+  try {
+    const docRef = db.collection("feedback").doc(docId);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      console.log(`\n  ❌ Feedback not found: ${docId}\n`);
+      return null;
+    }
+
+    const item = doc.data();
+    if (item.status !== "in-progress") {
+      console.log(`\n  ⚠️  Item is not in-progress. Cannot record file touch.\n`);
+      return null;
+    }
+
+    // Update lastActivity
+    await docRef.update({
+      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+      lastActivityType: "file-edit",
+    });
+
+    // Journal the file touch
+    await addJournalEntry(docId, JOURNAL_TYPES.FILE_TOUCHED, `Editing: ${filePath}`, {
+      filePath,
+      claimToken: item.claimToken?.substring(0, 8),
+    });
+
+    console.log(`\n  📁 Recorded: ${filePath}\n`);
+    return { id: docId, filePath };
+  } catch (error) {
+    console.error("\n  Error recording file touch:", error.message);
+    throw error;
+  }
+}
+
+// ============================================================================
+// UNCLAIM
+// ============================================================================
+
 /**
  * Unclaim a feedback item (release back to queue)
+ *
+ * Protection against stealing active claims:
+ * - If claim is stale (no activity for 45 min OR >8 hours total): allowed
+ * - If claim is fresh: BLOCKED - must use request-claim protocol
+ * - Emergency flag: bypasses all checks but requires justification
+ *
+ * @param {string} docId - Feedback document ID
+ * @param {object} options - Unclaim options
+ * @param {string} options.emergency - Emergency justification (bypasses checks)
  */
-async function unclaimFeedback(docId) {
+async function unclaimFeedback(docId, options = {}) {
+  const { emergency = null, confirmEmergency = false } = options;
+
   try {
     const docRef = db.collection("feedback").doc(docId);
     const doc = await docRef.get();
@@ -1757,14 +2502,142 @@ async function unclaimFeedback(docId) {
       return null;
     }
 
-    const releasedToken = item.claimToken?.substring(0, 8) || "none";
+    const claimToken = item.claimToken?.substring(0, 8) || "none";
+    const staleness = checkClaimStaleness(item);
 
+    // Check if there's a pending claim request that has expired
+    const hasExpiredRequest = item.claimRequestedAt &&
+      (Date.now() - item.claimRequestedAt.toDate().getTime() > STALE_THRESHOLDS.REQUEST_WAIT_MS);
+
+    // Emergency requires confirmation (already checked in main, but double-check)
+    if (emergency && !confirmEmergency) {
+      console.log("\n  ❌ Emergency unclaim requires --confirm-emergency flag\n");
+      return null;
+    }
+
+    // Check emergency cooldown
+    if (emergency) {
+      const recentEmergency = await db.collection("emergencyActions")
+        .where("performedBy", "==", ADMIN_USER_ID)
+        .orderBy("timestamp", "desc")
+        .limit(1)
+        .get();
+
+      if (!recentEmergency.empty) {
+        const lastAction = recentEmergency.docs[0].data();
+        const lastActionTime = lastAction.timestamp?.toDate?.()?.getTime() || 0;
+        const cooldownExpires = lastActionTime + EMERGENCY_CONFIG.COOLDOWN_MS;
+
+        if (Date.now() < cooldownExpires) {
+          const remainingMins = Math.ceil((cooldownExpires - Date.now()) / 60000);
+          console.log("\n  ⛔ EMERGENCY COOLDOWN ACTIVE\n");
+          console.log(`  You used emergency override ${formatDuration(Date.now() - lastActionTime)} ago.`);
+          console.log(`  Cooldown remaining: ${remainingMins} minutes\n`);
+          console.log("  Wait for cooldown to expire, or use another approach:");
+          console.log("    1. Wait for claim to become stale");
+          console.log("    2. Use request-claim to start a 15-min countdown\n");
+          return null;
+        }
+      }
+    }
+
+    // Decision logic
+    const canUnclaim = staleness.isStale || hasExpiredRequest || emergency;
+
+    if (!canUnclaim) {
+      // BLOCKED: Fresh claim, no expired request, no emergency
+      const activityAgeStr = formatDuration(staleness.activityAgeMs);
+      const totalAgeStr = formatDuration(staleness.ageMs);
+      const staleIn = formatDuration(STALE_THRESHOLDS.ACTIVITY_TIMEOUT_MS - staleness.activityAgeMs);
+
+      console.log("\n" + "=".repeat(70));
+      console.log("\n  ⛔ CANNOT UNCLAIM - ACTIVE WORK IN PROGRESS\n");
+      console.log("─".repeat(70));
+      console.log(`  ID: ${docId}`);
+      console.log(`  Title: ${item.title || "No title"}`);
+      console.log(`  Claimed by token: [${claimToken}]`);
+      console.log(`  Last activity: ${activityAgeStr} ago`);
+      console.log(`  Total claim time: ${totalAgeStr}`);
+      console.log(`  Becomes stale in: ${staleIn}`);
+      console.log("\n  Another agent is actively working on this item.\n");
+      console.log("  Options:");
+      console.log("    1. Wait for the claim to become stale (45 min inactivity)");
+      console.log(`    2. Request the claim: request-claim ${docId} "Your reason"`);
+      console.log("       (Starts 15-min countdown, then you can claim)");
+      console.log(`    3. Emergency takeover: unclaim ${docId} --emergency "Justification"`);
+      console.log("       (Audited, requires valid reason, destroys other agent's work)");
+      console.log("\n" + "=".repeat(70) + "\n");
+      return null;
+    }
+
+    // Determine the reason for unclaim
+    let unclaimReason;
+    let journalType = JOURNAL_TYPES.UNCLAIMED;
+
+    if (emergency) {
+      unclaimReason = "emergency";
+      journalType = JOURNAL_TYPES.CLAIM_STOLEN;
+      console.log("\n  🚨 EMERGENCY UNCLAIM 🚨");
+      console.log(`  Justification: ${emergency}`);
+      console.log(`  Token [${claimToken}] was active ${formatDuration(staleness.activityAgeMs)} ago`);
+      console.log("  This action is logged and flagged for review.\n");
+    } else if (hasExpiredRequest) {
+      unclaimReason = "request-expired";
+      console.log(`\n  ✅ Claim request wait period expired. Taking over from [${claimToken}].\n`);
+    } else if (staleness.reason === "no-activity") {
+      unclaimReason = "stale-no-activity";
+      console.log(`\n  ℹ️  Claim was stale (no activity for ${formatDuration(staleness.activityAgeMs)})\n`);
+    } else if (staleness.reason === "exceeded-max-time") {
+      unclaimReason = "stale-max-time";
+      console.log(`\n  ℹ️  Claim exceeded max time (${formatDuration(staleness.ageMs)} total)\n`);
+    } else {
+      unclaimReason = "stale";
+    }
+
+    // Journal the unclaim
+    await addJournalEntry(docId, journalType, `Unclaimed: ${unclaimReason}`, {
+      previousToken: claimToken,
+      reason: unclaimReason,
+      emergency: emergency || null,
+      activityAgeMs: staleness.activityAgeMs,
+      totalAgeMs: staleness.ageMs,
+    });
+
+    // Log emergency action to audit trail
+    if (emergency) {
+      await db.collection("emergencyActions").add({
+        actionType: "unclaim",
+        feedbackId: docId,
+        performedBy: ADMIN_USER_ID,
+        reason: emergency,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        previousClaimant: item.claimedBy || null,
+        previousClaimToken: item.claimToken || null,
+        previousSession: item.claimSession || null,
+        sessionId: SESSION_ID,
+      });
+      console.log("  📝 Emergency action logged to audit trail");
+    }
+
+    // Update session's active claims if releasing own claim
+    if (item.claimSession) {
+      db.collection("agentSessions").doc(item.claimSession).update({
+        activeClaims: admin.firestore.FieldValue.arrayRemove(docId),
+      }).catch(() => {}); // Ignore - session may not exist
+    }
+
+    // Clear claim fields
     await docRef.update({
       status: "new",
       claimedAt: admin.firestore.FieldValue.delete(),
       claimedBy: admin.firestore.FieldValue.delete(),
       claimToken: admin.firestore.FieldValue.delete(),
       claimSession: admin.firestore.FieldValue.delete(),
+      lastActivity: admin.firestore.FieldValue.delete(),
+      lastActivityType: admin.firestore.FieldValue.delete(),
+      claimRequestedAt: admin.firestore.FieldValue.delete(),
+      claimRequestedBy: admin.firestore.FieldValue.delete(),
+      claimRequestReason: admin.firestore.FieldValue.delete(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -1773,11 +2646,12 @@ async function unclaimFeedback(docId) {
     console.log("─".repeat(70));
     console.log(`  ID: ${docId}`);
     console.log(`  Title: ${item.title || "No title"}`);
-    console.log(`  Released Token: [${releasedToken}]`);
+    console.log(`  Released Token: [${claimToken}]`);
+    console.log(`  Reason: ${unclaimReason}`);
     console.log(`  Status: new (back in queue)`);
     console.log("\n" + "=".repeat(70) + "\n");
 
-    return { id: docId, status: "new" };
+    return { id: docId, status: "new", unclaimReason };
   } catch (error) {
     console.error("\n  Error unclaiming feedback:", error.message);
     throw error;
@@ -2145,6 +3019,9 @@ async function addFeedback(args) {
   const feedbackData = {
     title: flags.title,
     description: flags.description,
+    // Preserve originals (write-once) for long-term analysis of user language
+    originalTitle: flags.title,
+    originalDescription: flags.description,
     type,
     status: "new",
     source: "terminal", // Created via CLI, not app feedback form
@@ -2250,6 +3127,21 @@ const args = process.argv.slice(2);
 async function main() {
   const validPriorities = ["low", "medium", "high"];
 
+  // Register session on startup (for bulletproof claim coordination)
+  // Skip for read-only commands (list, stats, help)
+  const readOnlyCommands = ["list", "stats", "help", "--help", "-h", "journal"];
+  const isReadOnly = readOnlyCommands.includes(args[0]);
+
+  if (!isReadOnly) {
+    await registerSession();
+  }
+
+  // Handle cleanup on exit
+  process.on("SIGINT", async () => {
+    await cleanupSession();
+    process.exit(0);
+  });
+
   if (args.length === 0) {
     // No args: claim next item
     await claimNextFeedback();
@@ -2288,14 +3180,79 @@ async function main() {
     }
     await claimSpecificFeedback(args[1]);
   } else if (args[0] === "unclaim") {
-    // Unclaim: unclaim <id>
+    // Unclaim: unclaim <id> [--emergency "reason" --confirm-emergency]
     if (!args[1]) {
-      console.log(
-        "\n  Usage: node scripts/fetch-feedback.js.js unclaim <id>\n"
-      );
+      console.log("\n  Usage: node scripts/fetch-feedback.js unclaim <id> [--emergency \"reason\" --confirm-emergency]\n");
+      console.log("  Unclaims an item, returning it to the queue.\n");
+      console.log("  Fresh claims (<45 min activity) are protected. Options:");
+      console.log("    1. Wait for claim to become stale");
+      console.log("    2. Use request-claim to start a 15-min countdown");
+      console.log("    3. Use --emergency for true emergencies (audited, requires confirmation)\n");
       return;
     }
-    await unclaimFeedback(args[1]);
+    const emergencyIdx = args.indexOf("--emergency");
+    const emergency = emergencyIdx !== -1 ? args[emergencyIdx + 1] : null;
+    const confirmEmergency = args.includes("--confirm-emergency");
+
+    if (emergencyIdx !== -1 && !emergency) {
+      console.log("\n  ❌ --emergency requires a justification string\n");
+      console.log("  Example: unclaim abc123 --emergency \"Blocking release 0.3.0\" --confirm-emergency\n");
+      return;
+    }
+
+    // Emergency requires confirmation
+    if (emergency && !confirmEmergency) {
+      console.log("\n  ⚠️  EMERGENCY UNCLAIM REQUIRES CONFIRMATION\n");
+      console.log("  This action will:");
+      console.log("    - Forcibly take another agent's claim");
+      console.log("    - Be logged to an audit trail");
+      console.log("    - Trigger a 1-hour cooldown on further emergency actions\n");
+      console.log("  To proceed, add --confirm-emergency to your command:\n");
+      console.log(`    unclaim ${args[1]} --emergency "${emergency}" --confirm-emergency\n`);
+      return;
+    }
+
+    await unclaimFeedback(args[1], { emergency, confirmEmergency });
+
+  } else if (args[0] === "heartbeat") {
+    // Heartbeat: heartbeat <id> ["optional message"]
+    if (!args[1]) {
+      console.log("\n  Usage: node scripts/fetch-feedback.js heartbeat <id> [\"message\"]\n");
+      console.log("  Signals that you're still actively working on an item.");
+      console.log("  Run every 30 minutes to prevent your claim from going stale.\n");
+      return;
+    }
+    await sendHeartbeat(args[1], args[2] || null);
+
+  } else if (args[0] === "request-claim") {
+    // Request claim: request-claim <id> "reason"
+    if (!args[1] || !args[2]) {
+      console.log("\n  Usage: node scripts/fetch-feedback.js request-claim <id> \"reason\"\n");
+      console.log("  Requests to take over an active claim. Starts a 15-minute countdown.");
+      console.log("  After the countdown, you can claim the item normally.\n");
+      return;
+    }
+    await requestClaim(args[1], args[2]);
+
+  } else if (args[0] === "journal") {
+    // Journal: journal <id> [--limit N]
+    if (!args[1]) {
+      console.log("\n  Usage: node scripts/fetch-feedback.js journal <id> [--limit N]\n");
+      console.log("  Shows the work journal (activity log) for an item.\n");
+      return;
+    }
+    const limitIdx = args.indexOf("--limit");
+    const limit = limitIdx !== -1 ? parseInt(args[limitIdx + 1]) || 20 : 20;
+    await showJournal(args[1], limit);
+
+  } else if (args[0] === "touch") {
+    // Touch: touch <id> "file/path"
+    if (!args[1] || !args[2]) {
+      console.log("\n  Usage: node scripts/fetch-feedback.js touch <id> \"file/path\"\n");
+      console.log("  Records that you're editing a file. Helps with work recovery.\n");
+      return;
+    }
+    await touchFile(args[1], args[2]);
   } else if (args[0] === "add") {
     // Alias for "create" with flags - kept for backwards compatibility
     await addFeedback(args.slice(1));
@@ -2347,6 +3304,9 @@ async function main() {
       const docRef = await db.collection("feedback").add({
         title,
         description: description,
+        // Preserve originals (write-once) for long-term analysis of user language
+        originalTitle: title,
+        originalDescription: description,
         type,
         capturedModule: module,
         capturedTab: tab,
@@ -2413,6 +3373,9 @@ async function main() {
     } else if (args[1] === "resolution") {
       // Update resolution notes: <id> resolution "resolution notes"
       await updateResolutionNotes(args[0], args[2]);
+    } else if (args[1] === "changelog") {
+      // Update changelog entry: <id> changelog "changelog text"
+      await updateChangelogEntry(args[0], args[2]);
     } else if (args[1] === "subtask") {
       // Subtask commands: <id> subtask <command> [args...]
       const docId = args[0];
@@ -2466,10 +3429,12 @@ async function main() {
         console.log("    <id> subtask <subtaskId> <status>\n");
       }
     } else if (args[1]) {
-      // Update: <id> <status> ["notes"] [--user-notes "notes"]
-      // Parse --user-notes flag if present
+      // Update: <id> <status> ["notes"] [--user-notes "notes"] [--changelog "changelog text"]
+      // Parse --user-notes and --changelog flags if present
       const userNotesIndex = args.indexOf("--user-notes");
+      const changelogIndex = args.indexOf("--changelog");
       let userFacingNotes = null;
+      let changelogEntry = null;
       let resolutionNotes = args[2];
 
       if (userNotesIndex !== -1 && args[userNotesIndex + 1]) {
@@ -2480,11 +3445,20 @@ async function main() {
         }
       }
 
+      if (changelogIndex !== -1 && args[changelogIndex + 1]) {
+        changelogEntry = args[changelogIndex + 1];
+        // If --changelog comes before the resolution notes, adjust
+        if (changelogIndex === 2) {
+          resolutionNotes = null;
+        }
+      }
+
       await updateFeedbackById(
         args[0],
         args[1],
         resolutionNotes,
-        userFacingNotes
+        userFacingNotes,
+        changelogEntry
       );
     } else {
       // View specific item by ID

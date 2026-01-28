@@ -7,11 +7,15 @@
     PRIORITY_CONFIG,
   } from "../../domain/models/feedback-models";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
+  import type { ClaimHealth } from "../../services/contracts/IClaimStatusDeriver";
 
   const {
     item,
     isSelected,
     disableDrag = false,
+    claimHealth,
+    claimAgeMs,
+    claimTokenShort,
     onDragStart,
     onDragEnd,
     onTouchDrag,
@@ -21,12 +25,39 @@
     item: FeedbackItem;
     isSelected: boolean;
     disableDrag?: boolean;
+    claimHealth?: ClaimHealth;
+    claimAgeMs?: number;
+    claimTokenShort?: string;
     onDragStart: (item: FeedbackItem) => void;
     onDragEnd: () => void;
     onTouchDrag?: (item: FeedbackItem, x: number, y: number) => void;
     onTouchEnd?: (x: number, y: number) => void;
     onClick: () => void;
   }>();
+
+  // Format claim age for tooltip
+  const claimAgeFormatted = $derived.by(() => {
+    if (!claimAgeMs) return "";
+    const minutes = Math.floor(claimAgeMs / 60000);
+    const hours = Math.floor(claimAgeMs / 3600000);
+    if (hours > 0) return `${hours}h ${minutes % 60}m`;
+    return `${minutes}m`;
+  });
+
+  // Claim indicator tooltip
+  const claimTooltip = $derived.by(() => {
+    if (!claimHealth || claimHealth === "none") return "";
+    if (claimHealth === "active") {
+      return `Active claim [${claimTokenShort}] - ${claimAgeFormatted} ago`;
+    }
+    if (claimHealth === "stale") {
+      return `Stale claim [${claimTokenShort}] - ${claimAgeFormatted} ago (reclaimable)`;
+    }
+    if (claimHealth === "orphaned") {
+      return "Orphaned: status is in-progress but no claim exists";
+    }
+    return "";
+  });
 
   const typeConfig = $derived(
     item.type && item.type in TYPE_CONFIG
@@ -38,6 +69,14 @@
       ? PRIORITY_CONFIG[item.priority as keyof typeof PRIORITY_CONFIG]
       : null
   );
+
+  // Derive lane from item properties
+  const lane = $derived.by(() => {
+    if (item.priority === 'critical' && item.type === 'bug') return 'critical';
+    if (item.source === 'terminal') return 'internal';
+    if (item.priority === 'low' || item.deferredUntil) return 'backlog';
+    return 'normal';
+  });
 
   // Use Google photo if available, fallback to generated avatar
   const avatarUrl = $derived(
@@ -308,6 +347,32 @@
             <i class="fas fa-minus" aria-hidden="true"></i>
           {:else}
             <i class="fas fa-arrow-down" aria-hidden="true"></i>
+          {/if}
+        </span>
+      {/if}
+      {#if lane !== 'normal'}
+        <span class="lane-badge lane-{lane}" title="{lane} lane">
+          {#if lane === 'critical'}
+            <i class="fas fa-fire" aria-hidden="true"></i>
+          {:else if lane === 'internal'}
+            <i class="fas fa-code" aria-hidden="true"></i>
+          {:else if lane === 'backlog'}
+            <i class="fas fa-clock" aria-hidden="true"></i>
+          {/if}
+        </span>
+      {/if}
+      {#if claimHealth && claimHealth !== 'none'}
+        <span
+          class="claim-indicator claim-{claimHealth}"
+          title={claimTooltip}
+          aria-label={claimTooltip}
+        >
+          {#if claimHealth === 'active'}
+            <i class="fas fa-user-check" aria-hidden="true"></i>
+          {:else if claimHealth === 'stale'}
+            <i class="fas fa-user-clock" aria-hidden="true"></i>
+          {:else if claimHealth === 'orphaned'}
+            <i class="fas fa-user-slash" aria-hidden="true"></i>
           {/if}
         </span>
       {/if}
@@ -589,6 +654,67 @@
     background: color-mix(in srgb, var(--semantic-error) 25%, transparent);
     color: var(--semantic-error);
     animation: pulse-critical 2s ease-in-out infinite;
+  }
+
+  .lane-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(16px, 3cqi, 20px);
+    height: clamp(16px, 3cqi, 20px);
+    flex-shrink: 0;
+    border-radius: 50%;
+    font-size: clamp(7px, 1.4cqi, 9px);
+  }
+
+  .lane-badge.lane-critical {
+    background: color-mix(in srgb, #ef4444 25%, transparent);
+    color: #ef4444;
+  }
+
+  .lane-badge.lane-internal {
+    background: color-mix(in srgb, #6b7280 25%, transparent);
+    color: #6b7280;
+  }
+
+  .lane-badge.lane-backlog {
+    background: color-mix(in srgb, #94a3b8 25%, transparent);
+    color: #94a3b8;
+  }
+
+  /* Claim health indicator */
+  .claim-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(16px, 3cqi, 20px);
+    height: clamp(16px, 3cqi, 20px);
+    flex-shrink: 0;
+    border-radius: 50%;
+    font-size: clamp(7px, 1.4cqi, 9px);
+    cursor: help;
+  }
+
+  .claim-indicator.claim-active {
+    background: color-mix(in srgb, var(--semantic-success) 25%, transparent);
+    color: var(--semantic-success);
+  }
+
+  .claim-indicator.claim-stale {
+    background: color-mix(in srgb, var(--semantic-warning) 25%, transparent);
+    color: var(--semantic-warning);
+    animation: pulse-stale 2s ease-in-out infinite;
+  }
+
+  .claim-indicator.claim-orphaned {
+    background: color-mix(in srgb, var(--semantic-error) 25%, transparent);
+    color: var(--semantic-error);
+    animation: pulse-critical 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-stale {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
   }
 
   @keyframes pulse-critical {

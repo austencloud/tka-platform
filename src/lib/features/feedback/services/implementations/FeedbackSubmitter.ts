@@ -89,6 +89,9 @@ export class FeedbackSubmissionService implements IFeedbackSubmissionService {
       type: formData.type,
       title,
       description: formData.description,
+      // Preserve originals (write-once) for long-term analysis of user language
+      originalTitle: title,
+      originalDescription: formData.description,
       priority: null,
       capturedModule,
       capturedTab,

@@ -8,14 +8,16 @@
   } from "../../domain/models/feedback-models";
   import FeedbackKanbanColumn from "./FeedbackKanbanColumn.svelte";
   import KanbanStatusTab from "./KanbanStatusTab.svelte";
+  import type { IClaimStatusDeriver } from "../../services/contracts/IClaimStatusDeriver";
 
   interface Props {
     boardState: KanbanBoardState;
     manageState: FeedbackManageState;
+    claimStatusDeriver?: IClaimStatusDeriver;
     onOpenArchive?: () => void;
   }
 
-  const { boardState, manageState, onOpenArchive }: Props = $props();
+  const { boardState, manageState, claimStatusDeriver, onOpenArchive }: Props = $props();
 
   const KANBAN_STATUSES = [
     "new",
@@ -121,6 +123,8 @@
       {status}
       config={{ icon: "", label: "", color: "" }}
       items={boardState.itemsByStatus[status] ?? []}
+      wipStatus={boardState.wipStatus[status]}
+      {claimStatusDeriver}
       isDropTarget={boardState.dragOverColumn === status}
       isDragActive={boardState.draggedItem !== null}
       isActiveTab={boardState.activeStatus === status}

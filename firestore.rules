@@ -641,6 +641,54 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // AGENT SESSIONS (Feedback System Identity Tracking)
+    // ============================================================================
+
+    // Agent sessions - tracks which agents/sessions have active claims
+    // Used for bulletproof claim coordination
+    match /agentSessions/{sessionId} {
+      // Testers/admins can read all sessions (for debugging/monitoring)
+      allow read: if isTester();
+
+      // Sessions can only be created/updated by the owning user
+      // (verified server-side via Cloud Functions)
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow update: if isAuthenticated()
+        && resource.data.userId == request.auth.uid;
+
+      // Only admins or the owner can delete sessions
+      allow delete: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // ============================================================================
+    // EMERGENCY ACTIONS (Audit Trail)
+    // ============================================================================
+
+    // Emergency action log - tracks forced claim takeovers
+    // Write-only by Cloud Functions (Admin SDK), read by admins
+    match /emergencyActions/{actionId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false; // Admin SDK only
+    }
+
+    // ============================================================================
+    // ACTIVE FILE EDITS (Conflict Detection)
+    // ============================================================================
+
+    // Tracks which files are being edited by which agent/claim
+    // Enables conflict detection when multiple agents touch same file
+    match /activeFileEdits/{editId} {
+      // Testers can read to check for conflicts
+      allow read: if isTester();
+
+      // Write through Cloud Functions only for race safety
+      allow create, update, delete: if false;
+    }
+
+    // ============================================================================
     // FEEDBACK COLLECTION
     // ============================================================================
 
@@ -664,6 +712,16 @@ service cloud.firestore {
       match /subtasks/{subtaskId} {
         allow read: if isTester();
         allow write: if isTester();
+      }
+
+      // Work journal subcollection - tamper-proof audit trail
+      // Read by testers for debugging, write ONLY via Admin SDK (Cloud Functions)
+      // This ensures the journal cannot be tampered with by clients
+      match /journal/{entryId} {
+        allow read: if isTester();
+        // IMPORTANT: All journal writes go through Cloud Functions
+        // This makes the journal tamper-proof - no client can delete/modify entries
+        allow create, update, delete: if false;
       }
     }
 

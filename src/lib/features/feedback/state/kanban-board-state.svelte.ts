@@ -6,6 +6,7 @@ import type {
 import { STATUS_CONFIG } from "../domain/models/feedback-models";
 import type { IFeedbackSorter } from "../services/contracts/IFeedbackSorter";
 import type { IStorageManager } from "$lib/shared/foundation/services/contracts/IStorageManager";
+import { FeedbackSorter } from "../services/implementations/FeedbackSorter";
 
 type KanbanStatus = "new" | "in-progress" | "in-review" | "completed";
 
@@ -32,6 +33,7 @@ export interface KanbanBoardState {
   activeStatusColor: string;
   itemsByStatus: Record<KanbanStatus, FeedbackItem[]>;
   deferredItems: FeedbackItem[];
+  wipStatus: Record<KanbanStatus, { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean }>;
   draggedItem: FeedbackItem | null;
   dragOverColumn: FeedbackStatus | "deferred" | null;
   touchDragPosition: { x: number; y: number } | null;
@@ -104,6 +106,41 @@ export function createKanbanBoardState(
   // Derived: deferred items
   const deferredItems = $derived.by(() => {
     return sortingService.getDeferredItems(manageState.allItems);
+  });
+
+  // Derived: WIP status per column
+  // CRITICAL: For "in-progress", count is based on ACTIVE CLAIMS, not column length
+  // This ensures orphaned/stale items don't count toward the WIP limit
+  const wipStatus = $derived.by(() => {
+    const limits: Record<KanbanStatus, number> = { 'new': 0, 'in-progress': 4, 'in-review': 5, 'completed': 0 };
+    const result: Record<string, { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean }> = {};
+
+    // Get claim status deriver for accurate WIP counting
+    const claimDeriver = sortingService instanceof FeedbackSorter
+      ? sortingService.getClaimStatusDeriver()
+      : null;
+
+    for (const status of ['new', 'in-progress', 'in-review', 'completed'] as const) {
+      let count: number;
+
+      if (status === 'in-progress' && claimDeriver) {
+        // For in-progress, count only items with ACTIVE claims
+        // This is the key fix: WIP = active work, not orphaned items
+        count = claimDeriver.countActiveClaims(manageState.allItems);
+      } else {
+        // For other columns, count items in the column
+        count = itemsByStatus[status].length;
+      }
+
+      const limit = limits[status];
+      result[status] = {
+        count,
+        limit,
+        isAtLimit: limit > 0 && count >= limit,
+        isOverLimit: limit > 0 && count > limit,
+      };
+    }
+    return result as Record<KanbanStatus, { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean }>;
   });
 
   // Drag state
@@ -228,6 +265,9 @@ export function createKanbanBoardState(
     },
     get deferredItems() {
       return deferredItems;
+    },
+    get wipStatus() {
+      return wipStatus;
     },
     get draggedItem() {
       return draggedItem;

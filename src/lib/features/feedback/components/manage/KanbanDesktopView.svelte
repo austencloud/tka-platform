@@ -10,14 +10,16 @@
   import FeedbackKanbanColumn from "./FeedbackKanbanColumn.svelte";
   import KanbanArchiveDropZone from "./KanbanArchiveDropZone.svelte";
   import KanbanDeferDropZone from "./KanbanDeferDropZone.svelte";
+  import type { IClaimStatusDeriver } from "../../services/contracts/IClaimStatusDeriver";
 
   interface Props {
     boardState: KanbanBoardState;
     manageState: FeedbackManageState;
+    claimStatusDeriver?: IClaimStatusDeriver;
     onOpenArchive?: () => void;
   }
 
-  const { boardState, manageState, onOpenArchive }: Props = $props();
+  const { boardState, manageState, claimStatusDeriver, onOpenArchive }: Props = $props();
 
   const KANBAN_STATUSES = [
     "new",
@@ -118,6 +120,8 @@
       {status}
       config={STATUS_CONFIG[status]}
       items={boardState.itemsByStatus[status] ?? []}
+      wipStatus={boardState.wipStatus[status]}
+      {claimStatusDeriver}
       isDropTarget={boardState.dragOverColumn === status}
       isDragActive={boardState.draggedItem !== null}
       isActiveTab={true}

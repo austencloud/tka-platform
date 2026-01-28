@@ -227,7 +227,7 @@ function generateChangelogFromFeedback(items, includeInternalOnly = false) {
     }
 
     let text =
-      item.title || item.description?.substring(0, 100) || "Untitled change";
+      item.changelogEntry || item.title || item.description?.substring(0, 100) || "Untitled change";
 
     // Add appropriate prefix if not already present
     const lowerText = text.toLowerCase();

@@ -23,6 +23,12 @@
   const sortingService = container.items.feedbackSorter;
   const storageService = container.items.storageManager;
 
+  // Get claim status deriver for UI indicators
+  import { FeedbackSorter } from "../../services/implementations/FeedbackSorter";
+  const claimStatusDeriver = sortingService instanceof FeedbackSorter
+    ? sortingService.getClaimStatusDeriver()
+    : undefined;
+
   // Debounce flag to prevent rapid undo/redo
   let isProcessingUndoRedo = false;
 
@@ -193,9 +199,9 @@
 >
   {#if boardState}
     {#if boardState.isMobileView}
-      <KanbanMobileView {boardState} {manageState} {onOpenArchive} />
+      <KanbanMobileView {boardState} {manageState} {claimStatusDeriver} {onOpenArchive} />
     {:else}
-      <KanbanDesktopView {boardState} {manageState} {onOpenArchive} />
+      <KanbanDesktopView {boardState} {manageState} {claimStatusDeriver} {onOpenArchive} />
     {/if}
 
     {#if manageState.isLoading && manageState.items.length === 0}

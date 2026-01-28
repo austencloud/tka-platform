@@ -22,6 +22,70 @@ Users may use vague or incorrect terminology. Here's the actual structure:
 
 ---
 
+## Claim Health System
+
+**Claims go stale after 45 minutes of inactivity.** Stale claims can be taken over by other agents.
+
+### Keep Your Claim Active
+
+Every 30 minutes while actively working, run:
+```bash
+node scripts/fetch-feedback.js heartbeat <id> "Brief status message"
+```
+
+This resets the 45-minute staleness timer.
+
+### Record Files Being Edited (Optional)
+
+For better work recovery if your session dies:
+```bash
+node scripts/fetch-feedback.js touch <id> "src/path/to/file.svelte"
+```
+
+### View Work History
+
+See all activity on an item (claims, heartbeats, status changes):
+```bash
+node scripts/fetch-feedback.js journal <id>
+```
+
+---
+
+## Claim Takeover Protocol
+
+**Fresh claims (<45 min activity) are protected.** You cannot just unclaim them.
+
+### If You Need Someone Else's Claim:
+
+1. **Check if stale first:**
+   ```bash
+   node scripts/fetch-feedback.js list  # Shows staleness info
+   ```
+
+2. **If stale (>45 min inactive):** Just claim it normally
+   ```bash
+   node scripts/fetch-feedback.js claim <id>
+   ```
+
+3. **If active:** Submit a request and wait 15 minutes
+   ```bash
+   node scripts/fetch-feedback.js request-claim <id> "Why you need it"
+   ```
+   After 15 minutes, claim normally. The current holder can see your request.
+
+4. **True emergency only:** Use emergency flag (audited, logged, flagged for review)
+   ```bash
+   node scripts/fetch-feedback.js unclaim <id> --emergency "Blocking release 0.3.0"
+   ```
+
+### What NOT to Do
+
+- **NEVER bypass protection** by chaining unclaim/claim
+- **NEVER use --emergency for non-emergencies** - it's audited
+- **NEVER assume a fresh claim is abandoned** - the agent may be actively working
+
+---
+
 ## Auto-Selection (when no ID provided)
 
 When running `/fb` without an argument, Claude auto-selects the best item.
@@ -152,25 +216,52 @@ Task({
 
 ---
 
-## Status Values
+## Status Values & State Machine
 
-- `new` - Unclaimed, ready to be picked up
-- `in-progress` - Being worked on
-- `in-review` - Done, waiting for confirmation
-- `completed` - Ready for next release
-- `archived` - Closed (released or declined)
+Valid statuses and allowed transitions:
+
+| From | Allowed To | Action |
+|------|------------|--------|
+| `new` | `in-progress` | Claim the item |
+| `in-progress` | `new`, `in-review` | Unclaim or resolve |
+| `in-review` | `in-progress`, `completed` | Needs more work or confirm fixed |
+| `completed` | `archived`, `in-review` | Release or retest |
+| `archived` | `new` | Reopen (admin only) |
+
+**Invalid transitions are blocked.** You cannot skip steps (e.g., `new` → `completed`).
 
 ---
 
-## Other Commands
+## Commands Quick Reference
 
-- `node scripts/fetch-feedback.js list` - See queue status
-- `node scripts/fetch-feedback.js claim <id>` - **Atomically claim** an item (REQUIRED before working)
-- `node scripts/fetch-feedback.js <id>` - View specific item (does NOT claim)
-- `node scripts/fetch-feedback.js unclaim <id>` - Release a claimed item
-- `node scripts/fetch-feedback.js <id> priority <level>` - Set priority
-- `node scripts/fetch-feedback.js <id> resolution "notes"` - Add user-facing notes
-- `node scripts/fetch-feedback.js <id> subtask add "title" "desc"` - Add subtask
-- `node scripts/fetch-feedback.js <id> defer "YYYY-MM-DD" "reason"` - Defer item
+### Queue Commands
+```bash
+node scripts/fetch-feedback.js              # Auto-claim next item
+node scripts/fetch-feedback.js claim <id>   # Claim specific item
+node scripts/fetch-feedback.js list         # See queue status
+node scripts/fetch-feedback.js mine         # Your in-progress items
+```
+
+### Claim Health
+```bash
+node scripts/fetch-feedback.js heartbeat <id> "status"   # Keep claim active
+node scripts/fetch-feedback.js touch <id> "filepath"     # Record file edit
+node scripts/fetch-feedback.js journal <id>              # View activity log
+```
+
+### Claim Takeover
+```bash
+node scripts/fetch-feedback.js unclaim <id>              # Release stale claim
+node scripts/fetch-feedback.js request-claim <id> "why"  # Request active claim
+node scripts/fetch-feedback.js unclaim <id> --emergency "reason"  # Emergency only
+```
+
+### Item Management
+```bash
+node scripts/fetch-feedback.js <id>                      # View item details
+node scripts/fetch-feedback.js <id> <status> "notes"     # Update status
+node scripts/fetch-feedback.js <id> priority <level>     # Set priority
+node scripts/fetch-feedback.js <id> resolution "notes"   # Add resolution
+```
 
 **CRITICAL:** Always use `claim <id>` before working on an item. Just viewing with `<id>` alone does NOT prevent other agents from picking it up.

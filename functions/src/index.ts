@@ -2,7 +2,7 @@
  * Firebase Cloud Functions for TKA Scribe
  *
  * Handles subscription-related background tasks like role sync,
- * and custom email delivery via Resend.
+ * custom email delivery via Resend, and feedback claim management.
  */
 
 import * as functions from "firebase-functions";
@@ -13,6 +13,24 @@ admin.initializeApp();
 
 // Export magic link function
 export { sendMagicLink } from "./sendMagicLink";
+
+// Export feedback claims module (bulletproof claim management)
+export {
+  // Agent session management
+  cleanupStaleAgentSessions,
+  registerAgentSession,
+  heartbeatAgentSession,
+  // Claim operations
+  claimFeedback,
+  validateHeartbeat,
+  unclaimFeedback,
+  updateFeedbackStatus,
+  // File conflict detection
+  touchFile,
+  checkFileConflicts,
+  getActiveFileEdits,
+  releaseFileEdit,
+} from "./feedbackClaims";
 
 const db = admin.firestore();
 

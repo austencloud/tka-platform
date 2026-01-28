@@ -5,6 +5,7 @@
     FeedbackStatus,
   } from "../../domain/models/feedback-models";
   import FeedbackKanbanCard from "./FeedbackKanbanCard.svelte";
+  import type { IClaimStatusDeriver } from "../../services/contracts/IClaimStatusDeriver";
 
   const {
     status,
@@ -15,6 +16,8 @@
     isActiveTab = false,
     selectedItemId,
     disableDrag = false,
+    wipStatus,
+    claimStatusDeriver,
     onDragStart,
     onDragEnd,
     onTouchDrag,
@@ -32,6 +35,8 @@
     isActiveTab?: boolean;
     selectedItemId: string | null;
     disableDrag?: boolean;
+    wipStatus?: { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean };
+    claimStatusDeriver?: IClaimStatusDeriver;
     onDragStart: (item: FeedbackItem) => void;
     onDragEnd: () => void;
     onTouchDrag?: (item: FeedbackItem, x: number, y: number) => void;
@@ -41,6 +46,17 @@
     onDrop: () => void;
     onCardClick: (item: FeedbackItem) => void;
   }>();
+
+  // Derive claim health for an item
+  function getClaimHealth(item: FeedbackItem) {
+    if (!claimStatusDeriver) return { claimHealth: undefined, claimAgeMs: undefined, claimTokenShort: undefined };
+    const effective = claimStatusDeriver.deriveEffectiveStatus(item);
+    return {
+      claimHealth: effective.claimHealth,
+      claimAgeMs: effective.claimAgeMs,
+      claimTokenShort: effective.claimTokenShort,
+    };
+  }
 
   function handleDragOver(e: DragEvent) {
     e.preventDefault();
@@ -72,7 +88,18 @@
       <i class="fas {config.icon}" aria-hidden="true"></i>
     </div>
     <h3 class="header-title">{config.label}</h3>
-    <span class="header-count">{items.length}</span>
+    {#if wipStatus?.limit > 0}
+      <span
+        class="header-count wip-indicator"
+        class:at-limit={wipStatus.isAtLimit}
+        class:over-limit={wipStatus.isOverLimit}
+        title={wipStatus.isOverLimit ? `Over WIP limit of ${wipStatus.limit}` : wipStatus.isAtLimit ? `At WIP limit` : `${wipStatus.count}/${wipStatus.limit}`}
+      >
+        {wipStatus.count}/{wipStatus.limit}
+      </span>
+    {:else}
+      <span class="header-count">{items.length}</span>
+    {/if}
   </header>
 
   <!-- Cards Container -->
@@ -110,10 +137,14 @@
       </div>
     {:else}
       {#each items as item (item.id)}
+        {@const { claimHealth, claimAgeMs, claimTokenShort } = getClaimHealth(item)}
         <FeedbackKanbanCard
           {item}
           isSelected={selectedItemId === item.id}
           {disableDrag}
+          {claimHealth}
+          {claimAgeMs}
+          {claimTokenShort}
           {onDragStart}
           {onDragEnd}
           {onTouchDrag}
@@ -266,6 +297,24 @@
     font-size: var(--kc-text-xs);
     font-weight: 700;
     color: var(--column-color);
+  }
+
+  .wip-indicator.at-limit {
+    background: color-mix(in srgb, var(--semantic-warning) 30%, transparent);
+    border-color: var(--semantic-warning);
+    color: var(--semantic-warning);
+  }
+
+  .wip-indicator.over-limit {
+    background: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+    border-color: var(--semantic-error);
+    color: var(--semantic-error);
+    animation: pulse-warning 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
   }
 
   /* Cards Container */
