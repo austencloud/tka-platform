@@ -4,7 +4,11 @@
  * Tracks which modals are open and their stacking order.
  * Ensures only the topmost modal responds to escape/backdrop clicks.
  *
- * Similar pattern to DrawerStack but simplified for modals.
+ * Also manages pull-to-refresh blocking:
+ * - When any modal is open: blocks pull-to-refresh (overscroll-behavior-y: contain)
+ * - When all modals close: enables pull-to-refresh (removes the property)
+ *
+ * Similar pattern to DrawerStack.
  */
 
 type DismissCallback = () => void;
@@ -15,6 +19,23 @@ const dismissCallbacks = new Map<string, DismissCallback>();
 // Base z-index for modals (higher than drawers which use 200)
 const BASE_Z_INDEX = 1000;
 const Z_INDEX_INCREMENT = 10;
+
+/**
+ * Update pull-to-refresh blocking based on modal state.
+ * When any modal is open, block pull-to-refresh to prevent conflicts with swipe-to-dismiss.
+ * When all modals are closed, pull-to-refresh works normally.
+ */
+function updatePullToRefreshBlocking(): void {
+	if (typeof document === 'undefined') return;
+
+	const html = document.documentElement;
+
+	if (modalStack.length > 0) {
+		html.style.overscrollBehaviorY = 'contain';
+	} else {
+		html.style.removeProperty('overscroll-behavior-y');
+	}
+}
 
 /**
  * Register a modal when it opens
@@ -30,6 +51,9 @@ export function registerModal(id: string, onDismiss: DismissCallback): number {
 	modalStack.push(id);
 	dismissCallbacks.set(id, onDismiss);
 
+	// Block pull-to-refresh when modal opens
+	updatePullToRefreshBlocking();
+
 	return BASE_Z_INDEX + modalStack.length * Z_INDEX_INCREMENT;
 }
 
@@ -42,6 +66,9 @@ export function unregisterModal(id: string): void {
 		modalStack.splice(index, 1);
 	}
 	dismissCallbacks.delete(id);
+
+	// Re-enable pull-to-refresh if no modals are open
+	updatePullToRefreshBlocking();
 }
 
 /**
