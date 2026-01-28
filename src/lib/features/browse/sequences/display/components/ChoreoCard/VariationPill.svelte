@@ -4,7 +4,7 @@ VariationPill.svelte
 Small tappable pill showing "X/Y" for sequences with variations.
 Clicking cycles through variations with a smooth crossfade.
 
-Touch target: 44px minimum for accessibility.
+Touch target: 48px minimum for WCAG AAA accessibility.
 -->
 <script lang="ts">
   const {
@@ -51,9 +51,9 @@ Touch target: 44px minimum for accessibility.
     left: 50%;
     transform: translateX(-50%);
 
-    /* 44px minimum touch target */
-    min-width: 44px;
-    min-height: 44px;
+    /* 48px minimum touch target (WCAG AAA) */
+    min-width: 48px;
+    min-height: 48px;
 
     /* Visual styling - smaller appearance but large tap target */
     padding: 4px 10px;
@@ -62,15 +62,15 @@ Touch target: 44px minimum for accessibility.
     justify-content: center;
 
     /* Subtle glassmorphic background */
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--theme-overlay-bg, rgba(0, 0, 0, 0.5));
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
 
     /* Text styling */
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 12px;
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     letter-spacing: 0.5px;
 
@@ -83,8 +83,8 @@ Touch target: 44px minimum for accessibility.
   }
 
   .variation-pill:hover {
-    background: rgba(0, 0, 0, 0.7);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-overlay-bg-hover, rgba(0, 0, 0, 0.7));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     transform: translateX(-50%) scale(1.05);
   }
 
@@ -104,14 +104,25 @@ Touch target: 44px minimum for accessibility.
   }
 
   /* Light mode variant */
-  :global(.sequence-card.light-mode) .variation-pill {
-    background: rgba(255, 255, 255, 0.8);
-    border-color: rgba(0, 0, 0, 0.15);
-    color: rgba(0, 0, 0, 0.8);
+  :global(.choreo-card.light-mode) .variation-pill {
+    background: var(--theme-overlay-bg-light, rgba(255, 255, 255, 0.8));
+    border-color: var(--theme-stroke-light, rgba(0, 0, 0, 0.15));
+    color: var(--theme-text-light, rgba(0, 0, 0, 0.8));
   }
 
-  :global(.sequence-card.light-mode) .variation-pill:hover {
-    background: rgba(255, 255, 255, 0.95);
-    border-color: rgba(0, 0, 0, 0.25);
+  :global(.choreo-card.light-mode) .variation-pill:hover {
+    background: var(--theme-overlay-bg-light-hover, rgba(255, 255, 255, 0.95));
+    border-color: var(--theme-stroke-strong-light, rgba(0, 0, 0, 0.25));
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .variation-pill {
+      transition: none;
+    }
+    .variation-pill:hover,
+    .variation-pill:active {
+      transform: translateX(-50%);
+    }
   }
 </style>

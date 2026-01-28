@@ -21,7 +21,7 @@
   import type { ISequenceNormalizer } from "$lib/features/compose/services/contracts/ISequenceNormalizer";
   import type { IBrowseSorter } from "$lib/features/browse/sequences/display/services/contracts/IBrowseSorter";
   import { BrowseSortMethod } from "$lib/features/browse/shared/domain/enums/browse-enums";
-  import SequenceCard from "$lib/features/browse/sequences/display/components/SequenceCard/SequenceCard.svelte";
+  import ChoreoCard from "$lib/features/browse/sequences/display/components/ChoreoCard/ChoreoCard.svelte";
 
   // Sort options for dropdown
   const sortOptions = [
@@ -289,20 +289,6 @@
       error = err instanceof Error ? err.message : "Failed to load sequences";
     } finally {
       isLoading = false;
-    }
-  }
-
-  // Get cover URL for a sequence
-  function getCoverUrl(sequence: SequenceData): string | undefined {
-    if (!thumbnailService) return undefined;
-
-    // Get the first thumbnail from the sequence's thumbnails array
-    const firstThumbnail = sequence.thumbnails?.[0];
-    if (!firstThumbnail) return undefined;
-    try {
-      return thumbnailService.getThumbnailUrl(sequence.id, firstThumbnail);
-    } catch (error) {
-      return undefined;
     }
   }
 
@@ -608,10 +594,8 @@
                     class:modal-grid={effectiveDisplayMode === "modal"}
                   >
                     {#each lengthGroup.sequences as sequence (sequence.id)}
-                      {@const coverUrl = getCoverUrl(sequence)}
-                      <SequenceCard
+                      <ChoreoCard
                         {sequence}
-                        {...coverUrl && { coverUrl }}
                         onPrimaryAction={handleSelect}
                       />
                     {/each}
@@ -625,10 +609,8 @@
                 class:modal-grid={effectiveDisplayMode === "modal"}
               >
                 {#each section.sequences as sequence (sequence.id)}
-                  {@const coverUrl = getCoverUrl(sequence)}
-                  <SequenceCard
+                  <ChoreoCard
                     {sequence}
-                    {...coverUrl && { coverUrl }}
                     onPrimaryAction={handleSelect}
                   />
                 {/each}

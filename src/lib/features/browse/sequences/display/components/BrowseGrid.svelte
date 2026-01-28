@@ -6,7 +6,7 @@
   // import { wrapGrid } from "animate-css-grid";
   import type { IBrowseThumbnailProvider } from "../services/contracts/IBrowseThumbnailProvider";
   import type { IVariationGrouper } from "../services/contracts/IVariationGrouper";
-  import SequenceCard from "./SequenceCard/SequenceCard.svelte";
+  import ChoreoCard from "./ChoreoCard/ChoreoCard.svelte";
   import SectionHeader from "./SectionHeader.svelte";
   import VirtualizedSequenceGrid from "./VirtualizedSequenceGrid.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -186,41 +186,6 @@
     }
   }
 
-  function getCoverUrl(sequence: SequenceData) {
-    if (!thumbnailService) return undefined;
-
-    // Cat-dog mode: Return null, PropAwareThumbnail will handle lazy rendering
-    if (isCatDog) {
-      return undefined;
-    }
-
-    try {
-      // Single-prop mode: Use prop-specific pre-rendered images
-      const sequenceName = sequence.word || sequence.name;
-      const propType = propSettings.bluePropType || propSettings.redPropType;
-
-      if (sequenceName && propType) {
-        // Use prop-specific thumbnail path: /gallery/{propType}/{sequence}_{mode}.webp
-        return thumbnailService.getPropSpecificThumbnailUrl(
-          sequenceName,
-          propType,
-          false // dark mode
-        );
-      }
-
-      // Fallback to legacy thumbnail path
-      const firstThumbnail = sequence?.thumbnails?.[0];
-      if (!firstThumbnail) return undefined;
-      return thumbnailService.getThumbnailUrl(sequence.id, firstThumbnail);
-    } catch (error) {
-      console.warn(
-        "BrowseGrid: Failed to resolve thumbnail for sequence",
-        sequence.id,
-        error
-      );
-      return undefined;
-    }
-  }
 </script>
 
 {#if useVirtualization}
@@ -246,10 +211,9 @@
           >
             {#each section.sequences as sequence (sequence.id)}
               {@const seqVariations = getVariationsForSequence(sequence)}
-              <SequenceCard
+              <ChoreoCard
                 {sequence}
                 variations={seqVariations}
-                coverUrl={getCoverUrl(sequence)}
                 onPrimaryAction={(seq) =>
                   handleSequenceAction("view-detail", seq, seqVariations)}
                 bluePropType={propSettings.bluePropType}
@@ -278,10 +242,9 @@
   >
     {#each sequences as sequence (sequence.id)}
       {@const seqVariations = getVariationsForSequence(sequence)}
-      <SequenceCard
+      <ChoreoCard
         {sequence}
         variations={seqVariations}
-        coverUrl={getCoverUrl(sequence)}
         onPrimaryAction={(seq) =>
           handleSequenceAction("view-detail", seq, seqVariations)}
         bluePropType={propSettings.bluePropType}

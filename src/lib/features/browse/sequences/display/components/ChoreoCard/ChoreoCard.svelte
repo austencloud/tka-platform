@@ -1,5 +1,5 @@
 <!--
-SequenceCard.svelte
+ChoreoCard.svelte
 
 Ultra-minimal card component for the Browse grid.
 Clicking the card opens the sequence detail viewer.
@@ -19,17 +19,23 @@ LOOP badge:
 - Positioned in bottom-left corner as overlay
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import type { ILOOPTypeResolver } from "$lib/features/create/generate/shared/services/contracts/ILOOPTypeResolver";
+  import { container } from "$lib/shared/di";
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import PropAwareThumbnail from "../PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
 
-  // Singleton resolver instance for parsing LOOP types
-  const loopTypeResolver = new LOOPTypeResolver();
+  // Services via DI
+  let loopTypeResolver: ILOOPTypeResolver | null = $state(null);
+
+  onMount(() => {
+    loopTypeResolver = container.items.loopTypeResolver;
+  });
 
   // Cache for on-demand LOOP detection results (keyed by sequence ID)
   const loopDetectionCache = new Map<string, Set<LOOPComponent> | null>();
@@ -43,7 +49,6 @@ LOOP badge:
     redPropType = undefined,
     catDogModeEnabled = false,
     lightMode = false,
-    coverUrl: _coverUrl = undefined, // Legacy prop - kept for backwards compatibility
   }: {
     sequence: SequenceData;
     variations?: SequenceData[];
@@ -53,7 +58,6 @@ LOOP badge:
     redPropType?: PropType;
     catDogModeEnabled?: boolean;
     lightMode?: boolean;
-    coverUrl?: string;
   } = $props();
 
   // Track which variation is currently displayed
@@ -77,6 +81,8 @@ LOOP badge:
    * Uses caching to avoid repeated analysis.
    */
   function detectLoopComponents(seq: SequenceData): Set<LOOPComponent> | null {
+    if (!loopTypeResolver) return null;
+
     // Check cache first
     const cacheKey = seq.id;
     if (loopDetectionCache.has(cacheKey)) {
@@ -111,6 +117,8 @@ LOOP badge:
   // Parse LOOP components for badge display
   // Priority: 1) Use existing loopType if set, 2) Detect on-demand if steps available
   const loopComponents = $derived.by(() => {
+    if (!loopTypeResolver) return null;
+
     const loopType = displayedSequence.loopType;
 
     // If loopType is explicitly set, use it
@@ -146,7 +154,7 @@ LOOP badge:
   });
 </script>
 
-<button class="sequence-card" class:selected class:light-mode={lightMode} onclick={handlePrimaryAction}>
+<button class="choreo-card" class:selected class:light-mode={lightMode} onclick={handlePrimaryAction}>
   <div class="thumbnail-container" class:crossfade={variationCount > 0}>
     <PropAwareThumbnail
       sequence={displayedSequence}
@@ -178,7 +186,7 @@ LOOP badge:
 </button>
 
 <style>
-  .sequence-card {
+  .choreo-card {
     position: relative;
     border-radius: 8px;
     overflow: hidden;
@@ -193,7 +201,7 @@ LOOP badge:
 
     /* Enable container queries */
     container-type: inline-size;
-    container-name: sequence-card;
+    container-name: choreo-card;
 
     /* Make card clickable */
     cursor: pointer;
@@ -204,7 +212,7 @@ LOOP badge:
       border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .sequence-card:hover {
+  .choreo-card:hover {
     /* Subtle scale instead of lift - more modern, less aggressive */
     transform: scale(1.02);
     /* Slightly enhanced shadow - much more subtle */
@@ -214,33 +222,33 @@ LOOP badge:
 
   /* Active state - brief feedback on touch/mobile only */
   @media (hover: none) and (pointer: coarse) {
-    .sequence-card:active {
+    .choreo-card:active {
       transform: scale(0.98);
       transition-duration: var(--duration-instant);
     }
   }
 
-  .sequence-card:focus-visible {
+  .choreo-card:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
 
-  .sequence-card.selected {
+  .choreo-card.selected {
     border-color: color-mix(in srgb, var(--semantic-info) 80%, transparent);
     box-shadow: 0 0 0 2px
       color-mix(in srgb, var(--semantic-info) 40%, transparent);
   }
 
   /* Light mode: use light background to match light-colored pictograph images */
-  .sequence-card.light-mode {
-    background: #f5f5f7;
-    border-color: rgba(0, 0, 0, 0.12);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  .choreo-card.light-mode {
+    background: var(--theme-card-bg-light, #f5f5f7);
+    border-color: var(--theme-stroke-light, rgba(0, 0, 0, 0.12));
+    box-shadow: 0 4px 20px var(--theme-shadow-light, rgba(0, 0, 0, 0.08));
   }
 
-  .sequence-card.light-mode:hover {
-    border-color: rgba(0, 0, 0, 0.2);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  .choreo-card.light-mode:hover {
+    border-color: var(--theme-stroke-strong-light, rgba(0, 0, 0, 0.2));
+    box-shadow: 0 6px 24px var(--theme-shadow-light, rgba(0, 0, 0, 0.12));
   }
 
   /* Thumbnail container for crossfade animation */
@@ -261,13 +269,24 @@ LOOP badge:
     bottom: 4px;
     left: 4px;
     padding: 3px 5px;
-    background: rgba(0, 0, 0, 0.65);
+    background: var(--theme-overlay-bg, rgba(0, 0, 0, 0.65));
     border-radius: 4px;
     backdrop-filter: blur(4px);
     z-index: 1;
   }
 
   .loop-badge.light-mode {
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--theme-overlay-bg-light, rgba(255, 255, 255, 0.85));
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .choreo-card {
+      transition: none;
+    }
+    .choreo-card:hover,
+    .choreo-card:active {
+      transform: none;
+    }
   }
 </style>

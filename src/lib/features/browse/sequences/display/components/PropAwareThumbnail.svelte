@@ -495,6 +495,31 @@
     );
     color: var(--theme-text-dim);
     box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* Skeleton shimmer effect for loading state */
+  .loading-placeholder::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.04) 50%,
+      transparent 100%
+    );
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
   }
 
   .placeholder-word {
@@ -519,7 +544,7 @@
 
   .loading-status {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
     text-transform: capitalize;
   }
 
@@ -617,7 +642,7 @@
   }
 
   /* Container query responsive sizing */
-  @container sequence-card (max-width: 249px) {
+  @container choreo-card (max-width: 249px) {
     .placeholder-word {
       font-size: clamp(12px, 5cqi, 18px);
     }
@@ -647,7 +672,7 @@
   }
 
   /* Very small cards - hide some elements */
-  @container sequence-card (max-width: 149px) {
+  @container choreo-card (max-width: 149px) {
     .placeholder-word {
       font-size: clamp(10px, 4cqi, 14px);
     }
@@ -662,6 +687,9 @@
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
     .spinner {
+      animation: none;
+    }
+    .loading-placeholder::before {
       animation: none;
     }
   }
