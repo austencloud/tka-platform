@@ -15,10 +15,14 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { container } from "$lib/shared/di";
   import { onMount, untrack } from "svelte";
+  import { page } from "$app/stores";
   import { getComposeModuleState } from "./shared/state/compose-module-state.svelte.ts";
   import type { ComposeTab } from "./shared/state/compose-module-state.svelte.ts";
   import type { IURLSyncer } from "$lib/shared/navigation/services/contracts/IURLSyncer";
   import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
+  import { consumeSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
+  import { arrangeGridState } from "./tabs/setup/state/arrange-grid-state.svelte";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // Import tab components
   import ArrangeTab from "./tabs/setup/ArrangeTab.svelte";
@@ -74,6 +78,40 @@
       (section !== "arrange" && section !== "browse" && section !== "timeline")
     ) {
       navigationState.setActiveTab("arrange");
+    }
+
+    // Check for sequence handoff from Viewer (e.g., "Open in Compose" button)
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("handoff")) {
+      const handoff = consumeSequenceHandoff();
+      if (handoff) {
+        // Navigate to Arrange tab
+        navigationState.setActiveTab("arrange");
+        composeState.setCurrentTab("arrange");
+
+        // Set up single-cell layout and load the sequence
+        arrangeGridState.setPresetLayout("single");
+
+        // Select the first (and only) enabled cell and add the sequence
+        const enabledCells = arrangeGridState.enabledCells;
+        const firstCell = enabledCells[0];
+        if (firstCell) {
+          arrangeGridState.selectCell(firstCell.id);
+          arrangeGridState.addLayerToCell(firstCell.id, handoff.sequence);
+        }
+
+        // Show feedback
+        const word = handoff.sequence.word || handoff.sequence.name || "Sequence";
+        showToast({
+          message: `Loaded "${word}" into Compose`,
+          type: "success",
+          duration: 3000,
+        });
+
+        // Clean up URL (remove handoff param)
+        url.searchParams.delete("handoff");
+        window.history.replaceState({}, "", url.pathname + url.search);
+      }
     }
 
     // Check for deep link (e.g., shared composition URL)
