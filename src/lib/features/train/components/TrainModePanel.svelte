@@ -84,10 +84,14 @@
       challenge: {
         ...sessionChallengeProgressRaw.challenge,
         description: '',
-        difficulty: 'normal' as const,
+        difficulty: 'medium' as const,
         isActive: true,
         createdAt: new Date(),
         order: 0,
+        requirement: {
+          ...sessionChallengeProgressRaw.challenge.requirement,
+          type: 'complete_sequence' as const,
+        },
       },
       currentProgress: sessionChallengeProgressRaw.currentProgress,
       isComplete: sessionChallengeProgressRaw.isComplete,

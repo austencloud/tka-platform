@@ -175,8 +175,9 @@
   </div>
 
   <!-- Content area with link interception -->
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="content-area" bind:this={contentArea} onclick={handleLinkClick}>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <div class="content-area" bind:this={contentArea} onclick={handleLinkClick} role="main">
     {#if currentTab === "videos"}
       <VideoGalleryPrototypes />
     {:else if currentTab === "curator"}
@@ -189,7 +190,10 @@
     {:else if loadedPage}
       <!-- Render the actual public page component -->
       <div class="page-embed">
-        <svelte:component this={loadedPage} />
+        {#if loadedPage}
+          {@const PageComponent = loadedPage}
+          <PageComponent />
+        {/if}
       </div>
     {:else}
       <div class="error-state">

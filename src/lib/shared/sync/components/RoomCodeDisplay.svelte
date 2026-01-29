@@ -138,13 +138,14 @@
   <div class="room-code-display" class:compact={size === 'compact'} class:large={size === 'large'}>
     <!-- Room code section -->
     <div class="code-section">
-      <label class="code-label" id="room-code-label">Room Code</label>
+      <div class="code-label" id="room-code-label">Room Code</div>
 
       <div
         class="code-value"
-        role="text"
+        role="status"
         aria-labelledby="room-code-label"
         aria-describedby="room-code-hint"
+        aria-live="polite"
       >
         {effectiveRoomCode}
       </div>

@@ -167,11 +167,12 @@
 	}
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
 	class="sync-status-indicator"
 	class:compact
 	class:interactive={status === 'connected'}
-	role="status"
+	role={status === 'connected' ? 'button' : 'status'}
 	aria-live="polite"
 	aria-label={ariaLabel}
 	title={tooltipText}

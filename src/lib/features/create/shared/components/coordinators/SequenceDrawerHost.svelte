@@ -23,6 +23,7 @@
   import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
   import SequenceDetailsModal from "$lib/shared/sequence-viewer/components/SequenceDetailsModal.svelte";
   import type { ExportSettings } from "$lib/shared/share-hub/domain/models/ExportSettings";
+  import type { ExportSettings as SequenceViewerExportSettings } from "$lib/shared/sequence-viewer/domain/types";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
   import type { IShareHubExportOrchestrator } from "$lib/shared/share-hub/services/contracts/IShareHubExportOrchestrator";
@@ -632,12 +633,26 @@
     panelState.closeShareHubPanel();
   }
 
+  // Adapter function to convert between ExportSettings types
+  function adaptExportSettings(settings: SequenceViewerExportSettings): ExportSettings {
+    return {
+      format: settings.format as "animation" | "static" | "performance",
+      animationSettings: settings.animationSettings ? {
+        ...settings.animationSettings,
+        preset: null, // sequence-viewer doesn't have preset, default to null
+      } : undefined,
+      staticSettings: settings.staticSettings,
+      performanceSettings: undefined,
+    };
+  }
+
   async function handleExport(
     mode: "single" | "composite",
-    settings?: ExportSettings
+    settings?: SequenceViewerExportSettings
   ) {
     if (isExporting) return;
-    await performExport(mode, settings);
+    const adaptedSettings = settings ? adaptExportSettings(settings) : undefined;
+    await performExport(mode, adaptedSettings);
   }
 
   async function performExport(

@@ -421,10 +421,7 @@ Uses pure runes instead of stores for reactivity.
       filter var(--duration-fast) ease-out;
   }
 
-  /* Inner content group for scale animation */
-  .letter-content {
-    /* transform-origin is set inline based on letter dimensions */
-  }
+  /* Inner content group for scale animation - transform-origin is set inline based on letter dimensions */
 
   /* Subtle scale-pulse animation when letter changes - pops "towards" user */
   @keyframes letter-change-pulse {

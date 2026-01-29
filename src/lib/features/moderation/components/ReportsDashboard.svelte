@@ -102,7 +102,7 @@
 			<!-- Filters Row -->
 			<div class="filters-row">
 				<!-- Status Tabs -->
-				<nav class="status-tabs" role="tablist">
+				<div class="status-tabs" role="tablist">
 					{#each statusTabs as tab}
 						<button
 							type="button"
@@ -118,7 +118,7 @@
 							{/if}
 						</button>
 					{/each}
-				</nav>
+				</div>
 
 				<!-- Category Filter -->
 				<div class="category-filter">
@@ -193,7 +193,6 @@
 
 <!-- Mobile Detail Drawer -->
 {#if adminReportsState.mobileDetailOpen}
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="mobile-drawer-backdrop"
 		onclick={handleMobileBackdropClick}
@@ -201,6 +200,7 @@
 		role="dialog"
 		aria-modal="true"
 		aria-label="Report details"
+		tabindex="-1"
 	>
 		<div class="mobile-drawer">
 			<ReportDetailPanel />

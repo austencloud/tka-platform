@@ -149,7 +149,7 @@ Features:
                 {currentSequence}
                 {isFadingOut}
                 {contentAreaBounds}
-                showHeader={false}
+                showHeader={true}
               />
             {/if}
           {/if}

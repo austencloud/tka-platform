@@ -626,7 +626,25 @@
   }
 
   .category-tabs {
-    @apply themed-scrollbar;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  .category-tabs::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .category-tabs::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, transparent);
+  }
+
+  .category-tabs::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
+    border-radius: 4px;
+  }
+
+  .category-tabs::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
   }
 
   .category-tab {
@@ -705,7 +723,25 @@
   }
 
   .achievements-list {
-    @apply themed-scrollbar;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  .achievements-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .achievements-list::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, transparent);
+  }
+
+  .achievements-list::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
+    border-radius: 4px;
+  }
+
+  .achievements-list::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
   }
 
   .achievement-card {

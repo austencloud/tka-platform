@@ -775,6 +775,7 @@
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}

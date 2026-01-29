@@ -685,6 +685,11 @@ export type NavigationState = ReturnType<typeof createNavigationState>;
 // Global navigation state instance
 export const navigationState = createNavigationState();
 
+// Expose to window for debugging (dev only)
+if (typeof window !== "undefined") {
+  (window as any).__navState = navigationState;
+}
+
 // ============================================================================
 // HMR: Force full reload when this module changes
 // ============================================================================

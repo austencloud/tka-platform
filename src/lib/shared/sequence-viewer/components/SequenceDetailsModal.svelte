@@ -98,7 +98,7 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
   }
 
   let {
-    open,
+    open = $bindable(),
     sequence,
     onclose,
     initialBpm,

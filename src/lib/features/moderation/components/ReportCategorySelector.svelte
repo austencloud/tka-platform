@@ -41,7 +41,10 @@
 			case ' ':
 				event.preventDefault();
 				if (focusedIndex >= 0 && focusedIndex < len) {
-					onSelect(categories[focusedIndex][0]);
+					const category = categories[focusedIndex];
+					if (category) {
+						onSelect(category[0]);
+					}
 				}
 				break;
 		}

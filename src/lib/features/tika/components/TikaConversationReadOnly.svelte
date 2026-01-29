@@ -47,7 +47,9 @@
         const lines = tableMatch.trim().split('\n');
         if (lines.length < 2) return tableMatch;
 
-        const headerCells = lines[0].split('|').slice(1, -1).map(c => c.trim());
+        const headerLine = lines[0];
+        if (!headerLine) return tableMatch;
+        const headerCells = headerLine.split('|').slice(1, -1).map(c => c.trim());
         const dataRows = lines.slice(2).map(row =>
           row.split('|').slice(1, -1).map(c => c.trim())
         );
@@ -98,7 +100,10 @@
 
     // Restore tables
     for (let i = 0; i < tableBlocks.length; i++) {
-      processed = processed.replace(`__TABLE_${i}__`, tableBlocks[i]);
+      const tableHtml = tableBlocks[i];
+      if (tableHtml) {
+        processed = processed.replace(`__TABLE_${i}__`, tableHtml);
+      }
     }
 
     // Wrap consecutive <li> in <ul>

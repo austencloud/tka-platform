@@ -30,6 +30,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     // Visibility
     tkaGlyphVisible = true,
     stepNumbersVisible = true,
+    beatPositionVisible = false,
     // Dark mode - when provided, overrides global state (for preview isolation)
     darkMode = false,
     // Start position indicator - shows "Start" in top-left when at start position
@@ -39,9 +40,10 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     displayedLetter?: Letter | null;
     displayedTurnsTuple?: string;
     displayedStepNumber?: number | null;
-    displayedMusicalPosition?: string;
+    displayedMusicalPosition?: string | null;
     tkaGlyphVisible?: boolean;
     stepNumbersVisible?: boolean;
+    beatPositionVisible?: boolean;
     darkMode?: boolean;
     isAtStartPosition?: boolean;
   } = $props();

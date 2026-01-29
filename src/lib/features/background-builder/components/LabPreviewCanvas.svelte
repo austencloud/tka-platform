@@ -152,6 +152,10 @@
   onmousemove={onMouseMove}
   onmouseleave={onMouseLeave}
   onclick={onClick}
+  onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(e as any); } }}
+  role="button"
+  tabindex="0"
+  aria-label="Lab preview canvas"
 >
   {#if isLoading}
     <div class="loading-overlay">

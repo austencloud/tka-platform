@@ -87,7 +87,7 @@
 		</div>
 	{:else}
 		<!-- Tab Navigation -->
-		<nav class="tab-nav" role="tablist" aria-label="Connect module tabs">
+		<div class="tab-nav" role="tablist" aria-label="Connect module tabs">
 			<button
 				id="tab-nearby"
 				class="tab-button"
@@ -135,7 +135,7 @@
 					<span class="badge pending" aria-label="{pendingInviteCount} pending">{pendingInviteCount}</span>
 				{/if}
 			</button>
-		</nav>
+		</div>
 
 		<!-- Tab Content -->
 		<div id="tabpanel-connect" class="tab-content" role="tabpanel" aria-labelledby="tab-{activeTab}">

@@ -76,7 +76,7 @@ Always opens selector panel when clicked
         [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: t("generator_loop_all_four"),
         [LOOPType.REWOUND]: t("generator_loop_rewound"),
       };
-      return typeMap[currentLOOPType] || currentLOOPType;
+      return typeMap[currentLOOPType as keyof typeof typeMap] || currentLOOPType;
     })()
   );
 </script>

@@ -32,7 +32,7 @@
     onStartPositionSelected?: () => void;
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: () => void;
-    onAssemblerBack?: () => void;
+    onAssemblerBack?: (() => void) | null;
     selectedStepNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
     practiceStepNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
     isSideBySideLayout?: boolean;

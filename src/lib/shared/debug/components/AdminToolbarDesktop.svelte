@@ -518,7 +518,25 @@
   }
 
   .quick-access {
-    @apply themed-scrollbar;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  .quick-access::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .quick-access::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, transparent);
+  }
+
+  .quick-access::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
+    border-radius: 4px;
+  }
+
+  .quick-access::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
   }
 
   .quick-access-label {

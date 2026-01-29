@@ -15,7 +15,7 @@
     sequence?: SequenceData | null;
     isMobile?: boolean;
     onClose: () => void;
-    onExport: (mode: "single" | "composite", settings?: ExportSettings) => void;
+    onExport: (mode: "single" | "composite", settings?: ExportSettings) => Promise<void>;
     selectedFormat?: "animation" | "static" | "performance";
   }
 
@@ -41,7 +41,7 @@
     <div
       class="share-hub-drawer-content"
       onclick={(e) => e.stopPropagation()}
-      role="document"
+      role="presentation"
     >
       {#if selectedFormat === "animation"}
         <AnimationExportView />

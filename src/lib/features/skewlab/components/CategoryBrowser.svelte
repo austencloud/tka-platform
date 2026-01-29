@@ -271,7 +271,7 @@
       {#each paginated as pictograph, indexInPage (pictograph.id)}
         {@const actualIndex = currentPage * perPage + indexInPage}
         {@const isSelected = actualIndex === selectedIndex && editorOpen}
-        <article
+        <div
           class="card"
           class:selected={isSelected}
           role="button"
@@ -294,7 +294,7 @@
             <span class="letter">{pictograph.letter}</span>
             <span class="position">{formatPosition(pictograph)}</span>
           </div>
-        </article>
+        </div>
       {/each}
     </div>
     {/if}

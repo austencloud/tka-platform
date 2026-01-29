@@ -201,6 +201,7 @@
           type="button"
           class="result-item"
           role="option"
+          aria-selected="false"
           onclick={() => handleSelectUser(user)}
         >
           <RobustAvatar

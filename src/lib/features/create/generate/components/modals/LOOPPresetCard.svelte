@@ -32,13 +32,15 @@ LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
   }
 </script>
 
-<button
-  class="preset-card"
-  onclick={handleSelect}
-  aria-label={`Apply ${preset.name}`}
->
-  <span class="preset-icon">{preset.icon}</span>
-  <span class="preset-name">{preset.name}</span>
+<div class="preset-card-wrapper">
+  <button
+    class="preset-card"
+    onclick={handleSelect}
+    aria-label={`Apply ${preset.name}`}
+  >
+    <span class="preset-icon">{preset.icon}</span>
+    <span class="preset-name">{preset.name}</span>
+  </button>
 
   {#if onToggleFavorite}
     <button
@@ -52,9 +54,16 @@ LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
       </svg>
     </button>
   {/if}
-</button>
+</div>
 
 <style>
+  .preset-card-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+
   .preset-card {
     display: flex;
     align-items: center;
@@ -93,6 +102,8 @@ LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
   }
 
   .favorite-btn {
+    position: absolute;
+    right: 10px;
     flex-shrink: 0;
     background: transparent;
     border: none;

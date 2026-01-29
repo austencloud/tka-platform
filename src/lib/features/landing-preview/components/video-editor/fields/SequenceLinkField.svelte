@@ -187,10 +187,10 @@
             onkeydown={(e) => e.key === "Enter" && handleManualSearch()}
             {disabled}
           />
-          <button type="button" class="manual-search-go" onclick={handleManualSearch} {disabled}>
+          <button type="button" class="manual-search-go" onclick={handleManualSearch} {disabled} aria-label="Search sequence">
             <i class="fas fa-search" aria-hidden="true"></i>
           </button>
-          <button type="button" class="manual-search-cancel" onclick={closeManualSearch}>
+          <button type="button" class="manual-search-cancel" onclick={closeManualSearch} aria-label="Cancel search">
             <i class="fas fa-times" aria-hidden="true"></i>
           </button>
         </div>

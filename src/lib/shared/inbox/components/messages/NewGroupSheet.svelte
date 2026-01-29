@@ -246,7 +246,7 @@
 
     <!-- User Search -->
     <div class="search-section">
-      <label class="form-label">Add People</label>
+      <div class="form-label" id="add-people-label">Add People</div>
       <UserSearchInput
         selectedUserId={searchUserId}
         selectedUserDisplay={searchUserDisplay}

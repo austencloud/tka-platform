@@ -116,21 +116,21 @@
   </div>
 
   <div class="slider-group">
-    <label class="slider-label">
+    <label class="slider-label" for="density-slider">
       <span>Density</span>
       <span class="slider-value">{density < 0.33 ? "Sparse" : density > 0.66 ? "Dense" : "Medium"}</span>
     </label>
-    <input type="range" min="0" max="1" step="0.05" value={density}
+    <input id="density-slider" type="range" min="0" max="1" step="0.05" value={density}
       oninput={(e) => onDensityChange(parseFloat(e.currentTarget.value))} />
     <div class="slider-labels"><span>Sparse</span><span>Dense</span></div>
   </div>
 
   <div class="slider-group">
-    <label class="slider-label">
+    <label class="slider-label" for="style-slider">
       <span>Style</span>
       <span class="slider-value">{style < 0.33 ? "Natural" : style > 0.66 ? "Composed" : "Balanced"}</span>
     </label>
-    <input type="range" min="0" max="1" step="0.05" value={style}
+    <input id="style-slider" type="range" min="0" max="1" step="0.05" value={style}
       oninput={(e) => onStyleChange(parseFloat(e.currentTarget.value))} />
     <div class="slider-labels"><span>Natural</span><span>Composed</span></div>
   </div>

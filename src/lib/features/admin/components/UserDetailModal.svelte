@@ -316,7 +316,7 @@
     {:else}
       <!-- Tabbed layout (compact) for small screens -->
       <div class="tabbed-layout">
-        <nav class="tab-nav" role="tablist">
+        <div class="tab-nav" role="tablist">
           <button
             role="tab"
             class="tab-btn"
@@ -349,7 +349,7 @@
               Admin
             </button>
           {/if}
-        </nav>
+        </div>
 
         <div class="tab-content themed-scrollbar">
           {#if activeTab === "profile"}
@@ -433,7 +433,7 @@
   </div>
 </BaseModal>
 
-<script context="module">
+<script module>
   function getRoleColor(role: string | undefined): string {
     switch (role) {
       case "admin":

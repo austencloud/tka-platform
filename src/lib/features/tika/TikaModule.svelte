@@ -357,7 +357,7 @@
               lines.push("");
               for (const part of toolParts) {
                 const inv = (
-                  part as {
+                  part as unknown as {
                     type: "tool-invocation";
                     toolInvocation: {
                       toolName: string;

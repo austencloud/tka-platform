@@ -121,9 +121,7 @@
     cursor: not-allowed;
   }
 
-  .chip-label {
-    /* No truncation needed - chips wrap to next line */
-  }
+  /* Chip labels do not need truncation - chips wrap to next line */
 
   @media (max-width: 500px) {
     .quick-bar-label {

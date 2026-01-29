@@ -619,11 +619,7 @@
     background: #000;
   }
 
-  .video-thumbnail video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  /* Video element styles removed - uses CroppedVideoPlayer component */
 
   .featured-badge {
     position: absolute;

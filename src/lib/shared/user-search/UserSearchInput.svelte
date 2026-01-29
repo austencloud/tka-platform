@@ -381,7 +381,25 @@
   }
 
   .search-results:not(.inline) {
-    @apply themed-scrollbar;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  .search-results:not(.inline)::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .search-results:not(.inline)::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, transparent);
+  }
+
+  .search-results:not(.inline)::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
+    border-radius: 4px;
+  }
+
+  .search-results:not(.inline)::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
   }
 
   .search-results.fixed-position {

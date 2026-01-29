@@ -65,12 +65,8 @@
     const _flagsVersion = featureFlagState.flagsVersion;
     const _globalOverrides = featureFlagState.globalFlagOverrides;
 
-    // DEBUG: Log when this derived recalculates
-    console.log('[ModuleQuickToggle] hiddenModules recalculating, flagsVersion:', _flagsVersion, 'globalOverrides:', _globalOverrides);
-
     // Get the set of currently visible module IDs
     const visibleModuleIds = new Set(sidebarModules.map((m) => m.id));
-    console.log('[ModuleQuickToggle] visibleModuleIds:', [...visibleModuleIds]);
 
     return allMainModules.filter((module) => {
       // Core modules are never "hidden" in this UI
@@ -190,15 +186,23 @@
       toast.success(`${module.label} enabled`, 2000);
       hapticService?.trigger("success");
 
-      // Add to module order if not present
+      // Update user overrides: add to module order AND remove from disabledFeatures
       const currentOverrides = featureFlagService.userOverrides;
       const currentOrder = currentOverrides.moduleOrder || visibleModules.map((m) => m.id);
-      if (!currentOrder.includes(module.id)) {
+      const currentDisabled = currentOverrides.disabledFeatures || [];
+
+      // Check if we need to update user overrides
+      const needsOrderUpdate = !currentOrder.includes(module.id);
+      const needsDisabledUpdate = currentDisabled.includes(featureId);
+
+      if (needsOrderUpdate || needsDisabledUpdate) {
         const userId = featureFlagService.userId;
         if (userId) {
           await featureFlagService.setUserFeatureOverrides(userId, {
             ...currentOverrides,
-            moduleOrder: [...currentOrder, module.id],
+            moduleOrder: needsOrderUpdate ? [...currentOrder, module.id] : currentOrder,
+            // Remove from disabledFeatures if present (user override was blocking it)
+            disabledFeatures: currentDisabled.filter((f) => f !== featureId),
           });
         }
       }
@@ -235,15 +239,22 @@
       toast.success(`${module.label} disabled`, 2000);
       hapticService?.trigger("success");
 
-      // Remove from module order
+      // Update user overrides: remove from module order AND add to disabledFeatures
       const currentOverrides = featureFlagService.userOverrides;
       const currentOrder = currentOverrides.moduleOrder || visibleModules.map((m) => m.id);
+      const currentDisabled = currentOverrides.disabledFeatures || [];
+
       const newOrder = currentOrder.filter((id) => id !== module.id);
+      const newDisabled = currentDisabled.includes(featureId)
+        ? currentDisabled
+        : [...currentDisabled, featureId];
+
       const userId = featureFlagService.userId;
-      if (userId && newOrder.length !== currentOrder.length) {
+      if (userId) {
         await featureFlagService.setUserFeatureOverrides(userId, {
           ...currentOverrides,
           moduleOrder: newOrder,
+          disabledFeatures: newDisabled,
         });
       }
     } catch (error) {

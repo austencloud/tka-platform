@@ -313,7 +313,7 @@
         sourceSequenceId: sequence.id || `temp-${Date.now()}`,
         userId: currentUser.uid,
         word: tkaName,
-        thumbnails: sequence.thumbnails || [],
+        thumbnails: [...(sequence.thumbnails || [])],
         sequenceLength: sequence.steps?.length || 0,
         flaggedTerms: moderationResult?.flaggedTerms || [],
         category,

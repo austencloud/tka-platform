@@ -493,6 +493,10 @@ Matches the desktop version exactly:
     overflow: hidden; /* Clip content to prevent spilling */
     box-sizing: border-box;
     margin: 0 auto;
+    /* Center the layout rows as a group vertically */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .layout-row {
@@ -500,7 +504,6 @@ Matches the desktop version exactly:
     align-items: flex-start;
     justify-content: center;
     width: 100%;
-    flex: 1; /* Fill available height */
     /* Clip content to prevent spilling */
     overflow: hidden;
     /* FLIP-inspired smooth layout transitions */
@@ -526,8 +529,6 @@ Matches the desktop version exactly:
     /* Fixed size policy to prevent stretching */
     flex-shrink: 0;
     flex-grow: 0;
-    height: 100%; /* Fill parent row height */
-    max-height: 100%; /* Don't exceed parent */
     /* Ensure sections don't exceed their allocated width */
     min-width: 0;
     max-width: 100%; /* Prevent overflow */

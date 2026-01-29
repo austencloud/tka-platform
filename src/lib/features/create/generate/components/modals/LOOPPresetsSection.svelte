@@ -49,7 +49,7 @@ Organized by tabs: Featured, All, Favorites
         class="tab"
         class:active={activeTab === tab.id}
         onclick={() => (activeTab = tab.id)}
-        aria-selected={activeTab === tab.id}
+        aria-pressed={activeTab === tab.id}
       >
         {tab.label}
       </button>

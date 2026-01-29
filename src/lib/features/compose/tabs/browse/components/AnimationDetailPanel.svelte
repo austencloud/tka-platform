@@ -37,7 +37,7 @@ Features:
   });
 
   // Get mode config from centralized source
-  const modeConfig = $derived(COMPOSE_MODE_CONFIG[animation.mode]);
+  const modeConfig = $derived(COMPOSE_MODE_CONFIG[animation.mode as keyof typeof COMPOSE_MODE_CONFIG]);
 
   // Format date
   const formattedDate = $derived.by(() => {

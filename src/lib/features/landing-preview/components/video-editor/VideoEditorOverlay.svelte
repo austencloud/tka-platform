@@ -359,13 +359,7 @@
     overflow-y: auto;
   }
 
-  .left-panel {
-    /* Sequence panel - slightly narrower is fine */
-  }
-
-  .right-panel {
-    /* Metadata panel */
-  }
+  /* Side panel notes: left-panel is for sequences (slightly narrower is fine), right-panel is for metadata */
 
   /* Info panel (for browse/link modes) */
   .info-panel {

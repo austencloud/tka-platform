@@ -58,7 +58,7 @@
       </button>
     {/each}
     {#if !showAddForm}
-      <button class="chip add-chip" onclick={() => onToggleAddForm(true)} {disabled}>
+      <button class="chip add-chip" onclick={() => onToggleAddForm(true)} {disabled} aria-label="Add category">
         <i class="fas fa-plus" aria-hidden="true"></i>
       </button>
     {/if}

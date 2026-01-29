@@ -101,8 +101,8 @@
       <!-- Variant switcher -->
       <div class="controls-panel">
         <div class="control-group">
-          <label>Progress Bar Style:</label>
-          <div class="variant-buttons">
+          <div class="control-label" id="progress-bar-style-label">Progress Bar Style:</div>
+          <div class="variant-buttons" role="group" aria-labelledby="progress-bar-style-label">
             <button
               class:active={progressBarVariant === "minimal"}
               onclick={() => (progressBarVariant = "minimal")}
@@ -149,8 +149,8 @@
         </div>
 
         <div class="control-group">
-          <label>Playback:</label>
-          <div class="playback-buttons">
+          <div class="control-label" id="playback-label">Playback:</div>
+          <div class="playback-buttons" role="group" aria-labelledby="playback-label">
             <button onclick={togglePlayback}>
               {isPlaying ? "⏸ Pause" : "▶ Play"}
             </button>
@@ -262,7 +262,7 @@
     margin-bottom: 0;
   }
 
-  .control-group label {
+  .control-label {
     display: block;
     font-weight: 600;
     font-size: 0.9rem;

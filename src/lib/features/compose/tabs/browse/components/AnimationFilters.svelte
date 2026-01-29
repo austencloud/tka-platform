@@ -292,10 +292,7 @@ Features:
     gap: var(--spacing-sm);
   }
 
-  /* Search Section */
-  .search-section {
-    /* Spacing handled by .filters-toolbar gap */
-  }
+  /* Search Section - spacing handled by .filters-toolbar gap */
 
   .search-input-wrapper {
     position: relative;

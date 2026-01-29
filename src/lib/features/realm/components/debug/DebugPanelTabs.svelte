@@ -497,27 +497,7 @@
     border-radius: 3px;
   }
 
-  /* Tab Title */
-  .tab-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .tab-title i {
-    font-size: 20px;
-    filter: drop-shadow(0 0 10px var(--active-color));
-  }
-
-  .tab-title span {
-    font-size: 16px;
-    font-weight: 600;
-    color: white;
-    letter-spacing: 0.02em;
-  }
+  /* Tab Title - removed unused styles (no .tab-title element in markup) */
 
   /* Focus states */
   .tab-btn:focus-visible,

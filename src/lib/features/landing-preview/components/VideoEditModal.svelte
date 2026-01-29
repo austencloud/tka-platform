@@ -35,10 +35,10 @@
   }: Props = $props();
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="edit-modal" onclick={onCancel}>
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <div class="edit-content" onclick={(e) => e.stopPropagation()}>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<div class="edit-modal" onclick={onCancel} onkeydown={(e) => { if (e.key === 'Escape') onCancel(); }} role="dialog" aria-modal="true" tabindex="-1">
+  <div class="edit-content" onclick={(e) => e.stopPropagation()} role="document">
     <h2>Edit Video</h2>
 
     <div class="form-group">

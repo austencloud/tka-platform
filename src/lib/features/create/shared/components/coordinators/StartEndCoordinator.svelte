@@ -23,6 +23,7 @@
   const displayOptions = $derived(
     pendingOptions ||
       panelState.startEndOptions || {
+        blockedStartPositions: [],
         startPosition: null,
         endPosition: null,
         mustContainLetters: [],

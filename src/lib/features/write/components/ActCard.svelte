@@ -26,7 +26,9 @@
 
   function handleClick() {
     hapticService?.trigger("selection");
-    onSelect?.(actInfo.filePath);
+    if (actInfo.filePath) {
+      onSelect?.(actInfo.filePath);
+    }
   }
 
   function handleKeyDown(event: KeyboardEvent) {

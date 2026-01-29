@@ -230,7 +230,7 @@
 
   <!-- Content Area -->
   {#if mode === "preview"}
-    <div class="preview" onmousemove={handleMouseMove} onmouseleave={handleMouseLeave}>
+    <div class="preview" onmousemove={handleMouseMove} onmouseleave={handleMouseLeave} role="application" aria-label="Firefly forest preview">
       {#if isLoading}
         <div class="loading-overlay">
           <i class="fas fa-spinner fa-spin"></i>

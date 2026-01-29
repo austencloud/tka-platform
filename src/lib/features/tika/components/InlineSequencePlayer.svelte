@@ -94,7 +94,14 @@
         const result = await currentGenerator!.generateFromWord({
           word: currentWord,
           preferences: {
+            targetStepCount: null,
+            motionTypeFilter: null,
+            maxReversals: null,
+            highContinuity: false,
+            handPathMode: "smooth",
             makeCircular: false,
+            selectedLOOPType: null,
+            constraintPreset: "smooth",
           },
         });
 

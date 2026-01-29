@@ -334,9 +334,12 @@
       <div
         class="undo-hint"
         onclick={() => boardState?.dismissUndoHint()}
-        onkeydown={(e) => e.key === "Escape" && boardState?.dismissUndoHint()}
-        role="status"
+        onkeydown={(e) =>
+          (e.key === "Escape" || e.key === "Enter" || e.key === " ") &&
+          boardState?.dismissUndoHint()}
+        role="button"
         aria-live="polite"
+        tabindex="0"
       >
         <i class="fas fa-undo" aria-hidden="true"></i>
         <span>Ctrl+Z to undo</span>

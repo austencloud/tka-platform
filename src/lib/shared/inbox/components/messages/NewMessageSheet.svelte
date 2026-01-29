@@ -169,8 +169,10 @@
     try {
       if (selectedUsers.length === 1) {
         // Single recipient → direct message
+        const firstUser = selectedUsers[0];
+        if (!firstUser) return;
         const result = await conversationService.getOrCreateConversation(
-          selectedUsers[0].id
+          firstUser.id
         );
         hapticService?.trigger("success");
         onConversationCreated(result.conversation.id);

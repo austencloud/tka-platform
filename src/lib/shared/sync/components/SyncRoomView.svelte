@@ -192,7 +192,7 @@
     </div>
   {:else}
     <!-- Header with room info and controls -->
-    <header class="sync-header" role="banner">
+    <header class="sync-header">
       <div class="header-left">
         <SyncStatusIndicator compact={false} showLatencyAlways={false} />
         <div class="room-info">
@@ -278,14 +278,14 @@
     </main>
 
     <!-- Footer with playback controls -->
-    <footer class="sync-footer" role="toolbar" aria-label="Playback controls">
+    <div class="sync-footer" role="toolbar" aria-label="Playback controls">
       <SyncPlaybackControls
         showSpeed={true}
         showLoop={true}
         showStepControls={true}
         compact={viewMode === 'both'}
       />
-    </footer>
+    </div>
   {/if}
 </div>
 
@@ -471,11 +471,12 @@
     font-size: var(--font-size-sm, 14px);
   }
 
-  .not-connected i,
-  .loading-state i {
+  .not-connected i {
     font-size: 2rem;
     opacity: 0.6;
   }
+
+  /* .loading-state i styles removed - uses SyncSkeleton component */
 
   /* Mobile responsive */
   @media (max-width: 768px) {

@@ -124,7 +124,7 @@
   let buttonPanelElement: HTMLElement | null = $state(null);
   let assemblyTabKey = $state(0); // Changes when assembly tab needs to reset
   let effectCleanup: (() => void) | null = null;
-  let panelPersistenceCleanup: (() => void) | null = null;
+  let panelPersistenceCleanup: (() => void) | undefined = undefined;
   let panelHeightTrackerCleanup: (() => void) | null = null;
   let currentDisplayWord = $state<string>(""); // Current word with contextual messages
   let currentLetterSources = $state<LetterSource[] | null>(null); // Letter sources for spell tab styling
@@ -417,7 +417,7 @@
       // Cleanup panel persistence tracking
       if (panelPersistenceCleanup) {
         panelPersistenceCleanup();
-        panelPersistenceCleanup = null;
+        panelPersistenceCleanup = undefined;
       }
 
       // Cleanup panel height tracker

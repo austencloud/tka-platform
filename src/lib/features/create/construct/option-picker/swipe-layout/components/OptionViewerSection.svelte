@@ -364,7 +364,6 @@ Renders a section with:
     align-items: center;
     max-width: 100%; /* Prevent section from exceeding container width */
     max-height: 100%; /* Prevent section from exceeding container height */
-    height: 100%; /* Fill available height in parent */
     box-sizing: border-box;
     overflow: hidden; /* Clip any overflow rather than letting it spill */
   }
@@ -373,10 +372,9 @@ Renders a section with:
     display: grid;
     justify-content: center;
     justify-items: center;
-    align-content: center; /* Center rows vertically within available space */
+    align-content: start; /* Align grid rows to top, close to header */
     width: 100%;
     max-width: 100%; /* Prevent grid from exceeding container width */
-    flex: 1; /* Fill remaining height after header */
     gap: 8px;
     padding: 0 4px; /* Prevent edge clipping when grid is centered */
     box-sizing: border-box;

@@ -60,8 +60,7 @@
 
 <div
   class="spotlight-container"
-  role="application"
-  aria-label="Sequence animation viewer"
+  role="presentation"
   onclick={handleInteraction}
   onkeydown={handleInteraction}
   onmousemove={handleInteraction}

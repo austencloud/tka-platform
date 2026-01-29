@@ -131,11 +131,11 @@
       case "demo":
       case "sequence":
         if (item.sequenceId) {
-          handleModuleChange("browse" as ModuleId, { sequenceId: item.sequenceId });
+          handleModuleChange("browse" as ModuleId);
         }
         break;
       case "composition":
-        handleModuleChange("compose" as ModuleId, { sequenceId: item.sequenceId });
+        handleModuleChange("compose" as ModuleId);
         break;
     }
   }

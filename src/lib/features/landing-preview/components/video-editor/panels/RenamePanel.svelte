@@ -276,12 +276,12 @@
   <!-- Sequence linking section (appears when title is set) -->
   {#if hasTitle && sequenceCandidates.length > 0}
     <div class="link-section">
-      <label class="section-label">
+      <div class="section-label" id="link-sequence-label">
         <i class="fas fa-link" aria-hidden="true"></i>
         Link Sequence
         <span class="optional-badge">optional</span>
-      </label>
-      <div class="candidates-grid">
+      </div>
+      <div class="candidates-grid" role="group" aria-labelledby="link-sequence-label">
         {#each sequenceCandidates as seq}
           <button
             class="candidate-card"

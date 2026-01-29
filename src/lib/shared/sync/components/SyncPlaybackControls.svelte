@@ -45,7 +45,7 @@
   // Swipe gesture state
   let touchStartX: number | null = null;
   let touchStartY: number | null = null;
-  let isSwiping = false;
+  let isSwiping = $state(false);
   const SWIPE_THRESHOLD = 50; // Minimum swipe distance in pixels
   const SWIPE_ANGLE_THRESHOLD = 30; // Max angle from horizontal in degrees
 

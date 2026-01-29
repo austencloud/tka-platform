@@ -600,11 +600,11 @@
     <CollapsibleLabSection title="Fish Behavior" icon="fa-fish" defaultOpen={false} accentColor="cyan">
       <!-- Fish Selector -->
       <div class="fish-selector">
-        <button class="nav-btn" onclick={selectPrevFish} disabled={fishList.length <= 1}>
+        <button class="nav-btn" onclick={selectPrevFish} disabled={fishList.length <= 1} aria-label="Previous fish">
           <i class="fas fa-chevron-left"></i>
         </button>
         <span class="fish-index">{selectedFishIndex + 1} / {fishList.length}</span>
-        <button class="nav-btn" onclick={selectNextFish} disabled={fishList.length <= 1}>
+        <button class="nav-btn" onclick={selectNextFish} disabled={fishList.length <= 1} aria-label="Next fish">
           <i class="fas fa-chevron-right"></i>
         </button>
       </div>

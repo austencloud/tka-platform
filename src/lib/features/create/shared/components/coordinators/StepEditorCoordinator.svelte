@@ -283,7 +283,10 @@
 
     // Handle start position (beat 0)
     if (selectedStepNumber === 0) {
-      activeSequenceState.setStartPosition(updatedStepData);
+      activeSequenceState.setStartPosition({
+        ...updatedStepData,
+        isStartPosition: true as const,
+      });
       return;
     }
 
