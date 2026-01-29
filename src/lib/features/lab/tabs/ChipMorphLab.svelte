@@ -58,110 +58,20 @@
   }
 
   // ============================================================
-  // APPROACH B: True FLIP animation
+  // APPROACH B: Simple morph - label stays centered, only color changes
   // ============================================================
 
   let expandedB = $state<string | null>(null);
   const springB = spring(0, SPRING_CONFIG);
 
-  // Store refs to label elements for FLIP
-  let labelRefs: Record<string, HTMLElement | null> = {};
-
-  // FLIP animation state
-  let flipTransform = $state<{ x: number; y: number; scaleX: number } | null>(null);
-  let flipAnimating = $state(false); // When true, CSS transition is enabled
-  let flippingId = $state<string | null>(null); // Which setting is currently being FLIPped
-
   function expandB(settingId: string) {
-    const labelEl = labelRefs[settingId];
-    if (!labelEl) {
-      expandedB = settingId;
-      springB.set(1);
-      return;
-    }
-
-    // FIRST: Capture current position and size
-    const firstRect = labelEl.getBoundingClientRect();
-
-    // Instantly apply expanded state (layout changes immediately)
     expandedB = settingId;
-    flippingId = settingId; // Track which label is being FLIPped
-    flipAnimating = false; // Disable transition during INVERT
-
-    // LAST/INVERT: After DOM updates, capture new position and apply inverse
-    requestAnimationFrame(() => {
-      const lastRect = labelEl.getBoundingClientRect();
-
-      // Calculate delta from new position back to old position
-      const deltaX = firstRect.left - lastRect.left;
-      const deltaY = firstRect.top - lastRect.top;
-      const scaleX = firstRect.width / lastRect.width;
-
-      // Apply inverted transform - element appears in original position
-      flipTransform = { x: deltaX, y: deltaY, scaleX };
-
-      // PLAY: Enable transition and animate to final position (transform: none)
-      requestAnimationFrame(() => {
-        flipAnimating = true;
-        flipTransform = { x: 0, y: 0, scaleX: 1 };
-        springB.set(1);
-
-        // Clear FLIP state after animation completes
-        setTimeout(() => {
-          flipTransform = null;
-          flipAnimating = false;
-          flippingId = null;
-        }, 350);
-      });
-    });
+    springB.set(1);
   }
 
   function collapseB() {
-    const settingId = expandedB;
-    if (!settingId) return;
-
-    const labelEl = labelRefs[settingId];
-    if (!labelEl) {
-      expandedB = null;
-      springB.set(0);
-      return;
-    }
-
-    // FIRST: Capture current (expanded) position
-    const firstRect = labelEl.getBoundingClientRect();
-
-    // Instantly apply collapsed state
-    flippingId = settingId; // Track which label is being FLIPped
-    flipAnimating = false;
+    expandedB = null;
     springB.set(0);
-
-    // LAST/INVERT: After state change, capture new position
-    requestAnimationFrame(() => {
-      // Need to wait for expandedB to clear for proper collapsed position
-      expandedB = null;
-
-      requestAnimationFrame(() => {
-        const lastRect = labelEl.getBoundingClientRect();
-
-        const deltaX = firstRect.left - lastRect.left;
-        const deltaY = firstRect.top - lastRect.top;
-        const scaleX = firstRect.width / lastRect.width;
-
-        flipTransform = { x: deltaX, y: deltaY, scaleX };
-
-        // PLAY
-        requestAnimationFrame(() => {
-          flipAnimating = true;
-          flipTransform = { x: 0, y: 0, scaleX: 1 };
-
-          setTimeout(() => {
-            flipTransform = null;
-            flipAnimating = false;
-            flippingId = null;
-          }, 350);
-        });
-      });
-    });
   }
 
   function selectOptionB(settingId: string, optionLabel: string) {
@@ -171,6 +81,64 @@
     }
     // Delay collapse for visual feedback
     setTimeout(() => collapseB(), 150);
+  }
+
+  // ============================================================
+  // APPROACH C: View Transitions API (2025 standard)
+  // ============================================================
+
+  let expandedC = $state<string | null>(null);
+  let transitioningC = $state<string | null>(null); // Track which chip is animating
+  const springC = spring(0, SPRING_CONFIG);
+
+  // Check if View Transitions API is supported
+  const supportsViewTransitions = typeof document !== 'undefined' && 'startViewTransition' in document;
+
+  function expandC(settingId: string) {
+    if (supportsViewTransitions) {
+      // Mark which chip is transitioning BEFORE starting
+      transitioningC = settingId;
+
+      const transition = (document as any).startViewTransition(() => {
+        expandedC = settingId;
+        springC.set(1);
+      });
+
+      // Clear transitioning state when animation finishes
+      transition.finished.then(() => {
+        transitioningC = null;
+      });
+    } else {
+      expandedC = settingId;
+      springC.set(1);
+    }
+  }
+
+  function collapseC() {
+    if (supportsViewTransitions) {
+      // Mark which chip is transitioning
+      transitioningC = expandedC;
+
+      const transition = (document as any).startViewTransition(() => {
+        expandedC = null;
+        springC.set(0);
+      });
+
+      transition.finished.then(() => {
+        transitioningC = null;
+      });
+    } else {
+      expandedC = null;
+      springC.set(0);
+    }
+  }
+
+  function selectOptionC(settingId: string, optionLabel: string) {
+    const setting = settings.find(s => s.id === settingId);
+    if (setting) {
+      setting.setValue(optionLabel);
+    }
+    setTimeout(() => collapseC(), 150);
   }
 </script>
 
@@ -259,8 +227,8 @@
     <!-- APPROACH B: Overlay expansion -->
     <!-- ============================================================ -->
     <div class="approach">
-      <h3>B) Overlay: Same Element</h3>
-      <p class="desc">Chip expands in place, covers siblings with z-index</p>
+      <h3>B) Same Element: Centered Label</h3>
+      <p class="desc">Label stays centered, only color morphs (white→purple)</p>
 
       <!-- Fake tool panel context -->
       <div class="fake-tool-panel">
@@ -295,29 +263,9 @@
                 role="button"
                 tabindex="0"
               >
-                <!-- Back icon - absolutely positioned, fades in at top-left -->
-                <i
-                  class="fas fa-chevron-left back-icon-b"
-                  style:opacity={$springB}
-                  onclick={(e) => {
-                    if (isExpanding) {
-                      e.stopPropagation();
-                      collapseB();
-                    }
-                  }}
-                ></i>
-
-                <!-- Label - THE FLIP ELEMENT - same DOM node that morphs position -->
-                {@const isFlipping = flippingId === setting.id}
+                <!-- Label - stays centered, color morphs via CSS -->
                 <span
                   class="chip-label-b"
-                  bind:this={labelRefs[setting.id]}
-                  style:transform={flipTransform && isFlipping
-                    ? `translate(${flipTransform.x}px, ${flipTransform.y}px) scaleX(${flipTransform.scaleX})`
-                    : undefined}
-                  style:transition={flipAnimating && isFlipping
-                    ? 'transform 300ms cubic-bezier(0.34, 1.2, 0.64, 1), color 300ms ease'
-                    : 'none'}
                   onclick={(e) => {
                     if (isExpanding) {
                       e.stopPropagation();
@@ -379,13 +327,112 @@
         </button>
       </div>
     </div>
+
+    <!-- ============================================================ -->
+    <!-- APPROACH C: View Transitions API (2025 standard) -->
+    <!-- ============================================================ -->
+    <div class="approach approach-wide">
+      <h3>C) View Transitions API <span class="badge">2025</span></h3>
+      <p class="desc">Browser animates between DOM states via view-transition-name</p>
+
+      {#if !supportsViewTransitions}
+        <div class="unsupported-warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          View Transitions API not supported in this browser
+        </div>
+      {/if}
+
+      <!-- Fake tool panel context -->
+      <div class="fake-tool-panel">
+        <div class="fake-input-row">
+          <span class="fake-word">BELOVE</span>
+          <button class="fake-btn"><i class="fas fa-backspace"></i></button>
+          <button class="fake-btn"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Settings area -->
+        <div class="settings-area settings-area-c" style:--expansion={$springC}>
+          <!-- Row 1: Three setting chips -->
+          <div class="chips-row-c" class:has-expanded={expandedC !== null}>
+            {#each settings as setting (setting.id)}
+              {@const isExpanded = expandedC === setting.id}
+              {@const isHidden = expandedC !== null && !isExpanded}
+              {@const isTransitioning = transitioningC === setting.id}
+
+              <div
+                class="chip-wrapper-c"
+                class:expanded={isExpanded}
+                class:hidden={isHidden}
+              >
+                {#if isExpanded}
+                  <!-- EXPANDED STATE -->
+                  <div class="expanded-chip-c">
+                    <button class="chip-header-c" onclick={collapseC}>
+                      <i class="fas fa-chevron-left"></i>
+                      <!-- Only apply view-transition-name to the chip being animated -->
+                      <span
+                        class="chip-label-c"
+                        style={isTransitioning ? `view-transition-name: chip-label-c-${setting.id}` : ''}
+                      >
+                        {setting.label}
+                      </span>
+                    </button>
+                    <div class="options-row-c">
+                      {#each options as option}
+                        <button
+                          class="option-btn-c"
+                          class:selected={setting.getValue() === option.label}
+                          onclick={() => selectOptionC(setting.id, option.label)}
+                        >
+                          {option.label}
+                        </button>
+                      {/each}
+                    </div>
+                  </div>
+                {:else}
+                  <!-- COLLAPSED STATE -->
+                  <button class="chip-c" onclick={() => expandC(setting.id)}>
+                    <!-- Only apply view-transition-name to the chip being animated -->
+                    <span
+                      class="chip-label-c collapsed-label"
+                      style={isTransitioning ? `view-transition-name: chip-label-c-${setting.id}` : ''}
+                    >
+                      {setting.label}
+                    </span>
+                    <span class="chip-value-c">{setting.getValue()}</span>
+                  </button>
+                {/if}
+              </div>
+            {/each}
+          </div>
+
+          <!-- Row 2: Grid and Loop toggles -->
+          <div class="toggles-row-c" class:hidden={expandedC !== null}>
+            <button class="chip-c toggle-chip">
+              <span class="chip-label">Grid</span>
+              <span class="chip-value">Diamond</span>
+            </button>
+            <button class="chip-c toggle-chip">
+              <span class="chip-label">Loop</span>
+              <span class="chip-value">Off</span>
+            </button>
+          </div>
+        </div>
+
+        <button class="fake-generate-btn">
+          <i class="fas fa-wand-magic-sparkles"></i>
+          Generate
+        </button>
+      </div>
+    </div>
   </div>
 
   <div class="notes">
     <h4>Key Differences:</h4>
     <ul>
-      <li><strong>A (Current):</strong> The label "Props" is destroyed and "Prop Reversals" is created as a new element - hence the color pops instantly</li>
-      <li><strong>B (Overlay):</strong> Same label element persists, text swaps at 50% progress, color transitions smoothly via CSS <code>color-mix()</code></li>
+      <li><strong>A (Current):</strong> Label destroyed/recreated - color pops instantly</li>
+      <li><strong>B (Same Element):</strong> Label persists, color morphs via <code>color-mix()</code></li>
+      <li><strong>C (View Transitions):</strong> DOM swap but browser morphs between states - position AND color animate smoothly</li>
     </ul>
   </div>
 </div>
@@ -396,6 +443,9 @@
     max-width: 1000px;
     margin: 0 auto;
     color: var(--theme-text, #fff);
+    /* Enable scrolling */
+    height: 100%;
+    overflow-y: auto;
   }
 
   h2 {
@@ -705,50 +755,24 @@
     pointer-events: none;
   }
 
-  /* Back icon - absolutely positioned top-left, fades in */
-  .back-icon-b {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    color: var(--theme-accent, #6366f1);
-    font-size: 12px;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: opacity 200ms ease;
-  }
-
-  .back-icon-b:hover {
-    background: var(--theme-card-hover-bg, rgba(255,255,255,0.08));
-  }
-
-  /* Label - FLIP animation: position defined by state, transform by JS */
+  /* Label - stays centered in both states, only color changes */
   .chip-label-b {
     position: absolute;
     white-space: nowrap;
     cursor: pointer;
-    /* Color transitions with CSS - doesn't need FLIP */
+    /* ALWAYS centered at top */
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    font-weight: 600;
+    /* Color morphs smoothly via CSS custom property */
     color: color-mix(
       in srgb,
       var(--theme-text-muted, rgba(255,255,255,0.6)) calc(100% - var(--morph-progress, 0) * 100%),
       var(--theme-accent, #6366f1) calc(var(--morph-progress, 0) * 100%)
     );
-    /* COLLAPSED state: centered horizontally, positioned above center */
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    transform-origin: center center;
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  /* EXPANDED state: top-left position */
-  .chip-b.expanding .chip-label-b {
-    top: 12px;
-    left: 32px;
-    transform: translateX(0);
-    font-size: 14px;
-    font-weight: 600;
+    transition: color 300ms ease;
   }
 
   .chip-b.expanding .chip-label-b:hover {
@@ -758,7 +782,7 @@
   /* Value - centered below label, fades out when expanded */
   .chip-value-b {
     position: absolute;
-    top: 32px;
+    top: 30px;
     left: 50%;
     transform: translateX(-50%);
     font-size: 14px;
@@ -877,9 +901,270 @@
     margin-bottom: 0;
   }
 
+  /* ============================================================ */
+  /* APPROACH C STYLES - View Transitions API */
+  /* ============================================================ */
+
+  .approach-wide {
+    grid-column: 1 / -1; /* Span full width */
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border-radius: 6px;
+    vertical-align: middle;
+    margin-left: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .unsupported-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px;
+    color: #f59e0b;
+    font-size: 13px;
+  }
+
+  .settings-area-c {
+    position: relative;
+  }
+
+  .chips-row-c {
+    display: flex;
+    gap: 8px;
+  }
+
+  .chips-row-c.has-expanded {
+    height: 100%;
+    /* Remove gap when expanded so the expanded chip can take full width */
+    gap: 0;
+  }
+
+  .chip-wrapper-c {
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
+    transition: flex 300ms cubic-bezier(0.34, 1.2, 0.64, 1);
+  }
+
+  .chip-wrapper-c.expanded {
+    /* Take exactly the full width, no more */
+    flex: 1 1 100%;
+    width: 100%;
+    height: 100%;
+  }
+
+  .chip-wrapper-c.hidden {
+    flex: 0 0 0;
+    width: 0;
+    overflow: hidden;
+    /* Use visibility instead of opacity to prevent blinking during View Transition */
+    visibility: hidden;
+    /* No transition - let View Transitions API handle animation */
+    transition: none;
+  }
+
+  .chip-c {
+    width: 100%;
+    min-height: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 12px;
+    background: var(--theme-card-bg, rgba(255,255,255,0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255,255,255,0.1));
+    border-radius: 18px;
+    cursor: pointer;
+    color: var(--theme-text, #fff);
+  }
+
+  .chip-c:hover {
+    border-color: var(--theme-stroke-strong, rgba(255,255,255,0.2));
+  }
+
+  .expanded-chip-c {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    background: var(--theme-card-bg, rgba(255,255,255,0.04));
+    border: 1.5px solid var(--theme-accent, #6366f1);
+    border-radius: 18px;
+    box-shadow:
+      0 4px 20px rgba(99, 102, 241, 0.15),
+      0 0 0 1px rgba(99, 102, 241, 0.1);
+    /* Prevent content overflow */
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .chip-header-c {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    min-height: 40px;
+    background: transparent;
+    border: none;
+    color: var(--theme-accent, #6366f1);
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .chip-header-c:hover {
+    background: var(--theme-card-hover-bg, rgba(255,255,255,0.08));
+  }
+
+  /* View Transition label - this is what the browser animates */
+  .chip-label-c {
+    font-size: 14px;
+    font-weight: 600;
+    /* Expanded state = purple */
+    color: var(--theme-accent, #6366f1);
+  }
+
+  .chip-label-c.collapsed-label {
+    font-size: 12px;
+    font-weight: 500;
+    /* Collapsed state = muted */
+    color: var(--theme-text-muted, rgba(255,255,255,0.6));
+  }
+
+  .chip-value-c {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+  }
+
+  .options-row-c {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    /* Prevent overflow - buttons should shrink if needed */
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .option-btn-c {
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
+    min-height: 48px;
+    background: var(--theme-panel-bg, rgba(18,18,28,0.6));
+    border: 1.5px solid var(--theme-stroke, rgba(255,255,255,0.1));
+    border-radius: 12px;
+    color: var(--theme-text-muted, rgba(255,255,255,0.6));
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .option-btn-c:hover {
+    border-color: var(--theme-stroke-strong, rgba(255,255,255,0.2));
+    color: var(--theme-text, #fff);
+  }
+
+  .option-btn-c.selected {
+    background: color-mix(in srgb, var(--theme-accent) 25%, var(--theme-card-bg));
+    border-color: var(--theme-accent, #6366f1);
+    color: var(--theme-text, #fff);
+  }
+
+  .toggles-row-c {
+    display: flex;
+    gap: 8px;
+    transition: opacity 200ms ease, max-height 200ms ease;
+  }
+
+  .toggles-row-c.hidden {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    margin-top: -8px;
+  }
+
+  /* ============================================================ */
+  /* VIEW TRANSITIONS API - Browser-native animation styles */
+  /* ============================================================ */
+
+  /* Default animation for view transitions */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 250ms;
+  }
+
+  /* Custom animation for chip labels - cross-fade + morph */
+  ::view-transition-old(chip-label-c-dashes),
+  ::view-transition-old(chip-label-c-props),
+  ::view-transition-old(chip-label-c-hands) {
+    animation: label-fade-out 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  ::view-transition-new(chip-label-c-dashes),
+  ::view-transition-new(chip-label-c-props),
+  ::view-transition-new(chip-label-c-hands) {
+    animation: label-fade-in 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes label-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  @keyframes label-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Mix blend mode for smoother color transition during morph */
+  ::view-transition-group(chip-label-c-dashes),
+  ::view-transition-group(chip-label-c-props),
+  ::view-transition-group(chip-label-c-hands) {
+    animation-duration: 300ms;
+    animation-timing-function: cubic-bezier(0.34, 1.2, 0.64, 1);
+  }
+
   @media (max-width: 700px) {
     .comparison {
       grid-template-columns: 1fr;
+    }
+
+    .approach-wide {
+      grid-column: 1;
+    }
+  }
+
+  /* Respect reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(*),
+    ::view-transition-new(*),
+    ::view-transition-group(*) {
+      animation: none !important;
+    }
+
+    .chip-b,
+    .chip-wrapper-a,
+    .chip-wrapper-c,
+    .toggles-row-a,
+    .toggles-row-b,
+    .toggles-row-c {
+      transition: none !important;
     }
   }
 </style>
