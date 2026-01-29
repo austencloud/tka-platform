@@ -179,10 +179,15 @@ even when Svelte recreates the component instance.
       // Start at cached position and animate to target
       displayedX = cached.x;
       displayedY = cached.y;
+
+      // Double-RAF pattern: first RAF lets the browser paint the "from" state,
+      // second RAF sets the "to" state which triggers CSS transition
       pendingPositionFrame = requestAnimationFrame(() => {
-        displayedX = targetX;
-        displayedY = targetY;
-        pendingPositionFrame = null;
+        pendingPositionFrame = requestAnimationFrame(() => {
+          displayedX = targetX;
+          displayedY = targetY;
+          pendingPositionFrame = null;
+        });
       });
     } else {
       // First render for this cell OR position hasn't changed
