@@ -188,13 +188,17 @@
     /* Enable container queries for intrinsic sizing */
     container-type: inline-size;
     container-name: word-label;
+    /* Constrain to parent width - prevents overflow into sibling buttons */
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .word-label {
     pointer-events: auto;
     font-family: Georgia, serif;
     font-weight: 600;
-    font-size: clamp(1.5rem, 5cqi, 2.5rem);
+    /* Auto-scale font based on container width - shrinks for long words */
+    font-size: clamp(1rem, 5cqi, 2.5rem);
     color: var(--text-color, #2c3e50);
     background: transparent;
     border: none;
@@ -203,11 +207,14 @@
     border-radius: 8px;
     text-align: center;
     white-space: nowrap;
-    overflow: visible;
+    /* Constrain to container and show ellipsis if needed */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
+    padding: 0 8px;
     margin: 0;
   }
 
@@ -222,8 +229,8 @@
   }
 
   .word-label.has-word {
-    /* Slightly smaller to ensure 12 letter units fit comfortably on one line */
-    font-size: clamp(1.25rem, 7vw, 2rem);
+    /* Scale based on container width - shrinks only for very long words */
+    font-size: clamp(1.25rem, 6cqi, 2rem);
   }
 
   /* Contextual messages (hand path status, etc.) - Container-aware sizing */

@@ -240,6 +240,9 @@
     justify-content: center;
     align-items: center;
     flex: 1;
+    /* Constrain width to prevent overflow into sibling button zones */
+    min-width: 0;
+    overflow: hidden;
   }
 
   .step-grid-wrapper {

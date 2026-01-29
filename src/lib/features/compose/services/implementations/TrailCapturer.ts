@@ -194,6 +194,7 @@ export class TrailCapturer implements ITrailCapturer {
   private readonly INITIAL_JUMP_DISTANCE_THRESHOLD = 200; // Skip trails for huge jumps
 
   initialize(config: TrailCaptureConfig): void {
+    console.log('[TrailCapturer] initialize() called - clearing trails');
     this.config = { ...config };
     this.clearTrails();
   }
@@ -257,11 +258,34 @@ export class TrailCapturer implements ITrailCapturer {
 
     const loopDetected = this.detectAnimationLoop(beat);
 
+    // Debug: log loop detection state
+    if (loopDetected || shouldClearOnLoop) {
+      console.log('[TrailCapturer] loop check:', {
+        shouldClearOnLoop,
+        loopDetected,
+        isSeamlesslyLoopable: this.config.isSeamlesslyLoopable,
+        mode: trailSettings.mode,
+        previousBeat: this.previousBeatForLoopDetection,
+        currentBeat: beat,
+      });
+    }
+
     if (shouldClearOnLoop && loopDetected) {
       this.clearTrails();
       // Reset animation start time
       this.animationStartTime = currentTime;
     }
+
+    // Debug: log capture attempt
+    console.log('[TrailCapturer] captureFrame:', {
+      rawCurrentTime: currentTime,
+      animationStartTime: this.animationStartTime,
+      animRelativeTime,
+      beat,
+      hasBlueProp: !!props.blueProp,
+      hasRedProp: !!props.redProp,
+      pastInitDelay: animRelativeTime >= this.INITIALIZATION_DELAY_MS,
+    });
 
     // Capture trail points for each prop
     if (props.blueProp) {
@@ -337,6 +361,13 @@ export class TrailCapturer implements ITrailCapturer {
     secondaryBlue: TrailPoint[],
     secondaryRed: TrailPoint[]
   ): void {
+    // Debug: log buffer states
+    console.log('[TrailCapturer] fillTrailPointArrays buffer lengths:', {
+      blue: this.blueTrailBuffer.length,
+      red: this.redTrailBuffer.length,
+      totalCaptured: this.totalPointsCaptured,
+    });
+
     // Clear arrays without deallocating
     blue.length = 0;
     red.length = 0;

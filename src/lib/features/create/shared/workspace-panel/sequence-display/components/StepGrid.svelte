@@ -221,8 +221,16 @@
       }
     }
 
+    // Scroll behavior based on how steps were added
     if (currentStepCount > previousStepCount) {
-      scrollState.scrollToBottom();
+      const stepsAdded = currentStepCount - previousStepCount;
+      if (stepsAdded === 1) {
+        // Single step added (constructor/assembler) - scroll to see the new step
+        scrollState.scrollToBottom();
+      } else {
+        // Multiple steps added at once (generation) - scroll to top to see start position
+        scrollState.scrollToTop();
+      }
     }
 
     previousStepCount = currentStepCount;

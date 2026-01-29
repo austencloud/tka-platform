@@ -46,6 +46,20 @@ export function createScrollState() {
   }
 
   /**
+   * Scroll to top of container
+   */
+  function scrollToTop(behavior: ScrollBehavior = "smooth") {
+    if (!scrollContainerRef) return;
+
+    setTimeout(() => {
+      scrollContainerRef?.scrollTo({
+        top: 0,
+        behavior,
+      });
+    }, 100);
+  }
+
+  /**
    * Set scroll container reference
    */
   function setScrollContainer(element: HTMLElement | null) {
@@ -78,6 +92,7 @@ export function createScrollState() {
     setScrollContainer,
     checkScrollbar,
     scrollToBottom,
+    scrollToTop,
     setAutoScroll,
   };
 }

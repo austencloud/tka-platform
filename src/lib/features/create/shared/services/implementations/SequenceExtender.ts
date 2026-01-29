@@ -17,12 +17,13 @@ import type {
 } from "../contracts/ISequenceExtender";
 import type { ILOOPExecutorSelector } from "$lib/features/create/generate/circular/services/contracts/ILOOPExecutorSelector";
 import type { IReversalDetector } from "../contracts/IReversalDetector";
-import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { ILetterQueryHandler, IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { ILOOPValidator } from "../contracts/ILOOPValidator";
 import type { ISequenceAnalyzer } from "../contracts/ISequenceAnalyzer";
 import type { IBridgeFinder } from "../contracts/IBridgeFinder";
+import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { recalculateAllOrientations } from "./sequence-transforms/orientation-propagation";
 import {
@@ -44,7 +45,9 @@ export class SequenceExtender implements ISequenceExtender {
     private orientationCalculator: IOrientationCalculator,
     private loopValidator: ILOOPValidator,
     private sequenceAnalyzer: ISequenceAnalyzer,
-    private bridgeFinder: IBridgeFinder
+    private bridgeFinder: IBridgeFinder,
+    private motionQueryHandler: IMotionQueryHandler,
+    private gridModeDeriver: IGridModeDeriver
   ) {}
 
   /**
@@ -199,17 +202,31 @@ export class SequenceExtender implements ISequenceExtender {
 
     // Renumber the extension steps to continue from the existing sequence
     const existingStepCount = sequence.steps?.length || 0;
-    const renumberedSteps = extensionBeats.map((beat, index) => ({
-      ...beat,
-      stepNumber: existingStepCount + index + 1,
-    }));
+
+    // IMPORTANT: The LOOP executors copy the letter from the source step,
+    // but the motions are transformed (reversed, rotated, etc.), so the letter
+    // is WRONG. We need to derive the correct letter from the transformed motions.
+    const stepsWithDerivedLetters = await Promise.all(
+      extensionBeats.map(async (beat, index) => {
+        const derivedLetter = await this.deriveLetterForStep(beat, sequence.gridMode || GridMode.DIAMOND);
+        return {
+          ...beat,
+          stepNumber: existingStepCount + index + 1,
+          letter: derivedLetter ?? beat.letter, // Use derived letter, fall back to original if derivation fails
+        };
+      })
+    );
 
     // Combine existing steps with extension steps
-    const newSteps = [...(sequence.steps || []), ...renumberedSteps];
+    const newSteps = [...(sequence.steps || []), ...stepsWithDerivedLetters];
+
+    // Build the updated word from all step letters
+    const word = newSteps.map((step) => step.letter ?? "").join("");
 
     const extendedSequence: SequenceData = {
       ...sequence,
       steps: newSteps,
+      word,
       isCircular: true,
       loopType: options.loopType,
     };
@@ -217,6 +234,37 @@ export class SequenceExtender implements ISequenceExtender {
     // Process reversals for the extended sequence
     // This detects rotation direction changes between consecutive steps
     return this.reversalDetector.processReversals(extendedSequence);
+  }
+
+  /**
+   * Derive the correct letter for a step based on its motion configuration.
+   * Used after LOOP transformations to find what letter the transformed motions represent.
+   */
+  private async deriveLetterForStep(
+    step: StepData,
+    gridMode: GridMode
+  ): Promise<Letter | null> {
+    const blueMotion = step.motions?.blue;
+    const redMotion = step.motions?.red;
+
+    if (!blueMotion || !redMotion) {
+      return null;
+    }
+
+    try {
+      const letter = await this.motionQueryHandler.findLetterByMotionConfiguration(
+        blueMotion,
+        redMotion,
+        gridMode
+      );
+      return letter as Letter | null;
+    } catch (error) {
+      console.warn(
+        `Failed to derive letter for step ${step.stepNumber}:`,
+        error
+      );
+      return null;
+    }
   }
 
   // ============ Bridge Letter Methods ============
@@ -348,6 +396,8 @@ import { orientationCalculator } from "$lib/shared/pictograph/prop/services/impl
 import { loopValidator } from "./LOOPValidator";
 import { sequenceAnalyzer } from "./SequenceAnalyzer";
 import { bridgeFinder } from "./BridgeFinder";
+import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
+import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
 
 export const sequenceExtender = new SequenceExtender(
   loopExecutorSelector,
@@ -357,5 +407,7 @@ export const sequenceExtender = new SequenceExtender(
   orientationCalculator,
   loopValidator,
   sequenceAnalyzer,
-  bridgeFinder
+  bridgeFinder,
+  motionQueryHandler,
+  gridModeDeriver
 );

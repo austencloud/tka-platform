@@ -550,7 +550,9 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             deps.orientationCalculator,
             ctx.loopValidator,
             ctx.sequenceAnalyzer,
-            null as any // IBridgeFinder - circular ref, must resolve later
+            null as any, // IBridgeFinder - circular ref, must resolve later
+            deps.motionQueryHandler,
+            deps.gridModeDeriver!
           ),
 
         // LOOPDetector needs loopabilityChecker and loopTypeResolver
