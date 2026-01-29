@@ -453,7 +453,10 @@
       "Bash(gcloud firestore databases describe:*)",
       "Bash(gcloud firestore databases list:*)",
       "Bash(gcloud firestore backups list:*)",
-      "Bash(gcloud firestore databases update:*)"
+      "Bash(gcloud firestore databases update:*)",
+      "Bash(script -q -c \"firebase deploy --only storage\" /dev/null)",
+      "WebFetch(domain:aerotwist.com)",
+      "WebFetch(domain:www.joshwcomeau.com)"
     ]
   },
   "enableAllProjectMcpServers": true,
