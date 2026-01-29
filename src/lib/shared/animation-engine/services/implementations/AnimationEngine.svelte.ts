@@ -18,7 +18,7 @@ import type { StartPositionData } from "$lib/features/create/shared/domain/model
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import type { ISVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
-import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
+import type { ITrailCapturer, TrailEvent } from "$lib/features/compose/services/contracts/ITrailCapturer";
 import type { ITurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
 import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
 import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
@@ -99,6 +99,8 @@ const DEFAULT_ENGINE_PROPS: AnimationEngineProps = {
 export interface AnimationEngineCallbacks {
   onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
   onTrailSettingsChange?: (settings: TrailSettings) => void;
+  /** Called when trail system events occur (memory pruning, trails cleared) */
+  onTrailEvent?: (event: TrailEvent) => void;
 }
 
 /**
@@ -989,6 +991,11 @@ export class AnimationEngine {
       bluePropType: this.state.currentBluePropType,
       redPropType: this.state.currentRedPropType,
     });
+
+    // Hook up trail event callback for UX feedback (memory pruning notifications)
+    if (this.callbacks?.onTrailEvent) {
+      this.trailCapturer.setEventCallback(this.callbacks.onTrailEvent);
+    }
 
     this.trailSettingsSyncService?.initialize(this.trailCapturer, () =>
       this.renderLoopService?.triggerRender(() => this.getFrameParams(props))
