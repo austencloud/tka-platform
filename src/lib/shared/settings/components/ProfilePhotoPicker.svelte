@@ -372,7 +372,7 @@
   <BaseModal
     open={isOpen}
     onclose={handleClose}
-    size="xl"
+    size={useSideBySide ? "xl" : "lg"}
     labelledBy="photo-picker-title"
     class="profile-photo-modal"
   >
@@ -432,8 +432,7 @@
           {@render panelHeader("choose")}
           {@render optionsList()}
         {:else}
-          {@render panelHeader("generate")}
-          {@render generateContent()}
+          {@render tabbedGenerateContent()}
         {/if}
       </div>
 
@@ -833,6 +832,91 @@
   </div>
 {/snippet}
 
+{#snippet tabbedGenerateContent()}
+  <!-- Horizontal layout for tabbed modal: avatar left, controls right -->
+  <div class="tabbed-generate-layout">
+    <div class="tabbed-avatar-column">
+      <div
+        class="avatar-preview generated large"
+        style="background: {selectedGradient.gradient};"
+      >
+        {#if currentPropImage}
+          <img src={currentPropImage} alt="Prop" class="prop-silhouette" />
+        {/if}
+      </div>
+      <span class="gradient-name">{selectedGradient.name}</span>
+      <button class="save-btn compact" onclick={useGeneratedAvatar} disabled={saving}>
+        {#if saving}
+          <i class="fas fa-circle-notch fa-spin"></i>
+          <span>Saving...</span>
+        {:else}
+          <i class="fas fa-check"></i>
+          <span>Use This Avatar</span>
+        {/if}
+      </button>
+    </div>
+
+    <div class="tabbed-controls-column">
+      <div class="section">
+        <h4 class="section-label">Style</h4>
+        <div class="family-row compact">
+          {#each COLOR_FAMILIES as family}
+            <button
+              class="family-chip compact"
+              class:selected={selectedFamilyId === family.id}
+              onclick={() => selectFamily(family.id)}
+              title={family.name}
+            >
+              <i class="fas {family.icon}"></i>
+              <span class="family-label">{family.name}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h4 class="section-label">Shade</h4>
+          <button class="shuffle-btn compact" onclick={shuffle} title="Shuffle">
+            <i class="fas fa-random"></i>
+          </button>
+        </div>
+        <div class="gradient-row">
+          {#each familyGradients as gradient}
+            <button
+              class="gradient-swatch compact"
+              class:selected={selectedGradientId === gradient.id}
+              onclick={() => selectGradient(gradient.id)}
+              title={gradient.name}
+              style="background: {gradient.gradient};"
+            >
+              {#if selectedGradientId === gradient.id}
+                <i class="fas fa-check"></i>
+              {/if}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <div class="section">
+        <h4 class="section-label">Prop</h4>
+        <div class="prop-row compact">
+          {#each PROPS as prop}
+            <button
+              class="prop-btn compact"
+              class:selected={selectedProp === prop.id}
+              onclick={() => (selectedProp = prop.id)}
+              title={prop.label}
+            >
+              <img src={prop.image} alt={prop.label} />
+            </button>
+          {/each}
+        </div>
+      </div>
+    </div>
+  </div>
+{/snippet}
+
 <style>
   /* ═══════════════════════════════════════════════════════════════════
      MODAL LAYOUT - Desktop side-by-side
@@ -953,6 +1037,84 @@
     background: var(--theme-accent, #6366f1);
     border-color: var(--theme-accent, #6366f1);
     color: white;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     TABBED GENERATE LAYOUT - Horizontal layout for constrained height
+     Avatar on left, controls on right - uses space efficiently
+     ═══════════════════════════════════════════════════════════════════ */
+
+  .tabbed-generate-layout {
+    display: flex;
+    gap: var(--spacing-lg, 24px);
+    align-items: flex-start;
+    height: 100%;
+  }
+
+  .tabbed-avatar-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm, 10px);
+    flex-shrink: 0;
+    padding-top: var(--spacing-md, 16px);
+  }
+
+  .tabbed-avatar-column .avatar-preview.large {
+    width: 120px;
+    height: 120px;
+  }
+
+  .tabbed-avatar-column .save-btn.compact {
+    margin-top: var(--spacing-sm, 8px);
+    padding: var(--spacing-sm, 10px) var(--spacing-md, 16px);
+    font-size: var(--font-size-sm, 13px);
+    white-space: nowrap;
+  }
+
+  .tabbed-controls-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md, 14px);
+    min-width: 0;
+  }
+
+  /* Compact variants for tabbed layout */
+  .family-row.compact {
+    gap: var(--spacing-xs, 6px);
+  }
+
+  .family-chip.compact {
+    padding: var(--spacing-xs, 6px) var(--spacing-sm, 10px);
+    min-height: 36px;
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .family-chip.compact i {
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .gradient-swatch.compact {
+    width: 40px;
+    height: 40px;
+  }
+
+  .shuffle-btn.compact {
+    width: 32px;
+    height: 32px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  .prop-row.compact {
+    gap: var(--spacing-xs, 6px);
+  }
+
+  .prop-btn.compact {
+    width: 40px;
+    height: 40px;
+    padding: var(--spacing-xs, 6px);
   }
 
   /* ═══════════════════════════════════════════════════════════════════
@@ -1254,12 +1416,11 @@
   }
 
   /* Family Row - style chips */
-  /* Use grid with auto-fit to create balanced rows (3+2 instead of 4+1) */
   .family-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: var(--spacing-sm, 10px);
-    max-width: 400px; /* Constrain width to force 3+2 layout */
+    justify-content: flex-start;
   }
 
   .family-chip {
@@ -1369,6 +1530,10 @@
     gap: var(--spacing-sm, 8px);
     padding: var(--spacing-md, 14px) var(--spacing-lg, 20px);
     min-height: 48px; /* AAA touch target */
+    max-width: 320px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
     background: var(--theme-accent, #6366f1);
     border: none;
     border-radius: var(--radius-md, 12px);
