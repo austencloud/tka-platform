@@ -113,7 +113,7 @@
     function animate() {
       const elapsed = performance.now() - beatStartTime;
       const beatDuration = (60 / bpm) * 1000;
-      const progress = Math.min(elapsed / stepDuration, 1.0);
+      const progress = Math.min(elapsed / beatDuration, 1.0);
 
       fractionalBeat = currentStepIndex + progress;
 

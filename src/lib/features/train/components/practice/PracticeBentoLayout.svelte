@@ -110,8 +110,8 @@
   // Track if grid settings panel is expanded
   let showGridSettings = $state(false);
 
-  // Extract propType from sequence
-  const propType = $derived(sequence?.propType ?? null);
+  // Extract propType from sequence (from first step's motion)
+  const propType = $derived(sequence?.steps?.[0]?.motions?.blue?.propType ?? null);
 </script>
 
 <div class="bento-layout">

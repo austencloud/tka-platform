@@ -79,8 +79,8 @@
   // Always show camera + grid (no display view modes)
   const showGrid = true; // Always show beat grid
 
-  // Extract propType from sequence
-  const propType = $derived(sequence?.propType ?? null);
+  // Extract propType from sequence (from first step's motion)
+  const propType = $derived(sequence?.steps?.[0]?.motions?.blue?.propType ?? null);
 </script>
 
 <div class="view-container">

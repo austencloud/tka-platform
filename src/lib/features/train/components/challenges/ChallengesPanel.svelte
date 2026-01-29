@@ -5,6 +5,7 @@
   Modern mobile-first design with slide-up filter panel and 52px touch targets.
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ITrainChallengeManager } from "../../services/contracts/ITrainChallengeManager";

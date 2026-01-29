@@ -114,7 +114,7 @@
       // At 60 BPM = 1000ms per beat, use 80% of beat duration for smooth animation
       // For manual selection, use fixed 300ms
       const beatDurationMs = (60 / currentBpm) * 1000;
-      const animationDuration = performing ? stepDurationMs * 0.8 : 300;
+      const animationDuration = performing ? beatDurationMs * 0.8 : 300;
 
       // Use linear interpolation during performance for consistent motion,
       // ease-out for manual selection (feels more responsive)

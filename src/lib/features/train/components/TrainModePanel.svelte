@@ -74,8 +74,24 @@
 
   // Results data for display
   let sessionXPBreakdown = $state<XPBreakdown | undefined>(undefined);
-  let sessionChallengeProgress = $state<ChallengeProgressResult | undefined>(
+  let sessionChallengeProgressRaw = $state<ChallengeProgressResult | undefined>(
     undefined
+  );
+
+  // Convert ChallengeProgressResult to ChallengeProgress for ResultsScreen
+  const sessionChallengeProgress = $derived(
+    sessionChallengeProgressRaw ? {
+      challenge: {
+        ...sessionChallengeProgressRaw.challenge,
+        description: '',
+        difficulty: 'normal' as const,
+        isActive: true,
+        createdAt: new Date(),
+        order: 0,
+      },
+      currentProgress: sessionChallengeProgressRaw.currentProgress,
+      isComplete: sessionChallengeProgressRaw.isComplete,
+    } : undefined
   );
 
   // Timing system (using requestAnimationFrame for better performance)
@@ -107,8 +123,10 @@
   async function initDetection() {
     try {
       detectionService = container.items.positionDetector;
-      await detectionService.initialize();
-      isDetectionReady = true;
+      if (detectionService) {
+        await detectionService.initialize();
+        isDetectionReady = true;
+      }
     } catch (error) {
       console.error("Failed to initialize detection:", error);
       trainState.setError(
@@ -238,7 +256,7 @@
 
     // Store results for ResultsScreen display
     sessionXPBreakdown = result.xpBreakdown;
-    sessionChallengeProgress = result.challengeProgress;
+    sessionChallengeProgressRaw = result.challengeProgress;
   }
 
   function startBeatTimer() {
