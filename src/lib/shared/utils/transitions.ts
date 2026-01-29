@@ -179,3 +179,73 @@ export function flyTransition(
  * See: src/lib/shared/ui-animation/ for the unified animation system
  * See: ANIMATION_SYSTEM.md for migration guide
  */
+
+/**
+ * Safe slide transition that guards against NaN height values.
+ *
+ * This is a workaround for Svelte 5 bug #14205 where the slide transition
+ * produces "Invalid keyframe value for property height: NaNpx" warnings when
+ * the element has no measurable height at the time the transition starts.
+ *
+ * The issue occurs because height is parsed with parseFloat which returns NaN
+ * for empty strings, and Svelte 5's Web Animations API validates and rejects these.
+ *
+ * @see https://github.com/sveltejs/svelte/issues/14205
+ */
+export function safeSlide(
+  node: Element,
+  {
+    delay = 0,
+    duration = 300,
+    easing = cubicOut,
+    axis = "y",
+  }: { delay?: number; duration?: number; easing?: (t: number) => number; axis?: "x" | "y" } = {}
+): TransitionConfig {
+  const style = getComputedStyle(node);
+  const opacity = +style.opacity;
+
+  // Determine primary and secondary properties based on axis
+  const isVertical = axis === "y";
+  const primary_property = isVertical ? "height" : "width";
+  const primary_property_value = parseFloat(style[primary_property]);
+
+  // Secondary properties for padding/margin/border
+  const startProp = isVertical ? "Top" : "Left";
+  const endProp = isVertical ? "Bottom" : "Right";
+  const startPropLower = isVertical ? "top" : "left";
+  const endPropLower = isVertical ? "bottom" : "right";
+
+  // Parse all the secondary property values
+  const padding_start_value = parseFloat(style.getPropertyValue(`padding-${startPropLower}`));
+  const padding_end_value = parseFloat(style.getPropertyValue(`padding-${endPropLower}`));
+  const margin_start_value = parseFloat(style.getPropertyValue(`margin-${startPropLower}`));
+  const margin_end_value = parseFloat(style.getPropertyValue(`margin-${endPropLower}`));
+  const border_width_start_value = parseFloat(style.getPropertyValue(`border-${startPropLower}-width`));
+  const border_width_end_value = parseFloat(style.getPropertyValue(`border-${endPropLower}-width`));
+
+  // Guard against NaN values - use 0 as fallback (fixes Svelte 5 bug #14205)
+  const safePrimary = Number.isFinite(primary_property_value) ? primary_property_value : 0;
+  const safePaddingStart = Number.isFinite(padding_start_value) ? padding_start_value : 0;
+  const safePaddingEnd = Number.isFinite(padding_end_value) ? padding_end_value : 0;
+  const safeMarginStart = Number.isFinite(margin_start_value) ? margin_start_value : 0;
+  const safeMarginEnd = Number.isFinite(margin_end_value) ? margin_end_value : 0;
+  const safeBorderStart = Number.isFinite(border_width_start_value) ? border_width_start_value : 0;
+  const safeBorderEnd = Number.isFinite(border_width_end_value) ? border_width_end_value : 0;
+
+  return {
+    delay,
+    duration,
+    easing,
+    css: (t) =>
+      "overflow: hidden;" +
+      `opacity: ${Math.min(t * 20, 1) * opacity};` +
+      `${primary_property}: ${t * safePrimary}px;` +
+      `padding-${startPropLower}: ${t * safePaddingStart}px;` +
+      `padding-${endPropLower}: ${t * safePaddingEnd}px;` +
+      `margin-${startPropLower}: ${t * safeMarginStart}px;` +
+      `margin-${endPropLower}: ${t * safeMarginEnd}px;` +
+      `border-${startPropLower}-width: ${t * safeBorderStart}px;` +
+      `border-${endPropLower}-width: ${t * safeBorderEnd}px;` +
+      "min-height: 0;",
+  };
+}

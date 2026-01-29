@@ -15,7 +15,7 @@ Design variants supported:
 -->
 <script lang="ts">
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import { slide } from "svelte/transition";
+  import { safeSlide } from "$lib/shared/utils/transitions";
   import { cubicOut } from "svelte/easing";
 
   let {
@@ -219,7 +219,7 @@ Design variants supported:
     onpointermove={handlePointerMove}
     onpointerup={handlePointerUp}
     onkeydown={handleKeyDown}
-    transition:slide={{ duration: 300, easing: cubicOut }}
+    transition:safeSlide={{ duration: 300, easing: cubicOut }}
   >
     {#if showLabels}
       <div class="labels-row">

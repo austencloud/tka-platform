@@ -10,8 +10,8 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
 Supports letter highlighting during animation playback.
 -->
 <script lang="ts">
-  import { slide, fade } from "svelte/transition";
   import { cubicOut, backOut } from "svelte/easing";
+  import { safeSlide } from "$lib/shared/utils/transitions";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   let {
@@ -130,7 +130,7 @@ Supports letter highlighting during animation playback.
     class="word-header"
     class:dark-mode={darkMode}
     data-controlled="true"
-    transition:slide={{ duration: 350, easing: cubicOut }}
+    transition:safeSlide={{ duration: 350, easing: cubicOut }}
   >
     <span class="word-text">
       {#if hasActiveHighlighting && parsedLetters.length > 0 && animationPhase === "idle"}
