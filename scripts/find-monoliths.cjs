@@ -219,10 +219,6 @@ const AUDITED_FILES = {
     auditDate: "2026-01-22",
     reason: "1420-line Web Worker is appropriately monolithic. Workers are self-contained by design. Contains: T-junction stitching, biome generation, vegetation placement, skirt geometry. All responsibilities are cohesive to terrain chunk generation. 2026-01-22 audit: Added getHeightAt(), fixed re-stitch cascade, added LRU memory eviction.",
   },
-  "lib/shared/sequence-viewer/components/SequenceDetailsModal.svelte": {
-    auditDate: "2026-01-29",
-    reason: "4/4 perspectives: Modal orchestrator with tightly-coupled swipe/playback logic. Migrated to PlaybackTimeCalculator. Remaining size from CSS (1070 lines) and necessary orchestration. Found dead code: SwipeGestureHandler, SequenceAnimationLoader services unused.",
-  },
   // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
 

@@ -119,13 +119,53 @@ Extracting thin wrappers (switch statements, property setters, ctx.save/restore 
 - Mixed concerns that don't belong together
 - 30+ props being passed
 - Can't describe in one sentence
+- **File exceeds 500 lines** (strong signal - see Size Threshold below)
+
+## Size Threshold: 500 Lines is the Hard Ceiling
+
+**CRITICAL: Files over 500 lines almost always need extraction.**
+
+The "Skeptic perspective" exists to prevent extracting thin wrappers, NOT to justify keeping 2000+ line monoliths. If you're using the Skeptic perspective to defend a file over 500 lines, you're misapplying it.
+
+### The AI Context Window Argument
+
+This codebase is built for AI-assisted development. The core principle:
+
+> "Smaller files = smaller context windows = faster, cheaper, more accurate AI assistance"
+
+A 3000-line file means:
+- AI must ingest 3000 lines to understand one bug
+- Changes risk breaking unrelated functionality
+- Code review is painful
+- Git blame is useless
+
+### When "Leave It Alone" is Actually Wrong
+
+**Lesson learned (2026-01-29):** Claude analyzed a 2867-line modal and concluded "leave it alone" because:
+- "The swipe logic is tightly coupled" (extractable with callbacks)
+- "CSS is 40% of the file" (CSS travels with extracted components)
+- "It's an orchestrator" (orchestrators don't need 150 lines of touch event handling)
+
+This was wrong. The file had 5+ clear extraction candidates. The Skeptic perspective was misapplied to avoid work.
+
+### The Real Test for Large Files
+
+For files over 500 lines, don't ask "is extraction warranted?" Ask:
+
+> "What distinct responsibilities can I extract into focused units?"
+
+Then extract them. Period. A 2000-line file is not "fine" - it's a decomposition backlog.
 
 ## Signs File is Fine Despite Size
+
+**These only apply to files under 500 lines:**
 
 - Orchestrators coordinating services
 - Test utilities/benchmarks
 - Well-commented, logically grouped
 - Logic is elsewhere (just wiring)
+
+**For files over 500 lines, these are NOT valid defenses.** Find the extraction points.
 
 ---
 
