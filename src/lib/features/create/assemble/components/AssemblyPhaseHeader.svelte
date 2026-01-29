@@ -43,7 +43,7 @@ Undo is handled by the workspace-level undo button, not here.
       case "rotation-selection":
         return {
           title: t("assembly_choose_rotation"),
-          color: "var(--semantic-success)",
+          color: "#8b5cf6", // Purple = blue + red combined
           step: 3,
         };
       case "complete":

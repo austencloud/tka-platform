@@ -9,6 +9,11 @@ Complete user flow:
 5. Complete - sequence is built, option to build another
 
 Integrates all Assembly components and manages state transitions.
+
+LAYOUT PRIORITY (mobile-first):
+1. HIGHEST: The Grid - must be as large as possible for touch targets
+2. MEDIUM: Controls - undo/next buttons, can be compact
+3. LOWEST: Header/Progress - can be minimal on small screens
 -->
 <script lang="ts">
   import {
@@ -297,23 +302,9 @@ Integrates all Assembly components and manages state transitions.
       return;
     }
 
-    // Rotation selection phase
+    // Rotation selection phase - only backspace to go back
+    // (rotation buttons are selected via UI since each hand has separate choice)
     if (currentPhase === "rotation-selection") {
-      // 1 or Numpad1 for clockwise
-      if (event.code === "Digit1" || event.code === "Numpad1") {
-        event.preventDefault();
-        hapticService?.trigger("success");
-        handleRotationSelect(RotationDirection.CLOCKWISE);
-        return;
-      }
-      // 2 or Numpad2 for counter-clockwise
-      if (event.code === "Digit2" || event.code === "Numpad2") {
-        event.preventDefault();
-        hapticService?.trigger("success");
-        handleRotationSelect(RotationDirection.COUNTER_CLOCKWISE);
-        return;
-      }
-      // Backspace to go back to red hand phase
       if (event.code === "Backspace") {
         event.preventDefault();
         hapticService?.trigger("selection");
@@ -584,10 +575,20 @@ Integrates all Assembly components and manages state transitions.
     }
   }
 
-  // Handle rotation selection
-  function handleRotationSelect(rotation: RotationDirection) {
+  // Handle rotation preview change (user is picking rotations, show preview)
+  function handleRotationPreviewChange(
+    blueRotation: RotationDirection | null,
+    redRotation: RotationDirection | null
+  ) {
+    // Show preview with current rotation selections applied
+    const preview = assemblyState.getRotationPreview(blueRotation, redRotation);
+    onSequenceUpdate?.(preview);
+  }
+
+  // Handle rotation confirm (user finalized their choices)
+  function handleRotationConfirm(blueRotation: RotationDirection, redRotation: RotationDirection) {
     try {
-      assemblyState.selectRotation(rotation);
+      assemblyState.selectRotations(blueRotation, redRotation);
 
       // Get user's preferred prop types from settings
       const settings = getSettings();
@@ -648,50 +649,56 @@ Integrates all Assembly components and manages state transitions.
   {:else}
     <!-- Building Phases -->
     <div class="build-phases" class:exiting={isExitingToWelcome}>
-      <!-- Phase Header -->
-      <AssemblyPhaseHeader
-        phase={currentPhase}
-        {bluePathLength}
-        {redPathLength}
-      />
+      {#if currentPhase === "blue" || currentPhase === "red"}
+        <!-- Grid Building Phase - Grid-first layout -->
+        <div class="grid-building-layout">
+          <!-- Grid Area - Takes priority, gets maximum space -->
+          <div class="grid-area">
+            <HandPathGrid
+              gridMode={assemblyState.gridMode}
+              currentPosition={assemblyState.currentPosition}
+              handColor={currentPhase === "red" ? "red" : "blue"}
+              {isSelectingStartPosition}
+              showEntranceAnimation={showGridEntranceAnimation}
+              onPositionSelect={handlePositionSelect}
+            />
+          </div>
 
-      <!-- Phase Content -->
-      <div class="phase-content">
-        {#if currentPhase === "blue" || currentPhase === "red"}
-          <!-- Grid Building Phase -->
-          <div class="grid-phase">
-            <div class="grid-container">
-              <HandPathGrid
-                gridMode={assemblyState.gridMode}
-                currentPosition={assemblyState.currentPosition}
-                handColor={currentPhase === "red" ? "red" : "blue"}
-                {isSelectingStartPosition}
-                showEntranceAnimation={showGridEntranceAnimation}
-                onPositionSelect={handlePositionSelect}
-              />
-            </div>
+          <!-- Controls Area - Compact, below grid -->
+          <div class="controls-area">
+            <AssemblyControls
+              phase={currentPhase}
+              {bluePathLength}
+              {redPathLength}
+              {canProceedToRed}
+              {canComplete}
+              canUndo={canUndoAssembly}
+              onNextHand={handleNextHand}
+              onComplete={handleProceedToRotation}
+              onReset={handleFullReset}
+              onUndo={handleUndo}
+            />
           </div>
-        {:else if currentPhase === "rotation-selection"}
-          <!-- Rotation Selection Phase -->
-          <div class="rotation-phase">
-            <RotationSelector onSelect={handleRotationSelect} />
+        </div>
+      {:else if currentPhase === "rotation-selection"}
+        <!-- Rotation Selection - preview updates as user picks rotations -->
+        <div class="rotation-phase">
+          <RotationSelector
+            onConfirm={handleRotationConfirm}
+            onPreviewChange={handleRotationPreviewChange}
+          />
+        </div>
+      {:else if currentPhase === "complete"}
+        <!-- Complete Phase - no header needed, checkmark speaks for itself -->
+        <div class="complete-phase">
+          <div class="complete-content">
+            <div class="complete-icon">✓</div>
+            <h2 class="complete-title">Sequence Complete!</h2>
+            <p class="complete-text">
+              Built a {bluePathLength - 1}-beat dual-prop sequence
+            </p>
           </div>
-        {:else if currentPhase === "complete"}
-          <!-- Completion Phase -->
-          <div class="complete-phase">
-            <div class="complete-content">
-              <div class="complete-icon">✓</div>
-              <h2 class="complete-title">Sequence Complete!</h2>
-              <p class="complete-text">
-                Built a {bluePathLength - 1}-beat dual-prop sequence
-              </p>
-            </div>
-          </div>
-        {/if}
-      </div>
-
-      <!-- Controls -->
-      {#if currentPhase !== "rotation-selection"}
+        </div>
         <AssemblyControls
           phase={currentPhase}
           {bluePathLength}
@@ -717,6 +724,9 @@ Integrates all Assembly components and manages state transitions.
     width: 100%;
     overflow: hidden;
     background: transparent;
+    /* Enable container queries */
+    container-type: size;
+    container-name: assembler;
   }
 
   .build-phases {
@@ -724,6 +734,7 @@ Integrates all Assembly components and manages state transitions.
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0;
     animation: build-phases-entrance var(--duration-emphasis) cubic-bezier(0.33, 1, 0.68, 1) both;
   }
 
@@ -738,7 +749,6 @@ Integrates all Assembly components and manages state transitions.
     }
   }
 
-  /* Exit animation when undoing back to welcome */
   .build-phases.exiting {
     animation: build-phases-exit var(--duration-emphasis) cubic-bezier(0.33, 1, 0.68, 1) both;
   }
@@ -754,7 +764,6 @@ Integrates all Assembly components and manages state transitions.
     }
   }
 
-  /* Welcome wrapper with entrance animation */
   .welcome-wrapper {
     flex: 1;
     display: flex;
@@ -782,42 +791,87 @@ Integrates all Assembly components and manages state transitions.
     }
   }
 
-  .phase-content {
+  /* =========================================================
+     Grid Building Layout - GRID-FIRST approach
+
+     The grid is the PRIMARY interactive element and gets
+     maximum available space. Controls are secondary.
+     ========================================================= */
+
+  .grid-building-layout {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     min-height: 0;
+    padding: 8px;
+    gap: 8px;
+    /* Account for bottom navigation safe area */
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
   }
 
-  /* Grid Building Phase */
-  .grid-phase {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .grid-container {
+  /* Grid Area - Takes all available space, centers the square grid */
+  .grid-area {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
     min-height: 0;
+    overflow: hidden;
   }
 
-  /* Rotation Phase */
+  /* Controls Area - Fixed height, minimal space */
+  .controls-area {
+    flex-shrink: 0;
+  }
+
+  /* =========================================================
+     Horizontal Layout for Wide Containers
+
+     Only triggers when:
+     - Aspect ratio > 1.8 (very wide)
+     - Width >= 700px (room for both panels)
+     - Height >= 300px (grid can be meaningful)
+     ========================================================= */
+  @container assembler (min-aspect-ratio: 1.8) and (min-width: 700px) and (min-height: 300px) {
+    .grid-building-layout {
+      flex-direction: row;
+      padding: 12px;
+      gap: 16px;
+    }
+
+    .grid-area {
+      flex: 1;
+      order: 2; /* Grid on the right */
+    }
+
+    .controls-area {
+      flex: 0 0 auto;
+      width: clamp(180px, 30%, 280px);
+      order: 1; /* Controls on the left */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+  }
+
+  /* =========================================================
+     Rotation Selection Phase - Compact, fills available space
+     ========================================================= */
+
   .rotation-phase {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow-y: auto;
-    padding: 16px;
+    padding: 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
   }
 
-  /* Complete Phase */
+  /* =========================================================
+     Complete Phase
+     ========================================================= */
+
   .complete-phase {
     flex: 1;
     display: flex;
@@ -856,14 +910,15 @@ Integrates all Assembly components and manages state transitions.
 
   .complete-text {
     font-size: var(--font-size-sm);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     margin: 0;
   }
 
   /* Mobile adjustments */
   @media (max-width: 480px) {
-    .grid-container {
-      padding: 12px;
+    .grid-building-layout {
+      padding: 4px;
+      gap: 4px;
     }
 
     .complete-icon {

@@ -198,8 +198,9 @@ Shows contextual action buttons based on current phase:
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding: 16px;
+    gap: 8px;
+    padding: 8px 16px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
     background: linear-gradient(to top, var(--theme-panel-bg), transparent);
   }
 
@@ -218,8 +219,8 @@ Shows contextual action buttons based on current phase:
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 14px 20px;
+    gap: 6px;
+    padding: 12px 16px;
     border: none;
     border-radius: 12px;
     font-size: var(--font-size-sm);
@@ -344,16 +345,18 @@ Shows contextual action buttons based on current phase:
   /* Mobile adjustments */
   @media (max-width: 480px) {
     .assembly-controls {
-      padding: 12px;
+      padding: 4px 12px;
+      padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+      gap: 6px;
     }
 
     .control-button {
-      padding: 12px 16px;
+      padding: 10px 14px;
       font-size: var(--font-size-sm);
     }
 
     .controls-row {
-      gap: 8px;
+      gap: 6px;
     }
   }
 </style>

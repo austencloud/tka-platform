@@ -54,7 +54,8 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
       : (config.initialBlueHandPath?.[config.initialBlueHandPath.length - 1] ??
           null)
   );
-  let selectedRotation = $state<RotationDirection | null>(null);
+  let selectedBlueRotation = $state<RotationDirection | null>(null);
+  let selectedRedRotation = $state<RotationDirection | null>(null);
   let gridMode = $state<GridMode>(config.gridMode);
   // PropType is always HAND in hand path assembly mode (forced in converter)
 
@@ -127,21 +128,28 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
   }
 
   /**
-   * Select rotation direction and complete the sequence
+   * Select rotation directions for both hands and complete the sequence
+   * @param blueRotation - Prop rotation direction for blue hand
+   * @param redRotation - Prop rotation direction for red hand
    */
-  function selectRotation(rotation: RotationDirection): void {
+  function selectRotations(
+    blueRotation: RotationDirection,
+    redRotation: RotationDirection
+  ): void {
     if (currentPhase !== "rotation-selection") {
       throw new Error("Can only select rotation in rotation-selection phase");
     }
 
-    if (
-      rotation !== RotationDirection.CLOCKWISE &&
-      rotation !== RotationDirection.COUNTER_CLOCKWISE
-    ) {
-      throw new Error("Must select CLOCKWISE or COUNTER_CLOCKWISE rotation");
+    const validRotations = [
+      RotationDirection.CLOCKWISE,
+      RotationDirection.COUNTER_CLOCKWISE,
+    ];
+    if (!validRotations.includes(blueRotation) || !validRotations.includes(redRotation)) {
+      throw new Error("Must select CLOCKWISE or COUNTER_CLOCKWISE rotation for each hand");
     }
 
-    selectedRotation = rotation;
+    selectedBlueRotation = blueRotation;
+    selectedRedRotation = redRotation;
     currentPhase = "complete";
   }
 
@@ -154,19 +162,20 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
     bluePropType: PropType = PropType.HAND,
     redPropType: PropType = PropType.HAND
   ): PictographData[] {
-    if (!selectedRotation) {
-      throw new Error("Must select rotation before getting final sequence");
+    if (!selectedBlueRotation || !selectedRedRotation) {
+      throw new Error("Must select rotation for both hands before getting final sequence");
     }
 
     if (blueHandPath.length === 0 || redHandPath.length === 0) {
       throw new Error("Both blue and red hands must be built");
     }
 
-    // First create sequence with HAND prop type
+    // First create sequence with HAND prop type, separate rotations per hand
     const handSequence = converter.mergeToDualPropSequence(
       blueHandPath,
       redHandPath,
-      selectedRotation,
+      selectedBlueRotation,
+      selectedRedRotation,
       gridMode
     );
 
@@ -182,32 +191,36 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
    * Get preview of current hand as pictographs
    * IMPORTANT: When in red phase, shows ALL blue steps with red overlaid progressively.
    * This ensures blue steps don't disappear while building the red hand.
+   * Preview uses FLOAT arrows (straight arrows, no rotation implied yet).
    */
   function getCurrentHandPreview(): PictographData[] {
     if (currentPhase === "blue" && blueHandPath.length >= 2) {
-      // Show only blue hand during blue phase
+      // Show only blue hand during blue phase with FLOAT arrows
       return converter.convertHandPathToPictographs(
         blueHandPath,
         MotionColor.BLUE,
-        RotationDirection.CLOCKWISE, // Temporary rotation for preview
-        gridMode
+        RotationDirection.CLOCKWISE, // Not used for preview
+        gridMode,
+        true // forPreview - use FLOAT arrows
       );
     } else if (currentPhase === "red" && blueHandPath.length >= 2) {
-      // Show ALL blue steps, with red overlaid where available
+      // Show ALL blue steps with FLOAT arrows, with red overlaid where available
       const allBlueBeats = converter.convertHandPathToPictographs(
         blueHandPath,
         MotionColor.BLUE,
-        RotationDirection.CLOCKWISE,
-        gridMode
+        RotationDirection.CLOCKWISE, // Not used for preview
+        gridMode,
+        true // forPreview - use FLOAT arrows
       );
 
       if (redHandPath.length >= 2) {
-        // Convert red hand path to pictographs
+        // Convert red hand path to pictographs with FLOAT arrows
         const redBeats = converter.convertHandPathToPictographs(
           redHandPath,
           MotionColor.RED,
-          RotationDirection.CLOCKWISE,
-          gridMode
+          RotationDirection.CLOCKWISE, // Not used for preview
+          gridMode,
+          true // forPreview - use FLOAT arrows
         );
 
         // Merge red motions into blue pictographs progressively
@@ -236,6 +249,65 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
   }
 
   /**
+   * Get preview with specific rotation selections applied (for rotation selection phase)
+   * Shows actual PRO/ANTI arrows based on the rotation choices
+   */
+  function getRotationPreview(
+    blueRotation: RotationDirection | null,
+    redRotation: RotationDirection | null
+  ): PictographData[] {
+    if (blueHandPath.length < 2 || redHandPath.length < 2) {
+      return [];
+    }
+
+    // Convert blue hand - use actual rotation if provided, otherwise FLOAT
+    const blueBeats = blueRotation
+      ? converter.convertHandPathToPictographs(
+          blueHandPath,
+          MotionColor.BLUE,
+          blueRotation,
+          gridMode,
+          false // NOT preview - show actual PRO/ANTI
+        )
+      : converter.convertHandPathToPictographs(
+          blueHandPath,
+          MotionColor.BLUE,
+          RotationDirection.CLOCKWISE, // unused
+          gridMode,
+          true // preview - show FLOAT
+        );
+
+    // Convert red hand - use actual rotation if provided, otherwise FLOAT
+    const redBeats = redRotation
+      ? converter.convertHandPathToPictographs(
+          redHandPath,
+          MotionColor.RED,
+          redRotation,
+          gridMode,
+          false // NOT preview - show actual PRO/ANTI
+        )
+      : converter.convertHandPathToPictographs(
+          redHandPath,
+          MotionColor.RED,
+          RotationDirection.CLOCKWISE, // unused
+          gridMode,
+          true // preview - show FLOAT
+        );
+
+    // Merge into dual-prop pictographs
+    return blueBeats.map((bluePictograph, index) => {
+      const redPictograph = redBeats[index];
+      return {
+        ...bluePictograph,
+        motions: {
+          ...bluePictograph.motions,
+          [MotionColor.RED]: redPictograph?.motions?.[MotionColor.RED],
+        },
+      } as PictographData;
+    });
+  }
+
+  /**
    * Remove last position from current hand (undo)
    */
   function undoLastPosition(): void {
@@ -256,7 +328,8 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
     currentPosition = null;
     blueHandPath = [];
     redHandPath = [];
-    selectedRotation = null;
+    selectedBlueRotation = null;
+    selectedRedRotation = null;
   }
 
   /**
@@ -279,10 +352,12 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
     } else if (currentPhase === "rotation-selection") {
       currentPhase = "red";
       currentPosition = redHandPath[redHandPath.length - 1] || null;
-      selectedRotation = null;
+      selectedBlueRotation = null;
+      selectedRedRotation = null;
     } else if (currentPhase === "complete") {
       currentPhase = "rotation-selection";
-      selectedRotation = null;
+      selectedBlueRotation = null;
+      selectedRedRotation = null;
     }
   }
 
@@ -301,8 +376,11 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
     get redHandPath() {
       return redHandPath;
     },
-    get selectedRotation() {
-      return selectedRotation;
+    get selectedBlueRotation() {
+      return selectedBlueRotation;
+    },
+    get selectedRedRotation() {
+      return selectedRedRotation;
     },
     get gridMode() {
       return gridMode;
@@ -332,9 +410,10 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
     addPosition,
     completeBlueHand,
     completeRedHand,
-    selectRotation,
+    selectRotations,
     getFinalSequence,
     getCurrentHandPreview,
+    getRotationPreview,
     undoLastPosition,
     reset,
     updateGridMode,

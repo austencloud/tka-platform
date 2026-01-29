@@ -37,12 +37,14 @@ export class HandPathSequenceConverter {
    * @param color - Blue or Red
    * @param userSelectedRotation - The rotation direction the user selected for SHIFT motions
    * @param gridMode - Diamond or Box mode
+   * @param forPreview - If true, uses FLOAT for all shift motions (no rotation implied yet)
    */
   convertHandPathToMotions(
     handPath: GridLocation[],
     color: MotionColor,
     userSelectedRotation: RotationDirection,
-    gridMode: GridMode
+    gridMode: GridMode,
+    forPreview: boolean = false
   ): MotionData[] {
     if (handPath.length < 2) {
       throw new Error(
@@ -64,14 +66,26 @@ export class HandPathSequenceConverter {
         to,
         gridMode
       );
-      const motionType = this.convertHandMotionTypeToMotionType(
-        handMotionType,
-        userSelectedRotation
+      // Calculate which direction the hand is traveling (CW or CCW around grid)
+      const handPathDirection = this.calculator.calculateRotationDirection(
+        from,
+        to,
+        gridMode
       );
-      const rotationDirection = this.getRotationDirection(
-        handMotionType,
-        userSelectedRotation
-      );
+
+      // For preview, use FLOAT arrows (straight arrows, no rotation implied)
+      // For final sequence, calculate PRO/ANTI based on hand path vs prop rotation
+      const motionType = forPreview
+        ? this.convertHandMotionTypeForPreview(handMotionType)
+        : this.convertHandMotionTypeToMotionType(
+            handMotionType,
+            handPathDirection,
+            userSelectedRotation
+          );
+
+      const rotationDirection = forPreview
+        ? RotationDirection.NO_ROTATION
+        : this.getRotationDirection(handMotionType, userSelectedRotation);
 
       const motion = createMotionData({
         color,
@@ -96,13 +110,30 @@ export class HandPathSequenceConverter {
   }
 
   /**
-   * Convert HandMotionType to MotionType based on user-selected rotation
-   * IMPORTANT: Hand paths always use FLOAT for SHIFT motions (adjacent movements)
-   * to display float arrows which best represent hand path movements
+   * Convert HandMotionType to MotionType for preview (always uses FLOAT for shifts)
+   */
+  private convertHandMotionTypeForPreview(handMotionType: HandMotionType): MotionType {
+    switch (handMotionType) {
+      case HandMotionType.STATIC:
+        return MotionType.STATIC;
+      case HandMotionType.DASH:
+        return MotionType.DASH;
+      case HandMotionType.SHIFT:
+        // Preview uses FLOAT - straight arrows with no rotation implied
+        return MotionType.FLOAT;
+      default:
+        throw new Error(`Unknown HandMotionType: ${handMotionType}`);
+    }
+  }
+
+  /**
+   * Convert HandMotionType to MotionType
+   * For SHIFT motions, requires comparing hand path direction to prop rotation direction
    */
   private convertHandMotionTypeToMotionType(
     handMotionType: HandMotionType,
-    _userSelectedRotation: RotationDirection
+    handPathDirection: RotationDirection | null,
+    userSelectedPropRotation: RotationDirection
   ): MotionType {
     switch (handMotionType) {
       case HandMotionType.STATIC:
@@ -112,9 +143,13 @@ export class HandPathSequenceConverter {
         return MotionType.DASH;
 
       case HandMotionType.SHIFT:
-        // SHIFT motions (adjacent movements) always use FLOAT for hand paths
-        // This displays float arrows which best represent hand path movements
-        return MotionType.FLOAT;
+        // PRO = prop rotation matches hand path direction
+        // ANTI = prop rotation opposes hand path direction
+        if (handPathDirection === userSelectedPropRotation) {
+          return MotionType.PRO;
+        } else {
+          return MotionType.ANTI;
+        }
 
       default:
         throw new Error(`Unknown HandMotionType: ${handMotionType}`);
@@ -137,18 +172,21 @@ export class HandPathSequenceConverter {
   /**
    * Create single-prop pictographs from hand path
    * IMPORTANT: Always uses PropType.HAND regardless of user settings
+   * @param forPreview - If true, uses FLOAT arrows (no rotation implied)
    */
   convertHandPathToPictographs(
     handPath: GridLocation[],
     color: MotionColor,
     userSelectedRotation: RotationDirection,
-    gridMode: GridMode
+    gridMode: GridMode,
+    forPreview: boolean = false
   ): PictographData[] {
     const motions = this.convertHandPathToMotions(
       handPath,
       color,
       userSelectedRotation,
-      gridMode
+      gridMode,
+      forPreview
     );
 
     return motions.map((motion) =>
@@ -165,13 +203,15 @@ export class HandPathSequenceConverter {
    * IMPORTANT: Always uses PropType.HAND regardless of user settings
    * @param blueHandPath - Array of grid locations for blue hand
    * @param redHandPath - Array of grid locations for red hand
-   * @param userSelectedRotation - The rotation direction for SHIFT motions
+   * @param blueRotation - Prop rotation direction for blue hand
+   * @param redRotation - Prop rotation direction for red hand
    * @param gridMode - Diamond or Box mode
    */
   mergeToDualPropSequence(
     blueHandPath: GridLocation[],
     redHandPath: GridLocation[],
-    userSelectedRotation: RotationDirection,
+    blueRotation: RotationDirection,
+    redRotation: RotationDirection,
     gridMode: GridMode
   ): PictographData[] {
     // Both hands must have the same length
@@ -184,14 +224,14 @@ export class HandPathSequenceConverter {
     const blueMotions = this.convertHandPathToMotions(
       blueHandPath,
       MotionColor.BLUE,
-      userSelectedRotation,
+      blueRotation,
       gridMode
     );
 
     const redMotions = this.convertHandPathToMotions(
       redHandPath,
       MotionColor.RED,
-      userSelectedRotation,
+      redRotation,
       gridMode
     );
 

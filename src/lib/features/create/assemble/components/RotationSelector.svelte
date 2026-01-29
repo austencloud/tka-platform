@@ -1,88 +1,142 @@
 <!--
 RotationSelector.svelte - Rotation direction selection UI
 
-Allows user to select between clockwise and counter-clockwise rotation
-for SHIFT motions in the completed hand paths.
+Preview-before-commit flow:
+1. User picks blue rotation → preview updates
+2. User picks red rotation → preview updates
+3. User sees actual PRO/ANTI arrows and can adjust
+4. "Done" button finalizes when both selected
 -->
 <script lang="ts">
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
 
-  const { onSelect } = $props<{
-    onSelect: (rotation: RotationDirection) => void;
+  const { onConfirm, onPreviewChange } = $props<{
+    onConfirm: (blueRotation: RotationDirection, redRotation: RotationDirection) => void;
+    onPreviewChange: (blueRotation: RotationDirection | null, redRotation: RotationDirection | null) => void;
   }>();
 
-  // Access haptic feedback service from ITI container
   const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
-  function selectClockwise() {
-    hapticService?.trigger("success");
-    onSelect(RotationDirection.CLOCKWISE);
+  // Track selections for each hand
+  let blueRotation = $state<RotationDirection | null>(null);
+  let redRotation = $state<RotationDirection | null>(null);
+
+  // Can confirm when both are selected
+  const canConfirm = $derived(blueRotation !== null && redRotation !== null);
+
+  function selectBlue(rotation: RotationDirection) {
+    hapticService?.trigger("selection");
+    blueRotation = rotation;
+    onPreviewChange(blueRotation, redRotation);
   }
 
-  function selectCounterClockwise() {
-    hapticService?.trigger("success");
-    onSelect(RotationDirection.COUNTER_CLOCKWISE);
+  function selectRed(rotation: RotationDirection) {
+    hapticService?.trigger("selection");
+    redRotation = rotation;
+    onPreviewChange(blueRotation, redRotation);
+  }
+
+  function handleConfirm() {
+    if (blueRotation && redRotation) {
+      hapticService?.trigger("success");
+      onConfirm(blueRotation, redRotation);
+    }
   }
 </script>
 
 <div class="rotation-selector">
-  <h2 class="title">Choose Rotation</h2>
-  <p class="description">
-    How should your props rotate between positions?
-  </p>
+  <p class="title">Prop rotation direction</p>
 
-  <div class="rotation-options">
-    <button class="rotation-button clockwise" onclick={selectClockwise}>
-      <div class="icon-container">
-        <svg class="rotation-icon" viewBox="0 0 48 48" fill="none">
+  <div class="hand-rows">
+    <!-- Blue hand row -->
+    <div class="hand-row">
+      <div class="hand-label blue">
+        <svg viewBox="0 0 75 100" class="hand-icon">
           <path
-            class="arrow-path"
-            d="M24 8C15.2 8 8 15.2 8 24s7.2 16 16 16c6.2 0 11.5-3.5 14.2-8.6"
-            stroke="currentColor"
-            stroke-width="3"
-            stroke-linecap="round"
-            fill="none"
-          />
-          <path
-            class="arrow-head"
-            d="M38 24l-4-6h8l-4 6z"
-            fill="currentColor"
+            d="M11.17 44.59h3.37V12.7a5.61 5.61 0 1 1 11.2-.01v31.9h3.32V5.72A5.5 5.5 0 0 1 34.66 0a5.55 5.55 0 0 1 5.58 5.77v38.81h3.32V13.56c0-2.99 1.95-5.19 4.97-5.64 3.08-.45 6.18 2.1 6.19 5.15q.02 5.73 0 11.46v38.13c0 .79.16 1.47.94 1.87.85.44 1.73.15 2.27-.77l6.41-10.87c1.64-2.79 4.42-3.73 7.43-2.48 3.04 1.26 4.15 4.73 2.41 7.7L65.3 73.19c-2.17 3.68-4.29 7.4-6.55 11.03a18 18 0 0 1-2.81 3.27 46 46 0 0 1-14.76 9.87c-5.01 2.03-10.23 3.03-15.63 2.51-9.85-.94-17.1-5.78-21.71-14.35A32 32 0 0 1 .26 73a76 76 0 0 1-.25-6.23L0 25.08a5.6 5.6 0 0 1 5.74-5.7 5.5 5.5 0 0 1 5.42 5.41z"
           />
         </svg>
       </div>
-      <div class="label">Clockwise</div>
-      <div class="sublabel">Props rotate right</div>
-      <div class="keyboard-hint">Press 1</div>
-    </button>
+      <div class="rotation-buttons">
+        <button
+          class="rotation-btn"
+          class:selected={blueRotation === RotationDirection.CLOCKWISE}
+          onclick={() => selectBlue(RotationDirection.CLOCKWISE)}
+          aria-label="Blue hand clockwise"
+        >
+          <svg class="arrow-icon cw" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 4C7.58 4 4 7.58 4 12s3.58 8 8 8c3.1 0 5.75-1.75 7.1-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M19 10l-3 4h6l-3-4z" fill="currentColor"/>
+          </svg>
+        </button>
+        <button
+          class="rotation-btn"
+          class:selected={blueRotation === RotationDirection.COUNTER_CLOCKWISE}
+          onclick={() => selectBlue(RotationDirection.COUNTER_CLOCKWISE)}
+          aria-label="Blue hand counter-clockwise"
+        >
+          <svg class="arrow-icon ccw" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 4C16.42 4 20 7.58 20 12s-3.58 8-8 8c-3.1 0-5.75-1.75-7.1-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M5 10l3 4H2l3-4z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
 
-    <button
-      class="rotation-button counter-clockwise"
-      onclick={selectCounterClockwise}
-    >
-      <div class="icon-container">
-        <svg class="rotation-icon" viewBox="0 0 48 48" fill="none">
+    <!-- Red hand row -->
+    <div class="hand-row">
+      <div class="hand-label red">
+        <svg viewBox="0 0 75 100" class="hand-icon mirrored">
           <path
-            class="arrow-path"
-            d="M24 8C32.8 8 40 15.2 40 24s-7.2 16-16 16c-6.2 0-11.5-3.5-14.2-8.6"
-            stroke="currentColor"
-            stroke-width="3"
-            stroke-linecap="round"
-            fill="none"
-          />
-          <path
-            class="arrow-head"
-            d="M10 24l4-6H6l4 6z"
-            fill="currentColor"
+            d="M11.17 44.59h3.37V12.7a5.61 5.61 0 1 1 11.2-.01v31.9h3.32V5.72A5.5 5.5 0 0 1 34.66 0a5.55 5.55 0 0 1 5.58 5.77v38.81h3.32V13.56c0-2.99 1.95-5.19 4.97-5.64 3.08-.45 6.18 2.1 6.19 5.15q.02 5.73 0 11.46v38.13c0 .79.16 1.47.94 1.87.85.44 1.73.15 2.27-.77l6.41-10.87c1.64-2.79 4.42-3.73 7.43-2.48 3.04 1.26 4.15 4.73 2.41 7.7L65.3 73.19c-2.17 3.68-4.29 7.4-6.55 11.03a18 18 0 0 1-2.81 3.27 46 46 0 0 1-14.76 9.87c-5.01 2.03-10.23 3.03-15.63 2.51-9.85-.94-17.1-5.78-21.71-14.35A32 32 0 0 1 .26 73a76 76 0 0 1-.25-6.23L0 25.08a5.6 5.6 0 0 1 5.74-5.7 5.5 5.5 0 0 1 5.42 5.41z"
           />
         </svg>
       </div>
-      <div class="label">Counter-Clockwise</div>
-      <div class="sublabel">Props rotate left</div>
-      <div class="keyboard-hint">Press 2</div>
-    </button>
+      <div class="rotation-buttons">
+        <button
+          class="rotation-btn"
+          class:selected={redRotation === RotationDirection.CLOCKWISE}
+          onclick={() => selectRed(RotationDirection.CLOCKWISE)}
+          aria-label="Red hand clockwise"
+        >
+          <svg class="arrow-icon cw" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 4C7.58 4 4 7.58 4 12s3.58 8 8 8c3.1 0 5.75-1.75 7.1-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M19 10l-3 4h6l-3-4z" fill="currentColor"/>
+          </svg>
+        </button>
+        <button
+          class="rotation-btn"
+          class:selected={redRotation === RotationDirection.COUNTER_CLOCKWISE}
+          onclick={() => selectRed(RotationDirection.COUNTER_CLOCKWISE)}
+          aria-label="Red hand counter-clockwise"
+        >
+          <svg class="arrow-icon ccw" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 4C16.42 4 20 7.58 20 12s-3.58 8-8 8c-3.1 0-5.75-1.75-7.1-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M5 10l3 4H2l3-4z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
   </div>
+
+  <!-- Confirm button -->
+  <button
+    class="confirm-btn"
+    onclick={handleConfirm}
+    disabled={!canConfirm}
+  >
+    {#if canConfirm}
+      Done
+    {:else if !blueRotation && !redRotation}
+      Select rotations
+    {:else if !blueRotation}
+      Select blue rotation
+    {:else}
+      Select red rotation
+    {/if}
+  </button>
 </div>
 
 <style>
@@ -90,73 +144,113 @@ for SHIFT motions in the completed hand paths.
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
-    padding: 40px;
-    max-width: 500px;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px;
+    height: 100%;
+    width: 100%;
+    max-width: 320px;
     margin: 0 auto;
   }
 
   .title {
-    font-size: var(--font-size-2xl);
-    font-weight: 700;
+    font-size: var(--font-size-base);
+    font-weight: 500;
     margin: 0;
-    color: var(--theme-text);
-    text-align: center;
-  }
-
-  .description {
-    font-size: var(--font-size-sm);
     color: var(--theme-text-dim);
     text-align: center;
-    margin: 0;
-    line-height: 1.5;
   }
 
-  .rotation-options {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    width: 100%;
-    margin-top: 8px;
-  }
-
-  .rotation-button {
+  .hand-rows {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 28px 20px;
-    background: var(--theme-card-bg);
-    border: 2px solid var(--theme-stroke);
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    gap: 12px;
+    width: 100%;
   }
 
-  /* Icon container with continuous animation */
-  .icon-container {
-    width: 64px;
-    height: 64px;
+  .hand-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hand-label {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .hand-label.blue {
+    color: var(--semantic-info);
+  }
+
+  .hand-label.red {
+    color: var(--semantic-error);
+  }
+
+  .hand-icon {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+  }
+
+  .hand-icon.mirrored {
+    transform: scaleX(-1);
+  }
+
+  .rotation-buttons {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .rotation-btn {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 12px;
+    background: var(--theme-card-bg);
+    border: 2px solid var(--theme-stroke);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all var(--duration-normal) ease;
+    min-height: 56px;
   }
 
-  .rotation-icon {
-    width: 100%;
-    height: 100%;
-    color: var(--theme-text-dim);
+  .rotation-btn:hover {
+    border-color: var(--theme-accent);
+    background: rgba(139, 92, 246, 0.1);
+  }
+
+  .rotation-btn.selected {
+    border-color: var(--theme-accent);
+    background: rgba(139, 92, 246, 0.2);
+  }
+
+  .rotation-btn:active {
+    transform: scale(0.97);
+    transition: transform var(--duration-instant) ease;
+  }
+
+  .arrow-icon {
+    width: 28px;
+    height: 28px;
+    color: var(--theme-text);
     transition: color var(--duration-normal) ease;
   }
 
-  /* Continuous rotation animation */
-  .rotation-button.clockwise .icon-container {
-    animation: spin-cw 4s linear infinite;
+  .rotation-btn:hover .arrow-icon,
+  .rotation-btn.selected .arrow-icon {
+    color: var(--theme-accent);
   }
 
-  .rotation-button.counter-clockwise .icon-container {
-    animation: spin-ccw 4s linear infinite;
+  .arrow-icon.cw {
+    animation: spin-cw 3s linear infinite;
+  }
+
+  .arrow-icon.ccw {
+    animation: spin-ccw 3s linear infinite;
   }
 
   @keyframes spin-cw {
@@ -169,117 +263,48 @@ for SHIFT motions in the completed hand paths.
     to { transform: rotate(-360deg); }
   }
 
-  .rotation-button .label {
-    font-size: var(--font-size-base);
-    font-weight: 700;
-    color: var(--theme-text);
-  }
-
-  .rotation-button .sublabel {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-  }
-
-  .rotation-button .keyboard-hint {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-    opacity: 0.5;
-    padding: 4px 10px;
-    background: var(--theme-stroke);
-    border-radius: 6px;
-    margin-top: 4px;
-  }
-
-  /* Hover effects */
   @media (hover: hover) {
-    .rotation-button:hover {
-      transform: translateY(-4px);
-    }
-
-    .rotation-button:hover .icon-container {
-      animation-duration: 1s; /* Speed up on hover */
+    .rotation-btn:hover .arrow-icon {
+      animation-duration: 1s;
     }
   }
 
-  .rotation-button:active {
+  /* Confirm button */
+  .confirm-btn {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-normal) ease;
+    background: linear-gradient(135deg, var(--semantic-success), #059669);
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+
+  .confirm-btn:hover:not(:disabled) {
     transform: translateY(-2px);
-    transition: transform var(--duration-instant) ease;
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
   }
 
-  /* Color themes */
-  .rotation-button.clockwise {
-    background: linear-gradient(135deg, var(--theme-card-bg), rgba(59, 130, 246, 0.08));
+  .confirm-btn:active:not(:disabled) {
+    transform: translateY(0);
   }
 
-  .rotation-button.clockwise:hover {
-    border-color: rgba(59, 130, 246, 0.5);
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.2));
-    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2), 0 0 0 1px rgba(59, 130, 246, 0.1);
-  }
-
-  .rotation-button.clockwise:hover .rotation-icon {
-    color: var(--semantic-info);
-  }
-
-  .rotation-button.counter-clockwise {
-    background: linear-gradient(135deg, var(--theme-card-bg), rgba(239, 68, 68, 0.08));
-  }
-
-  .rotation-button.counter-clockwise:hover {
-    border-color: rgba(239, 68, 68, 0.5);
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.2));
-    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.2), 0 0 0 1px rgba(239, 68, 68, 0.1);
-  }
-
-  .rotation-button.counter-clockwise:hover .rotation-icon {
-    color: var(--semantic-error);
-  }
-
-  /* Mobile adjustments */
-  @media (max-width: 640px) {
-    .rotation-selector {
-      padding: 24px 16px;
-      gap: 20px;
-    }
-
-    .title {
-      font-size: var(--font-size-xl);
-    }
-
-    .rotation-options {
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-
-    .rotation-button {
-      flex-direction: row;
-      justify-content: flex-start;
-      gap: 20px;
-      padding: 20px 24px;
-    }
-
-    .icon-container {
-      width: 48px;
-      height: 48px;
-      flex-shrink: 0;
-    }
-
-    .rotation-button .label,
-    .rotation-button .sublabel,
-    .rotation-button .keyboard-hint {
-      text-align: left;
-    }
-
-    .rotation-button .keyboard-hint {
-      margin-top: 0;
-      margin-left: auto;
-    }
+  .confirm-btn:disabled {
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+    box-shadow: none;
+    cursor: not-allowed;
   }
 
   /* Accessibility - reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .rotation-button,
-    .rotation-button .icon-container {
+    .rotation-btn,
+    .arrow-icon,
+    .confirm-btn {
       transition: none;
       animation: none;
     }

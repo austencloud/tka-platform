@@ -341,6 +341,8 @@ The hand overlay shows the current position and animates between positions.
   .ghost-overlay.red .ghost-icon {
     fill: #ef4444;
     filter: drop-shadow(0 2px 12px rgba(239, 68, 68, 0.5));
+    /* Mirror for right hand */
+    transform: scaleX(-1);
   }
 
   /* Animated hand overlay (shows after position is selected) */
@@ -403,6 +405,8 @@ The hand overlay shows the current position and animates between positions.
   .hand-overlay.red .hand-icon {
     filter: drop-shadow(0 4px 16px rgba(239, 68, 68, 0.6))
       drop-shadow(0 0 8px rgba(239, 68, 68, 0.4));
+    /* Mirror for right hand */
+    transform: scaleX(-1);
   }
 
   /* Phase transition animation */
