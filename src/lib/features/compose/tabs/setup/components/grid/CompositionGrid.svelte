@@ -271,6 +271,7 @@
           {#if cell}
             <div
               class="cell-wrapper"
+              class:is-resizing={resizeState?.cellId === cell.id}
               style:grid-column="span {cell.colSpan}"
               style:grid-row="span {cell.rowSpan}"
               style:--col-span={cell.colSpan}
@@ -284,6 +285,13 @@
                 isSelected={selectedCellId === cell.id}
                 onSelect={() => onSelectCell(cell.id)}
               />
+
+              <CellResizeHandles
+                cellId={cell.id}
+                canExpandRight={cell.col + cell.colSpan < 3}
+                canExpandDown={cell.row + cell.rowSpan < 3}
+                onResizeStart={handleResizeStart}
+              />
             </div>
           {:else if isOccupied}
             <!-- Skip - this position is covered by a spanning cell -->
@@ -292,6 +300,16 @@
           {/if}
         {/each}
       {/each}
+
+      <!-- Ghost preview during resize -->
+      {#if resizeState && resizingCell}
+        <div
+          class="resize-ghost"
+          class:invalid={!resizeState.isValid}
+          style:grid-column="{resizingCell.col - gridBounds.minCol + 1} / span {resizeState.targetColSpan}"
+          style:grid-row="{resizingCell.row - gridBounds.minRow + 1} / span {resizeState.targetRowSpan}"
+        ></div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -321,6 +339,11 @@
     height: calc(var(--row-span, 1) * var(--cell-size, 200px) + (var(--row-span, 1) - 1) * 16px);
   }
 
+  .cell-wrapper.is-resizing {
+    /* Slight opacity during resize to show it's being modified */
+    opacity: 0.8;
+  }
+
   .cell-placeholder {
     /* Empty slot in sparse grid - invisible but maintains layout */
     width: var(--cell-size, 200px);
@@ -346,5 +369,21 @@
   .empty-state p {
     margin: 0;
     font-size: var(--font-size-min, 14px);
+  }
+
+  /* Resize ghost preview */
+  .resize-ghost {
+    background: var(--theme-accent, #8b5cf6);
+    opacity: 0.2;
+    border: 2px dashed var(--theme-accent, #8b5cf6);
+    border-radius: var(--border-radius-md, 8px);
+    pointer-events: none;
+    z-index: 15;
+    transition: none;
+  }
+
+  .resize-ghost.invalid {
+    background: var(--semantic-error, #ef4444);
+    border-color: var(--semantic-error, #ef4444);
   }
 </style>

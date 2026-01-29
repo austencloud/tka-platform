@@ -75,6 +75,10 @@
     }
   }
 
+  function handleSetCellSpan(cellId: string, colSpan: number, rowSpan: number) {
+    gridState.setCellSpan(cellId, colSpan, rowSpan);
+  }
+
   // Cell selection
   function handleSelectCell(cellId: string) {
     gridState.selectCell(cellId);
@@ -184,6 +188,7 @@
           selectedCellId={gridState.selectedCellId}
           occupiedPositions={gridState.occupiedPositions}
           onSelectCell={handleSelectCell}
+          onSetCellSpan={handleSetCellSpan}
         />
       </div>
 
@@ -210,7 +215,6 @@
               onRemoveLayer={handleRemoveLayer}
               onEditLayerOffset={handleEditLayerOffset}
               onClearCell={handleClearCell}
-              onSetSpan={handleSetSpan}
             />
           </div>
         {:else}
