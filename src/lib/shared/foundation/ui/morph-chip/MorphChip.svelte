@@ -44,15 +44,11 @@
 	let localMorphProgress = $derived(isExpanding ? ctx.morphProgress : 0);
 
 	function handleChipClick() {
-		if (!isExpanding && !ctx.expandedId) {
-			ctx.expand(id);
-		}
-	}
-
-	function handleLabelClick(e: MouseEvent) {
 		if (isExpanding) {
-			e.stopPropagation();
+			// Clicking anywhere on expanded chip (not a button) collapses it
 			ctx.collapse();
+		} else if (!ctx.expandedId) {
+			ctx.expand(id);
 		}
 	}
 
@@ -99,14 +95,7 @@
 	tabindex={isFaded ? -1 : 0}
 >
 	<!-- Label - stays centered, color morphs via CSS -->
-	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-	<span
-		class="chip-label"
-		onclick={handleLabelClick}
-		onkeydown={(e) => e.key === "Enter" && handleLabelClick(e as unknown as MouseEvent)}
-		role={isExpanding ? "button" : undefined}
-		tabindex={isExpanding ? 0 : -1}
-	>
+	<span class="chip-label">
 		{label}
 	</span>
 
@@ -176,7 +165,7 @@
 		width: 100% !important;
 		height: var(--expanded-height, 132px);
 		z-index: 10;
-		cursor: default;
+		cursor: pointer; /* Click anywhere to collapse */
 		box-shadow:
 			0 4px 20px rgba(99, 102, 241, 0.15),
 			0 0 0 1px rgba(99, 102, 241, 0.1);
@@ -191,7 +180,7 @@
 	.chip-label {
 		position: absolute;
 		white-space: nowrap;
-		cursor: pointer;
+		pointer-events: none; /* Click passes through to chip */
 
 		/* ALWAYS centered at top */
 		top: 12px;
@@ -208,10 +197,6 @@
 			var(--theme-accent, #6366f1) calc(var(--morph-progress, 0) * 100%)
 		);
 		transition: color 300ms ease;
-	}
-
-	.chip.expanding .chip-label:hover {
-		text-decoration: underline;
 	}
 
 	/* Value - centered below label, fades out when expanded */
