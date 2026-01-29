@@ -24,6 +24,7 @@ import { TrailCapturer } from "$lib/features/compose/services/implementations/Tr
 import { AnimationStorageManager } from "$lib/features/compose/services/implementations/AnimationStorageManager";
 import { VideoExporter } from "$lib/features/compose/services/implementations/VideoExporter";
 import { DarkModeProvider } from "$lib/shared/animation-engine/services/implementations/DarkModeProvider";
+import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
 import { Animator } from "$lib/shared/application/services/implementations/Animator";
 
 // === TIER 1: Internal dependencies only ===
@@ -87,6 +88,7 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
       animationStorageManager: () => new AnimationStorageManager(),
       videoExporter: () => new VideoExporter(),
       darkModeProvider: () => new DarkModeProvider(),
+      propPositionCalculator: () => new PropPositionCalculator(),
       animator: () => new Animator(),
     })
     // === TIER 1: Services with internal dependencies ===

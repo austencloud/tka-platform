@@ -16,10 +16,8 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
 import type { PropState } from "../../shared/domain/types/PropState";
-
-// Constants matching PixiPropRenderer exactly
-const VIEWBOX_SIZE = 950;
-const GRID_HALFWAY_POINT_OFFSET = 150;
+import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
+import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/contracts/IPropPositionCalculator";
 
 /**
  * A single point in a trail
@@ -66,6 +64,8 @@ export interface TrailGenerationConfig {
 }
 
 export class TrailPathGenerator {
+  // Shared calculator for prop endpoint positions
+  private readonly propPositionCalculator = new PropPositionCalculator();
   /**
    * Generate complete trail data for a sequence
    *
@@ -113,13 +113,15 @@ export class TrailPathGenerator {
       };
     }
 
-    // Calculate scale factors
-    const gridScaleFactor = canvasSize / VIEWBOX_SIZE;
-    const scaledRadius = GRID_HALFWAY_POINT_OFFSET * gridScaleFactor;
-    const blueHalfLength = (bluePropDimensions.width / 2) * gridScaleFactor;
-    const redHalfLength = (redPropDimensions.width / 2) * gridScaleFactor;
-    const centerX = canvasSize / 2;
-    const centerY = canvasSize / 2;
+    // Configure endpoint calculators for each prop
+    const blueEndpointConfig: PropEndpointConfig = {
+      canvasSize,
+      propDimensions: bluePropDimensions,
+    };
+    const redEndpointConfig: PropEndpointConfig = {
+      canvasSize,
+      propDimensions: redPropDimensions,
+    };
 
     // Initialize trail arrays
     const blueLeft: TrailPoint[] = [];
@@ -139,33 +141,9 @@ export class TrailPathGenerator {
       const blueState = orchestrator.getBluePropState();
       const redState = orchestrator.getRedPropState();
 
-      // Calculate blue prop center and endpoints
-      const blueCenter = this.calculatePropCenter(
-        blueState,
-        centerX,
-        centerY,
-        scaledRadius
-      );
-      const blueEnds = this.calculatePropEndpoints(
-        blueCenter.x,
-        blueCenter.y,
-        blueState.staffRotationAngle,
-        blueHalfLength
-      );
-
-      // Calculate red prop center and endpoints
-      const redCenter = this.calculatePropCenter(
-        redState,
-        centerX,
-        centerY,
-        scaledRadius
-      );
-      const redEnds = this.calculatePropEndpoints(
-        redCenter.x,
-        redCenter.y,
-        redState.staffRotationAngle,
-        redHalfLength
-      );
+      // Calculate endpoints using shared calculator
+      const blueEnds = this.propPositionCalculator.calculateEndpoints(blueState, blueEndpointConfig);
+      const redEnds = this.propPositionCalculator.calculateEndpoints(redState, redEndpointConfig);
 
       // Add points to trails
       blueLeft.push({
@@ -234,67 +212,6 @@ export class TrailPathGenerator {
     };
   }
 
-  /**
-   * Calculate prop center position from PropState
-   *
-   * The prop center moves on a circle around the canvas center.
-   * centerPathAngle tells us WHERE on that circle.
-   */
-  private calculatePropCenter(
-    propState: PropState,
-    canvasCenterX: number,
-    canvasCenterY: number,
-    radius: number
-  ): { x: number; y: number } {
-    // Check for dash motion (explicit x,y coordinates)
-    if (propState.x !== undefined && propState.y !== undefined) {
-      return {
-        x: canvasCenterX + propState.x * radius,
-        y: canvasCenterY + propState.y * radius,
-      };
-    }
-
-    // Regular motion: position on circular path
-    return {
-      x: canvasCenterX + Math.cos(propState.centerPathAngle) * radius,
-      y: canvasCenterY + Math.sin(propState.centerPathAngle) * radius,
-    };
-  }
-
-  /**
-   * Calculate prop endpoint positions
-   *
-   * Given the center of the prop and its rotation, calculate where
-   * the left and right ends are located.
-   *
-   * Visual:
-   *   [LEFT]--------●--------[RIGHT]
-   *                 ↑
-   *            center point
-   *
-   * The rotation angle determines which direction the prop is pointing.
-   */
-  private calculatePropEndpoints(
-    centerX: number,
-    centerY: number,
-    rotationAngle: number,
-    halfLength: number
-  ): { left: { x: number; y: number }; right: { x: number; y: number } } {
-    // Calculate offset from center to each end
-    const offsetX = Math.cos(rotationAngle) * halfLength;
-    const offsetY = Math.sin(rotationAngle) * halfLength;
-
-    return {
-      left: {
-        x: centerX - offsetX,
-        y: centerY - offsetY,
-      },
-      right: {
-        x: centerX + offsetX,
-        y: centerY + offsetY,
-      },
-    };
-  }
 }
 
 // Singleton instance

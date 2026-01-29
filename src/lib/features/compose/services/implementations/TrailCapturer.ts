@@ -24,10 +24,7 @@ import type {
 import {
   TrackingMode,
   TrailMode,
-  TrailStyle,
   TrailEffect,
-  FadeStyle,
-  TaperStyle,
 } from "../../shared/domain/types/TrailTypes";
 import type {
   ITrailCapturer,
@@ -36,8 +33,12 @@ import type {
   TrailCaptureConfig,
   IAnimationCacheService,
   IPerformanceMonitorService,
+  TrailEventCallback,
+  TrailEvent,
 } from "../contracts/ITrailCapturer";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
+import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/contracts/IPropPositionCalculator";
 
 // ============================================================================
 // CIRCULAR BUFFER (inlined for O(1) trail point management)
@@ -117,7 +118,36 @@ class CircularBuffer<T> {
 }
 
 // ============================================================================
-// TRAIL LOOPTURE SERVICE
+// TRAIL CAPTURE CONSTANTS
+// ============================================================================
+
+/** Wait for panel open and textures before capturing first point */
+const INITIALIZATION_DELAY_MS = 500;
+
+/** Beat gap threshold for triggering cache backfill (>0.05 steps = use cache) */
+const LARGE_BEAT_GAP_THRESHOLD = 0.05;
+
+/** Skip trails for jumps larger than this (initial position jump detection) */
+const INITIAL_JUMP_DISTANCE_THRESHOLD = 200;
+
+/** Default minimum distance in pixels before adding a new trail point */
+const DEFAULT_POINT_SPACING = 0.75;
+
+/** Maximum accumulated points before forced pruning (safety limit for mobile memory) */
+const MAX_TOTAL_POINTS_BEFORE_PRUNE = 8000;
+
+/** Duration to keep when emergency pruning (5 seconds) */
+const EMERGENCY_PRUNE_KEEP_DURATION_MS = 5000;
+
+/** Default trail buffer capacity */
+const DEFAULT_BUFFER_CAPACITY = 1000;
+
+/** Default prop dimensions (staff dimensions in viewbox units) */
+const DEFAULT_PROP_WIDTH = 252.8;
+const DEFAULT_PROP_HEIGHT = 77.8;
+
+// ============================================================================
+// TRAIL CAPTURE SERVICE
 // ============================================================================
 
 /**
@@ -131,23 +161,22 @@ interface LastCapturedPoint {
 }
 
 export class TrailCapturer implements ITrailCapturer {
+  // Shared calculator for prop endpoint positions
+  private readonly propPositionCalculator = new PropPositionCalculator();
+
   // Configuration
   private config: TrailCaptureConfig = {
     canvasSize: 500,
-    bluePropDimensions: { width: 252.8, height: 77.8 },
-    redPropDimensions: { width: 252.8, height: 77.8 },
+    bluePropDimensions: { width: DEFAULT_PROP_WIDTH, height: DEFAULT_PROP_HEIGHT },
+    redPropDimensions: { width: DEFAULT_PROP_WIDTH, height: DEFAULT_PROP_HEIGHT },
     trailSettings: {
       enabled: false,
       mode: TrailMode.OFF,
+      effect: TrailEffect.NONE,
       trackingMode: TrackingMode.RIGHT_END,
-      style: TrailStyle.SMOOTH_LINE as TrailStyle, // Default trail style
-      effect: TrailEffect.NONE, // Default to no effect
-      fadeStyle: FadeStyle.EXPONENTIAL, // Exponential fade (holds brightness longer)
-      taperStyle: TaperStyle.NONE, // Tapering disabled - causes visual artifacts
       fadeDurationMs: 3000,
       maxPoints: 1000,
       lineWidth: 2,
-      glowEnabled: false,
       glowBlur: 0,
       blueColor: "#4A9EFF",
       redColor: "#FF6B6B",
@@ -160,10 +189,10 @@ export class TrailCapturer implements ITrailCapturer {
   };
 
   // Trail buffers (one per prop/end combination)
-  private blueTrailBuffer = new CircularBuffer<TrailPoint>(1000);
-  private redTrailBuffer = new CircularBuffer<TrailPoint>(1000);
-  private secondaryBlueTrailBuffer = new CircularBuffer<TrailPoint>(1000);
-  private secondaryRedTrailBuffer = new CircularBuffer<TrailPoint>(1000);
+  private blueTrailBuffer = new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY);
+  private redTrailBuffer = new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY);
+  private secondaryBlueTrailBuffer = new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY);
+  private secondaryRedTrailBuffer = new CircularBuffer<TrailPoint>(DEFAULT_BUFFER_CAPACITY);
 
   // Last captured points for distance-based sampling
   // Key format: "propIndex-endType" (e.g., "0-1" = blue prop, right end)
@@ -177,34 +206,68 @@ export class TrailCapturer implements ITrailCapturer {
   private animationCacheService: IAnimationCacheService | null = null;
   private performanceMonitor: IPerformanceMonitorService | null = null;
 
-  // Default point spacing (used if no performance monitor)
-  private readonly DEFAULT_POINT_SPACING = 0.75;
-
   // Memory leak prevention: Track total accumulated points
-  // CRITICAL: Lower threshold for mobile devices which have limited memory
-  // 8000 points = ~133 seconds at 60fps with default spacing (plenty for most animations)
   private totalPointsCaptured = 0;
-  private readonly MAX_TOTAL_POINTS_BEFORE_PRUNE = 8000; // Reduced from 15000 for mobile memory safety
 
-  // Constants
-  private readonly GRID_HALFWAY_POINT_OFFSET = 150; // Matches strict grid points
-  private readonly INWARD_FACTOR = 1.0; // No inward adjustment for animation mode
-  private readonly INITIALIZATION_DELAY_MS = 500; // Wait for panel open and textures
-  private readonly LARGE_BEAT_GAP_THRESHOLD = 0.05; // >0.05 steps = use cache (aggressive backfill for smooth trails)
-  private readonly INITIAL_JUMP_DISTANCE_THRESHOLD = 200; // Skip trails for huge jumps
+  // Event callback for UX feedback (memory pruning notifications, etc.)
+  private eventCallback: TrailEventCallback | null = null;
 
   initialize(config: TrailCaptureConfig): void {
-    console.log('[TrailCapturer] initialize() called - clearing trails');
     this.config = { ...config };
     this.clearTrails();
   }
 
   updateConfig(config: Partial<TrailCaptureConfig>): void {
+    const oldCanvasSize = this.config.canvasSize;
     this.config = { ...this.config, ...config };
+
+    // If canvas size changed, scale existing trail points to match new size
+    if (config.canvasSize !== undefined && config.canvasSize !== oldCanvasSize) {
+      this.scaleTrailPoints(oldCanvasSize, config.canvasSize);
+    }
 
     // If settings changed, update trail settings
     if (config.trailSettings) {
       this.updateSettings(config.trailSettings);
+    }
+  }
+
+  /**
+   * Scale all existing trail points when canvas size changes.
+   * This maintains visual continuity during resize.
+   */
+  private scaleTrailPoints(oldSize: number, newSize: number): void {
+    if (oldSize === 0 || newSize === 0) return;
+
+    const scaleFactor = newSize / oldSize;
+
+    // Scale points in all buffers
+    this.scaleBuffer(this.blueTrailBuffer, scaleFactor);
+    this.scaleBuffer(this.redTrailBuffer, scaleFactor);
+    this.scaleBuffer(this.secondaryBlueTrailBuffer, scaleFactor);
+    this.scaleBuffer(this.secondaryRedTrailBuffer, scaleFactor);
+
+    // Also scale the last captured points tracking
+    for (const [key, point] of this.lastCapturedPoints.entries()) {
+      this.lastCapturedPoints.set(key, {
+        ...point,
+        x: point.x * scaleFactor,
+        y: point.y * scaleFactor,
+      });
+    }
+  }
+
+  /**
+   * Scale all points in a circular buffer by a factor
+   */
+  private scaleBuffer(buffer: CircularBuffer<TrailPoint>, scaleFactor: number): void {
+    const length = buffer.length;
+    for (let i = 0; i < length; i++) {
+      const point = buffer.get(i);
+      if (point) {
+        point.x *= scaleFactor;
+        point.y *= scaleFactor;
+      }
     }
   }
 
@@ -223,6 +286,14 @@ export class TrailCapturer implements ITrailCapturer {
 
   setPerformanceMonitor(monitor: IPerformanceMonitorService | null): void {
     this.performanceMonitor = monitor;
+  }
+
+  /**
+   * Set callback for trail system events (memory pruning, etc.)
+   * Use this to show user notifications when trails are auto-pruned
+   */
+  setEventCallback(callback: TrailEventCallback | null): void {
+    this.eventCallback = callback;
   }
 
   captureFrame(
@@ -258,34 +329,11 @@ export class TrailCapturer implements ITrailCapturer {
 
     const loopDetected = this.detectAnimationLoop(beat);
 
-    // Debug: log loop detection state
-    if (loopDetected || shouldClearOnLoop) {
-      console.log('[TrailCapturer] loop check:', {
-        shouldClearOnLoop,
-        loopDetected,
-        isSeamlesslyLoopable: this.config.isSeamlesslyLoopable,
-        mode: trailSettings.mode,
-        previousBeat: this.previousBeatForLoopDetection,
-        currentBeat: beat,
-      });
-    }
-
     if (shouldClearOnLoop && loopDetected) {
       this.clearTrails();
       // Reset animation start time
       this.animationStartTime = currentTime;
     }
-
-    // Debug: log capture attempt
-    console.log('[TrailCapturer] captureFrame:', {
-      rawCurrentTime: currentTime,
-      animationStartTime: this.animationStartTime,
-      animRelativeTime,
-      beat,
-      hasBlueProp: !!props.blueProp,
-      hasRedProp: !!props.redProp,
-      pastInitDelay: animRelativeTime >= this.INITIALIZATION_DELAY_MS,
-    });
 
     // Capture trail points for each prop
     if (props.blueProp) {
@@ -361,13 +409,6 @@ export class TrailCapturer implements ITrailCapturer {
     secondaryBlue: TrailPoint[],
     secondaryRed: TrailPoint[]
   ): void {
-    // Debug: log buffer states
-    console.log('[TrailCapturer] fillTrailPointArrays buffer lengths:', {
-      blue: this.blueTrailBuffer.length,
-      red: this.redTrailBuffer.length,
-      totalCaptured: this.totalPointsCaptured,
-    });
-
     // Clear arrays without deallocating
     blue.length = 0;
     red.length = 0;
@@ -382,13 +423,24 @@ export class TrailCapturer implements ITrailCapturer {
   }
 
   clearTrails(): void {
+    const hadPoints = this.totalPointsCaptured > 0;
+
     this.blueTrailBuffer.clear();
     this.redTrailBuffer.clear();
     this.secondaryBlueTrailBuffer.clear();
     this.secondaryRedTrailBuffer.clear();
     this.lastCapturedPoints.clear();
     this.animationStartTime = null;
-    this.totalPointsCaptured = 0; // Reset counter to prevent false positives
+    this.totalPointsCaptured = 0;
+
+    // Emit event for UX feedback (only if there were points to clear)
+    if (hadPoints && this.eventCallback) {
+      this.eventCallback({
+        type: "trails_cleared",
+        pointsRemaining: 0,
+        message: "Trails cleared",
+      });
+    }
   }
 
   // ============================================================================
@@ -469,11 +521,14 @@ export class TrailCapturer implements ITrailCapturer {
       const key = `${propIndex}-${endType}`;
       const lastPoint = this.lastCapturedPoints.get(key);
 
-      // Calculate current endpoint position
-      const endpoint = this.calculatePropEndpoint(
-        prop,
+      // Calculate current endpoint position using shared calculator
+      const endpointConfig: PropEndpointConfig = {
+        canvasSize: this.config.canvasSize,
         propDimensions,
-        this.config.canvasSize,
+      };
+      const endpoint = this.propPositionCalculator.calculateEndpoint(
+        prop,
+        endpointConfig,
         endType,
         propType
       );
@@ -481,7 +536,7 @@ export class TrailCapturer implements ITrailCapturer {
       // FIRST POINT: Wait for animation initialization
       if (lastPoint === undefined) {
         // Only capture first point after initialization delay
-        if (currentTime >= this.INITIALIZATION_DELAY_MS) {
+        if (currentTime >= INITIALIZATION_DELAY_MS) {
           // Map propIndex to 0|1 for storage (secondary props map to primary)
           const storagePropIndex: 0 | 1 =
             propIndex === 0 || propIndex === 2 ? 0 : 1;
@@ -509,7 +564,7 @@ export class TrailCapturer implements ITrailCapturer {
         const beatDelta = Math.abs(currentStep - lastPoint.beat);
 
         // Check if we have a LARGE beat gap (seeking or major stutter)
-        const hasLargeBeatGap = beatDelta > this.LARGE_BEAT_GAP_THRESHOLD;
+        const hasLargeBeatGap = beatDelta > LARGE_BEAT_GAP_THRESHOLD;
 
         if (
           hasLargeBeatGap &&
@@ -563,7 +618,7 @@ export class TrailCapturer implements ITrailCapturer {
           );
 
           // Detect initial jump (from default position to first beat position)
-          const isInitialJump = distance > this.INITIAL_JUMP_DISTANCE_THRESHOLD;
+          const isInitialJump = distance > INITIAL_JUMP_DISTANCE_THRESHOLD;
 
           if (isInitialJump) {
             // Just update the tracking position without adding a trail point
@@ -602,11 +657,20 @@ export class TrailCapturer implements ITrailCapturer {
 
     // CRITICAL: Prevent unbounded memory growth during long playback sessions
     // If we've accumulated too many points (e.g., playing for hours), prune aggressively
-    if (this.totalPointsCaptured > this.MAX_TOTAL_POINTS_BEFORE_PRUNE) {
-      console.warn(
-        `⚠️ Trail memory limit reached (${this.totalPointsCaptured} points), pruning to prevent crash`
-      );
+    if (this.totalPointsCaptured > MAX_TOTAL_POINTS_BEFORE_PRUNE) {
+      const pointsBefore = this.totalPointsCaptured;
       this.pruneToReasonableSize(currentTime);
+      const pointsPruned = pointsBefore - this.totalPointsCaptured;
+
+      // Emit event for UX feedback
+      if (this.eventCallback) {
+        this.eventCallback({
+          type: "memory_pruned",
+          pointsPruned,
+          pointsRemaining: this.totalPointsCaptured,
+          message: `Trail memory optimized: removed ${pointsPruned} old points`,
+        });
+      }
     }
   }
 
@@ -615,8 +679,7 @@ export class TrailCapturer implements ITrailCapturer {
    * Called when total points exceed safety threshold
    */
   private pruneToReasonableSize(currentTime: number): void {
-    const KEEP_DURATION_MS = 5000; // Keep last 5 seconds only
-    const cutoffTime = currentTime - KEEP_DURATION_MS;
+    const cutoffTime = currentTime - EMERGENCY_PRUNE_KEEP_DURATION_MS;
 
     this.blueTrailBuffer.filterInPlace((p) => p.timestamp > cutoffTime);
     this.redTrailBuffer.filterInPlace((p) => p.timestamp > cutoffTime);
@@ -634,57 +697,6 @@ export class TrailCapturer implements ITrailCapturer {
   }
 
   /**
-   * Calculate an endpoint position of a prop
-   * Uses strict point positioning for animation viewer
-   */
-  private calculatePropEndpoint(
-    prop: PropState,
-    propDimensions: PropDimensions,
-    canvasSize: number,
-    endType: 0 | 1,
-    propType?: string | null
-  ): { x: number; y: number } {
-    const centerX = canvasSize / 2;
-    const centerY = canvasSize / 2;
-    const gridScaleFactor = canvasSize / 950;
-    const scaledHalfwayRadius =
-      this.GRID_HALFWAY_POINT_OFFSET * gridScaleFactor;
-
-    let propCenterX: number;
-    let propCenterY: number;
-
-    if (prop.x !== undefined && prop.y !== undefined) {
-      propCenterX = centerX + prop.x * scaledHalfwayRadius * this.INWARD_FACTOR;
-      propCenterY = centerY + prop.y * scaledHalfwayRadius * this.INWARD_FACTOR;
-    } else {
-      propCenterX =
-        centerX +
-        Math.cos(prop.centerPathAngle) *
-          scaledHalfwayRadius *
-          this.INWARD_FACTOR;
-      propCenterY =
-        centerY +
-        Math.sin(prop.centerPathAngle) *
-          scaledHalfwayRadius *
-          this.INWARD_FACTOR;
-    }
-
-    if (propType?.toLowerCase() === "hand") {
-      return { x: propCenterX, y: propCenterY };
-    }
-
-    const staffHalfWidth = (propDimensions.width / 2) * gridScaleFactor;
-    const staffEndOffset = endType === 1 ? staffHalfWidth : -staffHalfWidth;
-
-    const endX =
-      propCenterX + Math.cos(prop.staffRotationAngle) * staffEndOffset;
-    const endY =
-      propCenterY + Math.sin(prop.staffRotationAngle) * staffEndOffset;
-
-    return { x: endX, y: endY };
-  }
-
-  /**
    * Get minimum point spacing based on device performance
    * Returns distance in pixels that prop must move before adding a new trail point
    */
@@ -692,7 +704,7 @@ export class TrailCapturer implements ITrailCapturer {
     if (this.performanceMonitor) {
       return this.performanceMonitor.getAdaptivePointSpacing();
     }
-    return this.DEFAULT_POINT_SPACING;
+    return DEFAULT_POINT_SPACING;
   }
 
   /**

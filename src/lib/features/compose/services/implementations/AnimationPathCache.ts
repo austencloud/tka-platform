@@ -12,6 +12,24 @@
 
 import type { PropState } from "../../shared/domain/types/PropState";
 import type { TrailPoint } from "../../shared/domain/types/TrailTypes";
+import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
+import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/contracts/IPropPositionCalculator";
+
+// ============================================================================
+// PATH CACHE CONSTANTS
+// ============================================================================
+
+/** Default cache FPS - high for ultra-smooth trails */
+const DEFAULT_CACHE_FPS = 120;
+
+/** Default canvas size for endpoint calculations */
+const DEFAULT_CACHE_CANVAS_SIZE = 950;
+
+/** Default prop width for endpoint calculations */
+const DEFAULT_PROP_WIDTH = 120;
+
+/** Default prop height for endpoint calculations */
+const DEFAULT_PROP_HEIGHT = 15;
 
 /**
  * Pre-computed position data for a single prop at a specific time
@@ -85,9 +103,9 @@ export interface PathCacheConfig {
 }
 
 export const DEFAULT_PATH_CACHE_CONFIG: PathCacheConfig = {
-  cacheFps: 120, // High FPS for ultra-smooth trails
-  canvasSize: 950,
-  propDimensions: { width: 120, height: 15 },
+  cacheFps: DEFAULT_CACHE_FPS,
+  canvasSize: DEFAULT_CACHE_CANVAS_SIZE,
+  propDimensions: { width: DEFAULT_PROP_WIDTH, height: DEFAULT_PROP_HEIGHT },
 };
 
 /**
@@ -99,9 +117,8 @@ export class AnimationPathCache {
   private cacheData: AnimationPathCacheData | null = null;
   private config: PathCacheConfig;
 
-  // Constants matching PixiPropRenderer - CRITICAL: Must match exactly!
-  private readonly GRID_HALFWAY_POINT_OFFSET = 150;
-  private readonly INWARD_FACTOR = 1.0; // Must match PixiPropRenderer for accurate trails
+  // Shared calculator for prop endpoint positions
+  private readonly propPositionCalculator = new PropPositionCalculator();
 
   constructor(config: Partial<PathCacheConfig> = {}) {
     this.config = { ...DEFAULT_PATH_CACHE_CONFIG, ...config };
@@ -137,17 +154,14 @@ export class AnimationPathCache {
       // Get prop states from orchestrator
       const { blueProp, redProp } = calculateStateFunc(beat);
 
-      // Calculate endpoints for blue prop
-      const blueEndpoints = {
-        left: this.calculatePropEndpoint(blueProp, 0),
-        right: this.calculatePropEndpoint(blueProp, 1),
+      // Calculate endpoints using shared calculator
+      const endpointConfig: PropEndpointConfig = {
+        canvasSize: this.config.canvasSize,
+        propDimensions: this.config.propDimensions,
       };
 
-      // Calculate endpoints for red prop
-      const redEndpoints = {
-        left: this.calculatePropEndpoint(redProp, 0),
-        right: this.calculatePropEndpoint(redProp, 1),
-      };
+      const blueEndpoints = this.propPositionCalculator.calculateEndpoints(blueProp, endpointConfig);
+      const redEndpoints = this.propPositionCalculator.calculateEndpoints(redProp, endpointConfig);
 
       // Debug logging disabled - too noisy
       // if (frame < 3) {
@@ -400,56 +414,6 @@ export class AnimationPathCache {
     if (this.cacheData) {
       this.cacheData.isValid = false;
     }
-  }
-
-  /**
-   * Calculate prop endpoint position
-   * Matches logic in AnimatorCanvas.svelte:calculatePropEndpoint
-   */
-  private calculatePropEndpoint(
-    prop: PropState,
-    endType: 0 | 1
-  ): { x: number; y: number } {
-    const canvasSize = this.config.canvasSize;
-    const centerX = canvasSize / 2;
-    const centerY = canvasSize / 2;
-    const gridScaleFactor = canvasSize / 950;
-    const scaledHalfwayRadius =
-      this.GRID_HALFWAY_POINT_OFFSET * gridScaleFactor;
-
-    let propCenterX: number;
-    let propCenterY: number;
-
-    // Calculate prop center position
-    if (prop.x !== undefined && prop.y !== undefined) {
-      // Cartesian coordinates (for DASH motions)
-      propCenterX = centerX + prop.x * scaledHalfwayRadius * this.INWARD_FACTOR;
-      propCenterY = centerY + prop.y * scaledHalfwayRadius * this.INWARD_FACTOR;
-    } else {
-      // Polar coordinates (for circular motions)
-      propCenterX =
-        centerX +
-        Math.cos(prop.centerPathAngle) *
-          scaledHalfwayRadius *
-          this.INWARD_FACTOR;
-      propCenterY =
-        centerY +
-        Math.sin(prop.centerPathAngle) *
-          scaledHalfwayRadius *
-          this.INWARD_FACTOR;
-    }
-
-    // Calculate endpoint based on staff rotation
-    const staffHalfWidth =
-      (this.config.propDimensions.width / 2) * gridScaleFactor;
-    const staffEndOffset = endType === 1 ? staffHalfWidth : -staffHalfWidth;
-
-    const endpointX =
-      propCenterX + Math.cos(prop.staffRotationAngle) * staffEndOffset;
-    const endpointY =
-      propCenterY + Math.sin(prop.staffRotationAngle) * staffEndOffset;
-
-    return { x: endpointX, y: endpointY };
   }
 
   /**
