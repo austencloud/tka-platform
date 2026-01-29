@@ -3,10 +3,13 @@
 
   Renders the grid of cells for composition.
   Supports sparse layouts (non-rectangular) - only renders enabled cells.
+  Supports cell spanning (colSpan/rowSpan) for complex layouts.
   Dynamically sizes cells to fill available space while maintaining square aspect ratio.
+  Supports drag-to-resize cells by grabbing edges/corners.
 -->
 <script lang="ts">
   import CellCanvas from "./CellCanvas.svelte";
+  import CellResizeHandles from "./CellResizeHandles.svelte";
   import type { GridCell } from "../../state/arrange-grid-state.svelte";
 
   let {
@@ -14,14 +17,31 @@
     currentBeat,
     isPlaying,
     selectedCellId,
+    occupiedPositions,
     onSelectCell,
+    onSetCellSpan,
   }: {
     cells: GridCell[];
     currentBeat: number;
     isPlaying: boolean;
     selectedCellId: string | null;
+    occupiedPositions: Map<string, string>;
     onSelectCell: (cellId: string) => void;
+    onSetCellSpan: (cellId: string, colSpan: number, rowSpan: number) => void;
   } = $props();
+
+  // Resize state
+  let resizeState = $state<{
+    cellId: string;
+    direction: "horizontal" | "vertical" | "both";
+    startX: number;
+    startY: number;
+    originalColSpan: number;
+    originalRowSpan: number;
+    targetColSpan: number;
+    targetRowSpan: number;
+    isValid: boolean;
+  } | null>(null);
 
   // Container element reference
   let containerEl: HTMLDivElement | null = $state(null);
@@ -31,19 +51,22 @@
   // Get only enabled cells for rendering
   const enabledCells = $derived(cells.filter((c) => c.enabled));
 
-  // Calculate grid bounds from enabled cells
+  // Calculate grid bounds from enabled cells - accounts for spans
   const gridBounds = $derived.by(() => {
     if (enabledCells.length === 0) {
       return { minRow: 0, maxRow: 0, minCol: 0, maxCol: 0, rows: 1, cols: 1 };
     }
 
-    const rows = enabledCells.map((c) => c.row);
-    const colsArr = enabledCells.map((c) => c.col);
+    // Account for spans
+    const rowStarts = enabledCells.map((c) => c.row);
+    const rowEnds = enabledCells.map((c) => c.row + c.rowSpan - 1);
+    const colStarts = enabledCells.map((c) => c.col);
+    const colEnds = enabledCells.map((c) => c.col + c.colSpan - 1);
 
-    const minRow = Math.min(...rows);
-    const maxRow = Math.max(...rows);
-    const minCol = Math.min(...colsArr);
-    const maxCol = Math.max(...colsArr);
+    const minRow = Math.min(...rowStarts);
+    const maxRow = Math.max(...rowEnds);
+    const minCol = Math.min(...colStarts);
+    const maxCol = Math.max(...colEnds);
 
     return {
       minRow,
@@ -107,6 +130,120 @@
     });
     return sorted.findIndex((c) => c.id === cell.id) + 1;
   }
+
+  // Resize handlers
+  function handleResizeStart(
+    cellId: string,
+    direction: "horizontal" | "vertical" | "both",
+    e: PointerEvent
+  ) {
+    const cell = enabledCells.find((c) => c.id === cellId);
+    if (!cell) return;
+
+    resizeState = {
+      cellId,
+      direction,
+      startX: e.clientX,
+      startY: e.clientY,
+      originalColSpan: cell.colSpan,
+      originalRowSpan: cell.rowSpan,
+      targetColSpan: cell.colSpan,
+      targetRowSpan: cell.rowSpan,
+      isValid: true,
+    };
+
+    // Add global listeners for move/end
+    window.addEventListener("pointermove", handleResizeMove);
+    window.addEventListener("pointerup", handleResizeEnd);
+    window.addEventListener("pointercancel", handleResizeEnd);
+  }
+
+  function handleResizeMove(e: PointerEvent) {
+    if (!resizeState) return;
+
+    const cell = enabledCells.find((c) => c.id === resizeState.cellId);
+    if (!cell) return;
+
+    const gap = 16;
+    const unitSize = cellSize + gap;
+    const deltaX = e.clientX - resizeState.startX;
+    const deltaY = e.clientY - resizeState.startY;
+
+    let targetColSpan = resizeState.originalColSpan;
+    let targetRowSpan = resizeState.originalRowSpan;
+
+    if (resizeState.direction !== "vertical") {
+      const colDelta = Math.round(deltaX / unitSize);
+      targetColSpan = Math.max(
+        1,
+        Math.min(3 - cell.col, resizeState.originalColSpan + colDelta)
+      );
+    }
+
+    if (resizeState.direction !== "horizontal") {
+      const rowDelta = Math.round(deltaY / unitSize);
+      targetRowSpan = Math.max(
+        1,
+        Math.min(3 - cell.row, resizeState.originalRowSpan + rowDelta)
+      );
+    }
+
+    // Validate: would overlap other enabled cells?
+    const isValid = validateSpan(cell, targetColSpan, targetRowSpan);
+
+    resizeState = { ...resizeState, targetColSpan, targetRowSpan, isValid };
+  }
+
+  function handleResizeEnd() {
+    if (resizeState && resizeState.isValid) {
+      const { targetColSpan, targetRowSpan, originalColSpan, originalRowSpan } =
+        resizeState;
+      // Only update if span actually changed
+      if (
+        targetColSpan !== originalColSpan ||
+        targetRowSpan !== originalRowSpan
+      ) {
+        onSetCellSpan(resizeState.cellId, targetColSpan, targetRowSpan);
+      }
+    }
+
+    resizeState = null;
+
+    // Remove global listeners
+    window.removeEventListener("pointermove", handleResizeMove);
+    window.removeEventListener("pointerup", handleResizeEnd);
+    window.removeEventListener("pointercancel", handleResizeEnd);
+  }
+
+  function validateSpan(
+    cell: GridCell,
+    colSpan: number,
+    rowSpan: number
+  ): boolean {
+    // Check each position the expanded cell would occupy
+    for (let r = cell.row; r < cell.row + rowSpan; r++) {
+      for (let c = cell.col; c < cell.col + colSpan; c++) {
+        // Skip the origin position
+        if (r === cell.row && c === cell.col) continue;
+
+        // Check if another enabled cell exists at this position
+        const other = enabledCells.find(
+          (x) => x.row === r && x.col === c && x.id !== cell.id
+        );
+        if (other) return false;
+
+        // Check if this position is occupied by another cell's span
+        const occupyingId = occupiedPositions.get(`${r}-${c}`);
+        if (occupyingId && occupyingId !== cell.id) return false;
+      }
+    }
+    return true;
+  }
+
+  // Get the cell being resized (for ghost preview)
+  const resizingCell = $derived(
+    resizeState ? enabledCells.find((c) => c.id === resizeState.cellId) : null
+  );
 </script>
 
 <div
@@ -127,10 +264,18 @@
         {#each { length: gridBounds.cols } as _, colOffset}
           {@const row = gridBounds.minRow + rowOffset}
           {@const col = gridBounds.minCol + colOffset}
+          {@const posKey = `${row}-${col}`}
           {@const cell = getCellAt(row, col)}
+          {@const isOccupied = occupiedPositions.has(posKey)}
 
           {#if cell}
-            <div class="cell-wrapper">
+            <div
+              class="cell-wrapper"
+              style:grid-column="span {cell.colSpan}"
+              style:grid-row="span {cell.rowSpan}"
+              style:--col-span={cell.colSpan}
+              style:--row-span={cell.rowSpan}
+            >
               <CellCanvas
                 {cell}
                 cellIndex={getCellDisplayIndex(cell)}
@@ -140,6 +285,8 @@
                 onSelect={() => onSelectCell(cell.id)}
               />
             </div>
+          {:else if isOccupied}
+            <!-- Skip - this position is covered by a spanning cell -->
           {:else}
             <div class="cell-placeholder"></div>
           {/if}
@@ -169,8 +316,9 @@
 
   .cell-wrapper {
     position: relative;
-    width: var(--cell-size, 200px);
-    height: var(--cell-size, 200px);
+    /* Width/height calculated from span and cell size */
+    width: calc(var(--col-span, 1) * var(--cell-size, 200px) + (var(--col-span, 1) - 1) * 16px);
+    height: calc(var(--row-span, 1) * var(--cell-size, 200px) + (var(--row-span, 1) - 1) * 16px);
   }
 
   .cell-placeholder {

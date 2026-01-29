@@ -18,13 +18,26 @@
   let {
     cells,
     enabledCount,
+    occupiedPositions,
     onToggleCell,
     onPresetLayout,
   }: {
-    cells: Array<{ row: number; col: number; enabled: boolean }>;
+    cells: Array<{ row: number; col: number; enabled: boolean; colSpan: number; rowSpan: number }>;
     enabledCount: number;
+    occupiedPositions: Map<string, string>;
     onToggleCell: (row: number, col: number) => void;
-    onPresetLayout: (preset: "single" | "line" | "square" | "all") => void;
+    onPresetLayout: (
+      preset:
+        | "single"
+        | "vertical"
+        | "horizontal"
+        | "line"
+        | "square"
+        | "all"
+        | "hero-thumbs"
+        | "main-banner"
+        | "pip"
+    ) => void;
   } = $props();
 
   const haptic = container.items.hapticFeedback as IHapticFeedback;
@@ -41,7 +54,27 @@
     return cell?.enabled ?? false;
   }
 
+  // Check if a position is occupied by a spanning cell
+  function isOccupied(row: number, col: number): boolean {
+    return occupiedPositions.has(`${row}-${col}`);
+  }
+
+  // Get the cell that occupies this position (if any)
+  function getOccupyingCell(row: number, col: number): { row: number; col: number; colSpan: number; rowSpan: number } | null {
+    const occupyingId = occupiedPositions.get(`${row}-${col}`);
+    if (!occupyingId) return null;
+    // Parse the cell ID to get row/col
+    const match = occupyingId.match(/cell-(\d+)-(\d+)/);
+    if (!match) return null;
+    const originRow = parseInt(match[1]!, 10);
+    const originCol = parseInt(match[2]!, 10);
+    const cell = cells.find((c) => c.row === originRow && c.col === originCol);
+    return cell ? { row: cell.row, col: cell.col, colSpan: cell.colSpan, rowSpan: cell.rowSpan } : null;
+  }
+
   function handleCellClick(row: number, col: number) {
+    // Don't allow clicking occupied positions
+    if (isOccupied(row, col)) return;
     haptic.trigger("selection");
     onToggleCell(row, col);
   }
@@ -53,7 +86,18 @@
     }
   }
 
-  function handlePreset(preset: "single" | "line" | "square" | "all") {
+  function handlePreset(
+    preset:
+      | "single"
+      | "vertical"
+      | "horizontal"
+      | "line"
+      | "square"
+      | "all"
+      | "hero-thumbs"
+      | "main-banner"
+      | "pip"
+  ) {
     haptic.trigger("selection");
     onPresetLayout(preset);
   }
@@ -69,17 +113,22 @@
     >
       {#each gridPositions as pos (pos.row * GRID_SIZE + pos.col)}
         {@const enabled = isEnabled(pos.row, pos.col)}
+        {@const occupied = isOccupied(pos.row, pos.col)}
         <button
           class="grid-cell"
           class:enabled
+          class:occupied
           role="gridcell"
           aria-selected={enabled}
-          aria-label="Cell row {pos.row + 1}, column {pos.col + 1}, {enabled ? 'enabled' : 'disabled'}"
+          aria-disabled={occupied}
+          aria-label="Cell row {pos.row + 1}, column {pos.col + 1}, {enabled ? 'enabled' : occupied ? 'covered by spanning cell' : 'disabled'}"
           onclick={() => handleCellClick(pos.row, pos.col)}
           onkeydown={(e) => handleCellKeyDown(e, pos.row, pos.col)}
         >
           {#if enabled}
             <i class="fas fa-check" aria-hidden="true"></i>
+          {:else if occupied}
+            <i class="fas fa-link" aria-hidden="true"></i>
           {/if}
         </button>
       {/each}
@@ -103,6 +152,28 @@
         title="1 cell"
       >
         <div class="preset-icon single">
+          <span></span>
+        </div>
+      </button>
+      <button
+        class="preset-btn"
+        onclick={() => handlePreset("vertical")}
+        aria-label="2 cells vertical layout"
+        title="2 cells vertical"
+      >
+        <div class="preset-icon vertical">
+          <span></span>
+          <span></span>
+        </div>
+      </button>
+      <button
+        class="preset-btn"
+        onclick={() => handlePreset("horizontal")}
+        aria-label="2 cells horizontal layout"
+        title="2 cells horizontal"
+      >
+        <div class="preset-icon horizontal">
+          <span></span>
           <span></span>
         </div>
       </button>
@@ -141,6 +212,47 @@
           {#each Array(9) as _}
             <span></span>
           {/each}
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Spanning Presets -->
+  <div class="presets-section">
+    <span class="presets-label">Spanning layouts</span>
+    <div class="presets-row">
+      <button
+        class="preset-btn"
+        onclick={() => handlePreset("hero-thumbs")}
+        aria-label="Hero with thumbnails layout"
+        title="2×2 hero + 2 thumbnails"
+      >
+        <div class="preset-icon hero-thumbs">
+          <span class="span-2x2"></span>
+          <span class="span-1x1"></span>
+          <span class="span-1x1"></span>
+        </div>
+      </button>
+      <button
+        class="preset-btn"
+        onclick={() => handlePreset("main-banner")}
+        aria-label="Main with banner layout"
+        title="3×2 main + full-width banner"
+      >
+        <div class="preset-icon main-banner">
+          <span class="span-3x2"></span>
+          <span class="span-3x1"></span>
+        </div>
+      </button>
+      <button
+        class="preset-btn"
+        onclick={() => handlePreset("pip")}
+        aria-label="Picture-in-picture layout"
+        title="Large main + small overlay"
+      >
+        <div class="preset-icon pip">
+          <span class="span-2x3"></span>
+          <span class="span-1x1"></span>
         </div>
       </button>
     </div>
@@ -199,6 +311,18 @@
     border: 2px solid var(--theme-accent, #8b5cf6);
     color: white;
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  }
+
+  .grid-cell.occupied {
+    background: var(--theme-accent, #8b5cf6);
+    border: 2px solid var(--theme-accent, #8b5cf6);
+    opacity: 0.4;
+    color: white;
+    cursor: not-allowed;
+  }
+
+  .grid-cell.occupied i {
+    font-size: 10px;
   }
 
   @media (hover: hover) {
@@ -311,6 +435,25 @@
     height: 16px;
   }
 
+  .preset-icon.vertical {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(2, 1fr);
+  }
+
+  .preset-icon.vertical span {
+    width: 10px;
+    height: 10px;
+  }
+
+  .preset-icon.horizontal {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .preset-icon.horizontal span {
+    width: 10px;
+    height: 10px;
+  }
+
   .preset-icon.line {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -338,6 +481,64 @@
   .preset-icon.all span {
     width: 6px;
     height: 6px;
+  }
+
+  /* Spanning preset icons */
+  .preset-icon.hero-thumbs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 1px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .preset-icon.hero-thumbs .span-2x2 {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+
+  .preset-icon.hero-thumbs .span-1x1 {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+
+  .preset-icon.main-banner {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 1px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .preset-icon.main-banner .span-3x2 {
+    grid-column: span 3;
+    grid-row: span 2;
+  }
+
+  .preset-icon.main-banner .span-3x1 {
+    grid-column: span 3;
+    grid-row: span 1;
+  }
+
+  .preset-icon.pip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 1px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .preset-icon.pip .span-2x3 {
+    grid-column: span 2;
+    grid-row: span 3;
+  }
+
+  .preset-icon.pip .span-1x1 {
+    grid-column: span 1;
+    grid-row: span 1;
   }
 
   /* ====== REDUCED MOTION ====== */

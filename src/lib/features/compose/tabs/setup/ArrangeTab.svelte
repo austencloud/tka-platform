@@ -54,8 +54,25 @@
     gridState.toggleCell(row, col);
   }
 
-  function handlePresetLayout(preset: "single" | "line" | "square" | "all") {
+  function handlePresetLayout(
+    preset:
+      | "single"
+      | "vertical"
+      | "horizontal"
+      | "line"
+      | "square"
+      | "all"
+      | "hero-thumbs"
+      | "main-banner"
+      | "pip"
+  ) {
     gridState.setPresetLayout(preset);
+  }
+
+  function handleSetSpan(colSpan: number, rowSpan: number) {
+    if (selectedCellId !== null) {
+      gridState.setCellSpan(selectedCellId, colSpan, rowSpan);
+    }
   }
 
   // Cell selection
@@ -165,6 +182,7 @@
           currentBeat={gridState.currentBeat}
           isPlaying={gridState.isPlaying}
           selectedCellId={gridState.selectedCellId}
+          occupiedPositions={gridState.occupiedPositions}
           onSelectCell={handleSelectCell}
         />
       </div>
@@ -176,6 +194,7 @@
           <GridLayoutControls
             cells={gridState.cells}
             enabledCount={gridState.enabledCount}
+            occupiedPositions={gridState.occupiedPositions}
             onToggleCell={handleToggleCell}
             onPresetLayout={handlePresetLayout}
           />
@@ -191,6 +210,7 @@
               onRemoveLayer={handleRemoveLayer}
               onEditLayerOffset={handleEditLayerOffset}
               onClearCell={handleClearCell}
+              onSetSpan={handleSetSpan}
             />
           </div>
         {:else}

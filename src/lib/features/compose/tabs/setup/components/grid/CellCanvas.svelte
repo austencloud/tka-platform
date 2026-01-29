@@ -230,11 +230,11 @@
 <style>
   .cell-canvas {
     position: relative;
-    /* Fill the square cell-wrapper completely */
+    /* Fill the cell-wrapper completely (may be non-square for spanning cells) */
     width: 100%;
     height: 100%;
-    /* Enforce square aspect ratio */
-    aspect-ratio: 1 / 1;
+    /* Dynamic aspect ratio based on span (set via CSS variables from parent) */
+    aspect-ratio: var(--col-span, 1) / var(--row-span, 1);
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-md);

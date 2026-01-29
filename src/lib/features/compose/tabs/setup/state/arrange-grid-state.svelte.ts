@@ -16,8 +16,9 @@ import {
   getTunnelLayerColors,
 } from "../../../compose/domain/types";
 
-// LocalStorage key (v3 = 3x3 grid)
-const STORAGE_KEY = "compose-arrange-grid-v3";
+// LocalStorage key (v4 = 3x3 grid with cell spanning)
+const STORAGE_KEY = "compose-arrange-grid-v4";
+const STORAGE_KEY_V3 = "compose-arrange-grid-v3";
 
 // Grid dimensions (fixed 3x3 grid)
 export const GRID_SIZE = 3;
@@ -36,6 +37,10 @@ export interface GridCell {
   enabled: boolean;
   layers: TunnelLayerConfig[];
   beatOffset: number; // Cell-level offset for staggered playback
+  /** Number of columns this cell spans (1-3) */
+  colSpan: number;
+  /** Number of rows this cell spans (1-3) */
+  rowSpan: number;
 }
 
 /**
@@ -92,6 +97,8 @@ function createCell(row: number, col: number, enabled: boolean): GridCell {
     enabled,
     layers: [],
     beatOffset: 0,
+    colSpan: 1,
+    rowSpan: 1,
   };
 }
 
@@ -113,12 +120,32 @@ function loadFromStorage(): GridConfig {
   }
 
   try {
+    // Try v4 first
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const config = JSON.parse(stored) as GridConfig;
-      // Validate cell count
       if (config.cells.length === GRID_SIZE * GRID_SIZE) {
         return config;
+      }
+    }
+
+    // Try migrating from v3
+    const storedV3 = localStorage.getItem(STORAGE_KEY_V3);
+    if (storedV3) {
+      const configV3 = JSON.parse(storedV3) as GridConfig;
+      if (configV3.cells.length === GRID_SIZE * GRID_SIZE) {
+        // Migrate: add colSpan and rowSpan to all cells
+        const migratedCells = configV3.cells.map((cell) => ({
+          ...cell,
+          colSpan: cell.colSpan ?? 1,
+          rowSpan: cell.rowSpan ?? 1,
+        }));
+        const migratedConfig = { cells: migratedCells };
+        // Save migrated config to v4 key
+        saveToStorage(migratedConfig);
+        // Clean up old key
+        localStorage.removeItem(STORAGE_KEY_V3);
+        return migratedConfig;
       }
     }
   } catch (err) {
@@ -234,20 +261,42 @@ function createArrangeGridState() {
       return idx >= 0 ? idx : null;
     },
 
-    // Grid layout bounds (for rendering)
+    /**
+     * Map of grid positions that are "occupied" by spanning cells.
+     * Key is "row-col", value is the ID of the cell that occupies it.
+     * Only includes positions that are NOT the cell's origin.
+     */
+    get occupiedPositions(): Map<string, string> {
+      const occupied = new Map<string, string>();
+      for (const cell of cells.filter((c) => c.enabled)) {
+        for (let r = cell.row; r < cell.row + cell.rowSpan; r++) {
+          for (let c = cell.col; c < cell.col + cell.colSpan; c++) {
+            // Skip the origin position
+            if (r === cell.row && c === cell.col) continue;
+            occupied.set(`${r}-${c}`, cell.id);
+          }
+        }
+      }
+      return occupied;
+    },
+
+    // Grid layout bounds (for rendering) - accounts for cell spans
     get gridBounds() {
       const enabled = cells.filter((c) => c.enabled);
       if (enabled.length === 0) {
         return { minRow: 0, maxRow: 0, minCol: 0, maxCol: 0, rows: 1, cols: 1 };
       }
 
-      const rows = enabled.map((c) => c.row);
-      const colsArr = enabled.map((c) => c.col);
+      // Account for spans: a cell at (0,0) with colSpan=3 contributes cols 0,1,2
+      const rowStarts = enabled.map((c) => c.row);
+      const rowEnds = enabled.map((c) => c.row + c.rowSpan - 1);
+      const colStarts = enabled.map((c) => c.col);
+      const colEnds = enabled.map((c) => c.col + c.colSpan - 1);
 
-      const minRow = Math.min(...rows);
-      const maxRow = Math.max(...rows);
-      const minCol = Math.min(...colsArr);
-      const maxCol = Math.max(...colsArr);
+      const minRow = Math.min(...rowStarts);
+      const maxRow = Math.max(...rowEnds);
+      const minCol = Math.min(...colStarts);
+      const maxCol = Math.max(...colEnds);
 
       return {
         minRow,
@@ -273,6 +322,13 @@ function createArrangeGridState() {
       const cell = cells[index];
       if (!cell) return;
 
+      // Check if this position is occupied by a spanning cell
+      const occupyingId = this.occupiedPositions.get(`${row}-${col}`);
+      if (occupyingId) {
+        // Can't toggle a position that's under another cell's span
+        return;
+      }
+
       // If disabling a cell with content, warn/confirm
       const isDisabling = cell.enabled;
       const hasContent = cell.layers.length > 0;
@@ -283,6 +339,9 @@ function createArrangeGridState() {
         enabled: !cell.enabled,
         // Clear layers if disabling a cell with content
         layers: isDisabling && hasContent ? [] : cell.layers,
+        // Reset span if disabling
+        colSpan: isDisabling ? 1 : cell.colSpan,
+        rowSpan: isDisabling ? 1 : cell.rowSpan,
       };
       cells = newCells;
 
@@ -300,14 +359,118 @@ function createArrangeGridState() {
       return cell?.enabled ?? false;
     },
 
-    // Preset layouts (for 3x3 grid)
-    setPresetLayout(preset: "single" | "line" | "square" | "all") {
+    /**
+     * Check if a cell position is occupied by another spanning cell.
+     * Returns the ID of the occupying cell, or null if not occupied.
+     */
+    getOccupyingCell(row: number, col: number): string | null {
+      return this.occupiedPositions.get(`${row}-${col}`) ?? null;
+    },
+
+    /**
+     * Set the span for a cell. Validates bounds and disables overlapping cells.
+     * @returns true if span was set successfully, false if invalid
+     */
+    setCellSpan(
+      cellId: string,
+      colSpan: number,
+      rowSpan: number
+    ): boolean {
+      const cellIndex = cells.findIndex((c) => c.id === cellId);
+      const cell = cells[cellIndex];
+      if (!cell || !cell.enabled) return false;
+
+      // Validate spans
+      colSpan = Math.max(1, Math.min(colSpan, GRID_SIZE));
+      rowSpan = Math.max(1, Math.min(rowSpan, GRID_SIZE));
+
+      // Check bounds
+      if (cell.col + colSpan > GRID_SIZE) return false;
+      if (cell.row + rowSpan > GRID_SIZE) return false;
+
+      // Find cells that would be "under" this span and need to be disabled
+      const cellsToDisable: number[] = [];
+      for (let r = cell.row; r < cell.row + rowSpan; r++) {
+        for (let c = cell.col; c < cell.col + colSpan; c++) {
+          if (r === cell.row && c === cell.col) continue; // Skip origin
+          const idx = getCellIndex(r, c);
+          const targetCell = cells[idx];
+          if (targetCell?.enabled) {
+            cellsToDisable.push(idx);
+          }
+        }
+      }
+
+      // Apply changes
+      const newCells = [...cells];
+
+      // Update the spanning cell
+      newCells[cellIndex] = {
+        ...cell,
+        colSpan,
+        rowSpan,
+      };
+
+      // Disable cells under the span
+      for (const idx of cellsToDisable) {
+        const targetCell = newCells[idx];
+        if (targetCell) {
+          newCells[idx] = {
+            ...targetCell,
+            enabled: false,
+            layers: [], // Clear content
+            colSpan: 1,
+            rowSpan: 1,
+          };
+        }
+      }
+
+      cells = newCells;
+      save();
+      return true;
+    },
+
+    /**
+     * Reset a cell's span back to 1x1
+     */
+    resetCellSpan(cellId: string) {
+      this.setCellSpan(cellId, 1, 1);
+    },
+
+    // Preset layouts (for 3x3 grid) - includes spanning presets
+    setPresetLayout(
+      preset:
+        | "single"
+        | "vertical"
+        | "horizontal"
+        | "line"
+        | "square"
+        | "all"
+        | "hero-thumbs"
+        | "main-banner"
+        | "pip"
+    ) {
+      // Spanning presets have special handling
+      if (preset === "hero-thumbs" || preset === "main-banner" || preset === "pip") {
+        this.setSpanningPreset(preset);
+        return;
+      }
+
+      // Non-spanning presets: reset all spans to 1x1
       const newCells = cells.map((cell) => {
         let enabled = false;
 
         switch (preset) {
           case "single":
             enabled = cell.row === 0 && cell.col === 0;
+            break;
+          case "vertical":
+            // 2 cells vertically stacked in first column
+            enabled = cell.col === 0 && cell.row < 2;
+            break;
+          case "horizontal":
+            // 2 cells horizontally in first row
+            enabled = cell.row === 0 && cell.col < 2;
             break;
           case "line":
             // Top row (3 cells)
@@ -326,10 +489,91 @@ function createArrangeGridState() {
         return {
           ...cell,
           enabled,
+          colSpan: 1,
+          rowSpan: 1,
           // Clear layers for disabled cells
           layers: enabled ? cell.layers : [],
         };
       });
+
+      cells = newCells;
+      selectedCellId = null;
+      save();
+    },
+
+    /**
+     * Apply a spanning layout preset
+     */
+    setSpanningPreset(preset: "hero-thumbs" | "main-banner" | "pip") {
+      // First reset all cells to disabled with 1x1 span
+      const newCells = cells.map((cell) => ({
+        ...cell,
+        enabled: false,
+        colSpan: 1,
+        rowSpan: 1,
+        layers: [],
+      }));
+
+      switch (preset) {
+        case "hero-thumbs":
+          // 2×2 hero at top-left + two 1×1 thumbnails below
+          // [XX][_]
+          // [XX][_]
+          // [A][B][_]
+          {
+            const heroIdx = getCellIndex(0, 0);
+            const heroCell = newCells[heroIdx];
+            if (heroCell) {
+              newCells[heroIdx] = { ...heroCell, enabled: true, colSpan: 2, rowSpan: 2 };
+            }
+            const thumbLeft = newCells[getCellIndex(2, 0)];
+            if (thumbLeft) {
+              newCells[getCellIndex(2, 0)] = { ...thumbLeft, enabled: true };
+            }
+            const thumbRight = newCells[getCellIndex(2, 1)];
+            if (thumbRight) {
+              newCells[getCellIndex(2, 1)] = { ...thumbRight, enabled: true };
+            }
+          }
+          break;
+
+        case "main-banner":
+          // 3×2 main video at top + 3×1 full-width banner below
+          // [XXXXX]
+          // [XXXXX]
+          // [BBBBB]
+          {
+            const mainIdx = getCellIndex(0, 0);
+            const mainCell = newCells[mainIdx];
+            if (mainCell) {
+              newCells[mainIdx] = { ...mainCell, enabled: true, colSpan: 3, rowSpan: 2 };
+            }
+            const banner = newCells[getCellIndex(2, 0)];
+            if (banner) {
+              newCells[getCellIndex(2, 0)] = { ...banner, enabled: true, colSpan: 3 };
+            }
+          }
+          break;
+
+        case "pip":
+          // Picture-in-picture: 3×3 main + 1×1 overlay in corner
+          // This enables all cells but the main spans most of the grid
+          // [XXXXX][P]
+          // [XXXXX][_]
+          // [XXXXX][_]
+          {
+            const mainIdx = getCellIndex(0, 0);
+            const mainCell = newCells[mainIdx];
+            if (mainCell) {
+              newCells[mainIdx] = { ...mainCell, enabled: true, colSpan: 2, rowSpan: 3 };
+            }
+            const pip = newCells[getCellIndex(0, 2)];
+            if (pip) {
+              newCells[getCellIndex(0, 2)] = { ...pip, enabled: true };
+            }
+          }
+          break;
+      }
 
       cells = newCells;
       selectedCellId = null;
