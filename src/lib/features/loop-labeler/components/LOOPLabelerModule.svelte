@@ -7,7 +7,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
-  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { loopDetector } from "../services/implementations/LOOPDetector";
   import type { IStepDataConverter } from "../services/contracts/IStepDataConverter";
   import type {
     ILOOPDetector,

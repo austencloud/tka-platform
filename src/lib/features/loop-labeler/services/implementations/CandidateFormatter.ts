@@ -350,3 +350,9 @@ export class CandidateFormatter implements ICandidateFormatter {
     }));
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+
+export const candidateFormatter = new CandidateFormatter();

@@ -609,3 +609,13 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
     return `Modular: ${baseName} + SWAPPED (${binaryPattern})`;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+
+import { candidateFormatter } from "./CandidateFormatter";
+
+export const transformationAnalyzer = new TransformationAnalyzer(
+  candidateFormatter
+);

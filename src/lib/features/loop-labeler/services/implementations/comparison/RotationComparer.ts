@@ -207,3 +207,9 @@ export class RotationComparer implements IRotationComparer {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+
+export const rotationComparer = new RotationComparer();

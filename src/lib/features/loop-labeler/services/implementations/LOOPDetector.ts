@@ -732,3 +732,21 @@ export class LOOPDetector implements ILOOPDetector {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+
+import { stepComparisonOrchestrator } from "./comparison/StepComparisonOrchestrator";
+import { transformationAnalyzer } from "./TransformationAnalyzer";
+import { candidateFormatter } from "./CandidateFormatter";
+import { polyrhythmicDetector } from "./PolyrhythmicDetector";
+import { layeredPathDetector } from "./LayeredPathDetector";
+
+export const loopDetector = new LOOPDetector(
+  stepComparisonOrchestrator,
+  transformationAnalyzer,
+  candidateFormatter,
+  polyrhythmicDetector,
+  layeredPathDetector
+);

@@ -6,7 +6,7 @@
  */
 
 import { container } from "$lib/shared/di";
-import { loopDetector as loopDetectorInstance } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+import { loopDetector as loopDetectorInstance } from "../services/implementations/LOOPDetector";
 import type { ISequenceLoader } from "../services/contracts/ISequenceLoader";
 import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPLabelsFirebaseRepository";
 import type { INavigator } from "../services/contracts/INavigator";
@@ -48,7 +48,7 @@ export class LOOPLabelerServiceLocator {
 
   get detector(): ILOOPDetector | null {
     if (!this.cachedDetector) {
-      this.cachedDetector = loopDetectorInstance as unknown as ILOOPDetector;
+      this.cachedDetector = loopDetectorInstance;
     }
     return this.cachedDetector;
   }

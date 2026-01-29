@@ -584,3 +584,9 @@ export class PolyrhythmicDetector {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+
+export const polyrhythmicDetector = new PolyrhythmicDetector();

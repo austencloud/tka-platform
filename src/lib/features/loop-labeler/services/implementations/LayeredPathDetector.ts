@@ -434,3 +434,9 @@ export class LayeredPathDetector implements ILayeredPathDetector {
     };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+
+export const layeredPathDetector = new LayeredPathDetector();

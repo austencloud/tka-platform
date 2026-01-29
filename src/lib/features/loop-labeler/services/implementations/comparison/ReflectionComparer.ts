@@ -235,3 +235,9 @@ export class ReflectionComparer implements IReflectionComparer {
     }
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+
+export const reflectionComparer = new ReflectionComparer();

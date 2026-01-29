@@ -115,3 +115,9 @@ export class SwapInvertComparer implements ISwapInvertComparer {
     return { transformations };
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+
+export const swapInvertComparer = new SwapInvertComparer();

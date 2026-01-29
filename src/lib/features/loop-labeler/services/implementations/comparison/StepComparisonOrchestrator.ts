@@ -196,3 +196,19 @@ export class StepComparisonOrchestrator implements IStepComparisonOrchestrator {
     return null;
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+
+import { rotationComparer } from "./RotationComparer";
+import { reflectionComparer } from "./ReflectionComparer";
+import { swapInvertComparer } from "./SwapInvertComparer";
+import { candidateFormatter } from "../CandidateFormatter";
+
+export const stepComparisonOrchestrator = new StepComparisonOrchestrator(
+  rotationComparer,
+  reflectionComparer,
+  swapInvertComparer,
+  candidateFormatter
+);

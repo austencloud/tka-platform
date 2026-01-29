@@ -500,3 +500,9 @@ export class StepPairAnalyzer implements IStepPairAnalyzer {
     );
   }
 }
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+
+export const stepPairAnalyzer = new StepPairAnalyzer();
