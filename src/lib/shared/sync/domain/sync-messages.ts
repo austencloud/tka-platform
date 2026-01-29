@@ -6,7 +6,7 @@
  */
 
 import type { HLCTimestamp, PlaybackIntent, PeerInfo, SyncedRoomState, ViewMode } from './sync-types';
-import type { SequenceData } from '$lib/shared/sequence-data/models/SequenceData';
+import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
 
 // ============================================================================
 // Message Type Discriminator

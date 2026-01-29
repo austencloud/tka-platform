@@ -8,7 +8,7 @@
  * - Deterministic playback equations for frame-accurate sync
  */
 
-import type { SequenceData } from '$lib/shared/sequence-data/models/SequenceData';
+import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
 
 // ============================================================================
 // Hybrid Logical Clock Types

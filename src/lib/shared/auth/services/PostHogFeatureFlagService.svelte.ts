@@ -615,6 +615,10 @@ export const postHogFeatureFlagService = {
   /**
    * Update global feature flag configuration via PostHog API.
    * Calls server-side endpoint which proxies to PostHog.
+   *
+   * Note: minimumRole changes are stored locally only (PostHog doesn't support
+   * role-based filters via simple API). They persist in memory for the session
+   * and provide immediate UI feedback.
    */
   async updateGlobalFeatureFlag(
     featureId: FeatureId,
@@ -624,52 +628,62 @@ export const postHogFeatureFlagService = {
 
     const flagKey = featureIdToPostHogKey(featureId);
 
-    try {
-      // Get the current user's auth token for server-side verification
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error("Not authenticated");
-      }
-      const idToken = await currentUser.getIdToken();
+    // Handle minimumRole updates locally (PostHog doesn't support this)
+    if (updates.minimumRole) {
+      _state.globalRoleOverrides = {
+        ..._state.globalRoleOverrides,
+        [flagKey]: updates.minimumRole,
+      };
+      // Trigger reactive update
+      _state.flagsVersion++;
+      console.log(`[PostHogFeatureFlagService] Flag ${flagKey} minimumRole set to: ${updates.minimumRole} (local only)`);
+    }
 
-      const response = await fetch("/api/admin/feature-flags", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          flagKey,
-          enabled: updates.enabled,
-          // Note: minimumRole would need custom PostHog filters
-          // For now, we only support enabled/disabled toggle
-        }),
-      });
+    // Handle enabled updates via PostHog API
+    if (typeof updates.enabled === "boolean") {
+      try {
+        // Get the current user's auth token for server-side verification
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          throw new Error("Not authenticated");
+        }
+        const idToken = await currentUser.getIdToken();
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
+        const response = await fetch("/api/admin/feature-flags", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            flagKey,
+            enabled: updates.enabled,
+          }),
+        });
 
-      const result = await response.json();
-      console.log(`[PostHogFeatureFlagService] Flag ${flagKey} ${result.action}:`, result.flag);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `HTTP ${response.status}`);
+        }
 
-      // Update local cache immediately for responsive UI
-      if (typeof updates.enabled === "boolean") {
+        const result = await response.json();
+        console.log(`[PostHogFeatureFlagService] Flag ${flagKey} ${result.action}:`, result.flag);
+
+        // Update local cache immediately for responsive UI
         _state.globalFlagOverrides = {
           ..._state.globalFlagOverrides,
           [flagKey]: updates.enabled,
         };
+
+        // Also reload PostHog's local flags (for user-facing access checks)
+        reloadFeatureFlags();
+
+        // Trigger reactive update
+        _state.flagsVersion++;
+      } catch (err) {
+        console.error(`[PostHogFeatureFlagService] Failed to update ${flagKey}:`, err);
+        throw err;
       }
-
-      // Also reload PostHog's local flags (for user-facing access checks)
-      reloadFeatureFlags();
-
-      // Trigger reactive update
-      _state.flagsVersion++;
-    } catch (err) {
-      console.error(`[PostHogFeatureFlagService] Failed to update ${flagKey}:`, err);
-      throw err;
     }
   },
 

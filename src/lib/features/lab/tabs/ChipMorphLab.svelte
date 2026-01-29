@@ -204,9 +204,21 @@
                 role="button"
                 tabindex="0"
               >
-                <!-- Content wrapper - stacks label+value when collapsed -->
-                <button
-                  class="chip-header-b"
+                <!-- Back icon - absolutely positioned, fades in at top-left -->
+                <i
+                  class="fas fa-chevron-left back-icon-b"
+                  style:opacity={$springB}
+                  onclick={(e) => {
+                    if (isExpanding) {
+                      e.stopPropagation();
+                      collapseB();
+                    }
+                  }}
+                ></i>
+
+                <!-- Label - animates from center to top-left -->
+                <span
+                  class="chip-label-b"
                   onclick={(e) => {
                     if (isExpanding) {
                       e.stopPropagation();
@@ -214,32 +226,20 @@
                     }
                   }}
                 >
-                  <!-- Back icon - fades in -->
-                  <i
-                    class="fas fa-chevron-left back-icon-b"
-                    style:opacity={$springB}
-                    style:width={isExpanding ? "12px" : "0"}
-                    style:margin-right={isExpanding ? "8px" : "0"}
-                  ></i>
+                  {setting.label}
+                </span>
 
-                  <!-- Label - SAME element, color morphs -->
-                  <span class="chip-label-b">
-                    {setting.label}
-                  </span>
+                <!-- Value - stays centered, fades out -->
+                <span
+                  class="chip-value-b"
+                  style:opacity={1 - $springB}
+                >
+                  {setting.getValue()}
+                </span>
 
-                  <!-- Value - below label when collapsed, fades when expanded -->
-                  <span
-                    class="chip-value-b"
-                    style:opacity={1 - $springB}
-                  >
-                    {setting.getValue()}
-                  </span>
-                </button>
-
-                <!-- Options - slide in below header -->
+                <!-- Options - slide in from bottom -->
                 <div
                   class="options-inside-b"
-                  style:max-height={isExpanding ? `${$springB * 80}px` : "0"}
                   style:opacity={$springB}
                   style:pointer-events={isExpanding && $springB > 0.5 ? "auto" : "none"}
                 >
@@ -565,8 +565,6 @@
   .chip-b {
     position: absolute;
     top: 0;
-    display: flex;
-    flex-direction: column;
     background: var(--theme-card-bg, rgba(255,255,255,0.04));
     border-radius: 18px;
     color: var(--theme-text, #fff);
@@ -581,27 +579,21 @@
     /* Position based on index */
     left: calc(var(--chip-index) * (33.33% + 2.67px));
     width: calc(33.33% - 5.33px);
-    min-height: 56px;
+    height: 56px;
     /* Smooth transitions */
     transition:
       left 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
       width 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
-      min-height 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
+      height 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
       opacity 200ms ease,
       box-shadow 200ms ease;
-  }
-
-  /* Collapsed state - center everything vertically */
-  .chip-b:not(.expanding) {
-    justify-content: center;
-    align-items: center;
   }
 
   .chip-b.expanding {
     /* Expand to cover entire settings area */
     left: 0 !important;
     width: 100% !important;
-    min-height: 132px;
+    height: 132px;
     z-index: 10;
     cursor: default;
     box-shadow:
@@ -614,74 +606,79 @@
     pointer-events: none;
   }
 
-  /* Header row - layout changes based on state */
-  .chip-header-b {
-    display: flex;
-    align-items: center;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    color: inherit;
-  }
-
-  /* Collapsed: header is centered, column layout */
-  .chip-b:not(.expanding) .chip-header-b {
-    flex-direction: column;
-    padding: 4px;
-    pointer-events: none;
-  }
-
-  /* Expanded: header is top-left, row layout */
-  .chip-b.expanding .chip-header-b {
-    flex-direction: row;
-    padding: 8px 12px;
-    min-height: 40px;
-    align-self: flex-start;
-  }
-
-  .chip-b.expanding .chip-header-b:hover {
-    background: var(--theme-card-hover-bg, rgba(255,255,255,0.08));
-    border-radius: 8px;
-  }
-
+  /* Back icon - absolutely positioned top-left, fades in */
   .back-icon-b {
+    position: absolute;
+    top: 12px;
+    left: 12px;
     color: var(--theme-accent, #6366f1);
     font-size: 12px;
-    overflow: hidden;
-    transition: width 200ms ease, margin 200ms ease, opacity 200ms ease;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: opacity 200ms ease;
   }
 
+  .back-icon-b:hover {
+    background: var(--theme-card-hover-bg, rgba(255,255,255,0.08));
+  }
+
+  /* Label - animates position from center to top-left */
   .chip-label-b {
-    font-size: 12px;
-    font-weight: 500;
+    position: absolute;
     white-space: nowrap;
-    /* Spring-driven color morph - THIS IS THE KEY */
+    cursor: pointer;
+    /* Spring-driven color morph */
     color: color-mix(
       in srgb,
       var(--theme-text-muted, rgba(255,255,255,0.6)) calc(100% - var(--morph-progress, 0) * 100%),
       var(--theme-accent, #6366f1) calc(var(--morph-progress, 0) * 100%)
     );
-    transition: font-size 200ms ease;
+    /* Spring-driven position: center (50%, 35%) -> top-left (32px, 12px) */
+    top: calc(35% - var(--morph-progress, 0) * 35% + var(--morph-progress, 0) * 12px);
+    left: calc(50% - var(--morph-progress, 0) * 50% + var(--morph-progress, 0) * 32px);
+    transform: translateX(calc(-50% + var(--morph-progress, 0) * 50%));
+    /* Spring-driven font size */
+    font-size: calc(12px + var(--morph-progress, 0) * 2px);
+    font-weight: calc(500 + var(--morph-progress, 0) * 100);
+    transition: top 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
+                left 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
+                transform 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
+                font-size 300ms ease;
   }
 
-  .chip-b.expanding .chip-label-b {
-    font-size: 14px;
-    font-weight: 600;
+  .chip-b.expanding .chip-label-b:hover {
+    text-decoration: underline;
   }
 
-  /* Value - shown below label when collapsed, hidden when expanded */
+  /* Value - stays centered, fades out */
   .chip-value-b {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
     color: var(--theme-text, #fff);
+    pointer-events: none;
     transition: opacity 200ms ease;
   }
 
-  /* When expanded, value hides (still in DOM but invisible) */
-  .chip-b.expanding .chip-value-b {
+  /* Options - positioned at bottom, slide up */
+  .options-inside-b {
     position: absolute;
-    pointer-events: none;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    transition: opacity 200ms ease;
+  }
+
+  .chip-b:not(.expanding) .options-inside-b {
+    bottom: -100px;
+    opacity: 0;
   }
 
   /* Options INSIDE the chip */
