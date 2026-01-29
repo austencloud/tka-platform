@@ -43,6 +43,12 @@
 	// Local morph progress (only applies to expanding chip)
 	let localMorphProgress = $derived(isExpanding ? ctx.morphProgress : 0);
 
+	// Staggered border progress - stays blue longer during collapse
+	// Border stays at 1 (blue) until morphProgress drops below 0.3, then fades
+	let staggeredBorderProgress = $derived(
+		isExpanding || localMorphProgress > 0.3 ? 1 : localMorphProgress / 0.3
+	);
+
 	function handleChipClick() {
 		if (isExpanding) {
 			// Clicking anywhere on expanded chip (not a button) collapses it
@@ -87,6 +93,7 @@
 	class:expanding={isExpanding}
 	class:faded={isFaded}
 	style:--morph-progress={localMorphProgress}
+	style:--border-progress={staggeredBorderProgress}
 	style:--chip-index={chipIndex}
 	style={chipIndex >= 0 ? getChipStyle(chipIndex, ctx.chipCount, ctx.gap) : ""}
 	onclick={handleChipClick}
@@ -94,21 +101,21 @@
 	role="button"
 	tabindex={isFaded ? -1 : 0}
 >
-	<!-- Label - stays centered, color morphs via CSS -->
-	<span class="chip-label">
-		{label}
-	</span>
+	<!-- Collapsed content: label + value, centered with flexbox -->
+	<div class="chip-content">
+		<span class="chip-label">
+			{label}
+		</span>
+		<span class="chip-value" style:opacity={1 - localMorphProgress}>
+			{String(value)}
+		</span>
+	</div>
 
-	<!-- Value - stays centered, fades out -->
-	<span class="chip-value" style:opacity={1 - localMorphProgress}>
-		{String(value)}
-	</span>
-
-	<!-- Options - slide in from bottom -->
+	<!-- Options - slide in from bottom when expanded -->
+	<!-- pointer-events:none on container, auto on buttons only - clicks pass through to chip -->
 	<div
 		class="options-row"
 		style:opacity={localMorphProgress}
-		style:pointer-events={isExpanding && localMorphProgress > 0.5 ? "auto" : "none"}
 	>
 		{#each options as option}
 			<button
@@ -116,6 +123,7 @@
 				class:selected={value === option.value}
 				onclick={(e) => handleOptionSelect(e, option.value)}
 				tabindex={isExpanding ? 0 : -1}
+				style:pointer-events={isExpanding && localMorphProgress > 0.5 ? "auto" : "none"}
 			>
 				{option.label}
 			</button>
@@ -128,6 +136,7 @@
 	.chip-placeholder {
 		flex: 1;
 		min-height: 56px;
+		pointer-events: none; /* Never capture clicks - let them pass to chips */
 	}
 
 	/* The actual chip - positioned absolutely over the placeholder */
@@ -139,15 +148,15 @@
 		color: var(--theme-text, #fff);
 		overflow: hidden;
 		cursor: pointer;
-		height: 56px;
+		min-height: 56px;
 
-		/* Spring-driven border color */
+		/* Border color - uses staggered progress so it stays blue longer during collapse */
 		border: 1.5px solid
 			color-mix(
 				in srgb,
 				var(--theme-stroke, rgba(255, 255, 255, 0.1))
-					calc(100% - var(--morph-progress, 0) * 100%),
-				var(--theme-accent, #6366f1) calc(var(--morph-progress, 0) * 100%)
+					calc(100% - var(--border-progress, 0) * 100%),
+				var(--theme-accent, #6366f1) calc(var(--border-progress, 0) * 100%)
 			);
 
 		/* Smooth transitions */
@@ -176,18 +185,23 @@
 		pointer-events: none;
 	}
 
-	/* Label - stays centered in both states, only color changes */
-	.chip-label {
-		position: absolute;
-		white-space: nowrap;
-		pointer-events: none; /* Click passes through to chip */
+	/* Content container - uses flexbox to center label + value like Option C */
+	.chip-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		padding: 8px 12px;
+		min-height: 56px;
+		pointer-events: none; /* Clicks pass through to chip */
+	}
 
-		/* ALWAYS centered at top */
-		top: 12px;
-		left: 50%;
-		transform: translateX(-50%);
+	/* Label - centered via flexbox, color morphs */
+	.chip-label {
+		white-space: nowrap;
 		font-size: 12px;
-		font-weight: 600;
+		font-weight: 500;
 
 		/* Color morphs smoothly via CSS custom property */
 		color: color-mix(
@@ -199,17 +213,12 @@
 		transition: color 300ms ease;
 	}
 
-	/* Value - centered below label, fades out when expanded */
+	/* Value - centered via flexbox, fades out when expanded */
 	.chip-value {
-		position: absolute;
-		top: 30px;
-		left: 50%;
-		transform: translateX(-50%);
 		font-size: 14px;
 		font-weight: 600;
 		white-space: nowrap;
 		color: var(--theme-text, #fff);
-		pointer-events: none;
 		transition: opacity 200ms ease;
 	}
 
@@ -222,6 +231,7 @@
 		display: flex;
 		gap: 4px;
 		transition: opacity 200ms ease;
+		pointer-events: none; /* Clicks pass through to chip; buttons have pointer-events:auto */
 	}
 
 	.chip:not(.expanding) .options-row {
