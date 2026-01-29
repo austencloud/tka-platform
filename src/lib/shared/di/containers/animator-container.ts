@@ -21,6 +21,7 @@ import { CoordinateUpdater } from "$lib/features/compose/services/implementation
 import { MotionCalculator } from "$lib/features/compose/services/implementations/MotionCalculator";
 import { SVGGenerator } from "$lib/features/compose/services/implementations/SVGGenerator";
 import { TrailCapturer } from "$lib/features/compose/services/implementations/TrailCapturer";
+import { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
 import { AnimationStorageManager } from "$lib/features/compose/services/implementations/AnimationStorageManager";
 import { VideoExporter } from "$lib/features/compose/services/implementations/VideoExporter";
 import { DarkModeProvider } from "$lib/shared/animation-engine/services/implementations/DarkModeProvider";
@@ -85,6 +86,7 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
       motionCalculator: () => new MotionCalculator(),
       svgGenerator: () => new SVGGenerator(),
       trailCapturer: () => new TrailCapturer(),
+      animationPathCache: () => new AnimationPathCache(),
       animationStorageManager: () => new AnimationStorageManager(),
       videoExporter: () => new VideoExporter(),
       darkModeProvider: () => new DarkModeProvider(),
