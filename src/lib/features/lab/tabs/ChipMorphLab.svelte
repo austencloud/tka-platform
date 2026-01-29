@@ -204,7 +204,7 @@
                 role="button"
                 tabindex="0"
               >
-                <!-- Header row - always at top, always left-aligned -->
+                <!-- Content wrapper - stacks label+value when collapsed -->
                 <button
                   class="chip-header-b"
                   onclick={(e) => {
@@ -222,19 +222,19 @@
                     style:margin-right={isExpanding ? "8px" : "0"}
                   ></i>
 
-                  <!-- Label - SAME element, NEVER MOVES, color morphs -->
+                  <!-- Label - SAME element, color morphs -->
                   <span class="chip-label-b">
                     {setting.label}
                   </span>
-                </button>
 
-                <!-- Value - centered, fades out when expanded -->
-                <span
-                  class="chip-value-b"
-                  style:opacity={1 - $springB}
-                >
-                  {setting.getValue()}
-                </span>
+                  <!-- Value - below label when collapsed, fades when expanded -->
+                  <span
+                    class="chip-value-b"
+                    style:opacity={1 - $springB}
+                  >
+                    {setting.getValue()}
+                  </span>
+                </button>
 
                 <!-- Options - slide in below header -->
                 <div
@@ -591,6 +591,12 @@
       box-shadow 200ms ease;
   }
 
+  /* Collapsed state - center everything vertically */
+  .chip-b:not(.expanding) {
+    justify-content: center;
+    align-items: center;
+  }
+
   .chip-b.expanding {
     /* Expand to cover entire settings area */
     left: 0 !important;
@@ -608,28 +614,34 @@
     pointer-events: none;
   }
 
-  /* Header row - always at top left */
+  /* Header row - layout changes based on state */
   .chip-header-b {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
     background: transparent;
     border: none;
     cursor: pointer;
     color: inherit;
-    min-height: 40px;
   }
 
+  /* Collapsed: header is centered, column layout */
   .chip-b:not(.expanding) .chip-header-b {
-    /* When collapsed, header is not separately clickable */
+    flex-direction: column;
+    padding: 4px;
     pointer-events: none;
+  }
+
+  /* Expanded: header is top-left, row layout */
+  .chip-b.expanding .chip-header-b {
+    flex-direction: row;
+    padding: 8px 12px;
+    min-height: 40px;
+    align-self: flex-start;
   }
 
   .chip-b.expanding .chip-header-b:hover {
     background: var(--theme-card-hover-bg, rgba(255,255,255,0.08));
     border-radius: 8px;
-    margin: 4px;
-    padding: 4px 8px;
   }
 
   .back-icon-b {
@@ -641,7 +653,7 @@
 
   .chip-label-b {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     white-space: nowrap;
     /* Spring-driven color morph - THIS IS THE KEY */
     color: color-mix(
@@ -654,19 +666,22 @@
 
   .chip-b.expanding .chip-label-b {
     font-size: 14px;
+    font-weight: 600;
   }
 
-  /* Value - overlays center when collapsed, fades out when expanded */
+  /* Value - shown below label when collapsed, hidden when expanded */
   .chip-value-b {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
-    pointer-events: none;
+    color: var(--theme-text, #fff);
     transition: opacity 200ms ease;
+  }
+
+  /* When expanded, value hides (still in DOM but invisible) */
+  .chip-b.expanding .chip-value-b {
+    position: absolute;
+    pointer-events: none;
   }
 
   /* Options INSIDE the chip */
