@@ -155,8 +155,8 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
         }
       }
 
-      // Build expanded word string
-      const expandedWord = expandedLetters.join("");
+      // Build expanded word string (may be updated if LOOP is applied)
+      let expandedWord = expandedLetters.join("");
 
       // Store spell metadata in sequence for persistence
       sequence = {
@@ -174,33 +174,49 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
       // Analyze what LOOP types are available for this sequence
       const loopAnalysis = this.sequenceExtender.analyzeSequence(sequence);
 
-      // If sequence is directly loopable and user has selected a LOOP type, apply it
-      if (
-        options.preferences.makeCircular &&
-        options.preferences.selectedLOOPType &&
-        loopAnalysis.canExtend
-      ) {
-        // Check if the selected LOOP type is available
-        const isLOOPAvailable = loopAnalysis.availableLOOPOptions.some(
-          (opt) => opt.loopType === options.preferences.selectedLOOPType
-        );
+      // If makeCircular is enabled, apply a LOOP transformation
+      // Default to REWOUND if no specific type is selected (REWOUND is always available)
+      if (options.preferences.makeCircular && loopAnalysis.canExtend) {
+        // Use selected LOOP type, or default to REWOUND
+        const loopTypeToApply = options.preferences.selectedLOOPType || LOOPType.REWOUND;
+
+        // Check if the LOOP type is available
+        const isLOOPAvailable =
+          loopTypeToApply === LOOPType.REWOUND || // REWOUND is always available
+          loopAnalysis.availableLOOPOptions.some((opt) => opt.loopType === loopTypeToApply);
 
         if (isLOOPAvailable) {
           // Apply the LOOP transformation
+          // This now correctly derives letters for the extended steps
           sequence = await this.sequenceExtender.extendSequence(sequence, {
-            loopType: options.preferences.selectedLOOPType,
+            loopType: loopTypeToApply,
           });
 
-          // Update metadata to reflect the LOOP was applied
+          // Build updated expandedWord and letterSources from the extended sequence
+          // The extended sequence has the correct letters derived from motion data
+          const extendedExpandedWord = sequence.word || sequence.steps.map(s => s.letter || "").join("");
+          const originalStepCount = expandedLetters.length;
+          const extendedLetterSources: LetterSource[] = sequence.steps.map((step, index) => ({
+            letter: (step.letter || "") as Letter,
+            isOriginal: index < originalStepCount ? letterSources[index]?.isOriginal ?? false : false,
+            stepIndex: index + 1,
+          }));
+
+          // Update local variables for return value
+          expandedWord = extendedExpandedWord;
+          letterSources.length = 0;
+          letterSources.push(...extendedLetterSources);
+
+          // Update metadata to reflect the LOOP was applied with extended data
           sequence = {
             ...sequence,
             metadata: {
               ...sequence.metadata,
               spellData: {
                 originalWord: options.word,
-                expandedWord,
-                letterSources,
-                appliedLOOPType: options.preferences.selectedLOOPType,
+                expandedWord: extendedExpandedWord,
+                letterSources: extendedLetterSources,
+                appliedLOOPType: loopTypeToApply,
               },
             },
           };

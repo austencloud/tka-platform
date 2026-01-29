@@ -71,7 +71,8 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
           gridMode,
           constraints,
           constraintSet,
-          signal
+          signal,
+          options.letterSources
         );
 
         if (sequence) {
@@ -105,7 +106,8 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     gridMode: GridMode,
     constraints?: VariationConstraints,
     constraintSet?: ConstraintSet,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>
   ): Promise<SequenceData | null> {
     // Get ALL pictograph variations for this grid mode (cached by letterQueryHandler)
     const allPictographs = await this.letterQueryHandler.getAllPictographVariations(
@@ -200,12 +202,13 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     const sequence = this.buildSequence(
       state.steps,
       gridMode,
-      state.startPositionPictograph
+      state.startPositionPictograph,
+      letterSources
     );
 
     // Apply LOOP extension if circular is required
     if (constraints?.requiresCircular && !sequence.isCircular) {
-      const extended = await this.applyCircularExtension(sequence, constraints);
+      const extended = await this.applyCircularExtension(sequence, constraints, letterSources);
       return extended || sequence;
     }
 
@@ -486,7 +489,8 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
   private buildSequence(
     steps: StepData[],
     gridMode: GridMode,
-    startPositionPictograph: PictographData
+    startPositionPictograph: PictographData,
+    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>
   ): SequenceData {
     // Extract word from step letters
     const word = steps
@@ -511,6 +515,12 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       metadata: {
         generatedAt: new Date().toISOString(),
         generationMethod: "random-walk",
+        // Include spellData with letterSources if provided
+        ...(letterSources && {
+          spellData: {
+            letterSources,
+          },
+        }),
       },
     });
 
@@ -527,19 +537,66 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
 
   private async applyCircularExtension(
     sequence: SequenceData,
-    constraints?: VariationConstraints
+    constraints?: VariationConstraints,
+    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>
   ): Promise<SequenceData | null> {
     if (!constraints?.requiresCircular) return sequence;
 
     try {
       // Use specified LOOP type, or default to REWOUND
       const loopType = constraints.loopType ?? LOOPType.REWOUND;
+      const originalStepCount = sequence.steps?.length ?? 0;
+
+      // Get existing letterSources - prefer passed-in sources, fall back to metadata
+      const existingSpellData = sequence.metadata?.spellData as {
+        letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>;
+      } | undefined;
+      const existingLetterSources = letterSources ?? existingSpellData?.letterSources ?? [];
+
       const extended = await this.sequenceExtender.extendSequence(
         sequence,
         { loopType }
       );
 
-      return extended || sequence;
+      if (!extended) return sequence;
+
+      // Build updated word and letterSources from the extended sequence
+      // The extender has already derived correct letters for each step
+      const extendedWord = extended.word || extended.steps?.map(s => s.letter || "").join("") || "";
+
+      // Build letterSources: preserve isOriginal from existing sources for first half,
+      // mark LOOP-generated steps (second half) as not original
+      const extendedLetterSources = extended.steps?.map((step, index) => {
+        // For original steps, preserve the existing isOriginal flag (handles bridge letters)
+        if (index < originalStepCount && existingLetterSources[index]) {
+          return {
+            letter: (step.letter || "") as Letter,
+            isOriginal: existingLetterSources[index].isOriginal,
+            stepIndex: index + 1,
+          };
+        }
+        // For LOOP-extended steps, they are never "original"
+        return {
+          letter: (step.letter || "") as Letter,
+          isOriginal: false,
+          stepIndex: index + 1,
+        };
+      }) || [];
+
+      // Update metadata with spellData
+      return {
+        ...extended,
+        word: extendedWord,
+        metadata: {
+          ...extended.metadata,
+          spellData: {
+            originalWord: sequence.word || "",
+            expandedWord: extendedWord,
+            letterSources: extendedLetterSources,
+            appliedLOOPType: loopType,
+          },
+        },
+      };
     } catch (error) {
       console.error(
         "[RandomSequenceGenerator] Failed to apply circular extension:",

@@ -269,6 +269,7 @@ Same functionality, different density.
           gridMode: spellState.selectedGridMode,
           constraints,
           constraintSet,
+          letterSources: parseResult.letterSources,
         }
       );
 
@@ -280,17 +281,33 @@ Same functionality, different density.
 
       const sequenceWithStart = deriveStartPosition(sequence);
 
+      // Check if LOOP was applied (sequence has extended data in metadata)
+      const loopSpellData = sequenceWithStart.metadata?.spellData as {
+        expandedWord?: string;
+        letterSources?: typeof parseResult.letterSources;
+        appliedLOOPType?: string;
+      } | undefined;
+
+      // Use LOOP-extended data if available, otherwise use parse results
+      const finalExpandedWord = loopSpellData?.expandedWord || spellState.expandedWord || spellState.inputWord;
+      const finalLetterSources = loopSpellData?.letterSources || parseResult.letterSources || [];
+
+      // Update spell state with the final (possibly LOOP-extended) data
+      spellState.setExpandedWord(finalExpandedWord);
+      spellState.setLetterSources(finalLetterSources);
+
       sequenceState.setCurrentSequence({
         ...sequenceWithStart,
         name: spellState.inputWord,
         intendedWord: spellState.inputWord, // User's intended word (before bridges)
-        word: spellState.expandedWord || spellState.inputWord,
+        word: finalExpandedWord,
         metadata: {
           ...sequenceWithStart.metadata,
           spellData: {
             originalWord: spellState.inputWord,
-            expandedWord: spellState.expandedWord || spellState.inputWord,
-            letterSources: parseResult.letterSources || [],
+            expandedWord: finalExpandedWord,
+            letterSources: finalLetterSources,
+            ...(loopSpellData?.appliedLOOPType && { appliedLOOPType: loopSpellData.appliedLOOPType }),
           },
         },
       });
@@ -403,15 +420,15 @@ Same functionality, different density.
     container-name: spell-panel;
     display: flex;
     flex-direction: column;
-    justify-content: safe center;
+    justify-content: center;
     width: 100%;
     margin: 0 auto;
     height: 100%;
     min-height: 0;
-    overflow-y: auto;
+    /* No scrolling - content must always fit via intelligent layout switching */
+    overflow: hidden;
 
     /* Fluid spacing: 1vh scales naturally with viewport */
-    /* 667px viewport → 6.67px, 900px → 9px, 1200px → 12px */
     --fluid-space: clamp(4px, 1vh, 12px);
     gap: var(--fluid-space);
     padding: var(--fluid-space);
@@ -436,8 +453,8 @@ Same functionality, different density.
     padding-bottom: calc(var(--fluid-space) + 60px);
   }
 
-  /* Medium height: show expanded layout with modest scaling */
-  @container tool-panel (min-height: 500px) {
+  /* Medium height: expanded settings layout kicks in at 700px (matches SpellSettingsBar threshold) */
+  @container tool-panel (min-height: 700px) {
     .spell-panel {
       max-width: 520px;
       --spell-scale: 1;
@@ -445,8 +462,8 @@ Same functionality, different density.
     }
   }
 
-  /* Large height: slightly more room to breathe */
-  @container tool-panel (min-height: 700px) {
+  /* Large height: more room to breathe */
+  @container tool-panel (min-height: 800px) {
     .spell-panel {
       max-width: 560px;
       --spell-scale: 1.02;

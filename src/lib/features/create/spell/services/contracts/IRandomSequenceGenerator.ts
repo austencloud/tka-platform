@@ -10,6 +10,7 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { VariationConstraints } from "../../domain/models/spell-models";
 import type { ConstraintSet } from "$lib/shared/sequence-engine/constraints/types";
+import type { LetterSource } from "../../domain/models/spell-models";
 
 export interface RandomSequenceGenerationOptions {
   /** Grid mode to use */
@@ -22,6 +23,8 @@ export interface RandomSequenceGenerationOptions {
   signal?: AbortSignal;
   /** Max attempts before giving up (default: 100) */
   maxAttempts?: number;
+  /** Optional letter sources from parsing (tracks which letters are bridges) */
+  letterSources?: LetterSource[];
 }
 
 export interface IRandomSequenceGenerator {
