@@ -244,6 +244,66 @@ export const DEFAULT_SYNC_CONFIG: SyncConfig = {
 };
 
 // ============================================================================
+// Adaptive Heartbeat Configuration (Mobile Optimization)
+// ============================================================================
+
+/**
+ * Configuration for adaptive heartbeat timing.
+ * Adjusts heartbeat frequency based on connection quality and battery state.
+ */
+export interface AdaptiveHeartbeatConfig {
+	/** Minimum heartbeat interval in ms (when connection is unstable) */
+	minIntervalMs: number;
+
+	/** Maximum heartbeat interval in ms (when connection is stable, for battery saving) */
+	maxIntervalMs: number;
+
+	/** Default/starting interval in ms */
+	defaultIntervalMs: number;
+
+	/** Interval for verifying connection quality (fast heartbeats) */
+	verifyIntervalMs: number;
+
+	/** How many consecutive good heartbeats before increasing interval */
+	stabilityThreshold: number;
+
+	/** How many consecutive missed heartbeats before decreasing interval */
+	degradationThreshold: number;
+
+	/** Multiplier for interval increase (e.g., 1.5 = 50% longer) */
+	increaseMultiplier: number;
+
+	/** Multiplier for interval decrease (e.g., 0.5 = 50% shorter) */
+	decreaseMultiplier: number;
+
+	/** Whether to reduce heartbeat frequency when battery is low */
+	batteryAware: boolean;
+
+	/** Battery threshold (0-1) below which to use battery-saving mode */
+	lowBatteryThreshold: number;
+
+	/** Interval multiplier when battery is low */
+	lowBatteryMultiplier: number;
+}
+
+/**
+ * Default adaptive heartbeat configuration.
+ */
+export const DEFAULT_ADAPTIVE_HEARTBEAT_CONFIG: AdaptiveHeartbeatConfig = {
+	minIntervalMs: 2000,
+	maxIntervalMs: 30000,
+	defaultIntervalMs: 5000,
+	verifyIntervalMs: 1000,
+	stabilityThreshold: 5,
+	degradationThreshold: 2,
+	increaseMultiplier: 1.5,
+	decreaseMultiplier: 0.5,
+	batteryAware: true,
+	lowBatteryThreshold: 0.2,
+	lowBatteryMultiplier: 2.0
+};
+
+// ============================================================================
 // Factory Functions
 // ============================================================================
 
