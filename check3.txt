@@ -11,12 +11,6 @@ f:\tka-platform\[32msrc\lib\shared\pictograph\tka-glyph\components\TKAGlyph.sve
   [35m.letter-content[36m {
     /* transform-origin is set inline based on letter dimensions */[39m
 
-f:\tka-platform\[32msrc\lib\features\gallery\components\GalleryCanvas.svelte[39m:112:25
-[31mError[39m: Type 'unknown' is not assignable to type 'ToneMapping | undefined'. (ts)
-[36m{#if isReady}
-  <Canvas {autoRender} {[35mtoneMapping[36m} {createRenderer}>
-    {@render children()}[39m
-
 f:\tka-platform\[32msrc\lib\features\realm\components\debug\DebugPanelTabs.svelte[39m:510:3
 [33mWarn[39m: Unused CSS selector ".tab-title i"
 https://svelte.dev/e/css_unused_selector (svelte)
@@ -133,12 +127,6 @@ https://svelte.dev/e/a11y_label_has_associated_control (svelte)
     </label[36m>
     <input type="range" min="0" max="1" step="0.05" value={style}[39m
 
-f:\tka-platform\[32msrc\lib\features\background-builder\components\TreeImageGallery.svelte[39m:77:12
-[31mError[39m: Object is possibly 'undefined'. (ts)
-[36m    {#each CATEGORIES as category}
-      {#if [35mcategoryCounts[category][36m > 0}
-        <button[39m
-
 f:\tka-platform\[32msrc\lib\features\background-builder\components\FireflyForestLab.svelte[39m:233:5
 [33mWarn[39m: `<div>` with a mousemove or mouseleave handler must have an ARIA role
 https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
@@ -203,11 +191,12 @@ f:\tka-platform\[32msrc\lib\shared\animation-engine\components\AnimatorCanvas.s
         {[35mdisplayedMusicalPosition[36m}
         tkaGlyphVisible={effectiveTkaGlyphVisible}[39m
 
-f:\tka-platform\[32msrc\lib\features\browse\sequences\display\components\ShareOptionsRow.svelte[39m:25:14
-[31mError[39m: Expected 0 type arguments, but got 1. (ts)
-[36m    onNativeShare,
-  } = $props<[35mProps[36m>();
-</script>[39m
+f:\tka-platform\[32msrc\lib\features\compose\tabs\setup\components\grid\GridLayoutControls.svelte[39m:374:3
+[33mWarn[39m: Unused CSS selector ".presets-row"
+https://svelte.dev/e/css_unused_selector (svelte)
+[36m
+  [35m.presets-row[36m {
+    display: flex;[39m
 
 f:\tka-platform\[32msrc\lib\features\compose\tabs\setup\components\grid\CellResizeHandles.svelte[39m:39:5
 [33mWarn[39m: Elements with the ARIA role "slider" must have the following attributes defined: "aria-valuenow"
@@ -229,6 +218,12 @@ https://svelte.dev/e/a11y_role_has_required_aria_props (svelte)
 [36m    class="handle corner"
     [35mrole="slider"[36m
     aria-label="Resize cell width and height"[39m
+
+f:\tka-platform\[32msrc\lib\features\compose\tabs\setup\components\grid\CompositionGrid.svelte[39m:333:30
+[31mError[39m: Cannot find name 'onToggleCell'. Did you mean 'ontoggle'? (ts)
+[36m              class="cell-slot-empty"
+              onclick={() => [35monToggleCell[36m?.(row, col)}
+              aria-label="Enable cell at row {row + 1}, column {col + 1}"[39m
 
 f:\tka-platform\[32msrc\lib\features\compose\tabs\browse\components\AnimationFilters.svelte[39m:296:3
 [33mWarn[39m: Do not use empty rulesets (css)
@@ -1213,48 +1208,6 @@ https://svelte.dev/e/css_unused_selector (svelte)
     [35m.card-icon[36m {
       width: 44px;[39m
 
-f:\tka-platform\[32msrc\lib\shared\sequence-viewer\components\SequenceDetailsModal.svelte[39m:1273:10
-[31mError[39m: Type 'PropType | undefined' is not assignable to type 'PropType'.
-  Type 'undefined' is not assignable to type 'PropType'. (ts)
-[36m        userName={authState.user?.displayName || ""}
-        {[35mbluePropType[36m}
-        {redPropType}[39m
-
-f:\tka-platform\[32msrc\lib\shared\sequence-viewer\components\SequenceDetailsModal.svelte[39m:1274:10
-[31mError[39m: Type 'PropType | undefined' is not assignable to type 'PropType'.
-  Type 'undefined' is not assignable to type 'PropType'. (ts)
-[36m        {bluePropType}
-        {[35mredPropType[36m}
-        {catDogModeEnabled}[39m
-
-f:\tka-platform\[32msrc\lib\shared\sequence-viewer\components\SequenceDetailsModal.svelte[39m:1275:10
-[31mError[39m: Type 'boolean | undefined' is not assignable to type 'boolean'.
-  Type 'undefined' is not assignable to type 'boolean'. (ts)
-[36m        {redPropType}
-        {[35mcatDogModeEnabled[36m}
-        onSelectType={selectExportType}[39m
-
-f:\tka-platform\[32msrc\lib\shared\sequence-viewer\components\SequenceDetailsModal.svelte[39m:1298:10
-[31mError[39m: Type 'PropType | undefined' is not assignable to type 'PropType'.
-  Type 'undefined' is not assignable to type 'PropType'. (ts)
-[36m        userName={authState.user?.displayName || ""}
-        {[35mbluePropType[36m}
-        {redPropType}[39m
-
-f:\tka-platform\[32msrc\lib\shared\sequence-viewer\components\SequenceDetailsModal.svelte[39m:1299:10
-[31mError[39m: Type 'PropType | undefined' is not assignable to type 'PropType'.
-  Type 'undefined' is not assignable to type 'PropType'. (ts)
-[36m        {bluePropType}
-        {[35mredPropType[36m}
-        {catDogModeEnabled}[39m
-
-f:\tka-platform\[32msrc\lib\shared\sequence-viewer\components\SequenceDetailsModal.svelte[39m:1300:10
-[31mError[39m: Type 'boolean | undefined' is not assignable to type 'boolean'.
-  Type 'undefined' is not assignable to type 'boolean'. (ts)
-[36m        {redPropType}
-        {[35mcatDogModeEnabled[36m}
-        {isFullscreen}[39m
-
 f:\tka-platform\[32msrc\lib\features\create\shared\components\coordinators\SequenceDrawerHost.svelte[39m:741:60
 [31mError[39m: Argument of type 'import("f:/tka-platform/src/lib/shared/sequence-viewer/domain/types").ExportSettings' is not assignable to parameter of type 'import("f:/tka-platform/src/lib/shared/share-hub/domain/models/ExportSettings").ExportSettings'.
   Types of property 'animationSettings' are incompatible.
@@ -1319,11 +1272,12 @@ https://svelte.dev/e/a11y_no_noninteractive_element_interactions (svelte)
     </div[36m>
   </div>[39m
 
-f:\tka-platform\[32msrc\lib\shared\share-hub\components\ShareHubDrawer.svelte[39m:29:14
-[31mError[39m: Expected 0 type arguments, but got 1. (ts)
-[36m    selectedFormat = "animation",
-  } = $props<[35mProps[36m>();
-</script>[39m
+f:\tka-platform\[32msrc\lib\shared\share-hub\components\ShareHubDrawer.svelte[39m:52:12
+[31mError[39m: Type '(mode: "single" | "composite", settings?: ExportSettings | undefined) => void' is not assignable to type '(mode: "single" | "composite", settings?: ExportSettings | undefined) => Promise<void>'.
+  Type 'void' is not assignable to type 'Promise<void>'. (ts)
+[36m          {isMobile}
+          {[35monExport[36m}
+        />[39m
 
 f:\tka-platform\[32msrc\lib\features\feedback\components\manage\FeedbackKanbanBoard.svelte[39m:334:7
 [33mWarn[39m: Non-interactive element `<div>` should not be assigned mouse or keyboard event listeners
@@ -1532,36 +1486,6 @@ https://svelte.dev/e/a11y_no_noninteractive_element_to_interactive_role (svelte)
         </article[36m>
       {/each}[39m
 
-f:\tka-platform\[32msrc\lib\features\realm\RealmModule.svelte[39m:30:37
-[31mError[39m: Object is possibly 'undefined'. (ts)
-[36m    if (enabledDestinations.length === 1 && isPickerActive) {
-      destinationManager.navigateTo([35menabledDestinations[0][36m.id);
-    }[39m
-
-f:\tka-platform\[32msrc\lib\features\landing-preview\components\VideoGridGallery.svelte[39m:72:13
-[31mError[39m: Argument of type '(el: HTMLVideoElement | null) => void' is not assignable to parameter of type '__sveltets_2_SvelteActionReturnType'. (ts)
-[36m      <video
-        use:[35mhandleVideoRef={i[36m}
-        muted[39m
-
-f:\tka-platform\[32msrc\lib\features\landing-preview\components\VideoGridGallery.svelte[39m:72:27
-[31mError[39m: Expected 1 arguments, but got 2. (ts)
-[36m      <video
-        use:handleVideoRef[35m={i[36m}
-        muted[39m
-
-f:\tka-platform\[32msrc\lib\features\landing-preview\components\VideoCarousel.svelte[39m:79:15
-[31mError[39m: Argument of type '(el: HTMLVideoElement | null) => void' is not assignable to parameter of type '__sveltets_2_SvelteActionReturnType'. (ts)
-[36m        <video
-          use:[35mhandleVideoRef={i[36m}
-          muted[39m
-
-f:\tka-platform\[32msrc\lib\features\landing-preview\components\VideoCarousel.svelte[39m:79:29
-[31mError[39m: Expected 1 arguments, but got 2. (ts)
-[36m        <video
-          use:handleVideoRef[35m={i[36m}
-          muted[39m
-
 f:\tka-platform\[32msrc\lib\features\landing-preview\components\video-editor\fields\CategoryField.svelte[39m:61:7
 [33mWarn[39m: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
 https://svelte.dev/e/a11y_consider_explicit_label (svelte)
@@ -1604,12 +1528,6 @@ https://svelte.dev/e/a11y_consider_explicit_label (svelte)
             <i class="fas fa-times" aria-hidden="true"></i>
           </button[36m>
         </div>[39m
-
-f:\tka-platform\[32msrc\lib\features\landing-preview\components\video-editor\panels\CurateSequencePanel.svelte[39m:168:5
-[31mError[39m: Object is possibly 'undefined'. (ts)
-[36m    video.title &&
-    [35mtopMatches[0][36m.word.toUpperCase() === video.title.toUpperCase()
-  );[39m
 
 f:\tka-platform\[32msrc\lib\features\landing-preview\components\video-editor\panels\RenamePanel.svelte[39m:279:7
 [33mWarn[39m: A form label must be associated with a control
@@ -1694,18 +1612,6 @@ https://svelte.dev/e/css_unused_selector (svelte)
 [36m
   [35m.video-thumbnail video[36m {
     width: 100%;[39m
-
-f:\tka-platform\[32msrc\lib\features\landing-preview\components\VideoCurator.svelte[39m:438:21
-[31mError[39m: Object is possibly 'undefined'. (ts)
-[36m                {video.performers.length === 1
-                  ? [35mvideo.performers[0][36m.displayName
-                  : `${video.performers.length} performers`}[39m
-
-f:\tka-platform\[32msrc\routes\landing\components\LandingBackgroundPicker.svelte[39m:28:14
-[31mError[39m: Object is possibly 'undefined'. (ts)
-[36m    const nextIndex = (currentIndex + 1) % backgrounds.length;
-    onSelect([35mbackgrounds[nextIndex][36m.type);
-  }[39m
 
 f:\tka-platform\[32msrc\lib\features\landing-preview\LandingPreviewModule.svelte[39m:179:3
 [33mWarn[39m: `<div>` with a click handler must have an ARIA role
@@ -2165,5 +2071,5 @@ https://svelte.dev/e/a11y_label_has_associated_control (svelte)
           <div class="playback-buttons">[39m
 
 ====================================
-[31msvelte-check found 40 errors and 193 warnings in 70 files
+[31msvelte-check found 24 errors and 194 warnings in 64 files
 [39m

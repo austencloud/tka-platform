@@ -11,12 +11,6 @@ f:\tka-platform\[32msrc\lib\shared\pictograph\tka-glyph\components\TKAGlyph.sve
   [35m.letter-content[36m {
     /* transform-origin is set inline based on letter dimensions */[39m
 
-f:\tka-platform\[32msrc\lib\features\gallery\components\GalleryCanvas.svelte[39m:112:25
-[31mError[39m: Type 'unknown' is not assignable to type 'ToneMapping | undefined'. (ts)
-[36m{#if isReady}
-  <Canvas {autoRender} {[35mtoneMapping[36m} {createRenderer}>
-    {@render children()}[39m
-
 f:\tka-platform\[32msrc\lib\features\realm\components\debug\DebugPanelTabs.svelte[39m:510:3
 [33mWarn[39m: Unused CSS selector ".tab-title i"
 https://svelte.dev/e/css_unused_selector (svelte)
@@ -1213,48 +1207,6 @@ https://svelte.dev/e/css_unused_selector (svelte)
     [35m.card-icon[36m {
       width: 44px;[39m
 
-f:\tka-platform\[32msrc\lib\shared\sequence-viewer\components\SequenceDetailsModal.svelte[39m:1273:10
-[31mError[39m: Type 'PropType | undefined' is not assignable to type 'PropType'.
-  Type 'undefined' is not assignable to type 'PropType'. (ts)
-[36m        userName={authState.user?.displayName || ""}
-        {[35mbluePropType[36m}
-        {redPropType}[39m
-
-f:\tka-platform\[32msrc\lib\shared\sequence-viewer\components\SequenceDetailsModal.svelte[39m:1274:10
-[31mError[39m: Type 'PropType | undefined' is not assignable to type 'PropType'.
-  Type 'undefined' is not assignable to type 'PropType'. (ts)
-[36m        {bluePropType}
-        {[35mredPropType[36m}
-        {catDogModeEnabled}[39m
-
-f:\tka-platform\[32msrc\lib\shared\sequence-viewer\components\SequenceDetailsModal.svelte[39m:1275:10
-[31mError[39m: Type 'boolean | undefined' is not assignable to type 'boolean'.
-  Type 'undefined' is not assignable to type 'boolean'. (ts)
-[36m        {redPropType}
-        {[35mcatDogModeEnabled[36m}
-        onSelectType={selectExportType}[39m
-
-f:\tka-platform\[32msrc\lib\shared\sequence-viewer\components\SequenceDetailsModal.svelte[39m:1298:10
-[31mError[39m: Type 'PropType | undefined' is not assignable to type 'PropType'.
-  Type 'undefined' is not assignable to type 'PropType'. (ts)
-[36m        userName={authState.user?.displayName || ""}
-        {[35mbluePropType[36m}
-        {redPropType}[39m
-
-f:\tka-platform\[32msrc\lib\shared\sequence-viewer\components\SequenceDetailsModal.svelte[39m:1299:10
-[31mError[39m: Type 'PropType | undefined' is not assignable to type 'PropType'.
-  Type 'undefined' is not assignable to type 'PropType'. (ts)
-[36m        {bluePropType}
-        {[35mredPropType[36m}
-        {catDogModeEnabled}[39m
-
-f:\tka-platform\[32msrc\lib\shared\sequence-viewer\components\SequenceDetailsModal.svelte[39m:1300:10
-[31mError[39m: Type 'boolean | undefined' is not assignable to type 'boolean'.
-  Type 'undefined' is not assignable to type 'boolean'. (ts)
-[36m        {redPropType}
-        {[35mcatDogModeEnabled[36m}
-        {isFullscreen}[39m
-
 f:\tka-platform\[32msrc\lib\features\create\shared\components\coordinators\SequenceDrawerHost.svelte[39m:741:60
 [31mError[39m: Argument of type 'import("f:/tka-platform/src/lib/shared/sequence-viewer/domain/types").ExportSettings' is not assignable to parameter of type 'import("f:/tka-platform/src/lib/shared/share-hub/domain/models/ExportSettings").ExportSettings'.
   Types of property 'animationSettings' are incompatible.
@@ -2165,5 +2117,5 @@ https://svelte.dev/e/a11y_label_has_associated_control (svelte)
           <div class="playback-buttons">[39m
 
 ====================================
-[31msvelte-check found 40 errors and 193 warnings in 70 files
+[31msvelte-check found 33 errors and 193 warnings in 69 files
 [39m
