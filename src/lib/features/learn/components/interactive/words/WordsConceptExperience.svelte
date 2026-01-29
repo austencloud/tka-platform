@@ -24,7 +24,7 @@ Orchestrator component that manages page navigation and state
   // Note: Scroll mode not yet implemented for this experience
   // When viewMode === "scroll", falls back to step mode
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   // Persistence for HMR/refresh survival
   const persistence = getExperiencePersistence("words");

@@ -50,7 +50,7 @@ Features:
 		// Trigger confetti for silver/gold achievements
 		if (confettiAmount > 0) {
 			setTimeout(() => {
-				delightOrchestrator?.trigger(
+				delightOrchestrator?.celebrate(
 					achievement.tier === 'gold' ? 'badge-earned' : 'quiz-complete',
 					{}
 				);

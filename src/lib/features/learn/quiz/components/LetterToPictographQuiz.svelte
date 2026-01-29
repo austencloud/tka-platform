@@ -17,9 +17,10 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
   import QuizPictographButton from "./shared/QuizPictographButton.svelte";
   import QuizFeedbackBanner from "./shared/QuizFeedbackBanner.svelte";
 
-  let { onAnswerSubmit, onNextQuestion } = $props<{
+  let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
     onAnswerSubmit?: (isCorrect: boolean) => void;
     onNextQuestion?: () => void;
+    onBack?: () => void;
   }>();
 
   let hapticService: IHapticFeedback;

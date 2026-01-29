@@ -155,7 +155,7 @@ Provides quiz functionality for learning TKA notation:
 
   function handleStreakMilestone(streak: number) {
     // Trigger major celebration for streak milestones
-    delightOrchestrator?.trigger('streak-milestone', {
+    delightOrchestrator?.celebrate('streak-milestone', {
       toastMessage: `${streak} day streak! 🔥`
     });
   }

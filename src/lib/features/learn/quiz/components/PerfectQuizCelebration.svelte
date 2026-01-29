@@ -32,7 +32,7 @@ Features:
 			textVisible = true;
 			// Trigger celebration
 			hapticService?.trigger('success');
-			delightOrchestrator?.trigger('perfect-quiz', {
+			delightOrchestrator?.celebrate('perfect-quiz', {
 				confettiAmount: 80,
 				toastMessage: 'Perfect Score! 🎯'
 			});

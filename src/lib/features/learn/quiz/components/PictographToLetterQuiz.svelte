@@ -19,9 +19,10 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   import ScorePopAnimation from "./shared/ScorePopAnimation.svelte";
   import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
 
-  let { onAnswerSubmit, onNextQuestion } = $props<{
+  let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
     onAnswerSubmit?: (isCorrect: boolean) => void;
     onNextQuestion?: () => void;
+    onBack?: () => void;
   }>();
 
   let hapticService: IHapticFeedback;
@@ -86,7 +87,7 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
 
       // Mini confetti for streak of 3+
       if (currentStreak >= 3 && currentStreak % 3 === 0) {
-        delightOrchestrator?.trigger("answer-correct", {
+        delightOrchestrator?.celebrate("answer-correct", {
           confettiAmount: 15
         });
       }

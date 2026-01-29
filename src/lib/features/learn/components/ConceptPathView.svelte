@@ -18,7 +18,7 @@ Shows:
     getNextConcept,
     getPreviousConcept,
   } from "../domain/concepts";
-  import type { LearnConcept, ConceptCategory } from "../domain/types";
+  import type { LearnConcept, ConceptCategory, LearningProgress } from "../domain/types";
   import type { IConceptProgressTracker } from "../services/contracts/IConceptProgressTracker";
   import ProgressMiniMap from "./ProgressMiniMap.svelte";
   import HeroConceptCard from "./HeroConceptCard.svelte";
@@ -38,7 +38,7 @@ Shows:
 
   // Subscribe to progress updates
   onMount(() => {
-    const unsubscribe = conceptProgressService.subscribe((newProgress) => {
+    const unsubscribe = conceptProgressService.subscribe((newProgress: LearningProgress) => {
       progress = newProgress;
     });
     return unsubscribe;
