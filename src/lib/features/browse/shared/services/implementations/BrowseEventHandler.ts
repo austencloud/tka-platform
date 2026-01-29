@@ -118,9 +118,9 @@ export class BrowseEventHandler implements IBrowseEventHandler {
       // Close the detail panel if open
       this.handleCloseDetailPanel();
 
-      // Navigate to Create module's constructor tab using coordinator
+      // Navigate to Create module's construct tab using coordinator
       // (handleModuleChange does both state update AND module switch)
-      void handleModuleChange("create", "constructor");
+      void handleModuleChange("create", "construct");
     } catch (err) {
       console.error("Failed to initiate edit:", err);
       this.params!.setError(

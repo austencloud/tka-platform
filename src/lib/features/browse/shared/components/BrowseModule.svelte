@@ -103,7 +103,6 @@
     if (
       navTab === "gallery" ||
       navTab === "browse" ||
-      navTab === "gallery" ||
       navTab === "library"
     ) {
       newTab = "gallery";
