@@ -35,6 +35,12 @@ export class ProfilePictureManager implements IProfilePictureManager {
         return; // Not a Facebook user
       }
 
+      // Check if user has a custom avatar (uploaded to our Firebase Storage)
+      // These should NOT be overwritten by OAuth provider photos
+      if (user.photoURL?.includes("firebasestorage.googleapis.com")) {
+        return; // Preserve custom avatar
+      }
+
       // IMPORTANT: If user also has Google linked, prefer Google's photo
       // Google photos are more reliable and don't require access tokens
       const hasGoogle = user.providerData.some(
@@ -97,10 +103,16 @@ export class ProfilePictureManager implements IProfilePictureManager {
         return; // Not a Google user
       }
 
-      // If user has a Google photo, ALWAYS prefer it over other providers
-      // This fixes the issue where Facebook's broken silhouette overwrites Google photos
+      // Check if user has a custom avatar (uploaded to our Firebase Storage)
+      // These should NOT be overwritten by OAuth provider photos
+      const isCustomAvatar = user.photoURL?.includes("firebasestorage.googleapis.com");
+      if (isCustomAvatar) {
+        return; // Preserve custom avatar
+      }
+
+      // If user has a Google photo, prefer it over Facebook's broken silhouettes
       if (googleData.photoURL) {
-        // Check if current photoURL is NOT a Google URL (e.g., it's a Facebook URL)
+        // Check if current photoURL is already a Google URL
         const isCurrentlyGoogle = user.photoURL?.includes(
           "googleusercontent.com"
         );
@@ -290,23 +302,52 @@ export class ProfilePictureManager implements IProfilePictureManager {
       img.crossOrigin = "anonymous";
 
       img.onload = () => {
-        // Calculate size for prop (55% of avatar)
-        const propSize = size * 0.55;
-        const x = (size - propSize) / 2;
-        const y = (size - propSize) / 2;
+        // Calculate max size for prop (55% of avatar)
+        const maxPropSize = size * 0.55;
 
-        // Draw white silhouette
-        ctx.save();
-        ctx.globalCompositeOperation = "source-atop";
-        ctx.filter = "brightness(0) invert(1)";
-        ctx.globalAlpha = 0.9;
-        ctx.drawImage(img, x, y, propSize, propSize);
-        ctx.restore();
+        // Maintain aspect ratio
+        const imgAspect = img.naturalWidth / img.naturalHeight;
+        let propWidth: number;
+        let propHeight: number;
+
+        if (imgAspect > 1) {
+          // Wider than tall - fit to width
+          propWidth = maxPropSize;
+          propHeight = maxPropSize / imgAspect;
+        } else {
+          // Taller than wide - fit to height
+          propHeight = maxPropSize;
+          propWidth = maxPropSize * imgAspect;
+        }
+
+        // Center the prop
+        const x = (size - propWidth) / 2;
+        const y = (size - propHeight) / 2;
+
+        // Create an offscreen canvas to make the prop white
+        const offscreen = document.createElement("canvas");
+        offscreen.width = propWidth;
+        offscreen.height = propHeight;
+        const offCtx = offscreen.getContext("2d");
+
+        if (offCtx) {
+          // Draw the original image maintaining aspect ratio
+          offCtx.drawImage(img, 0, 0, propWidth, propHeight);
+
+          // Make it white by using composite operations
+          offCtx.globalCompositeOperation = "source-in";
+          offCtx.fillStyle = "rgba(255, 255, 255, 0.9)";
+          offCtx.fillRect(0, 0, propWidth, propHeight);
+
+          // Draw the white prop onto the main canvas
+          ctx.drawImage(offscreen, x, y);
+        }
 
         resolve();
       };
 
-      img.onerror = () => {
+      img.onerror = (e) => {
+        console.error("Failed to load prop image:", imageSrc, e);
         // Skip prop drawing if image fails to load
         resolve();
       };

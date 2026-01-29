@@ -152,4 +152,31 @@ export class UserDocumentManager implements IUserDocumentManager {
       // Don't throw - this shouldn't block authentication
     }
   }
+
+  /**
+   * Update only the photoURL field for a user's Firestore document.
+   * Used when user changes their profile picture without a full auth refresh.
+   */
+  async updatePhotoURL(userId: string, photoURL: string): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const userDocRef = doc(firestore, `users/${userId}`);
+
+      await setDoc(
+        userDocRef,
+        {
+          photoURL,
+          avatar: photoURL,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error(
+        `❌ [UserDocumentManager] Failed to update photoURL:`,
+        error
+      );
+      // Don't throw - this shouldn't block the main operation
+    }
+  }
 }

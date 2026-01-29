@@ -32,6 +32,7 @@
     type PhotoSelection,
   } from "../ProfilePhotoPicker.svelte";
   import { updateProfile } from "firebase/auth";
+  import { refreshUser } from "../../../auth/state/authState.svelte";
 
   import type { PreviewUserProfile } from "../../../debug/state/user-preview-state.svelte";
   import type { User } from "firebase/auth";
@@ -231,38 +232,44 @@
     hapticService?.trigger("selection");
 
     const profilePictureManager = container.items.profilePictureManager;
+    const userDocumentManager = container.items.userDocumentManager;
 
     try {
+      let newPhotoURL: string | null = null;
+
       switch (selection.type) {
         case "upload":
           if (selection.file) {
             // Upload file to Firebase Storage
-            const url = await uploadProfilePhoto(user, selection.file);
-            await updateProfile(user, { photoURL: url });
-            await user.reload();
-            hapticService?.trigger("success");
+            newPhotoURL = await uploadProfilePhoto(user, selection.file);
+            await updateProfile(user, { photoURL: newPhotoURL });
           }
           break;
 
         case "google":
         case "facebook":
           if (selection.url) {
-            await updateProfile(user, { photoURL: selection.url });
-            await user.reload();
-            hapticService?.trigger("success");
+            newPhotoURL = selection.url;
+            await updateProfile(user, { photoURL: newPhotoURL });
           }
           break;
 
         case "generated":
           if (selection.generatedData) {
-            await profilePictureManager.generateAndUploadAvatar(
+            newPhotoURL = await profilePictureManager.generateAndUploadAvatar(
               user,
               selection.generatedData
             );
-            await user.reload();
-            hapticService?.trigger("success");
           }
           break;
+      }
+
+      // If we got a new photo URL, sync to Firestore and refresh UI
+      if (newPhotoURL) {
+        // Update Firestore user document so admin views reflect change instantly
+        await userDocumentManager.updatePhotoURL(user.uid, newPhotoURL);
+        await refreshUser(); // Triggers Svelte reactivity
+        hapticService?.trigger("success");
       }
     } catch (error) {
       console.error("Failed to update profile photo:", error);

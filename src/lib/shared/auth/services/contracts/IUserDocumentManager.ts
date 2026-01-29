@@ -20,4 +20,14 @@ export interface IUserDocumentManager {
    * @returns Promise that resolves when document is created/updated
    */
   createOrUpdateUserDocument(user: User): Promise<void>;
+
+  /**
+   * Update only the photoURL field for a user's Firestore document.
+   * Used when user changes their profile picture without a full auth refresh.
+   *
+   * @param userId - The user's UID
+   * @param photoURL - The new photo URL
+   * @returns Promise that resolves when document is updated
+   */
+  updatePhotoURL(userId: string, photoURL: string): Promise<void>;
 }
