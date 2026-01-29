@@ -25,7 +25,7 @@
   - Screen reader announcements for mode changes
 -->
 <script lang="ts">
-  import { onDestroy, onMount, tick } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { fade, scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
@@ -44,10 +44,13 @@
   import ViewerFooter from "./ViewerFooter.svelte";
   import FullscreenControls from "./FullscreenControls.svelte";
   import { sequenceModalPersistence } from "../services/implementations/SequenceModalPersistence";
-import { playbackTimeCalculator } from "../services/implementations/PlaybackTimeCalculator";
+  import { playbackTimeCalculator } from "../services/implementations/PlaybackTimeCalculator";
+  import { createModalSwipeDismiss } from "../services/implementations/ModalSwipeDismiss";
+  import { createModalAccessibilityHelper } from "../services/implementations/ModalAccessibilityHelper.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager, type TrailVisibility } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { goto } from "$app/navigation";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import MorphingFooter from "./MorphingFooter.svelte";
@@ -144,62 +147,18 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
   const redPropType = $derived(settings.redPropType);
   const catDogModeEnabled = $derived(settings.catDogMode);
 
-  // ========== ACCESSIBILITY STATE ==========
-  // Screen reader announcement for dynamic content changes
-  let srAnnouncement = $state("");
-  // Reference to trigger element for focus restoration
-  let triggerElement: HTMLElement | null = null;
+  // ========== ACCESSIBILITY ==========
+  const accessibilityHelper = createModalAccessibilityHelper();
   // Reference to modal container for focus management
   let modalContainer: HTMLElement | null = null;
-
-  /**
-   * Announce a message to screen readers via aria-live region.
-   * Uses assertive for important changes, polite for status updates.
-   */
-  function announceToScreenReader(message: string, priority: "polite" | "assertive" = "polite") {
-    // Clear first to ensure repeated announcements are read
-    srAnnouncement = "";
-    // Use tick to ensure the DOM updates
-    tick().then(() => {
-      srAnnouncement = message;
-    });
-  }
-
-  /**
-   * Focus the first focusable element within the modal.
-   */
-  async function focusFirstElement() {
-    await tick();
-    if (!modalContainer) return;
-
-    const focusable = modalContainer.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    );
-    const firstElement = focusable[0];
-    if (firstElement) {
-      firstElement.focus();
-    }
-  }
-
-  /**
-   * Restore focus to the trigger element when modal closes.
-   */
-  function restoreFocus() {
-    if (triggerElement && typeof triggerElement.focus === "function") {
-      triggerElement.focus();
-    }
-  }
 
   // Capture trigger element when modal opens
   $effect(() => {
     if (open && browser) {
-      // Store the currently focused element as the trigger
-      triggerElement = document.activeElement as HTMLElement | null;
-      // Focus first element after modal renders
-      focusFirstElement();
-      // Announce modal opened
+      accessibilityHelper.captureTrigger();
+      accessibilityHelper.focusFirstElement(modalContainer);
       const sequenceWord = sequence?.word || "sequence";
-      announceToScreenReader(`Sequence viewer opened for ${sequenceWord}`, "assertive");
+      accessibilityHelper.announce(`Sequence viewer opened for ${sequenceWord}`, "assertive");
     }
   });
 
@@ -218,136 +177,43 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
     return undefined;
   });
 
-  // Swipe-to-dismiss state (mobile only)
-  // Supports dragging from anywhere on the modal to dismiss
-  let swipeY = $state(0);
-  let swipeStartY = $state(0);
-  let swipeStartX = $state(0);
-  let isSwiping = $state(false);
-  let isTrackingTouch = $state(false); // Track touch from anywhere initially
-  let swipeGestureStarted = $state(false); // True once we've committed to a swipe gesture
-  let blockClicksAfterSwipe = $state(false); // Temporarily block clicks after a swipe gesture
-  const SWIPE_THRESHOLD = 100; // px to trigger dismiss
-  const SWIPE_COMMIT_THRESHOLD = 10; // px of vertical movement before committing to swipe
-  const HORIZONTAL_TOLERANCE = 2; // Vertical movement must be > this times horizontal movement
+  // Swipe-to-dismiss handler (mobile only)
+  const swipeDismiss = createModalSwipeDismiss();
 
   function handleTouchStart(e: TouchEvent) {
     if (!isMobile || isFullscreen || isExportMode) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-
-    // Track touch start from anywhere - we'll decide if it's a swipe during move
-    swipeStartY = touch.clientY;
-    swipeStartX = touch.clientX;
-    isTrackingTouch = true;
-    isSwiping = false;
-    swipeGestureStarted = false;
-    swipeY = 0;
+    swipeDismiss.handleTouchStart(e);
   }
 
   function handleTouchMove(e: TouchEvent) {
-    if (!isTrackingTouch) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-
-    const deltaY = touch.clientY - swipeStartY;
-    const deltaX = Math.abs(touch.clientX - swipeStartX);
-
-    // If we haven't committed to a swipe yet, check if this looks like a vertical swipe
-    if (!swipeGestureStarted) {
-      // Only start swiping if:
-      // 1. Movement is downward (deltaY > 0)
-      // 2. Vertical movement exceeds the commit threshold
-      // 3. Vertical movement is significantly more than horizontal (to avoid interfering with horizontal scrolling)
-      if (deltaY > SWIPE_COMMIT_THRESHOLD && deltaY > deltaX * HORIZONTAL_TOLERANCE) {
-        swipeGestureStarted = true;
-        isSwiping = true;
-      } else if (deltaX > SWIPE_COMMIT_THRESHOLD) {
-        // This looks like a horizontal gesture, stop tracking for swipe
-        isTrackingTouch = false;
-        return;
-      } else {
-        // Not enough movement yet to decide
-        return;
+    if (!isMobile || isFullscreen || isExportMode) return;
+    const handled = swipeDismiss.handleTouchMove(e);
+    if (handled) {
+      // Only prevent default if the event is cancelable
+      // (won't be cancelable if browser already started scrolling)
+      if (e.cancelable) {
+        e.preventDefault();
       }
-    }
-
-    // We're committed to swiping - apply the transform
-    if (isSwiping && deltaY > 0) {
-      swipeY = deltaY;
-      // Prevent default to stop any scrolling
-      e.preventDefault();
-      // Apply transform to the dialog element
+      // Apply visual feedback
       const dialog = document.querySelector("dialog.sequence-details-modal") as HTMLDialogElement | null;
-      if (dialog) {
-        dialog.style.transform = `translateY(${deltaY}px)`;
-        dialog.style.opacity = `${Math.max(0.3, 1 - deltaY / 300)}`;
-      }
+      swipeDismiss.applyTransformToDialog(dialog);
     }
   }
 
-  function handleTouchEnd(e: TouchEvent) {
-    const wasSwipeGesture = swipeGestureStarted;
-    const currentSwipeY = swipeY;
-
-    // Reset tracking state
-    isTrackingTouch = false;
-
-    if (!wasSwipeGesture) {
-      // No swipe gesture - let the click event through
-      isSwiping = false;
-      swipeY = 0;
-      swipeGestureStarted = false;
-      return;
-    }
-
-    // A swipe gesture was made - block clicks temporarily to prevent step seeking
-    blockClicksAfterSwipe = true;
-    setTimeout(() => {
-      blockClicksAfterSwipe = false;
-    }, 100); // Clear after 100ms - enough to block the synthesized click
-
-    // Handle the swipe
+  async function handleTouchEnd() {
+    const shouldDismiss = swipeDismiss.handleTouchEnd();
     const dialog = document.querySelector("dialog.sequence-details-modal") as HTMLDialogElement | null;
 
-    if (currentSwipeY > SWIPE_THRESHOLD) {
-      // Dismiss the modal with animation
-      if (dialog) {
-        dialog.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
-        dialog.style.transform = 'translateY(100%)';
-        dialog.style.opacity = '0';
-        setTimeout(() => {
-          handleClose();
-          // Reset styles after close
-          if (dialog) {
-            dialog.style.transform = '';
-            dialog.style.opacity = '';
-            dialog.style.transition = '';
-          }
-        }, 200);
-      } else {
-        handleClose();
-      }
-    } else {
-      // Snap back
-      if (dialog) {
-        dialog.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
-        dialog.style.transform = '';
-        dialog.style.opacity = '';
-        setTimeout(() => {
-          if (dialog) dialog.style.transition = '';
-        }, 200);
-      }
+    if (shouldDismiss) {
+      await swipeDismiss.animateDismiss(dialog);
+      handleClose();
+    } else if (swipeDismiss.state.isCommitted) {
+      // Was swiping but didn't meet threshold - snap back
+      await swipeDismiss.animateSnapBack(dialog);
     }
-
-    // Reset state
-    swipeY = 0;
-    isSwiping = false;
-    swipeGestureStarted = false;
   }
 
   // Attach touchmove handler at document level with capture phase
-  // This ensures we catch the event before any child elements can intercept it
   $effect(() => {
     if (!browser || !open) return;
 
@@ -375,7 +241,7 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
     if (!isMobile && !isFullscreen) {
       isFullscreen = true;
     }
-    announceToScreenReader(`${pane === 'animation' ? 'Animation' : 'Image'} expanded. Tap to collapse.`);
+    accessibilityHelper.announce(`${pane === 'animation' ? 'Animation' : 'Image'} expanded. Tap to collapse.`);
   }
 
   function exitEditMode() {
@@ -386,7 +252,7 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
       isFullscreen = false;
       fullscreenControlsVisible = false;
     }
-    announceToScreenReader("Split view restored");
+    accessibilityHelper.announce("Split view restored");
   }
 
   // Export mode functions
@@ -398,32 +264,32 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
     if (isPlayingLocal && playbackController) {
       playbackController.togglePlayback();
     }
-    announceToScreenReader("Export mode. Choose Video, Image, or Combined format.", "assertive");
+    accessibilityHelper.announce("Export mode. Choose Video, Image, or Combined format.", "assertive");
   }
 
   function exitExportMode() {
     hapticService?.trigger("selection");
     isExportMode = false;
     exportType = null;
-    announceToScreenReader("Returned to viewer");
+    accessibilityHelper.announce("Returned to viewer");
   }
 
   function selectExportType(type: ExportType) {
     hapticService?.trigger("selection");
     if (type === "both") {
       // Redirect to Compose with combo-export preset
-      announceToScreenReader("Opening Compose for combined export");
+      accessibilityHelper.announce("Opening Compose for combined export");
       handleOpenInCompose("combo-export");
     } else {
       exportType = type;
-      announceToScreenReader(`${type === 'animation' ? 'Video' : 'Image'} export selected. Configure options below.`);
+      accessibilityHelper.announce(`${type === 'animation' ? 'Video' : 'Image'} export selected. Configure options below.`);
     }
   }
 
   function backToExportTypeSelection() {
     hapticService?.trigger("selection");
     exportType = null;
-    announceToScreenReader("Back to export format selection");
+    accessibilityHelper.announce("Back to export format selection");
   }
 
   // Simple sync toggle - one tap to connect/disconnect
@@ -447,11 +313,11 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
         }
       );
       hapticService?.trigger(isNowSyncing ? "success" : "selection");
-      announceToScreenReader(isNowSyncing ? "Sync enabled. Searching for peers." : "Sync disabled");
+      accessibilityHelper.announce(isNowSyncing ? "Sync enabled. Searching for peers." : "Sync disabled");
     } catch (err) {
       console.error("[Sync] Toggle failed:", err);
       hapticService?.trigger("error");
-      announceToScreenReader("Sync failed. Please try again.");
+      accessibilityHelper.announce("Sync failed. Please try again.");
     } finally {
       isSyncToggling = false;
     }
@@ -505,7 +371,7 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
     hapticService?.trigger("selection");
     isFullscreen = true;
     showFullscreenControls();
-    announceToScreenReader("Fullscreen mode. Tap to show controls, press Escape to exit.", "assertive");
+    accessibilityHelper.announce("Fullscreen mode. Tap to show controls, press Escape to exit.", "assertive");
   }
 
   function exitFullscreen() {
@@ -513,7 +379,7 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
     isFullscreen = false;
     fullscreenControlsVisible = false;
     clearControlsTimeout();
-    announceToScreenReader("Exited fullscreen");
+    accessibilityHelper.announce("Exited fullscreen");
   }
 
   function showFullscreenControls() {
@@ -646,42 +512,36 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
   let animTkaGlyph = $state(animationVisibility.getVisibility("tkaGlyph"));
   let animWordHeader = $state(animationVisibility.getVisibility("wordHeader"));
 
-  // Image visibility (local state, persisted to localStorage)
-  let imgShowWord = $state(loadImageSetting("word", true));
-  let imgShowStartPos = $state(loadImageSetting("startPos", true));
-  let imgShowDifficulty = $state(loadImageSetting("difficulty", true));
-  let imgShowCreatorName = $state(loadImageSetting("creatorName", true));
-  let imgShowNotes = $state(loadImageSetting("notes", true));
-  let imgDarkMode = $state(loadImageSetting("darkMode", false));
-  let imgColumnCount = $state<number | null>(loadColumnCountSetting());
+  // Image visibility (uses global ImageCompositionManager for Firebase sync)
+  const imageComposition = getImageCompositionManager();
 
-  function loadImageSetting(key: string, defaultValue: boolean): boolean {
-    if (typeof localStorage !== "undefined") {
-      const saved = localStorage.getItem(`tka_seq_details_img_${key}`);
-      if (saved !== null) return saved === "true";
-    }
-    return defaultValue;
-  }
+  // Reactive state synced from manager (using local state with observer pattern)
+  let imgShowWord = $state(imageComposition.addWord);
+  let imgShowStartPos = $state(imageComposition.includeStartPosition);
+  let imgShowDifficulty = $state(imageComposition.addDifficultyLevel);
+  let imgShowCreatorName = $state(imageComposition.showCreatorName);
+  let imgShowNotes = $state(imageComposition.showNotes);
+  let imgDarkMode = $state(imageComposition.darkMode);
 
-  function loadColumnCountSetting(): number | null {
-    if (typeof localStorage !== "undefined") {
-      const saved = localStorage.getItem("tka_seq_details_img_columnCount");
-      if (saved !== null && saved !== "null") return parseInt(saved, 10);
-    }
-    return null; // Auto
-  }
+  // Column count is modal-specific (not in global settings)
+  let imgColumnCount = $state<number | null>(sequenceModalPersistence.loadColumnCount());
 
-  function saveImageSetting(key: string, value: boolean) {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem(`tka_seq_details_img_${key}`, String(value));
-    }
-  }
+  // Sync from ImageCompositionManager when it changes externally
+  $effect(() => {
+    if (!browser) return;
 
-  function saveColumnCountSetting(value: number | null) {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem("tka_seq_details_img_columnCount", String(value));
-    }
-  }
+    const observer = () => {
+      imgShowWord = imageComposition.addWord;
+      imgShowStartPos = imageComposition.includeStartPosition;
+      imgShowDifficulty = imageComposition.addDifficultyLevel;
+      imgShowCreatorName = imageComposition.showCreatorName;
+      imgShowNotes = imageComposition.showNotes;
+      imgDarkMode = imageComposition.darkMode;
+    };
+
+    imageComposition.registerObserver(observer);
+    return () => imageComposition.unregisterObserver(observer);
+  });
 
   function cycleColumnCount() {
     hapticService?.trigger("selection");
@@ -690,7 +550,7 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
     const currentIndex = options.indexOf(imgColumnCount ?? null);
     const nextIndex = (currentIndex + 1) % options.length;
     imgColumnCount = options[nextIndex] ?? null;
-    saveColumnCountSetting(imgColumnCount);
+    sequenceModalPersistence.saveColumnCount(imgColumnCount);
   }
 
   function toggleAnimSetting(key: "trailStyle" | "tkaGlyph" | "wordHeader") {
@@ -712,28 +572,22 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
     hapticService?.trigger("selection");
     switch (key) {
       case "word":
-        imgShowWord = !imgShowWord;
-        saveImageSetting("word", imgShowWord);
+        imageComposition.setAddWord(!imgShowWord);
         break;
       case "startPos":
-        imgShowStartPos = !imgShowStartPos;
-        saveImageSetting("startPos", imgShowStartPos);
+        imageComposition.setIncludeStartPosition(!imgShowStartPos);
         break;
       case "difficulty":
-        imgShowDifficulty = !imgShowDifficulty;
-        saveImageSetting("difficulty", imgShowDifficulty);
+        imageComposition.setAddDifficultyLevel(!imgShowDifficulty);
         break;
       case "creatorName":
-        imgShowCreatorName = !imgShowCreatorName;
-        saveImageSetting("creatorName", imgShowCreatorName);
+        imageComposition.setShowCreatorName(!imgShowCreatorName);
         break;
       case "notes":
-        imgShowNotes = !imgShowNotes;
-        saveImageSetting("notes", imgShowNotes);
+        imageComposition.setShowNotes(!imgShowNotes);
         break;
       case "darkMode":
-        imgDarkMode = !imgDarkMode;
-        saveImageSetting("darkMode", imgDarkMode);
+        imageComposition.setDarkMode(!imgDarkMode);
         break;
     }
   }
@@ -745,9 +599,8 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
   function handleUnifiedDarkModeToggle() {
     hapticService?.trigger("selection");
     const newValue = !imgDarkMode;
-    // Update choreo card dark mode
-    imgDarkMode = newValue;
-    saveImageSetting("darkMode", newValue);
+    // Update choreo card dark mode (this also syncs to Firebase)
+    imageComposition.setDarkMode(newValue);
     // Update animation canvas dark mode
     animationVisibility.setDarkMode(newValue);
   }
@@ -1001,7 +854,7 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
   $effect(() => {
     // Only announce after initial load (when services are ready)
     if (animationServicesReady) {
-      announceToScreenReader(isPlayingLocal ? "Playing" : "Paused");
+      accessibilityHelper.announce(isPlayingLocal ? "Playing" : "Paused");
     }
   });
 
@@ -1016,7 +869,7 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
 
   function handleStepClick(stepIndex: number) {
     // Block clicks that follow a swipe gesture (prevents accidental step seeks when dismissing)
-    if (blockClicksAfterSwipe) {
+    if (swipeDismiss.state.blockClicks) {
       return;
     }
 
@@ -1047,7 +900,7 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
       lanSyncState.disconnect();
     }
     // Restore focus to the element that triggered the modal
-    restoreFocus();
+    accessibilityHelper.restoreFocus();
     onclose();
   }
 
@@ -1055,12 +908,12 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
   const exportCallbacks = {
     onSuccess: (message: string) => {
       showToast(message, "success");
-      announceToScreenReader(message, "assertive");
+      accessibilityHelper.announce(message, "assertive");
       exitExportMode();
     },
     onError: (message: string) => {
       // Error is already tracked in exporter state
-      announceToScreenReader(`Export failed: ${message}`, "assertive");
+      accessibilityHelper.announce(`Export failed: ${message}`, "assertive");
     },
     onHaptic: (type: "success" | "error" | "selection") => {
       hapticService?.trigger(type);
@@ -1145,6 +998,7 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
   onDestroy(() => {
     cleanupAnimationStateSubscription?.();
     clearControlsTimeout();
+    swipeDismiss.dispose();
     if (playbackController) {
       playbackController.dispose();
     }
@@ -1179,7 +1033,7 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
   aria-live="polite"
   aria-atomic="true"
 >
-  {srAnnouncement}
+  {accessibilityHelper.announcement}
 </div>
 
 <BaseModal
@@ -1227,35 +1081,19 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
   >
     <!-- Fullscreen floating controls overlay -->
     {#if isFullscreen}
-      <div class="fullscreen-overlay-controls" class:visible={fullscreenControlsVisible}>
-        <button
-          type="button"
-          class="fs-close-btn"
-          onclick={(e) => { e.stopPropagation(); exitFullscreen(); }}
-          aria-label="Exit fullscreen"
-        >
-          <i class="fas fa-compress" aria-hidden="true"></i>
-        </button>
-
-        {#if viewMode !== "image"}
-          <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-          <div class="fs-transport" role="presentation" onclick={(e) => e.stopPropagation()}>
-            <TransportControls
-              isPlaying={isPlayingLocal}
-              onPlaybackToggle={handlePlaybackToggle}
-              onStepHalfBeatBackward={() => playbackController?.stepHalfBeatBackward()}
-              onStepHalfBeatForward={() => playbackController?.stepHalfBeatForward()}
-              onStepFullBeatBackward={() => playbackController?.stepFullBeatBackward()}
-              onStepFullBeatForward={() => playbackController?.stepFullBeatForward()}
-            />
-            <BpmChips
-              bpm={bpmLocal}
-              variant="compact"
-              onBpmChange={handleBpmChange}
-            />
-          </div>
-        {/if}
-      </div>
+      <FullscreenControls
+        visible={fullscreenControlsVisible}
+        {viewMode}
+        isPlaying={isPlayingLocal}
+        bpm={bpmLocal}
+        onExit={exitFullscreen}
+        onPlaybackToggle={handlePlaybackToggle}
+        onStepHalfBeatBackward={() => playbackController?.stepHalfBeatBackward()}
+        onStepHalfBeatForward={() => playbackController?.stepHalfBeatForward()}
+        onStepFullBeatBackward={() => playbackController?.stepFullBeatBackward()}
+        onStepFullBeatForward={() => playbackController?.stepFullBeatForward()}
+        onBpmChange={handleBpmChange}
+      />
     {/if}
 
     {#if isExportMode}
@@ -1420,74 +1258,6 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
     position: relative;
   }
 
-  /* Floating fullscreen controls overlay */
-  .fullscreen-overlay-controls {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity var(--duration-fast, 150ms) ease;
-    z-index: 10;
-  }
-
-  .fullscreen-overlay-controls.visible {
-    opacity: 1;
-  }
-
-  .fullscreen-overlay-controls > * {
-    pointer-events: auto;
-  }
-
-  .fs-close-btn {
-    position: absolute;
-    top: max(env(safe-area-inset-top, 16px), 16px);
-    right: max(env(safe-area-inset-right, 16px), 16px);
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    font-size: 20px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .fs-close-btn:hover {
-    background: rgba(0, 0, 0, 0.8);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-
-  .fs-close-btn:active {
-    transform: scale(0.95);
-  }
-
-  .fs-close-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  .fs-transport {
-    position: absolute;
-    bottom: max(env(safe-area-inset-bottom, 24px), 24px);
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 24px;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
   /* ===== END FULLSCREEN MORPH STYLES ===== */
 
   /* Body content - must fill the modal-body wrapper completely */
@@ -1554,9 +1324,7 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    :global(.sequence-details-modal.base-modal),
-    .fullscreen-overlay-controls,
-    .fs-close-btn {
+    :global(.sequence-details-modal.base-modal) {
       transition: none !important;
     }
   }

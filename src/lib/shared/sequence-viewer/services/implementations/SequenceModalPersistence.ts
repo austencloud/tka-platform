@@ -1,17 +1,18 @@
 import type {
   ISequenceModalPersistence,
   ViewMode,
-  ImageSettings,
 } from "../contracts/ISequenceModalPersistence";
 
 const STORAGE_KEYS = {
   viewMode: "tka_sequence_details_view_mode",
-  imagePrefix: "tka_seq_details_img_",
   columnCount: "tka_seq_details_img_columnCount",
 } as const;
 
 /**
  * Persists sequence modal user preferences to localStorage.
+ *
+ * Note: Image visibility settings are now managed by ImageCompositionManager
+ * for Firebase sync. This service only handles modal-specific settings.
  */
 export class SequenceModalPersistence implements ISequenceModalPersistence {
   loadViewMode(): ViewMode {
@@ -32,19 +33,6 @@ export class SequenceModalPersistence implements ISequenceModalPersistence {
     localStorage.setItem(STORAGE_KEYS.viewMode, mode);
   }
 
-  loadImageSetting(key: keyof ImageSettings, defaultValue: boolean): boolean {
-    if (typeof localStorage === "undefined") return defaultValue;
-
-    const saved = localStorage.getItem(`${STORAGE_KEYS.imagePrefix}${key}`);
-    if (saved !== null) return saved === "true";
-    return defaultValue;
-  }
-
-  saveImageSetting(key: keyof ImageSettings, value: boolean): void {
-    if (typeof localStorage === "undefined") return;
-    localStorage.setItem(`${STORAGE_KEYS.imagePrefix}${key}`, String(value));
-  }
-
   loadColumnCount(): number | null {
     if (typeof localStorage === "undefined") return null;
 
@@ -59,17 +47,6 @@ export class SequenceModalPersistence implements ISequenceModalPersistence {
   saveColumnCount(value: number | null): void {
     if (typeof localStorage === "undefined") return;
     localStorage.setItem(STORAGE_KEYS.columnCount, String(value));
-  }
-
-  loadAllImageSettings(): ImageSettings {
-    return {
-      word: this.loadImageSetting("word", true),
-      startPos: this.loadImageSetting("startPos", true),
-      difficulty: this.loadImageSetting("difficulty", true),
-      creatorName: this.loadImageSetting("creatorName", true),
-      notes: this.loadImageSetting("notes", true),
-      darkMode: this.loadImageSetting("darkMode", false),
-    };
   }
 }
 

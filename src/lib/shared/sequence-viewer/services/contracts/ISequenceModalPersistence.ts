@@ -1,17 +1,11 @@
 /**
  * Persists sequence modal user preferences to localStorage.
+ *
+ * Note: Image visibility settings are now managed by ImageCompositionManager
+ * for Firebase sync. This service only handles modal-specific settings.
  */
 
 export type ViewMode = "animation" | "image" | "split";
-
-export interface ImageSettings {
-  word: boolean;
-  startPos: boolean;
-  difficulty: boolean;
-  creatorName: boolean;
-  notes: boolean;
-  darkMode: boolean;
-}
 
 export interface ISequenceModalPersistence {
   /**
@@ -25,16 +19,6 @@ export interface ISequenceModalPersistence {
   saveViewMode(mode: ViewMode): void;
 
   /**
-   * Load a specific image setting
-   */
-  loadImageSetting(key: keyof ImageSettings, defaultValue: boolean): boolean;
-
-  /**
-   * Save a specific image setting
-   */
-  saveImageSetting(key: keyof ImageSettings, value: boolean): void;
-
-  /**
    * Load the column count setting (null = auto)
    */
   loadColumnCount(): number | null;
@@ -43,9 +27,4 @@ export interface ISequenceModalPersistence {
    * Save the column count setting
    */
   saveColumnCount(value: number | null): void;
-
-  /**
-   * Load all image settings at once
-   */
-  loadAllImageSettings(): ImageSettings;
 }
