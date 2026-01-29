@@ -2,14 +2,14 @@
   ModuleQuickToggle - Full-viewport modal for managing module visibility and order
 
   Layout:
-  - LEFT: Hidden modules (not shown in sidebar) - tap to show
-  - RIGHT: Visible modules (shown in sidebar) - tap to hide, drag to reorder
+  - LEFT: Hidden modules (globally disabled) - tap to enable
+  - RIGHT: Visible modules (enabled AND user has access) - tap to disable, drag to reorder
 
   Features:
-  - Only shows modules the user has role-based access to
-  - Uses svelte-dnd-action for drag-and-drop (handles CSS transform issues in modals)
-  - Order persists to Firestore and affects sidebar display
-  - Core modules (create, browse, settings, admin) shown with lock icon, cannot be hidden
+  - Toggles GLOBAL feature flag enabled state (same as Permission Matrix)
+  - Module order is still per-user preference
+  - Core modules (create, browse, settings, admin) shown with lock icon, cannot be disabled
+  - Uses svelte-dnd-action for drag-and-drop
 -->
 <script lang="ts">
   import { onMount } from "svelte";
@@ -20,6 +20,8 @@
   import { getModuleDefinitions } from "../../../navigation-coordinator/navigation-coordinator.svelte";
   import { MODULE_DEFINITIONS } from "../../config/module-definitions";
   import { moduleIdToFeatureId } from "../../../auth/domain/models/FeatureFlag";
+  import { isModuleEnabledInEnvironment } from "../../../environment/environment-features";
+  import { toast } from "../../../toast/state/toast-state.svelte";
   import type { ModuleDefinition, ModuleId } from "../../domain/types";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
@@ -33,6 +35,7 @@
   let hapticService: IHapticFeedback = null!;
   let open = $state(false);
   let saving = $state(false);
+  let savingModuleId = $state<string | null>(null);
 
   // DND configuration
   const FLIP_DURATION_MS = 200;
@@ -45,34 +48,34 @@
     return CORE_MODULES.includes(moduleId);
   }
 
-  // Get modules currently visible in sidebar (what getModuleDefinitions returns)
-  const sidebarModules = $derived(getModuleDefinitions());
+  // Get modules currently visible in sidebar (enabled AND user has role access)
+  // Must use $derived.by() so Svelte tracks reactive reads inside getModuleDefinitions()
+  const sidebarModules = $derived.by(() => getModuleDefinitions());
 
-  // Get all modules the user CAN access based on ROLE only
-  const allAccessibleModules = $derived.by(() => {
-    const effectiveRole = featureFlagService.effectiveRole;
-
-    const result = MODULE_DEFINITIONS.filter((module) => {
-      if (!module.isMain) return false;
-      if (module.adminOnly && effectiveRole !== "admin") {
-        return false;
-      }
-      return true;
-    });
-
-    return result;
+  // Get all main modules (for showing in the UI)
+  const allMainModules = $derived.by(() => {
+    return MODULE_DEFINITIONS.filter((module) => module.isMain);
   });
 
-  // Get modules that are accessible but NOT currently visible in the sidebar
+  // Get modules that are NOT visible in the sidebar but COULD be enabled
+  // Only shows modules that pass environment checks (no point showing env-blocked modules)
   const hiddenModules = $derived.by(() => {
-    const visibleIds = new Set(sidebarModules.map((m) => m.id));
+    // Read flagsVersion to react to flag changes
+    const _ = featureFlagService.flagsVersion;
 
-    const hidden = allAccessibleModules.filter((module) => {
+    // Get the set of currently visible module IDs
+    const visibleModuleIds = new Set(sidebarModules.map((m) => m.id));
+
+    return allMainModules.filter((module) => {
+      // Core modules are never "hidden" in this UI
       if (isCoreModule(module.id)) return false;
-      return !visibleIds.has(module.id);
-    });
 
-    return hidden;
+      // Skip modules that are blocked by environment (can't be enabled via flag)
+      if (!isModuleEnabledInEnvironment(module.id)) return false;
+
+      // Module is hidden if it's not currently visible in the sidebar
+      return !visibleModuleIds.has(module.id);
+    });
   });
 
   // Visible modules - mutable state for reordering
@@ -123,7 +126,7 @@
     visibleModules = e.detail.items;
     hapticService?.trigger("success");
 
-    // Persist to Firestore
+    // Persist order to user preferences
     saveOrder(visibleModules.map((m) => m.id));
   }
 
@@ -156,88 +159,101 @@
   }
 
   // ============================================================================
-  // MODULE VISIBILITY
+  // MODULE VISIBILITY - Now uses global feature flags
   // ============================================================================
+
+  /**
+   * Enable a module globally (sets feature flag enabled: true)
+   */
   async function showModule(module: ModuleDefinition) {
-    const userId = featureFlagService.userId;
-    if (!userId) {
-      console.error("[ModuleQuickToggle] No userId, cannot save");
+    if (!featureFlagService.isAdmin) {
+      toast.error("Admin access required to enable modules");
       return;
     }
 
     saving = true;
+    savingModuleId = module.id;
     hapticService?.trigger("selection");
 
     try {
-      const currentOverrides = featureFlagService.userOverrides;
       const featureId = moduleIdToFeatureId(module.id);
-
-      const newDisabledFeatures = currentOverrides.disabledFeatures.filter(
-        (f) => f !== featureId
-      );
-
-      const newEnabledFeatures = currentOverrides.enabledFeatures.includes(featureId)
-        ? currentOverrides.enabledFeatures
-        : [...currentOverrides.enabledFeatures, featureId];
-
-      const currentOrder = currentOverrides.moduleOrder || visibleModules.map((m) => m.id);
-      const newOrder = currentOrder.includes(module.id)
-        ? currentOrder
-        : [...currentOrder, module.id];
-
-      await featureFlagService.setUserFeatureOverrides(userId, {
-        ...currentOverrides,
-        disabledFeatures: newDisabledFeatures,
-        enabledFeatures: newEnabledFeatures,
-        moduleOrder: newOrder,
+      const result = await featureFlagService.updateGlobalFeatureFlag(featureId, {
+        enabled: true,
       });
+
+      toast.success(`${module.label} enabled`, 2000);
+      hapticService?.trigger("success");
+
+      // Add to module order if not present
+      const currentOverrides = featureFlagService.userOverrides;
+      const currentOrder = currentOverrides.moduleOrder || visibleModules.map((m) => m.id);
+      if (!currentOrder.includes(module.id)) {
+        const userId = featureFlagService.userId;
+        if (userId) {
+          await featureFlagService.setUserFeatureOverrides(userId, {
+            ...currentOverrides,
+            moduleOrder: [...currentOrder, module.id],
+          });
+        }
+      }
     } catch (error) {
-      console.error("Failed to show module:", error);
+      console.error("Failed to enable module:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Failed to enable ${module.label}: ${errorMessage}`);
       hapticService?.trigger("error");
     } finally {
       saving = false;
+      savingModuleId = null;
     }
   }
 
+  /**
+   * Disable a module globally (sets feature flag enabled: false)
+   */
   async function hideModule(module: ModuleDefinition) {
-    const userId = featureFlagService.userId;
-    if (!userId) {
-      console.error("[ModuleQuickToggle] No userId, cannot save");
+    if (!featureFlagService.isAdmin) {
+      toast.error("Admin access required to disable modules");
       return;
     }
 
     saving = true;
+    savingModuleId = module.id;
     hapticService?.trigger("selection");
 
     try {
-      const currentOverrides = featureFlagService.userOverrides;
       const featureId = moduleIdToFeatureId(module.id);
+      await featureFlagService.updateGlobalFeatureFlag(featureId, {
+        enabled: false,
+      });
 
-      const newDisabledFeatures = currentOverrides.disabledFeatures.includes(featureId)
-        ? currentOverrides.disabledFeatures
-        : [...currentOverrides.disabledFeatures, featureId];
+      toast.success(`${module.label} disabled`, 2000);
+      hapticService?.trigger("success");
 
-      const newEnabledFeatures = currentOverrides.enabledFeatures.filter(
-        (f) => f !== featureId
-      );
-
+      // Remove from module order
+      const currentOverrides = featureFlagService.userOverrides;
       const currentOrder = currentOverrides.moduleOrder || visibleModules.map((m) => m.id);
       const newOrder = currentOrder.filter((id) => id !== module.id);
-
-      await featureFlagService.setUserFeatureOverrides(userId, {
-        ...currentOverrides,
-        disabledFeatures: newDisabledFeatures,
-        enabledFeatures: newEnabledFeatures,
-        moduleOrder: newOrder,
-      });
+      const userId = featureFlagService.userId;
+      if (userId && newOrder.length !== currentOrder.length) {
+        await featureFlagService.setUserFeatureOverrides(userId, {
+          ...currentOverrides,
+          moduleOrder: newOrder,
+        });
+      }
     } catch (error) {
-      console.error("Failed to hide module:", error);
+      console.error("Failed to disable module:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Failed to disable ${module.label}: ${errorMessage}`);
       hapticService?.trigger("error");
     } finally {
       saving = false;
+      savingModuleId = null;
     }
   }
 
+  /**
+   * Save module order (per-user preference, not global)
+   */
   async function saveOrder(newOrder: string[]) {
     const userId = featureFlagService.userId;
     if (!userId) return;
@@ -305,40 +321,49 @@
   {/snippet}
 
   <div class="sections-container">
-    <!-- Hidden Modules Section (LEFT) -->
+    <!-- Hidden Modules Section (LEFT) - Globally disabled modules -->
     <section class="module-section hidden-section">
       <div class="section-header">
         <h3 class="section-title">
           <i class="fas fa-eye-slash" aria-hidden="true"></i>
-          Hidden from Sidebar
+          Disabled Modules
         </h3>
-        <span class="section-hint">Tap to show</span>
+        <span class="section-hint">Tap to enable globally</span>
       </div>
 
       {#if hiddenModules.length === 0}
         <div class="empty-state">
-          <p>All modules visible</p>
-          <p class="empty-hint">Modules you hide will appear here</p>
+          <p>All modules enabled</p>
+          <p class="empty-hint">Disabled modules will appear here</p>
         </div>
       {:else}
-        <div class="module-grid hidden-grid" role="list" aria-label="Hidden modules">
+        <div class="module-grid hidden-grid" role="list" aria-label="Disabled modules">
           {#each hiddenModules as module (module.id)}
+            {@const isThisSaving = savingModuleId === module.id}
             <button
               class="module-cell hidden-module-cell"
               onclick={() => showModule(module)}
               type="button"
               style="--module-color: {module.color}"
-              aria-label="{module.label}, tap to show in sidebar"
+              aria-label="{module.label}, tap to enable globally"
               disabled={saving}
             >
               <div class="cell-background"></div>
               <div class="cell-content">
-                <span class="cell-icon">{@html module.icon}</span>
+                {#if isThisSaving}
+                  <span class="cell-icon">
+                    <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                  </span>
+                {:else}
+                  <span class="cell-icon">{@html module.icon}</span>
+                {/if}
                 <span class="cell-label">{module.label}</span>
               </div>
-              <div class="add-indicator">
-                <i class="fas fa-plus-circle" aria-hidden="true"></i>
-              </div>
+              {#if !isThisSaving}
+                <div class="add-indicator">
+                  <i class="fas fa-plus-circle" aria-hidden="true"></i>
+                </div>
+              {/if}
             </button>
           {/each}
         </div>
@@ -354,14 +379,14 @@
       <span class="divider-line"></span>
     </div>
 
-    <!-- Visible Modules Section (RIGHT) - syncs to sidebar -->
+    <!-- Visible Modules Section (RIGHT) - enabled modules user can access -->
     <section class="module-section visible-section">
       <div class="section-header">
         <h3 class="section-title">
           <i class="fas fa-eye" aria-hidden="true"></i>
-          Visible in Sidebar
+          Enabled Modules
         </h3>
-        <span class="section-hint">Drag handle to reorder, tap × to hide</span>
+        <span class="section-hint">Drag to reorder, tap × to disable</span>
       </div>
 
       {#if visibleModules.length === 0}
@@ -386,12 +411,14 @@
         >
           {#each visibleModules as module (module.id)}
             {@const isCore = isCoreModule(module.id)}
+            {@const isThisSaving = savingModuleId === module.id}
             <div
               class="module-cell visible-module-cell"
               class:core-module={isCore}
+              class:is-saving={isThisSaving}
               style="--module-color: {module.color}"
               role="listitem"
-              aria-label="{module.label}{isCore ? ', always visible' : ', drag to reorder or tap to hide'}"
+              aria-label="{module.label}{isCore ? ', always enabled' : ', drag to reorder or tap to disable'}"
               animate:flip={{ duration: FLIP_DURATION_MS }}
             >
               <div class="cell-background"></div>
@@ -407,14 +434,20 @@
                     <i class="fas fa-grip-vertical" aria-hidden="true"></i>
                   </div>
                 {/if}
-                <span class="cell-icon">{@html module.icon}</span>
+                {#if isThisSaving}
+                  <span class="cell-icon">
+                    <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                  </span>
+                {:else}
+                  <span class="cell-icon">{@html module.icon}</span>
+                {/if}
                 <span class="cell-label">{module.label}</span>
               </div>
               {#if isCore}
                 <div class="lock-indicator">
                   <i class="fas fa-lock" aria-hidden="true"></i>
                 </div>
-              {:else}
+              {:else if !isThisSaving}
                 <button
                   class="remove-button"
                   onclick={(e) => {
@@ -422,7 +455,7 @@
                     hideModule(module);
                   }}
                   type="button"
-                  aria-label="Hide {module.label} from sidebar"
+                  aria-label="Disable {module.label} globally"
                   disabled={saving}
                 >
                   <i class="fas fa-minus-circle" aria-hidden="true"></i>
@@ -969,7 +1002,19 @@
   }
 
   /* ============================================================================
-     SAVING OVERLAY
+     SAVING STATE (per-module)
+     ============================================================================ */
+  .module-cell.is-saving {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .module-cell.is-saving .cell-icon {
+    color: var(--theme-accent, #8b5cf6);
+  }
+
+  /* ============================================================================
+     SAVING OVERLAY (global - deprecated, kept for backwards compatibility)
      ============================================================================ */
   .saving-overlay {
     position: absolute;

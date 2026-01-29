@@ -24,6 +24,7 @@ export const CREATE_TABS: Section[] = [
     description: "Build sequences one hand at a time (6 simple choices)",
     color: "#8b5cf6",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
+    metadata: { isCreationMethod: true },
   },
   {
     id: "constructor",
@@ -32,6 +33,7 @@ export const CREATE_TABS: Section[] = [
     description: "Create sequences step by step (all options)",
     color: "#3b82f6",
     gradient: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
+    metadata: { isCreationMethod: true },
   },
   {
     id: "generator",
@@ -40,6 +42,7 @@ export const CREATE_TABS: Section[] = [
     description: "Auto-create sequences",
     color: "#f59e0b",
     gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #f97316 100%)",
+    metadata: { isCreationMethod: true },
   },
   {
     id: "spell",
@@ -48,6 +51,7 @@ export const CREATE_TABS: Section[] = [
     description: "Type words, get sequences",
     color: "#10b981",
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+    metadata: { isCreationMethod: true },
   },
 ];
 

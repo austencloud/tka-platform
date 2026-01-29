@@ -17,7 +17,7 @@ type DocumentWithViewTransition = Document & {
   startViewTransition?: (callback: () => void | Promise<void>) => ViewTransition;
 };
 
-import type { ModuleId } from "../navigation/domain/types";
+import type { ModuleId, Section } from "../navigation/domain/types";
 import {
   MODULE_DEFINITIONS,
   navigationState,
@@ -117,20 +117,16 @@ export function moduleSections() {
   // Create module section filtering
   if (module === "create") {
     // Filter sections based on user's feature access (role-based)
-    const availableSections = baseSections.filter((section: { id: string }) => {
+    const availableSections = baseSections.filter((section) => {
       return featureFlagService.canAccessTab("create", section.id);
     });
 
     if (!navigationCoordinator.canAccessEditAndExportPanels) {
-      return availableSections.filter((section: { id: string }) => {
+      return availableSections.filter((section) => {
         // Show all creation method tabs when no sequence exists
         // These are entry points for building sequences, not editing features
-        return (
-          section.id === "assembler" ||
-          section.id === "constructor" ||
-          section.id === "generator" ||
-          section.id === "spell"
-        );
+        // Use semantic metadata instead of hardcoded IDs
+        return section.metadata?.isCreationMethod === true;
       });
     }
 

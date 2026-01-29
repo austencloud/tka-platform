@@ -6,6 +6,15 @@
  */
 
 /**
+ * Metadata for tabs that controls behavior-based filtering
+ * Rather than hardcoding tab IDs in business logic, mark tabs with semantic metadata
+ */
+export interface SectionMetadata {
+  /** Tab is a creation entry point (assembler, constructor, generator, spell) */
+  isCreationMethod?: boolean;
+}
+
+/**
  * Tab within a module
  * Represents a navigation tab within a specific module (e.g., "Construct" tab in Create module)
  */
@@ -17,6 +26,7 @@ export interface Section {
   color?: string;
   gradient?: string; // Optional gradient for colorful icons
   disabled?: boolean; // For conditional tab accessibility
+  metadata?: SectionMetadata; // Semantic metadata for behavior-based filtering
 }
 
 // Module-based navigation types
