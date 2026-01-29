@@ -15,6 +15,7 @@
 		expandedHeight = 132,
 		springConfig = { stiffness: 0.3, damping: 0.8 },
 		children,
+		onExpandedChange,
 	}: MorphChipGroupProps = $props();
 
 	// Spring for morph animation progress
@@ -30,11 +31,13 @@
 	function expand(id: string) {
 		expandedId = id;
 		morphSpring.set(1);
+		onExpandedChange?.(id);
 	}
 
 	function collapse() {
 		expandedId = null;
 		morphSpring.set(0);
+		onExpandedChange?.(null);
 	}
 
 	function registerChip(id: string): number {

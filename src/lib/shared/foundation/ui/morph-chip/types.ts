@@ -28,6 +28,8 @@ export interface MorphChipGroupProps {
 	springConfig?: { stiffness: number; damping: number };
 	/** Child content (MorphChip components) */
 	children: Snippet;
+	/** Callback when expansion state changes (useful for parent layout coordination) */
+	onExpandedChange?: (expandedId: string | null) => void;
 }
 
 /**
@@ -42,12 +44,19 @@ export interface MorphChipProps<T = string> {
 	expandedLabel?: string;
 	/** Current selected value (bindable) */
 	value: T;
-	/** Available options to select from */
+	/** Available options to select from (ignored if expandedContent is provided) */
 	options: MorphChipOption<T>[];
 	/** Callback when value changes */
 	onchange?: (value: T) => void;
 	/** Milliseconds before auto-collapse after selection (default: 150) */
 	collapseDelay?: number;
+	/** Custom expanded content (replaces default options-row) */
+	expandedContent?: Snippet<[{
+		collapse: () => void;
+		morphProgress: number;
+	}]>;
+	/** Display value override (for custom chips that don't derive from options) */
+	displayValue?: string;
 }
 
 /**

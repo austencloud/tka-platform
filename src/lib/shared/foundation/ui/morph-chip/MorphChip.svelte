@@ -18,7 +18,12 @@
 		options,
 		onchange,
 		collapseDelay = 150,
+		expandedContent,
+		displayValue,
 	}: MorphChipProps<T> = $props();
+
+	// Display value: use override, or convert value to string
+	let chipDisplayValue = $derived(displayValue ?? String(value));
 
 	const ctx = getMorphChipContext();
 
@@ -67,19 +72,18 @@
 	}
 
 	// Calculate position based on chip count
-	// Each chip takes 1/n of the width minus gap adjustments
+	// Uses CSS calc to properly combine percentages and pixels
 	function getChipStyle(index: number, count: number, gap: number): string {
 		if (count === 0) return "";
 
-		const widthPercent = 100 / count;
-		// Total gap space = (count - 1) * gap
-		// Each chip's share of gap reduction = ((count - 1) * gap) / count
-		const gapAdjustment = ((count - 1) * gap) / count;
-		const leftOffset = index * (widthPercent + gap / count);
+		// Total gaps = (count - 1) * gap
+		// Each chip width = (100% - total gaps) / count
+		// Each chip left = index * (chip width + gap)
+		const totalGaps = (count - 1) * gap;
 
 		return `
-			left: calc(${leftOffset}%);
-			width: calc(${widthPercent}% - ${gapAdjustment}px);
+			left: calc(${index} * ((100% - ${totalGaps}px) / ${count} + ${gap}px));
+			width: calc((100% - ${totalGaps}px) / ${count});
 		`;
 	}
 </script>
@@ -95,7 +99,7 @@
 	style:--morph-progress={localMorphProgress}
 	style:--border-progress={staggeredBorderProgress}
 	style:--chip-index={chipIndex}
-	style={chipIndex >= 0 ? getChipStyle(chipIndex, ctx.chipCount, ctx.gap) : ""}
+	style={chipIndex >= 0 ? getChipStyle(chipIndex, ctx.chipCount, ctx.gap) : "left: 0; width: 100%;"}
 	onclick={handleChipClick}
 	onkeydown={(e) => e.key === "Enter" && handleChipClick()}
 	role="button"
@@ -107,28 +111,40 @@
 			{label}
 		</span>
 		<span class="chip-value" style:opacity={1 - localMorphProgress}>
-			{String(value)}
+			{chipDisplayValue}
 		</span>
 	</div>
 
-	<!-- Options - slide in from bottom when expanded -->
-	<!-- pointer-events:none on container, auto on buttons only - clicks pass through to chip -->
-	<div
-		class="options-row"
-		style:opacity={localMorphProgress}
-	>
-		{#each options as option}
-			<button
-				class="option-btn"
-				class:selected={value === option.value}
-				onclick={(e) => handleOptionSelect(e, option.value)}
-				tabindex={isExpanding ? 0 : -1}
-				style:pointer-events={isExpanding && localMorphProgress > 0.5 ? "auto" : "none"}
-			>
-				{option.label}
-			</button>
-		{/each}
-	</div>
+	<!-- Custom expanded content or default options-row -->
+	{#if expandedContent}
+		<!-- Custom content for complex chips (like Loop) -->
+		<div
+			class="custom-content"
+			style:opacity={localMorphProgress}
+			style:pointer-events={isExpanding && localMorphProgress > 0.5 ? "auto" : "none"}
+		>
+			{@render expandedContent({ collapse: ctx.collapse, morphProgress: localMorphProgress })}
+		</div>
+	{:else}
+		<!-- Default options - slide in from bottom when expanded -->
+		<!-- pointer-events:none on container, auto on buttons only - clicks pass through to chip -->
+		<div
+			class="options-row"
+			style:opacity={localMorphProgress}
+		>
+			{#each options as option}
+				<button
+					class="option-btn"
+					class:selected={value === option.value}
+					onclick={(e) => handleOptionSelect(e, option.value)}
+					tabindex={isExpanding ? 0 : -1}
+					style:pointer-events={isExpanding && localMorphProgress > 0.5 ? "auto" : "none"}
+				>
+					{option.label}
+				</button>
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -143,6 +159,7 @@
 	.chip {
 		position: absolute;
 		top: 0;
+		z-index: 1;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		border-radius: 18px;
 		color: var(--theme-text, #fff);
@@ -260,6 +277,21 @@
 		background: color-mix(in srgb, var(--theme-accent) 25%, var(--theme-card-bg));
 		border-color: var(--theme-accent, #6366f1);
 		color: var(--theme-text, #fff);
+	}
+
+	/* Custom expanded content container */
+	.custom-content {
+		position: absolute;
+		top: 44px; /* Below the header */
+		left: 8px;
+		right: 8px;
+		bottom: 8px;
+		transition: opacity 200ms ease;
+	}
+
+	.chip:not(.expanding) .custom-content {
+		opacity: 0;
+		pointer-events: none;
 	}
 
 	/* Respect reduced motion preferences */
