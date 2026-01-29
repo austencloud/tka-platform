@@ -56,7 +56,7 @@
       label="Grass"
       icon="fa-seedling"
       active={grassEnabled}
-      color="green"
+      color="lime"
       size="sm"
       onclick={onToggleGrass}
     />
@@ -72,7 +72,7 @@
       label="Bushes"
       icon="fa-leaf"
       active={bushesEnabled}
-      color="teal"
+      color="cyan"
       size="sm"
       onclick={onToggleBushes}
     />
