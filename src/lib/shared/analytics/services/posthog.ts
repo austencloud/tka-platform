@@ -56,13 +56,17 @@ export function initPostHog(): void {
     // Persist user identity across sessions
     persistence: "localStorage+cookie",
 
-    // Mask sensitive inputs by default (passwords, credit cards)
+    // Session recording configuration for accurate replay
     session_recording: {
       maskAllInputs: false, // We want to see what users type (except sensitive)
       maskInputOptions: {
         password: true,
         // Add other sensitive field types as needed
       },
+      // Capture fonts for accurate text rendering in replay
+      collectFonts: true,
+      // Inline stylesheets to ensure CSS is captured (default is true, being explicit)
+      inlineStylesheet: true,
     },
 
     // Load feature flags immediately

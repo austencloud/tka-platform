@@ -551,7 +551,8 @@
     <!-- Font Awesome CSS -->
     <!-- Note: Preload removed - SPA initialization delays icon rendering,
          causing "preloaded but not used" warnings. CSS handles font loading. -->
-    <link rel="stylesheet" href="/fonts/css/all.min.css" />
+    <!-- crossorigin="anonymous" is REQUIRED for PostHog session replay to capture styles -->
+    <link rel="stylesheet" href="/fonts/css/all.min.css" crossorigin="anonymous" />
 
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
