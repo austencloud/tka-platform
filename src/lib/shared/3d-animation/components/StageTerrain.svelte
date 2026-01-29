@@ -84,11 +84,11 @@
     }
 
     // Initialize vegetation manager
-    vegetationManager = new VegetationManager(scene, { useGLTFModels: true });
+    vegetationManager = new VegetationManager(scene.current, { useGLTFModels: true });
     await vegetationManager.initWithModels();
 
     // Initialize atmosphere
-    atmosphereManager = new AtmosphereManager(scene);
+    atmosphereManager = new AtmosphereManager(scene.current);
     atmosphereManager.createSky();
     atmosphereManager.setFog("forest");
 
@@ -139,7 +139,7 @@
       // Remove mesh from scene
       const mesh = chunkMeshes.get(key);
       if (mesh) {
-        scene.remove(mesh);
+        scene.current.remove(mesh);
         mesh.geometry.dispose();
         if (mesh.material instanceof MeshStandardMaterial) {
           mesh.material.dispose();
@@ -166,7 +166,7 @@
   onDestroy(() => {
     // Dispose chunk meshes
     for (const [key, mesh] of chunkMeshes) {
-      scene.remove(mesh);
+      scene.current.remove(mesh);
       mesh.geometry.dispose();
       if (mesh.material instanceof MeshStandardMaterial) {
         mesh.material.dispose();
@@ -225,7 +225,7 @@
       );
     }
 
-    scene.add(mesh);
+    scene.current.add(mesh);
     chunkMeshes.set(key, mesh);
   }
 </script>

@@ -285,7 +285,7 @@
 
   function handlePointerLockChange() {
     const wasLocked = isPointerLocked;
-    isPointerLocked = document.pointerLockElement === renderer.domElement;
+    isPointerLocked = document.pointerLockElement === renderer.current.domElement;
 
     // If we lost pointer lock (e.g., ESC pressed), return to orbit
     if (wasLocked && !isPointerLocked && mode !== CameraMode.ORBIT) {
@@ -306,7 +306,7 @@
     // Only request pointer lock if we can use it (mouse, not touch/DevTools simulation)
     // When using touch, the drag-to-look fallback is handled by pointer events
     if (isGameMode(mode) && inputCaps.canUsePointerLock()) {
-      renderer.domElement.requestPointerLock();
+      renderer.current.domElement.requestPointerLock();
     }
   }
 
@@ -317,7 +317,7 @@
   onMount(() => {
     if (!enabled) return;
 
-    const canvas = renderer.domElement;
+    const canvas = renderer.current.domElement;
 
     // Initialize input capabilities tracking
     inputCaps.init();
@@ -339,7 +339,7 @@
   });
 
   onDestroy(() => {
-    const canvas = renderer.domElement;
+    const canvas = renderer.current.domElement;
 
     // Cleanup input capabilities
     inputCaps.destroy();
@@ -600,7 +600,7 @@
         let finalCamZ = desiredCamZ;
 
         // Raycast from player to desired camera position to detect terrain collision
-        if (scene) {
+        if (scene.current) {
           // Start ray from player's head area (slightly above center)
           rayOrigin.set(targetX, targetY + cfg.lookAtHeight, targetZ);
           desiredCamPos.set(desiredCamX, desiredCamY, desiredCamZ);
@@ -613,7 +613,7 @@
           cameraRaycaster.far = distanceToCamera;
 
           // Raycast against all meshes in the scene
-          const intersects = cameraRaycaster.intersectObjects(scene.children, true);
+          const intersects = cameraRaycaster.intersectObjects(scene.current.children, true);
 
           // Find first terrain/solid mesh intersection (ignore non-physical objects)
           for (const intersection of intersects) {

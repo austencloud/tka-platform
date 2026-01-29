@@ -27,7 +27,7 @@
 
   const { scene } = useThrelte();
   let texture: CanvasTexture | null = null;
-  let originalBackground: typeof scene.background = null;
+  let originalBackground: typeof scene.current.background = null;
 
   function createGradientTexture(): CanvasTexture {
     const canvas = document.createElement("canvas");
@@ -50,16 +50,16 @@
 
   onMount(() => {
     // Store original background
-    originalBackground = scene.background;
+    originalBackground = scene.current.background;
 
     // Create and set gradient texture
     texture = createGradientTexture();
-    scene.background = texture;
+    scene.current.background = texture;
   });
 
   onDestroy(() => {
     // Restore original background
-    scene.background = originalBackground;
+    scene.current.background = originalBackground;
     texture?.dispose();
   });
 
@@ -68,7 +68,7 @@
     if (texture) {
       texture.dispose();
       texture = createGradientTexture();
-      scene.background = texture;
+      scene.current.background = texture;
     }
   });
 </script>

@@ -58,13 +58,13 @@
 
   function findIntersection(event: PointerEvent): THREE.Intersection | null {
     const cam = camera.current;
-    if (!cam || !scene) return null;
+    if (!cam || !scene.current) return null;
 
     getCanvasCoords(event);
     raycaster.setFromCamera(pointer, cam);
 
     // Only raycast against meshes (not lights, cameras, etc.)
-    const intersects = raycaster.intersectObjects(scene.children, true);
+    const intersects = raycaster.intersectObjects(scene.current.children, true);
 
     // Find first mesh intersection
     for (const intersection of intersects) {
@@ -146,7 +146,7 @@
 
   onMount(() => {
     // Get the canvas from the renderer
-    canvasElement = renderer?.domElement ?? null;
+    canvasElement = renderer?.current.domElement ?? null;
     if (!canvasElement) {
       console.error("[ManualRaycaster] Could not find canvas element");
       return;

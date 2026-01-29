@@ -87,7 +87,7 @@
   function getViewmodelPosition(
     propState: PropState3D | null
   ): [number, number, number] {
-    const cam = $camera.current;
+    const cam = camera.current;
     if (!cam || !propState) return [0, 0, 0];
 
     // Get the prop's position relative to the grid center
@@ -120,7 +120,7 @@
   function getViewmodelRotation(
     propState: PropState3D | null
   ): [number, number, number] {
-    const cam = $camera.current;
+    const cam = camera.current;
     if (!cam) return [0, 0, 0];
 
     // Get the prop's rotation from animation data

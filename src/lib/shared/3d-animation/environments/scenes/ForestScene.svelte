@@ -239,10 +239,10 @@
   // Apply fog to scene (reactive to variant changes)
   $effect(() => {
     const fogColor = new Color(palette.fog.color);
-    scene.fog = new FogExp2(fogColor, palette.fog.density);
+    scene.current.fog = new FogExp2(fogColor, palette.fog.density);
 
     return () => {
-      scene.fog = null;
+      scene.current.fog = null;
     };
   });
 </script>

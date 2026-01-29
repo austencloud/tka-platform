@@ -54,7 +54,7 @@
   $effect(() => {
     const noise = $noiseTexture;
     const profile = $profileTexture;
-    const cam = $camera;
+    const cam = camera.current;
 
     if (noise && profile && cam && !fire) {
       try {

@@ -314,28 +314,30 @@
     const initialPerformer = performerManager.initialize();
 
     // Load persisted state
-    const saved = persistenceService.loadState();
+    if (persistenceService) {
+      const saved = persistenceService.loadState();
 
-    if (saved.visiblePlanes)
-      visiblePlanes = persistenceService.parsePlanes(saved.visiblePlanes);
-    if (saved.showGrid !== undefined) showGrid = saved.showGrid;
-    if (saved.showLabels !== undefined) showLabels = saved.showLabels;
-    if (saved.gridMode) gridMode = saved.gridMode;
-    if (saved.cameraPreset) cameraPreset = saved.cameraPreset;
-    if (saved.panelOpen !== undefined) panelOpen = saved.panelOpen;
-    if (saved.speed !== undefined) speed = saved.speed;
-    if (saved.cameraPosition) customCameraPosition = saved.cameraPosition;
-    if (saved.cameraTarget) customCameraTarget = saved.cameraTarget;
-    if (saved.loop !== undefined && performerStates[0])
-      performerStates[0].loop = saved.loop;
-    if (saved.avatarId) avatarId = saved.avatarId;
-    // Note: environmentType removed - now uses settingsService.settings.backgroundType
+      if (saved.visiblePlanes)
+        visiblePlanes = persistenceService.parsePlanes(saved.visiblePlanes);
+      if (saved.showGrid !== undefined) showGrid = saved.showGrid;
+      if (saved.showLabels !== undefined) showLabels = saved.showLabels;
+      if (saved.gridMode) gridMode = saved.gridMode;
+      if (saved.cameraPreset) cameraPreset = saved.cameraPreset;
+      if (saved.panelOpen !== undefined) panelOpen = saved.panelOpen;
+      if (saved.speed !== undefined) speed = saved.speed;
+      if (saved.cameraPosition) customCameraPosition = saved.cameraPosition;
+      if (saved.cameraTarget) customCameraTarget = saved.cameraTarget;
+      if (saved.loop !== undefined && performerStates[0])
+        performerStates[0].loop = saved.loop;
+      if (saved.avatarId) avatarId = saved.avatarId;
+      // Note: environmentType removed - now uses settingsService.settings.backgroundType
 
-    // Load sequence into first performer if persisted
-    if (saved.loadedSequence && performerStates[0]) {
-      performerStates[0].loadSequence(saved.loadedSequence);
-      if (saved.currentStepIndex !== undefined) {
-        performerStates[0].goToStep(saved.currentStepIndex);
+      // Load sequence into first performer if persisted
+      if (saved.loadedSequence && performerStates[0]) {
+        performerStates[0].loadSequence(saved.loadedSequence);
+        if (saved.currentStepIndex !== undefined) {
+          performerStates[0].goToStep(saved.currentStepIndex);
+        }
       }
     }
 
