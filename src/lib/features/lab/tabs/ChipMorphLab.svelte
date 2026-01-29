@@ -58,18 +58,110 @@
   }
 
   // ============================================================
-  // APPROACH B: Overlay expansion (absolute positioning)
+  // APPROACH B: True FLIP animation
   // ============================================================
 
   let expandedB = $state<string | null>(null);
   const springB = spring(0, SPRING_CONFIG);
 
+  // Store refs to label elements for FLIP
+  let labelRefs: Record<string, HTMLElement | null> = {};
+
+  // FLIP animation state
+  let flipTransform = $state<{ x: number; y: number; scaleX: number } | null>(null);
+  let flipAnimating = $state(false); // When true, CSS transition is enabled
+  let flippingId = $state<string | null>(null); // Which setting is currently being FLIPped
+
+  function expandB(settingId: string) {
+    const labelEl = labelRefs[settingId];
+    if (!labelEl) {
+      expandedB = settingId;
+      springB.set(1);
+      return;
+    }
+
+    // FIRST: Capture current position and size
+    const firstRect = labelEl.getBoundingClientRect();
+
+    // Instantly apply expanded state (layout changes immediately)
+    expandedB = settingId;
+    flippingId = settingId; // Track which label is being FLIPped
+    flipAnimating = false; // Disable transition during INVERT
+
+    // LAST/INVERT: After DOM updates, capture new position and apply inverse
+    requestAnimationFrame(() => {
+      const lastRect = labelEl.getBoundingClientRect();
+
+      // Calculate delta from new position back to old position
+      const deltaX = firstRect.left - lastRect.left;
+      const deltaY = firstRect.top - lastRect.top;
+      const scaleX = firstRect.width / lastRect.width;
+
+      // Apply inverted transform - element appears in original position
+      flipTransform = { x: deltaX, y: deltaY, scaleX };
+
+      // PLAY: Enable transition and animate to final position (transform: none)
+      requestAnimationFrame(() => {
+        flipAnimating = true;
+        flipTransform = { x: 0, y: 0, scaleX: 1 };
+        springB.set(1);
+
+        // Clear FLIP state after animation completes
+        setTimeout(() => {
+          flipTransform = null;
+          flipAnimating = false;
+          flippingId = null;
+        }, 350);
+      });
+    });
+  }
+
   function collapseB() {
-    springB.set(0);
-    // Wait for animation to complete before clearing state
-    setTimeout(() => {
+    const settingId = expandedB;
+    if (!settingId) return;
+
+    const labelEl = labelRefs[settingId];
+    if (!labelEl) {
       expandedB = null;
-    }, 300);
+      springB.set(0);
+      return;
+    }
+
+    // FIRST: Capture current (expanded) position
+    const firstRect = labelEl.getBoundingClientRect();
+
+    // Instantly apply collapsed state
+    flippingId = settingId; // Track which label is being FLIPped
+    flipAnimating = false;
+    springB.set(0);
+
+    // LAST/INVERT: After state change, capture new position
+    requestAnimationFrame(() => {
+      // Need to wait for expandedB to clear for proper collapsed position
+      expandedB = null;
+
+      requestAnimationFrame(() => {
+        const lastRect = labelEl.getBoundingClientRect();
+
+        const deltaX = firstRect.left - lastRect.left;
+        const deltaY = firstRect.top - lastRect.top;
+        const scaleX = firstRect.width / lastRect.width;
+
+        flipTransform = { x: deltaX, y: deltaY, scaleX };
+
+        // PLAY
+        requestAnimationFrame(() => {
+          flipAnimating = true;
+          flipTransform = { x: 0, y: 0, scaleX: 1 };
+
+          setTimeout(() => {
+            flipTransform = null;
+            flipAnimating = false;
+            flippingId = null;
+          }, 350);
+        });
+      });
+    });
   }
 
   function selectOptionB(settingId: string, optionLabel: string) {
@@ -197,8 +289,7 @@
                 style:--chip-index={index}
                 onclick={() => {
                   if (!isExpanding && !expandedB) {
-                    expandedB = setting.id;
-                    springB.set(1);
+                    expandB(setting.id);
                   }
                 }}
                 role="button"
@@ -216,9 +307,17 @@
                   }}
                 ></i>
 
-                <!-- Label - animates from center to top-left -->
+                <!-- Label - THE FLIP ELEMENT - same DOM node that morphs position -->
+                {@const isFlipping = flippingId === setting.id}
                 <span
                   class="chip-label-b"
+                  bind:this={labelRefs[setting.id]}
+                  style:transform={flipTransform && isFlipping
+                    ? `translate(${flipTransform.x}px, ${flipTransform.y}px) scaleX(${flipTransform.scaleX})`
+                    : undefined}
+                  style:transition={flipAnimating && isFlipping
+                    ? 'transform 300ms cubic-bezier(0.34, 1.2, 0.64, 1), color 300ms ease'
+                    : 'none'}
                   onclick={(e) => {
                     if (isExpanding) {
                       e.stopPropagation();
@@ -623,40 +722,45 @@
     background: var(--theme-card-hover-bg, rgba(255,255,255,0.08));
   }
 
-  /* Label - animates position from center to top-left */
+  /* Label - FLIP animation: position defined by state, transform by JS */
   .chip-label-b {
     position: absolute;
     white-space: nowrap;
     cursor: pointer;
-    /* Spring-driven color morph */
+    /* Color transitions with CSS - doesn't need FLIP */
     color: color-mix(
       in srgb,
       var(--theme-text-muted, rgba(255,255,255,0.6)) calc(100% - var(--morph-progress, 0) * 100%),
       var(--theme-accent, #6366f1) calc(var(--morph-progress, 0) * 100%)
     );
-    /* Spring-driven position: center (50%, 35%) -> top-left (32px, 12px) */
-    top: calc(35% - var(--morph-progress, 0) * 35% + var(--morph-progress, 0) * 12px);
-    left: calc(50% - var(--morph-progress, 0) * 50% + var(--morph-progress, 0) * 32px);
-    transform: translateX(calc(-50% + var(--morph-progress, 0) * 50%));
-    /* Spring-driven font size */
-    font-size: calc(12px + var(--morph-progress, 0) * 2px);
-    font-weight: calc(500 + var(--morph-progress, 0) * 100);
-    transition: top 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
-                left 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
-                transform 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
-                font-size 300ms ease;
+    /* COLLAPSED state: centered horizontally, positioned above center */
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    transform-origin: center center;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* EXPANDED state: top-left position */
+  .chip-b.expanding .chip-label-b {
+    top: 12px;
+    left: 32px;
+    transform: translateX(0);
+    font-size: 14px;
+    font-weight: 600;
   }
 
   .chip-b.expanding .chip-label-b:hover {
     text-decoration: underline;
   }
 
-  /* Value - stays centered, fades out */
+  /* Value - centered below label, fades out when expanded */
   .chip-value-b {
     position: absolute;
-    top: 55%;
+    top: 32px;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);
     font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
