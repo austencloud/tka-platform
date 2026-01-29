@@ -13,7 +13,7 @@
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import {
     getAnimationVisibilityManager,
-    type TrailStyle,
+    type TrailVisibility,
     type PlaybackMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -52,7 +52,7 @@
   let stepNumbersVisible = $state(true);
 
   // Animation visibility state
-  let animTrailStyle = $state<TrailStyle>("on");
+  let animTrailStyle = $state<TrailVisibility>("on");
   let animPlaybackMode = $state<PlaybackMode>("continuous");
   let animBpm = $state(60);
   let animTkaGlyphVisible = $state(true);
@@ -155,7 +155,7 @@
 
   function handleTrailStyleChange(newStyle: string) {
     triggerHaptic();
-    animationVisibilityManager.setTrailStyle(newStyle as TrailStyle);
+    animationVisibilityManager.setTrailStyle(newStyle as TrailVisibility);
   }
 
   function handlePlaybackModeChange(mode: PlaybackMode) {

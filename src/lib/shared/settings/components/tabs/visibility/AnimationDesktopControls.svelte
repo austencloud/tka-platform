@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type {
-    TrailStyle,
+    TrailVisibility,
     PlaybackMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
@@ -18,13 +18,13 @@
     stepNumbersVisible: boolean;
     tkaGlyphVisible: boolean;
     wordHeaderVisible: boolean;
-    trailStyle: TrailStyle;
+    trailStyle: TrailVisibility;
     showBilateralToggle: boolean;
     isBothEnds: boolean;
     onPlaybackModeChange: (mode: PlaybackMode) => void;
     onBpmChange: (bpm: number) => void;
     onToggle: (key: string) => void;
-    onTrailPreset: (preset: TrailStyle) => void;
+    onTrailPreset: (preset: TrailVisibility) => void;
     onToggleBothEnds: () => void;
   }
 

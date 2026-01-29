@@ -9,7 +9,7 @@
   import AnimationMobileControls from "./AnimationMobileControls.svelte";
   import AnimationDesktopControls from "./AnimationDesktopControls.svelte";
   import type {
-    TrailStyle,
+    TrailVisibility,
     PlaybackMode,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import {
@@ -22,7 +22,7 @@
   interface Props {
     gridVisible: boolean;
     stepNumbersVisible: boolean;
-    trailStyle: TrailStyle;
+    trailStyle: TrailVisibility;
     playbackMode: PlaybackMode;
     bpm: number;
     tkaGlyphVisible: boolean;
@@ -62,7 +62,7 @@
   /**
    * Set trail on/off with hardcoded vivid settings when enabled
    */
-  function setTrailPreset(preset: TrailStyle) {
+  function setTrailPreset(preset: TrailVisibility) {
     onTrailStyleChange(preset);
 
     if (preset === "off") {
@@ -74,7 +74,6 @@
       animationSettings.setTrailAppearance({
         lineWidth: 3.5,
         maxOpacity: 0.95,
-        glowEnabled: true,
       });
     }
   }

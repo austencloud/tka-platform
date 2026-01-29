@@ -196,21 +196,51 @@
     showPhotoPicker = true;
   }
 
+  /**
+   * Upload a profile photo file to Firebase Storage
+   */
+  async function uploadProfilePhoto(user: User, file: File): Promise<string> {
+    const { getStorageInstance } = await import("$lib/shared/auth/firebase");
+    const { ref, uploadBytes, getDownloadURL } = await import(
+      "firebase/storage"
+    );
+    const storage = await getStorageInstance();
+
+    // Generate unique filename with timestamp
+    const ext = file.name.split(".").pop() || "jpg";
+    const filename = `${Date.now()}.${ext}`;
+    const storagePath = `avatars/${user.uid}/${filename}`;
+    const storageRef = ref(storage, storagePath);
+
+    await uploadBytes(storageRef, file, {
+      contentType: file.type || "image/jpeg",
+      customMetadata: {
+        userId: user.uid,
+        originalName: file.name,
+        uploadedAt: new Date().toISOString(),
+      },
+    });
+
+    return await getDownloadURL(storageRef);
+  }
+
   async function handlePhotoSelected(selection: PhotoSelection) {
     const user = authState.user;
     if (!user) return;
 
     hapticService?.trigger("selection");
 
+    const profilePictureManager = container.items.profilePictureManager;
+
     try {
       switch (selection.type) {
         case "upload":
-          // TODO: Implement file upload to Firebase Storage
-          // For now, we'll show an alert that this needs implementation
           if (selection.file) {
-            console.log("File upload selected:", selection.file.name);
-            // Future: Upload to storage, get URL, update profile
-            alert("Photo upload coming soon! For now, try using your Google or Facebook photo.");
+            // Upload file to Firebase Storage
+            const url = await uploadProfilePhoto(user, selection.file);
+            await updateProfile(user, { photoURL: url });
+            await user.reload();
+            hapticService?.trigger("success");
           }
           break;
 
@@ -218,20 +248,19 @@
         case "facebook":
           if (selection.url) {
             await updateProfile(user, { photoURL: selection.url });
-            // Force auth state to refresh
             await user.reload();
+            hapticService?.trigger("success");
           }
           break;
 
         case "generated":
           if (selection.generatedData) {
-            // Store the generated avatar data
-            // For now, we'll create a data URL placeholder
-            // In production, you'd generate a proper image and upload it
-            const { gradient, propType } = selection.generatedData;
-            console.log("Generated avatar:", { gradient, propType });
-            // TODO: Generate actual image and upload to storage
-            alert("Generated avatars coming soon! For now, try using your Google or Facebook photo.");
+            await profilePictureManager.generateAndUploadAvatar(
+              user,
+              selection.generatedData
+            );
+            await user.reload();
+            hapticService?.trigger("success");
           }
           break;
       }
