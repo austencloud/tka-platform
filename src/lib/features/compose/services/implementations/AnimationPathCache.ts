@@ -11,7 +11,7 @@
  */
 
 import type { PropState } from "../../shared/domain/types/PropState";
-import type { TrailPoint } from "../../shared/domain/types/TrailTypes";
+import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
 import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/contracts/IPropPositionCalculator";
 

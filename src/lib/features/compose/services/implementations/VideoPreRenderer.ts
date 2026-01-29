@@ -32,7 +32,7 @@ import { Canvas2DAnimationRenderer } from "./Canvas2DAnimationRenderer";
 import {
   DEFAULT_TRAIL_SETTINGS,
   type TrailSettings,
-} from "../../shared/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/TrailTypes";
 
 // IndexedDB database name and store for video caching
 const DB_NAME = "tka-video-cache";

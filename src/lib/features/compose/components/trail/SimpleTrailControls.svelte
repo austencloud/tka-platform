@@ -130,6 +130,7 @@
       class:active={currentPreset === "off"}
       onclick={() => setPreset("off")}
       type="button"
+      aria-label="Turn trails off"
     >
       Off
     </button>
@@ -138,6 +139,7 @@
       class:active={currentPreset === "on"}
       onclick={() => setPreset("on")}
       type="button"
+      aria-label="Turn trails on"
     >
       On
     </button>
@@ -151,6 +153,7 @@
         onclick={() => setTrackingMode(TrackingMode.LEFT_END)}
         type="button"
         title="Track {endLabels[0]} end only"
+        aria-label="Track {endLabels[0]} end only"
       >
         <span class="ends-label">{endLabels[0]}</span>
       </button>
@@ -160,6 +163,7 @@
         onclick={() => setTrackingMode(TrackingMode.BOTH_ENDS)}
         type="button"
         title="Track both ends"
+        aria-label="Track both ends"
       >
         <i class="fas fa-arrows-alt-h" aria-hidden="true"></i>
       </button>
@@ -169,6 +173,7 @@
         onclick={() => setTrackingMode(TrackingMode.RIGHT_END)}
         type="button"
         title="Track {endLabels[1]} end only"
+        aria-label="Track {endLabels[1]} end only"
       >
         <span class="ends-label">{endLabels[1]}</span>
       </button>
@@ -196,7 +201,7 @@
   }
 
   .label {
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     color: var(--theme-text-dim, var(--theme-text-dim));
     text-transform: uppercase;
@@ -304,7 +309,7 @@
     border: none;
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);

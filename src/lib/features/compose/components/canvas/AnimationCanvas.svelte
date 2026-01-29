@@ -13,7 +13,7 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropState } from "../../shared/domain/types/PropState";
-  import type { TrailSettings } from "../../shared/domain/types/TrailTypes";
+  import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
   import type { VideoRenderResult } from "../../services/contracts/IVideoPreRenderer";
   import type { StartPositionData } from "../../../create/shared/domain/models/StartPositionData";
   import type { StepData } from "../../../create/shared/domain/models/StepData";

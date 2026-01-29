@@ -12,7 +12,7 @@
 import type {
   TrailPoint,
   TrailSettings,
-} from "../../shared/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { PropState } from "../../shared/domain/types/PropState";
 
 /**

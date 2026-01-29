@@ -13,12 +13,12 @@
 import type {
   TrailPoint,
   TrailSettings,
-} from "../../../shared/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import {
   TrailMode,
   TrailEffect,
   TrackingMode,
-} from "../../../shared/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/TrailTypes";
 
 // ============================================================================
 // CATMULL-ROM SPLINE (pure math, no framework dependencies)

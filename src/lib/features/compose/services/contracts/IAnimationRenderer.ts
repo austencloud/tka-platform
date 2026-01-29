@@ -9,7 +9,7 @@ import type { PropState } from "../../shared/domain/types/PropState";
 import type {
   TrailPoint,
   TrailSettings,
-} from "../../shared/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/TrailTypes";
 
 /**
  * Visibility settings for animation rendering

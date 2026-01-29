@@ -15,7 +15,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
 import type { IAnimationRenderer } from "../contracts/IAnimationRenderer";
 import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
-import type { TrailSettings } from "../../shared/domain/types/TrailTypes";
+import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
 import { container } from "$lib/shared/di";
