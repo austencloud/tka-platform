@@ -15,16 +15,17 @@
 
   // Dynamic tab imports - add new experiments here
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
-    "chip-morph": () => import("./tabs/ChipMorphLab.svelte"),
     skew: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
     poi: () => import("$lib/features/poi-lab/PoiLabModule.svelte"),
     avatar: () => import("./tabs/ProfileAvatarLab.svelte"),
+    "photo-picker": () => import("./tabs/PhotoPickerLab.svelte"),
     realm: () => import("$lib/features/realm/RealmModule.svelte"),
     terrain: () => import("$lib/features/terrain-research/TerrainResearchModule.svelte"),
     mandala: () =>
       import("$lib/features/mandala-generator/components/MandalaGeneratorModule.svelte"),
     backgrounds: () => import("$lib/features/background-builder/BackgroundBuilder.svelte"),
     landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
+    "constraint-layout": () => import("$lib/features/constraint-layout-lab/ConstraintLayoutLab.svelte"),
   };
 
   // Get current tab, default to first tab

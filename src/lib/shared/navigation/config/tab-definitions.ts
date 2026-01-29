@@ -500,14 +500,6 @@ export const WATCH_TABS: Section[] = [
 // All experimental modules consolidated here instead of cluttering the sidebar
 export const LAB_TABS: Section[] = [
   {
-    id: "chip-morph",
-    label: "Chip Morph",
-    icon: '<i class="fas fa-expand-arrows-alt" aria-hidden="true"></i>',
-    description: "Compare chip expansion animation approaches",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-  },
-  {
     id: "skew",
     label: "Skew",
     icon: '<i class="fas fa-bezier-curve" aria-hidden="true"></i>',
@@ -530,6 +522,14 @@ export const LAB_TABS: Section[] = [
     description: "Generated profile avatar designs",
     color: "#a855f7",
     gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
+  },
+  {
+    id: "photo-picker",
+    label: "Photo Picker",
+    icon: '<i class="fas fa-portrait" aria-hidden="true"></i>',
+    description: "Profile photo selection modal redesign",
+    color: "#ec4899",
+    gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
   },
   {
     id: "realm",
@@ -570,6 +570,14 @@ export const LAB_TABS: Section[] = [
     description: "Landing page preview and iteration",
     color: "#f472b6",
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
+  },
+  {
+    id: "constraint-layout",
+    label: "Constraint Layout",
+    icon: '<i class="fas fa-vector-square" aria-hidden="true"></i>',
+    description: "Constraint-based layout engine experiment",
+    color: "#6366f1",
+    gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
 ];
 
