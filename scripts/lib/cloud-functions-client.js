@@ -1,72 +1,151 @@
 /**
  * Cloud Functions Client for CLI
  *
- * Provides a unified interface to call Cloud Functions from the CLI.
- * Falls back to direct Firestore operations when functions aren't available.
+ * Provides authenticated access to Cloud Functions from the CLI.
+ * Uses Google IAM authentication with the service account credentials.
  *
- * This module allows the CLI to work in two modes:
- * 1. Cloud Functions mode (bulletproof) - all operations go through server
- * 2. Direct mode (legacy) - operations use Admin SDK directly
+ * This is the BULLETPROOF path - all operations go through server-side
+ * functions that generate tokens, validate sessions, and write to
+ * tamper-proof audit logs.
  */
 
 import admin from "firebase-admin";
-
-const db = admin.firestore();
+import { JWT } from "google-auth-library";
+import { readFileSync } from "fs";
 
 // Firebase project configuration
-const PROJECT_ID = "tka-scribe";
+const PROJECT_ID = "the-kinetic-alphabet";
 const REGION = "us-central1";
 
+// HTTP endpoint names (these use onRequest, not onCall)
+const HTTP_ENDPOINTS = {
+  registerSession: "httpRegisterAgentSession",
+  claimFeedback: "httpClaimFeedback",
+  heartbeat: "httpValidateHeartbeat",
+  unclaim: "httpUnclaimFeedback",
+  touchFile: "httpTouchFile",
+  checkFileConflicts: "httpCheckFileConflicts",
+  updateFeedbackStatus: "httpUpdateFeedbackStatus",
+};
+
+// Lazy-load db to avoid accessing before Firebase is initialized
+let _db = null;
+function getDb() {
+  if (!_db) {
+    _db = admin.firestore();
+  }
+  return _db;
+}
+
+// Cache the JWT client and tokens
+let _jwtClient = null;
+let _cachedToken = null;
+let _tokenExpiry = 0;
+
 /**
- * Check if Cloud Functions are available
+ * Get or create a JWT client from the service account
+ */
+function getJwtClient(targetAudience) {
+  try {
+    const keyFile = "./serviceAccountKey.json";
+    const credentials = JSON.parse(readFileSync(keyFile, "utf8"));
+
+    return new JWT({
+      email: credentials.client_email,
+      key: credentials.private_key,
+      additionalClaims: {
+        target_audience: targetAudience,
+      },
+    });
+  } catch (error) {
+    throw new Error(`Failed to create JWT client: ${error.message}`);
+  }
+}
+
+/**
+ * Get an ID token for authenticating with Cloud Functions
  *
- * We do this by checking if the function exists in Firebase.
- * This allows graceful degradation when functions aren't deployed.
+ * Cloud Functions require an ID token with the function URL as the audience.
+ */
+async function getIdToken(functionUrl) {
+  // Check cache (tokens are valid for ~1 hour, we refresh at 50 min)
+  if (_cachedToken && Date.now() < _tokenExpiry) {
+    return _cachedToken;
+  }
+
+  try {
+    const client = getJwtClient(functionUrl);
+    const tokenResponse = await client.authorize();
+
+    if (!tokenResponse.id_token) {
+      throw new Error("No ID token in response");
+    }
+
+    // Cache the token (refresh 10 minutes before expiry)
+    _cachedToken = tokenResponse.id_token;
+    _tokenExpiry = Date.now() + 50 * 60 * 1000; // 50 minutes
+
+    return _cachedToken;
+  } catch (error) {
+    throw new Error(`Failed to get ID token: ${error.message}`);
+  }
+}
+
+/**
+ * Check if Cloud Functions are available and we can authenticate
  */
 let _functionsAvailable = null;
+let _functionsCheckTime = 0;
 
 export async function areFunctionsAvailable() {
-  if (_functionsAvailable !== null) {
+  // Re-check every 5 minutes in case of transient failures
+  if (_functionsAvailable !== null && Date.now() - _functionsCheckTime < 5 * 60 * 1000) {
     return _functionsAvailable;
   }
 
   try {
-    // Try to call a lightweight function to check availability
-    // We use the registerAgentSession function as a health check
-    const response = await fetch(
-      `https://${REGION}-${PROJECT_ID}.cloudfunctions.net/registerAgentSession`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: {} }), // Empty call will fail auth but confirms function exists
-      }
-    );
+    const url = `https://${REGION}-${PROJECT_ID}.cloudfunctions.net/${HTTP_ENDPOINTS.registerSession}`;
+    const token = await getIdToken(url);
 
-    // If we get a 401/403 (auth required) or 200, the function exists
-    _functionsAvailable =
-      response.status === 401 ||
-      response.status === 403 ||
-      response.status === 200;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ healthCheck: true }),
+    });
+
+    // 200 = worked (health check accepted)
+    // 400 = function exists but rejected data (still good for auth)
+    // 401/403 = auth failed
+    _functionsAvailable = response.status === 200 || response.status === 400;
+    _functionsCheckTime = Date.now();
+
+    if (_functionsAvailable) {
+      console.log("  ✅ Cloud Functions authenticated via IAM");
+    } else {
+      console.log(`  ⚠️  Cloud Functions returned ${response.status}, using direct mode`);
+    }
   } catch (error) {
-    // Network error or function doesn't exist
+    console.log(`  ⚠️  Cloud Functions unavailable: ${error.message}`);
     _functionsAvailable = false;
+    _functionsCheckTime = Date.now();
   }
 
   return _functionsAvailable;
 }
 
 /**
- * Call a Cloud Function using Admin SDK token
+ * Call an HTTP Cloud Function with proper IAM authentication
  *
- * The CLI runs with a service account, so we can generate a custom token
- * to authenticate with Cloud Functions.
+ * Unlike callable functions (onCall), HTTP functions (onRequest) accept
+ * the data directly in the request body, not wrapped in { data: ... }.
+ * The response is also { result: ... } which we extract.
  */
-async function callFunction(functionName, data) {
+async function callHttpFunction(functionName, data) {
   const url = `https://${REGION}-${PROJECT_ID}.cloudfunctions.net/${functionName}`;
-
-  // For Admin SDK calls, we need to use a service account token
-  // The functions verify auth via context.auth
-  const token = await admin.auth().createCustomToken("admin-cli");
+  const token = await getIdToken(url);
 
   const response = await fetch(url, {
     method: "POST",
@@ -74,18 +153,19 @@ async function callFunction(functionName, data) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ data }),
+    body: JSON.stringify(data),
   });
 
+  const responseData = await response.json().catch(() => ({}));
+
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(
-      error.error?.message || `Function call failed: ${response.status}`
-    );
+    const errorMessage =
+      responseData.error ||
+      `Function call failed: ${response.status}`;
+    throw new Error(errorMessage);
   }
 
-  const result = await response.json();
-  return result.result;
+  return responseData.result;
 }
 
 /**
@@ -94,18 +174,21 @@ async function callFunction(functionName, data) {
 export async function registerSession(sessionId, agentType, metadata = {}) {
   if (!(await areFunctionsAvailable())) {
     // Fall back to direct write
-    await db.collection("agentSessions").doc(sessionId).set({
-      sessionId,
-      agentType,
-      registeredAt: admin.firestore.FieldValue.serverTimestamp(),
-      lastActivity: admin.firestore.FieldValue.serverTimestamp(),
-      activeClaims: [],
-      metadata,
-    });
+    await getDb()
+      .collection("agentSessions")
+      .doc(sessionId)
+      .set({
+        sessionId,
+        agentType,
+        registeredAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastActivity: admin.firestore.FieldValue.serverTimestamp(),
+        activeClaims: [],
+        metadata,
+      });
     return { success: true, sessionId, mode: "direct" };
   }
 
-  return await callFunction("registerAgentSession", {
+  return await callHttpFunction(HTTP_ENDPOINTS.registerSession, {
     sessionId,
     agentType,
     metadata,
@@ -122,11 +205,10 @@ export async function claimFeedbackViaFunction(
   force = false
 ) {
   if (!(await areFunctionsAvailable())) {
-    // Return null to signal caller should use direct method
     return null;
   }
 
-  return await callFunction("claimFeedback", {
+  return await callHttpFunction(HTTP_ENDPOINTS.claimFeedback, {
     feedbackId,
     sessionId,
     isReclaim,
@@ -137,12 +219,16 @@ export async function claimFeedbackViaFunction(
 /**
  * Send heartbeat via Cloud Function
  */
-export async function heartbeatViaFunction(feedbackId, sessionId, message = "") {
+export async function heartbeatViaFunction(
+  feedbackId,
+  sessionId,
+  message = ""
+) {
   if (!(await areFunctionsAvailable())) {
     return null;
   }
 
-  return await callFunction("validateHeartbeat", {
+  return await callHttpFunction(HTTP_ENDPOINTS.heartbeat, {
     feedbackId,
     sessionId,
     message,
@@ -165,7 +251,7 @@ export async function unclaimViaFunction(
     return null;
   }
 
-  return await callFunction("unclaimFeedback", {
+  return await callHttpFunction(HTTP_ENDPOINTS.unclaim, {
     feedbackId,
     sessionId,
     newStatus,
@@ -184,7 +270,7 @@ export async function touchFileViaFunction(feedbackId, sessionId, filePath) {
     return null;
   }
 
-  return await callFunction("touchFile", {
+  return await callHttpFunction(HTTP_ENDPOINTS.touchFile, {
     feedbackId,
     sessionId,
     filePath,
@@ -199,9 +285,32 @@ export async function checkFileConflictsViaFunction(feedbackId, filePaths) {
     return null;
   }
 
-  return await callFunction("checkFileConflicts", {
+  return await callHttpFunction(HTTP_ENDPOINTS.checkFileConflicts, {
     feedbackId,
     filePaths,
+  });
+}
+
+/**
+ * Update feedback status via Cloud Function
+ */
+export async function updateStatusViaFunction(
+  feedbackId,
+  sessionId,
+  newStatus,
+  adminNotes = "",
+  resolution = ""
+) {
+  if (!(await areFunctionsAvailable())) {
+    return null;
+  }
+
+  return await callHttpFunction(HTTP_ENDPOINTS.updateFeedbackStatus, {
+    feedbackId,
+    sessionId,
+    newStatus,
+    adminNotes,
+    resolution,
   });
 }
 
@@ -213,4 +322,5 @@ export default {
   unclaimViaFunction,
   touchFileViaFunction,
   checkFileConflictsViaFunction,
+  updateStatusViaFunction,
 };

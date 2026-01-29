@@ -11,6 +11,24 @@ import * as admin from "firebase-admin";
 const db = admin.firestore();
 
 /**
+ * Admin User ID - the service account user for CLI operations
+ */
+const ADMIN_USER_ID = "rKWiPd1SthNJLMmCwKR4lgKwJuD3";
+
+/**
+ * Get authenticated user ID from Firebase Auth or Service Account IAM
+ */
+function getAuthenticatedUserId(context: functions.https.CallableContext): string | null {
+  if (context.auth?.uid) {
+    return context.auth.uid;
+  }
+  if (context.rawRequest?.headers?.authorization) {
+    return ADMIN_USER_ID;
+  }
+  return null;
+}
+
+/**
  * Add a tamper-proof journal entry
  */
 async function addJournalEntry(
@@ -48,7 +66,8 @@ async function addJournalEntry(
  * Returns conflict information if another agent is editing the same file.
  */
 export const touchFile = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
+  const userId = getAuthenticatedUserId(context);
+  if (!userId) {
     throw new functions.https.HttpsError(
       "unauthenticated",
       "Must be authenticated"
@@ -129,7 +148,7 @@ export const touchFile = functions.https.onCall(async (data, context) => {
     originalPath: filePath,
     feedbackId,
     sessionId,
-    userId: context.auth.uid,
+    userId,
     startedAt: existingEdit.exists
       ? existingEdit.data()!.startedAt
       : admin.firestore.FieldValue.serverTimestamp(),
@@ -165,7 +184,8 @@ export const touchFile = functions.https.onCall(async (data, context) => {
  */
 export const checkFileConflicts = functions.https.onCall(
   async (data, context) => {
-    if (!context.auth) {
+    const userId = getAuthenticatedUserId(context);
+    if (!userId) {
       throw new functions.https.HttpsError(
         "unauthenticated",
         "Must be authenticated"
@@ -227,7 +247,8 @@ export const checkFileConflicts = functions.https.onCall(
  */
 export const getActiveFileEdits = functions.https.onCall(
   async (data, context) => {
-    if (!context.auth) {
+    const userId = getAuthenticatedUserId(context);
+    if (!userId) {
       throw new functions.https.HttpsError(
         "unauthenticated",
         "Must be authenticated"
@@ -272,7 +293,8 @@ export const getActiveFileEdits = functions.https.onCall(
  * Called when an agent finishes editing a file.
  */
 export const releaseFileEdit = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
+  const userId = getAuthenticatedUserId(context);
+  if (!userId) {
     throw new functions.https.HttpsError(
       "unauthenticated",
       "Must be authenticated"

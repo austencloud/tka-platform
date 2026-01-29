@@ -12,6 +12,24 @@ import { AGENT_SESSION_CONFIG } from "./types";
 const db = admin.firestore();
 
 /**
+ * Admin User ID - the service account user for CLI operations
+ */
+const ADMIN_USER_ID = "rKWiPd1SthNJLMmCwKR4lgKwJuD3";
+
+/**
+ * Get authenticated user ID from Firebase Auth or Service Account IAM
+ */
+function getAuthenticatedUserId(context: functions.https.CallableContext): string | null {
+  if (context.auth?.uid) {
+    return context.auth.uid;
+  }
+  if (context.rawRequest?.headers?.authorization) {
+    return ADMIN_USER_ID;
+  }
+  return null;
+}
+
+/**
  * Cleanup stale agent sessions
  *
  * Runs hourly to remove sessions that haven't had activity in the past hour.
@@ -132,8 +150,8 @@ export const cleanupStaleAgentSessions = functions.pubsub
  */
 export const registerAgentSession = functions.https.onCall(
   async (data, context) => {
-    // Verify authentication
-    if (!context.auth) {
+    const userId = getAuthenticatedUserId(context);
+    if (!userId) {
       throw new functions.https.HttpsError(
         "unauthenticated",
         "Must be authenticated to register an agent session"
@@ -169,7 +187,7 @@ export const registerAgentSession = functions.https.onCall(
       registeredAt: now,
       lastActivity: now,
       activeClaims: [],
-      userId: context.auth.uid,
+      userId,
       metadata: metadata || {},
     };
 
@@ -202,7 +220,8 @@ export const registerAgentSession = functions.https.onCall(
  */
 export const heartbeatAgentSession = functions.https.onCall(
   async (data, context) => {
-    if (!context.auth) {
+    const userId = getAuthenticatedUserId(context);
+    if (!userId) {
       throw new functions.https.HttpsError(
         "unauthenticated",
         "Must be authenticated"
@@ -228,9 +247,10 @@ export const heartbeatAgentSession = functions.https.onCall(
       );
     }
 
-    // Verify ownership
+    // For Firebase Auth users, verify ownership
+    // For service account calls (userId === ADMIN_USER_ID), trust the session
     const sessionData = sessionDoc.data();
-    if (sessionData?.userId !== context.auth.uid) {
+    if (userId !== ADMIN_USER_ID && sessionData?.userId !== userId) {
       throw new functions.https.HttpsError(
         "permission-denied",
         "Not authorized to update this session"

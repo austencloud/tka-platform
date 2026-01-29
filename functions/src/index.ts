@@ -30,6 +30,14 @@ export {
   checkFileConflicts,
   getActiveFileEdits,
   releaseFileEdit,
+  // HTTP endpoints for CLI (service account auth)
+  httpClaimFeedback,
+  httpValidateHeartbeat,
+  httpUnclaimFeedback,
+  httpRegisterAgentSession,
+  httpTouchFile,
+  httpCheckFileConflicts,
+  httpUpdateFeedbackStatus,
 } from "./feedbackClaims";
 
 const db = admin.firestore();

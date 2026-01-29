@@ -26,6 +26,7 @@ import { execSync } from "child_process";
 import { existsSync, mkdirSync } from "fs";
 import { randomUUID } from "crypto";
 import config from "../config/feedback.config.js";
+import cfClient from "./lib/cloud-functions-client.js";
 
 // Generate a unique session ID for this script invocation
 // This allows us to distinguish between different agents/sessions
@@ -185,6 +186,108 @@ function formatDuration(ms) {
 function isApproachingStale(item) {
   const { activityAgeMs } = checkClaimStaleness(item);
   return activityAgeMs > STALE_THRESHOLDS.WARNING_THRESHOLD_MS;
+}
+
+// ============================================================================
+// PARTIAL ID RESOLUTION
+// ============================================================================
+
+/**
+ * Resolve a partial feedback ID to its full ID
+ *
+ * The list command shows truncated IDs (e.g., "lYX2vHmn...") but Firestore
+ * requires exact IDs. This function finds the full ID from a prefix.
+ *
+ * @param {string} partialId - Full or partial (8+ chars) document ID
+ * @returns {Promise<{fullId: string|null, error: string|null, matches: string[]}>}
+ */
+async function resolvePartialId(partialId) {
+  // If it looks like a full ID (20 chars), try exact match first
+  if (partialId.length >= 20) {
+    const doc = await db.collection("feedback").doc(partialId).get();
+    if (doc.exists) {
+      return { fullId: partialId, error: null, matches: [partialId] };
+    }
+    return { fullId: null, error: `Feedback not found: ${partialId}`, matches: [] };
+  }
+
+  // For partial IDs, we need to query and match
+  // Firestore doesn't support prefix queries on doc IDs, so we fetch all and filter
+  // This is acceptable because the feedback collection is small (<1000 docs typically)
+  const snapshot = await db.collection("feedback")
+    .where("status", "in", ["new", "in-progress", "in-review", "completed"])
+    .get();
+
+  const matches = [];
+  snapshot.forEach(doc => {
+    if (doc.id.startsWith(partialId)) {
+      matches.push(doc.id);
+    }
+  });
+
+  if (matches.length === 0) {
+    // Also check archived items in case they're looking for those
+    const archivedSnapshot = await db.collection("feedback")
+      .where("status", "==", "archived")
+      .limit(500) // Don't fetch entire archive
+      .get();
+
+    archivedSnapshot.forEach(doc => {
+      if (doc.id.startsWith(partialId)) {
+        matches.push(doc.id);
+      }
+    });
+  }
+
+  if (matches.length === 0) {
+    return { fullId: null, error: `No feedback found matching ID prefix: ${partialId}`, matches: [] };
+  }
+
+  if (matches.length === 1) {
+    return { fullId: matches[0], error: null, matches };
+  }
+
+  // Multiple matches - return error with the matches so user can be more specific
+  return {
+    fullId: null,
+    error: `Ambiguous ID prefix "${partialId}" matches ${matches.length} items`,
+    matches
+  };
+}
+
+/**
+ * Helper to resolve ID and exit early on failure
+ * Used at the top of functions that need a valid docId
+ *
+ * @param {string} partialId - Full or partial document ID
+ * @returns {Promise<string|null>} - Full ID or null (with error already printed)
+ */
+async function resolveAndValidateId(partialId) {
+  const { fullId, error, matches } = await resolvePartialId(partialId);
+
+  if (error) {
+    console.log(`\n  ❌ ${error}`);
+    if (matches.length > 1) {
+      console.log(`\n  Matching IDs:`);
+      matches.slice(0, 5).forEach(id => {
+        console.log(`     ${id}`);
+      });
+      if (matches.length > 5) {
+        console.log(`     ... and ${matches.length - 5} more`);
+      }
+      console.log(`\n  Please provide more characters to disambiguate.\n`);
+    } else {
+      console.log();
+    }
+    return null;
+  }
+
+  // If the user provided a partial ID, show them the resolution
+  if (partialId.length < 20 && fullId) {
+    console.log(`  🔗 Resolved ${partialId}... → ${fullId}`);
+  }
+
+  return fullId;
 }
 
 // ============================================================================
@@ -498,44 +601,7 @@ async function notifyUserFeedbackResolved(
   }
 }
 
-/**
- * Resolve a partial document ID to a full document ID.
- * Queries all feedback documents and finds ones that start with the partial ID.
- * @param {string} partialId - The partial ID (6+ characters)
- * @returns {Promise<string|null>} - The full document ID, or null if not found/ambiguous
- */
-async function resolvePartialId(partialId) {
-  if (!partialId || partialId.length < 6) {
-    return null;
-  }
-  // If it looks like a full ID (20 chars), just return it
-  if (partialId.length >= 20) {
-    return partialId;
-  }
-  try {
-    const snapshot = await db.collection("feedback").get();
-    const matches = snapshot.docs.filter((doc) => doc.id.startsWith(partialId));
-    if (matches.length === 0) {
-      console.log(`  ❌ No feedback found starting with "${partialId}"`);
-      return null;
-    }
-    if (matches.length > 1) {
-      console.log(`  ⚠️  Multiple matches for "${partialId}":`);
-      matches.forEach((doc) => {
-        const data = doc.data();
-        console.log(
-          `     ${doc.id} - ${data.title || data.description?.substring(0, 40) || "No title"}`
-        );
-      });
-      console.log(`  💡 Use more characters to be specific`);
-      return null;
-    }
-    return matches[0].id;
-  } catch (error) {
-    console.error(`  ❌ Error resolving partial ID: ${error.message}`);
-    return null;
-  }
-}
+// NOTE: resolvePartialId has been moved to the PARTIAL ID RESOLUTION section near the top of the file
 
 /**
  * Download images from Firebase Storage for a feedback item
@@ -588,16 +654,59 @@ async function downloadFeedbackImages(feedbackId, imageUrls) {
  * @returns {Object|null} - The claimed item data, or null if claim failed
  */
 async function atomicClaim(docId, isReclaim = false) {
-  // Generate a unique token for THIS specific claim attempt
-  // This is the key to preventing race conditions - even if two transactions
-  // both "succeed", only one will have written their token
+  const forceFlag = process.argv.includes('--force');
+
+  // ==========================================================================
+  // CLOUD FUNCTIONS PATH (Bulletproof)
+  // Server generates tokens, validates sessions, prevents all race conditions
+  // ==========================================================================
+  try {
+    const cfResult = await cfClient.claimFeedbackViaFunction(
+      docId,
+      SESSION_ID,
+      isReclaim,
+      forceFlag
+    );
+
+    if (cfResult !== null) {
+      // Cloud Functions handled the claim
+      if (cfResult.success) {
+        const shortToken = cfResult.claimToken?.substring(0, 8) || "server";
+        console.log(`  ✅ Claim successful [${shortToken}] via Cloud Function`);
+
+        // Journal the successful claim (async, non-blocking)
+        addJournalEntry(docId, JOURNAL_TYPES.CLAIMED, isReclaim ? "Reclaimed (was stale)" : "Claimed", {
+          claimToken: shortToken,
+          isReclaim,
+          mode: "cloud-function",
+        }).catch(() => {});
+
+        // Fetch the full document to return
+        const doc = await db.collection("feedback").doc(docId).get();
+        return { id: doc.id, ...doc.data(), isReclaim };
+      } else {
+        // Cloud Function rejected the claim
+        console.log(`  ❌ Claim rejected: ${cfResult.error || "Unknown error"}`);
+        return null;
+      }
+    }
+    // If cfResult is null, Cloud Functions unavailable - fall through to direct mode
+    console.log(`  ⚠️  Cloud Functions unavailable, using direct mode`);
+  } catch (cfError) {
+    console.log(`  ⚠️  Cloud Function error: ${cfError.message}, falling back to direct mode`);
+  }
+
+  // ==========================================================================
+  // DIRECT MODE FALLBACK (Legacy)
+  // Only used when Cloud Functions are unavailable
+  // ==========================================================================
   const claimToken = randomUUID();
   const shortToken = claimToken.substring(0, 8);
 
   try {
     const docRef = db.collection("feedback").doc(docId);
 
-    console.log(`  🔒 Attempting claim [${shortToken}] on ${docId.substring(0, 8)}...`);
+    console.log(`  🔒 Attempting claim [${shortToken}] on ${docId.substring(0, 8)}... (direct mode)`);
 
     // Check WIP limit based on ACTIVE CLAIMS, not stored status
     // This is the correct model: WIP = items with active, non-stale claims
@@ -623,7 +732,6 @@ async function atomicClaim(docId, isReclaim = false) {
 
       const wipLimit = WIP_LIMITS['in-progress'];
       if (wipLimit > 0 && activeClaimCount >= wipLimit) {
-        const forceFlag = process.argv.includes('--force');
         if (!forceFlag) {
           console.log(`\n  ⚠️  WIP limit reached (${activeClaimCount}/${wipLimit} active claims)`);
           console.log(`     Add --force to claim anyway\n`);
@@ -2223,6 +2331,36 @@ EXAMPLES
  * @param {string} message - Optional status message
  */
 async function sendHeartbeat(docId, message = null) {
+  // ==========================================================================
+  // CLOUD FUNCTIONS PATH (Bulletproof)
+  // Server validates session ownership before updating
+  // ==========================================================================
+  try {
+    const cfResult = await cfClient.heartbeatViaFunction(docId, SESSION_ID, message || "");
+
+    if (cfResult !== null) {
+      if (cfResult.success) {
+        console.log("\n" + "=".repeat(70));
+        console.log(`\n  💓 HEARTBEAT SENT (via Cloud Function)\n`);
+        console.log("─".repeat(70));
+        console.log(`  ID: ${docId}`);
+        if (message) console.log(`  Message: ${message}`);
+        console.log(`  Claim refreshed - next stale in: ${formatDuration(STALE_THRESHOLDS.ACTIVITY_TIMEOUT_MS)}`);
+        console.log("\n" + "=".repeat(70) + "\n");
+        return { id: docId, heartbeat: true };
+      } else {
+        console.log(`\n  ❌ Heartbeat rejected: ${cfResult.error || "Unknown error"}\n`);
+        return null;
+      }
+    }
+    console.log(`  ⚠️  Cloud Functions unavailable, using direct mode`);
+  } catch (cfError) {
+    console.log(`  ⚠️  Cloud Function error: ${cfError.message}, falling back to direct mode`);
+  }
+
+  // ==========================================================================
+  // DIRECT MODE FALLBACK (Legacy)
+  // ==========================================================================
   try {
     const docRef = db.collection("feedback").doc(docId);
     const doc = await docRef.get();
@@ -2432,6 +2570,23 @@ function getJournalIcon(type) {
  */
 async function touchFile(docId, filePath) {
   try {
+    // Try Cloud Function first
+    const cfResult = await cfClient.touchFileViaFunction(docId, SESSION_ID, filePath);
+    if (cfResult !== null) {
+      if (cfResult.success) {
+        if (cfResult.conflict) {
+          console.log(`\n  ⚠️  ${cfResult.message}\n`);
+        } else {
+          console.log(`\n  📁 ${cfResult.message} (via Cloud Function)\n`);
+        }
+        return { id: docId, filePath, conflict: cfResult.conflict };
+      } else {
+        console.log(`\n  ❌ Touch failed: ${cfResult.message}\n`);
+        return null;
+      }
+    }
+
+    // Fall back to direct mode
     const docRef = db.collection("feedback").doc(docId);
     const doc = await docRef.get();
 
@@ -2458,7 +2613,7 @@ async function touchFile(docId, filePath) {
       claimToken: item.claimToken?.substring(0, 8),
     });
 
-    console.log(`\n  📁 Recorded: ${filePath}\n`);
+    console.log(`\n  📁 Recorded: ${filePath} (direct mode)\n`);
     return { id: docId, filePath };
   } catch (error) {
     console.error("\n  Error recording file touch:", error.message);
@@ -2485,6 +2640,38 @@ async function touchFile(docId, filePath) {
 async function unclaimFeedback(docId, options = {}) {
   const { emergency = null, confirmEmergency = false } = options;
 
+  // ==========================================================================
+  // CLOUD FUNCTIONS PATH (Bulletproof)
+  // ==========================================================================
+  try {
+    const cfResult = await cfClient.unclaimViaFunction(
+      docId,
+      SESSION_ID,
+      "new", // newStatus
+      "", // notes
+      !!emergency,
+      emergency || "",
+      confirmEmergency
+    );
+
+    if (cfResult !== null) {
+      if (cfResult.success) {
+        console.log(`\n  🔓 Unclaimed via Cloud Function\n`);
+        return { id: docId, status: "new", unclaimReason: cfResult.reason };
+      } else {
+        console.log(`\n  ❌ Unclaim rejected: ${cfResult.error || "Unknown error"}\n`);
+        return null;
+      }
+    }
+    // Cloud Functions unavailable - fall through to direct mode
+    console.log(`  ⚠️  Cloud Functions unavailable, using direct mode`);
+  } catch (cfError) {
+    console.log(`  ⚠️  Cloud Function error: ${cfError.message}, falling back to direct mode`);
+  }
+
+  // ==========================================================================
+  // DIRECT MODE FALLBACK (Legacy)
+  // ==========================================================================
   try {
     const docRef = db.collection("feedback").doc(docId);
     const doc = await docRef.get();
@@ -3173,12 +3360,15 @@ async function main() {
     }
     await searchFeedback(args.slice(1).join(" "));
   } else if (args[0] === "claim") {
-    // Claim specific: claim <id>
+    // Claim specific: claim <id> (supports partial IDs)
     if (!args[1]) {
-      console.log("\n  Usage: node scripts/fetch-feedback.js.js claim <id>\n");
+      console.log("\n  Usage: node scripts/fetch-feedback.js claim <id>\n");
+      console.log("  Accepts full ID or partial ID (8+ characters from list output)\n");
       return;
     }
-    await claimSpecificFeedback(args[1]);
+    const fullId = await resolveAndValidateId(args[1]);
+    if (!fullId) return;
+    await claimSpecificFeedback(fullId);
   } else if (args[0] === "unclaim") {
     // Unclaim: unclaim <id> [--emergency "reason" --confirm-emergency]
     if (!args[1]) {
@@ -3212,7 +3402,9 @@ async function main() {
       return;
     }
 
-    await unclaimFeedback(args[1], { emergency, confirmEmergency });
+    const fullId = await resolveAndValidateId(args[1]);
+    if (!fullId) return;
+    await unclaimFeedback(fullId, { emergency, confirmEmergency });
 
   } else if (args[0] === "heartbeat") {
     // Heartbeat: heartbeat <id> ["optional message"]
@@ -3222,7 +3414,9 @@ async function main() {
       console.log("  Run every 30 minutes to prevent your claim from going stale.\n");
       return;
     }
-    await sendHeartbeat(args[1], args[2] || null);
+    const fullId = await resolveAndValidateId(args[1]);
+    if (!fullId) return;
+    await sendHeartbeat(fullId, args[2] || null);
 
   } else if (args[0] === "request-claim") {
     // Request claim: request-claim <id> "reason"
@@ -3232,7 +3426,9 @@ async function main() {
       console.log("  After the countdown, you can claim the item normally.\n");
       return;
     }
-    await requestClaim(args[1], args[2]);
+    const fullId = await resolveAndValidateId(args[1]);
+    if (!fullId) return;
+    await requestClaim(fullId, args[2]);
 
   } else if (args[0] === "journal") {
     // Journal: journal <id> [--limit N]
@@ -3241,9 +3437,11 @@ async function main() {
       console.log("  Shows the work journal (activity log) for an item.\n");
       return;
     }
+    const fullId = await resolveAndValidateId(args[1]);
+    if (!fullId) return;
     const limitIdx = args.indexOf("--limit");
     const limit = limitIdx !== -1 ? parseInt(args[limitIdx + 1]) || 20 : 20;
-    await showJournal(args[1], limit);
+    await showJournal(fullId, limit);
 
   } else if (args[0] === "touch") {
     // Touch: touch <id> "file/path"
@@ -3252,17 +3450,21 @@ async function main() {
       console.log("  Records that you're editing a file. Helps with work recovery.\n");
       return;
     }
-    await touchFile(args[1], args[2]);
+    const fullId = await resolveAndValidateId(args[1]);
+    if (!fullId) return;
+    await touchFile(fullId, args[2]);
   } else if (args[0] === "add") {
     // Alias for "create" with flags - kept for backwards compatibility
     await addFeedback(args.slice(1));
   } else if (args[0] === "delete") {
     // Delete: delete <id>
     if (!args[1]) {
-      console.log("\n  Usage: node scripts/fetch-feedback.js.js delete <id>\n");
+      console.log("\n  Usage: node scripts/fetch-feedback.js delete <id>\n");
       return;
     }
-    await deleteFeedback(args[1]);
+    const fullId = await resolveAndValidateId(args[1]);
+    if (!fullId) return;
+    await deleteFeedback(fullId);
   } else if (args[0] === "prioritize") {
     // Auto-prioritize all unprioritized feedback
     const dryRun = args.includes("--dry-run");
@@ -3331,11 +3533,11 @@ async function main() {
   } else {
     // All remaining commands use args[0] as a document ID
     // Resolve partial ID to full ID before proceeding
-    const resolvedId = await resolvePartialId(args[0]);
-    if (!resolvedId) {
+    const fullId = await resolveAndValidateId(args[0]);
+    if (!fullId) {
       return;
     }
-    args[0] = resolvedId;
+    args[0] = fullId;
 
     if (args[1] === "defer") {
       // Defer: <id> defer "YYYY-MM-DD" "Reason"

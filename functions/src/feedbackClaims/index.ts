@@ -29,5 +29,16 @@ export {
   releaseFileEdit,
 } from "./fileConflicts";
 
+// HTTP endpoints for service account authentication (CLI)
+export {
+  httpClaimFeedback,
+  httpValidateHeartbeat,
+  httpUnclaimFeedback,
+  httpRegisterAgentSession,
+  httpTouchFile,
+  httpCheckFileConflicts,
+  httpUpdateFeedbackStatus,
+} from "./httpWrapper";
+
 // Shared types
 export * from "./types";
