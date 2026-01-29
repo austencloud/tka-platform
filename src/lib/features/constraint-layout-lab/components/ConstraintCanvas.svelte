@@ -15,17 +15,19 @@
   let {
     cells,
     containerBounds,
-    selectedCellId,
+    selectedCellIds,
     onSelectCell,
     onUpdateCellPosition,
     onUpdateCellSize,
+    onDuplicateCell,
   }: {
     cells: ConstraintCell[];
     containerBounds: ContainerBounds;
-    selectedCellId: string | null;
-    onSelectCell: (cellId: string | null) => void;
+    selectedCellIds: Set<string>;
+    onSelectCell: (cellId: string | null, additive?: boolean) => void;
     onUpdateCellPosition: (cellId: string, x: number, y: number) => void;
     onUpdateCellSize: (cellId: string, width: number, height: number, x?: number, y?: number) => void;
+    onDuplicateCell: (cellId: string, x: number, y: number) => string; // Returns new cell ID
   } = $props();
 
   // Container reference
@@ -49,19 +51,31 @@
   function handleCellPointerDown(cell: ConstraintCell, e: PointerEvent) {
     e.stopPropagation();
     e.preventDefault();
-    onSelectCell(cell.id);
 
     // Capture pointer for reliable drag on touch devices
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
+    // Alt + drag = duplicate
+    let duplicateId: string | undefined;
+    let targetCellId = cell.id;
+
+    if (e.altKey) {
+      // Create duplicate at same position, we'll move it during drag
+      duplicateId = onDuplicateCell(cell.id, cell.computed.x, cell.computed.y);
+      targetCellId = duplicateId;
+    }
+
+    onSelectCell(targetCellId);
+
     // Start move drag
     dragState = {
-      cellId: cell.id,
+      cellId: targetCellId,
       mode: "move",
       startX: e.clientX,
       startY: e.clientY,
       startCellBounds: { ...cell.computed },
       activeSnapGuides: [],
+      duplicateId,
     };
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -111,43 +125,64 @@
       let newX = state.startCellBounds.x + deltaX;
       let newY = state.startCellBounds.y + deltaY;
 
-      // Snap to guides
-      const snapX = findSnapPosition(newX, guides.x);
-      const snapXRight = findSnapPosition(newX + cell.computed.width, guides.x);
-      const snapXCenter = findSnapPosition(newX + cell.computed.width / 2, guides.x);
+      const shiftHeld = e.shiftKey;
+      const ctrlHeld = e.ctrlKey || e.metaKey;
 
-      const snapY = findSnapPosition(newY, guides.y);
-      const snapYBottom = findSnapPosition(newY + cell.computed.height, guides.y);
-      const snapYCenter = findSnapPosition(newY + cell.computed.height / 2, guides.y);
-
-      // Apply snapping (prefer edge snaps over center)
-      const snappedX: number[] = [];
-      const snappedY: number[] = [];
-
-      if (snapX.guide !== null) {
-        newX = snapX.snapped;
-        snappedX.push(snapX.guide);
-      } else if (snapXRight.guide !== null) {
-        newX = snapXRight.snapped - cell.computed.width;
-        snappedX.push(snapXRight.guide);
-      } else if (snapXCenter.guide !== null) {
-        newX = snapXCenter.snapped - cell.computed.width / 2;
-        snappedX.push(snapXCenter.guide);
+      // Shift + drag = constrain to horizontal or vertical
+      if (shiftHeld) {
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          // Horizontal movement
+          newY = state.startCellBounds.y;
+        } else {
+          // Vertical movement
+          newX = state.startCellBounds.x;
+        }
       }
 
-      if (snapY.guide !== null) {
-        newY = snapY.snapped;
-        snappedY.push(snapY.guide);
-      } else if (snapYBottom.guide !== null) {
-        newY = snapYBottom.snapped - cell.computed.height;
-        snappedY.push(snapYBottom.guide);
-      } else if (snapYCenter.guide !== null) {
-        newY = snapYCenter.snapped - cell.computed.height / 2;
-        snappedY.push(snapYCenter.guide);
-      }
+      // Ctrl + drag = free movement (skip snapping)
+      if (!ctrlHeld) {
+        // Snap to guides
+        const snapX = findSnapPosition(newX, guides.x);
+        const snapXRight = findSnapPosition(newX + cell.computed.width, guides.x);
+        const snapXCenter = findSnapPosition(newX + cell.computed.width / 2, guides.x);
 
-      activeSnapGuidesX = snappedX;
-      activeSnapGuidesY = snappedY;
+        const snapY = findSnapPosition(newY, guides.y);
+        const snapYBottom = findSnapPosition(newY + cell.computed.height, guides.y);
+        const snapYCenter = findSnapPosition(newY + cell.computed.height / 2, guides.y);
+
+        // Apply snapping (prefer edge snaps over center)
+        const snappedX: number[] = [];
+        const snappedY: number[] = [];
+
+        if (snapX.guide !== null) {
+          newX = snapX.snapped;
+          snappedX.push(snapX.guide);
+        } else if (snapXRight.guide !== null) {
+          newX = snapXRight.snapped - cell.computed.width;
+          snappedX.push(snapXRight.guide);
+        } else if (snapXCenter.guide !== null) {
+          newX = snapXCenter.snapped - cell.computed.width / 2;
+          snappedX.push(snapXCenter.guide);
+        }
+
+        if (snapY.guide !== null) {
+          newY = snapY.snapped;
+          snappedY.push(snapY.guide);
+        } else if (snapYBottom.guide !== null) {
+          newY = snapYBottom.snapped - cell.computed.height;
+          snappedY.push(snapYBottom.guide);
+        } else if (snapYCenter.guide !== null) {
+          newY = snapYCenter.snapped - cell.computed.height / 2;
+          snappedY.push(snapYCenter.guide);
+        }
+
+        activeSnapGuidesX = snappedX;
+        activeSnapGuidesY = snappedY;
+      } else {
+        // Free movement - no snap guides
+        activeSnapGuidesX = [];
+        activeSnapGuidesY = [];
+      }
 
       onUpdateCellPosition(state.cellId, newX, newY);
     } else if (state.mode === "resize" && state.handle) {
@@ -299,6 +334,8 @@
           <i class="fas fa-image cell-icon" aria-hidden="true"></i>
         {:else if cell.mediaType === "choreo-card"}
           <i class="fas fa-th cell-icon" aria-hidden="true"></i>
+        {:else if cell.mediaType === "viewer-3d"}
+          <i class="fas fa-cube cell-icon" aria-hidden="true"></i>
         {:else}
           <i class="fas fa-square cell-icon" aria-hidden="true"></i>
         {/if}

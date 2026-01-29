@@ -8,6 +8,8 @@
   - Snap guides
   - Z-index layering
   - Cell inspector
+  - Persistence (survives refresh)
+  - Custom preset saving
 -->
 <script lang="ts">
   import { browser } from "$app/environment";
@@ -16,7 +18,17 @@
   import CellInspector from "./components/CellInspector.svelte";
   import { LAYOUT_PRESETS, resetCellIdCounter } from "./services/LayoutPresets";
   import { solveConstraints, GRID_SIZE } from "./services/ConstraintSolver";
-  import type { ConstraintCell, ContainerBounds, LayoutPreset, Constraint, SizeConstraint } from "./domain/types";
+  import {
+    saveLayoutState,
+    loadLayoutState,
+    loadCustomPresets,
+    saveCustomPreset,
+    deleteCustomPreset,
+    customPresetToLayoutPreset,
+    exportLayoutAsJSON,
+    type CustomPreset,
+  } from "./services/LayoutPersistence";
+  import type { ConstraintCell, ContainerBounds, LayoutPreset, Constraint, SizeConstraint, CellMediaType } from "./domain/types";
 
   // Container dimensions (observed via ResizeObserver)
   let containerEl: HTMLDivElement | null = $state(null);
@@ -24,21 +36,65 @@
 
   // Layout state
   let cells = $state<ConstraintCell[]>([]);
-  let selectedCellId = $state<string | null>(null);
+  let selectedCellIds = $state<Set<string>>(new Set());
 
-  // Selected cell derived
+  // Custom presets
+  let customPresets = $state<CustomPreset[]>([]);
+
+  // Track if we've initialized from persistence
+  let initialized = $state(false);
+
+  // Save preset dialog state
+  let showSaveDialog = $state(false);
+  let newPresetName = $state("");
+  let newPresetDescription = $state("");
+  let newPresetIcon = $state("bookmark");
+
+  // Selected cells derived (for inspector - shows first selected, or null if multiple/none)
   const selectedCell = $derived(
-    selectedCellId ? cells.find((c) => c.id === selectedCellId) ?? null : null
+    selectedCellIds.size === 1
+      ? cells.find((c) => selectedCellIds.has(c.id)) ?? null
+      : null
   );
 
-  // Initialize with first preset
+  // For display purposes
+  const selectedCount = $derived(selectedCellIds.size);
+
+  // Combined presets (built-in + custom)
+  const allPresets = $derived<LayoutPreset[]>([
+    ...LAYOUT_PRESETS,
+    ...customPresets.map(customPresetToLayoutPreset),
+  ]);
+
+  // Load persisted state on mount
   $effect(() => {
-    if (cells.length === 0 && containerBounds.width > 0) {
-      const firstPreset = LAYOUT_PRESETS[0];
-      if (firstPreset) {
-        applyPreset(firstPreset);
-      }
+    if (!browser || initialized) return;
+
+    // Load custom presets
+    customPresets = loadCustomPresets();
+
+    // Load layout state
+    const savedState = loadLayoutState();
+    if (savedState && savedState.cells.length > 0) {
+      cells = savedState.cells;
+      // Convert single selectedCellId to Set for backwards compatibility
+      selectedCellIds = savedState.selectedCellId
+        ? new Set([savedState.selectedCellId])
+        : new Set();
+      initialized = true;
+    } else if (containerBounds.width > 0) {
+      // No saved state - start with empty canvas (user creates all presets from scratch)
+      cells = [];
+      initialized = true;
     }
+  });
+
+  // Save state whenever cells or selection changes
+  $effect(() => {
+    if (!browser || !initialized) return;
+    // Save first selected cell for backwards compatibility with persistence format
+    const firstSelected = selectedCellIds.size > 0 ? [...selectedCellIds][0] : null;
+    saveLayoutState(cells, firstSelected ?? null);
   });
 
   // Observe container size
@@ -64,7 +120,7 @@
     resetCellIdCounter();
     cells = preset.createCells(containerBounds);
     updateComputedPositions();
-    selectedCellId = null;
+    selectedCellIds = new Set();
   }
 
   function updateComputedPositions() {
@@ -78,8 +134,30 @@
     });
   }
 
-  function handleSelectCell(cellId: string | null) {
-    selectedCellId = cellId;
+  /**
+   * Handle cell selection with multi-select support
+   * - Normal click: select only this cell
+   * - Ctrl/Cmd+click: toggle this cell in selection
+   * - Shift+click: add to selection (range not needed for non-list)
+   * - Click on empty: clear selection
+   */
+  function handleSelectCell(cellId: string | null, additive: boolean = false) {
+    if (cellId === null) {
+      // Clicked on empty space
+      selectedCellIds = new Set();
+    } else if (additive) {
+      // Ctrl/Shift+click: toggle in selection
+      const newSet = new Set(selectedCellIds);
+      if (newSet.has(cellId)) {
+        newSet.delete(cellId);
+      } else {
+        newSet.add(cellId);
+      }
+      selectedCellIds = newSet;
+    } else {
+      // Normal click: select only this cell
+      selectedCellIds = new Set([cellId]);
+    }
   }
 
   function handleUpdateCellPosition(cellId: string, x: number, y: number) {
@@ -198,51 +276,59 @@
   }
 
   function handleUpdateLabel(label: string) {
-    if (!selectedCellId) return;
+    if (selectedCellIds.size === 0) return;
     cells = cells.map((cell) =>
-      cell.id === selectedCellId ? { ...cell, label } : cell
+      selectedCellIds.has(cell.id) ? { ...cell, label } : cell
     );
   }
 
   function handleUpdateZIndex(zIndex: number) {
-    if (!selectedCellId) return;
+    if (selectedCellIds.size === 0) return;
     cells = cells.map((cell) =>
-      cell.id === selectedCellId ? { ...cell, zIndex } : cell
+      selectedCellIds.has(cell.id) ? { ...cell, zIndex } : cell
     );
   }
 
   function handleUpdateColor(color: string) {
-    if (!selectedCellId) return;
+    if (selectedCellIds.size === 0) return;
     cells = cells.map((cell) =>
-      cell.id === selectedCellId ? { ...cell, color } : cell
+      selectedCellIds.has(cell.id) ? { ...cell, color } : cell
+    );
+  }
+
+  function handleUpdateMediaType(mediaType: CellMediaType) {
+    if (selectedCellIds.size === 0) return;
+    cells = cells.map((cell) =>
+      selectedCellIds.has(cell.id) ? { ...cell, mediaType } : cell
     );
   }
 
   function handleDeleteCell() {
-    if (!selectedCellId) return;
-    cells = cells.filter((c) => c.id !== selectedCellId);
-    selectedCellId = null;
+    if (selectedCellIds.size === 0) return;
+    cells = cells.filter((c) => !selectedCellIds.has(c.id));
+    selectedCellIds = new Set();
   }
 
-  function handleDuplicateCell() {
-    if (!selectedCell) return;
+  /** Duplicate cell at specific position (used by Alt+drag) - returns new cell ID */
+  function handleDuplicateCellAt(cellId: string, x: number, y: number): string {
+    const sourceCell = cells.find((c) => c.id === cellId);
+    if (!sourceCell) return cellId;
 
     const newId = `cell-dup-${Date.now()}`;
-    const offset = GRID_SIZE; // Snap to grid
 
     const newCell: ConstraintCell = {
-      ...selectedCell,
+      ...sourceCell,
       id: newId,
-      label: `${selectedCell.label} Copy`,
-      zIndex: selectedCell.zIndex + 1,
-      mediaType: selectedCell.mediaType,
+      label: `${sourceCell.label} Copy`,
+      zIndex: Math.max(...cells.map((c) => c.zIndex)) + 1,
+      mediaType: sourceCell.mediaType,
       constraints: [
         {
           id: `${newId}-left-abs`,
           cellId: newId,
           anchor: "left",
           target: { type: "parent", anchor: "left" },
-          offset: selectedCell.computed.x + offset,
+          offset: x,
           priority: "required",
           relation: "equal",
         },
@@ -251,7 +337,7 @@
           cellId: newId,
           anchor: "top",
           target: { type: "parent", anchor: "top" },
-          offset: selectedCell.computed.y + offset,
+          offset: y,
           priority: "required",
           relation: "equal",
         },
@@ -261,7 +347,7 @@
           id: `${newId}-width`,
           cellId: newId,
           dimension: "width",
-          value: selectedCell.computed.width,
+          value: sourceCell.computed.width,
           priority: "required",
           relation: "equal",
         },
@@ -269,21 +355,34 @@
           id: `${newId}-height`,
           cellId: newId,
           dimension: "height",
-          value: selectedCell.computed.height,
+          value: sourceCell.computed.height,
           priority: "required",
           relation: "equal",
         },
       ],
       computed: {
-        x: selectedCell.computed.x + offset,
-        y: selectedCell.computed.y + offset,
-        width: selectedCell.computed.width,
-        height: selectedCell.computed.height,
+        x,
+        y,
+        width: sourceCell.computed.width,
+        height: sourceCell.computed.height,
       },
     };
 
     cells = [...cells, newCell];
-    selectedCellId = newId;
+    return newId;
+  }
+
+  /** Duplicate selected cell with offset (used by button) */
+  function handleDuplicateCell() {
+    if (!selectedCell) return;
+
+    const offset = GRID_SIZE;
+    const newId = handleDuplicateCellAt(
+      selectedCell.id,
+      selectedCell.computed.x + offset,
+      selectedCell.computed.y + offset
+    );
+    selectedCellIds = new Set([newId]);
   }
 
   function handleAddCell() {
@@ -293,11 +392,12 @@
     const y = Math.round((containerBounds.height - size) / 2 / GRID_SIZE) * GRID_SIZE;
 
     // Cycle through media types for new cells
-    const MEDIA_CYCLE: Array<{ label: string; type: "video" | "animation" | "image" | "choreo-card"; color: string }> = [
+    const MEDIA_CYCLE: Array<{ label: string; type: "video" | "animation" | "image" | "choreo-card" | "viewer-3d"; color: string }> = [
       { label: "Video", type: "video", color: "#ef4444" },
       { label: "Animation", type: "animation", color: "#8b5cf6" },
       { label: "Image", type: "image", color: "#10b981" },
       { label: "Choreo Card", type: "choreo-card", color: "#3b82f6" },
+      { label: "3D Viewer", type: "viewer-3d", color: "#f59e0b" },
     ];
     const media = MEDIA_CYCLE[cells.length % MEDIA_CYCLE.length]!;
 
@@ -349,15 +449,87 @@
     };
 
     cells = [...cells, newCell];
-    selectedCellId = newId;
+    selectedCellIds = new Set([newId]);
   }
+
+  function handleSaveAsPreset() {
+    if (!newPresetName.trim()) return;
+
+    const preset = saveCustomPreset(
+      newPresetName.trim(),
+      newPresetDescription.trim() || `Custom layout with ${cells.length} cells`,
+      newPresetIcon,
+      cells,
+      containerBounds
+    );
+
+    customPresets = [...customPresets, preset];
+
+    // Reset dialog
+    showSaveDialog = false;
+    newPresetName = "";
+    newPresetDescription = "";
+    newPresetIcon = "bookmark";
+  }
+
+  function handleDeletePreset(presetId: string) {
+    deleteCustomPreset(presetId);
+    customPresets = customPresets.filter((p) => p.id !== presetId);
+  }
+
+  function handleCancelSaveDialog() {
+    showSaveDialog = false;
+    newPresetName = "";
+    newPresetDescription = "";
+    newPresetIcon = "bookmark";
+  }
+
+  let exportStatus = $state<"idle" | "copied" | "error">("idle");
+
+  async function handleExportLayout() {
+    if (cells.length === 0) return;
+
+    const exported = exportLayoutAsJSON(
+      cells,
+      containerBounds,
+      "Exported Layout",
+      `${cells.length} cells`,
+      "bookmark"
+    );
+
+    const json = JSON.stringify(exported, null, 2);
+
+    try {
+      await navigator.clipboard.writeText(json);
+      exportStatus = "copied";
+      setTimeout(() => {
+        exportStatus = "idle";
+      }, 2000);
+    } catch {
+      exportStatus = "error";
+      setTimeout(() => {
+        exportStatus = "idle";
+      }, 2000);
+    }
+  }
+
+  const ICON_OPTIONS = [
+    "bookmark",
+    "star",
+    "heart",
+    "folder",
+    "layer-group",
+    "th-large",
+    "border-all",
+    "object-group",
+  ];
 </script>
 
 <div class="constraint-layout-lab">
   <header class="lab-header">
     <h1>Constraint Layout Lab</h1>
     <p class="subtitle">
-      Experiment with constraint-based positioning. Drag cells to move, grab handles to resize.
+      Drag to move, handles to resize. Shift=straight line/square, Alt=duplicate, Ctrl=free move.
     </p>
   </header>
 
@@ -367,10 +539,11 @@
       <ConstraintCanvas
         {cells}
         {containerBounds}
-        {selectedCellId}
+        {selectedCellIds}
         onSelectCell={handleSelectCell}
         onUpdateCellPosition={handleUpdateCellPosition}
         onUpdateCellSize={handleUpdateCellSize}
+        onDuplicateCell={handleDuplicateCellAt}
       />
     </div>
 
@@ -382,8 +555,38 @@
         Add Cell
       </button>
 
+      <!-- Export button -->
+      <button
+        class="export-btn"
+        class:copied={exportStatus === "copied"}
+        class:error={exportStatus === "error"}
+        onclick={handleExportLayout}
+        disabled={cells.length === 0}
+      >
+        {#if exportStatus === "copied"}
+          <i class="fas fa-check" aria-hidden="true"></i>
+          Copied!
+        {:else if exportStatus === "error"}
+          <i class="fas fa-times" aria-hidden="true"></i>
+          Failed
+        {:else}
+          <i class="fas fa-copy" aria-hidden="true"></i>
+          Export JSON
+        {/if}
+      </button>
+
+      <!-- Save as preset button -->
+      <button class="save-preset-btn" onclick={() => (showSaveDialog = true)} disabled={cells.length === 0}>
+        <i class="fas fa-save" aria-hidden="true"></i>
+        Save as Preset
+      </button>
+
       <!-- Presets -->
-      <PresetPicker onSelectPreset={applyPreset} />
+      <PresetPicker
+        presets={allPresets}
+        onSelectPreset={applyPreset}
+        onDeletePreset={handleDeletePreset}
+      />
 
       <!-- Inspector (when cell selected) -->
       {#if selectedCell}
@@ -393,6 +596,7 @@
           onUpdateLabel={handleUpdateLabel}
           onUpdateZIndex={handleUpdateZIndex}
           onUpdateColor={handleUpdateColor}
+          onUpdateMediaType={handleUpdateMediaType}
           onDeleteCell={handleDeleteCell}
           onDuplicateCell={handleDuplicateCell}
         />
@@ -409,6 +613,70 @@
       </div>
     </div>
   </div>
+
+  <!-- Save preset dialog -->
+  {#if showSaveDialog}
+    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <div class="dialog-backdrop" onclick={handleCancelSaveDialog}>
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+      <div class="dialog" onclick={(e) => e.stopPropagation()}>
+        <h2 class="dialog-title">Save as Preset</h2>
+
+        <div class="form-field">
+          <label for="preset-name">Name</label>
+          <input
+            id="preset-name"
+            type="text"
+            bind:value={newPresetName}
+            placeholder="My Layout"
+            maxlength="30"
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="preset-description">Description (optional)</label>
+          <input
+            id="preset-description"
+            type="text"
+            bind:value={newPresetDescription}
+            placeholder="A custom layout..."
+            maxlength="100"
+          />
+        </div>
+
+        <div class="form-field">
+          <label>Icon</label>
+          <div class="icon-picker">
+            {#each ICON_OPTIONS as icon}
+              <button
+                class="icon-btn"
+                class:selected={newPresetIcon === icon}
+                onclick={() => (newPresetIcon = icon)}
+                type="button"
+                aria-label="Select {icon} icon"
+              >
+                <i class="fas fa-{icon}" aria-hidden="true"></i>
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <div class="dialog-actions">
+          <button class="cancel-btn" onclick={handleCancelSaveDialog} type="button">
+            Cancel
+          </button>
+          <button
+            class="save-btn"
+            onclick={handleSaveAsPreset}
+            type="button"
+            disabled={!newPresetName.trim()}
+          >
+            Save Preset
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -484,6 +752,74 @@
     background: var(--theme-accent-hover, #7c3aed);
   }
 
+  .save-preset-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    background: transparent;
+    border: 1px dashed var(--theme-accent, #8b5cf6);
+    border-radius: var(--border-radius-md, 8px);
+    color: var(--theme-accent, #8b5cf6);
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .save-preset-btn:hover:not(:disabled) {
+    background: var(--theme-accent, #8b5cf6);
+    color: white;
+  }
+
+  .save-preset-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .export-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .export-btn:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-accent, #8b5cf6);
+    color: var(--theme-text, white);
+  }
+
+  .export-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .export-btn.copied {
+    background: var(--semantic-success, #10b981);
+    border-color: var(--semantic-success, #10b981);
+    color: white;
+  }
+
+  .export-btn.error {
+    background: var(--semantic-error, #ef4444);
+    border-color: var(--semantic-error, #ef4444);
+    color: white;
+  }
+
   .divider {
     height: 1px;
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -518,6 +854,144 @@
     text-align: center;
   }
 
+  /* Dialog styles */
+  .dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .dialog {
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-lg, 12px);
+    padding: var(--spacing-xl, 24px);
+    width: 100%;
+    max-width: 400px;
+    margin: var(--spacing-lg, 16px);
+  }
+
+  .dialog-title {
+    margin: 0 0 var(--spacing-lg, 16px);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--theme-text, white);
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs, 4px);
+    margin-bottom: var(--spacing-md, 12px);
+  }
+
+  .form-field label {
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+  }
+
+  .form-field input {
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .form-field input:focus {
+    outline: none;
+    border-color: var(--theme-accent, #8b5cf6);
+  }
+
+  .form-field input::placeholder {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
+  .icon-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs, 4px);
+  }
+
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .icon-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, white);
+  }
+
+  .icon-btn.selected {
+    background: var(--theme-accent, #8b5cf6);
+    border-color: var(--theme-accent, #8b5cf6);
+    color: white;
+  }
+
+  .dialog-actions {
+    display: flex;
+    gap: var(--spacing-sm, 8px);
+    justify-content: flex-end;
+    margin-top: var(--spacing-lg, 16px);
+  }
+
+  .cancel-btn {
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
+    border-radius: var(--border-radius-md, 8px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .cancel-btn:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, white);
+  }
+
+  .save-btn {
+    padding: var(--spacing-sm, 8px) var(--spacing-lg, 16px);
+    background: var(--theme-accent, #8b5cf6);
+    border: none;
+    border-radius: var(--border-radius-md, 8px);
+    color: white;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .save-btn:hover:not(:disabled) {
+    background: var(--theme-accent-hover, #7c3aed);
+  }
+
+  .save-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
   @media (max-width: 768px) {
     .lab-content {
       grid-template-columns: 1fr;
@@ -526,6 +1000,15 @@
 
     .control-panel {
       max-height: 300px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .save-preset-btn,
+    .icon-btn,
+    .cancel-btn,
+    .save-btn {
+      transition: none;
     }
   }
 </style>

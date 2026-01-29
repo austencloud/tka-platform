@@ -4,13 +4,15 @@
   Panel showing selected cell properties and allowing edits.
 -->
 <script lang="ts">
-  import type { ConstraintCell } from "../domain/types";
+  import type { ConstraintCell, CellMediaType } from "../domain/types";
+  import { MEDIA_COLORS } from "../services/LayoutPresets";
 
   let {
     cell,
     onUpdateLabel,
     onUpdateZIndex,
     onUpdateColor,
+    onUpdateMediaType,
     onDeleteCell,
     onDuplicateCell,
   }: {
@@ -18,9 +20,18 @@
     onUpdateLabel: (label: string) => void;
     onUpdateZIndex: (zIndex: number) => void;
     onUpdateColor: (color: string) => void;
+    onUpdateMediaType: (mediaType: CellMediaType) => void;
     onDeleteCell: () => void;
     onDuplicateCell: () => void;
   } = $props();
+
+  const MEDIA_TYPES: { type: CellMediaType; label: string; icon: string }[] = [
+    { type: "video", label: "Video", icon: "video" },
+    { type: "animation", label: "Animation", icon: "play-circle" },
+    { type: "image", label: "Image", icon: "image" },
+    { type: "choreo-card", label: "Choreo Card", icon: "th" },
+    { type: "viewer-3d", label: "3D Viewer", icon: "cube" },
+  ];
 
   const COLORS = [
     "#8b5cf6", // Purple
@@ -42,10 +53,39 @@
     const input = e.target as HTMLInputElement;
     onUpdateZIndex(parseInt(input.value, 10) || 1);
   }
+
+  function handleMediaTypeChange(mediaType: CellMediaType) {
+    onUpdateMediaType(mediaType);
+    // Also update color to match media type
+    onUpdateColor(MEDIA_COLORS[mediaType]);
+    // Update label to match media type
+    const mediaInfo = MEDIA_TYPES.find((m) => m.type === mediaType);
+    if (mediaInfo) {
+      onUpdateLabel(mediaInfo.label);
+    }
+  }
 </script>
 
 <div class="cell-inspector">
   <h3 class="section-title">Selected Cell</h3>
+
+  <!-- Media Type -->
+  <div class="field">
+    <div class="field-label" id="media-type-label">Media Type</div>
+    <div class="media-type-grid" role="group" aria-labelledby="media-type-label">
+      {#each MEDIA_TYPES as media}
+        <button
+          class="media-type-btn"
+          class:selected={cell.mediaType === media.type}
+          onclick={() => handleMediaTypeChange(media.type)}
+          title={media.label}
+          aria-label="Set media type to {media.label}"
+        >
+          <i class="fas fa-{media.icon}" aria-hidden="true"></i>
+        </button>
+      {/each}
+    </div>
+  </div>
 
   <!-- Label -->
   <div class="field">
@@ -157,6 +197,41 @@
   .field input:focus {
     outline: none;
     border-color: var(--theme-accent, #8b5cf6);
+  }
+
+  .media-type-grid {
+    display: flex;
+    gap: var(--spacing-xs, 4px);
+  }
+
+  .media-type-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm, 8px);
+    min-height: 40px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-sm, 4px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: 1rem;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .media-type-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, white);
+  }
+
+  .media-type-btn.selected {
+    background: var(--theme-accent, #8b5cf6);
+    border-color: var(--theme-accent, #8b5cf6);
+    color: white;
   }
 
   .color-grid {

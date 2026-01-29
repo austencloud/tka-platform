@@ -48,6 +48,7 @@ export type CellMediaType =
   | "animation"       // Pictograph animation
   | "image"           // Static image or composite
   | "choreo-card"     // Sequence choreo card
+  | "viewer-3d"       // 3D animation viewer
   | "empty";          // Placeholder/empty cell
 
 /** A cell in the constraint-based layout */
@@ -112,8 +113,12 @@ export interface DragState {
   cellId: string;
   mode: "move" | "resize";
   handle?: "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  /** Alt+drag creates a duplicate - this is the new cell's ID */
+  duplicateId?: string;
   startX: number;
   startY: number;
   startCellBounds: { x: number; y: number; width: number; height: number };
   activeSnapGuides: SnapGuide[];
+  /** For multi-cell dragging: store start bounds of all selected cells */
+  groupStartBounds?: Map<string, { x: number; y: number; width: number; height: number }>;
 }
