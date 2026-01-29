@@ -160,7 +160,6 @@
   const isNightEnvironment = $derived(
     backgroundType === BackgroundType.FIREFLY_FOREST ||
       backgroundType === BackgroundType.NIGHT_SKY ||
-      backgroundType === BackgroundType.AURORA ||
       backgroundType === BackgroundType.DEEP_OCEAN
   );
 

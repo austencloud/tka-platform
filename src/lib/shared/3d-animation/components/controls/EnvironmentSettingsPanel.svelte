@@ -42,12 +42,6 @@
       icon: "fa-moon",
       has3DScene: true,
     },
-    {
-      type: BackgroundType.AURORA,
-      name: "Aurora",
-      icon: "fa-wand-magic-sparkles",
-      has3DScene: true,
-    },
     // All animated backgrounds have 3D scenes
     {
       type: BackgroundType.SNOWFALL,

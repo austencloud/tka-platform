@@ -40,8 +40,6 @@
         return { scene: "forest", variant: "firefly" };
       case BackgroundType.NIGHT_SKY:
         return { scene: "cosmic", variant: "night" };
-      case BackgroundType.AURORA:
-        return { scene: "cosmic", variant: "aurora" };
       case BackgroundType.SNOWFALL:
         return { scene: "winter" };
       case BackgroundType.DEEP_OCEAN:
