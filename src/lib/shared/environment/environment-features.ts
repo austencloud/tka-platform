@@ -158,19 +158,11 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   "ml-training": false,
   admin: false,
   settings: true, // Settings always available
-  realm: false, // 3D experiences - Stage + Museum (admin-only)
   choreo_card: false, // Choreo card generator (internal tool)
   word_card: false, // Legacy alias for choreo_card
   write: false, // Write module (unreleased)
-  mandala: false, // Mandala generator (internal tool)
-  skewlab: false, // Skewlab internal tool
-  "poi-lab": false, // Poi Lab internal tool (poi physics constraints)
-  "background-builder": false, // Background builder internal tool
-  // "infinite-worlds" removed - now part of "realm"
-  "landing-preview": false, // Landing page preview/iteration (admin-only)
   watch: false, // Watch videos/performances (unreleased)
   connect: false, // Multiplayer sessions (unreleased)
   moderation: false, // Content moderation (admin-only)
-  lab: false, // Experimental features lab (admin-only)
-  "terrain-research": false, // Terrain research (admin-only)
+  lab: false, // Experimental features lab (admin-only) - consolidates realm, mandala, skewlab, poi-lab, background-builder, landing-preview, terrain-research
 };

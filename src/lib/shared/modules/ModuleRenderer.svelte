@@ -78,10 +78,6 @@
       import("../../features/feedback/components/FeedbackModule.svelte"),
     admin: () =>
       import("../../features/admin/components/AdminDashboard.svelte"),
-    // Skew Lab module - experimental skewed positions (admin-only, temporary)
-    skewlab: () => import("../../features/skewlab/SkewLabModule.svelte"),
-    // Poi Lab module - poi physics constraints with VTG terminology
-    "poi-lab": () => import("../../features/poi-lab/PoiLabModule.svelte"),
     // ML Training module for prop detection model training
     "ml-training": () =>
       import("../../features/train/ml-training/components/MLTrainingModule.svelte"),
@@ -96,26 +92,22 @@
     connect: () => import("../../features/connect/ConnectModule.svelte"),
     // settings module - accessed via gear icon in sidebar footer
     settings: () => import("../../features/settings/SettingsModule.svelte"),
-    // Realm module - Unified 3D destination hub (Stage, Gallery, Worlds, etc.)
-    realm: () => import("../../features/realm/RealmModule.svelte"),
-    // Terrain Research Lab - temporary module for comparing terrain implementations
-    "terrain-research": () =>
-      import("../../features/terrain-research/TerrainResearchModule.svelte"),
-    // Mandala generator - kaleidoscope art studio with TKA elements
-    mandala: () =>
-      import("../../features/mandala-generator/components/MandalaGeneratorModule.svelte"),
-    // Background Builder - design and iterate on deep ocean background elements
-    "background-builder": () =>
-      import("../../features/background-builder/BackgroundBuilder.svelte"),
-    // Landing Preview - iterate on landing page designs (admin-only)
-    "landing-preview": () =>
-      import("../../features/landing-preview/LandingPreviewModule.svelte"),
     // Tika module - AI tutor for TKA (standalone module)
     tika: () => import("../../features/tika/TikaModule.svelte"),
     // Moderation module - user reports dashboard (admin-only)
     moderation: () => import("../../features/moderation/ModerationModule.svelte"),
-    // Lab module - consolidated experiments (Spell Layouts, Skew, Poi tabs)
+    // Lab module - ALL experiments consolidated here (Skew, Poi, Realm, Terrain, Mandala, Backgrounds, Landing)
     lab: () => import("../../features/lab/LabModule.svelte"),
+    // ========================================================================
+    // BACKWARDS COMPAT: Old standalone experimental modules now redirect to Lab
+    // ========================================================================
+    skewlab: () => import("../../features/lab/LabModule.svelte"),
+    "poi-lab": () => import("../../features/lab/LabModule.svelte"),
+    realm: () => import("../../features/lab/LabModule.svelte"),
+    "terrain-research": () => import("../../features/lab/LabModule.svelte"),
+    mandala: () => import("../../features/lab/LabModule.svelte"),
+    "background-builder": () => import("../../features/lab/LabModule.svelte"),
+    "landing-preview": () => import("../../features/lab/LabModule.svelte"),
     // ========================================================================
     // REMOVED: Standalone 3D modules (now accessible via Realm destinations)
     // ========================================================================

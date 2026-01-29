@@ -24,7 +24,7 @@ import {
 } from "../navigation/state/navigation-state.svelte";
 import { switchModule } from "../application/state/ui/module-state";
 import { authState } from "../auth/state/authState.svelte";
-import { featureFlagService } from "../auth/services/PostHogFeatureFlagService.svelte";
+import { featureFlagService, featureFlagState } from "../auth/services/PostHogFeatureFlagService.svelte";
 
 // Session storage key for persisting navigation history across HMR
 const PREVIOUS_MODULE_KEY = "tka-previous-module-before-settings";
@@ -434,6 +434,11 @@ export function getModuleDefinitions() {
   // Read reactive values to ensure $derived recalculates when role changes
   // (including when impersonation syncs to debugRoleOverride)
   const _effectiveRole = featureFlagService.effectiveRole;
+
+  // Read flagsVersion directly from $state to ensure $derived recalculates when admin toggles flags
+  // This is incremented by updateGlobalFeatureFlag() in the admin UI
+  // Must access the $state directly (not through getter) for Svelte 5 reactivity
+  const _flagsVersion = featureFlagState.flagsVersion;
 
   return MODULE_DEFINITIONS.filter((module) => {
     // Library module is now integrated into Gallery via Community/My Library toggle

@@ -37,17 +37,10 @@ export type ModuleId =
   | "ml-training"
   | "admin"
   | "settings"
-  | "realm" // 3D exploration - procedural forest with campground
-  | "mandala"
-  | "skewlab" // Experimental skewed positions (admin-only, temporary)
-  | "poi-lab" // Poi physics constraints with VTG terminology (admin-only)
-  | "background-builder" // Design and iterate on deep ocean background elements
-  | "landing-preview" // Preview and iterate on landing page designs
   | "watch" // Watch videos and performances
   | "connect" // Multiplayer sessions
   | "moderation" // Content moderation (admin)
-  | "lab" // Experimental features lab
-  | "terrain-research"; // Terrain research lab
+  | "lab"; // Experimental features lab (all experiments consolidated here)
 
 /**
  * Module Definition

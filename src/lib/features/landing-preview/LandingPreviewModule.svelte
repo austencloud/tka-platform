@@ -5,6 +5,9 @@
    * Admin-only module for previewing and iterating on public pages.
    * Each tab corresponds to an actual public route: /landing, /about, /terms, etc.
    *
+   * Now embedded as a Lab tab, this module manages its own internal tab navigation
+   * since the sidebar tabs are LAB_TABS, not our internal page tabs.
+   *
    * Link interception: Clicks on internal links (back buttons, CTAs pointing to
    * other public pages) are intercepted and mapped to tab navigation instead of
    * actual route navigation. This keeps the user inside the preview module.
@@ -12,7 +15,17 @@
   import { onMount } from "svelte";
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+
+  // Internal tabs - these are NOT sidebar tabs, they're internal to this module
+  const INTERNAL_TABS = [
+    { id: "landing", label: "Landing", icon: "fa-rocket" },
+    { id: "videos", label: "Videos", icon: "fa-film" },
+    { id: "about", label: "About", icon: "fa-info-circle" },
+    { id: "roots", label: "Roots", icon: "fa-seedling" },
+    { id: "terms", label: "Terms", icon: "fa-file-contract" },
+    { id: "privacy", label: "Privacy", icon: "fa-shield-alt" },
+    { id: "curator", label: "Curator", icon: "fa-video" },
+  ];
 
   // Lazy-load the public page content components
   // These are the actual route components - we embed them directly
@@ -47,8 +60,8 @@
   let isLoading = $state(false);
   let contentArea = $state<HTMLDivElement | null>(null);
 
-  // Get current tab from navigation state
-  const currentTab = $derived(navigationState.currentSection || "landing");
+  // Internal tab state (not connected to sidebar navigation)
+  let currentTab = $state("landing");
 
   // Dev-only tabs that don't load a public page component
   const devOnlyTabs = ["videos", "curator"];
@@ -91,7 +104,7 @@
     if (tabId) {
       event.preventDefault();
       event.stopPropagation();
-      navigationState.setActiveTab(tabId);
+      currentTab = tabId;
       return;
     }
 
@@ -126,6 +139,22 @@
 </script>
 
 <div class="landing-preview-module">
+  <!-- Internal tab bar (since we're now embedded in Lab) -->
+  <div class="internal-tabs" role="tablist">
+    {#each INTERNAL_TABS as tab}
+      <button
+        class="internal-tab"
+        class:active={currentTab === tab.id}
+        onclick={() => currentTab = tab.id}
+        role="tab"
+        aria-selected={currentTab === tab.id}
+      >
+        <i class="fas {tab.icon}" aria-hidden="true"></i>
+        <span>{tab.label}</span>
+      </button>
+    {/each}
+  </div>
+
   <!-- Info bar showing which route this corresponds to -->
   <div class="route-info-bar">
     <span class="route-label">
@@ -178,6 +207,47 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
+  }
+
+  /* Internal tabs (since we're embedded in Lab) */
+  .internal-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 12px;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+
+  .internal-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    min-height: 36px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-sm, 14px);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .internal-tab:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text, white);
+  }
+
+  .internal-tab.active {
+    background: var(--theme-accent, #6366f1);
+    color: white;
+  }
+
+  .internal-tab i {
+    font-size: 12px;
   }
 
   /* Route info bar */
@@ -234,10 +304,27 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
+    position: relative;
   }
 
   .page-embed {
     min-height: 100%;
+    position: relative;
+  }
+
+  /*
+   * Override position: fixed in embedded pages.
+   * Public pages like /landing use position: fixed for backgrounds,
+   * which breaks out of containers. We convert to absolute positioning
+   * to keep them contained within the preview area.
+   */
+  .page-embed :global(.background-layer) {
+    position: absolute !important;
+  }
+
+  .page-embed :global(.landing-page) {
+    min-height: 100%;
+    overflow: visible;
   }
 
   /* Loading state */

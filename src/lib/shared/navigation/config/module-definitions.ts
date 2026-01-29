@@ -16,9 +16,6 @@ import {
   ML_TRAINING_TABS,
   ADMIN_TABS,
   SETTINGS_TABS,
-  REALM_TABS,
-  SKEWLAB_TABS,
-  LANDING_PAGE_TABS,
   WATCH_TABS,
   LAB_TABS,
 } from "./tab-definitions";
@@ -33,6 +30,14 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   discover: "browse", // Module renamed from Discover to Browse (Jan 2026)
   explore: "browse", // Module renamed from Explore to Browse (Jan 2026)
   dashboard: "create", // Dashboard removed - Create is now the default landing (Jan 2026)
+  // Experimental modules consolidated into Lab (Jan 2026)
+  skewlab: "lab",
+  "poi-lab": "lab",
+  realm: "lab",
+  "terrain-research": "lab",
+  mandala: "lab",
+  "background-builder": "lab",
+  "landing-preview": "lab",
 };
 
 /**
@@ -217,77 +222,6 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Temporary experiments and UI prototypes",
     isMain: true,
     sections: LAB_TABS,
-    adminOnly: true,
-  },
-  // DEPRECATED: Individual lab modules now consolidated into Lab module above
-  {
-    id: "skewlab",
-    label: "Skew Lab",
-    icon: '<i class="fas fa-flask" style="color: #f97316;" aria-hidden="true"></i>',
-    color: "#f97316", // Orange - experimental
-    description: "Experimental skewed positions development (temporary)",
-    isMain: true, // Visibility controlled by getModuleDefinitions() based on admin status
-    sections: SKEWLAB_TABS,
-    adminOnly: true,
-  },
-  {
-    id: "poi-lab",
-    label: "Poi Lab",
-    icon: '<i class="fas fa-circle-notch" style="color: #22d3ee;" aria-hidden="true"></i>',
-    color: "#22d3ee", // Cyan - circular/spinning motion
-    description: "Browse poi constraints with VTG terminology",
-    isMain: true, // Visibility controlled by getModuleDefinitions() based on admin status
-    sections: [], // Tabs handled internally
-    adminOnly: true,
-  },
-  {
-    id: "realm",
-    label: "Realm",
-    icon: '<i class="fas fa-vr-cardboard" style="color: #06b6d4;" aria-hidden="true"></i>',
-    color: "#06b6d4", // Cyan - 3D/immersive
-    description: "Unified 3D destination hub - Stage, Gallery, Infinite Worlds, and more",
-    isMain: true, // Visibility controlled by feature flags (admin-only)
-    sections: [], // Uses destination picker instead of tabs
-    adminOnly: true,
-  },
-  {
-    id: "terrain-research",
-    label: "Terrain Lab",
-    icon: '<i class="fas fa-mountain" style="color: #22c55e;" aria-hidden="true"></i>',
-    color: "#22c55e", // Green - terrain/nature
-    description: "Research lab comparing open-source terrain implementations (temporary)",
-    isMain: true,
-    sections: [],
-    adminOnly: true, // Admin-only temporary module
-  },
-  {
-    id: "mandala",
-    label: "Mandala",
-    icon: '<i class="fas fa-dharmachakra" style="color: #f472b6;" aria-hidden="true"></i>',
-    color: "#f472b6", // Pink - artistic/creative
-    description: "Create kaleidoscope art with TKA elements",
-    isMain: true, // Visibility controlled by feature flags (admin-only for now)
-    sections: [], // Single-tab creative studio
-    adminOnly: true,
-  },
-  {
-    id: "background-builder",
-    label: "BG Builder",
-    icon: '<i class="fas fa-water" style="color: #0ea5e9;" aria-hidden="true"></i>',
-    color: "#0ea5e9", // Sky blue - ocean/background
-    description: "Design and iterate on deep ocean background elements",
-    isMain: true, // Admin-only for development
-    sections: [], // Tab switching handled internally
-    adminOnly: true,
-  },
-  {
-    id: "landing-preview",
-    label: "Landing Page",
-    icon: '<i class="fas fa-rocket" style="color: #f472b6;" aria-hidden="true"></i>',
-    color: "#f472b6", // Pink - launch/landing
-    description: "Preview and iterate on landing page designs",
-    isMain: true, // Admin-only for development
-    sections: LANDING_PAGE_TABS,
     adminOnly: true,
   },
   {

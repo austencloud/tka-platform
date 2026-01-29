@@ -367,9 +367,6 @@ export const ADMIN_TABS: Section[] = [
   },
 ];
 
-// Skew Lab - single page module (no sub-tabs)
-export const SKEWLAB_TABS: Section[] = [];
-
 // Settings tabs configuration - shown in sidebar like other modules
 export const SETTINGS_TABS: Section[] = [
   {
@@ -496,15 +493,15 @@ export const WATCH_TABS: Section[] = [
 ];
 
 // Lab tabs configuration (admin-only, temporary experiments)
-// This replaces scattered individual lab modules (Skew Lab, Poi Lab, etc.)
+// All experimental modules consolidated here instead of cluttering the sidebar
 export const LAB_TABS: Section[] = [
   {
-    id: "spell-layouts",
-    label: "Spell Layouts",
-    icon: '<i class="fas fa-columns" aria-hidden="true"></i>',
-    description: "Test large-screen layout options for Spell tab",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+    id: "chip-morph",
+    label: "Chip Morph",
+    icon: '<i class="fas fa-expand-arrows-alt" aria-hidden="true"></i>',
+    description: "Compare chip expansion animation approaches",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
   {
     id: "skew",
@@ -530,57 +527,47 @@ export const LAB_TABS: Section[] = [
     color: "#a855f7",
     gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
   },
-];
-
-// Landing Page tabs configuration (admin-only, for iterating on public pages)
-// These mirror the actual public routes: /landing, /about, /terms, /privacy, /roots
-export const LANDING_PAGE_TABS: Section[] = [
+  {
+    id: "realm",
+    label: "Realm",
+    icon: '<i class="fas fa-vr-cardboard" aria-hidden="true"></i>',
+    description: "3D destination hub - Stage, Gallery, Worlds",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+  },
+  {
+    id: "terrain",
+    label: "Terrain",
+    icon: '<i class="fas fa-mountain" aria-hidden="true"></i>',
+    description: "Terrain implementation research",
+    color: "#22c55e",
+    gradient: "linear-gradient(135deg, #4ade80 0%, #22c55e 100%)",
+  },
+  {
+    id: "mandala",
+    label: "Mandala",
+    icon: '<i class="fas fa-dharmachakra" aria-hidden="true"></i>',
+    description: "Kaleidoscope art with TKA elements",
+    color: "#f472b6",
+    gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
+  },
+  {
+    id: "backgrounds",
+    label: "Backgrounds",
+    icon: '<i class="fas fa-water" aria-hidden="true"></i>',
+    description: "Background theme design tool",
+    color: "#0ea5e9",
+    gradient: "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%)",
+  },
   {
     id: "landing",
     label: "Landing",
     icon: '<i class="fas fa-rocket" aria-hidden="true"></i>',
-    description: "Main landing page (/landing)",
+    description: "Landing page preview and iteration",
     color: "#f472b6",
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
   },
-  {
-    id: "videos",
-    label: "Videos",
-    icon: '<i class="fas fa-film" aria-hidden="true"></i>',
-    description: "Video gallery layout prototypes",
-    color: "#6366f1",
-    gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
-  },
-  {
-    id: "about",
-    label: "About",
-    icon: '<i class="fas fa-info-circle" aria-hidden="true"></i>',
-    description: "About TKA page (/about)",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-  },
-  {
-    id: "roots",
-    label: "Roots",
-    icon: '<i class="fas fa-seedling" aria-hidden="true"></i>',
-    description: "Origins and history (/roots)",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-  },
-  {
-    id: "terms",
-    label: "Terms",
-    icon: '<i class="fas fa-file-contract" aria-hidden="true"></i>',
-    description: "Terms of service (/terms)",
-    color: "#64748b",
-    gradient: "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)",
-  },
-  {
-    id: "privacy",
-    label: "Privacy",
-    icon: '<i class="fas fa-shield-alt" aria-hidden="true"></i>',
-    description: "Privacy policy (/privacy)",
-    color: "#8b5cf6",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
 ];
+
+// REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs
+// since it's embedded in Lab module (Jan 2026)
