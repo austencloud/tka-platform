@@ -71,9 +71,9 @@
 	let orbGroupRef: Group | undefined = $state();
 
 	useTask(() => {
-		if (orbGroupRef && $camera) {
+		if (orbGroupRef && camera.current) {
 			// Make the orb face the camera (billboard effect)
-			orbGroupRef.quaternion.copy($camera.quaternion);
+			orbGroupRef.quaternion.copy(camera.current.quaternion);
 		}
 	});
 

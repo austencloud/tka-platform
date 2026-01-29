@@ -32,9 +32,15 @@
   let { layout, enabled = true, intensity = 0.75 }: Props = $props();
 
   // Generate torch positions BETWEEN exhibits (not overlapping them)
+  // NOTE: Torches are disabled until wall geometry is added back to GalleryLayout
   const torchPositions = $derived.by(() => {
     const positions: TorchPosition[] = [];
 
+    // TODO: Re-enable torches once GalleryLayout includes wall geometry
+    // The current model-based approach uses exhibitSlots directly without wall grouping
+    return positions;
+
+    /* Original wall-based code (disabled):
     for (const wall of layout.walls) {
       // Only add torches to side walls (not front/back)
       if (!wall.id.includes("left") && !wall.id.includes("right")) {
@@ -100,6 +106,7 @@
     }
 
     return positions;
+    */
   });
 </script>
 

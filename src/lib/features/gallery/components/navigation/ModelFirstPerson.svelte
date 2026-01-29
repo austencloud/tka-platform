@@ -180,7 +180,7 @@
   // Check wall collision and return hit info for sliding
   // Returns null if no collision, or the wall normal if collision detected
   function checkWallCollision(position: Vector3, moveDir: Vector3, distance: number): Vector3 | null {
-    if (!scene) return null;
+    if (!scene.current) return null;
 
     const feetY = position.y - currentHeight;
 
@@ -196,7 +196,7 @@
       wallRaycaster.set(playerPos, moveDir);
       wallRaycaster.far = distance + collisionRadius;
 
-      const intersects = wallRaycaster.intersectObjects(scene.children, true);
+      const intersects = wallRaycaster.intersectObjects(scene.current.children, true);
 
       for (const hit of intersects) {
         if (hit.distance < distance + collisionRadius && hit.face) {
@@ -216,7 +216,7 @@
 
   // Check if position is inside a wall (for push-back)
   function getWallPushBack(position: Vector3): Vector3 | null {
-    if (!scene) return null;
+    if (!scene.current) return null;
 
     const feetY = position.y - currentHeight;
     const pushBack = new Vector3();
@@ -239,7 +239,7 @@
       wallRaycaster.set(playerPos, dir);
       wallRaycaster.far = collisionRadius;
 
-      const intersects = wallRaycaster.intersectObjects(scene.children, true);
+      const intersects = wallRaycaster.intersectObjects(scene.current.children, true);
 
       const firstHit = intersects[0];
       if (intersects.length > 0 && firstHit && firstHit.face) {
@@ -258,7 +258,7 @@
 
   // Get floor height at position - only accepts floors within step range
   function getFloorHeight(position: Vector3): number | null {
-    if (!scene) return null;
+    if (!scene.current) return null;
 
     const currentFeetY = position.y - currentHeight;
 
@@ -271,7 +271,7 @@
     // Only look for floors within stepping distance below us
     floorRaycaster.far = maxStepHeight + 2; // Can step down ~2 meters (stairs)
 
-    const intersects = floorRaycaster.intersectObjects(scene.children, true);
+    const intersects = floorRaycaster.intersectObjects(scene.current.children, true);
 
     const floorHit = intersects[0];
     if (intersects.length > 0 && floorHit) {
@@ -293,18 +293,18 @@
 
   // Check if head would hit ceiling (for jump)
   function checkCeilingCollision(): boolean {
-    if (!scene || !camera) return false;
+    if (!scene.current || !camera) return false;
 
     ceilingRaycaster.set(camera.position, new Vector3(0, 1, 0));
     ceilingRaycaster.far = 0.3; // Small buffer above head
 
-    const intersects = ceilingRaycaster.intersectObjects(scene.children, true);
+    const intersects = ceilingRaycaster.intersectObjects(scene.current.children, true);
     return intersects.length > 0;
   }
 
   // Check if there's clearance to stand up from crouch
   function canStandUp(): boolean {
-    if (!scene || !camera) return true;
+    if (!scene.current || !camera) return true;
 
     const heightDifference = playerHeight - crouchHeight;
     const rayOrigin = camera.position.clone();
@@ -312,7 +312,7 @@
     ceilingRaycaster.set(rayOrigin, new Vector3(0, 1, 0));
     ceilingRaycaster.far = heightDifference + 0.2; // Need clearance for full height
 
-    const intersects = ceilingRaycaster.intersectObjects(scene.children, true);
+    const intersects = ceilingRaycaster.intersectObjects(scene.current.children, true);
     return intersects.length === 0;
   }
 
@@ -322,14 +322,14 @@
 
     if (!renderer) return;
 
-    controls = new PointerLockControls(camera, renderer.domElement);
+    controls = new PointerLockControls(camera, renderer.current.domElement);
 
     // Track lock state
     controls.addEventListener("lock", () => { isLocked = true; });
     controls.addEventListener("unlock", () => { isLocked = false; });
 
     // Add click listener to lock pointer
-    renderer.domElement.addEventListener("click", handleClick);
+    renderer.current.domElement.addEventListener("click", handleClick);
   }
 
   // Set up keyboard listeners
@@ -350,8 +350,8 @@
     if (controls) {
       controls.dispose();
     }
-    if (renderer) {
-      renderer.domElement.removeEventListener("click", handleClick);
+    if (renderer.current) {
+      renderer.current.domElement.removeEventListener("click", handleClick);
     }
   });
 

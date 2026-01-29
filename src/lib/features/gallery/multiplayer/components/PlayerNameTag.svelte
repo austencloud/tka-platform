@@ -33,9 +33,9 @@
 
 	// Update billboard rotation each frame using useTask
 	useTask(() => {
-		if (groupRef && $camera) {
+		if (groupRef && camera.current) {
 			// Make the name tag face the camera
-			groupRef.quaternion.copy($camera.quaternion);
+			groupRef.quaternion.copy(camera.current.quaternion);
 		}
 	});
 </script>
