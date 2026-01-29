@@ -337,6 +337,7 @@ export class AnimationEngine {
 
         // Trigger render when trails visibility changes
         if (state.trails !== this.prevTrailsVisible) {
+          console.log('[AnimationEngine] trails visibility changed:', { prev: this.prevTrailsVisible, new: state.trails, isInitialized: this.state.isInitialized });
           this.prevTrailsVisible = state.trails;
           if (this.state.isInitialized) {
             this.renderLoopService?.triggerRender(() =>

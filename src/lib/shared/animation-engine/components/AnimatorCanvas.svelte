@@ -357,97 +357,51 @@ Last audit: 2025-12-27
   }
 
   /* ===========================================
-     LANDSCAPE MODE: Horizontal layout
-     When container is wider than tall (aspect ratio > 1.2)
-     [Header] [Square Canvas] [Progress]
+     CONSTRAINED MODE: Canvas-only when squeezed
+     When container is wider than tall (aspect ratio > 1.15),
+     hide chrome and maximize the square canvas.
+     This prevents wasted horizontal space when the animation
+     pane is wider than the portrait-mode canvas needs.
      =========================================== */
 
-  @container (min-aspect-ratio: 1.2) {
+  @container (min-aspect-ratio: 1.15) {
     .content-wrapper {
-      /* Horizontal layout */
-      flex-direction: row;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      /*
-       * Landscape mode: Height = canvas side = min(container_height - margin, container_width/3)
-       * We want canvas to fill height, with header/progress on sides
-       */
-      width: auto;
-      max-width: none;
-      height: min(calc(100cqh - 12px), calc(100cqw * 0.6));
-      /* Reset container-type for landscape - we want height-based sizing */
-      container-type: size;
-      padding: 6px;
+      /* Size based on shorter dimension (height) */
+      width: calc(100cqh - 8px);
+      max-width: calc(100cqh - 8px);
+      /* Remove overhead calculation - just the square */
+      height: auto;
+      /* Tighter border in constrained mode */
+      border-width: 1px;
     }
 
-    /* Header slot: vertical strip on left in landscape */
+    /* Hide header when constrained - word is visible in choreo card below */
     .header-slot {
-      /* Take minimum width needed */
-      flex: 0 0 auto;
-      /* Rotate content or hide based on visibility */
-      writing-mode: vertical-rl;
-      text-orientation: mixed;
-      transform: rotate(180deg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 0;
-    }
-
-    /* Hide header text in landscape - word is visible in choreo card below */
-    .header-slot :global(.word-header) {
       display: none;
     }
 
-    /* Canvas wrapper: square, sized by height in landscape */
-    .canvas-wrapper {
-      /* Square based on container height */
-      width: 100cqh;
-      height: 100cqh;
-      flex-shrink: 0;
-      order: 0; /* Center position */
-    }
-
-    /* Progress slot: vertical strip on right in landscape */
+    /* Hide progress bar when constrained - modal has playback controls */
     .progress-slot {
-      flex: 0 0 auto;
-      /* Progress bar rotates to vertical orientation */
-      writing-mode: vertical-rl;
-      transform: rotate(180deg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100%;
+      display: none;
     }
 
-    /* Hide progress bar in landscape - too cramped */
-    .progress-slot :global(.sequence-progress-bar) {
-      display: none;
+    /* Canvas fills the available space */
+    .canvas-wrapper {
+      /* Square based on parent width (which equals height) */
+      width: 100%;
+      height: 100cqw;
     }
   }
 
   /* ===========================================
-     ULTRA-WIDE LANDSCAPE: Just show the canvas
-     When very landscape (aspect > 2), hide extras
+     EXTREMELY CONSTRAINED: Minimal chrome
+     When aspect ratio > 2.5, remove all borders
      =========================================== */
 
-  @container (min-aspect-ratio: 2) {
+  @container (min-aspect-ratio: 2.5) {
     .content-wrapper {
-      /* Just the canvas, centered */
-      padding: 0;
-      gap: 0;
-    }
-
-    .header-slot,
-    .progress-slot {
-      display: none;
-    }
-
-    .canvas-wrapper {
-      /* Fill the shorter dimension */
-      width: min(100cqh, 100cqw);
-      height: min(100cqh, 100cqw);
+      border: none;
+      border-radius: 0;
     }
   }
 

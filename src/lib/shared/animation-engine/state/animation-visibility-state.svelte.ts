@@ -284,6 +284,7 @@ export class AnimationVisibilityStateManager {
    * Set trail style
    */
   setTrailStyle(style: TrailStyle): void {
+    console.log('[VisibilityManager] setTrailStyle:', style, 'observers:', this.observers.size);
     this.settings.trailStyle = style;
     this.saveToStorage();
     this.notifyObservers();

@@ -119,6 +119,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const { trailSettings, isPlaying } = params;
 
     // Real-time trail capture
+    // Debug: always log trail capturer state
+    console.log('[RenderLoop] capture check:', {
+      enabled: trailSettings.enabled,
+      mode: trailSettings.mode,
+      hasTrailCapturer: !!this.TrailCapturer,
+    });
     if (
       trailSettings.enabled &&
       trailSettings.mode !== TrailMode.OFF &&
@@ -128,6 +134,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         params.stepData && "stepNumber" in params.stepData
           ? params.stepData.stepNumber
           : undefined;
+      const hasBlueProp = params.props.blueProp !== null;
+      const hasRedProp = params.props.redProp !== null;
       this.TrailCapturer.captureFrame(
         {
           blueProp: params.props.blueProp,
@@ -138,6 +146,17 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         currentStep,
         currentTime
       );
+      // Debug: log capture attempt (throttled)
+      if (Math.random() < 0.1) { // ~10% of frames
+        console.log('[RenderLoop] captureFrame called:', { hasBlueProp, hasRedProp, currentStep });
+      }
+    } else {
+      // Debug: log why capture is skipped
+      console.log('[RenderLoop] Trail capture skipped:', {
+        trailSettingsEnabled: trailSettings.enabled,
+        trailMode: trailSettings.mode,
+        hasTrailCapturer: !!this.TrailCapturer,
+      });
     }
 
     // Continue render loop if:
@@ -198,6 +217,21 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const effectivePropsVisible = visibility.propsVisible;
     const effectiveTrailsVisible =
       visibility.trailsVisible && trailSettings.enabled;
+
+    // Debug: log trail state when visibility is on
+    if (visibility.trailsVisible) {
+      console.log('[RenderLoop] trails:', {
+        visibilityTrailsVisible: visibility.trailsVisible,
+        trailSettingsEnabled: trailSettings.enabled,
+        effectiveTrailsVisible,
+        bluePointCount: trailPoints.blue.length,
+        redPointCount: trailPoints.red.length,
+        currentStep,
+        isPlaying: params.isPlaying,
+        hasPathCache: !!this.pathCache,
+        pathCacheValid: this.pathCache?.isValid() ?? false,
+      });
+    }
     // Derive motion visibility from both internal state AND whether prop is actually present
     // (props may be filtered to null by parent component based on its own visibility state)
     const effectiveBlueMotionVisible =
@@ -355,6 +389,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         this.reusableSecondaryBlueTrailPoints,
         this.reusableSecondaryRedTrailPoints
       );
+      // Debug: log if capturer returned no points
+      if (this.reusableBlueTrailPoints.length === 0 && this.reusableRedTrailPoints.length === 0) {
+        console.log('[RenderLoop] TrailCapturer returned 0 points - no real-time capture available');
+      }
+    } else {
+      console.log('[RenderLoop] No path cache and no TrailCapturer - cannot gather trail points');
     }
 
     return {
