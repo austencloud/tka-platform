@@ -206,4 +206,23 @@ declare module "*.svelte" {
   export default component;
 }
 
+// Threlte type augmentation - useThrelte returns stores with .current property
+declare module "@threlte/core" {
+  import type { Camera, Scene, WebGLRenderer } from "three";
+
+  export interface ThrelteContext {
+    camera: {
+      current: Camera;
+    };
+    scene: {
+      current: Scene;
+    };
+    renderer: {
+      current: WebGLRenderer;
+    };
+  }
+
+  export function useThrelte(): ThrelteContext;
+}
+
 export {};
