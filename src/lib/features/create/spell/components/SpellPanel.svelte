@@ -46,6 +46,9 @@ Same functionality, different density.
   let hasTouchCapability = $state(false);
   let isInputFocused = $state(false);
 
+  // Loop chip expansion state - when expanded, it takes over the full panel
+  let isLoopExpanded = $state(false);
+
   // Keyboard state
   let hasVirtualKeyboard = $state(false);
   // Note: containerHeight ALREADY shrinks when keyboard opens (viewport pushes up)
@@ -336,16 +339,21 @@ Same functionality, different density.
     haptic.trigger("selection");
     spellState.clearError();
   }
+
+  function handleLoopExpandedChange(expanded: boolean) {
+    isLoopExpanded = expanded;
+  }
 </script>
 
 <div
   bind:this={panelElement}
   class="spell-panel"
   class:input-mode={shouldCollapseLayout}
+  class:loop-expanded={isLoopExpanded}
   data-is-desktop={isDesktop}
 >
-  <!-- Error Banner - hidden in collapsed mode -->
-  {#if spellState.error && !shouldCollapseLayout}
+  <!-- Error Banner - hidden in collapsed mode or when Loop is expanded -->
+  {#if spellState.error && !shouldCollapseLayout && !isLoopExpanded}
     <div class="error-banner" role="alert">
       <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
       <span class="error-message">{spellState.error}</span>
@@ -359,43 +367,48 @@ Same functionality, different density.
     </div>
   {/if}
 
-  <!-- Word Input -->
-  <section class="word-section">
-    <WordInput
-      value={spellState.inputWord}
-      onInput={handleWordChange}
-      onFocusChange={handleInputFocusChange}
-      onSubmit={handleGenerate}
-    />
-  </section>
+  <!-- Word Input - hidden when Loop chip is expanded (it takes over) -->
+  {#if !isLoopExpanded}
+    <section class="word-section">
+      <WordInput
+        value={spellState.inputWord}
+        onInput={handleWordChange}
+        onFocusChange={handleInputFocusChange}
+        onSubmit={handleGenerate}
+      />
+    </section>
+  {/if}
 
   <!-- Settings - hidden only when collapsed (small screen + keyboard) -->
   {#if !shouldCollapseLayout}
-    <section class="settings-section">
+    <section class="settings-section" class:loop-expanded={isLoopExpanded}>
       <SpellSettingsBar
         gridMode={spellState.selectedGridMode}
         preferences={spellState.preferences}
         onGridModeChange={handleGridModeChange}
         onPreferenceChange={handlePreferenceChange}
+        onLoopExpandedChange={handleLoopExpandedChange}
       />
     </section>
 
-    <!-- Generate Button - hidden in input mode (available in toolbar) -->
-    <button
-      class="generate-button"
-      class:generating={spellState.isGenerating}
-      onclick={handleGenerate}
-      disabled={!canGenerate}
-      aria-label={canGenerate ? "Generate sequence" : "Enter a word first"}
-    >
-      {#if spellState.isGenerating}
-        <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-        <span>Generating...</span>
-      {:else}
-        <i class="fas fa-magic" aria-hidden="true"></i>
-        <span>Generate</span>
-      {/if}
-    </button>
+    <!-- Generate Button - hidden in input mode or when Loop expanded -->
+    {#if !isLoopExpanded}
+      <button
+        class="generate-button"
+        class:generating={spellState.isGenerating}
+        onclick={handleGenerate}
+        disabled={!canGenerate}
+        aria-label={canGenerate ? "Generate sequence" : "Enter a word first"}
+      >
+        {#if spellState.isGenerating}
+          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+          <span>Generating...</span>
+        {:else}
+          <i class="fas fa-magic" aria-hidden="true"></i>
+          <span>Generate</span>
+        {/if}
+      </button>
+    {/if}
   {/if}
 
   <!-- Keyboard toolbar for touch devices - detects actual keyboard visibility -->
@@ -476,6 +489,21 @@ Same functionality, different density.
   .word-section,
   .settings-section {
     flex-shrink: 0;
+  }
+
+  /* When Loop is expanded, settings section takes all available space */
+  .settings-section.loop-expanded {
+    flex: 1;
+    min-height: 0;
+    /* Center the content within the expanded section */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Panel state when Loop is expanded - use flex-start, section will fill via flex:1 */
+  .spell-panel.loop-expanded {
+    justify-content: flex-start;
   }
 
   /* Generate Button - scales with container */

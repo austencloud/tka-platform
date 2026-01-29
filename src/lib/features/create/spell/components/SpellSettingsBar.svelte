@@ -1,30 +1,32 @@
 <!--
-SpellSettingsBar.svelte - 2026 Premium Settings UI
+SpellSettingsBar.svelte - Settings using MorphChip Primitives
 
-State-of-the-art interaction patterns:
-- Spring physics for natural, interruptible animations
-- Gesture-driven expansion (drag to expand/collapse)
-- Shared element morphing for label transitions
-- Micro-interactions with selection feedback
-- Haptic choreography synced to animation keyframes
-- Graceful interruption handling
+Uses the MorphChipGroup and MorphChip primitives for:
+- Row 1: Dashes, Props, Hands (standard 3-option chips)
+- Row 2: Grid toggle + Loop (Loop uses custom expanded content)
 
 Container-aware responsive design:
-- Mobile (<700px height): Gesture-enabled expanding chips
+- Mobile (<700px height): MorphChip expanding chips
 - Desktop (≥700px height): Expanded sections with all options visible
 -->
 <script lang="ts">
-  import { spring } from "svelte/motion";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SpellPreferences } from "../domain/models/spell-models";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { LOOPType, LOOP_TYPE_LABELS } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
+  import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import LOOPExpandedOverlay from "$lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte";
+  import MorphChipGroup from "$lib/shared/foundation/ui/morph-chip/MorphChipGroup.svelte";
+  import MorphChip from "$lib/shared/foundation/ui/morph-chip/MorphChip.svelte";
 
   let {
     gridMode,
     preferences,
     onGridModeChange,
     onPreferenceChange,
+    onLoopExpandedChange,
   }: {
     gridMode: GridMode;
     preferences: SpellPreferences;
@@ -33,402 +35,252 @@ Container-aware responsive design:
       key: K,
       value: SpellPreferences[K]
     ) => void;
+    /** Notifies parent when Loop chip expansion state changes (for full-panel takeover) */
+    onLoopExpandedChange?: (expanded: boolean) => void;
   } = $props();
 
   const haptic = container.items.hapticFeedback as IHapticFeedback;
 
   // ============================================================
-  // SPRING PHYSICS SYSTEM
+  // EXPANSION STATE
   // ============================================================
 
-  // Spring configs for different interaction types
-  const SPRING_CONFIGS = {
-    // Snappy for direct responses
-    snappy: { stiffness: 0.3, damping: 0.8 },
-    // Bouncy for playful feedback
-    bouncy: { stiffness: 0.2, damping: 0.6 },
-    // Gentle for ambient motion
-    gentle: { stiffness: 0.1, damping: 0.9 },
-  };
+  // Row 1 expansion (Dashes, Props, Hands)
+  let row1ExpandedId = $state<string | null>(null);
 
-  // Expansion progress (0 = collapsed, 1 = expanded)
-  const expansionSpring = spring(0, SPRING_CONFIGS.snappy);
+  // Row 2 expansion (Grid, Loop) - Loop needs special handling for panel takeover
+  let row2ExpandedId = $state<string | null>(null);
 
-  // Which setting is being expanded/was expanded
-  let expandedId = $state<string | null>(null);
-  let previousExpandedId = $state<string | null>(null);
+  // Track when Loop is expanded for parent notification
+  $effect(() => {
+    onLoopExpandedChange?.(row2ExpandedId === "loop");
+  });
 
-  // Selection feedback springs (one per option button)
-  const selectionPulse = spring(1, SPRING_CONFIGS.bouncy);
-  let lastSelectedIndex = $state<number | null>(null);
+  // LOOP full overlay state
+  let showFullLoopOverlay = $state(false);
 
   // ============================================================
-  // GESTURE SYSTEM
+  // CHIP OPTIONS & VALUES
   // ============================================================
 
-  let isDragging = $state(false);
-  let dragStartY = $state(0);
-  let dragCurrentY = $state(0);
-  let dragChipId = $state<string | null>(null);
-
-  // Velocity tracking for momentum
-  let lastDragTime = $state(0);
-  let lastDragY = $state(0);
-  let dragVelocity = $state(0);
-
-  const DRAG_THRESHOLD = 20; // px to start recognizing as drag
-  const EXPAND_THRESHOLD = 0.4; // 40% drag = commit to expand
-  const VELOCITY_THRESHOLD = 0.5; // px/ms for momentum-based decision
-
-  // ============================================================
-  // SETTING DEFINITIONS
-  // ============================================================
-
-  const settings = [
-    {
-      id: "dashes",
-      label: "Dashes",
-      expandedLabel: "Dashes",
-      getValue: () => {
-        if (preferences.motionTypeFilter === "no-dash") return "Low";
-        if (preferences.motionTypeFilter === "prefer-dash") return "High";
-        return "Mixed";
-      },
-      options: [
-        { value: "no-dash", label: "Low" },
-        { value: null, label: "Mixed" },
-        { value: "prefer-dash", label: "High" },
-      ],
-      isSelected: (v: unknown) => preferences.motionTypeFilter === v,
-      onSelect: (v: string | null) =>
-        onPreferenceChange("motionTypeFilter", v as SpellPreferences["motionTypeFilter"]),
-    },
-    {
-      id: "props",
-      label: "Props",
-      expandedLabel: "Prop Reversals",
-      getValue: () => {
-        if (preferences.constraintPreset === "smooth") return "Smooth";
-        if (preferences.constraintPreset === "high-reversal") return "High";
-        return "Mixed";
-      },
-      options: [
-        { value: "smooth", label: "Smooth" },
-        { value: "mixed", label: "Mixed" },
-        { value: "high-reversal", label: "High" },
-      ],
-      isSelected: (v: unknown) => preferences.constraintPreset === v,
-      onSelect: (v: string) => onPreferenceChange("constraintPreset", v as SpellPreferences["constraintPreset"]),
-    },
-    {
-      id: "hands",
-      label: "Hands",
-      expandedLabel: "Hand Reversals",
-      getValue: () => {
-        if (preferences.handPathMode === "smooth") return "Smooth";
-        if (preferences.handPathMode === "high") return "High";
-        return "Mixed";
-      },
-      options: [
-        { value: "smooth", label: "Smooth" },
-        { value: "mixed", label: "Mixed" },
-        { value: "high", label: "High" },
-      ],
-      isSelected: (v: unknown) => preferences.handPathMode === v,
-      onSelect: (v: string) =>
-        onPreferenceChange("handPathMode", v as SpellPreferences["handPathMode"]),
-    },
+  // Dashes
+  let dashValue = $derived.by(() => {
+    if (preferences.motionTypeFilter === "no-dash") return "no-dash";
+    if (preferences.motionTypeFilter === "prefer-dash") return "prefer-dash";
+    return "mixed";
+  });
+  const dashOptions = [
+    { value: "no-dash", label: "Low" },
+    { value: "mixed", label: "Mixed" },
+    { value: "prefer-dash", label: "High" },
   ];
 
+  function handleDashChange(v: string) {
+    haptic.trigger("selection");
+    const mapped = v === "mixed" ? null : v;
+    onPreferenceChange("motionTypeFilter", mapped as SpellPreferences["motionTypeFilter"]);
+  }
+
+  // Props
+  let propsValue = $derived(preferences.constraintPreset ?? "mixed");
+  const propsOptions = [
+    { value: "smooth", label: "Smooth" },
+    { value: "mixed", label: "Mixed" },
+    { value: "high-reversal", label: "High" },
+  ];
+
+  function handlePropsChange(v: string) {
+    haptic.trigger("selection");
+    onPreferenceChange("constraintPreset", v as SpellPreferences["constraintPreset"]);
+  }
+
+  // Hands
+  let handsValue = $derived(preferences.handPathMode ?? "mixed");
+  const handsOptions = [
+    { value: "smooth", label: "Smooth" },
+    { value: "mixed", label: "Mixed" },
+    { value: "high", label: "High" },
+  ];
+
+  function handleHandsChange(v: string) {
+    haptic.trigger("selection");
+    onPreferenceChange("handPathMode", v as SpellPreferences["handPathMode"]);
+  }
+
+  // Display values for chips
+  const dashDisplayValue = $derived.by(() => {
+    if (preferences.motionTypeFilter === "no-dash") return "Low";
+    if (preferences.motionTypeFilter === "prefer-dash") return "High";
+    return "Mixed";
+  });
+
+  const propsDisplayValue = $derived.by(() => {
+    if (preferences.constraintPreset === "smooth") return "Smooth";
+    if (preferences.constraintPreset === "high-reversal") return "High";
+    return "Mixed";
+  });
+
+  const handsDisplayValue = $derived.by(() => {
+    if (preferences.handPathMode === "smooth") return "Smooth";
+    if (preferences.handPathMode === "high") return "High";
+    return "Mixed";
+  });
+
   // ============================================================
-  // GESTURE HANDLERS
+  // LOOP OPTIONS
   // ============================================================
 
-  // Simple approach: click for taps, pointer events only for drag detection
+  const loopQuickOptions: Array<{ type: LOOPType | null; label: string; icon?: string; color?: string }> = [
+    { type: null, label: "Off" },
+    { type: LOOPType.REWOUND, label: "Rewound", icon: "backward", color: "#ff6b9d" },
+    { type: LOOPType.STRICT_ROTATED, label: "Rotated", icon: "rotate", color: "#36c3ff" },
+    { type: LOOPType.STRICT_MIRRORED, label: "Mirrored", icon: "left-right", color: "#6F2DA8" },
+    { type: LOOPType.STRICT_SWAPPED, label: "Swapped", icon: "shuffle", color: "#26e600" },
+    { type: LOOPType.STRICT_INVERTED, label: "Inverted", icon: "yin-yang", color: "#eb7d00" },
+  ];
 
-  function handleChipClick(settingId: string) {
-    // If we were dragging, don't also trigger click
-    if (isDragging) return;
+  const loopDisplayValue = $derived.by(() => {
+    if (!preferences.makeCircular) return "Off";
+    if (!preferences.selectedLOOPType) return "On";
+    return LOOP_TYPE_LABELS[preferences.selectedLOOPType] ?? "Custom";
+  });
 
+  const selectedLoopComponents = $derived.by(() => {
+    if (!preferences.selectedLOOPType) return new Set<LOOPComponent>();
+    return loopTypeResolver.parseComponents(preferences.selectedLOOPType);
+  });
+
+  // Dummy value for Loop chip (we use custom content, not options)
+  let loopValue = $state("loop");
+
+  function handleLoopQuickSelect(option: typeof loopQuickOptions[0], collapse: () => void) {
     haptic.trigger("selection");
 
-    if (expandedId === settingId) {
-      collapseChip();
+    if (option.type === null) {
+      onPreferenceChange("makeCircular", false);
+      onPreferenceChange("selectedLOOPType", null);
     } else {
-      expandChip(settingId);
-    }
-  }
-
-  function handlePointerDown(e: PointerEvent, settingId: string) {
-    if (e.button !== 0) return;
-
-    dragStartY = e.clientY;
-    dragChipId = settingId;
-    lastDragTime = e.timeStamp;
-    lastDragY = e.clientY;
-    dragVelocity = 0;
-    isDragging = false;
-  }
-
-  function handlePointerMove(e: PointerEvent) {
-    if (dragChipId === null) return;
-
-    const deltaY = e.clientY - dragStartY;
-
-    // Start drag mode after threshold
-    if (!isDragging && Math.abs(deltaY) > DRAG_THRESHOLD) {
-      isDragging = true;
-      haptic.trigger("selection");
+      onPreferenceChange("makeCircular", true);
+      onPreferenceChange("selectedLOOPType", option.type);
     }
 
-    if (isDragging) {
-      // Calculate velocity
-      const dt = e.timeStamp - lastDragTime;
-      if (dt > 0) {
-        dragVelocity = (e.clientY - lastDragY) / dt;
-      }
-      lastDragTime = e.timeStamp;
-      lastDragY = e.clientY;
-
-      // Update spring based on drag progress (downward = expand)
-      const dragProgress = Math.min(1, Math.max(0, deltaY / 100));
-
-      // If already expanded, invert (upward = collapse)
-      if (expandedId === dragChipId) {
-        expansionSpring.set(1 - Math.min(1, Math.max(0, -deltaY / 100)), { hard: true });
-      } else {
-        expansionSpring.set(dragProgress, { hard: true });
-      }
-    }
+    setTimeout(collapse, 150);
   }
 
-  function handlePointerUp() {
-    if (dragChipId === null) return;
-
-    const settingId = dragChipId;
-
-    if (isDragging) {
-      // Momentum-based decision for drag gestures
-      const shouldExpand = expandedId !== settingId
-        ? (dragVelocity > VELOCITY_THRESHOLD || $expansionSpring > EXPAND_THRESHOLD)
-        : (dragVelocity < -VELOCITY_THRESHOLD || $expansionSpring < (1 - EXPAND_THRESHOLD));
-
-      if (shouldExpand && expandedId !== settingId) {
-        expandChip(settingId);
-      } else if (!shouldExpand && expandedId === settingId) {
-        collapseChip();
-      } else {
-        // Snap back
-        expansionSpring.set(expandedId === settingId ? 1 : 0);
-      }
-    }
-    // Note: tap handling is done by click event, not here
-
-    // Reset drag state
-    dragChipId = null;
-    dragVelocity = 0;
-
-    // Reset isDragging after a microtask so click handler can check it
-    setTimeout(() => { isDragging = false; }, 0);
-  }
-
-  // ============================================================
-  // EXPANSION/COLLAPSE WITH SPRING PHYSICS
-  // ============================================================
-
-  function expandChip(settingId: string) {
-    previousExpandedId = expandedId;
-    expandedId = settingId;
-    expansionSpring.set(1);
-
-    // Haptic at expansion complete (synced to spring)
-    setTimeout(() => haptic.trigger("selection"), 150);
-  }
-
-  function collapseChip() {
-    previousExpandedId = expandedId;
-    expandedId = null;
-    expansionSpring.set(0);
-
+  function openFullLoopOverlay() {
     haptic.trigger("selection");
+    showFullLoopOverlay = true;
   }
 
-  function handleCollapse() {
-    collapseChip();
+  function handleFullLoopChange(newType: LOOPType) {
+    onPreferenceChange("makeCircular", true);
+    onPreferenceChange("selectedLOOPType", newType);
   }
 
-  // ============================================================
-  // SELECTION WITH MICRO-INTERACTIONS
-  // ============================================================
-
-  function handleSelect(setting: (typeof settings)[0], value: unknown, index: number) {
-    // Trigger selection pulse
-    lastSelectedIndex = index;
-    selectionPulse.set(1.15);
-    setTimeout(() => selectionPulse.set(1), 50);
-
-    // Haptic feedback
-    haptic.trigger("selection");
-
-    // Apply selection
-    setting.onSelect(value as never);
-
-    // Delay collapse for visual feedback
-    setTimeout(() => {
-      collapseChip();
-      // Second haptic on collapse complete
-      setTimeout(() => haptic.trigger("selection"), 150);
-    }, 200);
+  function handleFullLoopClose() {
+    showFullLoopOverlay = false;
+    row2ExpandedId = null;
   }
 
   // ============================================================
-  // TOGGLE HANDLERS
+  // GRID TOGGLE
   // ============================================================
-
-  function toggleLoop() {
-    haptic.trigger("selection");
-    onPreferenceChange("makeCircular", !preferences.makeCircular);
-  }
 
   function toggleGridMode() {
     haptic.trigger("selection");
     const newMode = gridMode === "diamond" ? "box" : "diamond";
     onGridModeChange(newMode as GridMode);
   }
-
-  // ============================================================
-  // COMPUTED STYLES FROM SPRINGS
-  // ============================================================
-
-  // Derive CSS values from spring
-  const springStyles = $derived.by(() => {
-    const expansion = $expansionSpring;
-    const pulse = $selectionPulse;
-
-    return {
-      // Expanded chip width percentage
-      expandedWidth: `${expansion * 100}%`,
-      // Sibling opacity (inverse of expansion)
-      siblingOpacity: 1 - expansion,
-      // Sibling scale
-      siblingScale: 1 - (expansion * 0.2),
-      // Toggle row opacity and transform
-      toggleRowOpacity: 1 - expansion,
-      toggleRowScale: 1 - (expansion * 0.05),
-      // Selection pulse
-      selectionScale: pulse,
-    };
-  });
 </script>
 
 <div class="settings-container">
   <!-- ============================================================ -->
-  <!-- MOBILE LAYOUT: Gesture-enabled expanding chips -->
+  <!-- MOBILE LAYOUT: MorphChip expanding chips -->
   <!-- ============================================================ -->
-  <div
-    class="mobile-layout"
-    class:has-expanded={expandedId !== null}
-    style:--expansion={$expansionSpring}
-  >
-    <!-- Row 1: Three setting chips -->
-    <div class="chips-row" class:has-expanded={expandedId !== null}>
-      {#each settings as setting, settingIndex (setting.id)}
-        {@const isExpanded = expandedId === setting.id}
-        {@const isHidden = expandedId !== null && !isExpanded}
-        {@const isBeingDragged = dragChipId === setting.id}
+  <div class="mobile-layout" class:loop-expanded={row2ExpandedId === "loop"}>
+    <!-- Row 1: Dashes, Props, Hands (hide when Loop is expanded) -->
+    {#if row2ExpandedId !== "loop"}
+      <MorphChipGroup bind:expandedId={row1ExpandedId}>
+        <MorphChip
+          id="dashes"
+          label="Dashes"
+          bind:value={dashValue}
+          options={dashOptions}
+          displayValue={dashDisplayValue}
+          onchange={handleDashChange}
+        />
+        <MorphChip
+          id="props"
+          label="Props"
+          expandedLabel="Prop Reversals"
+          bind:value={propsValue}
+          options={propsOptions}
+          displayValue={propsDisplayValue}
+          onchange={handlePropsChange}
+        />
+        <MorphChip
+          id="hands"
+          label="Hands"
+          expandedLabel="Hand Reversals"
+          bind:value={handsValue}
+          options={handsOptions}
+          displayValue={handsDisplayValue}
+          onchange={handleHandsChange}
+        />
+      </MorphChipGroup>
+    {/if}
 
-        <div
-          class="chip-wrapper"
-          class:expanded={isExpanded}
-          class:hidden={isHidden}
-          class:dragging={isBeingDragged && isDragging}
-          style:--sibling-opacity={isHidden ? springStyles.siblingOpacity : 1}
-          style:--sibling-scale={isHidden ? springStyles.siblingScale : 1}
-        >
-          {#if isExpanded}
-            <!-- Expanded state: shows options -->
-            <div class="expanded-chip">
+    <!-- Row 2: Grid + Loop (side by side, but Loop can expand to take over) -->
+    <div class="row-2" class:loop-expanded={row2ExpandedId === "loop"}>
+      <!-- Grid chip (simple toggle, no expansion) - hidden when Loop expands -->
+      {#if row2ExpandedId !== "loop"}
+        <button class="grid-chip" onclick={toggleGridMode}>
+          <span class="chip-label">Grid</span>
+          <span class="chip-value">{gridMode === "diamond" ? "Diamond" : "Box"}</span>
+        </button>
+      {/if}
+
+      <!-- Loop chip in its own MorphChipGroup (single chip that can expand) -->
+      {#snippet loopExpandedContent({ collapse, morphProgress }: { collapse: () => void; morphProgress: number })}
+        <div class="loop-expanded-content">
+          <div class="loop-options-grid">
+            {#each loopQuickOptions as option}
+              {@const isSelected = preferences.makeCircular
+                ? preferences.selectedLOOPType === option.type
+                : option.type === null}
               <button
-                class="chip-header"
-                onclick={handleCollapse}
-                aria-expanded="true"
+                class="loop-option-btn"
+                class:selected={isSelected}
+                onclick={() => handleLoopQuickSelect(option, collapse)}
+                style:--option-color={option.color ?? "var(--theme-text-muted)"}
               >
-                <i class="fas fa-chevron-left back-icon" aria-hidden="true"></i>
-                <span class="chip-label morphing-label">{setting.expandedLabel}</span>
+                {#if option.icon}
+                  <i class="fas fa-{option.icon}" aria-hidden="true" style:color={option.color}></i>
+                {/if}
+                <span>{option.label}</span>
               </button>
-              <div class="options-row" role="radiogroup" aria-label="{setting.label} options">
-                {#each setting.options as option, optionIndex}
-                  {@const selected = setting.isSelected(option.value)}
-                  {@const isPulsing = lastSelectedIndex === optionIndex && selected}
-                  <button
-                    class="option-btn"
-                    class:selected
-                    class:pulsing={isPulsing}
-                    style:--pulse-scale={isPulsing ? springStyles.selectionScale : 1}
-                    onclick={() => handleSelect(setting, option.value, optionIndex)}
-                    role="radio"
-                    aria-checked={selected}
-                  >
-                    <span class="option-label">{option.label}</span>
-                    {#if selected}
-                      <span class="selection-indicator"></span>
-                    {/if}
-                  </button>
-                {/each}
-              </div>
-            </div>
-          {:else}
-            <!-- Collapsed state: tap via click, drag via pointer events -->
-            <button
-              class="chip"
-              onclick={() => handleChipClick(setting.id)}
-              onpointerdown={(e) => handlePointerDown(e, setting.id)}
-              onpointermove={handlePointerMove}
-              onpointerup={handlePointerUp}
-              onpointercancel={handlePointerUp}
-              aria-expanded="false"
-              aria-haspopup="listbox"
-            >
-              <span class="chip-label">{setting.label}</span>
-              <span class="chip-value">{setting.getValue()}</span>
-              <!-- Drag hint indicator -->
-              <span class="drag-hint" aria-hidden="true">
-                <i class="fas fa-grip-lines"></i>
-              </span>
-            </button>
-          {/if}
+            {/each}
+          </div>
+          <button class="customize-btn" onclick={openFullLoopOverlay}>
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <span>Customize Combo...</span>
+          </button>
         </div>
-      {/each}
-    </div>
+      {/snippet}
 
-    <!-- Row 2: Grid and Loop toggles -->
-    <div
-      class="chips-row toggles-row"
-      class:hidden={expandedId !== null}
-      style:--toggle-opacity={springStyles.toggleRowOpacity}
-      style:--toggle-scale={springStyles.toggleRowScale}
-    >
-      <button
-        class="chip grid-chip"
-        onclick={toggleGridMode}
-        aria-label="Toggle grid mode between Diamond and Box"
+      <MorphChipGroup
+        bind:expandedId={row2ExpandedId}
+        expandedHeight={280}
       >
-        <span class="chip-label">Grid</span>
-        <span class="chip-value">{gridMode === "diamond" ? "Diamond" : "Box"}</span>
-      </button>
-
-      <button
-        class="chip loop-chip"
-        class:loop-active={preferences.makeCircular}
-        onclick={toggleLoop}
-        aria-pressed={preferences.makeCircular}
-      >
-        <span class="chip-label">Loop</span>
-        <span class="chip-value">{preferences.makeCircular ? "On" : "Off"}</span>
-        {#if preferences.makeCircular}
-          <span class="loop-glow"></span>
-        {/if}
-      </button>
+        <MorphChip
+          id="loop"
+          label="Loop"
+          bind:value={loopValue}
+          options={[]}
+          displayValue={loopDisplayValue}
+          expandedContent={loopExpandedContent}
+        />
+      </MorphChipGroup>
     </div>
   </div>
 
@@ -436,34 +288,62 @@ Container-aware responsive design:
   <!-- DESKTOP LAYOUT: Expanded sections with all options visible -->
   <!-- ============================================================ -->
   <div class="desktop-layout">
-    {#each settings as setting}
-      <div class="setting-section">
-        <span class="section-label">{setting.expandedLabel}</span>
-        <div class="section-options" role="radiogroup" aria-label="{setting.label} options">
-          {#each setting.options as option, optionIndex}
-            {@const selected = setting.isSelected(option.value)}
-            <button
-              class="section-option"
-              class:selected
-              onclick={() => {
-                haptic.trigger("selection");
-                setting.onSelect(option.value as never);
-              }}
-              role="radio"
-              aria-checked={selected}
-            >
-              {option.label}
-            </button>
-          {/each}
-        </div>
+    <div class="setting-section">
+      <span class="section-label">Dashes</span>
+      <div class="section-options" role="radiogroup">
+        {#each dashOptions as option}
+          <button
+            class="section-option"
+            class:selected={dashValue === option.value}
+            onclick={() => handleDashChange(option.value)}
+            role="radio"
+            aria-checked={dashValue === option.value}
+          >
+            {option.label}
+          </button>
+        {/each}
       </div>
-    {/each}
+    </div>
+
+    <div class="setting-section">
+      <span class="section-label">Prop Reversals</span>
+      <div class="section-options" role="radiogroup">
+        {#each propsOptions as option}
+          <button
+            class="section-option"
+            class:selected={propsValue === option.value}
+            onclick={() => handlePropsChange(option.value)}
+            role="radio"
+            aria-checked={propsValue === option.value}
+          >
+            {option.label}
+          </button>
+        {/each}
+      </div>
+    </div>
+
+    <div class="setting-section">
+      <span class="section-label">Hand Reversals</span>
+      <div class="section-options" role="radiogroup">
+        {#each handsOptions as option}
+          <button
+            class="section-option"
+            class:selected={handsValue === option.value}
+            onclick={() => handleHandsChange(option.value)}
+            role="radio"
+            aria-checked={handsValue === option.value}
+          >
+            {option.label}
+          </button>
+        {/each}
+      </div>
+    </div>
 
     <!-- Grid and Loop row -->
     <div class="setting-section toggles-section">
       <div class="toggle-group">
         <span class="section-label">Grid</span>
-        <div class="section-options" role="radiogroup" aria-label="Grid mode">
+        <div class="section-options" role="radiogroup">
           <button
             class="section-option"
             class:selected={gridMode === "diamond"}
@@ -485,26 +365,42 @@ Container-aware responsive design:
         </div>
       </div>
 
-      <div class="toggle-group">
+      <div class="toggle-group loop-toggle-group">
         <span class="section-label">Loop</span>
-        <div class="section-options" role="radiogroup" aria-label="Loop mode">
+        <div class="section-options loop-desktop-options" role="listbox">
+          {#each loopQuickOptions.slice(0, 4) as option}
+            {@const isSelected = preferences.makeCircular
+              ? preferences.selectedLOOPType === option.type
+              : option.type === null}
+            <button
+              class="section-option loop-desktop-option"
+              class:selected={isSelected}
+              onclick={() => {
+                haptic.trigger("selection");
+                if (option.type === null) {
+                  onPreferenceChange("makeCircular", false);
+                  onPreferenceChange("selectedLOOPType", null);
+                } else {
+                  onPreferenceChange("makeCircular", true);
+                  onPreferenceChange("selectedLOOPType", option.type);
+                }
+              }}
+              role="option"
+              aria-selected={isSelected}
+              style:--option-color={option.color ?? "var(--theme-accent)"}
+            >
+              {#if option.icon}
+                <i class="fas fa-{option.icon}" aria-hidden="true" style:color={option.color}></i>
+              {/if}
+              {option.label}
+            </button>
+          {/each}
           <button
-            class="section-option"
-            class:selected={!preferences.makeCircular}
-            onclick={() => { haptic.trigger("selection"); onPreferenceChange("makeCircular", false); }}
-            role="radio"
-            aria-checked={!preferences.makeCircular}
+            class="section-option loop-desktop-more"
+            onclick={openFullLoopOverlay}
           >
-            Off
-          </button>
-          <button
-            class="section-option loop-on"
-            class:selected={preferences.makeCircular}
-            onclick={() => { haptic.trigger("selection"); onPreferenceChange("makeCircular", true); }}
-            role="radio"
-            aria-checked={preferences.makeCircular}
-          >
-            On
+            <i class="fas fa-ellipsis" aria-hidden="true"></i>
+            More
           </button>
         </div>
       </div>
@@ -512,12 +408,41 @@ Container-aware responsive design:
   </div>
 </div>
 
+<!-- Full LOOP overlay for multi-select combos -->
+{#if showFullLoopOverlay}
+  <div
+    class="overlay-backdrop"
+    onclick={handleFullLoopClose}
+    onkeydown={(e) => e.key === "Escape" && handleFullLoopClose()}
+    role="dialog"
+    aria-modal="true"
+    aria-label="LOOP type selection"
+    tabindex="-1"
+  >
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div
+      class="overlay-container"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
+      role="document"
+    >
+      <LOOPExpandedOverlay
+        currentType={preferences.selectedLOOPType ?? LOOPType.STRICT_ROTATED}
+        selectedComponents={selectedLoopComponents}
+        onChange={handleFullLoopChange}
+        onClose={handleFullLoopClose}
+      />
+    </div>
+  </div>
+{/if}
+
 <style>
   .settings-container {
     display: flex;
     flex-direction: column;
     gap: var(--settings-spacing-sm, 8px);
     --scale: var(--spell-scale, 1);
+    width: 100%;
   }
 
   /* ============================================================ */
@@ -528,11 +453,11 @@ Container-aware responsive design:
     display: flex;
     flex-direction: column;
     gap: var(--settings-spacing-sm, 8px);
-    /* Fixed height prevents layout shift */
-    height: 132px;
-    overflow: hidden;
-    /* Spring-driven gap */
-    gap: calc(var(--settings-spacing-sm, 8px) * (1 - var(--expansion, 0)));
+    min-height: 132px;
+  }
+
+  .mobile-layout.loop-expanded {
+    min-height: 280px;
   }
 
   .desktop-layout {
@@ -552,406 +477,148 @@ Container-aware responsive design:
   }
 
   /* ============================================================ */
-  /* MOBILE: Spring-animated expanding chips */
+  /* ROW 2: Grid + Loop side by side */
   /* ============================================================ */
 
-  .chips-row {
+  .row-2 {
     display: flex;
     gap: var(--settings-spacing-sm, 8px);
-    /* Spring-driven gap collapse */
-    gap: calc(var(--settings-spacing-sm, 8px) * (1 - var(--expansion, 0)));
+    min-height: 56px;
   }
 
-  .chips-row.has-expanded {
+  .row-2.loop-expanded {
+    min-height: 280px;
+  }
+
+  /* Grid chip takes half width normally */
+  .row-2 > .grid-chip {
     flex: 1;
-    height: 100%;
-    min-height: 0;
   }
 
-  /* Toggle row with spring-driven hide */
-  .chips-row.toggles-row {
-    opacity: var(--toggle-opacity, 1);
-    transform: scale(var(--toggle-scale, 1));
-    transform-origin: top center;
-  }
-
-  .chips-row.toggles-row.hidden {
-    max-height: 0;
-    pointer-events: none;
-    margin-top: calc(-1 * var(--settings-spacing-sm, 8px));
-    overflow: hidden;
-  }
-
-  /* ============================================================ */
-  /* Chip wrapper - spring-animated */
-  /* ============================================================ */
-
-  .chip-wrapper {
+  /* MorphChipGroup (containing Loop) takes half width normally, full when expanded */
+  .row-2 > :global(.morph-chip-group) {
     flex: 1;
-    min-width: 0;
-    /* Spring values applied via inline styles */
-    opacity: var(--sibling-opacity, 1);
-    transform: scale(var(--sibling-scale, 1));
-    transform-origin: center center;
-    /* Smooth transition for non-spring properties */
-    transition: flex 300ms cubic-bezier(0.34, 1.2, 0.64, 1);
   }
 
-  .chip-wrapper.expanded {
-    flex: 1 0 100%;
-    height: 100%;
-    min-height: 0;
+  .row-2.loop-expanded > :global(.morph-chip-group) {
+    flex: 1;
   }
 
-  .chip-wrapper.hidden {
-    flex: 0 0 0%;
-    pointer-events: none;
-    overflow: hidden;
-  }
-
-  .chip-wrapper.dragging {
-    z-index: 10;
-  }
-
-  /* ============================================================ */
-  /* Collapsed chip - gesture-enabled */
-  /* ============================================================ */
-
-  .chip {
-    width: 100%;
+  .grid-chip {
     min-height: 56px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--settings-spacing-xs, 4px);
-    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 12px);
+    gap: 4px;
+    padding: 8px 12px;
     background: var(--theme-card-bg);
     border: 1.5px solid var(--theme-stroke);
-    border-radius: var(--settings-radius-lg, 18px);
+    border-radius: 18px;
     color: var(--theme-text);
     cursor: pointer;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    /* Disable all browser touch actions - we handle everything */
-    touch-action: none;
-    position: relative;
-    overflow: hidden;
-    /* Micro-interaction: subtle hover lift */
-    transition:
-      background 150ms ease,
-      border-color 150ms ease,
-      transform 200ms cubic-bezier(0.34, 1.2, 0.64, 1),
-      box-shadow 200ms ease;
+    transition: all 150ms ease;
   }
 
-  .chip:active {
+  .grid-chip:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .grid-chip:active {
     transform: scale(0.97);
   }
 
-  @media (hover: hover) {
-    .chip:hover {
-      background: var(--theme-card-hover-bg);
-      border-color: var(--theme-stroke-strong);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .chip:hover .drag-hint {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  .chip-label {
-    font-size: var(--font-size-compact, 12px);
+  .grid-chip .chip-label {
+    font-size: 12px;
     font-weight: 500;
     color: var(--theme-text-muted);
-    white-space: nowrap;
-    transition: color 150ms ease;
   }
 
-  .chip-value {
-    font-size: var(--font-size-min, 14px);
+  .grid-chip .chip-value {
+    font-size: 14px;
     font-weight: 600;
-    color: var(--theme-text);
-    white-space: nowrap;
-  }
-
-  /* Drag hint - subtle indicator that chip is draggable */
-  .drag-hint {
-    position: absolute;
-    bottom: 4px;
-    left: 50%;
-    transform: translateX(-50%) translateY(2px);
-    font-size: 8px;
-    color: var(--theme-text-muted);
-    opacity: 0;
-    transition: opacity 200ms ease, transform 200ms ease;
-    pointer-events: none;
-  }
-
-  /* Loop chip active state with glow */
-  .loop-chip {
-    position: relative;
-    overflow: visible;
-  }
-
-  .loop-chip.loop-active {
-    background: color-mix(in srgb, var(--theme-accent) 20%, var(--theme-card-bg));
-    border-color: var(--theme-accent);
-  }
-
-  .loop-chip.loop-active .chip-value {
-    color: var(--theme-accent-light, var(--theme-accent));
-  }
-
-  .loop-glow {
-    position: absolute;
-    inset: -2px;
-    border-radius: calc(var(--settings-radius-lg, 18px) + 2px);
-    background: radial-gradient(ellipse at center, var(--theme-accent) 0%, transparent 70%);
-    opacity: 0.15;
-    pointer-events: none;
-    animation: loopPulse 2s ease-in-out infinite;
-  }
-
-  @keyframes loopPulse {
-    0%, 100% { opacity: 0.1; transform: scale(1); }
-    50% { opacity: 0.2; transform: scale(1.02); }
   }
 
   /* ============================================================ */
-  /* Expanded chip - morphing container */
+  /* LOOP EXPANDED CONTENT */
   /* ============================================================ */
 
-  .expanded-chip {
+  .loop-expanded-content {
     display: flex;
     flex-direction: column;
     gap: var(--settings-spacing-sm, 8px);
-    padding: var(--settings-spacing-sm, 8px);
-    background: var(--theme-card-bg);
-    border: 1.5px solid var(--theme-accent);
-    border-radius: var(--settings-radius-lg, 18px);
-    box-shadow:
-      0 4px 20px rgba(99, 102, 241, 0.15),
-      0 0 0 1px rgba(99, 102, 241, 0.1);
-    height: 132px;
-    box-sizing: border-box;
-    /* Entrance animation */
-    animation: expandIn 350ms cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+    height: 100%;
   }
 
-  @keyframes expandIn {
-    0% {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  .chip-header {
-    display: flex;
-    align-items: center;
+  .loop-options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
     gap: var(--settings-spacing-sm, 8px);
-    padding: var(--settings-spacing-xs, 4px) var(--settings-spacing-sm, 8px);
-    background: transparent;
-    border: none;
-    color: var(--theme-accent);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    border-radius: var(--settings-radius-sm, 8px);
-    transition:
-      background 150ms ease,
-      transform 150ms cubic-bezier(0.34, 1.2, 0.64, 1);
-    min-height: 40px;
+    flex: 1;
   }
 
-  .chip-header:hover {
-    background: var(--theme-card-hover-bg);
-  }
-
-  .chip-header:active {
-    transform: scale(0.97);
-  }
-
-  .chip-header:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .chip-header .chip-label {
-    color: var(--theme-accent);
-    font-size: var(--font-size-min, 14px);
-  }
-
-  /* Morphing label with staggered entrance */
-  .morphing-label {
-    animation: labelMorph 300ms cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
-  }
-
-  @keyframes labelMorph {
-    0% {
-      opacity: 0;
-      transform: translateX(-8px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  .back-icon {
-    font-size: 12px;
-    transition: transform 200ms cubic-bezier(0.34, 1.2, 0.64, 1);
-  }
-
-  .chip-header:hover .back-icon {
-    transform: translateX(-3px);
-  }
-
-  /* ============================================================ */
-  /* Options with micro-interactions */
-  /* ============================================================ */
-
-  .options-row {
+  .loop-option-btn {
     display: flex;
-    gap: var(--settings-spacing-xs, 4px);
-    flex: 1;
-    min-height: 0;
-  }
-
-  .option-btn {
-    flex: 1;
-    min-height: 48px;
-    align-self: stretch;
-    padding: var(--settings-spacing-sm, 8px);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 56px;
+    padding: 8px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.6));
     border: 1.5px solid var(--theme-stroke);
-    border-radius: var(--settings-radius-md, 12px);
+    border-radius: 12px;
     color: var(--theme-text-muted);
-    font-size: var(--font-size-min, 14px);
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    position: relative;
-    overflow: hidden;
-    /* Spring-driven scale for selection pulse */
-    transform: scale(var(--pulse-scale, 1));
-    transition:
-      background 150ms ease,
-      border-color 150ms ease,
-      color 150ms ease,
-      box-shadow 150ms ease;
-    /* Staggered entrance */
-    animation: optionIn 350ms cubic-bezier(0.34, 1.2, 0.64, 1) backwards;
+    transition: all 150ms ease;
   }
 
-  .option-btn:nth-child(1) { animation-delay: 80ms; }
-  .option-btn:nth-child(2) { animation-delay: 140ms; }
-  .option-btn:nth-child(3) { animation-delay: 200ms; }
-
-  @keyframes optionIn {
-    0% {
-      opacity: 0;
-      transform: translateY(12px) scale(0.92);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
+  .loop-option-btn:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+    color: var(--theme-text);
   }
 
-  .option-btn:active {
+  .loop-option-btn:active {
     transform: scale(0.96);
   }
 
-  @media (hover: hover) {
-    .option-btn:hover:not(.selected) {
-      background: var(--theme-card-hover-bg);
-      border-color: var(--theme-stroke-strong);
-      color: var(--theme-text);
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-  }
-
-  .option-btn:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .option-btn.selected {
-    background: color-mix(in srgb, var(--theme-accent) 25%, var(--theme-card-bg));
-    border-color: var(--theme-accent);
+  .loop-option-btn.selected {
+    background: color-mix(in srgb, var(--option-color, var(--theme-accent)) 20%, var(--theme-card-bg));
+    border-color: var(--option-color, var(--theme-accent));
     color: var(--theme-text);
-    box-shadow:
-      0 0 0 1px rgba(99, 102, 241, 0.2),
-      0 2px 8px rgba(99, 102, 241, 0.15);
   }
 
-  /* Selection indicator - animated checkmark feel */
-  .selection-indicator {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 6px;
-    height: 6px;
-    background: var(--theme-accent);
-    border-radius: 50%;
-    animation: indicatorPop 300ms cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+  .loop-option-btn i {
+    font-size: 18px;
   }
 
-  @keyframes indicatorPop {
-    0% {
-      transform: scale(0);
-      opacity: 0;
-    }
-    50% {
-      transform: scale(1.4);
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
+  .customize-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1.5px dashed var(--theme-stroke);
+    border-radius: 12px;
+    color: var(--theme-text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 150ms ease;
   }
 
-  .option-label {
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Pulsing state for selection feedback */
-  .option-btn.pulsing::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--theme-accent);
-    border-radius: inherit;
-    opacity: 0;
-    animation: selectionRipple 400ms ease-out forwards;
-  }
-
-  @keyframes selectionRipple {
-    0% {
-      opacity: 0.3;
-      transform: scale(0.8);
-    }
-    100% {
-      opacity: 0;
-      transform: scale(1.1);
-    }
+  .customize-btn:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-accent);
+    border-style: solid;
+    color: var(--theme-accent);
   }
 
   /* ============================================================ */
@@ -965,11 +632,11 @@ Container-aware responsive design:
     padding: calc(16px * var(--scale));
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
-    border-radius: calc(var(--settings-radius-lg, 18px) * var(--scale));
+    border-radius: calc(18px * var(--scale));
   }
 
   .section-label {
-    font-size: calc(var(--font-size-compact, 12px) * var(--scale));
+    font-size: calc(12px * var(--scale));
     font-weight: 600;
     color: var(--theme-text-muted);
     text-transform: uppercase;
@@ -987,55 +654,34 @@ Container-aware responsive design:
     padding: calc(12px * var(--scale)) calc(16px * var(--scale));
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.6));
     border: 1.5px solid var(--theme-stroke);
-    border-radius: calc(var(--settings-radius-md, 12px) * var(--scale));
+    border-radius: calc(12px * var(--scale));
     color: var(--theme-text-muted);
-    font-size: calc(var(--font-size-min, 14px) * var(--scale));
+    font-size: calc(14px * var(--scale));
     font-weight: 600;
     cursor: pointer;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    transition:
-      background 150ms ease,
-      border-color 150ms ease,
-      color 150ms ease,
-      transform 150ms cubic-bezier(0.34, 1.2, 0.64, 1),
-      box-shadow 150ms ease;
+    transition: all 150ms ease;
   }
 
   .section-option:active {
     transform: scale(0.97);
   }
 
-  @media (hover: hover) {
-    .section-option:hover:not(.selected) {
-      background: var(--theme-card-hover-bg);
-      border-color: var(--theme-stroke-strong);
-      color: var(--theme-text);
-      transform: translateY(-1px);
-    }
-  }
-
-  .section-option:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
+  .section-option:hover:not(.selected) {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+    color: var(--theme-text);
   }
 
   .section-option.selected {
     background: color-mix(in srgb, var(--theme-accent) 25%, var(--theme-card-bg));
     border-color: var(--theme-accent);
     color: var(--theme-text);
-    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.15);
-  }
-
-  .section-option.loop-on.selected {
-    background: color-mix(in srgb, var(--theme-accent) 30%, var(--theme-card-bg));
   }
 
   .toggles-section {
     display: flex;
     flex-direction: row;
     gap: calc(16px * var(--scale));
-    padding: calc(16px * var(--scale));
   }
 
   .toggle-group {
@@ -1045,32 +691,73 @@ Container-aware responsive design:
     gap: calc(8px * var(--scale));
   }
 
-  .toggle-group .section-options {
-    flex: 1;
+  .loop-toggle-group {
+    flex: 2;
+  }
+
+  .loop-desktop-options {
+    flex-wrap: wrap;
+  }
+
+  .loop-desktop-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .loop-desktop-option.selected {
+    background: color-mix(in srgb, var(--option-color, var(--theme-accent)) 20%, var(--theme-card-bg));
+    border-color: var(--option-color, var(--theme-accent));
+  }
+
+  .loop-desktop-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
   }
 
   /* ============================================================ */
-  /* Reduced motion - respects user preference */
+  /* LOOP OVERLAY */
+  /* ============================================================ */
+
+  .overlay-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: fadeIn 200ms ease forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .overlay-container {
+    width: 100%;
+    max-width: 400px;
+    max-height: 90vh;
+    position: relative;
+  }
+
+  /* ============================================================ */
+  /* Reduced motion */
   /* ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
-    .chip-wrapper,
-    .chips-row.toggles-row,
-    .chip,
-    .expanded-chip,
-    .chip-header,
-    .option-btn,
+    .grid-chip,
+    .loop-option-btn,
+    .customize-btn,
     .section-option,
-    .back-icon,
-    .loop-glow,
-    .selection-indicator {
+    .overlay-backdrop {
       transition: none;
       animation: none;
-    }
-
-    .loop-glow {
-      animation: none;
-      opacity: 0.15;
     }
   }
 </style>
