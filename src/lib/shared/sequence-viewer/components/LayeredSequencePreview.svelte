@@ -269,8 +269,9 @@
   const badgeSize = $derived(Math.max(16, scaledHeaderHeight * 0.9));
   const badgePadding = $derived(Math.max(2, scaledHeaderHeight * 0.05));
   const badgeNumberFontSize = $derived(Math.max(8, Math.floor(badgeSize / 1.75)));
-  const footerFontSize = $derived(Math.max(10, Math.floor(scaledFooterHeight * 0.55)));
-  const footerMargin = $derived(Math.max(8, Math.floor(scaledFooterHeight * 0.3)));
+  // Footer font size scales proportionally - no minimum constraint for WYSIWYG preview
+  const footerFontSize = $derived(Math.floor(scaledFooterHeight * 0.55));
+  const footerMargin = $derived(Math.floor(scaledFooterHeight * 0.3));
 
   // Beat number font size (10.526% of cell width, matching StepNumber.svelte)
   const beatNumberFontSize = $derived.by(() => {
@@ -929,6 +930,13 @@
     max-width: 100%;
     /* Allow highlight overflow to be visible */
     overflow: visible;
+    /* Light mode background for empty cells */
+    background: #f5f5f5;
+  }
+
+  .dark-mode .grid-section {
+    /* Dark mode background for empty cells */
+    background: #000;
   }
 
   /* Individual pictograph cell */

@@ -16,7 +16,6 @@
 -->
 <script lang="ts">
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
-  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
   import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
@@ -95,8 +94,10 @@
 
   function toggleAnimTrails() {
     const newStyle = animTrailsOn ? "off" : "on";
+    console.log('[MorphingFooter] toggleAnimTrails:', { oldState: animTrailsOn, newStyle });
     animVisibility.setTrailStyle(newStyle);
     animTrailsOn = newStyle === "on";
+    console.log('[MorphingFooter] after toggle, isTrailsVisible:', animVisibility.isTrailsVisible());
   }
 
   function toggleAnimTkaGlyph() {
@@ -183,14 +184,41 @@
     <!-- Playback Panel -->
     <div class="panel-content" class:active={mode === 'playback'}>
       <div class="playback-controls">
-        <TransportControls
-          {isPlaying}
-          onPlaybackToggle={onPlayPause}
-          onStepHalfBeatBackward={onStepHalfBack ?? (() => {})}
-          onStepHalfBeatForward={onStepHalfForward ?? (() => {})}
-          onStepFullBeatBackward={onStepBack}
-          onStepFullBeatForward={onStepForward}
-        />
+        <!-- Step controls only - main FAB handles play/pause -->
+        <div class="step-controls">
+          <button
+            class="step-btn step-half"
+            onclick={onStepHalfBack ?? (() => {})}
+            type="button"
+            aria-label="Previous half beat"
+          >
+            <i class="fas fa-chevron-left" aria-hidden="true"></i>
+          </button>
+          <button
+            class="step-btn step-full"
+            onclick={onStepBack}
+            type="button"
+            aria-label="Previous full beat"
+          >
+            <i class="fas fa-angles-left" aria-hidden="true"></i>
+          </button>
+          <button
+            class="step-btn step-full"
+            onclick={onStepForward}
+            type="button"
+            aria-label="Next full beat"
+          >
+            <i class="fas fa-angles-right" aria-hidden="true"></i>
+          </button>
+          <button
+            class="step-btn step-half"
+            onclick={onStepHalfForward ?? (() => {})}
+            type="button"
+            aria-label="Next half beat"
+          >
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        </div>
         <div class="bpm-section">
           <BpmChips
             {bpm}
@@ -351,6 +379,47 @@
     align-items: center;
     gap: 12px;
     width: 100%;
+  }
+
+  /* Step controls - horizontal row of prev/next buttons */
+  .step-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .step-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 50%;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: all var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .step-btn.step-full {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+  }
+
+  .step-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, white);
+  }
+
+  .step-btn:active {
+    transform: scale(0.95);
+    background: var(--theme-card-hover-bg);
   }
 
   .bpm-section {

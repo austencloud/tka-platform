@@ -1299,7 +1299,7 @@
         </div>
 
         <div class="header-center">
-          <h2 class="sequence-title">{isMobile ? (sequence?.word || 'Viewer') : 'Sequence Viewer'}</h2>
+          <h2 class="sequence-title">Sequence Viewer</h2>
         </div>
 
         <div class="header-right">
@@ -1876,7 +1876,7 @@
 
   /* Content fills viewport in fullscreen */
   .modal-body-content[data-fullscreen="true"] {
-    background: #000;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     position: relative;
   }
 
