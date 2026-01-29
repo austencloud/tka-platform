@@ -26,6 +26,8 @@ import {
   moduleIdToFeatureId,
   tabIdToFeatureId,
   getDefaultFeatureRole,
+  isValidFeatureId,
+  isValidUserRole,
 } from "../domain/models/FeatureFlag";
 import type { ModuleId } from "../../navigation/domain/types";
 import { MODULE_DEFINITIONS } from "../../navigation/config/module-definitions";
@@ -55,35 +57,136 @@ function featureIdToPostHogKey(featureId: FeatureId): string {
 
 /**
  * Convert PostHog flag key back to FeatureId
+ * Returns undefined if the key doesn't match a valid FeatureId pattern
  * - module-create -> module:create
  * - tab-create-assembler -> tab:create:assembler
+ * - capability-export-video -> capability:export:video
  */
-function postHogKeyToFeatureId(key: string): FeatureId {
+function postHogKeyToFeatureId(key: string): FeatureId | undefined {
+  let candidate: string | undefined;
+
   // Handle module flags
   if (key.startsWith("module-")) {
-    return `module:${key.slice(7)}` as FeatureId;
+    const moduleId = key.slice(7);
+    if (moduleId) {
+      candidate = `module:${moduleId}`;
+    }
   }
-
   // Handle tab flags (tab-{module}-{tab})
-  if (key.startsWith("tab-")) {
+  else if (key.startsWith("tab-")) {
     const parts = key.slice(4).split("-");
-    if (parts.length >= 2) {
+    if (parts.length >= 2 && parts[0] && parts[1]) {
       const moduleId = parts[0];
       const tabId = parts.slice(1).join("-");
-      return `tab:${moduleId}:${tabId}` as FeatureId;
+      candidate = `tab:${moduleId}:${tabId}`;
     }
   }
-
   // Handle capability flags
-  if (key.startsWith("capability-")) {
+  else if (key.startsWith("capability-")) {
     const parts = key.slice(11).split("-");
-    if (parts.length >= 2) {
-      return `capability:${parts[0]}:${parts.slice(1).join("-")}` as FeatureId;
+    if (parts.length >= 2 && parts[0] && parts[1]) {
+      candidate = `capability:${parts[0]}:${parts.slice(1).join("-")}`;
     }
   }
 
-  // Return as-is with colon conversion for unknown patterns
-  return key.replace(/-/g, ":") as FeatureId;
+  // Validate using the runtime validation helper
+  if (candidate && isValidFeatureId(candidate)) {
+    return candidate;
+  }
+
+  // Invalid key - return undefined instead of casting blindly
+  return undefined;
+}
+
+// ============================================================================
+// GLOBAL OVERRIDE PERSISTENCE
+// ============================================================================
+
+const GLOBAL_FLAG_OVERRIDES_KEY = "tka-global-flag-overrides";
+const GLOBAL_ROLE_OVERRIDES_KEY = "tka-global-role-overrides";
+
+/**
+ * Load global flag overrides from localStorage
+ * These are admin-set overrides that persist across sessions
+ */
+function loadGlobalFlagOverrides(): Record<string, boolean> {
+  if (!browser) return {};
+
+  try {
+    const stored = localStorage.getItem(GLOBAL_FLAG_OVERRIDES_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Validate the structure: should be Record<string, boolean>
+      if (typeof parsed === "object" && parsed !== null) {
+        const validated: Record<string, boolean> = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          if (typeof key === "string" && typeof value === "boolean") {
+            validated[key] = value;
+          }
+        }
+        return validated;
+      }
+    }
+  } catch (error) {
+    console.warn("[PostHogFeatureFlagService] Failed to load global flag overrides:", error);
+  }
+
+  return {};
+}
+
+/**
+ * Save global flag overrides to localStorage
+ */
+function saveGlobalFlagOverrides(overrides: Record<string, boolean>): void {
+  if (!browser) return;
+
+  try {
+    localStorage.setItem(GLOBAL_FLAG_OVERRIDES_KEY, JSON.stringify(overrides));
+  } catch (error) {
+    console.warn("[PostHogFeatureFlagService] Failed to save global flag overrides:", error);
+  }
+}
+
+/**
+ * Load global role overrides from localStorage
+ * These are admin-set minimum role requirements that persist across sessions
+ */
+function loadGlobalRoleOverrides(): Record<string, UserRole> {
+  if (!browser) return {};
+
+  try {
+    const stored = localStorage.getItem(GLOBAL_ROLE_OVERRIDES_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Validate the structure: should be Record<string, UserRole>
+      if (typeof parsed === "object" && parsed !== null) {
+        const validated: Record<string, UserRole> = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          if (typeof key === "string" && isValidUserRole(value)) {
+            validated[key] = value as UserRole;
+          }
+        }
+        return validated;
+      }
+    }
+  } catch (error) {
+    console.warn("[PostHogFeatureFlagService] Failed to load global role overrides:", error);
+  }
+
+  return {};
+}
+
+/**
+ * Save global role overrides to localStorage
+ */
+function saveGlobalRoleOverrides(overrides: Record<string, UserRole>): void {
+  if (!browser) return;
+
+  try {
+    localStorage.setItem(GLOBAL_ROLE_OVERRIDES_KEY, JSON.stringify(overrides));
+  } catch (error) {
+    console.warn("[PostHogFeatureFlagService] Failed to save global role overrides:", error);
+  }
 }
 
 // ============================================================================
@@ -123,8 +226,9 @@ const _state = $state<FeatureFlagState>({
   initialized: false,
   loading: false,
   flagsVersion: 0,
-  globalFlagOverrides: {},
-  globalRoleOverrides: {},
+  // Initialize from localStorage if in browser, empty otherwise
+  globalFlagOverrides: browser ? loadGlobalFlagOverrides() : {},
+  globalRoleOverrides: browser ? loadGlobalRoleOverrides() : {},
 });
 
 // ============================================================================
@@ -613,18 +717,33 @@ export const postHogFeatureFlagService = {
   },
 
   /**
+   * Result of a feature flag update operation
+   */
+  // (Type defined inline to avoid circular imports)
+
+  /**
    * Update global feature flag configuration via PostHog API.
    * Calls server-side endpoint which proxies to PostHog.
    *
-   * Note: minimumRole changes are stored locally only (PostHog doesn't support
-   * role-based filters via simple API). They persist in memory for the session
+   * Note: minimumRole changes are stored in localStorage (PostHog doesn't support
+   * role-based filters via simple API). They persist across browser sessions
    * and provide immediate UI feedback.
+   *
+   * Returns result with action type, flag info, and optional PostHog dashboard URL.
    */
   async updateGlobalFeatureFlag(
     featureId: FeatureId,
     updates: Partial<FeatureFlagConfig>
-  ): Promise<void> {
-    if (!browser) return;
+  ): Promise<{
+    action: "created" | "updated" | "role_updated";
+    flagKey: string;
+    flagId?: number;
+    note?: string;
+    dashboardUrl?: string;
+  }> {
+    if (!browser) {
+      return { action: "updated", flagKey: featureIdToPostHogKey(featureId) };
+    }
 
     const flagKey = featureIdToPostHogKey(featureId);
 
@@ -634,13 +753,31 @@ export const postHogFeatureFlagService = {
         ..._state.globalRoleOverrides,
         [flagKey]: updates.minimumRole,
       };
+      // Persist to localStorage
+      saveGlobalRoleOverrides(_state.globalRoleOverrides);
       // Trigger reactive update
       _state.flagsVersion++;
-      console.log(`[PostHogFeatureFlagService] Flag ${flagKey} minimumRole set to: ${updates.minimumRole} (local only)`);
+      console.log(`[PostHogFeatureFlagService] Flag ${flagKey} minimumRole set to: ${updates.minimumRole} (persisted)`);
+
+      // If only role update (no enabled change), return early
+      if (typeof updates.enabled !== "boolean") {
+        return { action: "role_updated", flagKey };
+      }
     }
 
     // Handle enabled updates via PostHog API
     if (typeof updates.enabled === "boolean") {
+      // Store previous value for rollback on failure
+      const previousValue = _state.globalFlagOverrides[flagKey];
+
+      // OPTIMISTIC UPDATE: Apply immediately for responsive UI
+      _state.globalFlagOverrides = {
+        ..._state.globalFlagOverrides,
+        [flagKey]: updates.enabled,
+      };
+      saveGlobalFlagOverrides(_state.globalFlagOverrides);
+      _state.flagsVersion++;
+
       try {
         // Get the current user's auth token for server-side verification
         const currentUser = auth.currentUser;
@@ -669,22 +806,45 @@ export const postHogFeatureFlagService = {
         const result = await response.json();
         console.log(`[PostHogFeatureFlagService] Flag ${flagKey} ${result.action}:`, result.flag);
 
-        // Update local cache immediately for responsive UI
-        _state.globalFlagOverrides = {
-          ..._state.globalFlagOverrides,
-          [flagKey]: updates.enabled,
-        };
-
         // Also reload PostHog's local flags (for user-facing access checks)
         reloadFeatureFlags();
 
-        // Trigger reactive update
-        _state.flagsVersion++;
+        // Build dashboard URL if we have the flag ID
+        let dashboardUrl: string | undefined;
+        if (result.flag?.id) {
+          // PostHog project ID from env (passed through the response)
+          dashboardUrl = `https://us.posthog.com/project/${result.projectId || "unknown"}/feature_flags/${result.flag.id}`;
+        }
+
+        return {
+          action: result.action as "created" | "updated",
+          flagKey,
+          flagId: result.flag?.id,
+          note: result.note,
+          dashboardUrl,
+        };
       } catch (err) {
-        console.error(`[PostHogFeatureFlagService] Failed to update ${flagKey}:`, err);
+        // ROLLBACK: Revert optimistic update on failure
+        console.error(`[PostHogFeatureFlagService] Failed to update ${flagKey}, rolling back:`, err);
+
+        if (previousValue !== undefined) {
+          _state.globalFlagOverrides = {
+            ..._state.globalFlagOverrides,
+            [flagKey]: previousValue,
+          };
+        } else {
+          // Remove the key if it didn't exist before
+          const { [flagKey]: _, ...rest } = _state.globalFlagOverrides;
+          _state.globalFlagOverrides = rest;
+        }
+        saveGlobalFlagOverrides(_state.globalFlagOverrides);
+        _state.flagsVersion++;
+
         throw err;
       }
     }
+
+    return { action: "updated", flagKey };
   },
 
   /**

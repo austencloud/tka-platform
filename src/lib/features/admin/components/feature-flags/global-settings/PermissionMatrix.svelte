@@ -7,8 +7,9 @@
 
   import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/FeatureFlag";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
-  import { ROLE_HIERARCHY, ROLE_DISPLAY, hasRolePrivilege } from "$lib/shared/auth/domain/models/UserRole";
+  import { ROLE_HIERARCHY, ROLE_DISPLAY } from "$lib/shared/auth/domain/models/UserRole";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import {
     buildFeatureHierarchy,
     getFeatureIconAndColor,
@@ -30,10 +31,16 @@
   // Get flags from service
   const featureFlags = $derived(featureFlagService.featureConfigs);
 
+  // Debug: log when featureFlags changes
+  $effect(() => {
+    const trainModule = featureFlags.find(f => f.id === 'module:train');
+    console.log('[PermissionMatrix] featureFlags updated, train module enabled:', trainModule?.enabled, 'flagsVersion:', featureFlagService.flagsVersion);
+  });
+
   // Build hierarchy and filter
   const hierarchy = $derived(buildFeatureHierarchy(featureFlags));
 
-  const filteredModules = $derived(() => {
+  const filteredModules = $derived.by(() => {
     if (!searchQuery.trim()) return hierarchy.modules;
     const q = searchQuery.toLowerCase();
     return hierarchy.modules.filter((m) => {
@@ -49,7 +56,7 @@
     });
   });
 
-  const filteredCapabilities = $derived(() => {
+  const filteredCapabilities = $derived.by(() => {
     if (!searchQuery.trim()) return hierarchy.capabilities;
     const q = searchQuery.toLowerCase();
     return hierarchy.capabilities.filter(
@@ -65,9 +72,32 @@
   ) {
     savingFlags = new Set([...savingFlags, flag.id]);
     try {
-      await featureFlagService.updateGlobalFeatureFlag(flag.id, updates);
+      const result = await featureFlagService.updateGlobalFeatureFlag(flag.id, updates);
+
+      // Show success toast based on action type
+      if (result.action === "created") {
+        // New flag created - show with dashboard link
+        const message = result.dashboardUrl
+          ? `${flag.name} created. View in PostHog →`
+          : `${flag.name} created with 100% rollout`;
+        toast.success(message, 4000);
+
+        // Open PostHog dashboard if available (optional - could make this a click action)
+        if (result.dashboardUrl) {
+          console.log(`[PermissionMatrix] PostHog dashboard: ${result.dashboardUrl}`);
+        }
+      } else if (result.action === "updated") {
+        // Existing flag toggled
+        const newState = updates.enabled ? "enabled" : "disabled";
+        toast.success(`${flag.name} ${newState}`, 2000);
+      } else if (result.action === "role_updated") {
+        // Role changed
+        toast.success(`${flag.name} role updated to ${updates.minimumRole}`, 2000);
+      }
     } catch (error) {
       console.error("Failed to update flag:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Failed to update ${flag.name}: ${errorMessage}`);
       onError(`Failed to update ${flag.name}`);
     } finally {
       savingFlags = new Set([...savingFlags].filter((id) => id !== flag.id));
@@ -105,7 +135,7 @@
 
   <!-- Quick toggle bar for modules (excludes core modules that can't be disabled) -->
   <ModuleQuickBar
-    modules={filteredModules().map(m => m.module).filter(m => !coreModuleIds.includes(m.id))}
+    modules={filteredModules.map(m => m.module).filter(m => !coreModuleIds.includes(m.id))}
     {savingFlags}
     onToggle={handleEnabledToggle}
   />
@@ -124,7 +154,7 @@
     </div>
 
     <!-- Modules with their tabs (always expanded) -->
-    {#each filteredModules() as { module, tabs }}
+    {#each filteredModules as { module, tabs }}
       {@const moduleStyle = getFeatureIconAndColor(module.id)}
       {@const hasTabs = tabs.length > 0}
 
@@ -155,11 +185,11 @@
     {/each}
 
     <!-- Capabilities section -->
-    {#if filteredCapabilities().length > 0}
+    {#if filteredCapabilities.length > 0}
       <div class="section-divider">
         <span><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> Capabilities</span>
       </div>
-      {#each filteredCapabilities() as capability}
+      {#each filteredCapabilities as capability}
         <MatrixRow
           flag={capability}
           saving={savingFlags.has(capability.id)}

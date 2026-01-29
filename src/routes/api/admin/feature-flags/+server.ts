@@ -125,7 +125,7 @@ export const PATCH: RequestHandler = async (event) => {
           headers: getPostHogHeaders(),
           body: JSON.stringify({
             key: flagKey,
-            name: flagKey.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+            name: flagKey.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
             active: enabled ?? true,
             filters: filters ?? { groups: [{ properties: [], rollout_percentage: 100 }] },
           }),
@@ -139,7 +139,13 @@ export const PATCH: RequestHandler = async (event) => {
       }
 
       const created = await createResponse.json();
-      return json({ success: true, flag: created, action: "created" });
+      return json({
+        success: true,
+        flag: created,
+        action: "created",
+        projectId: projectId,
+        note: `Flag "${flagKey}" created with 100% rollout. Configure targeting in PostHog dashboard.`,
+      });
     }
 
     // Update existing flag
@@ -167,7 +173,7 @@ export const PATCH: RequestHandler = async (event) => {
     }
 
     const updated = await updateResponse.json();
-    return json({ success: true, flag: updated, action: "updated" });
+    return json({ success: true, flag: updated, action: "updated", projectId });
   } catch (err: unknown) {
     if (typeof err === "object" && err && "status" in err) {
       throw err;

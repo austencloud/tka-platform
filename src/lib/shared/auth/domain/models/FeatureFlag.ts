@@ -8,7 +8,7 @@
  * - Global enable/disable
  */
 
-import type { UserRole } from "./UserRole";
+import { type UserRole, ROLE_HIERARCHY } from "./UserRole";
 import type { ModuleId } from "../../../navigation/domain/types";
 
 /**
@@ -142,4 +142,94 @@ export function getDefaultFeatureConfig(
   featureId: FeatureId
 ): FeatureFlagConfig | undefined {
   return DEFAULT_FEATURE_FLAGS.find((f) => f.id === featureId);
+}
+
+// ============================================================================
+// VALIDATION HELPERS
+// ============================================================================
+
+/**
+ * Valid prefixes for FeatureId
+ */
+const FEATURE_ID_PREFIXES = ["module:", "tab:", "capability:"] as const;
+
+/**
+ * Check if a value is a valid FeatureId format
+ * Format: "prefix:value" or "prefix:value:value"
+ */
+export function isValidFeatureId(value: unknown): value is FeatureId {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  // Must start with a valid prefix
+  const hasValidPrefix = FEATURE_ID_PREFIXES.some((prefix) =>
+    value.startsWith(prefix)
+  );
+  if (!hasValidPrefix) {
+    return false;
+  }
+
+  // Must have content after the prefix
+  const prefixMatch = FEATURE_ID_PREFIXES.find((prefix) =>
+    value.startsWith(prefix)
+  );
+  if (!prefixMatch) {
+    return false;
+  }
+
+  const afterPrefix = value.slice(prefixMatch.length);
+  if (!afterPrefix || afterPrefix.length === 0) {
+    return false;
+  }
+
+  // Tab IDs must have module:tab format (two parts after "tab:")
+  if (value.startsWith("tab:")) {
+    const parts = afterPrefix.split(":");
+    if (parts.length < 2 || !parts[0] || !parts[1]) {
+      return false;
+    }
+  }
+
+  // Capability IDs must have category:name format
+  if (value.startsWith("capability:")) {
+    const parts = afterPrefix.split(":");
+    if (parts.length < 2 || !parts[0] || !parts[1]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Check if a value is a valid UserRole
+ */
+export function isValidUserRole(value: unknown): value is UserRole {
+  if (typeof value !== "string") {
+    return false;
+  }
+  return ROLE_HIERARCHY.includes(value as UserRole);
+}
+
+/**
+ * Parse a string to FeatureId, returning undefined if invalid
+ * Useful for safely converting user input or external data
+ */
+export function parseFeatureId(value: string): FeatureId | undefined {
+  if (isValidFeatureId(value)) {
+    return value;
+  }
+  return undefined;
+}
+
+/**
+ * Parse a string to UserRole, returning undefined if invalid
+ * Useful for safely converting user input or external data
+ */
+export function parseUserRole(value: string): UserRole | undefined {
+  if (isValidUserRole(value)) {
+    return value;
+  }
+  return undefined;
 }

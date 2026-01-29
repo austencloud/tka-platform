@@ -1,20 +1,20 @@
 /**
- * ⛔ DEPRECATED - DO NOT ADD NEW SERVICES HERE ⛔
+ * Application Dependency Injection Container
  *
- * This dependency injection system is being phased out.
- * See: .claude/rules/di-migration.md for migration status and instructions.
+ * ITI (Isomorphic Type-safe IoC) container for the TKA application.
+ * All services are registered here and accessed via container.items.
  *
- * NEW PATTERN: Direct singleton exports from service files.
- *
- * ❌ OLD (don't do this):
+ * Usage:
  *   import { container } from "$lib/shared/di";
  *   const myService = container.items.myService;
  *
- * ✅ NEW (do this instead):
- *   import { myService } from "$lib/path/to/MyService";
+ * Adding new services:
+ *   1. Create interface in services/contracts/IServiceName.ts
+ *   2. Create implementation in services/implementations/ServiceName.ts
+ *   3. Create or update container in di/containers/your-container.ts
+ *   4. Wire into this file's container composition
  *
- * If you're adding a new service, export it directly from its implementation file.
- * If you're consuming an existing service, check if it has a direct export first.
+ * See .claude/rules/code-style.md for DI patterns.
  */
 
 import { createContainer } from "iti";
@@ -79,6 +79,7 @@ import { createHallOfShameContainer } from "./containers/hall-of-shame-container
 import { createWatchContainer } from "./containers/watch-container";
 import { createLanSyncContainer } from "./containers/lan-sync-container";
 import { createConnectContainer } from "./containers/connect-container";
+import { createDeviceSyncContainer } from "./containers/device-sync-container";
 
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
@@ -280,6 +281,11 @@ const watchContainer = typeof window !== 'undefined' ? createWatchContainer({
 // LAN Sync container - self-contained, no external dependencies
 const lanSyncContainer = typeof window !== 'undefined' ? createLanSyncContainer() : null as any;
 
+// Device Sync container - needs peerConnectionManager from lan-sync
+const deviceSyncContainer = typeof window !== 'undefined' ? createDeviceSyncContainer({
+  peerConnectionManager: lanSyncContainer.items.peerConnectionManager,
+}) : null as any;
+
 // Connect container - needs lanSyncCoordinator from lan-sync
 const connectContainer = typeof window !== 'undefined' ? createConnectContainer({
   lanSyncCoordinator: lanSyncContainer.items.lanSyncCoordinator,
@@ -352,6 +358,7 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(hallOfShameContainer.items)
   .add(watchContainer.items)
   .add(lanSyncContainer.items)
+  .add(deviceSyncContainer.items)
   .add(connectContainer.items)
   // Cross-container services (depend on multiple container outputs)
   .add({ deepLinkResolver: () => deepLinkResolver }) : null as any;
