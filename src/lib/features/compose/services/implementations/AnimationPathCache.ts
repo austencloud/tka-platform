@@ -435,36 +435,3 @@ export class AnimationPathCache {
   }
 }
 
-/**
- * Global cache instance (singleton pattern)
- * @deprecated Use DI container instead: container.items.animationPathCache
- * Kept for backward compatibility during migration.
- */
-let globalCacheInstance: AnimationPathCache | null = null;
-
-/**
- * Get or create global animation path cache instance
- * @deprecated Use DI container instead: container.items.animationPathCache
- * This global singleton bypasses dependency injection.
- */
-export function getGlobalPathCache(
-  config?: Partial<PathCacheConfig>
-): AnimationPathCache {
-  if (!globalCacheInstance) {
-    globalCacheInstance = new AnimationPathCache(config);
-  } else if (config) {
-    globalCacheInstance.setConfig(config);
-  }
-  return globalCacheInstance;
-}
-
-/**
- * Clear global cache instance
- * @deprecated Use DI container instead: container.items.animationPathCache.clear()
- */
-export function clearGlobalPathCache(): void {
-  if (globalCacheInstance) {
-    globalCacheInstance.clear();
-    globalCacheInstance = null;
-  }
-}

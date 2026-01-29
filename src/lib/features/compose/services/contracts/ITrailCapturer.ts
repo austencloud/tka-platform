@@ -16,24 +16,6 @@ import type {
 import type { PropState } from "../../shared/domain/types/PropState";
 
 /**
- * Callback for trail system events (memory pruning, etc.)
- */
-export type TrailEventCallback = (event: TrailEvent) => void;
-
-/**
- * Trail system events for UX feedback
- */
-export interface TrailEvent {
-  type: "memory_pruned" | "trails_cleared";
-  /** Points pruned (for memory_pruned event) */
-  pointsPruned?: number;
-  /** Points remaining after operation */
-  pointsRemaining: number;
-  /** Human-readable message */
-  message: string;
-}
-
-/**
  * Prop states for trail capture (distinct from the simpler PropStates in domain)
  */
 export interface TrailCapturePropStates {
@@ -140,12 +122,6 @@ export interface ITrailCapturer {
    * Set the performance monitor for adaptive sampling
    */
   setPerformanceMonitor(monitor: IPerformanceMonitorService | null): void;
-
-  /**
-   * Set callback for trail system events (memory pruning, etc.)
-   * Use this to show user notifications when trails are auto-pruned
-   */
-  setEventCallback(callback: TrailEventCallback | null): void;
 }
 
 /**

@@ -33,8 +33,6 @@ import type {
   TrailCaptureConfig,
   IAnimationCacheService,
   IPerformanceMonitorService,
-  TrailEventCallback,
-  TrailEvent,
 } from "../contracts/ITrailCapturer";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
@@ -209,9 +207,6 @@ export class TrailCapturer implements ITrailCapturer {
   // Memory leak prevention: Track total accumulated points
   private totalPointsCaptured = 0;
 
-  // Event callback for UX feedback (memory pruning notifications, etc.)
-  private eventCallback: TrailEventCallback | null = null;
-
   initialize(config: TrailCaptureConfig): void {
     this.config = { ...config };
     this.clearTrails();
@@ -286,14 +281,6 @@ export class TrailCapturer implements ITrailCapturer {
 
   setPerformanceMonitor(monitor: IPerformanceMonitorService | null): void {
     this.performanceMonitor = monitor;
-  }
-
-  /**
-   * Set callback for trail system events (memory pruning, etc.)
-   * Use this to show user notifications when trails are auto-pruned
-   */
-  setEventCallback(callback: TrailEventCallback | null): void {
-    this.eventCallback = callback;
   }
 
   captureFrame(
@@ -423,8 +410,6 @@ export class TrailCapturer implements ITrailCapturer {
   }
 
   clearTrails(): void {
-    const hadPoints = this.totalPointsCaptured > 0;
-
     this.blueTrailBuffer.clear();
     this.redTrailBuffer.clear();
     this.secondaryBlueTrailBuffer.clear();
@@ -432,15 +417,6 @@ export class TrailCapturer implements ITrailCapturer {
     this.lastCapturedPoints.clear();
     this.animationStartTime = null;
     this.totalPointsCaptured = 0;
-
-    // Emit event for UX feedback (only if there were points to clear)
-    if (hadPoints && this.eventCallback) {
-      this.eventCallback({
-        type: "trails_cleared",
-        pointsRemaining: 0,
-        message: "Trails cleared",
-      });
-    }
   }
 
   // ============================================================================
@@ -658,19 +634,7 @@ export class TrailCapturer implements ITrailCapturer {
     // CRITICAL: Prevent unbounded memory growth during long playback sessions
     // If we've accumulated too many points (e.g., playing for hours), prune aggressively
     if (this.totalPointsCaptured > MAX_TOTAL_POINTS_BEFORE_PRUNE) {
-      const pointsBefore = this.totalPointsCaptured;
       this.pruneToReasonableSize(currentTime);
-      const pointsPruned = pointsBefore - this.totalPointsCaptured;
-
-      // Emit event for UX feedback
-      if (this.eventCallback) {
-        this.eventCallback({
-          type: "memory_pruned",
-          pointsPruned,
-          pointsRemaining: this.totalPointsCaptured,
-          message: `Trail memory optimized: removed ${pointsPruned} old points`,
-        });
-      }
     }
   }
 
