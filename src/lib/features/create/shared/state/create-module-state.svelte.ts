@@ -102,16 +102,16 @@ export function createCreateModuleState(
    */
   function getSequenceStateForTab(tab: BuildModeId): SequenceState {
     switch (tab) {
-      case "constructor": {
+      case "construct": {
         const ctor = _constructorTabState as {
           sequenceState?: SequenceState;
         } | null;
         return ctor?.sequenceState || constructorFallbackState;
       }
-      case "assembler": {
+      case "assemble": {
         return _assemblerTabState?.sequenceState || assemblerFallbackState;
       }
-      case "generator": {
+      case "generate": {
         return _generatorTabState?.sequenceState || generatorFallbackState;
       }
       case "spell": {
@@ -224,7 +224,7 @@ export function createCreateModuleState(
    * Get the sequence state for the currently active tab
    * This allows tab-specific sequence operations (e.g., sequence actions)
    *
-   * @returns The sequence state for the active tab (constructor, assembler, or generator)
+   * @returns The sequence state for the active tab (construct, assembler, or generator)
    */
   function getActiveTabSequenceState(): SequenceState {
     const activeTab = navigationState.activeTab as BuildModeId;
@@ -235,18 +235,18 @@ export function createCreateModuleState(
    * Get the undo controller for the currently active tab
    * Each tab has its own independent undo history
    *
-   * @returns The undo controller for the active tab (constructor, assembler, or generator)
+   * @returns The undo controller for the active tab (construct, assembler, or generator)
    */
   function getActiveTabUndoController(): UndoController | null {
     const activeTab = navigationState.activeTab as BuildModeId;
     switch (activeTab) {
-      case "constructor": {
+      case "construct": {
         return _constructorTabState?.undoController ?? null;
       }
-      case "assembler": {
+      case "assemble": {
         return _assemblerTabState?.undoController || null;
       }
-      case "generator": {
+      case "generate": {
         return _generatorTabState?.undoController || null;
       }
       case "spell": {
@@ -299,7 +299,7 @@ export function createCreateModuleState(
     undo: () => {
       // Check assembly handpath builder undo first (when in assembler mode building positions)
       if (
-        navigationState.activeTab === "assembler" &&
+        navigationState.activeTab === "assemble" &&
         _assemblyUndoRef?.canUndo
       ) {
         _assemblyUndoRef.undo();
@@ -332,7 +332,7 @@ export function createCreateModuleState(
     get canUndo() {
       // Check assembly handpath builder undo first (when in assembler mode building positions)
       if (
-        navigationState.activeTab === "assembler" &&
+        navigationState.activeTab === "assemble" &&
         _assemblyUndoRef?.canUndo
       ) {
         return true;

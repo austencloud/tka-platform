@@ -52,7 +52,7 @@
 
   // Derive assembler back handler from state - only available when in assembler tab and has started building
   const assemblerBackHandler = $derived.by(() => {
-    if (navigationState.activeTab !== "assembler") return null;
+    if (navigationState.activeTab !== "assemble") return null;
     const backRef = CreateModuleState.assemblyBackRef;
     if (!backRef?.canGoBack) return null;
     return backRef.back;

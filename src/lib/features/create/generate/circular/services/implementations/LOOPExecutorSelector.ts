@@ -68,7 +68,7 @@ export class LOOPExecutorSelector implements ILOOPExecutorSelector {
       case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
         return this.mirroredRotatedInvertedSwappedExecutor;
 
-      case LOOPType.REWOUND:
+      case LOOPType.STRICT_REWOUND:
         return this.rewoundLOOPExecutor;
 
       default:
@@ -99,7 +99,7 @@ export class LOOPExecutorSelector implements ILOOPExecutorSelector {
       LOOPType.MIRRORED_ROTATED,
       LOOPType.MIRRORED_INVERTED_ROTATED,
       LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
-      LOOPType.REWOUND,
+      LOOPType.STRICT_REWOUND,
     ].includes(loopType);
   }
 }

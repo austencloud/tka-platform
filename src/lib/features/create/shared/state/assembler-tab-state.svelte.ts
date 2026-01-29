@@ -52,7 +52,7 @@ export function createAssemblerTabState(
   let isInitialized = $state(false);
 
   // Assembler tab has its own independent sequence state
-  // IMPORTANT: Pass tabId="assembler" to ensure persistence loads/saves only assembler's data
+  // IMPORTANT: Pass tabId="assemble" to ensure persistence loads/saves only assembler's data
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,
@@ -60,7 +60,7 @@ export function createAssemblerTabState(
         ...(sequenceStatisticsService && { sequenceStatisticsService }),
         ...(SequenceTransformer && { SequenceTransformer }),
         ...(sequenceValidationService && { sequenceValidationService }),
-        tabId: "assembler", // Persistence isolation - only load/save assembler's data
+        tabId: "assemble", // Persistence isolation - only load/save assembler's data
       })
     : null;
 
@@ -69,9 +69,9 @@ export function createAssemblerTabState(
     ? createUndoController({
         UndoManager: undoManager,
         sequenceState,
-        getActiveSection: () => "assembler",
+        getActiveSection: () => "assemble",
         setActiveSectionInternal: async (_panel, _addToHistory) => {
-          // Assembler tab doesn't need to change active section since it's always assembler
+          // Assembler tab doesn't need to change active section since it's always assemble
           // This is just for compatibility with the undo controller interface
         },
       })

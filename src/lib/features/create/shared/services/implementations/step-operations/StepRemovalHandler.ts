@@ -27,7 +27,7 @@ export function removeStep(
     });
 
     void createModuleState.sequenceState.clearSequenceCompletely();
-    createModuleState.setActiveToolPanel("constructor");
+    createModuleState.setActiveToolPanel("construct");
     return;
   }
 

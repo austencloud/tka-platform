@@ -178,7 +178,7 @@
   }
 
   function resetHelpButtonDiscovery() {
-    const key = "helpButtonDiscoverySeen:generator";
+    const key = "helpButtonDiscoverySeen:generate";
     localStorage.removeItem(key);
     // Dispatch custom event so HelpButtonDiscovery can react (same-tab)
     window.dispatchEvent(new CustomEvent("helpDiscoveryReset"));

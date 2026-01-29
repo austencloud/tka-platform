@@ -66,8 +66,8 @@ export async function executeClearSequenceWorkflow(
     // 3. After animations complete, clear the active tab's data and reset UI
     // This happens after components have faded out to avoid visual popping
 
-    // Clear Construct tab state if we're in the Constructor tab
-    if (activeTab === "constructor" && constructTabState) {
+    // Clear Construct tab state if we're in the Construct tab
+    if (activeTab === "construct" && constructTabState) {
       constructTabState.setShowStartPositionPicker(true);
       constructTabState.setSelectedStartPosition(null);
       constructTabState.startPositionStateService.clearSelectedPosition();

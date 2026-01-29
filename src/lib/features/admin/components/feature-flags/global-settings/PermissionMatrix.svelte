@@ -8,7 +8,7 @@
   import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/FeatureFlag";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
   import { ROLE_HIERARCHY, ROLE_DISPLAY } from "$lib/shared/auth/domain/models/UserRole";
-  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
+  import { featureFlagService, featureFlagState } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import {
     buildFeatureHierarchy,
@@ -28,8 +28,12 @@
   let searchQuery = $state("");
   let savingFlags = $state<Set<string>>(new Set());
 
-  // Get flags from service
-  const featureFlags = $derived(featureFlagService.featureConfigs);
+  // Get flags from service - explicitly track flagsVersion for reactivity
+  // when flags are changed from ModuleQuickToggle (Manage Modules modal)
+  const featureFlags = $derived.by(() => {
+    const _version = featureFlagState.flagsVersion;
+    return featureFlagService.featureConfigs;
+  });
 
   // Build hierarchy and filter
   const hierarchy = $derived(buildFeatureHierarchy(featureFlags));

@@ -18,7 +18,7 @@
 
   // Tabs that support the Sequence Actions Panel
   // Spell tab has its own self-contained UI and doesn't use shared panels
-  const SUPPORTED_TABS = new Set(["constructor", "assembler", "generator"]);
+  const SUPPORTED_TABS = new Set(["construct", "assemble", "generate"]);
 
   // Get context
   const ctx = getCreateModuleContext();

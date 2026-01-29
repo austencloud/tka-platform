@@ -40,9 +40,9 @@ export const MODULE_USAGE_CONFIG: Record<string, AnalyticsDisplayConfig> = {
   admin: { label: "Admin", color: "#ffd700" },
 
   // Create tabs
-  "create:constructor": { label: "Create → Construct", color: "#3b82f6" },
-  "create:assembler": { label: "Create → Assemble", color: "#8b5cf6" },
-  "create:generator": { label: "Create → Generate", color: "#f59e0b" },
+  "create:construct": { label: "Create → Construct", color: "#3b82f6" },
+  "create:assemble": { label: "Create → Assemble", color: "#8b5cf6" },
+  "create:generate": { label: "Create → Generate", color: "#f59e0b" },
 
   // Learn tabs
   "learn:concepts": { label: "Learn → Concepts", color: "#60a5fa" },
@@ -116,7 +116,7 @@ export function formatEventTypeLabel(eventType: string): string {
 
 /**
  * Format module:tab string to human-readable label
- * e.g., "create:generator" -> "Create → Generator"
+ * e.g., "create:generate" -> "Create → Generate"
  */
 export function formatModuleTabLabel(moduleTab: string): string {
   const parts = moduleTab.split(":");

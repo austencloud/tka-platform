@@ -13,12 +13,12 @@ import type { Section } from "../domain/types";
 // Note: Record removed (not implemented yet, users will use native camera apps)
 
 // Default tab for new users visiting /create without a specific tab.
-// Currently "constructor" because "assembler" is still in testing.
-export const DEFAULT_CREATE_TAB = "constructor";
+// Currently "construct" because "assemble" is still in testing.
+export const DEFAULT_CREATE_TAB = "construct";
 
 export const CREATE_TABS: Section[] = [
   {
-    id: "assembler",
+    id: "assemble",
     label: "Assemble",
     icon: '<i class="fas fa-puzzle-piece" aria-hidden="true"></i>',
     description: "Build sequences one hand at a time (6 simple choices)",
@@ -27,7 +27,7 @@ export const CREATE_TABS: Section[] = [
     metadata: { isCreationMethod: true },
   },
   {
-    id: "constructor",
+    id: "construct",
     label: "Construct",
     icon: '<i class="fas fa-hammer" aria-hidden="true"></i>',
     description: "Create sequences step by step (all options)",
@@ -36,7 +36,7 @@ export const CREATE_TABS: Section[] = [
     metadata: { isCreationMethod: true },
   },
   {
-    id: "generator",
+    id: "generate",
     label: "Generate",
     icon: '<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>',
     description: "Auto-create sequences",

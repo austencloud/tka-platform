@@ -43,7 +43,7 @@
     onDismiss,
   }: Props = $props();
 
-  const STORAGE_KEY = "helpButtonDiscoverySeen:generator";
+  const STORAGE_KEY = "helpButtonDiscoverySeen:generate";
   const DESKTOP_BREAKPOINT = 1024;
 
   let isVisible = $state(false);

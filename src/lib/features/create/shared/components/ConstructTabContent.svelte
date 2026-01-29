@@ -85,7 +85,7 @@
 </div>
 
 <!-- Tab intro - shows on first visit only (content fetched internally by TabIntro) -->
-<TabIntro moduleId="create" tabId="constructor" />
+<TabIntro moduleId="create" tabId="construct" />
 
 <style>
   .construct-tab-content {

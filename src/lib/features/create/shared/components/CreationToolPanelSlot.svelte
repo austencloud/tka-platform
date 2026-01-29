@@ -154,7 +154,7 @@
     <div class="creation-tool-content" data-active-tab={activeToolPanel}>
       {#key `${activeToolPanel}-${assemblyTabKey}`}
         <div class="sub-tab-content" data-tab={activeToolPanel}>
-          {#if activeToolPanel === "assembler"}
+          {#if activeToolPanel === "assemble"}
             <!-- Assembler Mode - Simplified tap-based hand path builder -->
             {@const assemblerTabState = createModuleState.assemblerTabState}
             {@const assemblerSeq =
@@ -296,7 +296,7 @@
                 createModuleState.setGuidedModeHeaderText(text);
               }}
             />
-          {:else if activeToolPanel === "constructor"}
+          {:else if activeToolPanel === "construct"}
             <!-- Constructor Mode - Manual builder (step by step) -->
             {#if isPickerStateLoading}
               <div class="picker-loading">
@@ -323,7 +323,7 @@
                   constructTabState.setContinuousOnly(value)}
               />
             {/if}
-          {:else if activeToolPanel === "generator"}
+          {:else if activeToolPanel === "generate"}
             <!-- Generator Mode - Automatic sequence generation -->
             <GeneratePanel
               sequenceState={createModuleState.getActiveTabSequenceState()}

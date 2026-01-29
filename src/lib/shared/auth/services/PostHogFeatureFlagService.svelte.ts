@@ -7,7 +7,7 @@
  * Migration notes:
  * - User roles are sent as PostHog person properties via identifyUser()
  * - Module flags use naming convention: `module-{moduleId}` (e.g., `module-create`)
- * - Tab flags use naming convention: `tab-{moduleId}-{tabId}` (e.g., `tab-create-assembler`)
+ * - Tab flags use naming convention: `tab-{moduleId}-{tabId}` (e.g., `tab-create-assemble`)
  * - Falls back to role-based defaults when PostHog flag doesn't exist
  *
  * PostHog flag structure:
@@ -48,7 +48,7 @@ import { auth } from "../firebase";
 /**
  * Convert FeatureId to PostHog flag key
  * - module:create -> module-create
- * - tab:create:assembler -> tab-create-assembler
+ * - tab:create:assemble -> tab-create-assemble
  * - capability:export:video -> capability-export-video
  */
 function featureIdToPostHogKey(featureId: FeatureId): string {
@@ -59,7 +59,7 @@ function featureIdToPostHogKey(featureId: FeatureId): string {
  * Convert PostHog flag key back to FeatureId
  * Returns undefined if the key doesn't match a valid FeatureId pattern
  * - module-create -> module:create
- * - tab-create-assembler -> tab:create:assembler
+ * - tab-create-assemble -> tab:create:assemble
  * - capability-export-video -> capability:export:video
  */
 function postHogKeyToFeatureId(key: string): FeatureId | undefined {

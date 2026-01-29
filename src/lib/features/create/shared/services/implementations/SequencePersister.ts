@@ -24,13 +24,13 @@ export class SequencePersister implements ISequencePersister {
    */
   private async getCurrentMode(): Promise<string> {
     try {
-      return navigationState.currentSection || "constructor";
+      return navigationState.currentSection || "construct";
     } catch (error) {
       console.warn(
-        "⚠️ Failed to get current mode, defaulting to constructor:",
+        "⚠️ Failed to get current mode, defaulting to construct:",
         error
       );
-      return "constructor";
+      return "construct";
     }
   }
 
@@ -104,9 +104,9 @@ export class SequencePersister implements ISequencePersister {
   private isActiveCreateModule(value: unknown): value is ActiveCreateModule {
     return (
       typeof value === "string" &&
-      (value === "constructor" ||
-        value === "generator" ||
-        value === "assembler")
+      (value === "construct" ||
+        value === "generate" ||
+        value === "assemble")
     );
   }
 

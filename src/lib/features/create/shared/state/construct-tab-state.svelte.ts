@@ -112,7 +112,7 @@ export function createConstructTabState(
   let isContinuousOnly = $state(loadPersistedContinuousFilter()); // Filter state for option viewer (persisted)
 
   // Construct tab has its own independent sequence state
-  // IMPORTANT: Pass tabId="constructor" to ensure persistence loads/saves only constructor's data
+  // IMPORTANT: Pass tabId="construct" to ensure persistence loads/saves only construct's data
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,
@@ -120,7 +120,7 @@ export function createConstructTabState(
         ...(sequenceStatisticsService && { sequenceStatisticsService }),
         ...(SequenceTransformer && { SequenceTransformer }),
         ...(sequenceValidationService && { sequenceValidationService }),
-        tabId: "constructor", // Persistence isolation - only load/save constructor's data
+        tabId: "construct", // Persistence isolation - only load/save construct's data
       })
     : null;
 
@@ -130,9 +130,9 @@ export function createConstructTabState(
         UndoManager: undoManager,
         sequenceState,
         getActiveSection: () =>
-          createModuleState?.activeSection || "constructor",
+          createModuleState?.activeSection || "construct",
         setActiveSectionInternal: async (_panel, _addToHistory) => {
-          // Construct tab doesn't need to change active section since it's always constructor
+          // Construct tab doesn't need to change active section since it's always construct
           // This is just for compatibility with the undo controller interface
         },
       })
@@ -328,10 +328,10 @@ export function createConstructTabState(
         await sequenceState.initializeWithPersistence();
 
         // Check if we have a persisted state that should affect UI
-        // IMPORTANT: Pass "constructor" to load only Constructor's persisted data
+        // IMPORTANT: Pass "construct" to load only Construct's persisted data
         // Without this, it loads based on navigationState.currentSection which could be another tab
         const savedState =
-          await SequencePersister.loadCurrentState("constructor");
+          await SequencePersister.loadCurrentState("construct");
         debug.log("init: savedState =", savedState);
         debug.log(
           "init: savedState?.hasStartPosition =",

@@ -15,8 +15,11 @@ export enum LOOPType {
   /** Strict rotated - rotates positions around the grid */
   STRICT_ROTATED = "strict_rotated",
 
-  /** Strict mirrored - mirrors positions vertically */
+  /** Strict mirrored - mirrors positions vertically (left ↔ right) */
   STRICT_MIRRORED = "strict_mirrored",
+
+  /** Strict flipped - mirrors positions horizontally (north ↔ south) */
+  STRICT_FLIPPED = "strict_flipped",
 
   /** Strict swapped - swaps blue and red attributes */
   STRICT_SWAPPED = "strict_swapped",
@@ -48,8 +51,8 @@ export enum LOOPType {
   /** Mirrored rotated inverted swapped - combines all four transformations */
   MIRRORED_ROTATED_INVERTED_SWAPPED = "mirrored_rotated_inverted_swapped",
 
-  /** Rewound - appends reversed sequence to double length */
-  REWOUND = "rewound",
+  /** Strict rewound - appends reversed sequence to double length */
+  STRICT_REWOUND = "strict_rewound",
 }
 
 /**
@@ -113,6 +116,7 @@ export interface LOOPValidationResult {
 export const LOOP_TYPE_LABELS: Record<LOOPType, string> = {
   [LOOPType.STRICT_ROTATED]: "Rotated",
   [LOOPType.STRICT_MIRRORED]: "Mirrored",
+  [LOOPType.STRICT_FLIPPED]: "Flipped",
   [LOOPType.STRICT_SWAPPED]: "Swapped",
   [LOOPType.STRICT_INVERTED]: "Inverted",
   [LOOPType.SWAPPED_INVERTED]: "Swapped / Inverted",
@@ -123,5 +127,5 @@ export const LOOP_TYPE_LABELS: Record<LOOPType, string> = {
   [LOOPType.MIRRORED_ROTATED]: "Mirrored / Rotated",
   [LOOPType.MIRRORED_INVERTED_ROTATED]: "Mir / Comp / Rot",
   [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: "All Four",
-  [LOOPType.REWOUND]: "Rewound",
+  [LOOPType.STRICT_REWOUND]: "Rewound",
 };

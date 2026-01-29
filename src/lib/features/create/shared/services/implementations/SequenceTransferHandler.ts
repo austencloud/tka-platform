@@ -25,7 +25,7 @@ export class SequenceTransferHandler implements ISequenceTransferHandler {
       return { action: "already-loaded" };
     }
 
-    // Different sequences - need confirmation if constructor has content
+    // Different sequences - need confirmation if construct has content
     if (targetHasSequence) {
       return { action: "confirm-needed", pendingSequence: sourceSequence };
     }
@@ -74,7 +74,7 @@ export class SequenceTransferHandler implements ISequenceTransferHandler {
 
     // CRITICAL: Save to persistence BEFORE switching tabs!
     // Otherwise restoreStateForTab will load the OLD persisted sequence and overwrite our new one
-    await constructTabState.sequenceState.saveCurrentState("constructor");
+    await constructTabState.sequenceState.saveCurrentState("construct");
   }
 }
 

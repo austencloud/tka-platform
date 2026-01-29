@@ -46,6 +46,10 @@ const LOOP_OPTION_CONFIG: Record<
     icon: "fa-reflect-horizontal",
     description: "Mirrors positions vertically",
   },
+  [LOOPType.STRICT_FLIPPED]: {
+    icon: "fa-arrows-up-down",
+    description: "Mirrors positions horizontally",
+  },
   [LOOPType.STRICT_SWAPPED]: {
     icon: "fa-shuffle",
     description: "Swaps blue and red props",
@@ -86,7 +90,7 @@ const LOOP_OPTION_CONFIG: Record<
     icon: "fa-circle-nodes",
     description: "All four transformations combined",
   },
-  [LOOPType.REWOUND]: {
+  [LOOPType.STRICT_REWOUND]: {
     icon: "fa-backward",
     description: "Appends reversed sequence to double length",
   },
@@ -106,7 +110,7 @@ const ALL_LOOP_TYPES = [
   LOOPType.MIRRORED_ROTATED,
   LOOPType.MIRRORED_INVERTED_ROTATED,
   LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
-  LOOPType.REWOUND,
+  LOOPType.STRICT_REWOUND,
 ];
 
 export class LOOPValidator implements ILOOPValidator {
@@ -203,7 +207,7 @@ export class LOOPValidator implements ILOOPValidator {
         return INVERTED_LOOP_VALIDATION_SET.has(positionPair);
 
       // Rewound LOOP - always valid (works on any sequence regardless of positions)
-      case LOOPType.REWOUND:
+      case LOOPType.STRICT_REWOUND:
         return true;
 
       default:

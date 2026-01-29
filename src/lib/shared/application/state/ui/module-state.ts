@@ -153,9 +153,9 @@ export async function revalidateCurrentModule(): Promise<void> {
         !featureFlagService.canAccessTab("create", currentSection)
       ) {
         console.warn(
-          `⚠️ [module-state] User does not have access to ${currentSection} tab. Redirecting to constructor.`
+          `⚠️ [module-state] User does not have access to ${currentSection} tab. Redirecting to construct.`
         );
-        navigationState.setActiveTab("constructor");
+        navigationState.setActiveTab("construct");
       }
     } catch (_error) {
       console.warn(`⚠️ [module-state] Failed to validate section:`, _error);
@@ -362,7 +362,7 @@ export async function initializeModulePersistence(): Promise<void> {
         );
         // Fix the URL if it had an invalid module
         if (rawEffectiveModule && window.history) {
-          const correctedPath = `/create/constructor`;
+          const correctedPath = `/create/construct`;
           window.history.replaceState(null, "", correctedPath);
         }
       }

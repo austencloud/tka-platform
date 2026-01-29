@@ -10,7 +10,7 @@
   - Content centers properly within the content area, not the full viewport
 
   Usage:
-  <TabIntro moduleId="create" tabId="generator" />
+  <TabIntro moduleId="create" tabId="generate" />
 -->
 <script lang="ts">
   import { onMount } from "svelte";

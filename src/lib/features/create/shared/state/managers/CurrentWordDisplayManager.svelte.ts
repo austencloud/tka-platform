@@ -101,8 +101,8 @@ export function createCurrentWordDisplayEffect(
           displayText = CreateModuleState.sequenceState.sequenceWord() ?? "";
         }
       }
-      // PRIORITY 2: Constructor tab - start position instructions
-      else if (navigationState.activeTab === "constructor") {
+      // PRIORITY 2: Construct tab - start position instructions
+      else if (navigationState.activeTab === "construct") {
         if (constructTabState.shouldShowStartPositionPicker()) {
           displayText = "Choose your start position!";
         } else {

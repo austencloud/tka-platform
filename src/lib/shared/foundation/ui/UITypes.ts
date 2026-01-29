@@ -14,13 +14,11 @@
  * Note: Record and Share have been removed
  */
 export type BuildModeId =
-  | "assembler" // Tap-based hand path builder (one hand at a time)
-  | "constructor" // Manual builder (one pictograph at a time)
-  | "construct" // Alias for constructor (legacy/UI compatibility)
+  | "assemble" // Tap-based hand path builder (one hand at a time)
+  | "construct" // Manual builder (one pictograph at a time)
   | "one-handed"
   | "guided" // Guided mode
-  | "generator" // Automatic sequence generation
-  | "generate" // Alias for generator (legacy/UI compatibility)
+  | "generate" // Automatic sequence generation
   | "spell"; // Word-to-sequence generator
 
 /**

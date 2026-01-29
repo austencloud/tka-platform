@@ -109,12 +109,12 @@ export function createNavigationState() {
   // ─────────────────────────────────────────────────────────────────────────────
 
   // Current mode state (legacy, synced with activeTab)
-  let currentCreateMode = $state<string>("constructor");
+  let currentCreateMode = $state<string>("construct");
   let currentLearnMode = $state<string>("concepts");
 
   // Module-based state - Create is the default landing module
   let currentModule = $state<ModuleId>("create");
-  let activeTab = $state<string>(DEFAULT_CREATE_TAB); // Default to constructor tab
+  let activeTab = $state<string>(DEFAULT_CREATE_TAB); // Default to construct tab
 
   // Track previous module for settings toggle behavior
   let previousModule = $state<ModuleId | null>(loadPreviousModuleFromSession());
@@ -373,7 +373,7 @@ export function createNavigationState() {
       activeTab = nextTab;
 
       // Log module navigation for analytics (non-blocking)
-      // Include the tab for more granular tracking (e.g., "create:generator")
+      // Include the tab for more granular tracking (e.g., "create:generate")
       if (previousModuleLocal !== moduleId) {
         try {
           const activityService = tryResolveService<IActivityLogger>("activityLogger");
@@ -438,61 +438,80 @@ export function createNavigationState() {
         moduleFound: !!moduleDefinition,
         tabExists,
         availableTabs: moduleDefinition?.sections.map((s) => s.id),
+        currentActiveTab: activeTab,
       });
-      // Show stack trace to find the culprit
-      console.trace("[NavState] setActiveTab stack trace");
     }
 
-    if (moduleDefinition && tabExists) {
-      const previousTab = activeTab;
-      activeTab = tabId;
-
-      // Log tab switch for analytics (non-blocking)
-      if (previousTab !== tabId) {
-        try {
-          const activityService = tryResolveService<IActivityLogger>("activityLogger");
-          if (activityService) {
-            const moduleWithTab = `${currentModule}:${tabId}`;
-            const previousModuleWithTab = `${currentModule}:${previousTab}`;
-            void activityService.logModuleView(
-              moduleWithTab,
-              previousModuleWithTab
-            );
-          }
-        } catch {
-          // Silently fail - activity logging is non-critical
-        }
-
-        // Update presence with new tab (non-blocking)
-        try {
-          const presenceService = tryResolveService<IPresenceTracker>("presenceTracker");
-          if (presenceService) {
-            void presenceService.updateLocation(currentModule, tabId);
-          }
-        } catch {
-          // Silently fail - presence is non-critical
-        }
+    if (!moduleDefinition || !tabExists) {
+      if (debug) {
+        console.log("[NavState] ❌ GUARD FAILED - not setting tab");
       }
+      return;
+    }
 
-      if (typeof localStorage !== "undefined") {
-        localStorage.setItem(ACTIVE_TAB_KEY, tabId);
-      }
+    const previousTab = activeTab;
 
-      // Sync with mode-specific state
-      const module = getCurrentModule();
-      if (module === "create") {
-        setCreateMode(tabId);
-      } else if (module === "learn") {
-        setLearnMode(tabId);
-      }
+    if (debug) {
+      console.log(`[NavState] 📝 BEFORE assignment: activeTab = "${activeTab}"`);
+    }
 
-      // In dev mode, verify the tab switch worked after MIME errors
-      // MIME errors corrupt Svelte's reactivity, causing state to change
-      // but the UI to not update. This detects that case and forces a reload.
-      if (import.meta.env.DEV && previousTab !== tabId && hasMimeErrorOccurred()) {
-        // Non-blocking verification - will reload if UI didn't update
-        void verifyTabSwitch(tabId, 200);
+    activeTab = tabId;
+
+    if (debug) {
+      console.log(`[NavState] 📝 AFTER assignment: activeTab = "${activeTab}"`);
+      if (activeTab !== tabId) {
+        console.error(`[NavState] 🔴 ASSIGNMENT FAILED! Expected "${tabId}" but got "${activeTab}"`);
       }
+    }
+
+    if (previousTab === tabId) {
+      // No change needed, but we still updated
+      return;
+    }
+
+    // Log tab switch for analytics (non-blocking)
+    try {
+      const activityService = tryResolveService<IActivityLogger>("activityLogger");
+      if (activityService) {
+        const moduleWithTab = `${currentModule}:${tabId}`;
+        const previousModuleWithTab = `${currentModule}:${previousTab}`;
+        void activityService.logModuleView(
+          moduleWithTab,
+          previousModuleWithTab
+        );
+      }
+    } catch {
+      // Silently fail - activity logging is non-critical
+    }
+
+    // Update presence with new tab (non-blocking)
+    try {
+      const presenceService = tryResolveService<IPresenceTracker>("presenceTracker");
+      if (presenceService) {
+        void presenceService.updateLocation(currentModule, tabId);
+      }
+    } catch {
+      // Silently fail - presence is non-critical
+    }
+
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(ACTIVE_TAB_KEY, tabId);
+    }
+
+    // Sync with mode-specific state
+    const module = getCurrentModule();
+    if (module === "create") {
+      setCreateMode(tabId);
+    } else if (module === "learn") {
+      setLearnMode(tabId);
+    }
+
+    // In dev mode, verify the tab switch worked after MIME errors
+    // MIME errors corrupt Svelte's reactivity, causing state to change
+    // but the UI to not update. This detects that case and forces a reload.
+    if (import.meta.env.DEV && hasMimeErrorOccurred()) {
+      // Non-blocking verification - will reload if UI didn't update
+      void verifyTabSwitch(tabId, 200);
     }
   }
 

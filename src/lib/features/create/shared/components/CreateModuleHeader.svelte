@@ -67,7 +67,7 @@
         tabindex={activeTab === "construct" ? 0 : -1}
         id="tab-construct"
         title={t("create_construct_mode")}
-        data-testid="tab-constructor"
+        data-testid="tab-construct"
       >
         {#if layout === "vertical"}
           🔨
@@ -89,7 +89,7 @@
         tabindex={activeTab === "generate" ? 0 : -1}
         id="tab-generate"
         title={t("create_generate_mode")}
-        data-testid="tab-generator"
+        data-testid="tab-generate"
       >
         {#if layout === "vertical"}
           ⚡

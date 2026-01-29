@@ -132,9 +132,10 @@ Container-aware responsive design:
 
   const loopQuickOptions: Array<{ type: LOOPType | null; label: string; icon?: string; color?: string }> = [
     { type: null, label: "Off" },
-    { type: LOOPType.REWOUND, label: "Rewound", icon: "backward", color: "#ff6b9d" },
+    { type: LOOPType.STRICT_REWOUND, label: "Rewound", icon: "backward", color: "#ff6b9d" },
     { type: LOOPType.STRICT_ROTATED, label: "Rotated", icon: "rotate", color: "#36c3ff" },
     { type: LOOPType.STRICT_MIRRORED, label: "Mirrored", icon: "left-right", color: "#6F2DA8" },
+    { type: LOOPType.STRICT_FLIPPED, label: "Flipped", icon: "arrows-up-down", color: "#00CED1" },
     { type: LOOPType.STRICT_SWAPPED, label: "Swapped", icon: "shuffle", color: "#26e600" },
     { type: LOOPType.STRICT_INVERTED, label: "Inverted", icon: "yin-yang", color: "#eb7d00" },
   ];
@@ -339,70 +340,73 @@ Container-aware responsive design:
       </div>
     </div>
 
-    <!-- Grid and Loop row -->
-    <div class="setting-section toggles-section">
-      <div class="toggle-group">
-        <span class="section-label">Grid</span>
-        <div class="section-options" role="radiogroup">
-          <button
-            class="section-option"
-            class:selected={gridMode === "diamond"}
-            onclick={() => { haptic.trigger("selection"); onGridModeChange("diamond" as GridMode); }}
-            role="radio"
-            aria-checked={gridMode === "diamond"}
-          >
-            ◇ Diamond
-          </button>
-          <button
-            class="section-option"
-            class:selected={gridMode === "box"}
-            onclick={() => { haptic.trigger("selection"); onGridModeChange("box" as GridMode); }}
-            role="radio"
-            aria-checked={gridMode === "box"}
-          >
-            ▢ Box
-          </button>
-        </div>
+    <!-- Grid section -->
+    <div class="setting-section">
+      <span class="section-label">Grid</span>
+      <div class="section-options" role="radiogroup">
+        <button
+          class="section-option"
+          class:selected={gridMode === "diamond"}
+          onclick={() => { haptic.trigger("selection"); onGridModeChange("diamond" as GridMode); }}
+          role="radio"
+          aria-checked={gridMode === "diamond"}
+        >
+          ◇ Diamond
+        </button>
+        <button
+          class="section-option"
+          class:selected={gridMode === "box"}
+          onclick={() => { haptic.trigger("selection"); onGridModeChange("box" as GridMode); }}
+          role="radio"
+          aria-checked={gridMode === "box"}
+        >
+          ▢ Box
+        </button>
       </div>
+    </div>
 
-      <div class="toggle-group loop-toggle-group">
-        <span class="section-label">Loop</span>
-        <div class="section-options loop-desktop-options" role="listbox">
-          {#each loopQuickOptions.slice(0, 4) as option}
-            {@const isSelected = preferences.makeCircular
-              ? preferences.selectedLOOPType === option.type
-              : option.type === null}
-            <button
-              class="section-option loop-desktop-option"
-              class:selected={isSelected}
-              onclick={() => {
-                haptic.trigger("selection");
-                if (option.type === null) {
-                  onPreferenceChange("makeCircular", false);
-                  onPreferenceChange("selectedLOOPType", null);
-                } else {
-                  onPreferenceChange("makeCircular", true);
-                  onPreferenceChange("selectedLOOPType", option.type);
-                }
-              }}
-              role="option"
-              aria-selected={isSelected}
-              style:--option-color={option.color ?? "var(--theme-accent)"}
-            >
-              {#if option.icon}
-                <i class="fas fa-{option.icon}" aria-hidden="true" style:color={option.color}></i>
-              {/if}
-              {option.label}
-            </button>
-          {/each}
+    <!-- Loop section - uses icon buttons with labels below -->
+    <div class="setting-section loop-section">
+      <span class="section-label">Loop</span>
+      <div class="loop-desktop-grid" role="listbox">
+        {#each loopQuickOptions as option}
+          {@const isSelected = preferences.makeCircular
+            ? preferences.selectedLOOPType === option.type
+            : option.type === null}
           <button
-            class="section-option loop-desktop-more"
-            onclick={openFullLoopOverlay}
+            class="loop-icon-btn"
+            class:selected={isSelected}
+            onclick={() => {
+              haptic.trigger("selection");
+              if (option.type === null) {
+                onPreferenceChange("makeCircular", false);
+                onPreferenceChange("selectedLOOPType", null);
+              } else {
+                onPreferenceChange("makeCircular", true);
+                onPreferenceChange("selectedLOOPType", option.type);
+              }
+            }}
+            role="option"
+            aria-selected={isSelected}
+            aria-label={option.label}
+            style:--option-color={option.color ?? "var(--theme-text-muted)"}
           >
-            <i class="fas fa-ellipsis" aria-hidden="true"></i>
-            More
+            {#if option.icon}
+              <i class="fas fa-{option.icon}" aria-hidden="true"></i>
+            {:else}
+              <i class="fas fa-ban" aria-hidden="true"></i>
+            {/if}
+            <span class="loop-icon-label">{option.label}</span>
           </button>
-        </div>
+        {/each}
+        <button
+          class="loop-icon-btn loop-more-btn"
+          onclick={openFullLoopOverlay}
+          aria-label="Customize loop combination"
+        >
+          <i class="fas fa-sliders" aria-hidden="true"></i>
+          <span class="loop-icon-label">Custom</span>
+        </button>
       </div>
     </div>
   </div>
@@ -680,44 +684,75 @@ Container-aware responsive design:
     color: var(--theme-text);
   }
 
-  .toggles-section {
-    display: flex;
-    flex-direction: row;
-    gap: calc(16px * var(--scale));
+  /* Loop section - icon grid layout */
+  .loop-section {
+    padding-bottom: calc(12px * var(--scale));
   }
 
-  .toggle-group {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+  .loop-desktop-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
     gap: calc(8px * var(--scale));
   }
 
-  .loop-toggle-group {
-    flex: 2;
-  }
-
-  .loop-desktop-options {
-    flex-wrap: wrap;
-  }
-
-  .loop-desktop-option {
+  .loop-icon-btn {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 4px;
+    min-height: calc(64px * var(--scale));
+    padding: calc(8px * var(--scale));
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.6));
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: calc(12px * var(--scale));
+    color: var(--theme-text-muted);
+    cursor: pointer;
+    transition: all 150ms ease;
   }
 
-  .loop-desktop-option.selected {
+  .loop-icon-btn i {
+    font-size: calc(18px * var(--scale));
+    color: var(--option-color);
+  }
+
+  .loop-icon-label {
+    font-size: calc(11px * var(--scale));
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .loop-icon-btn:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+    color: var(--theme-text);
+  }
+
+  .loop-icon-btn:active {
+    transform: scale(0.96);
+  }
+
+  .loop-icon-btn.selected {
     background: color-mix(in srgb, var(--option-color, var(--theme-accent)) 20%, var(--theme-card-bg));
     border-color: var(--option-color, var(--theme-accent));
+    color: var(--theme-text);
   }
 
-  .loop-desktop-more {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
+  .loop-more-btn {
+    border-style: dashed;
+  }
+
+  .loop-more-btn:hover {
+    border-style: solid;
+    border-color: var(--theme-accent);
+  }
+
+  .loop-more-btn i {
+    color: var(--theme-text-muted);
+  }
+
+  .loop-more-btn:hover i {
+    color: var(--theme-accent);
   }
 
   /* ============================================================ */
@@ -744,7 +779,7 @@ Container-aware responsive design:
   .overlay-container {
     width: 100%;
     max-width: 400px;
-    max-height: 90vh;
+    height: min(500px, 80vh);
     position: relative;
   }
 

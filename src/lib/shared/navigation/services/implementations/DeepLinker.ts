@@ -34,12 +34,12 @@ interface StoredDeepLinkData {
  * Module and tab mappings for deep links
  */
 const MODULE_MAPPINGS: Record<string, ModuleMapping> = {
-  construct: { moduleId: "create", tabId: "constructor" },
-  constructor: { moduleId: "create", tabId: "constructor" },
-  assemble: { moduleId: "create", tabId: "assembler" },
-  assembler: { moduleId: "create", tabId: "assembler" },
-  generate: { moduleId: "create", tabId: "generator" },
-  generator: { moduleId: "create", tabId: "generator" },
+  construct: { moduleId: "create", tabId: "construct" },
+  constructor: { moduleId: "create", tabId: "construct" }, // Legacy alias
+  assemble: { moduleId: "create", tabId: "assemble" },
+  assembler: { moduleId: "create", tabId: "assemble" }, // Legacy alias
+  generate: { moduleId: "create", tabId: "generate" },
+  generator: { moduleId: "create", tabId: "generate" }, // Legacy alias
   share: { moduleId: "share", navigateToModule: "create" },
   // Compose module - arrange is the main tab
   compose: { moduleId: "compose", tabId: "arrange" },

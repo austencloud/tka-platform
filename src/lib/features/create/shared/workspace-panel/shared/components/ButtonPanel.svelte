@@ -34,8 +34,8 @@
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
   const { CreateModuleState, panelState } = getCreateModuleContext();
 
-  // Show help button only on generator tab (mobile only - CSS handles desktop hide)
-  const showGeneratorHelp = $derived(navigationState.activeTab === "generator");
+  // Show help button only on generate tab (mobile only - CSS handles desktop hide)
+  const showGeneratorHelp = $derived(navigationState.activeTab === "generate");
 
   // Hide help button when beat editor or share hub is open (not relevant in those contexts)
   const shouldHideHelpButton = $derived(

@@ -31,7 +31,7 @@ export interface TabIntroContent {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const CREATE_TAB_INTROS: Record<string, TabIntroContent> = {
-  constructor: {
+  construct: {
     icon: "fa-cubes",
     color: "#3b82f6",
     title: "Constructor",
@@ -50,7 +50,7 @@ export const CREATE_TAB_INTROS: Record<string, TabIntroContent> = {
     ],
   },
 
-  generator: {
+  generate: {
     icon: "fa-wand-magic-sparkles",
     color: "#8b5cf6",
     title: "Generator",
@@ -69,7 +69,7 @@ export const CREATE_TAB_INTROS: Record<string, TabIntroContent> = {
     ],
   },
 
-  assembler: {
+  assemble: {
     icon: "fa-route",
     color: "#06b6d4",
     title: "Assembler",

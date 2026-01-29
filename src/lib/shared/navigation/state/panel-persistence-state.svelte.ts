@@ -4,7 +4,7 @@
  * Remembers which panel was last open for each module:tab combination.
  * Extracted from navigation-state to maintain single responsibility.
  *
- * Key format: "moduleId:tabId" (e.g., "create:constructor", "create:assembler")
+ * Key format: "moduleId:tabId" (e.g., "create:construct", "create:assembler")
  * Value: panel ID (e.g., "animation", "edit", "share") or null
  */
 
@@ -12,7 +12,7 @@ import { TAB_LAST_PANELS_KEY } from "../config/storage-keys";
 
 export function createPanelPersistenceState() {
   // Panel persistence per tab
-  // Key format: "moduleId:tabId" (e.g., "create:constructor", "create:assembler")
+  // Key format: "moduleId:tabId" (e.g., "create:construct", "create:assembler")
   let lastPanelByTab = $state<Record<string, string | null>>({});
 
   // ─────────────────────────────────────────────────────────────────────────

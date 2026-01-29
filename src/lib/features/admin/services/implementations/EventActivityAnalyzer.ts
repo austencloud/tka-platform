@@ -224,7 +224,7 @@ export class EventActivityAnalyzer implements IEventActivityAnalyzer {
 
   /**
    * Get module usage statistics for the time range
-   * Supports module:tab format (e.g., "create:generator")
+   * Supports module:tab format (e.g., "create:generate")
    */
   async getModuleUsage(
     timeRange: AnalyticsTimeRange

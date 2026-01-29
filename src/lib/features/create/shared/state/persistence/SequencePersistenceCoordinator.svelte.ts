@@ -45,8 +45,8 @@ export function createSequencePersistenceCoordinator(
   });
 
   // 🚀 PERFORMANCE: Cache the active tab to avoid unnecessary load operations
-  // If tabId is provided, use it as the fixed tab; otherwise start with "constructor"
-  let cachedActiveTab: ActiveCreateModule = tabId ?? "constructor";
+  // If tabId is provided, use it as the fixed tab; otherwise start with "construct"
+  let cachedActiveTab: ActiveCreateModule = tabId ?? "construct";
 
   return {
     // Getters

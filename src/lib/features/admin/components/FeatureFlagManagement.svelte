@@ -11,7 +11,7 @@
    * - Impact summary before saving changes
    */
 
-  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
+  import { featureFlagService, featureFlagState } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import FeatureFlagHeader from "./feature-flags/FeatureFlagHeader.svelte";
   import PermissionMatrix from "./feature-flags/global-settings/PermissionMatrix.svelte";
   import UserOverrides from "./feature-flags/user-overrides/UserOverrides.svelte";
@@ -20,8 +20,11 @@
   let viewMode = $state<"global" | "users">("global");
   let errorMessage = $state<string | null>(null);
 
-  // Compute stats from feature configs
-  const stats = $derived(computeStats(featureFlagService.featureConfigs));
+  // Compute stats from feature configs - track flagsVersion for cross-component reactivity
+  const stats = $derived.by(() => {
+    const _version = featureFlagState.flagsVersion;
+    return computeStats(featureFlagService.featureConfigs);
+  });
 
   function handleViewModeChange(mode: "global" | "users") {
     viewMode = mode;

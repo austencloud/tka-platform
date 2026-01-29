@@ -29,7 +29,7 @@ export interface ISequencePersister {
 
   /**
    * Load the current sequence state after hot module replacement
-   * @param mode - Optional mode to load state for (constructor, generator, assembler)
+   * @param mode - Optional mode to load state for (construct, generator, assembler)
    * If not provided, loads state for the current active mode
    * @returns Saved sequence state or null if none exists
    */
@@ -42,14 +42,14 @@ export interface ISequencePersister {
 
   /**
    * Clear the current sequence state (for clear sequence functionality)
-   * @param mode - Optional mode to clear state for (constructor, generator, assembler)
+   * @param mode - Optional mode to clear state for (construct, generator, assembler)
    * If not provided, clears all modes
    */
   clearCurrentState(mode?: string): Promise<void>;
 
   /**
    * Check if there is a saved sequence state
-   * @param mode - Optional mode to check for (constructor, generator, assembler)
+   * @param mode - Optional mode to check for (construct, generator, assembler)
    * If not provided, checks the current active mode
    * @returns True if there is a saved state that can be restored
    */
@@ -57,7 +57,7 @@ export interface ISequencePersister {
 
   /**
    * Get the timestamp of the last saved state
-   * @param mode - Optional mode to get timestamp for (constructor, generator, assembler)
+   * @param mode - Optional mode to get timestamp for (construct, generator, assembler)
    * If not provided, gets timestamp for the current active mode
    * @returns Timestamp of last save or null if no state exists
    */

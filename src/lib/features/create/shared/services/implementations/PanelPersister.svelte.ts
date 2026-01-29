@@ -18,13 +18,13 @@ import type { PanelCoordinationState } from "../../state/panel-coordination-stat
  * - Filter is primarily for generator
  */
 const PANEL_TAB_SUPPORT: Record<PanelId, Set<string>> = {
-  animation: new Set(["constructor", "assembler", "generator", "spell"]),
-  videoRecord: new Set(["constructor", "assembler", "generator", "spell"]),
-  filter: new Set(["constructor", "generator"]),
-  sequenceActions: new Set(["constructor", "assembler", "generator"]),
-  cap: new Set(["constructor", "assembler", "generator"]),
-  customize: new Set(["constructor", "generator"]),
-  stepEditor: new Set(["constructor", "assembler", "generator"]),
+  animation: new Set(["construct", "assemble", "generate", "spell"]),
+  videoRecord: new Set(["construct", "assemble", "generate", "spell"]),
+  filter: new Set(["construct", "generate"]),
+  sequenceActions: new Set(["construct", "assemble", "generate"]),
+  cap: new Set(["construct", "assemble", "generate"]),
+  customize: new Set(["construct", "generate"]),
+  stepEditor: new Set(["construct", "assemble", "generate"]),
 };
 
 /**

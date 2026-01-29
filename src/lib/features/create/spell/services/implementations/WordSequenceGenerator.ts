@@ -178,11 +178,11 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
       // Default to REWOUND if no specific type is selected (REWOUND is always available)
       if (options.preferences.makeCircular && loopAnalysis.canExtend) {
         // Use selected LOOP type, or default to REWOUND
-        const loopTypeToApply = options.preferences.selectedLOOPType || LOOPType.REWOUND;
+        const loopTypeToApply = options.preferences.selectedLOOPType || LOOPType.STRICT_REWOUND;
 
         // Check if the LOOP type is available
         const isLOOPAvailable =
-          loopTypeToApply === LOOPType.REWOUND || // REWOUND is always available
+          loopTypeToApply === LOOPType.STRICT_REWOUND || // REWOUND is always available
           loopAnalysis.availableLOOPOptions.some((opt) => opt.loopType === loopTypeToApply);
 
         if (isLOOPAvailable) {
@@ -676,7 +676,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
       // Filter out REWOUND since it's always available and shown separately
       const analysis = this.sequenceExtender.analyzeSequence(tempSequence);
       const positionDependentLOOPs = analysis.availableLOOPOptions.filter(
-        (opt) => opt.loopType !== LOOPType.REWOUND
+        (opt) => opt.loopType !== LOOPType.STRICT_REWOUND
       );
 
       if (positionDependentLOOPs.length > 0) {

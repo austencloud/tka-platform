@@ -430,7 +430,7 @@ export class DexiePersistenceService implements IPersistenceService {
     activeBuildSection?: string;
   }): Promise<void> {
     try {
-      const mode = state.activeBuildSection ?? "constructor";
+      const mode = state.activeBuildSection ?? "construct";
       const storageKey = this.getSequenceStateKey(mode);
 
       // Use localStorage for immediate persistence that survives hot module replacement
@@ -457,7 +457,7 @@ export class DexiePersistenceService implements IPersistenceService {
     activeBuildSection?: string;
   } | null> {
     try {
-      const targetMode = mode ?? "constructor";
+      const targetMode = mode ?? "construct";
       const storageKey = this.getSequenceStateKey(targetMode);
       const stateJson = localStorage.getItem(storageKey);
 
@@ -530,7 +530,7 @@ export class DexiePersistenceService implements IPersistenceService {
         localStorage.removeItem(storageKey);
       } else {
         // Clear all modes
-        const modes = ["constructor", "generator", "assembler"];
+        const modes = ["construct", "generate", "assemble"];
         modes.forEach((m) => {
           const storageKey = this.getSequenceStateKey(m);
           localStorage.removeItem(storageKey);

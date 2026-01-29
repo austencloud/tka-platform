@@ -93,7 +93,7 @@
   });
 
   // Generator tab always shows workspace (for help button accessibility)
-  const isGeneratorTab = $derived(navigationState.activeTab === "generator");
+  const isGeneratorTab = $derived(navigationState.activeTab === "generate");
 
   // Workspace should be visible if:
   // - NOT in input mode (keyboard up on mobile)
@@ -107,11 +107,11 @@
 
     // Map each creation mode to its color (20% opacity for subtle border)
     switch (activeTab) {
-      case "assembler":
+      case "assemble":
         return "rgba(139, 92, 246, 0.2)"; // Purple
-      case "constructor":
+      case "construct":
         return "rgba(59, 130, 246, 0.2)"; // Blue
-      case "generator":
+      case "generate":
         return "rgba(245, 158, 11, 0.2)"; // Gold
       default:
         return "rgba(255, 255, 255, 0.1)"; // Default

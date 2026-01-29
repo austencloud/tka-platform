@@ -520,11 +520,11 @@
         currentSequence: sequence,
         selectedStartPosition: sequence.steps[0] || null,
         hasStartPosition: sequence.steps.length > 0,
-        activeBuildSection: "constructor",
+        activeBuildSection: "construct",
       });
 
-      // Switch to Constructor tab
-      navigationState.setActiveTab("constructor");
+      // Switch to Construct tab
+      navigationState.setActiveTab("construct");
     } catch (error) {
       console.error("❌ Failed to transfer sequence to Constructor:", error);
     }

@@ -64,7 +64,7 @@ import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
   const sequence = $derived.by(() => activeSequenceState.currentSequence);
   const hasSequence = $derived.by(() => activeSequenceState.hasSequence());
   const isInConstructTab = $derived(
-    navigationState.currentCreateMode === "constructor"
+    navigationState.currentCreateMode === "construct"
   );
   const isSideBySideLayout = $derived(layout.shouldUseSideBySideLayout);
 
@@ -441,9 +441,9 @@ import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
 
     switch (result.action) {
       case "already-loaded":
-        toast.info("Sequence already loaded in Constructor");
+        toast.info("Sequence already loaded in Construct");
         handleClose();
-        navigationState.setActiveTab("constructor");
+        navigationState.setActiveTab("construct");
         break;
       case "confirm-needed":
         pendingSequenceTransfer = result.pendingSequence;
@@ -474,7 +474,7 @@ import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
 
     // Close panel and switch tab AFTER state is saved
     handleClose();
-    navigationState.setActiveTab("constructor");
+    navigationState.setActiveTab("construct");
   }
 
   function handleClose() {

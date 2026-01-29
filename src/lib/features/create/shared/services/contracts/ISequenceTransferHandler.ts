@@ -31,7 +31,7 @@ export interface ISequenceTransferHandler {
   ): TransferCheckResult;
 
   /**
-   * Perform the actual transfer to constructor tab.
+   * Perform the actual transfer to construct tab.
    * Call this after confirmation (or immediately if checkTransfer returned 'transfer').
    */
   executeTransfer(

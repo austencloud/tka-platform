@@ -55,7 +55,7 @@ export interface SequenceStateServices {
   ReversalDetector?: IReversalDetector;
   /**
    * IMPORTANT: Tab ID for persistence isolation.
-   * Each tab (constructor, assembler, generator) should have its own persisted data.
+   * Each tab (construct, assembler, generator) should have its own persisted data.
    * If not provided, persistence will use navigationState.currentSection which can cause
    * cross-tab data pollution.
    */

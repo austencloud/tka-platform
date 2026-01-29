@@ -22,9 +22,9 @@ export const MODULE_ICONS = {
 
 /** Icon IDs for create tabs */
 export const CREATE_TAB_ICONS = {
-  assembler: "fa-puzzle-piece",
-  constructor: "fa-hammer",
-  generator: "fa-wand-magic-sparkles",
+  assemble: "fa-puzzle-piece",
+  construct: "fa-hammer",
+  generate: "fa-wand-magic-sparkles",
 } as const;
 
 /** Icon IDs for learn tabs */

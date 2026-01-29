@@ -241,7 +241,7 @@ export class BridgeFinder implements IBridgeFinder {
 
       if (excludeRewound) {
         availableLOOPs = availableLOOPs.filter(
-          (opt) => opt.loopType !== LOOPType.REWOUND
+          (opt) => opt.loopType !== LOOPType.STRICT_REWOUND
         );
       }
 

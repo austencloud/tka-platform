@@ -11,7 +11,7 @@
    * - Impact summary before save
    */
 
-  import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
+  import { featureFlagService, featureFlagState } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import type { FeatureId, UserFeatureOverrides } from "$lib/shared/auth/domain/models/FeatureFlag";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import AdminTwoPanelLayout from "$lib/shared/admin/components/AdminTwoPanelLayout.svelte";
@@ -46,8 +46,11 @@
   let showImpactModal = $state(false);
   let pendingImpact = $state<{ gained: string[]; lost: string[]; unchanged: string[] } | null>(null);
 
-  // Feature flags
-  const featureFlags = $derived(featureFlagService.featureConfigs);
+  // Feature flags - track flagsVersion for cross-component reactivity
+  const featureFlags = $derived.by(() => {
+    const _version = featureFlagState.flagsVersion;
+    return featureFlagService.featureConfigs;
+  });
 
   function selectUser(user: UserWithOverrides) {
     // Convert UserProfile to UserData format for the editor

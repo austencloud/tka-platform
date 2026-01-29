@@ -544,7 +544,7 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
 
     try {
       // Use specified LOOP type, or default to REWOUND
-      const loopType = constraints.loopType ?? LOOPType.REWOUND;
+      const loopType = constraints.loopType ?? LOOPType.STRICT_REWOUND;
       const originalStepCount = sequence.steps?.length ?? 0;
 
       // Get existing letterSources - prefer passed-in sources, fall back to metadata

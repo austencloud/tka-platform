@@ -6,7 +6,7 @@
  * mode transition requires saving or loading workspace data.
  *
  * IMPORTANT: Uses getSequenceStateForTab to get tab-specific sequence states.
- * Each tab (constructor, generator, assembler) has its own independent sequence state.
+ * Each tab (construct, generator, assembler) has its own independent sequence state.
  */
 
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
@@ -53,7 +53,7 @@ export function createCreateModulePersistenceController({
   }
 
   async function initialize(): Promise<BuildModeId> {
-    let modeToLoad: BuildModeId = "constructor";
+    let modeToLoad: BuildModeId = "construct";
 
     try {
       if (SequencePersister) {

@@ -64,6 +64,7 @@ Always opens selector panel when clicked
       const typeMap: Record<LOOPType, string> = {
         [LOOPType.STRICT_ROTATED]: t("generator_loop_rotated"),
         [LOOPType.STRICT_MIRRORED]: t("generator_loop_mirrored"),
+        [LOOPType.STRICT_FLIPPED]: t("generator_loop_flipped"),
         [LOOPType.STRICT_SWAPPED]: t("generator_loop_swapped"),
         [LOOPType.STRICT_INVERTED]: t("generator_loop_inverted"),
         [LOOPType.SWAPPED_INVERTED]: t("generator_loop_swapped_inverted"),
@@ -74,7 +75,7 @@ Always opens selector panel when clicked
         [LOOPType.MIRRORED_ROTATED]: t("generator_loop_mirrored_rotated"),
         [LOOPType.MIRRORED_INVERTED_ROTATED]: t("generator_loop_mir_comp_rot"),
         [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: t("generator_loop_all_four"),
-        [LOOPType.REWOUND]: t("generator_loop_rewound"),
+        [LOOPType.STRICT_REWOUND]: t("generator_loop_rewound"),
       };
       return typeMap[currentLOOPType as keyof typeof typeMap] || currentLOOPType;
     })()

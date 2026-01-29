@@ -32,9 +32,9 @@ type NavigationControllerDeps = {
 };
 
 const CREATION_MODES: BuildModeId[] = [
-  "assembler",
-  "constructor",
-  "generator",
+  "assemble",
+  "construct",
+  "generate",
   "spell",
 ] as const;
 
@@ -46,8 +46,8 @@ export function createNavigationController({
   persistenceController,
   getConstructTabState,
 }: NavigationControllerDeps) {
-  let activeSection = $state<BuildModeId>("constructor");
-  let lastContentTab = $state<"generator" | "constructor">("constructor");
+  let activeSection = $state<BuildModeId>("construct");
+  let lastContentTab = $state<"generate" | "construct">("construct");
   const navigationHistory = $state<NavigationHistoryEntry[]>([]);
   let isNavigatingBack = $state(false);
   let isUpdatingFromToggle = $state(false);
@@ -82,7 +82,7 @@ export function createNavigationController({
     }
 
     if (
-      (activeSection === "generator" || activeSection === "constructor") &&
+      (activeSection === "generate" || activeSection === "construct") &&
       activeSection !== panel
     ) {
       lastContentTab = activeSection;

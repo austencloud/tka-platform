@@ -44,7 +44,7 @@
   }>();
 
   // Check if we're in the assembler tab
-  const isAssemblerTab = $derived(navigationState.activeTab === "assembler");
+  const isAssemblerTab = $derived(navigationState.activeTab === "assemble");
 
   const logger = createComponentLogger("SequenceDisplay");
 

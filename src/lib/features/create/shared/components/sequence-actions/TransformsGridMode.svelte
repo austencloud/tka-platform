@@ -355,11 +355,11 @@
       </button>
       {#if showEditInConstructor}
         <button
-          class="grid-btn constructor"
+          class="grid-btn construct"
           onclick={onEditInConstructor}
           disabled={!hasSequence}
-          data-testid="edit-in-constructor"
-          aria-label="Open sequence in constructor for full editing"
+          data-testid="edit-in-construct"
+          aria-label="Open sequence in construct for full editing"
         >
           <div class="btn-icon">
             <i class="fas fa-pen-to-square" aria-hidden="true"></i>
@@ -562,7 +562,7 @@
   .grid-btn.edit-turns {
     --btn-color: 59, 130, 246;
   } /* Blue */
-  .grid-btn.constructor {
+  .grid-btn.construct {
     --btn-color: 124, 58, 237;
   } /* Violet */
 

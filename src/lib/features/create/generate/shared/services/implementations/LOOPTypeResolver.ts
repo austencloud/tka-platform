@@ -98,10 +98,14 @@ export class LOOPTypeResolver implements ILOOPTypeResolver {
           return LOOPType.STRICT_ROTATED;
         case LOOPComponent.MIRRORED:
           return LOOPType.STRICT_MIRRORED;
+        case LOOPComponent.FLIPPED:
+          return LOOPType.STRICT_FLIPPED;
         case LOOPComponent.SWAPPED:
           return LOOPType.STRICT_SWAPPED;
         case LOOPComponent.INVERTED:
           return LOOPType.STRICT_INVERTED;
+        case LOOPComponent.REWOUND:
+          return LOOPType.STRICT_REWOUND;
       }
     }
 

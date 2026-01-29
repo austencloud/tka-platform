@@ -49,6 +49,17 @@
     return contextualPhrases.some((phrase) => word.includes(phrase));
   });
 
+  // Computed: Length category for CSS-based font scaling
+  // Groups: short (1-4), medium (5-7), long (8-10), extra-long (11-12)
+  const lengthCategory = $derived.by(() => {
+    if (!word || isContextualMessage) return "contextual";
+    const len = word.length;
+    if (len <= 4) return "short";
+    if (len <= 7) return "medium";
+    if (len <= 10) return "long";
+    return "extra-long";
+  });
+
   // Derived simplified word (only truncate actual words, not contextual messages)
   const displayWord = $derived(
     isContextualMessage ? word : simplifyAndTruncate(word, 12)
@@ -132,6 +143,10 @@
       class:has-word={!!word && !isContextualMessage}
       class:contextual-message={isContextualMessage}
       class:has-letter-sources={hasLetterSources}
+      class:length-short={lengthCategory === "short"}
+      class:length-medium={lengthCategory === "medium"}
+      class:length-long={lengthCategory === "long"}
+      class:length-extra-long={lengthCategory === "extra-long"}
       onclick={copyToClipboard}
       title={isContextualMessage ? word : "Click to copy '{word}' to clipboard"}
       aria-label={isContextualMessage
@@ -229,8 +244,29 @@
   }
 
   .word-label.has-word {
-    /* Scale based on container width - shrinks only for very long words */
+    /* Default: Scale based on container width */
     font-size: clamp(1.25rem, 6cqi, 2rem);
+  }
+
+  /* Length-based font scaling to prevent overflow into buttons */
+  .word-label.length-short {
+    /* 1-4 letters: full size */
+    font-size: clamp(1.25rem, 6cqi, 2rem);
+  }
+
+  .word-label.length-medium {
+    /* 5-7 letters: slightly smaller */
+    font-size: clamp(1.1rem, 5cqi, 1.75rem);
+  }
+
+  .word-label.length-long {
+    /* 8-10 letters: smaller */
+    font-size: clamp(1rem, 4cqi, 1.5rem);
+  }
+
+  .word-label.length-extra-long {
+    /* 11-12 letters: smallest */
+    font-size: clamp(0.875rem, 3.5cqi, 1.25rem);
   }
 
   /* Contextual messages (hand path status, etc.) - Container-aware sizing */
@@ -308,6 +344,19 @@
       padding: 0.2rem 0.5rem;
     }
 
+    /* Mobile length-based scaling */
+    .word-label.length-medium {
+      font-size: clamp(1rem, 4.5cqi, 1.5rem);
+    }
+
+    .word-label.length-long {
+      font-size: clamp(0.875rem, 3.5cqi, 1.25rem);
+    }
+
+    .word-label.length-extra-long {
+      font-size: clamp(0.75rem, 3cqi, 1.1rem);
+    }
+
     .copied-message {
       font-size: 0.8rem;
       padding: 0.4rem 0.8rem;
@@ -318,6 +367,18 @@
   @media (max-width: 480px) {
     .word-label {
       font-size: clamp(1rem, 6vw, 1.75rem);
+    }
+
+    .word-label.length-medium {
+      font-size: clamp(0.9rem, 5vw, 1.4rem);
+    }
+
+    .word-label.length-long {
+      font-size: clamp(0.8rem, 4.5vw, 1.2rem);
+    }
+
+    .word-label.length-extra-long {
+      font-size: clamp(0.7rem, 4vw, 1rem);
     }
   }
 

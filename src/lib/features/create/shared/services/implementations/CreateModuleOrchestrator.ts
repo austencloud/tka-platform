@@ -15,7 +15,7 @@ import type { ICreateModuleOrchestrator } from "../contracts/ICreateModuleOrches
 import { constructTabEventService } from "./CreateModuleEventHandler";
 
 export class CreateModuleOrchestrator implements ICreateModuleOrchestrator {
-  private currentTab: string = "constructor"; // Default tab
+  private currentTab: string = "construct"; // Default tab
   private tabStates: Map<string, unknown> = new Map();
 
   constructor() {} // Start position selection now handled by unified service // private readonly StartPositionManager: IStartPositionManager // @inject(TYPES.IStartPositionManager)

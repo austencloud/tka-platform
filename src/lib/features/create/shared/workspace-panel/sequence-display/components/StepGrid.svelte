@@ -180,7 +180,7 @@
       if (beatCountDiff === 1) {
         if (previousStepCount === 0) {
           displayState.handleSingleBeatAddition(currentStepCount - 1);
-        } else if (activeMode === "assembler") {
+        } else if (activeMode === "assemble") {
           displayState.handleSingleBeatAddition(currentStepCount - 1);
         } else {
           const lastPreviousBeat = previousStepsRef[previousStepCount - 1];

@@ -300,9 +300,9 @@ export async function handleModuleChange(
 // Note: Compose module playback is an overlay, not a tab
 const TAB_ORDERS: Record<string, string[]> = {
   create: [
-    "assembler",
-    "constructor",
-    "generator",
+    "assemble",
+    "construct",
+    "generate",
     "spell",
     "editor",
     "export",
@@ -355,7 +355,7 @@ export function handleSectionChange(
     navDebug("BLOCKED: Feature flag denied access");
     // Redirect to a default accessible section
     if (module === "create") {
-      navigationState.setActiveTab("constructor");
+      navigationState.setActiveTab("construct");
     }
     return;
   }
@@ -503,7 +503,7 @@ function parsePathNavigation(): {
 } | null {
   if (typeof window === "undefined") return null;
 
-  // First try pathname (format: /create/constructor)
+  // First try pathname (format: /create/construct)
   let pathname = window.location.pathname;
   const searchParams = new URLSearchParams(window.location.search);
 
@@ -552,7 +552,7 @@ function parsePathNavigation(): {
     }
   }
 
-  // Fallback: check for legacy hash format (#create/constructor)
+  // Fallback: check for legacy hash format (#create/construct)
   // This provides backwards compatibility for existing bookmarks
   const hash = window.location.hash;
   if (hash && hash !== "#") {

@@ -10,7 +10,7 @@
  * Rather than hardcoding tab IDs in business logic, mark tabs with semantic metadata
  */
 export interface SectionMetadata {
-  /** Tab is a creation entry point (assembler, constructor, generator, spell) */
+  /** Tab is a creation entry point (assemble, construct, generate, spell) */
   isCreationMethod?: boolean;
 }
 

@@ -49,7 +49,7 @@ export function createGeneratorTabState(
   let isInitialized = $state(false);
 
   // Generator tab has its own independent sequence state
-  // IMPORTANT: Pass tabId="generator" to ensure persistence loads/saves only generator's data
+  // IMPORTANT: Pass tabId="generate" to ensure persistence loads/saves only generator's data
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,
@@ -57,7 +57,7 @@ export function createGeneratorTabState(
         ...(sequenceStatisticsService && { sequenceStatisticsService }),
         ...(SequenceTransformer && { SequenceTransformer }),
         ...(sequenceValidationService && { sequenceValidationService }),
-        tabId: "generator", // Persistence isolation - only load/save generator's data
+        tabId: "generate", // Persistence isolation - only load/save generator's data
       })
     : null;
 
@@ -66,9 +66,9 @@ export function createGeneratorTabState(
     ? createUndoController({
         UndoManager: undoManager,
         sequenceState,
-        getActiveSection: () => "generator",
+        getActiveSection: () => "generate",
         setActiveSectionInternal: async (_panel, _addToHistory) => {
-          // Generator tab doesn't need to change active section since it's always generator
+          // Generator tab doesn't need to change active section since it's always generate
           // This is just for compatibility with the undo controller interface
         },
       })
