@@ -50,12 +50,12 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
   import { getAnimationVisibilityManager, type TrailVisibility } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { goto } from "$app/navigation";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  // Button components
-  import SyncToggleButton from "$lib/shared/ui/components/SyncToggleButton.svelte";
-  import MultiPerformerButton from "$lib/shared/ui/components/MultiPerformerButton.svelte";
-  import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
-  import ExpandButton from "$lib/shared/ui/components/ExpandButton.svelte";
   import MorphingFooter from "./MorphingFooter.svelte";
+  // Extracted child components
+  import ViewerHeader from "./ViewerHeader.svelte";
+  import ViewerSplitPane from "./ViewerSplitPane.svelte";
+  import ExportModeContent from "./ExportModeContent.svelte";
+  import ExportFooter from "./ExportFooter.svelte";
   // Animation and playback
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
@@ -765,14 +765,6 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
   const exportProgress = $derived(sequenceModalExporter.state.progress);
   const exportError = $derived(sequenceModalExporter.state.error);
 
-  // Human-readable stage names for export progress
-  const EXPORT_STAGE_LABELS: Record<string, string> = {
-    capturing: "Capturing frames",
-    encoding: "Encoding video",
-    complete: "Complete",
-    error: "Error",
-  };
-
   function handleCanvasReady(canvas: HTMLCanvasElement | null) {
     animationCanvas = canvas;
   }
@@ -1200,94 +1192,23 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
   class="sequence-details-modal"
 >
   {#snippet header()}
-    {#if isExportMode}
-      <!-- Export mode header -->
-      <header class="details-header export-header" data-hidden={isFullscreen}>
-        <div class="header-left">
-          <button
-            type="button"
-            class="close-button"
-            onclick={exportType ? backToExportTypeSelection : exitExportMode}
-            aria-label={exportType ? "Back to export options" : "Back to viewer"}
-          >
-            <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          </button>
-        </div>
-
-        <div class="header-center">
-          <h2 class="mode-title">
-            {#if !exportType}
-              Export
-            {:else if exportType === "animation"}
-              Export Video
-            {:else}
-              Export Image
-            {/if}
-          </h2>
-        </div>
-
-        <div class="header-right">
-          <!-- Spacer to balance layout -->
-        </div>
-      </header>
-    {:else}
-      <!-- Normal viewer header -->
-      <header
-        class="details-header"
-        class:mobile={isMobile}
-        data-hidden={isFullscreen}
-      >
-        <!-- Mobile: Swipe handle indicator for swipe-to-dismiss -->
-        {#if isMobile}
-          <div class="swipe-handle" aria-hidden="true"></div>
-        {/if}
-
-        <div class="header-left">
-          {#if !isMobile}
-            <!-- Desktop: Full set of controls -->
-            <SyncToggleButton
-              isSearching={lanSyncState.isActive && !lanSyncState.isConnected}
-              isConnected={lanSyncState.isConnected}
-              isToggling={isSyncToggling}
-              onToggle={handleSyncToggle}
-              disabled={isSyncToggling}
-              size="small"
-            />
-            <MultiPerformerButton
-              onclick={() => handleOpenInCompose('stagger')}
-              size="small"
-            />
-            <!-- Desktop: Quick light/dark toggle + fullscreen -->
-            <LightsToggleButton
-              lightsOn={!imgDarkMode}
-              onToggle={() => toggleImgSetting("darkMode")}
-              size="small"
-            />
-            <ExpandButton
-              isExpanded={isFullscreen}
-              onclick={enterFullscreen}
-              size="small"
-            />
-          {/if}
-          <!-- Mobile: No header buttons - settings moved to morphing footer -->
-        </div>
-
-        <div class="header-center">
-          <h2 class="sequence-title">Sequence Viewer</h2>
-        </div>
-
-        <div class="header-right">
-          <button
-            type="button"
-            class="close-button"
-            onclick={handleClose}
-            aria-label="Close"
-          >
-            <i class="fas fa-times" aria-hidden="true"></i>
-          </button>
-        </div>
-      </header>
-    {/if}
+    <ViewerHeader
+      {isExportMode}
+      {exportType}
+      {isFullscreen}
+      {isMobile}
+      darkMode={imgDarkMode}
+      isSyncActive={lanSyncState.isActive}
+      isSyncConnected={lanSyncState.isConnected}
+      {isSyncToggling}
+      onClose={handleClose}
+      onExitExportMode={exitExportMode}
+      onBackToExportTypeSelection={backToExportTypeSelection}
+      onSyncToggle={handleSyncToggle}
+      onOpenInCompose={() => handleOpenInCompose('stagger')}
+      onDarkModeToggle={() => toggleImgSetting("darkMode")}
+      onEnterFullscreen={enterFullscreen}
+    />
   {/snippet}
 
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -1339,385 +1260,70 @@ import { playbackTimeCalculator } from "../services/implementations/PlaybackTime
 
     {#if isExportMode}
       <!-- Export mode: show type selector or preview/options -->
-      <div
-        class="export-mode-container view-container"
-        in:fade={{ duration: 250, delay: 50, easing: cubicOut }}
-        out:fade={{ duration: 150, easing: cubicOut }}
-      >
-        {#if !exportType}
-          <!-- Export type selector -->
-          <div class="export-type-selector">
-            <p class="selector-hint">What would you like to export?</p>
-
-            <div class="export-type-cards" role="group" aria-label="Export format options">
-              <button
-                type="button"
-                class="export-type-card"
-                onclick={() => selectExportType("animation")}
-                aria-describedby="video-desc"
-              >
-                <div class="card-icon animation" aria-hidden="true">
-                  <i class="fas fa-play-circle"></i>
-                </div>
-                <div class="card-content">
-                  <span class="card-title">Video</span>
-                  <span class="card-desc" id="video-desc">Animated sequence as MP4</span>
-                </div>
-                <i class="fas fa-chevron-right card-arrow" aria-hidden="true"></i>
-              </button>
-
-              <button
-                type="button"
-                class="export-type-card"
-                onclick={() => selectExportType("image")}
-                aria-describedby="image-desc"
-              >
-                <div class="card-icon image" aria-hidden="true">
-                  <i class="fas fa-image"></i>
-                </div>
-                <div class="card-content">
-                  <span class="card-title">Image</span>
-                  <span class="card-desc" id="image-desc">Choreo card as PNG</span>
-                </div>
-                <i class="fas fa-chevron-right card-arrow" aria-hidden="true"></i>
-              </button>
-
-              <button
-                type="button"
-                class="export-type-card combo"
-                onclick={() => selectExportType("both")}
-                aria-describedby="combo-desc"
-              >
-                <div class="card-icon combo" aria-hidden="true">
-                  <i class="fas fa-layer-group"></i>
-                </div>
-                <div class="card-content">
-                  <span class="card-title">Combined</span>
-                  <span class="card-desc" id="combo-desc">Video with choreo card overlay. Opens in Compose.</span>
-                </div>
-                <div class="card-badge" aria-hidden="true">
-                  <i class="fas fa-external-link-alt"></i>
-                  Compose
-                </div>
-              </button>
-            </div>
-          </div>
-        {:else}
-          <!-- Preview area -->
-          <div class="export-preview-area">
-            {#if exportType === "image"}
-              <LayeredSequencePreview
-                {sequence}
-                showHighlight={false}
-                showWord={exportOptions.imageShowWord}
-                showStepNumbers={exportOptions.imageShowStepNumbers}
-                showDifficultyLevel={exportOptions.imageShowDifficulty}
-                includeStartPosition={exportOptions.imageIncludeStartPosition}
-                showCreatorName={exportOptions.imageShowCreatorName}
-                showNotes={exportOptions.imageShowNotes}
-                showBirthday={true}
-                showLoopGlyph={true}
-                darkMode={exportOptions.imageDarkMode}
-                userName={authState.user?.displayName || ""}
-                {bluePropType}
-                {redPropType}
-                {catDogModeEnabled}
-              />
-            {:else}
-              <!-- For video exports, show the animation canvas -->
-              {#if animationLoading}
-                <div class="loading-state">
-                  <div class="spinner"></div>
-                </div>
-              {:else if modalAnimationState.error}
-                <div class="error-state">
-                  <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-                  <span>{modalAnimationState.error}</span>
-                </div>
-              {:else}
-                <AnimatorCanvas
-                  sequenceData={modalAnimationState.sequenceData}
-                  currentStep={currentStepLocal}
-                  isPlaying={false}
-                  blueProp={modalAnimationState.bluePropState}
-                  redProp={modalAnimationState.redPropState}
-                  gridMode={sequence?.gridMode}
-                  letter={currentLetter}
-                  stepData={currentStepData}
-                  word={sequence?.word}
-                  onCanvasReady={handleCanvasReady}
-                />
-              {/if}
-            {/if}
-          </div>
-
-          <!-- Export options -->
-          <div class="export-options-area">
-            <p class="export-hint">
-              <i class="fas fa-info-circle" aria-hidden="true"></i>
-              Customize your export, then tap the button below.
-            </p>
-            <div class="export-options-card">
-              {#if exportType === "image"}
-                <!-- Image export options -->
-                <div class="option-group">
-                  <span class="option-label">Include</span>
-                  <div class="option-chips">
-                    <button
-                      type="button"
-                      class="chip"
-                      class:active={exportOptions.imageShowWord}
-                      onclick={() => exportOptions.setImageShowWord(!exportOptions.imageShowWord)}
-                      aria-pressed={exportOptions.imageShowWord}
-                    >Word</button>
-                    <button
-                      type="button"
-                      class="chip"
-                      class:active={exportOptions.imageIncludeStartPosition}
-                      onclick={() => exportOptions.setImageIncludeStartPosition(!exportOptions.imageIncludeStartPosition)}
-                      aria-pressed={exportOptions.imageIncludeStartPosition}
-                    >Start</button>
-                    <button
-                      type="button"
-                      class="chip"
-                      class:active={exportOptions.imageShowDifficulty}
-                      onclick={() => exportOptions.setImageShowDifficulty(!exportOptions.imageShowDifficulty)}
-                      aria-pressed={exportOptions.imageShowDifficulty}
-                    >Level</button>
-                    <button
-                      type="button"
-                      class="chip"
-                      class:active={exportOptions.imageShowCreatorName}
-                      onclick={() => exportOptions.setImageShowCreatorName(!exportOptions.imageShowCreatorName)}
-                      aria-pressed={exportOptions.imageShowCreatorName}
-                    >Name</button>
-                    <button
-                      type="button"
-                      class="chip"
-                      class:active={exportOptions.imageShowNotes}
-                      onclick={() => exportOptions.setImageShowNotes(!exportOptions.imageShowNotes)}
-                      aria-pressed={exportOptions.imageShowNotes}
-                    >Notes</button>
-                    <button
-                      type="button"
-                      class="chip"
-                      class:active={exportOptions.imageDarkMode}
-                      onclick={() => exportOptions.setImageDarkMode(!exportOptions.imageDarkMode)}
-                      aria-pressed={exportOptions.imageDarkMode}
-                    >Dark</button>
-                  </div>
-                </div>
-              {:else}
-                <!-- Animation video export options -->
-                <div class="option-group">
-                  <span class="option-label">FPS</span>
-                  <div class="option-chips">
-                    {#each [30, 50, 60] as fps}
-                      <button
-                        type="button"
-                        class="chip"
-                        class:active={exportOptions.videoFps === fps}
-                        onclick={() => exportOptions.setVideoFps(fps as VideoFps)}
-                        aria-pressed={exportOptions.videoFps === fps}
-                      >{fps}</button>
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-            </div>
-          </div>
-        {/if}
-      </div>
+      <ExportModeContent
+        {sequence}
+        {exportType}
+        {exportOptions}
+        animationState={modalAnimationState}
+        {animationLoading}
+        currentStep={currentStepLocal}
+        {currentLetter}
+        {currentStepData}
+        userName={authState.user?.displayName || ""}
+        {bluePropType}
+        {redPropType}
+        {catDogModeEnabled}
+        onSelectType={selectExportType}
+        onCanvasReady={handleCanvasReady}
+      />
     {:else}
       <!-- Split view: Animation and Image side by side, tap to focus -->
-      <div
-        class="split-view view-container"
-        data-fullscreen-stack={isFullscreen ? (fullscreenStackVertical ? 'vertical' : 'horizontal') : undefined}
-        data-focused={editingPane}
-        in:fade={{ duration: 250, delay: 50, easing: cubicOut }}
-        out:fade={{ duration: 150, easing: cubicOut }}
-      >
-        <!-- Animation pane -->
-        <div
-          class="split-column animation-column"
-          class:focused={editingPane === 'animation'}
-          data-hidden={editingPane === 'image'}
-          role="button"
-          tabindex="0"
-          onclick={() => editingPane === 'animation' ? exitEditMode() : enterEditMode('animation')}
-          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editingPane === 'animation' ? exitEditMode() : enterEditMode('animation'); }}}
-          aria-label={editingPane === 'animation' ? "Exit focus mode" : "Focus on animation"}
-          aria-expanded={editingPane === 'animation'}
-        >
-          <div class="media-pane animation-pane">
-            <!-- Close button - shown when focused (desktop only, mobile uses tap to collapse) -->
-            {#if editingPane === 'animation' && !isMobile}
-              <div
-                class="pane-close-btn"
-                role="button"
-                tabindex="0"
-                onclick={(e) => { e.stopPropagation(); exitEditMode(); }}
-                onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); exitEditMode(); }}}
-                aria-label="Exit focus mode"
-              >
-                <i class="fas fa-times" aria-hidden="true"></i>
-              </div>
-            {/if}
-
-            {#if animationLoading}
-              <div class="loading-state">
-                <div class="spinner"></div>
-              </div>
-            {:else if modalAnimationState.error}
-              <div class="error-state">
-                <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-                <span>{modalAnimationState.error}</span>
-              </div>
-            {:else}
-              <AnimatorCanvas
-                sequenceData={modalAnimationState.sequenceData}
-                currentStep={currentStepLocal}
-                isPlaying={isPlayingLocal}
-                blueProp={modalAnimationState.bluePropState}
-                redProp={modalAnimationState.redPropState}
-                gridMode={sequence?.gridMode}
-                letter={currentLetter}
-                stepData={currentStepData}
-                word={sequence?.word}
-                onCanvasReady={handleCanvasReady}
-              />
-            {/if}
-          </div>
-
-        </div>
-
-        <!-- Image/Preview pane -->
-        <div
-          class="split-column preview-column"
-          class:focused={editingPane === 'image'}
-          data-hidden={editingPane === 'animation'}
-          role="button"
-          tabindex="0"
-          onclick={() => editingPane === 'image' ? exitEditMode() : enterEditMode('image')}
-          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editingPane === 'image' ? exitEditMode() : enterEditMode('image'); }}}
-          aria-label={editingPane === 'image' ? "Exit focus mode" : "Focus on image"}
-          aria-expanded={editingPane === 'image'}
-        >
-          <!-- Inner wrapper for horizontal layout on wide screens -->
-          <div class="preview-column-inner" class:focused={editingPane === 'image'}>
-            <div class="media-pane preview-pane">
-              <!-- Close button - shown when focused (desktop only, mobile uses tap to collapse) -->
-              {#if editingPane === 'image' && !isMobile}
-                <div
-                  class="pane-close-btn"
-                  role="button"
-                  tabindex="0"
-                  onclick={(e) => { e.stopPropagation(); exitEditMode(); }}
-                  onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); exitEditMode(); }}}
-                  aria-label="Exit focus mode"
-                >
-                  <i class="fas fa-times" aria-hidden="true"></i>
-                </div>
-              {/if}
-
-              <LayeredSequencePreview
-                {sequence}
-                highlightedStepIndex={highlightedStepIndex}
-                showHighlight={isPlayingLocal}
-                onStepClick={handleStepClick}
-                showWord={imgShowWord}
-                showStepNumbers={true}
-                showDifficultyLevel={imgShowDifficulty}
-                includeStartPosition={imgShowStartPos}
-                showCreatorName={imgShowCreatorName}
-                showNotes={imgShowNotes}
-                showBirthday={true}
-                showLoopGlyph={true}
-                darkMode={imgDarkMode}
-                userName={authState.user?.displayName || ""}
-                columnCount={imgColumnCount}
-                {bluePropType}
-                {redPropType}
-                {catDogModeEnabled}
-              />
-            </div>
-
-          </div>
-        </div>
-      </div>
+      <ViewerSplitPane
+        {sequence}
+        animationState={modalAnimationState}
+        {animationLoading}
+        currentStep={currentStepLocal}
+        isPlaying={isPlayingLocal}
+        {currentLetter}
+        {currentStepData}
+        {highlightedStepIndex}
+        {imgShowWord}
+        {imgShowDifficulty}
+        {imgShowStartPos}
+        {imgShowCreatorName}
+        {imgShowNotes}
+        {imgDarkMode}
+        {imgColumnCount}
+        userName={authState.user?.displayName || ""}
+        {bluePropType}
+        {redPropType}
+        {catDogModeEnabled}
+        {isFullscreen}
+        {fullscreenStackVertical}
+        {isMobile}
+        focusedPane={editingPane}
+        onFocusPane={enterEditMode}
+        onUnfocusPane={exitEditMode}
+        onStepClick={handleStepClick}
+        onCanvasReady={handleCanvasReady}
+      />
     {/if}
   </div>
 
   {#snippet footer()}
     {#if !isFullscreen}
-      {#if isExportMode && exportType}
-        <!-- Export mode: prominent export button with progress (only when export type is selected) -->
-        <footer class="controls-footer" data-hidden={isFullscreen}>
-          <div
-            class="export-footer-content"
-            in:fade={{ duration: 200, delay: 50, easing: cubicOut }}
-            out:fade={{ duration: 100, easing: cubicOut }}
-          >
-            {#if exportError}
-              <!-- Error state with retry button -->
-              <div class="export-error-state" role="alert">
-                <div class="error-content">
-                  <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-                  <span class="error-message">{exportError}</span>
-                </div>
-                <button
-                  type="button"
-                  class="retry-export-btn"
-                  onclick={() => { sequenceModalExporter.clearError(); handleExport(); }}
-                >
-                  <i class="fas fa-redo" aria-hidden="true"></i>
-                  Retry
-                </button>
-              </div>
-            {:else if isExporting && exportProgress}
-              <!-- Progress display during export -->
-              <div class="export-progress" role="status" aria-live="polite">
-                <span class="progress-stage">{EXPORT_STAGE_LABELS[exportProgress.stage] || exportProgress.stage}</span>
-                <div
-                  class="progress-bar"
-                  role="progressbar"
-                  aria-valuenow={Math.round(exportProgress.progress * 100)}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label="Export progress"
-                >
-                  <div class="progress-fill" style="width: {exportProgress.progress * 100}%"></div>
-                </div>
-                <span class="progress-text" aria-live="polite" aria-atomic="true">{Math.round(exportProgress.progress * 100)}%</span>
-                <button
-                  type="button"
-                  class="cancel-export-btn"
-                  onclick={handleCancelExport}
-                  aria-label="Cancel export"
-                >
-                  <i class="fas fa-times" aria-hidden="true"></i>
-                </button>
-              </div>
-            {:else}
-              <!-- Prominent export button -->
-              <button
-                type="button"
-                class="primary-export-btn"
-                onclick={handleExport}
-                disabled={isExporting}
-                aria-label={isExporting ? "Export in progress" : `Export ${exportType === "image" ? "image" : "video"}`}
-              >
-                <i class="fas fa-download" aria-hidden="true"></i>
-                Export {exportType === "image" ? "Image" : "Video"}
-              </button>
-            {/if}
-          </div>
-        </footer>
-      {:else if isExportMode && !exportType}
-        <!-- Export type selection mode: no footer needed, choices are in the content area -->
-        <footer class="controls-footer export-type-footer" data-hidden={isFullscreen}>
-          <p class="footer-hint">Select an export format above</p>
-        </footer>
+      {#if isExportMode}
+        <!-- Export footer: shows button when type is selected, hint when selecting -->
+        <ExportFooter
+          {exportType}
+          {isExporting}
+          {exportProgress}
+          {exportError}
+          {isFullscreen}
+          onExport={handleExport}
+          onCancel={handleCancelExport}
+          onRetry={() => { sequenceModalExporter.clearError(); handleExport(); }}
+        />
       {:else}
         <!-- Footer: MorphingFooter on mobile, ViewerFooter on desktop -->
         {#if isMobile}

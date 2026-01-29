@@ -304,10 +304,13 @@ export function createExportOptionsState() {
   };
 }
 
-// Singleton for global access (created once per app)
-let singletonInstance: ReturnType<typeof createExportOptionsState> | null = null;
+/** The return type of createExportOptionsState - used for typing the state object */
+export type ExportOptionsStateManager = ReturnType<typeof createExportOptionsState>;
 
-export function getExportOptionsState() {
+// Singleton for global access (created once per app)
+let singletonInstance: ExportOptionsStateManager | null = null;
+
+export function getExportOptionsState(): ExportOptionsStateManager {
   if (!singletonInstance) {
     singletonInstance = createExportOptionsState();
   }
