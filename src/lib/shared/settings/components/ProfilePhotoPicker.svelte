@@ -159,6 +159,11 @@
   let fileInputRef: HTMLInputElement | null = $state(null);
   let initialized = $state(false);
 
+  // Wizard mode for very small screens
+  type WizardStep = "style" | "shade" | "prop" | "confirm";
+  let wizardStep = $state<WizardStep>("style");
+  const COMPACT_THRESHOLD = 400; // Use wizard below this width
+
   // ============ DERIVED ============
 
   const user = $derived(authState.user);
@@ -178,23 +183,46 @@
 
   // ============ LAYOUT MODE DETECTION ============
 
-  // Breakpoint for modal vs drawer - simple threshold
+  // Width breakpoint for modal vs drawer
+  // 768px is the standard tablet/desktop breakpoint and matches when sidebar nav appears
   const DESKTOP_BREAKPOINT = 768;
+  // Minimum height for side-by-side modal layout
+  // The generate panel needs ~700px for all content (avatar preview + style + shade + props + button)
+  // Modal is 90vh, so we need viewport of ~780px minimum, but with margins/padding we need more
+  // At 930px viewport there was still overflow, so setting to 1000px to be safe
+  const SIDE_BY_SIDE_MIN_HEIGHT = 1000;
+  // Minimum height for any modal - below this use drawer
+  const MIN_MODAL_HEIGHT = 500;
 
   let viewportWidth = $state(typeof window !== "undefined" ? window.innerWidth : 800);
+  let viewportHeight = $state(typeof window !== "undefined" ? window.innerHeight : 600);
 
   // Set up resize listener
   $effect(() => {
     function handleResize() {
       viewportWidth = window.innerWidth;
+      viewportHeight = window.innerHeight;
     }
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   });
 
-  // Desktop shows modal with side-by-side panels, mobile shows drawer with tabs
-  const isDesktop = $derived(viewportWidth >= DESKTOP_BREAKPOINT);
+  // Desktop shows modal, mobile shows drawer
+  // Use modal if we have desktop width AND enough height for at least tabbed modal
+  const isDesktop = $derived(
+    viewportWidth >= DESKTOP_BREAKPOINT &&
+    viewportHeight >= MIN_MODAL_HEIGHT
+  );
+
+  // Within modal: use side-by-side layout only if we have enough height
+  // Otherwise use tabbed modal (same as drawer tabs but in modal container)
+  const useSideBySide = $derived(
+    viewportHeight >= SIDE_BY_SIDE_MIN_HEIGHT
+  );
+
+  // Use wizard (step-by-step) mode on very small screens
+  const useWizardMode = $derived(viewportWidth < COMPACT_THRESHOLD);
 
   const selectedGradient = $derived(
     ALL_GRADIENTS.find((g) => g.id === selectedGradientId) ?? ALL_GRADIENTS[0]!
@@ -236,7 +264,25 @@
 
   function handleClose() {
     activeTab = "options";
+    wizardStep = "style"; // Reset wizard
     onClose();
+  }
+
+  // Wizard navigation
+  function wizardNext() {
+    if (wizardStep === "style") wizardStep = "shade";
+    else if (wizardStep === "shade") wizardStep = "prop";
+    else if (wizardStep === "prop") wizardStep = "confirm";
+  }
+
+  function wizardBack() {
+    if (wizardStep === "shade") wizardStep = "style";
+    else if (wizardStep === "prop") wizardStep = "shade";
+    else if (wizardStep === "confirm") wizardStep = "prop";
+  }
+
+  function wizardGoTo(step: WizardStep) {
+    wizardStep = step;
   }
 
   function selectFamily(familyId: string) {
@@ -351,8 +397,8 @@
 />
 
 {#snippet modalContent()}
-  <!-- Modal: Side-by-side layout, generous spacing -->
-  <div class="modal-layout">
+  <!-- Modal: Side-by-side when tall enough, tabbed when constrained -->
+  <div class="modal-layout" class:tabbed-modal={!useSideBySide}>
     <header class="modal-header">
       <h2 id="photo-picker-title">Profile Photo</h2>
       <button class="close-btn" onclick={handleClose} aria-label="Close">
@@ -360,29 +406,75 @@
       </button>
     </header>
 
-    <div class="modal-panels">
-      <!-- Left Panel: Choose Photo -->
-      <div class="panel choose-panel">
-        {@render panelHeader("choose")}
-        {@render optionsList()}
+    {#if useSideBySide}
+      <!-- Side-by-side layout for tall viewports -->
+      <div class="modal-panels">
+        <!-- Left Panel: Choose Photo -->
+        <div class="panel choose-panel">
+          {@render panelHeader("choose")}
+          {@render optionsList()}
+        </div>
+
+        <div class="panel-divider"></div>
+
+        <!-- Right Panel: Create Avatar -->
+        <div class="panel generate-panel">
+          {@render panelHeader("generate")}
+          {@render generateContent()}
+        </div>
+      </div>
+    {:else}
+      <!-- Tabbed layout for constrained heights -->
+      <div class="modal-tabbed-body">
+        {#if activeTab === "options"}
+          {@render panelHeader("choose")}
+          {@render optionsList()}
+        {:else}
+          {@render panelHeader("generate")}
+          {@render generateContent()}
+        {/if}
       </div>
 
-      <div class="panel-divider"></div>
-
-      <!-- Right Panel: Create Avatar -->
-      <div class="panel generate-panel">
-        {@render panelHeader("generate")}
-        {@render generateContent()}
+      <div class="modal-tab-switcher">
+        <button
+          class="tab-btn"
+          class:active={activeTab === "options"}
+          onclick={() => (activeTab = "options")}
+        >
+          <i class="fas fa-image"></i>
+          <span>Choose Photo</span>
+        </button>
+        <button
+          class="tab-btn"
+          class:active={activeTab === "generate"}
+          onclick={() => (activeTab = "generate")}
+        >
+          <i class="fas fa-magic"></i>
+          <span>Create Avatar</span>
+        </button>
       </div>
-    </div>
+    {/if}
   </div>
 {/snippet}
 
 {#snippet drawerContent()}
-  <!-- Drawer: Tabbed layout for mobile -->
+  <!-- Drawer: Tabbed layout for mobile, Wizard for compact -->
   <div class="drawer-layout">
     <header class="drawer-header">
-      <h2 id="photo-picker-title">Profile Photo</h2>
+      {#if useWizardMode && activeTab === "generate"}
+        <button class="back-btn" onclick={wizardStep === "style" ? () => (activeTab = "options") : wizardBack} aria-label="Back">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 id="photo-picker-title">
+          {#if wizardStep === "style"}Pick Style
+          {:else if wizardStep === "shade"}Pick Shade
+          {:else if wizardStep === "prop"}Pick Prop
+          {:else}Confirm
+          {/if}
+        </h2>
+      {:else}
+        <h2 id="photo-picker-title">Profile Photo</h2>
+      {/if}
       <button class="close-btn" onclick={handleClose} aria-label="Close">
         <i class="fas fa-times"></i>
       </button>
@@ -392,30 +484,34 @@
       {#if activeTab === "options"}
         {@render panelHeader("choose")}
         {@render optionsList()}
+      {:else if useWizardMode}
+        {@render wizardContent()}
       {:else}
         {@render panelHeader("generate")}
         {@render generateContent()}
       {/if}
     </div>
 
-    <div class="tab-switcher">
-      <button
-        class="tab-btn"
-        class:active={activeTab === "options"}
-        onclick={() => (activeTab = "options")}
-      >
-        <i class="fas fa-image"></i>
-        <span>Choose Photo</span>
-      </button>
-      <button
-        class="tab-btn"
-        class:active={activeTab === "generate"}
-        onclick={() => (activeTab = "generate")}
-      >
-        <i class="fas fa-magic"></i>
-        <span>Create Avatar</span>
-      </button>
-    </div>
+    {#if !useWizardMode || activeTab === "options"}
+      <div class="tab-switcher">
+        <button
+          class="tab-btn"
+          class:active={activeTab === "options"}
+          onclick={() => (activeTab = "options")}
+        >
+          <i class="fas fa-image"></i>
+          <span>Choose Photo</span>
+        </button>
+        <button
+          class="tab-btn"
+          class:active={activeTab === "generate"}
+          onclick={() => { activeTab = "generate"; wizardStep = "style"; }}
+        >
+          <i class="fas fa-magic"></i>
+          <span>Create Avatar</span>
+        </button>
+      </div>
+    {/if}
   </div>
 {/snippet}
 
@@ -500,52 +596,214 @@
   </div>
 {/snippet}
 
+{#snippet wizardContent()}
+  <!-- Wizard: Step-by-step for compact screens -->
+  <div class="wizard-content">
+    <!-- Progress indicator -->
+    <div class="wizard-progress">
+      <button
+        class="progress-dot"
+        class:active={wizardStep === "style"}
+        class:completed={["shade", "prop", "confirm"].includes(wizardStep)}
+        onclick={() => wizardGoTo("style")}
+        aria-label="Style"
+      ></button>
+      <div class="progress-line" class:filled={["shade", "prop", "confirm"].includes(wizardStep)}></div>
+      <button
+        class="progress-dot"
+        class:active={wizardStep === "shade"}
+        class:completed={["prop", "confirm"].includes(wizardStep)}
+        onclick={() => wizardGoTo("shade")}
+        aria-label="Shade"
+      ></button>
+      <div class="progress-line" class:filled={["prop", "confirm"].includes(wizardStep)}></div>
+      <button
+        class="progress-dot"
+        class:active={wizardStep === "prop"}
+        class:completed={wizardStep === "confirm"}
+        onclick={() => wizardGoTo("prop")}
+        aria-label="Prop"
+      ></button>
+      <div class="progress-line" class:filled={wizardStep === "confirm"}></div>
+      <button
+        class="progress-dot"
+        class:active={wizardStep === "confirm"}
+        onclick={() => wizardGoTo("confirm")}
+        aria-label="Confirm"
+      ></button>
+    </div>
+
+    <!-- Step container with animation wrapper -->
+    <div class="wizard-step-container">
+      {#key wizardStep}
+        <div class="wizard-step-animated">
+          {#if wizardStep === "style"}
+            <!-- Step 1: Style -->
+            <div class="wizard-step">
+              <p class="wizard-subtitle">What vibe fits you?</p>
+              <div class="wizard-options">
+                {#each COLOR_FAMILIES as family}
+                  <button
+                    class="wizard-option"
+                    class:selected={selectedFamilyId === family.id}
+                    onclick={() => { selectFamily(family.id); wizardNext(); }}
+                  >
+                    <div class="wizard-option-icon">
+                      <i class="fas {family.icon}"></i>
+                    </div>
+                    <span>{family.name}</span>
+                  </button>
+                {/each}
+              </div>
+            </div>
+
+          {:else if wizardStep === "shade"}
+            <!-- Step 2: Shade -->
+            <div class="wizard-step">
+              <p class="wizard-subtitle">Pick your shade</p>
+              <div class="wizard-shades">
+                {#each familyGradients as gradient}
+                  <button
+                    class="wizard-shade"
+                    class:selected={selectedGradientId === gradient.id}
+                    onclick={() => { selectGradient(gradient.id); wizardNext(); }}
+                    style="background: {gradient.gradient};"
+                  >
+                    <span class="shade-name">{gradient.name}</span>
+                    {#if selectedGradientId === gradient.id}
+                      <i class="fas fa-check"></i>
+                    {/if}
+                  </button>
+                {/each}
+              </div>
+            </div>
+
+          {:else if wizardStep === "prop"}
+            <!-- Step 3: Prop -->
+            <div class="wizard-step">
+              <p class="wizard-subtitle">Choose your prop</p>
+              <div class="wizard-props-scroll">
+                <div class="wizard-props">
+                  {#each PROPS as prop}
+                    <button
+                      class="wizard-prop"
+                      class:selected={selectedProp === prop.id}
+                      onclick={() => { selectedProp = prop.id; wizardNext(); }}
+                    >
+                      <img src={prop.image} alt={prop.label} />
+                      <span>{prop.label}</span>
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            </div>
+
+          {:else}
+            <!-- Step 4: Confirm -->
+            <div class="wizard-step wizard-confirm">
+              <div
+                class="wizard-preview"
+                style="background: {selectedGradient.gradient};"
+              >
+                {#if currentPropImage}
+                  <img src={currentPropImage} alt="Prop" class="prop-silhouette" />
+                {/if}
+              </div>
+              <p class="wizard-preview-label">{selectedGradient.name}</p>
+
+              <!-- Quick edit chips with labels -->
+              <div class="quick-edit-section">
+                <p class="quick-edit-label">Tap to change:</p>
+                <div class="quick-edit-row">
+                  <button class="quick-edit-chip" onclick={() => wizardGoTo("style")} aria-label="Change style">
+                    <i class="fas {COLOR_FAMILIES.find(f => f.id === selectedFamilyId)?.icon}"></i>
+                    <span class="chip-label">Style</span>
+                  </button>
+                  <button class="quick-edit-chip shade-chip" onclick={() => wizardGoTo("shade")} style="background: {selectedGradient.gradient};" aria-label="Change shade">
+                    <span class="chip-label">Shade</span>
+                  </button>
+                  <button class="quick-edit-chip" onclick={() => wizardGoTo("prop")} aria-label="Change prop">
+                    <img src={currentPropImage} alt="Prop" />
+                    <span class="chip-label">Prop</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Start Over button -->
+              <button class="start-over-btn" onclick={() => wizardGoTo("style")}>
+                <i class="fas fa-redo"></i>
+                <span>Start Over</span>
+              </button>
+
+              <button class="save-btn" onclick={useGeneratedAvatar} disabled={saving}>
+                {#if saving}
+                  <i class="fas fa-circle-notch fa-spin"></i>
+                  <span>Saving...</span>
+                {:else}
+                  <i class="fas fa-check"></i>
+                  <span>Use This Avatar</span>
+                {/if}
+              </button>
+            </div>
+          {/if}
+        </div>
+      {/key}
+    </div>
+  </div>
+{/snippet}
+
 {#snippet generateContent()}
   <div class="generate-content">
-    <!-- Color Family Selector -->
-    <div class="section">
-      <h4 class="section-label">Style</h4>
-      <div class="family-row">
-        {#each COLOR_FAMILIES as family}
-          <button
-            class="family-chip"
-            class:selected={selectedFamilyId === family.id}
-            onclick={() => selectFamily(family.id)}
-          >
-            <i class="fas {family.icon}"></i>
-            <span>{family.name}</span>
-          </button>
-        {/each}
+    <!-- Combined Style & Shade row for compact mobile -->
+    <div class="section style-shade-section">
+      <div class="style-shade-row">
+        <!-- Style dropdown - shows current family with icon -->
+        <div class="compact-selector">
+          <h4 class="section-label">Style</h4>
+          <div class="family-row">
+            {#each COLOR_FAMILIES as family}
+              <button
+                class="family-chip"
+                class:selected={selectedFamilyId === family.id}
+                onclick={() => selectFamily(family.id)}
+                title={family.name}
+              >
+                <i class="fas {family.icon}"></i>
+                <span class="family-label">{family.name}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <!-- Shade swatches -->
+        <div class="compact-selector shade-selector">
+          <div class="section-header">
+            <h4 class="section-label">Shade</h4>
+            <button class="shuffle-btn" onclick={shuffle} title="Shuffle">
+              <i class="fas fa-random"></i>
+            </button>
+          </div>
+          <div class="gradient-row">
+            {#each familyGradients as gradient}
+              <button
+                class="gradient-swatch"
+                class:selected={selectedGradientId === gradient.id}
+                onclick={() => selectGradient(gradient.id)}
+                title={gradient.name}
+                style="background: {gradient.gradient};"
+              >
+                {#if selectedGradientId === gradient.id}
+                  <i class="fas fa-check"></i>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Gradients in Selected Family -->
-    <div class="section">
-      <div class="section-header">
-        <h4 class="section-label">Shade</h4>
-        <button class="shuffle-btn" onclick={shuffle} title="Shuffle">
-          <i class="fas fa-random"></i>
-        </button>
-      </div>
-      <div class="gradient-row">
-        {#each familyGradients as gradient}
-          <button
-            class="gradient-swatch"
-            class:selected={selectedGradientId === gradient.id}
-            onclick={() => selectGradient(gradient.id)}
-            title={gradient.name}
-            style="background: {gradient.gradient};"
-          >
-            {#if selectedGradientId === gradient.id}
-              <i class="fas fa-check"></i>
-            {/if}
-          </button>
-        {/each}
-      </div>
-    </div>
-
-    <!-- Prop Selection -->
-    <div class="section">
+    <!-- Prop Selection - horizontal scroll on mobile -->
+    <div class="section prop-section">
       <h4 class="section-label">Prop</h4>
       <div class="prop-row">
         {#each PROPS as prop}
@@ -616,11 +874,87 @@
     flex-direction: column;
     padding: var(--modal-padding, 24px);
     min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* Styled scrollbar for panels */
+  .modal-panels .panel::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .modal-panels .panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .modal-panels .panel::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15));
+    border-radius: 3px;
+  }
+
+  .modal-panels .panel::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.25));
   }
 
   /* Vertical divider between panels */
   .modal-panels .panel-divider {
     width: 1px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     TABBED MODAL - When viewport is wide but not tall enough for side-by-side
+     Still a modal (not drawer), but shows one panel at a time with tabs
+     ═══════════════════════════════════════════════════════════════════ */
+
+  .tabbed-modal .modal-tabbed-body {
+    flex: 1;
+    padding: var(--modal-padding, 24px);
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .modal-tab-switcher {
+    display: flex;
+    padding: var(--spacing-md, 16px) var(--modal-padding, 24px);
+    gap: var(--spacing-sm, 8px);
+    flex-shrink: 0;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .modal-tab-switcher .tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-sm, 10px);
+    min-height: 48px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-md, 10px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-sm, 13px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .modal-tab-switcher .tab-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .modal-tab-switcher .tab-btn.active {
+    background: var(--theme-accent, #6366f1);
+    border-color: var(--theme-accent, #6366f1);
+    color: white;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     PANEL DIVIDER (moved declaration)
+     ═══════════════════════════════════════════════════════════════════ */
+
+  .modal-panels .panel-divider {
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
     align-self: stretch;
@@ -658,6 +992,9 @@
     flex: 1;
     overflow-y: auto;
     padding: var(--spacing-md, 16px);
+    /* Container for responsive queries */
+    container-type: inline-size;
+    container-name: drawer-content;
   }
 
   /* Tab Switcher - drawer only */
@@ -1089,6 +1426,530 @@
   .modal-layout .prop-btn {
     width: 60px;
     height: 60px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     WIZARD MODE - Step-by-step for compact screens
+     ═══════════════════════════════════════════════════════════════════ */
+
+  .back-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: var(--theme-text, #ffffff);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+  }
+
+  .back-btn:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+  }
+
+  .wizard-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: var(--spacing-md, 16px);
+    overflow: hidden;
+  }
+
+  /* Step container for animation */
+  .wizard-step-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* Animated step wrapper */
+  .wizard-step-animated {
+    animation: wizardFadeSlideIn 0.25s ease-out forwards;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  @keyframes wizardFadeSlideIn {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wizard-step-animated {
+      animation: none;
+    }
+  }
+
+  /* Progress indicator */
+  .wizard-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: var(--spacing-sm, 8px) 0;
+  }
+
+  .progress-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+  }
+
+  .progress-dot.active {
+    background: var(--theme-accent, #6366f1);
+    border-color: var(--theme-accent, #6366f1);
+    transform: scale(1.2);
+  }
+
+  .progress-dot.completed {
+    background: var(--theme-accent, #6366f1);
+    border-color: var(--theme-accent, #6366f1);
+  }
+
+  .progress-line {
+    width: 32px;
+    height: 2px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.2));
+    transition: background 0.2s ease;
+  }
+
+  .progress-line.filled {
+    background: var(--theme-accent, #6366f1);
+  }
+
+  /* Wizard step container */
+  .wizard-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md, 16px);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .wizard-subtitle {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    margin: 0;
+    text-align: center;
+  }
+
+  /* Style options (Step 1) */
+  .wizard-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 10px);
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .wizard-option {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md, 14px);
+    padding: var(--spacing-md, 16px);
+    min-height: 56px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-md, 12px);
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-md, 16px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    width: 100%;
+  }
+
+  .wizard-option:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .wizard-option.selected {
+    background: var(--theme-accent, #6366f1);
+    border-color: var(--theme-accent, #6366f1);
+  }
+
+  .wizard-option-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-lg, 18px);
+  }
+
+  /* Shade options (Step 2) */
+  .wizard-shades {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 10px);
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .wizard-shade {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md, 16px) var(--spacing-lg, 20px);
+    min-height: 56px;
+    border: 2px solid transparent;
+    border-radius: var(--radius-md, 12px);
+    color: white;
+    font-size: var(--font-size-md, 16px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+
+  .wizard-shade:hover {
+    transform: scale(1.02);
+  }
+
+  .wizard-shade.selected {
+    border-color: white;
+    box-shadow: 0 0 0 2px var(--theme-accent, #6366f1);
+  }
+
+  .shade-name {
+    font-weight: 600;
+  }
+
+  /* Prop options (Step 3) */
+  .wizard-props-scroll {
+    flex: 1;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 320px;
+    padding: var(--spacing-xs, 4px);
+    /* Styled scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
+  }
+
+  .wizard-props-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .wizard-props-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .wizard-props-scroll::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
+    border-radius: 3px;
+  }
+
+  .wizard-props {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-sm, 10px);
+    width: 100%;
+  }
+
+  .wizard-prop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs, 6px);
+    padding: var(--spacing-sm, 12px) var(--spacing-xs, 8px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-md, 12px);
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-compact, 11px);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .wizard-prop:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .wizard-prop.selected {
+    background: var(--theme-accent, #6366f1);
+    border-color: var(--theme-accent, #6366f1);
+  }
+
+  .wizard-prop img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+  }
+
+  /* Confirm step (Step 4) */
+  .wizard-confirm {
+    justify-content: center;
+  }
+
+  .wizard-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 3px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .wizard-preview .prop-silhouette {
+    width: 55%;
+    height: 55%;
+    object-fit: contain;
+    filter: brightness(0) invert(1) opacity(0.9);
+  }
+
+  .wizard-preview-label {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim);
+    margin: 0;
+  }
+
+  /* Quick edit section with label */
+  .quick-edit-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs, 6px);
+    margin-top: var(--spacing-sm, 8px);
+  }
+
+  .quick-edit-label {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    margin: 0;
+  }
+
+  .quick-edit-row {
+    display: flex;
+    gap: var(--spacing-sm, 10px);
+  }
+
+  .quick-edit-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: var(--spacing-sm, 10px) var(--spacing-md, 14px);
+    min-width: 60px;
+    border-radius: var(--radius-md, 10px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: var(--theme-text);
+    font-size: var(--font-size-md, 16px);
+  }
+
+  .quick-edit-chip:hover {
+    border-color: var(--theme-accent, #6366f1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+  }
+
+  .quick-edit-chip img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+  }
+
+  .quick-edit-chip.shade-chip {
+    /* Shade chip shows the gradient as background, needs white text */
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  .chip-label {
+    font-size: var(--font-size-compact, 11px);
+    font-weight: 500;
+  }
+
+  /* Start over button */
+  .start-over-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs, 6px);
+    padding: var(--spacing-sm, 10px) var(--spacing-md, 16px);
+    min-height: 44px;
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: var(--radius-md, 10px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-sm, 13px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-top: var(--spacing-md, 12px);
+  }
+
+  .start-over-btn:hover {
+    color: var(--theme-text);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .start-over-btn i {
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .wizard-confirm .save-btn {
+    margin-top: var(--spacing-sm, 8px);
+    width: 100%;
+    max-width: 280px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     COMPACT MOBILE LAYOUT (iPhone SE and similar)
+     Uses container queries for component-level responsiveness
+     ═══════════════════════════════════════════════════════════════════ */
+
+  /* Compact mobile: viewport width < 400px */
+  @container drawer-content (max-width: 400px) {
+    /* Smaller avatar preview */
+    .panel-header .avatar-preview {
+      width: 64px;
+      height: 64px;
+    }
+
+    .panel-header {
+      gap: var(--spacing-xs, 8px);
+      margin-bottom: var(--spacing-md, 14px);
+    }
+
+    .panel-title {
+      font-size: var(--font-size-compact, 12px);
+    }
+
+    .gradient-name {
+      font-size: 11px;
+    }
+
+    /* Tighter section spacing */
+    .generate-content {
+      gap: var(--spacing-md, 14px);
+    }
+
+    .section {
+      gap: var(--spacing-xs, 6px);
+    }
+
+    .section-label {
+      font-size: 11px;
+    }
+
+    /* Compact family chips - icon only with tooltip */
+    .family-chip {
+      padding: var(--spacing-xs, 8px) var(--spacing-sm, 10px);
+      min-height: 40px;
+      gap: 4px;
+    }
+
+    .family-chip .family-label {
+      display: none;
+    }
+
+    .family-row {
+      gap: var(--spacing-xs, 6px);
+    }
+
+    /* Smaller gradient swatches */
+    .gradient-swatch {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm, 8px);
+    }
+
+    .gradient-row {
+      gap: var(--spacing-xs, 6px);
+    }
+
+    /* Horizontal scrolling props */
+    .prop-row {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: var(--spacing-xs, 6px);
+      padding-bottom: var(--spacing-xs, 6px);
+      margin: 0 calc(-1 * var(--spacing-md, 16px));
+      padding-left: var(--spacing-md, 16px);
+      padding-right: var(--spacing-md, 16px);
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .prop-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .prop-btn {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      padding: var(--spacing-xs, 6px);
+    }
+
+    /* Smaller shuffle button */
+    .shuffle-btn {
+      width: 32px;
+      height: 32px;
+      min-width: 40px;
+      min-height: 40px;
+    }
+
+    /* Compact save button */
+    .save-btn {
+      padding: var(--spacing-sm, 10px) var(--spacing-md, 16px);
+      font-size: var(--font-size-compact, 12px);
+      margin-top: var(--spacing-xs, 6px);
+    }
+  }
+
+  /* Extra compact: very small screens (< 350px) */
+  @container drawer-content (max-width: 350px) {
+    .panel-header .avatar-preview {
+      width: 56px;
+      height: 56px;
+    }
+
+    .gradient-swatch {
+      width: 36px;
+      height: 36px;
+    }
+
+    .prop-btn {
+      width: 40px;
+      height: 40px;
+    }
+
+    .family-chip {
+      padding: var(--spacing-xs, 6px) var(--spacing-xs, 8px);
+      min-height: 36px;
+    }
   }
 
   /* ═══════════════════════════════════════════════════════════════════
