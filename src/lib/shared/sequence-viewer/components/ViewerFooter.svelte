@@ -78,6 +78,7 @@
       window.addEventListener("resize", checkMobile);
       return () => window.removeEventListener("resize", checkMobile);
     }
+    return undefined;
   });
 </script>
 

@@ -655,8 +655,14 @@ export class DeviceSyncCoordinator implements IDeviceSyncCoordinator {
 	}
 
 	private handleWelcome(message: SyncMessage & { type: 'WELCOME' }): void {
-		// Deserialize the room state
-		const remoteState = deserializeRoomState(message.payload.roomState);
+		// Deserialize and validate the room state
+		let remoteState;
+		try {
+			remoteState = deserializeRoomState(message.payload.roomState);
+		} catch (error) {
+			console.error('[DeviceSync] Invalid WELCOME message payload:', error);
+			return; // Ignore malformed messages
+		}
 
 		if (!this._roomState) {
 			// First state - adopt it entirely
@@ -773,8 +779,14 @@ export class DeviceSyncCoordinator implements IDeviceSyncCoordinator {
 	}
 
 	private handleStateResponse(message: SyncMessage & { type: 'STATE_RESPONSE' }): void {
-		// Same handling as WELCOME
-		const remoteState = deserializeRoomState(message.payload.roomState);
+		// Deserialize and validate the room state
+		let remoteState;
+		try {
+			remoteState = deserializeRoomState(message.payload.roomState);
+		} catch (error) {
+			console.error('[DeviceSync] Invalid STATE_RESPONSE message payload:', error);
+			return; // Ignore malformed messages
+		}
 
 		if (!this._roomState) {
 			this._roomState = remoteState;
@@ -974,13 +986,21 @@ export class DeviceSyncCoordinator implements IDeviceSyncCoordinator {
 
 	private notifyRoomStateChange(): void {
 		for (const callback of this.roomStateCallbacks) {
-			callback(this._roomState);
+			try {
+				callback(this._roomState);
+			} catch (error) {
+				console.error('[DeviceSync] Room state callback error:', error);
+			}
 		}
 	}
 
 	private notifyConnectionStateChange(): void {
 		for (const callback of this.connectionStateCallbacks) {
-			callback(this._connectionState);
+			try {
+				callback(this._connectionState);
+			} catch (error) {
+				console.error('[DeviceSync] Connection state callback error:', error);
+			}
 		}
 	}
 
@@ -993,11 +1013,16 @@ export class DeviceSyncCoordinator implements IDeviceSyncCoordinator {
 		if (this.adaptiveHeartbeat) {
 			// When adaptive heartbeat says it's time to send, trigger our heartbeat
 			const heartbeatUnsub = this.adaptiveHeartbeat.onHeartbeatDue(() => {
-				if (this._connectionState.status === 'connected' ||
-					this._connectionState.status === 'waiting-for-peer') {
-					return this.sendHeartbeatWithTracking();
+				try {
+					if (this._connectionState.status === 'connected' ||
+						this._connectionState.status === 'waiting-for-peer') {
+						return this.sendHeartbeatWithTracking();
+					}
+					return -1; // No heartbeat sent
+				} catch (error) {
+					console.error('[DeviceSync] Heartbeat callback error:', error);
+					return -1;
 				}
-				return -1; // No heartbeat sent
 			});
 			this.unsubscribers.push(heartbeatUnsub);
 		}
@@ -1006,8 +1031,12 @@ export class DeviceSyncCoordinator implements IDeviceSyncCoordinator {
 		if (this.messageBatcher) {
 			// When batcher flushes, send the batched messages
 			const flushUnsub = this.messageBatcher.onFlush((event) => {
-				for (const message of event.messages) {
-					this.broadcastDirect(message);
+				try {
+					for (const message of event.messages) {
+						this.broadcastDirect(message);
+					}
+				} catch (error) {
+					console.error('[DeviceSync] Message flush callback error:', error);
 				}
 			});
 			this.unsubscribers.push(flushUnsub);
@@ -1030,7 +1059,8 @@ export class DeviceSyncCoordinator implements IDeviceSyncCoordinator {
 							this.hlc.nodeId
 						);
 						this.broadcast(stateRequest);
-					} catch {
+					} catch (error) {
+						console.error('[DeviceSync] Reconnection failed:', error);
 						// Let adapter handle retry logic
 					}
 				}
@@ -1039,13 +1069,17 @@ export class DeviceSyncCoordinator implements IDeviceSyncCoordinator {
 
 			// Forward recovery state changes to our connection state
 			const recoveryUnsub = this.connectionAdapter.onRecoveryStateChange((event) => {
-				if (event.currentState === 'failed') {
-					this.updateConnectionState({
-						status: 'error',
-						errorMessage: 'Failed to reconnect after multiple attempts'
-					});
-				} else if (event.currentState === 'reconnecting') {
-					this.updateConnectionState({ status: 'reconnecting' });
+				try {
+					if (event.currentState === 'failed') {
+						this.updateConnectionState({
+							status: 'error',
+							errorMessage: 'Failed to reconnect after multiple attempts'
+						});
+					} else if (event.currentState === 'reconnecting') {
+						this.updateConnectionState({ status: 'reconnecting' });
+					}
+				} catch (error) {
+					console.error('[DeviceSync] Recovery state callback error:', error);
 				}
 			});
 			this.unsubscribers.push(recoveryUnsub);

@@ -148,6 +148,7 @@
     "message-received": "When you receive a direct message",
     "admin-new-user-signup": "When a new user signs up",
     "system-announcement": "Important system announcements",
+    "moderation-warning": "When you receive a moderation warning",
   };
 
   // Dynamically generate preference groups from NOTIFICATION_TYPE_CONFIG

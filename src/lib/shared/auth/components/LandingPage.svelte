@@ -57,7 +57,7 @@
   // Background toggle state
   const backgrounds: { type: BackgroundType; icon: string; label: string }[] = [
     { type: BackgroundType.NIGHT_SKY, icon: "fa-moon", label: "Night Sky" },
-    { type: BackgroundType.AURORA, icon: "fa-wind", label: "Aurora" },
+    { type: BackgroundType.PRIDE, icon: "fa-rainbow", label: "Pride" },
     { type: BackgroundType.DEEP_OCEAN, icon: "fa-water", label: "Ocean" },
     { type: BackgroundType.SNOWFALL, icon: "fa-snowflake", label: "Snow" },
     { type: BackgroundType.EMBER_GLOW, icon: "fa-fire", label: "Ember" },

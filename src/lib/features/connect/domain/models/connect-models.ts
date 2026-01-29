@@ -20,6 +20,8 @@ export interface SyncSession {
 	hostUserId: string;
 	/** Display name of the host */
 	hostDisplayName: string;
+	/** Profile photo URL of the host */
+	hostAvatarUrl?: string;
 	/** The sequence being shared */
 	sequenceId: string;
 	/** Human-readable sequence word (e.g., "AΔUSTY-EΘ-N") */
@@ -63,6 +65,8 @@ export interface Invite {
 	fromUserId: string;
 	/** Display name of sender */
 	fromDisplayName: string;
+	/** Display name of sender (alternative field name used in some components) */
+	senderDisplayName?: string;
 	/** Firebase UID of recipient */
 	toUserId: string;
 	/** The session to join */

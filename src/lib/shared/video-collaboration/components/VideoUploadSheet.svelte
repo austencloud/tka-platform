@@ -147,7 +147,7 @@
       const uploadResult = await uploadService.uploadPerformanceVideo(
         sequence.id,
         selectedFile,
-        (progress) => {
+        (progress: number) => {
           // Reserve 0-90% for video, 90-100% for thumbnail
           uploadProgress = Math.round(progress * 0.9);
         }

@@ -248,16 +248,15 @@ export class LOOPDetector implements ILOOPDetector {
     const quarterLength = length / 4;
 
     // Derive start positions of first beat of each quarter from motion locations
-    const q1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
-    const q2Start = steps[quarterLength]
-      ? this.deriveStartPosition(steps[quarterLength])
-      : null;
-    const q3Start = steps[quarterLength * 2]
-      ? this.deriveStartPosition(steps[quarterLength * 2])
-      : null;
-    const q4Start = steps[quarterLength * 3]
-      ? this.deriveStartPosition(steps[quarterLength * 3])
-      : null;
+    const step1 = steps[0];
+    const step2 = steps[quarterLength];
+    const step3 = steps[quarterLength * 2];
+    const step4 = steps[quarterLength * 3];
+
+    const q1Start = step1 ? this.deriveStartPosition(step1) : null;
+    const q2Start = step2 ? this.deriveStartPosition(step2) : null;
+    const q3Start = step3 ? this.deriveStartPosition(step3) : null;
+    const q4Start = step4 ? this.deriveStartPosition(step4) : null;
 
     if (!q1Start || !q2Start || !q3Start || !q4Start) return false;
 

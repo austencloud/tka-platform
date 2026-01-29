@@ -11,7 +11,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ISequenceToEntryConverter } from "../services/contracts/ISequenceToEntryConverter";
   import { container } from "$lib/shared/di";
-  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { loopDetector } from "$lib/features/loop-labeler/services/implementations/LOOPDetector";
   import { onMount } from "svelte";
   import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
   import ChoreoCardQR from "./ChoreoCardQR.svelte";

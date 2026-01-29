@@ -219,9 +219,67 @@ export function serializeRoomState(state: SyncedRoomState): SerializableSyncedRo
 }
 
 /**
+ * Validate that a serialized room state has the required structure.
+ * Returns true if valid, throws descriptive error if invalid.
+ */
+export function validateSerializedRoomState(data: unknown): data is SerializableSyncedRoomState {
+	if (!data || typeof data !== 'object') {
+		throw new Error('Room state must be an object');
+	}
+
+	const state = data as Record<string, unknown>;
+
+	// Validate playback
+	if (!state.playback || typeof state.playback !== 'object') {
+		throw new Error('Room state missing playback data');
+	}
+	const playback = state.playback as Record<string, unknown>;
+	if (typeof playback.isPlaying !== 'boolean') {
+		throw new Error('Playback missing isPlaying boolean');
+	}
+	if (typeof playback.anchorStep !== 'number') {
+		throw new Error('Playback missing anchorStep number');
+	}
+
+	// Validate sequence
+	if (!state.sequence || typeof state.sequence !== 'object') {
+		throw new Error('Room state missing sequence data');
+	}
+	const sequence = state.sequence as Record<string, unknown>;
+	if (typeof sequence.id !== 'string') {
+		throw new Error('Sequence missing id string');
+	}
+
+	// Validate peers
+	if (!Array.isArray(state.peers)) {
+		throw new Error('Room state peers must be an array');
+	}
+	for (const peer of state.peers) {
+		if (!peer || typeof peer !== 'object') {
+			throw new Error('Invalid peer in peers array');
+		}
+		const p = peer as Record<string, unknown>;
+		if (typeof p.nodeId !== 'string') {
+			throw new Error('Peer missing nodeId string');
+		}
+	}
+
+	// Validate createdAt
+	if (!state.createdAt || typeof state.createdAt !== 'object') {
+		throw new Error('Room state missing createdAt timestamp');
+	}
+
+	return true;
+}
+
+/**
  * Convert serializable form back to SyncedRoomState.
+ * Validates the input structure before conversion.
  */
 export function deserializeRoomState(serialized: SerializableSyncedRoomState): SyncedRoomState {
+	// Validate structure before conversion
+	validateSerializedRoomState(serialized);
+
 	return {
 		playback: serialized.playback,
 		sequence: serialized.sequence,

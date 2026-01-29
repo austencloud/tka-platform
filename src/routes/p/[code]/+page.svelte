@@ -59,11 +59,11 @@
       // Offline codes are inline-encoded and have no Firebase record to update
       const sequenceEncoder = container.items.sequenceEncoder;
       if (!sequenceEncoder.isInlineEncoded(shortCode)) {
-        shortCodeManager.incrementScanCount(shortCode).catch((err) => {
+        shortCodeManager.incrementScanCount(shortCode).catch((err: unknown) => {
           console.warn("Failed to increment scan count:", err);
         });
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to load sequence:", err);
       error = "Failed to load sequence";
       isLoading = false;
@@ -80,7 +80,7 @@
           JSON.stringify(sequence)
         );
         goto("/?module=create&tab=edit");
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Failed to store sequence:", err);
         goto("/");
       }

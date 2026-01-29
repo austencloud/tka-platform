@@ -89,7 +89,10 @@
       highlightIndex = highlightIndex <= 0 ? matchedSequences.length - 1 : highlightIndex - 1;
     } else if (e.key === "Enter" && highlightIndex >= 0) {
       e.preventDefault();
-      onSelect(matchedSequences[highlightIndex]);
+      const selected = matchedSequences[highlightIndex];
+      if (selected) {
+        onSelect(selected);
+      }
       showResults = false;
     } else if (e.key === "Escape") {
       showResults = false;

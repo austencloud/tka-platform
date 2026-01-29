@@ -101,6 +101,8 @@ export interface ShowcaseVideo {
   excluded: boolean;
   crop?: VideoCropData;
   snip?: VideoSnipData;
+  /** Sequence word extracted from linked sequences or title */
+  sequenceWord?: string | null;
 }
 
 export interface CurationProgress {

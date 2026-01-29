@@ -6,7 +6,8 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { fade, slide } from "svelte/transition";
+  import { fade } from "svelte/transition";
+  import { safeSlide } from "$lib/shared/utils/transitions";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { ISimilarityCalculator, SimilarityReport } from "$lib/shared/comparison/services/contracts/ISimilarityCalculator";
   import type { ISequenceEquivalenceDetector, EquivalenceResult } from "$lib/features/create/shared/services/contracts/ISequenceEquivalenceDetector";
@@ -135,7 +136,7 @@
   </button>
 
   {#if isExpanded}
-    <div class="panel-content" transition:slide={{ duration: 200 }}>
+    <div class="panel-content" transition:safeSlide={{ duration: 200 }}>
       {#if isLoading}
         <div class="loading-state">
           <div class="spinner"></div>

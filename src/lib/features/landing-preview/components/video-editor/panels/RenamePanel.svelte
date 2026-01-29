@@ -124,7 +124,10 @@
         return;
       } else if (e.key === "Enter" && hasNavigatedSuggestions && highlightedIndex >= 0) {
         e.preventDefault();
-        selectTitleSuggestion(titleSuggestions[highlightedIndex]);
+        const suggestion = titleSuggestions[highlightedIndex];
+        if (suggestion) {
+          selectTitleSuggestion(suggestion);
+        }
         return;
       } else if (e.key === "Escape") {
         e.preventDefault();

@@ -44,6 +44,7 @@
   import ViewerFooter from "./ViewerFooter.svelte";
   import FullscreenControls from "./FullscreenControls.svelte";
   import { sequenceModalPersistence } from "../services/implementations/SequenceModalPersistence";
+import { playbackTimeCalculator } from "../services/implementations/PlaybackTimeCalculator";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager, type TrailVisibility } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -92,6 +93,8 @@
     initialPlaybackTimeMs?: number;
     /** Initial view mode to restore */
     initialViewMode?: ViewMode;
+    /** Initial stagger open state to restore */
+    initialStaggerOpen?: boolean;
   }
 
   let {
@@ -101,6 +104,7 @@
     initialBpm,
     initialPlaybackTimeMs,
     initialViewMode,
+    initialStaggerOpen,
   }: Props = $props();
 
   // Internal open state - syncs with prop, allows BaseModal to write to it
@@ -228,11 +232,7 @@
   const HORIZONTAL_TOLERANCE = 2; // Vertical movement must be > this times horizontal movement
 
   function handleTouchStart(e: TouchEvent) {
-    console.log('[Swipe] touchstart - isMobile:', isMobile, 'isFullscreen:', isFullscreen, 'isExportMode:', isExportMode, 'windowWidth:', window.innerWidth);
-    if (!isMobile || isFullscreen || isExportMode) {
-      console.log('[Swipe] touchstart blocked by guard');
-      return;
-    }
+    if (!isMobile || isFullscreen || isExportMode) return;
     const touch = e.touches[0];
     if (!touch) return;
 
@@ -243,21 +243,15 @@
     isSwiping = false;
     swipeGestureStarted = false;
     swipeY = 0;
-    console.log('[Swipe] touchstart tracking from', swipeStartX, swipeStartY);
   }
 
   function handleTouchMove(e: TouchEvent) {
-    if (!isTrackingTouch) {
-      console.log('[Swipe] touchmove - not tracking');
-      return;
-    }
+    if (!isTrackingTouch) return;
     const touch = e.touches[0];
     if (!touch) return;
 
     const deltaY = touch.clientY - swipeStartY;
     const deltaX = Math.abs(touch.clientX - swipeStartX);
-
-    console.log('[Swipe] touchmove - deltaY:', deltaY, 'deltaX:', deltaX, 'swipeGestureStarted:', swipeGestureStarted);
 
     // If we haven't committed to a swipe yet, check if this looks like a vertical swipe
     if (!swipeGestureStarted) {
@@ -266,12 +260,10 @@
       // 2. Vertical movement exceeds the commit threshold
       // 3. Vertical movement is significantly more than horizontal (to avoid interfering with horizontal scrolling)
       if (deltaY > SWIPE_COMMIT_THRESHOLD && deltaY > deltaX * HORIZONTAL_TOLERANCE) {
-        console.log('[Swipe] committing to swipe gesture');
         swipeGestureStarted = true;
         isSwiping = true;
       } else if (deltaX > SWIPE_COMMIT_THRESHOLD) {
         // This looks like a horizontal gesture, stop tracking for swipe
-        console.log('[Swipe] horizontal gesture detected, stopping');
         isTrackingTouch = false;
         return;
       } else {
@@ -287,7 +279,6 @@
       e.preventDefault();
       // Apply transform to the dialog element
       const dialog = document.querySelector("dialog.sequence-details-modal") as HTMLDialogElement | null;
-      console.log('[Swipe] applying transform translateY:', deltaY, 'dialog found:', !!dialog);
       if (dialog) {
         dialog.style.transform = `translateY(${deltaY}px)`;
         dialog.style.opacity = `${Math.max(0.3, 1 - deltaY / 300)}`;
@@ -360,11 +351,9 @@
   $effect(() => {
     if (!browser || !open) return;
 
-    console.log('[Swipe] attaching document-level touchmove listener');
     document.addEventListener("touchmove", handleTouchMove, { passive: false, capture: true });
 
     return () => {
-      console.log('[Swipe] removing document-level touchmove listener');
       document.removeEventListener("touchmove", handleTouchMove, { capture: true });
     };
   });
@@ -380,20 +369,17 @@
   });
 
   function enterEditMode(pane: 'animation' | 'image') {
-    console.log('[DEBUG] enterEditMode:', pane, 'isPlaying:', isPlayingLocal, 'currentStep:', currentStepLocal);
-    hapticService?.trigger("selection"); // Haptic feedback for mode expansion
+    hapticService?.trigger("selection");
     editingPane = pane;
     // On desktop, also enter fullscreen for maximum screen real estate
     if (!isMobile && !isFullscreen) {
       isFullscreen = true;
     }
     announceToScreenReader(`${pane === 'animation' ? 'Animation' : 'Image'} expanded. Tap to collapse.`);
-    console.log('[DEBUG] enterEditMode done, isPlaying:', isPlayingLocal, 'currentStep:', currentStepLocal);
   }
 
   function exitEditMode() {
-    console.log('[DEBUG] exitEditMode, isPlaying:', isPlayingLocal, 'currentStep:', currentStepLocal);
-    hapticService?.trigger("selection"); // Lighter feedback for collapse
+    hapticService?.trigger("selection");
     editingPane = null;
     // On desktop, also exit fullscreen when unfocusing
     if (!isMobile && isFullscreen) {
@@ -401,7 +387,6 @@
       fullscreenControlsVisible = false;
     }
     announceToScreenReader("Split view restored");
-    console.log('[DEBUG] exitEditMode done, isPlaying:', isPlayingLocal, 'currentStep:', currentStepLocal);
   }
 
   // Export mode functions
@@ -628,6 +613,7 @@
         window.removeEventListener("keydown", handleKeydown, { capture: true });
       };
     }
+    return undefined;
   });
 
   // Sync fullscreen state to dialog element (BaseModal doesn't pass data attributes through)
@@ -840,7 +826,7 @@
           isPlayingLocal = value as boolean;
           // When playback stops, save the current position to URL
           if (!(value as boolean)) {
-            const timeMs = calculatePlaybackTimeMs(currentStepLocal, bpmLocal);
+            const timeMs = playbackTimeCalculator.stepToTimeMs(currentStepLocal, bpmLocal);
             setPlaybackTimeUrl(timeMs, true);
           }
           // Broadcast to sync peers
@@ -850,7 +836,7 @@
           currentStepLocal = value as number;
           // Periodically update URL with current position (debounced internally)
           if (isPlayingLocal) {
-            const timeMs = calculatePlaybackTimeMs(value as number, bpmLocal);
+            const timeMs = playbackTimeCalculator.stepToTimeMs(value as number, bpmLocal);
             setPlaybackTimeUrl(timeMs);
           }
           // Broadcast to sync peers
@@ -899,18 +885,6 @@
       }
     }
   });
-
-  // Calculate playback time in milliseconds from step and BPM
-  function calculatePlaybackTimeMs(step: number, bpm: number): number {
-    const msPerBeat = 60000 / bpm;
-    return Math.round(step * msPerBeat);
-  }
-
-  // Calculate step from playback time in milliseconds
-  function calculateStepFromTimeMs(timeMs: number, bpm: number): number {
-    const msPerBeat = 60000 / bpm;
-    return timeMs / msPerBeat;
-  }
 
   // Load animation services
   async function loadServices() {
@@ -964,7 +938,7 @@
 
       // Restore playback position if provided
       if (initialPlaybackTimeMs && initialPlaybackTimeMs > 0) {
-        const targetStep = calculateStepFromTimeMs(initialPlaybackTimeMs, initialBpm || 60);
+        const targetStep = playbackTimeCalculator.timeMsToStep(initialPlaybackTimeMs, initialBpm || 60);
         playbackController.jumpToStep(targetStep);
         currentStepLocal = targetStep;
       }

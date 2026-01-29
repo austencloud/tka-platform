@@ -53,6 +53,7 @@
   import type { ModuleId } from "../../navigation/domain/types";
   import { handleModuleChange } from "../../navigation-coordinator/navigation-coordinator.svelte";
   import { container } from "../../di";
+  import type { Container } from "iti";
 
   // Get DI container from context
   const getContainer = getContext<() => Container | null>("di-container");
@@ -264,7 +265,7 @@
             break;
           case "6":
             event.preventDefault();
-            switchModule("library");
+            switchModule("browse");
             break;
         }
       }

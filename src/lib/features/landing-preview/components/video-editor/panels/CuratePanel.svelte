@@ -141,7 +141,10 @@
         return;
       } else if (e.key === "Enter" && highlightedIndex >= 0) {
         e.preventDefault();
-        selectSuggestion(titleSuggestions[highlightedIndex]);
+        const suggestion = titleSuggestions[highlightedIndex];
+        if (suggestion) {
+          selectSuggestion(suggestion);
+        }
         return;
       }
     }

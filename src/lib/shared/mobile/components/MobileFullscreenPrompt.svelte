@@ -150,7 +150,7 @@
       }, 2500);
     }
 
-    const unsubscribeInstall = fullscreenService.onInstallPromptAvailable(
+    const unsubscribeInstall = fullscreenService?.onInstallPromptAvailable(
       (canInstall: boolean) => {
         canInstallPWA = canInstall;
         strategy = fullscreenService?.getRecommendedStrategy() ?? strategy;

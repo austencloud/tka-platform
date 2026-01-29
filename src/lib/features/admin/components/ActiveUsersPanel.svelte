@@ -47,11 +47,13 @@
     try {
       userActivityService = container.items.userActivityTracker;
 
-      // Subscribe to all users (Firestore + presence data merged)
-      unsubscribe = userActivityService.subscribeToAllUsers((allUsers) => {
-        users = allUsers;
-        isLoading = false;
-      });
+      if (userActivityService) {
+        // Subscribe to all users (Firestore + presence data merged)
+        unsubscribe = userActivityService.subscribeToAllUsers((allUsers) => {
+          users = allUsers;
+          isLoading = false;
+        });
+      }
     } catch (e) {
       console.error("Failed to initialize user activity service:", e);
       error = "Failed to load user data";

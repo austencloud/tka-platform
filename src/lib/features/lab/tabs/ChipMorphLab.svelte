@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import { spring } from "svelte/motion";
+  import { MorphChipGroup, MorphChip } from "$lib/shared/foundation/ui/morph-chip";
 
   // ============================================================
   // SHARED STATE
@@ -14,10 +15,15 @@
 
   const SPRING_CONFIG = { stiffness: 0.3, damping: 0.8 };
 
-  // Mutable values for each setting
+  // Mutable values for each setting (A, B, C approaches)
   let dashesValue = $state("Mixed");
   let propsValue = $state("Mixed");
   let handsValue = $state("Smooth");
+
+  // Mutable values for Approach D (primitive components)
+  let dashesValueD = $state("Mixed");
+  let propsValueD = $state("Mixed");
+  let handsValueD = $state("Smooth");
 
   const settings = [
     { id: "dashes", label: "Dashes", expandedLabel: "Dashes", getValue: () => dashesValue, setValue: (v: string) => dashesValue = v },
@@ -427,12 +433,61 @@
     </div>
   </div>
 
+  <!-- ============================================================ -->
+  <!-- APPROACH D: Reusable Primitives -->
+  <!-- ============================================================ -->
+  <div class="approach approach-full">
+    <h3>D) Reusable Primitives <span class="badge badge-new">New</span></h3>
+    <p class="desc">Extracted from Approach B into MorphChipGroup + MorphChip components</p>
+
+    <!-- Fake tool panel context -->
+    <div class="fake-tool-panel">
+      <div class="fake-input-row">
+        <span class="fake-word">BELOVE</span>
+        <button class="fake-btn"><i class="fas fa-backspace"></i></button>
+        <button class="fake-btn"><i class="fas fa-times"></i></button>
+      </div>
+
+      <!-- Settings area using new primitives -->
+      <div class="settings-area settings-area-d">
+        <MorphChipGroup>
+          <MorphChip
+            id="dashes-d"
+            label="Dashes"
+            bind:value={dashesValueD}
+            options={options}
+          />
+          <MorphChip
+            id="props-d"
+            label="Props"
+            expandedLabel="Prop Reversals"
+            bind:value={propsValueD}
+            options={options}
+          />
+          <MorphChip
+            id="hands-d"
+            label="Hands"
+            expandedLabel="Hand Reversals"
+            bind:value={handsValueD}
+            options={options}
+          />
+        </MorphChipGroup>
+      </div>
+
+      <button class="fake-generate-btn">
+        <i class="fas fa-wand-magic-sparkles"></i>
+        Generate
+      </button>
+    </div>
+  </div>
+
   <div class="notes">
     <h4>Key Differences:</h4>
     <ul>
       <li><strong>A (Current):</strong> Label destroyed/recreated - color pops instantly</li>
       <li><strong>B (Same Element):</strong> Label persists, color morphs via <code>color-mix()</code></li>
       <li><strong>C (View Transitions):</strong> DOM swap but browser morphs between states - position AND color animate smoothly</li>
+      <li><strong>D (Primitives):</strong> Same as B, but extracted into reusable <code>MorphChipGroup</code> + <code>MorphChip</code> components</li>
     </ul>
   </div>
 </div>
@@ -1140,12 +1195,29 @@
     animation-timing-function: cubic-bezier(0.34, 1.2, 0.64, 1);
   }
 
+  /* ============================================================ */
+  /* APPROACH D STYLES - Reusable primitives */
+  /* ============================================================ */
+
+  .approach-full {
+    grid-column: 1 / -1;
+  }
+
+  .badge-new {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  }
+
+  .settings-area-d {
+    min-height: 132px;
+  }
+
   @media (max-width: 700px) {
     .comparison {
       grid-template-columns: 1fr;
     }
 
-    .approach-wide {
+    .approach-wide,
+    .approach-full {
       grid-column: 1;
     }
   }

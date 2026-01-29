@@ -46,10 +46,11 @@
       }
 
       // Initialize the background system
-      await backgroundSystem.initialize(dimensions, quality);
-
-      // Start animation loop
-      startAnimation();
+      if (backgroundSystem) {
+        await backgroundSystem.initialize(dimensions, quality);
+        // Start animation loop
+        startAnimation();
+      }
     } catch (error) {
       console.error("Failed to initialize Deep Ocean background:", error);
     }

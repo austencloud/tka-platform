@@ -186,11 +186,12 @@
   // Width breakpoint for modal vs drawer
   // 768px is the standard tablet/desktop breakpoint and matches when sidebar nav appears
   const DESKTOP_BREAKPOINT = 768;
-  // Minimum height for side-by-side modal layout
-  // The generate panel needs ~700px for all content (avatar preview + style + shade + props + button)
-  // Modal is 90vh, so we need viewport of ~780px minimum, but with margins/padding we need more
-  // At 930px viewport there was still overflow, so setting to 1000px to be safe
+  // Minimum height for side-by-side modal layout (when width is moderate)
   const SIDE_BY_SIDE_MIN_HEIGHT = 1000;
+  // But if we have lots of width, we can use side-by-side at lower heights
+  // because the narrower panels mean content stacks better
+  const WIDE_VIEWPORT_THRESHOLD = 1400;
+  const SIDE_BY_SIDE_MIN_HEIGHT_WIDE = 800;
   // Minimum height for any modal - below this use drawer
   const MIN_MODAL_HEIGHT = 500;
 
@@ -216,9 +217,10 @@
   );
 
   // Within modal: use side-by-side layout only if we have enough height
-  // Otherwise use tabbed modal (same as drawer tabs but in modal container)
+  // Wide viewports can use side-by-side at lower heights (narrower panels = less vertical space needed)
   const useSideBySide = $derived(
-    viewportHeight >= SIDE_BY_SIDE_MIN_HEIGHT
+    viewportHeight >= SIDE_BY_SIDE_MIN_HEIGHT ||
+    (viewportWidth >= WIDE_VIEWPORT_THRESHOLD && viewportHeight >= SIDE_BY_SIDE_MIN_HEIGHT_WIDE)
   );
 
   // Use wizard (step-by-step) mode on very small screens
@@ -915,6 +917,7 @@
 
   .modal-tab-switcher {
     display: flex;
+    justify-content: center;
     padding: var(--spacing-md, 16px) var(--modal-padding, 24px);
     gap: var(--spacing-sm, 8px);
     flex-shrink: 0;
@@ -922,12 +925,14 @@
   }
 
   .modal-tab-switcher .tab-btn {
-    flex: 1;
+    flex: 0 1 auto;
+    min-width: 160px;
+    max-width: 240px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: var(--spacing-sm, 8px);
-    padding: var(--spacing-sm, 10px);
+    padding: var(--spacing-sm, 10px) var(--spacing-lg, 24px);
     min-height: 48px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -958,6 +963,11 @@
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
     align-self: stretch;
+  }
+
+  /* Choose panel - vertically center content when there's extra space */
+  .modal-panels .choose-panel {
+    justify-content: center;
   }
 
   /* ═══════════════════════════════════════════════════════════════════
@@ -1244,15 +1254,18 @@
   }
 
   /* Family Row - style chips */
+  /* Use grid with auto-fit to create balanced rows (3+2 instead of 4+1) */
   .family-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
     gap: var(--spacing-sm, 10px);
-    flex-wrap: wrap;
+    max-width: 400px; /* Constrain width to force 3+2 layout */
   }
 
   .family-chip {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--spacing-xs, 6px);
     padding: var(--spacing-sm, 10px) var(--spacing-md, 16px);
     min-height: 48px; /* AAA touch target */

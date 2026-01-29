@@ -35,6 +35,7 @@
     [UndoOperationType.SHIFT_START]: "Shift Start",
     [UndoOperationType.APPLY_TURN_PATTERN]: "Turn Pattern",
     [UndoOperationType.APPLY_ROTATION_PATTERN]: "Rotation Pattern",
+    [UndoOperationType.APPLY_DURATION_PATTERN]: "Duration Pattern",
     [UndoOperationType.EXTEND_SEQUENCE]: "Extend",
     [UndoOperationType.MODIFY_BEAT_PROPERTIES]: "Edit Beat",
     [UndoOperationType.GENERATE_SEQUENCE]: "Generate Sequence",

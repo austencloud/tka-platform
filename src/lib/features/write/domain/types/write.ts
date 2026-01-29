@@ -45,6 +45,8 @@ export interface ActThumbnailInfo {
   thumbnailUrl?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  /** Last modification time (alias for updatedAt) */
+  lastModified?: Date;
 }
 
 /**

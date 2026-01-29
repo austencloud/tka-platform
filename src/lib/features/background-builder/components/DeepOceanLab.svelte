@@ -128,14 +128,15 @@
     }
 
     try {
-      backgroundSystem = container.items.deepOceanBackgroundSystem;
+      const system = container.items.deepOceanBackgroundSystem;
+      backgroundSystem = system;
 
-      if (backgroundSystem) {
+      if (system) {
         const dimensions = { width: canvas.width, height: canvas.height };
-        await backgroundSystem.initialize(dimensions, quality, { spawnFishOnScreen: true });
+        await system.initialize(dimensions, quality, { spawnFishOnScreen: true });
 
-        backgroundSystem.setLayerVisibility(layers);
-        stats = backgroundSystem.getStats();
+        system.setLayerVisibility(layers);
+        stats = system.getStats();
         updateFishList();
 
         startAnimation();

@@ -65,9 +65,7 @@ export function createToggleCardState<T>(props: {
       deviceDetector = container.items.deviceDetector;
 
       // Set initial layout state
-      if (deviceDetector) {
-        isLandscapeMobile = deviceDetector.isLandscapeMobile();
-      }
+      isLandscapeMobile = deviceDetector?.isLandscapeMobile() ?? false;
 
       // Subscribe to device capability changes
       const cleanupDeviceListener = deviceDetector?.onCapabilitiesChanged(() => {

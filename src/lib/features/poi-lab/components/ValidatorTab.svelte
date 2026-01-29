@@ -11,6 +11,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { PoiValidationResult } from "../domain/poi-models";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
   // Services
   const sequenceValidator = container.items.poiSequenceValidator;
@@ -57,10 +58,9 @@
       // Fetch pictographs for each letter
       const pictographs: PictographData[] = [];
       for (const letter of letters) {
-        const variations = await letterQueryHandler.getPictographsByLetter(letter);
-        if (variations.length > 0) {
-          // Use first variation (could be enhanced to pick based on context)
-          pictographs.push(variations[0]!);
+        const pictograph = await letterQueryHandler.getPictographByLetter(letter as any, GridMode.DIAMOND);
+        if (pictograph) {
+          pictographs.push(pictograph);
         }
       }
 
@@ -86,7 +86,7 @@
 
       // Extract transition violations (those not tied to a specific beat)
       const transitionViolations = result.violations.filter(
-        (v) => v.message.includes("transition") || v.message.includes("reversal")
+        (v: { message: string }) => v.message.includes("transition") || v.message.includes("reversal")
       );
 
       validationResult = {

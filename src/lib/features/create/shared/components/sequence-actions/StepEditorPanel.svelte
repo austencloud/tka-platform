@@ -213,6 +213,7 @@
       return () => clearTimeout(timeout);
     }
     lastSequenceVersion = sequenceVersion;
+    return undefined;
   });
 
   // Inspect modal state (admin-only)

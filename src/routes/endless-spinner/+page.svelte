@@ -625,7 +625,6 @@
               bluePropType={PropType.STAFF}
               redPropType={PropType.STAFF}
               word={currentSequence?.word || currentSequence?.name || ""}
-              wordHeaderVisible={true}
               progressBarVariant="minimal"
               previewDarkMode={true}
               onProgressBarSeek={handleProgressBarSeek}

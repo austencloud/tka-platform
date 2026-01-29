@@ -66,12 +66,13 @@
     let deviceCleanup: (() => void) | undefined;
     try {
       deviceDetector = container.items.deviceDetector;
-      responsiveSettings = deviceDetector.getResponsiveSettings();
+      if (deviceDetector) {
+        responsiveSettings = deviceDetector.getResponsiveSettings();
+        deviceCleanup = deviceDetector.onCapabilitiesChanged(() => {
+          responsiveSettings = deviceDetector!.getResponsiveSettings();
+        });
+      }
       hapticService = container.items.hapticFeedback;
-
-      deviceCleanup = deviceDetector.onCapabilitiesChanged(() => {
-        responsiveSettings = deviceDetector!.getResponsiveSettings();
-      });
     } catch (error) {
       console.warn("SettingsModule: Failed to resolve DeviceDetector", error);
     }

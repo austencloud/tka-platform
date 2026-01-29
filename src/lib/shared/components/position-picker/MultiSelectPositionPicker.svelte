@@ -73,7 +73,7 @@ Uses blocklist approach: positions in blockedPositions are excluded.
     hapticService?.trigger("selection");
 
     const newBlocked = blockedSet.has(position)
-      ? blockedPositions.filter((p) => p !== position) // Remove from blocked
+      ? blockedPositions.filter((p: GridPosition) => p !== position) // Remove from blocked
       : [...blockedPositions, position]; // Add to blocked
 
     onBlockedChange(newBlocked);

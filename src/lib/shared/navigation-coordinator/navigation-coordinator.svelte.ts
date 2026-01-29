@@ -436,6 +436,10 @@ export function getModuleDefinitions() {
   // Must access the $state directly (not through getter) for Svelte 5 reactivity
   const _flagsVersion = featureFlagState.flagsVersion;
 
+  // Also read globalFlagOverrides to ensure reactivity when flags are toggled
+  // The object reference changes on each update, so reading it establishes the dependency
+  const _globalOverrides = featureFlagState.globalFlagOverrides;
+
   return MODULE_DEFINITIONS.filter((module) => {
     // Library module is now integrated into Gallery via Community/My Library toggle
     // (Note: "library" is not in ModuleId type but may exist in legacy data)

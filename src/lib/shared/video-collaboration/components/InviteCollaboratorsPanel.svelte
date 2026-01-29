@@ -99,7 +99,7 @@
       try {
         const results = await userService!.searchUsers(searchQuery, 10);
         // Filter out users already in the collaboration
-        searchResults = results.filter((u) => !existingUserIds.has(u.id));
+        searchResults = results.filter((u: EnhancedUserProfile) => !existingUserIds.has(u.id));
       } catch (e) {
         console.error("Search failed:", e);
         searchResults = [];

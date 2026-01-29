@@ -88,10 +88,11 @@
         authService = container.items.authenticator;
       }
 
-      await authService.signInWithGoogleCredential(response.credential);
-
-      debug.success("Google One Tap sign-in successful!");
-      onSuccess?.();
+      if (authService) {
+        await authService.signInWithGoogleCredential(response.credential);
+        debug.success("Google One Tap sign-in successful!");
+        onSuccess?.();
+      }
     } catch (error) {
       debug.error("Google One Tap sign-in failed:", error);
       onError?.(error instanceof Error ? error : new Error("Sign-in failed"));

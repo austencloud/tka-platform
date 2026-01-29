@@ -251,6 +251,7 @@
         window.removeEventListener("keydown", handleKeydown, { capture: true });
       };
     }
+    return undefined;
   });
 
   onDestroy(() => {

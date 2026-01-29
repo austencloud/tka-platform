@@ -52,7 +52,7 @@
         stepIndex = 0; // Loop back to start
       }
       currentStepNumber = stepIndex;
-    }, stepDuration);
+    }, beatDuration);
   }
 
   function stopPlayback() {

@@ -205,8 +205,8 @@ export class HybridLogicalClock implements IHybridLogicalClock {
 			throw new Error(`Invalid HLC format: expected "wallTime:logical:nodeId", got "${s}"`);
 		}
 
-		const wallTime = parseInt(parts[0], 10);
-		const logical = parseInt(parts[1], 10);
+		const wallTime = parseInt(parts[0]!, 10);
+		const logical = parseInt(parts[1]!, 10);
 		// Node ID may contain colons, so join remaining parts
 		const nodeId = parts.slice(2).join(':');
 

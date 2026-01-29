@@ -128,7 +128,10 @@
       } else if (e.key === "Enter" && hasNavigatedSuggestions && highlightedIndex >= 0) {
         // Only select suggestion if user explicitly navigated with arrow keys
         e.preventDefault();
-        selectSuggestion(titleSuggestions[highlightedIndex]);
+        const suggestion = titleSuggestions[highlightedIndex];
+        if (suggestion) {
+          selectSuggestion(suggestion);
+        }
         return;
       }
     }

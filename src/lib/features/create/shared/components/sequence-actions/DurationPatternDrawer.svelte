@@ -359,7 +359,7 @@
                         </h4>
                         <div class="patterns-list">
                           {#each groupTemplates as template}
-                            {@const pattern = authState.user
+                            {@const pattern = authState.user && sequence
                               ? templateToPattern(
                                   template,
                                   authState.user.uid,
@@ -388,7 +388,7 @@
                   <!-- Filtered display (mobile always uses this, desktop when filter selected) -->
                   <div class="patterns-list" class:mobile-compact={isMobile}>
                     {#each filteredTemplates as template}
-                      {@const pattern = authState.user
+                      {@const pattern = authState.user && sequence
                         ? templateToPattern(
                             template,
                             authState.user.uid,

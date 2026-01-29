@@ -27,7 +27,7 @@
 
   // Find current model data
   const currentModelData = $derived(
-    availableModels.find((m) => m.id === currentModel) || availableModels[0]
+    availableModels.find((m: ModelOption) => m.id === currentModel) || availableModels[0]
   );
 
   // Desktop breakpoint

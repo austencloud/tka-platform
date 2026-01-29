@@ -35,7 +35,7 @@
 
     <div class="sheet-content">
       <SequenceGrid
-        sequences={act.sequences}
+        sequences={act.sequences.map(s => s.sequenceData)}
         {onSequenceClicked}
         {onSequenceRemoveRequested}
       />

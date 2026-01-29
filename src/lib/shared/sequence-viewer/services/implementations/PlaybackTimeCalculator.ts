@@ -22,3 +22,6 @@ export class PlaybackTimeCalculator implements IPlaybackTimeCalculator {
     return Math.round(speed * 60);
   }
 }
+
+// Singleton instance for direct import
+export const playbackTimeCalculator = new PlaybackTimeCalculator();

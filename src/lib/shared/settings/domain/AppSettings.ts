@@ -123,6 +123,7 @@ export interface AppSettings {
     showNotes?: boolean; // Bottom-center: notes text
     showBirthday?: boolean; // Bottom-right: birthday date
     customNotesText?: string; // Custom text for notes (default: "Created using TKA Scribe")
+    showLoopGlyph?: boolean; // Show LOOP glyph indicator
   };
 }
 

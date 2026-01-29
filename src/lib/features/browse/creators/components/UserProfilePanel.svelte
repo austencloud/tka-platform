@@ -262,7 +262,7 @@
         await Promise.all([
           leaderboardService.getUserRank(userId, "xp"),
           leaderboardService.getUserRank(userId, "level"),
-          leaderboardService.getUserRank(userId, "gallery"),
+          leaderboardService.getUserRank(userId, "sequences"),
           leaderboardService.getUserRank(userId, "achievements"),
           leaderboardService.getUserRank(userId, "streak"),
         ]);

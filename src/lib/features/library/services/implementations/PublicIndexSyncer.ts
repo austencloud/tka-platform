@@ -124,7 +124,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
 
   /**
    * Fetch LOOP type from the loop-labels collection.
-   * Returns a string like "rotated", "mirrored+swapped", "freeform", or null if not labeled.
+   * Returns a string like "rotated", "mirrored+swapped", or null if not labeled or freeform.
    */
   private async fetchLoopType(
     firestore: Firestore,
@@ -141,9 +141,9 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
 
       const data = labelDoc.data();
 
-      // If explicitly marked as freeform
+      // If explicitly marked as freeform, return null (no recognized pattern)
       if (data.isFreeform) {
-        return "freeform";
+        return null;
       }
 
       // If has designations, join the components
@@ -160,8 +160,8 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
           if (components && components.length > 0) {
             return components.join("+");
           }
-          // Or use the loopType directly if no components
-          return firstDesignation.loopType || "freeform";
+          // Or use the loopType directly if no components (returns null for freeform)
+          return firstDesignation.loopType || null;
         }
       }
 

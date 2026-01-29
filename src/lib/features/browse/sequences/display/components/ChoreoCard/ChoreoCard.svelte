@@ -98,7 +98,7 @@ LOOP badge:
     try {
       const result = loopDetector.detectLOOPType(seq);
 
-      if (result.loopType && result.loopType !== "freeform") {
+      if (result.loopType !== null) {
         const components = loopTypeResolver.parseComponents(result.loopType);
         const resultSet = components.size > 0 ? components : null;
         loopDetectionCache.set(cacheKey, resultSet);
@@ -122,7 +122,7 @@ LOOP badge:
     const loopType = displayedSequence.loopType;
 
     // If loopType is explicitly set, use it
-    if (loopType && loopType !== "freeform") {
+    if (loopType !== null && loopType !== undefined) {
       const components = loopTypeResolver.parseComponents(loopType);
       return components.size > 0 ? components : null;
     }

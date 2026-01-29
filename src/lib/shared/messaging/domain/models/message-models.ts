@@ -25,6 +25,8 @@ export interface MessageAttachment {
   type: MessageAttachmentType;
   url: string;
   thumbnailUrl?: string;
+  /** Display name for the attachment (e.g., filename, sequence word) */
+  name?: string;
   metadata?: {
     title?: string;
     description?: string;

@@ -79,11 +79,13 @@
 
     try {
       deviceDetector = container.items.deviceDetector;
-      responsiveSettings = deviceDetector.getResponsiveSettings();
+      if (deviceDetector) {
+        responsiveSettings = deviceDetector.getResponsiveSettings();
 
-      cleanup = deviceDetector.onCapabilitiesChanged(() => {
-        responsiveSettings = deviceDetector!.getResponsiveSettings();
-      });
+        cleanup = deviceDetector.onCapabilitiesChanged(() => {
+          responsiveSettings = deviceDetector!.getResponsiveSettings();
+        });
+      }
     } catch (error) {
       console.warn(
         "AdminTwoPanelLayout: Failed to resolve DeviceDetector",

@@ -54,6 +54,8 @@ export interface FireflyForestTreeTypes {
   oak: boolean;
   maple: boolean;
   poplar: boolean;
+  willow: boolean;
+  dead: boolean;
 }
 
 export interface FireflyForestLabSettings {
@@ -107,7 +109,8 @@ export type RainbowPridePalette =
   | "pansexual"
   | "nonbinary"
   | "lesbian"
-  | "asexual";
+  | "asexual"
+  | "gay";
 
 export interface RainbowLabLayers {
   gradient: boolean;
@@ -175,6 +178,8 @@ export const DEFAULT_FIREFLY_FOREST_SETTINGS: FireflyForestLabSettings = {
     oak: true,
     maple: true,
     poplar: true,
+    willow: false,
+    dead: false,
   },
 };
 

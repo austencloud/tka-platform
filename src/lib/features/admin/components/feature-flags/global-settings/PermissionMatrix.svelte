@@ -31,12 +31,6 @@
   // Get flags from service
   const featureFlags = $derived(featureFlagService.featureConfigs);
 
-  // Debug: log when featureFlags changes
-  $effect(() => {
-    const trainModule = featureFlags.find(f => f.id === 'module:train');
-    console.log('[PermissionMatrix] featureFlags updated, train module enabled:', trainModule?.enabled, 'flagsVersion:', featureFlagService.flagsVersion);
-  });
-
   // Build hierarchy and filter
   const hierarchy = $derived(buildFeatureHierarchy(featureFlags));
 

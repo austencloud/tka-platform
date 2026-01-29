@@ -88,6 +88,8 @@ with pre-prepared data for better performance.
     widthMultiplier = 1,
     // Cell index for position caching (enables smooth transitions on regeneration)
     cellIndex = null,
+    // Musical position string (e.g., "1", "1.5", "2e") for beat number display (timeline mode)
+    musicalPosition = undefined,
   } = $props<{
     pictographData?: (StepData | PictographData) | null;
     disableTransitions?: boolean;
@@ -123,6 +125,8 @@ with pre-prepared data for better performance.
     widthMultiplier?: number;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
     cellIndex?: number | null;
+    /** Musical position string (e.g., "1", "1.5", "2e") for beat number display in timeline mode */
+    musicalPosition?: string;
   }>();
 
   // Extract beat context from StepData if available

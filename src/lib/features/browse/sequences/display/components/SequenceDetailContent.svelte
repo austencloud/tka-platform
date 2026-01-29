@@ -14,7 +14,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ISequenceDetailLoader } from "../services/contracts/ISequenceDetailLoader";
   import type { IVideoCountManager } from "../services/contracts/IVideoCountManager";
-  import type { ISequenceImageSharer } from "../services/contracts/ISequenceImageSharer";
+  import type { ISequenceImageSharer } from "$lib/shared/share/services/contracts/ISequenceImageSharer";
   import type { IClaudeCodeCopier } from "../services/contracts/IClaudeCodeCopier";
   import type { MediaType } from "$lib/shared/sequence-viewer/domain/types";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
