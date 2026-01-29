@@ -383,6 +383,7 @@ Same functionality, different density.
     <!-- Generate Button - hidden in input mode (available in toolbar) -->
     <button
       class="generate-button"
+      class:generating={spellState.isGenerating}
       onclick={handleGenerate}
       disabled={!canGenerate}
       aria-label={canGenerate ? "Generate sequence" : "Enter a word first"}
@@ -507,6 +508,12 @@ Same functionality, different density.
     background: var(--theme-accent-hover, #4f46e5);
   }
 
+  /* Immediate press feedback */
+  .generate-button:active:not(:disabled) {
+    transform: scale(0.96);
+    background: var(--theme-accent-hover, #4f46e5);
+  }
+
   .generate-button:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 4px;
@@ -516,6 +523,29 @@ Same functionality, different density.
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
     cursor: not-allowed;
+  }
+
+  /* Generating state - pulse animation for visual feedback */
+  .generate-button.generating {
+    animation: generatePulse 600ms ease-out;
+    pointer-events: none;
+  }
+
+  @keyframes generatePulse {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5);
+    }
+    30% {
+      transform: scale(0.97);
+    }
+    60% {
+      box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+    }
   }
 
   /* Error Banner - scales with container */
