@@ -14,12 +14,11 @@
   import PlaybackControls from "./components/PlaybackControls.svelte";
   import MobilePlaybackToolbar from "./components/MobilePlaybackToolbar.svelte";
   import MobilePlaybackStepGrid from "./components/MobilePlaybackStepGrid.svelte";
-  import TrailSettingsSheet from "./components/TrailSettingsSheet.svelte";
+  import TrailSettingsSheet from "../../components/controls/TrailSettingsSheet.svelte";
   import SingleRenderer from "./renderers/SingleRenderer.svelte";
   import TunnelRenderer from "./renderers/TunnelRenderer.svelte";
   import MirrorRenderer from "./renderers/MirrorRenderer.svelte";
   import GridRenderer from "./renderers/GridRenderer.svelte";
-  import type { TrailSettings } from "../../shared/domain/types/TrailTypes";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -47,7 +46,6 @@
 
   // Trail settings sheet
   let isTrailSettingsOpen = $state(false);
-  let currentSettingsCanvasId = $state<string>("main");
 
   // Tunnel colors - uses centralized getMotionColor (dark mode for animation canvas)
   const tunnelColors = {
@@ -90,16 +88,8 @@
     // TODO: Implement share functionality
   }
 
-  function handleOpenSettings(canvasId: string) {
-    currentSettingsCanvasId = canvasId;
+  function handleOpenSettings(_canvasId: string) {
     isTrailSettingsOpen = true;
-  }
-
-  function handleTrailSettingsChange(
-    canvasId: string,
-    settings: Partial<TrailSettings>
-  ) {
-    playbackState.updateTrailSettings(canvasId, settings);
   }
 
   function handleGridSelectCell(index: number) {
@@ -109,16 +99,6 @@
   function handleGridRemoveCell(index: number) {
     // TODO: Remove sequence from grid cell
   }
-
-  // Get current canvas settings
-  const currentCanvasSettings = $derived(() => {
-    const settings = playbackState.canvasSettings.find(
-      (cs) => cs.id === currentSettingsCanvasId
-    );
-    return (
-      settings?.trailSettings || playbackState.canvasSettings[0]?.trailSettings
-    );
-  });
 
   // Get primary and secondary sequences for tunnel mode
   const primarySequence = $derived(() => {
@@ -277,17 +257,7 @@
   {/if}
 
   <!-- Trail Settings Sheet -->
-  {#if currentCanvasSettings()}
-    {@const canvasSettings = currentCanvasSettings()}
-    {#if canvasSettings}
-      <TrailSettingsSheet
-        bind:isOpen={isTrailSettingsOpen}
-        canvasId={currentSettingsCanvasId}
-        trailSettings={canvasSettings}
-        onSettingsChange={handleTrailSettingsChange}
-      />
-    {/if}
-  {/if}
+  <TrailSettingsSheet bind:isOpen={isTrailSettingsOpen} />
 </div>
 
 <style>

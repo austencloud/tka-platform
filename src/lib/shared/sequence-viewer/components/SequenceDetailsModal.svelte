@@ -46,7 +46,7 @@
   import { sequenceModalPersistence } from "../services/implementations/SequenceModalPersistence";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
-  import { getAnimationVisibilityManager, type TrailStyle } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { getAnimationVisibilityManager, type TrailVisibility } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { goto } from "$app/navigation";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   // Button components
@@ -656,7 +656,7 @@
 
   // Animation visibility (global singleton)
   const animationVisibility = getAnimationVisibilityManager();
-  let animTrailStyle = $state<TrailStyle>(animationVisibility.getTrailStyle());
+  let animTrailStyle = $state<TrailVisibility>(animationVisibility.getTrailStyle());
   let animTkaGlyph = $state(animationVisibility.getVisibility("tkaGlyph"));
   let animWordHeader = $state(animationVisibility.getVisibility("wordHeader"));
 

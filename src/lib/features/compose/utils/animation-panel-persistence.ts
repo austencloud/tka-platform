@@ -13,8 +13,6 @@ import {
   TrackingMode,
   TrailMode,
   TrailEffect,
-  FadeStyle,
-  TaperStyle,
 } from "../shared/domain/types/TrailTypes";
 
 const COLLAPSE_STATE_KEY = "tka_animation_collapse_states";
@@ -48,20 +46,17 @@ export function loadTrailSettings(): TrailSettings {
     }
 
     // Merge with defaults, then FORCE the vivid settings
-    // Old persisted settings may have taperStyle: "none" which we don't want
+    // The rendering now always uses exponential fade and tapered width (hardcoded)
     const result = { ...DEFAULT_TRAIL_SETTINGS, ...parsed };
 
     // ALWAYS force these vivid settings - they make trails beautiful
     result.enabled = true;
     result.mode = TrailMode.FADE;
     result.effect = TrailEffect.GLOW;
-    result.fadeStyle = FadeStyle.EXPONENTIAL;
-    result.taperStyle = TaperStyle.TAPERED;
     // Thicker line width to compensate for tapering (tapered trails thin at tail)
     result.lineWidth = 5;
     result.maxOpacity = 1.0; // Full opacity at head
     result.minOpacity = 0.25; // Higher minimum so tail doesn't fade too much
-    result.glowEnabled = true;
     result.glowBlur = 3; // Stronger glow for more visibility
     result.fadeDurationMs = 2500;
 

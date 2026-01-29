@@ -211,6 +211,7 @@ export class AnimationEngine {
   private canvasSize = DEFAULT_CANVAS_SIZE;
   private instanceId = Math.random().toString(36).substring(2, 8);
   private settingsLoaded = false;
+  private trailCapturerInitialized = false;
   private previousGridMode: string | null = null;
   private cacheSequenceId: string | null = null;
   private unsubscribeVisibility: (() => void) | null = null;
@@ -337,7 +338,6 @@ export class AnimationEngine {
 
         // Trigger render when trails visibility changes
         if (state.trails !== this.prevTrailsVisible) {
-          console.log('[AnimationEngine] trails visibility changed:', { prev: this.prevTrailsVisible, new: state.trails, isInitialized: this.state.isInitialized });
           this.prevTrailsVisible = state.trails;
           if (this.state.isInitialized) {
             this.renderLoopService?.triggerRender(() =>
@@ -423,14 +423,12 @@ export class AnimationEngine {
       this.settingsService?.currentSettings ||
       props.externalTrailSettings !== undefined;
 
-    if (shouldInitTrailCapturer && this.trailCapturer) {
+    if (shouldInitTrailCapturer && this.trailCapturer && !this.trailCapturerInitialized) {
       if (!this.settingsLoaded) {
         this.settingsLoaded = true;
-        this.initializeTrailCapturer(props);
-      } else if (!this.trailSettingsSyncService?.state.syncedSettings) {
-        // Retry initialization if sync service wasn't ready on first attempt
-        this.initializeTrailCapturer(props);
       }
+      this.initializeTrailCapturer(props);
+      this.trailCapturerInitialized = true;
     }
 
     // Handle prop type changes - check for overrides first, then settings
@@ -1133,11 +1131,10 @@ export class AnimationEngine {
     return (
       a.enabled !== b.enabled ||
       a.mode !== b.mode ||
-      a.style !== b.style ||
+      a.effect !== b.effect ||
       a.fadeDurationMs !== b.fadeDurationMs ||
       a.maxPoints !== b.maxPoints ||
       a.lineWidth !== b.lineWidth ||
-      a.glowEnabled !== b.glowEnabled ||
       a.glowBlur !== b.glowBlur ||
       a.blueColor !== b.blueColor ||
       a.redColor !== b.redColor ||

@@ -94,10 +94,8 @@
 
   function toggleAnimTrails() {
     const newStyle = animTrailsOn ? "off" : "on";
-    console.log('[MorphingFooter] toggleAnimTrails:', { oldState: animTrailsOn, newStyle });
     animVisibility.setTrailStyle(newStyle);
     animTrailsOn = newStyle === "on";
-    console.log('[MorphingFooter] after toggle, isTrailsVisible:', animVisibility.isTrailsVisible());
   }
 
   function toggleAnimTkaGlyph() {

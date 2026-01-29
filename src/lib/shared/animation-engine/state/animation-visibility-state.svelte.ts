@@ -18,7 +18,7 @@ export interface MotionColorsCache {
 }
 
 // Trail toggle - simplified from off/subtle/vivid to just on/off
-export type TrailStyle = "off" | "on";
+export type TrailVisibility = "off" | "on";
 export type GridMode = "none" | "diamond" | "box";
 export type PlaybackMode = "continuous" | "step";
 
@@ -28,7 +28,7 @@ interface AnimationVisibilitySettings {
   stepNumbers: boolean; // "Beat 1, 2, 3..." overlay at top-left
   beatPosition: boolean; // Musical beat position at bottom-center (1, 1.5, 2e, etc.)
   props: boolean; // Show props vs trails-only mode
-  trailStyle: TrailStyle; // Trail visualization style (3-state)
+  trailStyle: TrailVisibility; // Trail visualization style (3-state)
   playbackMode: PlaybackMode; // Continuous flow vs step-by-step
   speed: number; // Speed multiplier (1.0 = 60 BPM, range 0.1-3.0)
   wordHeader: boolean; // Word/sequence name header at top
@@ -121,15 +121,8 @@ export class AnimationVisibilityStateManager {
           delete parsed.propGlow;
         }
 
-        // Migrate trailStyle from off/subtle/vivid to off/on
-        if (parsed.trailStyle === "subtle" || parsed.trailStyle === "vivid") {
-          parsed.trailStyle = "on";
-        }
-
         // Force beatPosition to false (replaced by progress bar)
         parsed.beatPosition = false;
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
 
         // Ensure new properties exist with defaults if missing
         const defaults = this.getDefaultSettings();
@@ -274,17 +267,16 @@ export class AnimationVisibilityStateManager {
   // ============================================================================
 
   /**
-   * Get current trail style
+   * Get current trail visibility
    */
-  getTrailStyle(): TrailStyle {
+  getTrailStyle(): TrailVisibility {
     return this.settings.trailStyle;
   }
 
   /**
-   * Set trail style
+   * Set trail visibility
    */
-  setTrailStyle(style: TrailStyle): void {
-    console.log('[VisibilityManager] setTrailStyle:', style, 'observers:', this.observers.size);
+  setTrailStyle(style: TrailVisibility): void {
     this.settings.trailStyle = style;
     this.saveToStorage();
     this.notifyObservers();

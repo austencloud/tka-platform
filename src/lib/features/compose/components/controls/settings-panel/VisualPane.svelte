@@ -12,7 +12,7 @@
   import {
     getAnimationVisibilityManager,
     type GridMode,
-    type TrailStyle,
+    type TrailVisibility,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import {
     animationSettings,
@@ -44,10 +44,10 @@
   // Visibility state
   const visibilityManager = getAnimationVisibilityManager();
   let updateCounter = $state(0);
-  let currentTrailStyle = $state<TrailStyle>(visibilityManager.getTrailStyle());
+  let currentTrailStyle = $state<TrailVisibility>(visibilityManager.getTrailStyle());
 
   // Derive trail style from actual animation settings (source of truth)
-  function getTrailStyleFromSettings(): TrailStyle {
+  function getTrailStyleFromSettings(): TrailVisibility {
     const trail = animationSettings.trail;
     if (!trail.enabled || trail.mode === TrailMode.OFF) return "off";
     return "on";
@@ -195,7 +195,7 @@
   }
 
   // Trail on/off handler with hardcoded vivid settings when enabled
-  function setTrailStyle(style: TrailStyle) {
+  function setTrailStyle(style: TrailVisibility) {
     visibilityManager.setTrailStyle(style);
     if (style === "off") {
       animationSettings.setTrailMode(TrailMode.OFF);
@@ -206,7 +206,6 @@
       animationSettings.setTrailAppearance({
         lineWidth: 3.5,
         maxOpacity: 0.95,
-        glowEnabled: true,
       });
     }
     updateCounter++;

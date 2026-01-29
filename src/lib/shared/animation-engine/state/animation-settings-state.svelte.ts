@@ -19,17 +19,14 @@
 import {
   TrailMode,
   TrackingMode,
-  TrailStyle,
   TrailEffect,
-  FadeStyle,
-  TaperStyle,
   type TrailSettings,
   type TrailPoint,
   DEFAULT_TRAIL_SETTINGS as MODULE_DEFAULT_TRAIL_SETTINGS,
 } from "../domain/types/TrailTypes";
 
 // Re-export for convenience
-export { TrailMode, TrackingMode, TrailStyle, TrailEffect };
+export { TrailMode, TrackingMode, TrailEffect };
 export type { TrailSettings, TrailPoint };
 
 /**
@@ -39,7 +36,6 @@ export interface TrailAppearance {
   lineWidth: number;
   maxOpacity: number;
   minOpacity: number;
-  glowEnabled: boolean;
   glowBlur: number;
   blueColor: string;
   redColor: string;
@@ -68,7 +64,6 @@ export const DEFAULT_TRAIL_APPEARANCE: TrailAppearance = {
   lineWidth: 3.5,
   maxOpacity: 0.95,
   minOpacity: 0.15,
-  glowEnabled: true,
   glowBlur: 2,
   blueColor: getMotionColor(MotionColor.BLUE, "dark"),
   redColor: getMotionColor(MotionColor.RED, "dark"),
@@ -103,20 +98,16 @@ function loadSettings(): AnimationSettings {
   const settings = settingsPersistence.load();
 
   // MIGRATION: Force the vivid trail preset for everyone
-  // Old settings may have taperStyle: "none", fadeStyle: "linear", etc.
-  // The new defaults are what makes trails beautiful - exponential fade, glow
+  // The rendering now always uses exponential fade and tapered width (hardcoded)
   if (settings.trail) {
     // Always force these "vivid" settings - they're what makes trails look good
     settings.trail.enabled = true;
     settings.trail.mode = TrailMode.FADE;
     settings.trail.effect = TrailEffect.GLOW;
-    settings.trail.fadeStyle = FadeStyle.EXPONENTIAL;
-    settings.trail.taperStyle = TaperStyle.TAPERED;
     // Thicker line width to compensate for tapering (tapered trails thin at tail)
     settings.trail.lineWidth = 5;
     settings.trail.maxOpacity = 1.0; // Full opacity at head
     settings.trail.minOpacity = 0.25; // Higher minimum so tail doesn't fade too much
-    settings.trail.glowEnabled = true;
     settings.trail.glowBlur = 3; // Stronger glow for more visibility
     settings.trail.fadeDurationMs = 2500;
   }
@@ -169,13 +160,10 @@ export function createAnimationSettingsState(): AnimationSettingsState {
       void settings.trail.enabled;
       void settings.trail.mode;
       void settings.trail.effect;
-      void settings.trail.fadeStyle;
-      void settings.trail.taperStyle;
       void settings.trail.trackingMode;
       void settings.trail.lineWidth;
       void settings.trail.maxOpacity;
       void settings.trail.minOpacity;
-      void settings.trail.glowEnabled;
       void settings.trail.glowBlur;
       void settings.trail.blueColor;
       void settings.trail.redColor;

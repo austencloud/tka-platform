@@ -3,6 +3,13 @@
  *
  * Type definitions for the spirograph-style trail effect
  * that traces prop endpoints during animation.
+ *
+ * SIMPLIFIED (2026-01-28):
+ * - Removed TrailStyle enum (only SMOOTH_LINE was ever used)
+ * - Removed FadeStyle enum (only EXPONENTIAL was ever used, now hardcoded)
+ * - Removed TaperStyle enum (only TAPERED was ever used, now hardcoded)
+ * - Removed NEON from TrailEffect (never implemented)
+ * - Removed style, fadeStyle, taperStyle, glowEnabled from TrailSettings
  */
 
 /**
@@ -27,15 +34,6 @@ export enum TrailMode {
 }
 
 /**
- * Trail rendering style (for future expansion)
- */
-export enum TrailStyle {
-  SMOOTH_LINE = "smooth_line",
-  DOTTED = "dotted",
-  GRADIENT_WIDTH = "gradient_width",
-}
-
-/**
  * Which prop end(s) to track
  */
 export enum TrackingMode {
@@ -50,39 +48,23 @@ export enum TrackingMode {
 export enum TrailEffect {
   NONE = "none", // No glow effect
   GLOW = "glow", // Simple shadowBlur glow
-  NEON = "neon", // Multi-layer ribbon effect (bright core + outer glow)
-}
-
-/**
- * Trail fade curve style
- */
-export enum FadeStyle {
-  LINEAR = "linear", // Constant rate of fade (original)
-  EXPONENTIAL = "exponential", // Holds brightness longer, then drops sharply
-}
-
-/**
- * Trail line width taper style
- */
-export enum TaperStyle {
-  NONE = "none", // Constant line width
-  TAPERED = "tapered", // Thick at head (prop), thin at tail (oldest)
 }
 
 /**
  * Trail settings configuration
+ *
+ * Note: Rendering always uses:
+ * - SMOOTH_LINE style (spline curves)
+ * - EXPONENTIAL fade (holds brightness longer, then drops sharply)
+ * - TAPERED width (thick at head, thin at tail)
  */
 export interface TrailSettings {
   enabled: boolean;
   mode: TrailMode;
-  style: TrailStyle;
-  effect: TrailEffect; // Visual effect (none, glow, neon)
-  fadeStyle: FadeStyle; // Opacity fade curve (linear vs exponential)
-  taperStyle: TaperStyle; // Line width variation (none vs tapered)
+  effect: TrailEffect; // Visual effect (none, glow)
   fadeDurationMs: number; // How long before trail fades (fade mode only)
   maxPoints: number; // Maximum trail points to store
   lineWidth: number;
-  glowEnabled: boolean; // Legacy - use effect instead
   glowBlur: number;
   blueColor: string;
   redColor: string;
@@ -104,25 +86,21 @@ import { MotionColor } from "../../../pictograph/shared/domain/enums/pictograph-
  * Users can toggle trails on/off, but when ON, these exact settings are used.
  */
 export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
-  enabled: true, // ✅ Trails enabled by default
-  mode: TrailMode.FADE, // FADE mode provides beautiful, smooth trails
-  style: TrailStyle.SMOOTH_LINE,
-  effect: TrailEffect.GLOW, // Glow effect
-  fadeStyle: FadeStyle.EXPONENTIAL, // Holds brightness longer, then drops
-  taperStyle: TaperStyle.TAPERED, // ✅ Tapered trails (thick at head, thin at tail)
-  fadeDurationMs: 2500, // 2.5 seconds
-  maxPoints: 1000, // Increased for full sequence trails
-  lineWidth: 5, // ✅ Thick enough to compensate for tapering
-  glowEnabled: true, // Legacy field
-  glowBlur: 3, // Stronger glow for visibility
+  enabled: true,
+  mode: TrailMode.FADE,
+  effect: TrailEffect.GLOW,
+  fadeDurationMs: 2500,
+  maxPoints: 1000,
+  lineWidth: 5,
+  glowBlur: 3,
   blueColor: getMotionColor(MotionColor.BLUE, "dark"),
   redColor: getMotionColor(MotionColor.RED, "dark"),
-  minOpacity: 0.25, // Higher minimum so tail doesn't fade into background
-  maxOpacity: 1.0, // ✅ Full opacity at head
-  trackingMode: TrackingMode.RIGHT_END, // Track right end (tip) by default
-  hideProps: false, // Show props by default
-  usePathCache: true, // ✅ Enable intelligent backfill for gap-free trails during device stutters
-  previewMode: false, // Show past trail by default (false = trail mode, true = preview/training mode)
+  minOpacity: 0.25,
+  maxOpacity: 1.0,
+  trackingMode: TrackingMode.RIGHT_END,
+  hideProps: false,
+  usePathCache: true,
+  previewMode: false,
 };
 
 /**

@@ -52,9 +52,8 @@
       />
 
       <p class="hint-text">
-        Trails visualize the path each prop takes through space.
-        <strong>Subtle</strong> shows a fading trail, while
-        <strong>Vivid</strong> adds glow effects.
+        Trails visualize the path each prop takes through space with a glowing,
+        fading effect.
       </p>
     </div>
   </div>
@@ -134,7 +133,4 @@
     margin: 0;
   }
 
-  .hint-text strong {
-    color: var(--theme-text);
-  }
 </style>

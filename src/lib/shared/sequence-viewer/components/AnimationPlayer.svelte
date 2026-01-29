@@ -125,10 +125,7 @@
 		void t.fadeDurationMs;
 		void t.lineWidth;
 		void t.maxOpacity;
-		void t.glowEnabled;
 		void t.trackingMode;
-		void t.fadeStyle;
-		void t.taperStyle;
 		void t.effect;
 		return { ...t };
 	});

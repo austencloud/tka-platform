@@ -14,7 +14,7 @@
   } from "../../../../shared/animation-engine/state/animation-settings-state.svelte";
   import {
     getAnimationVisibilityManager,
-    type TrailStyle,
+    type TrailVisibility,
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { isBilateralProp, getBilateralEndLabels } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -76,8 +76,8 @@
     return ["End 1", "End 2"];
   });
 
-  // Get current trail style from visibility manager (global state)
-  let currentPreset = $state<TrailStyle>(
+  // Get current trail visibility from visibility manager (global state)
+  let currentPreset = $state<TrailVisibility>(
     animationVisibilityManager.getTrailStyle()
   );
 
@@ -99,7 +99,7 @@
     showBilateralToggle && currentPreset !== "off"
   );
 
-  function setPreset(preset: TrailStyle) {
+  function setPreset(preset: TrailVisibility) {
     // Update global visibility state
     animationVisibilityManager.setTrailStyle(preset);
 
@@ -113,7 +113,6 @@
       animationSettings.setTrailAppearance({
         lineWidth: 3.5,
         maxOpacity: 0.95,
-        glowEnabled: true,
       });
     }
   }

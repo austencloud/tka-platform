@@ -16,11 +16,8 @@ import type {
 } from "../../../shared/domain/types/TrailTypes";
 import {
   TrailMode,
-  TrailStyle,
   TrailEffect,
   TrackingMode,
-  FadeStyle,
-  TaperStyle,
 } from "../../../shared/domain/types/TrailTypes";
 
 // ============================================================================
@@ -118,7 +115,40 @@ function createSmoothCurve(
 // CANVAS 2D TRAIL RENDERER
 // ============================================================================
 
+// ============================================================================
+// TRAIL RENDERING CONSTANTS
+// ============================================================================
+
+/** Exponent for fade curve - holds brightness longer, then drops sharply */
+const FADE_EXPONENT = 2.5;
+
+/** Minimum width ratio at trail tail (30% of base width) */
+const MIN_TAIL_WIDTH_RATIO = 0.3;
+
+/** Default glow blur multiplier */
+const DEFAULT_GLOW_BLUR_MULTIPLIER = 4;
+
+/** Fallback glow blur when settings.glowBlur is 0 */
+const FALLBACK_GLOW_BLUR = 8;
+
+/** Minimum subdivisions per spline segment */
+const MIN_SPLINE_SUBDIVISIONS = 2;
+
+/** Maximum subdivisions per spline segment */
+const MAX_SPLINE_SUBDIVISIONS = 10;
+
+/** Target total subdivisions for adaptive calculation */
+const TARGET_TOTAL_SUBDIVISIONS = 150;
+
+/** Catmull-Rom alpha for centripetal parameterization */
+const CATMULL_ROM_ALPHA = 0.5;
+
 export class Canvas2DTrailRenderer {
+  // Reusable buffers to avoid hot path allocations
+  private controlPointsBuffer: Point2D[] = [];
+  private leftEdgeBuffer: Point2D[] = [];
+  private rightEdgeBuffer: Point2D[] = [];
+
   renderTrails(
     ctx: CanvasRenderingContext2D,
     blueTrailPoints: TrailPoint[],
@@ -197,29 +227,16 @@ export class Canvas2DTrailRenderer {
     for (const pointSet of pointSets) {
       if (pointSet.length < 2) continue;
 
-      // Use smooth curves if enabled, otherwise line segments
-      if (settings.style === TrailStyle.SMOOTH_LINE) {
-        this.renderSmoothTrail(
-          ctx,
-          pointSet,
-          colorString,
-          settings,
-          currentTime
-        );
-      } else {
-        this.renderSegmentedTrail(
-          ctx,
-          pointSet,
-          colorString,
-          settings,
-          currentTime
-        );
-      }
+      // Always use smooth curve rendering (Catmull-Rom splines)
+      this.renderSmoothTrail(
+        ctx,
+        pointSet,
+        colorString,
+        settings,
+        currentTime
+      );
     }
   }
-
-  // Reusable control points array to avoid allocations in render loop
-  private controlPointsBuffer: Point2D[] = [];
 
   private renderSmoothTrail(
     ctx: CanvasRenderingContext2D,
@@ -245,26 +262,24 @@ export class Canvas2DTrailRenderer {
 
     // Adaptive subdivision based on point count
     const subdivisionsPerSegment = Math.max(
-      2, // Minimum 2 subdivisions
+      MIN_SPLINE_SUBDIVISIONS,
       Math.min(
-        10, // Maximum 10 subdivisions
-        Math.floor(150 / points.length) // Scale inversely with point count
+        MAX_SPLINE_SUBDIVISIONS,
+        Math.floor(TARGET_TOTAL_SUBDIVISIONS / points.length)
       )
     );
 
     const smoothPoints = createSmoothCurve(controlPoints, {
-      alpha: 0.5, // Centripetal Catmull-Rom
+      alpha: CATMULL_ROM_ALPHA,
       subdivisionsPerSegment,
     });
 
     if (smoothPoints.length < 2) return;
 
-    const effect =
-      settings.effect ??
-      (settings.glowEnabled ? TrailEffect.GLOW : TrailEffect.NONE);
+    const effect = settings.effect ?? TrailEffect.GLOW;
 
-    // If tapering is enabled, we must draw segments individually
-    const needsSegmentedRendering = settings.taperStyle === TaperStyle.TAPERED;
+    // Always use tapered rendering (thick at head, thin at tail)
+    const needsSegmentedRendering = true;
 
     if (needsSegmentedRendering) {
       // Segmented rendering for tapered trails
@@ -361,28 +376,9 @@ export class Canvas2DTrailRenderer {
       }
     }
 
-    if (effect === TrailEffect.NEON) {
-      // NEON: Multi-layer ribbon effect
-      ctx.lineWidth = settings.lineWidth * 4;
-      ctx.globalAlpha = avgOpacity * 0.2;
-      ctx.strokeStyle = color;
-      ctx.shadowBlur = 25;
-      ctx.shadowColor = color;
-      ctx.stroke();
-
-      ctx.lineWidth = settings.lineWidth * 2;
-      ctx.globalAlpha = avgOpacity * 0.4;
-      ctx.shadowBlur = 12;
-      ctx.stroke();
-
-      ctx.lineWidth = settings.lineWidth;
-      ctx.globalAlpha = avgOpacity;
-      ctx.shadowBlur = 4;
-      ctx.strokeStyle = this.lightenColor(color, 0.7);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    } else if (effect === TrailEffect.GLOW) {
-      const glowBlur = settings.glowBlur > 0 ? settings.glowBlur * 4 : 8;
+    // GLOW or NONE effect (NEON removed - never used)
+    if (effect === TrailEffect.GLOW) {
+      const glowBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
       ctx.shadowBlur = glowBlur;
       ctx.shadowColor = color;
       ctx.strokeStyle = color;
@@ -428,8 +424,11 @@ export class Canvas2DTrailRenderer {
 
     // Build two edge curves - one on each side of the trail path
     // Offset perpendicular to the path direction by half the line width
-    const leftEdge: Point2D[] = [];
-    const rightEdge: Point2D[] = [];
+    // Reuse buffers to avoid allocations in hot path
+    const leftEdge = this.leftEdgeBuffer;
+    const rightEdge = this.rightEdgeBuffer;
+    leftEdge.length = smoothPoints.length;
+    rightEdge.length = smoothPoints.length;
 
     for (let i = 0; i < smoothPoints.length; i++) {
       const curr = smoothPoints[i]!;
@@ -461,8 +460,19 @@ export class Canvas2DTrailRenderer {
       const perpX = -dy / len;
       const perpY = dx / len;
 
-      leftEdge.push({ x: curr.x + perpX * halfWidth, y: curr.y + perpY * halfWidth });
-      rightEdge.push({ x: curr.x - perpX * halfWidth, y: curr.y - perpY * halfWidth });
+      // Reuse or create point objects in buffers
+      if (leftEdge[i]) {
+        leftEdge[i]!.x = curr.x + perpX * halfWidth;
+        leftEdge[i]!.y = curr.y + perpY * halfWidth;
+      } else {
+        leftEdge[i] = { x: curr.x + perpX * halfWidth, y: curr.y + perpY * halfWidth };
+      }
+      if (rightEdge[i]) {
+        rightEdge[i]!.x = curr.x - perpX * halfWidth;
+        rightEdge[i]!.y = curr.y - perpY * halfWidth;
+      } else {
+        rightEdge[i] = { x: curr.x - perpX * halfWidth, y: curr.y - perpY * halfWidth };
+      }
     }
 
     // Draw filled polygon using the two edges
@@ -514,25 +524,9 @@ export class Canvas2DTrailRenderer {
 
     ctx.closePath();
 
-    if (effect === TrailEffect.NEON) {
-      // NEON: Multiple fills with blur for glow layers
-      ctx.fillStyle = color;
-      ctx.globalAlpha = avgOpacity * 0.3;
-      ctx.shadowBlur = 25;
-      ctx.shadowColor = color;
-      ctx.fill();
-
-      ctx.globalAlpha = avgOpacity * 0.6;
-      ctx.shadowBlur = 12;
-      ctx.fill();
-
-      ctx.fillStyle = this.lightenColor(color, 0.5);
-      ctx.globalAlpha = avgOpacity;
-      ctx.shadowBlur = 4;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    } else if (effect === TrailEffect.GLOW) {
-      const glowBlur = settings.glowBlur > 0 ? settings.glowBlur * 4 : 8;
+    // GLOW or NONE effect (NEON removed - never used)
+    if (effect === TrailEffect.GLOW) {
+      const glowBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
       ctx.shadowBlur = glowBlur;
       ctx.shadowColor = color;
       ctx.fillStyle = color;
@@ -562,14 +556,12 @@ export class Canvas2DTrailRenderer {
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    // Determine effect
-    const effect =
-      settings.effect ??
-      (settings.glowEnabled ? TrailEffect.GLOW : TrailEffect.NONE);
+    // Determine effect (default to GLOW)
+    const effect = settings.effect ?? TrailEffect.GLOW;
 
     // Apply glow/shadow if using glow effect
     if (effect === TrailEffect.GLOW) {
-      const glowBlur = settings.glowBlur > 0 ? settings.glowBlur * 4 : 8;
+      const glowBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
       ctx.shadowBlur = glowBlur;
       ctx.shadowColor = color;
       ctx.shadowOffsetX = 0;
@@ -600,13 +592,8 @@ export class Canvas2DTrailRenderer {
         const age = currentTime - point.timestamp;
         const rawProgress = Math.min(1, Math.max(0, age / settings.fadeDurationMs));
 
-        // Apply fade curve based on fadeStyle
-        let fadeProgress: number;
-        if (settings.fadeStyle === FadeStyle.EXPONENTIAL) {
-          fadeProgress = Math.pow(rawProgress, 2.5);
-        } else {
-          fadeProgress = rawProgress;
-        }
+        // Always use exponential fade (holds brightness longer, then drops sharply)
+        const fadeProgress = Math.pow(rawProgress, FADE_EXPONENT);
 
         opacity =
           settings.maxOpacity -
@@ -629,60 +616,14 @@ export class Canvas2DTrailRenderer {
       ctx.moveTo(point.x, point.y);
       ctx.lineTo(nextPoint.x, nextPoint.y);
 
-      if (effect === TrailEffect.NEON) {
-        // NEON: Multi-layer per segment
-        // Layer 1: Outer glow
-        ctx.lineWidth = lineWidth * 4;
-        ctx.globalAlpha = opacity * 0.2;
-        ctx.strokeStyle = color;
-        ctx.shadowBlur = 25;
-        ctx.shadowColor = color;
-        ctx.stroke();
-
-        // Layer 2: Mid glow
-        ctx.lineWidth = lineWidth * 2;
-        ctx.globalAlpha = opacity * 0.4;
-        ctx.shadowBlur = 12;
-        ctx.stroke();
-
-        // Layer 3: Bright core
-        ctx.lineWidth = lineWidth;
-        ctx.globalAlpha = opacity;
-        ctx.shadowBlur = 4;
-        ctx.strokeStyle = this.lightenColor(color, 0.7);
-        ctx.stroke();
-
-        ctx.shadowBlur = 0;
-      } else {
-        // GLOW or NONE: Single stroke
-        ctx.strokeStyle = color;
-        ctx.lineWidth = lineWidth;
-        ctx.globalAlpha = opacity;
-        ctx.stroke();
-      }
+      // GLOW or NONE: Single stroke (NEON removed - never used)
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.globalAlpha = opacity;
+      ctx.stroke();
     }
 
     ctx.restore();
-  }
-
-  /**
-   * Lighten a hex color toward white
-   * @param hex - Hex color string (e.g., "#2E3192")
-   * @param amount - 0 = no change, 1 = pure white
-   */
-  private lightenColor(hex: string, amount: number): string {
-    // Parse hex color
-    const hexClean = hex.replace("#", "");
-    const r = parseInt(hexClean.substring(0, 2), 16);
-    const g = parseInt(hexClean.substring(2, 4), 16);
-    const b = parseInt(hexClean.substring(4, 6), 16);
-
-    // Lerp toward white (255, 255, 255)
-    const newR = Math.round(r + (255 - r) * amount);
-    const newG = Math.round(g + (255 - g) * amount);
-    const newB = Math.round(b + (255 - b) * amount);
-
-    return `rgb(${newR}, ${newG}, ${newB})`;
   }
 
   private calculateOpacity(
@@ -703,16 +644,8 @@ export class Canvas2DTrailRenderer {
         const age = currentTime - originalPoint.timestamp;
         const progress = Math.min(1, Math.max(0, age / settings.fadeDurationMs));
 
-        // Apply fade curve based on fadeStyle
-        let fadeProgress: number;
-        if (settings.fadeStyle === FadeStyle.EXPONENTIAL) {
-          // Exponential: holds brightness longer, then drops sharply
-          // Using a power curve - stays bright longer before dropping
-          fadeProgress = Math.pow(progress, 2.5);
-        } else {
-          // Linear: steady fade
-          fadeProgress = progress;
-        }
+        // Always use exponential fade (holds brightness longer, then drops sharply)
+        const fadeProgress = Math.pow(progress, FADE_EXPONENT);
 
         const opacity =
           settings.maxOpacity -
@@ -735,21 +668,15 @@ export class Canvas2DTrailRenderer {
   }
 
   /**
-   * Calculate line width based on position and taper style
+   * Calculate line width based on position (always tapered)
    * @param progress - 0 = oldest (tail), 1 = newest (head/prop)
    */
   private calculateLineWidth(
     progress: number,
     settings: TrailSettings
   ): number {
-    if (settings.taperStyle === TaperStyle.TAPERED) {
-      // Tapered: thick at head (progress=1), thin at tail (progress=0)
-      // Use a minimum of 30% of the base width at the tail
-      const minWidthRatio = 0.3;
-      const widthRatio = minWidthRatio + (1 - minWidthRatio) * progress;
-      return settings.lineWidth * widthRatio;
-    }
-    // No taper: constant width
-    return settings.lineWidth;
+    // Always tapered: thick at head (progress=1), thin at tail (progress=0)
+    const widthRatio = MIN_TAIL_WIDTH_RATIO + (1 - MIN_TAIL_WIDTH_RATIO) * progress;
+    return settings.lineWidth * widthRatio;
   }
 }
