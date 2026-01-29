@@ -456,7 +456,8 @@
       "Bash(gcloud firestore databases update:*)",
       "Bash(script -q -c \"firebase deploy --only storage\" /dev/null)",
       "WebFetch(domain:aerotwist.com)",
-      "WebFetch(domain:www.joshwcomeau.com)"
+      "WebFetch(domain:www.joshwcomeau.com)",
+      "WebFetch(domain:storage.googleapis.com)"
     ]
   },
   "enableAllProjectMcpServers": true,
