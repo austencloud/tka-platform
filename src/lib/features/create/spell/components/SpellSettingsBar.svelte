@@ -557,6 +557,7 @@ Container-aware responsive design:
     grid-template-rows: repeat(2, 1fr);
     gap: var(--settings-spacing-sm, 8px);
     flex: 1;
+    min-height: 0; /* Allow grid to shrink below content size for proper 1fr distribution */
   }
 
   .loop-option-btn {
@@ -565,6 +566,7 @@ Container-aware responsive design:
     align-items: center;
     justify-content: center;
     gap: 4px;
+    height: 100%; /* Fill the grid cell */
     min-height: 56px;
     padding: 8px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.6));
