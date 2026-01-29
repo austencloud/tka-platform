@@ -31,7 +31,7 @@
     /** "auto" = zoom to enabled cells, "full" = show entire 3x3 grid */
     zoomMode?: "auto" | "full";
     onSelectCell: (cellId: string) => void;
-    onSetCellSpan: (cellId: string, colSpan: number, rowSpan: number) => void;
+    onSetCellSpan: (cellId: string, colSpan: number, rowSpan: number, newCol?: number, newRow?: number) => void;
     onToggleCell?: (row: number, col: number) => void;
   } = $props();
 
@@ -152,7 +152,7 @@
   // Resize handlers
   function handleResizeStart(
     cellId: string,
-    direction: "horizontal" | "vertical" | "both",
+    direction: ResizeDirection,
     e: PointerEvent
   ) {
     const cell = enabledCells.find((c) => c.id === cellId);
@@ -163,8 +163,12 @@
       direction,
       startX: e.clientX,
       startY: e.clientY,
+      originalCol: cell.col,
+      originalRow: cell.row,
       originalColSpan: cell.colSpan,
       originalRowSpan: cell.rowSpan,
+      targetCol: cell.col,
+      targetRow: cell.row,
       targetColSpan: cell.colSpan,
       targetRowSpan: cell.rowSpan,
       isValid: true,
@@ -180,49 +184,72 @@
     const state = resizeState;
     if (!state) return;
 
-    const cell = enabledCells.find((c) => c.id === state.cellId);
-    if (!cell) return;
-
     const gap = 16;
     const unitSize = cellSize + gap;
     const deltaX = e.clientX - state.startX;
     const deltaY = e.clientY - state.startY;
 
+    let targetCol = state.originalCol;
+    let targetRow = state.originalRow;
     let targetColSpan = state.originalColSpan;
     let targetRowSpan = state.originalRowSpan;
 
-    if (state.direction !== "vertical") {
+    const dir = state.direction;
+
+    // Handle horizontal resizing
+    if (dir === "left" || dir === "top-left" || dir === "bottom-left") {
+      // Dragging left edge: negative delta = expand left, positive = shrink
       const colDelta = Math.round(deltaX / unitSize);
-      targetColSpan = Math.max(
-        1,
-        Math.min(3 - cell.col, state.originalColSpan + colDelta)
-      );
+      const newCol = Math.max(0, state.originalCol + colDelta);
+      const colChange = state.originalCol - newCol;
+      targetCol = newCol;
+      targetColSpan = Math.max(1, state.originalColSpan + colChange);
+    } else if (dir === "right" || dir === "top-right" || dir === "bottom-right") {
+      // Dragging right edge: positive delta = expand right
+      const colDelta = Math.round(deltaX / unitSize);
+      targetColSpan = Math.max(1, Math.min(3 - state.originalCol, state.originalColSpan + colDelta));
     }
 
-    if (state.direction !== "horizontal") {
+    // Handle vertical resizing
+    if (dir === "top" || dir === "top-left" || dir === "top-right") {
+      // Dragging top edge: negative delta = expand up, positive = shrink
       const rowDelta = Math.round(deltaY / unitSize);
-      targetRowSpan = Math.max(
-        1,
-        Math.min(3 - cell.row, state.originalRowSpan + rowDelta)
-      );
+      const newRow = Math.max(0, state.originalRow + rowDelta);
+      const rowChange = state.originalRow - newRow;
+      targetRow = newRow;
+      targetRowSpan = Math.max(1, state.originalRowSpan + rowChange);
+    } else if (dir === "bottom" || dir === "bottom-left" || dir === "bottom-right") {
+      // Dragging bottom edge: positive delta = expand down
+      const rowDelta = Math.round(deltaY / unitSize);
+      targetRowSpan = Math.max(1, Math.min(3 - state.originalRow, state.originalRowSpan + rowDelta));
     }
 
-    // Validate: would overlap other enabled cells?
-    const isValid = validateSpan(cell, targetColSpan, targetRowSpan);
+    // Ensure we don't exceed grid bounds
+    if (targetCol + targetColSpan > 3) {
+      targetColSpan = 3 - targetCol;
+    }
+    if (targetRow + targetRowSpan > 3) {
+      targetRowSpan = 3 - targetRow;
+    }
 
-    resizeState = { ...state, targetColSpan, targetRowSpan, isValid };
+    // Always valid - we'll absorb any cells that get in the way
+    const isValid = true;
+
+    resizeState = { ...state, targetCol, targetRow, targetColSpan, targetRowSpan, isValid };
   }
 
   function handleResizeEnd() {
     if (resizeState && resizeState.isValid) {
-      const { targetColSpan, targetRowSpan, originalColSpan, originalRowSpan } =
+      const { cellId, targetCol, targetRow, targetColSpan, targetRowSpan, originalCol, originalRow, originalColSpan, originalRowSpan } =
         resizeState;
-      // Only update if span actually changed
+      // Only update if something actually changed
       if (
+        targetCol !== originalCol ||
+        targetRow !== originalRow ||
         targetColSpan !== originalColSpan ||
         targetRowSpan !== originalRowSpan
       ) {
-        onSetCellSpan(resizeState.cellId, targetColSpan, targetRowSpan);
+        onSetCellSpan(cellId, targetColSpan, targetRowSpan, targetCol, targetRow);
       }
     }
 
@@ -234,28 +261,13 @@
     window.removeEventListener("pointercancel", handleResizeEnd);
   }
 
-  function validateSpan(
-    _cell: GridCell,
-    _colSpan: number,
-    _rowSpan: number
-  ): boolean {
-    // Always valid - we'll absorb any cells that get in the way
-    // The state manager handles disabling overlapped cells
-    return true;
-  }
-
-  // Get the cell being resized (for ghost preview)
-  const resizingCell = $derived.by(() => {
-    const state = resizeState;
-    if (!state) return null;
-    return enabledCells.find((c) => c.id === state.cellId) ?? null;
-  });
-
-  // Only show ghost when span has actually changed from original
+  // Only show ghost when something has actually changed from original
   const showGhost = $derived.by(() => {
     const state = resizeState;
     if (!state) return false;
     return (
+      state.targetCol !== state.originalCol ||
+      state.targetRow !== state.originalRow ||
       state.targetColSpan !== state.originalColSpan ||
       state.targetRowSpan !== state.originalRowSpan
     );
@@ -264,15 +276,14 @@
   // Calculate ghost position and size in pixels (absolute positioning)
   const ghostStyle = $derived.by(() => {
     const state = resizeState;
-    const cell = resizingCell;
-    if (!state || !cell) return "";
+    if (!state) return "";
 
     const gap = 16;
     const unit = cellSize + gap;
 
-    // Position relative to cell's position in the grid
-    const colOffset = cell.col - gridBounds.minCol;
-    const rowOffset = cell.row - gridBounds.minRow;
+    // Position relative to TARGET position in the grid (not current cell position)
+    const colOffset = state.targetCol - gridBounds.minCol;
+    const rowOffset = state.targetRow - gridBounds.minRow;
 
     const left = colOffset * unit;
     const top = rowOffset * unit;

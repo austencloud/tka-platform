@@ -44,6 +44,9 @@
     role="slider"
     aria-label="Resize cell from left"
     aria-orientation="horizontal"
+    aria-valuenow="50"
+    aria-valuemin="0"
+    aria-valuemax="100"
     tabindex="0"
     onpointerdown={(e) => handlePointerDown("left", e)}
   ></div>
@@ -55,6 +58,9 @@
     role="slider"
     aria-label="Resize cell from right"
     aria-orientation="horizontal"
+    aria-valuenow="50"
+    aria-valuemin="0"
+    aria-valuemax="100"
     tabindex="0"
     onpointerdown={(e) => handlePointerDown("right", e)}
   ></div>
@@ -66,6 +72,9 @@
     role="slider"
     aria-label="Resize cell from top"
     aria-orientation="vertical"
+    aria-valuenow="50"
+    aria-valuemin="0"
+    aria-valuemax="100"
     tabindex="0"
     onpointerdown={(e) => handlePointerDown("top", e)}
   ></div>
@@ -77,6 +86,9 @@
     role="slider"
     aria-label="Resize cell from bottom"
     aria-orientation="vertical"
+    aria-valuenow="50"
+    aria-valuemin="0"
+    aria-valuemax="100"
     tabindex="0"
     onpointerdown={(e) => handlePointerDown("bottom", e)}
   ></div>
@@ -88,6 +100,9 @@
     class="handle corner top-left"
     role="slider"
     aria-label="Resize cell from top-left corner"
+    aria-valuenow="50"
+    aria-valuemin="0"
+    aria-valuemax="100"
     tabindex="0"
     onpointerdown={(e) => handlePointerDown("top-left", e)}
   ></div>
@@ -98,6 +113,9 @@
     class="handle corner top-right"
     role="slider"
     aria-label="Resize cell from top-right corner"
+    aria-valuenow="50"
+    aria-valuemin="0"
+    aria-valuemax="100"
     tabindex="0"
     onpointerdown={(e) => handlePointerDown("top-right", e)}
   ></div>
@@ -108,6 +126,9 @@
     class="handle corner bottom-left"
     role="slider"
     aria-label="Resize cell from bottom-left corner"
+    aria-valuenow="50"
+    aria-valuemin="0"
+    aria-valuemax="100"
     tabindex="0"
     onpointerdown={(e) => handlePointerDown("bottom-left", e)}
   ></div>
@@ -118,6 +139,9 @@
     class="handle corner bottom-right"
     role="slider"
     aria-label="Resize cell from bottom-right corner"
+    aria-valuenow="50"
+    aria-valuemin="0"
+    aria-valuemax="100"
     tabindex="0"
     onpointerdown={(e) => handlePointerDown("bottom-right", e)}
   ></div>

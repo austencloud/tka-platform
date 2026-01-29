@@ -78,8 +78,8 @@
     }
   }
 
-  function handleSetCellSpan(cellId: string, colSpan: number, rowSpan: number) {
-    gridState.setCellSpan(cellId, colSpan, rowSpan);
+  function handleSetCellSpan(cellId: string, colSpan: number, rowSpan: number, newCol?: number, newRow?: number) {
+    gridState.setCellSpan(cellId, colSpan, rowSpan, newCol, newRow);
   }
 
   // Cell selection

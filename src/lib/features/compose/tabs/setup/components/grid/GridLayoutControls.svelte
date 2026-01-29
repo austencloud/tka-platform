@@ -371,11 +371,6 @@
     letter-spacing: 0.5px;
   }
 
-  .presets-row {
-    display: flex;
-    gap: var(--spacing-sm, 8px);
-  }
-
   .presets-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

@@ -369,12 +369,16 @@ function createArrangeGridState() {
 
     /**
      * Set the span for a cell. Validates bounds and disables overlapping cells.
+     * Optionally moves the cell to a new origin position (for resizing from left/top edges).
+     * When moving, the cell's content is transferred to the new position.
      * @returns true if span was set successfully, false if invalid
      */
     setCellSpan(
       cellId: string,
       colSpan: number,
-      rowSpan: number
+      rowSpan: number,
+      newCol?: number,
+      newRow?: number
     ): boolean {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
@@ -384,45 +388,102 @@ function createArrangeGridState() {
       colSpan = Math.max(1, Math.min(colSpan, GRID_SIZE));
       rowSpan = Math.max(1, Math.min(rowSpan, GRID_SIZE));
 
-      // Check bounds
-      if (cell.col + colSpan > GRID_SIZE) return false;
-      if (cell.row + rowSpan > GRID_SIZE) return false;
+      // Use new position if provided, otherwise keep current
+      const targetCol = newCol !== undefined ? Math.max(0, Math.min(newCol, GRID_SIZE - 1)) : cell.col;
+      const targetRow = newRow !== undefined ? Math.max(0, Math.min(newRow, GRID_SIZE - 1)) : cell.row;
 
-      // Find cells that would be "under" this span and need to be disabled
-      const cellsToDisable: number[] = [];
-      for (let r = cell.row; r < cell.row + rowSpan; r++) {
-        for (let c = cell.col; c < cell.col + colSpan; c++) {
-          if (r === cell.row && c === cell.col) continue; // Skip origin
-          const idx = getCellIndex(r, c);
-          const targetCell = cells[idx];
-          if (targetCell?.enabled) {
-            cellsToDisable.push(idx);
-          }
-        }
-      }
+      // Check bounds with new position
+      if (targetCol + colSpan > GRID_SIZE) return false;
+      if (targetRow + rowSpan > GRID_SIZE) return false;
 
-      // Apply changes
+      const isMoving = targetCol !== cell.col || targetRow !== cell.row;
       const newCells = [...cells];
 
-      // Update the spanning cell
-      newCells[cellIndex] = {
-        ...cell,
-        colSpan,
-        rowSpan,
-      };
+      if (isMoving) {
+        // Moving the cell to a new origin position
+        // 1. Transfer content to the new origin cell
+        // 2. Disable the old origin cell
+        // 3. Disable any cells under the new span
 
-      // Disable cells under the span
-      for (const idx of cellsToDisable) {
-        const targetCell = newCells[idx];
-        if (targetCell) {
-          newCells[idx] = {
-            ...targetCell,
+        const newOriginIdx = getCellIndex(targetRow, targetCol);
+        const oldOriginIdx = cellIndex;
+
+        // Get the cell at the new origin (might be enabled or disabled)
+        const newOriginCell = newCells[newOriginIdx];
+
+        // Transfer content from old cell to new origin
+        if (newOriginCell) {
+          newCells[newOriginIdx] = {
+            ...newOriginCell,
+            enabled: true,
+            layers: cell.layers, // Transfer layers
+            beatOffset: cell.beatOffset, // Transfer offset
+            colSpan,
+            rowSpan,
+          };
+        }
+
+        // Disable the old origin (it's no longer the active cell)
+        if (oldOriginIdx !== newOriginIdx) {
+          newCells[oldOriginIdx] = {
+            ...cell,
             enabled: false,
-            layers: [], // Clear content
+            layers: [],
+            beatOffset: 0,
             colSpan: 1,
             rowSpan: 1,
           };
         }
+
+        // Disable any other cells under the new span
+        for (let r = targetRow; r < targetRow + rowSpan; r++) {
+          for (let c = targetCol; c < targetCol + colSpan; c++) {
+            const idx = getCellIndex(r, c);
+            // Skip the new origin and old origin (already handled)
+            if (idx === newOriginIdx || idx === oldOriginIdx) continue;
+            const targetCell = newCells[idx];
+            if (targetCell?.enabled) {
+              newCells[idx] = {
+                ...targetCell,
+                enabled: false,
+                layers: [],
+                colSpan: 1,
+                rowSpan: 1,
+              };
+            }
+          }
+        }
+
+        // Update selection to the new cell
+        if (selectedCellId === cellId) {
+          selectedCellId = newOriginCell?.id ?? null;
+        }
+      } else {
+        // Not moving, just update span
+        // Find cells that would be "under" this span and need to be disabled
+        for (let r = cell.row; r < cell.row + rowSpan; r++) {
+          for (let c = cell.col; c < cell.col + colSpan; c++) {
+            if (r === cell.row && c === cell.col) continue; // Skip origin
+            const idx = getCellIndex(r, c);
+            const targetCell = newCells[idx];
+            if (targetCell?.enabled) {
+              newCells[idx] = {
+                ...targetCell,
+                enabled: false,
+                layers: [],
+                colSpan: 1,
+                rowSpan: 1,
+              };
+            }
+          }
+        }
+
+        // Update the spanning cell
+        newCells[cellIndex] = {
+          ...cell,
+          colSpan,
+          rowSpan,
+        };
       }
 
       cells = newCells;
