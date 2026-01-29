@@ -47,15 +47,16 @@
     sequenceId: "seq-123",
     sequenceName: "Example Flow Sequence",
     videoUrl: "",
+    storagePath: "/videos/demo-video-1.mp4",
     thumbnailUrl: undefined,
     duration: 125,
     fileSize: 15000000,
     mimeType: "video/mp4",
     visibility: "public",
+    creatorId: "user1",
     collaborators: mockCollaborators,
     pendingInvites: [
       {
-        videoId: "demo-video-1",
         userId: "user4",
         displayName: "New Collaborator",
         invitedBy: "user1",
@@ -71,10 +72,12 @@
     id: "seq-123",
     word: "FLOW",
     name: "Example Flow Sequence",
-    beats: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    difficulty: "beginner",
+    steps: [],
+    thumbnails: [],
+    isFavorite: false,
+    isCircular: false,
+    tags: [],
+    metadata: {},
   };
 
   // State

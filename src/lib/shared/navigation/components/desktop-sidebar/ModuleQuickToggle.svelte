@@ -60,11 +60,17 @@
   // Get modules that are NOT visible in the sidebar but COULD be enabled
   // Only shows modules that pass environment checks (no point showing env-blocked modules)
   const hiddenModules = $derived.by(() => {
-    // Read flagsVersion to react to flag changes
-    const _ = featureFlagService.flagsVersion;
+    // Read $state directly (not through getter) to ensure Svelte 5 reactivity
+    // These values are updated by updateGlobalFeatureFlag() in the admin UI
+    const _flagsVersion = featureFlagState.flagsVersion;
+    const _globalOverrides = featureFlagState.globalFlagOverrides;
+
+    // DEBUG: Log when this derived recalculates
+    console.log('[ModuleQuickToggle] hiddenModules recalculating, flagsVersion:', _flagsVersion, 'globalOverrides:', _globalOverrides);
 
     // Get the set of currently visible module IDs
     const visibleModuleIds = new Set(sidebarModules.map((m) => m.id));
+    console.log('[ModuleQuickToggle] visibleModuleIds:', [...visibleModuleIds]);
 
     return allMainModules.filter((module) => {
       // Core modules are never "hidden" in this UI

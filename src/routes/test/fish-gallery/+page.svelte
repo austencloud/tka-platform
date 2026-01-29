@@ -229,6 +229,8 @@
       bodyAspect,
       x: 0,
       y: 0,
+      z: 0.5,
+      targetZ: 0.5,
       baseY: 0,
       direction: 1,
       speed: 15,

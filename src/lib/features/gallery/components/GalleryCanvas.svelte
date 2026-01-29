@@ -18,8 +18,8 @@
     renderingBackend: RenderingBackend;
     /** Whether to enable auto-rendering */
     autoRender?: boolean;
-    /** Tone mapping setting */
-    toneMapping?: number;
+    /** Tone mapping setting (Three.js constant) */
+    toneMapping?: unknown;
     /** Children snippet */
     children: Snippet;
   }
