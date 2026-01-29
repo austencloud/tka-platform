@@ -40,12 +40,8 @@
   let compactLabel = $derived(label);
   let fullLabel = $derived(label);
 
-  function handleClick(event: MouseEvent | TouchEvent) {
+  function handleClick() {
     if (!disabled) {
-      // Prevent double-firing on devices that support both touch and mouse
-      if (event instanceof TouchEvent) {
-        event.preventDefault();
-      }
       hapticService?.trigger("selection");
       onClick();
     }
@@ -64,7 +60,6 @@
   class:section={type === "section"}
   class:special={type === "special"}
   onclick={handleClick}
-  ontouchend={handleClick}
   {disabled}
   aria-label="{ariaLabel || label}{badgeCount > 0
     ? `, ${badgeCount} unread`

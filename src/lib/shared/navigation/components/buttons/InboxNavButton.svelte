@@ -12,7 +12,7 @@
   }>();
 
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-  let suppressNextClick = false;
+  let suppressNextClick = $state(false);
 
   const hasUnread = $derived(inboxState.totalUnreadCount > 0);
   const badgeCount = $derived(
@@ -21,48 +21,24 @@
       : String(inboxState.totalUnreadCount)
   );
 
-  function handleClick(event: MouseEvent | TouchEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    inboxState.open();
-  }
-
-  function handleTouchStart(event: TouchEvent) {
-    // Prevent Android context menu and gesture navigation from triggering
-    event.stopPropagation();
-
-    // Start long press timer on touch devices
-    if (onLongPress) {
-      clearLongPress();
-      longPressTimer = setTimeout(() => {
-        suppressNextClick = true;
-        onLongPress?.();
-      }, longPressMs);
-    }
-  }
-
-  function handleTouchMove(event: TouchEvent) {
-    // If user moves finger, cancel long press
-    clearLongPress();
-  }
-
-  function handleTouchEnd(event: TouchEvent) {
-    // Prevent browser from triggering native share sheet or context menus
-    event.preventDefault();
-    event.stopPropagation();
-
-    clearLongPress();
-
+  function handleClick() {
     if (suppressNextClick) {
       suppressNextClick = false;
       return;
     }
-    handleClick(event);
+    inboxState.open();
   }
 
-  function handleTouchCancel() {
+  function startLongPress(event: PointerEvent) {
+    // Only trigger long-press for touch (not mouse)
+    if (event.pointerType === "mouse") return;
+    if (!onLongPress) return;
+
     clearLongPress();
-    suppressNextClick = false;
+    longPressTimer = setTimeout(() => {
+      suppressNextClick = true;
+      onLongPress?.();
+    }, longPressMs);
   }
 
   function clearLongPress() {
@@ -71,27 +47,17 @@
       longPressTimer = null;
     }
   }
-
-  function handleWrapperClick(event: MouseEvent) {
-    // Only handle mouse clicks - touch is handled by touchend
-    if (suppressNextClick) {
-      suppressNextClick = false;
-      return;
-    }
-    handleClick(event);
-  }
 </script>
 
 <div
   class="inbox-nav-button-wrapper"
-  onclick={handleWrapperClick}
-  ontouchstart={handleTouchStart}
-  ontouchmove={handleTouchMove}
-  ontouchend={handleTouchEnd}
-  ontouchcancel={handleTouchCancel}
+  onclick={handleClick}
+  onpointerdown={startLongPress}
+  onpointerup={clearLongPress}
+  onpointerleave={clearLongPress}
+  onpointercancel={clearLongPress}
   oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); return false; }}
-  onkeydown={(e) =>
-    e.key === "Enter" && handleClick(e as unknown as MouseEvent)}
+  onkeydown={(e) => e.key === "Enter" && handleClick()}
   role="button"
   tabindex="0"
 >

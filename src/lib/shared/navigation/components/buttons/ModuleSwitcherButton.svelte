@@ -42,12 +42,7 @@
     }
   }
 
-  function handleClick(event: MouseEvent | TouchEvent) {
-    // Prevent double-firing on devices that support both touch and mouse
-    if (event instanceof TouchEvent) {
-      event.preventDefault();
-    }
-
+  function handleClick() {
     // Skip click if long-press just fired
     if (suppressClick) {
       suppressClick = false;
@@ -71,7 +66,6 @@
   class="menu-button"
   class:has-badge={badgeCount > 0}
   onclick={handleClick}
-  ontouchend={handleClick}
   onpointerdown={startLongPress}
   onpointerup={clearLongPress}
   onpointerleave={clearLongPress}
