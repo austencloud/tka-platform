@@ -83,9 +83,13 @@ export const GET: RequestHandler = async (event) => {
  * Body: { flagKey: string, enabled?: boolean, filters?: object }
  */
 export const PATCH: RequestHandler = async (event) => {
+  console.log("[feature-flags] PATCH request received");
   try {
+    console.log("[feature-flags] Verifying Firebase user...");
     const caller = await requireFirebaseUser(event);
+    console.log("[feature-flags] User verified:", caller.uid);
     const callerIsAdmin = await isAdmin(caller.uid);
+    console.log("[feature-flags] Is admin:", callerIsAdmin);
     if (!callerIsAdmin) {
       throw error(403, "Admin access required");
     }
@@ -168,7 +172,12 @@ export const PATCH: RequestHandler = async (event) => {
     if (typeof err === "object" && err && "status" in err) {
       throw err;
     }
-    console.error("[feature-flags] Error:", err);
-    throw error(500, "Failed to update feature flag");
+    // Log the full error for debugging
+    console.error("[feature-flags] PATCH Error:", err);
+    if (err instanceof Error) {
+      console.error("[feature-flags] Error message:", err.message);
+      console.error("[feature-flags] Error stack:", err.stack);
+    }
+    throw error(500, `Internal Error: ${err instanceof Error ? err.message : String(err)}`);
   }
 };

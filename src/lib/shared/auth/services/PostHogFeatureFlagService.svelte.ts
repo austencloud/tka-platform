@@ -37,6 +37,7 @@ import {
   getAllFeatureFlags,
   setUserProperties,
 } from "../../analytics/services/posthog";
+import { auth } from "../firebase";
 
 // ============================================================================
 // POSTHOG FLAG NAMING CONVENTIONS
@@ -102,6 +103,10 @@ interface FeatureFlagState {
   initialized: boolean;
   /** Whether currently loading */
   loading: boolean;
+  /** Version counter to trigger reactive updates when flags change */
+  flagsVersion: number;
+  /** Local cache of global flag states updated via admin UI */
+  globalFlagOverrides: Record<string, boolean>;
 }
 
 const _state = $state<FeatureFlagState>({
@@ -115,6 +120,8 @@ const _state = $state<FeatureFlagState>({
   },
   initialized: false,
   loading: false,
+  flagsVersion: 0,
+  globalFlagOverrides: {},
 });
 
 // ============================================================================
@@ -184,11 +191,20 @@ function getDefaultFeatureConfig(
 
 /**
  * Check PostHog for a feature flag with fallback to role-based defaults
+ * Also checks globalFlagOverrides (admin UI changes) first
  */
 function checkPostHogFlag(featureId: FeatureId): boolean | null {
   if (!browser) return null;
 
   const postHogKey = featureIdToPostHogKey(featureId);
+
+  // Priority 1: Check local admin overrides (set via admin UI)
+  const localOverride = _state.globalFlagOverrides[postHogKey];
+  if (typeof localOverride === "boolean") {
+    return localOverride;
+  }
+
+  // Priority 2: Check PostHog remote flag value
   const flagValue = getFeatureFlag(postHogKey);
 
   // PostHog flag exists - use its value
@@ -319,9 +335,43 @@ export const postHogFeatureFlagService = {
     return _state.loading;
   },
 
-  /** Get all feature configs (with role-based defaults) */
+  /** Version counter - increments when flags are updated via admin UI */
+  get flagsVersion(): number {
+    return _state.flagsVersion;
+  },
+
+  /** Get all feature configs (merged with PostHog state and local overrides) */
   get featureConfigs(): FeatureFlagConfig[] {
-    return _DEFAULT_FEATURE_FLAGS;
+    // Reference flagsVersion to make this reactive when flags are updated
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    _state.flagsVersion;
+
+    // Get current PostHog flags (user's local evaluation)
+    const postHogFlags = getAllFeatureFlags();
+
+    // Merge default configs with PostHog values and local admin overrides
+    return _DEFAULT_FEATURE_FLAGS.map((config) => {
+      const postHogKey = featureIdToPostHogKey(config.id);
+
+      // Priority 1: Local admin overrides (set via admin UI)
+      const localOverride = _state.globalFlagOverrides[postHogKey];
+      if (typeof localOverride === "boolean") {
+        return { ...config, enabled: localOverride };
+      }
+
+      // Priority 2: PostHog flag value (user's evaluation)
+      const postHogValue = postHogFlags[postHogKey];
+      if (typeof postHogValue === "boolean") {
+        return { ...config, enabled: postHogValue };
+      }
+      if (typeof postHogValue === "string") {
+        const enabled = postHogValue !== "" && postHogValue !== "false" && postHogValue !== "control";
+        return { ...config, enabled };
+      }
+
+      // Priority 3: Default config
+      return config;
+    });
   },
 
   // ===== Core Access Checks =====
@@ -568,9 +618,19 @@ export const postHogFeatureFlagService = {
     const flagKey = featureIdToPostHogKey(featureId);
 
     try {
+      // Get the current user's auth token for server-side verification
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error("Not authenticated");
+      }
+      const idToken = await currentUser.getIdToken();
+
       const response = await fetch("/api/admin/feature-flags", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
+        },
         body: JSON.stringify({
           flagKey,
           enabled: updates.enabled,
@@ -587,8 +647,19 @@ export const postHogFeatureFlagService = {
       const result = await response.json();
       console.log(`[PostHogFeatureFlagService] Flag ${flagKey} ${result.action}:`, result.flag);
 
-      // Reload flags from PostHog to get updated state
+      // Update local cache immediately for responsive UI
+      if (typeof updates.enabled === "boolean") {
+        _state.globalFlagOverrides = {
+          ..._state.globalFlagOverrides,
+          [flagKey]: updates.enabled,
+        };
+      }
+
+      // Also reload PostHog's local flags (for user-facing access checks)
       reloadFeatureFlags();
+
+      // Trigger reactive update
+      _state.flagsVersion++;
     } catch (err) {
       console.error(`[PostHogFeatureFlagService] Failed to update ${flagKey}:`, err);
       throw err;
@@ -683,3 +754,16 @@ export const postHogFeatureFlagService = {
  * This is the PostHog-backed implementation that replaces the Firebase version.
  */
 export const featureFlagService = postHogFeatureFlagService;
+
+/**
+ * Direct access to reactive state for Svelte 5 $derived tracking.
+ * Use this when you need $derived to react to flag changes:
+ *
+ * ```ts
+ * const modules = $derived.by(() => {
+ *   const _ = featureFlagState.flagsVersion; // Track changes
+ *   return MODULE_DEFINITIONS.filter(m => featureFlagService.canAccessModule(m.id));
+ * });
+ * ```
+ */
+export const featureFlagState = _state;
