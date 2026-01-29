@@ -701,39 +701,5 @@
   {isMobile}
   onClose={handleClose}
   onExport={handleExport}
-  animationSequenceData={animationPanelState.sequenceData}
-  isAnimationPlaying={isPlayingLocal}
-  animationCurrentBeat={animationPanelState.currentStep}
-  animationSpeed={animationPanelState.speed}
-  animationBluePropState={animationPanelState.bluePropState}
-  animationRedPropState={animationPanelState.redPropState}
-  {isCircular}
-  {exportLoopCount}
-  isAnimationExporting={isExporting && selectedFormat === "animation"}
-  animationExportProgress={exportProgress}
-  {animationServicesReady}
-  {animationLoading}
   {selectedFormat}
-  playbackMode={playbackModeLocal}
-  stepPlaybackPauseMs={stepPlaybackPauseMsLocal}
-  stepPlaybackStepSize={stepPlaybackStepSizeLocal}
-  {blueMotionVisible}
-  {redMotionVisible}
-  {isSideBySideLayout}
-  onPlaybackToggle={handlePlaybackToggle}
-  onSpeedChange={handleSpeedChange}
-  onStepHalfBeatForward={handleStepHalfBeatForward}
-  onStepHalfBeatBackward={handleStepHalfBeatBackward}
-  onStepFullBeatForward={handleStepFullBeatForward}
-  onStepFullBeatBackward={handleStepFullBeatBackward}
-  onLoopCountChange={handleLoopCountChange}
-  onCanvasReady={handleCanvasReady}
-  onCancelExport={handleCancelExport}
-  onExportVideo={handleExportVideo}
-  onFormatChange={handleFormatChange}
-  onPlaybackModeChange={handlePlaybackModeChange}
-  onStepPlaybackPauseMsChange={handleStepPlaybackPauseMsChange}
-  onStepPlaybackStepSizeChange={handleStepPlaybackStepSizeChange}
-  onToggleBlue={handleToggleBlueMotion}
-  onToggleRed={handleToggleRedMotion}
 />
