@@ -15,14 +15,14 @@
     onNativeShare: () => void;
   }
 
-  const {
+  let {
     isCopying,
     copySuccess,
     canNativeShare,
     onCopy,
     onDownload,
     onNativeShare,
-  } = $props<Props>();
+  }: Props = $props();
 </script>
 
 <div class="share-options-row">

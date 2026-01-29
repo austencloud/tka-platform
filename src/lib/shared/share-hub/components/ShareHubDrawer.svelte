@@ -19,14 +19,14 @@
     selectedFormat?: "animation" | "static" | "performance";
   }
 
-  const {
+  let {
     isOpen,
     sequence,
     isMobile = false,
     onClose,
     onExport,
     selectedFormat = "animation",
-  } = $props<Props>();
+  }: Props = $props();
 </script>
 
 {#if isOpen}

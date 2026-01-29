@@ -25,7 +25,10 @@
 
   function cycleBackground() {
     const nextIndex = (currentIndex + 1) % backgrounds.length;
-    onSelect(backgrounds[nextIndex].type);
+    const nextBackground = backgrounds[nextIndex];
+    if (nextBackground) {
+      onSelect(nextBackground.type);
+    }
   }
 </script>
 

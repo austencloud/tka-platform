@@ -9,7 +9,7 @@
 
   import { Canvas } from "@threlte/core";
   import { type Snippet } from "svelte";
-  import { WebGLRenderer, PCFSoftShadowMap } from "three";
+  import { WebGLRenderer, PCFSoftShadowMap, type ToneMapping } from "three";
   import type { RenderingBackend } from "../state/gallery-settings.svelte";
   import { isWebGPUSupported } from "$lib/shared/3d-core/rendering/create-renderer";
 
@@ -19,7 +19,7 @@
     /** Whether to enable auto-rendering */
     autoRender?: boolean;
     /** Tone mapping setting (Three.js constant) */
-    toneMapping?: unknown;
+    toneMapping?: ToneMapping;
     /** Children snippet */
     children: Snippet;
   }

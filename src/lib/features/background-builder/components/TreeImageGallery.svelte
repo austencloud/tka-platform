@@ -74,13 +74,13 @@
       All ({categoryCounts.all})
     </button>
     {#each CATEGORIES as category}
-      {#if categoryCounts[category] > 0}
+      {#if categoryCounts[category] && categoryCounts[category] > 0}
         <button
           class="category-btn"
           class:active={selectedCategory === category}
           onclick={() => onCategoryChange(category)}
         >
-          {category.charAt(0).toUpperCase() + category.slice(1)} ({categoryCounts[category]})
+          {category.charAt(0).toUpperCase() + category.slice(1)} ({categoryCounts[category] ?? 0})
         </button>
       {/if}
     {/each}

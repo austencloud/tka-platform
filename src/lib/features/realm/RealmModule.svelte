@@ -27,7 +27,10 @@
   // If only one destination is enabled, skip the picker and go straight to it
   onMount(() => {
     if (enabledDestinations.length === 1 && isPickerActive) {
-      destinationManager.navigateTo(enabledDestinations[0].id);
+      const destination = enabledDestinations[0];
+      if (destination) {
+        destinationManager.navigateTo(destination.id);
+      }
     }
   });
 
