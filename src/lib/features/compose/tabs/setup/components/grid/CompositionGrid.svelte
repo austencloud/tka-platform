@@ -159,39 +159,40 @@
   }
 
   function handleResizeMove(e: PointerEvent) {
-    if (!resizeState) return;
+    const state = resizeState;
+    if (!state) return;
 
-    const cell = enabledCells.find((c) => c.id === resizeState.cellId);
+    const cell = enabledCells.find((c) => c.id === state.cellId);
     if (!cell) return;
 
     const gap = 16;
     const unitSize = cellSize + gap;
-    const deltaX = e.clientX - resizeState.startX;
-    const deltaY = e.clientY - resizeState.startY;
+    const deltaX = e.clientX - state.startX;
+    const deltaY = e.clientY - state.startY;
 
-    let targetColSpan = resizeState.originalColSpan;
-    let targetRowSpan = resizeState.originalRowSpan;
+    let targetColSpan = state.originalColSpan;
+    let targetRowSpan = state.originalRowSpan;
 
-    if (resizeState.direction !== "vertical") {
+    if (state.direction !== "vertical") {
       const colDelta = Math.round(deltaX / unitSize);
       targetColSpan = Math.max(
         1,
-        Math.min(3 - cell.col, resizeState.originalColSpan + colDelta)
+        Math.min(3 - cell.col, state.originalColSpan + colDelta)
       );
     }
 
-    if (resizeState.direction !== "horizontal") {
+    if (state.direction !== "horizontal") {
       const rowDelta = Math.round(deltaY / unitSize);
       targetRowSpan = Math.max(
         1,
-        Math.min(3 - cell.row, resizeState.originalRowSpan + rowDelta)
+        Math.min(3 - cell.row, state.originalRowSpan + rowDelta)
       );
     }
 
     // Validate: would overlap other enabled cells?
     const isValid = validateSpan(cell, targetColSpan, targetRowSpan);
 
-    resizeState = { ...resizeState, targetColSpan, targetRowSpan, isValid };
+    resizeState = { ...state, targetColSpan, targetRowSpan, isValid };
   }
 
   function handleResizeEnd() {
@@ -241,9 +242,11 @@
   }
 
   // Get the cell being resized (for ghost preview)
-  const resizingCell = $derived(
-    resizeState ? enabledCells.find((c) => c.id === resizeState.cellId) : null
-  );
+  const resizingCell = $derived.by(() => {
+    const state = resizeState;
+    if (!state) return null;
+    return enabledCells.find((c) => c.id === state.cellId) ?? null;
+  });
 </script>
 
 <div

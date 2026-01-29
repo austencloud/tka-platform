@@ -6,7 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { TrailSettings } from "$lib/features/compose/shared/domain/types/TrailTypes";
+import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { Composition, GridLayout, CellType } from "../domain/types";
 import {
   createEmptyCells,

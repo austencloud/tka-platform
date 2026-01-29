@@ -306,7 +306,7 @@
         {#if audioBpm}
           <div class="beat-markers">
             {#each downbeats as beatTime, index}
-              {@const x = timeToPixels(stepTime, pixelsPerSecond)}
+              {@const x = timeToPixels(beatTime, pixelsPerSecond)}
               <div
                 class="beat-marker"
                 style="left: {x}px"

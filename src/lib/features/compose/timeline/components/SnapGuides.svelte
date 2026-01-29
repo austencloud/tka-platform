@@ -105,7 +105,7 @@
   <!-- Beat marker guides (subtle, always visible when snapping to steps) -->
   {#if snapToSteps}
     {#each downbeats as beatTime}
-      {@const x = timeToPixels(stepTime, pixelsPerSecond)}
+      {@const x = timeToPixels(beatTime, pixelsPerSecond)}
       <div
         class="snap-guide beat"
         style="left: {x}px; height: {height}px"

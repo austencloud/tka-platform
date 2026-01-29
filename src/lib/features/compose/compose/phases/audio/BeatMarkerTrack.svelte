@@ -47,7 +47,7 @@
   const currentMeasure = $derived(() => {
     if (!bpm || duration <= 0) return -1;
     const beatInterval = 60 / bpm;
-    return Math.floor(currentTime / stepInterval / 4);
+    return Math.floor(currentTime / beatInterval / 4);
   });
 
   // Add a custom marker at current playhead position
@@ -106,7 +106,7 @@
             : index + 1}
           {@const isCurrentMeasure =
             currentMeasure() === (showAllSteps ? Math.floor(index / 4) : index)}
-          {@const isDownbeat = !showAllBeats || index % 4 === 0}
+          {@const isDownbeat = !showAllSteps || index % 4 === 0}
           <div
             class="beat-marker"
             class:current={isCurrentMeasure && isDownbeat}

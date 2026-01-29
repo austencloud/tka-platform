@@ -10,7 +10,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import {
   type TrailSettings,
   DEFAULT_TRAIL_SETTINGS,
-} from "$lib/features/compose/shared/domain/types/TrailTypes";
+} from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import {
   type TimeSignatureKey,
   DEFAULT_TIME_SIGNATURE,
