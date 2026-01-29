@@ -443,7 +443,17 @@
       "WebFetch(domain:posthog.com)",
       "Bash(exit 0)",
       "Bash(cmd.exe /c \"npm install\")",
-      "Bash(do git add \"$f\")"
+      "Bash(do git add \"$f\")",
+      "Bash(gcloud functions get-iam-policy:*)",
+      "Bash(gcloud functions add-invoker-policy-binding:*)",
+      "Bash(gcloud functions add-iam-policy-binding:*)",
+      "Bash(gcloud functions describe:*)",
+      "Bash(gcloud firestore backups schedules list:*)",
+      "Bash(gcloud firestore backups schedules create:*)",
+      "Bash(gcloud firestore databases describe:*)",
+      "Bash(gcloud firestore databases list:*)",
+      "Bash(gcloud firestore backups list:*)",
+      "Bash(gcloud firestore databases update:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

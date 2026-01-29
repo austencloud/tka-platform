@@ -1,3 +1,10 @@
 [
-  { "category": "added", "text": "Spell tab - type a word, generate a sequence" }
+  { "category": "fixed", "text": "Generated sequences now scroll to the start position, not the bottom" },
+  { "category": "fixed", "text": "LOOP labels correctly identify rotated vs mirrored sequences" },
+  { "category": "fixed", "text": "Red hand icon displays properly when building in assembler" },
+  { "category": "fixed", "text": "Mobile keyboard behavior improved when typing feedback" },
+  { "category": "fixed", "text": "Layout glitch fixed in spell tab on mobile" },
+  { "category": "improved", "text": "Pinch-to-zoom to resize sequence thumbnails in gallery" },
+  { "category": "improved", "text": "Saved sequences remember your intended word (before bridge letters)" },
+  { "category": "improved", "text": "Assembler tool layout works better on vertical screens" }
 ]
