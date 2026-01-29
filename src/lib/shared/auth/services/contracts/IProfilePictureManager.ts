@@ -6,6 +6,13 @@
  */
 
 import type { User } from "firebase/auth";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+
+export interface GeneratedAvatarData {
+  gradientId: string;
+  gradient: string;
+  propType: PropType;
+}
 
 export interface IProfilePictureManager {
   /**
@@ -33,4 +40,17 @@ export interface IProfilePictureManager {
    * @returns Object with googleId and facebookId if available
    */
   getProviderIds(user: User): { googleId?: string; facebookId?: string };
+
+  /**
+   * Generate and upload a custom avatar with gradient background and prop silhouette.
+   * Renders to canvas, uploads to Firebase Storage, and updates user profile.
+   *
+   * @param user - Firebase User object
+   * @param avatarData - Gradient and prop configuration
+   * @returns Promise with the uploaded avatar URL
+   */
+  generateAndUploadAvatar(
+    user: User,
+    avatarData: GeneratedAvatarData
+  ): Promise<string>;
 }

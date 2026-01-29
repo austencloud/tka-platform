@@ -3,10 +3,16 @@
  *
  * Handles OAuth provider profile picture management for Firebase Auth users.
  * Manages Facebook and Google profile pictures with proper fallback logic.
+ * Also generates custom avatars with gradient backgrounds and prop silhouettes.
  */
 
 import { updateProfile, type User } from "firebase/auth";
-import type { IProfilePictureManager } from "../contracts/IProfilePictureManager";
+import type {
+  IProfilePictureManager,
+  GeneratedAvatarData,
+} from "../contracts/IProfilePictureManager";
+import { getStorageInstance } from "$lib/shared/auth/firebase";
+import { PROP_TYPE_DISPLAY_REGISTRY } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
 
 export class ProfilePictureManager implements IProfilePictureManager {
   /**
@@ -132,5 +138,180 @@ export class ProfilePictureManager implements IProfilePictureManager {
     }
 
     return result;
+  }
+
+  /**
+   * Generate a custom avatar image and upload to Firebase Storage.
+   * Creates a circular avatar with gradient background and prop silhouette.
+   */
+  async generateAndUploadAvatar(
+    user: User,
+    avatarData: GeneratedAvatarData
+  ): Promise<string> {
+    const { gradient, propType, gradientId } = avatarData;
+
+    // Create canvas for rendering
+    const size = 256; // High-res for quality
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) {
+      throw new Error("Failed to create canvas context");
+    }
+
+    // Draw circular gradient background
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+
+    // Parse gradient and draw
+    await this.drawGradient(ctx, gradient, size);
+
+    // Draw prop silhouette
+    const propInfo = PROP_TYPE_DISPLAY_REGISTRY[propType];
+    if (propInfo?.image) {
+      await this.drawPropSilhouette(ctx, propInfo.image, size);
+    }
+
+    // Convert to blob
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (b) => {
+          if (b) resolve(b);
+          else reject(new Error("Failed to create blob"));
+        },
+        "image/png",
+        0.95
+      );
+    });
+
+    // Upload to Firebase Storage
+    const { ref, uploadBytes, getDownloadURL } = await import(
+      "firebase/storage"
+    );
+    const storage = await getStorageInstance();
+
+    const storagePath = `avatars/${user.uid}/${gradientId}_${propType}.png`;
+    const storageRef = ref(storage, storagePath);
+
+    await uploadBytes(storageRef, blob, {
+      contentType: "image/png",
+      customMetadata: {
+        userId: user.uid,
+        gradientId,
+        propType,
+        generatedAt: new Date().toISOString(),
+      },
+    });
+
+    const downloadUrl = await getDownloadURL(storageRef);
+
+    // Update user profile with new avatar URL
+    await updateProfile(user, { photoURL: downloadUrl });
+
+    return downloadUrl;
+  }
+
+  /**
+   * Draw CSS gradient onto canvas context
+   */
+  private async drawGradient(
+    ctx: CanvasRenderingContext2D,
+    cssGradient: string,
+    size: number
+  ): Promise<void> {
+    // Parse the CSS gradient
+    // Format: linear-gradient(135deg, #color1 0%, #color2 50%, #color3 100%)
+    const match = cssGradient.match(/linear-gradient\((\d+)deg,\s*(.+)\)/);
+
+    if (!match) {
+      // Fallback: solid color
+      ctx.fillStyle = "#6366f1";
+      ctx.fillRect(0, 0, size, size);
+      return;
+    }
+
+    const angle = parseInt(match[1] ?? "135", 10);
+    const colorStops = match[2] ?? "";
+
+    // Convert angle to gradient coordinates
+    const angleRad = ((angle - 90) * Math.PI) / 180;
+    const x1 = size / 2 - (Math.cos(angleRad) * size) / 2;
+    const y1 = size / 2 - (Math.sin(angleRad) * size) / 2;
+    const x2 = size / 2 + (Math.cos(angleRad) * size) / 2;
+    const y2 = size / 2 + (Math.sin(angleRad) * size) / 2;
+
+    const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+
+    // Parse color stops: "#color 50%" or "#color"
+    const stopRegex = /(#[a-fA-F0-9]{3,8}|rgba?\([^)]+\))\s*(\d+)?%?/g;
+    let stopMatch;
+    const stops: Array<{ color: string; position: number }> = [];
+
+    while ((stopMatch = stopRegex.exec(colorStops)) !== null) {
+      const color = stopMatch[1] ?? "#ffffff";
+      const position = stopMatch[2] ? parseInt(stopMatch[2], 10) / 100 : null;
+      stops.push({ color, position: position ?? 0 });
+    }
+
+    // Assign positions to stops without explicit positions
+    stops.forEach((stop, i) => {
+      if (stop.position === 0 && i > 0) {
+        stop.position = i / (stops.length - 1);
+      }
+    });
+
+    // Add color stops to gradient
+    stops.forEach((stop) => {
+      try {
+        gradient.addColorStop(stop.position, stop.color);
+      } catch {
+        // Invalid color, skip
+      }
+    });
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+  }
+
+  /**
+   * Draw prop silhouette (white, semi-transparent)
+   */
+  private async drawPropSilhouette(
+    ctx: CanvasRenderingContext2D,
+    imageSrc: string,
+    size: number
+  ): Promise<void> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+
+      img.onload = () => {
+        // Calculate size for prop (55% of avatar)
+        const propSize = size * 0.55;
+        const x = (size - propSize) / 2;
+        const y = (size - propSize) / 2;
+
+        // Draw white silhouette
+        ctx.save();
+        ctx.globalCompositeOperation = "source-atop";
+        ctx.filter = "brightness(0) invert(1)";
+        ctx.globalAlpha = 0.9;
+        ctx.drawImage(img, x, y, propSize, propSize);
+        ctx.restore();
+
+        resolve();
+      };
+
+      img.onerror = () => {
+        // Skip prop drawing if image fails to load
+        resolve();
+      };
+
+      img.src = imageSrc;
+    });
   }
 }
