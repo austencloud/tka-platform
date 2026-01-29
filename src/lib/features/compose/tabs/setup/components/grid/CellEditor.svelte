@@ -16,6 +16,7 @@
     onRemoveLayer,
     onEditLayerOffset,
     onClearCell,
+    onRemoveCell,
   }: {
     cell: GridCell;
     cellIndex: number;
@@ -23,6 +24,7 @@
     onRemoveLayer: (layerIndex: number) => void;
     onEditLayerOffset: (layerIndex: number) => void;
     onClearCell: () => void;
+    onRemoveCell: () => void;
   } = $props();
 
   const MAX_LAYERS = 4;
@@ -63,6 +65,14 @@
       <button class="add-btn primary" onclick={onAddSequence}>
         <i class="fas fa-plus" aria-hidden="true"></i>
         Add Sequence
+      </button>
+      <button
+        class="remove-cell-btn"
+        onclick={onRemoveCell}
+        title="Remove this cell from the grid (Delete)"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+        Remove Cell
       </button>
     </div>
   {:else}
@@ -112,8 +122,16 @@
         </button>
       {/if}
       <button class="clear-btn" onclick={onClearCell}>
-        <i class="fas fa-trash" aria-hidden="true"></i>
-        Clear Cell
+        <i class="fas fa-eraser" aria-hidden="true"></i>
+        Clear
+      </button>
+      <button
+        class="remove-cell-btn"
+        onclick={onRemoveCell}
+        title="Remove this cell from the grid (Delete)"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+        Remove
       </button>
     </div>
   {/if}
@@ -302,8 +320,34 @@
   }
 
   .clear-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, white);
+  }
+
+  .remove-cell-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: transparent;
+    color: var(--semantic-error, #ef4444);
+    font-size: var(--font-size-min, 14px);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .remove-cell-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+
+  .empty-state .remove-cell-btn {
+    margin-top: var(--spacing-sm);
   }
 </style>

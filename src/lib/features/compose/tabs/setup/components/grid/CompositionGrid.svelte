@@ -18,26 +18,38 @@
     isPlaying,
     selectedCellId,
     occupiedPositions,
+    zoomMode = "auto",
     onSelectCell,
     onSetCellSpan,
+    onToggleCell,
   }: {
     cells: GridCell[];
     currentBeat: number;
     isPlaying: boolean;
     selectedCellId: string | null;
     occupiedPositions: Map<string, string>;
+    /** "auto" = zoom to enabled cells, "full" = show entire 3x3 grid */
+    zoomMode?: "auto" | "full";
     onSelectCell: (cellId: string) => void;
     onSetCellSpan: (cellId: string, colSpan: number, rowSpan: number) => void;
+    onToggleCell?: (row: number, col: number) => void;
   } = $props();
+
+  // Resize direction type
+  type ResizeDirection = "left" | "right" | "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
   // Resize state
   let resizeState = $state<{
     cellId: string;
-    direction: "horizontal" | "vertical" | "both";
+    direction: ResizeDirection;
     startX: number;
     startY: number;
+    originalCol: number;
+    originalRow: number;
     originalColSpan: number;
     originalRowSpan: number;
+    targetCol: number;
+    targetRow: number;
     targetColSpan: number;
     targetRowSpan: number;
     isValid: boolean;
@@ -52,7 +64,13 @@
   const enabledCells = $derived(cells.filter((c) => c.enabled));
 
   // Calculate grid bounds from enabled cells - accounts for spans
+  // In "full" zoom mode, always show the entire 3x3 grid
   const gridBounds = $derived.by(() => {
+    // In full zoom mode, always show entire 3x3
+    if (zoomMode === "full") {
+      return { minRow: 0, maxRow: 2, minCol: 0, maxCol: 2, rows: 3, cols: 3 };
+    }
+
     if (enabledCells.length === 0) {
       return { minRow: 0, maxRow: 0, minCol: 0, maxCol: 0, rows: 1, cols: 1 };
     }
@@ -217,27 +235,12 @@
   }
 
   function validateSpan(
-    cell: GridCell,
-    colSpan: number,
-    rowSpan: number
+    _cell: GridCell,
+    _colSpan: number,
+    _rowSpan: number
   ): boolean {
-    // Check each position the expanded cell would occupy
-    for (let r = cell.row; r < cell.row + rowSpan; r++) {
-      for (let c = cell.col; c < cell.col + colSpan; c++) {
-        // Skip the origin position
-        if (r === cell.row && c === cell.col) continue;
-
-        // Check if another enabled cell exists at this position
-        const other = enabledCells.find(
-          (x) => x.row === r && x.col === c && x.id !== cell.id
-        );
-        if (other) return false;
-
-        // Check if this position is occupied by another cell's span
-        const occupyingId = occupiedPositions.get(`${r}-${c}`);
-        if (occupyingId && occupyingId !== cell.id) return false;
-      }
-    }
+    // Always valid - we'll absorb any cells that get in the way
+    // The state manager handles disabling overlapped cells
     return true;
   }
 
@@ -324,13 +327,24 @@
 
               <CellResizeHandles
                 cellId={cell.id}
-                canExpandRight={cell.col + cell.colSpan < 3}
-                canExpandDown={cell.row + cell.rowSpan < 3}
+                canResizeLeft={cell.colSpan > 1 || cell.col > 0}
+                canResizeRight={cell.colSpan > 1 || cell.col + cell.colSpan < 3}
+                canResizeTop={cell.rowSpan > 1 || cell.row > 0}
+                canResizeBottom={cell.rowSpan > 1 || cell.row + cell.rowSpan < 3}
                 onResizeStart={handleResizeStart}
               />
             </div>
           {:else if isOccupied}
             <!-- Skip - this position is covered by a spanning cell -->
+          {:else if zoomMode === "full"}
+            <!-- In full mode, show clickable empty slot to enable cell -->
+            <button
+              class="cell-slot-empty"
+              onclick={() => onToggleCell?.(row, col)}
+              aria-label="Enable cell at row {row + 1}, column {col + 1}"
+            >
+              <i class="fas fa-plus" aria-hidden="true"></i>
+            </button>
           {:else}
             <div class="cell-placeholder"></div>
           {/if}
@@ -384,6 +398,45 @@
     /* Empty slot in sparse grid - invisible but maintains layout */
     width: var(--cell-size, 200px);
     height: var(--cell-size, 200px);
+  }
+
+  /* Clickable empty slot in full grid mode */
+  .cell-slot-empty {
+    width: var(--cell-size, 200px);
+    height: var(--cell-size, 200px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: var(--border-radius-md, 8px);
+    cursor: pointer;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .cell-slot-empty i {
+    font-size: 1.5rem;
+    opacity: 0.5;
+    transition: opacity 0.15s ease;
+  }
+
+  .cell-slot-empty:hover {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: var(--theme-accent, #8b5cf6);
+    color: var(--theme-accent, #8b5cf6);
+  }
+
+  .cell-slot-empty:hover i {
+    opacity: 1;
+  }
+
+  .cell-slot-empty:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
   }
 
   .empty-state {

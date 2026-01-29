@@ -141,10 +141,10 @@
     </div>
   </div>
 
-  <!-- Quick Presets -->
+  <!-- Layout Presets -->
   <div class="presets-section">
-    <span class="presets-label">Quick layouts</span>
-    <div class="presets-row">
+    <span class="presets-label">Presets</span>
+    <div class="presets-grid">
       <button
         class="preset-btn"
         onclick={() => handlePreset("single")}
@@ -152,17 +152,6 @@
         title="1 cell"
       >
         <div class="preset-icon single">
-          <span></span>
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handlePreset("vertical")}
-        aria-label="2 cells vertical layout"
-        title="2 cells vertical"
-      >
-        <div class="preset-icon vertical">
-          <span></span>
           <span></span>
         </div>
       </button>
@@ -179,12 +168,11 @@
       </button>
       <button
         class="preset-btn"
-        onclick={() => handlePreset("line")}
-        aria-label="Horizontal line layout"
-        title="1×3 row"
+        onclick={() => handlePreset("vertical")}
+        aria-label="2 cells vertical layout"
+        title="2 cells vertical"
       >
-        <div class="preset-icon line">
-          <span></span>
+        <div class="preset-icon vertical">
           <span></span>
           <span></span>
         </div>
@@ -204,6 +192,18 @@
       </button>
       <button
         class="preset-btn"
+        onclick={() => handlePreset("line")}
+        aria-label="Horizontal line layout"
+        title="1×3 row"
+      >
+        <div class="preset-icon line">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </button>
+      <button
+        class="preset-btn"
         onclick={() => handlePreset("all")}
         aria-label="Full 3×3 grid layout"
         title="3×3 grid"
@@ -214,13 +214,6 @@
           {/each}
         </div>
       </button>
-    </div>
-  </div>
-
-  <!-- Spanning Presets -->
-  <div class="presets-section">
-    <span class="presets-label">Spanning layouts</span>
-    <div class="presets-row">
       <button
         class="preset-btn"
         onclick={() => handlePreset("hero-thumbs")}
@@ -380,6 +373,12 @@
 
   .presets-row {
     display: flex;
+    gap: var(--spacing-sm, 8px);
+  }
+
+  .presets-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-sm, 8px);
   }
 

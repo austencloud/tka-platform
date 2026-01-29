@@ -9,22 +9,26 @@
 <script lang="ts">
   let {
     cellId,
-    canExpandRight,
-    canExpandDown,
+    canResizeLeft,
+    canResizeRight,
+    canResizeTop,
+    canResizeBottom,
     onResizeStart,
   }: {
     cellId: string;
-    canExpandRight: boolean;
-    canExpandDown: boolean;
+    canResizeLeft: boolean;
+    canResizeRight: boolean;
+    canResizeTop: boolean;
+    canResizeBottom: boolean;
     onResizeStart: (
       cellId: string,
-      direction: "horizontal" | "vertical" | "both",
+      direction: "left" | "right" | "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right",
       e: PointerEvent
     ) => void;
   } = $props();
 
   function handlePointerDown(
-    direction: "horizontal" | "vertical" | "both",
+    direction: "left" | "right" | "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right",
     e: PointerEvent
   ) {
     e.stopPropagation();
@@ -33,35 +37,89 @@
   }
 </script>
 
-{#if canExpandRight}
+<!-- Edge handles -->
+{#if canResizeLeft}
+  <div
+    class="handle left"
+    role="slider"
+    aria-label="Resize cell from left"
+    aria-orientation="horizontal"
+    tabindex="0"
+    onpointerdown={(e) => handlePointerDown("left", e)}
+  ></div>
+{/if}
+
+{#if canResizeRight}
   <div
     class="handle right"
     role="slider"
-    aria-label="Resize cell width"
+    aria-label="Resize cell from right"
     aria-orientation="horizontal"
     tabindex="0"
-    onpointerdown={(e) => handlePointerDown("horizontal", e)}
+    onpointerdown={(e) => handlePointerDown("right", e)}
   ></div>
 {/if}
 
-{#if canExpandDown}
+{#if canResizeTop}
+  <div
+    class="handle top"
+    role="slider"
+    aria-label="Resize cell from top"
+    aria-orientation="vertical"
+    tabindex="0"
+    onpointerdown={(e) => handlePointerDown("top", e)}
+  ></div>
+{/if}
+
+{#if canResizeBottom}
   <div
     class="handle bottom"
     role="slider"
-    aria-label="Resize cell height"
+    aria-label="Resize cell from bottom"
     aria-orientation="vertical"
     tabindex="0"
-    onpointerdown={(e) => handlePointerDown("vertical", e)}
+    onpointerdown={(e) => handlePointerDown("bottom", e)}
   ></div>
 {/if}
 
-{#if canExpandRight && canExpandDown}
+<!-- Corner handles -->
+{#if canResizeTop && canResizeLeft}
   <div
-    class="handle corner"
+    class="handle corner top-left"
     role="slider"
-    aria-label="Resize cell width and height"
+    aria-label="Resize cell from top-left corner"
     tabindex="0"
-    onpointerdown={(e) => handlePointerDown("both", e)}
+    onpointerdown={(e) => handlePointerDown("top-left", e)}
+  ></div>
+{/if}
+
+{#if canResizeTop && canResizeRight}
+  <div
+    class="handle corner top-right"
+    role="slider"
+    aria-label="Resize cell from top-right corner"
+    tabindex="0"
+    onpointerdown={(e) => handlePointerDown("top-right", e)}
+  ></div>
+{/if}
+
+{#if canResizeBottom && canResizeLeft}
+  <div
+    class="handle corner bottom-left"
+    role="slider"
+    aria-label="Resize cell from bottom-left corner"
+    tabindex="0"
+    onpointerdown={(e) => handlePointerDown("bottom-left", e)}
+  ></div>
+{/if}
+
+{#if canResizeBottom && canResizeRight}
+  <div
+    class="handle corner bottom-right"
+    role="slider"
+    aria-label="Resize cell from bottom-right corner"
+    tabindex="0"
+    onpointerdown={(e) => handlePointerDown("bottom-right", e)}
   ></div>
 {/if}
 
@@ -69,13 +127,8 @@
   .handle {
     position: absolute;
     z-index: 20;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  .handle:hover,
-  .handle:focus-visible {
-    opacity: 1;
+    background: transparent;
+    transition: background 0.15s ease;
   }
 
   .handle:focus-visible {
@@ -83,59 +136,167 @@
     outline-offset: -2px;
   }
 
-  /* Right edge handle */
-  .handle.right {
-    right: -8px;
-    top: 16px;
-    bottom: 16px;
-    width: 16px;
+  /* Horizontal edge handles */
+  .handle.left {
+    left: 0;
+    top: 24px;
+    bottom: 24px;
+    width: 20px;
     cursor: ew-resize;
-    background: linear-gradient(
-      to right,
-      transparent 0%,
-      transparent 40%,
-      var(--theme-accent, #8b5cf6) 40%,
-      var(--theme-accent, #8b5cf6) 60%,
-      transparent 60%
-    );
-    border-radius: 4px;
   }
 
-  /* Bottom edge handle */
-  .handle.bottom {
-    bottom: -8px;
-    left: 16px;
-    right: 16px;
-    height: 16px;
+  .handle.right {
+    right: 0;
+    top: 24px;
+    bottom: 24px;
+    width: 20px;
+    cursor: ew-resize;
+  }
+
+  /* Vertical edge handles */
+  .handle.top {
+    top: 0;
+    left: 24px;
+    right: 24px;
+    height: 20px;
     cursor: ns-resize;
-    background: linear-gradient(
-      to bottom,
-      transparent 0%,
-      transparent 40%,
-      var(--theme-accent, #8b5cf6) 40%,
-      var(--theme-accent, #8b5cf6) 60%,
-      transparent 60%
-    );
-    border-radius: 4px;
   }
 
-  /* Corner handle */
+  .handle.bottom {
+    bottom: 0;
+    left: 24px;
+    right: 24px;
+    height: 20px;
+    cursor: ns-resize;
+  }
+
+  /* Corner handles */
   .handle.corner {
-    right: -8px;
-    bottom: -8px;
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .handle.corner.top-left {
+    top: 0;
+    left: 0;
     cursor: nwse-resize;
+  }
+
+  .handle.corner.top-right {
+    top: 0;
+    right: 0;
+    cursor: nesw-resize;
+  }
+
+  .handle.corner.bottom-left {
+    bottom: 0;
+    left: 0;
+    cursor: nesw-resize;
+  }
+
+  .handle.corner.bottom-right {
+    bottom: 0;
+    right: 0;
+    cursor: nwse-resize;
+  }
+
+  /* Hover effects for edge handles */
+  .handle.left:hover {
+    background: linear-gradient(to right, rgba(139, 92, 246, 0.3) 0%, transparent 100%);
+  }
+
+  .handle.right:hover {
+    background: linear-gradient(to left, rgba(139, 92, 246, 0.3) 0%, transparent 100%);
+  }
+
+  .handle.top:hover {
+    background: linear-gradient(to bottom, rgba(139, 92, 246, 0.3) 0%, transparent 100%);
+  }
+
+  .handle.bottom:hover {
+    background: linear-gradient(to top, rgba(139, 92, 246, 0.3) 0%, transparent 100%);
+  }
+
+  /* Hover effects for corner handles */
+  .handle.corner.top-left:hover {
+    background: radial-gradient(circle at top left, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+  }
+
+  .handle.corner.top-right:hover {
+    background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+  }
+
+  .handle.corner.bottom-left:hover {
+    background: radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+  }
+
+  .handle.corner.bottom-right:hover {
+    background: radial-gradient(circle at bottom right, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+  }
+
+  /* Visual indicator on hover */
+  .handle:hover::after {
+    content: "";
+    position: absolute;
     background: var(--theme-accent, #8b5cf6);
+    border-radius: 2px;
+  }
+
+  .handle.left:hover::after {
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 40px;
+  }
+
+  .handle.right:hover::after {
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 40px;
+  }
+
+  .handle.top:hover::after {
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+  }
+
+  .handle.bottom:hover::after {
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+  }
+
+  .handle.corner:hover::after {
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
   }
 
-  /* When cell is hovered, show handles more visibly */
-  :global(.cell-wrapper:hover) .handle {
-    opacity: 0.5;
+  .handle.corner.top-left:hover::after {
+    top: 4px;
+    left: 4px;
   }
 
-  :global(.cell-wrapper:hover) .handle:hover {
-    opacity: 1;
+  .handle.corner.top-right:hover::after {
+    top: 4px;
+    right: 4px;
+  }
+
+  .handle.corner.bottom-left:hover::after {
+    bottom: 4px;
+    left: 4px;
+  }
+
+  .handle.corner.bottom-right:hover::after {
+    bottom: 4px;
+    right: 4px;
   }
 </style>

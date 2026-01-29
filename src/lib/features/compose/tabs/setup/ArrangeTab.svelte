@@ -45,6 +45,9 @@
   let showStaggerControls = $state(false);
   let editingLayerIndex = $state<number | null>(null);
 
+  // Zoom mode: "auto" zooms to fit enabled cells, "full" shows entire 3x3
+  let zoomMode = $state<"auto" | "full">("auto");
+
   // Derived: selected cell data
   const selectedCell = $derived(gridState.selectedCell);
   const selectedCellId = $derived(gridState.selectedCellId);
@@ -129,6 +132,12 @@
     }
   }
 
+  function handleRemoveCell() {
+    if (selectedCell) {
+      gridState.toggleCell(selectedCell.row, selectedCell.col);
+    }
+  }
+
   // Playback
   function handlePlayPause() {
     gridState.togglePlayPause();
@@ -164,6 +173,151 @@
     });
     return sorted.findIndex((c) => c.id === selectedCell.id) + 1;
   }
+
+  // Keyboard shortcuts
+  function handleKeyDown(e: KeyboardEvent) {
+    // Don't intercept if user is typing in an input
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.isContentEditable
+    ) {
+      return;
+    }
+
+    // Don't intercept if modals are open
+    if (gridState.showSequencePicker || showStaggerControls) {
+      return;
+    }
+
+    switch (e.key) {
+      case "Delete":
+      case "Backspace":
+        // Remove selected cell from grid
+        if (selectedCellId !== null && selectedCell) {
+          e.preventDefault();
+          handleRemoveCell();
+        }
+        break;
+
+      case "Escape":
+        // Deselect cell
+        if (selectedCellId !== null) {
+          e.preventDefault();
+          gridState.deselectCell();
+        }
+        break;
+
+      case "ArrowUp":
+      case "ArrowDown":
+      case "ArrowLeft":
+      case "ArrowRight":
+        e.preventDefault();
+        navigateToAdjacentCell(e.key);
+        break;
+
+      case " ":
+        // Space for play/pause (only when not focused on a button)
+        if (target.tagName !== "BUTTON" && gridState.hasAnyLayers) {
+          e.preventDefault();
+          handlePlayPause();
+        }
+        break;
+
+      case "z":
+      case "Z":
+        // Z to toggle zoom mode
+        e.preventDefault();
+        zoomMode = zoomMode === "auto" ? "full" : "auto";
+        break;
+    }
+  }
+
+  function navigateToAdjacentCell(direction: string) {
+    const enabledCells = gridState.enabledCells;
+    if (enabledCells.length === 0) return;
+
+    // If no cell selected, select the first one
+    if (!selectedCell) {
+      const sorted = [...enabledCells].sort((a, b) => {
+        if (a.row !== b.row) return a.row - b.row;
+        return a.col - b.col;
+      });
+      if (sorted[0]) {
+        gridState.selectCell(sorted[0].id);
+      }
+      return;
+    }
+
+    // Calculate target position
+    let targetRow = selectedCell.row;
+    let targetCol = selectedCell.col;
+
+    switch (direction) {
+      case "ArrowUp":
+        targetRow--;
+        break;
+      case "ArrowDown":
+        targetRow++;
+        break;
+      case "ArrowLeft":
+        targetCol--;
+        break;
+      case "ArrowRight":
+        targetCol++;
+        break;
+    }
+
+    // Find cell at target position (or closest in that direction)
+    const cellAtTarget = enabledCells.find(
+      (c) => c.row === targetRow && c.col === targetCol
+    );
+
+    if (cellAtTarget) {
+      gridState.selectCell(cellAtTarget.id);
+    } else {
+      // Try to find any cell in that direction
+      const candidates = enabledCells.filter((c) => {
+        switch (direction) {
+          case "ArrowUp":
+            return c.row < selectedCell.row;
+          case "ArrowDown":
+            return c.row > selectedCell.row;
+          case "ArrowLeft":
+            return c.col < selectedCell.col;
+          case "ArrowRight":
+            return c.col > selectedCell.col;
+          default:
+            return false;
+        }
+      });
+
+      if (candidates.length > 0) {
+        // Pick the closest one
+        candidates.sort((a, b) => {
+          const distA =
+            Math.abs(a.row - selectedCell.row) +
+            Math.abs(a.col - selectedCell.col);
+          const distB =
+            Math.abs(b.row - selectedCell.row) +
+            Math.abs(b.col - selectedCell.col);
+          return distA - distB;
+        });
+        if (candidates[0]) {
+          gridState.selectCell(candidates[0].id);
+        }
+      }
+    }
+  }
+
+  // Register keyboard listener
+  $effect(() => {
+    if (typeof window === "undefined" || isMobile) return;
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
 </script>
 
 <div class="arrange-tab">
@@ -181,14 +335,36 @@
     <div class="desktop-content">
       <!-- Left: Grid Canvas Area -->
       <div class="canvas-area">
+        <!-- Zoom toggle -->
+        <div class="zoom-controls">
+          <button
+            class="zoom-btn"
+            class:active={zoomMode === "auto"}
+            onclick={() => (zoomMode = "auto")}
+            title="Fit to content"
+          >
+            <i class="fas fa-compress-alt" aria-hidden="true"></i>
+          </button>
+          <button
+            class="zoom-btn"
+            class:active={zoomMode === "full"}
+            onclick={() => (zoomMode = "full")}
+            title="Show full grid"
+          >
+            <i class="fas fa-th" aria-hidden="true"></i>
+          </button>
+        </div>
+
         <CompositionGrid
           cells={gridState.cells}
           currentBeat={gridState.currentBeat}
           isPlaying={gridState.isPlaying}
           selectedCellId={gridState.selectedCellId}
           occupiedPositions={gridState.occupiedPositions}
+          {zoomMode}
           onSelectCell={handleSelectCell}
           onSetCellSpan={handleSetCellSpan}
+          onToggleCell={handleToggleCell}
         />
       </div>
 
@@ -215,6 +391,7 @@
               onRemoveLayer={handleRemoveLayer}
               onEditLayerOffset={handleEditLayerOffset}
               onClearCell={handleClearCell}
+              onRemoveCell={handleRemoveCell}
             />
           </div>
         {:else}
@@ -317,10 +494,51 @@
 
   /* Canvas area - left side */
   .canvas-area {
+    position: relative;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-radius: var(--border-radius-lg);
     overflow: hidden;
     min-height: 0;
+  }
+
+  /* Zoom controls */
+  .zoom-controls {
+    position: absolute;
+    top: var(--spacing-sm, 8px);
+    right: var(--spacing-sm, 8px);
+    display: flex;
+    gap: 2px;
+    z-index: 20;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    padding: 2px;
+  }
+
+  .zoom-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    border-radius: var(--border-radius-sm, 4px);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .zoom-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--theme-text, white);
+  }
+
+  .zoom-btn.active {
+    background: var(--theme-accent, #8b5cf6);
+    color: white;
   }
 
   /* Control panel - right side */
