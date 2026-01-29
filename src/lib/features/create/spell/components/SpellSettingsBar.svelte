@@ -242,7 +242,7 @@ Container-aware responsive design:
     expansionSpring.set(1);
 
     // Haptic at expansion complete (synced to spring)
-    setTimeout(() => haptic.trigger("impact"), 150);
+    setTimeout(() => haptic.trigger("selection"), 150);
   }
 
   function collapseChip() {
@@ -268,7 +268,7 @@ Container-aware responsive design:
     setTimeout(() => selectionPulse.set(1), 50);
 
     // Haptic feedback
-    haptic.trigger("impact");
+    haptic.trigger("selection");
 
     // Apply selection
     setting.onSelect(value as never);
@@ -286,12 +286,12 @@ Container-aware responsive design:
   // ============================================================
 
   function toggleLoop() {
-    haptic.trigger("impact");
+    haptic.trigger("selection");
     onPreferenceChange("makeCircular", !preferences.makeCircular);
   }
 
   function toggleGridMode() {
-    haptic.trigger("impact");
+    haptic.trigger("selection");
     const newMode = gridMode === "diamond" ? "box" : "diamond";
     onGridModeChange(newMode as GridMode);
   }
@@ -446,7 +446,7 @@ Container-aware responsive design:
               class="section-option"
               class:selected
               onclick={() => {
-                haptic.trigger("impact");
+                haptic.trigger("selection");
                 setting.onSelect(option.value as never);
               }}
               role="radio"
@@ -467,7 +467,7 @@ Container-aware responsive design:
           <button
             class="section-option"
             class:selected={gridMode === "diamond"}
-            onclick={() => { haptic.trigger("impact"); onGridModeChange("diamond" as GridMode); }}
+            onclick={() => { haptic.trigger("selection"); onGridModeChange("diamond" as GridMode); }}
             role="radio"
             aria-checked={gridMode === "diamond"}
           >
@@ -476,7 +476,7 @@ Container-aware responsive design:
           <button
             class="section-option"
             class:selected={gridMode === "box"}
-            onclick={() => { haptic.trigger("impact"); onGridModeChange("box" as GridMode); }}
+            onclick={() => { haptic.trigger("selection"); onGridModeChange("box" as GridMode); }}
             role="radio"
             aria-checked={gridMode === "box"}
           >
@@ -491,7 +491,7 @@ Container-aware responsive design:
           <button
             class="section-option"
             class:selected={!preferences.makeCircular}
-            onclick={() => { haptic.trigger("impact"); onPreferenceChange("makeCircular", false); }}
+            onclick={() => { haptic.trigger("selection"); onPreferenceChange("makeCircular", false); }}
             role="radio"
             aria-checked={!preferences.makeCircular}
           >
@@ -500,7 +500,7 @@ Container-aware responsive design:
           <button
             class="section-option loop-on"
             class:selected={preferences.makeCircular}
-            onclick={() => { haptic.trigger("impact"); onPreferenceChange("makeCircular", true); }}
+            onclick={() => { haptic.trigger("selection"); onPreferenceChange("makeCircular", true); }}
             role="radio"
             aria-checked={preferences.makeCircular}
           >
