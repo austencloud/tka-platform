@@ -54,7 +54,6 @@ export class AnimationVisibilitySynchronizer implements IAnimationVisibilitySync
 
   private notifySubscribers(): void {
     const state = this.getState();
-    console.log('[AnimationVisibilitySynchronizer] notifySubscribers, trails:', state.trails, 'callbacks:', this.callbacks.size);
     this.callbacks.forEach((callback) => {
       try {
         callback(state);
