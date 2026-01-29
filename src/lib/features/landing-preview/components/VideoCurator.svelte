@@ -435,7 +435,7 @@
               <div class="performer-badge">
                 <i class="fas fa-user" aria-hidden="true"></i>
                 {video.performers.length === 1
-                  ? video.performers[0].displayName
+                  ? video.performers[0]?.displayName
                   : `${video.performers.length} performers`}
               </div>
             {/if}

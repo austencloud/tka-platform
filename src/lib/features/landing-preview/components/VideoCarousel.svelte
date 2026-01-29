@@ -64,10 +64,8 @@
     carouselRef.scrollTo({ left: index * itemWidth, behavior: "smooth" });
   }
 
-  function handleVideoRef(index: number) {
-    return (el: HTMLVideoElement | null) => {
-      if (el) videoRefs[index] = el;
-    };
+  function handleVideoRef(el: HTMLVideoElement, index: number) {
+    videoRefs[index] = el;
   }
 </script>
 

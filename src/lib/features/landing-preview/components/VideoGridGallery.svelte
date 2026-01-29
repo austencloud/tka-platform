@@ -50,11 +50,13 @@
     };
   });
 
-  function handleVideoRef(index: number) {
-    return (el: HTMLVideoElement | null) => {
-      if (el) {
-        videoRefs[index] = el;
-        observer?.observe(el);
+  function handleVideoRef(el: HTMLVideoElement, index: number) {
+    videoRefs[index] = el;
+    observer?.observe(el);
+
+    return {
+      destroy() {
+        observer?.unobserve(el);
       }
     };
   }

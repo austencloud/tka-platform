@@ -165,7 +165,7 @@
   const hasExactMatch = $derived(
     topMatches.length > 0 &&
     video.title &&
-    topMatches[0].word.toUpperCase() === video.title.toUpperCase()
+    topMatches[0]?.word.toUpperCase() === video.title.toUpperCase()
   );
 </script>
 
