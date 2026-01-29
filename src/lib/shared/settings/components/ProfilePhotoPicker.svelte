@@ -7,10 +7,11 @@
   3. Use Facebook photo (if linked)
   4. Generate avatar (gradient + prop) - auto-matches user's theme
 
-  Adaptive: Modal on desktop, drawer on mobile
+  Adaptive: Modal (BaseModal) on desktop, Drawer on mobile
 -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { container } from "$lib/shared/di";
@@ -21,7 +22,6 @@
   } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
-  import { constructGoogleAvatarUrl } from "$lib/shared/foundation/utils/google-avatar";
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
   import { BACKGROUND_THEME_COLORS } from "$lib/shared/settings/utils/background-theme-calculator";
 
@@ -167,18 +167,34 @@
   const hasGoogle = $derived(!!providerIds.googleId);
   const hasFacebook = $derived(!!providerIds.facebookId);
 
-  const googlePhotoUrl = $derived(
-    providerIds.googleId ? constructGoogleAvatarUrl(providerIds.googleId, 96) : null
-  );
-
-  let isDesktop = $state(false);
-  $effect(() => {
-    isDesktop = responsiveLayoutManager.shouldUseSideBySideLayout();
-    const unsubscribe = responsiveLayoutManager.onLayoutChange(() => {
-      isDesktop = responsiveLayoutManager.shouldUseSideBySideLayout();
-    });
-    return unsubscribe;
+  // Get Google photo from provider data directly (more reliable than constructing from ID)
+  const googlePhotoUrl = $derived.by(() => {
+    if (!user) return null;
+    const googleProvider = user.providerData.find(
+      (p) => p.providerId === "google.com"
+    );
+    return googleProvider?.photoURL ?? null;
   });
+
+  // ============ LAYOUT MODE DETECTION ============
+
+  // Breakpoint for modal vs drawer - simple threshold
+  const DESKTOP_BREAKPOINT = 768;
+
+  let viewportWidth = $state(typeof window !== "undefined" ? window.innerWidth : 800);
+
+  // Set up resize listener
+  $effect(() => {
+    function handleResize() {
+      viewportWidth = window.innerWidth;
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  });
+
+  // Desktop shows modal with side-by-side panels, mobile shows drawer with tabs
+  const isDesktop = $derived(viewportWidth >= DESKTOP_BREAKPOINT);
 
   const selectedGradient = $derived(
     ALL_GRADIENTS.find((g) => g.id === selectedGradientId) ?? ALL_GRADIENTS[0]!
@@ -221,16 +237,6 @@
   function handleClose() {
     activeTab = "options";
     onClose();
-  }
-
-  function handleBackdropClick() {
-    handleClose();
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape" && isOpen) {
-      handleClose();
-    }
   }
 
   function selectFamily(familyId: string) {
@@ -314,31 +320,16 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 {#if isDesktop}
-  {#if isOpen}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div
-      class="modal-overlay"
-      onclick={handleBackdropClick}
-      role="button"
-      tabindex="-1"
-      aria-label="Close"
-    >
-      <div
-        class="modal-container"
-        onclick={(e) => e.stopPropagation()}
-        onkeydown={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="photo-picker-title"
-        tabindex="-1"
-      >
-        {@render pickerContent()}
-      </div>
-    </div>
-  {/if}
+  <BaseModal
+    open={isOpen}
+    onclose={handleClose}
+    size="xl"
+    labelledBy="photo-picker-title"
+    class="profile-photo-modal"
+  >
+    {@render modalContent()}
+  </BaseModal>
 {:else}
   <Drawer
     {isOpen}
@@ -347,7 +338,7 @@
     onclose={handleClose}
     ariaLabel="Change profile photo"
   >
-    {@render pickerContent()}
+    {@render drawerContent()}
   </Drawer>
 {/if}
 
@@ -359,179 +350,54 @@
   class="sr-only"
 />
 
-{#snippet pickerContent()}
-  <div class="picker-container" class:modal={isDesktop}>
-    <header class="picker-header">
+{#snippet modalContent()}
+  <!-- Modal: Side-by-side layout, generous spacing -->
+  <div class="modal-layout">
+    <header class="modal-header">
       <h2 id="photo-picker-title">Profile Photo</h2>
       <button class="close-btn" onclick={handleClose} aria-label="Close">
         <i class="fas fa-times"></i>
       </button>
     </header>
 
-    <!-- Wide layout: side-by-side. Narrow: tabbed -->
-    <div class="picker-body themed-scrollbar">
+    <div class="modal-panels">
       <!-- Left Panel: Choose Photo -->
-      <div class="panel choose-panel" class:hidden-panel={isDesktop ? false : activeTab !== "options"}>
-        <div class="panel-header">
-          <div class="current-preview">
-            <div class="avatar-preview-wrapper">
-              <RobustAvatar
-                src={user?.photoURL}
-                name={user?.displayName || user?.email}
-                googleId={providerIds.googleId}
-                alt={user?.displayName || "Profile"}
-                size="xl"
-              />
-            </div>
-          </div>
-          <h3 class="panel-title">Choose Photo</h3>
-        </div>
-        <div class="options-list">
-          <button class="option-btn" onclick={triggerFileUpload} disabled={saving}>
-            <div class="option-icon upload">
-              <i class="fas fa-camera"></i>
-            </div>
-            <div class="option-text">
-              <span class="option-label">Upload Photo</span>
-              <span class="option-desc">Choose from your device</span>
-            </div>
-            <i class="fas fa-chevron-right option-arrow"></i>
-          </button>
-
-          {#if hasGoogle}
-            <button class="option-btn" onclick={useGooglePhoto} disabled={saving}>
-              <div class="option-icon google">
-                <i class="fab fa-google"></i>
-              </div>
-              <div class="option-text">
-                <span class="option-label">Use Google Photo</span>
-                <span class="option-desc">From your Google account</span>
-              </div>
-              {#if googlePhotoUrl}
-                <img
-                  src={googlePhotoUrl}
-                  alt="Google profile"
-                  class="option-preview-img"
-                  referrerpolicy="no-referrer"
-                  crossorigin="anonymous"
-                />
-              {/if}
-            </button>
-          {/if}
-
-          {#if hasFacebook}
-            <button class="option-btn" onclick={useFacebookPhoto} disabled={saving}>
-              <div class="option-icon facebook">
-                <i class="fab fa-facebook-f"></i>
-              </div>
-              <div class="option-text">
-                <span class="option-label">Use Facebook Photo</span>
-                <span class="option-desc">From your Facebook account</span>
-              </div>
-              <img
-                src="https://graph.facebook.com/{providerIds.facebookId}/picture?type=small"
-                alt="Facebook profile"
-                class="option-preview-img"
-              />
-            </button>
-          {/if}
-        </div>
+      <div class="panel choose-panel">
+        {@render panelHeader("choose")}
+        {@render optionsList()}
       </div>
 
-      <!-- Divider (wide layout only) -->
       <div class="panel-divider"></div>
 
       <!-- Right Panel: Create Avatar -->
-      <div class="panel generate-panel" class:hidden-panel={isDesktop ? false : activeTab !== "generate"}>
-        <div class="panel-header">
-          <div class="current-preview">
-            <div
-              class="avatar-preview generated"
-              style="background: {selectedGradient.gradient};"
-            >
-              {#if currentPropImage}
-                <img src={currentPropImage} alt="Prop" class="prop-silhouette" />
-              {/if}
-            </div>
-            <span class="gradient-name">{selectedGradient.name}</span>
-          </div>
-          <h3 class="panel-title">Create Avatar</h3>
-        </div>
-
-        <div class="generate-content">
-          <!-- Color Family Selector -->
-          <div class="section">
-            <h3>Style</h3>
-            <div class="family-row">
-              {#each COLOR_FAMILIES as family}
-                <button
-                  class="family-chip"
-                  class:selected={selectedFamilyId === family.id}
-                  onclick={() => selectFamily(family.id)}
-                >
-                  <i class="fas {family.icon}"></i>
-                  <span>{family.name}</span>
-                </button>
-              {/each}
-            </div>
-          </div>
-
-          <!-- Gradients in Selected Family -->
-          <div class="section">
-            <div class="section-header">
-              <h3>Shade</h3>
-              <button class="shuffle-btn" onclick={shuffle} title="Shuffle">
-                <i class="fas fa-random"></i>
-              </button>
-            </div>
-            <div class="gradient-row">
-              {#each familyGradients as gradient}
-                <button
-                  class="gradient-swatch"
-                  class:selected={selectedGradientId === gradient.id}
-                  onclick={() => selectGradient(gradient.id)}
-                  title={gradient.name}
-                  style="background: {gradient.gradient};"
-                >
-                  {#if selectedGradientId === gradient.id}
-                    <i class="fas fa-check"></i>
-                  {/if}
-                </button>
-              {/each}
-            </div>
-          </div>
-
-          <!-- Prop Selection -->
-          <div class="section">
-            <h3>Prop</h3>
-            <div class="prop-row">
-              {#each PROPS as prop}
-                <button
-                  class="prop-btn"
-                  class:selected={selectedProp === prop.id}
-                  onclick={() => (selectedProp = prop.id)}
-                  title={prop.label}
-                >
-                  <img src={prop.image} alt={prop.label} />
-                </button>
-              {/each}
-            </div>
-          </div>
-
-          <button class="save-btn" onclick={useGeneratedAvatar} disabled={saving}>
-            {#if saving}
-              <i class="fas fa-circle-notch fa-spin"></i>
-              <span>Saving...</span>
-            {:else}
-              <i class="fas fa-check"></i>
-              <span>Use This Avatar</span>
-            {/if}
-          </button>
-        </div>
+      <div class="panel generate-panel">
+        {@render panelHeader("generate")}
+        {@render generateContent()}
       </div>
     </div>
+  </div>
+{/snippet}
 
-    <!-- Tab Switcher (narrow layout only) -->
+{#snippet drawerContent()}
+  <!-- Drawer: Tabbed layout for mobile -->
+  <div class="drawer-layout">
+    <header class="drawer-header">
+      <h2 id="photo-picker-title">Profile Photo</h2>
+      <button class="close-btn" onclick={handleClose} aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </header>
+
+    <div class="drawer-body">
+      {#if activeTab === "options"}
+        {@render panelHeader("choose")}
+        {@render optionsList()}
+      {:else}
+        {@render panelHeader("generate")}
+        {@render generateContent()}
+      {/if}
+    </div>
+
     <div class="tab-switcher">
       <button
         class="tab-btn"
@@ -553,142 +419,252 @@
   </div>
 {/snippet}
 
+{#snippet panelHeader(type: "choose" | "generate")}
+  <div class="panel-header">
+    {#if type === "choose"}
+      <div class="avatar-preview-wrapper">
+        <RobustAvatar
+          src={user?.photoURL}
+          name={user?.displayName || user?.email}
+          googleId={providerIds.googleId}
+          alt={user?.displayName || "Profile"}
+          size="xl"
+        />
+      </div>
+      <h3 class="panel-title">Choose Photo</h3>
+    {:else}
+      <div
+        class="avatar-preview generated"
+        style="background: {selectedGradient.gradient};"
+      >
+        {#if currentPropImage}
+          <img src={currentPropImage} alt="Prop" class="prop-silhouette" />
+        {/if}
+      </div>
+      <span class="gradient-name">{selectedGradient.name}</span>
+      <h3 class="panel-title">Create Avatar</h3>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet optionsList()}
+  <div class="options-list">
+    <button class="option-btn" onclick={triggerFileUpload} disabled={saving}>
+      <div class="option-icon upload">
+        <i class="fas fa-camera"></i>
+      </div>
+      <div class="option-text">
+        <span class="option-label">Upload Photo</span>
+        <span class="option-desc">Choose from your device</span>
+      </div>
+      <i class="fas fa-chevron-right option-arrow"></i>
+    </button>
+
+    {#if hasGoogle}
+      <button class="option-btn" onclick={useGooglePhoto} disabled={saving}>
+        <div class="option-icon google">
+          <i class="fab fa-google"></i>
+        </div>
+        <div class="option-text">
+          <span class="option-label">Use Google Photo</span>
+          <span class="option-desc">From your Google account</span>
+        </div>
+        {#if googlePhotoUrl}
+          <img
+            src={googlePhotoUrl}
+            alt="Google profile"
+            class="option-preview-img"
+            referrerpolicy="no-referrer"
+            crossorigin="anonymous"
+          />
+        {/if}
+      </button>
+    {/if}
+
+    {#if hasFacebook}
+      <button class="option-btn" onclick={useFacebookPhoto} disabled={saving}>
+        <div class="option-icon facebook">
+          <i class="fab fa-facebook-f"></i>
+        </div>
+        <div class="option-text">
+          <span class="option-label">Use Facebook Photo</span>
+          <span class="option-desc">From your Facebook account</span>
+        </div>
+        <img
+          src="https://graph.facebook.com/{providerIds.facebookId}/picture?type=small"
+          alt="Facebook profile"
+          class="option-preview-img"
+        />
+      </button>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet generateContent()}
+  <div class="generate-content">
+    <!-- Color Family Selector -->
+    <div class="section">
+      <h4 class="section-label">Style</h4>
+      <div class="family-row">
+        {#each COLOR_FAMILIES as family}
+          <button
+            class="family-chip"
+            class:selected={selectedFamilyId === family.id}
+            onclick={() => selectFamily(family.id)}
+          >
+            <i class="fas {family.icon}"></i>
+            <span>{family.name}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+
+    <!-- Gradients in Selected Family -->
+    <div class="section">
+      <div class="section-header">
+        <h4 class="section-label">Shade</h4>
+        <button class="shuffle-btn" onclick={shuffle} title="Shuffle">
+          <i class="fas fa-random"></i>
+        </button>
+      </div>
+      <div class="gradient-row">
+        {#each familyGradients as gradient}
+          <button
+            class="gradient-swatch"
+            class:selected={selectedGradientId === gradient.id}
+            onclick={() => selectGradient(gradient.id)}
+            title={gradient.name}
+            style="background: {gradient.gradient};"
+          >
+            {#if selectedGradientId === gradient.id}
+              <i class="fas fa-check"></i>
+            {/if}
+          </button>
+        {/each}
+      </div>
+    </div>
+
+    <!-- Prop Selection -->
+    <div class="section">
+      <h4 class="section-label">Prop</h4>
+      <div class="prop-row">
+        {#each PROPS as prop}
+          <button
+            class="prop-btn"
+            class:selected={selectedProp === prop.id}
+            onclick={() => (selectedProp = prop.id)}
+            title={prop.label}
+          >
+            <img src={prop.image} alt={prop.label} />
+          </button>
+        {/each}
+      </div>
+    </div>
+
+    <button class="save-btn" onclick={useGeneratedAvatar} disabled={saving}>
+      {#if saving}
+        <i class="fas fa-circle-notch fa-spin"></i>
+        <span>Saving...</span>
+      {:else}
+        <i class="fas fa-check"></i>
+        <span>Use This Avatar</span>
+      {/if}
+    </button>
+  </div>
+{/snippet}
+
 <style>
-  /* Modal Overlay */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(4px);
-    z-index: 10000;
-    animation: fadeIn 0.2s ease-out;
-  }
+  /* ═══════════════════════════════════════════════════════════════════
+     MODAL LAYOUT - Desktop side-by-side
+     Uses BaseModal's "xl" size (min(90vw, 1400px)) for generous space
+     ═══════════════════════════════════════════════════════════════════ */
 
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  .modal-container {
-    container-type: inline-size;
-    container-name: photo-modal;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: min(90vw, 800px);
-    max-height: calc(100vh - 40px);
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
-    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  @keyframes slideUp {
-    from { transform: translateY(16px) scale(0.98); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
-  }
-
-  /* Container */
-  .picker-container {
-    container-type: inline-size;
-    container-name: picker;
+  .modal-layout {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     color: var(--theme-text, #ffffff);
-    overflow: hidden;
   }
 
-  .picker-container.modal {
-    height: auto;
-    max-height: calc(100vh - 80px);
-  }
-
-  /* Header */
-  .picker-header {
+  /* Modal Header */
+  .modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 24px;
+    padding: var(--modal-padding, 24px);
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
   }
 
-  .picker-header h2 {
-    font-size: 18px;
+  .modal-header h2 {
+    font-size: var(--font-size-lg, 18px);
     font-weight: 600;
     margin: 0;
   }
 
-  .close-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text, #ffffff);
-    cursor: pointer;
+  /* Modal Panels Container - side-by-side */
+  .modal-panels {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-  }
-
-  .close-btn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-  }
-
-  /* Body - holds panels */
-  .picker-body {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
     min-height: 0;
   }
 
-  /* Panels */
-  .panel {
+  /* Each panel takes half the space */
+  .modal-panels .panel {
+    flex: 1;
     display: flex;
     flex-direction: column;
+    padding: var(--modal-padding, 24px);
+    min-width: 0;
   }
 
-  .panel-header {
+  /* Vertical divider between panels */
+  .modal-panels .panel-divider {
+    width: 1px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    flex-shrink: 0;
+    align-self: stretch;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     DRAWER LAYOUT - Mobile tabbed
+     ═══════════════════════════════════════════════════════════════════ */
+
+  .drawer-layout {
     display: flex;
     flex-direction: column;
+    height: 100%;
+    color: var(--theme-text, #ffffff);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .drawer-header {
+    display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 20px;
+    justify-content: space-between;
+    padding: var(--spacing-md, 16px) var(--spacing-lg, 20px);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    flex-shrink: 0;
   }
 
-  .panel-title {
-    font-size: 14px;
+  .drawer-header h2 {
+    font-size: var(--font-size-lg, 18px);
     font-weight: 600;
     margin: 0;
-    color: var(--theme-text-dim);
   }
 
-  .panel-divider {
-    display: none;
+  .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-md, 16px);
   }
 
-  .hidden-panel {
-    display: none;
-  }
-
-  /* Tab Switcher - shown on narrow layouts */
+  /* Tab Switcher - drawer only */
   .tab-switcher {
     display: flex;
-    padding: 12px 16px;
-    gap: 8px;
+    padding: var(--spacing-sm, 12px) var(--spacing-md, 16px);
+    gap: var(--spacing-sm, 8px);
     flex-shrink: 0;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
@@ -698,13 +674,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 10px;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-sm, 10px);
+    min-height: 48px; /* AAA touch target */
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
+    border-radius: var(--radius-md, 10px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: 13px;
+    font-size: var(--font-size-sm, 13px);
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -721,21 +698,55 @@
     color: white;
   }
 
-  /* Preview */
-  .current-preview {
+  /* ═══════════════════════════════════════════════════════════════════
+     SHARED COMPONENTS
+     ═══════════════════════════════════════════════════════════════════ */
+
+  /* Close Button */
+  .close-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 48px; /* AAA touch target */
+    min-height: 48px;
+    border-radius: 50%;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, #ffffff);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .close-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+  }
+
+  /* Panel Header */
+  .panel-header {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: var(--spacing-sm, 12px);
+    margin-bottom: var(--spacing-lg, 20px);
   }
 
+  .panel-title {
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    margin: 0;
+    color: var(--theme-text-dim);
+  }
+
+  /* Avatar Previews */
   .avatar-preview-wrapper {
     width: 80px;
     height: 80px;
     border-radius: 50%;
     overflow: hidden;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-    border: 3px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .avatar-preview-wrapper :global(.robust-avatar) {
@@ -751,7 +762,7 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-    border: 3px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .prop-silhouette {
@@ -762,26 +773,26 @@
   }
 
   .gradient-name {
-    font-size: 12px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim);
   }
 
   /* Options List */
   .options-list {
-    padding: 0 20px 20px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--spacing-sm, 10px);
   }
 
   .option-btn {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
+    gap: var(--spacing-sm, 12px);
+    padding: var(--spacing-sm, 12px) var(--spacing-md, 16px);
+    min-height: 48px; /* AAA touch target */
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
+    border-radius: var(--radius-md, 12px);
     color: var(--theme-text, #ffffff);
     cursor: pointer;
     transition: all 0.15s ease;
@@ -802,11 +813,11 @@
   .option-icon {
     width: 40px;
     height: 40px;
-    border-radius: 10px;
+    border-radius: var(--radius-sm, 8px);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: var(--font-size-md, 16px);
     flex-shrink: 0;
   }
 
@@ -822,12 +833,19 @@
     min-width: 0;
   }
 
-  .option-label { font-size: 14px; font-weight: 500; }
-  .option-desc { font-size: 12px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.5)); }
+  .option-label {
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 500;
+  }
+
+  .option-desc {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
 
   .option-preview-img {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
@@ -836,21 +854,20 @@
 
   .option-arrow {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    font-size: 12px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   /* Generate Content */
   .generate-content {
-    padding: 0 20px 20px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--spacing-lg, 20px);
   }
 
   .section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--spacing-sm, 10px);
   }
 
   .section-header {
@@ -859,8 +876,8 @@
     justify-content: space-between;
   }
 
-  .section h3 {
-    font-size: 12px;
+  .section-label {
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     margin: 0;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
@@ -869,16 +886,18 @@
   }
 
   .shuffle-btn {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
+    min-width: 48px; /* AAA touch target */
+    min-height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 6px;
+    border-radius: var(--radius-sm, 8px);
     color: var(--theme-text, #ffffff);
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     cursor: pointer;
     transition: all 0.15s ease;
   }
@@ -887,23 +906,24 @@
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
   }
 
-  /* Family Row - all chips on one line */
+  /* Family Row - style chips */
   .family-row {
     display: flex;
-    gap: 8px;
-    flex-wrap: nowrap;
+    gap: var(--spacing-sm, 10px);
+    flex-wrap: wrap;
   }
 
   .family-chip {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
+    gap: var(--spacing-xs, 6px);
+    padding: var(--spacing-sm, 10px) var(--spacing-md, 16px);
+    min-height: 48px; /* AAA touch target */
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 20px;
+    border-radius: 24px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: 13px;
+    font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -922,19 +942,20 @@
   }
 
   .family-chip i {
-    font-size: 12px;
+    font-size: var(--font-size-sm, 14px);
   }
 
   /* Gradient Row */
   .gradient-row {
     display: flex;
-    gap: 12px;
+    gap: var(--spacing-sm, 10px);
+    flex-wrap: wrap;
   }
 
   .gradient-swatch {
     width: 52px;
     height: 52px;
-    border-radius: 12px;
+    border-radius: var(--radius-md, 12px);
     border: 2px solid transparent;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -942,12 +963,12 @@
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 14px;
+    font-size: var(--font-size-md, 16px);
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   }
 
   .gradient-swatch:hover {
-    transform: scale(1.08);
+    transform: scale(1.05);
   }
 
   .gradient-swatch.selected {
@@ -958,17 +979,17 @@
   /* Prop Row */
   .prop-row {
     display: flex;
-    gap: 8px;
+    gap: var(--spacing-sm, 8px);
     flex-wrap: wrap;
   }
 
   .prop-btn {
-    width: 44px;
-    height: 44px;
-    padding: 8px;
+    width: 52px;
+    height: 52px;
+    padding: var(--spacing-xs, 8px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
+    border-radius: var(--radius-sm, 8px);
     cursor: pointer;
     transition: all 0.15s ease;
   }
@@ -995,16 +1016,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 14px 20px;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-md, 14px) var(--spacing-lg, 20px);
+    min-height: 48px; /* AAA touch target */
     background: var(--theme-accent, #6366f1);
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-md, 12px);
     color: white;
-    font-size: 14px;
+    font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
+    margin-top: var(--spacing-sm, 8px);
   }
 
   .save-btn:hover:not(:disabled) {
@@ -1031,80 +1054,51 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════
-     WIDE LAYOUT: Side-by-side panels (600px+)
+     MODAL-SPECIFIC OVERRIDES
+     Make the modal feel generous and spacious
      ═══════════════════════════════════════════════════════════════════ */
-  @container picker (min-width: 580px) {
-    .picker-body {
-      flex-direction: row;
-      overflow: hidden;
-    }
 
-    .panel {
-      flex: 1;
-      overflow-y: auto;
-      min-width: 0;
-    }
-
-    .hidden-panel {
-      display: flex;
-    }
-
-    .panel-divider {
-      display: block;
-      width: 1px;
-      background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-      flex-shrink: 0;
-    }
-
-    .tab-switcher {
-      display: none;
-    }
-
-    .panel-header {
-      padding: 24px 24px 16px;
-    }
-
-    .avatar-preview,
-    .avatar-preview-wrapper {
-      width: 100px;
-      height: 100px;
-    }
-
-    .options-list {
-      padding: 0 24px 24px;
-    }
-
-    .generate-content {
-      padding: 0 24px 24px;
-    }
+  /* Larger avatars in modal */
+  .modal-layout .avatar-preview-wrapper,
+  .modal-layout .avatar-preview {
+    width: 96px;
+    height: 96px;
   }
 
-  /* Mobile */
-  @media (max-width: 480px) {
-    .picker-container {
-      padding-bottom: env(safe-area-inset-bottom, 0);
-    }
-
-    .avatar-preview,
-    .avatar-preview-wrapper {
-      width: 72px;
-      height: 72px;
-    }
-
-    .family-chip {
-      padding: 6px 10px;
-      font-size: 11px;
-    }
-
-    .gradient-swatch {
-      width: 44px;
-      height: 44px;
-    }
+  /* More generous spacing in modal */
+  .modal-layout .options-list {
+    gap: var(--spacing-md, 14px);
   }
 
-  /* Accessibility */
+  .modal-layout .option-btn {
+    padding: var(--spacing-md, 16px) var(--spacing-lg, 20px);
+  }
+
+  .modal-layout .option-icon {
+    width: 48px;
+    height: 48px;
+    font-size: var(--font-size-lg, 18px);
+  }
+
+  /* Larger swatches in modal */
+  .modal-layout .gradient-swatch {
+    width: 60px;
+    height: 60px;
+  }
+
+  .modal-layout .prop-btn {
+    width: 60px;
+    height: 60px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     ACCESSIBILITY
+     ═══════════════════════════════════════════════════════════════════ */
+
   @media (prefers-reduced-motion: reduce) {
-    .modal-overlay, .modal-container { animation: none; }
-    .gradient-swatch:hover, .save-btn:hover { transform: none; }
+    .gradient-swatch:hover,
+    .save-btn:hover {
+      transform: none;
+    }
   }
 </style>
