@@ -247,6 +247,39 @@
     if (!state) return null;
     return enabledCells.find((c) => c.id === state.cellId) ?? null;
   });
+
+  // Only show ghost when span has actually changed from original
+  const showGhost = $derived.by(() => {
+    const state = resizeState;
+    if (!state) return false;
+    return (
+      state.targetColSpan !== state.originalColSpan ||
+      state.targetRowSpan !== state.originalRowSpan
+    );
+  });
+
+  // Calculate ghost position and size in pixels (absolute positioning)
+  const ghostStyle = $derived.by(() => {
+    const state = resizeState;
+    const cell = resizingCell;
+    if (!state || !cell) return "";
+
+    const gap = 16;
+    const unit = cellSize + gap;
+
+    // Position relative to cell's position in the grid
+    const colOffset = cell.col - gridBounds.minCol;
+    const rowOffset = cell.row - gridBounds.minRow;
+
+    const left = colOffset * unit;
+    const top = rowOffset * unit;
+    const width =
+      state.targetColSpan * cellSize + (state.targetColSpan - 1) * gap;
+    const height =
+      state.targetRowSpan * cellSize + (state.targetRowSpan - 1) * gap;
+
+    return `left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;`;
+  });
 </script>
 
 <div
@@ -304,13 +337,12 @@
         {/each}
       {/each}
 
-      <!-- Ghost preview during resize -->
-      {#if resizeState && resizingCell}
+      <!-- Ghost preview during resize (absolute positioned to avoid layout shifts) -->
+      {#if showGhost && resizeState}
         <div
           class="resize-ghost"
           class:invalid={!resizeState.isValid}
-          style:grid-column="{resizingCell.col - gridBounds.minCol + 1} / span {resizeState.targetColSpan}"
-          style:grid-row="{resizingCell.row - gridBounds.minRow + 1} / span {resizeState.targetRowSpan}"
+          style={ghostStyle}
         ></div>
       {/if}
     </div>
@@ -328,6 +360,7 @@
   }
 
   .grid-content {
+    position: relative; /* For absolute positioned ghost */
     display: grid;
     grid-template-rows: repeat(var(--grid-rows, 1), var(--cell-size, 200px));
     grid-template-columns: repeat(var(--grid-cols, 1), var(--cell-size, 200px));
@@ -374,15 +407,15 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  /* Resize ghost preview */
+  /* Resize ghost preview - absolute positioned to avoid layout shifts */
   .resize-ghost {
+    position: absolute;
     background: var(--theme-accent, #8b5cf6);
     opacity: 0.2;
     border: 2px dashed var(--theme-accent, #8b5cf6);
     border-radius: var(--border-radius-md, 8px);
     pointer-events: none;
     z-index: 15;
-    transition: none;
   }
 
   .resize-ghost.invalid {
