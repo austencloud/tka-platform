@@ -26,6 +26,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     displayedLetter = null,
     displayedTurnsTuple = "(s, 0, 0)",
     displayedStepNumber = null,
+    displayedMusicalPosition = undefined,
     // Visibility
     tkaGlyphVisible = true,
     stepNumbersVisible = true,
@@ -38,6 +39,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     displayedLetter?: Letter | null;
     displayedTurnsTuple?: string;
     displayedStepNumber?: number | null;
+    displayedMusicalPosition?: string;
     tkaGlyphVisible?: boolean;
     stepNumbersVisible?: boolean;
     darkMode?: boolean;

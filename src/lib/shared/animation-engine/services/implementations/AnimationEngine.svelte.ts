@@ -586,6 +586,34 @@ export class AnimationEngine {
       if (newHash !== this.lastSequenceContentHash) {
         this.orchestrator.initializeWithDomainData(props.sequenceData);
         this.lastSequenceContentHash = newHash;
+
+        // Trigger path cache precomputation for smooth trails during stutters
+        // This pre-computes the entire animation at 120fps so the render loop can
+        // retrieve smooth trail points even when frames are dropped
+        if (
+          this.state.trailSettings.usePathCache &&
+          this.precomputationService
+        ) {
+          const totalSteps = props.sequenceData.steps.length;
+          // Default to 1000ms/beat if duration not specified
+          const stepDurationMs = props.sequenceData.steps[0]?.duration ?? 1000;
+
+          // Precompute paths and update render loop's cache reference
+          this.precomputationService
+            .precomputeAnimationPaths(
+              props.sequenceData,
+              totalSteps,
+              stepDurationMs,
+              this.state.trailSettings
+            )
+            .then(() => {
+              // Update render loop with the now-populated cache
+              const pathCache = this.precomputationService?.getPathCache();
+              if (pathCache && this.renderLoopService) {
+                this.renderLoopService.updateConfig({ pathCache });
+              }
+            });
+        }
       }
     }
 

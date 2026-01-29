@@ -86,26 +86,50 @@ Design variants supported:
   );
 
   /**
+   * Total duration across all steps (for progress calculation)
+   */
+  const totalDuration = $derived(
+    steps.reduce((sum, step) => sum + (step.duration ?? 1), 0)
+  );
+
+  /**
    * Overall progress as percentage (0-100) across entire bar
-   * This moves at CONSTANT VISUAL SPEED regardless of beat durations
+   * This moves at CONSTANT VISUAL SPEED by tracking cumulative duration
    *
    * IMPORTANT: currentStep is 1-based (1.0 = beat 1 starting, 2.0 = beat 2 starting)
    * - currentStep = 0: at start position, before any animation (0% progress)
    * - currentStep = 1.0: beat 1 just starting (0% progress)
-   * - currentStep = 1.5: beat 1 halfway through (~16.7% for 3-beat sequence)
-   * - currentStep = 2.0: beat 2 just starting (~33.3% for 3-beat sequence)
+   * - currentStep = 1.5: beat 1 halfway through
+   * - currentStep = 2.0: beat 2 just starting
    *
-   * Formula: (currentStep - 1) / totalSteps converts to 0-based progress
+   * Progress is calculated based on cumulative duration, not step count,
+   * so the fill moves at constant visual speed across duration-aware segments.
    */
   const overallProgressPercent = $derived.by(() => {
-    if (steps.length === 0) return 0;
-    // Convert 1-based beat number to 0-based progress
-    // currentStep=0 or 1 means at/before beat 1 start = 0% progress
+    if (steps.length === 0 || totalDuration === 0) return 0;
+
+    // Convert 1-based beat to 0-based
     const zeroBasedProgress = currentStep <= 0 ? 0 : currentStep - 1;
-    // Clamp to valid range [0, totalSteps]
-    const clampedProgress = Math.max(0, Math.min(steps.length, zeroBasedProgress));
-    // Calculate progress (0-100%)
-    return (clampedProgress / steps.length) * 100;
+
+    // Determine which step we're in and how far through it
+    const currentStepIndex = Math.floor(zeroBasedProgress);
+    const progressWithinStep = zeroBasedProgress - currentStepIndex;
+
+    // Sum durations of all completed steps
+    let completedDuration = 0;
+    for (let i = 0; i < Math.min(currentStepIndex, steps.length); i++) {
+      completedDuration += steps[i]?.duration ?? 1;
+    }
+
+    // Add partial duration of current step
+    if (currentStepIndex < steps.length) {
+      const currentStepDuration = steps[currentStepIndex]?.duration ?? 1;
+      completedDuration += currentStepDuration * progressWithinStep;
+    }
+
+    // Clamp and convert to percentage
+    const clampedDuration = Math.max(0, Math.min(totalDuration, completedDuration));
+    return (clampedDuration / totalDuration) * 100;
   });
 
   /**
