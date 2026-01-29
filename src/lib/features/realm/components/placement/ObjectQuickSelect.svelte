@@ -6,7 +6,7 @@
 	 * Press Q to open, click or release Q on an item to select.
 	 */
 
-	import { OBJECT_CATALOG, type ObjectDefinition } from "../objects/object-catalog";
+	import { OBJECT_CATALOG, type ObjectDefinition } from "../../objects/object-catalog";
 
 	interface Props {
 		onSelect: (definition: ObjectDefinition) => void;
@@ -16,7 +16,7 @@
 	let { onSelect, onClose }: Props = $props();
 
 	// Get a subset of commonly used objects for quick access
-	const quickObjects = OBJECT_CATALOG.filter((obj) =>
+	const quickObjects = OBJECT_CATALOG.filter((obj: ObjectDefinition) =>
 		["bell-tent", "dome-tent", "flag", "fire-pit", "pin-marker", "waypoint"].includes(obj.key)
 	);
 

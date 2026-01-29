@@ -179,7 +179,7 @@
     performerState = null,
   }: Props = $props();
 
-  // Get Threlte context
+  // Get Threlte context (returns stores with .current property for Three.js objects)
   const { scene, camera, renderer } = useThrelte();
 
   // Grid plane sets
@@ -268,16 +268,16 @@
     initTerrainMaterial();
 
     // Initialize vegetation manager with GLTF models
-    vegetationManager = new VegetationManager(scene, { useGLTFModels: true });
+    vegetationManager = new VegetationManager(scene.current, { useGLTFModels: true });
     await vegetationManager.initWithModels();
 
     // Initialize atmosphere (sky, fog)
-    atmosphereManager = new AtmosphereManager(scene);
+    atmosphereManager = new AtmosphereManager(scene.current);
     atmosphereManager.createSky();
     atmosphereManager.setFog(stageMode ? "forest" : "plains");
 
     // Initialize water (flat plane that follows camera - legacy fallback)
-    waterManager = new WaterManager(scene, {
+    waterManager = new WaterManager(scene.current, {
       waterLevel: 5,
       color: "#2a8faa",
       opacity: 0.75,
@@ -285,7 +285,7 @@
     waterManager.create();
 
     // Initialize drainage-based water (per-chunk water that follows terrain)
-    drainageWaterManager = new DrainageWaterManager(scene, {
+    drainageWaterManager = new DrainageWaterManager(scene.current, {
       oceanLevel: activeConfig.terrain.waterLevel ?? -10,
       deepColor: "#1a5f7a",
       shallowColor: "#4a9fb5",
@@ -427,7 +427,7 @@
       // Remove mesh from scene
       const mesh = chunkMeshes.get(key);
       if (mesh) {
-        scene.remove(mesh);
+        scene.current.remove(mesh);
         mesh.geometry.dispose();
         if (mesh.material instanceof MeshStandardMaterial) {
           mesh.material.dispose();
@@ -487,7 +487,7 @@
 
     // Dispose chunk meshes
     for (const [key, mesh] of chunkMeshes) {
-      scene.remove(mesh);
+      scene.current.remove(mesh);
       mesh.geometry.dispose();
       if (mesh.material instanceof MeshStandardMaterial) {
         mesh.material.dispose();
@@ -497,7 +497,7 @@
 
     // Dispose campground objects
     for (const obj of campgroundObjects) {
-      scene.remove(obj);
+      scene.current.remove(obj);
     }
     campgroundObjects = [];
 
@@ -541,11 +541,11 @@
   function setupLighting(): void {
     // Ambient light
     const ambient = new AmbientLight(0x404060, 0.4);
-    scene.add(ambient);
+    scene.current.add(ambient);
 
     // Hemisphere light (sky + ground)
     const hemisphere = new HemisphereLight(0x87ceeb, 0x3d5c3d, 0.6);
-    scene.add(hemisphere);
+    scene.current.add(hemisphere);
 
     // Sun with standard directional light shadows
     // Shadow frustum follows player for infinite terrain coverage
@@ -571,9 +571,9 @@
     sun.shadow.bias = -0.0005;
     sun.shadow.normalBias = 0.02;
 
-    scene.add(sun);
+    scene.current.add(sun);
     sun.target.position.set(0, 0, 0);
-    scene.add(sun.target);
+    scene.current.add(sun.target);
     sunLight = sun;
   }
 
@@ -607,7 +607,7 @@
           child.receiveShadow = true;
         }
       });
-      scene.add(model);
+      scene.current.add(model);
       campgroundObjects.push(model);
       return model;
     } catch (error) {
@@ -780,7 +780,7 @@
       mesh.position.set(chunkWorldX, 0, chunkWorldZ);
     }
 
-    scene.add(mesh);
+    scene.current.add(mesh);
     chunkMeshes.set(key, mesh);
 
     // Store mesh reference in entity

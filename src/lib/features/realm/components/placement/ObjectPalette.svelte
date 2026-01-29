@@ -10,7 +10,7 @@
 		OBJECT_CATALOG,
 		OBJECT_CATEGORIES,
 		type ObjectDefinition,
-	} from "../objects/object-catalog";
+	} from "../../objects/object-catalog";
 
 	interface Props {
 		onSelect: (definition: ObjectDefinition) => void;
@@ -22,7 +22,7 @@
 
 	// Group objects by category
 	function getObjectsByCategory(categoryKey: string): ObjectDefinition[] {
-		return OBJECT_CATALOG.filter((obj) => obj.type === categoryKey);
+		return OBJECT_CATALOG.filter((obj: ObjectDefinition) => obj.type === categoryKey);
 	}
 
 	// Track expanded categories

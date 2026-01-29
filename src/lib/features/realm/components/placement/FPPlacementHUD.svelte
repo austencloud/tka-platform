@@ -6,7 +6,7 @@
 	 * Shown when an object is selected for placement in FP mode.
 	 */
 
-	import type { ObjectDefinition } from "../objects/object-catalog";
+	import type { ObjectDefinition } from "../../objects/object-catalog";
 
 	interface Props {
 		selectedObject: ObjectDefinition;

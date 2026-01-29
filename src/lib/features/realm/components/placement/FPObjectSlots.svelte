@@ -6,7 +6,7 @@
 	 * Allows quick selection of objects via number keys 1-6.
 	 */
 
-	import type { ObjectDefinition } from "../objects/object-catalog";
+	import type { ObjectDefinition } from "../../objects/object-catalog";
 
 	interface Props {
 		objects: ObjectDefinition[];
