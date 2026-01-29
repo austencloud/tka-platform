@@ -223,3 +223,17 @@ export function getDefaultGradientForTheme(
   const gradientId = THEME_TO_GRADIENT[backgroundType] ?? "twilight";
   return getGradientById(gradientId) ?? ALL_GRADIENTS[0]!;
 }
+
+/**
+ * Extract the primary accent color from a gradient string.
+ * Uses the middle color stop for balanced representation.
+ */
+export function getGradientAccentColor(gradient: string): string {
+  // Extract all hex colors from the gradient
+  const hexColors = gradient.match(/#[0-9a-fA-F]{6}/g) ?? [];
+  if (hexColors.length === 0) return "#6366f1"; // fallback
+
+  // Use middle color for balanced representation
+  const middleIndex = Math.floor(hexColors.length / 2);
+  return hexColors[middleIndex] ?? hexColors[0] ?? "#6366f1";
+}

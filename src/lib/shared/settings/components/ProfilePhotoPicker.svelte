@@ -270,7 +270,7 @@
       </header>
 
       {#if useSideBySide}
-        <!-- Side-by-side layout -->
+        <!-- Side-by-side layout: left shows current photo, right shows avatar generator -->
         <div class="modal-panels">
           <div class="panel choose-panel">
             <PhotoOptionsList

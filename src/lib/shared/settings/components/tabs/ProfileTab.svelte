@@ -28,9 +28,8 @@
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
   import StorageSection from "./profile/StorageSection.svelte";
   import AuthPrompt from "./profile/AuthPrompt.svelte";
-  import ProfilePhotoPicker, {
-    type PhotoSelection,
-  } from "../ProfilePhotoPicker.svelte";
+  import ProfilePhotoPicker from "../ProfilePhotoPicker.svelte";
+  import type { PhotoSelection } from "../../domain/photo-picker-types";
   import { updateProfile } from "firebase/auth";
   import { refreshUser } from "../../../auth/state/authState.svelte";
 
