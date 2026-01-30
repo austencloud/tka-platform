@@ -133,11 +133,14 @@ export class Canvas2DApplicationManager {
     this.updateBackgroundTransition();
 
     // Fill with current (possibly transitioning) background color
+    // CRITICAL: Wrap in save/restore to prevent globalAlpha state leakage
+    // which causes colored strip artifacts on mobile due to RAF timing variations
     if (this.backgroundAlpha > 0) {
+      this.ctx.save();
       this.ctx.globalAlpha = this.backgroundAlpha;
       this.ctx.fillStyle = this.currentBgColor;
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-      this.ctx.globalAlpha = 1;
+      this.ctx.restore();
     }
   }
 

@@ -32,6 +32,10 @@
   let showCopiedMessage = $state(false);
   let copiedTimeout: number | null = $state(null);
 
+  // Overflow detection state
+  let labelElement: HTMLButtonElement | null = $state(null);
+  let scaleFactor = $state(1);
+
   // Check if this is a contextual message (not a word)
   const isContextualMessage = $derived.by(() => {
     const contextualPhrases = [
@@ -49,15 +53,67 @@
     return contextualPhrases.some((phrase) => word.includes(phrase));
   });
 
-  // Computed: Length category for CSS-based font scaling
-  // Groups: short (1-4), medium (5-7), long (8-10), extra-long (11-12)
-  const lengthCategory = $derived.by(() => {
-    if (!word || isContextualMessage) return "contextual";
-    const len = word.length;
-    if (len <= 4) return "short";
-    if (len <= 7) return "medium";
-    if (len <= 10) return "long";
-    return "extra-long";
+  /**
+   * Check if text overflows its container and calculate scale factor.
+   * Only shrinks when the text actually overflows - never preemptively.
+   */
+  function checkOverflow() {
+    if (!labelElement) return;
+
+    // Find the word-label-area (grandparent) which defines available space
+    const wordLabelArea = labelElement.closest('.word-label-area') as HTMLElement | null;
+    if (!wordLabelArea) return;
+
+    const availableWidth = wordLabelArea.clientWidth;
+    if (availableWidth <= 0) return;
+
+    // Temporarily remove scale to measure true content width
+    const prevTransform = labelElement.style.transform;
+    labelElement.style.transform = 'none';
+
+    // Force reflow to get accurate measurement
+    const contentWidth = labelElement.scrollWidth;
+
+    // Restore transform
+    labelElement.style.transform = prevTransform;
+
+    // Only scale down if content actually overflows available space
+    // Use a small buffer (95% of available) to prevent edge-case jitter
+    if (contentWidth > availableWidth * 0.95) {
+      const newScale = Math.max(0.65, (availableWidth * 0.95) / contentWidth);
+      scaleFactor = newScale;
+    } else {
+      scaleFactor = 1;
+    }
+  }
+
+  // Re-check overflow when word changes
+  $effect(() => {
+    // Track word to trigger re-check
+    const _ = word;
+    // Reset and recheck after DOM updates
+    scaleFactor = 1;
+    // Wait for DOM to update with new word before measuring
+    requestAnimationFrame(() => {
+      checkOverflow();
+    });
+  });
+
+  // Set up ResizeObserver to detect container size changes
+  $effect(() => {
+    if (!labelElement) return;
+
+    const wordLabelArea = labelElement.closest('.word-label-area') as HTMLElement | null;
+
+    const resizeObserver = new ResizeObserver(() => {
+      checkOverflow();
+    });
+
+    if (wordLabelArea) {
+      resizeObserver.observe(wordLabelArea);
+    }
+
+    return () => resizeObserver.disconnect();
   });
 
   // Derived simplified word (only truncate actual words, not contextual messages)
@@ -139,14 +195,13 @@
 {#if shouldShowWordLabel}
   <div class="word-label-container" class:scroll-mode={scrollMode}>
     <button
+      bind:this={labelElement}
       class="word-label"
       class:has-word={!!word && !isContextualMessage}
       class:contextual-message={isContextualMessage}
       class:has-letter-sources={hasLetterSources}
-      class:length-short={lengthCategory === "short"}
-      class:length-medium={lengthCategory === "medium"}
-      class:length-long={lengthCategory === "long"}
-      class:length-extra-long={lengthCategory === "extra-long"}
+      class:is-scaled={scaleFactor < 1}
+      style:--scale-factor={scaleFactor}
       onclick={copyToClipboard}
       title={isContextualMessage ? word : "Click to copy '{word}' to clipboard"}
       aria-label={isContextualMessage
@@ -244,29 +299,14 @@
   }
 
   .word-label.has-word {
-    /* Default: Scale based on container width */
+    /* Scale based on container width - shrinks only for very long words */
     font-size: clamp(1.25rem, 6cqi, 2rem);
   }
 
-  /* Length-based font scaling to prevent overflow into buttons */
-  .word-label.length-short {
-    /* 1-4 letters: full size */
-    font-size: clamp(1.25rem, 6cqi, 2rem);
-  }
-
-  .word-label.length-medium {
-    /* 5-7 letters: slightly smaller */
-    font-size: clamp(1.1rem, 5cqi, 1.75rem);
-  }
-
-  .word-label.length-long {
-    /* 8-10 letters: smaller */
-    font-size: clamp(1rem, 4cqi, 1.5rem);
-  }
-
-  .word-label.length-extra-long {
-    /* 11-12 letters: smallest */
-    font-size: clamp(0.875rem, 3.5cqi, 1.25rem);
+  /* Apply dynamic scale factor when overflow is detected */
+  .word-label.is-scaled {
+    transform: scale(var(--scale-factor, 1));
+    transform-origin: center;
   }
 
   /* Contextual messages (hand path status, etc.) - Container-aware sizing */
@@ -344,19 +384,6 @@
       padding: 0.2rem 0.5rem;
     }
 
-    /* Mobile length-based scaling */
-    .word-label.length-medium {
-      font-size: clamp(1rem, 4.5cqi, 1.5rem);
-    }
-
-    .word-label.length-long {
-      font-size: clamp(0.875rem, 3.5cqi, 1.25rem);
-    }
-
-    .word-label.length-extra-long {
-      font-size: clamp(0.75rem, 3cqi, 1.1rem);
-    }
-
     .copied-message {
       font-size: 0.8rem;
       padding: 0.4rem 0.8rem;
@@ -367,18 +394,6 @@
   @media (max-width: 480px) {
     .word-label {
       font-size: clamp(1rem, 6vw, 1.75rem);
-    }
-
-    .word-label.length-medium {
-      font-size: clamp(0.9rem, 5vw, 1.4rem);
-    }
-
-    .word-label.length-long {
-      font-size: clamp(0.8rem, 4.5vw, 1.2rem);
-    }
-
-    .word-label.length-extra-long {
-      font-size: clamp(0.7rem, 4vw, 1rem);
     }
   }
 

@@ -457,7 +457,8 @@
       "Bash(script -q -c \"firebase deploy --only storage\" /dev/null)",
       "WebFetch(domain:aerotwist.com)",
       "WebFetch(domain:www.joshwcomeau.com)",
-      "WebFetch(domain:storage.googleapis.com)"
+      "WebFetch(domain:storage.googleapis.com)",
+      "Bash(nslookup:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
