@@ -20,9 +20,13 @@ if (browser) {
     });
 }
 
-if (browser && !dev) {
-  // Only register service worker in production builds
-  // In dev mode, the virtual:pwa-register module causes CORS errors
+// PWA registration - only when PWA plugin is enabled
+// The __PWA_ENABLED__ flag is replaced at build time by vite.config.ts
+// When DISABLE_PWA=true, this entire block is dead-code eliminated
+declare const __PWA_ENABLED__: boolean;
+
+if (browser && !dev && typeof __PWA_ENABLED__ !== "undefined" && __PWA_ENABLED__) {
+  // Only register service worker in production builds with PWA enabled
   import("virtual:pwa-register")
     .then(({ registerSW }) => {
       registerSW({

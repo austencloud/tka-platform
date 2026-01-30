@@ -233,6 +233,8 @@ export default defineConfig({
     __DEFINES__: JSON.stringify({}),
     __APP_VERSION__: JSON.stringify(packageJson.version),
     "import.meta.env.VITE_APP_VERSION": JSON.stringify(packageJson.version),
+    // PWA flag - used by hooks.client.ts to conditionally import virtual:pwa-register
+    __PWA_ENABLED__: process.env.DISABLE_PWA !== "true",
   },
   plugins: [
     sveltekit({
@@ -255,6 +257,7 @@ export default defineConfig({
       devOptions: {
         enabled: true, // PWA enabled in dev for testing fullscreen mode
         type: "module",
+        suppressWarnings: true, // Suppress "glob pattern doesn't match any files" warnings in dev
       },
       manifest: false, // We already have a manifest in static/pwa/
       injectRegister: "auto",
@@ -263,14 +266,14 @@ export default defineConfig({
         mode: "production",
         disableDevLogs: true,
         // Cache strategies for different asset types
-        // In dev mode, skip glob patterns entirely - SW handles caching at runtime
-        // In production, glob against actual build output structure
+        // adapter-static outputs to root, NOT prerendered/ or client/ subdirs
+        // suppressWarnings in devOptions handles the "glob pattern doesn't match" warnings
         globPatterns: process.env.NODE_ENV === "production"
           ? [
-              // Only use root-level pattern - prerendered/ and client/ don't exist in adapter-static output
+              // adapter-static output structure (root-level, no subdirs)
               "**/*.{js,css,html,ico,png,svg,woff2,woff,webp,webmanifest}",
             ]
-          : [], // Empty in dev - SW handles caching at runtime
+          : [] // Empty in dev - SW handles caching at runtime
         // Exclude files from precaching that shouldn't be cached
         globIgnores: [
           "**/data/*.json", // sequence-index.json is 8MB+
