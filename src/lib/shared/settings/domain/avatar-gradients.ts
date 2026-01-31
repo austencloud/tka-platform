@@ -5,7 +5,7 @@
  * with mappings to background themes for auto-matching user preferences.
  */
 
-import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+import { BackgroundType } from "@austencloud/backgrounds";
 
 export interface GradientOption {
   id: string;

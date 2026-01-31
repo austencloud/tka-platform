@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { AutumnDriftBackgroundSystem } from "$lib/shared/background/autumn-drift/services/AutumnDriftBackgroundSystem";
-  import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+  import { AutumnDriftBackgroundSystem, type QualityLevel } from "@austencloud/backgrounds";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
   import LabPreviewCanvas from "./LabPreviewCanvas.svelte";

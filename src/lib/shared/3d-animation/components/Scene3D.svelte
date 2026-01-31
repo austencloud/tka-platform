@@ -28,7 +28,7 @@
   import BloomEffect from "../effects/post-processing/BloomEffect.svelte";
   import Environment3D from "../environments/components/Environment3D.svelte";
   import StageTerrain from "./StageTerrain.svelte";
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import type { PhysicsWorldState } from "$lib/shared/3d-core/physics/types";
   import { Plane } from "../domain/enums/Plane";
   import type { GridMode } from "../domain/constants/grid-layout";

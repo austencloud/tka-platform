@@ -29,7 +29,7 @@
  * Static values (spacing, radius, typography) are now hardcoded in components.
  */
 
-import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+import { BackgroundType } from "@austencloud/backgrounds";
 import { setThemeMode } from "$lib/shared/theme/state/theme-mode-state.svelte";
 
 /**

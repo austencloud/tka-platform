@@ -6,7 +6,7 @@
  */
 
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+import { BackgroundType } from "@austencloud/backgrounds";
 import {
   DEFAULT_NIGHT_SKY_SETTINGS,
   DEFAULT_FIREFLY_FOREST_SETTINGS,

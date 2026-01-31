@@ -1,8 +1,13 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import type { FireflyForestLayers } from "$lib/shared/background/firefly-forest/services/FireflyForestBackgroundSystem";
-  import type { TreeTypeVisibility, EcologicalPattern } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
-  import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+  import type {
+    FireflyForestLayers,
+    TreeTypeVisibility,
+    EcologicalPattern,
+    QualityLevel,
+    TreeCategory,
+    RenderedTree,
+  } from "@austencloud/backgrounds";
   import {
     getFireflyForestSettings,
     updateFireflyForestSettings,
@@ -13,8 +18,6 @@
   // Child components
   import PreviewControls from "./PreviewControls.svelte";
   import TreeImageGallery from "./TreeImageGallery.svelte";
-  import type { TreeCategory } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteImageLoader";
-  import type { RenderedTree } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
 
   // Get services from DI container
   const previewController = container.items.previewAnimationController;

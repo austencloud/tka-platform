@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { FishPersonality } from "$lib/shared/background/deep-ocean/domain/types/fish-personality-types";
+  import type { FishPersonality } from "@austencloud/backgrounds";
 
   interface Props {
     personality: FishPersonality;

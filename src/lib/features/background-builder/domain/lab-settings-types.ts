@@ -5,7 +5,7 @@
  * These are stored in AppSettings and synced via localStorage/Firebase.
  */
 
-import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+import type { QualityLevel } from "@austencloud/backgrounds";
 
 // ============================================================================
 // Night Sky Lab

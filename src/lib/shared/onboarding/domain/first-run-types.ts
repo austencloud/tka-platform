@@ -6,7 +6,7 @@
  */
 
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+import type { BackgroundType } from "@austencloud/backgrounds";
 
 /**
  * Data collected during first-run onboarding

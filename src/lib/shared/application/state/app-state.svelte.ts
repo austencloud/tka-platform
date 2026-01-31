@@ -7,7 +7,7 @@
  * This replaces the 460-line monolith with a clean, focused architecture.
  */
 
-import { BackgroundType } from "../../background/shared/domain/enums/background-enums";
+import { BackgroundType } from "@austencloud/backgrounds";
 import type { PerformanceSnapshot } from "../../foundation/ui/UITypes";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/PropType";

@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { detectSiteMode, type SiteMode } from "../config/domains";
   import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import HeroSection from "./landing/components/HeroSection.svelte";
   import NotationShowcaseSection from "./landing/components/NotationShowcaseSection.svelte";
@@ -349,7 +349,6 @@
       <div class="background-layer">
         <BackgroundHost
           backgroundType={currentBackground}
-          quality="medium"
         />
       </div>
     {/if}

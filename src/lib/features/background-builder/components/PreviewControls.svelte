@@ -1,7 +1,10 @@
 <script lang="ts">
-  import type { FireflyForestLayers } from "$lib/shared/background/firefly-forest/services/FireflyForestBackgroundSystem";
-  import type { TreeTypeVisibility, EcologicalPattern } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
-  import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+  import type {
+    FireflyForestLayers,
+    TreeTypeVisibility,
+    EcologicalPattern,
+    QualityLevel,
+  } from "@austencloud/backgrounds";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
 

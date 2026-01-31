@@ -7,7 +7,6 @@
  * - Data transformation
  * - Persistence (IndexedDB via Dexie)
  * - Sequence operations
- * - Background system services
  *
  * Migrated from Inversify's data.module.ts
  */
@@ -31,18 +30,6 @@ import { ReversalDetector } from "$lib/features/create/shared/services/implement
 import { SequenceImporter } from "$lib/features/create/shared/services/implementations/SequenceImporter";
 import { SequenceNormalizer } from "$lib/features/compose/services/implementations/SequenceNormalizer";
 import { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
-
-// Background services
-import { BackgroundManager } from "../../background/shared/services/implementations/BackgroundManager";
-import { BackgroundRenderingService } from "../../background/shared/services/implementations/BackgroundRenderingService";
-import { BackgroundPreLoader } from "../../background/shared/services/implementations/BackgroundPreloader";
-import { BackgroundConfigurationService } from "../../background/shared/services/implementations/BackgroundConfigurationService";
-
-// Night Sky services
-import { NightSkyCalculationService } from "../../background/night-sky/services/implementations/NightSkyCalculationService";
-
-// Device services for background
-import { GeoLocationProvider } from "../../device/services/implementations/GeoLocationProvider";
 
 /**
  * Data container with all data/persistence service factories
@@ -70,18 +57,6 @@ export const dataContainer = createContainer()
     reversalDetector: () => new ReversalDetector(),
     sequenceNormalizer: () => new SequenceNormalizer(),
     sequenceLoopabilityChecker: () => new SequenceLoopabilityChecker(),
-
-    // Background services with no dependencies
-    backgroundManager: () => new BackgroundManager(),
-    backgroundRenderingService: () => new BackgroundRenderingService(),
-    backgroundPreloader: () => new BackgroundPreLoader(),
-    backgroundConfigurationService: () => new BackgroundConfigurationService(),
-
-    // Night Sky services
-    nightSkyCalculationService: () => new NightSkyCalculationService(),
-
-    // Device services for background
-    geoLocationProvider: () => new GeoLocationProvider(),
   })
 
   // === Layer 2: Services that depend on Layer 1 ===

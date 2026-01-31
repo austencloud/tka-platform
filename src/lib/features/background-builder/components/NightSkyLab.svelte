@@ -1,8 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+  import { type QualityLevel, type UFOMood, type WobbleType } from "@austencloud/backgrounds";
   import type { NightSkyDensityPreset, NightSkyLabMode } from "../domain/lab-settings-types";
-  import type { UFOMood, WobbleType } from "$lib/shared/background/night-sky/services/UFOSystem";
   import type { UFOStatusSnapshot } from "../services/contracts/IUFOStatusPoller";
   import { container } from "$lib/shared/di";
   import type { INightSkyLabController } from "../services/contracts/INightSkyLabController";

@@ -10,7 +10,7 @@
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   // Background types with 3D environment support

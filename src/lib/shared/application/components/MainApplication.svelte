@@ -43,7 +43,7 @@
   } from "../state/initialization-state.svelte";
   import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
   import BackgroundHost from "../../background/shared/components/BackgroundHost.svelte";
-  import { BackgroundType } from "../../background/shared/domain/enums/background-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import {
     getShowDebugPanel,
     toggleDebugPanel,
@@ -346,7 +346,6 @@
   {#if settings.backgroundEnabled}
     <BackgroundHost
       backgroundType={settings.backgroundType || BackgroundType.SOLID_COLOR}
-      quality={settings.backgroundQuality || "medium"}
       backgroundColor={settings.backgroundColor || "#000000"}
       {...settings.gradientColors
         ? { gradientColors: settings.gradientColors }

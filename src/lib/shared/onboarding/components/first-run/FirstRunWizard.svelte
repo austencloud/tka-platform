@@ -12,7 +12,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";

@@ -5,11 +5,11 @@
   When user clicks a theme, it immediately applies so they can see it.
 -->
 <script lang="ts">
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import {
-    backgroundsConfig,
-    getBackgroundConfig,
-  } from "$lib/shared/settings/components/tabs/background/background-config";
+    BACKGROUND_CARD_REGISTRY,
+    getCardMetadata,
+  } from "@austencloud/backgrounds/card";
 
   interface Props {
     initialValue?: BackgroundType;
@@ -33,7 +33,7 @@
 
   // Animated backgrounds for the main grid
   const animatedBackgrounds = $derived(
-    backgroundsConfig.filter(
+    BACKGROUND_CARD_REGISTRY.filter(
       (bg) =>
         bg.type !== BackgroundType.SOLID_COLOR &&
         bg.type !== BackgroundType.LINEAR_GRADIENT
@@ -42,7 +42,7 @@
 
   // Minimalist option (pure black)
   const minimalistOption = $derived(
-    getBackgroundConfig(BackgroundType.SOLID_COLOR)
+    getCardMetadata(BackgroundType.SOLID_COLOR)
   );
 
   function handleSelect(type: BackgroundType) {
@@ -69,18 +69,18 @@
       <button
         class="theme-card"
         class:selected={selectedTheme === bg.type}
-        onclick={() => handleSelect(bg.type)}
+        onclick={() => handleSelect(bg.type as BackgroundType)}
         aria-pressed={selectedTheme === bg.type}
-        aria-label={`Select ${bg.name} theme`}
+        aria-label={`Select ${bg.label} theme`}
       >
         <div
           class="theme-preview"
           style="background: linear-gradient(135deg, {bg.themeColors?.[0] ??
             '#1a1a2e'}, {bg.themeColors?.[1] ?? '#16213e'})"
         >
-          <span class="theme-icon">{@html bg.icon}</span>
+          <span class="theme-icon">{@html bg.iconSvg}</span>
         </div>
-        <span class="theme-name">{bg.name}</span>
+        <span class="theme-name">{bg.label}</span>
         {#if selectedTheme === bg.type}
           <div class="selected-badge">
             <i class="fas fa-check" aria-hidden="true"></i>

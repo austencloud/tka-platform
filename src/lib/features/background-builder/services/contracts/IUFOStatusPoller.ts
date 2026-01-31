@@ -1,4 +1,4 @@
-import type { NightSkyBackgroundSystem } from "$lib/shared/background/night-sky/services/NightSkyBackgroundSystem";
+import type { NightSkyBackgroundSystem } from "@austencloud/backgrounds";
 
 /**
  * UFO status snapshot returned by the poller.

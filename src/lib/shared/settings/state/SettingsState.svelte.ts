@@ -12,11 +12,11 @@
  */
 
 import { browser } from "$app/environment";
-import { BackgroundType } from "../../background/shared/domain/enums/background-enums";
+import { BackgroundType } from "@austencloud/backgrounds";
 import {
   updateBodyBackground,
   type CustomBackgroundOptions,
-} from "../../background/shared/background-preloader";
+} from "../utils/background-preloader";
 import { ThemeService } from "../../theme/services/ThemeService";
 import {
   applyThemeFromColors,

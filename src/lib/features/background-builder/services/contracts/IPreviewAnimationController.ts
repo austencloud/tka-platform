@@ -2,9 +2,13 @@
  * Interface for managing the Firefly Forest preview animation
  */
 
-import type { FireflyForestLayers } from "$lib/shared/background/firefly-forest/services/FireflyForestBackgroundSystem";
-import type { TreeTypeVisibility, EcologicalPattern, RenderedTree } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
-import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+import type {
+  QualityLevel,
+  FireflyForestLayers,
+  TreeTypeVisibility,
+  EcologicalPattern,
+  RenderedTree,
+} from "@austencloud/backgrounds";
 
 export interface PreviewStats {
   fireflies: number;

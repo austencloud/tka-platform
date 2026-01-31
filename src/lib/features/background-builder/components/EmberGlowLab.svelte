@@ -1,8 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { EmberGlowBackgroundSystem } from "$lib/shared/background/ember-glow/services/EmberGlowBackgroundSystem";
-  import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
-  import type { HeatIntensity, DensityPreset } from "$lib/shared/background/ember-glow/domain/constants/ember-constants";
+  import { EmberGlowBackgroundSystem, type QualityLevel, type HeatIntensity, type DensityPreset } from "@austencloud/backgrounds";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
   import LabPreviewCanvas from "./LabPreviewCanvas.svelte";

@@ -57,7 +57,6 @@ import { createPromoContainer } from "./containers/promo-container";
 import { createLibraryContainer } from "./containers/library-container";
 import { createQRContainer } from "./containers/qr-container";
 import { createAnimation3DContainer } from "./containers/animation-3d-container";
-import { deepOceanContainer } from "./containers/deep-ocean-container";
 import { createGalleryContainer } from "./containers/gallery-container";
 import { createDelightContainer } from "./containers/delight-container";
 import { backgroundBuilderContainer } from "./containers/background-builder-container";
@@ -247,7 +246,6 @@ export const container = createContainer()
   .add(mandalaContainer.items)
   .add(qrContainer.items)
   .add(animation3DContainer.items)
-  .add(deepOceanContainer.items)
   .add(galleryContainer.items)
   .add(backgroundBuilderContainer.items)
   .add(delightContainer.items)

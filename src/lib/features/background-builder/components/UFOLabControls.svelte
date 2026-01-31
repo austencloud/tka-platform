@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { UFOMood, WobbleType } from "$lib/shared/background/night-sky/services/UFOSystem";
+  import { type UFOMood, type WobbleType } from "@austencloud/backgrounds";
   import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
   import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";

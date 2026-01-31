@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+  import type { QualityLevel } from "@austencloud/backgrounds";
   import type { NightSkyDensityPreset } from "../domain/lab-settings-types";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";

@@ -7,7 +7,7 @@
 
 import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import type { GridMode, GridPosition } from "../../pictograph/grid/domain/enums/grid-enums";
-import type { BackgroundType } from "../../background/shared/domain/enums/background-enums";
+import type { BackgroundType } from "@austencloud/backgrounds";
 import type { BackgroundLabSettings } from "$lib/features/background-builder/domain/lab-settings-types";
 import type { TimeSignatureKey } from "../../foundation/domain/models/TimeSignature";
 

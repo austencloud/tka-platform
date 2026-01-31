@@ -1,14 +1,14 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
-  import type { FishMarineLife } from "$lib/shared/background/deep-ocean/domain/models/DeepOceanModels";
-  import type { FishMood } from "$lib/shared/background/deep-ocean/domain/types/fish-personality-types";
   import {
+    type FishMarineLife,
+    type FishMood,
     DeepOceanBackgroundOrchestrator,
     type DeepOceanLayers,
-  } from "$lib/shared/background/deep-ocean/services/DeepOceanBackgroundOrchestrator";
-  import { fishDebugConfig } from "$lib/shared/background/deep-ocean/domain/debug-config";
-  import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+    fishDebugConfig,
+    type QualityLevel,
+  } from "@austencloud/backgrounds";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
   import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";

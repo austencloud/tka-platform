@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { TreeCategory } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteImageLoader";
-  import type { RenderedTree } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
+  import type { TreeCategory, RenderedTree } from "@austencloud/backgrounds";
 
   interface Props {
     selectedCategory: TreeCategory | "all";

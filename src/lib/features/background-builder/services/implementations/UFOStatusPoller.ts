@@ -1,4 +1,4 @@
-import type { NightSkyBackgroundSystem } from "$lib/shared/background/night-sky/services/NightSkyBackgroundSystem";
+import type { NightSkyBackgroundSystem } from "@austencloud/backgrounds";
 import type { IUFOStatusPoller, UFOStatusSnapshot } from "../contracts/IUFOStatusPoller";
 
 const DEFAULT_POLL_INTERVAL_MS = 100; // 10Hz polling

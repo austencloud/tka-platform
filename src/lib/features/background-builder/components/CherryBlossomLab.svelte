@@ -1,8 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { CherryBlossomBackgroundSystem, type CherryBlossomLayers } from "$lib/shared/background/cherry-blossom/services/CherryBlossomBackgroundSystem";
-  import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
-  import { type TimeOfDay, getTimeOfDayPreset } from "$lib/shared/background/cherry-blossom/domain/constants/time-of-day-presets";
+  import { CherryBlossomBackgroundSystem, type CherryBlossomLayers, type QualityLevel, type TimeOfDay, getTimeOfDayPreset } from "@austencloud/backgrounds";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
   import LabPreviewCanvas from "./LabPreviewCanvas.svelte";

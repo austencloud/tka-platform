@@ -8,6 +8,7 @@
   import { container } from "$lib/shared/di";
   import type { Snippet } from "svelte";
   import { onMount, setContext } from "svelte";
+  import { onNavigate } from "$app/navigation";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { registerCacheClearShortcut } from "$lib/shared/utils/cache-buster";
   import { initI18n } from "$lib/shared/i18n/i18n.svelte.js";
@@ -16,6 +17,22 @@
   import "../app.css";
   // Import modern view transitions CSS
   import "$lib/shared/transitions/view-transitions.css";
+
+  // ============================================================================
+  // VIEW TRANSITIONS API
+  // Enables smooth morphing animations between pages (e.g., thumbnail → viewer)
+  // ============================================================================
+  onNavigate((navigation) => {
+    // Skip if browser doesn't support View Transitions API
+    if (!document.startViewTransition) return;
+
+    return new Promise((resolve) => {
+      document.startViewTransition(async () => {
+        resolve();
+        await navigation.complete;
+      });
+    });
+  });
 
   let { children } = $props<{
     children: Snippet;

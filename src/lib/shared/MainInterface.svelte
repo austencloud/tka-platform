@@ -40,8 +40,7 @@
   // Domain managers
   import ModuleRenderer from "./modules/ModuleRenderer.svelte";
   import PWAInstallationManager from "./pwa/PWAInstallationManager.svelte";
-  import SpotlightRouter from "./spotlight/SpotlightRouter.svelte";
-  import {
+    import {
     desktopSidebarState,
     setDesktopSidebarCollapsed,
   } from "./layout/desktop-sidebar-state.svelte";
@@ -294,7 +293,6 @@
 
   <!-- Domain Managers -->
   <PWAInstallationManager />
-  <SpotlightRouter />
   <!-- Module Switcher Drawer (opens via custom event) -->
   <ModuleSwitcher
     currentModule={currentModule()}

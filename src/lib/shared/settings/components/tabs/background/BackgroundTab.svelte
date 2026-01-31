@@ -1,206 +1,92 @@
 <!--
-  BackgroundTab.svelte - Theme/Background Settings
+  BackgroundTab.svelte - Background selection using shared package cards
 
-  Polished glass panel layout matching Visibility and Profile tabs.
-  Groups backgrounds into Animated and Simple categories.
+  Uses <background-card> web components from @austencloud/backgrounds/card.
+  Preserves TKA's theme integration via applyThemeFromColors().
 -->
 <script lang="ts">
   import type { AppSettings } from "../../../domain/AppSettings";
-  import { container } from "$lib/shared/di";
-  import { BackgroundType } from "../../../../background/shared/domain/enums/background-enums";
-  import type { IDeviceDetector } from "../../../../device/services/contracts/IDeviceDetector";
-  import type { IViewportManager } from "../../../../device/services/contracts/IViewportManager";
-  import { onMount } from "svelte";
-  import BackgroundCard from "./BackgroundCard.svelte";
-  import { backgroundsConfig } from "./background-config";
+  import { BackgroundType } from "@austencloud/backgrounds";
+  import {
+    registerBackgroundCard,
+    BACKGROUND_CARD_REGISTRY,
+    getCardMetadata,
+  } from "@austencloud/backgrounds/card";
+  import type { BackgroundCardSelectDetail } from "@austencloud/backgrounds/card";
   import { applyThemeFromColors } from "../../../utils/background-theme-calculator";
+  import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
+  registerBackgroundCard();
 
   let { settings, onUpdate } = $props<{
     settings: AppSettings;
     onUpdate?: (event: { key: string; value: unknown }) => void;
   }>();
 
-  // Services
-  let deviceDetector: IDeviceDetector | null = null;
-  let viewportService: IViewportManager | null = null;
-
-  // Device orientation state
-  let orientation = $state<"portrait" | "landscape" | "square">("square");
-
-  // Entry animation
   let isVisible = $state(false);
+  let gridEl: HTMLDivElement;
 
-  // Background settings state - initialized with defaults, synced from settings via $effect
-  let backgroundSettings = $state({
-    backgroundEnabled: true,
-    backgroundType: BackgroundType.NIGHT_SKY,
-    backgroundQuality: "medium" as string,
-    backgroundColor: "#000000",
-    gradientColors: ["#0d1117", "#161b22", "#21262d"],
-    gradientDirection: 135,
-  });
-
-  // Sync from settings prop
-  $effect(() => {
-    backgroundSettings = {
-      backgroundEnabled: settings?.backgroundEnabled ?? true,
-      backgroundType: settings?.backgroundType || BackgroundType.NIGHT_SKY,
-      backgroundQuality: settings?.backgroundQuality || "medium",
-      backgroundColor: settings?.backgroundColor || "#000000",
-      gradientColors: settings?.gradientColors || [
-        "#0d1117",
-        "#161b22",
-        "#21262d",
-      ],
-      gradientDirection: settings?.gradientDirection || 135,
-    };
-  });
-
-  // Split backgrounds into categories
-  const animatedBackgrounds = backgroundsConfig.filter(
-    (bg) =>
-      bg.type !== BackgroundType.SOLID_COLOR &&
-      bg.type !== BackgroundType.LINEAR_GRADIENT
-  );
-
-  const simpleBackgrounds = backgroundsConfig.filter(
-    (bg) =>
-      bg.type === BackgroundType.SOLID_COLOR ||
-      bg.type === BackgroundType.LINEAR_GRADIENT
-  );
+  const currentBg = $derived(settings?.backgroundType || BackgroundType.NIGHT_SKY);
 
   onMount(() => {
-    // Initialize services
-    deviceDetector = container.items.deviceDetector;
-    viewportService = container.items.viewportManager;
-
-    // Set initial orientation
-    updateOrientation();
-
-    // Subscribe to viewport changes
-    const unsubscribe = viewportService?.onViewportChange(() => {
-      updateOrientation();
-    });
-
-    // Entry animation
     setTimeout(() => (isVisible = true), 30);
 
-    return () => {
-      unsubscribe?.();
-    };
-  });
+    function handleSelect(e: Event) {
+      const detail = (e as CustomEvent<BackgroundCardSelectDetail>).detail;
+      const type = detail.type as BackgroundType;
+      const meta = getCardMetadata(type);
 
-  function updateOrientation() {
-    if (!viewportService) return;
-
-    if (viewportService.isLandscape()) {
-      orientation = "landscape";
-    } else if (viewportService.isPortrait()) {
-      orientation = "portrait";
-    } else {
-      orientation = "square";
-    }
-  }
-
-  function updateBackgroundSetting<K extends keyof typeof backgroundSettings>(
-    key: K,
-    value: (typeof backgroundSettings)[K]
-  ) {
-    backgroundSettings[key] = value;
-    onUpdate?.({ key, value });
-  }
-
-  function handleBackgroundSelect(selectedType: BackgroundType) {
-    // Find the background config to get color/gradient info
-    const bgConfig = backgroundsConfig.find((bg) => bg.type === selectedType);
-
-    // IMPORTANT: Update colors/gradient FIRST before updating type
-    // This ensures the crossfade transition has access to the custom options
-    if (bgConfig) {
-      if (selectedType === BackgroundType.SOLID_COLOR && bgConfig.color) {
-        updateBackgroundSetting("backgroundColor", bgConfig.color);
-        applyThemeFromColors(bgConfig.color);
-      } else if (
-        selectedType === BackgroundType.LINEAR_GRADIENT &&
-        bgConfig.colors
-      ) {
-        updateBackgroundSetting("gradientColors", bgConfig.colors);
-        updateBackgroundSetting("gradientDirection", bgConfig.direction || 135);
-        applyThemeFromColors(undefined, bgConfig.colors);
-      } else if (bgConfig.themeColors) {
-        // Animated backgrounds: use themeColors for UI theming
-        applyThemeFromColors(undefined, bgConfig.themeColors);
+      // Apply theme colors before updating background type (ensures crossfade has correct options)
+      if (type === BackgroundType.SOLID_COLOR) {
+        onUpdate?.({ key: "backgroundColor", value: "#000000" });
+        applyThemeFromColors("#000000");
+      } else if (type === BackgroundType.LINEAR_GRADIENT) {
+        const defaultColors = ["#0d1117", "#161b22", "#21262d"];
+        onUpdate?.({ key: "gradientColors", value: defaultColors });
+        onUpdate?.({ key: "gradientDirection", value: 135 });
+        applyThemeFromColors(undefined, defaultColors);
+      } else if (meta?.themeColors) {
+        applyThemeFromColors(undefined, meta.themeColors);
       }
+
+      onUpdate?.({ key: "backgroundType", value: type });
     }
 
-    // Update the background type LAST to trigger the crossfade with custom options
-    updateBackgroundSetting("backgroundType", selectedType);
-  }
+    gridEl.addEventListener("background-select", handleSelect);
+    return () => gridEl.removeEventListener("background-select", handleSelect);
+  });
 </script>
 
 <div class="background-tab themed-scrollbar" class:visible={isVisible}>
-  {#if backgroundSettings.backgroundEnabled}
-    <!-- Main Glass Panel -->
-    <section class="settings-panel">
-      <header class="panel-header">
-        <span class="panel-icon"
-          ><i class="fas fa-palette" aria-hidden="true"></i></span
-        >
-        <div class="panel-header-text">
-          <h3 class="panel-title">{t("settings_background_theme")}</h3>
-          <p class="panel-subtitle">{t("settings_background_subtitle")}</p>
-        </div>
-      </header>
-
-      <!-- Animated Backgrounds Section -->
-      <div class="category-section">
-        <div class="category-header">
-          <span class="category-icon"
-            ><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i></span
-          >
-          <span class="category-label">{t("settings_animated")}</span>
-        </div>
-        <div class="card-grid animated-grid">
-          {#each animatedBackgrounds as background}
-            <BackgroundCard
-              {background}
-              isSelected={backgroundSettings.backgroundType === background.type}
-              onSelect={handleBackgroundSelect}
-              {orientation}
-            />
-          {/each}
-        </div>
+  <section class="settings-panel">
+    <header class="panel-header">
+      <span class="panel-icon"
+        ><i class="fas fa-palette" aria-hidden="true"></i></span
+      >
+      <div class="panel-header-text">
+        <h3 class="panel-title">{t("settings_background_theme")}</h3>
+        <p class="panel-subtitle">{t("settings_background_subtitle")}</p>
       </div>
+    </header>
 
-      <!-- Simple Backgrounds Section -->
-      <div class="category-section">
-        <div class="category-header">
-          <span class="category-icon"
-            ><i class="fas fa-circle" aria-hidden="true"></i></span
-          >
-          <span class="category-label">{t("settings_simple")}</span>
-        </div>
-        <div class="card-grid simple-grid">
-          {#each simpleBackgrounds as background}
-            <BackgroundCard
-              {background}
-              isSelected={backgroundSettings.backgroundType === background.type}
-              onSelect={handleBackgroundSelect}
-              {orientation}
-            />
-          {/each}
-        </div>
-      </div>
-    </section>
-  {/if}
+    <div
+      class="bg-grid"
+      role="radiogroup"
+      aria-label="Choose background"
+      bind:this={gridEl}
+    >
+      {#each BACKGROUND_CARD_REGISTRY as bg}
+        <background-card
+          type={bg.type}
+          selected={currentBg === bg.type ? "" : undefined}
+        ></background-card>
+      {/each}
+    </div>
+  </section>
 </div>
 
 <style>
-  /* ═══════════════════════════════════════════════════════════════════════════
-     BACKGROUND TAB - Polished Glass Panel Layout
-     Matches Visibility and Profile tab styling
-     ═══════════════════════════════════════════════════════════════════════════ */
   .background-tab {
     container-type: inline-size;
     container-name: background-tab;
@@ -214,7 +100,6 @@
     padding: clamp(8px, 2cqi, 16px);
     gap: clamp(10px, 1.5cqi, 16px);
 
-    /* Enable scrolling */
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -227,9 +112,6 @@
     opacity: 1;
   }
 
-  /* ========================================
-     SETTINGS PANEL - Theme-aware
-     ======================================== */
   .settings-panel {
     display: flex;
     flex-direction: column;
@@ -250,9 +132,6 @@
     transform: translateY(-1px);
   }
 
-  /* ========================================
-     PANEL HEADER
-     ======================================== */
   .panel-header {
     display: flex;
     align-items: center;
@@ -303,85 +182,25 @@
     margin: 2px 0 0 0;
   }
 
-  /* ========================================
-     CATEGORY SECTIONS
-     ======================================== */
-  .category-section {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(8px, 1.5cqi, 12px);
-  }
-
-  .category-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .category-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: clamp(20px, 4cqi, 24px);
-    height: clamp(20px, 4cqi, 24px);
-    border-radius: 5px;
-    font-size: clamp(10px, 2cqi, 12px);
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-  }
-
-  .category-label {
-    font-size: clamp(11px, 2cqi, 12px);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-family:
-      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-  }
-
-  /* ========================================
-     CARD GRIDS
-     ======================================== */
-  .card-grid {
+  .bg-grid {
     display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: clamp(8px, 1.5cqi, 12px);
     width: 100%;
   }
 
-  /* Default: 2 columns for mobile */
-  .animated-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .simple-grid {
-    grid-template-columns: repeat(2, 1fr);
-    align-items: start;
-  }
-
-  /* Medium containers (tablet): 3 columns for animated */
   @container background-tab (min-width: 400px) {
-    .animated-grid {
+    .bg-grid {
       grid-template-columns: repeat(3, 1fr);
     }
   }
 
-  /* Large containers (desktop): 4 columns for animated to fit everything */
   @container background-tab (min-width: 600px) {
-    .animated-grid {
+    .bg-grid {
       grid-template-columns: repeat(4, 1fr);
-    }
-
-    .simple-grid {
-      grid-template-columns: repeat(2, 1fr);
-      max-width: 50%; /* Keep simple cards from stretching too wide */
     }
   }
 
-
-  /* ========================================
-     ACCESSIBILITY
-     ======================================== */
   @media (prefers-reduced-motion: reduce) {
     .background-tab,
     .settings-panel,

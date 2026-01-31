@@ -2,10 +2,10 @@
   import { onMount } from "svelte";
   import { APP_DOMAIN } from "../../../config/domains";
   import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
-  import { ANIMATED_BACKGROUNDS } from "$lib/shared/background/shared/config/animated-backgrounds";
+  import { BackgroundType } from "@austencloud/backgrounds";
+  import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
-  import { getPublicThemeIndex, savePublicThemeIndex, getNextThemeIndex } from "$lib/shared/background/shared/config/public-page-theme";
+  import { getPublicThemeIndex, savePublicThemeIndex, getNextThemeIndex } from "$lib/shared/settings/utils/public-page-backgrounds";
 
   // Use shared animated backgrounds config
   const backgrounds = ANIMATED_BACKGROUNDS;
@@ -54,7 +54,7 @@
 
 <div class="roots-page">
   <!-- Animated Background -->
-  <BackgroundHost backgroundType={currentBackground} quality="medium" />
+  <BackgroundHost backgroundType={currentBackground} />
 
   <div class="roots-container">
     <!-- Header -->

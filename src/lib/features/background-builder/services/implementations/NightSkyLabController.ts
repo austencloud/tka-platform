@@ -2,8 +2,7 @@
  * Controller for managing the Night Sky Lab canvas and animation lifecycle
  */
 
-import { NightSkyBackgroundSystem } from "$lib/shared/background/night-sky/services/NightSkyBackgroundSystem";
-import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+import { NightSkyBackgroundSystem, type QualityLevel } from "@austencloud/backgrounds";
 import type { INightSkyLabController, NightSkyLayers } from "../contracts/INightSkyLabController";
 
 export class NightSkyLabController implements INightSkyLabController {

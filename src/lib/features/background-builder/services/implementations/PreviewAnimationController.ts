@@ -4,15 +4,13 @@
 
 import {
   FireflyForestBackgroundSystem,
+  ECOLOGICAL_PATTERNS,
+  type QualityLevel,
   type FireflyForestLayers,
-} from "$lib/shared/background/firefly-forest/services/FireflyForestBackgroundSystem";
-import {
   type TreeTypeVisibility,
   type EcologicalPattern,
   type RenderedTree,
-  ECOLOGICAL_PATTERNS,
-} from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
-import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+} from "@austencloud/backgrounds";
 import type { IPreviewAnimationController, PreviewStats, PlacementConfig } from "../contracts/IPreviewAnimationController";
 
 export class PreviewAnimationController implements IPreviewAnimationController {

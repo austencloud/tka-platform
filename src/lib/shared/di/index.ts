@@ -68,7 +68,6 @@ import { createPromoContainer } from "./containers/promo-container";
 import { createLibraryContainer } from "./containers/library-container";
 import { createQRContainer } from "./containers/qr-container";
 import { createAnimation3DContainer } from "./containers/animation-3d-container";
-import { deepOceanContainer } from "./containers/deep-ocean-container";
 import { createGalleryContainer } from "./containers/gallery-container";
 import { createDelightContainer } from "./containers/delight-container";
 import { backgroundBuilderContainer } from "./containers/background-builder-container";
@@ -83,6 +82,9 @@ import { createDeviceSyncContainer } from "./containers/device-sync-container";
 
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
+
+// Unified sequence data provider (abstracts local + Firebase sources)
+import { SequenceDataProvider } from "../sequence-viewer/services/implementations/SequenceDataProvider";
 
 // ============================================================================
 // INSTANTIATE FACTORY CONTAINERS WITH STUB DEPENDENCIES
@@ -297,6 +299,13 @@ const deepLinkResolver = typeof window !== 'undefined' ? new DeepLinkResolver(
   browseContainer.items.browseLoader
 ) : null as any;
 
+// SequenceDataProvider - unified interface for loading sequences from any source
+// Abstracts local IndexedDB (user sequences) vs Firebase (public sequences)
+const sequenceDataProvider = typeof window !== 'undefined' ? new SequenceDataProvider(
+  dataContainer.items.sequenceRepository,
+  browseContainer.items.browseLoader
+) : null as any;
+
 // ============================================================================
 // COMPOSE ALL CONTAINERS INTO ONE
 // ============================================================================
@@ -348,7 +357,6 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(mandalaContainer.items)
   .add(qrContainer.items)
   .add(animation3DContainer.items)
-  .add(deepOceanContainer.items)
   .add(galleryContainer.items)
   .add(backgroundBuilderContainer.items)
   .add(delightContainer.items)
@@ -361,7 +369,8 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(deviceSyncContainer.items)
   .add(connectContainer.items)
   // Cross-container services (depend on multiple container outputs)
-  .add({ deepLinkResolver: () => deepLinkResolver }) : null as any;
+  .add({ deepLinkResolver: () => deepLinkResolver })
+  .add({ sequenceDataProvider: () => sequenceDataProvider }) : null as any;
 
 // Export type for the composed container
 export type AppContainer = typeof container;

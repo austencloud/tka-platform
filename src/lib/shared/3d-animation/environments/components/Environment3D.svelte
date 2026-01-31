@@ -7,7 +7,7 @@
    * and 3D environment selection - they are the same setting.
    */
 
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import ForestScene from "../scenes/ForestScene.svelte";
   import CosmicScene from "../scenes/CosmicScene.svelte";
   import WinterScene from "../scenes/WinterScene.svelte";

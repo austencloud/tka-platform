@@ -1,8 +1,11 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { RainbowBackgroundSystem } from "$lib/shared/background/rainbow/services/RainbowBackgroundSystem";
-  import { PRIDE_PALETTES, type PridePalette } from "$lib/shared/background/rainbow/domain/constants/rainbow-constants";
-  import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+  import {
+    RainbowBackgroundSystem,
+    PRIDE_PALETTES,
+    type PridePalette,
+    type QualityLevel,
+  } from "@austencloud/backgrounds";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
   import LabPreviewCanvas from "./LabPreviewCanvas.svelte";

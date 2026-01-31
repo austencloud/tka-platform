@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
-  import { ANIMATED_BACKGROUNDS } from "$lib/shared/background/shared/config/animated-backgrounds";
+  import { BackgroundType } from "@austencloud/backgrounds";
+  import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
 
   interface Props {
     currentBackground: BackgroundType;

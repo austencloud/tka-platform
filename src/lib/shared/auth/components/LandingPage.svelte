@@ -28,7 +28,7 @@
   
   import type { IAuthenticator } from "../services/contracts/IAuthenticator";
   import { settingsService } from "../../settings/state/SettingsState.svelte";
-  import { BackgroundType } from "../../background/shared/domain/enums/background-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "../../settings/utils/background-theme-calculator";
   import { isGoogleOneTapConfigured } from "../config/google-oauth";
 

@@ -2,8 +2,7 @@
  * Interface for managing the Night Sky Lab canvas and animation lifecycle
  */
 
-import type { NightSkyBackgroundSystem } from "$lib/shared/background/night-sky/services/NightSkyBackgroundSystem";
-import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+import type { NightSkyBackgroundSystem, QualityLevel } from "@austencloud/backgrounds";
 
 export interface NightSkyLayers {
   stars: boolean;

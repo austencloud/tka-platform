@@ -6,7 +6,7 @@
     FinState,
     TailState,
     FishColorPalette,
-  } from "$lib/shared/background/deep-ocean/domain/models/DeepOceanModels";
+  } from "@austencloud/backgrounds";
 
   let staticCanvas: HTMLCanvasElement;
   let animatedCanvas: HTMLCanvasElement;
