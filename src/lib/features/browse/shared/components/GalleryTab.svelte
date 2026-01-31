@@ -8,7 +8,6 @@
   import BrowseLayout from "./BrowseLayout.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
-  import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
   import InviteCollaboratorsPanel from "$lib/shared/video-collaboration/components/InviteCollaboratorsPanel.svelte";
   import ViewPresetsSheet from "../../sequences/filtering/components/ViewPresetsSheet.svelte";
   import SortJumpSheet from "../../sequences/navigation/components/SortJumpSheet.svelte";
@@ -20,41 +19,21 @@
 
   interface Props {
     isMobile: boolean;
-    isUIVisible: boolean;
-    showDesktopSidebar: boolean;
     drawerWidth: string;
     galleryState: any;
     error: string | null;
-    isAnimationPanelOpen?: boolean;
     onSequenceAction: (action: string, sequence: SequenceData) => Promise<void>;
-    onDetailPanelAction: (action: string, sequence: SequenceData) => Promise<void>;
-    onCloseDetailPanel: () => void;
     onContainerScroll: (event: CustomEvent<{ scrollTop: number }>) => void;
   }
 
   let {
     isMobile,
-    isUIVisible,
-    showDesktopSidebar: _showDesktopSidebar,
     drawerWidth,
     galleryState,
     error,
-    isAnimationPanelOpen = false,
     onSequenceAction,
-    onDetailPanelAction,
-    onCloseDetailPanel,
     onContainerScroll,
   }: Props = $props();
-
-  // Panel is "open" when either the detail panel OR animation panel is showing (desktop only)
-  const isPanelOpen = $derived(
-    !isMobile && (sequencePanelManager.isOpen || isAnimationPanelOpen)
-  );
-
-  // Effective drawer width - accounts for expansion state
-  const effectiveDrawerWidth = $derived(
-    sequencePanelManager.isDetailExpanded ? "min(900px, 85vw)" : drawerWidth
-  );
 
   // State for sub-sheets
   let isLetterSheetOpen = $state(false);
@@ -138,24 +117,18 @@
 
 <BrowseLayout>
   {#snippet centerPanel()}
-    <div class="sequences-with-detail">
-      <div
-        class="sequences-main"
-        class:panel-open={isPanelOpen}
-        style:--drawer-width={effectiveDrawerWidth}
-      >
-        <SequenceDisplayPanel
-          sequences={galleryState.displayedSequences}
-          sections={galleryState.sequenceSections}
-          isLoading={galleryState.isLoading}
-          sectionsReady={galleryState.sectionsReady}
-          {error}
-          showSections={galleryState.showSections}
-          source={galleryState.currentSource}
-          onAction={onSequenceAction}
-          onScroll={onContainerScroll}
-        />
-      </div>
+    <div class="sequences-main">
+      <SequenceDisplayPanel
+        sequences={galleryState.displayedSequences}
+        sections={galleryState.sequenceSections}
+        isLoading={galleryState.isLoading}
+        sectionsReady={galleryState.sectionsReady}
+        {error}
+        showSections={galleryState.showSections}
+        source={galleryState.currentSource}
+        onAction={onSequenceAction}
+        onScroll={onContainerScroll}
+      />
     </div>
   {/snippet}
 </BrowseLayout>
@@ -280,32 +253,6 @@
   </Drawer>
 </div>
 
-<!-- Detail Panel -->
-{#if sequencePanelManager.activeSequence}
-  <!-- Key forces remount when viewId changes, ensuring fresh animation state on reopen -->
-  {#key sequencePanelManager.viewId}
-    <SequenceDrawer
-      isOpen={sequencePanelManager.isDetailOpen}
-      sequence={sequencePanelManager.activeSequence}
-      mode="browse"
-      {isMobile}
-      drawerWidth={sequencePanelManager.isDetailExpanded ? "min(900px, 85vw)" : drawerWidth}
-      isNavVisible={isUIVisible}
-      variations={sequencePanelManager.activeVariations}
-      variationIndex={sequencePanelManager.variationIndex}
-      onClose={() => {
-        handleCloseInvitePanel();
-        onCloseDetailPanel();
-      }}
-      onAction={onDetailPanelAction}
-      onInviteCollaborators={handleInviteCollaborators}
-      onVariationSelect={(index, _seq) => {
-        sequencePanelManager.setVariationIndex(index);
-      }}
-    />
-  {/key}
-{/if}
-
 <!-- Invite Collaborators Panel -->
 {#if inviteVideo}
   <div style:--drawer-width={isMobile ? "min(720px, 95vw)" : "min(520px, 45vw)"}>
@@ -319,25 +266,12 @@
 {/if}
 
 <style>
-  .sequences-with-detail {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-    height: 100%;
-    transition: all var(--duration-emphasis) ease;
-  }
-
   .sequences-main {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     min-width: 0;
-    --drawer-width: min(600px, 90vw);
-    transition: padding-right var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .sequences-main.panel-open {
-    padding-right: var(--drawer-width);
+    height: 100%;
   }
 
   /* Bento filter wrapper */
@@ -520,10 +454,4 @@
     background: var(--theme-panel-bg) !important;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .sequences-with-detail,
-    .sequences-main {
-      transition: none;
-    }
-  }
 </style>

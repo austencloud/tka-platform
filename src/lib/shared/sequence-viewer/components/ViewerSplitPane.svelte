@@ -235,19 +235,20 @@
     inset: 0;
   }
 
-  /* Split view - uses CSS Grid for smoother focus transitions */
+  /* Split view - CSS Grid with animated grid-template transitions */
   .split-view {
     display: grid;
-    /* Mobile: vertical stack */
-    grid-template-rows: 1fr 1fr;
+    /* Mobile: vertical stack, both panes equal (use % for animatable values) */
+    grid-template-rows: 50% 50%;
     grid-template-columns: 1fr;
     height: 100%;
     width: 100%;
     position: relative;
-    /* Smooth grid transitions */
-    transition:
-      grid-template-rows 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-      grid-template-columns 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    /* GPU hint for smoother animation */
+    will-change: grid-template-rows, grid-template-columns;
+    /* Smooth grid transitions - 300ms ease-out */
+    transition: grid-template-rows 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+                grid-template-columns 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   /* Split columns are tappable buttons */
@@ -263,9 +264,9 @@
     font: inherit;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    /* Opacity transition for smooth fade */
-    transition: opacity 0.15s ease;
     overflow: hidden;
+    /* Smooth opacity transition for content fade */
+    transition: opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .split-column:focus-visible {
@@ -280,9 +281,8 @@
   .preview-column {
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    transition:
-      border-color 0.25s ease,
-      opacity 0.15s ease;
+    transition: border-color 0.25s ease,
+                opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   /* Inner wrapper for preview column */
@@ -375,32 +375,41 @@
     border-top-color: transparent;
   }
 
-  /* Mobile-only: Vertical expansion */
-  @media (max-width: 767px) {
-    .split-view[data-focused="animation"] {
-      grid-template-rows: 1fr 0fr;
-    }
+  /* ========================================
+     MOBILE: Vertical layout (default)
+     Use percentage-based grid for animatable transitions
+     ======================================== */
 
-    .split-view[data-focused="image"] {
-      grid-template-rows: 0fr 1fr;
-    }
+  /* Mobile: Focus on animation - collapse preview row */
+  .split-view[data-focused="animation"] {
+    grid-template-rows: 100% 0%;
   }
 
-  /* Desktop: horizontal layout */
+  /* Mobile: Focus on image - collapse animation row */
+  .split-view[data-focused="image"] {
+    grid-template-rows: 0% 100%;
+  }
+
+  /* ========================================
+     DESKTOP: Horizontal layout (768px+)
+     ======================================== */
   @media (min-width: 768px) {
     .split-view {
+      /* Desktop: side-by-side, both panes equal */
       grid-template-rows: 1fr;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 50% 50%;
     }
 
+    /* Desktop: Focus on animation - collapse preview column */
     .split-view[data-focused="animation"] {
       grid-template-rows: 1fr;
-      grid-template-columns: 1fr 0fr;
+      grid-template-columns: 100% 0%;
     }
 
+    /* Desktop: Focus on image - collapse animation column */
     .split-view[data-focused="image"] {
       grid-template-rows: 1fr;
-      grid-template-columns: 0fr 1fr;
+      grid-template-columns: 0% 100%;
     }
 
     .preview-column {
@@ -413,10 +422,15 @@
     }
   }
 
-  /* Fullscreen stack layouts */
+  /* ========================================
+     FULLSCREEN STACK LAYOUTS
+     Override grid direction based on orientation
+     ======================================== */
+
+  /* Fullscreen horizontal stack */
   .split-view[data-fullscreen-stack="horizontal"] {
     grid-template-rows: 1fr;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 50% 50%;
   }
 
   .split-view[data-fullscreen-stack="horizontal"] .preview-column {
@@ -424,14 +438,35 @@
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
+  /* Fullscreen horizontal + focus animation */
+  .split-view[data-fullscreen-stack="horizontal"][data-focused="animation"] {
+    grid-template-columns: 100% 0%;
+  }
+
+  /* Fullscreen horizontal + focus image */
+  .split-view[data-fullscreen-stack="horizontal"][data-focused="image"] {
+    grid-template-columns: 0% 100%;
+  }
+
+  /* Fullscreen vertical stack */
   .split-view[data-fullscreen-stack="vertical"] {
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: 50% 50%;
     grid-template-columns: 1fr;
   }
 
   .split-view[data-fullscreen-stack="vertical"] .preview-column {
     border-left: none;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  /* Fullscreen vertical + focus animation */
+  .split-view[data-fullscreen-stack="vertical"][data-focused="animation"] {
+    grid-template-rows: 100% 0%;
+  }
+
+  /* Fullscreen vertical + focus image */
+  .split-view[data-fullscreen-stack="vertical"][data-focused="image"] {
+    grid-template-rows: 0% 100%;
   }
 
   /* Media pane children should fill available space */

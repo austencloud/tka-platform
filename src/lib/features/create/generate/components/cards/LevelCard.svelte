@@ -4,7 +4,7 @@ Uses stepper pattern for space-efficient level selection
 -->
 <script lang="ts">
   import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isBrightBackground } from "../../shared/domain/card-colors";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";

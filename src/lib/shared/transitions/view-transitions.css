@@ -181,6 +181,35 @@
 }
 
 /* ============================================================================
+   SEQUENCE VIEWER TRANSITIONS (Google Photos-style morph)
+   Thumbnail in ChoreoCard morphs into full viewer in /sequence/[id] route.
+   Both elements use style:view-transition-name="sequence-{id}" to link them.
+
+   How it works:
+   - The View Transitions API captures a snapshot of elements with matching
+     view-transition-name values before and after navigation
+   - The browser automatically creates a ::view-transition-group for each
+     named element and animates position, size, and opacity
+   - We just need to set the timing and easing; the morph is automatic
+   ============================================================================ */
+
+/* CSS variable for sequence viewer transition timing */
+:root {
+  --sequence-transition-duration: 350ms;
+  --sequence-transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/*
+ * Note: The browser's View Transitions API automatically morphs elements
+ * that share the same view-transition-name. The default crossfade looks
+ * good for our use case. If we need custom animations for specific
+ * sequences, we could use @property or JS to set custom transition names.
+ *
+ * The ::view-transition-group pseudo-elements are created dynamically
+ * by the browser based on the view-transition-name values found in the DOM.
+ */
+
+/* ============================================================================
    FALLBACK FOR BROWSERS WITHOUT VIEW TRANSITIONS API
    Manual CSS transition classes
    ============================================================================ */

@@ -28,7 +28,6 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { browseNavigationState } from "$lib/features/browse/shared/state/browse-navigation-state.svelte";
-  import { openSpotlightWithAnimation } from "$lib/shared/application/state/ui/ui-state.svelte";
 
   /**
    * Panel mode determines which features and actions are available
@@ -290,11 +289,8 @@
 
   function handleMaximize() {
     hapticService?.trigger("selection");
-    if (currentMediaType === "animation") {
-      openSpotlightWithAnimation(effectiveSequence);
-    } else {
-      onAction?.("fullscreen", effectiveSequence);
-    }
+    // Delegate fullscreen to parent - parent can decide to open SequenceDetailsModal
+    onAction?.("fullscreen", effectiveSequence);
   }
 
   function handleCreatorClick() {

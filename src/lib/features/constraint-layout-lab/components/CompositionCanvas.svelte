@@ -1,12 +1,13 @@
 <!--
-  ConstraintCanvas.svelte
+  CompositionCanvas.svelte
 
-  Interactive canvas for constraint-based layout editing.
+  Interactive canvas for composition layout editing.
   Supports:
   - Drag to move cells
   - Resize handles on all edges
   - Snap guides during manipulation
   - Z-index visualization
+  - Spacebar + drag to pan the viewport
 -->
 <script lang="ts">
   import type { ConstraintCell, DragState, ContainerBounds } from "../domain/types";
@@ -20,6 +21,7 @@
     onUpdateCellPosition,
     onUpdateCellSize,
     onDuplicateCell,
+    onDragStart,
   }: {
     cells: ConstraintCell[];
     containerBounds: ContainerBounds;
@@ -27,7 +29,8 @@
     onSelectCell: (cellId: string | null, additive?: boolean) => void;
     onUpdateCellPosition: (cellId: string, x: number, y: number) => void;
     onUpdateCellSize: (cellId: string, width: number, height: number, x?: number, y?: number) => void;
-    onDuplicateCell: (cellId: string, x: number, y: number) => string; // Returns new cell ID
+    onDuplicateCell: (cellId: string, x: number, y: number) => string;
+    onDragStart?: () => void;
   } = $props();
 
   // Container reference
@@ -48,11 +51,199 @@
   // Track which cell is being hovered
   let hoveredCellId = $state<string | null>(null);
 
+  // ── Viewport pan & zoom state ──
+  let panX = $state(0);
+  let panY = $state(0);
+  let zoom = $state(1);
+  let spaceHeld = $state(false);
+  let isPanning = $state(false);
+  let panStartX = 0;
+  let panStartY = 0;
+  let panStartOffsetX = 0;
+  let panStartOffsetY = 0;
+
+  const MIN_ZOOM = 0.1;
+  const MAX_ZOOM = 5;
+  const ZOOM_STEP = 0.1;
+
+  // Zoom indicator fade
+  let showZoomIndicator = $state(false);
+  let zoomIndicatorTimeout: ReturnType<typeof setTimeout> | null = null;
+  const zoomPercent = $derived(Math.round(zoom * 100));
+
+  // Listen for spacebar to enter pan mode
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.code === "Space" && !e.repeat) {
+      // Don't hijack space if user is typing in an input
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      e.preventDefault();
+      e.stopPropagation();
+      spaceHeld = true;
+    }
+  }
+
+  function handleKeyUp(e: KeyboardEvent) {
+    if (e.code === "Space") {
+      e.preventDefault();
+      e.stopPropagation();
+      spaceHeld = false;
+      // If we were mid-pan, end it
+      if (isPanning) {
+        endPan();
+      }
+    }
+  }
+
+  // Attach/detach global keyboard listeners
+  // Use capture phase so we intercept before anything else can react
+  $effect(() => {
+    window.addEventListener("keydown", handleKeyDown, true);
+    window.addEventListener("keyup", handleKeyUp, true);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true);
+      window.removeEventListener("keyup", handleKeyUp, true);
+    };
+  });
+
+  // Track the active pan pointer so we can release capture reliably
+  let panPointerId: number | null = null;
+
+  function startPan(e: PointerEvent) {
+    isPanning = true;
+    panStartX = e.clientX;
+    panStartY = e.clientY;
+    panStartOffsetX = panX;
+    panStartOffsetY = panY;
+    panPointerId = e.pointerId;
+
+    // Capture on the container element, not the clicked child.
+    // This prevents capture from being lost if the child is removed/hidden.
+    if (containerEl) {
+      containerEl.setPointerCapture(e.pointerId);
+    }
+
+    window.addEventListener("pointermove", handlePanMove);
+    window.addEventListener("pointerup", handlePanUp);
+    window.addEventListener("pointercancel", handlePanCancel);
+  }
+
+  function handlePanMove(e: PointerEvent) {
+    if (!isPanning) return;
+    panX = panStartOffsetX + (e.clientX - panStartX);
+    panY = panStartOffsetY + (e.clientY - panStartY);
+  }
+
+  function handlePanUp(e: PointerEvent) {
+    releasePanCapture();
+    endPan();
+  }
+
+  function handlePanCancel(_e: PointerEvent) {
+    // Browser killed our pointer (touch gesture, focus loss, etc.)
+    // Keep the current pan position, just stop the drag cleanly
+    releasePanCapture();
+    endPan();
+  }
+
+  function releasePanCapture() {
+    if (containerEl && panPointerId !== null) {
+      try {
+        containerEl.releasePointerCapture(panPointerId);
+      } catch {
+        // Already released - ignore
+      }
+    }
+    panPointerId = null;
+  }
+
+  function endPan() {
+    isPanning = false;
+    window.removeEventListener("pointermove", handlePanMove);
+    window.removeEventListener("pointerup", handlePanUp);
+    window.removeEventListener("pointercancel", handlePanCancel);
+  }
+
+  // Suppress context menu during pan (Chrome mobile emulation long-press)
+  function handleContextMenu(e: MouseEvent) {
+    if (spaceHeld || isPanning) {
+      e.preventDefault();
+    }
+  }
+
+  // ── Zoom via Alt + scroll wheel ──
+  function handleWheel(e: WheelEvent) {
+    if (!e.altKey) return;
+
+    e.preventDefault();
+
+    // Determine zoom direction: scroll up = zoom in, scroll down = zoom out
+    const direction = e.deltaY < 0 ? 1 : -1;
+    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom + direction * ZOOM_STEP));
+    if (newZoom === zoom) return;
+
+    // Zoom toward cursor: keep the point under the cursor fixed.
+    // The viewport transform is: translate(panX, panY) then scale(zoom).
+    // A world point P maps to screen as: screen = P * zoom + pan
+    // To keep the cursor's world point fixed after zoom change:
+    //   cursorScreen = worldPt * oldZoom + oldPan
+    //   cursorScreen = worldPt * newZoom + newPan
+    // => newPan = cursorScreen - worldPt * newZoom
+    //           = cursorScreen - (cursorScreen - oldPan) / oldZoom * newZoom
+    const rect = containerEl?.getBoundingClientRect();
+    if (!rect) return;
+
+    const cursorX = e.clientX - rect.left;
+    const cursorY = e.clientY - rect.top;
+
+    const worldX = (cursorX - panX) / zoom;
+    const worldY = (cursorY - panY) / zoom;
+
+    panX = cursorX - worldX * newZoom;
+    panY = cursorY - worldY * newZoom;
+    zoom = newZoom;
+
+    // Flash zoom indicator
+    showZoomIndicator = true;
+    if (zoomIndicatorTimeout) clearTimeout(zoomIndicatorTimeout);
+    zoomIndicatorTimeout = setTimeout(() => {
+      showZoomIndicator = false;
+    }, 800);
+  }
+
+  // ── Canvas pointer down ──
+  // If space is held, start panning instead of deselecting
+  function handleCanvasPointerDown(e: PointerEvent) {
+    if (spaceHeld) {
+      e.preventDefault();
+      e.stopPropagation();
+      startPan(e);
+    }
+  }
+
+  function handleCanvasClick() {
+    // Don't deselect if we just finished panning
+    if (spaceHeld || isPanning) return;
+    onSelectCell(null);
+  }
+
+  // ── Cell interactions ──
+
   function handleCellPointerDown(cell: ConstraintCell, e: PointerEvent) {
+    // If space is held, pan instead of moving the cell
+    if (spaceHeld) {
+      e.preventDefault();
+      e.stopPropagation();
+      startPan(e);
+      return;
+    }
+
     e.stopPropagation();
     e.preventDefault();
 
-    // Capture pointer for reliable drag on touch devices
+    // Snapshot for undo before any mutation
+    onDragStart?.();
+
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
     // Alt + drag = duplicate
@@ -60,14 +251,14 @@
     let targetCellId = cell.id;
 
     if (e.altKey) {
-      // Create duplicate at same position, we'll move it during drag
       duplicateId = onDuplicateCell(cell.id, cell.computed.x, cell.computed.y);
       targetCellId = duplicateId;
     }
 
-    onSelectCell(targetCellId);
+    // Ctrl/Cmd+click = add to selection (Shift is reserved for axis-constrain)
+    const additive = e.ctrlKey || e.metaKey;
+    onSelectCell(targetCellId, additive);
 
-    // Start move drag
     dragState = {
       cellId: targetCellId,
       mode: "move",
@@ -87,11 +278,22 @@
     handle: DragState["handle"],
     e: PointerEvent
   ) {
+    // If space is held, pan instead of resizing
+    if (spaceHeld) {
+      e.preventDefault();
+      e.stopPropagation();
+      startPan(e);
+      return;
+    }
+
     e.stopPropagation();
     e.preventDefault();
-    onSelectCell(cell.id);
 
-    // Capture pointer for reliable drag on touch devices
+    // Snapshot for undo before any mutation
+    onDragStart?.();
+
+    onSelectCell(cell.id, e.ctrlKey || e.metaKey);
+
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
     dragState = {
@@ -115,8 +317,9 @@
     const cell = cells.find((c) => c.id === state.cellId);
     if (!cell) return;
 
-    const deltaX = e.clientX - state.startX;
-    const deltaY = e.clientY - state.startY;
+    // Convert screen-space delta to world-space by dividing by zoom
+    const deltaX = (e.clientX - state.startX) / zoom;
+    const deltaY = (e.clientY - state.startY) / zoom;
 
     // Generate snap guides
     const guides = generateSnapGuides(cells, containerBounds, state.cellId);
@@ -131,17 +334,14 @@
       // Shift + drag = constrain to horizontal or vertical
       if (shiftHeld) {
         if (Math.abs(deltaX) > Math.abs(deltaY)) {
-          // Horizontal movement
           newY = state.startCellBounds.y;
         } else {
-          // Vertical movement
           newX = state.startCellBounds.x;
         }
       }
 
       // Ctrl + drag = free movement (skip snapping)
       if (!ctrlHeld) {
-        // Snap to guides
         const snapX = findSnapPosition(newX, guides.x);
         const snapXRight = findSnapPosition(newX + cell.computed.width, guides.x);
         const snapXCenter = findSnapPosition(newX + cell.computed.width / 2, guides.x);
@@ -150,7 +350,6 @@
         const snapYBottom = findSnapPosition(newY + cell.computed.height, guides.y);
         const snapYCenter = findSnapPosition(newY + cell.computed.height / 2, guides.y);
 
-        // Apply snapping (prefer edge snaps over center)
         const snappedX: number[] = [];
         const snappedY: number[] = [];
 
@@ -179,7 +378,6 @@
         activeSnapGuidesX = snappedX;
         activeSnapGuidesY = snappedY;
       } else {
-        // Free movement - no snap guides
         activeSnapGuidesX = [];
         activeSnapGuidesY = [];
       }
@@ -188,10 +386,9 @@
     } else if (state.mode === "resize" && state.handle) {
       let { x, y, width, height } = state.startCellBounds;
       const handle = state.handle;
-      const isCorner = handle.includes("-"); // e.g., "top-left", "bottom-right"
+      const isCorner = handle.includes("-");
       const shiftHeld = e.shiftKey;
 
-      // Adjust based on handle
       if (handle.includes("right")) {
         width = Math.max(50, state.startCellBounds.width + deltaX);
         const snapRight = findSnapPosition(x + width, guides.x);
@@ -253,10 +450,8 @@
       // Shift + corner drag = constrain to square
       if (shiftHeld && isCorner) {
         const size = Math.max(width, height);
-        // Snap the square size to grid
         const snappedSize = findSnapPosition(size, guides.x).snapped;
 
-        // Adjust position based on which corner is being dragged
         if (handle === "top-left") {
           x = state.startCellBounds.x + state.startCellBounds.width - snappedSize;
           y = state.startCellBounds.y + state.startCellBounds.height - snappedSize;
@@ -265,7 +460,6 @@
         } else if (handle === "bottom-left") {
           x = state.startCellBounds.x + state.startCellBounds.width - snappedSize;
         }
-        // bottom-right: x and y stay the same
 
         width = snappedSize;
         height = snappedSize;
@@ -276,7 +470,6 @@
   }
 
   function handlePointerUp(e: PointerEvent) {
-    // Release pointer capture
     if (e.target instanceof HTMLElement) {
       e.target.releasePointerCapture(e.pointerId);
     }
@@ -288,117 +481,132 @@
     window.removeEventListener("pointermove", handlePointerMove);
     window.removeEventListener("pointerup", handlePointerUp);
   }
-
-  function handleCanvasClick() {
-    onSelectCell(null);
-  }
 </script>
 
 <div
-  class="constraint-canvas"
+  class="composition-canvas"
+  class:pan-mode={spaceHeld}
+  class:panning={isPanning}
   bind:this={containerEl}
+  onpointerdown={handleCanvasPointerDown}
   onclick={handleCanvasClick}
+  oncontextmenu={handleContextMenu}
+  onwheel={handleWheel}
+  style:background-position="{panX}px {panY}px"
+  style:background-size="{50 * zoom}px {50 * zoom}px"
   role="presentation"
 >
-  <!-- Cells -->
-  {#each sortedCells as cell (cell.id)}
-    {@const isSelected = selectedCellId === cell.id}
-    {@const isHovered = hoveredCellId === cell.id}
-    {@const isDragging = dragState?.cellId === cell.id}
-    {@const showHandles = isSelected || isHovered}
-    <div
-      class="cell"
-      class:selected={isSelected}
-      class:dragging={isDragging}
-      style:left="{cell.computed.x}px"
-      style:top="{cell.computed.y}px"
-      style:width="{cell.computed.width}px"
-      style:height="{cell.computed.height}px"
-      style:z-index={cell.zIndex}
-      style:--cell-color={cell.color}
-      onpointerdown={(e) => handleCellPointerDown(cell, e)}
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectCell(cell.id); } }}
-      onpointerenter={() => hoveredCellId = cell.id}
-      onpointerleave={() => { if (hoveredCellId === cell.id) hoveredCellId = null; }}
-      role="button"
-      tabindex="0"
-      aria-label="{cell.label}, z-index {cell.zIndex}"
-    >
-      <div class="cell-content">
-        {#if cell.mediaType === "video"}
-          <i class="fas fa-video cell-icon" aria-hidden="true"></i>
-        {:else if cell.mediaType === "animation"}
-          <i class="fas fa-play-circle cell-icon" aria-hidden="true"></i>
-        {:else if cell.mediaType === "image"}
-          <i class="fas fa-image cell-icon" aria-hidden="true"></i>
-        {:else if cell.mediaType === "choreo-card"}
-          <i class="fas fa-th cell-icon" aria-hidden="true"></i>
-        {:else if cell.mediaType === "viewer-3d"}
-          <i class="fas fa-cube cell-icon" aria-hidden="true"></i>
-        {:else}
-          <i class="fas fa-square cell-icon" aria-hidden="true"></i>
+  <!-- Zoom indicator -->
+  {#if showZoomIndicator}
+    <div class="zoom-indicator">{zoomPercent}%</div>
+  {/if}
+
+  <!-- Pannable + zoomable viewport layer -->
+  <div
+    class="viewport"
+    style:transform="translate({panX}px, {panY}px) scale({zoom})"
+    style:transform-origin="0 0"
+  >
+    <!-- Cells -->
+    {#each sortedCells as cell (cell.id)}
+      {@const isSelected = selectedCellIds.has(cell.id)}
+      {@const isHovered = hoveredCellId === cell.id}
+      {@const isDragging = dragState?.cellId === cell.id}
+      {@const showHandles = isSelected || isHovered}
+      <div
+        class="cell"
+        class:selected={isSelected}
+        class:dragging={isDragging}
+        style:left="{cell.computed.x}px"
+        style:top="{cell.computed.y}px"
+        style:width="{cell.computed.width}px"
+        style:height="{cell.computed.height}px"
+        style:z-index={cell.zIndex}
+        style:--cell-color={cell.color}
+        onpointerdown={(e) => handleCellPointerDown(cell, e)}
+        onclick={(e) => e.stopPropagation()}
+        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectCell(cell.id, e.ctrlKey || e.metaKey); } }}
+        onpointerenter={() => hoveredCellId = cell.id}
+        onpointerleave={() => { if (hoveredCellId === cell.id) hoveredCellId = null; }}
+        role="button"
+        tabindex="0"
+        aria-label="{cell.label}, z-index {cell.zIndex}"
+      >
+        <div class="cell-content">
+          {#if cell.mediaType === "video"}
+            <i class="fas fa-video cell-icon" aria-hidden="true"></i>
+          {:else if cell.mediaType === "animation"}
+            <i class="fas fa-play-circle cell-icon" aria-hidden="true"></i>
+          {:else if cell.mediaType === "image"}
+            <i class="fas fa-image cell-icon" aria-hidden="true"></i>
+          {:else if cell.mediaType === "choreo-card"}
+            <i class="fas fa-th cell-icon" aria-hidden="true"></i>
+          {:else if cell.mediaType === "viewer-3d"}
+            <i class="fas fa-cube cell-icon" aria-hidden="true"></i>
+          {:else}
+            <i class="fas fa-square cell-icon" aria-hidden="true"></i>
+          {/if}
+          <span class="cell-label">{cell.label}</span>
+        </div>
+
+        <!-- Resize handles (on hover or selected) -->
+        {#if showHandles}
+          <div
+            class="resize-handle top-left"
+            class:selected={isSelected}
+            onpointerdown={(e) => handleResizePointerDown(cell, "top-left", e)}
+          ></div>
+          <div
+            class="resize-handle top"
+            class:selected={isSelected}
+            onpointerdown={(e) => handleResizePointerDown(cell, "top", e)}
+          ></div>
+          <div
+            class="resize-handle top-right"
+            class:selected={isSelected}
+            onpointerdown={(e) => handleResizePointerDown(cell, "top-right", e)}
+          ></div>
+          <div
+            class="resize-handle left"
+            class:selected={isSelected}
+            onpointerdown={(e) => handleResizePointerDown(cell, "left", e)}
+          ></div>
+          <div
+            class="resize-handle right"
+            class:selected={isSelected}
+            onpointerdown={(e) => handleResizePointerDown(cell, "right", e)}
+          ></div>
+          <div
+            class="resize-handle bottom-left"
+            class:selected={isSelected}
+            onpointerdown={(e) => handleResizePointerDown(cell, "bottom-left", e)}
+          ></div>
+          <div
+            class="resize-handle bottom"
+            class:selected={isSelected}
+            onpointerdown={(e) => handleResizePointerDown(cell, "bottom", e)}
+          ></div>
+          <div
+            class="resize-handle bottom-right"
+            class:selected={isSelected}
+            onpointerdown={(e) => handleResizePointerDown(cell, "bottom-right", e)}
+          ></div>
         {/if}
-        <span class="cell-label">{cell.label}</span>
       </div>
+    {/each}
 
-      <!-- Resize handles (on hover or selected) -->
-      {#if showHandles}
-        <div
-          class="resize-handle top-left"
-          class:selected={isSelected}
-          onpointerdown={(e) => handleResizePointerDown(cell, "top-left", e)}
-        ></div>
-        <div
-          class="resize-handle top"
-          class:selected={isSelected}
-          onpointerdown={(e) => handleResizePointerDown(cell, "top", e)}
-        ></div>
-        <div
-          class="resize-handle top-right"
-          class:selected={isSelected}
-          onpointerdown={(e) => handleResizePointerDown(cell, "top-right", e)}
-        ></div>
-        <div
-          class="resize-handle left"
-          class:selected={isSelected}
-          onpointerdown={(e) => handleResizePointerDown(cell, "left", e)}
-        ></div>
-        <div
-          class="resize-handle right"
-          class:selected={isSelected}
-          onpointerdown={(e) => handleResizePointerDown(cell, "right", e)}
-        ></div>
-        <div
-          class="resize-handle bottom-left"
-          class:selected={isSelected}
-          onpointerdown={(e) => handleResizePointerDown(cell, "bottom-left", e)}
-        ></div>
-        <div
-          class="resize-handle bottom"
-          class:selected={isSelected}
-          onpointerdown={(e) => handleResizePointerDown(cell, "bottom", e)}
-        ></div>
-        <div
-          class="resize-handle bottom-right"
-          class:selected={isSelected}
-          onpointerdown={(e) => handleResizePointerDown(cell, "bottom-right", e)}
-        ></div>
-      {/if}
-    </div>
-  {/each}
-
-  <!-- Snap guides -->
-  {#each activeSnapGuidesX as x}
-    <div class="snap-guide vertical" style:left="{x}px"></div>
-  {/each}
-  {#each activeSnapGuidesY as y}
-    <div class="snap-guide horizontal" style:top="{y}px"></div>
-  {/each}
+    <!-- Snap guides -->
+    {#each activeSnapGuidesX as x}
+      <div class="snap-guide vertical" style:left="{x}px"></div>
+    {/each}
+    {#each activeSnapGuidesY as y}
+      <div class="snap-guide horizontal" style:top="{y}px"></div>
+    {/each}
+  </div>
 </div>
 
 <style>
-  .constraint-canvas {
+  .composition-canvas {
     position: relative;
     width: 100%;
     height: 100%;
@@ -407,11 +615,43 @@
     border-radius: var(--border-radius-lg, 12px);
     overflow: hidden;
 
-    /* Grid pattern background - 50px squares with visible lines */
+    /* Grid pattern background moves with pan via background-position */
     background-image:
       linear-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
     background-size: 50px 50px;
+  }
+
+  /* Pan mode: grab cursor + suppress browser gestures */
+  .composition-canvas.pan-mode {
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .composition-canvas.panning {
+    cursor: grabbing;
+    touch-action: none;
+    user-select: none;
+  }
+
+  /* Override cell cursors when in pan mode */
+  .composition-canvas.pan-mode .cell,
+  .composition-canvas.panning .cell {
+    cursor: inherit;
+  }
+
+  .composition-canvas.pan-mode .resize-handle,
+  .composition-canvas.panning .resize-handle {
+    cursor: inherit;
+  }
+
+  .viewport {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    will-change: transform;
   }
 
   .cell {
@@ -424,7 +664,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    touch-action: none; /* Prevent browser touch gestures during drag */
+    touch-action: none;
   }
 
   .cell:hover {
@@ -470,7 +710,7 @@
     width: 48px;
     height: 48px;
     z-index: 10;
-    touch-action: none; /* Prevent browser touch gestures during resize */
+    touch-action: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -571,11 +811,39 @@
     right: 0;
   }
 
+  /* Zoom indicator */
+  .zoom-indicator {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 200;
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    border-radius: var(--border-radius-md, 8px);
+    pointer-events: none;
+    animation: zoom-fade 0.8s ease-out forwards;
+  }
+
+  @keyframes zoom-fade {
+    0% { opacity: 1; }
+    70% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .cell,
     .resize-handle {
       transition: none;
+    }
+
+    .zoom-indicator {
+      animation: none;
+      opacity: 1;
     }
   }
 </style>

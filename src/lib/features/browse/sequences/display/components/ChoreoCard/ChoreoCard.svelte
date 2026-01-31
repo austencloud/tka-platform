@@ -155,7 +155,12 @@ LOOP badge:
 </script>
 
 <button class="choreo-card" class:selected class:light-mode={lightMode} onclick={handlePrimaryAction}>
-  <div class="thumbnail-container" class:crossfade={variationCount > 0}>
+  <!-- view-transition-name enables Google Photos-style morph animation to /sequence/[id] -->
+  <div
+    class="thumbnail-container"
+    class:crossfade={variationCount > 0}
+    style:view-transition-name="sequence-{displayedSequence.id}"
+  >
     <PropAwareThumbnail
       sequence={displayedSequence}
       {bluePropType}

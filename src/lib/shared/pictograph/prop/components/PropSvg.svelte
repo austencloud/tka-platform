@@ -122,16 +122,22 @@ even when Svelte recreates the component instance.
     const settings = getSettings();
 
     // Determine the actual prop type being rendered
-    // If motionData explicitly specifies HAND (e.g., Assembly mode), use it
-    // Otherwise, use settings override > stored prop type
-    const actualPropType =
-      motionData.propType === PropType.HAND
-        ? PropType.HAND
-        : motionData.color === MotionColor.BLUE
-          ? (settings.bluePropType ?? motionData.propType)
-          : motionData.color === MotionColor.RED
-            ? (settings.redPropType ?? motionData.propType)
-            : motionData.propType;
+    // Settings prop type ALWAYS takes precedence over stored prop type (including HAND)
+    // This ensures that when sequences with HAND prop type are transferred between tabs,
+    // the user's selected prop type from settings is shown, not hands.
+    // HAND is only preserved when:
+    // 1. motionData has HAND AND
+    // 2. User hasn't set a specific prop type in settings (bluePropType/redPropType are undefined)
+    const settingsPropType =
+      motionData.color === MotionColor.BLUE
+        ? settings.bluePropType
+        : motionData.color === MotionColor.RED
+          ? settings.redPropType
+          : undefined;
+
+    // If settings has a specific prop type, use it (overrides HAND from stored data)
+    // If settings doesn't have a prop type, fall back to stored (which may be HAND)
+    const actualPropType = settingsPropType ?? motionData.propType;
 
     // Red hand is always mirrored
     if (

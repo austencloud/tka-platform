@@ -304,7 +304,7 @@ function topologicalSort(cells: ConstraintCell[]): ConstraintCell[] {
   return result;
 }
 
-/** Grid size for snapping (matches visual grid in ConstraintCanvas) */
+/** Grid size for snapping (matches visual grid in CompositionCanvas) */
 export const GRID_SIZE = 50;
 
 /** Half grid for finer snapping */

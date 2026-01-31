@@ -1,7 +1,8 @@
 <!--
-  ConstraintLayoutLab.svelte
+  CompositionLab.svelte
 
-  Interactive lab for testing constraint-based layout engine.
+  Composition Lab for designing layout presets.
+  Presets created here will be offered to users in a simplified picker.
   Features:
   - Preset layouts
   - Drag-to-move and resize cells
@@ -13,7 +14,7 @@
 -->
 <script lang="ts">
   import { browser } from "$app/environment";
-  import ConstraintCanvas from "./components/ConstraintCanvas.svelte";
+  import CompositionCanvas from "./components/CompositionCanvas.svelte";
   import PresetPicker from "./components/PresetPicker.svelte";
   import CellInspector from "./components/CellInspector.svelte";
   import { LAYOUT_PRESETS, resetCellIdCounter } from "./services/LayoutPresets";
@@ -37,6 +38,33 @@
   // Layout state
   let cells = $state<ConstraintCell[]>([]);
   let selectedCellIds = $state<Set<string>>(new Set());
+
+  // ── Undo/Redo history ──
+  const MAX_HISTORY = 50;
+  let undoStack: ConstraintCell[][] = [];
+  let redoStack: ConstraintCell[][] = [];
+
+  /** Snapshot current cells before a mutation. Call this before changing `cells`. */
+  function pushUndo() {
+    undoStack.push($state.snapshot(cells) as ConstraintCell[]);
+    if (undoStack.length > MAX_HISTORY) undoStack.shift();
+    // Any new action invalidates the redo stack
+    redoStack = [];
+  }
+
+  function undo() {
+    if (undoStack.length === 0) return;
+    redoStack.push($state.snapshot(cells) as ConstraintCell[]);
+    cells = undoStack.pop()!;
+    selectedCellIds = new Set();
+  }
+
+  function redo() {
+    if (redoStack.length === 0) return;
+    undoStack.push($state.snapshot(cells) as ConstraintCell[]);
+    cells = redoStack.pop()!;
+    selectedCellIds = new Set();
+  }
 
   // Custom presets
   let customPresets = $state<CustomPreset[]>([]);
@@ -116,11 +144,57 @@
     return () => observer.disconnect();
   });
 
+  // ── Keyboard shortcuts (Delete, Undo, Redo) ──
+  function handleGlobalKeyDown(e: KeyboardEvent) {
+    // Skip if user is in an input field
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+    // Delete / Backspace = delete selected cells
+    if (e.key === "Delete" || e.key === "Backspace") {
+      if (selectedCellIds.size > 0) {
+        e.preventDefault();
+        pushUndo();
+        handleDeleteCell();
+      }
+      return;
+    }
+
+    // Ctrl+Z / Cmd+Z = undo, Ctrl+Shift+Z / Cmd+Shift+Z = redo
+    if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+      e.preventDefault();
+      if (e.shiftKey) {
+        redo();
+      } else {
+        undo();
+      }
+      return;
+    }
+
+    // Ctrl+Y / Cmd+Y = redo (Windows convention)
+    if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+      e.preventDefault();
+      redo();
+      return;
+    }
+  }
+
+  $effect(() => {
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  });
+
   function applyPreset(preset: LayoutPreset) {
+    pushUndo();
     resetCellIdCounter();
     cells = preset.createCells(containerBounds);
     updateComputedPositions();
     selectedCellIds = new Set();
+  }
+
+  /** Called by canvas at the start of a drag (move or resize). Snapshots for undo. */
+  function handleDragStart() {
+    pushUndo();
   }
 
   function updateComputedPositions() {
@@ -277,6 +351,7 @@
 
   function handleUpdateLabel(label: string) {
     if (selectedCellIds.size === 0) return;
+    pushUndo();
     cells = cells.map((cell) =>
       selectedCellIds.has(cell.id) ? { ...cell, label } : cell
     );
@@ -284,6 +359,7 @@
 
   function handleUpdateZIndex(zIndex: number) {
     if (selectedCellIds.size === 0) return;
+    pushUndo();
     cells = cells.map((cell) =>
       selectedCellIds.has(cell.id) ? { ...cell, zIndex } : cell
     );
@@ -291,6 +367,7 @@
 
   function handleUpdateColor(color: string) {
     if (selectedCellIds.size === 0) return;
+    pushUndo();
     cells = cells.map((cell) =>
       selectedCellIds.has(cell.id) ? { ...cell, color } : cell
     );
@@ -298,6 +375,7 @@
 
   function handleUpdateMediaType(mediaType: CellMediaType) {
     if (selectedCellIds.size === 0) return;
+    pushUndo();
     cells = cells.map((cell) =>
       selectedCellIds.has(cell.id) ? { ...cell, mediaType } : cell
     );
@@ -305,6 +383,7 @@
 
   function handleDeleteCell() {
     if (selectedCellIds.size === 0) return;
+    pushUndo();
     cells = cells.filter((c) => !selectedCellIds.has(c.id));
     selectedCellIds = new Set();
   }
@@ -375,6 +454,7 @@
   /** Duplicate selected cell with offset (used by button) */
   function handleDuplicateCell() {
     if (!selectedCell) return;
+    pushUndo();
 
     const offset = GRID_SIZE;
     const newId = handleDuplicateCellAt(
@@ -386,6 +466,7 @@
   }
 
   function handleAddCell() {
+    pushUndo();
     const newId = `cell-new-${Date.now()}`;
     const size = GRID_SIZE * 2; // 2 grid units
     const x = Math.round((containerBounds.width - size) / 2 / GRID_SIZE) * GRID_SIZE;
@@ -525,18 +606,18 @@
   ];
 </script>
 
-<div class="constraint-layout-lab">
+<div class="composition-lab">
   <header class="lab-header">
-    <h1>Constraint Layout Lab</h1>
+    <h1>Composition Lab</h1>
     <p class="subtitle">
-      Drag to move, handles to resize. Shift=straight line/square, Alt=duplicate, Ctrl=free move.
+      Drag to move, handles to resize. Shift=constrain, Alt+drag=duplicate, Ctrl=free move, Space+drag=pan, Alt+scroll=zoom.
     </p>
   </header>
 
   <div class="lab-content">
     <!-- Canvas area -->
     <div class="canvas-wrapper" bind:this={containerEl}>
-      <ConstraintCanvas
+      <CompositionCanvas
         {cells}
         {containerBounds}
         {selectedCellIds}
@@ -544,6 +625,7 @@
         onUpdateCellPosition={handleUpdateCellPosition}
         onUpdateCellSize={handleUpdateCellSize}
         onDuplicateCell={handleDuplicateCellAt}
+        onDragStart={handleDragStart}
       />
     </div>
 
@@ -600,6 +682,15 @@
           onDeleteCell={handleDeleteCell}
           onDuplicateCell={handleDuplicateCell}
         />
+      {:else if selectedCount > 1}
+        <div class="divider"></div>
+        <div class="multi-selection">
+          <p class="multi-label">{selectedCount} cells selected</p>
+          <button class="action-btn danger" onclick={handleDeleteCell}>
+            <i class="fas fa-trash" aria-hidden="true"></i>
+            Delete Selected
+          </button>
+        </div>
       {:else}
         <div class="no-selection">
           <i class="fas fa-mouse-pointer" aria-hidden="true"></i>
@@ -680,7 +771,7 @@
 </div>
 
 <style>
-  .constraint-layout-lab {
+  .composition-lab {
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -824,6 +915,43 @@
     height: 1px;
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     margin: var(--spacing-sm, 8px) 0;
+  }
+
+  .multi-selection {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md, 12px);
+    padding: var(--spacing-md, 12px) 0;
+  }
+
+  .multi-label {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text, white);
+  }
+
+  .multi-selection .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    background: transparent;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+  }
+
+  .multi-selection .action-btn.danger {
+    color: var(--semantic-error, #ef4444);
+    border-color: var(--semantic-error, #ef4444);
+  }
+
+  .multi-selection .action-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.15);
   }
 
   .no-selection {

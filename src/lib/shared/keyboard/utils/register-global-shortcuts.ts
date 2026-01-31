@@ -25,10 +25,9 @@ import {
   isSettingsPreviewMode,
 } from "../../application/state/app-state.svelte";
 import { toast } from "../../toast/state/toast-state.svelte";
-import { backgroundsConfig } from "../../settings/components/tabs/background/background-config";
-import { BackgroundType } from "../../background/shared/domain/enums/background-enums";
+import { BackgroundType } from "@austencloud/backgrounds";
+import { BACKGROUND_CARD_REGISTRY } from "@austencloud/backgrounds/card";
 import { applyThemeFromColors } from "../../settings/utils/background-theme-calculator";
-import { updateBodyBackground } from "../../background/shared/background-preloader";
 import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 
 export function registerGlobalShortcuts(
@@ -343,61 +342,47 @@ export function registerGlobalShortcuts(
   // Map number keys to background indices (1-9, 0 for 10th)
   const themeKeyMap = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
 
-  backgroundsConfig.slice(0, 10).forEach((bgConfig, index) => {
+  BACKGROUND_CARD_REGISTRY.slice(0, 10).forEach((bg, index) => {
     const key = themeKeyMap[index];
     if (!key) return;
 
     service.register({
-      id: `global.theme-${bgConfig.type}`,
-      label: bgConfig.name,
-      description: `Switch to ${bgConfig.name} theme (Shift+${key})`,
+      id: `global.theme-${bg.type}`,
+      label: bg.label,
+      description: `Switch to ${bg.label} theme (Shift+${key})`,
       key: key,
       modifiers: ["shift"],
       context: "global",
       scope: "action",
       priority: "high",
       action: () => {
-        console.log('[Keyboard] Theme shortcut triggered:', bgConfig.type, bgConfig.name);
+        if (isSettingsPreviewMode()) return;
 
-        // Block changes in preview mode
-        if (isSettingsPreviewMode()) {
-          console.log('[Keyboard] Blocked - in preview mode');
-          return;
-        }
+        const bgType = bg.type as BackgroundType;
 
-        // Apply theme colors for UI AND body background
-        // ALWAYS apply both - CSS variables may have been cleared by HMR
-        if (bgConfig.type === BackgroundType.SOLID_COLOR && bgConfig.color) {
-          applyThemeFromColors(bgConfig.color);
-          updateBodyBackground(bgConfig.type, { color: bgConfig.color });
+        // Apply theme colors for UI
+        if (bgType === BackgroundType.SOLID_COLOR) {
+          applyThemeFromColors("#000000");
           void updateSettings({
-            backgroundType: bgConfig.type,
-            backgroundColor: bgConfig.color,
+            backgroundType: bgType,
+            backgroundColor: "#000000",
           });
-        } else if (
-          bgConfig.type === BackgroundType.LINEAR_GRADIENT &&
-          bgConfig.colors
-        ) {
-          applyThemeFromColors(undefined, bgConfig.colors);
-          updateBodyBackground(bgConfig.type, {
-            colors: bgConfig.colors,
-            direction: bgConfig.direction || 135,
-          });
+        } else if (bgType === BackgroundType.LINEAR_GRADIENT) {
+          const defaultColors = ["#0d1117", "#161b22", "#21262d"];
+          applyThemeFromColors(undefined, defaultColors);
           void updateSettings({
-            backgroundType: bgConfig.type,
-            gradientColors: bgConfig.colors,
-            gradientDirection: bgConfig.direction || 135,
+            backgroundType: bgType,
+            gradientColors: defaultColors,
+            gradientDirection: 135,
           });
-        } else if (bgConfig.themeColors) {
-          // Animated backgrounds
-          applyThemeFromColors(undefined, bgConfig.themeColors);
-          updateBodyBackground(bgConfig.type);
+        } else if (bg.themeColors) {
+          applyThemeFromColors(undefined, bg.themeColors);
           void updateSettings({
-            backgroundType: bgConfig.type,
+            backgroundType: bgType,
           });
         }
 
-        toast.info(`Theme: ${bgConfig.name}`, 1500);
+        toast.info(`Theme: ${bg.label}`, 1500);
       },
     });
   });

@@ -15,10 +15,6 @@
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
   import {
-    openSpotlightWithVideo,
-    openSpotlightWithImage,
-  } from "$lib/shared/application/state/ui/ui-state.svelte";
-  import {
     userPreviewState,
     getEffectiveUserId,
   } from "$lib/shared/debug/state/user-preview-state.svelte";
@@ -103,14 +99,9 @@
 
   function handleCardClick(item: FeedItem) {
     hapticService?.trigger("selection");
-    // Open in fullscreen spotlight - tap to dismiss
-    if (item.contentType === "video" && item.videoUrl) {
-      openSpotlightWithVideo(item.videoUrl, item.thumbnailUrl);
-    } else if (item.contentType === "animation" && item.animationUrl) {
-      openSpotlightWithImage(item.animationUrl);
-    } else if (item.thumbnailUrl) {
-      openSpotlightWithImage(item.thumbnailUrl);
-    }
+    // TODO: Implement video/media lightbox for feed items
+    // Previously used spotlight viewer which has been deprecated
+    console.log("[FeedTab] Card clicked:", item.contentType, item.videoUrl || item.animationUrl || item.thumbnailUrl);
   }
 
   function handleCreatorClick(creatorId: string, creatorName: string) {

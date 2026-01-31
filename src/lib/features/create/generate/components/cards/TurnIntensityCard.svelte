@@ -3,7 +3,7 @@ TurnIntensityCard.svelte - Card for selecting turn intensity
 Uses stepper pattern for direct increment/decrement interaction
 -->
 <script lang="ts">
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isBrightBackground } from "../../shared/domain/card-colors";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";

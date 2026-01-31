@@ -25,7 +25,7 @@
       import("$lib/features/mandala-generator/components/MandalaGeneratorModule.svelte"),
     backgrounds: () => import("$lib/features/background-builder/BackgroundBuilder.svelte"),
     landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
-    "constraint-layout": () => import("$lib/features/constraint-layout-lab/ConstraintLayoutLab.svelte"),
+    "composition": () => import("$lib/features/constraint-layout-lab/CompositionLab.svelte"),
   };
 
   // Get current tab, default to first tab

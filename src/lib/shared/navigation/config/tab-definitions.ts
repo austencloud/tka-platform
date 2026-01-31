@@ -572,10 +572,10 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
   },
   {
-    id: "constraint-layout",
-    label: "Constraint Layout",
+    id: "composition",
+    label: "Composition",
     icon: '<i class="fas fa-vector-square" aria-hidden="true"></i>',
-    description: "Constraint-based layout engine experiment",
+    description: "Composition layout engine experiment",
     color: "#6366f1",
     gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },

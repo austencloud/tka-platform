@@ -15,7 +15,7 @@
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import FeedbackEditDrawer from "./FeedbackEditDrawer.svelte";
   import FeedbackReplyPanel from "./FeedbackReplyPanel.svelte";
-  import ImageViewerModal from "./ImageViewerModal.svelte";
+  import MediaSpotlight from "$lib/components/media/spotlight/MediaSpotlight.svelte";
   import StatusTimeline from "./StatusTimeline.svelte";
   import { useUserPreview } from "$lib/shared/debug/context/user-preview-context";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -416,11 +416,17 @@
 
       <!-- Image Viewer Modal -->
       {#if item.imageUrls && item.imageUrls.length > 0}
-        <ImageViewerModal
-          images={item.imageUrls}
-          initialIndex={imageViewerIndex}
-          isOpen={isImageViewerOpen}
-          onClose={() => (isImageViewerOpen = false)}
+        <MediaSpotlight
+          open={isImageViewerOpen}
+          items={item.imageUrls.map((url: string, i: number) => ({
+            id: `screenshot-${i}`,
+            url,
+            type: "image" as const,
+            alt: `Screenshot ${i + 1}`,
+          }))}
+          currentIndex={imageViewerIndex}
+          onclose={() => (isImageViewerOpen = false)}
+          showFilmstrip={item.imageUrls.length > 1}
         />
       {/if}
     </div>

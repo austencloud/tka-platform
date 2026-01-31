@@ -223,6 +223,10 @@ const AUDITED_FILES = {
     auditDate: "2026-01-29",
     reason: "Orchestrator for sequence viewer modal. All business logic extracted to services (ModalSwipeDismiss, ModalAccessibilityHelper, SequenceModalPersistence, SequenceModalExporter, ImageCompositionManager). UI extracted to children (ViewerHeader, ViewerSplitPane, ViewerFooter, ExportModeContent, FullscreenControls). Remaining code is modal-specific wiring and state coordination.",
   },
+  "lib/features/browse/sequences/spotlight/components/SpotlightViewer.svelte": {
+    auditDate: "2026-01-30",
+    reason: "Pending deprecation: browse gallery migrating to SequenceDetailsModal which has its own unified fullscreen. No decomposition needed - file will be deleted.",
+  },
   // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
 

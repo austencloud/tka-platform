@@ -5,7 +5,7 @@
  * bright backgrounds (like Aurora) where normal colors wash out.
  */
 
-import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+import { BackgroundType } from "@austencloud/backgrounds";
 
 export interface CardColorSet {
   color: string;

@@ -13,7 +13,7 @@
    * actual route navigation. This keeps the user inside the preview module.
    */
   import { onMount } from "svelte";
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
 
   // Internal tabs - these are NOT sidebar tabs, they're internal to this module

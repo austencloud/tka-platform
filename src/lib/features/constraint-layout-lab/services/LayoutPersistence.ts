@@ -1,14 +1,16 @@
 /**
  * Layout Persistence
  *
- * Persists constraint layout state to localStorage so it survives refresh.
+ * Persists composition lab state to localStorage so it survives refresh.
  * Also handles saving/loading custom user presets.
  */
 
 import type { ConstraintCell, LayoutPreset, ContainerBounds } from "../domain/types";
 
-const STORAGE_KEY = "constraint-layout-state";
-const PRESETS_KEY = "constraint-layout-custom-presets";
+const STORAGE_KEY = "composition-lab-state";
+const LEGACY_STORAGE_KEY = "constraint-layout-state";
+const PRESETS_KEY = "composition-lab-custom-presets";
+const LEGACY_PRESETS_KEY = "constraint-layout-custom-presets";
 
 export interface PersistedLayoutState {
   cells: ConstraintCell[];
@@ -49,11 +51,23 @@ export function saveLayoutState(cells: ConstraintCell[], selectedCellId: string 
 }
 
 /**
- * Load layout state from localStorage
+ * Load layout state from localStorage.
+ * Checks the current key first, then falls back to the legacy key for backwards compatibility.
  */
 export function loadLayoutState(): PersistedLayoutState | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
+
+    // Fall back to legacy key if current key has no data
+    if (!raw) {
+      raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (raw) {
+        // Migrate: save under new key, remove legacy key
+        localStorage.setItem(STORAGE_KEY, raw);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
+    }
+
     if (!raw) return null;
 
     const state = JSON.parse(raw) as PersistedLayoutState;
@@ -72,11 +86,12 @@ export function loadLayoutState(): PersistedLayoutState | null {
 }
 
 /**
- * Clear saved layout state
+ * Clear saved layout state (removes both current and legacy keys)
  */
 export function clearLayoutState(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
   } catch (e) {
     console.warn("Failed to clear layout state:", e);
   }
@@ -99,7 +114,7 @@ export function saveCustomPreset(
     name,
     description,
     icon,
-    cells: structuredClone(cells),
+    cells: JSON.parse(JSON.stringify(cells)),
     originalBounds: { ...containerBounds },
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -117,11 +132,23 @@ export function saveCustomPreset(
 }
 
 /**
- * Load all custom presets
+ * Load all custom presets.
+ * Checks the current key first, then falls back to the legacy key for backwards compatibility.
  */
 export function loadCustomPresets(): CustomPreset[] {
   try {
-    const raw = localStorage.getItem(PRESETS_KEY);
+    let raw = localStorage.getItem(PRESETS_KEY);
+
+    // Fall back to legacy key if current key has no data
+    if (!raw) {
+      raw = localStorage.getItem(LEGACY_PRESETS_KEY);
+      if (raw) {
+        // Migrate: save under new key, remove legacy key
+        localStorage.setItem(PRESETS_KEY, raw);
+        localStorage.removeItem(LEGACY_PRESETS_KEY);
+      }
+    }
+
     if (!raw) return [];
     return JSON.parse(raw) as CustomPreset[];
   } catch (e) {

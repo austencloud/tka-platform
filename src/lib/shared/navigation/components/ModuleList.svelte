@@ -20,7 +20,6 @@
   import { onMount } from "svelte";
   import { translateModule } from "$lib/shared/i18n/translate";
   import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
-  import { browser } from "$app/environment";
 
   // Reactive locale for re-rendering translations
   const locale = $derived(getReactiveLocale());
@@ -48,82 +47,15 @@
     startTime: 0,
   });
 
-  // ============================================================================
-  // SMART ORDERING - Track module usage for intelligent sorting
-  // ============================================================================
-  const USAGE_STORAGE_KEY = "tka-module-usage";
-  const MAX_HISTORY = 20;
-
-  interface ModuleUsage {
-    counts: Record<string, number>;
-    recents: string[]; // Most recent first
-  }
-
-  function getModuleUsage(): ModuleUsage {
-    if (!browser) return { counts: {}, recents: [] };
-    try {
-      const stored = localStorage.getItem(USAGE_STORAGE_KEY);
-      if (stored) return JSON.parse(stored);
-    } catch {}
-    return { counts: {}, recents: [] };
-  }
-
-  function recordModuleUsage(moduleId: ModuleId) {
-    if (!browser) return;
-    const usage = getModuleUsage();
-
-    // Update count
-    usage.counts[moduleId] = (usage.counts[moduleId] || 0) + 1;
-
-    // Update recents (remove if exists, add to front)
-    usage.recents = usage.recents.filter((id) => id !== moduleId);
-    usage.recents.unshift(moduleId);
-    if (usage.recents.length > MAX_HISTORY) {
-      usage.recents = usage.recents.slice(0, MAX_HISTORY);
-    }
-
-    try {
-      localStorage.setItem(USAGE_STORAGE_KEY, JSON.stringify(usage));
-    } catch {}
-  }
-
-  function getModuleScore(moduleId: string, usage: ModuleUsage): number {
-    // Weighted score: recency matters more than frequency
-    const recencyIndex = usage.recents.indexOf(moduleId);
-    const recencyScore = recencyIndex === -1 ? 0 : (MAX_HISTORY - recencyIndex) * 3;
-    const frequencyScore = usage.counts[moduleId] || 0;
-    return recencyScore + frequencyScore;
-  }
-
-  // Sort modules by usage (smart ordering)
-  function sortByUsage(mods: ModuleDefinition[]): ModuleDefinition[] {
-    const usage = getModuleUsage();
-
-    // If no usage history, return original order
-    if (usage.recents.length === 0) return mods;
-
-    return [...mods].sort((a, b) => {
-      // Current module always first
-      if (a.id === currentModule) return -1;
-      if (b.id === currentModule) return 1;
-
-      // Then by usage score
-      const scoreA = getModuleScore(a.id, usage);
-      const scoreB = getModuleScore(b.id, usage);
-      return scoreB - scoreA;
-    });
-  }
-
   onMount(() => {
     hapticService = container.items.hapticFeedback;
   });
 
-  // Filter to main modules and dev modules, then sort by usage
+  // Filter to main modules and dev modules - static order from module-definitions.ts
   // Settings is always shown in main modules on mobile (it's user-facing, not dev-only)
-  const mainModulesFiltered = $derived(
+  const mainModules = $derived(
     modules.filter((m: ModuleDefinition) => m.isMain || m.id === "settings")
   );
-  const mainModules = $derived(sortByUsage(mainModulesFiltered));
   const devModules = $derived(
     modules.filter((m: ModuleDefinition) => !m.isMain && m.id !== "settings")
   );
@@ -200,7 +132,6 @@
     }
 
     hapticService?.trigger("selection");
-    recordModuleUsage(moduleId);
     onModuleSelect?.(moduleId);
   }
 

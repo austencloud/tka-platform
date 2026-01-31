@@ -2,7 +2,7 @@
  * Layout Presets
  *
  * Built-in presets are intentionally empty - users create all presets
- * from scratch via the constraint layout lab.
+ * from scratch via the Composition Lab.
  *
  * This file provides media type colors and the empty preset array.
  */
@@ -26,7 +26,7 @@ export { MEDIA_COLORS };
 
 /**
  * Built-in presets - empty by design.
- * Users create all presets from scratch via the constraint layout lab.
+ * Users create all presets from scratch via the Composition Lab.
  */
 export const LAYOUT_PRESETS: LayoutPreset[] = [];
 

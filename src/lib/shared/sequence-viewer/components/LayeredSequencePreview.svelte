@@ -433,13 +433,21 @@
    * Render all cells (start position + steps)
    */
   async function renderAllCells() {
+    const renderStart = performance.now();
+    console.log(`[RENDER] renderAllCells START`);
+
     if (!sequence?.steps?.length) {
       isLoading = false;
+      console.log(`[RENDER] renderAllCells SKIP - no steps`);
       return;
     }
 
-    if (isRendering) return;
+    if (isRendering) {
+      console.log(`[RENDER] renderAllCells SKIP - already rendering`);
+      return;
+    }
     isRendering = true;
+    console.log(`[RENDER] renderAllCells STARTED, ${sequence.steps.length} steps to render`);
 
     try {
       const layoutService = layoutCalculator;
@@ -512,6 +520,7 @@
       clearCellUrls();
 
       cells = newCells;
+      console.log(`[RENDER] renderAllCells COMPLETE in ${(performance.now() - renderStart).toFixed(2)}ms`);
     } catch (error) {
       console.error("Failed to render cells:", error);
     } finally {
@@ -531,8 +540,19 @@
   let containerObserver: ResizeObserver | undefined;
 
   // Calculate "contain" dimensions - fill container while maintaining aspect ratio
+  let resizeCallCount = 0;
+  let lastResizeLogTime = 0;
+
   function updateContainedDimensions() {
     if (!containerElement || !previewAspectRatio || !Number.isFinite(previewAspectRatio)) return;
+
+    resizeCallCount++;
+    const now = performance.now();
+    // Log resize calls but throttle to avoid console spam
+    if (now - lastResizeLogTime > 50) {
+      console.log(`[RESIZE] updateContainedDimensions called (call #${resizeCallCount})`);
+      lastResizeLogTime = now;
+    }
 
     const containerWidth = containerElement.clientWidth;
     const containerHeight = containerElement.clientHeight;
@@ -556,8 +576,18 @@
   }
 
   // Track cell width for responsive sizing using ResizeObserver
+  let cellWidthCallCount = 0;
+  let lastCellWidthLogTime = 0;
+
   function updateCellWidth() {
     if (previewStackElement && columns > 0) {
+      cellWidthCallCount++;
+      const now = performance.now();
+      if (now - lastCellWidthLogTime > 50) {
+        console.log(`[RESIZE] updateCellWidth called (call #${cellWidthCallCount})`);
+        lastCellWidthLogTime = now;
+      }
+
       // Calculate cell width from the preview stack width
       const stackWidth = previewStackElement.clientWidth;
       const newCellWidth = stackWidth / columns;
@@ -571,11 +601,16 @@
 
   // Re-render when relevant props change
   $effect(() => {
+    // Track all props that affect rendering
+    const _sequence = sequence;
+    const _sequenceSteps = sequence?.steps;
     const _bluePropType = bluePropType;
     const _redPropType = redPropType;
     const _catDogModeEnabled = catDogModeEnabled;
     const _showStepNumbers = showStepNumbers;
     const _columnCount = columnCount;
+
+    console.log(`[EFFECT] LayeredSequencePreview re-render effect triggered, hasMounted=${hasMounted}`);
 
     if (hasMounted) {
       untrack(() => {
@@ -1046,10 +1081,15 @@
     }
   }
 
-  /* Played cells (already passed) - subtle dim */
+  /* Played cells (already passed) - dim to distinguish from upcoming */
   .pictograph-cell.played {
     opacity: 0.6;
     transition: opacity 0.15s ease-out;
+  }
+
+  /* Light mode needs stronger dimming since opacity against light bg is subtle */
+  .layered-preview:not(.dark-mode) .pictograph-cell.played {
+    opacity: 0.4;
   }
 
   /* Footer section */

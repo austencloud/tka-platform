@@ -1,8 +1,9 @@
 /**
  * Sequence Handoff Coordinator
  *
- * Manages handoff of sequences between modules (e.g., from Browse's SequenceDetailsModal
- * to Compose for stagger/multi-performer visualization).
+ * Manages handoff of sequences between modules:
+ * - Browse → /sequence/[id] route (view sequence)
+ * - /sequence/[id] → Compose (multi-performer or export)
  *
  * Uses sessionStorage to persist handoff data across navigation.
  */
@@ -10,9 +11,10 @@
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
 
 const HANDOFF_STORAGE_KEY = 'tka_sequence_handoff';
+const ROUTE_HANDOFF_STORAGE_KEY = 'tka_sequence_route_handoff';
 
 /**
- * Handoff data passed from SequenceDetailsModal to Compose
+ * Handoff data passed from SequenceDetailsModal/Route to Compose
  */
 export interface SequenceHandoff {
 	/** The sequence to visualize */
@@ -30,6 +32,37 @@ export interface SequenceHandoff {
 
 	/** Path to return to when closing Compose (e.g., "/browse") */
 	returnPath?: string;
+}
+
+/**
+ * Extended handoff data for Browse → /sequence/[id] navigation
+ * Includes return context for restoring gallery state
+ */
+export interface SequenceRouteHandoff {
+	/** The sequence to view (cached for instant loading) */
+	sequence: SequenceData;
+
+	/** Current playback state to restore */
+	playbackState?: {
+		currentStep: number;
+		bpm: number;
+		isPlaying: boolean;
+	};
+
+	/** Path to return to (e.g., "/browse/gallery") */
+	returnPath: string;
+
+	/** Label for back button (e.g., "Browse", "My Library") */
+	returnLabel?: string;
+
+	/** Scroll position to restore on return */
+	scrollY?: number;
+
+	/** Active filters to restore on return */
+	filters?: Record<string, unknown>;
+
+	/** Timestamp for staleness checking */
+	timestamp: number;
 }
 
 /**
@@ -89,4 +122,76 @@ export function hasSequenceHandoff(): boolean {
  */
 export function clearSequenceHandoff(): void {
 	sessionStorage.removeItem(HANDOFF_STORAGE_KEY);
+}
+
+// ============================================================================
+// ROUTE HANDOFF (Browse → /sequence/[id])
+// ============================================================================
+
+/**
+ * Save route handoff data for Browse → /sequence/[id] navigation.
+ * Caches the sequence for instant loading and stores return context.
+ */
+export function saveSequenceRouteHandoff(handoff: Omit<SequenceRouteHandoff, 'timestamp'>): void {
+	try {
+		const data: SequenceRouteHandoff = {
+			...handoff,
+			timestamp: Date.now()
+		};
+		const serialized = JSON.stringify(data);
+		sessionStorage.setItem(ROUTE_HANDOFF_STORAGE_KEY, serialized);
+	} catch (err) {
+		console.error('[SequenceRouteHandoff] Failed to save:', err);
+	}
+}
+
+/**
+ * Consume route handoff data from sessionStorage.
+ * Called by /sequence/[id] route on mount.
+ * Returns null if no handoff exists, is stale (>5 min), or parsing fails.
+ * Automatically clears the storage after consuming.
+ */
+export function consumeSequenceRouteHandoff(): SequenceRouteHandoff | null {
+	try {
+		const serialized = sessionStorage.getItem(ROUTE_HANDOFF_STORAGE_KEY);
+		if (!serialized) return null;
+
+		// Clear after reading (one-time consumption)
+		sessionStorage.removeItem(ROUTE_HANDOFF_STORAGE_KEY);
+
+		const handoff = JSON.parse(serialized) as SequenceRouteHandoff;
+
+		// Check staleness (5 minute max)
+		const STALE_THRESHOLD_MS = 5 * 60 * 1000;
+		if (Date.now() - handoff.timestamp > STALE_THRESHOLD_MS) {
+			console.warn('[SequenceRouteHandoff] Handoff data is stale, ignoring');
+			return null;
+		}
+
+		// Basic validation
+		if (!handoff.sequence || !handoff.sequence.id) {
+			console.warn('[SequenceRouteHandoff] Invalid handoff data - missing sequence');
+			return null;
+		}
+
+		return handoff;
+	} catch (err) {
+		console.error('[SequenceRouteHandoff] Failed to consume:', err);
+		sessionStorage.removeItem(ROUTE_HANDOFF_STORAGE_KEY);
+		return null;
+	}
+}
+
+/**
+ * Check if there's pending route handoff data without consuming it.
+ */
+export function hasSequenceRouteHandoff(): boolean {
+	return sessionStorage.getItem(ROUTE_HANDOFF_STORAGE_KEY) !== null;
+}
+
+/**
+ * Clear any pending route handoff data.
+ */
+export function clearSequenceRouteHandoff(): void {
+	sessionStorage.removeItem(ROUTE_HANDOFF_STORAGE_KEY);
 }

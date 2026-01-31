@@ -27,7 +27,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   } from "../circular/domain/models/circular-models";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getCardColors } from "../shared/domain/card-colors";
   // Card components

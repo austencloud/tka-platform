@@ -32,7 +32,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
-  import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
+  import type { ISequenceDataProvider } from "../services/contracts/ISequenceDataProvider";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import type { ILanSyncCoordinator } from "$lib/shared/lan-sync/services/contracts/ILanSyncCoordinator";
@@ -72,7 +72,6 @@
   // LAN Sync
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
   import {
-    setSequenceModalUrl,
     setViewModeUrl,
     setPlaybackTimeUrl,
     setBpmUrl,
@@ -235,24 +234,44 @@
   });
 
   function enterEditMode(pane: 'animation' | 'image') {
+    const start = performance.now();
+    console.log(`[MODAL TIMING] enterEditMode('${pane}') START`);
+
     hapticService?.trigger("selection");
+    console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: haptic triggered`);
+
     editingPane = pane;
+    console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: editingPane set`);
+
     // On desktop, also enter fullscreen for maximum screen real estate
     if (!isMobile && !isFullscreen) {
       isFullscreen = true;
+      console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: isFullscreen set to true`);
     }
+
     accessibilityHelper.announce(`${pane === 'animation' ? 'Animation' : 'Image'} expanded. Tap to collapse.`);
+    console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: enterEditMode COMPLETE`);
   }
 
   function exitEditMode() {
+    const start = performance.now();
+    console.log(`[MODAL TIMING] exitEditMode START`);
+
     hapticService?.trigger("selection");
+    console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: haptic triggered`);
+
     editingPane = null;
+    console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: editingPane set to null`);
+
     // On desktop, also exit fullscreen when unfocusing
     if (!isMobile && isFullscreen) {
       isFullscreen = false;
       fullscreenControlsVisible = false;
+      console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: isFullscreen set to false`);
     }
+
     accessibilityHelper.announce("Split view restored");
+    console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: exitEditMode COMPLETE`);
   }
 
   // Export mode functions
@@ -485,8 +504,10 @@
   // Sync fullscreen state to dialog element (BaseModal doesn't pass data attributes through)
   // This effect tracks isFullscreen and updates the dialog's data-fullscreen attribute
   $effect(() => {
+    const effectStart = performance.now();
     // Track isFullscreen dependency explicitly
     const fullscreenState = isFullscreen;
+    console.log(`[EFFECT TIMING] fullscreen sync effect running, isFullscreen=${fullscreenState}`);
 
     const dialog = document.querySelector("dialog.sequence-details-modal") as HTMLDialogElement | null;
     if (dialog) {
@@ -496,6 +517,7 @@
         dialog.removeAttribute("data-fullscreen");
       }
     }
+    console.log(`[EFFECT TIMING] fullscreen sync effect done in ${(performance.now() - effectStart).toFixed(2)}ms`);
   });
 
   function loadViewMode(): ViewMode {
@@ -608,7 +630,7 @@
   // Services (lazy-loaded)
   let playbackController: IAnimationPlaybackController | null = null;
   let loopabilityChecker: ISequenceLoopabilityChecker | null = null;
-  let sequenceRepository: ISequenceRepository | null = null;
+  let sequenceDataProvider: ISequenceDataProvider | null = null;
   let hapticService: IHapticFeedback | null = null;
 
   // Export state (from service)
@@ -633,6 +655,10 @@
   let currentStepLocal = $state(0);
   let bpmLocal = $state(60);
   let cleanupAnimationStateSubscription: (() => void) | undefined;
+
+  // Use hydrated sequence data when available, otherwise fall back to prop
+  // This ensures LayeredSequencePreview gets the full sequence with motion data
+  const effectiveSequence = $derived(modalAnimationState.sequenceData ?? sequence);
 
   // Step highlighting for LayeredSequencePreview
   // -1 = start position, 0+ = motion steps
@@ -736,7 +762,7 @@
     try {
       playbackController = container.items.animationPlaybackController;
       loopabilityChecker = container.items.sequenceLoopabilityChecker;
-      sequenceRepository = container.items.sequenceRepository;
+      sequenceDataProvider = container.items.sequenceDataProvider;
       hapticService = container.items.hapticFeedback;
 
       // Initialize LAN sync state with coordinator from container
@@ -752,7 +778,7 @@
 
   // Initialize animation when open and services ready
   async function initializeAnimation(seq: SequenceData) {
-    if (!playbackController || !sequenceRepository) return;
+    if (!playbackController || !sequenceDataProvider) return;
 
     const sequenceId = seq.id || seq.word || "unknown";
     if (sequenceId === lastLoadedSequenceId) return;
@@ -804,32 +830,8 @@
   }
 
   async function loadSequenceData(seq: SequenceData): Promise<SequenceData | null> {
-    if (!sequenceRepository) return ensureWordPopulated(seq);
-
-    const hasMotionData = (s: SequenceData) =>
-      Array.isArray(s.steps) &&
-      s.steps.length > 0 &&
-      s.steps.some((step) => step?.motions?.blue && step?.motions?.red);
-
-    if (hasMotionData(seq)) return ensureWordPopulated(seq);
-
-    const galleryId = seq.word || seq.name;
-    if (galleryId) {
-      const hydrated = await sequenceRepository.getSequence(galleryId);
-      if (hydrated && hasMotionData(hydrated)) return ensureWordPopulated(hydrated);
-    }
-
-    return ensureWordPopulated(seq);
-  }
-
-  function ensureWordPopulated(seq: SequenceData): SequenceData {
-    if (seq.word) return seq;
-    const derivedWord = seq.steps
-      ?.filter((step) => !!step.letter)
-      .map((step) => step.letter)
-      .join("") || "";
-    if (!derivedWord) return seq;
-    return { ...seq, word: derivedWord };
+    if (!sequenceDataProvider) return seq;
+    return sequenceDataProvider.hydrateSequence(seq);
   }
 
   // Event handlers
@@ -972,13 +974,10 @@
     }
   });
 
-  // Sync modal state to URL when opening
+  // Cache sequence data when opening (for HMR restoration)
   $effect(() => {
     if (open && sequence) {
-      // Cache sequence for HMR restoration
       cacheSequence(sequence);
-      // Update URL with modal state (stagger is now handled via Compose navigation)
-      setSequenceModalUrl(sequence, viewMode as SequenceViewMode, false);
     }
   });
 
@@ -1099,7 +1098,7 @@
     {#if isExportMode}
       <!-- Export mode: show type selector or preview/options -->
       <ExportModeContent
-        {sequence}
+        sequence={effectiveSequence}
         {exportType}
         {exportOptions}
         animationState={modalAnimationState}
@@ -1117,7 +1116,7 @@
     {:else}
       <!-- Split view: Animation and Image side by side, tap to focus -->
       <ViewerSplitPane
-        {sequence}
+        sequence={effectiveSequence}
         animationState={modalAnimationState}
         {animationLoading}
         currentStep={currentStepLocal}

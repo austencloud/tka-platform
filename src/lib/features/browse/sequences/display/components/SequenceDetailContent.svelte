@@ -36,7 +36,6 @@ Used by both desktop side panel and mobile slide-up overlay.
   // State imports
   import { browseNavigationState } from "../../../shared/state/browse-navigation-state.svelte";
   import { sequencePanelManager } from "../../../shared/state/sequence-panel-state.svelte";
-  import { openSpotlightWithAnimation } from "$lib/shared/application/state/ui/ui-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -201,11 +200,8 @@ Used by both desktop side panel and mobile slide-up overlay.
   function handleMaximize() {
     hapticService?.trigger("selection");
     const seq = fullSequence ?? sequence;
-    if (currentMediaType === "animation") {
-      openSpotlightWithAnimation(seq);
-    } else {
-      onAction("fullscreen", seq);
-    }
+    // Always delegate to parent via onAction - parent can decide to open SequenceDetailsModal
+    onAction("fullscreen", seq);
   }
 
   function handleCreatorClick() {
