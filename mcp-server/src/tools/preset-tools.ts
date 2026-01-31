@@ -277,7 +277,7 @@ export function registerPresetTools(server: McpServer): void {
         const turnIntensity = input.turnIntensity ?? config.turnIntensity ?? 0;
         const gridMode = (input.gridMode ?? config.gridMode ?? "diamond") as GridMode;
         const darkMode = input.darkMode ?? config.darkMode ?? true;
-        const cellSize = config.cellSize ?? 150;
+        const cellSize = config.cellSize ?? 900;
         const layout = config.layout ?? "grid";
 
         // Load pictograph data

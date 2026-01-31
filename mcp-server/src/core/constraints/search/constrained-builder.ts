@@ -272,6 +272,11 @@ export function buildConstrainedSequence(
 
         if (useMultiLetterBridge) {
           // Multi-letter bridge: add each bridge letter sequentially
+          // NOTE: This code path should never be reached in practice.
+          // TKA's position groups (alpha, beta, gamma) are all directly connected
+          // via Type 2 letters (W, X, Y, Z, Σ, Δ, Θ, Ω). A single bridge letter
+          // can always reach any target group. Multi-letter bridges would only
+          // be needed if we added letter types that break this connectivity.
           let currentState = state;
           let bridgeSuccess = true;
           const totalBridgeSteps = multiBridgePath.length;
@@ -350,70 +355,84 @@ export function buildConstrainedSequence(
             statesBrowsed++;
           }
         } else {
-          // Single-letter bridge: score and pick the best one
+          // Single-letter bridge: try ALL bridge options, not just the "best" one
+          // The "best" bridge by constraint score may not have a variation at current position
           const scoredBridges = scoreBridgeOptions(bridgeOptions, constraintSet, allPictographs);
-          const bestBridge = scoredBridges[0];
-          if (!bestBridge) continue;
 
-          // Find variations of the best bridge letter that start at current position
-          const bridgeVariations = allPictographs.filter(
-            (p) => p.letter === bestBridge.letter && p.startPosition === state.currentEndPosition
-          );
+          let bridgeSucceeded = false;
 
-          if (bridgeVariations.length === 0) {
-            // Bridge letter doesn't have a variation at this position
-            continue;
-          }
+          // Try each bridge option in score order until one works
+          for (const bridgeOption of scoredBridges) {
+            if (!bridgeOption) continue;
 
-          // Score and pick best bridge variation
-          const bridgeScores = scoreAndRankVariations(
-            bridgeVariations,
-            {
-              stepIndex: i,
-              totalSteps: letters.length + 1, // Account for bridge
-              previousSteps: state.steps,
-              letter: bestBridge.letter,
-            },
-            constraintSet
-          );
+            // Find variations of this bridge letter that start at current position
+            const bridgeVariations = allPictographs.filter(
+              (p) => p.letter === bridgeOption.letter && p.startPosition === state.currentEndPosition
+            );
 
-          const bestBridgeScore = bridgeScores[0];
-          if (!bestBridgeScore || !bestBridgeScore.hardConstraintsSatisfied) continue;
+            if (bridgeVariations.length === 0) {
+              // This bridge doesn't have a variation at current position - try next bridge
+              continue;
+            }
 
-          // Extend state with bridge letter (marked as bridge)
-          const stateWithBridge = extendState(state, bestBridgeScore.variation, bestBridgeScore, true);
-          statesBrowsed++;
+            // Score and pick best bridge variation
+            const bridgeScores = scoreAndRankVariations(
+              bridgeVariations,
+              {
+                stepIndex: i,
+                totalSteps: letters.length + 1, // Account for bridge
+                previousSteps: state.steps,
+                letter: bridgeOption.letter,
+              },
+              constraintSet
+            );
 
-          // Now find target letter variations from bridge's end position
-          validVariations = allPictographs.filter(
-            (p) => p.letter === letter && p.startPosition === stateWithBridge.currentEndPosition
-          );
+            const bestBridgeScore = bridgeScores[0];
+            if (!bestBridgeScore || !bestBridgeScore.hardConstraintsSatisfied) continue;
 
-          if (validVariations.length === 0) {
-            // Still no valid path even with bridge
-            continue;
-          }
-
-          // Score variations in context (after bridge)
-          const scores = scoreAndRankVariations(
-            validVariations,
-            {
-              stepIndex: i + 1, // Adjusted for bridge
-              totalSteps: letters.length + 1,
-              previousSteps: stateWithBridge.steps,
-              letter,
-            },
-            constraintSet
-          );
-
-          // Extend state with target letter variations
-          for (const scored of scores.slice(0, config.beamWidth)) {
-            if (!scored.hardConstraintsSatisfied) continue;
-
-            const newState = extendState(stateWithBridge, scored.variation, scored);
-            nextBeam.push(newState);
+            // Extend state with bridge letter (marked as bridge)
+            const stateWithBridge = extendState(state, bestBridgeScore.variation, bestBridgeScore, true);
             statesBrowsed++;
+
+            // Now find target letter variations from bridge's end position
+            const targetVariations = allPictographs.filter(
+              (p) => p.letter === letter && p.startPosition === stateWithBridge.currentEndPosition
+            );
+
+            if (targetVariations.length === 0) {
+              // This bridge doesn't lead to the target letter - try next bridge
+              continue;
+            }
+
+            // Score variations in context (after bridge)
+            const scores = scoreAndRankVariations(
+              targetVariations,
+              {
+                stepIndex: i + 1, // Adjusted for bridge
+                totalSteps: letters.length + 1,
+                previousSteps: stateWithBridge.steps,
+                letter,
+              },
+              constraintSet
+            );
+
+            // Extend state with target letter variations
+            for (const scored of scores.slice(0, config.beamWidth)) {
+              if (!scored.hardConstraintsSatisfied) continue;
+
+              const newState = extendState(stateWithBridge, scored.variation, scored);
+              nextBeam.push(newState);
+              statesBrowsed++;
+              bridgeSucceeded = true;
+            }
+
+            // If we found valid paths with this bridge, we can stop trying others
+            // (they're sorted by score, so first success is likely best)
+            if (bridgeSucceeded) break;
           }
+
+          // If no single-letter bridge worked, the state will be dropped from beam
+          // (which is correct - we've exhausted all options for this path)
         }
       } else {
         // Direct path available - score and extend normally

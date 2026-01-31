@@ -65,7 +65,7 @@ export interface SequenceRenderOptions {
 
 const DEFAULT_OPTIONS: SequenceRenderOptions = {
   layout: "grid",
-  cellSize: 150,
+  cellSize: 900,
   padding: 8,
   showStepNumbers: true,
   showWord: true,

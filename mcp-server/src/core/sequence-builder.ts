@@ -185,7 +185,7 @@ function expandLettersWithBridges(
 export function buildSequenceFromLetters(
   letters: string[],
   allPictographs: PictographData[],
-  maxAttempts: number = 100,
+  maxAttempts: number = 500,
   bridgeSelections?: BridgeSelections,
   skipBridges: boolean = false
 ): SequenceResult {
@@ -438,7 +438,7 @@ export function buildSequenceWithEndConstraint(
   letters: string[],
   allPictographs: PictographData[],
   targetEndPositions: string[],
-  maxAttempts: number = 100
+  maxAttempts: number = 500
 ): SequenceResult {
   if (letters.length === 0) {
     return {
@@ -752,7 +752,7 @@ export function buildSequenceForLoop(
   letters: string[],
   allPictographs: PictographData[],
   loopConstraint: LoopConstraint,
-  maxAttempts: number = 100
+  maxAttempts: number = 500
 ): SequenceResult {
   // Rewound works with any sequence
   if (loopConstraint.loopType === "rewound") {

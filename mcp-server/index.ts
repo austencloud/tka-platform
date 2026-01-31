@@ -29,6 +29,7 @@ import {
   registerPresetTools,
   registerUtilityTools,
 } from "./src/tools/index.js";
+import { ensureTransitionGraphInitialized } from "./src/core/letter-transition-graph.js";
 
 // Create MCP server instance
 const server = new McpServer({
@@ -49,6 +50,12 @@ registerUtilityTools(server);
 // Start the server
 async function main() {
   console.error("[MCP] Starting TKA Domain MCP Server v2.0.0...");
+
+  // Ensure transition graph is initialized before accepting tool calls
+  // This must complete before any sequence generation tools are used
+  console.error("[MCP] Initializing transition graph...");
+  await ensureTransitionGraphInitialized();
+  console.error("[MCP] Transition graph ready");
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

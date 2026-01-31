@@ -120,9 +120,9 @@ export function registerLoopTools(server: McpServer): void {
       loopType: z.enum(["rewound", "strict_rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "strict_rotated" (180°/90° rotation)'),
       sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
-      maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
+      maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
     },
-    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", maxAttempts = 100 }) => {
+    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", maxAttempts = 500 }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -275,11 +275,11 @@ export function registerLoopTools(server: McpServer): void {
       sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size'),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
-      cellSize: z.number().optional().default(150).describe("Size of each pictograph cell in pixels"),
+      cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
       showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers"),
       showWord: z.boolean().optional().default(true).describe("Show word header"),
       darkMode: z.boolean().optional().default(true).describe("Use dark background"),
-      maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
+      maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
       loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP components for the pie chart glyph"),
       level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
       turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3). Each motion gets a random turn value from 0 up to this max. Defaults to 0 for level 1, 3 for level 2-3."),
@@ -287,7 +287,7 @@ export function registerLoopTools(server: McpServer): void {
       notes: z.string().optional().describe("Notes for footer"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format"),
     },
-    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100, loopComponents, level = 1, turnIntensity, userName, notes, birthday }) => {
+    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -480,11 +480,11 @@ export function registerLoopTools(server: McpServer): void {
       sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe("Slice size"),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
-      cellSize: z.number().optional().default(150).describe("Size of each pictograph cell in pixels"),
+      cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
       showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers"),
       showWord: z.boolean().optional().default(true).describe("Show word header"),
       darkMode: z.boolean().optional().default(true).describe("Use dark background"),
-      maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
+      maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
       loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP components for the pie chart glyph"),
       level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
       turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3). Each motion gets a random turn value from 0 up to this max. Defaults to 0 for level 1, 3 for level 2-3."),
@@ -492,7 +492,7 @@ export function registerLoopTools(server: McpServer): void {
       notes: z.string().optional().describe("Notes for footer"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format"),
     },
-    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 100, loopComponents, level = 1, turnIntensity, userName, notes, birthday }) => {
+    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters

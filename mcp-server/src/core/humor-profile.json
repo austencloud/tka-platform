@@ -1795,13 +1795,55 @@
           "lens": "ABSURDIST"
         }
       ]
+    },
+    {
+      "word": "DICKWHISTLE",
+      "selected": {
+        "text": "The instrument nobody asked for",
+        "lens": "DEADPAN"
+      },
+      "rejected": [
+        {
+          "text": "(n.) A wind instrument of questionable origin",
+          "lens": "DICTIONARY"
+        },
+        {
+          "text": "Pitch: concerning",
+          "lens": "DEADPAN"
+        },
+        {
+          "text": "Auditions are closed",
+          "lens": "SARDONIC"
+        }
+      ]
+    },
+    {
+      "word": "BEEFCAKE",
+      "selected": {
+        "text": "(n.) A confection of questionable anatomy",
+        "lens": "DICTIONARY"
+      },
+      "rejected": [
+        {
+          "text": "The protein or the physique?",
+          "lens": "ABSURDIST"
+        },
+        {
+          "text": "Macros calculated",
+          "lens": "DEADPAN"
+        },
+        {
+          "text": "Gains certified",
+          "lens": "SARDONIC"
+        }
+      ]
     }
   ],
   "lensDistribution": {
-    "DEADPAN": 21,
+    "DEADPAN": 22,
     "ABSURDIST": 14,
     "SARDONIC": 13,
-    "DICTIONARY": 13,
+    "DICTIONARY": 14,
     "DOMAIN": 9,
     "ACRONYM": 4,
     "DARK": 1,

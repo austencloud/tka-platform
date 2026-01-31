@@ -24,25 +24,35 @@ export class LetterTransitionGraph {
 
   /**
    * Initialize the graph by loading letter mappings.
-   * Note: This is synchronous for backward compatibility but internally async.
+   * Returns a Promise for proper async handling.
+   */
+  async initializeAsync(): Promise<void> {
+    if (this.initialized) return;
+
+    await this.sharedGraph.initialize();
+    this.initialized = true;
+  }
+
+  /**
+   * Synchronous initialization - DEPRECATED.
+   * This doesn't actually wait for the async init to complete.
+   * Use initializeAsync() and await it instead.
    */
   initialize(): void {
     if (this.initialized) return;
 
-    // Load synchronously for backward compatibility
-    // The data provider loads synchronously in Node.js
+    // Start the async initialization
     this.sharedGraph.initialize()
       .then(() => {
         this.initialized = true;
       })
       .catch((error) => {
         console.error("[MCP] Failed to initialize LetterTransitionGraph:", error);
-        throw error;
       });
 
-    // Force synchronous behavior by checking initialization state
-    // This works because NodeDataProvider uses fs.readFileSync
-    this.initialized = true;
+    // NOTE: This returns immediately without waiting!
+    // The graph will be in an uninitialized state until the Promise resolves.
+    // Callers should use initializeAsync() and await it.
   }
 
   canFollow(letterA: string, letterB: string): boolean {
@@ -84,16 +94,31 @@ export class LetterTransitionGraph {
 
 // Singleton instance
 let transitionGraphInstance: LetterTransitionGraph | null = null;
+let initializationPromise: Promise<void> | null = null;
 
 /**
  * Get the singleton LetterTransitionGraph instance.
+ * NOTE: The instance may not be initialized yet. Use ensureInitialized() first.
  */
 export function getLetterTransitionGraph(): LetterTransitionGraph {
   if (!transitionGraphInstance) {
     transitionGraphInstance = new LetterTransitionGraph();
-    transitionGraphInstance.initialize();
+    // Start initialization but don't wait
+    initializationPromise = transitionGraphInstance.initializeAsync();
   }
   return transitionGraphInstance;
+}
+
+/**
+ * Ensure the transition graph is initialized before use.
+ * Call this at MCP server startup.
+ */
+export async function ensureTransitionGraphInitialized(): Promise<LetterTransitionGraph> {
+  const graph = getLetterTransitionGraph();
+  if (initializationPromise) {
+    await initializationPromise;
+  }
+  return graph;
 }
 
 // Re-export types for convenience

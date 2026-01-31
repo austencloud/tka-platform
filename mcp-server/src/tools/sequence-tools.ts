@@ -297,13 +297,13 @@ export function registerSequenceTools(server: McpServer): void {
     {
       word: z.string().describe('The sequence word, e.g., "ABC" or "DEFGH"'),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
-      maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
+      maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
       bridgeSelections: z.record(z.string(), z.number()).optional().describe('Map of bridge transition index to preferred bridge option index. E.g., {"0": 1} uses the 2nd bridge option for the first bridge needed.'),
       constraints: z.string().optional().describe('Natural language constraints, e.g., "maximize continuity, all pro motions", "smooth flow with blue clockwise"'),
       constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "pro-cw", "anti-ccw", "no-dash", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset: smooth (maximize continuity), reversal (break every beat), isolation (all pro), antispin (all anti), pro-cw, anti-ccw, no-dash, maximize-dash (prefer Type 4/5 letters), maximum-chaos, smooth-hands (hand path continuity), smooth-props (prop spin continuity)'),
       compact: z.boolean().optional().default(false).describe("Compact output - summary only without full step data (saves ~2000+ tokens for long sequences)"),
     },
-    async ({ word, gridMode = "diamond", maxAttempts = 100, bridgeSelections, constraints, constraintPreset, compact = false }) => {
+    async ({ word, gridMode = "diamond", maxAttempts = 500, bridgeSelections, constraints, constraintPreset, compact = false }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -540,12 +540,12 @@ export function registerSequenceTools(server: McpServer): void {
       word: z.string().describe('The sequence word, e.g., "ABC"'),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
-      cellSize: z.number().optional().default(150).describe("Size of each pictograph cell in pixels"),
+      cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
       showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers overlaid on each pictograph"),
       showWord: z.boolean().optional().default(true).describe("Show word header at the top"),
       displayWord: z.string().optional().describe("Override the word shown in the header. Use when generating extra letters (e.g., word='CAKEQ' but displayWord='CAKE' shows 'CAKE' in header while generating all 5 letters)"),
       darkMode: z.boolean().optional().default(true).describe("Use dark background"),
-      maxAttempts: z.number().optional().default(100).describe("Maximum generation attempts"),
+      maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
       showDifficulty: z.boolean().optional().default(true).describe("Show difficulty level badge in header"),
       userName: z.string().optional().describe("Username to show in footer (bottom-left)"),
       notes: z.string().optional().describe("Notes to show in footer (bottom-center)"),
@@ -558,7 +558,36 @@ export function registerSequenceTools(server: McpServer): void {
       constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "pro-cw", "anti-ccw", "no-dash", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset'),
       showReversals: z.boolean().optional().default(true).describe("Show reversal indicators (colored dots on left edge when prop direction changes from previous step). Defaults to true."),
     },
-    async ({ word, gridMode = "diamond", layout = "grid", cellSize = 150, showStepNumbers = true, showWord = true, displayWord, darkMode = true, maxAttempts = 100, showDifficulty = true, userName, notes, birthday, bridgeSelections, level = 1, turnIntensity, loopComponents, constraints, constraintPreset, showReversals = true }) => {
+    async ({ word, gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, maxAttempts = 500, showDifficulty = true, userName, notes, birthday, bridgeSelections, level = 1, turnIntensity, loopComponents, constraints, constraintPreset, showReversals = true }) => {
+      // GUARDRAIL: Require tagline before generating sequences.
+      // When notes is not provided, block generation and remind Claude to present
+      // tagline options to the user first. This prevents generating sequences without
+      // the humor training workflow (see sequence-generation.md).
+      // Opt-out: pass notes="none" to explicitly skip the tagline.
+      if (!notes) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: [
+                `BLOCKED: No tagline (notes) provided for "${word}".`,
+                ``,
+                `You MUST present 4 tagline options to the user BEFORE generating.`,
+                ``,
+                `Workflow:`,
+                `1. Read humor profile: mcp-server/src/core/humor-profile.json`,
+                `2. Present 4 tagline options spanning different humor lenses`,
+                `3. Wait for user to pick one (or provide their own)`,
+                `4. Call generate_sequence again with notes="<chosen tagline>"`,
+                ``,
+                `If the user explicitly said "no tagline" or "skip tagline", pass notes="none".`,
+              ].join("\n"),
+            },
+          ],
+          isError: true,
+        };
+      }
+
       const allPictographs = ensureDataLoaded(gridMode);
       const letters = parseWordToLetters(word.toUpperCase());
 
