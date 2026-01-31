@@ -1,15 +1,4 @@
-import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { TabId } from "../../../navigation/domain/types";
-import type { IBrowseThumbnailProvider } from "../../../../features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
-import {
-  setSpotlightModalUrl,
-  clearModalUrlState,
-  cacheSequence,
-  type SpotlightDisplayMode as UrlSpotlightMode,
-} from "./modal-url-state.svelte";
-
-// Spotlight display modes
-export type SpotlightDisplayMode = "image" | "stepgrid" | "animation" | "video" | "split";
 
 // Centralized UI state leveraging Svelte 5 runes.
 // Uses TabId (which includes both ModuleId and LegacyTabId) for backwards compatibility
@@ -24,12 +13,6 @@ export const uiState = $state({
   isFullScreen: false,
   isTransitioning: false,
   isWaitingForModuleLoad: false,
-  showSpotlight: false,
-  spotlightSequence: null as SequenceData | null,
-  spotlightThumbnailService: null as IBrowseThumbnailProvider | null,
-  spotlightImageUrl: null as string | null, // Direct image URL (for Create module spotlight)
-  spotlightVideoUrl: null as string | null, // Direct video URL (for Dashboard feed spotlight)
-  spotlightDisplayMode: "image" as SpotlightDisplayMode, // "image", "stepgrid", "animation", or "video"
   showDebugPanel: false, // Admin-only debug console
 });
 
@@ -193,140 +176,6 @@ export function setIsWaitingForTabLoad(waiting: boolean): void {
 }
 
 // ============================================================================
-// SPOTLIGHT STATE
-// ============================================================================
-
-export function getShowSpotlight(): boolean {
-  return uiState.showSpotlight;
-}
-
-export function getSpotlightSequence(): SequenceData | null {
-  return uiState.spotlightSequence;
-}
-
-export function getSpotlightThumbnailService(): IBrowseThumbnailProvider | null {
-  return uiState.spotlightThumbnailService;
-}
-
-export function getSpotlightImageUrl(): string | null {
-  return uiState.spotlightImageUrl;
-}
-
-export function getSpotlightVideoUrl(): string | null {
-  return uiState.spotlightVideoUrl;
-}
-
-export function getSpotlightDisplayMode(): SpotlightDisplayMode {
-  return uiState.spotlightDisplayMode;
-}
-
-export function openSpotlightViewer(
-  sequence: SequenceData,
-  thumbnailService: IBrowseThumbnailProvider
-): void {
-  uiState.spotlightSequence = sequence;
-  uiState.spotlightThumbnailService = thumbnailService;
-  uiState.spotlightImageUrl = null; // Clear direct URL when using thumbnailService
-  uiState.spotlightDisplayMode = "image";
-  uiState.showSpotlight = true;
-  // Sync to URL for HMR persistence
-  cacheSequence(sequence);
-  setSpotlightModalUrl(sequence, "image" as UrlSpotlightMode);
-}
-
-/**
- * Open spotlight viewer with a direct image URL (for Create module)
- * This bypasses the need for a thumbnailService by providing a pre-rendered image
- */
-export function openSpotlightWithImage(
-  imageUrl: string,
-  sequence?: SequenceData
-): void {
-  uiState.spotlightImageUrl = imageUrl;
-  uiState.spotlightSequence = sequence || null;
-  uiState.spotlightThumbnailService = null;
-  uiState.spotlightDisplayMode = "image";
-  uiState.showSpotlight = true;
-  // Sync to URL for HMR persistence (only if sequence provided)
-  if (sequence) {
-    cacheSequence(sequence);
-    setSpotlightModalUrl(sequence, "image" as UrlSpotlightMode);
-  }
-}
-
-/**
- * Open spotlight viewer with a step grid (renders sequence data directly)
- * Faster than image mode since it doesn't need to generate/fetch an image first
- */
-export function openSpotlightWithStepGrid(sequence: SequenceData): void {
-  uiState.spotlightSequence = sequence;
-  uiState.spotlightImageUrl = null;
-  uiState.spotlightThumbnailService = null;
-  uiState.spotlightDisplayMode = "stepgrid";
-  uiState.showSpotlight = true;
-  // Sync to URL for HMR persistence
-  cacheSequence(sequence);
-  setSpotlightModalUrl(sequence, "stepgrid" as UrlSpotlightMode);
-}
-
-/**
- * Open spotlight viewer with animation playback
- * Renders the AnimationPlayer fullscreen for immersive viewing
- */
-export function openSpotlightWithAnimation(sequence: SequenceData): void {
-  uiState.spotlightSequence = sequence;
-  uiState.spotlightImageUrl = null;
-  uiState.spotlightVideoUrl = null;
-  uiState.spotlightThumbnailService = null;
-  uiState.spotlightDisplayMode = "animation";
-  uiState.showSpotlight = true;
-  // Sync to URL for HMR persistence
-  cacheSequence(sequence);
-  setSpotlightModalUrl(sequence, "animation" as UrlSpotlightMode);
-}
-
-/**
- * Open spotlight viewer with video playback
- * Renders fullscreen video player - tap anywhere to dismiss
- */
-export function openSpotlightWithVideo(videoUrl: string, posterUrl?: string): void {
-  uiState.spotlightVideoUrl = videoUrl;
-  uiState.spotlightImageUrl = posterUrl || null; // Use imageUrl for poster
-  uiState.spotlightSequence = null;
-  uiState.spotlightThumbnailService = null;
-  uiState.spotlightDisplayMode = "video";
-  uiState.showSpotlight = true;
-}
-
-/**
- * Open spotlight viewer with split view
- * Shows animation on one side and LayeredSequencePreview on the other
- * Supports step highlighting during playback
- */
-export function openSpotlightWithSplit(sequence: SequenceData): void {
-  uiState.spotlightSequence = sequence;
-  uiState.spotlightImageUrl = null;
-  uiState.spotlightVideoUrl = null;
-  uiState.spotlightThumbnailService = null;
-  uiState.spotlightDisplayMode = "split";
-  uiState.showSpotlight = true;
-  // Sync to URL for HMR persistence
-  cacheSequence(sequence);
-  setSpotlightModalUrl(sequence, "split" as UrlSpotlightMode);
-}
-
-export function closeSpotlightViewer(): void {
-  uiState.showSpotlight = false;
-  uiState.spotlightSequence = null;
-  uiState.spotlightThumbnailService = null;
-  uiState.spotlightImageUrl = null;
-  uiState.spotlightVideoUrl = null;
-  uiState.spotlightDisplayMode = "image";
-  // Clear URL state when closing spotlight
-  clearModalUrlState();
-}
-
-// ============================================================================
 // DEBUG PANEL STATE (Admin Only)
 // ============================================================================
 
@@ -360,11 +209,5 @@ export function resetUIState(): void {
   uiState.isFullScreen = false;
   uiState.isTransitioning = false;
   uiState.isWaitingForModuleLoad = false;
-  uiState.showSpotlight = false;
-  uiState.spotlightSequence = null;
-  uiState.spotlightThumbnailService = null;
-  uiState.spotlightImageUrl = null;
-  uiState.spotlightVideoUrl = null;
-  uiState.spotlightDisplayMode = "image";
   uiState.showDebugPanel = false;
 }

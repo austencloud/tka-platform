@@ -174,7 +174,6 @@ export function createBrowseContainer(deps: BrowseContainerDeps) {
   const tier6 = tier5.add((ctx) => ({
     browseEventHandler: () =>
       new BrowseEventHandler(
-        ctx.browseThumbnailProvider,
         deps.sheetRouter,
         ctx.browseLoader
       ),
