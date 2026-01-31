@@ -1,0 +1,508 @@
+/**
+ * Spotlight Design Tokens & Animations
+ *
+ * Premium media viewer using cutting-edge 2026 CSS features:
+ * - @starting-style for entry animations
+ * - transition-behavior: allow-discrete for exit animations
+ * - Native ::backdrop pseudo-element
+ * - Spring physics for natural feel
+ */
+
+:root {
+  /* ===== Durations ===== */
+  --spotlight-duration-in: 350ms;
+  --spotlight-duration-out: 250ms;
+  --spotlight-duration-nav: 300ms;
+  --spotlight-duration-chrome: 200ms;
+
+  /* ===== Easings ===== */
+  --spotlight-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --spotlight-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spotlight-ease-content: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ===== Gesture Thresholds ===== */
+  --spotlight-swipe-threshold: 80px;
+  --spotlight-fast-swipe-threshold: 50px;
+  --spotlight-dismiss-threshold: 150px;
+  --spotlight-fast-swipe-velocity: 0.5; /* px/ms */
+
+  /* ===== Chrome Auto-Hide ===== */
+  --spotlight-chrome-timeout: 3000ms;
+
+  /* ===== Backdrop ===== */
+  --spotlight-backdrop-bg: rgba(0, 0, 0, 0.92);
+  --spotlight-backdrop-blur: 12px;
+
+  /* ===== Arrow Buttons ===== */
+  --spotlight-arrow-size: 64px;
+  --spotlight-arrow-size-mobile: 80px;
+  --spotlight-arrow-bg: rgba(0, 0, 0, 0.4);
+  --spotlight-arrow-bg-hover: rgba(0, 0, 0, 0.6);
+
+  /* ===== Zoom ===== */
+  --spotlight-zoom-min: 1;
+  --spotlight-zoom-max: 5;
+  --spotlight-zoom-double-tap: 2;
+
+  /* ===== Filmstrip ===== */
+  --spotlight-filmstrip-height: 80px;
+  --spotlight-filmstrip-thumb-size: 60px;
+  --spotlight-filmstrip-gap: 4px;
+
+  /* ===== Tag Panel ===== */
+  --spotlight-tag-panel-width: 280px;
+
+  /* ===== Spacing ===== */
+  --spotlight-chrome-padding: 16px;
+  --spotlight-chrome-padding-mobile: 12px;
+  --spotlight-safe-area-top: env(safe-area-inset-top, 0px);
+  --spotlight-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --spotlight-safe-area-left: env(safe-area-inset-left, 0px);
+  --spotlight-safe-area-right: env(safe-area-inset-right, 0px);
+}
+
+/* ===== Base Spotlight Dialog ===== */
+dialog.media-spotlight {
+  /* Reset browser defaults */
+  border: none;
+  padding: 0;
+  margin: 0;
+  max-width: none;
+  max-height: none;
+
+  /* Fill viewport */
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  width: 100dvw;
+  height: 100dvh;
+
+  /* Appearance */
+  background: transparent;
+  color: white;
+  overflow: hidden;
+
+  /* Closed state (default) */
+  opacity: 0;
+
+  /* Transition for closing */
+  transition:
+    opacity var(--spotlight-duration-out) var(--spotlight-ease-out),
+    overlay var(--spotlight-duration-out) allow-discrete,
+    display var(--spotlight-duration-out) allow-discrete;
+}
+
+/* Open state */
+dialog.media-spotlight[open] {
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+}
+
+/* ===== Entry Animation - @starting-style (2026) ===== */
+@starting-style {
+  dialog.media-spotlight[open] {
+    opacity: 0;
+  }
+}
+
+/* ===== Exit Animation State ===== */
+dialog.media-spotlight[data-closing="true"] {
+  opacity: 0;
+}
+
+/* ===== Backdrop Styles ===== */
+dialog.media-spotlight::backdrop {
+  background: var(--spotlight-backdrop-bg);
+  backdrop-filter: blur(var(--spotlight-backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--spotlight-backdrop-blur));
+
+  /* Exit transition */
+  transition:
+    opacity var(--spotlight-duration-out) var(--spotlight-ease-out),
+    backdrop-filter var(--spotlight-duration-out),
+    overlay var(--spotlight-duration-out) allow-discrete;
+}
+
+/* Entry animation for backdrop */
+@starting-style {
+  dialog.media-spotlight[open]::backdrop {
+    opacity: 0;
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+}
+
+/* Exit animation for backdrop */
+dialog.media-spotlight[data-closing="true"]::backdrop {
+  opacity: 0;
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+}
+
+/* ===== Swipe Dismiss Transform ===== */
+dialog.media-spotlight[data-swiping="true"] {
+  transition: none;
+}
+
+/* ===== Chrome Auto-Hide Animation ===== */
+.spotlight-chrome {
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--spotlight-duration-chrome) var(--spotlight-ease-out),
+    transform var(--spotlight-duration-chrome) var(--spotlight-ease-out);
+}
+
+.spotlight-chrome[data-visible="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Top chrome slides down from top */
+.spotlight-chrome-top {
+  transform: translateY(-20px);
+}
+
+.spotlight-chrome-top[data-visible="true"] {
+  transform: translateY(0);
+}
+
+/* Bottom chrome slides up from bottom */
+.spotlight-chrome-bottom {
+  transform: translateY(20px);
+}
+
+.spotlight-chrome-bottom[data-visible="true"] {
+  transform: translateY(0);
+}
+
+/* Side chrome fades */
+.spotlight-chrome-side {
+  /* No transform, just opacity */
+}
+
+/* ===== Image Navigation Transition ===== */
+.spotlight-image-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spotlight-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  touch-action: none;
+}
+
+/* Navigation slide animation */
+.spotlight-image-enter {
+  animation: spotlightImageEnter var(--spotlight-duration-nav) var(--spotlight-ease-out);
+}
+
+.spotlight-image-exit {
+  animation: spotlightImageExit var(--spotlight-duration-nav) var(--spotlight-ease-out);
+}
+
+/* Direction-aware animations */
+@keyframes spotlightImageEnter {
+  from {
+    opacity: 0;
+    transform: translateX(var(--slide-direction, 30px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes spotlightImageExit {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--slide-direction, 30px) * -1));
+  }
+}
+
+/* ===== Arrow Button Styles ===== */
+.spotlight-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--spotlight-arrow-size);
+  height: var(--spotlight-arrow-size);
+  border: none;
+  border-radius: 50%;
+  background: var(--spotlight-arrow-bg);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background var(--spotlight-duration-chrome) ease,
+    transform 150ms var(--spotlight-ease-spring),
+    opacity var(--spotlight-duration-chrome) ease;
+  z-index: 10;
+}
+
+.spotlight-arrow:hover {
+  background: var(--spotlight-arrow-bg-hover);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.spotlight-arrow:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.spotlight-arrow:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.spotlight-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.spotlight-arrow-prev {
+  left: var(--spotlight-chrome-padding);
+}
+
+.spotlight-arrow-next {
+  right: var(--spotlight-chrome-padding);
+}
+
+.spotlight-arrow svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Mobile: larger touch targets */
+@media (max-width: 768px) {
+  .spotlight-arrow {
+    width: var(--spotlight-arrow-size-mobile);
+    height: var(--spotlight-arrow-size-mobile);
+  }
+
+  .spotlight-arrow svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* ===== Filmstrip Styles ===== */
+.spotlight-filmstrip {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--spotlight-filmstrip-height);
+  padding: var(--spotlight-chrome-padding);
+  padding-bottom: calc(var(--spotlight-chrome-padding) + var(--spotlight-safe-area-bottom));
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spotlight-filmstrip-gap);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.spotlight-filmstrip::-webkit-scrollbar {
+  display: none;
+}
+
+.spotlight-filmstrip-thumb {
+  flex-shrink: 0;
+  width: var(--spotlight-filmstrip-thumb-size);
+  height: var(--spotlight-filmstrip-thumb-size);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    transform 150ms var(--spotlight-ease-spring),
+    border-color 150ms ease;
+}
+
+.spotlight-filmstrip-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.spotlight-filmstrip-thumb:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.spotlight-filmstrip-thumb[data-active="true"] {
+  border-color: white;
+  transform: scale(1.1);
+}
+
+.spotlight-filmstrip-thumb:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+/* ===== Tag Panel Styles ===== */
+.spotlight-tag-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--spotlight-tag-panel-width);
+  background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+  border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  transform: translateX(100%);
+  transition: transform var(--spotlight-duration-nav) var(--spotlight-ease-out);
+  overflow-y: auto;
+  z-index: 20;
+}
+
+.spotlight-tag-panel[data-open="true"] {
+  transform: translateX(0);
+}
+
+/* ===== Close Button ===== */
+.spotlight-close {
+  position: absolute;
+  top: calc(var(--spotlight-chrome-padding) + var(--spotlight-safe-area-top));
+  right: calc(var(--spotlight-chrome-padding) + var(--spotlight-safe-area-right));
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: var(--spotlight-arrow-bg);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 150ms ease,
+    transform 150ms var(--spotlight-ease-spring);
+  z-index: 10;
+}
+
+.spotlight-close:hover {
+  background: var(--spotlight-arrow-bg-hover);
+  transform: scale(1.05);
+}
+
+.spotlight-close:active {
+  transform: scale(0.95);
+}
+
+.spotlight-close:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.spotlight-close svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ===== Counter Badge ===== */
+.spotlight-counter {
+  position: absolute;
+  top: calc(var(--spotlight-chrome-padding) + var(--spotlight-safe-area-top));
+  left: calc(var(--spotlight-chrome-padding) + var(--spotlight-safe-area-left));
+  padding: 8px 16px;
+  background: var(--spotlight-arrow-bg);
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  z-index: 10;
+}
+
+/* ===== Loading Skeleton ===== */
+.spotlight-skeleton {
+  position: absolute;
+  inset: 20%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  background-size: 200% 100%;
+  animation: spotlightSkeletonShimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes spotlightSkeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ===== Reduced Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  dialog.media-spotlight,
+  dialog.media-spotlight::backdrop,
+  .spotlight-chrome,
+  .spotlight-chrome-top,
+  .spotlight-chrome-bottom,
+  .spotlight-arrow,
+  .spotlight-filmstrip-thumb,
+  .spotlight-tag-panel,
+  .spotlight-close {
+    transition: none;
+  }
+
+  .spotlight-image-enter,
+  .spotlight-image-exit {
+    animation: none;
+  }
+
+  .spotlight-skeleton {
+    animation: none;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  dialog.media-spotlight[data-closing="true"],
+  dialog.media-spotlight[data-closing="true"]::backdrop {
+    opacity: 1;
+  }
+
+  @starting-style {
+    dialog.media-spotlight[open],
+    dialog.media-spotlight[open]::backdrop {
+      opacity: 1;
+    }
+  }
+}
+
+/* ===== Fallback for browsers without @starting-style ===== */
+@supports not (selector(@starting-style {})) {
+  dialog.media-spotlight[data-entered="true"] {
+    animation: spotlightFallbackIn var(--spotlight-duration-in) var(--spotlight-ease-out);
+  }
+
+  @keyframes spotlightFallbackIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}

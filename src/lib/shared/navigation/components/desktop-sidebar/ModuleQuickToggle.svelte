@@ -239,15 +239,18 @@
       toast.success(`${module.label} disabled`, 2000);
       hapticService?.trigger("success");
 
-      // Update user overrides: remove from module order AND add to disabledFeatures
+      // Update user overrides: remove from module order, add to disabledFeatures,
+      // and REMOVE from enabledFeatures (enabledFeatures bypasses all other checks)
       const currentOverrides = featureFlagService.userOverrides;
       const currentOrder = currentOverrides.moduleOrder || visibleModules.map((m) => m.id);
       const currentDisabled = currentOverrides.disabledFeatures || [];
+      const currentEnabled = currentOverrides.enabledFeatures || [];
 
       const newOrder = currentOrder.filter((id) => id !== module.id);
       const newDisabled = currentDisabled.includes(featureId)
         ? currentDisabled
         : [...currentDisabled, featureId];
+      const newEnabled = currentEnabled.filter((f) => f !== featureId);
 
       const userId = featureFlagService.userId;
       if (userId) {
@@ -255,6 +258,7 @@
           ...currentOverrides,
           moduleOrder: newOrder,
           disabledFeatures: newDisabled,
+          enabledFeatures: newEnabled,
         });
       }
     } catch (error) {

@@ -15,6 +15,7 @@
     getFeatureIconAndColor,
     getRoleColor,
   } from "../shared/feature-utils";
+  import { auth } from "$lib/shared/auth/firebase";
   import AdminSearchBox from "$lib/shared/admin/components/AdminSearchBox.svelte";
   import MatrixRow from "./MatrixRow.svelte";
   import ModuleQuickBar from "./ModuleQuickBar.svelte";
@@ -27,6 +28,43 @@
 
   let searchQuery = $state("");
   let savingFlags = $state<Set<string>>(new Set());
+  let migrating = $state(false);
+  let migrationResult = $state<{ migrated: number; total: number } | null>(null);
+
+  async function migrateDeactivatedFlags() {
+    migrating = true;
+    migrationResult = null;
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error("Not authenticated");
+      const idToken = await currentUser.getIdToken();
+
+      const response = await fetch("/api/admin/feature-flags", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      migrationResult = { migrated: result.migrated, total: result.total };
+
+      if (result.migrated > 0) {
+        toast.success(`Migrated ${result.migrated} deactivated flag(s) to 0% rollout`);
+      } else {
+        toast.success("No deactivated flags found. All flags are healthy.");
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Migration failed: ${msg}`);
+      onError(`Migration failed: ${msg}`);
+    } finally {
+      migrating = false;
+    }
+  }
 
   // Get flags from service - explicitly track flagsVersion for reactivity
   // when flags are changed from ModuleQuickToggle (Manage Modules modal)
@@ -128,6 +166,20 @@
           oninput={(e) => (searchQuery = (e.target as HTMLInputElement).value)}
         />
       </div>
+      <button
+        class="migrate-btn"
+        onclick={migrateDeactivatedFlags}
+        disabled={migrating}
+        title="Fix deactivated PostHog flags by reactivating them with 0% rollout"
+      >
+        {#if migrating}
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          Migrating...
+        {:else}
+          <i class="fas fa-wrench" aria-hidden="true"></i>
+          Fix Flags
+        {/if}
+      </button>
     </div>
   </div>
 
@@ -253,6 +305,34 @@
 
   .search-box {
     min-width: 280px;
+  }
+
+  .migrate-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    min-height: var(--min-touch-target, 48px);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 24px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+
+  .migrate-btn:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .migrate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   /* Override AdminSearchBox to match pill style */

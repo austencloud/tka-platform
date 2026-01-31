@@ -330,25 +330,41 @@ function checkPostHogFlag(featureId: FeatureId): boolean | null {
 
 /**
  * Check if a feature is accessible based on role and overrides
- * Priority: User overrides > PostHog flag > Role-based default
+ *
+ * Priority (highest to lowest):
+ * 1. User disabledFeatures - always deny
+ * 2. Global admin override (globalFlagOverrides) - admin toggle trumps user enables
+ * 3. User enabledFeatures - per-user grant (only if not globally disabled)
+ * 4. PostHog remote flag
+ * 5. Role-based default
  */
 function checkFeatureAccess(featureId: FeatureId): boolean {
-  // 1. Check user-specific overrides first (highest priority)
+  // 1. User explicitly disabled - always wins
   if (_state.userOverrides.disabledFeatures.includes(featureId)) {
-    return false; // Explicitly disabled for this user
+    return false;
   }
 
+  // 2. Check global admin override BEFORE user enables
+  // An admin toggling a feature off globally must override per-user enabledFeatures,
+  // otherwise stale enabledFeatures entries make features impossible to disable.
+  const postHogKey = featureIdToPostHogKey(featureId);
+  const globalOverride = _state.globalFlagOverrides[postHogKey];
+  if (globalOverride === false) {
+    return false; // Globally disabled by admin - overrides user enabledFeatures
+  }
+
+  // 3. User explicitly enabled (only reaches here if not globally disabled)
   if (_state.userOverrides.enabledFeatures.includes(featureId)) {
-    return true; // Explicitly enabled for this user (bypasses all other checks)
+    return true;
   }
 
-  // 2. Check PostHog flag (if it exists)
+  // 4. Check PostHog flag (remote value, skipping globalFlagOverrides since we checked above)
   const postHogResult = checkPostHogFlag(featureId);
   if (postHogResult !== null) {
     return postHogResult;
   }
 
-  // 3. Fall back to role-based default
+  // 5. Fall back to role-based default
   const config = getDefaultFeatureConfig(featureId);
   if (!config) {
     console.warn(`[PostHogFeatureFlagService] Unknown feature: ${featureId}`);
@@ -506,7 +522,22 @@ export const postHogFeatureFlagService = {
 
     // Then check role-based access
     const featureId = moduleIdToFeatureId(moduleId);
-    return checkFeatureAccess(featureId);
+    const result = checkFeatureAccess(featureId);
+
+    // Temporary debug: trace Lab module access decisions (remove after confirming fix)
+    if (moduleId === "lab") {
+      const phKey = featureIdToPostHogKey(featureId);
+      console.log(
+        `[DEBUG canAccessModule("lab")] result=${result}`,
+        `| globalOverride=${_state.globalFlagOverrides[phKey]}`,
+        `| postHogFlag=${getFeatureFlag(phKey)}`,
+        `| inDisabled=${_state.userOverrides.disabledFeatures.includes(featureId)}`,
+        `| inEnabled=${_state.userOverrides.enabledFeatures.includes(featureId)}`,
+        `| v=${_state.flagsVersion}`
+      );
+    }
+
+    return result;
   },
 
   /**

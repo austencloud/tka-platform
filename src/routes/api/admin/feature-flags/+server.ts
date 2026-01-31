@@ -4,7 +4,13 @@
  *
  * Endpoints:
  * - GET: List all feature flags
- * - PATCH: Update a feature flag
+ * - POST: Migrate deactivated flags (reactivate with 0% rollout)
+ * - PATCH: Create or update a feature flag
+ *
+ * IMPORTANT: Flags are never deactivated (active=false). PostHog's client SDK
+ * returns undefined for deactivated flags, which causes the client to fall through
+ * to role-based defaults and show features that should be hidden. Instead, we keep
+ * flags active and control visibility via rollout percentage (0% = disabled, 100% = enabled).
  *
  * Requires admin role and POSTHOG_PERSONAL_API_KEY env var.
  */
@@ -77,6 +83,81 @@ export const GET: RequestHandler = async (event) => {
 };
 
 /**
+ * POST /api/admin/feature-flags
+ * Migrate deactivated flags: reactivate with 0% rollout so PostHog evaluates them.
+ * Deactivated flags (active=false) return undefined from the client SDK,
+ * causing tabs to appear visible when they should be hidden.
+ */
+export const POST: RequestHandler = async (event) => {
+  try {
+    const caller = await requireFirebaseUser(event);
+    const callerIsAdmin = await isAdmin(caller.uid);
+    if (!callerIsAdmin) {
+      throw error(403, "Admin access required");
+    }
+
+    const projectId = getProjectId();
+
+    // Fetch all flags (paginated - PostHog defaults to 100 per page)
+    const response = await fetch(
+      `${POSTHOG_API_BASE}/projects/${projectId}/feature_flags/?limit=200`,
+      { headers: getPostHogHeaders() }
+    );
+
+    if (!response.ok) {
+      throw error(response.status, "Failed to fetch feature flags");
+    }
+
+    const data = await response.json();
+    const allFlags = data.results || [];
+
+    // Find TKA flags that are deactivated (active=false)
+    const deactivatedFlags = allFlags.filter(
+      (f: { key: string; active: boolean }) =>
+        !f.active && (f.key.startsWith("module-") || f.key.startsWith("tab-") || f.key.startsWith("capability-"))
+    );
+
+    if (deactivatedFlags.length === 0) {
+      return json({ success: true, migrated: 0, message: "No deactivated flags found" });
+    }
+
+    // Reactivate each with 0% rollout
+    const results = [];
+    for (const flag of deactivatedFlags) {
+      const patchResponse = await fetch(
+        `${POSTHOG_API_BASE}/projects/${projectId}/feature_flags/${flag.id}/`,
+        {
+          method: "PATCH",
+          headers: getPostHogHeaders(),
+          body: JSON.stringify({
+            active: true,
+            filters: { groups: [{ properties: [], rollout_percentage: 0 }] },
+          }),
+        }
+      );
+
+      results.push({
+        key: flag.key,
+        id: flag.id,
+        success: patchResponse.ok,
+        status: patchResponse.status,
+      });
+    }
+
+    const migrated = results.filter((r) => r.success).length;
+    console.log(`[feature-flags] Migration: reactivated ${migrated}/${deactivatedFlags.length} flags with 0% rollout`);
+
+    return json({ success: true, migrated, total: deactivatedFlags.length, results });
+  } catch (err: unknown) {
+    if (typeof err === "object" && err && "status" in err) {
+      throw err;
+    }
+    console.error("[feature-flags] Migration error:", err);
+    throw error(500, "Migration failed");
+  }
+};
+
+/**
  * PATCH /api/admin/feature-flags
  * Update a feature flag in PostHog
  *
@@ -118,6 +199,8 @@ export const PATCH: RequestHandler = async (event) => {
 
     if (!flag) {
       // Flag doesn't exist - create it
+      // Always create as active, control visibility via rollout percentage
+      const isEnabled = enabled ?? true;
       const createResponse = await fetch(
         `${POSTHOG_API_BASE}/projects/${projectId}/feature_flags/`,
         {
@@ -126,8 +209,10 @@ export const PATCH: RequestHandler = async (event) => {
           body: JSON.stringify({
             key: flagKey,
             name: flagKey.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
-            active: enabled ?? true,
-            filters: filters ?? { groups: [{ properties: [], rollout_percentage: 100 }] },
+            active: true,
+            filters: filters ?? {
+              groups: [{ properties: [], rollout_percentage: isEnabled ? 100 : 0 }],
+            },
           }),
         }
       );
@@ -149,9 +234,16 @@ export const PATCH: RequestHandler = async (event) => {
     }
 
     // Update existing flag
+    // IMPORTANT: Never set active=false. Deactivated PostHog flags return undefined
+    // from getFeatureFlag(), which causes the client to fall through to role-based
+    // defaults and show tabs that should be hidden.
+    // Instead, keep flags active and toggle rollout between 100% (enabled) and 0% (disabled).
     const updates: Record<string, unknown> = {};
     if (typeof enabled === "boolean") {
-      updates.active = enabled;
+      updates.active = true; // Always keep flag active so PostHog evaluates it
+      updates.filters = enabled
+        ? { groups: [{ properties: [], rollout_percentage: 100 }] }
+        : { groups: [{ properties: [], rollout_percentage: 0 }] };
     }
     if (filters) {
       updates.filters = filters;
