@@ -21,18 +21,20 @@
 
   import { onMount, onDestroy } from "svelte";
   import SequenceDrawer from "$lib/shared/sequence-viewer/components/SequenceDrawer.svelte";
-  import SequenceDetailsModal from "$lib/shared/sequence-viewer/components/SequenceDetailsModal.svelte";
   import type { ExportSettings } from "$lib/shared/share-hub/domain/models/ExportSettings";
   import type { ExportSettings as SequenceViewerExportSettings } from "$lib/shared/sequence-viewer/domain/types";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
   import type { IShareHubExportOrchestrator } from "$lib/shared/share-hub/services/contracts/IShareHubExportOrchestrator";
+  import { goto } from "$app/navigation";
   import { container } from "$lib/shared/di";
   import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
+  import { sequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
 
   // Animation imports
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
@@ -306,6 +308,24 @@
       animationPanelState.setError("Failed to load animation services");
     }
   }
+
+  // Intercept modal opening and navigate to route instead
+  // When panelState.isSequenceDetailsModalOpen becomes true, redirect to /sequence/[id]
+  $effect(() => {
+    if (panelState.isSequenceDetailsModalOpen && currentSequence) {
+      // Close the modal state immediately
+      panelState.closeSequenceDetailsModal();
+
+      // Save handoff data and navigate to route
+      saveSequenceRouteHandoff({
+        sequence: currentSequence,
+        returnPath: "/create/construct",
+        returnLabel: "Construct",
+        scrollY: 0,
+      });
+      void goto(sequenceEncoder.generateSequenceRoutePath(currentSequence));
+    }
+  });
 
   // Initialize animation when services ready and sequence available
   // Check requestedShareHubFormat to avoid initializing when user explicitly requested static format
@@ -792,11 +812,4 @@
   {/key}
 {/if}
 
-<!-- Sequence Details Modal (full-screen alternative to drawer) -->
-{#if currentSequence}
-  <SequenceDetailsModal
-    open={panelState.isSequenceDetailsModalOpen}
-    sequence={currentSequence}
-    onclose={() => panelState.closeSequenceDetailsModal()}
-  />
-{/if}
+<!-- Sequence Details Modal removed - $effect intercept at line 314 redirects to /sequence/[id] route -->

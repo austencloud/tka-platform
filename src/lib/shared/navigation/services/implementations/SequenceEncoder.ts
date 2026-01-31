@@ -36,6 +36,7 @@ import type {
   ShareURLResult,
   DeepLinkParseResult,
   QRSizeEstimate,
+  SequenceRouteIdParseResult,
 } from "../contracts/ISequenceEncoder";
 
 // ============================================================================
@@ -413,8 +414,8 @@ export class SequenceEncoder implements ISequenceEncoder {
   }
 
   /**
-   * Generate a standalone viewer URL for a sequence
-   * Uses /sequence/{encodedSequence} format
+   * Generate a standalone viewer URL for a sequence.
+   * Uses /sequence/{encodedSequence} format with self-contained data.
    */
   generateViewerURL(
     sequence: SequenceData,
@@ -447,6 +448,47 @@ export class SequenceEncoder implements ISequenceEncoder {
       compressed: false,
       savings: 0,
     };
+  }
+
+  // ============================================================================
+  // Route Path Methods
+  // ============================================================================
+
+  /**
+   * Generate just the path for navigating to /sequence/{encoded}.
+   * The encoded string is the compressed sequence data (self-contained, no DB lookup needed).
+   */
+  generateSequenceRoutePath(sequence: SequenceData): string {
+    const { encoded } = this.encodeWithCompression(sequence);
+    return `/sequence/${encodeURIComponent(encoded)}`;
+  }
+
+  /**
+   * Parse a sequence route [id] param to determine its type.
+   *
+   * Self-contained encoded sequences start with "z:" (compressed) or contain "|" (uncompressed).
+   * Everything else is treated as a legacy ID (Firebase doc ID, short code, or plain word).
+   */
+  parseSequenceRouteId(id: string): SequenceRouteIdParseResult {
+    if (!id) {
+      return { encoded: null, legacyId: null };
+    }
+
+    // URL-decode in case the id came through encoded (e.g. "z%3A..." -> "z:...")
+    const decoded = decodeURIComponent(id);
+
+    // Compressed format: starts with "z:"
+    if (decoded.startsWith("z:")) {
+      return { encoded: decoded, legacyId: null };
+    }
+
+    // Uncompressed format: contains pipe delimiters (startPos|step1|step2...)
+    if (decoded.includes("|")) {
+      return { encoded: decoded, legacyId: null };
+    }
+
+    // Legacy: Firebase document ID, short code, or plain word
+    return { encoded: null, legacyId: id };
   }
 
   // ============================================================================

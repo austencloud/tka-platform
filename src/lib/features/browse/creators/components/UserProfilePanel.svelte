@@ -5,11 +5,10 @@
    * Responsive design for mobile and desktop
    */
 
+  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
-  import { openSpotlightViewer } from "$lib/shared/application/state/ui/ui-state.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
@@ -27,6 +26,8 @@
   import ProfileTabs from "./profile/ProfileTabs.svelte";
   import ProfileAdminSection from "./profile/ProfileAdminSection.svelte";
   import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
+  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
+  import { sequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
 
   interface Props {
     userId: string;
@@ -57,7 +58,6 @@
   let libraryService: ILibraryRepository;
   let hapticService: IHapticFeedback;
   let leaderboardService: ILeaderboardManager;
-  let thumbnailService: IBrowseThumbnailProvider;
 
   // Personal rankings state (only for own profile)
   interface UserRanks {
@@ -106,7 +106,6 @@
       libraryService = container.items.libraryRepository;
       hapticService = container.items.hapticFeedback;
       leaderboardService = container.items.leaderboardManager;
-      thumbnailService = container.items.browseThumbnailProvider;
 
       // Load user profile with current user context for follow status
       userProfile = await userService.getUserProfile(userId, currentUserId);
@@ -202,10 +201,14 @@
 
   function handleSequenceClick(sequence: LibrarySequence) {
     hapticService?.trigger("selection");
-    // Open spotlight viewer with the sequence
-    if (thumbnailService) {
-      openSpotlightViewer(sequence, thumbnailService);
-    }
+    // Navigate to sequence route with handoff data
+    saveSequenceRouteHandoff({
+      sequence,
+      returnPath: `/browse/creators/${userId}`,
+      returnLabel: userProfile?.displayName ?? "Creator",
+      scrollY: 0,
+    });
+    void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
   }
 
   async function loadFollowingUsers() {

@@ -25,7 +25,6 @@
   import { UndoOperationType } from "../../services/contracts/IUndoManager";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
-  import { openSpotlightWithStepGrid } from "$lib/shared/application/state/ui/ui-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
 
@@ -39,13 +38,17 @@
   // Transform help mode types
   import type { ActionHelpId } from "../../domain/transforms/transform-help-content";
   type HelpMode = "inactive" | "selecting" | "viewing";
+  import { goto } from "$app/navigation";
   import RotationDirectionDrawer from "./RotationDirectionDrawer.svelte";
-import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
+  import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
   import ExtendDrawer from "./ExtendDrawer.svelte";
   import StepGridSection from "./StepGridSection.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import FirstStepConfirmDialog from "./FirstStepConfirmDialog.svelte";
   import HandSelector from "./HandSelector.svelte";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
+  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
+  import { sequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
 
   interface Props {
     show: boolean;
@@ -117,6 +120,10 @@ import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
   let showDurationDrawer = $state(false);
   let showExtendDrawer = $state(false);
   let extensionAnalysis = $state<ExtensionAnalysis | null>(null);
+  // Spotlight modal state (legacy - modal replaced with route navigation)
+  let spotlightOpen = $state(false);
+  let spotlightSequence = $state<SequenceData | null>(null);
+  // Note: These are kept for backwards compatibility but modal is no longer rendered
   let circularizationOptions = $state<CircularizationOption[]>([]);
   let directUnavailableReason = $state<string | null>(null);
   let isExtending = $state(false);
@@ -257,8 +264,20 @@ import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
     if (!sequence) return;
     hapticService?.trigger("selection");
     handleClose();
-    // Open spotlight with beat grid - renders sequence directly without generating an image
-    openSpotlightWithStepGrid(sequence);
+    // Navigate to sequence route instead of opening modal
+    saveSequenceRouteHandoff({
+      sequence,
+      returnPath: "/create/construct",
+      returnLabel: "Construct",
+      scrollY: 0,
+    });
+    void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
+  }
+
+  function handleSpotlightClose() {
+    // Legacy - no longer used since modal is replaced with route
+    spotlightOpen = false;
+    spotlightSequence = null;
   }
 
   function handleTurnPattern() {
@@ -778,6 +797,8 @@ import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
   onConfirm={() => executeShiftStart(pendingShiftStepNumber!)}
   onCancel={cancelShiftStart}
 />
+
+<!-- Spotlight Modal - Replaced with /sequence/[id] route navigation -->
 
 <style>
   .editor-panel {

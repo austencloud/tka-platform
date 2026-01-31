@@ -8,16 +8,19 @@
    * Domain: Create module - Layout
    */
 
+  import { goto } from "$app/navigation";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { openSpotlightWithStepGrid } from "$lib/shared/application/state/ui/ui-state.svelte";
   import ButtonPanel from "../workspace-panel/shared/components/ButtonPanel.svelte";
   import CreationWorkspaceArea from "./CreationWorkspaceArea.svelte";
   import CreationToolPanelSlot from "./CreationToolPanelSlot.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { createCreateModuleState as CreateModuleStateType } from "../state/create-module-state.svelte";
   import type { PanelCoordinationState } from "../state/panel-coordination-state.svelte";
   import type { IToolPanelMethods } from "../types/create-module-types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
+  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
+  import { sequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
 
   type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 
@@ -69,6 +72,11 @@
   // ============================================================================
   let workspaceContainerRef: HTMLElement | null = $state(null);
   let buttonPanelHeight = $state(0);
+
+  // Spotlight modal state (legacy - modal replaced with route navigation)
+  let spotlightOpen = $state(false);
+  let spotlightSequence = $state<SequenceData | null>(null);
+  // Note: These are kept for backwards compatibility but modal is no longer rendered
 
   // ============================================================================
   // DERIVED STATE - Workspace Color Coding & Visibility
@@ -139,12 +147,25 @@
     return () => resizeObserver.disconnect();
   });
 
-  // Handler for spotlight button - opens fullscreen beat grid
+  // Handler for spotlight button - opens fullscreen sequence viewer
   function handleSpotlight() {
     const sequence = CreateModuleState.sequenceState.currentSequence;
     if (sequence) {
-      openSpotlightWithStepGrid(sequence);
+      // Navigate to sequence route instead of opening modal
+      saveSequenceRouteHandoff({
+        sequence,
+        returnPath: "/create/construct",
+        returnLabel: "Construct",
+        scrollY: 0,
+      });
+      void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
     }
+  }
+
+  function handleSpotlightClose() {
+    // Legacy - no longer used since modal is replaced with route
+    spotlightOpen = false;
+    spotlightSequence = null;
   }
 </script>
 
@@ -203,6 +224,8 @@
     />
   </div>
 </div>
+
+<!-- Spotlight Modal - Replaced with /sequence/[id] route navigation -->
 
 <style>
   .layout-wrapper {

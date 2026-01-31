@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import { container } from "$lib/shared/di";
@@ -33,8 +34,9 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import AnimationSheetCoordinator from "../../../../shared/coordinators/AnimationSheetCoordinator.svelte";
   import { consumePendingSequenceView } from "../../state/pending-sequence.svelte";
-  import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
   import HallOfShameGallery from "$lib/features/hall-of-shame/components/HallOfShameGallery.svelte";
+  import { saveSequenceRouteHandoff } from "../../../../shared/coordinators/sequence-handoff.svelte";
+  import { sequenceEncoder } from "../../../../shared/navigation/services/implementations/SequenceEncoder";
 
   // Note: Library tab removed - now integrated into Sequences via scope toggle (Community / My Library)
   type BrowseModuleType = "gallery" | "collections" | "creators" | "hall-of-shame";
@@ -390,8 +392,14 @@
             (s) => s.id === pendingSequenceId
           );
           if (sequence) {
-            // Open the detail panel with this sequence
-            sequencePanelManager.openDetail(sequence);
+            // Navigate to sequence route with handoff data
+            saveSequenceRouteHandoff({
+              sequence,
+              returnPath: "/browse/gallery",
+              returnLabel: "Browse",
+              scrollY: 0,
+            });
+            void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
           } else {
             console.warn(
               "[BrowseModule] Pending sequence not found:",
@@ -455,6 +463,8 @@
   bind:isOpen={showAnimator}
 />
 
+<!-- Sequence Details Modal removed - BrowseEventHandler.handleViewDetail() navigates to /sequence/[id] route -->
+
 <!-- Main layout - shows immediately with skeletons while data loads -->
 <div class="browse-content">
   <!-- Tab Content - uses {#key} with directional slide transitions (like Learn module) -->
@@ -476,19 +486,12 @@
         {#if activeTab === "gallery"}
           <GalleryTab
             {isMobile}
-            {isUIVisible}
-            {showDesktopSidebar}
             {drawerWidth}
             {galleryState}
             {error}
-            isAnimationPanelOpen={showAnimator}
             onSequenceAction={(action, sequence) =>
               eventHandlerService?.handleSequenceAction(action, sequence) ??
               Promise.resolve()}
-            onDetailPanelAction={(action, sequence) =>
-              eventHandlerService?.handleDetailPanelAction(action, sequence) ??
-              Promise.resolve()}
-            onCloseDetailPanel={() => eventHandlerService?.handleCloseDetailPanel()}
             onContainerScroll={handleContainerScroll}
           />
         {:else if activeTab === "collections"}

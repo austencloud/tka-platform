@@ -1,40 +1,26 @@
 <!--
   ModalUrlRestorer.svelte
 
-  Restores modal state from URL params on page load/HMR.
-  Renders the appropriate modal based on URL state.
+  Redirects legacy ?modal=sequence URLs to the /sequence/[id] route.
+  Preserves deep linking by resolving the sequence and navigating to the route.
 
-  Supports deep linking:
-  - Same-tab refresh: Uses sessionStorage cache
-  - Cross-tab: Fetches from local IndexedDB or Firebase public sequences
-  - Cross-user: Fetches from Firebase public sequences
+  Legacy URL formats handled:
+  - ?modal=sequence&id=seq_xxx  → /sequence/seq_xxx
+  - ?modal=spotlight&id=seq_xxx → /sequence/seq_xxx
 
   This component should be placed at the app root level (in +layout.svelte).
 -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
   import {
     getModalUrlState,
     clearModalUrlState,
-    cacheSequence,
   } from "../state/ui/modal-url-state.svelte";
-  import {
-    openSpotlightWithSplit,
-    openSpotlightWithAnimation,
-    openSpotlightWithStepGrid,
-  } from "../state/ui/ui-state.svelte";
   import { container } from "$lib/shared/di";
   import type { IDeepLinkResolver, DeepLinkError } from "../services/contracts/IDeepLinkResolver";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import SequenceDetailsModal from "$lib/shared/sequence-viewer/components/SequenceDetailsModal.svelte";
-
-  // State for sequence details modal
-  let sequenceModalOpen = $state(false);
-  let sequenceModalData = $state<SequenceData | null>(null);
-  let restoredBpm = $state(60);
-  let restoredPlaybackTime = $state(0);
-  let restoredViewMode = $state<"split" | "animation" | "image">("split");
-  let restoredStaggerOpen = $state(false);
+  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
+  import { sequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
 
   // Error state for failed deep links
   let loadError = $state<DeepLinkError>(null);
@@ -53,18 +39,14 @@
     }
   });
 
-  // Get URL state reactively
-  let urlState = $derived(getModalUrlState());
-
-  // Restore modal state from URL on mount
+  // Redirect legacy modal URLs on mount
   onMount(() => {
-    // Small delay to ensure page is fully loaded
     setTimeout(() => {
-      restoreFromUrl();
+      redirectLegacyUrl();
     }, 100);
   });
 
-  async function restoreFromUrl() {
+  async function redirectLegacyUrl() {
     if (restorationAttempted) return;
     restorationAttempted = true;
 
@@ -74,61 +56,35 @@
       return;
     }
 
-    console.log("[ModalUrlRestorer] Restoring modal state:", state);
+    console.log("[ModalUrlRestorer] Redirecting legacy modal URL to /sequence/ route:", state);
     isLoading = true;
     loadError = null;
 
-    // Use DeepLinkResolver to fetch sequence from any source
+    // Resolve the sequence to cache it for the route
     const deepLinkResolver = container.items.deepLinkResolver as IDeepLinkResolver;
     const result = await deepLinkResolver.resolve(state.sequenceId);
 
     isLoading = false;
 
     if (!result.sequence) {
-      console.warn("[ModalUrlRestorer] Could not restore modal:", result.error);
+      console.warn("[ModalUrlRestorer] Could not resolve sequence:", result.error);
       loadError = result.error;
-      // Keep the error state visible - don't clear URL immediately
-      // This lets the user see the error message
       return;
     }
 
-    // Cache the sequence for future use (HMR, etc.)
-    if (result.source === "public" || result.source === "local") {
-      cacheSequence(result.sequence);
-    }
+    // Clear the legacy modal URL params
+    clearModalUrlState();
 
-    // Restore based on modal type
-    if (state.modal === "sequence") {
-      // Store restoration data
-      restoredBpm = state.bpm;
-      restoredPlaybackTime = state.playbackTimeMs;
-      restoredViewMode = state.view;
-      restoredStaggerOpen = state.stagger;
-      sequenceModalData = result.sequence;
-      sequenceModalOpen = true;
-    } else if (state.modal === "spotlight") {
-      // Open spotlight with appropriate mode
-      switch (state.spotlightMode) {
-        case "animation":
-          openSpotlightWithAnimation(result.sequence);
-          break;
-        case "stepgrid":
-          openSpotlightWithStepGrid(result.sequence);
-          break;
-        case "split":
-          openSpotlightWithSplit(result.sequence);
-          break;
-        case "image":
-        default:
-          openSpotlightWithSplit(result.sequence);
-          break;
-      }
-    }
-  }
+    // Save handoff data for the route
+    saveSequenceRouteHandoff({
+      sequence: result.sequence,
+      returnPath: window.location.pathname,
+      returnLabel: "Back",
+      scrollY: 0,
+    });
 
-  function handleModalClose() {
-    sequenceModalOpen = false;
-    sequenceModalData = null;
+    // Navigate to the self-contained sequence route
+    void goto(sequenceEncoder.generateSequenceRoutePath(result.sequence));
   }
 
   function dismissError() {
@@ -175,19 +131,6 @@
       </button>
     </div>
   </div>
-{/if}
-
-<!-- Render sequence details modal if URL state indicates it should be open -->
-{#if sequenceModalOpen && sequenceModalData}
-  <SequenceDetailsModal
-    bind:open={sequenceModalOpen}
-    sequence={sequenceModalData}
-    onclose={handleModalClose}
-    initialBpm={restoredBpm}
-    initialPlaybackTimeMs={restoredPlaybackTime}
-    initialViewMode={restoredViewMode}
-    initialStaggerOpen={restoredStaggerOpen}
-  />
 {/if}
 
 <style>
@@ -237,7 +180,7 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--radius-lg, 12px);
-    outline: none; /* Container receives focus for screen readers but isn't visually interactive */
+    outline: none;
   }
 
   .error-icon {

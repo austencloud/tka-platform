@@ -102,6 +102,23 @@ export interface ISequenceEncoder {
   ): ShareURLResult;
 
   /**
+   * Generate just the path portion for navigating to /sequence/{encoded}.
+   * Returns e.g. "/sequence/z:CoCkBEjA2oBh..."
+   * Used by in-app navigation (goto calls).
+   */
+  generateSequenceRoutePath(sequence: SequenceData): string;
+
+  /**
+   * Parse a sequence route [id] param to determine its type.
+   * Distinguishes self-contained encoded sequences from legacy IDs.
+   *
+   * Returns:
+   * - encoded: non-null if the ID is a self-contained encoded sequence (z: prefix or pipe-delimited)
+   * - legacyId: non-null if the ID is a legacy session/Firebase ID or plain word
+   */
+  parseSequenceRouteId(id: string): SequenceRouteIdParseResult;
+
+  /**
    * Encode a sequence for QR code offline use.
    * Returns a string prefixed with "s~" that contains all sequence data
    * compressed and URL-safe, allowing the sequence to load without Firebase.
@@ -150,6 +167,16 @@ export interface ISequenceEncoder {
    * @returns Estimation with encoded length and recommended QR version
    */
   estimateOfflineQRSize(sequence: SequenceData): QRSizeEstimate;
+}
+
+/**
+ * Result of parsing a sequence route ID
+ */
+export interface SequenceRouteIdParseResult {
+  /** Non-null if the ID is a self-contained encoded sequence */
+  encoded: string | null;
+  /** Non-null if the ID is a legacy session/Firebase ID or plain word */
+  legacyId: string | null;
 }
 
 /**

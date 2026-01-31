@@ -5,24 +5,25 @@
  * following the service-based architecture pattern.
  */
 
+import { goto } from "$app/navigation";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
   IBrowseEventHandler,
   BrowseEventHandlerParams,
   DeleteConfirmationData,
 } from "../contracts/IBrowseEventHandler";
-import { openSpotlightViewer } from "../../../../../shared/application/state/ui/ui-state.svelte";
-import type { IBrowseThumbnailProvider } from "../../../sequences/display/services/contracts/IBrowseThumbnailProvider";
-import type { IBrowseLoader } from "../../../sequences/display/services/contracts/IBrowseLoader";
 import { sequencePanelManager } from "../../state/sequence-panel-state.svelte";
+import { browseScrollState } from "../../state/BrowseScrollState.svelte";
+import type { IBrowseLoader } from "../../../sequences/display/services/contracts/IBrowseLoader";
 import type { ISheetRouter } from "../../../../../shared/navigation/services/contracts/ISheetRouter";
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
+import { saveSequenceRouteHandoff } from "../../../../../shared/coordinators/sequence-handoff.svelte";
+import { sequenceEncoder } from "../../../../../shared/navigation/services/implementations/SequenceEncoder";
 
 export class BrowseEventHandler implements IBrowseEventHandler {
   private params: BrowseEventHandlerParams | null = null;
 
   constructor(
-    private thumbnailService: IBrowseThumbnailProvider,
     private sheetRouterService: ISheetRouter | null,
     private loaderService: IBrowseLoader | null
   ) {}
@@ -85,7 +86,16 @@ export class BrowseEventHandler implements IBrowseEventHandler {
   }
 
   handleViewDetail(sequence: SequenceData): void {
-    sequencePanelManager.openDetail(sequence);
+    // Save handoff data before navigation for instant loading and return context
+    saveSequenceRouteHandoff({
+      sequence,
+      returnPath: "/browse/gallery",
+      returnLabel: "Browse",
+      scrollY: browseScrollState.lastScrollY,
+    });
+
+    // Navigate to the dedicated sequence route (self-contained URL)
+    void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
   }
 
   handleCloseDetailPanel(): void {
@@ -171,10 +181,15 @@ export class BrowseEventHandler implements IBrowseEventHandler {
   }
 
   handleSpotlightView(sequence: SequenceData): void {
-    openSpotlightViewer(sequence, this.thumbnailService);
+    // Navigate to the dedicated sequence route (replaces modal-based spotlight)
+    saveSequenceRouteHandoff({
+      sequence,
+      returnPath: "/browse/gallery",
+      returnLabel: "Browse",
+      scrollY: browseScrollState.lastScrollY,
+    });
 
-    // Also update URL for sharing/bookmarking
-    this.sheetRouterService?.openSpotlight(sequence.id);
+    void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
   }
 
   async handleDeleteConfirm(
