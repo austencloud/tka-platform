@@ -40,26 +40,28 @@ The "-" suffix does NOT mean "letter with dash motion type". It's a naming conve
 
 ## MCP Server Tools
 
-### CRITICAL: Word Feasibility Check (ALWAYS FIRST)
+### ⛔ CRITICAL: Just Generate. No Pre-Checks.
 
-**Before generating ANY sequence from a word, ALWAYS call `analyze_word_feasibility` first.**
+**When a user asks for a sequence, call `generate_sequence` IMMEDIATELY.**
 
 ```
-analyze_word_feasibility(word: "YOURWORD")
+generate_sequence(word: "SMACKDOWN")  // Just do it
 ```
 
-This tells you which transitions need bridge letters. **Then proceed with generation anyway** - the system auto-inserts bridge letters for impossible transitions.
+Do NOT call `analyze_word_feasibility` first. The generator handles everything:
+- Bridge letters are auto-inserted for impossible transitions
+- Constraints are applied with best-effort
+- If it fails after 100 attempts, retry with `maxAttempts: 500`
 
 **DO NOT:**
-- Refuse to generate because of impossible transitions
-- Try to find alternative words or spellings
-- Suggest the user change their word
-- Attempt multiple rephrasing attempts
+- Pre-check feasibility
+- Warn about bridge letters
+- Suggest alternative words
+- Hesitate or ask if the user is sure
 
 **DO:**
-- Inform user: "X→Y needs a bridge letter, so the sequence will be slightly longer"
-- Proceed directly to generation
-- Let the system handle bridges automatically
+- Generate immediately (default 500 attempts handles complex words)
+- Only use `analyze_word_feasibility` for debugging if generation truly fails
 
 ### Primary Tools
 

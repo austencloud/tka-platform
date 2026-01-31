@@ -1,41 +1,59 @@
 # Sequence Generation Workflow
 
+## ⛔ CRITICAL: Always Use `constraintPreset: "smooth"`
+
+**The legacy builder fails for most words. Always use a constraint preset to trigger the reliable builder.**
+
+### The Correct Way (Single Tool Call)
+
+```
+generate_sequence(word: "BOOK", constraintPreset: "smooth")
+```
+
+That's it. One tool call. Works every time.
+
+### Why This Matters
+
+There are **two sequence builders** in the MCP server:
+1. **Legacy builder** - Random walk with 500 retries. Fails for most real words.
+2. **Constrained builder** - Beam search with backtracking. Handles bridges reliably.
+
+**Adding `constraintPreset: "smooth"` triggers the constrained builder.** Without it, you get the legacy builder which will fail.
+
+### If User Specifies a Different Constraint
+
+Use their constraint instead:
+```
+generate_sequence(word: "CAKE", constraintPreset: "reversal")
+generate_sequence(word: "FLOW", constraints: "all pro motions")
+```
+
+Any constraint (preset or natural language) triggers the reliable builder.
+
+---
+
 ## Tool Selection
 
 | Tool | Use When | Returns |
 |------|----------|---------|
-| `generate_sequence` | **Default.** User needs to see the sequence | Opens in viewer, ~50 tokens |
-| `generate_pictograph` | User needs to see a single letter | Opens in viewer, ~50 tokens |
-| `get_sequence_data` | You need step data without showing user | Data only, ~500 tokens |
+| `generate_sequence` | **Default.** Show sequence to user | Opens in viewer, ~50 tokens |
+| `generate_pictograph` | Single letter | Opens in viewer, ~50 tokens |
+| `get_sequence_data` | Need step data without image | Data, ~500 tokens |
 
-**Always use `generate_sequence`** unless you specifically need data without showing the image.
-
----
-
-## Constraints: Just Use Them
-
-When the user specifies constraints ("make it smooth", "no reversals", etc.), pass them directly to `generate_sequence`:
-
-```
-generate_sequence(word: "CAKE", constraintPreset: "smooth")
-generate_sequence(word: "FLOW", constraints: "all pro motions")
-```
-
-**The tool handles feasibility internally.** If a constraint can't be fully satisfied, the response includes a note like:
-- "Prop continuity limited: min 2 reversal(s) unavoidable"
-
-You don't need to call `analyze_word_feasibility` separately. Just generate.
+**Always include a constraint** unless the user explicitly says "no constraints" or "random":
+- Default: `constraintPreset: "smooth"`
+- User wants reversals: `constraintPreset: "reversal"`
+- User wants specific style: pass their `constraints` string
 
 ---
 
-## Bridge Letters: Automatic
+## Bridge Letters
 
-The generator auto-inserts bridge letters for impossible transitions. You don't need to:
-- Warn the user about bridge count
-- Suggest alternative words
-- Check feasibility first
+The constrained builder handles bridges automatically. The response may include notes like:
+- "Σ inserted between B and O"
+- "W inserted between O and K"
 
-The beat count is what it is. Users can request shorter or longer words as needed.
+You don't need to pre-compute bridges. Just call `generate_sequence` with a constraint preset.
 
 ---
 
@@ -45,23 +63,20 @@ If the user requests a sequence without specifying an exact tagline (notes field
 
 ### The Workflow (IN THIS ORDER)
 
-1. **Generate directly** using `generate_sequence`
-   - Bridges are handled automatically
-   - Constraints are handled automatically
+1. **Read the humor profile** from `mcp-server/src/core/humor-profile.json`
+   - Understand preferences BEFORE presenting options
 
-2. **Read the humor profile** from `mcp-server/src/core/humor-profile.json`
-   - Understand preferences BEFORE generating anything
-   - Check if user has established preferences
+2. **Present 4 tagline options** based on the humor profile
 
-3. **Present 4 tagline options** based on the humor profile
+3. **Wait for selection** - user picks one, or says "none" and provides their own
 
-4. **Wait for selection** - user picks one, or says "none" and provides their own
+4. **Generate the sequence** with the chosen tagline:
+   ```
+   generate_sequence(word: "USERWORD", constraintPreset: "smooth", notes: "<tagline>")
+   ```
+   Always include `constraintPreset: "smooth"` to ensure reliable generation.
 
-5. **Generate the sequence** using `generate_sequence` WITH the chosen tagline in `notes`
-   - Only generate ONCE with the final tagline
-   - Don't generate without a tagline then regenerate - that's wasteful
-
-6. **Save the training pair** using the script below
+5. **Save the training pair** using the script below
 
 ### Humor Profile Location
 

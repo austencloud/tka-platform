@@ -458,7 +458,21 @@
       "WebFetch(domain:aerotwist.com)",
       "WebFetch(domain:www.joshwcomeau.com)",
       "WebFetch(domain:storage.googleapis.com)",
-      "Bash(nslookup:*)"
+      "Bash(nslookup:*)",
+      "Bash(deno --version:*)",
+      "Bash(copy:*)",
+      "Bash(icacls \"C:\\\\Program Files \\(x86\\)\\\\Google\\\\Cloud SDK\" /grant \"%USERNAME%:\\(OI\\)\\(CI\\)F\" /T)",
+      "Bash(gcloud storage buckets create:*)",
+      "Bash(gcloud storage buckets list:*)",
+      "Bash(gcloud auth print-access-token:*)",
+      "Bash(gcloud auth list:*)",
+      "Bash(builder \")",
+      "WebFetch(domain:frontendmasters.com)",
+      "WebFetch(domain:blog.olivierlarose.com)",
+      "WebFetch(domain:www.lightgalleryjs.com)",
+      "WebFetch(domain:www.motocms.com)",
+      "WebFetch(domain:ui-patterns.com)",
+      "WebFetch(domain:registry.npmjs.org)"
     ]
   },
   "enableAllProjectMcpServers": true,

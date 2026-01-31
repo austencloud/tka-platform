@@ -90,7 +90,7 @@ Named for the Greek river of forgetting (souls drink from it before reincarnatio
 
 **Why:** Someone on the Windows 93 development team leaked the software to the public without Order authorization. Within months, 3,400+ users had downloaded it. The Order panicked.
 
-**Austen's Immunity:** On May 8, 1994 - the exact day of Protocol Lethe - Austen Cloud was born in the Pacific Northwest. Medical records indicate he experienced minor cranial trauma at approximately 3:47 PM PST, the precise moment the suppression wave reached peak amplitude in the region.
+**Austen's Immunity:** On May 8, 1994 - the exact day of Protocol Lethe - Austen Cloud was born. Medical records indicate he experienced minor cranial trauma at approximately 3:47 PM PST, the precise moment the suppression wave reached peak amplitude in the region.
 
 The "fortuitous concussion" may have created a momentary gap in cognitive reception, allowing the suppression wave to pass through without anchoring.
 

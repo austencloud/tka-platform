@@ -2,6 +2,8 @@
 
 ## Status: Complete
 
+> **Note (Jan 2026):** Paths referencing `infinite-worlds/` have been renamed to `realm/`.
+
 All 3D destinations now use **1 unit = 1 meter** as the universal scale.
 
 ## The Single Source of Truth
@@ -42,7 +44,7 @@ export const SCALE = {
 
 | File | Changes |
 |------|---------|
-| `infinite-worlds/core/systems.ts` | Uses SCALE.* for movement, gravity |
+| `realm/core/systems.ts` | Uses SCALE.* for movement, gravity |
 | `gallery/components/navigation/ModelFirstPerson.svelte` | Uses SCALE.* for player dimensions |
 | `3d-animation/state/avatar-instance-state.svelte.ts` | Scene bounds now in meters |
 | `3d-core/camera/UnifiedCameraController.svelte` | All SETTINGS in meters |

@@ -1,5 +1,11 @@
 # Bulletproof Modal Sizing Strategy
 
+## Implementation Status (Jan 2026)
+
+**Partially implemented.** The three-layer system and layout mode detection are documented but not all modals follow this pattern yet. Some modals still use hardcoded sizes. This document serves as the target architecture.
+
+---
+
 ## Core Principles
 
 1. **Content-first, viewport-constrained**: Modal sizes to its content, but never exceeds safe viewport bounds
