@@ -7,7 +7,7 @@
   - full: TransportControls + SettingsTogglePanel
 -->
 <script lang="ts">
-	import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+	import TempoControl from "./TempoControl.svelte";
 	import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
 	import SettingsTogglePanel from "$lib/features/compose/components/controls/SettingsTogglePanel.svelte";
 	import { sequencePanelManager } from "$lib/features/browse/shared/state/sequence-panel-state.svelte";
@@ -113,7 +113,7 @@
 				</svg>
 			{/if}
 		</button>
-		<BpmChips {bpm} variant="compact" {onBpmChange} />
+		<TempoControl {bpm} {onBpmChange} showPresets={false} showRamp={false} />
 		<button
 			class="settings-gear-btn"
 			class:active={sequencePanelManager.isDetailExpanded}
@@ -192,6 +192,7 @@
 		cursor: pointer;
 		flex-shrink: 0;
 		transition: transform var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	.play-btn svg {
@@ -205,7 +206,8 @@
 	}
 
 	.play-btn:active {
-		transform: scale(0.98);
+		transform: scale(0.9);
+		transition-duration: 0ms;
 	}
 
 	.settings-gear-btn {
@@ -223,6 +225,7 @@
 		cursor: pointer;
 		transition: all var(--duration-normal) ease;
 		flex-shrink: 0;
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	.settings-gear-btn i {
@@ -237,7 +240,8 @@
 	}
 
 	.settings-gear-btn:active {
-		transform: scale(0.95);
+		transform: scale(0.9);
+		transition-duration: 0ms;
 	}
 
 	.settings-gear-btn.active {

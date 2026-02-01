@@ -16,7 +16,7 @@
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
-  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+  import TempoControl from "./TempoControl.svelte";
 
   interface Props {
     /** Current BPM value */
@@ -27,6 +27,8 @@
     isLoggedIn: boolean;
     /** Whether controls should be visible (for auto-hide) */
     controlsVisible?: boolean;
+    /** Whether tempo ramp is currently active */
+    rampActive?: boolean;
     /** Callback when BPM changes */
     onBpmChange: (bpm: number) => void;
     /** Callback to toggle play/pause */
@@ -47,6 +49,12 @@
     onShare: () => void;
     /** Callback when Export is clicked */
     onExport: () => void;
+    /** Callback when "Get TKA Scribe" is clicked (unauthenticated users) */
+    onGetApp?: () => void;
+    /** Callback when ramp training starts */
+    onRampStart?: () => void;
+    /** Callback when ramp training stops */
+    onRampStop?: () => void;
   }
 
   let {
@@ -54,6 +62,7 @@
     isPlaying,
     isLoggedIn,
     controlsVisible = true,
+    rampActive = false,
     onBpmChange,
     onPlayPause,
     onStepBack,
@@ -64,6 +73,9 @@
     onCompose,
     onShare,
     onExport,
+    onGetApp,
+    onRampStart,
+    onRampStop,
   }: Props = $props();
 
   // Detect if we're on mobile
@@ -91,24 +103,36 @@
     <!-- Mobile: Stacked layout -->
     <!-- Row 1: Primary actions (always visible) -->
     <div class="actions-row">
-      <button
-        type="button"
-        class="action-btn save"
-        onclick={onSave}
-        aria-label="Save to Library"
-      >
-        <i class="fas fa-bookmark" aria-hidden="true"></i>
-        <span>Save</span>
-      </button>
-      <button
-        type="button"
-        class="action-btn compose"
-        onclick={onCompose}
-        aria-label="Open in Compose"
-      >
-        <i class="fas fa-users" aria-hidden="true"></i>
-        <span>Compose</span>
-      </button>
+      {#if isLoggedIn}
+        <button
+          type="button"
+          class="action-btn save"
+          onclick={onSave}
+          aria-label="Save to Library"
+        >
+          <i class="fas fa-bookmark" aria-hidden="true"></i>
+          <span>Save</span>
+        </button>
+        <button
+          type="button"
+          class="action-btn compose"
+          onclick={onCompose}
+          aria-label="Open in Compose"
+        >
+          <i class="fas fa-users" aria-hidden="true"></i>
+          <span>Compose</span>
+        </button>
+      {:else}
+        <button
+          type="button"
+          class="action-btn get-app"
+          onclick={onGetApp}
+          aria-label="Get TKA Scribe"
+        >
+          <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+          <span>Get App</span>
+        </button>
+      {/if}
       <button
         type="button"
         class="action-btn share"
@@ -139,11 +163,14 @@
         onStepFullBeatBackward={onStepBack}
         onStepFullBeatForward={onStepForward}
       />
-      <div class="bpm-compact">
-        <BpmChips
+      <div class="tempo-section">
+        <TempoControl
           {bpm}
-          variant="compact"
           {onBpmChange}
+          showPresets={false}
+          rampActive={rampActive}
+          onRampStart={onRampStart}
+          onRampStop={onRampStop}
         />
       </div>
     </div>
@@ -159,34 +186,48 @@
           onStepFullBeatBackward={onStepBack}
           onStepFullBeatForward={onStepForward}
         />
-        <div class="bpm-compact">
-          <BpmChips
+        <div class="tempo-section">
+          <TempoControl
             {bpm}
-            variant="compact"
             {onBpmChange}
+            rampActive={rampActive}
+            onRampStart={onRampStart}
+            onRampStop={onRampStop}
           />
         </div>
       </div>
 
       <div class="actions-section">
-        <button
-          type="button"
-          class="action-btn save"
-          onclick={onSave}
-          aria-label="Save to Library"
-        >
-          <i class="fas fa-bookmark" aria-hidden="true"></i>
-          <span>Save</span>
-        </button>
-        <button
-          type="button"
-          class="action-btn compose"
-          onclick={onCompose}
-          aria-label="Open in Compose"
-        >
-          <i class="fas fa-users" aria-hidden="true"></i>
-          <span>Compose</span>
-        </button>
+        {#if isLoggedIn}
+          <button
+            type="button"
+            class="action-btn save"
+            onclick={onSave}
+            aria-label="Save to Library"
+          >
+            <i class="fas fa-bookmark" aria-hidden="true"></i>
+            <span>Save</span>
+          </button>
+          <button
+            type="button"
+            class="action-btn compose"
+            onclick={onCompose}
+            aria-label="Open in Compose"
+          >
+            <i class="fas fa-users" aria-hidden="true"></i>
+            <span>Compose</span>
+          </button>
+        {:else}
+          <button
+            type="button"
+            class="action-btn get-app"
+            onclick={onGetApp}
+            aria-label="Get TKA Scribe"
+          >
+            <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+            <span>Get App</span>
+          </button>
+        {/if}
         <button
           type="button"
           class="action-btn share"
@@ -232,7 +273,6 @@
   .desktop-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 16px;
   }
 
@@ -247,7 +287,7 @@
   .actions-section {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex-shrink: 0;
   }
 
@@ -297,9 +337,9 @@
     align-items: center;
     justify-content: center;
     gap: 2px;
-    min-width: 64px;
+    min-width: 68px;
     height: 48px;
-    padding: 6px 14px;
+    padding: 6px 16px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
@@ -327,8 +367,8 @@
   }
 
   .action-btn:active {
-    transform: scale(0.95);
-    transition-duration: 50ms;
+    transform: scale(0.9);
+    transition-duration: 0ms;
   }
 
   .action-btn:focus-visible {
@@ -359,6 +399,17 @@
     border-color: rgba(6, 182, 212, 0.4);
   }
 
+  .action-btn.get-app {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.25);
+    color: #22c55e;
+  }
+
+  .action-btn.get-app:hover {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.4);
+  }
+
   .action-btn.share {
     background: rgba(168, 85, 247, 0.1);
     border-color: rgba(168, 85, 247, 0.25);
@@ -383,47 +434,13 @@
   }
 
   /* ===========================
-     BPM COMPACT STYLING
+     TEMPO CONTROL SECTION
      =========================== */
 
-  .bpm-compact {
+  .tempo-section {
     flex: 1;
     min-width: 0;
-    max-width: 350px;
-  }
-
-  /* Match action button height and styling */
-  .bpm-compact :global(.bpm-chips.compact) {
-    gap: 6px;
-  }
-
-  .bpm-compact :global(.preset-chip) {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    box-shadow: none;
-    min-height: 48px;
-    padding: 8px 10px;
-    font-size: 13px;
-  }
-
-  .bpm-compact :global(.preset-chip.active) {
-    background: rgba(139, 92, 246, 0.12);
-    border-color: rgba(139, 92, 246, 0.3);
-    color: #a78bfa;
-  }
-
-  .bpm-compact :global(.preset-chip:hover:not(.active)) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-  }
-
-  /* Custom chip - ensure text doesn't truncate */
-  .bpm-compact :global(.custom-chip) {
-    min-width: 56px;
-    max-width: 70px;
-    font-size: 11px;
-    padding: 8px 6px;
+    max-width: 500px;
   }
 
   /* ===========================
@@ -445,7 +462,7 @@
       font-size: 11px;
     }
 
-    .bpm-compact {
+    .tempo-section {
       width: 100%;
       max-width: none;
     }

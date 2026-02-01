@@ -106,6 +106,18 @@ export interface IAnimationPlaybackController {
   calculateStateForBeat(beat: number): void;
 
   /**
+   * Register a callback that fires each time a full loop of the sequence completes.
+   * Used by tempo ramp training to track rounds.
+   * @param callback Function to call on each loop completion
+   */
+  onLoopComplete(callback: () => void): void;
+
+  /**
+   * Remove the loop completion callback.
+   */
+  offLoopComplete(): void;
+
+  /**
    * Clean up resources
    */
   dispose(): void;

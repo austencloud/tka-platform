@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
-  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+  import TempoControl from "./TempoControl.svelte";
 
   interface Props {
     visible: boolean;
@@ -58,10 +58,11 @@
         onStepFullBeatBackward={onStepFullBeatBackward}
         onStepFullBeatForward={onStepFullBeatForward}
       />
-      <BpmChips
+      <TempoControl
         {bpm}
-        variant="compact"
         onBpmChange={onBpmChange}
+        showPresets={false}
+        showRamp={false}
       />
     </div>
   {/if}

@@ -40,6 +40,7 @@ import { CompositeVideoRenderer } from "$lib/features/compose/services/implement
 import { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 import { TunnelModeSequenceManager } from "$lib/features/compose/services/implementations/TunnelModeSequenceManager";
 import { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
+import { TempoRampOrchestrator } from "$lib/shared/sequence-viewer/services/implementations/TempoRampOrchestrator";
 
 // Type imports for external dependencies
 import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
@@ -147,6 +148,9 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
     .add(() => ({
       sequenceMotionLoader: () =>
         new SequenceMotionLoader(externalDeps.browseLoader),
+    }))
+    .add(() => ({
+      tempoRampOrchestrator: () => new TempoRampOrchestrator(),
     }));
 }
 

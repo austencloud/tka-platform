@@ -42,6 +42,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   // Track if this is the first loop (for loopable sequences that skip start pos on subsequent loops)
   private isFirstLoop: boolean = true;
 
+  // Loop completion callback (used by tempo ramp training)
+  private loopCompleteCallback: (() => void) | null = null;
+
   constructor(
     private readonly animationEngine: ISequenceAnimationOrchestrator,
     private readonly loopService: IAnimationLoop,
@@ -436,9 +439,18 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     return this.animationEngine.getCurrentPropStates();
   }
 
+  onLoopComplete(callback: () => void): void {
+    this.loopCompleteCallback = callback;
+  }
+
+  offLoopComplete(): void {
+    this.loopCompleteCallback = null;
+  }
+
   dispose(): void {
     this.stopStepPlayback();
     this.loopService.stop();
+    this.loopCompleteCallback = null;
     this.state = null;
     this.sequenceData = null;
     this.timePosition = 0;
@@ -493,6 +505,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     const animationEndStep = this.state.totalSteps + 1;
     if (nextStep > animationEndStep) {
       if (this.state.shouldLoop) {
+        // Notify loop completion listener (used by tempo ramp training)
+        this.loopCompleteCallback?.();
+
         // Loop back to start without leaving "playing" state
         this.syncCurrentStep(0);
         if (this.sequenceData) {
@@ -569,6 +584,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
         // Mark that we've completed the first loop
         this.isFirstLoop = false;
+
+        // Notify loop completion listener (used by tempo ramp training)
+        this.loopCompleteCallback?.();
 
         // For seamlessly loopable sequences: skip start position on subsequent loops
         // For freeform sequences: show start position every time

@@ -16,8 +16,9 @@
 -->
 <script lang="ts">
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
-  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+  import TempoControl from "./TempoControl.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { container } from "$lib/shared/di";
 
   type FooterMode = 'collapsed' | 'settings' | 'playback' | 'actions';
 
@@ -26,7 +27,7 @@
     bpm: number;
     /** Whether animation is currently playing */
     isPlaying: boolean;
-    /** Whether user is logged in (affects Save button) */
+    /** Whether user is logged in (affects Save/Compose buttons) */
     isLoggedIn: boolean;
     /** Unified dark mode state */
     darkMode: boolean;
@@ -52,6 +53,14 @@
     onExport: () => void;
     /** Callback when unified dark mode is toggled */
     onDarkModeToggle: () => void;
+    /** Callback when "Get TKA Scribe" is clicked (unauthenticated users) */
+    onGetApp?: () => void;
+    /** Whether tempo ramp is currently active */
+    rampActive?: boolean;
+    /** Callback when ramp training starts */
+    onRampStart?: () => void;
+    /** Callback when ramp training stops */
+    onRampStop?: () => void;
   }
 
   let {
@@ -70,6 +79,10 @@
     onShare,
     onExport,
     onDarkModeToggle,
+    onGetApp,
+    rampActive = false,
+    onRampStart,
+    onRampStop,
   }: Props = $props();
 
   // Footer mode state machine
@@ -87,38 +100,71 @@
 
   // Toggle handlers for animation settings
   function toggleAnimGrid() {
+    haptic();
     const newMode = animGridVisible ? "none" : "diamond";
     animVisibility.setGridMode(newMode);
     animGridVisible = newMode !== "none";
   }
 
   function toggleAnimTrails() {
+    haptic();
     const newStyle = animTrailsOn ? "off" : "on";
     animVisibility.setTrailStyle(newStyle);
     animTrailsOn = newStyle === "on";
   }
 
   function toggleAnimTkaGlyph() {
+    haptic();
     animTkaGlyph = !animTkaGlyph;
     animVisibility.setVisibility("tkaGlyph", animTkaGlyph);
   }
 
   function toggleAnimWordHeader() {
+    haptic();
     animWordHeader = !animWordHeader;
     animVisibility.setVisibility("wordHeader", animWordHeader);
   }
 
   function toggleAnimStepNumbers() {
+    haptic();
     animStepNumbers = !animStepNumbers;
     animVisibility.setVisibility("stepNumbers", animStepNumbers);
   }
 
+  // Haptic feedback helper
+  function haptic() {
+    container.items.hapticFeedback?.trigger("selection");
+  }
+
+  // Step button glow state — tracks which button is animating
+  let steppingBtn = $state<'half-back' | 'full-back' | 'full-fwd' | 'half-fwd' | null>(null);
+  let steppingTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function glowStep(btn: typeof steppingBtn, duration: number) {
+    if (steppingTimer) clearTimeout(steppingTimer);
+    steppingBtn = btn;
+    steppingTimer = setTimeout(() => { steppingBtn = null; }, duration);
+  }
+
+  // Compute step animation duration (matches AnimationPlaybackController.getStepDuration)
+  function getHalfStepDuration(): number {
+    const speedMultiplier = bpm / 60;
+    return (1000 / speedMultiplier) * 0.5;
+  }
+
+  function getFullStepDuration(): number {
+    const speedMultiplier = bpm / 60;
+    return 1000 / speedMultiplier;
+  }
+
   // Button handlers
   function handleSettingsClick() {
+    haptic();
     mode = mode === 'settings' ? 'collapsed' : 'settings';
   }
 
   function handlePlayClick() {
+    haptic();
     // Always toggle playback
     onPlayPause();
     // Toggle panel visibility
@@ -126,6 +172,7 @@
   }
 
   function handleShareClick() {
+    haptic();
     mode = mode === 'actions' ? 'collapsed' : 'actions';
   }
 
@@ -186,7 +233,8 @@
         <div class="step-controls">
           <button
             class="step-btn step-half"
-            onclick={onStepHalfBack ?? (() => {})}
+            class:stepping={steppingBtn === 'half-back'}
+            onclick={() => { haptic(); glowStep('half-back', getHalfStepDuration()); (onStepHalfBack ?? (() => {}))(); }}
             type="button"
             aria-label="Previous half beat"
           >
@@ -194,7 +242,8 @@
           </button>
           <button
             class="step-btn step-full"
-            onclick={onStepBack}
+            class:stepping={steppingBtn === 'full-back'}
+            onclick={() => { haptic(); glowStep('full-back', getFullStepDuration()); onStepBack(); }}
             type="button"
             aria-label="Previous full beat"
           >
@@ -202,7 +251,8 @@
           </button>
           <button
             class="step-btn step-full"
-            onclick={onStepForward}
+            class:stepping={steppingBtn === 'full-fwd'}
+            onclick={() => { haptic(); glowStep('full-fwd', getFullStepDuration()); onStepForward(); }}
             type="button"
             aria-label="Next full beat"
           >
@@ -210,7 +260,8 @@
           </button>
           <button
             class="step-btn step-half"
-            onclick={onStepHalfForward ?? (() => {})}
+            class:stepping={steppingBtn === 'half-fwd'}
+            onclick={() => { haptic(); glowStep('half-fwd', getHalfStepDuration()); (onStepHalfForward ?? (() => {}))(); }}
             type="button"
             aria-label="Next half beat"
           >
@@ -218,10 +269,13 @@
           </button>
         </div>
         <div class="bpm-section">
-          <BpmChips
+          <TempoControl
             {bpm}
-            variant="compact"
             {onBpmChange}
+            showPresets={false}
+            rampActive={rampActive}
+            onRampStart={onRampStart}
+            onRampStop={onRampStop}
           />
         </div>
       </div>
@@ -230,28 +284,40 @@
     <!-- Actions Panel -->
     <div class="panel-content" class:active={mode === 'actions'}>
       <div class="actions-grid">
-        <button
-          type="button"
-          class="action-btn save"
-          onclick={onSave}
-          aria-label="Save to Library"
-        >
-          <i class="fas fa-bookmark" aria-hidden="true"></i>
-          <span>Save</span>
-        </button>
-        <button
-          type="button"
-          class="action-btn compose"
-          onclick={onCompose}
-          aria-label="Open in Compose"
-        >
-          <i class="fas fa-users" aria-hidden="true"></i>
-          <span>Compose</span>
-        </button>
+        {#if isLoggedIn}
+          <button
+            type="button"
+            class="action-btn save"
+            onclick={() => { haptic(); onSave(); }}
+            aria-label="Save to Library"
+          >
+            <i class="fas fa-bookmark" aria-hidden="true"></i>
+            <span>Save</span>
+          </button>
+          <button
+            type="button"
+            class="action-btn compose"
+            onclick={() => { haptic(); onCompose(); }}
+            aria-label="Open in Compose"
+          >
+            <i class="fas fa-users" aria-hidden="true"></i>
+            <span>Compose</span>
+          </button>
+        {:else}
+          <button
+            type="button"
+            class="action-btn get-app"
+            onclick={() => { haptic(); onGetApp?.(); }}
+            aria-label="Get TKA Scribe"
+          >
+            <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+            <span>Get App</span>
+          </button>
+        {/if}
         <button
           type="button"
           class="action-btn share"
-          onclick={onShare}
+          onclick={() => { haptic(); onShare(); }}
           aria-label="Share"
         >
           <i class="fas fa-share" aria-hidden="true"></i>
@@ -260,7 +326,7 @@
         <button
           type="button"
           class="action-btn download"
-          onclick={onExport}
+          onclick={() => { haptic(); onExport(); }}
           aria-label="Download"
         >
           <i class="fas fa-download" aria-hidden="true"></i>
@@ -416,46 +482,21 @@
   }
 
   .step-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
     background: var(--theme-card-hover-bg);
+    transition-duration: 0ms;
+  }
+
+  .step-btn.stepping {
+    border-color: var(--theme-accent, rgba(99, 102, 241, 0.6));
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--theme-text, white);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
   }
 
   .bpm-section {
     width: 100%;
-    max-width: 350px;
-  }
-
-  /* Match action button height and styling */
-  .bpm-section :global(.bpm-chips.compact) {
-    gap: 6px;
-  }
-
-  .bpm-section :global(.preset-chip) {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    box-shadow: none;
-    min-height: 48px;
-    padding: 8px 10px;
-    font-size: 13px;
-  }
-
-  .bpm-section :global(.preset-chip.active) {
-    background: rgba(139, 92, 246, 0.12);
-    border-color: rgba(139, 92, 246, 0.3);
-    color: #a78bfa;
-  }
-
-  .bpm-section :global(.preset-chip:hover:not(.active)) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-  }
-
-  .bpm-section :global(.custom-chip) {
-    min-width: 56px;
-    max-width: 70px;
-    font-size: 11px;
-    padding: 8px 6px;
+    max-width: 400px;
   }
 
   /* ===========================
@@ -507,8 +548,8 @@
   }
 
   .action-btn:active {
-    transform: scale(0.95);
-    transition-duration: 50ms;
+    transform: scale(0.9);
+    transition-duration: 0ms;
   }
 
   .action-btn:focus-visible {
@@ -537,6 +578,17 @@
   .action-btn.compose:hover {
     background: rgba(6, 182, 212, 0.2);
     border-color: rgba(6, 182, 212, 0.4);
+  }
+
+  .action-btn.get-app {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.25);
+    color: #22c55e;
+  }
+
+  .action-btn.get-app:hover {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.4);
   }
 
   .action-btn.share {
@@ -597,8 +649,8 @@
   }
 
   .morph-btn:active {
-    transform: scale(0.92);
-    transition-duration: 100ms;
+    transform: scale(0.88);
+    transition-duration: 0ms;
   }
 
   .morph-btn:focus-visible {
@@ -630,7 +682,8 @@
   }
 
   .morph-btn.play:active {
-    transform: scale(0.95);
+    transform: scale(0.88);
+    transition-duration: 0ms;
   }
 
   .morph-btn.play.active {

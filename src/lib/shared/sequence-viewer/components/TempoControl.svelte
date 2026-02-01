@@ -1,0 +1,533 @@
+<!--
+  TempoControl.svelte
+
+  Compact BPM control replacing BpmChips.
+
+  Desktop: [ - ]  60 BPM  [ + ]   [ Slow ] [ Med ] [ Fast ]   [ Ramp ]
+  Mobile:  [ - ]  60 BPM  [ + ]   [ Ramp ]
+
+  Features:
+  - +/- buttons with hold-to-repeat (accelerating)
+  - Tappable BPM display for tap-tempo
+  - Semantic presets (Slow/Med/Fast) hidden on mobile
+  - Ramp button to start progressive tempo training
+  - BPM intensity color coding
+-->
+<script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
+  const PRESETS = [
+    { label: "Slow", bpm: 15 },
+    { label: "Med", bpm: 60 },
+    { label: "Fast", bpm: 120 },
+  ] as const;
+
+  const BPM_MIN = 5;
+  const BPM_MAX = 300;
+  const STEP_NORMAL = 5;
+  const STEP_FAST = 10;
+  const HOLD_DELAY_MS = 500;
+  const HOLD_TICK_MS = 100;
+  const HOLD_ACCEL_MS = 2000;
+  const TAP_TIMEOUT_MS = 2000;
+  const MAX_TAP_HISTORY = 8;
+
+  interface Props {
+    bpm: number;
+    onBpmChange: (bpm: number) => void;
+    showPresets?: boolean;
+    showRamp?: boolean;
+    rampActive?: boolean;
+    onRampStart?: () => void;
+    onRampStop?: () => void;
+  }
+
+  let {
+    bpm,
+    onBpmChange,
+    showPresets = true,
+    showRamp = true,
+    rampActive = false,
+    onRampStart,
+    onRampStop,
+  }: Props = $props();
+
+  // Tap tempo state
+  let tapTimes: number[] = $state([]);
+  let tapTimeout: ReturnType<typeof setTimeout> | null = null;
+  let isTapping = $derived(tapTimes.length > 0);
+
+  // Hold-to-repeat state
+  let holdTimer: ReturnType<typeof setTimeout> | null = null;
+  let holdInterval: ReturnType<typeof setInterval> | null = null;
+  let holdStartTime = 0;
+
+  // Mobile detection
+  let isMobile = $state(false);
+
+  $effect(() => {
+    if (typeof window !== "undefined") {
+      const check = () => { isMobile = window.innerWidth < 768; };
+      check();
+      window.addEventListener("resize", check);
+      return () => window.removeEventListener("resize", check);
+    }
+    return undefined;
+  });
+
+  // BPM intensity color
+  let bpmColor = $derived.by(() => {
+    if (bpm <= 30) return "var(--semantic-success, #22c55e)";
+    if (bpm <= 75) return "var(--theme-accent, #8b5cf6)";
+    if (bpm <= 120) return "var(--semantic-warning, #f59e0b)";
+    return "var(--semantic-error, #ef4444)";
+  });
+
+  // Active preset
+  let activePreset = $derived(
+    PRESETS.find((p) => p.bpm === bpm)?.label ?? null
+  );
+
+  // --- Handlers ---
+
+  function clampBpm(value: number): number {
+    return Math.max(BPM_MIN, Math.min(BPM_MAX, value));
+  }
+
+  function adjustBpm(direction: 1 | -1) {
+    const elapsed = performance.now() - holdStartTime;
+    const step = elapsed > HOLD_ACCEL_MS ? STEP_FAST : STEP_NORMAL;
+    const newBpm = clampBpm(bpm + direction * step);
+    if (newBpm !== bpm) {
+      onBpmChange(newBpm);
+    }
+  }
+
+  function startHold(direction: 1 | -1) {
+    holdStartTime = performance.now();
+    adjustBpm(direction);
+
+    holdTimer = setTimeout(() => {
+      holdInterval = setInterval(() => {
+        adjustBpm(direction);
+      }, HOLD_TICK_MS);
+    }, HOLD_DELAY_MS);
+  }
+
+  function stopHold() {
+    if (holdTimer) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+    if (holdInterval) {
+      clearInterval(holdInterval);
+      holdInterval = null;
+    }
+  }
+
+  function handleTap() {
+    const now = Date.now();
+
+    if (tapTimeout !== null) {
+      clearTimeout(tapTimeout);
+    }
+
+    tapTimes = [...tapTimes, now].slice(-MAX_TAP_HISTORY);
+
+    if (tapTimes.length >= 2) {
+      const intervals: number[] = [];
+      for (let i = 1; i < tapTimes.length; i++) {
+        const current = tapTimes[i];
+        const previous = tapTimes[i - 1];
+        if (current !== undefined && previous !== undefined) {
+          intervals.push(current - previous);
+        }
+      }
+
+      const avgInterval =
+        intervals.reduce((sum, val) => sum + val, 0) / intervals.length;
+      const calculatedBpm = Math.round(60000 / avgInterval);
+      const newBpm = clampBpm(calculatedBpm);
+      onBpmChange(newBpm);
+    }
+
+    tapTimeout = setTimeout(() => {
+      tapTimes = [];
+    }, TAP_TIMEOUT_MS) as ReturnType<typeof setTimeout>;
+  }
+
+  function selectPreset(presetBpm: number) {
+    onBpmChange(presetBpm);
+  }
+
+  function handleRampClick() {
+    if (rampActive) {
+      onRampStop?.();
+    } else {
+      onRampStart?.();
+    }
+  }
+
+  // Cleanup on unmount
+  $effect(() => {
+    return () => {
+      stopHold();
+      if (tapTimeout) clearTimeout(tapTimeout);
+    };
+  });
+</script>
+
+<div class="tempo-control" class:mobile={isMobile}>
+  <!-- +/- with BPM display -->
+  <div class="bpm-adjuster">
+    <button
+      class="adjust-btn"
+      onpointerdown={() => startHold(-1)}
+      onpointerup={stopHold}
+      onpointerleave={stopHold}
+      onpointercancel={stopHold}
+      disabled={bpm <= BPM_MIN}
+      aria-label={t("compose_decrease_bpm")}
+      type="button"
+    >
+      <i class="fas fa-minus" aria-hidden="true"></i>
+    </button>
+
+    <button
+      class="bpm-display"
+      onclick={handleTap}
+      type="button"
+      aria-label={t("compose_tap_to_set_tempo")}
+      title={t("compose_tap_tempo_hint")}
+      style="--bpm-color: {bpmColor}"
+    >
+      <span class="bpm-value">{bpm}</span>
+      <span class="bpm-label">{isTapping ? t("compose_tap") : t("compose_bpm")}</span>
+    </button>
+
+    <button
+      class="adjust-btn"
+      onpointerdown={() => startHold(1)}
+      onpointerup={stopHold}
+      onpointerleave={stopHold}
+      onpointercancel={stopHold}
+      disabled={bpm >= BPM_MAX}
+      aria-label={t("compose_increase_bpm")}
+      type="button"
+    >
+      <i class="fas fa-plus" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <!-- Semantic presets (hidden on mobile) -->
+  {#if showPresets && !isMobile}
+    <div class="presets">
+      {#each PRESETS as preset}
+        <button
+          class="preset-btn"
+          class:active={activePreset === preset.label}
+          onclick={() => selectPreset(preset.bpm)}
+          type="button"
+          aria-label={t("compose_set_bpm_to", { bpm: preset.bpm })}
+        >
+          {preset.label}
+        </button>
+      {/each}
+    </div>
+  {/if}
+
+  <!-- Ramp button -->
+  {#if showRamp}
+    <button
+      class="ramp-btn"
+      class:active={rampActive}
+      onclick={handleRampClick}
+      type="button"
+      aria-label={rampActive ? "Stop ramp training" : "Start ramp training"}
+    >
+      <i class="fas {rampActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
+      <span>{rampActive ? "Stop" : "Ramp"}</span>
+    </button>
+  {/if}
+</div>
+
+<style>
+  .tempo-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .tempo-control.mobile {
+    gap: 8px;
+  }
+
+  /* ===========================
+     BPM ADJUSTER (+/- and display)
+     =========================== */
+
+  .bpm-adjuster {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .adjust-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 50%;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .adjust-btn:hover:not(:disabled) {
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+      color: var(--theme-text, white);
+      transform: scale(1.05);
+    }
+  }
+
+  .adjust-btn:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  .adjust-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .adjust-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  /* ===========================
+     BPM DISPLAY (tappable)
+     =========================== */
+
+  .bpm-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 16px;
+    min-width: 72px;
+    background: color-mix(in srgb, var(--bpm-color) 12%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--bpm-color) 30%, transparent);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .bpm-display:hover {
+      background: color-mix(in srgb, var(--bpm-color) 18%, transparent);
+      border-color: color-mix(in srgb, var(--bpm-color) 40%, transparent);
+      transform: scale(1.02);
+    }
+  }
+
+  .bpm-display:active {
+    transform: scale(0.98);
+    background: color-mix(in srgb, var(--bpm-color) 22%, transparent);
+  }
+
+  .bpm-display:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .bpm-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--bpm-color);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bpm-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  /* ===========================
+     SEMANTIC PRESETS
+     =========================== */
+
+  .presets {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .preset-btn {
+    padding: 8px 14px;
+    min-height: 48px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+  }
+
+  .preset-btn.active {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: #a78bfa;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .preset-btn:hover:not(.active) {
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+      color: var(--theme-text, white);
+      transform: translateY(-1px);
+    }
+
+    .preset-btn.active:hover {
+      background: rgba(139, 92, 246, 0.2);
+      border-color: rgba(139, 92, 246, 0.5);
+    }
+  }
+
+  .preset-btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .preset-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  /* ===========================
+     RAMP BUTTON
+     =========================== */
+
+  .ramp-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    min-height: 48px;
+    min-width: 48px;
+    flex-shrink: 0;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+  }
+
+  .ramp-btn.active {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #f87171;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+    animation: ramp-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes ramp-pulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.35); }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ramp-btn:hover:not(.active) {
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+      color: var(--theme-text, white);
+      transform: translateY(-1px);
+    }
+
+    .ramp-btn.active:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+  }
+
+  .ramp-btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .ramp-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .ramp-btn i {
+    font-size: 14px;
+  }
+
+  /* ===========================
+     RESPONSIVE
+     =========================== */
+
+  @media (max-width: 480px) {
+    .bpm-display {
+      min-width: 64px;
+      padding: 6px 12px;
+    }
+
+    .bpm-value {
+      font-size: 1.1rem;
+    }
+  }
+
+  /* ===========================
+     ACCESSIBILITY
+     =========================== */
+
+  @media (prefers-reduced-motion: reduce) {
+    .adjust-btn,
+    .bpm-display,
+    .preset-btn,
+    .ramp-btn {
+      transition: none;
+      animation: none;
+    }
+
+    .adjust-btn:hover,
+    .adjust-btn:active,
+    .bpm-display:hover,
+    .bpm-display:active,
+    .preset-btn:hover,
+    .preset-btn:active,
+    .ramp-btn:hover,
+    .ramp-btn:active {
+      transform: none;
+    }
+  }
+</style>

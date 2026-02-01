@@ -61,7 +61,9 @@
   import ExportFooter from "./ExportFooter.svelte";
   // Animation and playback
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+  import { TempoRampOrchestrator } from "../services/implementations/TempoRampOrchestrator";
+  import { createTempoRampState } from "../state/tempo-ramp-state.svelte";
+  import RampProgressIndicator from "./RampProgressIndicator.svelte";
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
   import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
   import { browser } from "$app/environment";
@@ -656,17 +658,32 @@
   let bpmLocal = $state(60);
   let cleanupAnimationStateSubscription: (() => void) | undefined;
 
+  // Track whether current position was reached via step buttons
+  let arrivedViaStepping = $state(false);
+
   // Use hydrated sequence data when available, otherwise fall back to prop
   // This ensures LayeredSequencePreview gets the full sequence with motion data
   const effectiveSequence = $derived(modalAnimationState.sequenceData ?? sequence);
 
+  // After stepping (via step buttons), props land at the START of the next beat,
+  // meaning the PREVIOUS beat's motion just completed. Offset the glyph and highlight
+  // to show the just-completed beat instead of the upcoming one.
+  const showPreviousBeat = $derived(
+    arrivedViaStepping &&
+    !isPlayingLocal &&
+    currentStepLocal >= 1 &&
+    Math.abs(currentStepLocal - Math.round(currentStepLocal)) < 0.01
+  );
+
   // Step highlighting for LayeredSequencePreview
   // -1 = start position, 0+ = motion steps
   let highlightedStepIndex = $derived.by(() => {
-    if (!isPlayingLocal) return null;
-    // Start position (currentStep 0 to <1)
+    if (!isPlayingLocal && currentStepLocal < 0.5) return null;
     if (currentStepLocal < 1) return -1;
-    // Motion steps (currentStep 1+ maps to index 0+)
+    // After stepping to an integer beat, show the just-completed beat
+    if (showPreviousBeat) {
+      return Math.round(currentStepLocal) - 2;
+    }
     return Math.floor(currentStepLocal) - 1;
   });
 
@@ -674,11 +691,20 @@
   const currentStepData = $derived.by(() => {
     const sequenceData = modalAnimationState.sequenceData;
     if (!sequenceData) return null;
-    // Start position (currentStep 0 to <1)
+    // After stepping to an integer beat, show the just-completed beat's data
+    if (showPreviousBeat) {
+      const prevIndex = Math.round(currentStepLocal) - 2;
+      if (prevIndex < 0 && sequenceData.startPosition) {
+        return sequenceData.startPosition;
+      }
+      if (sequenceData.steps?.length > 0) {
+        const clampedIndex = Math.min(Math.max(0, prevIndex), sequenceData.steps.length - 1);
+        return sequenceData.steps[clampedIndex] || null;
+      }
+    }
     if (currentStepLocal < 1 && sequenceData.startPosition) {
       return sequenceData.startPosition;
     }
-    // Motion steps (currentStep 1+ maps to steps array)
     if (sequenceData.steps?.length > 0) {
       const stepIndex = Math.max(0, Math.floor(currentStepLocal) - 1);
       const clampedIndex = Math.min(stepIndex, sequenceData.steps.length - 1);
@@ -688,6 +714,9 @@
   });
 
   const currentLetter = $derived(currentStepData?.letter || null);
+
+  // Track beat transitions for haptic feedback during playback
+  let lastBeatNumber = 0;
 
   // Subscribe to animation state changes
   cleanupAnimationStateSubscription = modalAnimationState.subscribe(
@@ -703,16 +732,24 @@
           // Broadcast to sync peers
           lanSyncState.updatePlayback({ isPlaying: value as boolean });
           break;
-        case "currentStep":
-          currentStepLocal = value as number;
+        case "currentStep": {
+          const newStep = value as number;
+          // Haptic pulse on beat transitions during playback
+          const newBeat = Math.floor(newStep);
+          if (isPlayingLocal && newBeat !== lastBeatNumber && newBeat >= 1) {
+            hapticService?.trigger("selection");
+          }
+          lastBeatNumber = newBeat;
+          currentStepLocal = newStep;
           // Periodically update URL with current position (debounced internally)
           if (isPlayingLocal) {
-            const timeMs = playbackTimeCalculator.stepToTimeMs(value as number, bpmLocal);
+            const timeMs = playbackTimeCalculator.stepToTimeMs(newStep, bpmLocal);
             setPlaybackTimeUrl(timeMs);
           }
           // Broadcast to sync peers
-          lanSyncState.updatePlayback({ currentStep: value as number });
+          lanSyncState.updatePlayback({ currentStep: newStep });
           break;
+        }
         case "speed":
           // Convert speed multiplier to BPM (speed 1.0 = 60 BPM)
           bpmLocal = Math.round((value as number) * 60);
@@ -848,9 +885,15 @@
   }
 
   function handlePlaybackToggle() {
+    arrivedViaStepping = false;
     playbackController?.togglePlayback();
     // Announcement handled by isPlayingLocal state change below
   }
+
+  function handleStepHalfBack() { arrivedViaStepping = true; playbackController?.stepHalfBeatBackward(); }
+  function handleStepHalfFwd() { arrivedViaStepping = true; playbackController?.stepHalfBeatForward(); }
+  function handleStepFullBack() { arrivedViaStepping = true; playbackController?.stepFullBeatBackward(); }
+  function handleStepFullFwd() { arrivedViaStepping = true; playbackController?.stepFullBeatForward(); }
 
   // Announce playback state changes
   $effect(() => {
@@ -860,6 +903,12 @@
     }
   });
 
+  // ========== TEMPO RAMP TRAINING ==========
+  const rampOrchestrator = new TempoRampOrchestrator();
+  const rampState = createTempoRampState();
+  // Derived flag to ensure Svelte tracks reactivity for the ramp active state
+  let rampActive = $derived(rampState.progress.active);
+
   function handleBpmChange(newBpm: number) {
     hapticService?.trigger("selection");
     // Convert BPM to speed multiplier (60 BPM = 1.0 speed)
@@ -867,6 +916,76 @@
     playbackController?.setSpeed(speedMultiplier);
     // Sync BPM to URL for persistence
     setBpmUrl(newBpm);
+    // If ramp is active, sync the orchestrator's baseline BPM
+    if (rampOrchestrator.isActive()) {
+      rampOrchestrator.adjustBpm(newBpm);
+      rampState.updateProgress(rampOrchestrator.getProgress());
+    }
+  }
+
+  function handleRampStart() {
+    if (!playbackController) {
+      showToast("Animation not ready yet. Wait for it to load.", "info");
+      return;
+    }
+
+    hapticService?.trigger("selection");
+    rampState.clearCompletion();
+
+    // Start the ramp orchestrator with user's saved config
+    const startBpm = rampOrchestrator.start(rampState.userConfig);
+    rampState.updateProgress(rampOrchestrator.getProgress());
+
+    // Set BPM to start value
+    handleBpmChange(startBpm);
+
+    // Wire loop completion callback
+    playbackController.onLoopComplete(() => {
+      const newBpm = rampOrchestrator.onLoopComplete();
+      rampState.updateProgress(rampOrchestrator.getProgress());
+
+      if (newBpm !== null) {
+        // BPM bumped - apply it
+        handleBpmChange(newBpm);
+        hapticService?.trigger("selection");
+      }
+
+      // Check if ramp ended (hit max BPM)
+      if (!rampOrchestrator.isActive()) {
+        handleRampStop();
+      }
+    });
+
+    // Ensure playback is running and looping
+    modalAnimationState.setShouldLoop(true);
+    if (!isPlayingLocal) {
+      playbackController.togglePlayback();
+    }
+  }
+
+  function handleRampStop() {
+    if (!playbackController) return;
+
+    const finalBpm = rampOrchestrator.stop();
+    rampState.updateProgress(rampOrchestrator.getProgress());
+
+    // Remove loop completion callback
+    playbackController.offLoopComplete();
+
+    // Record personal best
+    const sequenceId = sequence?.id || sequence?.word || "unknown";
+    rampState.recordPersonalBest(sequenceId, finalBpm);
+
+    // Show completion feedback
+    rampState.showCompletion(finalBpm);
+    hapticService?.trigger("success");
+
+    const personalBest = rampState.getPersonalBest(sequenceId);
+    const isNewBest = personalBest !== null && finalBpm >= personalBest;
+    const message = isNewBest
+      ? `Ramp complete: ${finalBpm} BPM (new best!)`
+      : `Ramp complete: ${finalBpm} BPM`;
+    showToast(message, "success");
   }
 
   function handleStepClick(stepIndex: number) {
@@ -884,6 +1003,7 @@
     if (playbackController) {
       hapticService?.trigger("selection");
       const targetStep = stepIndex + 1;
+      arrivedViaStepping = false;
       modalAnimationState.setCurrentStep(targetStep);
       // Use seekToStep to maintain playback state (don't pause if playing)
       playbackController.seekToStep(targetStep);
@@ -891,6 +1011,13 @@
   }
 
   function handleClose() {
+    // Stop ramp training if active
+    if (rampOrchestrator.isActive()) {
+      rampOrchestrator.stop();
+      playbackController?.offLoopComplete();
+      rampState.updateProgress(rampOrchestrator.getProgress());
+    }
+
     if (isPlayingLocal && playbackController) {
       playbackController.togglePlayback();
     }
@@ -1087,10 +1214,10 @@
         bpm={bpmLocal}
         onExit={exitFullscreen}
         onPlaybackToggle={handlePlaybackToggle}
-        onStepHalfBeatBackward={() => playbackController?.stepHalfBeatBackward()}
-        onStepHalfBeatForward={() => playbackController?.stepHalfBeatForward()}
-        onStepFullBeatBackward={() => playbackController?.stepFullBeatBackward()}
-        onStepFullBeatForward={() => playbackController?.stepFullBeatForward()}
+        onStepHalfBeatBackward={handleStepHalfBack}
+        onStepHalfBeatForward={handleStepHalfFwd}
+        onStepFullBeatBackward={handleStepFullBack}
+        onStepFullBeatForward={handleStepFullFwd}
         onBpmChange={handleBpmChange}
       />
     {/if}
@@ -1171,32 +1298,52 @@
             darkMode={imgDarkMode}
             onBpmChange={handleBpmChange}
             onPlayPause={handlePlaybackToggle}
-            onStepBack={() => playbackController?.stepFullBeatBackward()}
-            onStepForward={() => playbackController?.stepFullBeatForward()}
-            onStepHalfBack={() => playbackController?.stepHalfBeatBackward()}
-            onStepHalfForward={() => playbackController?.stepHalfBeatForward()}
+            onStepBack={handleStepFullBack}
+            onStepForward={handleStepFullFwd}
+            onStepHalfBack={handleStepHalfBack}
+            onStepHalfForward={handleStepHalfFwd}
             onSave={handleSave}
             onCompose={handleCompose}
             onShare={handleShare}
             onExport={enterExportMode}
             onDarkModeToggle={handleUnifiedDarkModeToggle}
+            rampActive={rampActive}
+            onRampStart={() => handleRampStart()}
+            onRampStop={() => handleRampStop()}
           />
+          {#if rampActive}
+            <RampProgressIndicator
+              progress={rampState.progress}
+              onStop={() => handleRampStop()}
+              variant="floating"
+            />
+          {/if}
         {:else}
           <ViewerFooter
             bpm={bpmLocal}
             isPlaying={isPlayingLocal}
             isLoggedIn={authState.isAuthenticated}
+            rampActive={rampActive}
             onBpmChange={handleBpmChange}
             onPlayPause={handlePlaybackToggle}
-            onStepBack={() => playbackController?.stepFullBeatBackward()}
-            onStepForward={() => playbackController?.stepFullBeatForward()}
-            onStepHalfBack={() => playbackController?.stepHalfBeatBackward()}
-            onStepHalfForward={() => playbackController?.stepHalfBeatForward()}
+            onStepBack={handleStepFullBack}
+            onStepForward={handleStepFullFwd}
+            onStepHalfBack={handleStepHalfBack}
+            onStepHalfForward={handleStepHalfFwd}
             onSave={handleSave}
             onCompose={handleCompose}
             onShare={handleShare}
             onExport={enterExportMode}
+            onRampStart={() => handleRampStart()}
+            onRampStop={() => handleRampStop()}
           />
+          {#if rampActive}
+            <RampProgressIndicator
+              progress={rampState.progress}
+              onStop={() => handleRampStop()}
+              variant="inline"
+            />
+          {/if}
         {/if}
       {/if}
     {/if}

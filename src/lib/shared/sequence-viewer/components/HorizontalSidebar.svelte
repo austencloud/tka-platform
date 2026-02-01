@@ -5,7 +5,7 @@
   Adapts between compact (tabbed) and expanded modes based on available height.
 -->
 <script lang="ts">
-	import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+	import TempoControl from "./TempoControl.svelte";
 	import SettingsTogglePanel from "$lib/features/compose/components/controls/SettingsTogglePanel.svelte";
 	import PlaybackPane from "$lib/features/compose/components/controls/settings-panel/PlaybackPane.svelte";
 	import VisualPane from "$lib/features/compose/components/controls/settings-panel/VisualPane.svelte";
@@ -91,7 +91,7 @@
 	{:else}
 		<!-- Standalone mode: simplified BPM + visual controls -->
 		<div class="sidebar-section standalone-controls">
-			<BpmChips {bpm} variant="full" {onBpmChange} />
+			<TempoControl {bpm} {onBpmChange} showRamp={false} />
 		</div>
 		<div class="sidebar-section">
 			<VisualPane propType={null} bluePropType={null} redPropType={null} />
@@ -187,27 +187,14 @@
 		border-top: 1px solid var(--theme-stroke);
 	}
 
-	/* Standalone mode: BpmChips in sidebar */
+	/* Standalone mode: TempoControl in sidebar */
 	.standalone-controls {
 		gap: 12px;
 	}
 
-	.standalone-controls :global(.bpm-chips) {
-		width: 100%;
-	}
-
-	.standalone-controls :global(.bpm-adjuster) {
+	.standalone-controls :global(.tempo-control) {
+		flex-wrap: wrap;
 		justify-content: center;
-	}
-
-	.standalone-controls :global(.preset-chips) {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 8px;
-	}
-
-	.standalone-controls :global(.preset-chip) {
-		min-height: 48px;
 	}
 
 	/* Child panes - space between sections, not stretched buttons */
