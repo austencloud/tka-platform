@@ -97,7 +97,10 @@
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    padding: 8px 4px;
+    /* iOS safe area - account for notch in landscape and home indicator */
+    padding: max(8px, env(safe-area-inset-top, 0px)) 4px
+      max(8px, env(safe-area-inset-bottom, 0px))
+      max(4px, env(safe-area-inset-left, 0px));
     /* Module-colored background with subtle sheen */
     background: linear-gradient(
       90deg,

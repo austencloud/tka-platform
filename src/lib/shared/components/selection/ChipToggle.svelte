@@ -170,6 +170,12 @@
     }
   }
 
+  /* Active state for press feedback */
+  .chip-toggle:active:not(:disabled) {
+    transform: scale(0.93);
+    transition-duration: 0ms;
+  }
+
   /* Focus visible for keyboard navigation */
   .chip-toggle:focus-visible {
     outline: 2px solid var(--chip-focus, #6366f1);
@@ -266,6 +272,10 @@
   @media (prefers-reduced-motion: reduce) {
     .chip-toggle {
       transition: none;
+    }
+
+    .chip-toggle:active:not(:disabled) {
+      transform: none;
     }
   }
 </style>

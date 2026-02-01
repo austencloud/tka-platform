@@ -94,7 +94,8 @@
     min-height: var(--min-touch-target);
     padding: 0;
     background: transparent;
-    border: 1px solid var(--theme-accent, var(--theme-accent));
+    /* Fallback #818cf8 (indigo-400) ensures visibility before theme loads */
+    border: 1px solid var(--theme-accent, #818cf8);
     border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 2px 8px hsl(0 0% 0% / 0.3);
@@ -111,7 +112,7 @@
     opacity: 0.85;
     background: color-mix(
       in srgb,
-      var(--theme-accent, var(--theme-accent)) 15%,
+      var(--theme-accent, #818cf8) 15%,
       transparent
     );
   }
@@ -128,7 +129,8 @@
 
   .menu-icon {
     font-size: var(--font-size-xl);
-    color: var(--theme-accent, var(--theme-accent));
+    /* Fallback #818cf8 (indigo-400) ensures visibility before theme loads */
+    color: var(--theme-accent, #818cf8);
     pointer-events: none;
   }
 

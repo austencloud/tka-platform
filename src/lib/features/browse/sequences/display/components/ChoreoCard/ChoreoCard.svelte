@@ -284,6 +284,14 @@ LOOP badge:
     background: var(--theme-overlay-bg-light, rgba(255, 255, 255, 0.85));
   }
 
+  /* On mobile, suppress the morph view-transition-name so the drawer
+     slide-up animation isn't fighting with a morph animation */
+  @media (max-width: 767px) {
+    .thumbnail-container {
+      view-transition-name: none !important;
+    }
+  }
+
   /* Accessibility: Respect user's motion preferences */
   @media (prefers-reduced-motion: reduce) {
     .choreo-card {

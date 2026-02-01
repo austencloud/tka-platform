@@ -11,6 +11,7 @@
 <script lang="ts">
   let {
     isPlaying = false,
+    stepGlowMs = 500,
     onPlaybackToggle = () => {},
     onStepHalfBeatBackward = () => {},
     onStepHalfBeatForward = () => {},
@@ -18,19 +19,33 @@
     onStepFullBeatForward = () => {},
   }: {
     isPlaying?: boolean;
+    /** How long step buttons glow after click (ms). 0 to disable. */
+    stepGlowMs?: number;
     onPlaybackToggle?: () => void;
     onStepHalfBeatBackward?: () => void;
     onStepHalfBeatForward?: () => void;
     onStepFullBeatBackward?: () => void;
     onStepFullBeatForward?: () => void;
   } = $props();
+
+  // Step glow state
+  let glowingBtn = $state<string | null>(null);
+  let glowTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function glow(btn: string) {
+    if (!stepGlowMs) return;
+    if (glowTimer) clearTimeout(glowTimer);
+    glowingBtn = btn;
+    glowTimer = setTimeout(() => { glowingBtn = null; }, stepGlowMs);
+  }
 </script>
 
 <div class="transport-controls">
   <!-- Half Beat Back (secondary - outer position) -->
   <button
     class="step-btn step-half"
-    onclick={onStepHalfBeatBackward}
+    class:stepping={glowingBtn === 'hb'}
+    onclick={() => { glow('hb'); onStepHalfBeatBackward(); }}
     type="button"
     aria-label="Previous half beat"
   >
@@ -40,7 +55,8 @@
   <!-- Full Beat Back (primary - adjacent to play) -->
   <button
     class="step-btn step-full"
-    onclick={onStepFullBeatBackward}
+    class:stepping={glowingBtn === 'fb'}
+    onclick={() => { glow('fb'); onStepFullBeatBackward(); }}
     type="button"
     aria-label="Previous full beat"
   >
@@ -61,7 +77,8 @@
   <!-- Full Beat Forward (primary - adjacent to play) -->
   <button
     class="step-btn step-full"
-    onclick={onStepFullBeatForward}
+    class:stepping={glowingBtn === 'ff'}
+    onclick={() => { glow('ff'); onStepFullBeatForward(); }}
     type="button"
     aria-label="Next full beat"
   >
@@ -71,7 +88,8 @@
   <!-- Half Beat Forward (secondary - outer position) -->
   <button
     class="step-btn step-half"
-    onclick={onStepHalfBeatForward}
+    class:stepping={glowingBtn === 'hf'}
+    onclick={() => { glow('hf'); onStepHalfBeatForward(); }}
     type="button"
     aria-label="Next half beat"
   >
@@ -124,8 +142,16 @@
   }
 
   .step-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
     background: var(--theme-card-hover-bg);
+    transition-duration: 0ms;
+  }
+
+  .step-btn.stepping {
+    border-color: var(--theme-accent, rgba(99, 102, 241, 0.6));
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--theme-text, white);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
   }
 
   /* Play/Pause Button - Uses semantic success/error colors */
@@ -178,7 +204,8 @@
   }
 
   .play-pause-btn:active {
-    transform: scale(0.96);
+    transform: scale(0.92);
+    transition-duration: 0ms;
   }
 
   /* Larger play button in expanded mode */

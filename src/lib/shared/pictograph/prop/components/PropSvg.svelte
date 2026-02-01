@@ -57,6 +57,29 @@ even when Svelte recreates the component instance.
     return () => visibilityManager.unregisterObserver(handler);
   });
 
+  // Track SVG content changes for fade transition on prop type swap
+  let propFading = $state(false);
+  let previousImageSrc: string | null = null;
+  let fadeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    const currentSrc = propAssets?.imageSrc;
+    if (previousImageSrc !== null && currentSrc !== previousImageSrc) {
+      // SVG content changed (prop type swap) - trigger fade
+      propFading = true;
+      if (fadeTimeoutId !== null) clearTimeout(fadeTimeoutId);
+      fadeTimeoutId = setTimeout(() => {
+        propFading = false;
+        fadeTimeoutId = null;
+      }, 150);
+    }
+    previousImageSrc = currentSrc ?? null;
+
+    return () => {
+      if (fadeTimeoutId !== null) clearTimeout(fadeTimeoutId);
+    };
+  });
+
   let {
     motionData,
     propAssets,
@@ -372,6 +395,7 @@ even when Svelte recreates the component instance.
       class="prop-svg {motionData.color}-prop-svg clickable"
       class:selected={isSelected}
       class:no-transition={isTransforming}
+      class:prop-fading={propFading}
       data-prop-type={motionData?.propType}
       style="transform: {transformString};"
       onclick={onPropClick}
@@ -404,6 +428,7 @@ even when Svelte recreates the component instance.
       class="prop-svg {motionData.color}-prop-svg"
       class:selected={isSelected}
       class:no-transition={isTransforming}
+      class:prop-fading={propFading}
       data-prop-type={motionData?.propType}
       style="transform: {transformString};"
     >
@@ -427,9 +452,15 @@ even when Svelte recreates the component instance.
 <style>
   .prop-svg {
     pointer-events: none;
-    /* Smooth transition for position and rotation changes - matches arrow and grid behavior */
+    /* Smooth transition for position, rotation, and prop type changes */
     /* IMPORTANT: transform must be a CSS property (not SVG attribute) for transitions to work */
-    transition: transform var(--duration-normal) ease;
+    transition: transform var(--duration-normal) ease,
+                opacity 150ms ease;
+  }
+
+  /* Brief fade when prop type changes (SVG content swap) */
+  .prop-svg.prop-fading {
+    opacity: 0.15;
   }
 
   /* Disable transitions during sequence transforms to prevent janky mid-calculation animation */

@@ -206,7 +206,7 @@
         <LayeredSequencePreview
           {sequence}
           {highlightedStepIndex}
-          showHighlight={isPlaying}
+          showHighlight={isPlaying || highlightedStepIndex !== null}
           {onStepClick}
           showWord={imgShowWord}
           showStepNumbers={true}

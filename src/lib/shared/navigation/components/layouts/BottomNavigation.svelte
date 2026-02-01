@@ -269,6 +269,9 @@
     view-transition-name: none;
     z-index: 100;
 
+    /* iOS safe area - push content above home indicator on iPhones */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+
     transition:
       transform var(--transition-smooth),
       opacity var(--transition-smooth),
@@ -432,7 +435,8 @@
     min-height: var(--min-touch-target);
     padding: 0;
     background: transparent;
-    border: 1px solid var(--theme-accent, var(--theme-accent));
+    /* Fallback #818cf8 (indigo-400) ensures visibility before theme loads */
+    border: 1px solid var(--theme-accent, #818cf8);
     border-radius: 50%;
     box-shadow: 0 2px 8px hsl(0 0% 0% / 0.3);
     touch-action: manipulation;
@@ -453,7 +457,7 @@
   .bottom-navigation :global(.nav-button.special.active) {
     background: color-mix(
       in srgb,
-      var(--theme-accent, var(--theme-accent)) 15%,
+      var(--theme-accent, #818cf8) 15%,
       transparent
     );
   }
@@ -470,8 +474,9 @@
   }
 
   .bottom-navigation :global(.nav-button.special .nav-icon i) {
-    color: var(--theme-accent);
-    -webkit-text-fill-color: var(--theme-accent, var(--theme-accent));
+    /* Fallback #818cf8 (indigo-400) ensures visibility before theme loads */
+    color: var(--theme-accent, #818cf8);
+    -webkit-text-fill-color: var(--theme-accent, #818cf8);
   }
 
   /* ============================================================================

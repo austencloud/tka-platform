@@ -181,8 +181,8 @@
     /* Intelligent reactive padding to prevent overlap */
     padding: clamp(2px, 1vh, 16px) clamp(2px, 1vw, 24px);
 
-    /* Ensure panel is always interactive */
-    pointer-events: auto;
+    /* Let taps pass through empty areas to step grid below */
+    pointer-events: none;
   }
 
   /* LEFT ZONE: Undo button always at left edge */
@@ -191,6 +191,7 @@
     align-items: center;
     gap: 12px; /* Slightly reduced for better mobile fit */
     flex-shrink: 0; /* Don't shrink */
+    pointer-events: auto;
   }
 
   /* CENTER ZONE WRAPPER: Maintains layout space during transitions */
@@ -212,6 +213,7 @@
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
+    pointer-events: auto;
   }
 
   /* RIGHT ZONE: Toggle always at right edge */
@@ -220,6 +222,7 @@
     align-items: center;
     gap: 12px; /* Slightly reduced for better mobile fit */
     flex-shrink: 0; /* Don't shrink */
+    pointer-events: auto;
   }
 
   /* Ensure transition wrappers don't interfere with layout */

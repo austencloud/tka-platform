@@ -312,12 +312,16 @@
     {widthMultiplier}
     cellIndex={index}
   />
+  {#if musicalPosition}
+    <span class="duration-indicator">{musicalPosition}</span>
+  {/if}
 </div>
 
 <style>
   .step-cell {
     position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     border-radius: 0;
@@ -837,5 +841,20 @@
     .practice-wave {
       animation: none;
     }
+  }
+
+  /* Duration indicator - shows "2×", "0.5×", etc. below the pictograph */
+  .duration-indicator {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-accent, #60a5fa);
+    line-height: 1;
+    pointer-events: none;
+    white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   }
 </style>
