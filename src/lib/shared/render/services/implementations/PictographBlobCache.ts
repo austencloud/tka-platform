@@ -21,7 +21,9 @@ import type {
 
 const DB_NAME = "pictograph-blob-cache";
 const STORE_NAME = "blobs";
-const DB_VERSION = 1;
+// v2: Cache keys now include visibility settings (nonRadialPoints, handPointVisibility,
+// showTKA, showReversals). All v1 entries are stale and cleared on upgrade.
+const DB_VERSION = 2;
 
 interface CachedBlobEntry {
   /** Hash key for the pictograph configuration (includes size) */
@@ -51,10 +53,16 @@ export class PictographBlobCache implements IPictographBlobCache {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
+        const oldVersion = event.oldVersion;
 
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: "key" });
           store.createIndex("timestamp", "timestamp", { unique: false });
+        } else if (oldVersion < 2) {
+          // v1 → v2: Cache keys changed (now include visibility settings).
+          // All existing entries are stale - clear them.
+          const tx = (event.target as IDBOpenDBRequest).transaction!;
+          tx.objectStore(STORE_NAME).clear();
         }
       };
 

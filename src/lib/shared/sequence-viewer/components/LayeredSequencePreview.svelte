@@ -32,6 +32,7 @@
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
   import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -149,6 +150,13 @@
   let containerElement: HTMLDivElement | undefined = $state();
   let containedWidth = $state<number | null>(null);
   let containedHeight = $state<number | null>(null);
+
+  // Visibility settings from user preferences (reactive)
+  const visibilitySettings = $derived(getSettings().visibility);
+  const showNonRadial = $derived(visibilitySettings?.nonRadialPoints ?? true);
+  const handPointVis = $derived<"all" | "active">(visibilitySettings?.handPointVisibility ?? "all");
+  const showTKA = $derived(visibilitySettings?.tkaGlyph ?? true);
+  const showReversals = $derived(visibilitySettings?.reversalIndicators ?? true);
 
   // Layout calculations
   const difficultyCalculator = new SequenceDifficultyCalculator();
@@ -292,7 +300,9 @@
     stepNumber: number | undefined,
     isDark: boolean
   ): string {
-    // Build a deterministic key from all rendering parameters
+    // Build a deterministic key from ALL rendering parameters
+    // Every setting that affects the final pixel output MUST be in this key,
+    // otherwise the IndexedDB blob cache returns stale images.
     const keyParts = [
       pictographData.letter || "start",
       pictographData.motions?.blue?.motionType || "none",
@@ -308,6 +318,11 @@
       isDark ? "dark" : "light",
       showStepNumbers ? (stepNumber ?? "none") : "nonum",
       CELL_SIZE,
+      // Visibility settings that change the rendered output
+      showNonRadial ? "nr1" : "nr0",
+      handPointVis,
+      showTKA ? "tka1" : "tka0",
+      showReversals ? "rev1" : "rev0",
     ];
 
     // djb2 hash
@@ -355,20 +370,20 @@
       redPropType: catDogModeEnabled ? redPropType : bluePropType,
     });
 
-    // Render options
+    // Render options - read from user's visibility preferences
     const options: LayerRenderOptions = {
       size: CELL_SIZE,
       darkMode: isDark,
-      showNonRadialPoints: true,
-      handPointVisibility: "all",
+      showNonRadialPoints: showNonRadial,
+      handPointVisibility: handPointVis,
       bluePropType: bluePropType,
       redPropType: catDogModeEnabled ? redPropType : bluePropType,
     };
 
-    // Visibility settings
+    // Visibility settings - read from user's preferences
     const visibility: LayerVisibility = {
-      showTKA: true,
-      showReversals: true,
+      showTKA,
+      showReversals,
     };
 
     // Compose the pictograph
@@ -599,7 +614,7 @@
   // Track if initial render is complete
   let hasMounted = false;
 
-  // Re-render when relevant props change
+  // Re-render when relevant props or visibility settings change
   $effect(() => {
     // Track all props that affect rendering
     const _sequence = sequence;
@@ -609,6 +624,11 @@
     const _catDogModeEnabled = catDogModeEnabled;
     const _showStepNumbers = showStepNumbers;
     const _columnCount = columnCount;
+    // Visibility settings (included in cache key, so changes produce cache misses → re-render)
+    const _showNonRadial = showNonRadial;
+    const _handPointVis = handPointVis;
+    const _showTKA = showTKA;
+    const _showReversals = showReversals;
 
     console.log(`[EFFECT] LayeredSequencePreview re-render effect triggered, hasMounted=${hasMounted}`);
 
