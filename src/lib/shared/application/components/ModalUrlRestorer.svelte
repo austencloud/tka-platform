@@ -12,15 +12,13 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
   import {
     getModalUrlState,
     clearModalUrlState,
   } from "../state/ui/modal-url-state.svelte";
   import { container } from "$lib/shared/di";
   import type { IDeepLinkResolver, DeepLinkError } from "../services/contracts/IDeepLinkResolver";
-  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import { sequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 
   // Error state for failed deep links
   let loadError = $state<DeepLinkError>(null);
@@ -75,16 +73,11 @@
     // Clear the legacy modal URL params
     clearModalUrlState();
 
-    // Save handoff data for the route
-    saveSequenceRouteHandoff({
-      sequence: result.sequence,
+    // Navigate to sequence viewer (drawer on mobile, route on desktop)
+    openSequenceViewer(result.sequence, {
       returnPath: window.location.pathname,
       returnLabel: "Back",
-      scrollY: 0,
     });
-
-    // Navigate to the self-contained sequence route
-    void goto(sequenceEncoder.generateSequenceRoutePath(result.sequence));
   }
 
   function dismissError() {

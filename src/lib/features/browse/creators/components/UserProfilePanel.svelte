@@ -5,7 +5,6 @@
    * Responsive design for mobile and desktop
    */
 
-  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -26,8 +25,7 @@
   import ProfileTabs from "./profile/ProfileTabs.svelte";
   import ProfileAdminSection from "./profile/ProfileAdminSection.svelte";
   import ProfileConnectionSection from "./profile/ProfileConnectionSection.svelte";
-  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import { sequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 
   interface Props {
     userId: string;
@@ -201,14 +199,10 @@
 
   function handleSequenceClick(sequence: LibrarySequence) {
     hapticService?.trigger("selection");
-    // Navigate to sequence route with handoff data
-    saveSequenceRouteHandoff({
-      sequence,
+    openSequenceViewer(sequence, {
       returnPath: `/browse/creators/${userId}`,
       returnLabel: userProfile?.displayName ?? "Creator",
-      scrollY: 0,
     });
-    void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
   }
 
   async function loadFollowingUsers() {

@@ -38,7 +38,6 @@
   // Transform help mode types
   import type { ActionHelpId } from "../../domain/transforms/transform-help-content";
   type HelpMode = "inactive" | "selecting" | "viewing";
-  import { goto } from "$app/navigation";
   import RotationDirectionDrawer from "./RotationDirectionDrawer.svelte";
   import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
   import ExtendDrawer from "./ExtendDrawer.svelte";
@@ -47,8 +46,7 @@
   import FirstStepConfirmDialog from "./FirstStepConfirmDialog.svelte";
   import HandSelector from "./HandSelector.svelte";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
-  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import { sequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 
   interface Props {
     show: boolean;
@@ -264,14 +262,10 @@
     if (!sequence) return;
     hapticService?.trigger("selection");
     handleClose();
-    // Navigate to sequence route instead of opening modal
-    saveSequenceRouteHandoff({
-      sequence,
+    openSequenceViewer(sequence, {
       returnPath: "/create/construct",
       returnLabel: "Construct",
-      scrollY: 0,
     });
-    void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
   }
 
   function handleSpotlightClose() {

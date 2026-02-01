@@ -26,15 +26,14 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
   import type { IShareHubExportOrchestrator } from "$lib/shared/share-hub/services/contracts/IShareHubExportOrchestrator";
-  import { goto } from "$app/navigation";
+
   import { container } from "$lib/shared/di";
   import { responsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import { sequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 
   // Animation imports
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
@@ -309,21 +308,17 @@
     }
   }
 
-  // Intercept modal opening and navigate to route instead
-  // When panelState.isSequenceDetailsModalOpen becomes true, redirect to /sequence/[id]
+  // Intercept modal opening and navigate to viewer instead
+  // When panelState.isSequenceDetailsModalOpen becomes true, open the sequence viewer
   $effect(() => {
     if (panelState.isSequenceDetailsModalOpen && currentSequence) {
       // Close the modal state immediately
       panelState.closeSequenceDetailsModal();
 
-      // Save handoff data and navigate to route
-      saveSequenceRouteHandoff({
-        sequence: currentSequence,
+      openSequenceViewer(currentSequence, {
         returnPath: "/create/construct",
         returnLabel: "Construct",
-        scrollY: 0,
       });
-      void goto(sequenceEncoder.generateSequenceRoutePath(currentSequence));
     }
   });
 

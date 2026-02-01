@@ -38,6 +38,27 @@ export interface DeepLinkParseResult {
 }
 
 /**
+ * Optional metadata to encode in share URL searchParams.
+ * These are human-readable and don't affect the motion encoding.
+ */
+export interface ShareURLMetadata {
+  /** Creator display name */
+  creator?: string;
+  /** Notes/tagline text */
+  notes?: string;
+  /** The intended word */
+  word?: string;
+  /** Dark mode preference (true/false) */
+  darkMode?: boolean;
+  /** Difficulty level string */
+  difficulty?: string;
+  /** Creation date as compact YYYYMMDD string */
+  birthday?: string;
+  /** BPM value */
+  bpm?: number;
+}
+
+/**
  * Service for encoding/decoding sequences for URL sharing
  */
 export interface ISequenceEncoder {
@@ -95,10 +116,11 @@ export interface ISequenceEncoder {
   /**
    * Generate a standalone viewer URL for a sequence
    * Uses /sequence/{encodedSequence} format
+   * Optional metadata is appended as URL searchParams
    */
   generateViewerURL(
     sequence: SequenceData,
-    options?: { compress?: boolean }
+    options?: { compress?: boolean; metadata?: ShareURLMetadata }
   ): ShareURLResult;
 
   /**

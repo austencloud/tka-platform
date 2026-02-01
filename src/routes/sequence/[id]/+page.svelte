@@ -2,20 +2,16 @@
   /sequence/[id]/+page.svelte
 
   Dedicated sequence viewer route - the canonical way to view sequences.
-  Replaces SequenceDetailsModal with a full route for:
-  - Better URL sharing (playback state in URL params)
-  - Smoother animations (no modal fighting with split pane)
-  - SSR support for social sharing (og:image, og:title)
-  - Clean navigation flow with View Transitions
-
-  Features:
-  - Split pane view (animation + choreo card)
-  - Full playback controls with BPM adjustment
-  - Export mode (image/video)
-  - LAN sync integration
-  - Focus mode (expand one pane)
-  - Swipe-to-dismiss (mobile)
-  - Keyboard shortcuts (Space = play/pause, Escape = back)
+  Uses SequenceViewerOrchestrator for all shared state/logic, keeping only
+  route-specific concerns:
+  - URL param parsing and state restoration
+  - Sequence loading (handoff, encoded URL, legacy ID)
+  - initializeAppServices() for standalone access
+  - SSR metadata (<svelte:head>)
+  - View Transitions
+  - Swipe-to-dismiss gesture (mobile)
+  - DrawerStack registration (blocks pull-to-refresh)
+  - Browse gallery background (mobile drawer effect)
 -->
 <script lang="ts">
   import { page } from "$app/stores";
@@ -24,33 +20,22 @@
   import { onMount, onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ILanSyncCoordinator } from "$lib/shared/lan-sync/services/contracts/ILanSyncCoordinator";
-  import type { ISequenceDataProvider } from "$lib/shared/sequence-viewer/services/contracts/ISequenceDataProvider";
   import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import type { ILetterDeriver } from "$lib/shared/navigation/services/contracts/ILetterDeriver";
   import type { IPositionDeriver } from "$lib/shared/navigation/services/contracts/IPositionDeriver";
-  import { createAnimationPanelState, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
-  import { getAnimationVisibilityManager, type TrailVisibility } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-  import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
-  import { sequenceModalPersistence } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalPersistence";
-  import { playbackTimeCalculator } from "$lib/shared/sequence-viewer/services/implementations/PlaybackTimeCalculator";
-  import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalExporter";
-  import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/implementations/ModalAccessibilityHelper.svelte";
+  import { setSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
+  import { registerDrawer, unregisterDrawer, generateDrawerId } from "$lib/shared/foundation/ui/drawer/DrawerStack";
   import { createModalSwipeDismiss } from "$lib/shared/sequence-viewer/services/implementations/ModalSwipeDismiss";
   import {
-    saveSequenceHandoff,
     consumeSequenceRouteHandoff,
     type SequenceRouteHandoff
   } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import { getExportOptionsState } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
+  import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
+  import { playbackTimeCalculator } from "$lib/shared/sequence-viewer/services/implementations/PlaybackTimeCalculator";
+  import SequenceViewerOrchestrator from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
+  import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
 
   // Components
   import ViewerSplitPane from "$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte";
@@ -59,174 +44,157 @@
   import FullscreenControls from "$lib/shared/sequence-viewer/components/FullscreenControls.svelte";
   import ExportModeContent from "$lib/shared/sequence-viewer/components/ExportModeContent.svelte";
   import ExportFooter from "$lib/shared/sequence-viewer/components/ExportFooter.svelte";
+  import RampProgressIndicator from "$lib/shared/sequence-viewer/components/RampProgressIndicator.svelte";
   import RouteViewerHeader from "./RouteViewerHeader.svelte";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
+  import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
 
-  // Types
-  type ViewMode = "animation" | "image" | "split";
-  type ExportType = "animation" | "image" | "both";
+  // ============================================================================
+  // ROUTE-SPECIFIC STATE
+  // ============================================================================
 
   // Route params
   const sequenceId = $derived($page.params.id);
 
   // URL params for state restoration
-  const urlViewMode = $derived($page.url.searchParams.get("view") as ViewMode | null);
+  const urlViewMode = $derived($page.url.searchParams.get("view") as "animation" | "image" | "split" | null);
   const urlBpm = $derived(parseInt($page.url.searchParams.get("bpm") || "") || null);
   const urlTime = $derived(parseInt($page.url.searchParams.get("t") || "") || null);
 
-  // State
+  // URL metadata params (from share URLs)
+  const urlWord = $derived($page.url.searchParams.get("word"));
+  const urlCreator = $derived($page.url.searchParams.get("creator"));
+  const urlNotes = $derived($page.url.searchParams.get("notes"));
+  const urlDarkMode = $derived($page.url.searchParams.get("dark"));
+  const urlDifficulty = $derived($page.url.searchParams.get("difficulty"));
+  const urlBirthday = $derived($page.url.searchParams.get("birthday"));
+
+  // Sequence loading state
   let sequence = $state<SequenceData | null>(null);
   let isLoading = $state(true);
   let loadError = $state<string | null>(null);
   let handoffData = $state<SequenceRouteHandoff | null>(null);
 
-  // View mode
-  let viewMode = $state<ViewMode>("split");
-
-  // Fullscreen state
-  let isFullscreen = $state(false);
-  let fullscreenControlsVisible = $state(false);
-  let controlsHideTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  // Export mode
-  let isExportMode = $state(false);
-  let exportType = $state<ExportType | null>(null);
-  const exportOptions = getExportOptionsState();
+  // IAB banner padding
+  const iabBannerShowing = $derived(getIabBannerVisible());
 
   // Mobile detection
   let isMobile = $state(false);
 
-  // Services
-  let playbackController: IAnimationPlaybackController | null = null;
-  let sequenceDataProvider: ISequenceDataProvider | null = null;
-  let hapticService: IHapticFeedback | null = null;
-
-  // Animation state
-  const modalAnimationState = createAnimationPanelState();
-  let animationServicesReady = $state(false);
-  let animationLoading = $state(false);
-  let lastLoadedSequenceId: string | null = null;
-
-  // Local reactive state for animation (synced via observer pattern)
-  let isPlayingLocal = $state(false);
-  let currentStepLocal = $state(0);
-  let bpmLocal = $state(60);
-  let cleanupAnimationStateSubscription: (() => void) | undefined;
-
-  // Which pane is in edit mode: null, 'animation', or 'image'
-  let editingPane = $state<'animation' | 'image' | null>(null);
-
-  // Export state
-  let animationCanvas = $state<HTMLCanvasElement | null>(null);
-  const isExporting = $derived(sequenceModalExporter.state.isExporting);
-  const exportProgress = $derived(sequenceModalExporter.state.progress);
-  const exportError = $derived(sequenceModalExporter.state.error);
-
-  // LAN Sync
-  let isSyncToggling = $state(false);
-
-  // Prop type settings
-  const settings = $derived(getSettings());
-  const bluePropType = $derived(settings.bluePropType);
-  const redPropType = $derived(settings.redPropType);
-  const catDogModeEnabled = $derived(settings.catDogMode);
-
-  // Animation visibility (global singleton)
-  const animationVisibility = getAnimationVisibilityManager();
-  let animTrailStyle = $state<TrailVisibility>(animationVisibility.getTrailStyle());
-  let animTkaGlyph = $state(animationVisibility.getVisibility("tkaGlyph"));
-  let animWordHeader = $state(animationVisibility.getVisibility("wordHeader"));
-
-  // Image composition (global singleton, syncs to Firebase)
-  const imageComposition = getImageCompositionManager();
-  let imgShowWord = $state(imageComposition.addWord);
-  let imgShowStartPos = $state(imageComposition.includeStartPosition);
-  let imgShowDifficulty = $state(imageComposition.addDifficultyLevel);
-  let imgShowCreatorName = $state(imageComposition.showCreatorName);
-  let imgShowNotes = $state(imageComposition.showNotes);
-  let imgDarkMode = $state(imageComposition.darkMode);
-  let imgColumnCount = $state<number | null>(sequenceModalPersistence.loadColumnCount());
-
-  // Accessibility
-  const accessibilityHelper = createModalAccessibilityHelper();
-  let pageContainer: HTMLElement | null = null;
-
   // Swipe-to-dismiss (mobile only)
   const swipeDismiss = createModalSwipeDismiss();
+  let currentSwipeY = $state(0);
+  let currentIsSwiping = $state(false);
 
-  // Derived values - ensures we have a non-null sequence for rendering
-  const effectiveSequence = $derived(modalAnimationState.sequenceData ?? sequence);
-  const hasSequence = $derived(effectiveSequence !== null);
+  // Page container ref for swipe visual feedback
+  let pageContainer: HTMLElement | null = null;
 
-  const highlightedStepIndex = $derived.by(() => {
-    if (!isPlayingLocal) return null;
-    if (currentStepLocal < 1) return -1;
-    return Math.floor(currentStepLocal) - 1;
-  });
+  // DrawerStack registration - blocks pull-to-refresh on mobile
+  const drawerId = generateDrawerId();
 
-  const currentStepData = $derived.by(() => {
-    const sequenceData = modalAnimationState.sequenceData;
-    if (!sequenceData) return null;
-    if (currentStepLocal < 1 && sequenceData.startPosition) {
-      return sequenceData.startPosition;
-    }
-    if (sequenceData.steps?.length > 0) {
-      const stepIndex = Math.max(0, Math.floor(currentStepLocal) - 1);
-      const clampedIndex = Math.min(stepIndex, sequenceData.steps.length - 1);
-      return sequenceData.steps[clampedIndex] || null;
-    }
-    return null;
-  });
+  // Track if orchestrator needs to restore time from URL after init
+  let pendingTimeRestore = $state<number | null>(null);
 
-  const currentLetter = $derived(currentStepData?.letter || null);
-
-  // Preview aspect ratio for fullscreen layout
-  const previewAspectRatio = $derived.by(() => {
-    if (!sequence?.steps?.length) return 1;
-    const stepCount = sequence.steps.length;
-    return layoutCalculator.calculateThumbnailAspectRatio(stepCount, {
-      includeStartPosition: imgShowStartPos,
-      hasHeader: imgShowWord,
-      hasFooter: imgShowCreatorName || imgShowNotes,
-    });
-  });
-
-  const fullscreenStackVertical = $derived(previewAspectRatio > 1.3);
+  // Cleanup
+  let resizeCleanup: (() => void) | null = null;
 
   // ============================================================================
   // LIFECYCLE
   // ============================================================================
 
-  // Track cleanup functions for onDestroy
-  let resizeCleanup: (() => void) | null = null;
-  let keydownCleanup: (() => void) | null = null;
-  let imageCompositionObserver: (() => void) | null = null;
+  onMount(async () => {
+    // Ensure services are initialized (standalone route needs this;
+    // inside the app shell, MainApplication handles it)
+    await initializeAppServices();
 
-  // Async initialization (called from onMount, but doesn't return cleanup)
+    // Mobile detection
+    const checkMobile = () => { isMobile = window.innerWidth < 768; };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    resizeCleanup = () => window.removeEventListener("resize", checkMobile);
+
+    // Block pull-to-refresh on mobile
+    if (isMobile) {
+      registerDrawer(drawerId, handleBack);
+    }
+
+    // Start sequence loading
+    void initializeRoute();
+  });
+
+  onDestroy(() => {
+    unregisterDrawer(drawerId);
+    resizeCleanup?.();
+    swipeDismiss.dispose();
+  });
+
+  // Apply visual feedback during swipe gesture
+  $effect(() => {
+    if (!pageContainer) return;
+    if (currentIsSwiping && currentSwipeY > 0) {
+      pageContainer.style.transform = `translateY(${currentSwipeY}px)`;
+      pageContainer.style.opacity = `${Math.max(0.3, 1 - currentSwipeY / 300)}`;
+      pageContainer.style.transition = "none";
+    } else if (!currentIsSwiping) {
+      pageContainer.style.transform = "";
+      pageContainer.style.opacity = "";
+      pageContainer.style.transition = "";
+    }
+  });
+
+  // ============================================================================
+  // METADATA RESTORATION
+  // ============================================================================
+
+  /** Apply URL metadata params to a decoded sequence (fills in data lost during encoding). */
+  function applyUrlMetadata(seq: SequenceData): SequenceData {
+    // Build a mutable updates object and cast to Partial<SequenceData>
+    // since updateSequenceData uses spread which bypasses readonly
+    const updates: Record<string, unknown> = {};
+
+    if (urlWord && !seq.word) updates.word = urlWord;
+    if (urlCreator && !seq.ownerDisplayName) updates.ownerDisplayName = urlCreator;
+    if (urlDifficulty && !seq.difficultyLevel) updates.difficultyLevel = urlDifficulty;
+
+    if (urlNotes) {
+      updates.metadata = { ...seq.metadata, notes: urlNotes };
+    }
+
+    if (urlBirthday && !seq.createdAt) {
+      // Parse YYYYMMDD back into a Date
+      const y = urlBirthday.slice(0, 4);
+      const m = urlBirthday.slice(4, 6);
+      const d = urlBirthday.slice(6, 8);
+      const date = new Date(`${y}-${m}-${d}`);
+      if (!isNaN(date.getTime())) {
+        updates.createdAt = date;
+      }
+    }
+
+    if (Object.keys(updates).length === 0) return seq;
+    return { ...seq, ...updates } as SequenceData;
+  }
+
+  // ============================================================================
+  // SEQUENCE LOADING
+  // ============================================================================
+
   async function initializeRoute() {
-    // Try to consume handoff data first (from Browse gallery)
+    // Try handoff data first (from Browse gallery)
     handoffData = consumeSequenceRouteHandoff();
 
     if (handoffData?.sequence) {
-      // Use cached sequence from handoff (immediate, no network)
       sequence = handoffData.sequence;
       isLoading = false;
-
-      // Restore playback state from handoff
-      if (handoffData.playbackState) {
-        bpmLocal = handoffData.playbackState.bpm || 60;
-        currentStepLocal = handoffData.playbackState.currentStep || 0;
-      }
     } else if (sequenceId) {
-      // Parse the route ID to determine if it's a self-contained encoded sequence or legacy ID
       const encoderService = container.items.sequenceEncoder as ISequenceEncoder;
       const parsed = encoderService.parseSequenceRouteId(sequenceId);
 
       if (parsed.encoded) {
-        // Self-contained URL - decode directly, no network needed
         try {
           let decoded = encoderService.decodeWithCompression(parsed.encoded);
 
-          // Enrich with letters and positions (URL encoding doesn't store these)
           const letterDeriver = container.items.letterDeriver as ILetterDeriver | null;
           const positionDeriver = container.items.positionDeriver as IPositionDeriver | null;
 
@@ -237,7 +205,14 @@
             decoded = await positionDeriver.derivePositionsForSequence(decoded);
           }
 
-          sequence = decoded;
+          sequence = applyUrlMetadata(decoded);
+
+          // Apply URL dark mode preference before the orchestrator mounts
+          if (urlDarkMode !== null) {
+            const imageComposition = getImageCompositionManager();
+            imageComposition.setDarkMode(urlDarkMode === "1");
+          }
+
           isLoading = false;
         } catch (err) {
           console.error("[SequenceRoute] Failed to decode sequence from URL:", err);
@@ -245,7 +220,6 @@
           isLoading = false;
         }
       } else if (parsed.legacyId) {
-        // Legacy ID - try database lookup
         await loadSequenceFromId(parsed.legacyId);
       } else {
         loadError = "No sequence data in URL";
@@ -256,110 +230,40 @@
       isLoading = false;
     }
 
-    // Restore view mode from URL or localStorage
-    viewMode = urlViewMode || sequenceModalPersistence.loadViewMode();
-
-    // Restore BPM from URL if present
-    if (urlBpm) {
-      bpmLocal = urlBpm;
+    // Mobile + signed-in users: redirect to app shell with drawer overlay
+    // This handles QR code / shared link scenarios where the user lands on
+    // the route but would get a better experience with the drawer overlay
+    if (isMobile && authState.isAuthenticated && sequence) {
+      const returnPath = handoffData?.returnPath || "/browse/gallery";
+      const returnLabel = handoffData?.returnLabel || "Browse";
+      // Set overlay state without history push (goto will handle navigation)
+      openSequenceOverlay(sequence, {
+        returnLabel,
+        initialBpm: urlBpm ?? undefined,
+        initialStep: urlTime ?? undefined,
+        skipHistoryPush: true,
+      });
+      // Navigate to app shell - replaces the /sequence/[id] entry
+      // Once MainInterface mounts, SequenceViewerDrawerHost picks up overlay state
+      await goto(returnPath, { replaceState: true });
+      // Push overlay history entry after navigation completes
+      window.history.pushState({ sequenceOverlay: true }, '');
+      return;
     }
 
-    // Initialize services
-    await loadServices();
-
-    // Initialize animation if we have a sequence
-    if (sequence && animationServicesReady) {
-      await initializeAnimation(sequence);
-
-      // Restore playback time from URL
-      if (urlTime && playbackController) {
-        const targetStep = playbackTimeCalculator.timeMsToStep(urlTime, bpmLocal);
-        playbackController.jumpToStep(targetStep);
-      }
+    // Store pending time restore from URL (orchestrator will handle after animation init)
+    if (urlTime) {
+      pendingTimeRestore = urlTime;
     }
   }
-
-  onMount(() => {
-    // Mobile detection (sync)
-    const checkMobile = () => {
-      isMobile = window.innerWidth < 768;
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    resizeCleanup = () => window.removeEventListener("resize", checkMobile);
-
-    // Keyboard handler (sync)
-    window.addEventListener("keydown", handleKeydown, { capture: true });
-    keydownCleanup = () => window.removeEventListener("keydown", handleKeydown, { capture: true });
-
-    // Sync image composition from manager
-    const observer = () => {
-      imgShowWord = imageComposition.addWord;
-      imgShowStartPos = imageComposition.includeStartPosition;
-      imgShowDifficulty = imageComposition.addDifficultyLevel;
-      imgShowCreatorName = imageComposition.showCreatorName;
-      imgShowNotes = imageComposition.showNotes;
-      imgDarkMode = imageComposition.darkMode;
-    };
-    imageComposition.registerObserver(observer);
-    imageCompositionObserver = observer;
-
-    // Start async initialization (fire and forget - errors handled in initializeRoute)
-    void initializeRoute();
-  });
-
-  onDestroy(() => {
-    // Clean up event listeners
-    resizeCleanup?.();
-    keydownCleanup?.();
-    if (imageCompositionObserver) {
-      imageComposition.unregisterObserver(imageCompositionObserver);
-    }
-
-    // Clean up other resources
-    cleanupAnimationStateSubscription?.();
-    clearControlsTimeout();
-    swipeDismiss.dispose();
-    if (playbackController) {
-      playbackController.dispose();
-    }
-    modalAnimationState.dispose();
-    sequenceModalExporter.dispose();
-  });
-
-  // Subscribe to animation state changes
-  cleanupAnimationStateSubscription = modalAnimationState.subscribe(
-    (key: AnimationStateKey, value: unknown) => {
-      switch (key) {
-        case "isPlaying":
-          isPlayingLocal = value as boolean;
-          lanSyncState.updatePlayback({ isPlaying: value as boolean });
-          break;
-        case "currentStep":
-          currentStepLocal = value as number;
-          lanSyncState.updatePlayback({ currentStep: value as number });
-          break;
-        case "speed":
-          bpmLocal = Math.round((value as number) * 60);
-          lanSyncState.updatePlayback({ speed: value as number });
-          break;
-      }
-    }
-  );
-
-  // ============================================================================
-  // DATA LOADING
-  // ============================================================================
 
   async function loadSequenceFromId(id: string) {
     isLoading = true;
     loadError = null;
 
     try {
-      // First, try to decode if it's an encoded sequence (s~ prefix or base64)
       const encoderService = container.items.sequenceEncoder as ISequenceEncoder;
 
-      // Check if this is an inline-encoded sequence
       if (encoderService.isInlineEncoded(id)) {
         try {
           const decoded = encoderService.decodeWithCompression(decodeURIComponent(id));
@@ -369,17 +273,15 @@
             return;
           }
         } catch {
-          // Not a valid encoded sequence, continue to other methods
+          // Not a valid encoded sequence, continue
         }
       }
 
-      // Try to resolve via short code manager (handles both Firebase and inline)
       const shortCodeManager = container.items.shortCodeManager;
       let resolvedSequence = await shortCodeManager.resolveShortCode(id);
 
       if (!resolvedSequence) {
-        // Try loading by ID from sequence data provider
-        const provider = container.items.sequenceDataProvider as ISequenceDataProvider;
+        const provider = container.items.sequenceDataProvider;
         resolvedSequence = await provider.loadByIdentifier(id);
       }
 
@@ -398,414 +300,48 @@
     }
   }
 
-  async function loadServices() {
-    try {
-      playbackController = container.items.animationPlaybackController;
-      sequenceDataProvider = container.items.sequenceDataProvider;
-      hapticService = container.items.hapticFeedback;
-
-      const lanSyncCoordinator = container.items.lanSyncCoordinator as ILanSyncCoordinator;
-      lanSyncState.initialize(lanSyncCoordinator);
-
-      animationServicesReady = true;
-    } catch (error) {
-      console.error("[SequenceRoute] Failed to load services:", error);
-      modalAnimationState.setError("Failed to load animation services");
-    }
-  }
-
-  async function initializeAnimation(seq: SequenceData) {
-    if (!playbackController || !sequenceDataProvider) return;
-
-    const seqId = seq.id || seq.word || "unknown";
-    if (seqId === lastLoadedSequenceId) return;
-
-    animationLoading = true;
-    modalAnimationState.setLoading(true);
-    modalAnimationState.setError(null);
-
-    try {
-      const loadedSequence = await sequenceDataProvider.hydrateSequence(seq);
-      if (!loadedSequence) throw new Error("Failed to load sequence");
-
-      modalAnimationState.setShouldLoop(true);
-      const success = playbackController.initialize(loadedSequence, modalAnimationState);
-      if (!success) throw new Error("Failed to initialize playback");
-
-      setAnimationPlaybackRef(playbackController);
-
-      lastLoadedSequenceId = seqId;
-      modalAnimationState.setSequenceData(loadedSequence);
-
-      // Apply BPM from state
-      if (bpmLocal !== 60) {
-        const speedMultiplier = bpmLocal / 60;
-        playbackController.setSpeed(speedMultiplier);
-      }
-
-      // Auto-start after brief delay
-      setTimeout(() => {
-        if (viewMode !== "image") {
-          playbackController?.togglePlayback();
-        }
-      }, 300);
-    } catch (err) {
-      console.warn("[SequenceRoute] Animation not available:", err);
-      modalAnimationState.setError("Animation data not available");
-    } finally {
-      animationLoading = false;
-      modalAnimationState.setLoading(false);
-    }
-  }
-
   // ============================================================================
   // NAVIGATION
   // ============================================================================
 
   function handleBack() {
-    if (isPlayingLocal && playbackController) {
-      playbackController.togglePlayback();
-    }
-    setAnimationPlaybackRef(null);
-
-    if (lanSyncState.isConnected) {
-      lanSyncState.disconnect();
-    }
-
-    accessibilityHelper.restoreFocus();
-
-    // Navigate back to return path or default
     const returnPath = handoffData?.returnPath || "/browse/gallery";
     goto(returnPath);
-  }
-
-  // ============================================================================
-  // PLAYBACK CONTROLS
-  // ============================================================================
-
-  function handlePlaybackToggle() {
-    playbackController?.togglePlayback();
-  }
-
-  function handleBpmChange(newBpm: number) {
-    hapticService?.trigger("selection");
-    const speedMultiplier = newBpm / 60;
-    playbackController?.setSpeed(speedMultiplier);
-    // Update URL param
-    updateUrlParam("bpm", String(newBpm));
-  }
-
-  function handleStepClick(stepIndex: number) {
-    if (swipeDismiss.state.blockClicks) return;
-    if (editingPane !== 'image' || isPlayingLocal) return;
-
-    if (playbackController) {
-      hapticService?.trigger("selection");
-      const targetStep = stepIndex + 1;
-      modalAnimationState.setCurrentStep(targetStep);
-      playbackController.seekToStep(targetStep);
-    }
-  }
-
-  // ============================================================================
-  // FOCUS MODE
-  // ============================================================================
-
-  function enterEditMode(pane: 'animation' | 'image') {
-    hapticService?.trigger("selection");
-    editingPane = pane;
-
-    if (!isMobile && !isFullscreen) {
-      isFullscreen = true;
-    }
-
-    accessibilityHelper.announce(`${pane === 'animation' ? 'Animation' : 'Image'} expanded. Tap to collapse.`);
-  }
-
-  function exitEditMode() {
-    hapticService?.trigger("selection");
-    editingPane = null;
-
-    if (!isMobile && isFullscreen) {
-      isFullscreen = false;
-      fullscreenControlsVisible = false;
-    }
-
-    accessibilityHelper.announce("Split view restored");
-  }
-
-  // ============================================================================
-  // FULLSCREEN
-  // ============================================================================
-
-  function enterFullscreen() {
-    hapticService?.trigger("selection");
-    isFullscreen = true;
-    showFullscreenControls();
-    accessibilityHelper.announce("Fullscreen mode. Tap to show controls, press Escape to exit.", "assertive");
-  }
-
-  function exitFullscreen() {
-    hapticService?.trigger("selection");
-    isFullscreen = false;
-    fullscreenControlsVisible = false;
-    clearControlsTimeout();
-    accessibilityHelper.announce("Exited fullscreen");
-  }
-
-  function showFullscreenControls() {
-    fullscreenControlsVisible = true;
-    scheduleControlsHide();
-  }
-
-  function scheduleControlsHide() {
-    clearControlsTimeout();
-    controlsHideTimeout = setTimeout(() => {
-      fullscreenControlsVisible = false;
-    }, 3000);
-  }
-
-  function clearControlsTimeout() {
-    if (controlsHideTimeout) {
-      clearTimeout(controlsHideTimeout);
-      controlsHideTimeout = null;
-    }
-  }
-
-  function handleFullscreenTap() {
-    if (isFullscreen && !fullscreenControlsVisible) {
-      showFullscreenControls();
-    }
-  }
-
-  // ============================================================================
-  // EXPORT MODE
-  // ============================================================================
-
-  function enterExportMode() {
-    hapticService?.trigger("selection");
-    isExportMode = true;
-    exportType = null;
-    if (isPlayingLocal && playbackController) {
-      playbackController.togglePlayback();
-    }
-    accessibilityHelper.announce("Export mode. Choose Video, Image, or Combined format.", "assertive");
-  }
-
-  function exitExportMode() {
-    hapticService?.trigger("selection");
-    isExportMode = false;
-    exportType = null;
-    accessibilityHelper.announce("Returned to viewer");
-  }
-
-  function selectExportType(type: ExportType) {
-    hapticService?.trigger("selection");
-    if (type === "both") {
-      accessibilityHelper.announce("Opening Compose for combined export");
-      handleOpenInCompose("combo-export");
-    } else {
-      exportType = type;
-      accessibilityHelper.announce(`${type === 'animation' ? 'Video' : 'Image'} export selected. Configure options below.`);
-    }
-  }
-
-  function backToExportTypeSelection() {
-    hapticService?.trigger("selection");
-    exportType = null;
-    accessibilityHelper.announce("Back to export format selection");
-  }
-
-  async function handleExport() {
-    if (isExporting || !exportType) return;
-    hapticService?.trigger("selection");
-
-    const callbacks = {
-      onSuccess: (message: string) => {
-        showToast(message, "success");
-        accessibilityHelper.announce(message, "assertive");
-        exitExportMode();
-      },
-      onError: (message: string) => {
-        accessibilityHelper.announce(`Export failed: ${message}`, "assertive");
-      },
-      onHaptic: (type: "success" | "error" | "selection") => {
-        hapticService?.trigger(type);
-      },
-    };
-
-    if (exportType === "animation" && playbackController && animationCanvas) {
-      const opts = exportOptions.getVideoOptions();
-      await sequenceModalExporter.exportAnimation(
-        opts,
-        { canvas: animationCanvas, playbackController, panelState: modalAnimationState },
-        callbacks
-      );
-    } else if (exportType === "image" && sequence) {
-      const opts = exportOptions.getImageOptions();
-      await sequenceModalExporter.exportImage(
-        opts,
-        { sequence, userName: authState.user?.displayName ?? "" },
-        callbacks
-      );
-    }
-  }
-
-  function handleCanvasReady(canvas: HTMLCanvasElement | null) {
-    animationCanvas = canvas;
-  }
-
-  // ============================================================================
-  // LAN SYNC
-  // ============================================================================
-
-  async function handleSyncToggle() {
-    if (isSyncToggling || !sequence) return;
-    isSyncToggling = true;
-    hapticService?.trigger("selection");
-
-    try {
-      const sequenceWord = sequence.word || sequence.name || "Sequence";
-      const isNowSyncing = await lanSyncState.toggleSync(
-        sequence.id,
-        sequenceWord,
-        {
-          sequenceId: sequence.id,
-          currentStep: currentStepLocal,
-          isPlaying: isPlayingLocal,
-          speed: bpmLocal / 60,
-          shouldLoop: true
-        }
-      );
-      hapticService?.trigger(isNowSyncing ? "success" : "selection");
-      accessibilityHelper.announce(isNowSyncing ? "Sync enabled. Searching for peers." : "Sync disabled");
-    } catch (err) {
-      console.error("[Sync] Toggle failed:", err);
-      hapticService?.trigger("error");
-      accessibilityHelper.announce("Sync failed. Please try again.");
-    } finally {
-      isSyncToggling = false;
-    }
-  }
-
-  // ============================================================================
-  // COMPOSE NAVIGATION
-  // ============================================================================
-
-  async function handleOpenInCompose(preset: 'stagger' | 'mirror' | 'combo-export' = 'stagger') {
-    if (!sequence) return;
-    hapticService?.trigger("selection");
-
-    if (lanSyncState.isActive) {
-      lanSyncState.disconnect();
-    }
-
-    saveSequenceHandoff({
-      sequence,
-      playbackState: {
-        currentStep: currentStepLocal,
-        bpm: bpmLocal,
-        isPlaying: isPlayingLocal,
-      },
-      preferredPreset: preset,
-      returnPath: $page.url.pathname,
-    });
-
-    const message = preset === 'combo-export'
-      ? "Opening in Compose for combined export..."
-      : "Opening in Compose...";
-    showToast({ message, type: "info", duration: 2000 });
-
-    await goto('/compose?handoff=true');
-  }
-
-  // ============================================================================
-  // ACTION HANDLERS
-  // ============================================================================
-
-  function handleSave() {
-    hapticService?.trigger("selection");
-    if (!authState.isAuthenticated) {
-      showToast("Sign in to save sequences", "info");
-      return;
-    }
-    showToast("Save feature coming soon", "info");
-  }
-
-  function handleShare() {
-    hapticService?.trigger("selection");
-    const shareUrl = window.location.href;
-    if (navigator.share) {
-      navigator.share({
-        title: sequence?.word || "Sequence",
-        text: `Check out this TKA sequence: ${sequence?.word || ""}`,
-        url: shareUrl,
-      }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        showToast("Link copied to clipboard", "success");
-      }).catch(() => {
-        showToast("Could not copy link", "error");
-      });
-    }
-  }
-
-  function handleUnifiedDarkModeToggle() {
-    hapticService?.trigger("selection");
-    const newValue = !imgDarkMode;
-    imageComposition.setDarkMode(newValue);
-    animationVisibility.setDarkMode(newValue);
-  }
-
-  // ============================================================================
-  // KEYBOARD HANDLING
-  // ============================================================================
-
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      if (isFullscreen) {
-        exitFullscreen();
-      } else if (isExportMode) {
-        exitExportMode();
-      } else {
-        handleBack();
-      }
-      return;
-    }
-
-    if (event.key === " " || event.code === "Space") {
-      const target = event.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      playbackController?.togglePlayback();
-    }
   }
 
   // ============================================================================
   // SWIPE HANDLING (MOBILE)
   // ============================================================================
 
-  function handleTouchStart(e: TouchEvent) {
-    if (!isMobile || isFullscreen || isExportMode) return;
+  function handleTouchStart(e: TouchEvent, ctx: OrchestratorContext) {
+    if (!isMobile || ctx.isFullscreen || ctx.isExportMode) return;
     swipeDismiss.handleTouchStart(e);
   }
 
-  function handleTouchMove(e: TouchEvent) {
-    if (!isMobile || isFullscreen || isExportMode) return;
+  function handleTouchMove(e: TouchEvent, ctx: OrchestratorContext) {
+    if (!isMobile || ctx.isFullscreen || ctx.isExportMode) return;
     const handled = swipeDismiss.handleTouchMove(e);
+    currentSwipeY = swipeDismiss.state.swipeY;
+    currentIsSwiping = swipeDismiss.state.isSwiping;
     if (handled && e.cancelable) {
       e.preventDefault();
     }
   }
 
-  async function handleTouchEnd() {
+  async function handleTouchEnd(ctx: OrchestratorContext) {
     const shouldDismiss = swipeDismiss.handleTouchEnd();
     if (shouldDismiss) {
-      handleBack();
+      if (pageContainer) {
+        pageContainer.style.transition = "transform 200ms ease-out, opacity 200ms ease-out";
+        pageContainer.style.transform = "translateY(100%)";
+        pageContainer.style.opacity = "0";
+        await new Promise((r) => setTimeout(r, 200));
+      }
+      setSkipNextViewTransition();
+      ctx.onBack();
+    } else {
+      currentSwipeY = 0;
+      currentIsSwiping = false;
     }
   }
 
@@ -831,20 +367,15 @@
   />
 </svelte:head>
 
-<div
-  class="sequence-route-page"
-  bind:this={pageContainer}
-  data-fullscreen={isFullscreen}
-  ontouchstart={handleTouchStart}
-  ontouchmove={handleTouchMove}
-  ontouchend={handleTouchEnd}
->
-  {#if isLoading}
+{#if isLoading}
+  <div class="sequence-route-page">
     <div class="loading-container">
       <div class="spinner"></div>
       <p>Loading sequence...</p>
     </div>
-  {:else if loadError || !sequence}
+  </div>
+{:else if loadError || !sequence}
+  <div class="sequence-route-page">
     <div class="error-container">
       <div class="error-card">
         <i class="fas fa-exclamation-circle error-icon" aria-hidden="true"></i>
@@ -855,161 +386,201 @@
         </button>
       </div>
     </div>
-  {:else}
-    <!-- Header -->
-    <RouteViewerHeader
-      {isExportMode}
-      {exportType}
-      {isFullscreen}
-      {isMobile}
-      darkMode={imgDarkMode}
-      returnLabel={handoffData?.returnLabel || "Back"}
-      isSyncActive={lanSyncState.isActive}
-      isSyncConnected={lanSyncState.isConnected}
-      {isSyncToggling}
-      onBack={handleBack}
-      onExitExportMode={exitExportMode}
-      onBackToExportTypeSelection={backToExportTypeSelection}
-      onSyncToggle={handleSyncToggle}
-      onOpenInCompose={() => handleOpenInCompose('stagger')}
-      onDarkModeToggle={() => handleUnifiedDarkModeToggle()}
-      onEnterFullscreen={enterFullscreen}
-    />
-
-    <!-- Main content - view-transition-name matches ChoreoCard thumbnail for morph animation -->
-    <div
-      class="route-body-content"
-      data-fullscreen={isFullscreen}
-      style:view-transition-name="sequence-{sequence?.id || 'viewer'}"
-      onclick={isFullscreen ? handleFullscreenTap : undefined}
-      onkeydown={isFullscreen ? (e) => { if (e.key === 'Enter' || e.key === ' ') handleFullscreenTap(); } : undefined}
-      role={isFullscreen ? "button" : undefined}
-      tabindex={isFullscreen ? 0 : undefined}
-    >
-      {#if isFullscreen}
-        <FullscreenControls
-          visible={fullscreenControlsVisible}
-          {viewMode}
-          isPlaying={isPlayingLocal}
-          bpm={bpmLocal}
-          onExit={exitFullscreen}
-          onPlaybackToggle={handlePlaybackToggle}
-          onStepHalfBeatBackward={() => playbackController?.stepHalfBeatBackward()}
-          onStepHalfBeatForward={() => playbackController?.stepHalfBeatForward()}
-          onStepFullBeatBackward={() => playbackController?.stepFullBeatBackward()}
-          onStepFullBeatForward={() => playbackController?.stepFullBeatForward()}
-          onBpmChange={handleBpmChange}
-        />
-      {/if}
-
-      {#if hasSequence && effectiveSequence}
-        {#if isExportMode}
-          <ExportModeContent
-            sequence={effectiveSequence}
-            {exportType}
-            {exportOptions}
-            animationState={modalAnimationState}
-            {animationLoading}
-            currentStep={currentStepLocal}
-            {currentLetter}
-            {currentStepData}
-            userName={authState.user?.displayName || ""}
-            {bluePropType}
-            {redPropType}
-            {catDogModeEnabled}
-            onSelectType={selectExportType}
-            onCanvasReady={handleCanvasReady}
-          />
-        {:else}
-          <ViewerSplitPane
-            sequence={effectiveSequence}
-          animationState={modalAnimationState}
-          {animationLoading}
-          currentStep={currentStepLocal}
-          isPlaying={isPlayingLocal}
-          {currentLetter}
-          {currentStepData}
-          {highlightedStepIndex}
-          {imgShowWord}
-          {imgShowDifficulty}
-          {imgShowStartPos}
-          {imgShowCreatorName}
-          {imgShowNotes}
-          {imgDarkMode}
-          {imgColumnCount}
-          userName={authState.user?.displayName || ""}
-          {bluePropType}
-          {redPropType}
-          {catDogModeEnabled}
-          {isFullscreen}
-          {fullscreenStackVertical}
+  </div>
+{:else}
+  <SequenceViewerOrchestrator
+    {sequence}
+    {isMobile}
+    initialBpm={urlBpm || handoffData?.playbackState?.bpm || 60}
+    initialStep={handoffData?.playbackState?.currentStep || 0}
+    initialViewMode={urlViewMode || undefined}
+    onBack={handleBack}
+    onUrlParamChange={updateUrlParam}
+    blockClicks={swipeDismiss.state.blockClicks}
+  >
+    {#snippet children(ctx)}
+      <div
+        class="sequence-route-page"
+        bind:this={pageContainer}
+        data-fullscreen={ctx.isFullscreen}
+        style:padding-bottom={iabBannerShowing ? `${IAB_BANNER_HEIGHT}px` : undefined}
+        ontouchstart={(e) => handleTouchStart(e, ctx)}
+        ontouchmove={(e) => handleTouchMove(e, ctx)}
+        ontouchend={() => handleTouchEnd(ctx)}
+      >
+        <!-- Header -->
+        <RouteViewerHeader
+          isExportMode={ctx.isExportMode}
+          exportType={ctx.exportType}
+          isFullscreen={ctx.isFullscreen}
           {isMobile}
-          focusedPane={editingPane}
-          onFocusPane={enterEditMode}
-          onUnfocusPane={exitEditMode}
-          onStepClick={handleStepClick}
-          onCanvasReady={handleCanvasReady}
+          darkMode={ctx.imgDarkMode}
+          returnLabel={handoffData?.returnLabel || "Back"}
+          isLoggedIn={ctx.isLoggedIn}
+          isSyncActive={lanSyncState.isActive}
+          isSyncConnected={lanSyncState.isConnected}
+          isSyncToggling={ctx.isSyncToggling}
+          onBack={ctx.onBack}
+          onExitExportMode={ctx.exitExportMode}
+          onBackToExportTypeSelection={ctx.backToExportTypeSelection}
+          onSyncToggle={ctx.handleSyncToggle}
+          onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
+          onEnterFullscreen={ctx.enterFullscreen}
         />
+
+        <!-- Main content -->
+        <div
+          class="route-body-content"
+          data-fullscreen={ctx.isFullscreen}
+          style:view-transition-name="sequence-{sequence?.id || 'viewer'}"
+          onclick={ctx.isFullscreen ? ctx.handleFullscreenTap : undefined}
+          onkeydown={ctx.isFullscreen ? (e) => { if (e.key === 'Enter' || e.key === ' ') ctx.handleFullscreenTap(); } : undefined}
+          role={ctx.isFullscreen ? "button" : undefined}
+          tabindex={ctx.isFullscreen ? 0 : undefined}
+        >
+          {#if ctx.isFullscreen}
+            <FullscreenControls
+              visible={ctx.fullscreenControlsVisible}
+              viewMode={ctx.viewMode}
+              isPlaying={ctx.isPlayingLocal}
+              bpm={ctx.bpmLocal}
+              onExit={ctx.exitFullscreen}
+              onPlaybackToggle={ctx.handlePlaybackToggle}
+              onStepHalfBeatBackward={ctx.stepHalfBeatBackward}
+              onStepHalfBeatForward={ctx.stepHalfBeatForward}
+              onStepFullBeatBackward={ctx.stepFullBeatBackward}
+              onStepFullBeatForward={ctx.stepFullBeatForward}
+              onBpmChange={ctx.handleBpmChange}
+            />
+          {/if}
+
+          {#if ctx.hasSequence && ctx.effectiveSequence}
+            {#if ctx.isExportMode}
+              <ExportModeContent
+                sequence={ctx.effectiveSequence}
+                exportType={ctx.exportType}
+                exportOptions={ctx.exportOptions}
+                animationState={ctx.modalAnimationState}
+                animationLoading={ctx.animationLoading}
+                currentStep={ctx.currentStepLocal}
+                currentLetter={ctx.currentLetter}
+                currentStepData={ctx.currentStepData}
+                userName={ctx.userName}
+                bluePropType={ctx.bluePropType}
+                redPropType={ctx.redPropType}
+                catDogModeEnabled={ctx.catDogModeEnabled}
+                onSelectType={ctx.selectExportType}
+                onCanvasReady={ctx.handleCanvasReady}
+              />
+            {:else}
+              <ViewerSplitPane
+                sequence={ctx.effectiveSequence}
+                animationState={ctx.modalAnimationState}
+                animationLoading={ctx.animationLoading}
+                currentStep={ctx.currentStepLocal}
+                isPlaying={ctx.isPlayingLocal}
+                currentLetter={ctx.currentLetter}
+                currentStepData={ctx.currentStepData}
+                highlightedStepIndex={ctx.highlightedStepIndex}
+                imgShowWord={ctx.imgShowWord}
+                imgShowDifficulty={ctx.imgShowDifficulty}
+                imgShowStartPos={ctx.imgShowStartPos}
+                imgShowCreatorName={ctx.imgShowCreatorName}
+                imgShowNotes={ctx.imgShowNotes}
+                imgDarkMode={ctx.imgDarkMode}
+                imgColumnCount={ctx.imgColumnCount}
+                userName={ctx.userName}
+                bluePropType={ctx.bluePropType}
+                redPropType={ctx.redPropType}
+                catDogModeEnabled={ctx.catDogModeEnabled}
+                isFullscreen={ctx.isFullscreen}
+                fullscreenStackVertical={ctx.fullscreenStackVertical}
+                {isMobile}
+                focusedPane={ctx.editingPane}
+                onFocusPane={ctx.enterEditMode}
+                onUnfocusPane={ctx.exitEditMode}
+                onStepClick={ctx.handleStepClick}
+                onCanvasReady={ctx.handleCanvasReady}
+              />
+            {/if}
+          {/if}
+        </div>
+
+        <!-- Footer -->
+        {#if !ctx.isFullscreen}
+          {#if ctx.isExportMode}
+            <ExportFooter
+              exportType={ctx.exportType}
+              isExporting={ctx.isExporting}
+              exportProgress={ctx.exportProgress}
+              exportError={ctx.exportError}
+              isFullscreen={ctx.isFullscreen}
+              onExport={ctx.handleExport}
+              onCancel={ctx.handleCancelExport}
+              onRetry={ctx.handleRetryExport}
+            />
+          {:else if isMobile}
+            <MorphingFooter
+              bpm={ctx.bpmLocal}
+              isPlaying={ctx.isPlayingLocal}
+              isLoggedIn={ctx.isLoggedIn}
+              darkMode={ctx.imgDarkMode}
+              onBpmChange={ctx.handleBpmChange}
+              onPlayPause={ctx.handlePlaybackToggle}
+              onStepBack={ctx.stepFullBeatBackward}
+              onStepForward={ctx.stepFullBeatForward}
+              onStepHalfBack={ctx.stepHalfBeatBackward}
+              onStepHalfForward={ctx.stepHalfBeatForward}
+              onSave={ctx.handleSave}
+              onCompose={() => ctx.handleOpenInCompose()}
+              onShare={ctx.handleShare}
+              onExport={ctx.enterExportMode}
+              onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
+              onGetApp={ctx.handleGetApp}
+              rampActive={ctx.rampActive}
+              onRampStart={ctx.handleRampStart}
+              onRampStop={ctx.handleRampStop}
+            />
+            {#if ctx.rampActive}
+              <RampProgressIndicator
+                progress={ctx.rampState.progress}
+                onStop={ctx.handleRampStop}
+                variant="floating"
+              />
+            {/if}
+          {:else}
+            <ViewerFooter
+              bpm={ctx.bpmLocal}
+              isPlaying={ctx.isPlayingLocal}
+              isLoggedIn={ctx.isLoggedIn}
+              rampActive={ctx.rampActive}
+              onBpmChange={ctx.handleBpmChange}
+              onPlayPause={ctx.handlePlaybackToggle}
+              onStepBack={ctx.stepFullBeatBackward}
+              onStepForward={ctx.stepFullBeatForward}
+              onStepHalfBack={ctx.stepHalfBeatBackward}
+              onStepHalfForward={ctx.stepHalfBeatForward}
+              onSave={ctx.handleSave}
+              onCompose={() => ctx.handleOpenInCompose()}
+              onShare={ctx.handleShare}
+              onExport={ctx.enterExportMode}
+              onGetApp={ctx.handleGetApp}
+              onRampStart={ctx.handleRampStart}
+              onRampStop={ctx.handleRampStop}
+            />
+            {#if ctx.rampActive}
+              <RampProgressIndicator
+                progress={ctx.rampState.progress}
+                onStop={ctx.handleRampStop}
+                variant="inline"
+              />
+            {/if}
+          {/if}
         {/if}
-      {/if}
-    </div>
-
-    <!-- Footer -->
-    {#if !isFullscreen}
-      {#if isExportMode}
-        <ExportFooter
-          {exportType}
-          {isExporting}
-          {exportProgress}
-          {exportError}
-          {isFullscreen}
-          onExport={handleExport}
-          onCancel={() => sequenceModalExporter.cancel()}
-          onRetry={() => { sequenceModalExporter.clearError(); handleExport(); }}
-        />
-      {:else if isMobile}
-        <MorphingFooter
-          bpm={bpmLocal}
-          isPlaying={isPlayingLocal}
-          isLoggedIn={authState.isAuthenticated}
-          darkMode={imgDarkMode}
-          onBpmChange={handleBpmChange}
-          onPlayPause={handlePlaybackToggle}
-          onStepBack={() => playbackController?.stepFullBeatBackward()}
-          onStepForward={() => playbackController?.stepFullBeatForward()}
-          onStepHalfBack={() => playbackController?.stepHalfBeatBackward()}
-          onStepHalfForward={() => playbackController?.stepHalfBeatForward()}
-          onSave={handleSave}
-          onCompose={() => handleOpenInCompose()}
-          onShare={handleShare}
-          onExport={enterExportMode}
-          onDarkModeToggle={handleUnifiedDarkModeToggle}
-        />
-      {:else}
-        <ViewerFooter
-          bpm={bpmLocal}
-          isPlaying={isPlayingLocal}
-          isLoggedIn={authState.isAuthenticated}
-          onBpmChange={handleBpmChange}
-          onPlayPause={handlePlaybackToggle}
-          onStepBack={() => playbackController?.stepFullBeatBackward()}
-          onStepForward={() => playbackController?.stepFullBeatForward()}
-          onStepHalfBack={() => playbackController?.stepHalfBeatBackward()}
-          onStepHalfForward={() => playbackController?.stepHalfBeatForward()}
-          onSave={handleSave}
-          onCompose={() => handleOpenInCompose()}
-          onShare={handleShare}
-          onExport={enterExportMode}
-        />
-      {/if}
-    {/if}
-  {/if}
-</div>
-
-<!-- Screen reader announcements -->
-<div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
-  {accessibilityHelper.announcement}
-</div>
+      </div>
+    {/snippet}
+  </SequenceViewerOrchestrator>
+{/if}
 
 <style>
   .sequence-route-page {
@@ -1121,17 +692,23 @@
     outline-offset: 2px;
   }
 
-  /* Screen reader only */
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+  /* Mobile drawer appearance */
+  @media (max-width: 767px) {
+    .sequence-route-page {
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+      background: var(--theme-panel-bg, #0a0a14);
+      overflow: hidden;
+      overscroll-behavior-y: contain;
+      touch-action: pan-y;
+    }
+
+    /* Suppress morph view-transition-name on mobile so the drawer
+       slide-up doesn't fight with a morph animation */
+    .route-body-content {
+      view-transition-name: none !important;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -14,6 +14,7 @@
   import { initI18n } from "$lib/shared/i18n/i18n.svelte.js";
   import { initModalUrlState, cleanupModalUrlState } from "$lib/shared/application/state/ui/modal-url-state.svelte";
   import { initPostHog } from "$lib/shared/analytics/services/posthog";
+  import { consumeSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
   import "../app.css";
   // Import modern view transitions CSS
   import "$lib/shared/transitions/view-transitions.css";
@@ -26,6 +27,34 @@
     // Skip if browser doesn't support View Transitions API
     if (!document.startViewTransition) return;
 
+    // If the sequence page already animated (swipe dismiss), skip the view transition
+    if (consumeSkipNextViewTransition()) return;
+
+    // Detect mobile drawer transitions for /sequence/ routes
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+    const fromPath = navigation.from?.url?.pathname ?? "";
+    const toPath = navigation.to?.url?.pathname ?? "";
+    const enteringSequence = !fromPath.startsWith("/sequence/") && toPath.startsWith("/sequence/");
+    const exitingSequence = fromPath.startsWith("/sequence/") && !toPath.startsWith("/sequence/");
+
+    // Add transition class for mobile drawer animation
+    if (isMobile && (enteringSequence || exitingSequence)) {
+      const cls = enteringSequence ? "sequence-drawer-enter" : "sequence-drawer-exit";
+      document.documentElement.classList.add(cls);
+
+      return new Promise((resolve) => {
+        const transition = document.startViewTransition(async () => {
+          resolve();
+          await navigation.complete;
+        });
+
+        transition.finished.then(() => {
+          document.documentElement.classList.remove(cls);
+        });
+      });
+    }
+
+    // Default: standard view transition (desktop morph, etc.)
     return new Promise((resolve) => {
       document.startViewTransition(async () => {
         resolve();
@@ -176,7 +205,7 @@
 <svelte:head>
   <!-- Default title only if page doesn't set one -->
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 </svelte:head>
 
 {#if containerError}

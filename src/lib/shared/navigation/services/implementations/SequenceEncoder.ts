@@ -34,6 +34,7 @@ import type {
   ISequenceEncoder,
   CompressionResult,
   ShareURLResult,
+  ShareURLMetadata,
   DeepLinkParseResult,
   QRSizeEstimate,
   SequenceRouteIdParseResult,
@@ -416,17 +417,19 @@ export class SequenceEncoder implements ISequenceEncoder {
   /**
    * Generate a standalone viewer URL for a sequence.
    * Uses /sequence/{encodedSequence} format with self-contained data.
+   * Optional metadata is appended as URL searchParams.
    */
   generateViewerURL(
     sequence: SequenceData,
-    options: { compress?: boolean } = { compress: true }
+    options: { compress?: boolean; metadata?: ShareURLMetadata } = { compress: true }
   ): ShareURLResult {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const metadataQuery = this.buildMetadataQuery(options.metadata);
 
     if (options.compress) {
       const { encoded, compressed, originalLength, finalLength } =
         this.encodeWithCompression(sequence);
-      const url = `${baseUrl}/sequence/${encodeURIComponent(encoded)}`;
+      const url = `${baseUrl}/sequence/${encodeURIComponent(encoded)}${metadataQuery}`;
       const savings = compressed
         ? Math.round(((originalLength - finalLength) / originalLength) * 100)
         : 0;
@@ -440,7 +443,7 @@ export class SequenceEncoder implements ISequenceEncoder {
     }
 
     const encoded = this.encode(sequence);
-    const url = `${baseUrl}/sequence/${encodeURIComponent(encoded)}`;
+    const url = `${baseUrl}/sequence/${encodeURIComponent(encoded)}${metadataQuery}`;
 
     return {
       url,
@@ -583,6 +586,27 @@ export class SequenceEncoder implements ISequenceEncoder {
   // ============================================================================
   // Private Helpers
   // ============================================================================
+
+  /**
+   * Build a URL query string from optional metadata.
+   * Returns empty string if no metadata, or "?key=val&key=val" otherwise.
+   */
+  private buildMetadataQuery(metadata?: ShareURLMetadata): string {
+    if (!metadata) return "";
+
+    const params = new URLSearchParams();
+
+    if (metadata.word) params.set("word", metadata.word);
+    if (metadata.creator) params.set("creator", metadata.creator);
+    if (metadata.notes) params.set("notes", metadata.notes);
+    if (metadata.bpm !== undefined) params.set("bpm", String(metadata.bpm));
+    if (metadata.darkMode !== undefined) params.set("dark", metadata.darkMode ? "1" : "0");
+    if (metadata.difficulty) params.set("difficulty", metadata.difficulty);
+    if (metadata.birthday) params.set("birthday", metadata.birthday);
+
+    const query = params.toString();
+    return query ? `?${query}` : "";
+  }
 
   private encodeMotion(motion: MotionData | undefined): string {
     if (!motion) return "";

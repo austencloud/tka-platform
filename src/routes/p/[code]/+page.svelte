@@ -1,34 +1,36 @@
 <script lang="ts">
   /**
-   * Animation Spotlight Page
+   * QR Code Resolver Page
    *
-   * Standalone route for playing sequence animations from QR codes.
+   * Resolves short codes from QR scans and redirects to the unified
+   * sequence viewer at /sequence/{encoded}.
+   *
    * URL format: /p/{shortCode}
    *
-   * Features:
-   * - Full-screen animation playback (phone-optimized)
-   * - Auto-play on load
-   * - Minimal UI with play/pause controls
-   * - Subtle CTA to open in TKA Scribe app
-   * - Scan count tracking for analytics
+   * Flow:
+   * 1. Resolve short code to SequenceData (Firebase or inline-encoded)
+   * 2. Track scan count (Firebase codes only)
+   * 3. Save sequence via route handoff for instant loading
+   * 4. Redirect to /sequence/{encoded} with replaceState
+   *
+   * The /sequence/ route handles all viewing: playback controls, auth-aware
+   * actions, export, share, etc. This route is purely a resolver.
    */
 
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import AnimationSpotlight from "$lib/shared/qr/components/AnimationSpotlight.svelte";
+  import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
+  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
 
   // Get short code from URL param
   const shortCode = $derived($page.params["code"]);
 
   // State
-  let sequence = $state<SequenceData | null>(null);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
 
-  // Load sequence on mount
   onMount(async () => {
     if (!shortCode) {
       error = "No short code provided";
@@ -38,89 +40,62 @@
 
     try {
       const shortCodeManager = container.items.shortCodeManager;
+      const sequenceEncoder = container.items.sequenceEncoder as ISequenceEncoder;
 
       // Resolve short code to sequence
       // Handles both formats:
-      // - s~{encodedData} → offline decode (no Firebase needed)
-      // - {shortCode} → Firebase lookup (traditional)
-      const resolvedSequence =
-        await shortCodeManager.resolveShortCode(shortCode);
+      // - s~{encodedData} -> offline decode (no Firebase needed)
+      // - {shortCode} -> Firebase lookup (traditional)
+      const sequence = await shortCodeManager.resolveShortCode(shortCode);
 
-      if (!resolvedSequence) {
+      if (!sequence) {
         error = "Sequence not found";
         isLoading = false;
         return;
       }
 
-      sequence = resolvedSequence;
-      isLoading = false;
-
-      // Only increment scan count for Firebase-backed short codes (not offline codes)
-      // Offline codes are inline-encoded and have no Firebase record to update
-      const sequenceEncoder = container.items.sequenceEncoder;
+      // Track scan count for Firebase-backed short codes (not offline codes)
       if (!sequenceEncoder.isInlineEncoded(shortCode)) {
         shortCodeManager.incrementScanCount(shortCode).catch((err: unknown) => {
           console.warn("Failed to increment scan count:", err);
         });
       }
+
+      // Save handoff data so /sequence/ route loads instantly (no re-fetch)
+      saveSequenceRouteHandoff({
+        sequence,
+        returnPath: "/browse/gallery",
+        returnLabel: "Browse",
+      });
+
+      // Generate the /sequence/{encoded} path and redirect
+      const routePath = sequenceEncoder.generateSequenceRoutePath(sequence);
+      await goto(routePath, { replaceState: true });
     } catch (err: unknown) {
-      console.error("Failed to load sequence:", err);
+      console.error("Failed to resolve short code:", err);
       error = "Failed to load sequence";
       isLoading = false;
     }
   });
 
-  // Handle opening in full app
-  function handleOpenInApp() {
-    if (sequence) {
-      // Store sequence for the app to consume
-      try {
-        localStorage.setItem(
-          "tka-pending-edit-sequence",
-          JSON.stringify(sequence)
-        );
-        goto("/?module=create&tab=edit");
-      } catch (err: unknown) {
-        console.error("Failed to store sequence:", err);
-        goto("/");
-      }
-    } else {
-      goto("/");
-    }
-  }
-
-  // Handle going home
   function handleGoHome() {
-    goto("/");
+    goto("/browse/gallery");
   }
 </script>
 
 <svelte:head>
-  <title>
-    {sequence?.word || sequence?.name || "Animation"} - TKA Scribe
-  </title>
-  <meta
-    name="description"
-    content={sequence?.word
-      ? `Watch the "${sequence.word}" flow sequence animation`
-      : "Watch this flow sequence animation in TKA Scribe"}
-  />
-  <!-- Mobile viewport optimization for full-screen experience -->
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-  />
-  <!-- Theme color for mobile browser chrome -->
+  <title>Loading... - TKA Scribe</title>
+  <meta name="description" content="Loading a flow sequence in TKA Scribe" />
   <meta name="theme-color" content="#0f0f1a" />
 </svelte:head>
 
-<div class="spotlight-page">
+<div class="resolver-page">
   {#if isLoading}
     <div class="loading-container">
       <div class="spinner"></div>
-      <p>Loading animation...</p>
+      <p>Loading sequence...</p>
     </div>
-  {:else if error || !sequence}
+  {:else if error}
     <div class="error-container">
       <div class="error-card">
         <svg
@@ -137,22 +112,20 @@
           <line x1="12" y1="8" x2="12" y2="12"></line>
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
         </svg>
-        <h1>Animation Not Found</h1>
-        <p>{error || "This QR code link appears to be invalid."}</p>
-        <button class="home-button" onclick={handleGoHome}>
-          Browse TKA Scribe
+        <h1>Sequence Not Found</h1>
+        <p>{error}</p>
+        <button class="home-button" onclick={handleGoHome} type="button">
+          Browse Sequences
         </button>
       </div>
     </div>
-  {:else}
-    <AnimationSpotlight {sequence} onOpenInApp={handleOpenInApp} />
   {/if}
 </div>
 
 <style>
-  .spotlight-page {
+  .resolver-page {
     min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    min-height: 100dvh;
     background: #0f0f1a;
     overflow: hidden;
   }

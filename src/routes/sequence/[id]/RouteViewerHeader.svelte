@@ -6,7 +6,6 @@
 -->
 <script lang="ts">
   import SyncToggleButton from "$lib/shared/ui/components/SyncToggleButton.svelte";
-  import MultiPerformerButton from "$lib/shared/ui/components/MultiPerformerButton.svelte";
   import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
   import ExpandButton from "$lib/shared/ui/components/ExpandButton.svelte";
 
@@ -19,6 +18,7 @@
     isMobile: boolean;
     darkMode: boolean;
     returnLabel: string;
+    isLoggedIn: boolean;
     // Sync state
     isSyncActive: boolean;
     isSyncConnected: boolean;
@@ -28,7 +28,6 @@
     onExitExportMode: () => void;
     onBackToExportTypeSelection: () => void;
     onSyncToggle: () => void;
-    onOpenInCompose: () => void;
     onDarkModeToggle: () => void;
     onEnterFullscreen: () => void;
   }
@@ -40,6 +39,7 @@
     isMobile,
     darkMode,
     returnLabel,
+    isLoggedIn,
     isSyncActive,
     isSyncConnected,
     isSyncToggling,
@@ -47,7 +47,6 @@
     onExitExportMode,
     onBackToExportTypeSelection,
     onSyncToggle,
-    onOpenInCompose,
     onDarkModeToggle,
     onEnterFullscreen,
   }: Props = $props();
@@ -115,19 +114,17 @@
 
     <div class="header-right">
       {#if !isMobile}
-        <!-- Desktop: Full set of controls -->
-        <SyncToggleButton
-          isSearching={isSyncActive && !isSyncConnected}
-          isConnected={isSyncConnected}
-          isToggling={isSyncToggling}
-          onToggle={onSyncToggle}
-          disabled={isSyncToggling}
-          size="small"
-        />
-        <MultiPerformerButton
-          onclick={onOpenInCompose}
-          size="small"
-        />
+        <!-- Desktop controls: Sync (auth-only), dark mode, fullscreen -->
+        {#if isLoggedIn}
+          <SyncToggleButton
+            isSearching={isSyncActive && !isSyncConnected}
+            isConnected={isSyncConnected}
+            isToggling={isSyncToggling}
+            onToggle={onSyncToggle}
+            disabled={isSyncToggling}
+            size="small"
+          />
+        {/if}
         <LightsToggleButton
           lightsOn={!darkMode}
           onToggle={onDarkModeToggle}
@@ -139,7 +136,6 @@
           size="small"
         />
       {/if}
-      <!-- Mobile: No header buttons - settings moved to morphing footer -->
     </div>
   </header>
 {/if}

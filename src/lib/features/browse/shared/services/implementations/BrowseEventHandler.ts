@@ -17,8 +17,7 @@ import { browseScrollState } from "../../state/BrowseScrollState.svelte";
 import type { IBrowseLoader } from "../../../sequences/display/services/contracts/IBrowseLoader";
 import type { ISheetRouter } from "../../../../../shared/navigation/services/contracts/ISheetRouter";
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
-import { saveSequenceRouteHandoff } from "../../../../../shared/coordinators/sequence-handoff.svelte";
-import { sequenceEncoder } from "../../../../../shared/navigation/services/implementations/SequenceEncoder";
+import { openSequenceViewer } from "../../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 
 export class BrowseEventHandler implements IBrowseEventHandler {
   private params: BrowseEventHandlerParams | null = null;
@@ -86,16 +85,11 @@ export class BrowseEventHandler implements IBrowseEventHandler {
   }
 
   handleViewDetail(sequence: SequenceData): void {
-    // Save handoff data before navigation for instant loading and return context
-    saveSequenceRouteHandoff({
-      sequence,
+    openSequenceViewer(sequence, {
       returnPath: "/browse/gallery",
       returnLabel: "Browse",
       scrollY: browseScrollState.lastScrollY,
     });
-
-    // Navigate to the dedicated sequence route (self-contained URL)
-    void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
   }
 
   handleCloseDetailPanel(): void {
@@ -181,15 +175,11 @@ export class BrowseEventHandler implements IBrowseEventHandler {
   }
 
   handleSpotlightView(sequence: SequenceData): void {
-    // Navigate to the dedicated sequence route (replaces modal-based spotlight)
-    saveSequenceRouteHandoff({
-      sequence,
+    openSequenceViewer(sequence, {
       returnPath: "/browse/gallery",
       returnLabel: "Browse",
       scrollY: browseScrollState.lastScrollY,
     });
-
-    void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
   }
 
   async handleDeleteConfirm(

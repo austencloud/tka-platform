@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import { container } from "$lib/shared/di";
@@ -35,8 +35,7 @@
   import AnimationSheetCoordinator from "../../../../shared/coordinators/AnimationSheetCoordinator.svelte";
   import { consumePendingSequenceView } from "../../state/pending-sequence.svelte";
   import HallOfShameGallery from "$lib/features/hall-of-shame/components/HallOfShameGallery.svelte";
-  import { saveSequenceRouteHandoff } from "../../../../shared/coordinators/sequence-handoff.svelte";
-  import { sequenceEncoder } from "../../../../shared/navigation/services/implementations/SequenceEncoder";
+  import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 
   // Note: Library tab removed - now integrated into Sequences via scope toggle (Community / My Library)
   type BrowseModuleType = "gallery" | "collections" | "creators" | "hall-of-shame";
@@ -355,6 +354,7 @@
           (deleteConfirmationData = data),
         setError: (err: string | null) => (error = err),
       });
+
     } catch (err) {
       console.error(
         "BrowseModule: Failed to resolve IBrowseEventHandler",
@@ -392,14 +392,10 @@
             (s) => s.id === pendingSequenceId
           );
           if (sequence) {
-            // Navigate to sequence route with handoff data
-            saveSequenceRouteHandoff({
-              sequence,
+            openSequenceViewer(sequence, {
               returnPath: "/browse/gallery",
               returnLabel: "Browse",
-              scrollY: 0,
             });
-            void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
           } else {
             console.warn(
               "[BrowseModule] Pending sequence not found:",

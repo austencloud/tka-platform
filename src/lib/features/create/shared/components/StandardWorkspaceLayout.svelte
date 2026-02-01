@@ -8,7 +8,7 @@
    * Domain: Create module - Layout
    */
 
-  import { goto } from "$app/navigation";
+
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import ButtonPanel from "../workspace-panel/shared/components/ButtonPanel.svelte";
   import CreationWorkspaceArea from "./CreationWorkspaceArea.svelte";
@@ -19,8 +19,7 @@
   import type { IToolPanelMethods } from "../types/create-module-types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
-  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import { sequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 
   type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 
@@ -151,14 +150,10 @@
   function handleSpotlight() {
     const sequence = CreateModuleState.sequenceState.currentSequence;
     if (sequence) {
-      // Navigate to sequence route instead of opening modal
-      saveSequenceRouteHandoff({
-        sequence,
+      openSequenceViewer(sequence, {
         returnPath: "/create/construct",
         returnLabel: "Construct",
-        scrollY: 0,
       });
-      void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
     }
   }
 
@@ -308,6 +303,8 @@
     /* Must be above drawer content (z-index: 150) so buttons remain clickable
        when slide-in panels are open */
     z-index: 160;
+    /* Allow taps to pass through empty areas to the step grid below */
+    pointer-events: none;
   }
 
   .tool-panel-container {
