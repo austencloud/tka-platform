@@ -472,13 +472,17 @@
       "WebFetch(domain:www.lightgalleryjs.com)",
       "WebFetch(domain:www.motocms.com)",
       "WebFetch(domain:ui-patterns.com)",
-      "WebFetch(domain:registry.npmjs.org)"
+      "WebFetch(domain:registry.npmjs.org)",
+      "Bash(reg query \"HKEY_CURRENT_USER\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\Advanced\" /v NavPaneShowAllFolders)",
+      "Bash(cmd.exe //c:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "playwright",
+    "memory",
     "tka-domain",
-    "game-controller"
+    "game-controller",
+    "gmail-fixer"
   ]
 }
