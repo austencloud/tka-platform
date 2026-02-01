@@ -29,35 +29,89 @@
     "relatedTerms": ["zeta", "skewed", "position"],
     "category": "position"
   },
+  "prop": {
+    "definition": "The physical object being manipulated (staff, fan, club, poi, etc.). The prop is what rotates. The hand is just the vehicle that carries it between grid points.",
+    "examples": ["Staff (bilateral): held at center, extends both sides", "Poi (unilateral): held at one end, extends outward"],
+    "relatedTerms": ["bilateral", "unilateral", "rotation"],
+    "category": "general"
+  },
+  "bilateral": {
+    "definition": "A prop held at its center point, extending equally on both sides of the hand. The prop rotates around its center, which is where the hand grips.",
+    "examples": ["Staff", "Double-ended baton"],
+    "relatedTerms": ["unilateral", "prop"],
+    "category": "general"
+  },
+  "unilateral": {
+    "definition": "A prop held at one end, extending outward from the hand in one direction. The prop rotates around the grip point, which is at the edge of the prop.",
+    "examples": ["Poi", "Fan", "Club"],
+    "relatedTerms": ["bilateral", "prop"],
+    "category": "general"
+  },
   "pro": {
-    "definition": "A rotation direction where the prop spins WITH the direction of hand travel. Also called 'prospin'.",
-    "examples": ["If hand moves clockwise, prop rotates clockwise", "Like a wheel rolling forward"],
-    "relatedTerms": ["anti", "rotation", "spin"],
+    "definition": "A motion type where the prop rotates in the same direction as the hand's travel. At 0 turns during a shift, the prop rotates 90 degrees with the hand path. Also called 'prospin' or 'isolation' (because the prop's orientation relative to the center point stays constant).",
+    "examples": ["Hand shifts W to N clockwise, prop rotates 90 degrees clockwise", "At 0 turns: orientation preserved (e.g. in stays in)"],
+    "relatedTerms": ["anti", "float", "isolation", "rotation"],
     "category": "rotation"
   },
   "anti": {
-    "definition": "A rotation direction where the prop spins AGAINST the direction of hand travel. Also called 'antispin'.",
-    "examples": ["If hand moves clockwise, prop rotates counter-clockwise", "Creates 'petal' patterns"],
-    "relatedTerms": ["pro", "rotation", "spin"],
+    "definition": "A motion type where the prop rotates opposite to the hand's travel. At 0 turns during a shift, the prop rotates 90 degrees against the hand path. Also called 'antispin'. Creates petal-like patterns.",
+    "examples": ["Hand shifts W to N clockwise, prop rotates 90 degrees counter-clockwise", "At 0 turns: orientation switches (e.g. in becomes out)"],
+    "relatedTerms": ["pro", "float", "rotation"],
     "category": "rotation"
   },
+  "isolation": {
+    "definition": "Another name for pro motion. Called an isolation because the prop's orientation relative to the center point remains constant as the hand moves. The prop appears to stay fixed in space while the hand orbits around it.",
+    "examples": ["Pro at 0 turns during a shift is an isolation"],
+    "relatedTerms": ["pro", "rotation"],
+    "category": "rotation"
+  },
+  "float": {
+    "definition": "A motion type where the hand shifts to an adjacent point but the prop does not rotate at all. Pure translation with zero prop rotation. Similar to a dash (also pure translation) but moves to an adjacent point instead of the opposite point.",
+    "examples": ["Hand moves from W to N, prop maintains its exact facing in space", "Like sliding the prop sideways without spinning it"],
+    "relatedTerms": ["pro", "anti", "dash", "shift"],
+    "category": "motion"
+  },
   "static": {
-    "definition": "A motion type where the hand stays at its current grid point (no movement). The prop may still rotate.",
-    "examples": ["Type 6 letters (alpha, beta, gamma) have both hands static", "Type 2 letters have one static hand"],
-    "relatedTerms": ["shift", "dash", "motion"],
+    "definition": "A motion type where the hand stays at its current grid point. At 0 turns, the prop does not rotate.",
+    "examples": ["Type 6 letters (alpha, beta, gamma) have both hands static", "Type 2 letters have one static hand and one shifting hand"],
+    "relatedTerms": ["shift", "dash", "float", "motion"],
     "category": "motion"
   },
   "shift": {
-    "definition": "A motion type where the hand moves to an adjacent grid point (90 degree movement).",
-    "examples": ["N to E is a shift", "NE to N is a shift", "Type 1 and Type 2 letters use shift"],
+    "definition": "A hand movement to an adjacent grid point (90 degrees around the grid). The prop behavior during a shift depends on the motion type: pro rotates with the hand path, anti rotates against it, float does not rotate.",
+    "examples": ["N to E is a shift", "NE to SE is a shift", "Type 1 and Type 2 letters use shifts"],
     "relatedTerms": ["static", "dash", "motion"],
     "category": "motion"
   },
   "dash": {
-    "definition": "A motion type where the hand moves to the opposite grid point (180 degree movement).",
-    "examples": ["N to S is a dash", "NE to SW is a dash", "Type 4 and Type 5 letters use dash"],
-    "relatedTerms": ["static", "shift", "motion"],
+    "definition": "A hand movement to the opposite grid point (180 degrees across the grid). At 0 turns, the prop does not rotate — it translates straight through the center. Pure translation, like float, but covering a greater distance.",
+    "examples": ["N to S is a dash", "NE to SW is a dash", "Type 4 and Type 5 letters use dashes"],
+    "relatedTerms": ["static", "shift", "float", "motion"],
     "category": "motion"
+  },
+  "hand-path": {
+    "definition": "The path a hand traces when moving between grid points. For a shift, the hand path covers 90 degrees around the grid. For a dash, 180 degrees across. The hand path determines the base rotation that pro and anti motions produce.",
+    "examples": ["W to N clockwise is a 90-degree hand path", "N to S is a 180-degree hand path (dash)"],
+    "relatedTerms": ["shift", "dash", "pro", "anti"],
+    "category": "motion"
+  },
+  "turns": {
+    "definition": "Additional prop rotation beyond the base rotation inherent to the motion type. 1 turn = 180 degrees of additional rotation. At 0 turns, pro and anti still produce base rotation from the hand path. The turn count measures rotation on top of that base behavior.",
+    "examples": ["0 turns with pro shift: prop rotates 90 degrees (base only, no additional)", "1 turn with pro shift: prop rotates 90 degrees base + 180 degrees additional", "0 turns with dash: no rotation (pure translation)"],
+    "relatedTerms": ["rotation", "pro", "anti", "float"],
+    "category": "motion"
+  },
+  "orientation": {
+    "definition": "The facing direction of a prop at any point during a step. Four possible values: in (toward center), out (away from center), clock (clockwise-facing), counter (counter-clockwise-facing). Orientation changes based on motion type, turns, and rotation direction.",
+    "examples": ["Pro at 0 turns preserves orientation (in stays in)", "Anti at 0 turns switches orientation (in becomes out)", "Dash at 0 turns: orientation changes as a geometric consequence of translation through center"],
+    "relatedTerms": ["pro", "anti", "turns", "rotation"],
+    "category": "rotation"
+  },
+  "step": {
+    "definition": "A single pictograph in a sequence, regardless of its duration. Each step represents what both hands and props do during that moment. Steps are the fundamental unit of a sequence.",
+    "examples": ["A 4-step sequence has 4 pictographs", "Step 0 is the start position"],
+    "relatedTerms": ["pictograph", "sequence"],
+    "category": "general"
   },
   "dual-shift": {
     "definition": "A letter type (Type 1) where both hands shift simultaneously to adjacent points.",
@@ -96,9 +150,9 @@
     "category": "grid"
   },
   "pictograph": {
-    "definition": "A visual representation of one beat of motion in TKA. Shows two props, arrows indicating motion, and position glyphs.",
+    "definition": "A visual representation of one step of motion in TKA. Shows two props, arrows indicating motion, and position glyphs.",
     "examples": ["Each letter has multiple pictograph variations", "Pictographs can be sequenced to create choreography"],
-    "relatedTerms": ["beat", "sequence", "letter"],
+    "relatedTerms": ["step", "sequence", "letter"],
     "category": "general"
   },
   "variation": {
@@ -141,12 +195,6 @@
     "definition": "A change in prop rotation direction during a movement. Shown as dots on the pictograph.",
     "examples": ["Prop changes from clockwise to counter-clockwise mid-beat"],
     "relatedTerms": ["rotation", "pro", "anti"],
-    "category": "motion"
-  },
-  "turns": {
-    "definition": "The number of full prop rotations during a beat. Common values are 0, 0.5, 1, 1.5, 2.",
-    "examples": ["0 turns = prop doesn't rotate", "1 turn = full 360 degree rotation"],
-    "relatedTerms": ["rotation", "spin", "beat"],
     "category": "motion"
   },
   "negative-space": {
