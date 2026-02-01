@@ -42,11 +42,11 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     color: "#3b82f6",
     shortDesc: "How complex the turns are",
     fullDesc:
-      "Controls how much your props can rotate during each motion.",
+      "Controls how many additional turns your props can do during each step.",
     images: [
-      { src: "/images/level_images/level_1.png", label: "Level 1 — No rotation" },
-      { src: "/images/level_images/level_2.png", label: "Level 2 — 180° (whole)" },
-      { src: "/images/level_images/level_3.png", label: "Level 3 — 90° (half)" },
+      { src: "/images/level_images/level_1.png", label: "Level 1 — No turns" },
+      { src: "/images/level_images/level_2.png", label: "Level 2 — Whole turns" },
+      { src: "/images/level_images/level_3.png", label: "Level 3 — All turns + float" },
     ],
     tip: "Start at Level 1 to learn the foundation, then progress to Level 3 for full variety.",
   },
@@ -87,8 +87,8 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     fullDesc:
       "Changes the underlying grid that determines where your hands can be positioned.",
     bullets: [
-      "Diamond: 8 positions arranged in a diamond shape (N, NE, E, SE, S, SW, W, NW)",
-      "Box: 8 positions arranged in a square pattern - different geometric feel",
+      "Diamond: Hands on cardinal points (N, E, S, W)",
+      "Box: Hands on intercardinal points (NE, SE, SW, NW)",
     ],
     tip: "Diamond grid is most common. Try Box for a different movement vocabulary.",
   },
@@ -113,12 +113,12 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     color: "#ef4444",
     shortDesc: "How much spinning",
     fullDesc:
-      "Limits the maximum amount of rotation per beat. Lower intensity means gentler, simpler movements.",
+      "Limits the maximum number of additional turns per step. Lower intensity means gentler, simpler movements.",
     bullets: [
       "Minimal (≤0.5): Quarter turns max - very gentle",
-      "Light (≤1.0): Up to full rotations",
-      "Moderate (≤1.5): Up to 1.5 rotations",
-      "Strong (≤2.0): Up to double rotations",
+      "Light (≤1.0): Up to half turns (180°)",
+      "Moderate (≤1.5): Up to three quarter turns (270°)",
+      "Strong (≤2.0): Up to full rotations (360°)",
       "Intense (≤2.5+): Maximum spinning",
     ],
     tip: "The color gradient (green→red) indicates intensity visually.",
@@ -134,10 +134,10 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     fullDesc:
       "When using LOOP mode, this determines HOW your sequence returns to start. Each type creates a different visual effect.",
     bullets: [
-      "Rotated: Sequence repeats with a rotation offset",
+      "Rotated: Positions rotate 180° around the grid center",
       "Mirrored: Second half mirrors the first (left↔right)",
-      "Swapped: Hands switch roles in the return",
-      "Inverted: Rotation directions flip on return",
+      "Swapped: Hands switch roles in the return (blue↔red)",
+      "Inverted: Motion types transform (pro↔anti, static↔dash)",
       "Combinations: Mix multiple types for complex patterns",
     ],
     tip: "Try different LOOP types with the same settings to see how they change the feel.",
