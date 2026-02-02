@@ -25,6 +25,7 @@
   import StaggerControls from "./components/shared/StaggerControls.svelte";
   import SequenceBrowserPanel from "$lib/shared/animation-engine/components/SequenceBrowserPanel.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/types";
 
   // Use singleton grid state
   const gridState = arrangeGridState;
@@ -135,6 +136,12 @@
   function handleRemoveCell() {
     if (selectedCell) {
       gridState.toggleCell(selectedCell.row, selectedCell.col);
+    }
+  }
+
+  function handleMediaTypeChange(mediaType: CellMediaType) {
+    if (selectedCellId !== null) {
+      gridState.setCellMediaType(selectedCellId, mediaType);
     }
   }
 
@@ -392,6 +399,7 @@
               onEditLayerOffset={handleEditLayerOffset}
               onClearCell={handleClearCell}
               onRemoveCell={handleRemoveCell}
+              onMediaTypeChange={handleMediaTypeChange}
             />
           </div>
         {:else}

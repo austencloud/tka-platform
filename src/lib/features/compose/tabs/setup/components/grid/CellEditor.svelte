@@ -3,11 +3,13 @@
 
   Editor panel for the selected cell.
   Shows the cell's layers and allows adding/removing sequences.
+  Supports display mode toggle (animation ↔ choreo-card) for single-layer cells.
   Size controls are handled by drag-to-resize on the cell itself.
 -->
 <script lang="ts">
   import type { GridCell } from "../../state/arrange-grid-state.svelte";
   import type { TunnelLayerConfig } from "../../../../compose/domain/types";
+  import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/types";
 
   let {
     cell,
@@ -17,6 +19,7 @@
     onEditLayerOffset,
     onClearCell,
     onRemoveCell,
+    onMediaTypeChange,
   }: {
     cell: GridCell;
     cellIndex: number;
@@ -25,10 +28,23 @@
     onEditLayerOffset: (layerIndex: number) => void;
     onClearCell: () => void;
     onRemoveCell: () => void;
+    onMediaTypeChange: (mediaType: CellMediaType) => void;
   } = $props();
 
   const MAX_LAYERS = 4;
   const canAddLayer = $derived(cell.layers.length < MAX_LAYERS);
+
+  // Show display mode toggle when there's exactly 1 layer
+  // Multiple layers = tunnel mode = always animation
+  const showDisplayToggle = $derived(cell.layers.length === 1);
+
+  // Is currently showing as choreo card?
+  const isChoreoCard = $derived(cell.mediaType === "choreo-card");
+
+  function handleToggleDisplayMode() {
+    const newMode: CellMediaType = isChoreoCard ? "animation" : "choreo-card";
+    onMediaTypeChange(newMode);
+  }
 
   // Show current size as text (read-only indicator)
   const sizeLabel = $derived(
@@ -55,11 +71,14 @@
           {sizeLabel}
         </span>
       {/if}
-      <span class="layer-count">{cell.layers.length}/{MAX_LAYERS}</span>
+      {#if cell.mediaType === "animation"}
+        <span class="layer-count">{cell.layers.length}/{MAX_LAYERS}</span>
+      {/if}
     </div>
   </div>
 
   {#if cell.layers.length === 0}
+    <!-- No layers yet -->
     <div class="empty-state">
       <p>No sequences in this cell</p>
       <button class="add-btn primary" onclick={onAddSequence}>
@@ -134,6 +153,33 @@
         Remove
       </button>
     </div>
+
+    <!-- Display Mode Toggle (only when exactly 1 layer) -->
+    {#if showDisplayToggle}
+      <div class="display-mode-section">
+        <span class="mode-label">Display Mode</span>
+        <div class="mode-toggle">
+          <button
+            class="mode-btn"
+            class:active={!isChoreoCard}
+            onclick={handleToggleDisplayMode}
+            aria-pressed={!isChoreoCard}
+          >
+            <i class="fas fa-film" aria-hidden="true"></i>
+            <span>Animation</span>
+          </button>
+          <button
+            class="mode-btn"
+            class:active={isChoreoCard}
+            onclick={handleToggleDisplayMode}
+            aria-pressed={isChoreoCard}
+          >
+            <i class="fas fa-id-card" aria-hidden="true"></i>
+            <span>Choreo Card</span>
+          </button>
+        </div>
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -349,5 +395,68 @@
 
   .empty-state .remove-cell-btn {
     margin-top: var(--spacing-sm);
+  }
+
+  /* Display mode toggle section */
+  .display-mode-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs, 4px);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    margin-top: var(--spacing-sm);
+  }
+
+  .mode-label {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .mode-toggle {
+    display: flex;
+    gap: 2px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    padding: 2px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs, 4px);
+    padding: var(--spacing-sm, 8px);
+    background: transparent;
+    border: none;
+    border-radius: var(--border-radius-sm, 6px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    min-height: 40px;
+  }
+
+  .mode-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--theme-text, white);
+  }
+
+  .mode-btn.active {
+    background: var(--theme-accent, #8b5cf6);
+    color: white;
+  }
+
+  .mode-btn i {
+    font-size: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mode-btn {
+      transition: none;
+    }
   }
 </style>

@@ -7,14 +7,24 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/TrailTypes";
-import type { Composition, GridLayout, CellType } from "../domain/types";
+import type {
+  Composition,
+  GridLayout,
+  CellType,
+  MediaDisplayType,
+  CellConfig,
+} from "../domain/types";
 import {
   createEmptyCells,
   isCellConfigured,
   isCompositionComplete,
+  generateCellId,
+  getDefaultTrailSettings,
 } from "../domain/types";
 import { createCellsFromTemplate, getTemplateById } from "../domain/templates";
 import { dexieCompositionRepository } from "../../services/implementations/DexieCompositionRepository";
+import { loadCustomPresets } from "$lib/features/constraint-layout-lab/services/LayoutPersistence";
+import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/types";
 
 // Import types and helpers
 import type { WorkflowPhase } from "./composition-types";
@@ -68,6 +78,10 @@ export function createCompositionState() {
     loadFromStorage(STORAGE_KEYS.WORKFLOW_PHASE, "canvas")
   );
 
+  // Preset picker gate (session-only, not persisted)
+  // Tracks whether user has passed the preset picker entry gate
+  let hasEnteredBuilder = $state(false);
+
   // =========================================================================
   // Initialize Managers
   // =========================================================================
@@ -104,6 +118,12 @@ export function createCompositionState() {
   // Effective BPM: manual override > detected > tempo region > default
   const effectiveBpm = $derived(
     audioManager.state.manualBpm ?? audioManager.state.detectedBpm ?? bpm
+  );
+
+  // Whether the composition has any content (sequences in any cell)
+  // Used to auto-skip preset picker when returning to existing composition
+  const hasAnyContent = $derived(
+    composition.cells.some((cell) => cell.sequences.length > 0)
   );
 
   // Max beat count across all configured cells (for loop/stop logic)
@@ -211,6 +231,12 @@ export function createCompositionState() {
   }
 
   function applyTemplate(templateId: string) {
+    // Check if this is a custom preset from the Composition Lab
+    if (templateId.startsWith("custom-")) {
+      applyCustomPreset(templateId);
+      return;
+    }
+
     const template = getTemplateById(templateId);
     if (!template) {
       console.warn(`Template not found: ${templateId}`);
@@ -221,6 +247,105 @@ export function createCompositionState() {
       ...composition,
       layout: template.layout,
       cells: createCellsFromTemplate(template),
+      updatedAt: new Date(),
+    };
+
+    uiManager.clearSelection();
+    uiManager.closeAllSheets();
+  }
+
+  /**
+   * Convert constraint-based media type to grid-based media type
+   */
+  function convertMediaType(
+    constraintMediaType: CellMediaType
+  ): MediaDisplayType | undefined {
+    switch (constraintMediaType) {
+      case "video":
+        return "video";
+      case "animation":
+        return "animation";
+      case "image":
+        return "image";
+      case "choreo-card":
+        return "animation"; // Closest match
+      case "viewer-3d":
+        return "animation"; // Closest match
+      case "empty":
+        return undefined;
+      default:
+        return undefined;
+    }
+  }
+
+  /**
+   * Calculate grid dimensions from cell count
+   */
+  function calculateGridFromCellCount(cellCount: number): {
+    rows: number;
+    cols: number;
+  } {
+    if (cellCount <= 1) return { rows: 1, cols: 1 };
+    if (cellCount === 2) return { rows: 1, cols: 2 };
+    if (cellCount === 3) return { rows: 1, cols: 3 };
+    if (cellCount === 4) return { rows: 2, cols: 2 };
+    if (cellCount === 5 || cellCount === 6) return { rows: 2, cols: 3 };
+    if (cellCount <= 9) return { rows: 3, cols: 3 };
+    if (cellCount <= 12) return { rows: 3, cols: 4 };
+    return { rows: 4, cols: 4 };
+  }
+
+  /**
+   * Apply a custom preset from the Composition Lab
+   * Converts constraint-based layout to grid-based layout
+   */
+  function applyCustomPreset(presetId: string) {
+    const customPresets = loadCustomPresets();
+    const preset = customPresets.find((p) => p.id === presetId);
+
+    if (!preset) {
+      console.warn(`Custom preset not found: ${presetId}`);
+      return;
+    }
+
+    // Calculate grid layout based on number of cells
+    const layout = calculateGridFromCellCount(preset.cells.length);
+
+    // Convert ConstraintCells to CellConfigs
+    const cells: CellConfig[] = [];
+    let cellIndex = 0;
+
+    for (let row = 0; row < layout.rows; row++) {
+      for (let col = 0; col < layout.cols; col++) {
+        const constraintCell = preset.cells[cellIndex];
+
+        if (constraintCell) {
+          cells.push({
+            id: generateCellId(row, col),
+            type: "single",
+            mediaType: convertMediaType(constraintCell.mediaType),
+            sequences: [],
+            trailSettings: getDefaultTrailSettings(),
+            rotationOffset: 0,
+          });
+          cellIndex++;
+        } else {
+          // Fill remaining grid cells with empty cells
+          cells.push({
+            id: generateCellId(row, col),
+            type: "single",
+            sequences: [],
+            trailSettings: getDefaultTrailSettings(),
+            rotationOffset: 0,
+          });
+        }
+      }
+    }
+
+    composition = {
+      ...composition,
+      layout,
+      cells,
       updatedAt: new Date(),
     };
 
@@ -511,6 +636,12 @@ export function createCompositionState() {
     get maxStepCount() {
       return maxStepCount;
     },
+    get hasAnyContent() {
+      return hasAnyContent;
+    },
+    get hasEnteredBuilder() {
+      return hasEnteredBuilder;
+    },
 
     // Persistence state getters
     get isSaving() {
@@ -574,6 +705,11 @@ export function createCompositionState() {
     goToCanvas,
     goToAudio,
     goToExport,
+
+    // Preset picker gate
+    setHasEnteredBuilder(value: boolean) {
+      hasEnteredBuilder = value;
+    },
 
     // Audio state mutations (delegated)
     loadAudioFile: audioManager.loadAudioFile,

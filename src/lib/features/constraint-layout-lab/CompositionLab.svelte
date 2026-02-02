@@ -17,7 +17,7 @@
   import CompositionCanvas from "./components/CompositionCanvas.svelte";
   import PresetPicker from "./components/PresetPicker.svelte";
   import CellInspector from "./components/CellInspector.svelte";
-  import { LAYOUT_PRESETS, resetCellIdCounter } from "./services/LayoutPresets";
+  import { LAYOUT_PRESETS, resetCellIdCounter, findPresetById } from "./services/LayoutPresets";
   import { solveConstraints, GRID_SIZE } from "./services/ConstraintSolver";
   import {
     saveLayoutState,
@@ -30,6 +30,14 @@
     type CustomPreset,
   } from "./services/LayoutPersistence";
   import type { ConstraintCell, ContainerBounds, LayoutPreset, Constraint, SizeConstraint, CellMediaType } from "./domain/types";
+
+  // Props
+  interface Props {
+    /** Optional preset ID to apply on mount */
+    initialPresetId?: string;
+  }
+
+  let { initialPresetId }: Props = $props();
 
   // Container dimensions (observed via ResizeObserver)
   let containerEl: HTMLDivElement | null = $state(null);
@@ -94,12 +102,37 @@
     ...customPresets.map(customPresetToLayoutPreset),
   ]);
 
+  // Track if initial preset has been applied
+  let initialPresetApplied = $state(false);
+
   // Load persisted state on mount
   $effect(() => {
     if (!browser || initialized) return;
 
     // Load custom presets
     customPresets = loadCustomPresets();
+
+    // Check if we have an initial preset to apply
+    if (initialPresetId && !initialPresetApplied && containerBounds.width > 0) {
+      // Find the preset (check built-in first, then custom)
+      let preset = findPresetById(initialPresetId);
+      if (!preset) {
+        const customPreset = customPresets.find((p) => p.id === initialPresetId);
+        if (customPreset) {
+          preset = customPresetToLayoutPreset(customPreset);
+        }
+      }
+
+      if (preset) {
+        resetCellIdCounter();
+        cells = preset.createCells(containerBounds);
+        updateComputedPositions();
+        selectedCellIds = new Set();
+        initialPresetApplied = true;
+        initialized = true;
+        return;
+      }
+    }
 
     // Load layout state
     const savedState = loadLayoutState();

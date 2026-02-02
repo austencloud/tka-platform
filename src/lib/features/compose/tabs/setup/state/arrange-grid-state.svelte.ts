@@ -15,6 +15,7 @@ import {
   type TunnelLayerConfig,
   getTunnelLayerColors,
 } from "../../../compose/domain/types";
+import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/types";
 
 // LocalStorage key (v4 = 3x3 grid with cell spanning)
 const STORAGE_KEY = "compose-arrange-grid-v4";
@@ -41,6 +42,8 @@ export interface GridCell {
   colSpan: number;
   /** Number of rows this cell spans (1-3) */
   rowSpan: number;
+  /** Media type for this cell (default: animation for tunnel mode) */
+  mediaType: CellMediaType;
 }
 
 /**
@@ -99,6 +102,7 @@ function createCell(row: number, col: number, enabled: boolean): GridCell {
     beatOffset: 0,
     colSpan: 1,
     rowSpan: 1,
+    mediaType: "animation",
   };
 }
 
@@ -125,7 +129,12 @@ function loadFromStorage(): GridConfig {
     if (stored) {
       const config = JSON.parse(stored) as GridConfig;
       if (config.cells.length === GRID_SIZE * GRID_SIZE) {
-        return config;
+        // Ensure all cells have mediaType (migration for older v4 data)
+        const migratedCells = config.cells.map((cell) => ({
+          ...cell,
+          mediaType: cell.mediaType ?? "animation",
+        }));
+        return { cells: migratedCells };
       }
     }
 
@@ -134,11 +143,12 @@ function loadFromStorage(): GridConfig {
     if (storedV3) {
       const configV3 = JSON.parse(storedV3) as GridConfig;
       if (configV3.cells.length === GRID_SIZE * GRID_SIZE) {
-        // Migrate: add colSpan and rowSpan to all cells
+        // Migrate: add colSpan, rowSpan, and mediaType to all cells
         const migratedCells = configV3.cells.map((cell) => ({
           ...cell,
           colSpan: cell.colSpan ?? 1,
           rowSpan: cell.rowSpan ?? 1,
+          mediaType: cell.mediaType ?? "animation",
         }));
         const migratedConfig = { cells: migratedCells };
         // Save migrated config to v4 key
@@ -752,6 +762,25 @@ function createArrangeGridState() {
         ...cell,
         layers: [],
         beatOffset: 0,
+      };
+      cells = newCells;
+      save();
+    },
+
+    /**
+     * Update the media type for a cell
+     */
+    setCellMediaType(cellId: string, mediaType: CellMediaType) {
+      const cellIndex = cells.findIndex((c) => c.id === cellId);
+      const cell = cells[cellIndex];
+      if (!cell) return;
+
+      const newCells = [...cells];
+      newCells[cellIndex] = {
+        ...cell,
+        mediaType,
+        // Clear layers when switching away from animation (layers are sequence-specific)
+        layers: mediaType === "animation" ? cell.layers : [],
       };
       cells = newCells;
       save();

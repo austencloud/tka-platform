@@ -2,11 +2,14 @@
   CellCanvas.svelte
 
   A single cell in the composition grid.
-  Renders a mini-canvas showing the cell's layers (up to 4 performers).
+  Renders based on display mode:
+  - animation: AnimatorCanvas with tunnel layers
+  - choreo-card: LayeredSequencePreview with beat highlighting
   Can be selected to edit its contents.
 -->
 <script lang="ts">
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import LayeredSequencePreview from "$lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte";
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
   import type { GridCell } from "../../state/arrange-grid-state.svelte";
@@ -50,6 +53,17 @@
   const primaryLayer = $derived(cell.layers[0] || null);
   const secondaryLayer = $derived(cell.layers[1] || null);
   const hasLayers = $derived(cell.layers.length > 0);
+  const isAnimationType = $derived(cell.mediaType === "animation");
+
+  // Media type display info
+  const mediaTypeInfo = $derived.by(() => {
+    switch (cell.mediaType) {
+      case "video": return { icon: "fa-video", label: "Video" };
+      case "image": return { icon: "fa-image", label: "Image" };
+      case "choreo-card": return { icon: "fa-id-card", label: "Card" };
+      default: return null;
+    }
+  });
 
   // Trail settings
   const trailSettings = $derived(animationSettings.trail);
@@ -187,43 +201,59 @@
 <div
   class="cell-canvas"
   class:selected={isSelected}
-  class:empty={!hasLayers}
+  class:empty={!hasLayers && isAnimationType}
+  class:other-media={!isAnimationType}
   role="button"
   tabindex="0"
-  aria-label="Cell {cellIndex + 1}{hasLayers ? ` with ${cell.layers.length} layer${cell.layers.length > 1 ? 's' : ''}` : ', empty'}"
+  aria-label="Cell {cellIndex + 1}{isAnimationType ? (hasLayers ? ` with ${cell.layers.length} layer${cell.layers.length > 1 ? 's' : ''}` : ', empty') : `, ${cell.mediaType}`}"
   aria-pressed={isSelected}
   onclick={handleClick}
   onkeydown={handleKeyDown}
 >
-  {#if hasLayers}
-    <AnimatorCanvas
-      blueProp={primaryAnimationState.bluePropState}
-      redProp={primaryAnimationState.redPropState}
-      secondaryBlueProp={secondaryLayer ? secondaryAnimationState.bluePropState : null}
-      secondaryRedProp={secondaryLayer ? secondaryAnimationState.redPropState : null}
-      gridVisible={true}
-      gridMode={primaryLayer?.sequence.gridMode ?? null}
-      letter={primaryStepData?.letter || null}
-      stepData={primaryStepData}
-      currentStep={primaryCurrentStep}
-      sequenceData={primaryLayer?.sequence || null}
-      word={null}
-      {trailSettings}
-      hideTkaGlyph={true}
-      hideStepNumbers={true}
-    />
+  {#if isAnimationType}
+    {#if hasLayers}
+      <AnimatorCanvas
+        blueProp={primaryAnimationState.bluePropState}
+        redProp={primaryAnimationState.redPropState}
+        secondaryBlueProp={secondaryLayer ? secondaryAnimationState.bluePropState : null}
+        secondaryRedProp={secondaryLayer ? secondaryAnimationState.redPropState : null}
+        gridVisible={true}
+        gridMode={primaryLayer?.sequence.gridMode ?? null}
+        letter={primaryStepData?.letter || null}
+        stepData={primaryStepData}
+        currentStep={primaryCurrentStep}
+        sequenceData={primaryLayer?.sequence || null}
+        word={null}
+        {trailSettings}
+        hideTkaGlyph={true}
+        hideStepNumbers={true}
+      />
+    {:else}
+      <div class="empty-cell">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+      </div>
+    {/if}
   {:else}
-    <div class="empty-cell">
-      <i class="fas fa-plus" aria-hidden="true"></i>
+    <!-- Non-animation media type placeholder -->
+    <div class="media-placeholder">
+      <i class="fas {mediaTypeInfo?.icon ?? 'fa-film'}" aria-hidden="true"></i>
+      <span class="media-label">{mediaTypeInfo?.label ?? 'Content'}</span>
     </div>
   {/if}
 
   <!-- Cell index badge -->
   <span class="cell-index">{cellIndex + 1}</span>
 
-  <!-- Layer count badge -->
-  {#if hasLayers}
+  <!-- Layer count badge (only for animation type) -->
+  {#if isAnimationType && hasLayers}
     <span class="layer-count">{cell.layers.length}</span>
+  {/if}
+
+  <!-- Media type badge (for non-animation types) -->
+  {#if mediaTypeInfo}
+    <span class="media-type-badge">
+      <i class="fas {mediaTypeInfo.icon}" aria-hidden="true"></i>
+    </span>
   {/if}
 </div>
 
@@ -341,6 +371,61 @@
     color: white;
     background: var(--theme-accent, #8b5cf6);
     padding: 2px 6px;
+    border-radius: var(--border-radius-sm);
+    pointer-events: none;
+  }
+
+  /* Media type placeholder for non-animation cells */
+  .media-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm, 8px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
+  .media-placeholder i {
+    font-size: clamp(20px, 25cqw, 48px);
+    opacity: 0.6;
+  }
+
+  .media-placeholder .media-label {
+    font-size: var(--font-size-compact, 12px);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.6;
+  }
+
+  .cell-canvas.other-media {
+    border-style: dashed;
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+  }
+
+  .cell-canvas.other-media:hover {
+    border-color: var(--theme-accent, #8b5cf6);
+  }
+
+  .cell-canvas.other-media:hover .media-placeholder {
+    color: var(--theme-accent, #8b5cf6);
+  }
+
+  .cell-canvas.other-media:hover .media-placeholder i,
+  .cell-canvas.other-media:hover .media-placeholder .media-label {
+    opacity: 1;
+  }
+
+  /* Media type badge */
+  .media-type-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 10px;
+    color: white;
+    background: var(--theme-accent, #8b5cf6);
+    padding: 4px 6px;
     border-radius: var(--border-radius-sm);
     pointer-events: none;
   }

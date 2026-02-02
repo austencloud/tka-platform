@@ -1,365 +1,137 @@
 <script lang="ts">
   /**
-   * CompositionBuilder - Unified composition canvas and playback
+   * CompositionBuilder - Entry point for the Compose module's Arrange tab
    *
-   * This component replaces the old ArrangeTab + PlaybackTab architecture
-   * with a single unified view where you build and play compositions
-   * in the same interface.
-   *
-   * Features:
-   * - Layout-first composition (choose grid, configure cells)
-   * - Inline playback (no separate overlay)
-   * - Toggle between live preview and static thumbnails
-   * - Inline controls below canvas (participates in layout flow)
-   * - Templates accessible via button (secondary)
-   * - Slide-out cell config panel (right on desktop, bottom on mobile)
-   * - Workflow stepper: Canvas → Audio → Export
+   * Flow:
+   * 1. PresetPicker (choose template or "Build Custom")
+   * 2a. Template selected → ContentEditor (fill cells with sequences)
+   * 2b. "Build Custom" → CompositionLab (create custom layout presets)
    */
 
   import { getCompositionState } from "./state/composition-state.svelte";
-  import type {
-    WorkflowPhase,
-    BeatMarker,
-    TempoRegion,
-  } from "./state/composition-state.svelte";
-  import CompositionCanvas from "./components/canvas/CompositionCanvas.svelte";
-  import CanvasControls from "./components/controls/CanvasControls.svelte";
-  import TemplatesSheet from "./components/sheets/TemplatesSheet.svelte";
-  import CellConfigPanel from "./components/panels/CellConfigPanel.svelte";
-  import WorkflowStepper from "./components/stepper/WorkflowStepper.svelte";
-  import AudioPhase from "./phases/audio/AudioPhase.svelte";
-  import ExportPhase from "./phases/export/ExportPhase.svelte";
+  import PresetPicker from "./components/PresetPicker.svelte";
+  import ContentEditor from "./components/ContentEditor.svelte";
+  import CompositionLab from "$lib/features/constraint-layout-lab/CompositionLab.svelte";
 
-  // Get singleton state (renamed to avoid conflict with $state rune)
+  // Get singleton state
   const compState = getCompositionState();
 
-  // Reactive bindings
-  const composition = $derived(compState.composition);
-  const isPlaying = $derived(compState.isPlaying);
-  const isPreviewing = $derived(compState.isPreviewing);
-  const isTemplatesOpen = $derived(compState.isTemplatesOpen);
-  const selectedCellId = $derived(compState.selectedCellId);
+  // Track which mode we're in
+  type BuilderMode = "picker" | "content" | "lab";
+  let currentMode = $state<BuilderMode>("picker");
 
-  // Workflow phase bindings
-  const currentPhase = $derived(compState.currentPhase);
-  const audioState = $derived(compState.audioState);
-  const hasContent = $derived(compState.canPlay);
-  const hasAudio = $derived(compState.hasAudio);
+  // Track selected preset ID
+  let selectedPresetId = $state<string | undefined>(undefined);
 
-  function handlePhaseChange(phase: WorkflowPhase) {
-    compState.setCurrentPhase(phase);
+  // Preset picker gate - show picker if user hasn't entered builder AND has no content
+  const hasEnteredBuilder = $derived(compState.hasEnteredBuilder);
+  const hasAnyContent = $derived(compState.hasAnyContent);
+  const shouldShowPicker = $derived(!hasEnteredBuilder && !hasAnyContent);
+
+  function handleSelectPreset(templateId: string) {
+    // Store the selected preset ID and switch to content editor
+    selectedPresetId = templateId;
+    currentMode = "content";
+    compState.setHasEnteredBuilder(true);
   }
 
-  function handleLoadAudio(file: File) {
-    compState.loadAudioFile(file);
+  function handleBuildCustom() {
+    // Go to CompositionLab for creating custom layouts
+    selectedPresetId = undefined;
+    currentMode = "lab";
+    compState.setHasEnteredBuilder(true);
   }
 
-  function handleClearAudio() {
-    compState.clearAudio();
-  }
-
-  function handleSetDetectedBpm(bpm: number) {
-    compState.setDetectedBpm(bpm);
-  }
-
-  function handleSetManualBpm(bpm: number) {
-    compState.setManualBpm(bpm);
-  }
-
-  function handleAddBeatMarker(marker: BeatMarker) {
-    compState.addBeatMarker(marker);
-  }
-
-  function handleRemoveBeatMarker(id: string) {
-    compState.removeBeatMarker(id);
-  }
-
-  function handleAddTempoRegion(region: TempoRegion) {
-    compState.addTempoRegion(region);
-  }
-
-  function handleRemoveTempoRegion(id: string) {
-    compState.removeTempoRegion(id);
-  }
-
-  function handleUpdateTempoRegion(id: string, updates: Partial<TempoRegion>) {
-    compState.updateTempoRegion(id, updates);
-  }
-
-  // Fullscreen mode binding
-  const isFullscreen = $derived(compState.isFullscreen);
-
-  function handleCellClick(cellId: string) {
-    // In fullscreen mode, any cell click exits fullscreen
-    if (isFullscreen) {
-      compState.exitFullscreen();
-      return;
-    }
-
-    if (isPlaying) {
-      // During playback, ignore cell clicks
-      return;
-    }
-
-    // Open cell config panel (slides from right on desktop, bottom on mobile)
-    compState.openCellConfig(cellId);
-  }
-
-  function handleCanvasClick() {
-    // Exit fullscreen on canvas tap
-    if (isFullscreen) {
-      compState.exitFullscreen();
-    }
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    // Exit fullscreen on Escape
-    if (e.key === "Escape" && isFullscreen) {
-      compState.exitFullscreen();
-    }
+  function handleBackToPicker() {
+    // Return to preset picker
+    currentMode = "picker";
+    selectedPresetId = undefined;
+    compState.setHasEnteredBuilder(false);
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-<div
-  class="composition-builder"
-  class:fullscreen={isFullscreen}
-  role="application"
-  aria-label="Composition Builder"
->
-  <!-- Workflow Stepper -->
-  <WorkflowStepper
-    {currentPhase}
-    onPhaseChange={handlePhaseChange}
-    {hasContent}
-    {hasAudio}
+<!-- Preset Picker Gate - shown before entering the builder -->
+{#if shouldShowPicker}
+  <PresetPicker
+    onSelectPreset={handleSelectPreset}
+    onBuildCustom={handleBuildCustom}
   />
-
-  <!-- Phase Content -->
-  <div class="phase-content">
-    {#if currentPhase === "canvas"}
-      <!-- Canvas Phase -->
-      <div class="canvas-phase">
-        <div class="canvas-column">
-          <div
-            class="canvas-area"
-            onclick={handleCanvasClick}
-            onkeydown={(e) => e.key === "Enter" && handleCanvasClick()}
-            role="button"
-            tabindex="0"
-            aria-label="Composition canvas - click to exit fullscreen"
-          >
-            <CompositionCanvas
-              {composition}
-              {isPlaying}
-              {isPreviewing}
-              {selectedCellId}
-              onCellClick={handleCellClick}
-            />
-
-            <!-- Fullscreen exit hint -->
-            {#if isFullscreen}
-              <div class="fullscreen-hint">
-                <span>Tap to exit fullscreen</span>
-              </div>
-            {/if}
-          </div>
-
-          <!-- Inline Controls (hidden in fullscreen) -->
-          {#if !isFullscreen}
-            <div class="inline-controls" class:playing={isPlaying}>
-              <CanvasControls />
-            </div>
-          {/if}
-        </div>
-      </div>
-    {:else if currentPhase === "audio"}
-      <!-- Audio Phase -->
-      <AudioPhase
-        {audioState}
-        onLoadAudio={handleLoadAudio}
-        onClearAudio={handleClearAudio}
-        onSetDetectedBpm={handleSetDetectedBpm}
-        onSetManualBpm={handleSetManualBpm}
-        onSetDuration={(duration) => compState.setAudioDuration(duration)}
-        onSetAnalyzing={(analyzing) => compState.setAnalyzing(analyzing)}
-        onAddBeatMarker={handleAddBeatMarker}
-        onRemoveBeatMarker={handleRemoveBeatMarker}
-        onAddTempoRegion={handleAddTempoRegion}
-        onRemoveTempoRegion={handleRemoveTempoRegion}
-        onUpdateTempoRegion={handleUpdateTempoRegion}
-        onRestoreFromCache={() => compState.restoreAudioFromCache()}
-      />
-    {:else if currentPhase === "export"}
-      <!-- Export Phase -->
-      <ExportPhase {hasContent} {hasAudio} {audioState} />
-    {/if}
+{:else if currentMode === "lab"}
+  <!-- CompositionLab - for creating custom layout presets -->
+  <div class="composition-builder">
+    <div class="builder-header">
+      <button class="back-button" onclick={handleBackToPicker}>
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Back to Templates
+      </button>
+      <span class="mode-label">Layout Editor</span>
+    </div>
+    <div class="builder-content">
+      <CompositionLab initialPresetId={selectedPresetId} />
+    </div>
   </div>
-
-  <!-- Templates Sheet (Drawer) - only for canvas phase -->
-  {#if currentPhase === "canvas"}
-    <TemplatesSheet
-      isOpen={isTemplatesOpen}
-      onClose={() => compState.closeTemplates()}
-      onSelectTemplate={(id: string) => compState.applyTemplate(id)}
-    />
-
-    <!-- Cell Configuration Panel (slides from right on desktop, bottom on mobile) -->
-    <CellConfigPanel />
-  {/if}
-</div>
+{:else}
+  <!-- Content mode - for filling preset with sequences -->
+  <ContentEditor
+    presetId={selectedPresetId ?? "single"}
+    onBack={handleBackToPicker}
+  />
+{/if}
 
 <style>
   .composition-builder {
-    position: relative;
     width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
     height: 100%;
     display: flex;
     flex-direction: column;
-    background: transparent;
-    overflow: hidden;
-    container-type: size;
-    container-name: builder;
-  }
-
-  /* Fullscreen mode */
-  .composition-builder.fullscreen {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: var(--theme-panel-bg);
-  }
-
-  .composition-builder.fullscreen .phase-content {
-    flex: 1;
-  }
-
-  .composition-builder.fullscreen .canvas-phase {
-    flex: 1;
-  }
-
-  .composition-builder.fullscreen .canvas-column {
-    flex: 1;
-  }
-
-  .composition-builder.fullscreen .canvas-area {
-    padding: 0;
-    cursor: pointer;
-    /* Prevent tap highlight flash on touch devices */
-    -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    user-select: none;
-  }
-
-  /* Hide stepper in fullscreen */
-  .composition-builder.fullscreen :global(.workflow-stepper) {
-    display: none;
-  }
-
-  /* Phase content area - fills remaining space */
-  .phase-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
     overflow: hidden;
   }
 
-  /* Canvas phase */
-  .canvas-phase {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-
-  /* Canvas + Controls column */
-  .canvas-column {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    min-width: 0;
-  }
-
-  .canvas-area {
-    position: relative;
-    flex: 1;
+  .builder-header {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: clamp(8px, 2cqi, 24px);
-    min-height: 0;
-    min-width: 0;
-    container-type: size;
-    container-name: canvas;
-  }
-
-  /* Inline Controls - participates in flex layout */
-  .inline-controls {
+    gap: var(--spacing-md, 12px);
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
-    padding: clamp(8px, 2cqi, 16px);
-    transition: opacity var(--duration-emphasis) ease;
   }
 
-  .inline-controls.playing {
-    opacity: 0.9;
+  .back-button {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs, 4px);
+    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
+    border-radius: var(--border-radius-sm, 6px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    min-height: 32px;
   }
 
-  /* Slight dim on mobile when playing */
-  @media (hover: none) and (pointer: coarse) {
-    .inline-controls.playing {
-      opacity: 0.85;
-    }
+  .back-button:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, white);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
-  /* Fullscreen hint */
-  .fullscreen-hint {
-    position: absolute;
-    bottom: clamp(16px, 4cqi, 32px);
-    left: 50%;
-    transform: translateX(-50%);
-    padding: clamp(8px, 2cqi, 12px) clamp(16px, 4cqi, 24px);
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: clamp(20px, 4cqi, 30px);
-    backdrop-filter: blur(8px);
-    animation: fadeInOut 3s ease-in-out forwards;
-    pointer-events: none;
+  .mode-label {
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
-  .fullscreen-hint span {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: clamp(0.75rem, 2.5cqi, 0.9rem);
-    white-space: nowrap;
+  .builder-content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
-  @keyframes fadeInOut {
-    0% {
-      opacity: 0;
-    }
-    10% {
-      opacity: 1;
-    }
-    70% {
-      opacity: 1;
-    }
-    100% {
-      opacity: 0;
-    }
-  }
-
-  /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .inline-controls {
+    .back-button {
       transition: none;
-    }
-
-    .fullscreen-hint {
-      animation: none;
-      opacity: 0.8;
     }
   }
 </style>

@@ -89,14 +89,10 @@
         navigationState.setActiveTab("arrange");
         composeState.setCurrentTab("arrange");
 
-        // Set up single-cell layout and load the sequence
+        // Set up single cell layout and add the sequence
         arrangeGridState.setPresetLayout("single");
-
-        // Select the first (and only) enabled cell and add the sequence
-        const enabledCells = arrangeGridState.enabledCells;
-        const firstCell = enabledCells[0];
+        const firstCell = arrangeGridState.enabledCells[0];
         if (firstCell) {
-          arrangeGridState.selectCell(firstCell.id);
           arrangeGridState.addLayerToCell(firstCell.id, handoff.sequence);
         }
 
