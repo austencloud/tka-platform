@@ -204,6 +204,7 @@ export interface PanelCoordinationState {
     selectedComponents: Set<LOOPComponent>,
     onChange: (loopType: LOOPType) => void
   ): void;
+  setLoopSelectedComponents(components: Set<LOOPComponent>): void;
   closeLOOPPanel(): void;
 
   // Creation Method Panel State
@@ -733,6 +734,10 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       loopSelectedComponents = selectedComponents;
       loopOnChange = onChange;
       isLOOPPanelOpen = true;
+    },
+
+    setLoopSelectedComponents(components: Set<LOOPComponent>) {
+      loopSelectedComponents = components;
     },
 
     closeLOOPPanel() {

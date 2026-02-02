@@ -47,6 +47,7 @@
   import HandSelector from "./HandSelector.svelte";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+  import { getReturnContext } from "$lib/shared/coordinators/sequence-handoff.svelte";
 
   interface Props {
     show: boolean;
@@ -262,10 +263,8 @@
     if (!sequence) return;
     hapticService?.trigger("selection");
     handleClose();
-    openSequenceViewer(sequence, {
-      returnPath: "/create/construct",
-      returnLabel: "Construct",
-    });
+    const { returnPath, returnLabel } = getReturnContext();
+    openSequenceViewer(sequence, { returnPath, returnLabel });
   }
 
   function handleSpotlightClose() {

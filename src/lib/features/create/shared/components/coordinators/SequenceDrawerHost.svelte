@@ -34,6 +34,7 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+  import { getReturnContext } from "$lib/shared/coordinators/sequence-handoff.svelte";
 
   // Animation imports
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
@@ -315,10 +316,8 @@
       // Close the modal state immediately
       panelState.closeSequenceDetailsModal();
 
-      openSequenceViewer(currentSequence, {
-        returnPath: "/create/construct",
-        returnLabel: "Construct",
-      });
+      const { returnPath, returnLabel } = getReturnContext();
+      openSequenceViewer(currentSequence, { returnPath, returnLabel });
     }
   });
 

@@ -289,7 +289,7 @@ Tested on:
 
 - `CameraPreview.svelte`: Handles camera feed and video element
 - `GridOverlay.svelte`: Visualizes detected and expected positions
-- `SequenceBrowserPanel.svelte`: For selecting sequences to train with
+- `SequencePickerModal.svelte`: For selecting sequences to train with
 
 ## Next Steps
 

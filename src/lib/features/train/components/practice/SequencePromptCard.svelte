@@ -10,7 +10,7 @@
     getTrainPracticeState,
     type RecentSequence,
   } from "../../state/train-practice-state.svelte";
-  import SequenceBrowserPanel from "$lib/shared/animation-engine/components/SequenceBrowserPanel.svelte";
+  import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -126,10 +126,9 @@
     </button>
   </div>
 
-  <!-- Sequence Browser Panel -->
-  <SequenceBrowserPanel
-    mode="primary"
-    show={showBrowser}
+  <!-- Sequence Picker Modal -->
+  <SequencePickerModal
+    open={showBrowser}
     onSelect={handleSequenceSelect}
     onClose={handleCloseBrowser}
   />

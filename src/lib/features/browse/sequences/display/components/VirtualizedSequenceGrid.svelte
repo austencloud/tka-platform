@@ -31,11 +31,17 @@
     sequences = [],
     thumbnailService,
     onAction = () => {},
+    pinchColumnOverride,
   } = $props<{
     sequences: SequenceData[];
     thumbnailService: IBrowseThumbnailProvider | null;
     onAction?: (action: string, sequence: SequenceData) => void;
+    /** Pinch-to-zoom column override (2-6). When set, overrides responsive columns. */
+    pinchColumnOverride?: number;
   }>();
+
+  // Layout calculator for proper aspect ratio estimation
+  const layoutCalculator = container.items.layoutCalculator;
 
   // Variation grouper service for identifying sequences with same word
   const variationGrouper = container.items.variationGrouper;
@@ -92,25 +98,40 @@
   let totalHeight = $state(0);
 
   // Dynamic column count based on container width
-  // Reduced column counts by 1 at each breakpoint for larger thumbnails
+  // Respects pinchColumnOverride when set (e.g., from SequencePickerModal zoom controls)
   const columnCount = $derived.by(() => {
+    if (pinchColumnOverride !== undefined) return pinchColumnOverride;
     if (containerWidth === 0) return 2;
-    if (containerWidth >= 1600) return 5; // was 6
-    if (containerWidth >= 1200) return 4; // was 5
-    if (containerWidth >= 800) return 3;  // was 4
-    if (containerWidth >= 481) return 2;  // was 3
+    if (containerWidth >= 1600) return 5;
+    if (containerWidth >= 1200) return 4;
+    if (containerWidth >= 800) return 3;
+    if (containerWidth >= 481) return 2;
     return 2; // minimum
   });
 
   // Calculate row count based on sequences and columns
   const rowCount = $derived(Math.ceil(sequences.length / columnCount));
 
-  // Estimated row height (card height + gap)
+  // Estimated row height based on actual gallery aspect ratio
+  // Uses the median sequence length to calculate proper card height
   const estimatedRowHeight = $derived.by(() => {
     if (containerWidth === 0) return 200;
-    const cardWidth = (containerWidth - (columnCount - 1) * 16) / columnCount;
-    // Assuming ~1.3 aspect ratio for cards (height = width * 1.3)
-    return cardWidth * 1.3 + 16; // +16 for gap
+    const gap = 16;
+    const cardWidth = (containerWidth - (columnCount - 1) * gap) / columnCount;
+
+    // Sample representative step count from first sequence (filtered lists are usually uniform)
+    const sampleSequence = sequences[0];
+    const stepCount =
+      sampleSequence?.steps?.length ||
+      sampleSequence?.sequenceLength ||
+      4;
+
+    // Use LayoutCalculator for exact gallery aspect ratio (width/height)
+    const aspectRatio =
+      layoutCalculator.calculateGalleryAspectRatio(stepCount);
+
+    // Card height = width / aspectRatio
+    return cardWidth / aspectRatio + gap;
   });
 
   // Get sequences for a specific row

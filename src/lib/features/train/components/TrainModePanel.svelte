@@ -25,7 +25,7 @@
   } from "../services/contracts/ISessionCompletionProcessor";
   import { getTrainPracticeState } from "../state/train-practice-state.svelte";
   import ModeSettingsSheet from "./practice/ModeSettingsSheet.svelte";
-  import SequenceBrowserPanel from "$lib/shared/animation-engine/components/SequenceBrowserPanel.svelte";
+  import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import PracticeBentoLayout from "./practice/PracticeBentoLayout.svelte";
   import ModePickerSheet from "./practice/ModePickerSheet.svelte";
   import GridSettingsSheet from "./practice/GridSettingsSheet.svelte";
@@ -483,10 +483,9 @@
     }}
   />
 
-  <!-- Sequence Browser Panel -->
-  <SequenceBrowserPanel
-    mode="primary"
-    show={showSequenceBrowser}
+  <!-- Sequence Picker Modal -->
+  <SequencePickerModal
+    open={showSequenceBrowser}
     onSelect={handleSelectSequence}
     onClose={handleCloseSequenceBrowser}
   />

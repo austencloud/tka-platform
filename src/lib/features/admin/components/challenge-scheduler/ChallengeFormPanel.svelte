@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import SequenceBrowserPanel from "../../../../shared/animation-engine/components/SequenceBrowserPanel.svelte";
+  import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import type { IBrowseThumbnailProvider } from "$lib/features/browse/sequences/display/services/contracts/IBrowseThumbnailProvider";
   import { container } from "$lib/shared/di";
 
@@ -227,13 +227,12 @@
   {/if}
 </div>
 
-<!-- Sequence Browser Drawer -->
-<SequenceBrowserPanel
-  mode="primary"
-  show={showSequenceBrowser}
+<!-- Sequence Picker Modal -->
+<SequencePickerModal
+  open={showSequenceBrowser}
   onSelect={handleSequenceSelect}
   onClose={() => (showSequenceBrowser = false)}
-  placement="right"
+  title="Select Challenge Sequence"
 />
 
 <style>

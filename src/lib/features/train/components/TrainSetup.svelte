@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import SequenceBrowserPanel from "../../../shared/animation-engine/components/SequenceBrowserPanel.svelte";
+  import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import { container } from "$lib/shared/di";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import { onMount } from "svelte";
@@ -112,10 +112,9 @@
     </div>
   {/if}
 
-  <!-- Sequence Browser Drawer -->
-  <SequenceBrowserPanel
-    mode="primary"
-    show={showBrowser}
+  <!-- Sequence Picker Modal -->
+  <SequencePickerModal
+    open={showBrowser}
     onSelect={handleSequenceSelect}
     onClose={closeBrowser}
   />

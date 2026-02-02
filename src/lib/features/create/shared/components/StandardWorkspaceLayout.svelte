@@ -20,6 +20,7 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+  import { getReturnContext } from "$lib/shared/coordinators/sequence-handoff.svelte";
 
   type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 
@@ -150,10 +151,8 @@
   function handleSpotlight() {
     const sequence = CreateModuleState.sequenceState.currentSequence;
     if (sequence) {
-      openSequenceViewer(sequence, {
-        returnPath: "/create/construct",
-        returnLabel: "Construct",
-      });
+      const { returnPath, returnLabel } = getReturnContext();
+      openSequenceViewer(sequence, { returnPath, returnLabel });
     }
   }
 

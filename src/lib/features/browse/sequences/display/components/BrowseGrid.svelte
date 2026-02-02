@@ -32,6 +32,7 @@
     onAction = () => {},
     pinchColumnOverride,
     isTransitioning = false,
+    disableVirtualization = false,
   } = $props<{
     sequences?: SequenceData[];
     sections?: SequenceData[];
@@ -43,12 +44,15 @@
     pinchColumnOverride?: number;
     /** True for ~200ms after column change (for CSS transition timing) */
     isTransitioning?: boolean;
+    /** Force flat grid rendering (skip virtualization). Use in modals/pickers. */
+    disableVirtualization?: boolean;
   }>();
 
   // Determine if we should use virtualization
   // Only virtualize flat grids (not sections) with many items
   const useVirtualization = $derived(
-    !showSections &&
+    !disableVirtualization &&
+      !showSections &&
       sequences.length > VIRTUALIZATION_THRESHOLD &&
       viewMode === "grid"
   );
@@ -190,7 +194,7 @@
 
 {#if useVirtualization}
   <!-- 🚀 VIRTUALIZED: Large flat list with 50+ items -->
-  <VirtualizedSequenceGrid {sequences} {thumbnailService} {onAction} />
+  <VirtualizedSequenceGrid {sequences} {thumbnailService} {onAction} {pinchColumnOverride} />
 {:else if showSections && sections.length > 0}
   <!-- Section-based organization (desktop app style) -->
   <div class="sections-container">

@@ -17,7 +17,7 @@ Container-aware responsive design:
   import { LOOPType, LOOP_TYPE_LABELS } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
-  import LOOPExpandedOverlay from "$lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte";
+  import LOOPSelectionHost from "$lib/features/create/generate/components/modals/loop-selection/LOOPSelectionHost.svelte";
   import MorphChipGroup from "$lib/shared/foundation/ui/morph-chip/MorphChipGroup.svelte";
   import MorphChip from "$lib/shared/foundation/ui/morph-chip/MorphChip.svelte";
 
@@ -58,6 +58,8 @@ Container-aware responsive design:
 
   // LOOP full overlay state
   let showFullLoopOverlay = $state(false);
+  // Local state for LOOP components during editing (synced when overlay opens)
+  let localLoopComponents = $state<Set<LOOPComponent>>(new Set());
 
   // ============================================================
   // CHIP OPTIONS & VALUES
@@ -170,6 +172,8 @@ Container-aware responsive design:
 
   function openFullLoopOverlay() {
     haptic.trigger("selection");
+    // Sync local state with current preferences
+    localLoopComponents = new Set(selectedLoopComponents);
     showFullLoopOverlay = true;
   }
 
@@ -412,33 +416,28 @@ Container-aware responsive design:
   </div>
 </div>
 
-<!-- Full LOOP overlay for multi-select combos -->
-{#if showFullLoopOverlay}
-  <div
-    class="overlay-backdrop"
-    onclick={handleFullLoopClose}
-    onkeydown={(e) => e.key === "Escape" && handleFullLoopClose()}
-    role="dialog"
-    aria-modal="true"
-    aria-label="LOOP type selection"
-    tabindex="-1"
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div
-      class="overlay-container"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
-      role="document"
-    >
-      <LOOPExpandedOverlay
-        currentType={preferences.selectedLOOPType ?? LOOPType.STRICT_ROTATED}
-        selectedComponents={selectedLoopComponents}
-        onChange={handleFullLoopChange}
-        onClose={handleFullLoopClose}
-      />
-    </div>
-  </div>
-{/if}
+<!-- Full LOOP selection modal - responsive layout based on viewport -->
+<LOOPSelectionHost
+  isOpen={showFullLoopOverlay}
+  selectedComponents={localLoopComponents}
+  onToggleComponent={(component) => {
+    // Toggle component in local state
+    const newSet = new Set(localLoopComponents);
+    if (newSet.has(component)) {
+      newSet.delete(component);
+    } else {
+      newSet.add(component);
+    }
+    localLoopComponents = newSet;
+  }}
+  onConfirm={() => {
+    // Generate LOOP type from local components and apply
+    const newType = loopTypeResolver.generateLOOPType(localLoopComponents);
+    handleFullLoopChange(newType);
+    handleFullLoopClose();
+  }}
+  onClose={handleFullLoopClose}
+/>
 
 <style>
   .settings-container {
@@ -756,34 +755,6 @@ Container-aware responsive design:
   }
 
   /* ============================================================ */
-  /* LOOP OVERLAY */
-  /* ============================================================ */
-
-  .overlay-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    animation: fadeIn 200ms ease forwards;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  .overlay-container {
-    width: 100%;
-    max-width: 400px;
-    height: min(500px, 80vh);
-    position: relative;
-  }
-
-  /* ============================================================ */
   /* Reduced motion */
   /* ============================================================ */
 
@@ -791,8 +762,7 @@ Container-aware responsive design:
     .grid-chip,
     .loop-option-btn,
     .customize-btn,
-    .section-option,
-    .overlay-backdrop {
+    .section-option {
       transition: none;
       animation: none;
     }
