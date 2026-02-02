@@ -23,9 +23,10 @@
   import CellEditor from "./components/grid/CellEditor.svelte";
   import PlaybackBar from "./components/shared/PlaybackBar.svelte";
   import StaggerControls from "./components/shared/StaggerControls.svelte";
-  import SequenceBrowserPanel from "$lib/shared/animation-engine/components/SequenceBrowserPanel.svelte";
+  import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/types";
+  import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/types";
 
   // Use singleton grid state
   const gridState = arrangeGridState;
@@ -46,7 +47,7 @@ import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/t
   let showStaggerControls = $state(false);
   let editingLayerIndex = $state<number | null>(null);
 
-  // Zoom mode: "auto" zooms to fit enabled cells, "full" shows entire 3x3
+  // Zoom mode: "auto" zooms to fit enabled cells, "full" shows entire 4x4
   let zoomMode = $state<"auto" | "full">("auto");
 
   // Derived: selected cell data
@@ -95,7 +96,15 @@ import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/t
 
   function handleSequenceSelected(sequence: SequenceData) {
     if (selectedCellId !== null) {
-      gridState.addLayerToCell(selectedCellId, sequence);
+      const result = gridState.addLayerToCell(selectedCellId, sequence);
+      if (!result.success && result.error) {
+        showToast({
+          message: result.error,
+          type: "error",
+          duration: 5000,
+        });
+        return; // Keep picker open so user can select a different sequence
+      }
     }
     gridState.closeSequencePicker();
   }
@@ -152,6 +161,30 @@ import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/t
 
   function handleStop() {
     gridState.stop();
+  }
+
+  function handleStepHalfBack() {
+    gridState.stepHalfBack();
+  }
+
+  function handleStepHalfFwd() {
+    gridState.stepHalfForward();
+  }
+
+  function handleStepFullBack() {
+    gridState.stepFullBack();
+  }
+
+  function handleStepFullFwd() {
+    gridState.stepFullForward();
+  }
+
+  function handleBpmChange(bpm: number) {
+    gridState.setBpm(bpm);
+  }
+
+  function handleToggleLoop() {
+    gridState.toggleSkipStartPosition();
   }
 
   // Stagger controls helpers
@@ -366,6 +399,7 @@ import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/t
           cells={gridState.cells}
           currentBeat={gridState.currentBeat}
           isPlaying={gridState.isPlaying}
+          skipStartPosition={gridState.skipStartPosition}
           selectedCellId={gridState.selectedCellId}
           occupiedPositions={gridState.occupiedPositions}
           {zoomMode}
@@ -418,8 +452,16 @@ import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/t
               isPlaying={gridState.isPlaying}
               currentBeat={gridState.currentBeat}
               totalBeats={gridState.totalBeats}
+              bpm={gridState.bpm}
+              skipStartPosition={gridState.skipStartPosition}
               onPlayPause={handlePlayPause}
               onStop={handleStop}
+              onStepHalfBack={handleStepHalfBack}
+              onStepHalfFwd={handleStepHalfFwd}
+              onStepFullBack={handleStepFullBack}
+              onStepFullFwd={handleStepFullFwd}
+              onBpmChange={handleBpmChange}
+              onToggleLoop={handleToggleLoop}
             />
           </div>
         {/if}
@@ -427,11 +469,10 @@ import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/t
     </div>
   {/if}
 
-  <!-- Sequence browser (modal on desktop) -->
-  <SequenceBrowserPanel
-    show={gridState.showSequencePicker}
-    mode="primary"
-    displayMode="auto"
+  <!-- Sequence picker modal -->
+  <SequencePickerModal
+    open={gridState.showSequencePicker}
+    requiredBeatCount={gridState.getRequiredBeatCount()}
     onSelect={handleSequenceSelected}
     onClose={handleCloseSequencePicker}
   />

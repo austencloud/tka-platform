@@ -15,7 +15,7 @@
 
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import SequenceBrowserPanel from "$lib/shared/animation-engine/components/SequenceBrowserPanel.svelte";
+  import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import { getCompositionState } from "../../state/composition-state.svelte";
   import type { MediaDisplayType } from "../../domain/types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -214,10 +214,9 @@
   </div>
 </Drawer>
 
-<!-- Sequence Browser Panel (stacked on top) -->
-<SequenceBrowserPanel
-  mode="primary"
-  show={showSequenceBrowser}
+<!-- Sequence Picker Modal -->
+<SequencePickerModal
+  open={showSequenceBrowser}
   onSelect={handleSequenceSelect}
   onClose={handleSequenceBrowserClose}
 />

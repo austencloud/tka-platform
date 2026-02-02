@@ -9,7 +9,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { DuetSequenceWithData } from "../domain/duet-sequence";
   import type { PerformerManager } from "../state/performer-manager.svelte";
-  import SequenceBrowserPanel from "$lib/shared/animation-engine/components/SequenceBrowserPanel.svelte";
+  import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import DuetBrowserPanel from "./panels/DuetBrowserPanel.svelte";
   import DuetCreatorPanel from "./panels/DuetCreatorPanel.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -93,11 +93,20 @@
   }
 </script>
 
-{#if open}
+<!-- Sequence Picker Modal (when in sequences mode) -->
+<SequencePickerModal
+  open={open && browserViewMode === "sequences"}
+  title="Load Sequence"
+  onSelect={handleSequenceSelect}
+  onClose={onClose}
+/>
+
+<!-- Duets Browser Panel (when in duets mode) -->
+{#if open && browserViewMode === "duets"}
   <div class="browser-overlay">
     <div class="browser-panel">
       <header class="browser-header">
-        <h2>Load Sequence</h2>
+        <h2>Load Duet</h2>
         <button
           class="close-browser-btn"
           onclick={onClose}
@@ -107,35 +116,24 @@
         </button>
       </header>
 
-      {#if browserViewMode === "sequences"}
-        <SequenceBrowserPanel
-          mode="primary"
-          show={true}
-          onSelect={handleSequenceSelect}
-          onClose={onClose}
-        />
-      {:else}
-        <DuetBrowserPanel
-          viewMode={browserViewMode}
-          onSelectDuet={handleDuetSelect}
-          onCreateDuet={() => (duetCreatorOpen = true)}
-          onViewModeChange={(mode) => (browserViewMode = mode)}
-        />
-      {/if}
+      <DuetBrowserPanel
+        viewMode={browserViewMode}
+        onSelectDuet={handleDuetSelect}
+        onCreateDuet={() => (duetCreatorOpen = true)}
+        onViewModeChange={(mode) => (browserViewMode = mode)}
+      />
 
       <!-- View Mode Toggle at bottom -->
       <div class="browser-footer">
         <button
           class="view-mode-btn"
-          class:active={browserViewMode === "sequences"}
           onclick={() => (browserViewMode = "sequences")}
         >
           <i class="fas fa-film" aria-hidden="true"></i>
           Solo Sequences
         </button>
         <button
-          class="view-mode-btn"
-          class:active={browserViewMode === "duets"}
+          class="view-mode-btn active"
           onclick={() => (browserViewMode = "duets")}
         >
           <i class="fas fa-users" aria-hidden="true"></i>
