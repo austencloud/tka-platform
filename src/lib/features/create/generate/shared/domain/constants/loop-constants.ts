@@ -13,6 +13,7 @@ import {
  * Used for UI rendering and user selection
  * Note: Descriptions are handled by LOOPExplanationTextGenerator service
  * Icons are Font Awesome icon names (without fa- prefix)
+ * Colors and icons match LOOPIconStrip.svelte (the canonical mapping)
  */
 export const LOOP_COMPONENTS: readonly LOOPComponentInfo[] = [
   {
@@ -20,7 +21,7 @@ export const LOOP_COMPONENTS: readonly LOOPComponentInfo[] = [
     label: "Rotated",
     shortLabel: "Rotated",
     description: "Rotate 180° around the grid center",
-    icon: "rotate", // Font Awesome: fa-rotate
+    icon: "rotate",
     color: "#36c3ff",
   },
   {
@@ -28,15 +29,23 @@ export const LOOP_COMPONENTS: readonly LOOPComponentInfo[] = [
     label: "Mirrored",
     shortLabel: "Mirrored",
     description: "Flip left-to-right like a mirror",
-    icon: "left-right", // Font Awesome: fa-left-right (horizontal flip)
+    icon: "left-right",
     color: "#6F2DA8",
+  },
+  {
+    component: LOOPComponent.FLIPPED,
+    label: "Flipped",
+    shortLabel: "Flipped",
+    description: "Flip top-to-bottom",
+    icon: "up-down",
+    color: "#e91e63",
   },
   {
     component: LOOPComponent.SWAPPED,
     label: "Swapped",
     shortLabel: "Swapped",
     description: "Exchange which hand does what",
-    icon: "shuffle", // Font Awesome: fa-shuffle
+    icon: "shuffle",
     color: "#26e600",
   },
   {
@@ -44,7 +53,22 @@ export const LOOP_COMPONENTS: readonly LOOPComponentInfo[] = [
     label: "Inverted",
     shortLabel: "Inverted",
     description: "Transform motions to their opposites",
-    icon: "yin-yang", // Font Awesome: fa-yin-yang
+    icon: "adjust",
     color: "#eb7d00",
   },
+  {
+    component: LOOPComponent.REWOUND,
+    label: "Rewound",
+    shortLabel: "Rewound",
+    description: "Play the sequence backward",
+    icon: "backward",
+    color: "#00bcd4",
+  },
 ] as const;
+
+/**
+ * Lookup map: LOOPComponent -> LOOPComponentInfo
+ * Useful for resolving icon/color from a component enum value
+ */
+export const LOOP_COMPONENT_MAP: ReadonlyMap<LOOPComponent, LOOPComponentInfo> =
+  new Map(LOOP_COMPONENTS.map((info) => [info.component, info]));

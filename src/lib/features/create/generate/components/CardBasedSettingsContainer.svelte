@@ -5,9 +5,8 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import { onMount, getContext } from "svelte";
+  import { onMount } from "svelte";
   import { flip } from "svelte/animate";
-  import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import { quintOut } from "svelte/easing";
   import { scale } from "svelte/transition";
   import type { CardDescriptor } from "../shared/services/contracts/ICardConfigurator";
@@ -31,8 +30,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getCardColors } from "../shared/domain/card-colors";
   // Card components
-  import LOOPCard from "./cards/LOOPCard.svelte";
-  import LOOPExpandedOverlay from "./cards/LOOPExpandedOverlay.svelte";
+  import LOOPInlinePicker from "./cards/LOOPInlinePicker.svelte";
   import GenerationModeCard from "./cards/GenerationModeCard.svelte";
   import GridModeCard from "./cards/GridModeCard.svelte";
   import LengthCard from "./cards/LengthCard.svelte";
@@ -65,9 +63,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     helpModeExiting?: boolean;
     onHelpSelect?: (controlId: GeneratorHelpId) => void;
   }>();
-
-  // Get panel coordination state from context (for LOOP expanded overlay)
-  const panelState = getContext<PanelCoordinationState>("panelState");
 
   // Map card IDs to help IDs
   const cardIdToHelpId: Record<string, GeneratorHelpId> = {
@@ -231,16 +226,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 </script>
 
 <div class="card-settings-container" class:help-mode={helpMode} class:help-mode-exiting={helpModeExiting}>
-  <!-- LOOP Expanded Overlay - covers cards when open -->
-  {#if panelState?.isLOOPPanelOpen && panelState.loopSelectedComponents && panelState.loopOnChange}
-    <LOOPExpandedOverlay
-      currentType={panelState.loopCurrentType!}
-      selectedComponents={panelState.loopSelectedComponents}
-      onChange={panelState.loopOnChange}
-      onClose={() => panelState.closeLOOPPanel()}
-    />
-  {/if}
-
   {#each cards as card (card.id)}
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <div
@@ -270,7 +255,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
       {:else if card.id === "turn-intensity"}
         <TurnIntensityCard {...card.props as any} color={cardColors.turnIntensity.color} shadowColor={cardColors.turnIntensity.shadowColor} />
       {:else if card.id === "loop-type"}
-        <LOOPCard {...card.props as any} />
+        <LOOPInlinePicker {...card.props as any} onInfoClick={() => onHelpSelect?.("loop-type")} />
       {:else if card.id === "start-end"}
         <StartEndCard {...card.props as any} color={cardColors.startEnd.color} shadowColor={cardColors.startEnd.shadowColor} />
       {:else if card.id === "generate-button"}
@@ -282,7 +267,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 
 <style>
   .card-settings-container {
-    /* Position relative for LOOP expanded overlay */
     position: relative;
     container-type: size; /* Enable both inline and block size container queries */
     container-name: settings-grid; /* Name the container for explicit targeting */

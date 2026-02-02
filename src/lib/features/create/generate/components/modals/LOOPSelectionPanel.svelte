@@ -16,7 +16,7 @@ with exported sequence cards.
   import { loopFavoritesManager } from "$lib/features/create/generate/shared/services/implementations/LOOPFavoritesManager";
   import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
   import type { LOOPPreset } from "../../shared/domain/constants/loop-presets";
-  import LOOPGlyph from "$lib/shared/components/LOOPGlyph.svelte";
+  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import LOOPComponentGrid from "./LOOPComponentGrid.svelte";
   import LOOPExplanationPanel from "./LOOPExplanationPanel.svelte";
   import LOOPModalHeader from "./LOOPModalHeader.svelte";
@@ -169,18 +169,16 @@ with exported sequence cards.
 
     <!-- Main Component Selection -->
     {#if isMultiSelectMode}
-      <!-- Build Combo mode: Interactive pie chart picker with legend -->
-      <div class="pie-picker-section">
-        <div class="pie-chart-container">
-          <LOOPGlyph
+      <!-- Build Combo mode: Icon strip preview with clickable legend -->
+      <div class="picker-section">
+        <div class="icon-strip-container">
+          <LOOPIconStrip
             activeComponents={selectedComponents}
-            size={120}
-            interactive={true}
+            size={28}
             darkMode={true}
-            onToggle={handleToggle}
           />
         </div>
-        <div class="pie-legend">
+        <div class="component-legend">
           {#each LOOP_COMPONENTS as componentInfo}
             <button
               class="legend-item"
@@ -188,10 +186,11 @@ with exported sequence cards.
               onclick={() => handleToggle(componentInfo.component)}
               style="--component-color: {componentInfo.color}"
             >
-              <span
-                class="legend-dot"
+              <i
+                class="fas fa-{componentInfo.icon} legend-icon"
                 class:filled={selectedComponents.has(componentInfo.component)}
-              ></span>
+                aria-hidden="true"
+              ></i>
               <span class="legend-label">{componentInfo.label}</span>
             </button>
           {/each}
@@ -361,8 +360,8 @@ with exported sequence cards.
     transform: translateY(-50%);
   }
 
-  /* Pie chart picker section (Build Combo mode) */
-  .pie-picker-section {
+  /* Icon strip picker section (Build Combo mode) */
+  .picker-section {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -373,14 +372,15 @@ with exported sequence cards.
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .pie-chart-container {
+  .icon-strip-container {
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    min-height: 40px;
   }
 
-  .pie-legend {
+  .component-legend {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -415,18 +415,17 @@ with exported sequence cards.
     outline-offset: 2px;
   }
 
-  .legend-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 2px solid var(--component-color);
-    background: transparent;
-    transition: background var(--duration-normal) ease;
+  .legend-icon {
+    font-size: 14px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    transition: color var(--duration-normal) ease;
     flex-shrink: 0;
+    width: 16px;
+    text-align: center;
   }
 
-  .legend-dot.filled {
-    background: var(--component-color);
+  .legend-icon.filled {
+    color: var(--component-color);
   }
 
   .legend-label {

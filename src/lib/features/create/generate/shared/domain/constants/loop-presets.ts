@@ -23,7 +23,7 @@ export interface LOOPPreset {
   components: LOOPComponent[];
   /** Difficulty level: 1 = beginner, 2 = intermediate, 3 = advanced */
   difficulty: 1 | 2 | 3;
-  /** Icon emoji for visual distinction */
+  /** Font Awesome icon name (without fa- prefix), matches loop-constants.ts */
   icon: string;
   /** Whether this is a featured/recommended preset */
   featured?: boolean;
@@ -41,7 +41,7 @@ export const LOOP_PRESETS: readonly LOOPPreset[] = [
     useCase: "Best for beginners. Your sequence plays in the opposite corner, making it easy to track visually.",
     components: [LOOPComponent.ROTATED],
     difficulty: 1,
-    icon: "🔄",
+    icon: "rotate",
     featured: true,
   },
   {
@@ -51,7 +51,7 @@ export const LOOP_PRESETS: readonly LOOPPreset[] = [
     useCase: "Great for building ambidextrous skill. Practice your sequence and its mirror image back-to-back.",
     components: [LOOPComponent.MIRRORED],
     difficulty: 1,
-    icon: "🪞",
+    icon: "left-right",
     featured: true,
   },
   {
@@ -61,7 +61,7 @@ export const LOOP_PRESETS: readonly LOOPPreset[] = [
     useCase: "Perfect for prop independence training. Forces each hand to learn the other's pattern.",
     components: [LOOPComponent.SWAPPED],
     difficulty: 1,
-    icon: "🤝",
+    icon: "shuffle",
   },
 
   // === INTERMEDIATE PRESETS ===
@@ -72,7 +72,7 @@ export const LOOP_PRESETS: readonly LOOPPreset[] = [
     useCase: "Browse the complementary version of your flow. Pro becomes anti, static becomes dash.",
     components: [LOOPComponent.INVERTED],
     difficulty: 2,
-    icon: "👤",
+    icon: "adjust",
   },
   {
     id: "diagonal-mirror",
@@ -81,7 +81,7 @@ export const LOOP_PRESETS: readonly LOOPPreset[] = [
     useCase: "Creates beautiful diamond patterns. Your sequence reflects diagonally across the grid.",
     components: [LOOPComponent.MIRRORED, LOOPComponent.ROTATED],
     difficulty: 2,
-    icon: "💎",
+    icon: "left-right",
     featured: true,
   },
   {
@@ -91,7 +91,7 @@ export const LOOP_PRESETS: readonly LOOPPreset[] = [
     useCase: "The mathematically cleanest way to return to start. Both spatial and hand positions swap.",
     components: [LOOPComponent.ROTATED, LOOPComponent.SWAPPED],
     difficulty: 2,
-    icon: "⭕",
+    icon: "rotate",
   },
   {
     id: "energy-flip",
@@ -100,7 +100,7 @@ export const LOOP_PRESETS: readonly LOOPPreset[] = [
     useCase: "Each hand does the other's pattern with opposite energy. Creates interesting push-pull dynamics.",
     components: [LOOPComponent.SWAPPED, LOOPComponent.INVERTED],
     difficulty: 2,
-    icon: "⚡",
+    icon: "shuffle",
   },
 
   // === ADVANCED PRESETS ===
@@ -111,7 +111,7 @@ export const LOOP_PRESETS: readonly LOOPPreset[] = [
     useCase: "Like seeing your shadow in a mirror. Spatial reflection + energy inversion.",
     components: [LOOPComponent.MIRRORED, LOOPComponent.INVERTED],
     difficulty: 3,
-    icon: "🌑",
+    icon: "left-right",
   },
   {
     id: "complete-reversal",
@@ -120,7 +120,7 @@ export const LOOP_PRESETS: readonly LOOPPreset[] = [
     useCase: "Everything changes: position AND energy. Maximum contrast while maintaining structure.",
     components: [LOOPComponent.ROTATED, LOOPComponent.INVERTED],
     difficulty: 3,
-    icon: "🔃",
+    icon: "rotate",
   },
   {
     id: "triple-transform",
@@ -129,7 +129,7 @@ export const LOOP_PRESETS: readonly LOOPPreset[] = [
     useCase: "For advanced practitioners seeking maximum variation. Three simultaneous transformations.",
     components: [LOOPComponent.MIRRORED, LOOPComponent.ROTATED, LOOPComponent.INVERTED],
     difficulty: 3,
-    icon: "🔺",
+    icon: "left-right",
   },
   {
     id: "ultimate-loop",
@@ -138,7 +138,7 @@ export const LOOP_PRESETS: readonly LOOPPreset[] = [
     useCase: "The most complex LOOP possible. Only for those who've mastered all individual components.",
     components: [LOOPComponent.ROTATED, LOOPComponent.MIRRORED, LOOPComponent.SWAPPED, LOOPComponent.INVERTED],
     difficulty: 3,
-    icon: "🌀",
+    icon: "rotate",
     featured: true,
   },
 ] as const;
