@@ -227,6 +227,94 @@ const AUDITED_FILES = {
     auditDate: "2026-01-30",
     reason: "Pending deprecation: browse gallery migrating to SequenceDetailsModal which has its own unified fullscreen. No decomposition needed - file will be deleted.",
   },
+  "lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Legitimate orchestrator - coordinates playback, export, sync, ramp training via dedicated services. Headless (20 lines markup). Clear section comments. Large context object is inherent to snippet pattern.",
+  },
+  "lib/shared/animation-engine/components/SequenceBrowserPanel.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Size from 540 lines CSS. Logic (~425 lines) properly delegates to services (browseLoader, browseSorter). Search/filter is simple derived state. No extractable logic.",
+  },
+  "lib/shared/sequence-viewer/components/LayeredSequencePreview.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Just extracted PreviewCellRenderer service (this session). Remaining: orchestration of rendering, container sizing (UI-specific), LOOP detection (delegates to service), ~305 lines CSS. No further extraction needed.",
+  },
+  "lib/features/realm/core/chunk-manager.ts": {
+    auditDate: "2026-02-02",
+    reason: "Cohesive domain service for streaming terrain chunks. Single complex system: worker pool, LOD calculation, memory management, zone types. Methods are 10-50 lines with clear sections. Extracting zones would fragment cohesive logic.",
+  },
+  "lib/features/constraint-layout-lab/CompositionLab.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Orchestrator for layout preset editor. Delegates to services (ConstraintSolver, LayoutPersistence) and child components (Canvas, Inspector, PresetPicker). ~370 lines CSS, ~640 lines script. All handlers serve one purpose.",
+  },
+  "lib/features/realm/components/scene/WorldSceneContent.svelte": {
+    auditDate: "2026-02-02",
+    reason: "3D scene orchestrator for Threlte Canvas. Coordinates physics, chunks, vegetation, atmosphere, water, avatar via useTask game loop. All systems have extracted managers. Scene coordination is the single responsibility.",
+  },
+  "lib/shared/navigation/components/desktop-sidebar/ModuleQuickToggle.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Size from CSS (680 lines, 58%). Script (~310 lines) handles DND + feature flags for module management. Complex visual states for cells, responsive breakpoints, a11y support. CSS belongs with component.",
+  },
+  "lib/features/create/shared/components/SaveToLibraryPanel.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Well-composed save panel. Logic delegated to services (librarySaveService, contentModerator, hallOfShameSubmitter). UI decomposed to 6 child components. 15 derived values justified by complex form state (moderation, duplicates). CSS is 43% of file.",
+  },
+  "lib/features/realm/components/scene/WorldScene.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Container wrapping WorldSceneContent. Holds ~50 state vars via bind: pattern (physics, managers, debug). HMR persistence + MCP bridge + UI overlays are page-specific. State is structural, not logic.",
+  },
+  "lib/features/create/shared/components/coordinators/ShareHubCoordinator.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Orchestrator pattern - coordinates animation, export, visibility services. All business logic in services (IAnimationPlaybackController, IVideoExportOrchestrator, ShareHubUrlManager). 12 handlers are thin wrappers. Zero extractable UI.",
+  },
+  "lib/features/compose/tabs/setup/state/arrange-grid-state.svelte.ts": {
+    auditDate: "2026-02-02",
+    reason: "Cohesive state module - all operations on single cells array. 35+ small methods (10-30 lines each). Mature code with v3→v4 migration. Extracting presets/spans would create coupling without benefit.",
+  },
+  "lib/features/realm/rendering/instanced-vegetation.ts": {
+    auditDate: "2026-02-02",
+    reason: "Cohesive GPU rendering class - single responsibility (instanced vegetation). Clear section headers, 20-50 line methods. Dual new/legacy system is backward compat, not tangled. Procedural geometry is fallback-only.",
+  },
+  "lib/shared/di/containers/build-container.ts": {
+    auditDate: "2026-02-02",
+    reason: "DI composition root - must be single file by design. ITI requires layered wiring at one point for type safety. 122 imports, ~80 services - this is correct DI architecture, not a monolith.",
+  },
+  "lib/features/realm/rendering/geometry-clipmap.ts": {
+    auditDate: "2026-02-02",
+    reason: "Graphics algorithm implementation - SIGGRAPH paper. Two approaches (pure vs hybrid) share same vertex morphing algorithm. Splitting separates related LOD techniques with shared documentation. Well-organized with clear section headers.",
+  },
+  "lib/features/browse/creators/components/profile/ProfileAdminSection.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Self-contained admin controls. 7 async functions (20-80 lines each) follow consistent pattern. CSS is 39% of file. Two simple modals could be extracted if file grows, but current structure is clear.",
+  },
+  "lib/features/realm/generation/vegetation-scatter.ts": {
+    auditDate: "2026-02-02",
+    reason: "Cohesive vegetation placement algorithms. Two systems (legacy + category) share Poisson disk sampling and biome rules. SpatialHash classes are implementation details, not separate responsibilities.",
+  },
+  "lib/features/constraint-layout-lab/components/CompositionCanvas.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Cohesive interactive canvas component. Pan/zoom and cell manipulation share pointer state and are coupled by design. Clear section headers organize the code.",
+  },
+  "lib/features/landing-preview/components/VideoCropEditor.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Self-contained video crop editor modal. Gesture handling coupled to component state by design. 50% CSS appropriate for styled full-screen modal.",
+  },
+  "lib/shared/animation-engine/services/implementations/AnimationEngine.svelte.ts": {
+    auditDate: "2026-02-02",
+    reason: "Legitimate orchestrator coordinating 12 already-extracted services (CanvasResizer, PropTextureLoader, RenderLoop, etc.). Header explicitly states: 'All 23 effects consolidated into update() method.' Logic lives in services; engine wires them together.",
+  },
+  "lib/shared/animation-engine/components/AnimationShareDrawer.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Presentation component by explicit design. Header: 'Has ZERO business logic - all lives in AnimationCoordinator.' Passes 30+ props to children. Mobile touch handling is browser quirk workaround.",
+  },
+  "lib/shared/3d-core/camera/UnifiedCameraController.svelte": {
+    auditDate: "2026-02-02",
+    reason: "Unified camera controller by explicit design. Three modes (orbit/third/first person) with tightly coupled input handling and movement. Game loop is natural 60fps integration point.",
+  },
+  "lib/shared/navigation/components/ModuleList.svelte": {
+    auditDate: "2026-02-02",
+    reason: "CSS-heavy UI component (72% CSS). Script is minimal (~150 lines). 6 adaptive layouts require extensive media queries for premium mobile-first responsive design.",
+  },
   // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
 
