@@ -9,7 +9,7 @@ argument-hint: "[scope | --list | --claims | --stats]"
 ## Run
 
 ```bash
-node scripts/find-deadcode.cjs --auto-claim
+set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --auto-claim
 ```
 
 ## Workflow
@@ -26,23 +26,23 @@ Read `.claude/rules/deadcode-workflow.md` for complete workflow, then:
 
 ```bash
 # Auto-claim next scope and start reviewing
-node scripts/find-deadcode.cjs --auto-claim
+set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --auto-claim
 
 # Claim specific scope
-node scripts/find-deadcode.cjs --claim features/compose
+set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --claim features/compose
 
 # List all scopes with status
-node scripts/find-deadcode.cjs --list
+set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --list
 
 # Show active claims
-node scripts/find-deadcode.cjs --claims
+set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --claims
 
 # Show summary stats
-node scripts/find-deadcode.cjs --stats
+set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --stats
 
 # Release a scope
-node scripts/find-deadcode.cjs --release features/compose
+set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --release features/compose
 
 # Mark item as false positive (won't appear again)
-node scripts/find-deadcode.cjs --false-positive "path/to/file.ts"
+set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --false-positive "path/to/file.ts"
 ```

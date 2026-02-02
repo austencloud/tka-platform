@@ -1,16 +1,5 @@
 {
-  "$schema": "https://modelcontextprotocol.io/schema/2025-06-18.json",
   "mcpServers": {
-    "playwright": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@playwright/mcp@latest"],
-      "env": {}
-    },
-    "memory": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-memory"],
-      "env": {}
-    },
     "tka-domain": {
       "command": "cmd",
       "args": [
@@ -19,18 +8,13 @@
       ],
       "env": {}
     },
-    "game-controller": {
-      "command": "node",
+    "chrome-devtools": {
+      "command": "npx.cmd",
       "args": [
-        "F:\\tka-platform\\packages\\mcp-game-controller\\dist\\index.js"
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--browserUrl=http://127.0.0.1:9222"
       ],
-      "env": {
-        "GAME_WS_PORT": "9876"
-      }
-    },
-    "gmail-fixer": {
-      "command": "node",
-      "args": ["F:\\gmail-fixer\\mcp-server\\index.js"],
       "env": {}
     }
   }

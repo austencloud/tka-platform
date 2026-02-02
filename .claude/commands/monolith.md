@@ -8,7 +8,7 @@ allowed-tools: Bash Read Edit Write Glob Grep Task TodoWrite
 ## Run
 
 ```bash
-node scripts/find-monoliths.cjs --auto-claim
+set +o onecmd; npx -p @austencloud/code-quality ac-monolith --auto-claim
 ```
 
 ## Workflow
