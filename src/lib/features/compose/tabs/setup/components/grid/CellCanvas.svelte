@@ -233,8 +233,19 @@
         <i class="fas fa-plus" aria-hidden="true"></i>
       </div>
     {/if}
+  {:else if cell.mediaType === "choreo-card" && primaryLayer}
+    <!-- Choreo Card mode: Beat-synced sequence preview -->
+    <div class="choreo-card-container">
+      <LayeredSequencePreview
+        sequence={primaryLayer.sequence}
+        highlightedStepIndex={primaryCurrentStep}
+        showHighlight={isPlaying}
+        darkMode={true}
+        sizing="contain"
+      />
+    </div>
   {:else}
-    <!-- Non-animation media type placeholder -->
+    <!-- Non-animation media type placeholder (video, image, or empty choreo-card) -->
     <div class="media-placeholder">
       <i class="fas {mediaTypeInfo?.icon ?? 'fa-film'}" aria-hidden="true"></i>
       <span class="media-label">{mediaTypeInfo?.label ?? 'Content'}</span>
@@ -373,6 +384,23 @@
     padding: 2px 6px;
     border-radius: var(--border-radius-sm);
     pointer-events: none;
+  }
+
+  /* Choreo Card container - allows sequence preview to fit within cell */
+  .choreo-card-container {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    overflow: hidden;
+  }
+
+  /* Constrain LayeredSequencePreview within the choreo card container */
+  .choreo-card-container :global(.sequence-preview-container) {
+    max-width: 100%;
+    max-height: 100%;
   }
 
   /* Media type placeholder for non-animation cells */
