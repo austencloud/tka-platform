@@ -42,7 +42,7 @@
 
   const haptic = container.items.hapticFeedback as IHapticFeedback;
 
-  // Generate grid positions (3x3)
+  // Generate grid positions (4x4)
   const gridPositions = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => ({
     row: Math.floor(i / GRID_SIZE),
     col: i % GRID_SIZE,
@@ -194,9 +194,10 @@
         class="preset-btn"
         onclick={() => handlePreset("line")}
         aria-label="Horizontal line layout"
-        title="1×3 row"
+        title="1×4 row"
       >
         <div class="preset-icon line">
+          <span></span>
           <span></span>
           <span></span>
           <span></span>
@@ -205,11 +206,11 @@
       <button
         class="preset-btn"
         onclick={() => handlePreset("all")}
-        aria-label="Full 3×3 grid layout"
-        title="3×3 grid"
+        aria-label="Full 4×4 grid layout"
+        title="4×4 grid"
       >
         <div class="preset-icon all">
-          {#each Array(9) as _}
+          {#each Array(16) as _}
             <span></span>
           {/each}
         </div>
@@ -218,10 +219,11 @@
         class="preset-btn"
         onclick={() => handlePreset("hero-thumbs")}
         aria-label="Hero with thumbnails layout"
-        title="2×2 hero + 2 thumbnails"
+        title="3×3 hero + 3 thumbnails"
       >
         <div class="preset-icon hero-thumbs">
-          <span class="span-2x2"></span>
+          <span class="span-3x3"></span>
+          <span class="span-1x1"></span>
           <span class="span-1x1"></span>
           <span class="span-1x1"></span>
         </div>
@@ -230,11 +232,11 @@
         class="preset-btn"
         onclick={() => handlePreset("main-banner")}
         aria-label="Main with banner layout"
-        title="3×2 main + full-width banner"
+        title="4×3 main + full-width banner"
       >
         <div class="preset-icon main-banner">
-          <span class="span-3x2"></span>
-          <span class="span-3x1"></span>
+          <span class="span-4x3"></span>
+          <span class="span-4x1"></span>
         </div>
       </button>
       <button
@@ -244,7 +246,7 @@
         title="Large main + small overlay"
       >
         <div class="preset-icon pip">
-          <span class="span-2x3"></span>
+          <span class="span-3x4"></span>
           <span class="span-1x1"></span>
         </div>
       </button>
@@ -270,8 +272,8 @@
 
   .toggle-grid {
     display: grid;
-    grid-template-rows: repeat(3, 1fr);
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 6px;
     padding: 12px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
@@ -449,12 +451,12 @@
   }
 
   .preset-icon.line {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .preset-icon.line span {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   .preset-icon.square {
@@ -468,28 +470,28 @@
   }
 
   .preset-icon.all {
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
   }
 
   .preset-icon.all span {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
 
   /* Spanning preset icons */
   .preset-icon.hero-thumbs {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
     gap: 1px;
     width: 24px;
     height: 24px;
   }
 
-  .preset-icon.hero-thumbs .span-2x2 {
-    grid-column: span 2;
-    grid-row: span 2;
+  .preset-icon.hero-thumbs .span-3x3 {
+    grid-column: span 3;
+    grid-row: span 3;
   }
 
   .preset-icon.hero-thumbs .span-1x1 {
@@ -499,35 +501,35 @@
 
   .preset-icon.main-banner {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
     gap: 1px;
     width: 24px;
     height: 24px;
   }
 
-  .preset-icon.main-banner .span-3x2 {
-    grid-column: span 3;
-    grid-row: span 2;
+  .preset-icon.main-banner .span-4x3 {
+    grid-column: span 4;
+    grid-row: span 3;
   }
 
-  .preset-icon.main-banner .span-3x1 {
-    grid-column: span 3;
+  .preset-icon.main-banner .span-4x1 {
+    grid-column: span 4;
     grid-row: span 1;
   }
 
   .preset-icon.pip {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
     gap: 1px;
     width: 24px;
     height: 24px;
   }
 
-  .preset-icon.pip .span-2x3 {
-    grid-column: span 2;
-    grid-row: span 3;
+  .preset-icon.pip .span-3x4 {
+    grid-column: span 3;
+    grid-row: span 4;
   }
 
   .preset-icon.pip .span-1x1 {

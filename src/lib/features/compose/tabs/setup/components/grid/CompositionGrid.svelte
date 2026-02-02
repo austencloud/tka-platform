@@ -10,12 +10,13 @@
 <script lang="ts">
   import CellCanvas from "./CellCanvas.svelte";
   import CellResizeHandles from "./CellResizeHandles.svelte";
-  import type { GridCell } from "../../state/arrange-grid-state.svelte";
+  import { GRID_SIZE, type GridCell } from "../../state/arrange-grid-state.svelte";
 
   let {
     cells,
     currentBeat,
     isPlaying,
+    skipStartPosition = true,
     selectedCellId,
     occupiedPositions,
     zoomMode = "auto",
@@ -26,9 +27,10 @@
     cells: GridCell[];
     currentBeat: number;
     isPlaying: boolean;
+    skipStartPosition?: boolean;
     selectedCellId: string | null;
     occupiedPositions: Map<string, string>;
-    /** "auto" = zoom to enabled cells, "full" = show entire 3x3 grid */
+    /** "auto" = zoom to enabled cells, "full" = show entire 4x4 grid */
     zoomMode?: "auto" | "full";
     onSelectCell: (cellId: string) => void;
     onSetCellSpan: (cellId: string, colSpan: number, rowSpan: number, newCol?: number, newRow?: number) => void;
@@ -64,11 +66,11 @@
   const enabledCells = $derived(cells.filter((c) => c.enabled));
 
   // Calculate grid bounds from enabled cells - accounts for spans
-  // In "full" zoom mode, always show the entire 3x3 grid
+  // In "full" zoom mode, always show the entire 4x4 grid
   const gridBounds = $derived.by(() => {
-    // In full zoom mode, always show entire 3x3
+    // In full zoom mode, always show entire 4x4
     if (zoomMode === "full") {
-      return { minRow: 0, maxRow: 2, minCol: 0, maxCol: 2, rows: 3, cols: 3 };
+      return { minRow: 0, maxRow: GRID_SIZE - 1, minCol: 0, maxCol: GRID_SIZE - 1, rows: GRID_SIZE, cols: GRID_SIZE };
     }
 
     if (enabledCells.length === 0) {
@@ -207,7 +209,7 @@
     } else if (dir === "right" || dir === "top-right" || dir === "bottom-right") {
       // Dragging right edge: positive delta = expand right
       const colDelta = Math.round(deltaX / unitSize);
-      targetColSpan = Math.max(1, Math.min(3 - state.originalCol, state.originalColSpan + colDelta));
+      targetColSpan = Math.max(1, Math.min(GRID_SIZE - state.originalCol, state.originalColSpan + colDelta));
     }
 
     // Handle vertical resizing
@@ -221,15 +223,15 @@
     } else if (dir === "bottom" || dir === "bottom-left" || dir === "bottom-right") {
       // Dragging bottom edge: positive delta = expand down
       const rowDelta = Math.round(deltaY / unitSize);
-      targetRowSpan = Math.max(1, Math.min(3 - state.originalRow, state.originalRowSpan + rowDelta));
+      targetRowSpan = Math.max(1, Math.min(GRID_SIZE - state.originalRow, state.originalRowSpan + rowDelta));
     }
 
     // Ensure we don't exceed grid bounds
-    if (targetCol + targetColSpan > 3) {
-      targetColSpan = 3 - targetCol;
+    if (targetCol + targetColSpan > GRID_SIZE) {
+      targetColSpan = GRID_SIZE - targetCol;
     }
-    if (targetRow + targetRowSpan > 3) {
-      targetRowSpan = 3 - targetRow;
+    if (targetRow + targetRowSpan > GRID_SIZE) {
+      targetRowSpan = GRID_SIZE - targetRow;
     }
 
     // Always valid - we'll absorb any cells that get in the way
@@ -327,21 +329,25 @@
               style:--col-span={cell.colSpan}
               style:--row-span={cell.rowSpan}
             >
-              <CellCanvas
-                {cell}
-                cellIndex={getCellDisplayIndex(cell)}
-                {currentBeat}
-                {isPlaying}
-                isSelected={selectedCellId === cell.id}
-                onSelect={() => onSelectCell(cell.id)}
-              />
+              <!-- Key by cell ID AND layer sequence IDs to force re-render when content changes -->
+              {#key `${cell.id}-${cell.layers.map(l => l.sequence.id || l.sequence.word).join('-')}`}
+                <CellCanvas
+                  {cell}
+                  cellIndex={getCellDisplayIndex(cell)}
+                  {currentBeat}
+                  {isPlaying}
+                  {skipStartPosition}
+                  isSelected={selectedCellId === cell.id}
+                  onSelect={() => onSelectCell(cell.id)}
+                />
+              {/key}
 
               <CellResizeHandles
                 cellId={cell.id}
                 canResizeLeft={cell.colSpan > 1 || cell.col > 0}
-                canResizeRight={cell.colSpan > 1 || cell.col + cell.colSpan < 3}
+                canResizeRight={cell.colSpan > 1 || cell.col + cell.colSpan < GRID_SIZE}
                 canResizeTop={cell.rowSpan > 1 || cell.row > 0}
-                canResizeBottom={cell.rowSpan > 1 || cell.row + cell.rowSpan < 3}
+                canResizeBottom={cell.rowSpan > 1 || cell.row + cell.rowSpan < GRID_SIZE}
                 onResizeStart={handleResizeStart}
               />
             </div>

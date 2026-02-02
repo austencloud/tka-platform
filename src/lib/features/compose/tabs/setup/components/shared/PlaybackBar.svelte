@@ -1,124 +1,128 @@
 <!--
   PlaybackBar.svelte
 
-  Simple horizontal playback controls:
-  - Play/Pause button
-  - Stop button
-  - Beat counter (current/total)
+  Playback controls for the compose grid.
+  Composes existing shared components:
+  - HorizontalTransportRow: step buttons + play/pause
+  - BpmChips: BPM presets with tap tempo
+  Plus: stop button, beat counter, loop mode toggle
 -->
 <script lang="ts">
+  import HorizontalTransportRow from "$lib/shared/sequence-viewer/components/HorizontalTransportRow.svelte";
+  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+
   let {
     isPlaying,
     currentBeat,
     totalBeats,
+    bpm = $bindable(120),
+    skipStartPosition = true,
     onPlayPause,
     onStop,
+    onStepHalfBack,
+    onStepHalfFwd,
+    onStepFullBack,
+    onStepFullFwd,
+    onBpmChange,
+    onToggleLoop,
   }: {
     isPlaying: boolean;
     currentBeat: number;
     totalBeats: number;
+    bpm: number;
+    skipStartPosition?: boolean;
     onPlayPause: () => void;
     onStop: () => void;
+    onStepHalfBack: () => void;
+    onStepHalfFwd: () => void;
+    onStepFullBack: () => void;
+    onStepFullFwd: () => void;
+    onBpmChange?: (bpm: number) => void;
+    onToggleLoop?: () => void;
   } = $props();
 
   const canStop = $derived(isPlaying || currentBeat > 0);
 </script>
 
 <div class="playback-bar">
-  <div class="controls">
-    <button
-      class="control-btn play-btn"
-      class:playing={isPlaying}
-      onclick={onPlayPause}
-      aria-label={isPlaying ? "Pause" : "Play"}
-    >
-      <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-    </button>
+  <!-- Transport: step buttons + play/pause (reuses shared component) -->
+  <HorizontalTransportRow
+    {isPlaying}
+    onPlaybackToggle={onPlayPause}
+    {onStepHalfBack}
+    {onStepHalfFwd}
+    {onStepFullBack}
+    {onStepFullFwd}
+  />
 
-    <button
-      class="control-btn stop-btn"
-      onclick={onStop}
-      disabled={!canStop}
-      aria-label="Stop"
-    >
-      <i class="fas fa-stop" aria-hidden="true"></i>
-    </button>
+  <!-- Beat counter + stop + loop toggle -->
+  <div class="info-row">
+    <div class="beat-display">
+      <span class="current">{Math.floor(currentBeat) + 1}</span>
+      <span class="separator">/</span>
+      <span class="total">{totalBeats}</span>
+      <span class="beat-label">beats</span>
+    </div>
+
+    <div class="controls-right">
+      <!-- Loop toggle -->
+      {#if onToggleLoop}
+        <button
+          class="loop-btn"
+          class:active={skipStartPosition}
+          onclick={onToggleLoop}
+          aria-label={skipStartPosition ? "Loop mode: seamless" : "Loop mode: with start position"}
+          title={skipStartPosition ? "Seamless loop (skips start pose)" : "Includes start pose each loop"}
+        >
+          <i class="fas fa-repeat" aria-hidden="true"></i>
+        </button>
+      {/if}
+
+      <!-- Stop button -->
+      <button
+        class="stop-btn"
+        onclick={onStop}
+        disabled={!canStop}
+        aria-label="Stop"
+      >
+        <i class="fas fa-stop" aria-hidden="true"></i>
+      </button>
+    </div>
   </div>
 
-  <div class="beat-display">
-    <span class="current">{currentBeat + 1}</span>
-    <span class="separator">/</span>
-    <span class="total">{totalBeats}</span>
-    <span class="label">beats</span>
-  </div>
+  <!-- BPM control (reuses shared component, compact variant) -->
+  <BpmChips
+    bind:bpm
+    variant="compact"
+    onBpmChange={onBpmChange}
+  />
 </div>
 
 <style>
   .playback-bar {
     display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 8px);
+  }
+
+  /* Override HorizontalTransportRow's default card background since
+     we're already inside a panel-section card */
+  .playback-bar :global(.horizontal-transport-row) {
+    background: transparent;
+    border: none;
+    padding: 8px 0;
+  }
+
+  .info-row {
+    display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--spacing-md);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-md);
-    margin-top: auto;
   }
 
-  .controls {
-    display: flex;
-    gap: var(--spacing-sm);
-  }
-
-  .control-btn {
-    width: var(--min-touch-target, 48px);
-    height: var(--min-touch-target, 48px);
+  .controls-right {
     display: flex;
     align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--border-radius-md);
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .control-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-
-  .control-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .control-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  /* Play button styling */
-  .play-btn {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: rgba(16, 185, 129, 0.4);
-  }
-
-  .play-btn:hover:not(:disabled) {
-    background: rgba(16, 185, 129, 0.4);
-    border-color: rgba(16, 185, 129, 0.6);
-  }
-
-  .play-btn.playing {
-    background: rgba(245, 158, 11, 0.2);
-    border-color: rgba(245, 158, 11, 0.4);
-  }
-
-  .play-btn.playing:hover:not(:disabled) {
-    background: rgba(245, 158, 11, 0.4);
-    border-color: rgba(245, 158, 11, 0.6);
+    gap: var(--spacing-sm, 8px);
   }
 
   /* Beat display */
@@ -146,15 +150,85 @@
     font-weight: 500;
   }
 
-  .label {
+  .beat-label {
     margin-left: var(--spacing-xs);
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
+  /* Loop toggle */
+  .loop-btn {
+    width: var(--min-touch-target, 48px);
+    height: var(--min-touch-target, 48px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 50%;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+  }
+
+  .loop-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, white);
+  }
+
+  .loop-btn.active {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: rgba(16, 185, 129, 1);
+  }
+
+  .loop-btn.active:hover {
+    background: rgba(16, 185, 129, 0.3);
+    border-color: rgba(16, 185, 129, 0.5);
+  }
+
+  .loop-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  /* Stop button */
+  .stop-btn {
+    width: var(--min-touch-target, 48px);
+    height: var(--min-touch-target, 48px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: white;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+  }
+
+  .stop-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .stop-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .stop-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .control-btn {
+    .loop-btn,
+    .stop-btn {
       transition: none;
     }
   }

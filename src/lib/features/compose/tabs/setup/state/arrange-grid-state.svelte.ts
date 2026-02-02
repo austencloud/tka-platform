@@ -2,7 +2,7 @@
  * Arrange Grid State
  *
  * State management for the Arrange tab grid composition mode.
- * Supports a freeform 4x4 grid where each position can be enabled/disabled,
+ * Supports a freeform 4×4 grid where each position can be enabled/disabled,
  * allowing for non-rectangular layouts (L-shapes, T-shapes, scattered, etc.).
  *
  * Each enabled cell is a "tunnel" that can hold up to 4 performers/layers.
@@ -17,12 +17,12 @@ import {
 } from "../../../compose/domain/types";
 import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/types";
 
-// LocalStorage key (v4 = 3x3 grid with cell spanning)
-const STORAGE_KEY = "compose-arrange-grid-v4";
-const STORAGE_KEY_V3 = "compose-arrange-grid-v3";
+// LocalStorage key (v5 = 4x4 grid with cell spanning)
+const STORAGE_KEY = "compose-arrange-grid-v5";
+const STORAGE_KEY_V4 = "compose-arrange-grid-v4";
 
-// Grid dimensions (fixed 3x3 grid)
-export const GRID_SIZE = 3;
+// Grid dimensions (fixed 4x4 grid)
+export const GRID_SIZE = 4;
 const MAX_LAYERS_PER_CELL = 4;
 
 /**
@@ -30,9 +30,9 @@ const MAX_LAYERS_PER_CELL = 4;
  */
 export interface GridCell {
   id: string;
-  /** Row position (0-2) */
+  /** Row position (0-3) */
   row: number;
-  /** Column position (0-2) */
+  /** Column position (0-3) */
   col: number;
   /** Is this cell enabled/visible? */
   enabled: boolean;
@@ -62,11 +62,16 @@ function lcm(a: number, b: number): number {
   return (a * b) / gcd(a, b);
 }
 
-function calculateCellBeats(cell: GridCell): number {
+function calculateCellBeats(cell: GridCell, skipStart: boolean): number {
   if (cell.layers.length === 0) return 0;
 
   const beatCounts = cell.layers.map((layer) => {
-    return layer.sequence.steps?.length || 1;
+    const stepCount = layer.sequence.steps?.length || 1;
+    // steps.length = number of motion beats (start position is stored separately
+    // in sequence.startPosition, NOT in the steps array).
+    // When skipStart=true (seamless loop): total = stepCount
+    // When skipStart=false (show start pose): total = stepCount + 1
+    return skipStart ? stepCount : stepCount + 1;
   });
 
   const firstCount = beatCounts[0];
@@ -74,14 +79,14 @@ function calculateCellBeats(cell: GridCell): number {
   return beatCounts.reduce((acc, count) => lcm(acc, count), firstCount);
 }
 
-function calculateTotalBeats(cells: GridCell[]): number {
+function calculateTotalBeats(cells: GridCell[], skipStart: boolean): number {
   const enabledCellsWithLayers = cells.filter(
     (c) => c.enabled && c.layers.length > 0
   );
   if (enabledCellsWithLayers.length === 0) return 0;
 
   const beatCounts = enabledCellsWithLayers.map((cell) =>
-    calculateCellBeats(cell)
+    calculateCellBeats(cell, skipStart)
   );
   const firstCount = beatCounts[0];
   if (firstCount === undefined) return 0;
@@ -124,12 +129,12 @@ function loadFromStorage(): GridConfig {
   }
 
   try {
-    // Try v4 first
+    // Try v5 first (4x4 grid)
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const config = JSON.parse(stored) as GridConfig;
       if (config.cells.length === GRID_SIZE * GRID_SIZE) {
-        // Ensure all cells have mediaType (migration for older v4 data)
+        // Ensure all cells have mediaType (migration for older data)
         const migratedCells = config.cells.map((cell) => ({
           ...cell,
           mediaType: cell.mediaType ?? "animation",
@@ -138,23 +143,36 @@ function loadFromStorage(): GridConfig {
       }
     }
 
-    // Try migrating from v3
-    const storedV3 = localStorage.getItem(STORAGE_KEY_V3);
-    if (storedV3) {
-      const configV3 = JSON.parse(storedV3) as GridConfig;
-      if (configV3.cells.length === GRID_SIZE * GRID_SIZE) {
-        // Migrate: add colSpan, rowSpan, and mediaType to all cells
-        const migratedCells = configV3.cells.map((cell) => ({
-          ...cell,
-          colSpan: cell.colSpan ?? 1,
-          rowSpan: cell.rowSpan ?? 1,
-          mediaType: cell.mediaType ?? "animation",
-        }));
-        const migratedConfig = { cells: migratedCells };
-        // Save migrated config to v4 key
+    // Try migrating from v4 (3x3 grid -> 4x4 grid)
+    const storedV4 = localStorage.getItem(STORAGE_KEY_V4);
+    if (storedV4) {
+      const configV4 = JSON.parse(storedV4) as GridConfig;
+      // v4 was 3x3 = 9 cells, we need 4x4 = 16 cells
+      if (configV4.cells.length === 9) {
+        // Create fresh 4x4 grid
+        const newCells = createInitialGrid();
+        // Copy over the 3x3 data into the top-left 3x3 of the 4x4 grid
+        for (const oldCell of configV4.cells) {
+          // Find matching cell in new grid (same row/col position)
+          const newIndex = oldCell.row * GRID_SIZE + oldCell.col;
+          const newCell = newCells[newIndex];
+          if (newCell && oldCell.row < 3 && oldCell.col < 3) {
+            newCells[newIndex] = {
+              ...newCell,
+              enabled: oldCell.enabled,
+              layers: oldCell.layers ?? [],
+              beatOffset: oldCell.beatOffset ?? 0,
+              colSpan: Math.min(oldCell.colSpan ?? 1, GRID_SIZE - oldCell.col),
+              rowSpan: Math.min(oldCell.rowSpan ?? 1, GRID_SIZE - oldCell.row),
+              mediaType: oldCell.mediaType ?? "animation",
+            };
+          }
+        }
+        const migratedConfig = { cells: newCells };
+        // Save migrated config to v5 key
         saveToStorage(migratedConfig);
         // Clean up old key
-        localStorage.removeItem(STORAGE_KEY_V3);
+        localStorage.removeItem(STORAGE_KEY_V4);
         return migratedConfig;
       }
     }
@@ -189,8 +207,17 @@ function createArrangeGridState() {
   let selectedCellId = $state<string | null>(null);
   let showSequencePicker = $state(false);
 
-  // Non-reactive
-  let playbackInterval: ReturnType<typeof setInterval> | null = null;
+  // When true, step 0 (start position) is skipped during playback.
+  // Sequences loop from final beat directly back to beat 1.
+  let skipStartPosition = $state(true);
+
+  // Playback BPM (reactive so BpmChips can display it)
+  let playbackBpm = $state(120);
+
+  // Non-reactive playback state
+  let animationFrameId: number | null = null;
+  let lastFrameTime: number = 0;
+  let stepAnimating = false;
 
   // Helper to save current state
   function save() {
@@ -207,27 +234,85 @@ function createArrangeGridState() {
     return row * GRID_SIZE + col;
   }
 
-  // Playback loop
+  // Playback loop using requestAnimationFrame for smooth fractional beats
   function startPlaybackLoop(bpm: number = 120) {
-    if (playbackInterval) {
-      clearInterval(playbackInterval);
+    stopPlaybackLoop();
+    playbackBpm = bpm;
+    lastFrameTime = performance.now();
+
+    function tick(now: number) {
+      if (!isPlaying) return;
+
+      const deltaMs = now - lastFrameTime;
+      lastFrameTime = now;
+
+      // Calculate beat increment based on BPM
+      // At 120 BPM: 2 beats per second = 0.002 beats per ms
+      const beatsPerMs = playbackBpm / 60 / 1000;
+      const beatIncrement = deltaMs * beatsPerMs;
+
+      const total = calculateTotalBeats(cells, skipStartPosition);
+      if (total > 0) {
+        currentBeat = (currentBeat + beatIncrement) % total;
+      }
+
+      animationFrameId = requestAnimationFrame(tick);
     }
 
-    const msPerBeat = (60 / bpm) * 1000;
-
-    playbackInterval = setInterval(() => {
-      const total = calculateTotalBeats(cells);
-      if (total > 0) {
-        currentBeat = (currentBeat + 1) % total;
-      }
-    }, msPerBeat);
+    animationFrameId = requestAnimationFrame(tick);
   }
 
   function stopPlaybackLoop() {
-    if (playbackInterval) {
-      clearInterval(playbackInterval);
-      playbackInterval = null;
+    stepAnimating = false;
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
     }
+  }
+
+  /**
+   * Animate currentBeat smoothly toward a target by the given amount.
+   * Used by step buttons so props visibly rotate/move to the next position.
+   */
+  function animateStep(amount: number) {
+    if (isPlaying) return;
+    stopPlaybackLoop();
+
+    const total = calculateTotalBeats(cells, skipStartPosition);
+    if (total <= 0) return;
+
+    const startBeat = currentBeat;
+    const targetBeat = ((currentBeat + amount) % total + total) % total;
+    const direction = amount > 0 ? 1 : -1;
+    const distance = Math.abs(amount);
+    let traveled = 0;
+
+    stepAnimating = true;
+    lastFrameTime = performance.now();
+
+    function tick(now: number) {
+      if (!stepAnimating) return;
+
+      const deltaMs = now - lastFrameTime;
+      lastFrameTime = now;
+
+      // Animate at current BPM rate
+      const beatsPerMs = playbackBpm / 60000;
+      const increment = deltaMs * beatsPerMs;
+      traveled += increment;
+
+      if (traveled >= distance) {
+        currentBeat = targetBeat;
+        stepAnimating = false;
+        animationFrameId = null;
+        return;
+      }
+
+      currentBeat = ((startBeat + direction * traveled) % total + total) % total;
+      animationFrameId = requestAnimationFrame(tick);
+    }
+
+    animationFrameId = requestAnimationFrame(tick);
   }
 
   return {
@@ -256,7 +341,10 @@ function createArrangeGridState() {
       return cells.filter((c) => c.enabled).length;
     },
     get totalBeats() {
-      return calculateTotalBeats(cells);
+      return calculateTotalBeats(cells, skipStartPosition);
+    },
+    get skipStartPosition() {
+      return skipStartPosition;
     },
     get hasAnyLayers() {
       return cells.some((c) => c.enabled && c.layers.length > 0);
@@ -508,7 +596,7 @@ function createArrangeGridState() {
       this.setCellSpan(cellId, 1, 1);
     },
 
-    // Preset layouts (for 3x3 grid) - includes spanning presets
+    // Preset layouts (for 4x4 grid) - includes spanning presets
     setPresetLayout(
       preset:
         | "single"
@@ -544,7 +632,7 @@ function createArrangeGridState() {
             enabled = cell.row === 0 && cell.col < 2;
             break;
           case "line":
-            // Top row (3 cells)
+            // Top row (4 cells)
             enabled = cell.row === 0;
             break;
           case "square":
@@ -552,7 +640,7 @@ function createArrangeGridState() {
             enabled = cell.row < 2 && cell.col < 2;
             break;
           case "all":
-            // Full 3x3
+            // Full 4x4
             enabled = true;
             break;
         }
@@ -573,7 +661,7 @@ function createArrangeGridState() {
     },
 
     /**
-     * Apply a spanning layout preset
+     * Apply a spanning layout preset (for 4x4 grid)
      */
     setSpanningPreset(preset: "hero-thumbs" | "main-banner" | "pip") {
       // First reset all cells to disabled with 1x1 span
@@ -587,60 +675,66 @@ function createArrangeGridState() {
 
       switch (preset) {
         case "hero-thumbs":
-          // 2×2 hero at top-left + two 1×1 thumbnails below
-          // [XX][_]
-          // [XX][_]
-          // [A][B][_]
+          // 3×3 hero at top-left + three 1×1 thumbnails below
+          // [XXX][_]
+          // [XXX][_]
+          // [XXX][_]
+          // [A][B][C][_]
           {
             const heroIdx = getCellIndex(0, 0);
             const heroCell = newCells[heroIdx];
             if (heroCell) {
-              newCells[heroIdx] = { ...heroCell, enabled: true, colSpan: 2, rowSpan: 2 };
+              newCells[heroIdx] = { ...heroCell, enabled: true, colSpan: 3, rowSpan: 3 };
             }
-            const thumbLeft = newCells[getCellIndex(2, 0)];
+            const thumbLeft = newCells[getCellIndex(3, 0)];
             if (thumbLeft) {
-              newCells[getCellIndex(2, 0)] = { ...thumbLeft, enabled: true };
+              newCells[getCellIndex(3, 0)] = { ...thumbLeft, enabled: true };
             }
-            const thumbRight = newCells[getCellIndex(2, 1)];
+            const thumbMid = newCells[getCellIndex(3, 1)];
+            if (thumbMid) {
+              newCells[getCellIndex(3, 1)] = { ...thumbMid, enabled: true };
+            }
+            const thumbRight = newCells[getCellIndex(3, 2)];
             if (thumbRight) {
-              newCells[getCellIndex(2, 1)] = { ...thumbRight, enabled: true };
+              newCells[getCellIndex(3, 2)] = { ...thumbRight, enabled: true };
             }
           }
           break;
 
         case "main-banner":
-          // 3×2 main video at top + 3×1 full-width banner below
-          // [XXXXX]
-          // [XXXXX]
-          // [BBBBB]
+          // 4×3 main video at top + 4×1 full-width banner below
+          // [XXXXXXX]
+          // [XXXXXXX]
+          // [XXXXXXX]
+          // [BBBBBBB]
           {
             const mainIdx = getCellIndex(0, 0);
             const mainCell = newCells[mainIdx];
             if (mainCell) {
-              newCells[mainIdx] = { ...mainCell, enabled: true, colSpan: 3, rowSpan: 2 };
+              newCells[mainIdx] = { ...mainCell, enabled: true, colSpan: 4, rowSpan: 3 };
             }
-            const banner = newCells[getCellIndex(2, 0)];
+            const banner = newCells[getCellIndex(3, 0)];
             if (banner) {
-              newCells[getCellIndex(2, 0)] = { ...banner, enabled: true, colSpan: 3 };
+              newCells[getCellIndex(3, 0)] = { ...banner, enabled: true, colSpan: 4 };
             }
           }
           break;
 
         case "pip":
-          // Picture-in-picture: 3×3 main + 1×1 overlay in corner
-          // This enables all cells but the main spans most of the grid
-          // [XXXXX][P]
-          // [XXXXX][_]
-          // [XXXXX][_]
+          // Picture-in-picture: 3×4 main + 1×1 overlay in corner
+          // [XXXXXX][P]
+          // [XXXXXX][_]
+          // [XXXXXX][_]
+          // [XXXXXX][_]
           {
             const mainIdx = getCellIndex(0, 0);
             const mainCell = newCells[mainIdx];
             if (mainCell) {
-              newCells[mainIdx] = { ...mainCell, enabled: true, colSpan: 2, rowSpan: 3 };
+              newCells[mainIdx] = { ...mainCell, enabled: true, colSpan: 3, rowSpan: 4 };
             }
-            const pip = newCells[getCellIndex(0, 2)];
+            const pip = newCells[getCellIndex(0, 3)];
             if (pip) {
-              newCells[getCellIndex(0, 2)] = { ...pip, enabled: true };
+              newCells[getCellIndex(0, 3)] = { ...pip, enabled: true };
             }
           }
           break;
@@ -670,13 +764,42 @@ function createArrangeGridState() {
       selectedCellId = null;
     },
 
+    /**
+     * Get the required beat count for new sequences.
+     * Returns null if no sequences exist yet (any length allowed).
+     */
+    getRequiredBeatCount(): number | null {
+      for (const cell of cells) {
+        const firstLayer = cell.layers[0];
+        if (cell.enabled && firstLayer) {
+          return firstLayer.sequence.steps?.length ?? null;
+        }
+      }
+      return null;
+    },
+
     // Layer operations on selected cell
-    addLayerToCell(cellId: string, sequence: SequenceData) {
+    addLayerToCell(
+      cellId: string,
+      sequence: SequenceData
+    ): { success: boolean; error?: string } {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
       if (!cell || !cell.enabled || cell.layers.length >= MAX_LAYERS_PER_CELL) {
-        console.warn("Cannot add layer - cell full, disabled, or invalid");
-        return;
+        return {
+          success: false,
+          error: "Cannot add layer - cell full, disabled, or invalid",
+        };
+      }
+
+      // Validate sequence length matches existing sequences
+      const requiredBeats = this.getRequiredBeatCount();
+      const sequenceBeats = sequence.steps?.length ?? 0;
+      if (requiredBeats !== null && sequenceBeats !== requiredBeats) {
+        return {
+          success: false,
+          error: `Sequence has ${sequenceBeats} beats but composition requires ${requiredBeats} beats. All sequences must be the same length.`,
+        };
       }
 
       const newLayer: TunnelLayerConfig = {
@@ -692,6 +815,7 @@ function createArrangeGridState() {
       };
       cells = newCells;
       save();
+      return { success: true };
     },
 
     removeLayerFromCell(cellId: string, layerIndex: number) {
@@ -779,8 +903,7 @@ function createArrangeGridState() {
       newCells[cellIndex] = {
         ...cell,
         mediaType,
-        // Clear layers when switching away from animation (layers are sequence-specific)
-        layers: mediaType === "animation" ? cell.layers : [],
+        // Layers preserved - both animation and choreo-card display the same sequence data
       };
       cells = newCells;
       save();
@@ -812,6 +935,51 @@ function createArrangeGridState() {
         isPlaying = true;
         startPlaybackLoop();
       }
+    },
+
+    // Step controls - animate smoothly to the next position
+    stepFullForward() {
+      animateStep(1);
+    },
+
+    stepFullBack() {
+      // If partway through a beat, animate back to its start first
+      const floored = Math.floor(currentBeat);
+      if (currentBeat - floored > 0.01) {
+        animateStep(floored - currentBeat);
+      } else {
+        animateStep(-1);
+      }
+    },
+
+    stepHalfForward() {
+      animateStep(0.5);
+    },
+
+    stepHalfBack() {
+      const snapped = Math.round(currentBeat * 2) / 2;
+      const diff = snapped - currentBeat;
+      if (Math.abs(diff) > 0.01 && diff < 0) {
+        animateStep(diff);
+      } else {
+        animateStep(-0.5);
+      }
+    },
+
+    // Loop mode
+    toggleSkipStartPosition() {
+      skipStartPosition = !skipStartPosition;
+      // Reset beat to 0 when changing mode to avoid out-of-bounds
+      currentBeat = 0;
+    },
+
+    // BPM control
+    get bpm() {
+      return playbackBpm;
+    },
+
+    setBpm(bpm: number) {
+      playbackBpm = Math.max(5, Math.min(300, bpm));
     },
 
     // UI

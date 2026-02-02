@@ -10,7 +10,6 @@
 
   import { getCompositionState } from "./state/composition-state.svelte";
   import PresetPicker from "./components/PresetPicker.svelte";
-  import ContentEditor from "./components/ContentEditor.svelte";
   import CompositionLab from "$lib/features/constraint-layout-lab/CompositionLab.svelte";
 
   // Get singleton state
@@ -71,11 +70,19 @@
     </div>
   </div>
 {:else}
-  <!-- Content mode - for filling preset with sequences -->
-  <ContentEditor
-    presetId={selectedPresetId ?? "single"}
-    onBack={handleBackToPicker}
-  />
+  <!-- Content mode - placeholder (ArrangeTab is the active implementation) -->
+  <div class="composition-builder">
+    <div class="builder-header">
+      <button class="back-button" onclick={handleBackToPicker}>
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Back to Templates
+      </button>
+      <span class="mode-label">Content Editor</span>
+    </div>
+    <div class="builder-content placeholder">
+      <p>Content editor not yet implemented. Use ArrangeTab instead.</p>
+    </div>
+  </div>
 {/if}
 
 <style>
@@ -127,6 +134,13 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .builder-content.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -13,9 +13,10 @@
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
   import type { GridCell } from "../../state/arrange-grid-state.svelte";
-  import type { IAnimationPlaybackController } from "../../../../services/contracts/IAnimationPlaybackController";
   import type { IAnimationRenderer } from "../../../../services/contracts/IAnimationRenderer";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+  import type { ISequenceAnimationOrchestrator } from "../../../../services/contracts/ISequenceAnimationOrchestrator";
+  import { SequenceAnimationOrchestrator } from "../../../../services/implementations/SequenceAnimationOrchestrator";
   import { createAnimationPanelState } from "../../../../state/animation-panel-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
@@ -24,6 +25,7 @@
     cellIndex,
     currentBeat,
     isPlaying,
+    skipStartPosition = true,
     isSelected = false,
     onSelect,
   }: {
@@ -31,13 +33,15 @@
     cellIndex: number;
     currentBeat: number;
     isPlaying: boolean;
+    /** When true, step 0 (start position) is skipped and beats map to steps 1..N */
+    skipStartPosition?: boolean;
     isSelected?: boolean;
     onSelect: () => void;
   } = $props();
 
-  // Services
-  let primaryPlaybackController: IAnimationPlaybackController | null = null;
-  let secondaryPlaybackController: IAnimationPlaybackController | null = null;
+  // Per-cell animation orchestrators (NOT shared singletons)
+  let primaryOrchestrator: ISequenceAnimationOrchestrator | null = null;
+  let secondaryOrchestrator: ISequenceAnimationOrchestrator | null = null;
   let animationRenderer: IAnimationRenderer | null = null;
   let settingsService: ISettingsState | null = null;
 
@@ -71,47 +75,75 @@
   // Calculate effective beat for this cell (including cell-level offset)
   const effectiveBeat = $derived(currentBeat + cell.beatOffset);
 
-  // Calculate current step for each layer
+  // Calculate current step for each layer.
+  // The orchestrator uses 1-based steps: step=1 is beat 1 (steps[0]), step < 1 is start position.
+  // steps.length = number of motion beats (start position is stored separately).
+  //
+  // skipStartPosition=true (seamless loop):
+  //   actualBeats = stepCount, wrapped ranges 0..stepCount-1, step = wrapped + 1
+  //   So orchestrator sees steps 1..stepCount (all motion beats, no start position)
+  //
+  // skipStartPosition=false (show start pose):
+  //   actualBeats = stepCount + 1, wrapped ranges 0..stepCount
+  //   step = wrapped (0 = start position, 1..stepCount = motion beats)
   const primaryCurrentStep = $derived.by(() => {
     if (!primaryLayer) return 0;
-    const beatCount = primaryLayer.sequence.steps?.length || 1;
+    const stepCount = primaryLayer.sequence.steps?.length || 1;
+    const actualBeats = skipStartPosition ? stepCount : stepCount + 1;
     const layerBeat = effectiveBeat + primaryLayer.beatOffset;
-    return layerBeat % beatCount;
+    const wrapped = layerBeat % actualBeats;
+    return skipStartPosition ? wrapped + 1 : wrapped;
   });
 
   const secondaryCurrentStep = $derived.by(() => {
     if (!secondaryLayer) return 0;
-    const beatCount = secondaryLayer.sequence.steps?.length || 1;
+    const stepCount = secondaryLayer.sequence.steps?.length || 1;
+    const actualBeats = skipStartPosition ? stepCount : stepCount + 1;
     const layerBeat = effectiveBeat + secondaryLayer.beatOffset;
-    return layerBeat % beatCount;
+    const wrapped = layerBeat % actualBeats;
+    return skipStartPosition ? wrapped + 1 : wrapped;
   });
 
-  // Get current step data
+  // Get current step data. The orchestrator step is 1-based (step=1 uses steps[0]),
+  // so subtract 1 before indexing into the array.
   const primaryStepData = $derived.by(() => {
     if (!primaryLayer?.sequence.steps) return null;
-    const stepIndex = Math.max(
-      0,
-      Math.min(primaryCurrentStep, primaryLayer.sequence.steps.length - 1)
+    const stepIndex = Math.floor(
+      Math.max(0, Math.min(primaryCurrentStep - 1, primaryLayer.sequence.steps.length - 1))
     );
     return primaryLayer.sequence.steps[stepIndex] || null;
   });
 
   const secondaryStepData = $derived.by(() => {
     if (!secondaryLayer?.sequence.steps) return null;
-    const stepIndex = Math.max(
-      0,
-      Math.min(secondaryCurrentStep, secondaryLayer.sequence.steps.length - 1)
+    const stepIndex = Math.floor(
+      Math.max(0, Math.min(secondaryCurrentStep - 1, secondaryLayer.sequence.steps.length - 1))
     );
     return secondaryLayer.sequence.steps[stepIndex] || null;
   });
 
-  // Initialize services
+  // Initialize services - create per-cell orchestrators
   onMount(() => {
     try {
-      primaryPlaybackController = container.items.animationPlaybackController;
-      secondaryPlaybackController = container.items.animationPlaybackController;
+      // Get shared stateless services from DI
+      const animationStateService = container.items.animationStateService;
+      const stepCalculationService = container.items.stepCalculationService;
+      const propInterpolationService = container.items.propInterpolationService;
       settingsService = container.items.settingsState;
       animationRenderer = container.items.animationRenderer;
+
+      // Create per-cell orchestrators (NOT shared singletons)
+      primaryOrchestrator = new SequenceAnimationOrchestrator(
+        animationStateService,
+        stepCalculationService,
+        propInterpolationService
+      );
+      secondaryOrchestrator = new SequenceAnimationOrchestrator(
+        animationStateService,
+        stepCalculationService,
+        propInterpolationService
+      );
+
       initialized = true;
     } catch (err) {
       console.error(`[CellCanvas ${cellIndex}] Failed to initialize:`, err);
@@ -121,37 +153,32 @@
   onDestroy(() => {
     primaryAnimationState.dispose();
     secondaryAnimationState.dispose();
+    primaryOrchestrator?.dispose();
+    secondaryOrchestrator?.dispose();
   });
 
-  // Initialize primary animation when layer changes
+  // Initialize primary orchestrator when layer changes
   $effect(() => {
-    if (initialized && primaryLayer && primaryPlaybackController) {
+    if (initialized && primaryLayer && primaryOrchestrator) {
       try {
-        primaryPlaybackController.initialize(
-          primaryLayer.sequence,
-          primaryAnimationState
-        );
+        primaryOrchestrator.initializeWithDomainData(primaryLayer.sequence);
+        primaryAnimationState.setSequenceData(primaryLayer.sequence);
+        primaryAnimationState.setTotalSteps(primaryLayer.sequence.steps?.length || 0);
       } catch (err) {
         console.error(`[CellCanvas ${cellIndex}] Primary init failed:`, err);
       }
     }
   });
 
-  // Initialize secondary animation when layer changes
+  // Initialize secondary orchestrator when layer changes
   $effect(() => {
-    if (
-      initialized &&
-      secondaryLayer &&
-      secondaryPlaybackController &&
-      animationRenderer &&
-      settingsService
-    ) {
+    if (initialized && secondaryLayer && secondaryOrchestrator) {
       initSecondary();
     }
   });
 
   async function initSecondary() {
-    if (!secondaryLayer || !animationRenderer || !settingsService) return;
+    if (!secondaryLayer || !animationRenderer || !settingsService || !secondaryOrchestrator) return;
 
     try {
       const propType = settingsService.currentSettings.propType || "staff";
@@ -162,27 +189,34 @@
       );
       secondaryTexturesLoaded = true;
 
-      if (secondaryPlaybackController) {
-        secondaryPlaybackController.initialize(
-          secondaryLayer.sequence,
-          secondaryAnimationState
-        );
-      }
+      secondaryOrchestrator.initializeWithDomainData(secondaryLayer.sequence);
+      secondaryAnimationState.setSequenceData(secondaryLayer.sequence);
+      secondaryAnimationState.setTotalSteps(secondaryLayer.sequence.steps?.length || 0);
     } catch (err) {
       console.error(`[CellCanvas ${cellIndex}] Secondary init failed:`, err);
     }
   }
 
-  // Sync step positions
+  // Sync step positions - calculate prop states and update animation state
+  // IMPORTANT: Read the derived step value BEFORE the conditional so Svelte 5
+  // always tracks it as a dependency. If the read is inside the `if`, and the
+  // condition is false on first run, the dependency is never registered and
+  // the effect won't re-run when the step changes during playback.
   $effect(() => {
-    if (primaryAnimationState.sequenceData && primaryLayer) {
-      primaryAnimationState.setCurrentStep(primaryCurrentStep);
+    const step = primaryCurrentStep;
+    if (primaryOrchestrator?.isInitialized() && primaryLayer) {
+      primaryOrchestrator.calculateState(step);
+      const states = primaryOrchestrator.getCurrentPropStates();
+      primaryAnimationState.setPropStates(states.blue, states.red);
     }
   });
 
   $effect(() => {
-    if (secondaryAnimationState.sequenceData && secondaryLayer) {
-      secondaryAnimationState.setCurrentStep(secondaryCurrentStep);
+    const step = secondaryCurrentStep;
+    if (secondaryOrchestrator?.isInitialized() && secondaryLayer) {
+      secondaryOrchestrator.calculateState(step);
+      const states = secondaryOrchestrator.getCurrentPropStates();
+      secondaryAnimationState.setPropStates(states.blue, states.red);
     }
   });
 
@@ -241,7 +275,10 @@
         highlightedStepIndex={primaryCurrentStep}
         showHighlight={isPlaying}
         darkMode={true}
-        sizing="contain"
+        showWord={false}
+        showCreatorName={false}
+        showNotes={false}
+        showBirthday={false}
       />
     </div>
   {:else}

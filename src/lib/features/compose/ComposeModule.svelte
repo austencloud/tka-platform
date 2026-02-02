@@ -92,17 +92,24 @@
         // Set up single cell layout and add the sequence
         arrangeGridState.setPresetLayout("single");
         const firstCell = arrangeGridState.enabledCells[0];
-        if (firstCell) {
-          arrangeGridState.addLayerToCell(firstCell.id, handoff.sequence);
-        }
-
-        // Show feedback
         const word = handoff.sequence.word || handoff.sequence.name || "Sequence";
-        showToast({
-          message: `Loaded "${word}" into Compose`,
-          type: "success",
-          duration: 3000,
-        });
+
+        if (firstCell) {
+          const result = arrangeGridState.addLayerToCell(firstCell.id, handoff.sequence);
+          if (result.success) {
+            showToast({
+              message: `Loaded "${word}" into Compose`,
+              type: "success",
+              duration: 3000,
+            });
+          } else {
+            showToast({
+              message: result.error || "Failed to load sequence",
+              type: "error",
+              duration: 5000,
+            });
+          }
+        }
 
         // Clean up URL (remove handoff param)
         url.searchParams.delete("handoff");
