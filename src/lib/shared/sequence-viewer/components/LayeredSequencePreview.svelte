@@ -17,11 +17,8 @@
   // when the container hadn't been sized yet (aspect-ratio elements)
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import type { LayerRenderOptions, LayerVisibility } from "$lib/shared/render/services/contracts/ILayerCompositor";
-  import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
+  import type { PreviewCellRenderOptions } from "../services/contracts/IPreviewCellRenderer";
   import { onMount, onDestroy, untrack } from "svelte";
-  import { layerCompositor } from "$lib/shared/render/services/implementations/LayerCompositor";
-  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
@@ -31,7 +28,7 @@
   import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
-  import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
+  import { previewCellRenderer } from "../services/implementations/PreviewCellRenderer";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   interface Props {
@@ -293,120 +290,20 @@
   });
 
   /**
-   * Generate a cache key for a pictograph based on its data and render options
+   * Build render options from current component state
    */
-  function derivePictographCacheKey(
-    pictographData: any,
-    stepNumber: number | undefined,
-    isDark: boolean
-  ): string {
-    // Build a deterministic key from ALL rendering parameters
-    // Every setting that affects the final pixel output MUST be in this key,
-    // otherwise the IndexedDB blob cache returns stale images.
-    const keyParts = [
-      pictographData.letter || "start",
-      pictographData.motions?.blue?.motionType || "none",
-      pictographData.motions?.blue?.startLocation || "",
-      pictographData.motions?.blue?.endLocation || "",
-      pictographData.motions?.blue?.turns ?? 0,
-      pictographData.motions?.red?.motionType || "none",
-      pictographData.motions?.red?.startLocation || "",
-      pictographData.motions?.red?.endLocation || "",
-      pictographData.motions?.red?.turns ?? 0,
-      bluePropType || "staff",
-      catDogModeEnabled ? (redPropType || "staff") : (bluePropType || "staff"),
-      isDark ? "dark" : "light",
-      showStepNumbers ? (stepNumber ?? "none") : "nonum",
-      CELL_SIZE,
-      // Visibility settings that change the rendered output
-      showNonRadial ? "nr1" : "nr0",
-      handPointVis,
-      showTKA ? "tka1" : "tka0",
-      showReversals ? "rev1" : "rev0",
-    ];
-
-    // djb2 hash
-    const str = keyParts.join("|");
-    let hash = 5381;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
-    }
-    return `lsp-${Math.abs(hash).toString(36)}`;
-  }
-
-  /**
-   * Render a single pictograph to a data URL (with IndexedDB caching)
-   */
-  async function renderPictograph(
-    pictographData: any,
-    stepNumber: number | undefined,
-    isDark: boolean
-  ): Promise<string> {
-    // Generate cache key
-    const cacheKey = derivePictographCacheKey(pictographData, stepNumber, isDark);
-
-    // Check IndexedDB cache first
-    try {
-      const cachedBlob = await pictographBlobCache.get(cacheKey);
-      if (cachedBlob) {
-        // Convert blob to data URL
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(cachedBlob);
-        });
-      }
-    } catch (err) {
-      // Cache miss or error, proceed to render
-    }
-
-    const compositor = layerCompositor;
-
-    // Prepare the pictograph data
-    const prepared = await pictographPreparer.prepareSingle(pictographData, {
-      themeMode: isDark ? "dark" : "light",
-      bluePropType: bluePropType,
-      redPropType: catDogModeEnabled ? redPropType : bluePropType,
-    });
-
-    // Render options - read from user's visibility preferences
-    const options: LayerRenderOptions = {
+  function buildRenderOptions(): PreviewCellRenderOptions {
+    return {
       size: CELL_SIZE,
-      darkMode: isDark,
+      bluePropType,
+      redPropType,
+      catDogModeEnabled,
+      showStepNumbers,
       showNonRadialPoints: showNonRadial,
       handPointVisibility: handPointVis,
-      bluePropType: bluePropType,
-      redPropType: catDogModeEnabled ? redPropType : bluePropType,
-    };
-
-    // Visibility settings - read from user's preferences
-    const visibility: LayerVisibility = {
       showTKA,
       showReversals,
     };
-
-    // Compose the pictograph
-    const result = await compositor.compose(
-      prepared,
-      options,
-      visibility,
-      showStepNumbers ? stepNumber : undefined
-    );
-
-    // Convert canvas to blob for caching
-    const dataUrl = result.canvas.toDataURL("image/png");
-
-    // Cache the result asynchronously (don't await)
-    result.canvas.toBlob((blob) => {
-      if (blob) {
-        pictographBlobCache.set(cacheKey, blob).catch(() => {
-          // Ignore cache write errors
-        });
-      }
-    }, "image/png");
-
-    return dataUrl;
   }
 
   /**
@@ -491,14 +388,17 @@
 
       const newCells: CellData[] = [];
 
+      // Build render options once for all cells
+      const renderOptions = buildRenderOptions();
+
       // Render start position
       const firstStep = sequence.steps[0];
       if (sequence.startPosition || firstStep) {
         const startData = sequence.startPosition || createStartPositionFromBeatStart(firstStep!);
 
         const [lightUrl, darkUrl] = await Promise.all([
-          renderPictograph(startData, undefined, false),
-          renderPictograph(startData, undefined, true),
+          previewCellRenderer.renderCell(startData, undefined, false, renderOptions),
+          previewCellRenderer.renderCell(startData, undefined, true, renderOptions),
         ]);
 
         const { gridColumn, gridRow } = calculateGridPosition(-1, cols);
@@ -515,9 +415,11 @@
       // Render each step
       for (let i = 0; i < sequence.steps.length; i++) {
         const step = sequence.steps[i];
+        if (!step) continue;
+
         const [lightUrl, darkUrl] = await Promise.all([
-          renderPictograph(step, i + 1, false),
-          renderPictograph(step, i + 1, true),
+          previewCellRenderer.renderCell(step, i + 1, false, renderOptions),
+          previewCellRenderer.renderCell(step, i + 1, true, renderOptions),
         ]);
 
         const { gridColumn, gridRow } = calculateGridPosition(i, cols);
