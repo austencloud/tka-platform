@@ -99,9 +99,10 @@ export class PropSvgLoader implements IPropSvgLoader {
       const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
 
       // Create cache key including color AND theme mode for transformed prop cache
-      // Use _animated version for animation canvas (scaled to 300px width)
-      const suffix = useAnimatedVersion ? "_animated" : "";
-      const path = `/images/props/${propType}${suffix}.svg`;
+      // Animated versions live in /images/props/animated/ (scaled to 300px width)
+      const path = useAnimatedVersion
+        ? `/images/props/animated/${propType}.svg`
+        : `/images/props/${propType}.svg`;
       const transformedCacheKey = `${path}:${color}:${themeMode}`;
 
       // 🚀 OPTIMIZATION: Check transformed cache first (fastest path)

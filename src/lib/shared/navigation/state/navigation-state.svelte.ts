@@ -60,6 +60,7 @@ import { MODULE_DEFINITIONS, normalizeModuleId } from "../config/module-definiti
 import {
   CURRENT_MODULE_KEY,
   ACTIVE_TAB_KEY,
+  MODULE_LAST_TABS_KEY,
   CURRENT_CREATE_MODE_KEY,
   CURRENT_LEARN_MODE_KEY,
   PREVIOUS_MODULE_SESSION_KEY,
@@ -163,6 +164,35 @@ export function createNavigationState() {
       sessionStorage.setItem(PREVIOUS_TAB_SESSION_KEY, tabId);
     } else {
       sessionStorage.removeItem(PREVIOUS_TAB_SESSION_KEY);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Per-Module Tab Persistence
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  function saveModuleTab(moduleId: string, tabId: string) {
+    if (typeof localStorage === "undefined") return;
+    try {
+      const raw = localStorage.getItem(MODULE_LAST_TABS_KEY);
+      const map: Record<string, string> = raw ? JSON.parse(raw) : {};
+      map[moduleId] = tabId;
+      localStorage.setItem(MODULE_LAST_TABS_KEY, JSON.stringify(map));
+    } catch {
+      // Corrupt storage - reset it
+      localStorage.setItem(MODULE_LAST_TABS_KEY, JSON.stringify({ [moduleId]: tabId }));
+    }
+  }
+
+  function loadModuleTab(moduleId: string): string | null {
+    if (typeof localStorage === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(MODULE_LAST_TABS_KEY);
+      if (!raw) return null;
+      const map: Record<string, string> = JSON.parse(raw);
+      return map[moduleId] || null;
+    } catch {
+      return null;
     }
   }
 
@@ -349,24 +379,30 @@ export function createNavigationState() {
 
       currentModule = moduleId;
 
-      // Determine the tab - use targetTab if valid, otherwise use default
+      // Determine the tab - use targetTab if valid, then saved per-module tab, then default
       const moduleDefinition = MODULE_DEFINITIONS.find(
         (m) => m.id === moduleId
       );
       let nextTab = "";
       if (moduleDefinition && moduleDefinition.sections.length > 0) {
-        // If targetTab is specified and valid, use it directly
         if (
           targetTab &&
           moduleDefinition.sections.some((tab) => tab.id === targetTab)
         ) {
+          // Explicit targetTab takes priority
           nextTab = targetTab;
         } else {
-          // Use default tab for the module
-          nextTab =
-            moduleId === "create"
-              ? DEFAULT_CREATE_TAB
-              : moduleDefinition.sections[0]?.id || "";
+          // Check for a previously saved tab for this module
+          const savedTab = loadModuleTab(moduleId);
+          if (savedTab && moduleDefinition.sections.some((tab) => tab.id === savedTab)) {
+            nextTab = savedTab;
+          } else {
+            // Fall back to module default
+            nextTab =
+              moduleId === "create"
+                ? DEFAULT_CREATE_TAB
+                : moduleDefinition.sections[0]?.id || "";
+          }
         }
       }
 
@@ -404,6 +440,7 @@ export function createNavigationState() {
         localStorage.setItem(CURRENT_MODULE_KEY, moduleId);
         if (nextTab) {
           localStorage.setItem(ACTIVE_TAB_KEY, nextTab);
+          saveModuleTab(moduleId, nextTab);
         } else {
           // Clear persisted tab when module has no tabs (e.g., dashboard)
           localStorage.removeItem(ACTIVE_TAB_KEY);
@@ -496,6 +533,7 @@ export function createNavigationState() {
 
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(ACTIVE_TAB_KEY, tabId);
+      saveModuleTab(currentModule, tabId);
     }
 
     // Sync with mode-specific state

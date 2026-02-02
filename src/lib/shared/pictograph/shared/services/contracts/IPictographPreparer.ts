@@ -30,6 +30,8 @@ export interface PrepareOptions {
    * When provided, this value is used directly. When omitted, falls back to global settings.
    */
   redPropType?: PropType;
+  /** Load animated prop SVGs (300px width) instead of standard ones. Used by conjoined lab. */
+  useAnimatedVersion?: boolean;
 }
 
 export interface IPictographPreparer {

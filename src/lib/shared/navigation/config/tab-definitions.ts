@@ -579,6 +579,14 @@ export const LAB_TABS: Section[] = [
     color: "#6366f1",
     gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
+  {
+    id: "conjoined",
+    label: "Conjoined",
+    icon: '<i class="fas fa-link" aria-hidden="true"></i>',
+    description: "Visualize sequences on conjoined grids",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs

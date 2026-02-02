@@ -9,6 +9,7 @@
  */
 
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
+import { navigationState } from '$lib/shared/navigation/state/navigation-state.svelte';
 
 const HANDOFF_STORAGE_KEY = 'tka_sequence_handoff';
 const ROUTE_HANDOFF_STORAGE_KEY = 'tka_sequence_route_handoff';
@@ -194,4 +195,57 @@ export function hasSequenceRouteHandoff(): boolean {
  */
 export function clearSequenceRouteHandoff(): void {
 	sessionStorage.removeItem(ROUTE_HANDOFF_STORAGE_KEY);
+}
+
+// ============================================================================
+// RETURN CONTEXT HELPER
+// ============================================================================
+
+/**
+ * Return context for sequence viewer navigation.
+ * Describes where to return when the user closes the sequence viewer.
+ */
+export interface ReturnContext {
+	/** Path to navigate back to (e.g., "/create/generate") */
+	returnPath: string;
+	/** Human-readable label for back button (e.g., "Generate") */
+	returnLabel: string;
+}
+
+/**
+ * Get the current return context based on navigation state.
+ * Use this when opening the sequence viewer to determine where to return.
+ *
+ * @example
+ * const { returnPath, returnLabel } = getReturnContext();
+ * openSequenceViewer(sequence, { returnPath, returnLabel });
+ */
+export function getReturnContext(): ReturnContext {
+	const currentModule = navigationState.currentModule;
+	const activeTab = navigationState.activeTab;
+
+	// Build return path from current navigation state
+	const returnPath = activeTab ? `/${currentModule}/${activeTab}` : `/${currentModule}`;
+
+	// Get proper label from tab definitions, or capitalize tab ID as fallback
+	let returnLabel = 'Back';
+	if (activeTab) {
+		const tabs = navigationState.getTabsForModule(currentModule);
+		const tabDef = tabs?.find((t) => t.id === activeTab);
+		returnLabel = tabDef?.label ?? capitalize(activeTab);
+	} else {
+		// No tab, use module name
+		const moduleDef = navigationState.getModuleDefinition(currentModule);
+		returnLabel = moduleDef?.label ?? capitalize(currentModule);
+	}
+
+	return { returnPath, returnLabel };
+}
+
+/**
+ * Capitalize first letter of a string.
+ */
+function capitalize(str: string): string {
+	if (!str) return str;
+	return str.charAt(0).toUpperCase() + str.slice(1);
 }

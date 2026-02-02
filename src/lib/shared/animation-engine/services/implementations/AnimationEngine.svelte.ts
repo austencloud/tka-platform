@@ -30,6 +30,7 @@ import type { PreRenderProgress } from "$lib/features/compose/services/implement
 
 import { loadAnimatorServices as loadServices } from "./AnimatorLoader";
 import { loadTrailSettings } from "$lib/features/compose/utils/animation-panel-persistence";
+import { TrailCapturer } from "$lib/features/compose/services/implementations/TrailCapturer";
 import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
 
 // Services
@@ -891,7 +892,10 @@ export class AnimationEngine {
     this.svgGenerator = services.svgGenerator;
     this.settingsService = services.settingsService;
     this.orchestrator = services.orchestrator;
-    this.trailCapturer = services.TrailCapturer;
+    // Per-instance TrailCapturer instead of shared DI singleton.
+    // The singleton causes trail data contamination when multiple canvases
+    // (e.g. compose grid cells) all write to the same trail buffers.
+    this.trailCapturer = new TrailCapturer();
     this.turnsTupleGenerator = services.turnsTupleGenerator;
     this.state.servicesReady = true;
     return true;
