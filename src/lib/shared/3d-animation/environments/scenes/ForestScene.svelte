@@ -23,22 +23,25 @@
 
   let { variant = "autumn" }: Props = $props();
 
+  /** R2 CDN base URL for large assets */
+  const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
+
   // Load KayKit forest models
-  const tree1 = useGltf("/models/forest/Tree_1_A_Color1.gltf");
-  const tree2 = useGltf("/models/forest/Tree_2_A_Color1.gltf");
-  const tree3 = useGltf("/models/forest/Tree_3_A_Color1.gltf");
-  const rock1 = useGltf("/models/forest/Rock_1_A_Color1.gltf");
-  const rock2 = useGltf("/models/forest/Rock_1_B_Color1.gltf");
-  const bush1 = useGltf("/models/forest/Bush_1_A_Color1.gltf");
-  const bush2 = useGltf("/models/forest/Bush_2_A_Color1.gltf");
+  const tree1 = useGltf(`${R2_CDN}/models/forest/Tree_1_A_Color1.gltf`);
+  const tree2 = useGltf(`${R2_CDN}/models/forest/Tree_2_A_Color1.gltf`);
+  const tree3 = useGltf(`${R2_CDN}/models/forest/Tree_3_A_Color1.gltf`);
+  const rock1 = useGltf(`${R2_CDN}/models/forest/Rock_1_A_Color1.gltf`);
+  const rock2 = useGltf(`${R2_CDN}/models/forest/Rock_1_B_Color1.gltf`);
+  const bush1 = useGltf(`${R2_CDN}/models/forest/Bush_1_A_Color1.gltf`);
+  const bush2 = useGltf(`${R2_CDN}/models/forest/Bush_2_A_Color1.gltf`);
 
   // Load camping models (Kenney Survival Kit - CC0)
-  const campfire = useGltf("/models/camping/campfire-pit.glb");
-  const tent = useGltf("/models/camping/tent-canvas.glb");
+  const campfire = useGltf(`${R2_CDN}/models/camping/campfire-pit.glb`);
+  const tent = useGltf(`${R2_CDN}/models/camping/tent-canvas.glb`);
 
   // Load forest floor detail models
-  const fallenLog = useGltf("/models/camping/tree-log.glb");
-  const fallenLogSmall = useGltf("/models/camping/tree-log-small.glb");
+  const fallenLog = useGltf(`${R2_CDN}/models/camping/tree-log.glb`);
+  const fallenLogSmall = useGltf(`${R2_CDN}/models/camping/tree-log-small.glb`);
 
   // Get scene for fog
   const { scene } = useThrelte();

@@ -628,12 +628,13 @@
 
     // Logging disabled
 
-    // Model paths
+    // Model paths (R2 CDN)
+    const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
     const MODELS = {
-      firePit: "/models/camping/campfire-pit.glb",
-      tent: "/models/camping/tent-canvas.glb",
-      log: "/models/camping/tree-log.glb",
-      logSmall: "/models/camping/tree-log-small.glb",
+      firePit: `${R2_CDN}/models/camping/campfire-pit.glb`,
+      tent: `${R2_CDN}/models/camping/tent-canvas.glb`,
+      log: `${R2_CDN}/models/camping/tree-log.glb`,
+      logSmall: `${R2_CDN}/models/camping/tree-log-small.glb`,
     };
 
     // Fire pit at center

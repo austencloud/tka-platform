@@ -5,6 +5,9 @@
  * Each avatar has an ID, display name, model path, and optional icon.
  */
 
+/** R2 CDN base URL for large assets */
+const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
+
 export interface AvatarDefinition {
   id: string;
   name: string;
@@ -21,28 +24,28 @@ export const AVATAR_DEFINITIONS: AvatarDefinition[] = [
   {
     id: "x-bot",
     name: "X-Bot",
-    modelPath: "/models/x-bot.glb",
+    modelPath: `${R2_CDN}/models/avatars/x-bot.glb`,
     icon: "fa-robot",
     description: "Mixamo masculine robot",
   },
   {
     id: "y-bot",
     name: "Y-Bot",
-    modelPath: "/models/y-bot.glb",
+    modelPath: `${R2_CDN}/models/avatars/y-bot.glb`,
     icon: "fa-robot",
     description: "Mixamo feminine robot",
   },
   {
     id: "remy",
     name: "Remy",
-    modelPath: "/models/remy.glb",
+    modelPath: `${R2_CDN}/models/avatars/remy.glb`,
     icon: "fa-person",
     description: "Mixamo Remy character",
   },
   {
     id: "ch26",
     name: "Character 26",
-    modelPath: "/models/ch26.glb",
+    modelPath: `${R2_CDN}/models/avatars/ch26.glb`,
     icon: "fa-person",
     description: "Mixamo detailed character",
   },
@@ -62,7 +65,7 @@ export function getAvatarById(id: string): AvatarDefinition | undefined {
  */
 export function getAvatarModelPath(id: string): string {
   const avatar = getAvatarById(id);
-  return avatar?.modelPath ?? "/models/x-bot.glb";
+  return avatar?.modelPath ?? `${R2_CDN}/models/avatars/x-bot.glb`;
 }
 
 /**

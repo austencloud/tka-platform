@@ -35,17 +35,20 @@ export interface ModelDefinition {
 // LEGACY MODEL DEFINITIONS (for backward compatibility)
 // ============================================================================
 
+/** R2 CDN base URL for large assets */
+const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
+
 /**
  * @deprecated Use ModelRegistry instead
  */
 export const FOREST_MODELS: Record<string, ModelDefinition> = {
-  tree1: { path: "/models/forest/Tree_1_A_Color1.gltf", scale: 2.5, yOffset: 0 },
-  tree2: { path: "/models/forest/Tree_2_A_Color1.gltf", scale: 2.5, yOffset: 0 },
-  tree3: { path: "/models/forest/Tree_3_A_Color1.gltf", scale: 2.5, yOffset: 0 },
-  rock1: { path: "/models/forest/Rock_1_A_Color1.gltf", scale: 1.5, yOffset: 0 },
-  rock2: { path: "/models/forest/Rock_1_B_Color1.gltf", scale: 1.5, yOffset: 0 },
-  bush1: { path: "/models/forest/Bush_1_A_Color1.gltf", scale: 1.2, yOffset: 0 },
-  bush2: { path: "/models/forest/Bush_2_A_Color1.gltf", scale: 1.2, yOffset: 0 },
+  tree1: { path: `${R2_CDN}/models/forest/Tree_1_A_Color1.gltf`, scale: 2.5, yOffset: 0 },
+  tree2: { path: `${R2_CDN}/models/forest/Tree_2_A_Color1.gltf`, scale: 2.5, yOffset: 0 },
+  tree3: { path: `${R2_CDN}/models/forest/Tree_3_A_Color1.gltf`, scale: 2.5, yOffset: 0 },
+  rock1: { path: `${R2_CDN}/models/forest/Rock_1_A_Color1.gltf`, scale: 1.5, yOffset: 0 },
+  rock2: { path: `${R2_CDN}/models/forest/Rock_1_B_Color1.gltf`, scale: 1.5, yOffset: 0 },
+  bush1: { path: `${R2_CDN}/models/forest/Bush_1_A_Color1.gltf`, scale: 1.2, yOffset: 0 },
+  bush2: { path: `${R2_CDN}/models/forest/Bush_2_A_Color1.gltf`, scale: 1.2, yOffset: 0 },
 };
 
 // ============================================================================
