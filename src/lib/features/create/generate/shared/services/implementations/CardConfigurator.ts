@@ -112,15 +112,58 @@ export class CardConfigurator implements ICardConfigurator {
       });
     }
 
+    // Row 3: Circular mode only cards (Slice Size + LOOP Type)
+    // Determine if slice size selection is needed
+    // LOOP types that include ROTATION support slice size choice (halved or quartered)
+    // LOOP types without rotation only support halved mode
+    const loopTypeAllowsSliceChoice =
+      config.loopType === LOOPType.STRICT_ROTATED ||
+      config.loopType === LOOPType.ROTATED_INVERTED ||
+      config.loopType === LOOPType.ROTATED_SWAPPED ||
+      config.loopType === LOOPType.MIRRORED_ROTATED ||
+      config.loopType === LOOPType.MIRRORED_INVERTED_ROTATED ||
+      config.loopType === LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED;
+
+    // Conditional: Slice Size (only in Circular mode AND when LOOP type allows choice)
+    if (!isFreeformMode && loopTypeAllowsSliceChoice) {
+      cardList.push({
+        id: "slice-size",
+        props: {
+          currentSliceSize: config.sliceSize,
+          onSliceSizeChange: handlers.handleSliceSizeChange,
+          // Color now handled via CSS variables in component
+          cardIndex: cardIndex++,
+          headerFontSize,
+        },
+        gridColumnSpan: 2,
+      });
+    }
+
     // Start/End Options Card - for position constraints
-    // In circular mode: shares row with Slice Size after LOOP
-    // In freeform mode: shares row with Generate button
+    // In circular mode: Add to row 3 with LOOP/SliceSize
+    // In freeform mode: Add to final row with Generate button
     const hasStartEndCard =
       handlers.handleStartEndChange && handlers.startEndOptions;
 
-    // Circular mode: LOOP inline picker (full row), then Slice Size + Start/End row
+    // Conditional: LOOP Type (only in Circular mode)
+    // Row 3 layout depends on whether slice size and start/end are shown:
+    // - SliceSize (2) + LOOP (2) + StartEnd (2) = 6 cols
+    // - LOOP (4) + StartEnd (2) = 6 cols
+    // - SliceSize (2) + LOOP (4) = 6 cols (no start/end)
+    // - LOOP (6) = full row (no start/end, no slice size)
     if (!isFreeformMode) {
-      // LOOP inline picker - always full row
+      // Determine LOOP column span based on what else is in row 3
+      let loopColumnSpan: number;
+      if (loopTypeAllowsSliceChoice && hasStartEndCard) {
+        loopColumnSpan = 2; // SliceSize(2) + LOOP(2) + StartEnd(2)
+      } else if (loopTypeAllowsSliceChoice) {
+        loopColumnSpan = 4; // SliceSize(2) + LOOP(4)
+      } else if (hasStartEndCard) {
+        loopColumnSpan = 4; // LOOP(4) + StartEnd(2)
+      } else {
+        loopColumnSpan = 6; // LOOP(6) full row
+      }
+
       cardList.push({
         id: "loop-type",
         props: {
@@ -130,45 +173,23 @@ export class CardConfigurator implements ICardConfigurator {
           cardIndex: cardIndex++,
           headerFontSize,
         },
-        gridColumnSpan: 6,
+        gridColumnSpan: loopColumnSpan,
       });
 
-      // LOOP types that include ROTATION support slice size choice (halved or quartered)
-      const loopTypeAllowsSliceChoice =
-        config.loopType === LOOPType.STRICT_ROTATED ||
-        config.loopType === LOOPType.ROTATED_INVERTED ||
-        config.loopType === LOOPType.ROTATED_SWAPPED ||
-        config.loopType === LOOPType.MIRRORED_ROTATED ||
-        config.loopType === LOOPType.MIRRORED_INVERTED_ROTATED ||
-        config.loopType === LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED;
-
-      // Slice Size + Start/End share the row after LOOP
-      if (loopTypeAllowsSliceChoice) {
-        cardList.push({
-          id: "slice-size",
-          props: {
-            currentSliceSize: config.sliceSize,
-            onSliceSizeChange: handlers.handleSliceSizeChange,
-            cardIndex: cardIndex++,
-            headerFontSize,
-          },
-          gridColumnSpan: hasStartEndCard ? 2 : 6,
-        });
-      }
-
+      // Add Start/End card in row 3 for circular mode
       if (hasStartEndCard) {
         cardList.push({
           id: "start-end",
           props: {
             currentOptions: handlers.startEndOptions,
             onOptionsChange: handlers.handleStartEndChange,
-            isFreeformMode: false,
+            isFreeformMode: false, // Circular mode - hide end position selector
             cardIndex: cardIndex++,
             headerFontSize,
             positionsResetTrigger: handlers.positionsResetTrigger,
             gridMode: handlers.currentGridMode,
           },
-          gridColumnSpan: loopTypeAllowsSliceChoice ? 4 : 6,
+          gridColumnSpan: 2, // Always 2 cols in circular mode row 3
         });
       }
     }

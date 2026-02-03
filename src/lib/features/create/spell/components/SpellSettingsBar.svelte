@@ -1,13 +1,14 @@
 <!--
 SpellSettingsBar.svelte - Settings using MorphChip Primitives
 
-Uses the MorphChipGroup and MorphChip primitives for:
-- Row 1: Dashes, Props, Hands (standard 3-option chips)
-- Row 2: Grid toggle + Loop (Loop uses custom expanded content)
+All 5 chips in a single MorphChipGroup split across two rows:
+  Row 1: Dashes, Props, Hands (3 chips)
+  Row 2: Grid, Loop (2 chips)
+When Loop expands, parent collapses word input + generate button via onLoopExpandedChange.
 
-Container-aware responsive design:
-- Mobile (<700px height): MorphChip expanding chips
-- Desktop (≥700px height): Expanded sections with all options visible
+Container-aware responsive design (2-tier):
+- Mobile/Tablet (default): MorphChip expanding chips in two rows
+- Desktop (>=700px tall): Vertical flex column with all options visible
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
@@ -17,7 +18,7 @@ Container-aware responsive design:
   import { LOOPType, LOOP_TYPE_LABELS } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
-  import LOOPSelectionHost from "$lib/features/create/generate/components/modals/loop-selection/LOOPSelectionHost.svelte";
+  import { LOOP_COMPONENTS } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
   import MorphChipGroup from "$lib/shared/foundation/ui/morph-chip/MorphChipGroup.svelte";
   import MorphChip from "$lib/shared/foundation/ui/morph-chip/MorphChip.svelte";
 
@@ -45,21 +46,26 @@ Container-aware responsive design:
   // EXPANSION STATE
   // ============================================================
 
-  // Row 1 expansion (Dashes, Props, Hands)
-  let row1ExpandedId = $state<string | null>(null);
+  // Single unified expansion state for all 5 chips
+  let expandedId = $state<string | null>(null);
 
-  // Row 2 expansion (Grid, Loop) - Loop needs special handling for panel takeover
-  let row2ExpandedId = $state<string | null>(null);
+  // Derived: is Loop chip currently expanded?
+  let isLoopExpanded = $derived(expandedId === "loop");
 
-  // Track when Loop is expanded for parent notification
+  // Local multi-select state for LOOP toggle chips
+  let localLoopSelection = $state<Set<LOOPComponent>>(new Set());
+  let isValidLoopCombo = $state(true);
+
+  // Sync local selection from preferences on external changes
   $effect(() => {
-    onLoopExpandedChange?.(row2ExpandedId === "loop");
+    if (preferences.makeCircular && preferences.selectedLOOPType) {
+      localLoopSelection = loopTypeResolver.parseComponents(preferences.selectedLOOPType);
+      isValidLoopCombo = true;
+    } else if (!preferences.makeCircular) {
+      localLoopSelection = new Set();
+      isValidLoopCombo = true;
+    }
   });
-
-  // LOOP full overlay state
-  let showFullLoopOverlay = $state(false);
-  // Local state for LOOP components during editing (synced when overlay opens)
-  let localLoopComponents = $state<Set<LOOPComponent>>(new Set());
 
   // ============================================================
   // CHIP OPTIONS & VALUES
@@ -109,6 +115,18 @@ Container-aware responsive design:
     onPreferenceChange("handPathMode", v as SpellPreferences["handPathMode"]);
   }
 
+  // Grid (MorphChip with Diamond/Box options)
+  let gridChipValue = $derived(gridMode === "diamond" ? "diamond" : "box");
+  const gridOptions = [
+    { value: "diamond", label: "Diamond" },
+    { value: "box", label: "Box" },
+  ];
+
+  function handleGridChipChange(v: string) {
+    haptic.trigger("selection");
+    onGridModeChange(v as GridMode);
+  }
+
   // Display values for chips
   const dashDisplayValue = $derived.by(() => {
     if (preferences.motionTypeFilter === "no-dash") return "Low";
@@ -128,84 +146,70 @@ Container-aware responsive design:
     return "Mixed";
   });
 
+  const gridDisplayValue = $derived(gridMode === "diamond" ? "\u25C7" : "\u25A2");
+
   // ============================================================
   // LOOP OPTIONS
   // ============================================================
 
-  const loopQuickOptions: Array<{ type: LOOPType | null; label: string; icon?: string; color?: string }> = [
-    { type: null, label: "Off" },
-    { type: LOOPType.STRICT_REWOUND, label: "Rewound", icon: "backward", color: "#ff6b9d" },
-    { type: LOOPType.STRICT_ROTATED, label: "Rotated", icon: "rotate", color: "#36c3ff" },
-    { type: LOOPType.STRICT_MIRRORED, label: "Mirrored", icon: "left-right", color: "#6F2DA8" },
-    { type: LOOPType.STRICT_FLIPPED, label: "Flipped", icon: "arrows-up-down", color: "#00CED1" },
-    { type: LOOPType.STRICT_SWAPPED, label: "Swapped", icon: "shuffle", color: "#26e600" },
-    { type: LOOPType.STRICT_INVERTED, label: "Inverted", icon: "yin-yang", color: "#eb7d00" },
-  ];
+  /** Check if a set of components round-trips through LOOPType resolution */
+  function isRoundTripValid(components: Set<LOOPComponent>): boolean {
+    if (components.size === 0) return true;
+    const type = loopTypeResolver.generateLOOPType(components);
+    const parsed = loopTypeResolver.parseComponents(type);
+    if (parsed.size !== components.size) return false;
+    for (const c of components) {
+      if (!parsed.has(c)) return false;
+    }
+    return true;
+  }
 
-  const loopDisplayValue = $derived.by(() => {
-    if (!preferences.makeCircular) return "Off";
-    if (!preferences.selectedLOOPType) return "On";
-    return LOOP_TYPE_LABELS[preferences.selectedLOOPType] ?? "Custom";
-  });
-
-  const selectedLoopComponents = $derived.by(() => {
-    if (!preferences.selectedLOOPType) return new Set<LOOPComponent>();
-    return loopTypeResolver.parseComponents(preferences.selectedLOOPType);
-  });
-
-  // Dummy value for Loop chip (we use custom content, not options)
-  let loopValue = $state("loop");
-
-  function handleLoopQuickSelect(option: typeof loopQuickOptions[0], collapse: () => void) {
+  function handleLoopToggle(component: LOOPComponent) {
     haptic.trigger("selection");
+    const newSet = new Set(localLoopSelection);
+    if (newSet.has(component)) {
+      newSet.delete(component);
+    } else {
+      newSet.add(component);
+    }
+    localLoopSelection = newSet;
 
-    if (option.type === null) {
+    if (newSet.size === 0) {
       onPreferenceChange("makeCircular", false);
       onPreferenceChange("selectedLOOPType", null);
+      isValidLoopCombo = true;
     } else {
-      onPreferenceChange("makeCircular", true);
-      onPreferenceChange("selectedLOOPType", option.type);
+      const valid = isRoundTripValid(newSet);
+      isValidLoopCombo = valid;
+      if (valid) {
+        const newType = loopTypeResolver.generateLOOPType(newSet);
+        onPreferenceChange("makeCircular", true);
+        onPreferenceChange("selectedLOOPType", newType);
+      }
     }
-
-    setTimeout(collapse, 150);
   }
 
-  function openFullLoopOverlay() {
-    haptic.trigger("selection");
-    // Sync local state with current preferences
-    localLoopComponents = new Set(selectedLoopComponents);
-    showFullLoopOverlay = true;
-  }
-
-  function handleFullLoopChange(newType: LOOPType) {
-    onPreferenceChange("makeCircular", true);
-    onPreferenceChange("selectedLOOPType", newType);
-  }
-
-  function handleFullLoopClose() {
-    showFullLoopOverlay = false;
-    row2ExpandedId = null;
-  }
-
-  // ============================================================
-  // GRID TOGGLE
-  // ============================================================
-
-  function toggleGridMode() {
-    haptic.trigger("selection");
-    const newMode = gridMode === "diamond" ? "box" : "diamond";
-    onGridModeChange(newMode as GridMode);
-  }
+  const loopDisplayValue = $derived.by(() => {
+    if (localLoopSelection.size === 0) return "Off";
+    if (!isValidLoopCombo) return `${localLoopSelection.size} selected`;
+    if (preferences.selectedLOOPType) {
+      return LOOP_TYPE_LABELS[preferences.selectedLOOPType] ?? "Custom";
+    }
+    return "On";
+  });
 </script>
 
-<div class="settings-container">
+<div class="settings-container" class:loop-expanded={isLoopExpanded}>
   <!-- ============================================================ -->
   <!-- MOBILE LAYOUT: MorphChip expanding chips -->
   <!-- ============================================================ -->
-  <div class="mobile-layout" class:loop-expanded={row2ExpandedId === "loop"}>
-    <!-- Row 1: Dashes, Props, Hands (hide when Loop is expanded) -->
-    {#if row2ExpandedId !== "loop"}
-      <MorphChipGroup bind:expandedId={row1ExpandedId}>
+  <div class="mobile-layout" class:loop-expanded={isLoopExpanded}>
+    <MorphChipGroup
+      bind:expandedId
+      gap={6}
+      onExpandedChange={(id) => onLoopExpandedChange?.(id === "loop")}
+    >
+      <div class="chip-row">
         <MorphChip
           id="dashes"
           label="Dashes"
@@ -232,61 +236,54 @@ Container-aware responsive design:
           displayValue={handsDisplayValue}
           onchange={handleHandsChange}
         />
-      </MorphChipGroup>
-    {/if}
-
-    <!-- Row 2: Grid + Loop (side by side, but Loop can expand to take over) -->
-    <div class="row-2" class:loop-expanded={row2ExpandedId === "loop"}>
-      <!-- Grid chip (simple toggle, no expansion) - hidden when Loop expands -->
-      {#if row2ExpandedId !== "loop"}
-        <button class="grid-chip" onclick={toggleGridMode}>
-          <span class="chip-label">Grid</span>
-          <span class="chip-value">{gridMode === "diamond" ? "Diamond" : "Box"}</span>
-        </button>
-      {/if}
-
-      <!-- Loop chip in its own MorphChipGroup (single chip that can expand) -->
-      {#snippet loopExpandedContent({ collapse, morphProgress }: { collapse: () => void; morphProgress: number })}
-        <div class="loop-expanded-content">
-          <div class="loop-options-grid">
-            {#each loopQuickOptions as option}
-              {@const isSelected = preferences.makeCircular
-                ? preferences.selectedLOOPType === option.type
-                : option.type === null}
-              <button
-                class="loop-option-btn"
-                class:selected={isSelected}
-                onclick={() => handleLoopQuickSelect(option, collapse)}
-                style:--option-color={option.color ?? "var(--theme-text-muted)"}
-              >
-                {#if option.icon}
-                  <i class="fas fa-{option.icon}" aria-hidden="true" style:color={option.color}></i>
-                {/if}
-                <span>{option.label}</span>
-              </button>
-            {/each}
-          </div>
-          <button class="customize-btn" onclick={openFullLoopOverlay}>
-            <i class="fas fa-sliders" aria-hidden="true"></i>
-            <span>Customize Combo...</span>
-          </button>
-        </div>
-      {/snippet}
-
-      <MorphChipGroup
-        bind:expandedId={row2ExpandedId}
-        expandedHeight={280}
-      >
+      </div>
+      <div class="chip-row">
+        <MorphChip
+          id="grid"
+          label="Grid"
+          bind:value={gridChipValue}
+          options={gridOptions}
+          displayValue={gridDisplayValue}
+          onchange={handleGridChipChange}
+        />
         <MorphChip
           id="loop"
           label="Loop"
-          bind:value={loopValue}
+          value={"loop"}
           options={[]}
           displayValue={loopDisplayValue}
-          expandedContent={loopExpandedContent}
-        />
-      </MorphChipGroup>
-    </div>
+          expandedHeight={200}
+        >
+          {#snippet expandedContent({ collapse, morphProgress })}
+            <div class="loop-expanded-content" role="group" aria-label="LOOP components" onpointerdown={(e) => e.stopPropagation()}>
+              <div class="loop-toggle-grid">
+                {#each LOOP_COMPONENTS as info}
+                  {@const isActive = localLoopSelection.has(info.component)}
+                  <button
+                    class="loop-toggle-chip"
+                    class:active={isActive}
+                    onclick={() => handleLoopToggle(info.component)}
+                    style:--chip-color={info.color}
+                    aria-pressed={isActive}
+                    aria-label="{info.label}: {isActive ? 'on' : 'off'}"
+                    tabindex={morphProgress > 0.5 ? 0 : -1}
+                  >
+                    <i class="fas fa-{info.icon}" aria-hidden="true"></i>
+                    <span>{info.label}</span>
+                  </button>
+                {/each}
+              </div>
+              {#if !isValidLoopCombo}
+                <div class="combo-hint" role="status">
+                  <i class="fas fa-flask" aria-hidden="true"></i>
+                  This combination isn't wired up yet
+                </div>
+              {/if}
+            </div>
+          {/snippet}
+        </MorphChip>
+      </div>
+    </MorphChipGroup>
   </div>
 
   <!-- ============================================================ -->
@@ -355,7 +352,7 @@ Container-aware responsive design:
           role="radio"
           aria-checked={gridMode === "diamond"}
         >
-          ◇ Diamond
+          Diamond
         </button>
         <button
           class="section-option"
@@ -364,80 +361,40 @@ Container-aware responsive design:
           role="radio"
           aria-checked={gridMode === "box"}
         >
-          ▢ Box
+          Box
         </button>
       </div>
     </div>
 
-    <!-- Loop section - uses icon buttons with labels below -->
+    <!-- Loop section - multi-toggle chips in 3x2 grid -->
     <div class="setting-section loop-section">
       <span class="section-label">Loop</span>
-      <div class="loop-desktop-grid" role="listbox">
-        {#each loopQuickOptions as option}
-          {@const isSelected = preferences.makeCircular
-            ? preferences.selectedLOOPType === option.type
-            : option.type === null}
+      <div class="loop-toggle-grid">
+        {#each LOOP_COMPONENTS as info}
+          {@const isActive = localLoopSelection.has(info.component)}
           <button
-            class="loop-icon-btn"
-            class:selected={isSelected}
-            onclick={() => {
-              haptic.trigger("selection");
-              if (option.type === null) {
-                onPreferenceChange("makeCircular", false);
-                onPreferenceChange("selectedLOOPType", null);
-              } else {
-                onPreferenceChange("makeCircular", true);
-                onPreferenceChange("selectedLOOPType", option.type);
-              }
-            }}
-            role="option"
-            aria-selected={isSelected}
-            aria-label={option.label}
-            style:--option-color={option.color ?? "var(--theme-text-muted)"}
+            class="loop-toggle-chip"
+            class:active={isActive}
+            onclick={() => handleLoopToggle(info.component)}
+            style:--chip-color={info.color}
+            aria-pressed={isActive}
+            aria-label="{info.label}: {isActive ? 'on' : 'off'}"
           >
-            {#if option.icon}
-              <i class="fas fa-{option.icon}" aria-hidden="true"></i>
-            {:else}
-              <i class="fas fa-ban" aria-hidden="true"></i>
-            {/if}
-            <span class="loop-icon-label">{option.label}</span>
+            <i class="fas fa-{info.icon}" aria-hidden="true"></i>
+            <span>{info.label}</span>
           </button>
         {/each}
-        <button
-          class="loop-icon-btn loop-more-btn"
-          onclick={openFullLoopOverlay}
-          aria-label="Customize loop combination"
-        >
-          <i class="fas fa-sliders" aria-hidden="true"></i>
-          <span class="loop-icon-label">Custom</span>
-        </button>
       </div>
+      {#if !isValidLoopCombo}
+        <div class="combo-hint" role="status">
+          <i class="fas fa-flask" aria-hidden="true"></i>
+          This combination isn't wired up yet
+        </div>
+      {/if}
     </div>
   </div>
 </div>
 
-<!-- Full LOOP selection modal - responsive layout based on viewport -->
-<LOOPSelectionHost
-  isOpen={showFullLoopOverlay}
-  selectedComponents={localLoopComponents}
-  onToggleComponent={(component) => {
-    // Toggle component in local state
-    const newSet = new Set(localLoopComponents);
-    if (newSet.has(component)) {
-      newSet.delete(component);
-    } else {
-      newSet.add(component);
-    }
-    localLoopComponents = newSet;
-  }}
-  onConfirm={() => {
-    // Generate LOOP type from local components and apply
-    const newType = loopTypeResolver.generateLOOPType(localLoopComponents);
-    handleFullLoopChange(newType);
-    handleFullLoopClose();
-  }}
-  onClose={handleFullLoopClose}
-/>
 
 <style>
   .settings-container {
@@ -448,186 +405,49 @@ Container-aware responsive design:
     width: 100%;
   }
 
+  /* Loop expanded: no special sizing needed — group handles it via min-height */
+
   /* ============================================================ */
-  /* LAYOUT SWITCHING */
+  /* MOBILE LAYOUT */
   /* ============================================================ */
 
   .mobile-layout {
     display: flex;
     flex-direction: column;
     gap: var(--settings-spacing-sm, 8px);
-    min-height: 132px;
   }
 
-  .mobile-layout.loop-expanded {
-    min-height: 280px;
-  }
-
-  .desktop-layout {
-    display: none;
-  }
-
-  @container tool-panel (min-height: 700px) {
-    .mobile-layout {
-      display: none;
-    }
-
-    .desktop-layout {
-      display: flex;
-      flex-direction: column;
-      gap: calc(var(--settings-spacing-md, 12px) * var(--scale));
-    }
-  }
-
-  /* ============================================================ */
-  /* ROW 2: Grid + Loop side by side */
-  /* ============================================================ */
-
-  .row-2 {
+  .chip-row {
     display: flex;
-    gap: var(--settings-spacing-sm, 8px);
-    min-height: 56px;
+    gap: 6px;
+    width: 100%;
+    /* CRITICAL: No position property — chips must measure offsetLeft/offsetTop from the group */
   }
 
-  .row-2.loop-expanded {
-    min-height: 280px;
+  /* Match between-row gap to parent's fluid spacing for consistent vertical rhythm */
+  .mobile-layout :global(.morph-chip-group) {
+    row-gap: var(--fluid-space, 8px);
   }
 
-  /* Grid chip takes half width normally */
-  .row-2 > .grid-chip {
-    flex: 1;
-  }
-
-  /* MorphChipGroup (containing Loop) takes half width normally, full when expanded */
-  .row-2 > :global(.morph-chip-group) {
-    flex: 1;
-  }
-
-  .row-2.loop-expanded > :global(.morph-chip-group) {
-    flex: 1;
-  }
-
-  .grid-chip {
-    min-height: 56px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 8px 12px;
-    background: var(--theme-card-bg);
-    border: 1.5px solid var(--theme-stroke);
-    border-radius: 18px;
-    color: var(--theme-text);
-    cursor: pointer;
-    transition: all 150ms ease;
-  }
-
-  .grid-chip:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .grid-chip:active {
-    transform: scale(0.97);
-  }
-
-  .grid-chip .chip-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--theme-text-muted);
-  }
-
-  .grid-chip .chip-value {
-    font-size: 14px;
-    font-weight: 600;
-  }
+  /* MorphChipGroup handles its own sizing via has-expanded min-height */
 
   /* ============================================================ */
-  /* LOOP EXPANDED CONTENT */
+  /* LOOP EXPANDED CONTENT (inside MorphChip custom content) */
   /* ============================================================ */
 
   .loop-expanded-content {
     display: flex;
     flex-direction: column;
     gap: var(--settings-spacing-sm, 8px);
-    height: 100%;
   }
 
-  .loop-options-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: var(--settings-spacing-sm, 8px);
-    flex: 1;
-    min-height: 0; /* Allow grid to shrink below content size for proper 1fr distribution */
-  }
-
-  .loop-option-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    height: 100%; /* Fill the grid cell */
-    min-height: 56px;
-    padding: 8px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.6));
-    border: 1.5px solid var(--theme-stroke);
-    border-radius: 12px;
-    color: var(--theme-text-muted);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 150ms ease;
-  }
-
-  .loop-option-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text);
-  }
-
-  .loop-option-btn:active {
-    transform: scale(0.96);
-  }
-
-  .loop-option-btn.selected {
-    background: color-mix(in srgb, var(--option-color, var(--theme-accent)) 20%, var(--theme-card-bg));
-    border-color: var(--option-color, var(--theme-accent));
-    color: var(--theme-text);
-  }
-
-  .loop-option-btn i {
-    font-size: 18px;
-  }
-
-  .customize-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 48px;
-    padding: 8px 12px;
-    background: transparent;
-    border: 1.5px dashed var(--theme-stroke);
-    border-radius: 12px;
-    color: var(--theme-text-muted);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 150ms ease;
-  }
-
-  .customize-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-accent);
-    border-style: solid;
-    color: var(--theme-accent);
+  .desktop-layout {
+    display: none;
   }
 
   /* ============================================================ */
-  /* DESKTOP: Expanded sections */
+  /* DESKTOP LAYOUT: Base styles for expanded sections */
+  /* These MUST come before container queries so CQ overrides win */
   /* ============================================================ */
 
   .setting-section {
@@ -683,75 +503,146 @@ Container-aware responsive design:
     color: var(--theme-text);
   }
 
-  /* Loop section - icon grid layout */
   .loop-section {
     padding-bottom: calc(12px * var(--scale));
   }
 
-  .loop-desktop-grid {
+  /* ============================================================ */
+  /* LOOP TOGGLE CHIPS (shared mobile + desktop) */
+  /* ============================================================ */
+
+  .loop-toggle-grid {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: calc(8px * var(--scale));
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--settings-spacing-sm, 8px);
   }
 
-  .loop-icon-btn {
+  .loop-toggle-chip {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    min-height: calc(64px * var(--scale));
-    padding: calc(8px * var(--scale));
+    min-height: 56px;
+    padding: 8px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.6));
     border: 1.5px solid var(--theme-stroke);
-    border-radius: calc(12px * var(--scale));
+    border-radius: 12px;
     color: var(--theme-text-muted);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
     cursor: pointer;
     transition: all 150ms ease;
   }
 
-  .loop-icon-btn i {
-    font-size: calc(18px * var(--scale));
-    color: var(--option-color);
-  }
-
-  .loop-icon-label {
-    font-size: calc(11px * var(--scale));
-    font-weight: 500;
-    white-space: nowrap;
-  }
-
-  .loop-icon-btn:hover {
+  .loop-toggle-chip:hover {
     background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
+    border-color: var(--chip-color, var(--theme-stroke-strong));
     color: var(--theme-text);
   }
 
-  .loop-icon-btn:active {
+  .loop-toggle-chip:active {
     transform: scale(0.96);
   }
 
-  .loop-icon-btn.selected {
-    background: color-mix(in srgb, var(--option-color, var(--theme-accent)) 20%, var(--theme-card-bg));
-    border-color: var(--option-color, var(--theme-accent));
+  .loop-toggle-chip.active {
+    background: color-mix(in srgb, var(--chip-color, var(--theme-accent)) 20%, var(--theme-card-bg));
+    border-color: var(--chip-color, var(--theme-accent));
     color: var(--theme-text);
   }
 
-  .loop-more-btn {
-    border-style: dashed;
+  .loop-toggle-chip.active i {
+    color: var(--chip-color);
   }
 
-  .loop-more-btn:hover {
-    border-style: solid;
-    border-color: var(--theme-accent);
+  .loop-toggle-chip i {
+    font-size: 18px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    transition: color 150ms ease;
   }
 
-  .loop-more-btn i {
-    color: var(--theme-text-muted);
+  .loop-toggle-chip:focus-visible {
+    outline: 2px solid var(--chip-color, var(--theme-accent));
+    outline-offset: 2px;
   }
 
-  .loop-more-btn:hover i {
-    color: var(--theme-accent);
+  .combo-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--semantic-warning, #f59e0b);
+    padding: 4px 8px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 6px;
+  }
+
+  .combo-hint i {
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  /* ============================================================ */
+  /* CONTAINER QUERIES: Must come AFTER base styles to override */
+  /* ============================================================ */
+
+  /* Desktop: tall tool panel — vertical flex column with labels + expanded options */
+  @container tool-panel (min-height: 700px) {
+    .mobile-layout {
+      display: none;
+    }
+
+    .desktop-layout {
+      display: flex;
+      flex-direction: column;
+      gap: calc(6px * var(--scale));
+    }
+
+    .setting-section {
+      padding: calc(8px * var(--scale)) calc(12px * var(--scale));
+      gap: calc(6px * var(--scale));
+      border-radius: calc(14px * var(--scale));
+    }
+
+    .section-label {
+      display: block;
+      font-size: calc(11px * var(--scale));
+    }
+
+    .section-options {
+      gap: calc(6px * var(--scale));
+    }
+
+    .section-option {
+      min-height: calc(44px * var(--scale));
+      padding: calc(8px * var(--scale)) calc(12px * var(--scale));
+      font-size: calc(14px * var(--scale));
+      border-radius: calc(10px * var(--scale));
+    }
+
+    .loop-section {
+      grid-column: unset;
+      padding-bottom: calc(8px * var(--scale));
+    }
+
+    .loop-toggle-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .loop-toggle-chip {
+      min-height: 44px;
+      padding: 6px;
+      font-size: var(--font-size-compact, 12px);
+      gap: 3px;
+      border-radius: 10px;
+      flex-direction: column;
+    }
+
+    .loop-toggle-chip i {
+      font-size: 16px;
+    }
   }
 
   /* ============================================================ */
@@ -759,9 +650,7 @@ Container-aware responsive design:
   /* ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
-    .grid-chip,
-    .loop-option-btn,
-    .customize-btn,
+    .loop-toggle-chip,
     .section-option {
       transition: none;
       animation: none;

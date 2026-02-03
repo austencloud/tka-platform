@@ -3,17 +3,15 @@ LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
 -->
 <script lang="ts">
   import type { LOOPPreset } from "../../shared/domain/constants/loop-presets";
-  import { LOOP_COMPONENT_MAP } from "../../shared/domain/constants/loop-constants";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
-  let { preset, onSelect, isFavorite = false, onToggleFavorite, variant = 'row' } = $props<{
+  let { preset, onSelect, isFavorite = false, onToggleFavorite } = $props<{
     preset: LOOPPreset;
     onSelect: (preset: LOOPPreset) => void;
     isFavorite?: boolean;
     onToggleFavorite?: (presetId: string) => void;
-    variant?: 'row' | 'card';
   }>();
 
   let hapticService: IHapticFeedback | null = null;
@@ -27,13 +25,6 @@ LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
     onSelect(preset);
   }
 
-  // Resolve icon color from the preset's first component
-  const iconColor = $derived.by(() => {
-    const firstComponent = preset.components[0];
-    if (!firstComponent) return "var(--theme-text, white)";
-    return LOOP_COMPONENT_MAP.get(firstComponent)?.color ?? "var(--theme-text, white)";
-  });
-
   function handleToggleFavorite(event: MouseEvent) {
     event.stopPropagation();
     hapticService?.trigger("selection");
@@ -41,14 +32,13 @@ LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
   }
 </script>
 
-<div class="preset-card-wrapper" class:card-variant={variant === 'card'}>
+<div class="preset-card-wrapper">
   <button
     class="preset-card"
-    class:card-layout={variant === 'card'}
     onclick={handleSelect}
     aria-label={`Apply ${preset.name}`}
   >
-    <i class="fas fa-{preset.icon} preset-icon" style="color: {iconColor};" aria-hidden="true"></i>
+    <span class="preset-icon">{preset.icon}</span>
     <span class="preset-name">{preset.name}</span>
   </button>
 
@@ -109,36 +99,6 @@ LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
     font-size: var(--font-size-compact);
     font-weight: 500;
     color: var(--theme-text, white);
-  }
-
-  /* Card variant: vertical layout */
-  .preset-card.card-layout {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 12px 8px;
-    min-height: 64px;
-    gap: 6px;
-  }
-
-  .preset-card.card-layout .preset-icon {
-    font-size: 22px;
-  }
-
-  .preset-card.card-layout .preset-name {
-    flex: none;
-    font-size: var(--font-size-compact, 12px);
-    line-height: 1.2;
-  }
-
-  .preset-card-wrapper.card-variant {
-    position: relative;
-  }
-
-  .preset-card-wrapper.card-variant .favorite-btn {
-    position: absolute;
-    top: 4px;
-    right: 4px;
   }
 
   .favorite-btn {

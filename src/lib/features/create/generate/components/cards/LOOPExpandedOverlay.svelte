@@ -29,8 +29,13 @@ Animates forward in z-axis and expands to fill the container space
 
   let hapticService: IHapticFeedback | null = null;
   let isMultiSelectMode = $state(false);
-  let localSelectedComponents = $state(new Set<LOOPComponent>(selectedComponents));
+  let localSelectedComponents = $state(new Set<LOOPComponent>());
   const explanationGenerator = new LOOPExplanationTextGenerator();
+
+  // Sync local state with prop changes
+  $effect(() => {
+    localSelectedComponents = new Set<LOOPComponent>(selectedComponents);
+  });
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;

@@ -46,37 +46,27 @@ Same functionality, different density.
   let hasTouchCapability = $state(false);
   let isInputFocused = $state(false);
 
-  // Loop chip expansion state - when expanded, it takes over the full panel
+  // Loop chip expansion: simple boolean, animation handled by CSS transition-delay
   let isLoopExpanded = $state(false);
 
   // Keyboard state
   let hasVirtualKeyboard = $state(false);
-  // Note: containerHeight ALREADY shrinks when keyboard opens (viewport pushes up)
-  // We only need to account for the toolbar (60px fixed) sitting at the bottom
 
-  // Container height tracking for smart layout decisions
+  // Panel element ref for potential future use
   let panelElement: HTMLElement | null = $state(null);
-  let containerHeight = $state(0);
 
   // The toolbar is 60px fixed height. When keyboard is open, we need to reserve
   // space for the toolbar since it sits above the keyboard.
-  const TOOLBAR_HEIGHT = 60;
-
-  // Calculate available height for content.
-  // containerHeight = panel's offsetHeight (already reduced by keyboard on most browsers)
-  // We only subtract toolbar height since that's the fixed overlay at the bottom
-  const availableHeight = $derived(
-    hasVirtualKeyboard ? containerHeight - TOOLBAR_HEIGHT : containerHeight
-  );
-
-  // Threshold: minimum height to show full layout (input + settings + generate button)
-  // Below this, we collapse to input-only mode
-  const FULL_LAYOUT_MIN_HEIGHT = 350; // ~350px fits word input + settings bar + generate button
-
   // Should we show the collapsed input-only layout?
-  // Only collapse if: keyboard is visible AND not enough space for full layout
+  // Collapse when virtual keyboard is visible and input is focused.
+  // Previously this also checked `availableHeight < threshold`, but that caused
+  // an infinite oscillation: collapse hides workspace → tool panel gets more height
+  // → availableHeight exceeds threshold → uncollapse → workspace shows → tool panel
+  // shrinks → availableHeight drops → collapse again → infinite loop.
+  // The `hasVirtualKeyboard` check already ensures this only fires on real mobile
+  // devices with actual virtual keyboards, so the height check is unnecessary.
   const shouldCollapseLayout = $derived(
-    isInputFocused && hasVirtualKeyboard && availableHeight < FULL_LAYOUT_MIN_HEIGHT
+    isInputFocused && hasVirtualKeyboard
   );
 
   // Legacy name for backwards compatibility with parent layout notification
@@ -130,21 +120,6 @@ Same functionality, different density.
     }
   });
 
-  // Track container height for smart layout decisions
-  $effect(() => {
-    if (!panelElement) return;
-
-    const updateHeight = () => {
-      containerHeight = panelElement?.offsetHeight ?? 0;
-    };
-
-    updateHeight();
-
-    const resizeObserver = new ResizeObserver(updateHeight);
-    resizeObserver.observe(panelElement);
-
-    return () => resizeObserver.disconnect();
-  });
 
   function handleInputFocusChange(focused: boolean) {
     isInputFocused = focused;
@@ -326,6 +301,16 @@ Same functionality, different density.
       spellState.markHasGeneratedOnce();
       haptic.trigger("success");
 
+      // Dismiss keyboard after successful generation so user can see the workspace.
+      // Without this, the workspace stays hidden (collapsed for keyboard mode) and
+      // the user has to manually tap Done to see their generated sequence.
+      if (isInputFocused) {
+        isInputFocused = false;
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      }
+
     } catch (error) {
       console.error("Failed to generate sequence:", error);
       haptic.trigger("error");
@@ -349,7 +334,6 @@ Same functionality, different density.
   bind:this={panelElement}
   class="spell-panel"
   class:input-mode={shouldCollapseLayout}
-  class:loop-expanded={isLoopExpanded}
   data-is-desktop={isDesktop}
 >
   <!-- Error Banner - hidden in collapsed mode or when Loop is expanded -->
@@ -367,19 +351,20 @@ Same functionality, different density.
     </div>
   {/if}
 
-  <!-- Word Input - hidden when Loop chip is expanded (it takes over) -->
-  {#if !isLoopExpanded}
-    <section class="word-section">
-      <WordInput
-        value={spellState.inputWord}
-        onInput={handleWordChange}
-        onFocusChange={handleInputFocusChange}
-        onSubmit={handleGenerate}
-      />
-    </section>
-  {/if}
+  <!-- Word Input — collapses when Loop chip takes over (CSS transition-delay) -->
+  <section
+    class="word-section"
+    class:loop-collapsed={isLoopExpanded}
+  >
+    <WordInput
+      value={spellState.inputWord}
+      onInput={handleWordChange}
+      onFocusChange={handleInputFocusChange}
+      onSubmit={handleGenerate}
+    />
+  </section>
 
-  <!-- Settings - hidden only when collapsed (small screen + keyboard) -->
+  <!-- Settings — hidden only when collapsed (small screen + keyboard) -->
   {#if !shouldCollapseLayout}
     <section class="settings-section" class:loop-expanded={isLoopExpanded}>
       <SpellSettingsBar
@@ -391,24 +376,23 @@ Same functionality, different density.
       />
     </section>
 
-    <!-- Generate Button - hidden in input mode or when Loop expanded -->
-    {#if !isLoopExpanded}
-      <button
-        class="generate-button"
-        class:generating={spellState.isGenerating}
-        onclick={handleGenerate}
-        disabled={!canGenerate}
-        aria-label={canGenerate ? "Generate sequence" : "Enter a word first"}
-      >
-        {#if spellState.isGenerating}
-          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-          <span>Generating...</span>
-        {:else}
-          <i class="fas fa-magic" aria-hidden="true"></i>
-          <span>Generate</span>
-        {/if}
-      </button>
-    {/if}
+    <!-- Generate Button — collapses when Loop chip takes over (CSS transition-delay) -->
+    <button
+      class="generate-button"
+      class:generating={spellState.isGenerating}
+      class:loop-collapsed={isLoopExpanded}
+      onclick={handleGenerate}
+      disabled={!canGenerate || isLoopExpanded}
+      aria-label={canGenerate ? "Generate sequence" : "Enter a word first"}
+    >
+      {#if spellState.isGenerating}
+        <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+        <span>Generating...</span>
+      {:else}
+        <i class="fas fa-magic" aria-hidden="true"></i>
+        <span>Generate</span>
+      {/if}
+    </button>
   {/if}
 
   <!-- Keyboard toolbar for touch devices - detects actual keyboard visibility -->
@@ -432,6 +416,8 @@ Same functionality, different density.
     /* Query the parent tool-panel container, not self */
     container-type: inline-size;
     container-name: spell-panel;
+    /* Positioning context for Loop overlay (rendered in SpellSettingsBar) */
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -439,8 +425,9 @@ Same functionality, different density.
     margin: 0 auto;
     height: 100%;
     min-height: 0;
-    /* No scrolling - content must always fit via intelligent layout switching */
-    overflow: hidden;
+    /* Auto-scroll for edge cases where layout switching leaves slight overflow */
+    overflow-y: auto;
+    overflow-x: hidden;
 
     /* Fluid spacing: 1vh scales naturally with viewport */
     --fluid-space: clamp(4px, 1vh, 12px);
@@ -491,19 +478,43 @@ Same functionality, different density.
     flex-shrink: 0;
   }
 
-  /* When Loop is expanded, settings section takes all available space */
-  .settings-section.loop-expanded {
-    flex: 1;
-    min-height: 0;
-    /* Center the content within the expanded section */
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* Loop takeover animation via CSS transition-delay.
+     Collapsing: everything goes at once (350ms) — matches chip expansion timing.
+     Restoring: height expands first (0ms), then opacity fades in (250ms delay).
+     CSS applies the transition rules of the TARGET state, giving us
+     directional sequencing with zero JS state machines. */
+  .word-section,
+  .generate-button {
+    max-height: 200px;
+    overflow: hidden;
+    transition:
+      max-height 300ms cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 200ms ease 250ms,
+      padding 300ms ease,
+      margin 300ms ease;
   }
 
-  /* Panel state when Loop is expanded - use flex-start, section will fill via flex:1 */
-  .spell-panel.loop-expanded {
-    justify-content: flex-start;
+  /* Collapsed state: all at once, no stagger — keeps chip expansion in sync */
+  .word-section.loop-collapsed,
+  button.generate-button.loop-collapsed {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+    transition:
+      opacity 200ms ease,
+      max-height 300ms cubic-bezier(0.4, 0, 0.2, 1),
+      padding 300ms ease,
+      margin 300ms ease;
+  }
+
+  /* Collapse gap when Loop is taking over (prevents gap from collapsed items) */
+  .spell-panel:has(.settings-section.loop-expanded) {
+    gap: 0;
   }
 
   /* Generate Button - scales with container */
@@ -522,7 +533,13 @@ Same functionality, different density.
     font-size: calc(var(--font-size-min, 14px) * var(--spell-scale));
     font-weight: 700;
     cursor: pointer;
-    transition: all 150ms ease;
+    /* Only transition hover/active properties — NOT max-height/opacity/padding/margin.
+       Those are handled by the loop-collapse rules above (lines 501-528).
+       Using 'all' here would clobber the sequenced transition-delay timings. */
+    transition:
+      background 150ms ease,
+      transform 150ms ease,
+      box-shadow 150ms ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     flex-shrink: 0;
@@ -631,7 +648,11 @@ Same functionality, different density.
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .generate-button,
-    .error-dismiss {
+    .error-dismiss,
+    .word-section,
+    .word-section.loop-collapsed,
+    button.generate-button,
+    button.generate-button.loop-collapsed {
       transition: none;
     }
   }
