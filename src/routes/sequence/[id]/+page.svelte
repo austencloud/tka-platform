@@ -88,7 +88,7 @@
   let currentIsSwiping = $state(false);
 
   // Page container ref for swipe visual feedback
-  let pageContainer: HTMLElement | null = null;
+  let pageContainer: HTMLElement | null = $state(null);
 
   // DrawerStack registration - blocks pull-to-refresh on mobile
   const drawerId = generateDrawerId();
@@ -429,6 +429,7 @@
         />
 
         <!-- Main content -->
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <div
           class="route-body-content"
           data-fullscreen={ctx.isFullscreen}

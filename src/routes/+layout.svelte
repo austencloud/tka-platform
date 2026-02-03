@@ -205,7 +205,6 @@
 <svelte:head>
   <!-- Default title only if page doesn't set one -->
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 </svelte:head>
 
 {#if containerError}

@@ -493,7 +493,11 @@
       "Bash(# Check for workspace or monorepo config cat F:/_CODE/cirque-aflame/pnpm-workspace.yaml || echo \"\"No pnpm workspace\"\" cat F:/_CODE/cirque-aflame/package.json)",
       "Bash(# Check for global npm links npm ls -g --depth=0 --link)",
       "mcp__chrome-devtools__wait_for",
-      "mcp__chrome-devtools__take_screenshot"
+      "mcp__chrome-devtools__take_screenshot",
+      "mcp__chrome-devtools__emulate",
+      "mcp__chrome-devtools__evaluate_script",
+      "mcp__chrome-devtools__resize_page",
+      "mcp__chrome-devtools__list_console_messages"
     ]
   },
   "enableAllProjectMcpServers": true,
