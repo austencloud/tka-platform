@@ -128,6 +128,40 @@ export interface RainbowLabSettings {
 }
 
 // ============================================================================
+// Deep Ocean Lab
+// ============================================================================
+
+export interface DeepOceanLabLayers {
+  gradient: boolean;
+  lightRays: boolean;
+  caustics: boolean;
+  particles: boolean;
+  bubbles: boolean;
+  fish: boolean;
+  jellyfish: boolean;
+  coral: boolean;
+}
+
+export interface DeepOceanLabSettings {
+  quality: QualityLevel;
+  layers: DeepOceanLabLayers;
+}
+
+export const DEFAULT_DEEP_OCEAN_SETTINGS: DeepOceanLabSettings = {
+  quality: "high",
+  layers: {
+    gradient: true,
+    lightRays: true,
+    caustics: true,
+    particles: true,
+    bubbles: true,
+    fish: true,
+    jellyfish: true,
+    coral: true,
+  },
+};
+
+// ============================================================================
 // Combined Lab Settings
 // ============================================================================
 
@@ -137,6 +171,7 @@ export interface BackgroundLabSettings {
   cherryBlossom?: CherryBlossomLabSettings;
   rainbow?: RainbowLabSettings;
   emberGlow?: EmberGlowLabSettings;
+  deepOcean?: DeepOceanLabSettings;
 }
 
 // ============================================================================

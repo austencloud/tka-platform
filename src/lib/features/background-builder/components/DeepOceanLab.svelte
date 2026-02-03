@@ -14,6 +14,7 @@
   import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
   import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
   import PersonalityBars from "./PersonalityBars.svelte";
+  import type { ICoralSceneRenderer } from "../services/contracts/ICoralSceneRenderer";
 
   type ColorPreset = "default" | "cyan" | "blue" | "lime" | "amber" | "rose" | "emerald" | "red" | "gray";
 
@@ -26,6 +27,11 @@
 
   // Quality settings
   let quality: QualityLevel = $state("high");
+
+  // Coral renderer
+  let coralRenderer: ICoralSceneRenderer = container.items.coralSceneRenderer;
+  let showCoral = $state(true);
+  let coralCount = $state(0);
 
   // Layer toggles
   let layers = $state<DeepOceanLayers>({
@@ -59,6 +65,7 @@
     { icon: "fa-fish", value: stats.fish, label: "Fish" },
     { icon: "fa-disease", value: stats.jellyfish, label: "Jellyfish" },
     { icon: "fa-circle", value: stats.bubbles, label: "Bubbles" },
+    ...(showCoral ? [{ icon: "fa-seedling", value: coralCount, label: "Coral" }] : []),
   ]);
 
   // Status chips for selected fish
@@ -139,6 +146,12 @@
         stats = system.getStats();
         updateFishList();
 
+        // Initialize coral silhouettes
+        if (showCoral) {
+          await coralRenderer.initialize(canvas.width, canvas.height);
+          coralCount = coralRenderer.getCoralCount();
+        }
+
         startAnimation();
       }
       isLoading = false;
@@ -169,9 +182,22 @@
 
       const dimensions = { width: canvas.width, height: canvas.height };
 
-      backgroundSystem.update(dimensions, frameMultiplier);
-      ctx.clearRect(0, 0, dimensions.width, dimensions.height);
-      backgroundSystem.draw(ctx, dimensions);
+      try {
+        backgroundSystem.update(dimensions, frameMultiplier);
+        ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+        backgroundSystem.draw(ctx, dimensions);
+
+        // Draw coral layers after the background system (back -> mid -> front)
+        if (showCoral && coralRenderer.isReady()) {
+          coralRenderer.update(frameMultiplier);
+          coralRenderer.drawLayer(ctx, "back", dimensions.width, dimensions.height);
+          coralRenderer.drawLayer(ctx, "mid", dimensions.width, dimensions.height);
+          coralRenderer.drawLayer(ctx, "front", dimensions.width, dimensions.height);
+        }
+      } catch {
+        // Swallow frame errors from backgrounds package (e.g. unknown wobble types)
+        // to keep the animation loop alive
+      }
 
       // Update stats and fish list periodically
       if (currentTime - lastStatsUpdate > 500) {
@@ -339,11 +365,17 @@
 
     const containerEl = canvas.parentElement;
     if (containerEl) {
-      const oldDimensions = { width: canvas.width, height: canvas.height };
+      const oldWidth = canvas.width;
+      const oldHeight = canvas.height;
       canvas.width = containerEl.clientWidth;
       canvas.height = containerEl.clientHeight;
+      const oldDimensions = { width: oldWidth, height: oldHeight };
       const newDimensions = { width: canvas.width, height: canvas.height };
       backgroundSystem.handleResize?.(oldDimensions, newDimensions);
+
+      if (coralRenderer.isReady()) {
+        coralRenderer.handleResize(oldWidth, oldHeight, canvas.width, canvas.height);
+      }
     }
   }
 
@@ -352,6 +384,7 @@
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
     }
+    coralRenderer.cleanup();
     backgroundSystem = null;
     await initializeSystem();
   }
@@ -399,6 +432,14 @@
     layers[layer] = !layers[layer];
     if (backgroundSystem) {
       backgroundSystem.setLayerVisibility(layers);
+    }
+  }
+
+  async function toggleCoral() {
+    showCoral = !showCoral;
+    if (showCoral && !coralRenderer.isReady() && canvas) {
+      await coralRenderer.initialize(canvas.width, canvas.height);
+      coralCount = coralRenderer.getCoralCount();
     }
   }
 
@@ -456,6 +497,7 @@
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
     }
+    coralRenderer.cleanup();
     window.removeEventListener("resize", handleResize);
   });
 
@@ -584,6 +626,7 @@
         <ChipToggle label="Bubbles" icon="fa-circle" active={layers.bubbles} color="cyan" onclick={() => toggleLayer("bubbles")} />
         <ChipToggle label="Fish" icon="fa-fish" active={layers.fish} color="cyan" onclick={() => toggleLayer("fish")} />
         <ChipToggle label="Jellyfish" icon="fa-disease" active={layers.jellyfish} color="cyan" onclick={() => toggleLayer("jellyfish")} />
+        <ChipToggle label="Coral" icon="fa-seedling" active={showCoral} color="cyan" onclick={toggleCoral} />
       </ChipGroup>
     </CollapsibleLabSection>
 
