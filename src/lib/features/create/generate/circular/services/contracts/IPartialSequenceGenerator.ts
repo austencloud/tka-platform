@@ -13,14 +13,14 @@ export interface IPartialSequenceGenerator {
    * Generate a partial sequence ending at a specific position
    * Used for circular mode LOOP generation
    * @param startPos - Start grid position
-   * @param endPos - Required end grid position
+   * @param endPos - Required end grid position, or null if unconstrained
    * @param sliceSize - Halved or quartered
    * @param options - Generation options
    * @returns Promise resolving to partial sequence (start position + intermediate steps + final beat)
    */
   generatePartialSequence(
     startPos: GridPosition,
-    endPos: GridPosition,
+    endPos: GridPosition | null,
     sliceSize: SliceSize,
     options: GenerationOptions
   ): Promise<StepData[]>;

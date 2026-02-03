@@ -46,7 +46,7 @@ export class PartialSequenceGenerator implements IPartialSequenceGenerator {
    */
   async generatePartialSequence(
     startPos: GridPosition,
-    endPos: GridPosition,
+    endPos: GridPosition | null,
     sliceSize: SliceSize,
     options: GenerationOptions
   ): Promise<StepData[]> {
@@ -211,8 +211,9 @@ export class PartialSequenceGenerator implements IPartialSequenceGenerator {
       // Only avoid endPos on the LAST intermediate beat (penultimate beat of the sequence)
       // This prevents situations where the only path to endPos is a Type 6 static move
       // Earlier steps can land on endPos freely since there's still time to move away
+      // When endPos is null (unconstrained), no avoidance needed
       const isPenultimateBeat = i === stepsToGenerate - 1;
-      const avoidPosition = isPenultimateBeat ? endPos : undefined;
+      const avoidPosition = isPenultimateBeat && endPos ? endPos : undefined;
 
       const nextStep = await this._generateNextBeat(
         sequence,
@@ -229,16 +230,22 @@ export class PartialSequenceGenerator implements IPartialSequenceGenerator {
       sequence.push(nextStep);
     }
 
-    // Step 4: Add final beat that must end at required endPos
+    // Step 4: Add final beat
     const lastStep = sequence[sequence.length - 1];
     if (!lastStep) {
       throw new Error("No steps in sequence to generate final beat from");
     }
 
-    let finalMoves = allOptions.filter(
-      (p) =>
-        p.startPosition === lastStep.endPosition && p.endPosition === endPos
-    );
+    // When endPos is null (unconstrained), accept any end position
+    let finalMoves = endPos
+      ? allOptions.filter(
+          (p) =>
+            p.startPosition === lastStep.endPosition &&
+            p.endPosition === endPos
+        )
+      : allOptions.filter(
+          (p) => p.startPosition === lastStep.endPosition
+        );
 
     // Apply the same filters as intermediate steps to respect continuity setting
     finalMoves = this.PictographFilter.filterByContinuity(finalMoves, lastStep);
@@ -256,8 +263,9 @@ export class PartialSequenceGenerator implements IPartialSequenceGenerator {
     }
 
     if (finalMoves.length === 0) {
+      const endDesc = endPos ? `to required end position ${endPos}` : "with no position constraint";
       throw new Error(
-        `No valid move from ${lastStep.endPosition} to required end position ${endPos} ` +
+        `No valid move from ${lastStep.endPosition} ${endDesc} ` +
           `that respects continuity=${options.propContinuity}. ` +
           `This combination may not be possible with the current settings.`
       );

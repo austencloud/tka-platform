@@ -13,6 +13,7 @@ export class LOOPExecutorSelector implements ILOOPExecutorSelector {
   constructor(
     private readonly strictRotatedExecutor: ILOOPExecutor,
     private readonly strictMirroredExecutor: ILOOPExecutor,
+    private readonly strictFlippedExecutor: ILOOPExecutor,
     private readonly strictSwappedExecutor: ILOOPExecutor,
     private readonly strictInvertedExecutor: ILOOPExecutor,
     private readonly mirroredSwappedExecutor: ILOOPExecutor,
@@ -37,6 +38,9 @@ export class LOOPExecutorSelector implements ILOOPExecutorSelector {
 
       case LOOPType.STRICT_MIRRORED:
         return this.strictMirroredExecutor;
+
+      case LOOPType.STRICT_FLIPPED:
+        return this.strictFlippedExecutor;
 
       case LOOPType.STRICT_SWAPPED:
         return this.strictSwappedExecutor;
@@ -74,7 +78,7 @@ export class LOOPExecutorSelector implements ILOOPExecutorSelector {
       default:
         throw new Error(
           `LOOP type "${loopType}" is not yet implemented. ` +
-            `Currently supported: STRICT_ROTATED, STRICT_MIRRORED, STRICT_SWAPPED, ` +
+            `Currently supported: STRICT_ROTATED, STRICT_MIRRORED, STRICT_FLIPPED, STRICT_SWAPPED, ` +
             `STRICT_INVERTED, MIRRORED_SWAPPED, SWAPPED_INVERTED, MIRRORED_INVERTED, ` +
             `ROTATED_SWAPPED, ROTATED_INVERTED, MIRRORED_ROTATED, MIRRORED_INVERTED_ROTATED, ` +
             `MIRRORED_ROTATED_INVERTED_SWAPPED, REWOUND`
@@ -89,6 +93,7 @@ export class LOOPExecutorSelector implements ILOOPExecutorSelector {
     return [
       LOOPType.STRICT_ROTATED,
       LOOPType.STRICT_MIRRORED,
+      LOOPType.STRICT_FLIPPED,
       LOOPType.STRICT_SWAPPED,
       LOOPType.STRICT_INVERTED,
       LOOPType.MIRRORED_SWAPPED,
@@ -109,6 +114,7 @@ export class LOOPExecutorSelector implements ILOOPExecutorSelector {
 // ============================================================================
 import { strictRotatedLOOPExecutor } from "./StrictRotatedLOOPExecutor";
 import { strictMirroredLOOPExecutor } from "./StrictMirroredLOOPExecutor";
+import { strictFlippedLOOPExecutor } from "./StrictFlippedLOOPExecutor";
 import { strictSwappedLOOPExecutor } from "./StrictSwappedLOOPExecutor";
 import { strictInvertedLOOPExecutor } from "./StrictInvertedLOOPExecutor";
 import { mirroredSwappedLOOPExecutor } from "./MirroredSwappedLOOPExecutor";
@@ -125,6 +131,7 @@ import { rewoundLOOPExecutor } from "./RewoundLOOPExecutor";
 export const loopExecutorSelector = new LOOPExecutorSelector(
   strictRotatedLOOPExecutor,
   strictMirroredLOOPExecutor,
+  strictFlippedLOOPExecutor,
   strictSwappedLOOPExecutor,
   strictInvertedLOOPExecutor,
   mirroredSwappedLOOPExecutor,

@@ -12,6 +12,8 @@
 import { createContainer } from "iti";
 
 // === TIER 0: No dependencies ===
+import { ArrangeUndoManager } from "$lib/features/compose/tabs/arrange/services/implementations/ArrangeUndoManager";
+import { ArrangeGridSerializer } from "$lib/features/compose/tabs/arrange/services/implementations/ArrangeGridSerializer";
 import { AngleCalculator } from "$lib/features/compose/services/implementations/AngleCalculator";
 import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
 import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
@@ -93,6 +95,8 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
       darkModeProvider: () => new DarkModeProvider(),
       propPositionCalculator: () => new PropPositionCalculator(),
       animator: () => new Animator(),
+      arrangeUndoManager: () => new ArrangeUndoManager(),
+      arrangeGridSerializer: () => new ArrangeGridSerializer(),
     })
     // === TIER 1: Services with internal dependencies ===
     .add((ctx) => ({

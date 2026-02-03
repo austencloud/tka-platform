@@ -14,11 +14,11 @@ export interface ILOOPEndPositionSelector {
    * @param loopType - The type of LOOP being executed
    * @param startPosition - The starting grid position
    * @param sliceSize - The slice size (only used for rotated LOOP)
-   * @returns The grid position where the partial sequence must end
+   * @returns The grid position where the partial sequence must end, or null if unconstrained
    */
   determineEndPosition(
     loopType: LOOPType,
     startPosition: GridPosition,
     sliceSize: SliceSize
-  ): GridPosition;
+  ): GridPosition | null;
 }

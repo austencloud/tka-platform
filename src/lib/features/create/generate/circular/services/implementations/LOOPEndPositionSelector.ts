@@ -3,6 +3,7 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 import {
   SWAPPED_POSITION_MAP,
   VERTICAL_MIRROR_POSITION_MAP,
+  HORIZONTAL_MIRROR_POSITION_MAP,
 } from "../../domain/constants/strict-loop-position-maps";
 import type { SliceSize } from "../../domain/models/circular-models";
 import { LOOPType } from "../../domain/models/circular-models";
@@ -37,7 +38,7 @@ export class LOOPEndPositionSelector implements ILOOPEndPositionSelector {
     loopType: LOOPType,
     startPosition: GridPosition,
     sliceSize: SliceSize
-  ): GridPosition {
+  ): GridPosition | null {
     switch (loopType) {
       // Strict LOOP types
       case LOOPType.STRICT_ROTATED:
@@ -52,6 +53,12 @@ export class LOOPEndPositionSelector implements ILOOPEndPositionSelector {
         // Non-null assertion: LOOP operations only use alpha/beta/gamma positions
         const mirroredEnd = VERTICAL_MIRROR_POSITION_MAP[startPosition]!;
         return mirroredEnd;
+      }
+
+      case LOOPType.STRICT_FLIPPED: {
+        // Flipped LOOP uses horizontal mirror map (N ↔ S)
+        const flippedEnd = HORIZONTAL_MIRROR_POSITION_MAP[startPosition]!;
+        return flippedEnd;
       }
 
       case LOOPType.STRICT_SWAPPED: {
@@ -125,10 +132,14 @@ export class LOOPEndPositionSelector implements ILOOPEndPositionSelector {
         // Inverted takes precedence - return to start position
         return startPosition;
 
+      case LOOPType.STRICT_REWOUND:
+        // Rewound has no position constraint - reversed steps return to start naturally
+        return null;
+
       default:
         throw new Error(
           `LOOP type "${loopType}" is not yet implemented. ` +
-            `Currently supported: STRICT_ROTATED, STRICT_MIRRORED, STRICT_SWAPPED, ` +
+            `Currently supported: STRICT_ROTATED, STRICT_MIRRORED, STRICT_FLIPPED, STRICT_SWAPPED, ` +
             `STRICT_INVERTED, MIRRORED_INVERTED, MIRRORED_SWAPPED, ` +
             `ROTATED_INVERTED, ROTATED_SWAPPED, SWAPPED_INVERTED, MIRRORED_ROTATED, ` +
             `MIRRORED_INVERTED_ROTATED, MIRRORED_ROTATED_INVERTED_SWAPPED`

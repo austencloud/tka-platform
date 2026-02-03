@@ -69,9 +69,10 @@ import { LOOPDetector } from "$lib/features/create/generate/circular/services/im
 import { OrientationCycleDetector } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleDetector";
 import { GenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/GenerationOrchestrator";
 
-// === LOOP Executors (14 variations) ===
+// === LOOP Executors (15 variations) ===
 import { StrictRotatedLOOPExecutor } from "$lib/features/create/generate/circular/services/implementations/StrictRotatedLOOPExecutor";
 import { StrictMirroredLOOPExecutor } from "$lib/features/create/generate/circular/services/implementations/StrictMirroredLOOPExecutor";
+import { StrictFlippedLOOPExecutor } from "$lib/features/create/generate/circular/services/implementations/StrictFlippedLOOPExecutor";
 import { StrictSwappedLOOPExecutor } from "$lib/features/create/generate/circular/services/implementations/StrictSwappedLOOPExecutor";
 import { StrictInvertedLOOPExecutor } from "$lib/features/create/generate/circular/services/implementations/StrictInvertedLOOPExecutor";
 import { MirroredSwappedLOOPExecutor } from "$lib/features/create/generate/circular/services/implementations/MirroredSwappedLOOPExecutor";
@@ -136,6 +137,7 @@ import { OrientationContinuityValidator } from "$lib/features/create/spell/servi
 import { LetterTypeClassifier } from "$lib/features/create/spell/services/implementations/LetterTypeClassifier";
 import { VariationConstraintBuilder } from "$lib/features/create/spell/services/implementations/VariationConstraintBuilder";
 import { RandomSequenceGenerator } from "$lib/features/create/spell/services/implementations/RandomSequenceGenerator";
+import { LOOPEndPositionResolver } from "$lib/features/create/spell/services/implementations/LOOPEndPositionResolver";
 
 // === Type Imports for Dependencies from Other Containers ===
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
@@ -341,6 +343,8 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           ),
         strictMirroredLOOPExecutor: () =>
           new StrictMirroredLOOPExecutor(deps.orientationCalculator),
+        strictFlippedLOOPExecutor: () =>
+          new StrictFlippedLOOPExecutor(deps.orientationCalculator),
         strictSwappedLOOPExecutor: () =>
           new StrictSwappedLOOPExecutor(
             deps.orientationCalculator,
@@ -469,6 +473,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           new LOOPExecutorSelector(
             ctx.strictRotatedLOOPExecutor,
             ctx.strictMirroredLOOPExecutor,
+            ctx.strictFlippedLOOPExecutor,
             ctx.strictSwappedLOOPExecutor,
             ctx.strictInvertedLOOPExecutor,
             ctx.mirroredSwappedLOOPExecutor,
@@ -657,7 +662,8 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             deps.orientationCalculator,
             ctx.sequenceExtender,
             ctx.stepConverter,
-            deps.reversalDetector
+            deps.reversalDetector,
+            new LOOPEndPositionResolver()
           ),
         variationExplorationOrchestrator: () =>
           new VariationExplorationOrchestrator(ctx.spellServiceLoader),

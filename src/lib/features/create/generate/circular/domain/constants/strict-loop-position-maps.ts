@@ -601,6 +601,16 @@ export const MIRRORED_LOOP_VALIDATION_SET = new Set<string>(
 );
 
 /**
+ * Flipped LOOP validation set
+ * Valid when: horizontal_mirror(start_pos) === end_pos
+ */
+export const FLIPPED_LOOP_VALIDATION_SET = new Set<string>(
+  Object.entries(HORIZONTAL_MIRROR_POSITION_MAP).map(
+    ([start, end]) => `${start},${end}`
+  )
+);
+
+/**
  * Swapped LOOP validation set
  * Valid when: swapped(start_pos) === end_pos
  */

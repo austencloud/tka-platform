@@ -6,7 +6,7 @@
  */
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -22,8 +22,8 @@ import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/service
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
 import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
+import type { ILOOPEndPositionResolver } from "../contracts/ILOOPEndPositionResolver";
 import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { ConstraintSet, ConstraintStep, ConstraintPictographData } from "$lib/shared/sequence-engine/constraints/types";
 import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -36,6 +36,10 @@ interface RandomWalkState {
   startPositionPictograph: PictographData;
   /** Track previous steps for constraint scoring (reversals, continuity) */
   previousConstraintSteps: ConstraintStep[];
+  /** Valid candidate options at each step index (for backtracking) */
+  candidatesPerStep: PictographData[][];
+  /** Which candidate index was chosen at each step (for backtracking) */
+  chosenIndicesPerStep: number[];
 }
 
 export class RandomSequenceGenerator implements IRandomSequenceGenerator {
@@ -46,7 +50,8 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     private orientationCalculator: IOrientationCalculator,
     private sequenceExtender: ISequenceExtender,
     private stepConverter: IStepConverter,
-    private reversalDetector: IReversalDetector
+    private reversalDetector: IReversalDetector,
+    private loopEndPositionResolver: ILOOPEndPositionResolver
   ) {}
 
   async generateRandomSequence(
@@ -164,6 +169,31 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     // Convert first letter variation to ConstraintStep for soft constraint scoring
     const firstConstraintStep = this.pictographToConstraintStep(firstLetterVariation);
 
+    // Compute valid LOOP end positions if a non-REWOUND LOOP type is selected
+    let validEndPositions: GridPosition[] = [];
+    if (
+      constraints?.requiresCircular &&
+      constraints?.loopType &&
+      constraints.loopType !== LOOPType.STRICT_REWOUND
+    ) {
+      const startPos = startPositionPictograph.startPosition as GridPosition;
+      validEndPositions = this.loopEndPositionResolver.getValidEndPositions(
+        startPos,
+        constraints.loopType
+      );
+    }
+
+    // For single-letter words with LOOP constraint, filter first letter by end position
+    if (letters.length === 1 && validEndPositions.length > 0) {
+      const endPosMatches = validEndPositions.includes(
+        firstLetterVariation.endPosition as GridPosition
+      );
+      if (!endPosMatches) {
+        // First letter doesn't end at a valid LOOP position - abort this attempt
+        return null;
+      }
+    }
+
     // Initialize walk state with first letter and start position
     const state: RandomWalkState = {
       steps: [firstLetterStep],
@@ -171,13 +201,21 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       letterIndex: 1, // Start from second letter (index 1) since first is already placed
       startPositionPictograph,
       previousConstraintSteps: [firstConstraintStep],
+      candidatesPerStep: [], // Index 0 = first letter (not tracked for backtracking)
+      chosenIndicesPerStep: [],
     };
 
-    // Walk through remaining letters
+    // Walk through remaining letters with LOOP-aware end position constraint
     while (state.letterIndex < letters.length) {
       if (signal?.aborted) {
         return null;
       }
+
+      const isLastLetter = state.letterIndex === letters.length - 1;
+      const endPositionFilter =
+        isLastLetter && validEndPositions.length > 0
+          ? validEndPositions
+          : undefined;
 
       const success = this.walkNextLetter(
         letters,
@@ -185,13 +223,26 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
         gridMode,
         allPictographs,
         constraints,
-        constraintSet
+        constraintSet,
+        endPositionFilter
       );
 
-      if (!success) {
-        console.warn(
-          `[RandomSequenceGenerator] Failed at letter ${state.letterIndex}/${letters.length}: ${letters[state.letterIndex]}`
+      if (!success && isLastLetter && validEndPositions.length > 0) {
+        // Last letter failed with LOOP constraint - try backtracking
+        const backtrackSuccess = this.backtrackAndRetry(
+          letters,
+          state,
+          gridMode,
+          allPictographs,
+          constraints,
+          constraintSet,
+          validEndPositions,
+          3 // max backtrack depth
         );
+        if (backtrackSuccess) break; // Walk complete
+      }
+
+      if (!success) {
         return null; // Failed to find valid next step
       }
 
@@ -221,7 +272,8 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     gridMode: GridMode,
     allPictographs: PictographData[],
     constraints?: VariationConstraints,
-    constraintSet?: ConstraintSet
+    constraintSet?: ConstraintSet,
+    requiredEndPositions?: GridPosition[]
   ): boolean {
     const letter = letters[state.letterIndex];
     if (!letter) return false;
@@ -247,17 +299,19 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       return this.meetsConstraints(pictograph, constraints);
     });
 
-    if (validOptions.length === 0) {
-      console.warn(
-        `[RandomSequenceGenerator] No valid options for ${letter}.`,
-        `\n  Last beat: ${lastPictograph.letter} ended at: ${lastEndPosition}`,
-        `\n  Need ${letter} starting at: ${lastEndPosition}`,
-        `\n  Total ${letter} variations: ${variations.length}`,
-        `\n  After position filter: ${validOptions.length}`,
-        `\n  Available ${letter} start positions:`, variations.map(v => v.startPosition).join(', ')
+    // Apply LOOP end position filter for the last letter
+    if (requiredEndPositions && requiredEndPositions.length > 0) {
+      validOptions = validOptions.filter((p) =>
+        requiredEndPositions.includes(p.endPosition as GridPosition)
       );
+    }
+
+    if (validOptions.length === 0) {
       return false; // No valid options - this path is blocked
     }
+
+    // Track candidates for backtracking
+    state.candidatesPerStep.push(validOptions);
 
     // Use constraint-weighted selection if soft constraints are provided
     const chosenPictograph = this.selectWithConstraints(
@@ -267,6 +321,10 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
       constraints
     );
     if (!chosenPictograph) return false;
+
+    // Track which candidate was chosen (by index in validOptions)
+    const chosenIndex = validOptions.indexOf(chosenPictograph);
+    state.chosenIndicesPerStep.push(chosenIndex);
 
     // Convert to step and add to state
     const step = this.stepConverter.convertToStep(
@@ -283,6 +341,160 @@ export class RandomSequenceGenerator implements IRandomSequenceGenerator {
     state.previousConstraintSteps.push(constraintStep);
 
     return true;
+  }
+
+  /**
+   * Backtrack up to `maxDepth` steps and re-walk forward, trying different
+   * variation choices at each depth to find a path where the last letter
+   * ends at a valid LOOP position.
+   *
+   * At each depth d (1..maxDepth):
+   *   1. Pop d steps from state (steps, pictographs, constraintSteps, candidates, chosen)
+   *   2. For each previously-unchosen alternative at the new last popped step, try:
+   *      a. Re-place that step with the alternative
+   *      b. Re-walk forward from there through remaining letters
+   *      c. If the last letter succeeds with the end position constraint, return true
+   *   3. If all alternatives exhausted at this depth, try next depth
+   *
+   * Returns true if a valid path was found (state is updated in place).
+   * Returns false if all depths exhausted (state is in an inconsistent mid-pop state -
+   * caller should discard this attempt).
+   */
+  private backtrackAndRetry(
+    letters: Letter[],
+    state: RandomWalkState,
+    gridMode: GridMode,
+    allPictographs: PictographData[],
+    constraints: VariationConstraints | undefined,
+    constraintSet: ConstraintSet | undefined,
+    validEndPositions: GridPosition[],
+    maxDepth: number
+  ): boolean {
+    // Save snapshot so we can restore if needed
+    const snapshotSteps = [...state.steps];
+    const snapshotPictographs = [...state.pictographs];
+    const snapshotConstraintSteps = [...state.previousConstraintSteps];
+    const snapshotCandidates = [...state.candidatesPerStep];
+    const snapshotChosen = [...state.chosenIndicesPerStep];
+    const snapshotLetterIndex = state.letterIndex;
+
+    for (let depth = 1; depth <= maxDepth; depth++) {
+      // Restore to snapshot before trying this depth
+      state.steps = [...snapshotSteps];
+      state.pictographs = [...snapshotPictographs];
+      state.previousConstraintSteps = [...snapshotConstraintSteps];
+      state.candidatesPerStep = [...snapshotCandidates];
+      state.chosenIndicesPerStep = [...snapshotChosen];
+      state.letterIndex = snapshotLetterIndex;
+
+      // Can't backtrack further than we have steps (excluding first letter at index 0)
+      // candidatesPerStep tracks steps from letterIndex=1 onward
+      if (depth > state.candidatesPerStep.length) break;
+
+      // Pop `depth` steps
+      for (let i = 0; i < depth; i++) {
+        state.steps.pop();
+        state.pictographs.pop();
+        state.previousConstraintSteps.pop();
+        state.letterIndex--;
+      }
+
+      // Get alternatives at the backtrack point
+      const backtrackCandidateIndex = state.candidatesPerStep.length - depth;
+      const candidatesAtBacktrack = state.candidatesPerStep[backtrackCandidateIndex];
+      const previouslyChosen = state.chosenIndicesPerStep[backtrackCandidateIndex];
+
+      // Trim candidates/chosen tracking to the backtrack point
+      state.candidatesPerStep = state.candidatesPerStep.slice(0, backtrackCandidateIndex);
+      state.chosenIndicesPerStep = state.chosenIndicesPerStep.slice(0, backtrackCandidateIndex);
+
+      if (!candidatesAtBacktrack || candidatesAtBacktrack.length <= 1) {
+        // No alternatives at this depth
+        continue;
+      }
+
+      // Build list of alternative indices, shuffled for randomness
+      const alternativeIndices = candidatesAtBacktrack
+        .map((_, i) => i)
+        .filter((i) => i !== previouslyChosen);
+      this.shuffleArray(alternativeIndices);
+
+      for (const altIndex of alternativeIndices) {
+        const altPictograph = candidatesAtBacktrack[altIndex];
+        if (!altPictograph) continue;
+
+        // Save state at backtrack point before trying this alternative
+        const btSteps = [...state.steps];
+        const btPictos = [...state.pictographs];
+        const btConstraint = [...state.previousConstraintSteps];
+        const btCandidates = [...state.candidatesPerStep];
+        const btChosen = [...state.chosenIndicesPerStep];
+        const btLetterIdx = state.letterIndex;
+
+        // Place the alternative
+        const step = this.stepConverter.convertToStep(
+          altPictograph,
+          state.steps.length + 1,
+          gridMode
+        );
+        state.steps.push(step);
+        state.pictographs.push(altPictograph);
+        state.previousConstraintSteps.push(
+          this.pictographToConstraintStep(altPictograph)
+        );
+        state.candidatesPerStep.push(candidatesAtBacktrack);
+        state.chosenIndicesPerStep.push(altIndex);
+        state.letterIndex++;
+
+        // Re-walk forward through remaining letters
+        let forwardSuccess = true;
+        while (state.letterIndex < letters.length) {
+          const isLastLetter = state.letterIndex === letters.length - 1;
+          const endFilter =
+            isLastLetter && validEndPositions.length > 0
+              ? validEndPositions
+              : undefined;
+
+          const walked = this.walkNextLetter(
+            letters,
+            state,
+            gridMode,
+            allPictographs,
+            constraints,
+            constraintSet,
+            endFilter
+          );
+
+          if (!walked) {
+            forwardSuccess = false;
+            break;
+          }
+          state.letterIndex++;
+        }
+
+        if (forwardSuccess) {
+          return true; // Found a valid path
+        }
+
+        // Restore to backtrack point and try next alternative
+        state.steps = btSteps;
+        state.pictographs = btPictos;
+        state.previousConstraintSteps = btConstraint;
+        state.candidatesPerStep = btCandidates;
+        state.chosenIndicesPerStep = btChosen;
+        state.letterIndex = btLetterIdx;
+      }
+    }
+
+    return false; // All depths exhausted
+  }
+
+  /** Fisher-Yates shuffle (in-place) */
+  private shuffleArray<T>(arr: T[]): void {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j]!, arr[i]!];
+    }
   }
 
   private meetsConstraints(
@@ -623,6 +835,7 @@ import { orientationCalculator } from "$lib/shared/pictograph/prop/services/impl
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
 import { stepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
 import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
+import { loopEndPositionResolver } from "./LOOPEndPositionResolver";
 
 export const randomSequenceGenerator = new RandomSequenceGenerator(
   letterQueryHandler,
@@ -631,5 +844,6 @@ export const randomSequenceGenerator = new RandomSequenceGenerator(
   orientationCalculator,
   sequenceExtender,
   stepConverter,
-  reversalDetector
+  reversalDetector,
+  loopEndPositionResolver
 );

@@ -288,10 +288,20 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
       for (const { alias, letter } of sortedAliases) {
         const remaining = word.slice(i).toLowerCase();
         if (remaining.startsWith(alias.toLowerCase())) {
-          letters.push(letter);
-          i += alias.length;
-          matched = true;
-          break;
+          // Word boundary check: only match alias if the next character
+          // is NOT an alphabetic letter. This prevents "BETSY" from matching
+          // "beta" (β) instead of parsing as B, E, T, S, Y.
+          // Valid boundaries: end of string, space, dash, or non-alpha char.
+          const nextCharIndex = i + alias.length;
+          const nextChar = word.charAt(nextCharIndex);
+          const isAtBoundary = !nextChar || !/[a-zA-Z]/.test(nextChar);
+
+          if (isAtBoundary) {
+            letters.push(letter);
+            i += alias.length;
+            matched = true;
+            break;
+          }
         }
       }
 

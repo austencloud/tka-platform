@@ -79,8 +79,7 @@ import { createWatchContainer } from "./containers/watch-container";
 import { createLanSyncContainer } from "./containers/lan-sync-container";
 import { createConnectContainer } from "./containers/connect-container";
 import { createDeviceSyncContainer } from "./containers/device-sync-container";
-import { createLOOPContainer } from "./containers/loop-container";
-
+import { conjoinedLabContainer } from "./containers/conjoined-lab-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -294,11 +293,6 @@ const connectContainer = typeof window !== 'undefined' ? createConnectContainer(
   lanSyncCoordinator: lanSyncContainer.items.lanSyncCoordinator,
 }) : null as any;
 
-// LOOP container - needs userRepository from community
-const loopContainer = typeof window !== 'undefined' ? createLOOPContainer({
-  userRepository: communityContainer.items.userRepository,
-}) : null as any;
-
 // DeepLinkResolver - needs sequenceRepository from data and browseLoader from browse
 const deepLinkResolver = typeof window !== 'undefined' ? new DeepLinkResolver(
   dataContainer.items.sequenceRepository,
@@ -374,7 +368,7 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(lanSyncContainer.items)
   .add(deviceSyncContainer.items)
   .add(connectContainer.items)
-  .add(loopContainer.items)
+  .add(conjoinedLabContainer.items)
   // Cross-container services (depend on multiple container outputs)
   .add({ deepLinkResolver: () => deepLinkResolver })
   .add({ sequenceDataProvider: () => sequenceDataProvider }) : null as any;

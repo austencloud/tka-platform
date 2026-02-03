@@ -23,6 +23,7 @@ import {
 } from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
 import {
   MIRRORED_LOOP_VALIDATION_SET,
+  FLIPPED_LOOP_VALIDATION_SET,
   SWAPPED_LOOP_VALIDATION_SET,
   INVERTED_LOOP_VALIDATION_SET,
   MIRRORED_SWAPPED_VALIDATION_SET,
@@ -100,6 +101,7 @@ const LOOP_OPTION_CONFIG: Record<
 const ALL_LOOP_TYPES = [
   LOOPType.STRICT_ROTATED,
   LOOPType.STRICT_MIRRORED,
+  LOOPType.STRICT_FLIPPED,
   LOOPType.STRICT_SWAPPED,
   LOOPType.STRICT_INVERTED,
   LOOPType.SWAPPED_INVERTED,
@@ -183,6 +185,10 @@ export class LOOPValidator implements ILOOPValidator {
       case LOOPType.STRICT_MIRRORED:
       case LOOPType.MIRRORED_INVERTED:
         return MIRRORED_LOOP_VALIDATION_SET.has(positionPair);
+
+      // Flipped LOOP (N ↔ S)
+      case LOOPType.STRICT_FLIPPED:
+        return FLIPPED_LOOP_VALIDATION_SET.has(positionPair);
 
       // Mirrored + Swapped (uses composed validation set)
       case LOOPType.MIRRORED_SWAPPED:
