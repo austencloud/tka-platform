@@ -37,17 +37,11 @@
   }
 </script>
 
-<!-- Edge handles -->
+<!-- Edge handles (pointer-only — keyboard users resize via presets) -->
 {#if canResizeLeft}
   <div
     class="handle left"
-    role="slider"
-    aria-label="Resize cell from left"
-    aria-orientation="horizontal"
-    aria-valuenow="50"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    tabindex="0"
+    aria-hidden="true"
     onpointerdown={(e) => handlePointerDown("left", e)}
   ></div>
 {/if}
@@ -55,13 +49,7 @@
 {#if canResizeRight}
   <div
     class="handle right"
-    role="slider"
-    aria-label="Resize cell from right"
-    aria-orientation="horizontal"
-    aria-valuenow="50"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    tabindex="0"
+    aria-hidden="true"
     onpointerdown={(e) => handlePointerDown("right", e)}
   ></div>
 {/if}
@@ -69,13 +57,7 @@
 {#if canResizeTop}
   <div
     class="handle top"
-    role="slider"
-    aria-label="Resize cell from top"
-    aria-orientation="vertical"
-    aria-valuenow="50"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    tabindex="0"
+    aria-hidden="true"
     onpointerdown={(e) => handlePointerDown("top", e)}
   ></div>
 {/if}
@@ -83,13 +65,7 @@
 {#if canResizeBottom}
   <div
     class="handle bottom"
-    role="slider"
-    aria-label="Resize cell from bottom"
-    aria-orientation="vertical"
-    aria-valuenow="50"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    tabindex="0"
+    aria-hidden="true"
     onpointerdown={(e) => handlePointerDown("bottom", e)}
   ></div>
 {/if}
@@ -98,12 +74,7 @@
 {#if canResizeTop && canResizeLeft}
   <div
     class="handle corner top-left"
-    role="slider"
-    aria-label="Resize cell from top-left corner"
-    aria-valuenow="50"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    tabindex="0"
+    aria-hidden="true"
     onpointerdown={(e) => handlePointerDown("top-left", e)}
   ></div>
 {/if}
@@ -111,12 +82,7 @@
 {#if canResizeTop && canResizeRight}
   <div
     class="handle corner top-right"
-    role="slider"
-    aria-label="Resize cell from top-right corner"
-    aria-valuenow="50"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    tabindex="0"
+    aria-hidden="true"
     onpointerdown={(e) => handlePointerDown("top-right", e)}
   ></div>
 {/if}
@@ -124,12 +90,7 @@
 {#if canResizeBottom && canResizeLeft}
   <div
     class="handle corner bottom-left"
-    role="slider"
-    aria-label="Resize cell from bottom-left corner"
-    aria-valuenow="50"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    tabindex="0"
+    aria-hidden="true"
     onpointerdown={(e) => handlePointerDown("bottom-left", e)}
   ></div>
 {/if}
@@ -137,12 +98,7 @@
 {#if canResizeBottom && canResizeRight}
   <div
     class="handle corner bottom-right"
-    role="slider"
-    aria-label="Resize cell from bottom-right corner"
-    aria-valuenow="50"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    tabindex="0"
+    aria-hidden="true"
     onpointerdown={(e) => handlePointerDown("bottom-right", e)}
   ></div>
 {/if}
@@ -153,11 +109,6 @@
     z-index: 20;
     background: transparent;
     transition: background 0.15s ease;
-  }
-
-  .handle:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: -2px;
   }
 
   /* Horizontal edge handles */
@@ -322,5 +273,11 @@
   .handle.corner.bottom-right:hover::after {
     bottom: 4px;
     right: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .handle {
+      transition: none;
+    }
   }
 </style>

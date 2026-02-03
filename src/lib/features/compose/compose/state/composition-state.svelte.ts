@@ -24,7 +24,7 @@ import {
 import { createCellsFromTemplate, getTemplateById } from "../domain/templates";
 import { dexieCompositionRepository } from "../../services/implementations/DexieCompositionRepository";
 import { loadCustomPresets } from "$lib/features/constraint-layout-lab/services/LayoutPersistence";
-import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/types";
+import type { CellMediaType } from "../domain/types";
 
 // Import types and helpers
 import type { WorkflowPhase } from "./composition-types";

@@ -15,32 +15,37 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { GRID_SIZE } from "../../state/arrange-grid-state.svelte";
 
+  type PresetType =
+    | "single"
+    | "vertical"
+    | "horizontal"
+    | "line"
+    | "square"
+    | "all"
+    | "hero-thumbs"
+    | "main-banner"
+    | "pip";
+
   let {
     cells,
     enabledCount,
     occupiedPositions,
+    hasContent,
     onToggleCell,
     onPresetLayout,
   }: {
     cells: Array<{ row: number; col: number; enabled: boolean; colSpan: number; rowSpan: number }>;
     enabledCount: number;
     occupiedPositions: Map<string, string>;
+    hasContent: boolean;
     onToggleCell: (row: number, col: number) => void;
-    onPresetLayout: (
-      preset:
-        | "single"
-        | "vertical"
-        | "horizontal"
-        | "line"
-        | "square"
-        | "all"
-        | "hero-thumbs"
-        | "main-banner"
-        | "pip"
-    ) => void;
+    onPresetLayout: (preset: PresetType) => void;
   } = $props();
 
   const haptic = container.items.hapticFeedback as IHapticFeedback;
+
+  // Confirmation state for destructive preset changes
+  let pendingPreset = $state<PresetType | null>(null);
 
   // Generate grid positions (4x4)
   const gridPositions = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => ({
@@ -86,20 +91,25 @@
     }
   }
 
-  function handlePreset(
-    preset:
-      | "single"
-      | "vertical"
-      | "horizontal"
-      | "line"
-      | "square"
-      | "all"
-      | "hero-thumbs"
-      | "main-banner"
-      | "pip"
-  ) {
+  function handlePreset(preset: PresetType) {
     haptic.trigger("selection");
-    onPresetLayout(preset);
+    if (hasContent) {
+      pendingPreset = preset;
+    } else {
+      onPresetLayout(preset);
+    }
+  }
+
+  function confirmPreset() {
+    if (pendingPreset) {
+      haptic.trigger("warning");
+      onPresetLayout(pendingPreset);
+      pendingPreset = null;
+    }
+  }
+
+  function cancelPreset() {
+    pendingPreset = null;
   }
 </script>
 
@@ -144,113 +154,132 @@
   <!-- Layout Presets -->
   <div class="presets-section">
     <span class="presets-label">Presets</span>
-    <div class="presets-grid">
-      <button
-        class="preset-btn"
-        onclick={() => handlePreset("single")}
-        aria-label="Single cell layout"
-        title="1 cell"
-      >
-        <div class="preset-icon single">
-          <span></span>
+
+    {#if pendingPreset}
+      <!-- Confirmation bar replaces preset grid when content would be lost -->
+      <div class="confirm-bar" role="alertdialog" aria-label="Confirm layout change">
+        <p class="confirm-text">
+          Sequences in affected cells will be cleared.
+        </p>
+        <div class="confirm-actions">
+          <button class="confirm-cancel" onclick={cancelPreset}>
+            Cancel
+          </button>
+          <button class="confirm-apply" onclick={confirmPreset}>
+            Change Layout
+          </button>
         </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handlePreset("horizontal")}
-        aria-label="2 cells horizontal layout"
-        title="2 cells horizontal"
-      >
-        <div class="preset-icon horizontal">
-          <span></span>
-          <span></span>
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handlePreset("vertical")}
-        aria-label="2 cells vertical layout"
-        title="2 cells vertical"
-      >
-        <div class="preset-icon vertical">
-          <span></span>
-          <span></span>
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handlePreset("square")}
-        aria-label="2×2 square layout"
-        title="2×2 square"
-      >
-        <div class="preset-icon square">
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handlePreset("line")}
-        aria-label="Horizontal line layout"
-        title="1×4 row"
-      >
-        <div class="preset-icon line">
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handlePreset("all")}
-        aria-label="Full 4×4 grid layout"
-        title="4×4 grid"
-      >
-        <div class="preset-icon all">
-          {#each Array(16) as _}
+        <p class="confirm-hint">Ctrl+Z to undo after applying</p>
+      </div>
+    {:else}
+      <div class="presets-grid">
+        <button
+          class="preset-btn"
+          onclick={() => handlePreset("single")}
+          aria-label="Single cell layout"
+          title="1 cell"
+        >
+          <div class="preset-icon single">
             <span></span>
-          {/each}
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handlePreset("hero-thumbs")}
-        aria-label="Hero with thumbnails layout"
-        title="3×3 hero + 3 thumbnails"
-      >
-        <div class="preset-icon hero-thumbs">
-          <span class="span-3x3"></span>
-          <span class="span-1x1"></span>
-          <span class="span-1x1"></span>
-          <span class="span-1x1"></span>
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handlePreset("main-banner")}
-        aria-label="Main with banner layout"
-        title="4×3 main + full-width banner"
-      >
-        <div class="preset-icon main-banner">
-          <span class="span-4x3"></span>
-          <span class="span-4x1"></span>
-        </div>
-      </button>
-      <button
-        class="preset-btn"
-        onclick={() => handlePreset("pip")}
-        aria-label="Picture-in-picture layout"
-        title="Large main + small overlay"
-      >
-        <div class="preset-icon pip">
-          <span class="span-3x4"></span>
-          <span class="span-1x1"></span>
-        </div>
-      </button>
-    </div>
+          </div>
+        </button>
+        <button
+          class="preset-btn"
+          onclick={() => handlePreset("horizontal")}
+          aria-label="2 cells horizontal layout"
+          title="2 cells horizontal"
+        >
+          <div class="preset-icon horizontal">
+            <span></span>
+            <span></span>
+          </div>
+        </button>
+        <button
+          class="preset-btn"
+          onclick={() => handlePreset("vertical")}
+          aria-label="2 cells vertical layout"
+          title="2 cells vertical"
+        >
+          <div class="preset-icon vertical">
+            <span></span>
+            <span></span>
+          </div>
+        </button>
+        <button
+          class="preset-btn"
+          onclick={() => handlePreset("square")}
+          aria-label="2×2 square layout"
+          title="2×2 square"
+        >
+          <div class="preset-icon square">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </button>
+        <button
+          class="preset-btn"
+          onclick={() => handlePreset("line")}
+          aria-label="Horizontal line layout"
+          title="1×4 row"
+        >
+          <div class="preset-icon line">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </button>
+        <button
+          class="preset-btn"
+          onclick={() => handlePreset("all")}
+          aria-label="Full 4×4 grid layout"
+          title="4×4 grid"
+        >
+          <div class="preset-icon all">
+            {#each Array(16) as _}
+              <span></span>
+            {/each}
+          </div>
+        </button>
+        <button
+          class="preset-btn"
+          onclick={() => handlePreset("hero-thumbs")}
+          aria-label="Hero with thumbnails layout"
+          title="3×3 hero + 3 thumbnails"
+        >
+          <div class="preset-icon hero-thumbs">
+            <span class="span-3x3"></span>
+            <span class="span-1x1"></span>
+            <span class="span-1x1"></span>
+            <span class="span-1x1"></span>
+          </div>
+        </button>
+        <button
+          class="preset-btn"
+          onclick={() => handlePreset("main-banner")}
+          aria-label="Main with banner layout"
+          title="4×3 main + full-width banner"
+        >
+          <div class="preset-icon main-banner">
+            <span class="span-4x3"></span>
+            <span class="span-4x1"></span>
+          </div>
+        </button>
+        <button
+          class="preset-btn"
+          onclick={() => handlePreset("pip")}
+          aria-label="Picture-in-picture layout"
+          title="Large main + small overlay"
+        >
+          <div class="preset-icon pip">
+            <span class="span-3x4"></span>
+            <span class="span-1x1"></span>
+          </div>
+        </button>
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -537,11 +566,85 @@
     grid-row: span 1;
   }
 
+  /* ====== CONFIRMATION BAR ====== */
+  .confirm-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-md, 12px);
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--border-radius-md, 8px);
+  }
+
+  .confirm-text {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text, white);
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: var(--spacing-sm, 8px);
+    width: 100%;
+  }
+
+  .confirm-cancel,
+  .confirm-apply {
+    flex: 1;
+    min-height: 40px;
+    padding: var(--spacing-xs, 4px) var(--spacing-md, 12px);
+    border: none;
+    border-radius: var(--border-radius-md, 8px);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 150ms ease;
+  }
+
+  .confirm-cancel {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .confirm-apply {
+    background: rgba(239, 68, 68, 0.7);
+    color: white;
+  }
+
+  @media (hover: hover) {
+    .confirm-cancel:hover {
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    }
+
+    .confirm-apply:hover {
+      background: rgba(239, 68, 68, 0.9);
+    }
+  }
+
+  .confirm-cancel:focus-visible,
+  .confirm-apply:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .confirm-hint {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
   /* ====== REDUCED MOTION ====== */
   @media (prefers-reduced-motion: reduce) {
     .grid-cell,
     .grid-cell i,
-    .preset-btn {
+    .preset-btn,
+    .confirm-cancel,
+    .confirm-apply {
       transition: none;
     }
   }

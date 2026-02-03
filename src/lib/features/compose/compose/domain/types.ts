@@ -42,6 +42,40 @@ export const LAYOUT_PRESETS = {
 export type LayoutPresetKey = keyof typeof LAYOUT_PRESETS;
 
 // ============================================================================
+// Cell Media Types
+// ============================================================================
+
+/**
+ * Media type that can be assigned to a composition cell.
+ * Controls how cell content is rendered in the Arrange grid.
+ */
+export type CellMediaType =
+  | "video"           // Recorded/uploaded video
+  | "animation"       // Pictograph animation (tunnel mode)
+  | "image"           // Static image or composite
+  | "choreo-card"     // Sequence choreo card
+  | "viewer-3d"       // 3D animation viewer
+  | "empty";          // Placeholder/empty cell
+
+// ============================================================================
+// Transform Types
+// ============================================================================
+
+/**
+ * Transform operations that can be applied to a sequence layer.
+ * Tracked in order of application for clipboard and serialization.
+ */
+export type TransformType =
+  | "rotate90"
+  | "rotate180"
+  | "rotate270"
+  | "mirror"
+  | "flip"
+  | "swapColors"
+  | "invert"
+  | "rewind";
+
+// ============================================================================
 // Tunnel (Layered Sequence) Configuration
 // ============================================================================
 
@@ -80,6 +114,9 @@ export interface TunnelLayerConfig {
 
   /** Prop colors for this layer */
   propColors: PropColors;
+
+  /** Transforms applied to this layer's sequence (in order) */
+  appliedTransforms?: TransformType[];
 }
 
 /**

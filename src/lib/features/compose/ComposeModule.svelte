@@ -21,11 +21,11 @@
   import type { IURLSyncer } from "$lib/shared/navigation/services/contracts/IURLSyncer";
   import { deepLinker } from "$lib/shared/navigation/services/implementations/DeepLinker";
   import { consumeSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import { arrangeGridState } from "./tabs/setup/state/arrange-grid-state.svelte";
+  import { arrangeGridState } from "./tabs/arrange/state/arrange-grid-state.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // Import tab components
-  import ArrangeTab from "./tabs/setup/ArrangeTab.svelte";
+  import ArrangeTab from "./tabs/arrange/ArrangeTab.svelte";
   import BrowseTab from "./tabs/browse/BrowseTab.svelte";
   import TimelinePanel from "./timeline/components/TimelinePanel.svelte";
 

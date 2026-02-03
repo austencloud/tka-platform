@@ -8,31 +8,68 @@
 -->
 <script lang="ts">
   import type { GridCell } from "../../state/arrange-grid-state.svelte";
-  import type { TunnelLayerConfig } from "../../../../compose/domain/types";
-  import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/types";
+  import type { TunnelLayerConfig, TransformType } from "../../../../compose/domain/types";
+  import type { CellMediaType } from "../../../../compose/domain/types";
 
   let {
     cell,
     cellIndex,
+    clipboardHasData = false,
+    transformingLayer = null,
     onAddSequence,
     onRemoveLayer,
     onEditLayerOffset,
     onClearCell,
     onRemoveCell,
     onMediaTypeChange,
+    onCopyLayer,
+    onPasteLayer,
+    onTransformLayer,
   }: {
     cell: GridCell;
     cellIndex: number;
+    clipboardHasData?: boolean;
+    transformingLayer?: { cellId: string; layerIndex: number } | null;
     onAddSequence: () => void;
     onRemoveLayer: (layerIndex: number) => void;
     onEditLayerOffset: (layerIndex: number) => void;
     onClearCell: () => void;
     onRemoveCell: () => void;
     onMediaTypeChange: (mediaType: CellMediaType) => void;
+    onCopyLayer?: (layerIndex: number) => void;
+    onPasteLayer?: () => void;
+    onTransformLayer?: (layerIndex: number, transformType: TransformType) => void;
   } = $props();
 
   const MAX_LAYERS = 4;
   const canAddLayer = $derived(cell.layers.length < MAX_LAYERS);
+
+  const TRANSFORMS: readonly {
+    type: TransformType;
+    icon: string;
+    shortLabel: string;
+    label: string;
+  }[] = [
+    { type: "rotate90", icon: "fa-redo", shortLabel: "90", label: "Rotate 90" },
+    { type: "rotate180", icon: "fa-sync-alt", shortLabel: "180", label: "Rotate 180" },
+    { type: "rotate270", icon: "fa-undo", shortLabel: "270", label: "Rotate 270" },
+    { type: "mirror", icon: "fa-arrows-alt-h", shortLabel: "Mirror", label: "Mirror" },
+    { type: "flip", icon: "fa-arrows-alt-v", shortLabel: "Flip", label: "Flip" },
+    { type: "swapColors", icon: "fa-exchange-alt", shortLabel: "Swap", label: "Swap Colors" },
+    { type: "invert", icon: "fa-adjust", shortLabel: "Invert", label: "Invert" },
+    { type: "rewind", icon: "fa-backward", shortLabel: "Rewind", label: "Rewind" },
+  ];
+
+  // Expanded transform toolbar per layer index (-1 = none)
+  let expandedTransformLayer = $state(-1);
+
+  function isLayerTransforming(index: number): boolean {
+    return (
+      transformingLayer !== null &&
+      transformingLayer.cellId === cell.id &&
+      transformingLayer.layerIndex === index
+    );
+  }
 
   // Show display mode toggle when there's exactly 1 layer
   // Multiple layers = tunnel mode = always animation
@@ -85,6 +122,12 @@
         <i class="fas fa-plus" aria-hidden="true"></i>
         Add Sequence
       </button>
+      {#if clipboardHasData && onPasteLayer}
+        <button class="add-btn" onclick={onPasteLayer}>
+          <i class="fas fa-paste" aria-hidden="true"></i>
+          Paste
+        </button>
+      {/if}
       <button
         class="remove-cell-btn"
         onclick={onRemoveCell}
@@ -113,6 +156,29 @@
             <span class="layer-beats">{getLayerBeats(layer)} beats</span>
           </div>
           <div class="layer-actions">
+            {#if onCopyLayer}
+              <button
+                class="icon-btn"
+                onclick={() => onCopyLayer(index)}
+                aria-label="Copy sequence"
+                title="Copy"
+              >
+                <i class="fas fa-copy" aria-hidden="true"></i>
+              </button>
+            {/if}
+            {#if onTransformLayer}
+              <button
+                class="icon-btn"
+                class:active={expandedTransformLayer === index}
+                onclick={() =>
+                  (expandedTransformLayer =
+                    expandedTransformLayer === index ? -1 : index)}
+                aria-label="Transform sequence"
+                title="Transforms"
+              >
+                <i class="fas fa-magic" aria-hidden="true"></i>
+              </button>
+            {/if}
             <button
               class="icon-btn"
               onclick={() => onEditLayerOffset(index)}
@@ -130,6 +196,29 @@
             </button>
           </div>
         </div>
+
+        <!-- Transform toolbar (expandable per layer) -->
+        {#if expandedTransformLayer === index && onTransformLayer}
+          {@const transforming = isLayerTransforming(index)}
+          <div class="transform-toolbar">
+            {#each TRANSFORMS as t}
+              <button
+                class="transform-btn"
+                onclick={() => onTransformLayer(index, t.type)}
+                disabled={transforming}
+                aria-label={t.label}
+                title={t.label}
+              >
+                {#if transforming}
+                  <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                {:else}
+                  <i class="fas {t.icon}" aria-hidden="true"></i>
+                {/if}
+                <span>{t.shortLabel}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
       {/each}
     </div>
 
@@ -138,6 +227,12 @@
         <button class="add-btn" onclick={onAddSequence}>
           <i class="fas fa-plus" aria-hidden="true"></i>
           Add Another
+        </button>
+      {/if}
+      {#if clipboardHasData && canAddLayer && onPasteLayer}
+        <button class="add-btn" onclick={onPasteLayer}>
+          <i class="fas fa-paste" aria-hidden="true"></i>
+          Paste
         </button>
       {/if}
       <button class="clear-btn" onclick={onClearCell}>
@@ -301,8 +396,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 48px;
+    height: 48px;
     border: none;
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
@@ -316,6 +411,11 @@
   .icon-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     color: var(--theme-text, white);
+  }
+
+  .icon-btn.active {
+    background: rgba(139, 92, 246, 0.25);
+    color: var(--theme-accent, #8b5cf6);
   }
 
   .icon-btn.danger:hover {
@@ -454,8 +554,61 @@
     font-size: 12px;
   }
 
+  /* Transform toolbar */
+  .transform-toolbar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: var(--border-radius-sm);
+    margin-top: -4px;
+  }
+
+  .transform-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 4px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease;
+    min-height: 40px;
+  }
+
+  .transform-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--theme-text, white);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .transform-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .transform-btn i {
+    font-size: 14px;
+  }
+
+  .transform-btn span {
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .mode-btn {
+    .mode-btn,
+    .transform-btn {
       transition: none;
     }
   }

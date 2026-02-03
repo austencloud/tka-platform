@@ -24,7 +24,7 @@
   } = $props();
 
   // Local state for editing
-  let editOffset = $state(currentOffset);
+  let editOffset = $state(0);
 
   // Reset when opened with new layer
   $effect(() => {

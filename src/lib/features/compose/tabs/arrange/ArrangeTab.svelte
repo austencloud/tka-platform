@@ -24,9 +24,11 @@
   import PlaybackBar from "./components/shared/PlaybackBar.svelte";
   import StaggerControls from "./components/shared/StaggerControls.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
+  import SaveCompositionModal from "./components/grid/SaveCompositionModal.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { CellMediaType } from "$lib/features/constraint-layout-lab/domain/types";
+  import type { CellMediaType } from "../../compose/domain/types";
+  import type { TransformType } from "../../compose/domain/types";
 
   // Use singleton grid state
   const gridState = arrangeGridState;
@@ -46,6 +48,7 @@
   // Local UI state for stagger controls
   let showStaggerControls = $state(false);
   let editingLayerIndex = $state<number | null>(null);
+  let showSaveModal = $state(false);
 
   // Zoom mode: "auto" zooms to fit enabled cells, "full" shows entire 4x4
   let zoomMode = $state<"auto" | "full">("auto");
@@ -154,6 +157,51 @@
     }
   }
 
+  // Copy / Paste / Transform
+  function handleCopyLayer(layerIndex: number) {
+    if (selectedCellId !== null) {
+      gridState.copyLayerSequence(selectedCellId, layerIndex);
+      showToast({ message: "Sequence copied", type: "info", duration: 2000 });
+    }
+  }
+
+  function handlePasteLayer() {
+    if (selectedCellId !== null) {
+      const result = gridState.pasteSequenceToCell(selectedCellId);
+      if (result.success) {
+        showToast({
+          message: "Sequence pasted",
+          type: "success",
+          duration: 2000,
+        });
+      } else if (result.error) {
+        showToast({ message: result.error, type: "error", duration: 4000 });
+      }
+    }
+  }
+
+  async function handleTransformLayer(
+    layerIndex: number,
+    transformType: TransformType
+  ) {
+    if (selectedCellId !== null) {
+      const result = await gridState.transformLayer(
+        selectedCellId,
+        layerIndex,
+        transformType
+      );
+      if (result.success) {
+        showToast({
+          message: `Applied ${transformType}`,
+          type: "success",
+          duration: 2000,
+        });
+      } else if (result.error) {
+        showToast({ message: result.error, type: "error", duration: 4000 });
+      }
+    }
+  }
+
   // Playback
   function handlePlayPause() {
     gridState.togglePlayPause();
@@ -203,15 +251,34 @@
     return 0;
   }
 
-  // Get cell display number for CellEditor
-  function getCellDisplayNumber(): number {
-    if (!selectedCell) return 0;
-    const enabledCells = gridState.enabledCells;
-    const sorted = [...enabledCells].sort((a, b) => {
-      if (a.row !== b.row) return a.row - b.row;
-      return a.col - b.col;
+
+  // Utility actions
+  async function handleCopyState() {
+    const state = gridState.serializeState();
+    try {
+      await navigator.clipboard.writeText(state);
+      showToast({ message: "Grid state copied", type: "info", duration: 2000 });
+    } catch {
+      showToast({ message: "Failed to copy", type: "error", duration: 3000 });
+    }
+  }
+
+  function handleSaveComposition() {
+    showSaveModal = true;
+  }
+
+  function handleSaveModalConfirm(name: string) {
+    gridState.saveComposition(name);
+    showSaveModal = false;
+    showToast({
+      message: `Saved "${name}"`,
+      type: "success",
+      duration: 3000,
     });
-    return sorted.findIndex((c) => c.id === selectedCell.id) + 1;
+  }
+
+  function handleSaveModalClose() {
+    showSaveModal = false;
   }
 
   // Keyboard shortcuts
@@ -227,17 +294,21 @@
     }
 
     // Don't intercept if modals are open
-    if (gridState.showSequencePicker || showStaggerControls) {
+    if (gridState.showSequencePicker || showStaggerControls || showSaveModal) {
       return;
     }
 
     switch (e.key) {
       case "Delete":
       case "Backspace":
-        // Remove selected cell from grid
+        // Two-step delete: clear layers first, then remove empty cell
         if (selectedCellId !== null && selectedCell) {
           e.preventDefault();
-          handleRemoveCell();
+          if (selectedCell.layers.length > 0) {
+            handleClearCell();
+          } else {
+            handleRemoveCell();
+          }
         }
         break;
 
@@ -265,12 +336,64 @@
         }
         break;
 
+      case "c":
+        // Ctrl+C to copy first layer of selected cell
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          if (selectedCellId !== null && selectedCell?.layers.length) {
+            handleCopyLayer(0);
+          }
+        }
+        break;
+
+      case "v":
+        // Ctrl+V to paste into selected cell
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          if (selectedCellId !== null && gridState.clipboard) {
+            handlePasteLayer();
+          }
+        }
+        break;
+
       case "z":
       case "Z":
-        // Z to toggle zoom mode
-        e.preventDefault();
-        zoomMode = zoomMode === "auto" ? "full" : "auto";
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            handleRedo();
+          } else {
+            handleUndo();
+          }
+        } else {
+          // Bare Z toggles zoom mode
+          e.preventDefault();
+          zoomMode = zoomMode === "auto" ? "full" : "auto";
+        }
         break;
+
+      case "y":
+      case "Y":
+        // Ctrl+Y = redo (Windows convention)
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          handleRedo();
+        }
+        break;
+    }
+  }
+
+  function handleUndo() {
+    const desc = gridState.undo();
+    if (desc) {
+      showToast({ message: `Undo: ${desc}`, type: "info", duration: 2000 });
+    }
+  }
+
+  function handleRedo() {
+    const desc = gridState.redo();
+    if (desc) {
+      showToast({ message: `Redo: ${desc}`, type: "info", duration: 2000 });
     }
   }
 
@@ -375,6 +498,26 @@
     <div class="desktop-content">
       <!-- Left: Grid Canvas Area -->
       <div class="canvas-area">
+        <!-- Utility buttons (top-left) -->
+        <div class="canvas-utils">
+          <button
+            class="util-btn"
+            onclick={handleCopyState}
+            title="Copy grid state to clipboard"
+            aria-label="Copy grid state to clipboard"
+          >
+            <i class="fas fa-clipboard" aria-hidden="true"></i>
+          </button>
+          <button
+            class="util-btn"
+            onclick={handleSaveComposition}
+            title="Save composition"
+            aria-label="Save composition"
+          >
+            <i class="fas fa-bookmark" aria-hidden="true"></i>
+          </button>
+        </div>
+
         <!-- Zoom toggle -->
         <div class="zoom-controls">
           <button
@@ -402,6 +545,7 @@
           skipStartPosition={gridState.skipStartPosition}
           selectedCellId={gridState.selectedCellId}
           occupiedPositions={gridState.occupiedPositions}
+          stateGridBounds={gridState.gridBounds}
           {zoomMode}
           onSelectCell={handleSelectCell}
           onSetCellSpan={handleSetCellSpan}
@@ -417,6 +561,7 @@
             cells={gridState.cells}
             enabledCount={gridState.enabledCount}
             occupiedPositions={gridState.occupiedPositions}
+            hasContent={gridState.hasAnyLayers}
             onToggleCell={handleToggleCell}
             onPresetLayout={handlePresetLayout}
           />
@@ -427,13 +572,18 @@
           <div class="panel-section">
             <CellEditor
               cell={selectedCell}
-              cellIndex={getCellDisplayNumber()}
+              cellIndex={selectedCell ? gridState.getCellDisplayIndex(selectedCell.id) : 0}
+              clipboardHasData={gridState.clipboard !== null}
+              transformingLayer={gridState.transformingLayer}
               onAddSequence={handleAddSequence}
               onRemoveLayer={handleRemoveLayer}
               onEditLayerOffset={handleEditLayerOffset}
               onClearCell={handleClearCell}
               onRemoveCell={handleRemoveCell}
               onMediaTypeChange={handleMediaTypeChange}
+              onCopyLayer={handleCopyLayer}
+              onPasteLayer={handlePasteLayer}
+              onTransformLayer={handleTransformLayer}
             />
           </div>
         {:else}
@@ -485,6 +635,14 @@
     maxOffset={gridState.totalBeats > 0 ? gridState.totalBeats - 1 : 10}
     onClose={handleCloseStaggerControls}
     onSave={handleSaveLayerOffset}
+  />
+
+  <!-- Save composition modal -->
+  <SaveCompositionModal
+    bind:open={showSaveModal}
+    suggestedName={gridState.suggestCompositionName()}
+    onSave={handleSaveModalConfirm}
+    onClose={handleSaveModalClose}
   />
 </div>
 
@@ -548,6 +706,46 @@
     border-radius: var(--border-radius-lg);
     overflow: hidden;
     min-height: 0;
+  }
+
+  /* Canvas utility buttons (top-left) */
+  .canvas-utils {
+    position: absolute;
+    top: var(--spacing-sm, 8px);
+    left: var(--spacing-sm, 8px);
+    display: flex;
+    gap: 2px;
+    z-index: 20;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    padding: 2px;
+  }
+
+  .util-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    border-radius: var(--border-radius-sm, 4px);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .util-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--theme-text, white);
+  }
+
+  .util-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
   }
 
   /* Zoom controls */

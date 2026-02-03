@@ -27,6 +27,7 @@
     isPlaying,
     skipStartPosition = true,
     isSelected = false,
+    isDragging = false,
     onSelect,
   }: {
     cell: GridCell;
@@ -36,6 +37,8 @@
     /** When true, step 0 (start position) is skipped and beats map to steps 1..N */
     skipStartPosition?: boolean;
     isSelected?: boolean;
+    /** When true, click is suppressed (drag just ended) */
+    isDragging?: boolean;
     onSelect: () => void;
   } = $props();
 
@@ -221,6 +224,7 @@
   });
 
   function handleClick() {
+    if (isDragging) return;
     onSelect();
   }
 
@@ -346,10 +350,11 @@
     border-style: dashed;
   }
 
-  /* Force AnimatorCanvas to fit within the square cell */
-  /* The hierarchy is: cell-canvas > animation-container > content-wrapper > canvas-wrapper > canvas */
+  /* Force AnimatorCanvas to fit within the cell as a centered square */
+  /* Hierarchy: cell-canvas > animation-container > content-wrapper > canvas-wrapper > canvas */
+  /* For non-square cells (e.g. 2-col × 1-row), the canvas must be the largest
+     centered square that fits, not stretch to the wider dimension and overflow. */
 
-  /* Constrain the outermost AnimatorCanvas container */
   .cell-canvas :global(.animation-container) {
     width: 100% !important;
     height: 100% !important;
@@ -357,23 +362,35 @@
     max-height: 100% !important;
   }
 
-  /* content-wrapper must fit within animation-container */
   .cell-canvas :global(.content-wrapper) {
-    /* Override the calc() sizing to just fit the container */
+    /* Fill the cell and center the canvas within */
     width: 100% !important;
+    height: 100% !important;
     max-width: 100% !important;
     max-height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Hide chrome that doesn't belong in grid cells (word header, progress bar) */
+  .cell-canvas :global(.header-slot),
+  .cell-canvas :global(.progress-slot) {
+    display: none !important;
   }
 
   .cell-canvas :global(.canvas-wrapper) {
-    /* Canvas wrapper should not exceed cell bounds */
-    width: 100% !important;
-    height: auto !important;
-    max-height: 100% !important;
-    aspect-ratio: 1 / 1;
+    /* Centered square: min(cell width, cell height)
+       cqw → content-wrapper width (inline-size container) = cell width
+       cqh → animation-container height (size container) = cell height */
+    width: min(100cqw, 100cqh) !important;
+    height: min(100cqw, 100cqh) !important;
+    max-width: none !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    flex-shrink: 0 !important;
   }
 
-  /* Ensure the actual canvas element is constrained */
   .cell-canvas :global(canvas) {
     max-width: 100% !important;
     max-height: 100% !important;
@@ -435,7 +452,7 @@
   }
 
   /* Constrain LayeredSequencePreview within the choreo card container */
-  .choreo-card-container :global(.sequence-preview-container) {
+  .choreo-card-container :global(.layered-preview) {
     max-width: 100%;
     max-height: 100%;
   }

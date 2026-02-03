@@ -10,7 +10,16 @@
 <script lang="ts">
   import CellCanvas from "./CellCanvas.svelte";
   import CellResizeHandles from "./CellResizeHandles.svelte";
-  import { GRID_SIZE, type GridCell } from "../../state/arrange-grid-state.svelte";
+  import { GRID_SIZE, arrangeGridState, type GridCell } from "../../state/arrange-grid-state.svelte";
+
+  interface GridBoundsInfo {
+    minRow: number;
+    maxRow: number;
+    minCol: number;
+    maxCol: number;
+    rows: number;
+    cols: number;
+  }
 
   let {
     cells,
@@ -19,6 +28,7 @@
     skipStartPosition = true,
     selectedCellId,
     occupiedPositions,
+    stateGridBounds,
     zoomMode = "auto",
     onSelectCell,
     onSetCellSpan,
@@ -30,6 +40,8 @@
     skipStartPosition?: boolean;
     selectedCellId: string | null;
     occupiedPositions: Map<string, string>;
+    /** Pre-computed grid bounds from state (auto mode) */
+    stateGridBounds: GridBoundsInfo;
     /** "auto" = zoom to enabled cells, "full" = show entire 4x4 grid */
     zoomMode?: "auto" | "full";
     onSelectCell: (cellId: string) => void;
@@ -37,8 +49,50 @@
     onToggleCell?: (row: number, col: number) => void;
   } = $props();
 
+  // Grid gap must match the CSS `gap` value on `.grid-content`
+  const GRID_GAP = 16;
+  // Drag activation threshold (pixels of movement before drag starts)
+  const DRAG_THRESHOLD = 5;
+  // Long press for touch devices (like rearranging apps on a home screen)
+  const LONG_PRESS_DURATION = 500;
+  const LONG_PRESS_MOVE_TOLERANCE = 10;
+
   // Resize direction type
   type ResizeDirection = "left" | "right" | "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
+  // Drag-to-move state
+  let dragState = $state<{
+    cellId: string;
+    startX: number;
+    startY: number;
+    originCol: number;
+    originRow: number;
+    colSpan: number;
+    rowSpan: number;
+    targetCol: number;
+    targetRow: number;
+    activated: boolean;
+    pointerType: string;
+    pointerId: number;
+    element: HTMLElement;
+  } | null>(null);
+
+  // Long press timer for touch drag activation
+  let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Clean up timer + listeners if component unmounts mid-drag
+  $effect(() => {
+    return () => {
+      cancelLongPress();
+      cleanupDragListeners();
+    };
+  });
+
+  // Transient flag to suppress click after drag
+  let suppressClick = $state(false);
+
+  // Track which cell is being long-pressed (for progress ring visual)
+  let pressingCellId = $state<string | null>(null);
 
   // Resize state
   let resizeState = $state<{
@@ -65,45 +119,16 @@
   // Get only enabled cells for rendering
   const enabledCells = $derived(cells.filter((c) => c.enabled));
 
-  // Calculate grid bounds from enabled cells - accounts for spans
-  // In "full" zoom mode, always show the entire 4x4 grid
-  const gridBounds = $derived.by(() => {
-    // In full zoom mode, always show entire 4x4
-    if (zoomMode === "full") {
-      return { minRow: 0, maxRow: GRID_SIZE - 1, minCol: 0, maxCol: GRID_SIZE - 1, rows: GRID_SIZE, cols: GRID_SIZE };
-    }
-
-    if (enabledCells.length === 0) {
-      return { minRow: 0, maxRow: 0, minCol: 0, maxCol: 0, rows: 1, cols: 1 };
-    }
-
-    // Account for spans
-    const rowStarts = enabledCells.map((c) => c.row);
-    const rowEnds = enabledCells.map((c) => c.row + c.rowSpan - 1);
-    const colStarts = enabledCells.map((c) => c.col);
-    const colEnds = enabledCells.map((c) => c.col + c.colSpan - 1);
-
-    const minRow = Math.min(...rowStarts);
-    const maxRow = Math.max(...rowEnds);
-    const minCol = Math.min(...colStarts);
-    const maxCol = Math.max(...colEnds);
-
-    return {
-      minRow,
-      maxRow,
-      minCol,
-      maxCol,
-      rows: maxRow - minRow + 1,
-      cols: maxCol - minCol + 1,
-    };
-  });
+  // Grid bounds: use pre-computed state bounds for auto mode, full 4x4 for full mode
+  const FULL_GRID_BOUNDS: GridBoundsInfo = { minRow: 0, maxRow: GRID_SIZE - 1, minCol: 0, maxCol: GRID_SIZE - 1, rows: GRID_SIZE, cols: GRID_SIZE };
+  const gridBounds = $derived(zoomMode === "full" ? FULL_GRID_BOUNDS : stateGridBounds);
 
   // Calculate cell size reactively based on container AND gridBounds
   // Goal: Fill 90% of container, clamped at 800px max
   const cellSize = $derived.by(() => {
     if (containerWidth === 0 || containerHeight === 0) return 200;
 
-    const gap = 16; // Gap between cells
+    const gap = GRID_GAP;
     const fillRatio = 0.9; // Fill 90% of container
 
     const { rows, cols } = gridBounds;
@@ -118,8 +143,8 @@
     // Use the smaller dimension to keep cells square
     const naturalSize = Math.floor(Math.min(maxCellFromWidth, maxCellFromHeight));
 
-    // Hard limits: min 150px for usability, max 800px
-    return Math.max(150, Math.min(naturalSize, 800));
+    // Hard limits: min 80px (spanning cells provide adequate visual size), max 800px
+    return Math.max(80, Math.min(naturalSize, 800));
   });
 
   // ResizeObserver to track container size
@@ -142,14 +167,6 @@
     return enabledCells.find((c) => c.row === row && c.col === col);
   }
 
-  // Get display index for a cell (1-based, only counting enabled cells)
-  function getCellDisplayIndex(cell: GridCell): number {
-    const sorted = [...enabledCells].sort((a, b) => {
-      if (a.row !== b.row) return a.row - b.row;
-      return a.col - b.col;
-    });
-    return sorted.findIndex((c) => c.id === cell.id) + 1;
-  }
 
   // Resize handlers
   function handleResizeStart(
@@ -186,7 +203,7 @@
     const state = resizeState;
     if (!state) return;
 
-    const gap = 16;
+    const gap = GRID_GAP;
     const unitSize = cellSize + gap;
     const deltaX = e.clientX - state.startX;
     const deltaY = e.clientY - state.startY;
@@ -263,6 +280,140 @@
     window.removeEventListener("pointercancel", handleResizeEnd);
   }
 
+  // Drag-to-move handlers
+  function handleDragStart(cellId: string, e: PointerEvent) {
+    // Don't start drag if already resizing
+    if (resizeState) return;
+
+    const cell = enabledCells.find((c) => c.id === cellId);
+    if (!cell) return;
+
+    const element = e.currentTarget as HTMLElement;
+
+    dragState = {
+      cellId,
+      startX: e.clientX,
+      startY: e.clientY,
+      originCol: cell.col,
+      originRow: cell.row,
+      colSpan: cell.colSpan,
+      rowSpan: cell.rowSpan,
+      targetCol: cell.col,
+      targetRow: cell.row,
+      activated: false,
+      pointerType: e.pointerType,
+      pointerId: e.pointerId,
+      element,
+    };
+
+    // Use { passive: false } so we can preventDefault to stop scrolling once drag activates
+    window.addEventListener("pointermove", handleDragMove, { passive: false });
+    window.addEventListener("pointerup", handleDragEnd);
+    window.addEventListener("pointercancel", handleDragEnd);
+
+    if (e.pointerType === "touch") {
+      pressingCellId = cellId;
+
+      // Capture the pointer during pointerdown so the browser doesn't steal it
+      // for scroll/zoom gestures. Released if user scrolls before long press fires.
+      try { element.setPointerCapture(e.pointerId); } catch { /* noop */ }
+
+      // Activate via long press (like rearranging apps on a home screen)
+      longPressTimer = setTimeout(() => {
+        longPressTimer = null;
+        pressingCellId = null;
+        if (dragState && !dragState.activated) {
+          navigator.vibrate?.(50);
+          dragState = { ...dragState, activated: true };
+        }
+      }, LONG_PRESS_DURATION);
+    }
+  }
+
+  function handleDragMove(e: PointerEvent) {
+    const state = dragState;
+    if (!state) return;
+
+    const deltaX = e.clientX - state.startX;
+    const deltaY = e.clientY - state.startY;
+
+    if (!state.activated) {
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      if (state.pointerType === "touch") {
+        // Touch: if finger moved too far before long press fires, user is scrolling — cancel
+        if (distance > LONG_PRESS_MOVE_TOLERANCE) {
+          cancelLongPress();
+          pressingCellId = null;
+          try { state.element.releasePointerCapture(state.pointerId); } catch { /* noop */ }
+          dragState = null;
+          cleanupDragListeners();
+          return;
+        }
+        // Still waiting for long press timer
+        return;
+      } else {
+        // Mouse/pen: activate on 5px movement threshold
+        if (distance < DRAG_THRESHOLD) return;
+        dragState = { ...state, activated: true };
+      }
+    }
+
+    // Prevent scrolling while actively dragging
+    e.preventDefault();
+
+    const gap = GRID_GAP;
+    const unitSize = cellSize + gap;
+
+    // Convert pixel delta to grid offset (snap to nearest cell)
+    const colOffset = Math.round(deltaX / unitSize);
+    const rowOffset = Math.round(deltaY / unitSize);
+
+    // Apply offset and clamp so the entire span fits within the grid
+    const targetCol = Math.max(0, Math.min(GRID_SIZE - state.colSpan, state.originCol + colOffset));
+    const targetRow = Math.max(0, Math.min(GRID_SIZE - state.rowSpan, state.originRow + rowOffset));
+
+    dragState = { ...dragState!, targetCol, targetRow };
+  }
+
+  function handleDragEnd() {
+    cancelLongPress();
+    pressingCellId = null;
+    const state = dragState;
+
+    // Release pointer capture if we captured it during touch drag
+    if (state) {
+      try { state.element.releasePointerCapture(state.pointerId); } catch { /* noop */ }
+    }
+
+    if (state?.activated) {
+      // Suppress the upcoming click event
+      suppressClick = true;
+      requestAnimationFrame(() => { suppressClick = false; });
+
+      // Apply move if target differs from origin
+      if (state.targetCol !== state.originCol || state.targetRow !== state.originRow) {
+        onSetCellSpan(state.cellId, state.colSpan, state.rowSpan, state.targetCol, state.targetRow);
+      }
+    }
+
+    dragState = null;
+    cleanupDragListeners();
+  }
+
+  function cancelLongPress() {
+    if (longPressTimer !== null) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }
+
+  function cleanupDragListeners() {
+    window.removeEventListener("pointermove", handleDragMove);
+    window.removeEventListener("pointerup", handleDragEnd);
+    window.removeEventListener("pointercancel", handleDragEnd);
+  }
+
   // Only show ghost when something has actually changed from original
   const showGhost = $derived.by(() => {
     const state = resizeState;
@@ -280,7 +431,7 @@
     const state = resizeState;
     if (!state) return "";
 
-    const gap = 16;
+    const gap = GRID_GAP;
     const unit = cellSize + gap;
 
     // Position relative to TARGET position in the grid (not current cell position)
@@ -296,6 +447,55 @@
 
     return `left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;`;
   });
+
+  // Drag ghost: show when drag activated and target differs from origin
+  const showDragGhost = $derived.by(() => {
+    const state = dragState;
+    if (!state?.activated) return false;
+    return state.targetCol !== state.originCol || state.targetRow !== state.originRow;
+  });
+
+  const dragGhostStyle = $derived.by(() => {
+    const state = dragState;
+    if (!state) return "";
+
+    const gap = GRID_GAP;
+    const unit = cellSize + gap;
+
+    const colOffset = state.targetCol - gridBounds.minCol;
+    const rowOffset = state.targetRow - gridBounds.minRow;
+
+    const left = colOffset * unit;
+    const top = rowOffset * unit;
+    const width = state.colSpan * cellSize + (state.colSpan - 1) * gap;
+    const height = state.rowSpan * cellSize + (state.rowSpan - 1) * gap;
+
+    return `left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;`;
+  });
+
+  // Origin placeholder: dashed outline where the cell came from during drag
+  const showOriginPlaceholder = $derived(dragState?.activated ?? false);
+
+  const originPlaceholderStyle = $derived.by(() => {
+    const state = dragState;
+    if (!state) return "";
+
+    const gap = GRID_GAP;
+    const unit = cellSize + gap;
+
+    const colOffset = state.originCol - gridBounds.minCol;
+    const rowOffset = state.originRow - gridBounds.minRow;
+
+    const left = colOffset * unit;
+    const top = rowOffset * unit;
+    const width = state.colSpan * cellSize + (state.colSpan - 1) * gap;
+    const height = state.rowSpan * cellSize + (state.rowSpan - 1) * gap;
+
+    return `left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;`;
+  });
+
+  // Whether any drag is active (for drop zone highlighting)
+  const isDragActive = $derived(dragState?.activated ?? false);
 </script>
 
 <div
@@ -304,6 +504,7 @@
   style:--grid-rows={gridBounds.rows}
   style:--grid-cols={gridBounds.cols}
   style:--cell-size="{cellSize}px"
+  style:--grid-gap="{GRID_GAP}px"
 >
   {#if enabledCells.length === 0}
     <div class="empty-state">
@@ -323,21 +524,29 @@
           {#if cell}
             <div
               class="cell-wrapper"
+              class:is-pressing={pressingCellId === cell.id}
               class:is-resizing={resizeState?.cellId === cell.id}
+              class:is-dragging={dragState?.activated && dragState?.cellId === cell.id}
               style:grid-column="span {cell.colSpan}"
               style:grid-row="span {cell.rowSpan}"
               style:--col-span={cell.colSpan}
               style:--row-span={cell.rowSpan}
+              role="group"
+              aria-label="Cell {arrangeGridState.getCellDisplayIndex(cell.id)}"
+              onpointerdown={(e) => handleDragStart(cell.id, e)}
+              oncontextmenu={(e) => { if (dragState) e.preventDefault(); }}
             >
-              <!-- Key by cell ID AND layer sequence IDs to force re-render when content changes -->
-              {#key `${cell.id}-${cell.layers.map(l => l.sequence.id || l.sequence.word).join('-')}`}
+              <!-- Key by cell ID only. CellCanvas effects handle reinit when layer data changes.
+                   Including sequence properties in the key causes unnecessary destruction/recreation. -->
+              {#key cell.id}
                 <CellCanvas
                   {cell}
-                  cellIndex={getCellDisplayIndex(cell)}
+                  cellIndex={arrangeGridState.getCellDisplayIndex(cell.id)}
                   {currentBeat}
                   {isPlaying}
                   {skipStartPosition}
                   isSelected={selectedCellId === cell.id}
+                  isDragging={suppressClick}
                   onSelect={() => onSelectCell(cell.id)}
                 />
               {/key}
@@ -357,13 +566,14 @@
             <!-- In full mode, show clickable empty slot to enable cell -->
             <button
               class="cell-slot-empty"
+              class:drop-target={isDragActive}
               onclick={() => onToggleCell?.(row, col)}
               aria-label="Enable cell at row {row + 1}, column {col + 1}"
             >
               <i class="fas fa-plus" aria-hidden="true"></i>
             </button>
           {:else}
-            <div class="cell-placeholder"></div>
+            <div class="cell-placeholder" class:drop-target={isDragActive}></div>
           {/if}
         {/each}
       {/each}
@@ -375,6 +585,16 @@
           class:invalid={!resizeState.isValid}
           style={ghostStyle}
         ></div>
+      {/if}
+
+      <!-- Origin placeholder: dashed outline where the cell came from -->
+      {#if showOriginPlaceholder}
+        <div class="origin-placeholder" style={originPlaceholderStyle}></div>
+      {/if}
+
+      <!-- Ghost preview during drag-to-move (with smooth position transitions) -->
+      {#if showDragGhost}
+        <div class="drag-ghost" style={dragGhostStyle}></div>
       {/if}
     </div>
   {/if}
@@ -395,20 +615,61 @@
     display: grid;
     grid-template-rows: repeat(var(--grid-rows, 1), var(--cell-size, 200px));
     grid-template-columns: repeat(var(--grid-cols, 1), var(--cell-size, 200px));
-    gap: 16px;
+    gap: var(--grid-gap, 16px);
     place-content: center;
   }
 
   .cell-wrapper {
     position: relative;
+    cursor: grab;
+    touch-action: none; /* Prevent browser gesture interception during drag */
     /* Width/height calculated from span and cell size */
-    width: calc(var(--col-span, 1) * var(--cell-size, 200px) + (var(--col-span, 1) - 1) * 16px);
-    height: calc(var(--row-span, 1) * var(--cell-size, 200px) + (var(--row-span, 1) - 1) * 16px);
+    width: calc(var(--col-span, 1) * var(--cell-size, 200px) + (var(--col-span, 1) - 1) * var(--grid-gap, 16px));
+    height: calc(var(--row-span, 1) * var(--cell-size, 200px) + (var(--row-span, 1) - 1) * var(--grid-gap, 16px));
   }
 
   .cell-wrapper.is-resizing {
     /* Slight opacity during resize to show it's being modified */
     opacity: 0.8;
+  }
+
+  .cell-wrapper.is-dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+  }
+
+  /* Touch devices: "lift up" effect like rearranging apps on a home screen */
+  @media (pointer: coarse) {
+    .cell-wrapper.is-dragging {
+      opacity: 0.85;
+      transform: scale(1.05);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      z-index: 25;
+      animation: drag-lift 0.2s ease-out;
+    }
+  }
+
+  @keyframes drag-lift {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1.05); }
+  }
+
+  /* Long press progress: glowing ring builds up over 500ms to signal "keep holding" */
+  .cell-wrapper.is-pressing {
+    animation: long-press-glow 500ms ease-out forwards;
+  }
+
+  @keyframes long-press-glow {
+    0% {
+      box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+    }
+    40% {
+      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3), 0 0 8px rgba(139, 92, 246, 0.15);
+    }
+    100% {
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.7), 0 0 20px rgba(139, 92, 246, 0.35);
+    }
   }
 
   .cell-placeholder {
@@ -491,5 +752,56 @@
   .resize-ghost.invalid {
     background: var(--semantic-error, #ef4444);
     border-color: var(--semantic-error, #ef4444);
+  }
+
+  /* Origin placeholder: dashed outline where the cell came from during drag */
+  .origin-placeholder {
+    position: absolute;
+    border: 2px dashed var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+    border-radius: var(--border-radius-md, 8px);
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.5;
+  }
+
+  /* Drag ghost: smooth transitions as it glides between grid positions */
+  .drag-ghost {
+    position: absolute;
+    background: var(--theme-accent, #8b5cf6);
+    opacity: 0.25;
+    border: 2px solid var(--theme-accent, #8b5cf6);
+    border-radius: var(--border-radius-md, 8px);
+    pointer-events: none;
+    z-index: 15;
+    transition: left 0.12s ease-out, top 0.12s ease-out;
+  }
+
+  /* Drop zone highlighting: subtle glow on valid positions while dragging */
+  .cell-placeholder.drop-target {
+    border: 2px dashed rgba(139, 92, 246, 0.25);
+    border-radius: var(--border-radius-md, 8px);
+    background: rgba(139, 92, 246, 0.06);
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .cell-slot-empty.drop-target {
+    border-color: rgba(139, 92, 246, 0.4);
+    background: rgba(139, 92, 246, 0.08);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cell-wrapper.is-pressing {
+      animation: none;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5);
+    }
+
+    .cell-wrapper.is-dragging {
+      animation: none;
+    }
+
+    .drag-ghost,
+    .cell-slot-empty {
+      transition: none;
+    }
   }
 </style>

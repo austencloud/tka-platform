@@ -1,0 +1,187 @@
+<!--
+  SaveCompositionModal.svelte - Modal for naming and saving compositions
+
+  Uses BaseModal for native dialog behavior (backdrop, escape, focus, animations).
+  Auto-focuses name input, Enter to save.
+-->
+<script lang="ts">
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { container } from "$lib/shared/di";
+  import { onMount } from "svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+  import ModalHeader from "$lib/features/create/generate/components/modals/ModalHeader.svelte";
+  import ModalActions from "$lib/features/create/generate/components/modals/ModalActions.svelte";
+
+  let {
+    open = $bindable(false),
+    suggestedName = "",
+    onSave,
+    onClose,
+  }: {
+    open?: boolean;
+    suggestedName?: string;
+    onSave: (name: string) => void;
+    onClose: () => void;
+  } = $props();
+
+  let hapticService: IHapticFeedback;
+  let nameInput: HTMLInputElement;
+
+  let compositionName = $state("");
+  $effect.pre(() => { compositionName = suggestedName; });
+
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
+  });
+
+  // Auto-focus input when modal opens
+  $effect(() => {
+    if (open) {
+      // Wait for dialog to render content
+      requestAnimationFrame(() => {
+        nameInput?.focus();
+        if (suggestedName) nameInput?.select();
+      });
+    }
+  });
+
+  function handleSave() {
+    const trimmed = compositionName.trim();
+    if (!trimmed) return;
+
+    hapticService?.trigger("selection");
+    onSave(trimmed);
+  }
+
+  function handleClose() {
+    hapticService?.trigger("selection");
+    onClose();
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === "Enter" && compositionName.trim()) {
+      handleSave();
+    }
+  }
+
+  const canSave = $derived(compositionName.trim().length > 0);
+</script>
+
+<BaseModal
+  bind:open
+  onclose={() => handleClose()}
+  size="fit"
+  animation="pop"
+  labelledBy="modal-title"
+>
+  {#snippet header()}
+    <ModalHeader title="Save Composition" onClose={handleClose} />
+  {/snippet}
+
+  <div class="modal-body" onkeydown={handleKeydown}>
+    <div class="form-section">
+      <label for="composition-name" class="form-label">Name</label>
+      <input
+        id="composition-name"
+        type="text"
+        class="name-input"
+        bind:value={compositionName}
+        bind:this={nameInput}
+        placeholder="e.g., Kaleidoscope 12-beat, Fire Opener"
+        maxlength="80"
+        autocomplete="off"
+        data-form-type="other"
+        data-lpignore="true"
+        data-1p-ignore
+      />
+    </div>
+  </div>
+
+  {#snippet footer()}
+    <ModalActions
+      onCancel={handleClose}
+      onConfirm={handleSave}
+      cancelLabel="Cancel"
+      confirmLabel="Save"
+      confirmDisabled={!canSave}
+      confirmVariant="primary"
+    />
+  {/snippet}
+</BaseModal>
+
+<style>
+  .modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .form-label {
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .name-input {
+    width: 100%;
+    padding: 12px 16px;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-shadow) 40%, transparent),
+      color-mix(in srgb, var(--theme-shadow) 30%, transparent)
+    );
+    border: 2px solid var(--theme-stroke-strong);
+    border-radius: 10px;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px var(--theme-shadow) inset;
+  }
+
+  .name-input:focus {
+    outline: none;
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, var(--semantic-info)) 60%,
+      transparent
+    );
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-shadow) 50%, transparent),
+      color-mix(in srgb, var(--theme-shadow) 40%, transparent)
+    );
+    box-shadow:
+      0 0 0 3px
+        color-mix(
+          in srgb,
+          var(--theme-accent, var(--semantic-info)) 20%,
+          transparent
+        ),
+      0 2px 8px var(--theme-shadow) inset;
+  }
+
+  .name-input::placeholder {
+    color: var(--theme-text-dim);
+  }
+
+  @media (max-width: 640px) {
+    .modal-body {
+      padding: 20px;
+      gap: 16px;
+    }
+
+    .name-input {
+      padding: 11px 14px;
+      font-size: var(--font-size-sm);
+    }
+  }
+</style>
