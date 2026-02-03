@@ -10,28 +10,19 @@
   - Letter selector loads real pictograph data from CSV
 -->
 <script lang="ts">
-  import type { ConjoinedLayout, GridArrangement } from "./domain/types";
+  import type { ConjoinedLayout } from "./domain/types";
   import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { DEFAULT_CONJOINED_LAYOUT } from "./domain/types";
-  import { getDefaultEdgeForArrangement } from "./domain/layout-presets";
+  import { DEFAULT_CONJOINED_LAYOUT, STRICT_HAND_POINT_COORDS, EDGE_OPPOSITES } from "./domain/types";
   import ConjoinedCanvas from "./components/ConjoinedCanvas.svelte";
   import ConjoinedControls from "./components/ConjoinedControls.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { ConjoinedLayoutCalculator } from "./services/implementations/ConjoinedLayoutCalculator";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
-  // Strict hand point coordinates for overlap detection (from gridCoordinates.ts)
-  const STRICT_COORDS: Record<string, { x: number; y: number }> = {
-    n: { x: 475, y: 325 }, e: { x: 625, y: 475 },
-    s: { x: 475, y: 625 }, w: { x: 325, y: 475 },
-    ne: { x: 581.1, y: 368.9 }, se: { x: 581.1, y: 581.1 },
-    sw: { x: 368.9, y: 581.1 }, nw: { x: 368.9, y: 368.9 },
-  };
-
-  const layoutCalc = new ConjoinedLayoutCalculator();
+  const layoutCalc = container.items.conjoinedLayoutCalculator;
 
   // State
   let layout = $state<ConjoinedLayout>({ ...DEFAULT_CONJOINED_LAYOUT });
@@ -43,14 +34,29 @@
   let allPictographs = $state<PictographData[]>([]);
   let selectedIndex = $state(0);
 
-  // Derived: unique letters available
-  const availableLetters = $derived(
-    [...new Set(allPictographs.map((p) => p.letter).filter(Boolean))]
-  );
-
   // Derived: current pictograph info
   const currentPictograph = $derived(allPictographs[selectedIndex] ?? null);
   const currentLetter = $derived(currentPictograph?.letter ?? "—");
+
+  // Detect which pictographs have conjoined beta overlap for current layout.
+  // Overlap occurs when blue ends at the conjoined edge and red ends at its opposite.
+  const overlappingIndices = $derived(
+    allPictographs
+      .map((p, i) => {
+        const blueEnd = p.motions?.blue?.endLocation?.toLowerCase();
+        const redEnd = p.motions?.red?.endLocation?.toLowerCase();
+        const edge = layout.conjoinedEdge;
+        const opposite = EDGE_OPPOSITES[edge];
+        return (blueEnd === edge && redEnd === opposite) ? i : -1;
+      })
+      .filter((i) => i >= 0)
+  );
+
+  const currentHasOverlap = $derived(overlappingIndices.includes(selectedIndex));
+
+  const overlapNavPosition = $derived(
+    overlappingIndices.indexOf(selectedIndex) + 1
+  );
 
   // Load all pictograph variations from CSV on mount
   onMount(async () => {
@@ -103,14 +109,6 @@
     layout = newLayout;
   }
 
-  function handleArrangementChange(arrangement: GridArrangement) {
-    layout = {
-      ...layout,
-      arrangement,
-      conjoinedEdge: getDefaultEdgeForArrangement(arrangement),
-    };
-  }
-
   function handleSpacingChange(spacing: number) {
     layout = {
       ...layout,
@@ -127,6 +125,22 @@
   function handleNext() {
     if (selectedIndex < allPictographs.length - 1) {
       selectedIndex++;
+    }
+  }
+
+  function navigateToOverlap(direction: number) {
+    if (overlappingIndices.length === 0) return;
+    const currentIdx = overlappingIndices.indexOf(selectedIndex);
+    if (currentIdx === -1) {
+      // Not on an overlap — jump to first or last
+      selectedIndex = direction > 0
+        ? overlappingIndices[0]!
+        : overlappingIndices[overlappingIndices.length - 1]!;
+    } else {
+      const next = currentIdx + direction;
+      if (next >= 0 && next < overlappingIndices.length) {
+        selectedIndex = overlappingIndices[next]!;
+      }
     }
   }
 
@@ -156,8 +170,8 @@
     if (blue && red) {
       const blueEnd = blue.endLocation?.toLowerCase();
       const redEnd = red.endLocation?.toLowerCase();
-      const blueCoord = STRICT_COORDS[blueEnd];
-      const redCoord = STRICT_COORDS[redEnd];
+      const blueCoord = STRICT_HAND_POINT_COORDS[blueEnd];
+      const redCoord = STRICT_HAND_POINT_COORDS[redEnd];
 
       if (blueCoord && redCoord) {
         const blueGlobal = {
@@ -230,7 +244,6 @@
       <ConjoinedControls
         {layout}
         onLayoutChange={handleLayoutChange}
-        onArrangementChange={handleArrangementChange}
         onSpacingChange={handleSpacingChange}
       />
 
@@ -248,19 +261,51 @@
             class="nav-btn"
             onclick={handlePrev}
             disabled={selectedIndex === 0}
-            title="Previous variation"
+            aria-label="Previous variation"
           >
-            <i class="fas fa-chevron-left"></i>
+            <i class="fas fa-chevron-left" aria-hidden="true"></i>
           </button>
           <button
             class="nav-btn"
             onclick={handleNext}
             disabled={selectedIndex >= allPictographs.length - 1}
-            title="Next variation"
+            aria-label="Next variation"
           >
-            <i class="fas fa-chevron-right"></i>
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
           </button>
         </div>
+
+        <!-- Overlap navigation -->
+        {#if overlappingIndices.length > 0}
+          <div class="overlap-nav">
+            <span class="overlap-label" class:active={currentHasOverlap}>
+              {#if currentHasOverlap}
+                {overlapNavPosition} / {overlappingIndices.length} overlaps
+              {:else}
+                {overlappingIndices.length} overlaps
+              {/if}
+            </span>
+            <div class="overlap-buttons">
+              <button
+                class="nav-btn overlap-btn"
+                onclick={() => navigateToOverlap(-1)}
+                disabled={overlapNavPosition <= 1 && currentHasOverlap}
+                aria-label="Previous overlapping pictograph"
+              >
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+              </button>
+              <button
+                class="nav-btn overlap-btn"
+                onclick={() => navigateToOverlap(1)}
+                disabled={overlapNavPosition >= overlappingIndices.length && currentHasOverlap}
+                aria-label="Next overlapping pictograph"
+              >
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+        {/if}
+
         <button
           class="copy-btn"
           onclick={handleCopy}
@@ -297,7 +342,7 @@
   }
 
   .lab-header p {
-    font-size: 13px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     margin: 0;
   }
@@ -361,7 +406,7 @@
   }
 
   .pictograph-selector h3 {
-    font-size: 12px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -382,7 +427,7 @@
   }
 
   .variation-label {
-    font-size: 13px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
@@ -393,7 +438,7 @@
 
   .nav-btn {
     flex: 1;
-    height: 40px;
+    min-height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -419,12 +464,43 @@
     font-size: 14px;
   }
 
+  .overlap-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 0;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .overlap-label {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    transition: color 0.15s ease;
+  }
+
+  .overlap-label.active {
+    color: var(--semantic-warning, #f59e0b);
+    font-weight: 600;
+  }
+
+  .overlap-buttons {
+    display: flex;
+    gap: 4px;
+  }
+
+  .overlap-btn {
+    flex: 0 0 auto;
+    width: 48px;
+    height: 48px;
+  }
+
   .copy-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    height: 40px;
+    min-height: 48px;
     padding: 0 16px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -446,7 +522,7 @@
   }
 
   .copy-btn i {
-    font-size: 13px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   /* Responsive: stack on smaller screens */

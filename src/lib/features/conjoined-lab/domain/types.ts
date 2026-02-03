@@ -68,3 +68,26 @@ export const DEFAULT_CONJOINED_LAYOUT: ConjoinedLayout = {
   spacing: 0,
   showConjoinedPoint: false,
 };
+
+/**
+ * Strict hand point absolute coordinates within a 950x950 grid.
+ * Used for global overlap detection between grids.
+ */
+export const STRICT_HAND_POINT_COORDS: Record<string, { x: number; y: number }> = {
+  n: { x: 475, y: 325 },
+  e: { x: 625, y: 475 },
+  s: { x: 475, y: 625 },
+  w: { x: 325, y: 475 },
+  ne: { x: 581.1, y: 368.9 },
+  se: { x: 581.1, y: 581.1 },
+  sw: { x: 368.9, y: 581.1 },
+  nw: { x: 368.9, y: 368.9 },
+};
+
+/**
+ * Opposite edges for conjoined grid junction detection
+ */
+export const EDGE_OPPOSITES: Record<string, string> = {
+  n: "s", s: "n", e: "w", w: "e",
+  ne: "sw", sw: "ne", se: "nw", nw: "se",
+};

@@ -7,7 +7,7 @@
   - Conjoined point visibility
 -->
 <script lang="ts">
-  import type { ConjoinedLayout, GridArrangement } from "../domain/types";
+  import type { ConjoinedLayout } from "../domain/types";
   import { LAYOUT_PRESETS } from "../domain/layout-presets";
 
   // Props
@@ -15,12 +15,10 @@
     layout,
     onLayoutChange,
     onSpacingChange,
-    onArrangementChange,
   }: {
     layout: ConjoinedLayout;
     onLayoutChange?: (layout: ConjoinedLayout) => void;
     onSpacingChange?: (spacing: number) => void;
-    onArrangementChange?: (arrangement: GridArrangement) => void;
   } = $props();
 
   function handlePresetClick(preset: typeof LAYOUT_PRESETS[0]) {
@@ -46,7 +44,7 @@
           onclick={() => handlePresetClick(preset)}
           title={preset.name}
         >
-          <i class="fas {preset.icon}"></i>
+          <i class="fas {preset.icon}" aria-hidden="true"></i>
           <span>{preset.name}</span>
         </button>
       {/each}
@@ -64,6 +62,7 @@
         value={layout.spacing}
         oninput={handleSpacingInput}
         class="spacing-slider"
+        aria-label="Grid spacing"
       />
       <span class="spacing-value">{layout.spacing}px</span>
     </div>
@@ -102,7 +101,7 @@
   }
 
   .control-section h3 {
-    font-size: 12px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -121,7 +120,8 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    padding: 12px 8px;
+    padding: 14px 8px;
+    min-height: 48px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
@@ -145,7 +145,7 @@
   }
 
   .preset-btn span {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .slider-row {
@@ -165,15 +165,15 @@
 
   .spacing-slider::-webkit-slider-thumb {
     appearance: none;
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
     background: var(--theme-accent, #10b981);
     border-radius: 50%;
     cursor: pointer;
   }
 
   .spacing-value {
-    font-size: 12px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     min-width: 48px;
     text-align: right;
@@ -184,13 +184,14 @@
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--font-size-min, 14px);
     color: var(--theme-text, #ffffff);
+    min-height: 48px;
   }
 
   .toggle-row input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     accent-color: var(--theme-accent, #10b981);
   }
 </style>

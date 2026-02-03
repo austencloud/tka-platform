@@ -17,13 +17,15 @@
 -->
 <script lang="ts">
   import type { ConjoinedLayout, ConjoinedEdge } from "../domain/types";
+  import { STRICT_HAND_POINT_COORDS } from "../domain/types";
   import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
-  import { ConjoinedLayoutCalculator } from "../services/implementations/ConjoinedLayoutCalculator";
+  import { container } from "$lib/shared/di";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import PropSvg from "$lib/shared/pictograph/prop/components/PropSvg.svelte";
   import ArrowSvg from "$lib/shared/pictograph/arrow/rendering/components/ArrowSvg.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PropPosition } from "$lib/shared/pictograph/prop/domain/models/PropPosition";
+  import { getBetaOffsetSize } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 
   // Normal→strict hand point coordinate deltas by grid location.
   // Props use normal coordinates (~143px from center) but conjoined mode
@@ -47,6 +49,17 @@
     return { x: position.x + delta.x, y: position.y + delta.y, rotation: position.rotation };
   }
 
+
+  // Separation axis perpendicular to each conjoined edge direction
+  const SEPARATION_AXES: Record<ConjoinedEdge, { x: number; y: number }> = {
+    e: { x: 0, y: 1 }, w: { x: 0, y: 1 },
+    n: { x: 1, y: 0 }, s: { x: 1, y: 0 },
+    ne: { x: -0.707, y: 0.707 }, sw: { x: -0.707, y: 0.707 },
+    nw: { x: 0.707, y: 0.707 }, se: { x: 0.707, y: 0.707 },
+  };
+
+  const OVERLAP_THRESHOLD = 5;
+
   // Props
   let {
     pictograph,
@@ -69,8 +82,8 @@
   const MASK_RADIUS = OUTER_POINT_RADIUS + OUTER_POINT_STROKE / 2 + 2; // ~33.5, covers the full visual circle
   const CENTER_POINT_RADIUS = 12; // r="12" in diamond_grid.svg
 
-  // Layout calculator instance
-  const layoutCalculator = new ConjoinedLayoutCalculator();
+  // Layout calculator from DI
+  const layoutCalculator = container.items.conjoinedLayoutCalculator;
 
   // Calculate grid positions and canvas dimensions
   const gridPositions = $derived(layoutCalculator.calculateGridPositions(layout));
@@ -100,6 +113,71 @@
     propPositions.red && redMotion
       ? toStrictPosition(propPositions.red, redMotion.endLocation)
       : propPositions.red
+  );
+
+  // Conjoined beta separation: when props on different grids physically
+  // overlap at the junction, separate them perpendicular to the edge.
+  const conjoinedBetaOffset = $derived.by(() => {
+    const noOffset = { blue: { x: 0, y: 0 }, red: { x: 0, y: 0 } };
+    if (!blueMotion || !redMotion || !blueStrictPropPosition || !redStrictPropPosition) {
+      return noOffset;
+    }
+
+    const blueEnd = blueMotion.endLocation?.toLowerCase();
+    const redEnd = redMotion.endLocation?.toLowerCase();
+    if (!blueEnd || !redEnd) return noOffset;
+
+    const blueCoord = STRICT_HAND_POINT_COORDS[blueEnd];
+    const redCoord = STRICT_HAND_POINT_COORDS[redEnd];
+    if (!blueCoord || !redCoord) return noOffset;
+
+    // Compute global positions to detect physical overlap
+    const blueGlobal = {
+      x: gridPositions.gridA.x + blueCoord.x,
+      y: gridPositions.gridA.y + blueCoord.y,
+    };
+    const redGlobal = {
+      x: gridPositions.gridB.x + redCoord.x,
+      y: gridPositions.gridB.y + redCoord.y,
+    };
+
+    const dist = Math.hypot(blueGlobal.x - redGlobal.x, blueGlobal.y - redGlobal.y);
+    if (dist >= OVERLAP_THRESHOLD) return noOffset;
+
+    // Overlap detected — determine separation direction from blue's arrow vector
+    const axis = SEPARATION_AXES[layout.conjoinedEdge];
+    const blueStart = STRICT_HAND_POINT_COORDS[blueMotion.startLocation?.toLowerCase()];
+    if (!blueStart) return noOffset;
+
+    const blueDir = { x: blueCoord.x - blueStart.x, y: blueCoord.y - blueStart.y };
+    const projection = blueDir.x * axis.x + blueDir.y * axis.y;
+    // Blue moves in its arrow's projected direction; default to -1 for zero projection
+    const sign = projection > 0.01 ? 1 : -1;
+
+    const propType = String(blueMotion.propType ?? "staff");
+    const gridModeStr = gridMode === GridMode.BOX ? "box" : "diamond";
+    const offset = getBetaOffsetSize(propType, gridModeStr);
+
+    return {
+      blue: { x: axis.x * sign * offset, y: axis.y * sign * offset },
+      red: { x: -axis.x * sign * offset, y: -axis.y * sign * offset },
+    };
+  });
+
+  // Final prop positions: strict coordinates + conjoined beta separation
+  const blueFinalPropPosition = $derived(
+    blueStrictPropPosition ? {
+      x: blueStrictPropPosition.x + conjoinedBetaOffset.blue.x,
+      y: blueStrictPropPosition.y + conjoinedBetaOffset.blue.y,
+      rotation: blueStrictPropPosition.rotation,
+    } : blueStrictPropPosition
+  );
+  const redFinalPropPosition = $derived(
+    redStrictPropPosition ? {
+      x: redStrictPropPosition.x + conjoinedBetaOffset.red.x,
+      y: redStrictPropPosition.y + conjoinedBetaOffset.red.y,
+      rotation: redStrictPropPosition.rotation,
+    } : redStrictPropPosition
   );
 
   // Get the opposite edge for Grid B's outer point that sits on Grid A's center
@@ -206,11 +284,11 @@
     <!-- 6. Props and arrows (rendered on top of everything) -->
     <!-- Blue prop + arrow on Grid A -->
     <g transform="translate({gridPositions.gridA.x}, {gridPositions.gridA.y})">
-      {#if blueMotion && propAssets.blue && blueStrictPropPosition}
+      {#if blueMotion && propAssets.blue && blueFinalPropPosition}
         <PropSvg
           motionData={blueMotion}
           propAssets={propAssets.blue}
-          propPosition={blueStrictPropPosition}
+          propPosition={blueFinalPropPosition}
           showProp={true}
         />
       {/if}
@@ -230,11 +308,11 @@
 
     <!-- Red prop + arrow on Grid B -->
     <g transform="translate({gridPositions.gridB.x}, {gridPositions.gridB.y})">
-      {#if redMotion && propAssets.red && redStrictPropPosition}
+      {#if redMotion && propAssets.red && redFinalPropPosition}
         <PropSvg
           motionData={redMotion}
           propAssets={propAssets.red}
-          propPosition={redStrictPropPosition}
+          propPosition={redFinalPropPosition}
           showProp={true}
         />
       {/if}
