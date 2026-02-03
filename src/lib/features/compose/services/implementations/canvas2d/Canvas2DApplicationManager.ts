@@ -56,6 +56,7 @@ export class Canvas2DApplicationManager {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private currentSize: number = 500;
+  private dpr: number = 1;
   private backgroundAlpha: number = 1;
   private isInitialized: boolean = false;
   private darkModeEnabled: boolean = false;
@@ -78,24 +79,30 @@ export class Canvas2DApplicationManager {
 
     this.currentSize = size;
     this.backgroundAlpha = backgroundAlpha;
+    this.dpr = window.devicePixelRatio || 1;
 
-    // Create canvas element
+    // Create canvas element with DPI-aware backing store
+    // Physical pixels = logical size * devicePixelRatio for sharp rendering on high-DPI screens
     this.canvas = document.createElement("canvas");
-    this.canvas.width = size;
-    this.canvas.height = size;
+    this.canvas.width = Math.floor(size * this.dpr);
+    this.canvas.height = Math.floor(size * this.dpr);
     this.canvas.style.width = "100%";
     this.canvas.style.height = "100%";
 
     // Get 2D context with alpha support based on backgroundAlpha
+    // NOTE: desynchronized intentionally omitted — it causes visible tearing
+    // (colored strip artifacts) on Android Chrome PWA due to front-buffer rendering
     this.ctx = this.canvas.getContext("2d", {
       alpha: backgroundAlpha < 1,
-      // Optimize for frequent redraws
-      desynchronized: true,
     });
 
     if (!this.ctx) {
       throw new Error("Failed to get 2D rendering context");
     }
+
+    // Scale context so all drawing operations use logical pixels
+    // The DPR scaling is transparent to all consumers of getCurrentSize()
+    this.ctx.scale(this.dpr, this.dpr);
 
     // Enable high-quality image rendering
     this.ctx.imageSmoothingEnabled = true;
@@ -111,10 +118,12 @@ export class Canvas2DApplicationManager {
     if (!this.isInitialized || !this.canvas || !this.ctx) return;
 
     this.currentSize = newSize;
-    this.canvas.width = newSize;
-    this.canvas.height = newSize;
+    this.dpr = window.devicePixelRatio || 1;
+    this.canvas.width = Math.floor(newSize * this.dpr);
+    this.canvas.height = Math.floor(newSize * this.dpr);
 
-    // Re-apply context settings after resize (they reset)
+    // Re-apply context settings after resize (they reset when canvas dimensions change)
+    this.ctx.scale(this.dpr, this.dpr);
     this.ctx.imageSmoothingEnabled = true;
     this.ctx.imageSmoothingQuality = "high";
   }
@@ -126,20 +135,19 @@ export class Canvas2DApplicationManager {
   clear(): void {
     if (!this.ctx || !this.canvas) return;
 
-    // Clear entire canvas
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    // Clear entire canvas using logical size (context is DPR-scaled)
+    this.ctx.clearRect(0, 0, this.currentSize, this.currentSize);
 
     // Update background color transition if in progress
     this.updateBackgroundTransition();
 
     // Fill with current (possibly transitioning) background color
-    // CRITICAL: Wrap in save/restore to prevent globalAlpha state leakage
-    // which causes colored strip artifacts on mobile due to RAF timing variations
+    // Wrap in save/restore to isolate globalAlpha from subsequent draw calls
     if (this.backgroundAlpha > 0) {
       this.ctx.save();
       this.ctx.globalAlpha = this.backgroundAlpha;
       this.ctx.fillStyle = this.currentBgColor;
-      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.fillRect(0, 0, this.currentSize, this.currentSize);
       this.ctx.restore();
     }
   }

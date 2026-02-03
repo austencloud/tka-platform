@@ -375,6 +375,13 @@ export class AnimationPathCache {
   }
 
   /**
+   * Get the raw pre-computed cache data (for sharing between engine instances)
+   */
+  getCacheData(): AnimationPathCacheData | null {
+    return this.cacheData;
+  }
+
+  /**
    * Check if cache is valid and ready
    */
   isValid(): boolean {
