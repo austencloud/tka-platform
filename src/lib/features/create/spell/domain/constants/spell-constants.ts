@@ -31,51 +31,29 @@ export const DEFAULT_SPELL_PREFERENCES: SpellPreferences = {
  * Case-insensitive matching is applied during parsing
  */
 export const GREEK_LETTER_ALIASES: LetterAlias[] = [
-  // Sigma variants
-  { alias: "sigma", letter: Letter.SIGMA },
-  { alias: "sig", letter: Letter.SIGMA },
+  // Dash variants (must come before base names since they're longer)
   { alias: "sigma-", letter: Letter.SIGMA_DASH },
-  { alias: "sig-", letter: Letter.SIGMA_DASH },
-
-  // Delta variants
-  { alias: "delta", letter: Letter.DELTA },
-  { alias: "del", letter: Letter.DELTA },
   { alias: "delta-", letter: Letter.DELTA_DASH },
-  { alias: "del-", letter: Letter.DELTA_DASH },
-
-  // Theta variants
-  { alias: "theta", letter: Letter.THETA },
-  { alias: "the", letter: Letter.THETA },
   { alias: "theta-", letter: Letter.THETA_DASH },
-  { alias: "the-", letter: Letter.THETA_DASH },
-
-  // Omega variants
-  { alias: "omega", letter: Letter.OMEGA },
-  { alias: "ome", letter: Letter.OMEGA },
   { alias: "omega-", letter: Letter.OMEGA_DASH },
-  { alias: "ome-", letter: Letter.OMEGA_DASH },
-
-  // Phi variants
-  { alias: "phi", letter: Letter.PHI },
+  { alias: "lambda-", letter: Letter.LAMBDA_DASH },
   { alias: "phi-", letter: Letter.PHI_DASH },
-
-  // Psi variants
-  { alias: "psi", letter: Letter.PSI },
   { alias: "psi-", letter: Letter.PSI_DASH },
 
-  // Lambda variants
+  // Full Greek names only - short aliases (bet, del, the, sig, etc.)
+  // were removed because they collide with English words.
+  // "BETSY" was parsed as [β, Y] instead of [B, E, T, S, Y].
+  // Users can insert Greek letters via the palette buttons instead.
+  { alias: "sigma", letter: Letter.SIGMA },
+  { alias: "delta", letter: Letter.DELTA },
+  { alias: "theta", letter: Letter.THETA },
+  { alias: "omega", letter: Letter.OMEGA },
   { alias: "lambda", letter: Letter.LAMBDA },
-  { alias: "lam", letter: Letter.LAMBDA },
-  { alias: "lambda-", letter: Letter.LAMBDA_DASH },
-  { alias: "lam-", letter: Letter.LAMBDA_DASH },
-
-  // Lowercase Greek (static positions)
+  { alias: "phi", letter: Letter.PHI },
+  { alias: "psi", letter: Letter.PSI },
   { alias: "alpha", letter: Letter.ALPHA },
-  { alias: "alp", letter: Letter.ALPHA },
   { alias: "beta", letter: Letter.BETA },
-  { alias: "bet", letter: Letter.BETA },
   { alias: "gamma", letter: Letter.GAMMA },
-  { alias: "gam", letter: Letter.GAMMA },
 ];
 
 /**
