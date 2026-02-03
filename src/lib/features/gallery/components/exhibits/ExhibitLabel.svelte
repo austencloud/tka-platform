@@ -27,7 +27,7 @@
   const labelHeight = 40;
 
   // Position below the frame
-  const labelY = slot.position.y - FRAME_HEIGHT / 2 - FRAME_BORDER - labelHeight / 2 - 10;
+  const labelY = $derived(slot.position.y - FRAME_HEIGHT / 2 - FRAME_BORDER - labelHeight / 2 - 10);
 
   // Get author name - prefer current user's name since viewing own library
   function getAuthorName(): string | null {

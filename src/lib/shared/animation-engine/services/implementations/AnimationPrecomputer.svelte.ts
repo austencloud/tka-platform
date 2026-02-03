@@ -25,6 +25,28 @@ import type {
   PropDimensions,
 } from "../contracts/IAnimationPrecomputer";
 
+// ============================================================================
+// GLOBAL PATH CACHE
+// Survives component remounts so drag-to-move doesn't re-precompute.
+// Keyed by sequence content hash. Capped at 20 entries (LRU eviction).
+// ============================================================================
+const MAX_GLOBAL_CACHE_SIZE = 20;
+const globalPathCacheMap = new Map<string, AnimationPathCache>();
+
+function getSequencePathHash(seq: SequenceData, totalSteps: number, stepDurationMs: number): string {
+  const durations = seq.steps?.map((s) => s.duration ?? 1).join(",") || "";
+  return `${seq.id || seq.word || "?"}-${totalSteps}-${stepDurationMs}-${durations}`;
+}
+
+function storeInGlobalCache(hash: string, cache: AnimationPathCache): void {
+  // Evict oldest entry if at capacity
+  if (globalPathCacheMap.size >= MAX_GLOBAL_CACHE_SIZE && !globalPathCacheMap.has(hash)) {
+    const oldest = globalPathCacheMap.keys().next().value;
+    if (oldest !== undefined) globalPathCacheMap.delete(oldest);
+  }
+  globalPathCacheMap.set(hash, cache);
+}
+
 export class AnimationPrecomputer implements IAnimationPrecomputer {
   // Reactive state - owned by service
   state = $state<PrecomputationState>({
@@ -90,6 +112,17 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
     }
 
     try {
+      const hash = getSequencePathHash(seqData, totalSteps, stepDurationMs);
+
+      // Check global cache first — avoids re-precomputing after drag-to-move
+      const cached = globalPathCacheMap.get(hash);
+      if (cached?.isValid()) {
+        this.pathCache = cached;
+        this.TrailCapturer.setAnimationCacheService(cached);
+        this.state.pathCacheData = cached.getCacheData();
+        return;
+      }
+
       this.state.isCachePrecomputing = true;
 
       // Create path cache instance if needed
@@ -123,14 +156,15 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
         };
       };
 
-      const startTime = performance.now();
-
       // Pre-compute paths
       const cacheData = await this.pathCache.precomputePaths(
         calculateStateFunc,
         totalSteps,
         stepDurationMs
       );
+
+      // Store in global cache for reuse across component remounts
+      storeInGlobalCache(hash, this.pathCache);
 
       this.state.pathCacheData = cacheData;
     } catch (error) {

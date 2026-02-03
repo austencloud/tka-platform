@@ -60,8 +60,8 @@
   function getRemotePlayers() { return multiplayerState?.remotePlayers ?? []; }
   function getIsInSession() { return multiplayerState?.isInSession ?? false; }
 
-  // Create avatar state adapter for unified camera
-  const avatarState = createGalleryAvatarState(galleryState);
+  // Create avatar state adapter for unified camera (reactive to galleryState identity)
+  const avatarState = $derived(createGalleryAvatarState(galleryState));
 
   // Track camera mode for avatar visibility (hide in first person)
   let cameraMode = $state<CameraMode>(CameraMode.FIRST_PERSON);

@@ -35,7 +35,9 @@
   }: Props = $props();
 
   // Load the museum model - useGltf returns an async store
-  const gltf = useGltf(modelPath);
+  // Note: useGltf is a Threlte hook that must run at init, can't be reactive
+  const getPath = () => modelPath;
+  const gltf = useGltf(getPath());
 
   // Track if we've already extracted slots
   let slotsExtracted = $state(false);

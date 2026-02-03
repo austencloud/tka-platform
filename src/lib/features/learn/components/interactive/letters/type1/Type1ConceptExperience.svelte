@@ -35,12 +35,12 @@ Supports two view modes:
   const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
   // Only create interactive state in step mode
-  const state = viewMode === "step"
+  const state = $derived.by(() => viewMode === "step"
     ? createType1ConceptState({
         hapticService,
         getOnComplete: () => onComplete,
       })
-    : null;
+    : null);
 </script>
 
 {#if viewMode === "scroll"}

@@ -31,6 +31,36 @@
   import { previewCellRenderer } from "../services/implementations/PreviewCellRenderer";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
+  // ============================================================================
+  // GLOBAL CELL URL CACHE
+  // Survives component remounts so drag-to-move doesn't re-render all cells.
+  // Keyed by sequence content + render options hash. Capped at 10 entries (LRU).
+  // ============================================================================
+  interface CachedPreview {
+    cells: { index: number; label: string; lightUrl: string; darkUrl: string; gridColumn: number; gridRow: number }[];
+    columns: number;
+    rows: number;
+  }
+  const MAX_PREVIEW_CACHE = 10;
+  const globalPreviewCache = new Map<string, CachedPreview>();
+
+  function getPreviewCacheKey(
+    seq: SequenceData,
+    opts: PreviewCellRenderOptions,
+    colCount: number | null,
+  ): string {
+    const stepLetters = seq.steps?.map(s => s.letter ?? "?").join("") ?? "";
+    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.bluePropType ?? ""}-${opts.redPropType ?? ""}-${colCount ?? "auto"}`;
+  }
+
+  function storePreviewInCache(key: string, data: CachedPreview): void {
+    if (globalPreviewCache.size >= MAX_PREVIEW_CACHE && !globalPreviewCache.has(key)) {
+      const oldest = globalPreviewCache.keys().next().value;
+      if (oldest !== undefined) globalPreviewCache.delete(oldest);
+    }
+    globalPreviewCache.set(key, data);
+  }
+
   interface Props {
     sequence: SequenceData;
     // Visibility toggles
@@ -345,21 +375,13 @@
    * Render all cells (start position + steps)
    */
   async function renderAllCells() {
-    const renderStart = performance.now();
-    console.log(`[RENDER] renderAllCells START`);
-
     if (!sequence?.steps?.length) {
       isLoading = false;
-      console.log(`[RENDER] renderAllCells SKIP - no steps`);
       return;
     }
 
-    if (isRendering) {
-      console.log(`[RENDER] renderAllCells SKIP - already rendering`);
-      return;
-    }
+    if (isRendering) return;
     isRendering = true;
-    console.log(`[RENDER] renderAllCells STARTED, ${sequence.steps.length} steps to render`);
 
     try {
       const layoutService = layoutCalculator;
@@ -370,26 +392,32 @@
       let rws: number;
 
       if (columnCount !== null && columnCount > 0) {
-        // User-specified column count
         cols = columnCount;
-        // Calculate rows: first row has (cols - 1) steps, subsequent rows have (cols - 1) each
-        // Total items = 1 (start) + stepCount
         const stepsPerRow = cols - 1;
         const firstRowSteps = Math.min(stepsPerRow, stepCount);
         const remainingSteps = stepCount - firstRowSteps;
         rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
       } else {
-        // Auto-calculate layout
         [cols, rws] = layoutService.calculateLayout(stepCount, true);
       }
 
       columns = cols;
       rows = rws;
 
-      const newCells: CellData[] = [];
-
       // Build render options once for all cells
       const renderOptions = buildRenderOptions();
+
+      // Check global cache — avoids re-rendering after drag-to-move
+      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount);
+      const cached = globalPreviewCache.get(cacheKey);
+      if (cached && cached.columns === cols && cached.rows === rws) {
+        cells = cached.cells;
+        isLoading = false;
+        isRendering = false;
+        return;
+      }
+
+      const newCells: CellData[] = [];
 
       // Render start position
       const firstStep = sequence.steps[0];
@@ -437,7 +465,9 @@
       clearCellUrls();
 
       cells = newCells;
-      console.log(`[RENDER] renderAllCells COMPLETE in ${(performance.now() - renderStart).toFixed(2)}ms`);
+
+      // Store in global cache for reuse across component remounts
+      storePreviewInCache(cacheKey, { cells: newCells, columns: cols, rows: rws });
     } catch (error) {
       console.error("Failed to render cells:", error);
     } finally {

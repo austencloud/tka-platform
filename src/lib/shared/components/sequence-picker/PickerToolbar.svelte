@@ -72,7 +72,7 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="toolbar" role="toolbar" onclick={handleClickOutside}>
+<div class="toolbar" role="toolbar" tabindex="0" onclick={handleClickOutside}>
   <!-- Sort Dropdown -->
   <div class="sort-dropdown-wrapper">
     <button

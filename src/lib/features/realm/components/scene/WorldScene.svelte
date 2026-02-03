@@ -112,7 +112,7 @@
   }: Props = $props();
 
   // Use provided realm config or default
-  const activeConfig = realmConfig ?? getDefaultRealmConfig();
+  const activeConfig = $derived(realmConfig ?? getDefaultRealmConfig());
 
   // ============================================================================
   // STATE (bindable to WorldSceneContent)
@@ -131,10 +131,11 @@
   let chunkManager: HybridChunkManager | null = $state(null);
   let chunkMeshes = $state(new Map<string, Mesh>());
 
-  // World generation
-  const worldSeed = seed ?? activeConfig.terrain.seed ?? generateWorldSeed();
-  const worldSeedEncoded = encodeSeed(worldSeed);
-  const worldNoise = new SeededNoise(worldSeed);
+  // World generation - _initialSeed is stable so $derived won't regenerate random seeds
+  const _initialSeed = generateWorldSeed();
+  const worldSeed = $derived(seed ?? activeConfig.terrain.seed ?? _initialSeed);
+  const worldSeedEncoded = $derived(encodeSeed(worldSeed));
+  const worldNoise = $derived(new SeededNoise(worldSeed));
 
   // Avatar/Camera state - restore from HMR if available
   // Default to ORBIT so users see the welcome overlay and can click to enter exploration

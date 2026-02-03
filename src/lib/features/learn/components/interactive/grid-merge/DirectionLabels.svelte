@@ -11,7 +11,7 @@
 	}>();
 
 	// Track which labels have been shown (prevents re-animation on back navigation)
-	let prevPhase = $state<Phase>(phase);
+	let prevPhase = $state<Phase>("intro");
 	let cardinalShown = $state(false);
 	let intercardinalShown = $state(false);
 

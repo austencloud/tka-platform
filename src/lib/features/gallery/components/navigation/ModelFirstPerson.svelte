@@ -60,7 +60,8 @@
   const THIRD_PERSON_HEIGHT = 2;
 
   // Track player position separately for third-person
-  let playerPosition = $state(new Vector3(...spawnPosition));
+  let playerPosition = $state(new Vector3(0, 0, 0));
+  $effect.pre(() => { playerPosition = new Vector3(...spawnPosition); });
   let playerYaw = $state(0);
   let playerPitch = $state(0);
 
@@ -84,7 +85,8 @@
   let verticalVelocity = $state(0);
   let isGrounded = $state(true);
   let isCrouching = $state(false);
-  let currentHeight = $state(playerHeight);
+  let currentHeight = $state<number>(SCALE.PLAYER_HEIGHT);
+  $effect.pre(() => { currentHeight = playerHeight; });
 
   // Raycasters for collision detection
   const floorRaycaster = new Raycaster();

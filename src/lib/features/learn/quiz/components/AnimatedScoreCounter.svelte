@@ -26,10 +26,10 @@ Features:
 		tier = 'default'
 	}: Props = $props();
 
-	const displayValue = new Tween(0, {
+	const displayValue = $derived.by(() => new Tween(0, {
 		duration,
 		easing: cubicOut
-	});
+	}));
 
 	// Start animation after delay when component mounts
 	$effect(() => {

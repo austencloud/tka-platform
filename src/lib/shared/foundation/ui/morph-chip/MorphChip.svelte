@@ -2,8 +2,9 @@
   MorphChip.svelte - Individual morphing chip component
 
   Renders a chip that morphs between collapsed (label + value) and
-  expanded (label + options) states. Uses absolute positioning over
-  a placeholder to enable smooth expansion animations.
+  expanded (label + options) states. Uses measurement-based positioning
+  (FLIP-inspired) over a placeholder to enable smooth expansion in any
+  flexbox layout. Spring physics via CSS linear() curves.
 -->
 <script lang="ts" generics="T = string">
 	import { onMount, onDestroy } from "svelte";
@@ -20,6 +21,7 @@
 		collapseDelay = 150,
 		expandedContent,
 		displayValue,
+		expandedHeight,
 	}: MorphChipProps<T> = $props();
 
 	// Display value: use override, or convert value to string
@@ -27,15 +29,37 @@
 
 	const ctx = getMorphChipContext();
 
-	// Register this chip on mount
-	let chipIndex = $state(-1);
+	let chipEl: HTMLElement | null = $state(null);
+	let placeholderEl: HTMLElement | null = $state(null);
+
+	// Measurement state
+	let measuredLeft = $state(0);
+	let measuredTop = $state(0);
+	let measuredWidth = $state(0);
+	let hasMeasured = $state(false);
+
+	let unsubResize: (() => void) | undefined;
+
+	function measurePlaceholder() {
+		if (!placeholderEl) return;
+		measuredLeft = placeholderEl.offsetLeft;
+		measuredTop = placeholderEl.offsetTop;
+		measuredWidth = placeholderEl.offsetWidth;
+		hasMeasured = true;
+	}
 
 	onMount(() => {
-		chipIndex = ctx.registerChip(id);
+		ctx.registerChip(id, expandedHeight);
+		// Use rAF to ensure layout is complete before first measurement
+		requestAnimationFrame(() => {
+			measurePlaceholder();
+		});
+		unsubResize = ctx.onResize(measurePlaceholder);
 	});
 
 	onDestroy(() => {
 		ctx.unregisterChip(id);
+		unsubResize?.();
 	});
 
 	// Derived state
@@ -49,14 +73,15 @@
 	let localMorphProgress = $derived(isExpanding ? ctx.morphProgress : 0);
 
 	// Staggered border progress - stays blue longer during collapse
-	// Border stays at 1 (blue) until morphProgress drops below 0.3, then fades
 	let staggeredBorderProgress = $derived(
 		isExpanding || localMorphProgress > 0.3 ? 1 : localMorphProgress / 0.3
 	);
 
+	// Effective expanded height: per-chip override or group default
+	let effectiveExpandedHeight = $derived(expandedHeight ?? ctx.expandedHeight);
+
 	function handleChipClick() {
 		if (isExpanding) {
-			// Clicking anywhere on expanded chip (not a button) collapses it
 			ctx.collapse();
 		} else if (!ctx.expandedId) {
 			ctx.expand(id);
@@ -67,43 +92,54 @@
 		e.stopPropagation();
 		value = optionValue;
 		onchange?.(optionValue);
-		// Delay collapse for visual feedback
 		setTimeout(() => ctx.collapse(), collapseDelay);
 	}
 
-	// Calculate position based on chip count
-	// Uses CSS calc to properly combine percentages and pixels
-	function getChipStyle(index: number, count: number, gap: number): string {
-		if (count === 0) return "";
-
-		// Total gaps = (count - 1) * gap
-		// Each chip width = (100% - total gaps) / count
-		// Each chip left = index * (chip width + gap)
-		const totalGaps = (count - 1) * gap;
-
-		return `
-			left: calc(${index} * ((100% - ${totalGaps}px) / ${count} + ${gap}px));
-			width: calc((100% - ${totalGaps}px) / ${count});
-		`;
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === "Escape" && isExpanding) {
+			e.stopPropagation();
+			ctx.collapse();
+			chipEl?.focus();
+		} else if (e.key === "Enter" && !isExpanding) {
+			handleChipClick();
+		}
 	}
+
+	// Focus first interactive element when expansion completes
+	$effect(() => {
+		if (isExpanding && localMorphProgress > 0.8) {
+			const firstFocusable = chipEl?.querySelector<HTMLElement>(
+				'button, [tabindex="0"]'
+			);
+			firstFocusable?.focus();
+		}
+	});
 </script>
 
 <!-- Placeholder maintains layout space -->
-<div class="chip-placeholder"></div>
+<div class="chip-placeholder" bind:this={placeholderEl}></div>
 
-<!-- The actual chip - positioned absolutely -->
+<!-- The actual chip - measurement-based absolute positioning -->
 <div
+	bind:this={chipEl}
 	class="chip"
 	class:expanding={isExpanding}
 	class:faded={isFaded}
+	class:measured={hasMeasured}
 	style:--morph-progress={localMorphProgress}
 	style:--border-progress={staggeredBorderProgress}
-	style:--chip-index={chipIndex}
-	style={chipIndex >= 0 ? getChipStyle(chipIndex, ctx.chipCount, ctx.gap) : "left: 0; width: 100%;"}
+	style:--expanded-height="{effectiveExpandedHeight}px"
+	style:left="{measuredLeft}px"
+	style:top="{measuredTop}px"
+	style:width="{measuredWidth}px"
 	onclick={handleChipClick}
-	onkeydown={(e) => e.key === "Enter" && handleChipClick()}
+	onkeydown={handleKeydown}
 	role="button"
 	tabindex={isFaded ? -1 : 0}
+	aria-expanded={isExpanding}
+	aria-label={isExpanding
+		? `${displayLabel}, expanded. Press Escape to collapse.`
+		: `${label}: ${chipDisplayValue}`}
 >
 	<!-- Collapsed content: label + value, centered with flexbox -->
 	<div class="chip-content">
@@ -117,7 +153,6 @@
 
 	<!-- Custom expanded content or default options-row -->
 	{#if expandedContent}
-		<!-- Custom content for complex chips (like Loop) -->
 		<div
 			class="custom-content"
 			style:opacity={localMorphProgress}
@@ -126,8 +161,6 @@
 			{@render expandedContent({ collapse: ctx.collapse, morphProgress: localMorphProgress })}
 		</div>
 	{:else}
-		<!-- Default options - slide in from bottom when expanded -->
-		<!-- pointer-events:none on container, auto on buttons only - clicks pass through to chip -->
 		<div
 			class="options-row"
 			style:opacity={localMorphProgress}
@@ -152,13 +185,12 @@
 	.chip-placeholder {
 		flex: 1;
 		min-height: 56px;
-		pointer-events: none; /* Never capture clicks - let them pass to chips */
+		pointer-events: none;
 	}
 
-	/* The actual chip - positioned absolutely over the placeholder */
+	/* The actual chip - measurement-based absolute positioning */
 	.chip {
 		position: absolute;
-		top: 0;
 		z-index: 1;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		border-radius: 18px;
@@ -176,22 +208,31 @@
 				var(--theme-accent, #6366f1) calc(var(--border-progress, 0) * 100%)
 			);
 
-		/* Smooth transitions */
+		/* Fallback: cubic-bezier overshoot for browsers without linear() */
 		transition:
-			left 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
-			width 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
-			height 300ms cubic-bezier(0.34, 1.2, 0.64, 1),
+			left 350ms cubic-bezier(0.34, 1.2, 0.64, 1),
+			top 350ms cubic-bezier(0.34, 1.2, 0.64, 1),
+			width 350ms cubic-bezier(0.34, 1.2, 0.64, 1),
+			min-height 350ms cubic-bezier(0.34, 1.2, 0.64, 1),
 			opacity 200ms ease,
 			box-shadow 200ms ease;
 	}
 
+	/* Invisible until JS measures placeholder position */
+	.chip:not(.measured) {
+		opacity: 0;
+	}
+
 	.chip.expanding {
-		/* Expand to cover entire container */
 		left: 0 !important;
+		top: 0 !important;
 		width: 100% !important;
-		height: var(--expanded-height, 132px);
+		height: 100%;
+		min-height: var(--expanded-height, 108px);
 		z-index: 10;
-		cursor: pointer; /* Click anywhere to collapse */
+		cursor: pointer;
+		display: flex;
+		flex-direction: column;
 		box-shadow:
 			0 4px 20px rgba(99, 102, 241, 0.15),
 			0 0 0 1px rgba(99, 102, 241, 0.1);
@@ -202,7 +243,7 @@
 		pointer-events: none;
 	}
 
-	/* Content container - uses flexbox to center label + value like Option C */
+	/* Content container */
 	.chip-content {
 		display: flex;
 		flex-direction: column;
@@ -211,16 +252,14 @@
 		gap: 4px;
 		padding: 8px 12px;
 		min-height: 56px;
-		pointer-events: none; /* Clicks pass through to chip */
+		pointer-events: none;
 	}
 
-	/* Label - centered via flexbox, color morphs */
+	/* Label - color morphs smoothly */
 	.chip-label {
 		white-space: nowrap;
 		font-size: 12px;
 		font-weight: 500;
-
-		/* Color morphs smoothly via CSS custom property */
 		color: color-mix(
 			in srgb,
 			var(--theme-text-muted, rgba(255, 255, 255, 0.6))
@@ -230,7 +269,7 @@
 		transition: color 300ms ease;
 	}
 
-	/* Value - centered via flexbox, fades out when expanded */
+	/* Value - fades out when expanded */
 	.chip-value {
 		font-size: 14px;
 		font-weight: 600;
@@ -239,7 +278,7 @@
 		transition: opacity 200ms ease;
 	}
 
-	/* Options - positioned at bottom, slide up */
+	/* Options row */
 	.options-row {
 		position: absolute;
 		bottom: 8px;
@@ -248,7 +287,7 @@
 		display: flex;
 		gap: 4px;
 		transition: opacity 200ms ease;
-		pointer-events: none; /* Clicks pass through to chip; buttons have pointer-events:auto */
+		pointer-events: none;
 	}
 
 	.chip:not(.expanding) .options-row {
@@ -281,23 +320,33 @@
 
 	/* Custom expanded content container */
 	.custom-content {
-		position: absolute;
-		top: 44px; /* Below the header */
-		left: 8px;
-		right: 8px;
-		bottom: 8px;
+		padding: 0 8px 8px;
 		transition: opacity 200ms ease;
+	}
+
+	/* When expanding, custom content fills remaining space and centers children */
+	.chip.expanding .custom-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		min-height: 0;
 	}
 
 	.chip:not(.expanding) .custom-content {
 		opacity: 0;
 		pointer-events: none;
+		height: 0;
+		overflow: hidden;
+		padding: 0;
 	}
 
 	/* Respect reduced motion preferences */
 	@media (prefers-reduced-motion: reduce) {
 		.chip,
-		.chip-label {
+		.chip-label,
+		.options-row,
+		.custom-content {
 			transition: none !important;
 		}
 	}

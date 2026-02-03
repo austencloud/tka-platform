@@ -741,10 +741,10 @@
   <!-- Save preset dialog -->
   {#if showSaveDialog}
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <div class="dialog-backdrop" onclick={handleCancelSaveDialog}>
+    <div class="dialog-backdrop" role="presentation" onclick={handleCancelSaveDialog}>
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-      <div class="dialog" onclick={(e) => e.stopPropagation()}>
-        <h2 class="dialog-title">Save as Preset</h2>
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="save-preset-title" tabindex="-1" onclick={(e) => e.stopPropagation()}>
+        <h2 id="save-preset-title" class="dialog-title">Save as Preset</h2>
 
         <div class="form-field">
           <label for="preset-name">Name</label>
@@ -769,8 +769,9 @@
         </div>
 
         <div class="form-field">
+          <!-- svelte-ignore a11y_label_has_associated_control -->
           <label>Icon</label>
-          <div class="icon-picker">
+          <div class="icon-picker" role="radiogroup" aria-label="Preset icon">
             {#each ICON_OPTIONS as icon}
               <button
                 class="icon-btn"

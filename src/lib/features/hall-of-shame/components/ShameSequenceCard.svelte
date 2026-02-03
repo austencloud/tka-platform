@@ -20,7 +20,7 @@
   // State
   let hasVoted = $state(false);
   let isVoting = $state(false);
-  let localVoteCount = $state(entry.voteCount || 0);
+  let localVoteCount = $state(0);
 
   const currentUser = $derived(authState.user);
 

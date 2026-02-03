@@ -27,7 +27,7 @@
   }: Props = $props();
 
   const centerX = 0;
-  const centerZ = depth / 2;
+  const centerZ = $derived(depth / 2);
 </script>
 
 {#if visible}

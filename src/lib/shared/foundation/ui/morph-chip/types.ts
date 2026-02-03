@@ -22,7 +22,7 @@ export interface MorphChipGroupProps {
 	expandedId?: string | null;
 	/** Gap between chips in pixels (default: 8) */
 	gap?: number;
-	/** Height when a chip is expanded in pixels (default: 132) */
+	/** Height when a chip is expanded in pixels (default: 108) */
 	expandedHeight?: number;
 	/** Spring animation configuration */
 	springConfig?: { stiffness: number; damping: number };
@@ -57,6 +57,8 @@ export interface MorphChipProps<T = string> {
 	}]>;
 	/** Display value override (for custom chips that don't derive from options) */
 	displayValue?: string;
+	/** Override expanded height for this specific chip (falls back to group default) */
+	expandedHeight?: number;
 }
 
 /**
@@ -73,12 +75,16 @@ export interface MorphChipContext {
 	readonly gap: number;
 	/** Height when expanded */
 	readonly expandedHeight: number;
+	/** Container element for measurement */
+	readonly containerEl: HTMLElement | null;
 	/** Expand a chip by ID */
 	expand: (id: string) => void;
 	/** Collapse the currently expanded chip */
 	collapse: () => void;
-	/** Register a chip, returns its index */
-	registerChip: (id: string) => number;
+	/** Register a chip (with optional per-chip expanded height), returns its index */
+	registerChip: (id: string, expandedHeight?: number) => number;
 	/** Unregister a chip */
 	unregisterChip: (id: string) => void;
+	/** Register a resize callback (returns unregister function) */
+	onResize: (callback: () => void) => () => void;
 }

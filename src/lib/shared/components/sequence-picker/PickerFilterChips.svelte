@@ -60,7 +60,7 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="filter-chips" role="group" aria-label="Filters" onclick={handleClickOutside}>
+<div class="filter-chips" role="toolbar" aria-label="Filters" tabindex="0" onclick={handleClickOutside}>
   <!-- Beat Count Badge (when locked) -->
   {#if requiredBeatCount != null}
     <div class="beat-count-badge" title="Filtered to match composition length">

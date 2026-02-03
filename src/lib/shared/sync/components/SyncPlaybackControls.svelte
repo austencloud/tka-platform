@@ -29,7 +29,7 @@
   } = $props();
 
   // Speed presets
-  const speedPresets = compact ? [0.5, 1, 1.5, 2] : [0.5, 1, 1.5, 2];
+  const speedPresets = $derived(compact ? [0.5, 1, 1.5, 2] : [0.5, 1, 1.5, 2]);
 
   // Derived state from deviceSyncState
   const isPlaying = $derived(deviceSyncState.isPlaying);

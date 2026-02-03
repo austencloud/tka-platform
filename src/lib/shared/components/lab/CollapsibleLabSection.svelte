@@ -17,7 +17,8 @@
     children,
   }: Props = $props();
 
-  let isOpen = $state(defaultOpen);
+  let isOpen = $state(false);
+  $effect.pre(() => { isOpen = defaultOpen; });
 
   function toggle() {
     isOpen = !isOpen;

@@ -28,7 +28,7 @@ Supports two view modes:
 	}>();
 
 	const hapticService = container.items.hapticFeedback;
-	const experienceState = createGridExperienceState(viewMode === 'scroll');
+	const experienceState = $derived.by(() => createGridExperienceState(viewMode === 'scroll'));
 
 	// Accessibility: refs for focus management
 	let nextButtonRef = $state<HTMLButtonElement | null>(null);

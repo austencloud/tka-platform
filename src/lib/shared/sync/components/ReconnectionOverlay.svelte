@@ -32,7 +32,8 @@
   }: Props = $props();
 
   // Internal state
-  let countdown = $state(retryIntervalSec);
+  let countdown = $state(5);
+  $effect.pre(() => { countdown = retryIntervalSec; });
   let retryCount = $state(0);
   let countdownInterval: ReturnType<typeof setInterval> | null = null;
 

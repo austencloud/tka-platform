@@ -30,7 +30,7 @@
   let { label, variant = "grid", columns, children }: Props = $props();
 
   // If columns is specified, use CSS grid instead of flexbox
-  const useFixedGrid = columns !== undefined;
+  const useFixedGrid = $derived(columns !== undefined);
 </script>
 
 <div class="chip-group">

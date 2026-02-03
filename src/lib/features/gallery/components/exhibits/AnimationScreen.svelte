@@ -68,8 +68,8 @@
   const SCREEN_OFFSET_X = FRAME_WIDTH * 1.2; // Space between frame and screen
 
   // Get sequence data
-  const sequence = exhibit.sequence as SequenceData;
-  const totalSteps = sequence.steps?.length ?? 0;
+  const sequence = $derived(exhibit.sequence as SequenceData);
+  const totalSteps = $derived(sequence.steps?.length ?? 0);
 
   // Get settings (reactive) for prop type and dark mode
   const settings = $derived(getSettings());

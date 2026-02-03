@@ -23,8 +23,12 @@
   let isPlaying = $state(false);
 
   // Snip state (in seconds)
-  let inPoint = $state(initialSnip?.inPoint ?? 0);
-  let outPoint = $state(initialSnip?.outPoint ?? 0);
+  let inPoint = $state(0);
+  let outPoint = $state(0);
+  $effect.pre(() => {
+    inPoint = initialSnip?.inPoint ?? 0;
+    outPoint = initialSnip?.outPoint ?? 0;
+  });
 
   // Drag state
   let dragging: "in" | "out" | "playhead" | null = $state(null);

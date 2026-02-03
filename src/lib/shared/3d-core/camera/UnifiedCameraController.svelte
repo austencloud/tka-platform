@@ -79,12 +79,14 @@
   const { renderer, camera, scene } = useThrelte();
 
   // Current camera mode (from preferences)
-  let mode = $state<CameraMode>(cameraPreferences.getModeForDestination(destinationId));
+  let mode = $state<CameraMode>(CameraMode.ORBIT);
+  $effect.pre(() => { mode = cameraPreferences.getModeForDestination(destinationId); });
 
   // Camera state (for game modes - orbit mode uses Scene3D's OrbitControls)
   // Use initial values from props for HMR restoration
-  let yaw = $state(initialYaw);
-  let pitch = $state(initialPitch);
+  let yaw = $state(0);
+  let pitch = $state(0);
+  $effect.pre(() => { yaw = initialYaw; pitch = initialPitch; });
   let isPointerLocked = $state(false);
 
   // Movement keys
