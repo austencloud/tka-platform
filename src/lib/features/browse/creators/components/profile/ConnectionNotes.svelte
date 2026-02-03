@@ -17,7 +17,7 @@
 
   let { targetUserId, initialNotes = "", onNotesChange }: Props = $props();
 
-  let notes = $state(initialNotes);
+  let notes = $state("");
   let saveStatus = $state<"idle" | "saving" | "saved">("idle");
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -29,7 +29,7 @@
   });
 
   // Sync with initial notes if they change
-  $effect(() => {
+  $effect.pre(() => {
     if (initialNotes !== notes && saveStatus === "idle") {
       notes = initialNotes;
     }

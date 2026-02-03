@@ -19,8 +19,11 @@
 
   let { user, onclick }: Props = $props();
 
-  // Dynamic color from avatar
-  let accentColor = $state(getCachedOrFallbackColor(user.avatar, user.displayName));
+  // Dynamic color from avatar - syncs from user props, but can be overridden by avatar load/error
+  let accentColor = $state("");
+  $effect(() => {
+    accentColor = getCachedOrFallbackColor(user.avatar, user.displayName);
+  });
 
   // Calculate override counts
   const overrideCounts = $derived(() => {

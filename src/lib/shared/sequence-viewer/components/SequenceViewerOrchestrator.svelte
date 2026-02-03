@@ -196,7 +196,8 @@
   // ============================================================================
 
   // View mode
-  let viewMode = $state<ViewMode>(initialViewMode || sequenceModalPersistence.loadViewMode());
+  let viewMode = $state<ViewMode>(sequenceModalPersistence.loadViewMode());
+  $effect.pre(() => { if (initialViewMode) viewMode = initialViewMode; });
 
   // Fullscreen state
   let isFullscreen = $state(false);
@@ -221,8 +222,9 @@
 
   // Local reactive state for animation (synced via observer pattern)
   let isPlayingLocal = $state(false);
-  let currentStepLocal = $state(initialStep);
-  let bpmLocal = $state(initialBpm);
+  let currentStepLocal = $state(0);
+  let bpmLocal = $state(120);
+  $effect.pre(() => { currentStepLocal = initialStep; bpmLocal = initialBpm; });
   let cleanupAnimationStateSubscription: (() => void) | undefined;
 
   // Track whether current position was reached via step buttons (vs. direct seek or playback)

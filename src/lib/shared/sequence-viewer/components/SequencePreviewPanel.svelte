@@ -68,7 +68,8 @@
   // Track current media type - updated by SequenceViewer via callback
   // Child (SequenceViewer) is source of truth - it handles sessionStorage persistence
   // We initialize with a placeholder; the actual value comes from onMediaTypeChange callback
-  let currentMediaType = $state<MediaType>(initialMediaType);
+  let currentMediaType = $state<MediaType>("image" as MediaType);
+  $effect.pre(() => { currentMediaType = initialMediaType; });
 
   // Export format syncs with media type: image → static, animation → animation
   const selectedFormat = $derived<MediaFormat>(

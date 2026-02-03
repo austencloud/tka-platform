@@ -39,13 +39,19 @@
   let editNameModal = $state<{ open: boolean; value: string }>({ open: false, value: "" });
 
   // Admin label state (quick identifier like "Jake from Tuesday jam")
-  let adminLabel = $state(userProfile.adminLabel ?? "");
+  let adminLabel = $state("");
   let labelSaveStatus = $state<"idle" | "saving" | "saved">("idle");
 
   // Admin notes state
-  let adminNotes = $state(userProfile.adminNotes ?? "");
+  let adminNotes = $state("");
   let notesSaveStatus = $state<"idle" | "saving" | "saved">("idle");
   let notesDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Sync local state with prop changes
+  $effect(() => {
+    adminLabel = userProfile.adminLabel ?? "";
+    adminNotes = userProfile.adminNotes ?? "";
+  });
 
   async function changeRole(newRole: UserRole) {
     if (isActionPending || userProfile.role === newRole) return;

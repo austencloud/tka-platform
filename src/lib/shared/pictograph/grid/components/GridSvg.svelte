@@ -139,8 +139,10 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     );
   });
 
-  // Load grid on mount and when mode changes between skewed/non-skewed
-  loadGrid(gridMode);
+  // Load grid on mount - runs once with initial gridMode value
+  $effect(() => {
+    loadGrid(gridMode);
+  });
 
   // Reload grid if mode changes to/from SKEWED (different SVG needed)
   $effect(() => {

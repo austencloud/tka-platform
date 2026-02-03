@@ -22,10 +22,11 @@
     children,
   }: Props = $props();
 
-  let isOpen = $state(defaultOpen);
+  let isOpen = $state(true);
+  $effect.pre(() => { isOpen = defaultOpen; });
 
   // Generate a stable ID from the title for aria-controls
-  const sectionId = `section-${title.toLowerCase().replace(/\s+/g, "-")}`;
+  const sectionId = $derived(`section-${title.toLowerCase().replace(/\s+/g, "-")}`);
 </script>
 
 <div class="collapsible-section" class:open={isOpen}>

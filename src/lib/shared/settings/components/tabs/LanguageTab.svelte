@@ -35,8 +35,11 @@
   // State
   let isVisible = $state(false);
   let currentLocale = $derived(getReactiveLocale());
-  let previousLocale = $state<string>(currentLocale);
+  let previousLocale = $state<string>("");
   let localeChanged = $state(false);
+
+  // Initialize previousLocale on first run
+  $effect.pre(() => { previousLocale ||= currentLocale; });
 
   // Track locale changes for screen reader announcement
   $effect(() => {

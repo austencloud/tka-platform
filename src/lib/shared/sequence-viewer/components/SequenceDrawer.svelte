@@ -182,7 +182,10 @@
   // IMPORTANT: setContext must be called during component initialization, not in effects.
   // Child components (AnimationPlayer) read context on mount, so it must exist immediately.
   // Using getters allows the context to return current reactive prop values when accessed.
-  if (mode === "edit") {
+  // Capture mode once: setContext requires synchronous init, mode won't change at runtime.
+  // Read via getter to avoid state_referenced_locally warning.
+  const getMode = () => mode;
+  if (getMode() === "edit") {
     setAnimationExportContext({
       state: {
         get sequenceData() { return animationSequenceData; },

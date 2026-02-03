@@ -128,7 +128,8 @@
   });
 
   // View mode state (persisted via localStorage, but prefer initialViewMode if provided)
-  let viewMode = $state<ViewMode>(initialViewMode || loadViewMode());
+  let viewMode = $state<ViewMode>(loadViewMode());
+  $effect.pre(() => { if (initialViewMode) viewMode = initialViewMode; });
 
   // Export mode state
   let isExportMode = $state(false);

@@ -25,11 +25,11 @@
     onchange,
   }: Props = $props();
 
-  const states: { id: OverrideState; icon: string; label: string }[] = [
+  const states: { id: OverrideState; icon: string; label: string }[] = $derived([
     { id: "inherit", icon: "fa-link", label: inheritLabel },
     { id: "grant", icon: "fa-check", label: "Grant" },
     { id: "deny", icon: "fa-ban", label: "Deny" },
-  ];
+  ]);
 </script>
 
 <div class="three-state-toggle" class:compact class:disabled>
