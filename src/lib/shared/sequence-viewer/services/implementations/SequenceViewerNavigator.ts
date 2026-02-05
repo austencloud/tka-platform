@@ -9,10 +9,7 @@
  *   saveSequenceRouteHandoff(...) + goto(sequenceEncoder.generateSequenceRoutePath(...))
  */
 
-import { goto } from '$app/navigation';
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
-import { saveSequenceRouteHandoff } from '$lib/shared/coordinators/sequence-handoff.svelte';
-import { sequenceEncoder } from '$lib/shared/navigation/services/implementations/SequenceEncoder';
 import { openSequenceOverlay } from '../../state/sequence-viewer-overlay-state.svelte';
 
 export interface OpenSequenceViewerOptions {
@@ -29,14 +26,14 @@ export interface OpenSequenceViewerOptions {
 }
 
 /**
- * Open the sequence viewer using the appropriate method for the current device.
+ * Open the sequence viewer as a drawer overlay.
  *
- * On compact devices (<=1024px): Opens the drawer overlay. The current module stays
- * mounted behind the drawer, so returning is instant. Includes swipe-to-dismiss.
- * Covers phones, folded/unfolded foldables, and small tablets.
+ * Always uses the drawer overlay for in-app navigation, regardless of viewport size.
+ * The current module stays mounted behind the drawer, so returning is instant.
+ * Includes swipe-to-dismiss on all viewports.
  *
- * On desktop (>1024px): Navigates to the /sequence/[id] route with view transitions
- * and saves handoff data for instant loading.
+ * The /sequence/[id] route still exists for external links (QR codes, shared URLs)
+ * where no app shell is loaded yet.
  */
 export function openSequenceViewer(
 	sequence: SequenceData,
@@ -54,24 +51,11 @@ export function openSequenceViewer(
 		// Silently fail - attribution tracking is non-critical
 	}
 
-	const useDrawer = window.innerWidth <= 1024;
-
-	if (useDrawer) {
-		// Compact (<=1024px): open drawer overlay, no route navigation
-		openSequenceOverlay(sequence, {
-			returnLabel: options.returnLabel,
-			initialBpm: options.initialBpm,
-			initialStep: options.initialStep,
-		});
-	} else {
-		// Desktop (>1024px): navigate to route with handoff for instant loading
-		saveSequenceRouteHandoff({
-			sequence,
-			returnPath: options.returnPath,
-			returnLabel: options.returnLabel,
-			scrollY: options.scrollY,
-		});
-
-		void goto(sequenceEncoder.generateSequenceRoutePath(sequence));
-	}
+	// Always use drawer overlay - keeps the underlying module mounted
+	// so content is immediately visible behind the drawer on dismiss
+	openSequenceOverlay(sequence, {
+		returnLabel: options.returnLabel,
+		initialBpm: options.initialBpm,
+		initialStep: options.initialStep,
+	});
 }

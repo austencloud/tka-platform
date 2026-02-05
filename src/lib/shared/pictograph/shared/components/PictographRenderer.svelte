@@ -35,6 +35,7 @@ Usage:
   import ElementalGlyph from "./ElementalGlyph.svelte";
   import PositionGlyph from "./PositionGlyph.svelte";
   import StepNumber from "./StepNumber.svelte";
+  import DurationGlyph from "./DurationGlyph.svelte";
   import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import type { IGridModeDeriver } from "../../grid/services/contracts/IGridModeDeriver";
   import { turnsTupleGenerator } from "../../arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
@@ -90,6 +91,8 @@ Usage:
     widthMultiplier = 1,
     // Cell index for position caching (enables smooth transitions on regeneration)
     cellIndex = null,
+    // Duration multiplier for the step (1 = default, shown when != 1)
+    duration = 1,
   } = $props<{
     pictograph: PreparedPictographData;
     blueReversal?: boolean;
@@ -129,6 +132,8 @@ Usage:
     widthMultiplier?: number;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
     cellIndex?: number | null;
+    /** Duration multiplier for the step (1 = default one beat, shown when != 1) */
+    duration?: number;
   }>();
 
   // Expanded viewBox calculations
@@ -406,6 +411,14 @@ Usage:
         visible={showPositions}
         {previewMode}
         onToggle={onTogglePositions}
+        centerX={expandedWidth / 2}
+      />
+
+      <!-- Duration glyph (shows "2×", "0.5×", etc. when duration != 1) -->
+      <DurationGlyph
+        {duration}
+        {hasValidData}
+        {darkMode}
         centerX={expandedWidth / 2}
       />
   </svg>

@@ -45,9 +45,11 @@
   import ExportFooter from "$lib/shared/sequence-viewer/components/ExportFooter.svelte";
   import RampProgressIndicator from "$lib/shared/sequence-viewer/components/RampProgressIndicator.svelte";
   import RouteViewerHeader from "./RouteViewerHeader.svelte";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import PropSelectorDrawer from "$lib/shared/sequence-viewer/components/PropSelectorDrawer.svelte";
   import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
+  import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   // ============================================================================
   // ROUTE-SPECIFIC STATE
@@ -69,6 +71,10 @@
   const urlDifficulty = $derived($page.url.searchParams.get("difficulty"));
   const urlBirthday = $derived($page.url.searchParams.get("birthday"));
 
+  // URL prop params (from QR codes with prop info)
+  const urlBlueProp = $derived($page.url.searchParams.get("bp"));
+  const urlRedProp = $derived($page.url.searchParams.get("rp"));
+
   // Sequence loading state
   let sequence = $state<SequenceData | null>(null);
   let isLoading = $state(true);
@@ -88,6 +94,9 @@
 
   // Page container ref for swipe visual feedback
   let pageContainer: HTMLElement | null = $state(null);
+
+  // Prop selector drawer state
+  let propDrawerOpen = $state(false);
 
   // DrawerStack registration - blocks pull-to-refresh on mobile
   const drawerId = generateDrawerId();
@@ -175,6 +184,31 @@
     return { ...seq, ...updates } as SequenceData;
   }
 
+  /**
+   * Apply URL prop preferences to settings state.
+   * Uses PROP_TYPE_DECODE mapping (single char -> PropType).
+   */
+  function applyUrlPropPreferences() {
+    if (!urlBlueProp && !urlRedProp) return;
+
+    const encoderService = container.items.sequenceEncoder as ISequenceEncoder;
+    const parsed = encoderService.parsePropsFromURL($page.url.searchParams);
+
+    if (parsed.bluePropType || parsed.redPropType) {
+      const settingsService = container.items.settingsState as ISettingsState;
+      const updates: { bluePropType?: PropType; redPropType?: PropType } = {};
+
+      if (parsed.bluePropType) {
+        updates.bluePropType = parsed.bluePropType as PropType;
+      }
+      if (parsed.redPropType) {
+        updates.redPropType = parsed.redPropType as PropType;
+      }
+
+      settingsService.updateSettings(updates);
+    }
+  }
+
   // ============================================================================
   // SEQUENCE LOADING
   // ============================================================================
@@ -185,6 +219,8 @@
 
     if (handoffData?.sequence) {
       sequence = handoffData.sequence;
+      // Apply URL prop preferences even when using handoff (QR might have props)
+      applyUrlPropPreferences();
       isLoading = false;
     } else if (sequenceId) {
       const encoderService = container.items.sequenceEncoder as ISequenceEncoder;
@@ -212,6 +248,9 @@
             imageComposition.setDarkMode(urlDarkMode === "1");
           }
 
+          // Apply URL prop preferences (from QR codes with embedded prop info)
+          applyUrlPropPreferences();
+
           isLoading = false;
         } catch (err) {
           console.error("[SequenceRoute] Failed to decode sequence from URL:", err);
@@ -229,21 +268,27 @@
       isLoading = false;
     }
 
-    // Mobile + signed-in users: redirect to app shell with drawer overlay
+    // Mobile: redirect to app shell with drawer overlay
     // This handles QR code / shared link scenarios where the user lands on
-    // the route but would get a better experience with the drawer overlay
-    if (isMobile && authState.isAuthenticated && sequence) {
+    // the route but would get a better experience with the drawer overlay.
+    // Works for both authenticated and unauthenticated users since
+    // SequenceViewerDrawerHost renders outside the auth gate.
+    if (isMobile && sequence) {
       const returnPath = handoffData?.returnPath || "/browse/gallery";
       const returnLabel = handoffData?.returnLabel || "Browse";
       // Set overlay state without history push (goto will handle navigation)
+      // dismissPath ensures swipe-down navigates to the app instead of history.back()
       openSequenceOverlay(sequence, {
         returnLabel,
         initialBpm: urlBpm ?? undefined,
         initialStep: urlTime ?? undefined,
         skipHistoryPush: true,
+        dismissPath: returnPath,
       });
+      // Skip view transition so it doesn't compete with drawer animation
+      setSkipNextViewTransition();
       // Navigate to app shell - replaces the /sequence/[id] entry
-      // Once MainInterface mounts, SequenceViewerDrawerHost picks up overlay state
+      // Once MainApplication mounts, SequenceViewerDrawerHost picks up overlay state
       await goto(returnPath, { replaceState: true });
       // Push overlay history entry after navigation completes
       window.history.pushState({ sequenceOverlay: true }, '');
@@ -291,6 +336,8 @@
       }
 
       sequence = resolvedSequence;
+      // Apply URL prop preferences (from QR codes with embedded prop info)
+      applyUrlPropPreferences();
       isLoading = false;
     } catch (err) {
       console.error("[SequenceRoute] Failed to load sequence:", err);
@@ -419,6 +466,7 @@
           onExitExportMode={ctx.exitExportMode}
           onBackToExportTypeSelection={ctx.backToExportTypeSelection}
           onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
+          onOpenPropSelector={() => (propDrawerOpen = true)}
         />
 
         <!-- Main content -->
@@ -550,6 +598,12 @@
     {/snippet}
   </SequenceViewerOrchestrator>
 {/if}
+
+<!-- Prop selector drawer - rendered outside constrained containers so position:fixed works -->
+<PropSelectorDrawer
+  bind:isOpen={propDrawerOpen}
+  onClose={() => (propDrawerOpen = false)}
+/>
 
 <style>
   .sequence-route-page {

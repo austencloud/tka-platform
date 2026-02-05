@@ -305,6 +305,7 @@
 >
   <!-- Normal pictograph (will show empty grid when step.isBlank) -->
   <!-- Always disable Svelte transitions to allow CSS transitions on props/arrows -->
+  <!-- Duration is now rendered INSIDE the pictograph via DurationGlyph -->
   <PictographContainer
     pictographData={stepDataWithSelection}
     disableTransitions={true}
@@ -312,9 +313,6 @@
     {widthMultiplier}
     cellIndex={index}
   />
-  {#if musicalPosition}
-    <span class="duration-indicator">{musicalPosition}</span>
-  {/if}
 </div>
 
 <style>
@@ -841,20 +839,5 @@
     .practice-wave {
       animation: none;
     }
-  }
-
-  /* Duration indicator - shows "2×", "0.5×", etc. below the pictograph */
-  .duration-indicator {
-    position: absolute;
-    bottom: 2px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-accent, #60a5fa);
-    line-height: 1;
-    pointer-events: none;
-    white-space: nowrap;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   }
 </style>

@@ -18,7 +18,6 @@
   import StepEditorHelpModal from "./StepEditorHelpModal.svelte";
   import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
   import ArrowAdjustmentPanel from "./ArrowAdjustmentPanel.svelte";
-  import { formatDurationCompact } from "../../domain/models/DurationPatternData";
   import type { StepData } from "../../domain/models/StepData";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import {
@@ -153,11 +152,6 @@
   );
   const redRotation = $derived(
     redMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
-  );
-
-  // Duration indicator text for the preview pictograph (empty string for default 1.0)
-  const durationDisplay = $derived(
-    formatDurationCompact(displayedStepData?.duration ?? 1)
   );
 
   const stepLabel = $derived.by(() => {
@@ -330,19 +324,15 @@
     </header>
 
     <!-- Pictograph Preview - shown on both mobile and desktop when beat selected -->
+    <!-- Duration is now rendered INSIDE the pictograph via DurationGlyph -->
     {#if hasSelection && displayedStepData}
       <div class="preview-section" class:mobile={!isSideBySideLayout}>
-        <div class="pictograph-wrapper">
-          <div class="pictograph-container">
-            <PictographContainer
-              pictographData={displayedStepData}
-              arrowsClickable={isAdmin()}
-              disableTransitions={true}
-            />
-          </div>
-          {#if durationDisplay}
-            <span class="duration-indicator">{durationDisplay}</span>
-          {/if}
+        <div class="pictograph-container">
+          <PictographContainer
+            pictographData={displayedStepData}
+            arrowsClickable={isAdmin()}
+            disableTransitions={true}
+          />
         </div>
       </div>
     {/if}
@@ -569,13 +559,6 @@
     flex: 1 1 auto;
   }
 
-  .pictograph-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
-
   .pictograph-container {
     /* Size based on smaller dimension - fills the space as a square */
     width: min(90cqw, 90cqh, 450px);
@@ -584,13 +567,6 @@
     /* Subtle container styling */
     background: rgba(255, 255, 255, 0.02);
     border-radius: 12px;
-  }
-
-  .duration-indicator {
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    color: var(--theme-accent, #60a5fa);
-    line-height: 1;
   }
 
   /* ============================================================================

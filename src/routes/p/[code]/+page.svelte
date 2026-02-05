@@ -23,6 +23,7 @@
   import { container } from "$lib/shared/di";
   import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
+  import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
 
   // Get short code from URL param
   const shortCode = $derived($page.params["code"]);
@@ -61,7 +62,20 @@
         });
       }
 
-      // Save handoff data so /sequence/ route loads instantly (no re-fetch)
+      // Mobile: go directly to app shell with drawer overlay (skip /sequence/[id] redirect)
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+      if (isMobile) {
+        openSequenceOverlay(sequence, {
+          returnLabel: "Browse",
+          dismissPath: "/browse/gallery",
+          skipHistoryPush: true,
+        });
+        await goto("/browse/gallery", { replaceState: true });
+        window.history.pushState({ sequenceOverlay: true }, "");
+        return;
+      }
+
+      // Desktop: redirect to /sequence/{encoded} route for full-page viewer
       saveSequenceRouteHandoff({
         sequence,
         returnPath: "/browse/gallery",
@@ -69,8 +83,10 @@
       });
 
       // Generate the /sequence/{encoded} path and redirect
+      // Preserve any query params (like prop types) that came with the original URL
       const routePath = sequenceEncoder.generateSequenceRoutePath(sequence);
-      await goto(routePath, { replaceState: true });
+      const currentSearch = typeof window !== "undefined" ? window.location.search : "";
+      await goto(routePath + currentSearch, { replaceState: true });
     } catch (err: unknown) {
       console.error("Failed to resolve short code:", err);
       error = "Failed to load sequence";

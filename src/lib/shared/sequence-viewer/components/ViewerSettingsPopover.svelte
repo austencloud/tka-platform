@@ -7,6 +7,9 @@
 <script lang="ts">
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
@@ -19,9 +22,21 @@
     onDarkModeToggle: () => void;
     /** Callback to close the popover */
     onClose: () => void;
+    /** Callback to open prop selector drawer */
+    onOpenPropSelector?: () => void;
   }
 
-  let { open, darkMode, onDarkModeToggle, onClose }: Props = $props();
+  let { open, darkMode, onDarkModeToggle, onClose, onOpenPropSelector }: Props = $props();
+
+  // Get current prop types from settings
+  const settings = $derived(getSettings());
+  const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
+  const redPropType = $derived(settings.redPropType ?? PropType.STAFF);
+  const catDogMode = $derived(settings.catDogMode ?? false);
+
+  // Display info for current props
+  const blueDisplayInfo = $derived(getPropTypeDisplayInfo(bluePropType));
+  const redDisplayInfo = $derived(getPropTypeDisplayInfo(redPropType));
 
   // Animation visibility manager
   const animVisibility = getAnimationVisibilityManager();
@@ -75,6 +90,12 @@
   function handleDarkModeToggle() {
     haptic();
     onDarkModeToggle();
+  }
+
+  function handlePropSelectorOpen() {
+    haptic();
+    onClose(); // Close popover first
+    onOpenPropSelector?.();
   }
 
   // Close on Escape
@@ -141,6 +162,42 @@
         onclick={toggleAnimStepNumbers}
       />
     </div>
+
+    <!-- Prop selector row -->
+    {#if onOpenPropSelector}
+      <div class="prop-section">
+        <span class="section-label">Props</span>
+        <button
+          type="button"
+          class="prop-indicator-btn"
+          onclick={handlePropSelectorOpen}
+          aria-label="Change prop type"
+        >
+          <div class="prop-icons">
+            <img
+              src={blueDisplayInfo.image}
+              alt={blueDisplayInfo.label}
+              class="prop-icon blue"
+            />
+            {#if catDogMode && redPropType !== bluePropType}
+              <img
+                src={redDisplayInfo.image}
+                alt={redDisplayInfo.label}
+                class="prop-icon red"
+              />
+            {/if}
+          </div>
+          <span class="prop-label">
+            {#if catDogMode && redPropType !== bluePropType}
+              {blueDisplayInfo.label} / {redDisplayInfo.label}
+            {:else}
+              {blueDisplayInfo.label}
+            {/if}
+          </span>
+          <i class="fas fa-chevron-right arrow-icon" aria-hidden="true"></i>
+        </button>
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -210,8 +267,87 @@
     padding: 12px;
   }
 
+  /* Prop selector section */
+  .prop-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .section-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .prop-indicator-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 150ms ease;
+    min-height: 48px;
+  }
+
+  .prop-indicator-btn:hover {
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  }
+
+  .prop-indicator-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .prop-icons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .prop-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  }
+
+  .prop-icon.blue {
+    /* Blue tint effect */
+    filter: drop-shadow(0 1px 2px rgba(59, 130, 246, 0.4));
+  }
+
+  .prop-icon.red {
+    /* Red tint effect */
+    filter: drop-shadow(0 1px 2px rgba(239, 68, 68, 0.4));
+  }
+
+  .prop-label {
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text, white);
+    flex: 1;
+    text-align: left;
+  }
+
+  .arrow-icon {
+    font-size: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .settings-popover {
+      transition: none;
+    }
+
+    .prop-indicator-btn {
       transition: none;
     }
   }

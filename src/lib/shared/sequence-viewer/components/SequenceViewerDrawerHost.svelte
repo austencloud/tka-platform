@@ -2,9 +2,10 @@
   SequenceViewerDrawerHost.svelte
 
   Hosts the mobile sequence viewer as a drawer overlay.
-  Lives in MainInterface.svelte as a sibling to ModuleRenderer.
+  Lives in MainApplication.svelte outside the auth gate so external links
+  (QR codes, shared URLs) work for both authenticated and unauthenticated users.
   When a sequence is opened on mobile, this drawer slides up from the bottom,
-  keeping the underlying module (Browse, Create, etc.) mounted behind it.
+  covering whatever is loading behind it (Browse gallery, landing page, etc.).
 
   Features:
   - Full-height bottom drawer
@@ -14,6 +15,7 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { goto } from "$app/navigation";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequenceViewerOrchestrator from "./SequenceViewerOrchestrator.svelte";
   import {
@@ -27,6 +29,7 @@
   import ExportFooter from "./ExportFooter.svelte";
   import RampProgressIndicator from "./RampProgressIndicator.svelte";
   import ViewerSettingsPopover from "./ViewerSettingsPopover.svelte";
+  import PropSelectorDrawer from "./PropSelectorDrawer.svelte";
 
   const overlay = getSequenceOverlayState();
 
@@ -51,6 +54,13 @@
 
   // Settings popover state
   let settingsOpen = $state(false);
+
+  // Prop selector drawer state
+  let propDrawerOpen = $state(false);
+
+  function handleOpenPropSelector() {
+    propDrawerOpen = true;
+  }
 
   // Sync overlay state to drawer state
   $effect(() => {
@@ -81,11 +91,19 @@
   // ============================================================================
 
   function handleDismiss() {
-    // Go back in history to remove the entry we pushed when opening
-    if (overlay.isOpen) {
+    // Read state BEFORE closing (closeSequenceOverlay clears it)
+    const path = overlay.dismissPath;
+    const wasOpen = overlay.isOpen;
+
+    closeSequenceOverlay();
+
+    if (path) {
+      // External link: navigate to app destination instead of going back
+      goto(path, { replaceState: true });
+    } else if (wasOpen) {
+      // In-app: go back in history to remove the entry we pushed when opening
       window.history.back();
     }
-    closeSequenceOverlay();
   }
 
   function handleDrawerClose() {
@@ -147,6 +165,7 @@
                 darkMode={ctx.imgDarkMode}
                 onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
                 onClose={() => (settingsOpen = false)}
+                onOpenPropSelector={handleOpenPropSelector}
               />
             </header>
 
@@ -253,6 +272,12 @@
     </SequenceViewerOrchestrator>
   {/if}
 </Drawer>
+
+<!-- Prop selector drawer - rendered outside the viewer drawer so position:fixed works -->
+<PropSelectorDrawer
+  bind:isOpen={propDrawerOpen}
+  onClose={() => (propDrawerOpen = false)}
+/>
 
 <style>
   .drawer-viewer-container {

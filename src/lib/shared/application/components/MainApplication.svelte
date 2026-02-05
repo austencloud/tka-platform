@@ -15,6 +15,7 @@
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
   import AttributionPrompt from "../../attribution/components/AttributionPrompt.svelte";
   import { getAttributionPromptState } from "../../attribution/state/attribution-prompt-state.svelte";
+  import SequenceViewerDrawerHost from "../../sequence-viewer/components/SequenceViewerDrawerHost.svelte";
 
   import { getContext, onMount } from "svelte";
   import MainInterface from "../../MainInterface.svelte";
@@ -452,6 +453,9 @@
     <!-- Deferred Attribution Prompt (appears after engagement threshold) -->
     <AttributionPrompt />
   {/if}
+
+  <!-- Sequence Viewer Drawer (mobile overlay) - outside auth gate so external links work -->
+  <SequenceViewerDrawerHost />
 </div>
 
 <style>

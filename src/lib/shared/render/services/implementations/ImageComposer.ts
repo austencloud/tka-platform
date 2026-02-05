@@ -9,7 +9,7 @@ import type { StepData } from "../../../../features/create/shared/domain/models/
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
+import { type PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
 import { LOOPTypeResolver } from "../../../../features/create/generate/shared/services/implementations/LOOPTypeResolver";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
@@ -397,7 +397,9 @@ export class ImageComposer implements IImageComposer {
           emptyCell,
           stepSize,
           headerHeight,
-          isDarkMode
+          isDarkMode,
+          effectiveBluePropType,
+          effectiveRedPropType
         );
         console.log("[ImageComposer] QR rendered at:", emptyCell);
       }
@@ -812,6 +814,8 @@ export class ImageComposer implements IImageComposer {
   /**
    * Render a QR code into an empty cell on the canvas.
    * The QR code is sized to 80% of the cell size with padding.
+   * @param bluePropType - Optional blue prop type to encode in the URL
+   * @param redPropType - Optional red prop type to encode in the URL
    */
   private async renderQRCode(
     ctx: CanvasRenderingContext2D,
@@ -819,7 +823,9 @@ export class ImageComposer implements IImageComposer {
     cell: { col: number; row: number },
     stepSize: number,
     headerHeight: number,
-    isDarkMode: boolean
+    isDarkMode: boolean,
+    bluePropType?: PropType,
+    redPropType?: PropType
   ): Promise<void> {
     if (!this.qrCodeGenerator) {
       return;
@@ -830,13 +836,15 @@ export class ImageComposer implements IImageComposer {
       const qrSize = Math.floor(stepSize * 0.8);
       const padding = (stepSize - qrSize) / 2;
 
-      // Generate QR code as image
+      // Generate QR code as image, including prop types if specified
       const qrImage = await this.qrCodeGenerator.generateAsImage(
         sequence,
         qrSize,
         {
           style: "modern",
           margin: 1,
+          bluePropType: bluePropType,
+          redPropType: redPropType,
         }
       );
 

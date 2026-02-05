@@ -133,6 +133,7 @@ with pre-prepared data for better performance.
   const blueReversal = $derived((pictographData as any)?.blueReversal ?? false);
   const redReversal = $derived((pictographData as any)?.redReversal ?? false);
   const stepNumber = $derived((pictographData as any)?.stepNumber ?? null);
+  const duration = $derived((pictographData as any)?.duration ?? 1);
   const isStartPosition = $derived(stepNumber === 0);
   const showStepNumber = $derived(stepNumber !== null && !isStartPosition);
 
@@ -400,6 +401,7 @@ with pre-prepared data for better performance.
         {onToggleNonRadial}
         {widthMultiplier}
         {cellIndex}
+        {duration}
       />
     {:else}
       {#key contentKey}
@@ -437,6 +439,7 @@ with pre-prepared data for better performance.
             {onToggleNonRadial}
             {widthMultiplier}
             {cellIndex}
+            {duration}
           />
         </div>
       {/key}

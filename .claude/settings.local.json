@@ -497,7 +497,8 @@
       "mcp__chrome-devtools__emulate",
       "mcp__chrome-devtools__evaluate_script",
       "mcp__chrome-devtools__resize_page",
-      "mcp__chrome-devtools__list_console_messages"
+      "mcp__chrome-devtools__list_console_messages",
+      "Bash(CF_PAGES=1 set:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

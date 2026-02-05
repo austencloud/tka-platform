@@ -30,6 +30,7 @@ import type {
   IShortCodeManager,
   ShortCodeRecord,
   CreateShortCodeResult,
+  ShortCodeURLOptions,
 } from "../contracts/IShortCodeManager";
 
 const SHORTCODES_COLLECTION = "shortcodes";
@@ -79,7 +80,31 @@ export class ShortCodeManager implements IShortCodeManager {
     return "https://thekineticalphabet.com";
   }
 
-  async createShortCode(sequence: SequenceData): Promise<CreateShortCodeResult> {
+  /**
+   * Build URL with optional prop type query params.
+   * Props are encoded as single characters (bp=S for blue staff, rp=F for red fan).
+   */
+  private buildUrlWithOptions(baseUrl: string, code: string, options?: ShortCodeURLOptions): string {
+    let url = `${baseUrl}/p/${code}`;
+
+    // Add prop type query params if provided
+    const params = new URLSearchParams();
+    if (options?.bluePropType) {
+      params.set("bp", options.bluePropType);
+    }
+    if (options?.redPropType) {
+      params.set("rp", options.redPropType);
+    }
+
+    const query = params.toString();
+    if (query) {
+      url += `?${query}`;
+    }
+
+    return url;
+  }
+
+  async createShortCode(sequence: SequenceData, options?: ShortCodeURLOptions): Promise<CreateShortCodeResult> {
     const firestore = await this.ensureFirestore();
 
     // Use sequence word/name as the unique identifier
@@ -95,7 +120,7 @@ export class ShortCodeManager implements IShortCodeManager {
     if (existingCode) {
       return {
         code: existingCode,
-        url: `${this.getBaseUrl()}/p/${existingCode}`,
+        url: this.buildUrlWithOptions(this.getBaseUrl(), existingCode, options),
         isNew: false,
       };
     }
@@ -125,7 +150,7 @@ export class ShortCodeManager implements IShortCodeManager {
 
         return {
           code,
-          url: `${this.getBaseUrl()}/p/${code}`,
+          url: this.buildUrlWithOptions(this.getBaseUrl(), code, options),
           isNew: true,
         };
       }
@@ -142,11 +167,11 @@ export class ShortCodeManager implements IShortCodeManager {
    * Create an offline-capable code for a sequence.
    * Embeds all sequence data in the URL, no Firebase lookup needed.
    */
-  createOfflineCode(sequence: SequenceData): CreateShortCodeResult {
+  createOfflineCode(sequence: SequenceData, options?: ShortCodeURLOptions): CreateShortCodeResult {
     const code = this.sequenceEncoder.encodeForQR(sequence);
     return {
       code,
-      url: `${this.getBaseUrl()}/p/${code}`,
+      url: this.buildUrlWithOptions(this.getBaseUrl(), code, options),
       isNew: true, // Offline codes are always "new" (not stored)
     };
   }

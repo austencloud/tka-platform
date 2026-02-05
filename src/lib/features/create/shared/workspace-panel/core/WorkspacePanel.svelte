@@ -67,26 +67,15 @@
     onAssemblerBack?: (() => void) | null;
   } = $props();
 
-  // Local beat selection state (stepNumber: 0=start, 1=first beat, etc.)
-  let localSelectedStepNumber = $state<number | null>(null);
-
-  // Effect: Update local selection when animation is playing
-  $effect(() => {
+  // Derive selection directly from sequenceState when not animating
+  // This avoids stale state issues from effect-based syncing
+  const effectiveSelectedStepNumber = $derived.by(() => {
+    // Animation takes precedence - show the animating step as selected
     if (animatingStepNumber !== null) {
-      localSelectedStepNumber = animatingStepNumber;
+      return animatingStepNumber;
     }
-  });
-
-  // Effect: Sync local selection with sequenceState selection
-  // This ensures UI updates when selection is cleared via edit panel close
-  $effect(() => {
-    if (!sequenceState) return;
-
-    const globalSelection = sequenceState.selectedStepNumber;
-    // Only sync if animation isn't playing (animation takes precedence)
-    if (animatingStepNumber === null) {
-      localSelectedStepNumber = globalSelection;
-    }
+    // Otherwise use the sequence state's selection
+    return sequenceState?.selectedStepNumber ?? null;
   });
 
   // Toast message for validation errors
@@ -102,9 +91,7 @@
     panelState?.closeAnimationPanel();
     animationStateRef?.stop();
 
-    // Select the step
-    localSelectedStepNumber = stepNumber;
-
+    // Select the step (derived state will update automatically)
     sequenceState.selectStep(stepNumber);
 
     // Open the step editor panel directly
@@ -133,7 +120,7 @@
     animationStateRef?.stop();
 
     // Select start position for editing (stepNumber 0)
-    localSelectedStepNumber = 0;
+    // Derived state will update automatically
     sequenceState.selectStartPositionForEditing();
 
     // Open the step editor panel directly (same fix as handleBeatSelected)
@@ -188,7 +175,7 @@
         onStartPositionSelected={handleStartPositionSelected}
         onStepDelete={handleStepDelete}
         {onAssemblerBack}
-        selectedStepNumber={localSelectedStepNumber}
+        selectedStepNumber={effectiveSelectedStepNumber}
         practiceStepNumber={animatingStepNumber ?? practiceStepIndex}
         {isSideBySideLayout}
         {shouldOrbitAroundCenter}

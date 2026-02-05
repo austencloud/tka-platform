@@ -84,10 +84,6 @@
   // Connect module - Invite overlay for app-wide invite notifications
   import InviteOverlay from "../features/connect/components/InviteOverlay.svelte";
 
-  // Sequence viewer drawer overlay (mobile)
-  import SequenceViewerDrawerHost from "./sequence-viewer/components/SequenceViewerDrawerHost.svelte";
-
-
   // Initialize user preview context for app-wide access
   initUserPreviewContext();
 
@@ -308,8 +304,6 @@
   <ShortcutsHelp />
   <!-- Toast Notifications -->
   <ToastContainer />
-  <!-- Sequence Viewer Drawer (mobile overlay) -->
-  <SequenceViewerDrawerHost />
 </div>
 
 <style>

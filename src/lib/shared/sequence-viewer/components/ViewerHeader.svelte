@@ -20,6 +20,8 @@
     onExitExportMode: () => void;
     onBackToExportTypeSelection: () => void;
     onDarkModeToggle: () => void;
+    /** Callback to open prop selector (handled by parent) */
+    onOpenPropSelector?: () => void;
   }
 
   let {
@@ -32,6 +34,7 @@
     onExitExportMode,
     onBackToExportTypeSelection,
     onDarkModeToggle,
+    onOpenPropSelector,
   }: Props = $props();
 
   // Settings popover state
@@ -115,6 +118,7 @@
       {darkMode}
       onDarkModeToggle={onDarkModeToggle}
       onClose={() => (settingsOpen = false)}
+      {onOpenPropSelector}
     />
   </header>
 {/if}

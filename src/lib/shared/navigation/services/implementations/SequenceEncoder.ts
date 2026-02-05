@@ -38,6 +38,7 @@ import type {
   DeepLinkParseResult,
   QRSizeEstimate,
   SequenceRouteIdParseResult,
+  URLPropOptions,
 } from "../contracts/ISequenceEncoder";
 
 // ============================================================================
@@ -604,8 +605,38 @@ export class SequenceEncoder implements ISequenceEncoder {
     if (metadata.difficulty) params.set("difficulty", metadata.difficulty);
     if (metadata.birthday) params.set("birthday", metadata.birthday);
 
+    // Prop types - only include if non-default (staff is the default)
+    if (metadata.bluePropType && metadata.bluePropType !== PropType.STAFF) {
+      const encoded = PROP_TYPE_ENCODE[metadata.bluePropType as PropType];
+      if (encoded) params.set("bp", encoded);
+    }
+    if (metadata.redPropType && metadata.redPropType !== PropType.STAFF) {
+      const encoded = PROP_TYPE_ENCODE[metadata.redPropType as PropType];
+      if (encoded) params.set("rp", encoded);
+    }
+
     const query = params.toString();
     return query ? `?${query}` : "";
+  }
+
+  /**
+   * Parse prop type params from URL search params.
+   * Returns decoded prop types or undefined if not present/invalid.
+   */
+  parsePropsFromURL(searchParams: URLSearchParams): URLPropOptions {
+    const result: URLPropOptions = {};
+
+    const bp = searchParams.get("bp");
+    if (bp && PROP_TYPE_DECODE[bp]) {
+      result.bluePropType = PROP_TYPE_DECODE[bp];
+    }
+
+    const rp = searchParams.get("rp");
+    if (rp && PROP_TYPE_DECODE[rp]) {
+      result.redPropType = PROP_TYPE_DECODE[rp];
+    }
+
+    return result;
   }
 
   private encodeMotion(motion: MotionData | undefined): string {

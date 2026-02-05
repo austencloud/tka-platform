@@ -56,6 +56,18 @@ export interface ShareURLMetadata {
   birthday?: string;
   /** BPM value */
   bpm?: number;
+  /** Blue prop type (encoded as short string) */
+  bluePropType?: string;
+  /** Red prop type (encoded as short string) */
+  redPropType?: string;
+}
+
+/**
+ * Prop types parsed from URL params
+ */
+export interface URLPropOptions {
+  bluePropType?: string;
+  redPropType?: string;
 }
 
 /**
@@ -189,6 +201,13 @@ export interface ISequenceEncoder {
    * @returns Estimation with encoded length and recommended QR version
    */
   estimateOfflineQRSize(sequence: SequenceData): QRSizeEstimate;
+
+  /**
+   * Parse prop type params from URL search params.
+   * @param searchParams - URLSearchParams to parse
+   * @returns Prop options with decoded prop types (or undefined if not present)
+   */
+  parsePropsFromURL(searchParams: URLSearchParams): URLPropOptions;
 }
 
 /**

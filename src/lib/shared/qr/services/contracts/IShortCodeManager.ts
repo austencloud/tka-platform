@@ -39,24 +39,36 @@ export interface CreateShortCodeResult {
   isNew: boolean;
 }
 
+/**
+ * Options for short code URL generation
+ */
+export interface ShortCodeURLOptions {
+  /** Blue prop type to append to URL (encoded as single char) */
+  bluePropType?: string;
+  /** Red prop type to append to URL (encoded as single char) */
+  redPropType?: string;
+}
+
 export interface IShortCodeManager {
   /**
    * Create or retrieve a short code for a sequence.
    * If an identical sequence already has a code, returns the existing code.
    *
    * @param sequence - The sequence to create a short code for
+   * @param options - Optional URL options (e.g., prop types to embed)
    * @returns The short code and full URL
    */
-  createShortCode(sequence: SequenceData): Promise<CreateShortCodeResult>;
+  createShortCode(sequence: SequenceData, options?: ShortCodeURLOptions): Promise<CreateShortCodeResult>;
 
   /**
    * Create an offline-capable code for a sequence.
    * Returns a URL that embeds all sequence data, working without Firebase.
    *
    * @param sequence - The sequence to encode
+   * @param options - Optional URL options (e.g., prop types to embed)
    * @returns The offline code (s~...) and full URL
    */
-  createOfflineCode(sequence: SequenceData): CreateShortCodeResult;
+  createOfflineCode(sequence: SequenceData, options?: ShortCodeURLOptions): CreateShortCodeResult;
 
   /**
    * Resolve a short code to its sequence data.

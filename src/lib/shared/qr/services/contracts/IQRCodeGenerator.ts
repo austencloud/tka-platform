@@ -76,6 +76,16 @@ export interface QRCodeOptions {
    * Default: false (uses Firebase short codes for smaller QR codes)
    */
   offline?: boolean;
+  /**
+   * Blue prop type to include in the URL.
+   * When set, the scanned viewer will use this prop type instead of user's default.
+   */
+  bluePropType?: string;
+  /**
+   * Red prop type to include in the URL.
+   * When set, the scanned viewer will use this prop type instead of user's default.
+   */
+  redPropType?: string;
 }
 
 /**

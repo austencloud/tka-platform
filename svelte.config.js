@@ -1,5 +1,11 @@
-import adapter from "@sveltejs/adapter-netlify";
+import netlifyAdapter from "@sveltejs/adapter-netlify";
+import staticAdapter from "@sveltejs/adapter-static";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
+
+// Cloudflare Pages sets CF_PAGES=1 during builds.
+// Use adapter-static for Cloudflare (landing page is a pure SPA).
+// Use adapter-netlify for Netlify (app needs serverless API routes).
+const isCloudflare = process.env.CF_PAGES === "1";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -12,17 +18,19 @@ const config = {
 
   kit: {
     // ============================================================================
-    // ADAPTER (Netlify with serverless functions for API routes)
+    // ADAPTER (conditional: Cloudflare Pages vs Netlify)
     // ============================================================================
-    // Using adapter-netlify to enable server-side API routes (+server.ts files).
-    // Pages are still client-rendered (SSR disabled in +layout.ts) but API
-    // endpoints like /api/tika/* are deployed as Netlify Functions.
-    adapter: adapter({
-      // Use Node.js serverless functions (not edge)
-      edge: false,
-      // Single function handles all server routes (simpler deployment)
-      split: false,
-    }),
+    // Cloudflare Pages: adapter-static with SPA fallback (tkaflowarts.com landing)
+    // Netlify: adapter-netlify with serverless functions (tkascribe.com app + API)
+    adapter: isCloudflare
+      ? staticAdapter({
+          fallback: "200.html",
+          strict: false,
+        })
+      : netlifyAdapter({
+          edge: false,
+          split: false,
+        }),
 
     // ============================================================================
     // PATH ALIASES (Clean domain-bounded architecture)

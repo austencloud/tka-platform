@@ -64,6 +64,11 @@ export function detectSiteMode(origin: string): SiteMode {
       return hostname.includes("tkaflowarts") ? "landing" : "app";
     }
 
+    // Cloudflare Pages preview deploys
+    if (hostname.endsWith(".pages.dev")) {
+      return "landing";
+    }
+
     // Unknown domain defaults to app
     return "app";
   } catch {
