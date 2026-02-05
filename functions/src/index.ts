@@ -14,6 +14,9 @@ admin.initializeApp();
 // Export magic link function
 export { sendMagicLink } from "./sendMagicLink";
 
+// Export audio transcription function
+export { transcribeAudio } from "./transcribeAudio";
+
 // Export feedback claims module (bulletproof claim management)
 export {
   // Agent session management

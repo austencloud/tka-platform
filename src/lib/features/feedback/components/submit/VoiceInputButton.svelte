@@ -1,224 +1,89 @@
-<!-- VoiceInputButton - Web Speech API voice-to-text for feedback -->
+<!-- VoiceInputButton - MediaRecorder-based voice capture for feedback -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import type { IVoiceRecorder, VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
 
-  // Web Speech API type declarations
-  interface SpeechRecognitionResult {
-    readonly isFinal: boolean;
-    readonly length: number;
-    [index: number]: { transcript: string; confidence: number };
-  }
-
-  interface SpeechRecognitionResultList {
-    readonly length: number;
-    [index: number]: SpeechRecognitionResult;
-  }
-
-  interface SpeechRecognitionEventInit extends EventInit {
-    resultIndex?: number;
-    results: SpeechRecognitionResultList;
-  }
-
-  interface SpeechRecognitionEventCustom extends Event {
-    readonly resultIndex: number;
-    readonly results: SpeechRecognitionResultList;
-  }
-
-  interface SpeechRecognitionErrorEventCustom extends Event {
-    readonly error: string;
-    readonly message: string;
-  }
-
-  interface SpeechRecognitionInstance {
-    continuous: boolean;
-    interimResults: boolean;
-    lang: string;
-    onresult: ((event: SpeechRecognitionEventCustom) => void) | null;
-    onerror: ((event: SpeechRecognitionErrorEventCustom) => void) | null;
-    onend: (() => void) | null;
-    start: () => void;
-    stop: () => void;
-    abort: () => void;
-  }
-
-  // Constants
-  const MAX_RECORDING_DURATION_MS = 30 * 1000; // 30 seconds of silence
-
-  // Props
   const {
-    onTranscript,
-    onInterimTranscript,
+    voiceRecorder,
+    onRecordingStart,
     onRecordingEnd,
-    onTimeout,
     disabled = false,
   } = $props<{
-    onTranscript: (text: string, isFinal: boolean) => void;
-    onInterimTranscript?: (text: string) => void;
-    onRecordingEnd?: () => void;
-    onTimeout?: () => void;
+    voiceRecorder: IVoiceRecorder;
+    onRecordingStart: (stream: MediaStream) => void;
+    onRecordingEnd: (result: VoiceRecordingResult) => void;
     disabled?: boolean;
   }>();
 
-  // State
   let isRecording = $state(false);
-  let isSupported = $state(false);
-  let recognition: SpeechRecognitionInstance | null = $state(null);
-  let baseTranscriptLength = 0; // Track where we started this recording session
-  let intentionalStop = false; // Track if user clicked stop vs silence timeout
-  let maxDurationTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Stop recording when tab becomes hidden (user switches away)
+  // Stop recording when tab becomes hidden
   function handleVisibilityChange() {
     if (document.hidden && isRecording) {
       stopRecording();
     }
   }
 
-  // Check browser support
   onMount(() => {
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    const SpeechRecognitionCtor =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-    isSupported = !!SpeechRecognitionCtor;
-
-    if (isSupported) {
-      recognition = new SpeechRecognitionCtor() as SpeechRecognitionInstance;
-      recognition.continuous = true;
-      recognition.interimResults = true; // Enable live streaming
-      recognition.lang = "en-US";
-
-      recognition.onresult = (event: SpeechRecognitionEventCustom) => {
-        // Reset timeout on any speech activity
-        resetMaxDurationTimeout();
-
-        let interimTranscript = "";
-        let finalTranscript = "";
-
-        // Process all results from the last finalized index
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (!result) continue;
-          const firstAlternative = result[0];
-          if (!firstAlternative) continue;
-          const transcript = firstAlternative.transcript;
-          if (result.isFinal) {
-            finalTranscript += transcript + " ";
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-
-        // Stream interim results for live preview
-        if (interimTranscript && onInterimTranscript) {
-          onInterimTranscript(interimTranscript);
-        }
-
-        // Commit final results
-        if (finalTranscript) {
-          onTranscript(finalTranscript.trim(), true);
-        }
-      };
-      recognition.onerror = (event: SpeechRecognitionErrorEventCustom) => {
-        console.error("Speech recognition error:", event.error);
-        if (event.error !== "no-speech") {
-          isRecording = false;
-        }
-      };
-
-      recognition.onend = () => {
-        // Auto-restart if stopped due to silence (not user clicking stop)
-        if (!intentionalStop && isRecording) {
-          try {
-            recognition?.start();
-            return; // Don't clear state, keep recording
-          } catch {
-            // Failed to restart, fall through to cleanup
-          }
-        }
-
-        isRecording = false;
-        // Clear any lingering interim text
-        if (onInterimTranscript) {
-          onInterimTranscript("");
-        }
-        // Notify parent that recording session ended
-        if (onRecordingEnd) {
-          onRecordingEnd();
-        }
-      };
-    }
-
-    // Return cleanup function - guaranteed to run even if onMount is interrupted
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      clearMaxDurationTimeout();
-      if (recognition && isRecording) {
-        recognition.abort();
+      if (isRecording) {
+        voiceRecorder.cancel();
       }
     };
   });
 
-  function clearMaxDurationTimeout() {
-    if (maxDurationTimeout) {
-      clearTimeout(maxDurationTimeout);
-      maxDurationTimeout = null;
+  async function startRecording() {
+    try {
+      const stream = await voiceRecorder.start();
+      isRecording = true;
+      onRecordingStart(stream);
+    } catch (err) {
+      console.error("Failed to start recording:", err);
+      isRecording = false;
     }
   }
 
-  function resetMaxDurationTimeout() {
-    clearMaxDurationTimeout();
-    maxDurationTimeout = setTimeout(() => {
-      stopRecording(true);
-    }, MAX_RECORDING_DURATION_MS);
-  }
-
-  function stopRecording(isTimeout = false) {
-    if (!recognition) return;
-    clearMaxDurationTimeout();
-    intentionalStop = true;
-    recognition.stop();
-    isRecording = false;
-    if (isTimeout && onTimeout) {
-      onTimeout();
+  async function stopRecording() {
+    if (!voiceRecorder.isRecording) return;
+    try {
+      const result = await voiceRecorder.stop();
+      isRecording = false;
+      onRecordingEnd(result);
+    } catch (err) {
+      console.error("Failed to stop recording:", err);
+      isRecording = false;
     }
   }
 
   function toggleRecording() {
-    if (!recognition || disabled) return;
-
+    if (disabled) return;
     if (isRecording) {
       stopRecording();
     } else {
-      intentionalStop = false; // Starting fresh session
-      recognition.start();
-      isRecording = true;
-      // Start max duration timer (resets on speech activity)
-      resetMaxDurationTimeout();
+      startRecording();
     }
   }
 </script>
 
-{#if isSupported}
-  <button
-    type="button"
-    class="voice-btn"
-    class:recording={isRecording}
-    onclick={toggleRecording}
-    {disabled}
-    aria-label={isRecording ? "Stop recording" : "Start voice input"}
-    aria-pressed={isRecording}
-    title={isRecording ? "Stop recording" : "Speak to dictate feedback"}
-  >
-    {#if isRecording}
-      <span class="pulse-ring"></span>
-      <i class="fas fa-stop" aria-hidden="true"></i>
-    {:else}
-      <i class="fas fa-microphone" aria-hidden="true"></i>
-    {/if}
-  </button>
-{/if}
+<button
+  type="button"
+  class="voice-btn"
+  class:recording={isRecording}
+  onclick={toggleRecording}
+  {disabled}
+  aria-label={isRecording ? "Stop recording" : "Start voice input"}
+  aria-pressed={isRecording}
+  title={isRecording ? "Stop recording" : "Speak to dictate feedback"}
+>
+  {#if isRecording}
+    <span class="pulse-ring"></span>
+    <i class="fas fa-stop" aria-hidden="true"></i>
+  {:else}
+    <i class="fas fa-microphone" aria-hidden="true"></i>
+  {/if}
+</button>
 
 <style>
   .voice-btn {

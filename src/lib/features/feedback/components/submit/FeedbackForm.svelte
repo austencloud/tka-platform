@@ -4,9 +4,11 @@
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-  import type { IVoiceTranscriptCoordinator } from "../../services/contracts/IVoiceTranscriptCoordinator";
+  import type { IVoiceRecorder, VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
+  import type { ITranscriptionClient } from "../../services/contracts/ITranscriptionClient";
   import type { IFormDraftPersister } from "../../services/contracts/IFormDraftPersister";
   import type { IFeedbackTypeResolver } from "../../services/contracts/IFeedbackTypeResolver";
+  import type { IAudioAnalyzer } from "../../services/contracts/IAudioAnalyzer";
   import type { FeedbackSubmitState } from "../../state/feedback-submit-state.svelte";
   import { TYPE_CONFIG } from "../../domain/models/feedback-models";
   import type { FeedbackType } from "../../domain/models/feedback-models";
@@ -35,24 +37,22 @@
   // Services
   const hapticService = container.items.hapticFeedback;
   const deviceDetector = container.items.deviceDetector;
-  const voiceCoordinator = container.items.voiceTranscriptCoordinator;
+  const voiceRecorder: IVoiceRecorder = container.items.voiceRecorder;
+  const transcriptionClient: ITranscriptionClient = container.items.transcriptionClient;
   const draftPersister = container.items.formDraftPersister;
   const typeResolver = container.items.feedbackTypeResolver;
+  const audioAnalyzer: IAudioAnalyzer = container.items.audioAnalyzer;
 
   // Component state
   let isMobileDevice = $state(false);
-  let voiceTimeoutMessage = $state(false);
+  let isVoiceRecording = $state(false);
+  let isTranscribing = $state(false);
+  let transcriptionError = $state("");
   let isTextareaFocused = $state(false);
   let textareaRef = $state<{ dismissKeyboard: () => void } | null>(null);
 
   // BULLETPROOF APPROACH: Assume keyboard exists until proven otherwise
-  // - Default: show keyboard hints (Shift+Enter)
-  // - Hide only when: virtual keyboard actually appears (not just "touch detected")
-  // - This works for: desktop, laptop, tablet with keyboard, Chrome DevTools, everything
   let hasSeenVirtualKeyboard = $state(false);
-
-  // isTouchDevice for UX purposes = virtual keyboard has actually appeared
-  // NOT "device has touch capability" (which is true for many laptops too)
   const isTouchDevice = $derived(isTouchDeviceProp ?? hasSeenVirtualKeyboard);
 
   onMount(() => {
@@ -70,6 +70,10 @@
         formState.setType(draft.formData.type);
       }
     }
+
+    return () => {
+      audioAnalyzer.stop();
+    };
   });
 
   // Auto-save draft when form data changes
@@ -95,48 +99,51 @@
     return undefined;
   });
 
-  // Derived: combine committed + interim for display
-  const displayText = $derived(
-    voiceCoordinator
-      ? voiceCoordinator.getInterimText()
-        ? `${formState.formData.description} ${voiceCoordinator.getInterimText()}`.trim()
-        : formState.formData.description
-      : formState.formData.description
-  );
+  function handleRecordingStart(stream: MediaStream) {
+    isVoiceRecording = true;
+    audioAnalyzer.startWithStream(stream);
+  }
 
-  function handleVoiceTranscript(transcript: string, isFinal: boolean) {
-    if (!voiceCoordinator) return;
+  async function handleRecordingEnd(result: VoiceRecordingResult) {
+    isVoiceRecording = false;
+    audioAnalyzer.stop();
 
-    if (isFinal) {
-      const updatedText = voiceCoordinator.processFinalTranscript(
-        transcript,
-        formState.formData.description
+    // Skip transcription for very short recordings (< 500ms)
+    if (result.durationMs < 500) {
+      return;
+    }
+
+    isTranscribing = true;
+    transcriptionError = "";
+
+    try {
+      const transcript = await transcriptionClient.transcribe(
+        result.blob,
+        result.mimeType,
       );
-      formState.updateField("description", updatedText);
-      hapticService?.trigger("selection");
+
+      if (transcript) {
+        const currentText = formState.formData.description.trim();
+        const updatedText = currentText
+          ? `${currentText} ${transcript}`
+          : transcript;
+        formState.updateField("description", updatedText);
+        hapticService?.trigger("selection");
+      }
+    } catch (err) {
+      console.error("Transcription failed:", err);
+      transcriptionError = "Transcription failed. Try again or type instead.";
+      hapticService?.trigger("warning");
+      setTimeout(() => {
+        transcriptionError = "";
+      }, 5000);
+    } finally {
+      isTranscribing = false;
     }
   }
 
-  function handleInterimTranscript(transcript: string) {
-    voiceCoordinator?.updateInterimText(transcript);
-  }
-
-  function handleRecordingEnd() {
-    voiceCoordinator?.reset();
-  }
-
-  function handleVoiceTimeout() {
-    voiceTimeoutMessage = true;
-    hapticService?.trigger("warning");
-    setTimeout(() => {
-      voiceTimeoutMessage = false;
-    }, 5000);
-  }
-
-  // When user manually types, clear interim and reset voice tracking
   function handleManualInput(value: string) {
     formState.updateField("description", value);
-    voiceCoordinator?.reset();
   }
 
   function handleTypeChange(type: FeedbackType) {
@@ -167,14 +174,12 @@
   function handleReset() {
     hapticService?.trigger("selection");
     formState.reset();
-    voiceCoordinator?.reset();
   }
 
   function handleClearText() {
     hapticService?.trigger("selection");
     formState.updateField("description", "");
     formState.updateField("title", "");
-    voiceCoordinator?.reset();
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -219,23 +224,24 @@
 
     <FeedbackTextarea
       bind:this={textareaRef}
-      value={displayText}
+      value={formState.formData.description}
       error={formState.formErrors.description}
       placeholder={currentTypeConfig?.placeholder ??
         "Describe the issue, suggestion, or idea..."}
-      isStreaming={(voiceCoordinator?.getInterimText()?.length ?? 0) > 0}
+      {isTranscribing}
       isMobile={isMobileDevice}
       {isTouchDevice}
       draftStatus={draftPersister?.saveStatus}
       bind:images={formState.images}
       disabled={formState.isSubmitting}
       {isInputMode}
+      {isVoiceRecording}
+      {audioAnalyzer}
+      {voiceRecorder}
       onInput={handleManualInput}
       onKeydown={handleKeydown}
-      onVoiceTranscript={handleVoiceTranscript}
-      onInterimTranscript={handleInterimTranscript}
+      onRecordingStart={handleRecordingStart}
       onRecordingEnd={handleRecordingEnd}
-      onVoiceTimeout={handleVoiceTimeout}
       onClearText={handleClearText}
       onFocusChange={handleTextareaFocusChange}
     />
@@ -259,11 +265,11 @@
         />
       {/if}
 
-      {#if voiceTimeoutMessage}
+      {#if transcriptionError}
         <Toast
-          type="info"
-          title="Recording stopped"
-          message="30 second silence limit reached. Click the mic to continue."
+          type="error"
+          title="Transcription failed"
+          message={transcriptionError}
           icon="fa-microphone-slash"
         />
       {/if}
@@ -271,22 +277,18 @@
   </form>
 
   <!-- Touch device keyboard toolbar - rendered outside form to position above keyboard -->
-  <!-- Always render on devices with touch capability - it self-manages visibility based on actual keyboard -->
-  <!-- This allows us to detect when a virtual keyboard actually appears -->
   {#if deviceDetector.isTouchDevice()}
     <MobileInputToolbar
       visible={isTextareaFocused}
       disabled={formState.isSubmitting}
       isFormValid={formState.isFormValid}
       isSubmitting={formState.isSubmitting}
+      {voiceRecorder}
       onDone={handleMobileToolbarDone}
       onSubmit={() => formState.submit()}
-      onVoiceTranscript={handleVoiceTranscript}
-      onInterimTranscript={handleInterimTranscript}
+      onRecordingStart={handleRecordingStart}
       onRecordingEnd={handleRecordingEnd}
-      onVoiceTimeout={handleVoiceTimeout}
       onKeyboardHeightChange={(height) => {
-        // When keyboard appears, we know this is a true touch-only device
         if (height > 0) {
           hasSeenVirtualKeyboard = true;
         }

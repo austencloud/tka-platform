@@ -119,7 +119,7 @@ export class FeedbackSubmissionService implements IFeedbackSubmissionService {
     if (images && images.length > 0) {
       try {
         const imageUrls = await Promise.all(
-          images.map((file) => this.uploadImage(file, docRef.id))
+          images.map((file) => this.uploadImage(file, docRef.id, effectiveUser.uid))
         );
         await updateDoc(docRef, { imageUrls });
       } catch (error) {
@@ -174,14 +174,19 @@ export class FeedbackSubmissionService implements IFeedbackSubmissionService {
     };
   }
 
-  private async uploadImage(file: File, feedbackId: string): Promise<string> {
+  private async uploadImage(
+    file: File,
+    feedbackId: string,
+    userId: string
+  ): Promise<string> {
     const { ref, uploadBytes, getDownloadURL } =
       await import("firebase/storage");
     const storage = await getStorageInstance();
 
     const timestamp = Date.now();
     const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const storagePath = `feedback/${feedbackId}/${timestamp}_${sanitizedFilename}`;
+    // Include userId in path for security - only owner/admin can read
+    const storagePath = `feedback/${userId}/${feedbackId}/${timestamp}_${sanitizedFilename}`;
 
     const storageRef = ref(storage, storagePath);
 

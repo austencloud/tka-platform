@@ -1,32 +1,38 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import VoiceInputButton from "./VoiceInputButton.svelte";
+  import VoiceWaveform from "./VoiceWaveform.svelte";
   import ImageUpload from "./ImageUpload.svelte";
+  import type { IAudioAnalyzer } from "../../services/contracts/IAudioAnalyzer";
+  import type { IVoiceRecorder, VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
   import type { DraftSaveStatus } from "../../services/contracts/IFormDraftPersister";
 
   let {
     value,
     error,
     placeholder,
-    isStreaming = false,
+    isTranscribing = false,
     isMobile = false,
     isTouchDevice = false,
     draftStatus = "idle",
     images = $bindable([]),
     disabled = false,
     isInputMode = false,
+    isVoiceRecording = false,
+    audioAnalyzer,
+    voiceRecorder,
     onInput,
     onKeydown,
-    onVoiceTranscript,
-    onInterimTranscript,
+    onRecordingStart,
     onRecordingEnd,
-    onVoiceTimeout,
     onClearText,
     onFocusChange,
   } = $props<{
     value: string;
     error?: string;
     placeholder: string;
-    isStreaming?: boolean;
+    /** Whether a transcription request is in flight */
+    isTranscribing?: boolean;
     isMobile?: boolean;
     /** Touch device - hides keyboard shortcuts like "(Shift+Enter to submit)" */
     isTouchDevice?: boolean;
@@ -34,12 +40,16 @@
     images?: string[];
     disabled?: boolean;
     isInputMode?: boolean;
+    /** Whether voice recording is active (shows waveform) */
+    isVoiceRecording?: boolean;
+    /** Audio analyzer for waveform visualization */
+    audioAnalyzer?: IAudioAnalyzer;
+    /** Voice recorder for capture button */
+    voiceRecorder?: IVoiceRecorder;
     onInput: (value: string) => void;
     onKeydown: (event: KeyboardEvent) => void;
-    onVoiceTranscript: (transcript: string, isFinal: boolean) => void;
-    onInterimTranscript: (transcript: string) => void;
-    onRecordingEnd: () => void;
-    onVoiceTimeout: () => void;
+    onRecordingStart: (stream: MediaStream) => void;
+    onRecordingEnd: (result: VoiceRecordingResult) => void;
     onClearText: () => void;
     onFocusChange?: (focused: boolean) => void;
   }>();
@@ -79,12 +89,23 @@
     >Feedback description (minimum 10 characters)</label
   >
   <div class="textarea-wrapper">
+    {#if isVoiceRecording && audioAnalyzer}
+      <div class="waveform-strip" transition:slide={{ duration: 200 }}>
+        <VoiceWaveform analyzer={audioAnalyzer} />
+      </div>
+    {:else if isTranscribing}
+      <div class="waveform-strip transcribing" transition:slide={{ duration: 200 }}>
+        <div class="transcribing-content">
+          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+          <span>Transcribing...</span>
+        </div>
+      </div>
+    {/if}
     <textarea
       bind:this={textareaElement}
       id="fb-description"
       class="field-textarea"
       class:has-error={!!error}
-      class:streaming={isStreaming}
       class:focused={isFocused}
       {value}
       oninput={(e) => onInput(e.currentTarget.value)}
@@ -98,15 +119,16 @@
       aria-invalid={!!error}
       aria-describedby={error ? "fb-description-error" : undefined}
     ></textarea>
-    <div class="voice-input-wrapper">
-      <VoiceInputButton
-        onTranscript={onVoiceTranscript}
-        {onInterimTranscript}
-        {onRecordingEnd}
-        onTimeout={onVoiceTimeout}
-        {disabled}
-      />
-    </div>
+    {#if voiceRecorder}
+      <div class="voice-input-wrapper">
+        <VoiceInputButton
+          {voiceRecorder}
+          {onRecordingStart}
+          {onRecordingEnd}
+          {disabled}
+        />
+      </div>
+    {/if}
   </div>
   <div class="field-footer">
     <div class="field-hint">
@@ -219,21 +241,6 @@
     border-color: var(--semantic-error, var(--semantic-error));
   }
 
-  .textarea-wrapper:has(.field-textarea.streaming) {
-    border-color: var(--theme-accent-strong);
-    background: color-mix(
-      in srgb,
-      var(--theme-accent-strong, var(--theme-accent-strong)) 8%,
-      rgba(0, 0, 0, 0.25)
-    );
-    box-shadow: 0 0 0 2px
-      color-mix(
-        in srgb,
-        var(--theme-accent-strong, var(--theme-accent-strong)) 15%,
-        transparent
-      );
-  }
-
   .field-textarea {
     width: 100%;
     padding: clamp(8px, 2cqi, 12px) clamp(10px, 2.5cqi, 16px);
@@ -297,6 +304,41 @@
 
   .clear-text-btn i {
     font-size: clamp(0.8rem, 2cqi, 0.95rem);
+  }
+
+  .waveform-strip {
+    height: 40px;
+    padding: 4px 12px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid
+      color-mix(
+        in srgb,
+        var(--theme-accent-strong, var(--theme-accent)) 20%,
+        transparent
+      );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent-strong, var(--theme-accent)) 5%,
+      transparent
+    );
+    flex-shrink: 0;
+  }
+
+  .waveform-strip.transcribing {
+    justify-content: center;
+  }
+
+  .transcribing-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-accent-strong, var(--theme-accent));
+  }
+
+  .transcribing-content i {
+    font-size: 0.9em;
   }
 
   .voice-input-wrapper {

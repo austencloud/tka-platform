@@ -13,30 +13,29 @@
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
   import VoiceInputButton from "./VoiceInputButton.svelte";
+  import type { IVoiceRecorder, VoiceRecordingResult } from "../../services/contracts/IVoiceRecorder";
 
   let {
     visible = false,
     disabled = false,
     isFormValid = false,
     isSubmitting = false,
+    voiceRecorder,
     onDone,
     onSubmit,
-    onVoiceTranscript,
-    onInterimTranscript,
+    onRecordingStart,
     onRecordingEnd,
-    onVoiceTimeout,
     onKeyboardHeightChange,
   } = $props<{
     visible: boolean;
     disabled?: boolean;
     isFormValid?: boolean;
     isSubmitting?: boolean;
+    voiceRecorder: IVoiceRecorder;
     onDone: () => void;
     onSubmit?: () => void;
-    onVoiceTranscript: (transcript: string, isFinal: boolean) => void;
-    onInterimTranscript: (transcript: string) => void;
-    onRecordingEnd: () => void;
-    onVoiceTimeout: () => void;
+    onRecordingStart: (stream: MediaStream) => void;
+    onRecordingEnd: (result: VoiceRecordingResult) => void;
     onKeyboardHeightChange?: (height: number) => void;
   }>();
 
@@ -231,10 +230,9 @@
     <div class="toolbar-content">
       <div class="toolbar-left">
         <VoiceInputButton
-          onTranscript={onVoiceTranscript}
-          {onInterimTranscript}
+          {voiceRecorder}
+          {onRecordingStart}
           {onRecordingEnd}
-          onTimeout={onVoiceTimeout}
           {disabled}
         />
       </div>
