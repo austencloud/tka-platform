@@ -297,10 +297,11 @@ function getDefaultFeatureConfig(
 }
 
 /**
- * Check PostHog for a feature flag with fallback to role-based defaults
- * Also checks globalFlagOverrides (admin UI changes) first
+ * Check if a feature is globally enabled (kill switch).
+ * Returns true/false if there's a definitive answer, null if no opinion.
+ * This answers "is the feature turned on?" NOT "can this user access it?"
  */
-function checkPostHogFlag(featureId: FeatureId): boolean | null {
+function isFeatureGloballyEnabled(featureId: FeatureId): boolean | null {
   if (!browser) return null;
 
   const postHogKey = featureIdToPostHogKey(featureId);
@@ -329,14 +330,41 @@ function checkPostHogFlag(featureId: FeatureId): boolean | null {
 }
 
 /**
- * Check if a feature is accessible based on role and overrides
+ * Get the effective minimum role for a feature, checking overrides first.
+ * Priority: admin UI role override > default config role > "admin" (secure default)
+ */
+function getEffectiveMinimumRole(featureId: FeatureId): UserRole {
+  const postHogKey = featureIdToPostHogKey(featureId);
+
+  // Priority 1: Admin-set role override (localStorage via admin UI)
+  const roleOverride = _state.globalRoleOverrides[postHogKey];
+  if (roleOverride) {
+    return roleOverride;
+  }
+
+  // Priority 2: Default from config (derives from CORE_USER_MODULES / getDefaultFeatureRole)
+  const config = getDefaultFeatureConfig(featureId);
+  if (config) {
+    return config.minimumRole;
+  }
+
+  // Secure by default
+  return "admin";
+}
+
+/**
+ * Check if a feature is accessible based on role and overrides.
  *
- * Priority (highest to lowest):
- * 1. User disabledFeatures - always deny
- * 2. Global admin override (globalFlagOverrides) - admin toggle trumps user enables
- * 3. User enabledFeatures - per-user grant (only if not globally disabled)
- * 4. PostHog remote flag
- * 5. Role-based default
+ * Two independent questions must BOTH be true:
+ * 1. Is this feature enabled? (kill switch / global toggle)
+ * 2. Does the user meet the role requirement?
+ *
+ * Priority:
+ * 1. User disabledFeatures → deny
+ * 2. Kill switch false → deny (overrides everything including per-user enables)
+ * 3. User enabledFeatures → allow (bypasses role, but NOT kill switch)
+ * 4. If no global opinion, check config.enabled → deny if false
+ * 5. Role check via getEffectiveMinimumRole()
  */
 function checkFeatureAccess(featureId: FeatureId): boolean {
   // 1. User explicitly disabled - always wins
@@ -344,41 +372,34 @@ function checkFeatureAccess(featureId: FeatureId): boolean {
     return false;
   }
 
-  // 2. Check global admin override BEFORE user enables
-  // An admin toggling a feature off globally must override per-user enabledFeatures,
-  // otherwise stale enabledFeatures entries make features impossible to disable.
-  const postHogKey = featureIdToPostHogKey(featureId);
-  const globalOverride = _state.globalFlagOverrides[postHogKey];
-  if (globalOverride === false) {
-    return false; // Globally disabled by admin - overrides user enabledFeatures
+  // 2. Check if feature is globally enabled (kill switch)
+  const globalEnabled = isFeatureGloballyEnabled(featureId);
+  if (globalEnabled === false) {
+    return false; // Kill switch OFF - overrides even per-user enabledFeatures
   }
 
-  // 3. User explicitly enabled (only reaches here if not globally disabled)
+  // 3. User explicitly enabled (only reaches here if not killed)
+  // Per-user grants bypass role check but NOT the kill switch
   if (_state.userOverrides.enabledFeatures.includes(featureId)) {
     return true;
   }
 
-  // 4. Check PostHog flag (remote value, skipping globalFlagOverrides since we checked above)
-  const postHogResult = checkPostHogFlag(featureId);
-  if (postHogResult !== null) {
-    return postHogResult;
+  // 4. If no global opinion, check default config enabled state
+  if (globalEnabled === null) {
+    const config = getDefaultFeatureConfig(featureId);
+    if (!config) {
+      console.warn(`[PostHogFeatureFlagService] Unknown feature: ${featureId}`);
+      return false;
+    }
+    if (!config.enabled) {
+      return false;
+    }
   }
 
-  // 5. Fall back to role-based default
-  const config = getDefaultFeatureConfig(featureId);
-  if (!config) {
-    console.warn(`[PostHogFeatureFlagService] Unknown feature: ${featureId}`);
-    return false;
-  }
-
-  // Check if globally disabled (from default config)
-  if (!config.enabled) {
-    return false;
-  }
-
-  // Check role-based access (use debug override if set)
+  // 5. Role check - ALWAYS runs when feature is enabled
+  // This is the key fix: PostHog true no longer short-circuits past this
   const effectiveRole = _state.debugRoleOverride ?? _state.userRole;
-  return hasRolePrivilege(effectiveRole, config.minimumRole);
+  return hasRolePrivilege(effectiveRole, getEffectiveMinimumRole(featureId));
 }
 
 /**
@@ -522,22 +543,7 @@ export const postHogFeatureFlagService = {
 
     // Then check role-based access
     const featureId = moduleIdToFeatureId(moduleId);
-    const result = checkFeatureAccess(featureId);
-
-    // Temporary debug: trace Lab module access decisions (remove after confirming fix)
-    if (moduleId === "lab") {
-      const phKey = featureIdToPostHogKey(featureId);
-      console.log(
-        `[DEBUG canAccessModule("lab")] result=${result}`,
-        `| globalOverride=${_state.globalFlagOverrides[phKey]}`,
-        `| postHogFlag=${getFeatureFlag(phKey)}`,
-        `| inDisabled=${_state.userOverrides.disabledFeatures.includes(featureId)}`,
-        `| inEnabled=${_state.userOverrides.enabledFeatures.includes(featureId)}`,
-        `| v=${_state.flagsVersion}`
-      );
-    }
-
-    return result;
+    return checkFeatureAccess(featureId);
   },
 
   /**
@@ -553,20 +559,23 @@ export const postHogFeatureFlagService = {
 
     const featureId = moduleIdToFeatureId(moduleId);
 
-    // Check PostHog flag first
-    const postHogResult = checkPostHogFlag(featureId);
-    if (postHogResult !== null) {
-      return postHogResult;
-    }
-
-    // Fall back to role-based check
-    const config = getDefaultFeatureConfig(featureId);
-    if (!config || !config.enabled) {
+    // Check if feature is globally enabled (kill switch)
+    const globalEnabled = isFeatureGloballyEnabled(featureId);
+    if (globalEnabled === false) {
       return false;
     }
 
+    // If no global opinion, check default config
+    if (globalEnabled === null) {
+      const config = getDefaultFeatureConfig(featureId);
+      if (!config || !config.enabled) {
+        return false;
+      }
+    }
+
+    // Role check - always runs when feature is enabled
     const effectiveRole = _state.debugRoleOverride ?? _state.userRole;
-    return hasRolePrivilege(effectiveRole, config.minimumRole);
+    return hasRolePrivilege(effectiveRole, getEffectiveMinimumRole(featureId));
   },
 
   /**
@@ -831,7 +840,8 @@ export const postHogFeatureFlagService = {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `HTTP ${response.status}`);
+          const detail = errorData.detail ? ` — ${errorData.detail}` : "";
+          throw new Error((errorData.message || `HTTP ${response.status}`) + detail);
         }
 
         const result = await response.json();
