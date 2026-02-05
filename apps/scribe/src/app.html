@@ -643,6 +643,9 @@
           animation: none;
           opacity: 1;
         }
+        #app-loading p {
+          transition: none;
+        }
       }
     </style>
 
@@ -708,7 +711,19 @@
       var __tkaTrickleInterval = null;
       var __tkaTrickleStopped = false;
 
-      // Show first flavor message immediately — no generic "Loading..."
+      // Crossfade: fade out → swap text → fade in (200ms each via CSS transition)
+      var __tkaFadeTimer = null;
+      function __tkaCrossfade(el, msg) {
+        if (__tkaFadeTimer) { clearTimeout(__tkaFadeTimer); __tkaFadeTimer = null; }
+        el.style.opacity = '0';
+        __tkaFadeTimer = setTimeout(function() {
+          __tkaFadeTimer = null;
+          el.textContent = msg;
+          el.style.opacity = '1';
+        }, 200);
+      }
+
+      // Show first flavor message immediately (no fade — nothing to fade from)
       var _initText = document.getElementById('loading-text');
       if (_initText && __tkaFlavorMessages.length > 0) {
         _initText.textContent = __tkaFlavorMessages[__tkaTrickleIndex];
@@ -727,9 +742,9 @@
         bar.style.width = __tkaTricklePercent + '%';
         if (screen) screen.setAttribute('aria-valuenow', String(__tkaTricklePercent));
 
-        // Rotate through flavor messages (direct swap — 800ms spacing means no flicker)
+        // Rotate through flavor messages with crossfade
         if (__tkaTrickleIndex < __tkaFlavorMessages.length) {
-          text.textContent = __tkaFlavorMessages[__tkaTrickleIndex];
+          __tkaCrossfade(text, __tkaFlavorMessages[__tkaTrickleIndex]);
           __tkaTrickleIndex++;
         }
 
@@ -747,7 +762,7 @@
 
       // Real progress function — called by SvelteKit as initialization proceeds.
       // The BAR always advances smoothly (CSS transition handles interpolation).
-      // The TEXT only updates if enough time has passed — rapid bursts are collapsed
+      // The TEXT crossfades when enough time has passed — rapid bursts are collapsed
       // so the user reads the first message, the bar slides, then sees "Ready".
       window.__tkaLoadProgress = function(percent, message) {
         // Monotonic: ignore out-of-order or duplicate calls
@@ -773,17 +788,18 @@
         if (percent >= 100) {
           __tkaFinished = true;
           var readyMsg = __tkaReadyMessages[Math.floor(Math.random() * __tkaReadyMessages.length)];
-          if (text) { text.style.opacity = '1'; text.textContent = readyMsg; }
+          if (text) __tkaCrossfade(text, readyMsg);
           clearTimeout(window.__tkaLoadTimeout);
+          // Hold ready message: 200ms fade-out + 200ms fade-in + 1s visible
           setTimeout(function() {
             if (screen) {
               screen.classList.add('loaded');
               screen.addEventListener('transitionend', function() { screen.remove(); });
             }
-          }, 1000);
+          }, 1400);
         } else if (now - __tkaLastTextTime >= __tkaMinTextGap) {
-          // Enough time since last text change — update the message
-          if (text) { text.style.opacity = '1'; text.textContent = message; }
+          // Enough time since last text change — crossfade to new message
+          if (text) __tkaCrossfade(text, message);
           __tkaLastTextTime = now;
         }
         // else: suppress text update (too soon), bar still advances silently
