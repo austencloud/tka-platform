@@ -1350,5 +1350,27 @@
   "auth_verify_with_passkey": "Vérifier avec passkey",
   "auth_sending": "Envoi...",
   "auth_send_magic_link": "Envoyer le lien magique",
-  "form_verify_password_hint": "Utilisez l'icône œil pour vérifier votre mot de passe"
+  "form_verify_password_hint": "Utilisez l'icône œil pour vérifier votre mot de passe",
+
+  "beta_discovery_title": "Bienvenue dans la bêta",
+  "beta_discovery_body": "TKA Scribe est encore en développement. Certaines fonctionnalités ne sont pas terminées et vous pourriez rencontrer des bugs. Merci de nous aider à améliorer l'application !",
+  "beta_discovery_acknowledge": "Je comprends qu'il s'agit d'une version bêta",
+  "beta_discovery_continue": "Continuer",
+
+  "attribution_question_title": "Comment avez-vous découvert TKA ?",
+  "attribution_question_subtitle": "Cela nous aide à comprendre comment les gens nous trouvent",
+  "attribution_source_search": "Moteur de recherche",
+  "attribution_source_social": "Réseaux sociaux",
+  "attribution_source_youtube": "Vidéo YouTube",
+  "attribution_source_friend": "Recommandé par un ami",
+  "attribution_source_event": "Événement ou festival",
+  "attribution_source_community": "Communauté en ligne",
+  "attribution_source_other": "Autre",
+  "attribution_followup_title": "Voulez-vous nous en dire plus ?",
+  "attribution_followup_optional": "(facultatif)",
+  "attribution_followup_placeholder_event": "Quel événement ou festival ?",
+  "attribution_followup_placeholder_friend": "Qui vous l'a recommandé ?",
+  "attribution_followup_placeholder_other": "Dites-nous en plus...",
+  "attribution_skip": "Passer",
+  "attribution_continue": "Continuer"
 }

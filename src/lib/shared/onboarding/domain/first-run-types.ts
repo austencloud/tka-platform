@@ -22,6 +22,7 @@ export interface FirstRunData {
  * Step identifiers for the first-run wizard
  */
 export type FirstRunStep =
+  | "betaDiscovery"
   | "welcome"
   | "displayName"
   | "theme"
@@ -43,6 +44,12 @@ export interface FirstRunStepConfig {
  * First-run wizard step definitions
  */
 export const FIRST_RUN_STEPS: FirstRunStepConfig[] = [
+  {
+    id: "betaDiscovery",
+    title: "Welcome to the beta",
+    subtitle: "Acknowledge beta status",
+    canSkip: false,
+  },
   {
     id: "welcome",
     title: "Welcome to TKA Scribe",

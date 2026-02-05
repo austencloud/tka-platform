@@ -26,6 +26,7 @@
   import PropPickerStep from "./steps/PropPickerStep.svelte";
   import PictographModeStep from "./steps/PictographModeStep.svelte";
   import AuthStep from "./steps/AuthStep.svelte";
+  import BetaDiscoveryStep from "./steps/BetaDiscoveryStep.svelte";
 
   interface Props {
     onComplete: () => void;
@@ -38,7 +39,7 @@
   const isAuthenticated = $derived(authState.isAuthenticated);
 
   // Wizard state
-  let currentStep = $state<FirstRunStep>("welcome");
+  let currentStep = $state<FirstRunStep>("betaDiscovery");
   let animateIn = $state(false);
 
   // Collected data
@@ -52,6 +53,7 @@
 
   // All possible steps (auth step only shown if not already authenticated)
   const ALL_STEPS: FirstRunStep[] = [
+    "betaDiscovery",
     "welcome",
     "displayName",
     "theme",
@@ -67,6 +69,7 @@
 
   // Icons for each step
   const STEP_ICONS: Record<FirstRunStep, string> = {
+    betaDiscovery: "fa-gem",
     welcome: "fa-infinity",
     displayName: "fa-user",
     theme: "fa-moon",
@@ -282,12 +285,16 @@
     <div class="progress-fill" style="width: {progress}%"></div>
   </div>
 
-  <!-- Skip button -->
-  <button class="skip-button" onclick={handleSkipAll}>Skip all</button>
+  <!-- Skip button (hidden on beta discovery step - acknowledgment is required) -->
+  {#if currentStep !== "betaDiscovery"}
+    <button class="skip-button" onclick={handleSkipAll}>Skip all</button>
+  {/if}
 
   <!-- Step content -->
   <div class="step-container">
-    {#if currentStep === "welcome"}
+    {#if currentStep === "betaDiscovery"}
+      <BetaDiscoveryStep onNext={() => handleNext("welcome")} />
+    {:else if currentStep === "welcome"}
       <WelcomeStep
         onNext={() => handleNext("displayName")}
         onQuickStart={handleQuickStart}
@@ -409,6 +416,7 @@
   }
 
   /* Animation */
+  .first-run-wizard :global(.beta-discovery-step),
   .first-run-wizard :global(.welcome-step),
   .first-run-wizard :global(.display-name-step),
   .first-run-wizard :global(.theme-picker-step),
@@ -422,6 +430,7 @@
       transform 0.4s ease;
   }
 
+  .first-run-wizard.animate-in :global(.beta-discovery-step),
   .first-run-wizard.animate-in :global(.welcome-step),
   .first-run-wizard.animate-in :global(.display-name-step),
   .first-run-wizard.animate-in :global(.theme-picker-step),
@@ -510,6 +519,7 @@
       transition: none;
     }
 
+    .first-run-wizard :global(.beta-discovery-step),
     .first-run-wizard :global(.welcome-step),
     .first-run-wizard :global(.display-name-step),
     .first-run-wizard :global(.theme-picker-step),

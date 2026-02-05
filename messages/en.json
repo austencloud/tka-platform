@@ -1475,5 +1475,27 @@
   "admin_train_challenges": "Train Challenge Manager",
   "admin_train_challenges_desc": "Create and manage training challenges",
   "tab_admin_hall_of_shame": "Hall of Shame",
-  "tab_desc_admin_hall_of_shame": "Manage hall of shame submissions"
+  "tab_desc_admin_hall_of_shame": "Manage hall of shame submissions",
+
+  "beta_discovery_title": "Welcome to the beta",
+  "beta_discovery_body": "TKA Scribe is still being built. Some features aren't finished yet, and you may encounter bugs. Thanks for helping us improve!",
+  "beta_discovery_acknowledge": "I understand this is a beta",
+  "beta_discovery_continue": "Continue",
+
+  "attribution_question_title": "How did you discover TKA?",
+  "attribution_question_subtitle": "This helps us understand how people find us",
+  "attribution_source_search": "Search engine",
+  "attribution_source_social": "Social media",
+  "attribution_source_youtube": "YouTube video",
+  "attribution_source_friend": "Friend recommended",
+  "attribution_source_event": "Event or festival",
+  "attribution_source_community": "Online community",
+  "attribution_source_other": "Other",
+  "attribution_followup_title": "Want to tell us more?",
+  "attribution_followup_optional": "(optional)",
+  "attribution_followup_placeholder_event": "Which event or festival?",
+  "attribution_followup_placeholder_friend": "Who recommended it?",
+  "attribution_followup_placeholder_other": "Tell us more...",
+  "attribution_skip": "Skip",
+  "attribution_continue": "Continue"
 }
