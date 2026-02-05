@@ -45,7 +45,7 @@ import admin from "firebase-admin";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { execSync } from "child_process";
 import * as readline from "readline";
-import config from "../config/feedback.config.js";
+import config from "../apps/scribe/config/feedback.config.js";
 
 // Load service account key
 const serviceAccount = JSON.parse(

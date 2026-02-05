@@ -10,7 +10,7 @@ import { getStorage } from "firebase-admin/storage";
 import { createReadStream, statSync } from "fs";
 import { basename, extname } from "path";
 import { randomBytes } from "crypto";
-import config from "../../config/museum-dev.config.js";
+import config from "../../apps/scribe/config/museum-dev.config.js";
 
 const { COLLECTIONS, ATTACHMENT_TYPES, JOURNAL_TYPES } = config;
 

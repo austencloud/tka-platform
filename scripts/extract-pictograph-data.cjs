@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const CSV_DIR = path.join(__dirname, '../static/data/pictographs');
+const CSV_DIR = path.join(__dirname, '../apps/scribe/static/data/pictographs');
 const OUTPUT_DIR = path.join(__dirname, '../deployment/functions/data');
 const OUTPUT_FILE = path.join(OUTPUT_DIR, 'pictographs.json');
 

@@ -10,16 +10,16 @@
  * - ISvgColorTransformer (color transformation logic)
  */
 
-import type { IArrowPathResolver } from "../../src/lib/shared/pictograph/arrow/rendering/contracts/IArrowPathResolver";
-import type { IArrowSvgParser } from "../../src/lib/shared/pictograph/arrow/rendering/contracts/IArrowSvgParser";
-import type { ISvgColorTransformer } from "../../src/lib/shared/pictograph/arrow/rendering/contracts/IArrowSvgColorTransformer";
-import type { ArrowPlacementData } from "../../src/lib/shared/pictograph/arrow/positioning/placement/domain/ArrowPlacementData";
-import type { ArrowSvgData } from "../../src/lib/shared/pictograph/shared/domain/models/svg-models";
+import type { IArrowPathResolver } from "../../apps/scribe/src/lib/shared/pictograph/arrow/rendering/contracts/IArrowPathResolver";
+import type { IArrowSvgParser } from "../../apps/scribe/src/lib/shared/pictograph/arrow/rendering/contracts/IArrowSvgParser";
+import type { ISvgColorTransformer } from "../../apps/scribe/src/lib/shared/pictograph/arrow/rendering/contracts/IArrowSvgColorTransformer";
+import type { ArrowPlacementData } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/placement/domain/ArrowPlacementData";
+import type { ArrowSvgData } from "../../apps/scribe/src/lib/shared/pictograph/shared/domain/models/svg-models";
 import type {
   IArrowSvgLoader,
   ArrowSvgLoadOptions,
-} from "../../src/lib/shared/pictograph/arrow/rendering/services/contracts/IArrowSvgLoader";
-import type { MotionData } from "../../src/lib/shared/pictograph/shared/domain/models/MotionData";
+} from "../../apps/scribe/src/lib/shared/pictograph/arrow/rendering/services/contracts/IArrowSvgLoader";
+import type { MotionData } from "../../apps/scribe/src/lib/shared/pictograph/shared/domain/models/MotionData";
 import { readFileSync } from "fs";
 import { join } from "path";
 

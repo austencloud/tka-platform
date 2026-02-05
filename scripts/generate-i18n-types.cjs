@@ -9,8 +9,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const messagesPath = path.resolve(__dirname, '../messages/en.json');
-const outputPath = path.resolve(__dirname, '../src/lib/shared/i18n/i18n-types.ts');
+const messagesPath = path.resolve(__dirname, '../apps/scribe/messages/en.json');
+const outputPath = path.resolve(__dirname, '../apps/scribe/src/lib/shared/i18n/i18n-types.ts');
 
 // Load and parse messages
 const messages = JSON.parse(fs.readFileSync(messagesPath, 'utf-8'));

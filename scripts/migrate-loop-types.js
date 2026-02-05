@@ -19,7 +19,7 @@ const __dirname = dirname(__filename);
 
 const SEQUENCE_INDEX_PATH = resolve(
   __dirname,
-  "../static/data/sequence-index.json"
+  "../apps/scribe/static/data/sequence-index.json"
 );
 
 // LOOP Type definitions (mirrored from circular-models.ts)

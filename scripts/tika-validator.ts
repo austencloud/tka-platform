@@ -13,8 +13,8 @@
  * Requires dev server running at localhost:5173
  */
 
-import { beginnerScenarios, beginnerScenariosByCategory } from '../src/lib/features/tika/evaluation/scenarios/beginner-scenarios'
-import type { TikaScenario } from '../src/lib/features/tika/evaluation/types'
+import { beginnerScenarios, beginnerScenariosByCategory } from '../apps/scribe/src/lib/features/tika/evaluation/scenarios/beginner-scenarios'
+import type { TikaScenario } from '../apps/scribe/src/lib/features/tika/evaluation/types'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Configuration

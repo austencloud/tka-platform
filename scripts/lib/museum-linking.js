@@ -6,7 +6,7 @@
  */
 
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import config from "../../config/museum-dev.config.js";
+import config from "../../apps/scribe/config/museum-dev.config.js";
 
 const { COLLECTIONS, LINK_TYPES, JOURNAL_TYPES } = config;
 

@@ -5,8 +5,8 @@
  * These return sensible defaults since we don't have Firebase or user sessions.
  */
 
-import { GridMode } from "../../src/lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "../../src/lib/shared/pictograph/prop/domain/enums/PropType";
+import { GridMode } from "../../apps/scribe/src/lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { PropType } from "../../apps/scribe/src/lib/shared/pictograph/prop/domain/enums/PropType";
 
 // Default settings for Node.js - matches what the browser uses as defaults
 const DEFAULT_SETTINGS = {

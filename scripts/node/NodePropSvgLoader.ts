@@ -5,18 +5,18 @@
  * Uses file system instead of fetch() for loading SVG files.
  */
 
-import type { MotionData } from "../../src/lib/shared/pictograph/shared/domain/models/MotionData";
-import type { PropPlacementData } from "../../src/lib/shared/pictograph/prop/domain/models/PropPlacementData";
-import type { PropRenderData } from "../../src/lib/shared/pictograph/prop/domain/models/PropRenderData";
+import type { MotionData } from "../../apps/scribe/src/lib/shared/pictograph/shared/domain/models/MotionData";
+import type { PropPlacementData } from "../../apps/scribe/src/lib/shared/pictograph/prop/domain/models/PropPlacementData";
+import type { PropRenderData } from "../../apps/scribe/src/lib/shared/pictograph/prop/domain/models/PropRenderData";
 import type {
   IPropSvgLoader,
   PropSvgLoadOptions,
-} from "../../src/lib/shared/pictograph/prop/services/contracts/IPropSvgLoader";
-import { MotionColor } from "../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+} from "../../apps/scribe/src/lib/shared/pictograph/prop/services/contracts/IPropSvgLoader";
+import { MotionColor } from "../../apps/scribe/src/lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   applyMotionColorToSvg,
   type ThemeMode,
-} from "../../src/lib/shared/utils/svg-color-utils";
+} from "../../apps/scribe/src/lib/shared/utils/svg-color-utils";
 import { readFileSync } from "fs";
 import { join } from "path";
 

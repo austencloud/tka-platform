@@ -25,7 +25,7 @@ import { readFileSync } from "fs";
 import { execSync } from "child_process";
 import { existsSync, mkdirSync } from "fs";
 import { randomUUID } from "crypto";
-import config from "../config/feedback.config.js";
+import config from "../apps/scribe/config/feedback.config.js";
 import cfClient from "./lib/cloud-functions-client.js";
 
 // Generate a unique session ID for this script invocation

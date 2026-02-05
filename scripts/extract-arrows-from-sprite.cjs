@@ -9,8 +9,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const SPRITE_PATH = path.join(__dirname, '../static/images/arrows-sprite.svg');
-const OUTPUT_DIR = path.join(__dirname, '../static/images/arrows');
+const SPRITE_PATH = path.join(__dirname, '../apps/scribe/static/images/arrows-sprite.svg');
+const OUTPUT_DIR = path.join(__dirname, '../apps/scribe/static/images/arrows');
 
 // Normalize Illustrator's XML entity encoding in IDs
 function normalizeId(id) {
