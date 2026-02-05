@@ -18,8 +18,9 @@ import {
   runTransaction,
   serverTimestamp,
   documentId,
+  startAfter,
 } from "firebase/firestore";
-import type { Timestamp, DocumentData } from "firebase/firestore";
+import type { Timestamp, DocumentData, DocumentSnapshot } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { getUserAchievementsPath } from "$lib/shared/gamification/data/firestore-collections";
@@ -28,11 +29,16 @@ import type {
   Achievement,
   UserAchievement,
 } from "$lib/shared/gamification/domain/models/achievement-models";
-import type { IUserRepository } from "../contracts/IUserRepository";
+import type {
+  IUserRepository,
+  PaginatedUsersResult,
+  PaginatedQueryOptions,
+} from "../contracts/IUserRepository";
 import type {
   EnhancedUserProfile,
   UserProfile,
   CreatorQueryOptions,
+  CreatorSortCriteria,
 } from "../../domain/models/enhanced-user-profile";
 
 import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
@@ -170,13 +176,136 @@ export class UserRepository implements IUserRepository {
   }
 
   /**
+   * Map sort criteria to Firestore field names
+   */
+  private readonly SORT_FIELD_MAP: Record<CreatorSortCriteria, string> = {
+    followers: "followerCount",
+    sequences: "sequenceCount",
+    level: "currentLevel",
+    xp: "totalXP",
+    joinedDate: "createdAt",
+    achievements: "achievementCount",
+  };
+
+  /**
+   * Get paginated users with cursor-based pagination
+   * Server-side sorting for scalability
+   */
+  async getUsersPaginated(
+    options: PaginatedQueryOptions,
+    currentUserId?: string
+  ): Promise<PaginatedUsersResult> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const usersRef = collection(firestore, this.USERS_COLLECTION);
+
+      // Get the Firestore field name for sorting
+      const sortField = this.SORT_FIELD_MAP[options.sortBy] || "followerCount";
+      const sortDirection = options.sortDirection === "asc" ? "asc" : "desc";
+
+      // Build query with server-side ordering
+      let q = query(
+        usersRef,
+        orderBy(sortField, sortDirection),
+        firestoreLimit(options.limit + 1) // Fetch one extra to check if there's more
+      );
+
+      // Apply cursor if provided (for pagination)
+      if (options.cursor) {
+        q = query(
+          usersRef,
+          orderBy(sortField, sortDirection),
+          startAfter(options.cursor),
+          firestoreLimit(options.limit + 1)
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+      const docs = querySnapshot.docs;
+
+      // Check if there are more results
+      const hasMore = docs.length > options.limit;
+      const resultDocs = hasMore ? docs.slice(0, options.limit) : docs;
+
+      // Get last document snapshot for cursor
+      const lastDoc = resultDocs[resultDocs.length - 1];
+      const lastDocSnapshot: DocumentSnapshot | null = lastDoc ?? null;
+
+      // Get list of users current user is following (for batch check)
+      let followingSet = new Set<string>();
+      if (currentUserId) {
+        followingSet = await this.getFollowingIds(currentUserId);
+      }
+
+      const users: EnhancedUserProfile[] = [];
+
+      for (const docSnap of resultDocs) {
+        const data = docSnap.data() as FirestoreUserData;
+        const isFollowing =
+          currentUserId !== docSnap.id && followingSet.has(docSnap.id);
+        // Skip achievements fetch in list views to avoid N+1 queries
+        const user = await this.mapFirestoreToEnhancedProfile(
+          docSnap.id,
+          data,
+          isFollowing,
+          true // skipAchievements
+        );
+        if (user) {
+          users.push(user);
+        }
+      }
+
+      return {
+        users,
+        lastDocSnapshot,
+        hasMore,
+      };
+    } catch (error) {
+      console.error("[UserRepository] Error fetching paginated users:", error);
+      toast.error("Failed to load creators.");
+      throw error;
+    }
+  }
+
+  /**
    * Get featured creators
    */
   async getFeaturedCreators(limit = 10): Promise<EnhancedUserProfile[]> {
-    return this.getUsers({
-      filter: "featured",
-      limit,
-    });
+    try {
+      const firestore = await getFirestoreInstance();
+      const usersRef = collection(firestore, this.USERS_COLLECTION);
+
+      // Query for featured users, ordered by follower count
+      const q = query(
+        usersRef,
+        where("isFeatured", "==", true),
+        orderBy("followerCount", "desc"),
+        firestoreLimit(limit)
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      const users: EnhancedUserProfile[] = [];
+
+      for (const docSnap of querySnapshot.docs) {
+        const data = docSnap.data() as FirestoreUserData;
+        // Skip achievements fetch in list views
+        const user = await this.mapFirestoreToEnhancedProfile(
+          docSnap.id,
+          data,
+          false, // isFollowing - will be updated by component
+          true // skipAchievements
+        );
+        if (user) {
+          users.push(user);
+        }
+      }
+
+      return users;
+    } catch (error) {
+      console.error("[UserRepository] Error fetching featured creators:", error);
+      return [];
+    }
   }
 
   /**
@@ -679,7 +808,7 @@ export class UserRepository implements IUserRepository {
         username,
         displayName,
         avatar,
-        email: data.email,
+        // NOTE: Email deliberately omitted - user documents are publicly readable
         sequenceCount,
         collectionCount,
         followerCount,

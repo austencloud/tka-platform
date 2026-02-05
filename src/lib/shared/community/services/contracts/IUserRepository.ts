@@ -3,11 +3,32 @@
  * Service contract for user profiles with social features (follow/unfollow)
  */
 
+import type { DocumentSnapshot } from "firebase/firestore";
 import type {
   EnhancedUserProfile,
   UserProfile,
   CreatorQueryOptions,
+  CreatorSortCriteria,
 } from "../../domain/models/enhanced-user-profile";
+
+/**
+ * Result from paginated user queries
+ */
+export interface PaginatedUsersResult {
+  users: EnhancedUserProfile[];
+  lastDocSnapshot: DocumentSnapshot | null;
+  hasMore: boolean;
+}
+
+/**
+ * Options for paginated user queries
+ */
+export interface PaginatedQueryOptions {
+  sortBy: CreatorSortCriteria;
+  sortDirection: "asc" | "desc";
+  limit: number;
+  cursor?: DocumentSnapshot | null;
+}
 
 export interface IUserRepository {
   /**
@@ -29,6 +50,17 @@ export interface IUserRepository {
     options?: CreatorQueryOptions,
     currentUserId?: string
   ): Promise<EnhancedUserProfile[]>;
+
+  /**
+   * Get paginated users with cursor-based pagination
+   * Server-side sorting for scalability
+   * @param options - Pagination and sort options
+   * @param currentUserId - Optional current user ID to check follow status
+   */
+  getUsersPaginated(
+    options: PaginatedQueryOptions,
+    currentUserId?: string
+  ): Promise<PaginatedUsersResult>;
 
   /**
    * Get featured creators

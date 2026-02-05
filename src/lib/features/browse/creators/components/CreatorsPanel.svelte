@@ -1,11 +1,14 @@
 <script lang="ts">
   /**
    * CreatorsPanel (Browse Module)
-   * Community creator browser for browseing users
-   * Displays user profiles with their contributions and stats.
+   * Community creator browser for browsing users
    *
-   * Uses singleton data state for caching - data persists across tab switches.
-   * Each creator card color is extracted from their avatar for a personalized look.
+   * Features:
+   * - Server-side paginated loading (30 users per page)
+   * - Server-side sorting by followers, sequences, level, XP, join date
+   * - Featured creators section (pinned at top)
+   * - Virtualized grid for smooth scrolling with large lists
+   * - Visibility-driven color extraction
    */
 
   import { onMount } from "svelte";
@@ -14,26 +17,24 @@
   import { authState, isEffectiveAdmin } from "$lib/shared/auth/state/authState.svelte.ts";
   import { browseNavigationState } from "../../shared/state/browse-navigation-state.svelte";
   import { creatorsDataState } from "../state/creators-data-state.svelte";
-  import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
+  import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
+  import type { CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import PanelContent from "$lib/shared/components/panel/PanelContent.svelte";
   import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
-  import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
-  import {
-    extractDominantColor,
-    getCachedOrFallbackColor,
-  } from "$lib/shared/foundation/utils/color-extractor";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
+  // New components
+  import VirtualizedCreatorGrid from "./VirtualizedCreatorGrid.svelte";
+  import FeaturedCreatorsSection from "./FeaturedCreatorsSection.svelte";
+  import CreatorsSortBar from "./CreatorsSortBar.svelte";
 
   let searchQuery = $state("");
   let followingInProgress = $state<Set<string>>(new Set());
 
-  // Track extracted colors per user ID
-  let userColors = $state<Map<string, string>>(new Map());
-
   // Service instances
-  let userService: IUserRepository;
+  let userRepository: IUserRepository;
   let hapticService: IHapticFeedback;
 
   // Get current user ID
@@ -41,130 +42,73 @@
 
   // Reactive getters from cached state
   const users = $derived(creatorsDataState.users);
-  const isLoading = $derived(
-    creatorsDataState.isLoading && !creatorsDataState.isLoaded
-  );
+  const featuredUsers = $derived(creatorsDataState.featuredUsers);
+  const isLoading = $derived(creatorsDataState.isLoading);
+  const isLoadingMore = $derived(creatorsDataState.isLoadingMore);
+  const isLoadingFeatured = $derived(creatorsDataState.isLoadingFeatured);
+  const hasMore = $derived(creatorsDataState.hasMore);
   const error = $derived(creatorsDataState.error);
+  const sortBy = $derived(creatorsDataState.sortBy);
+  const searchResults = $derived(creatorsDataState.searchResults);
+  const isSearching = $derived(creatorsDataState.isSearching);
 
   // Accounts to hide from public view (test/system accounts)
   // Admins can still see these accounts
-  const HIDDEN_EMAILS = ["tkascribe.review@gmail.com"];
+  // NOTE: Email-based filtering removed for privacy - use usernames only
   const HIDDEN_USERNAMES = [
     "netsua07",
     "flowtacocat",
     "tka.flowarts",
     "cirqueaflame_603",
+    "tkascribe.review", // Previously filtered by email
   ];
 
   // Check if effective user is admin (respects preview mode)
   const isAdmin = $derived(isEffectiveAdmin());
 
-  /**
-   * Fuzzy match a query against text.
-   * - Case insensitive
-   * - Matches if ALL query terms appear anywhere in the text
-   * - Each term can match partial words (e.g., "sky" matches "Bershadsky")
-   */
-  function fuzzyMatch(text: string, query: string): boolean {
-    const normalizedText = text.toLowerCase();
-    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-
-    // All terms must match somewhere in the text
-    return terms.every((term) => normalizedText.includes(term));
+  // Filter hidden accounts from user lists
+  function filterHiddenAccounts(userList: EnhancedUserProfile[]): EnhancedUserProfile[] {
+    if (isAdmin) return userList;
+    return userList.filter((user) => !HIDDEN_USERNAMES.includes(user.username));
   }
 
-  // Filtered users based on search (excludes hidden accounts for non-admins)
-  const filteredUsers = $derived.by(() => {
-    // Admins see all accounts, non-admins have hidden accounts filtered out
-    const visibleUsers = isAdmin
-      ? users
-      : users.filter((user) => {
-          const isHiddenByEmail =
-            user.email && HIDDEN_EMAILS.includes(user.email);
-          const isHiddenByUsername = HIDDEN_USERNAMES.includes(user.username);
-          return !isHiddenByEmail && !isHiddenByUsername;
-        });
-
-    if (!searchQuery) return visibleUsers;
-
-    return visibleUsers.filter((user) => {
-      // Combine searchable fields into one string for matching
-      const searchableText = `${user.username} ${user.displayName}`;
-      return fuzzyMatch(searchableText, searchQuery);
-    });
+  // Get display users - either search results or paginated list (filtered)
+  const displayUsers = $derived.by(() => {
+    const baseList = searchResults !== null ? searchResults : users;
+    return filterHiddenAccounts(baseList);
   });
+
+  // Featured users (filtered)
+  const displayFeaturedUsers = $derived(filterHiddenAccounts(featuredUsers));
+
+  // Debounce timer for search
+  let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   onMount(async () => {
     try {
       // Resolve services from DI container
-      userService = container.items.userRepository;
+      userRepository = container.items.userRepository;
       hapticService = container.items.hapticFeedback;
 
-      // Load creators data (uses cache if already loaded)
-      await creatorsDataState.loadCreators(userService, currentUserId);
+      // Load creators data if not already initialized
+      if (!creatorsDataState.isInitialized) {
+        await Promise.all([
+          creatorsDataState.loadCreators(userRepository, currentUserId),
+          creatorsDataState.loadFeaturedCreators(userRepository),
+        ]);
+      }
     } catch (err) {
       console.error("[CreatorsPanel] Error loading creators:", err);
     }
   });
 
-  function handleUserClick(user: UserProfile) {
+  function handleUserClick(user: EnhancedUserProfile) {
     hapticService?.trigger("selection");
     // Navigate to user profile using unified navigation state
     browseNavigationState.viewCreatorProfile(user.id, user.displayName);
   }
 
-  /**
-   * Get the accent color for a user card
-   * Uses extracted color if available, falls back to name-based color
-   */
-  function getUserColor(user: UserProfile): string {
-    // Check if we've already extracted this user's color
-    const extracted = userColors.get(user.id);
-    if (extracted) return extracted;
-
-    // Use cached or generate fallback from name
-    return getCachedOrFallbackColor(user.avatar, user.displayName);
-  }
-
-  /**
-   * Handle successful avatar image load - extract color
-   */
-  async function handleAvatarLoad(
-    user: UserProfile,
-    imgElement: HTMLImageElement
-  ) {
-    // Skip if already have color for this user
-    if (userColors.has(user.id)) return;
-
-    try {
-      const color = await extractDominantColor(user.avatar, user.displayName);
-      // Update state to trigger re-render with new color
-      userColors = new Map(userColors).set(user.id, color);
-    } catch {
-      // Extraction failed, use fallback (already handled by getCachedOrFallbackColor)
-    }
-  }
-
-  /**
-   * Handle avatar load error - ensure fallback color is set
-   */
-  function handleAvatarError(user: UserProfile, imgElement: HTMLImageElement) {
-    // Hide broken image, show placeholder
-    imgElement.style.display = "none";
-    const fallback = imgElement.nextElementSibling as HTMLElement;
-    if (fallback) fallback.style.display = "flex";
-
-    // Set fallback color based on name
-    if (!userColors.has(user.id)) {
-      const fallbackColor = getCachedOrFallbackColor(
-        undefined,
-        user.displayName
-      );
-      userColors = new Map(userColors).set(user.id, fallbackColor);
-    }
-  }
-
-  async function handleFollowToggle(user: UserProfile) {
+  async function handleFollowToggle(user: EnhancedUserProfile) {
     if (!currentUserId) {
       return;
     }
@@ -184,11 +128,11 @@
 
     try {
       if (user.isFollowing) {
-        await userService.unfollowUser(currentUserId, user.id);
+        await userRepository.unfollowUser(currentUserId, user.id);
         // Optimistic update via cached state
         creatorsDataState.updateUserFollowStatus(user.id, false, -1);
       } else {
-        await userService.followUser(currentUserId, user.id);
+        await userRepository.followUser(currentUserId, user.id);
         // Optimistic update via cached state
         creatorsDataState.updateUserFollowStatus(user.id, true, 1);
       }
@@ -206,6 +150,33 @@
       followingInProgress = newSet;
     }
   }
+
+  function handleSearchInput(value: string) {
+    searchQuery = value;
+
+    // Debounce search by 300ms
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+
+    searchDebounceTimer = setTimeout(() => {
+      creatorsDataState.setSearchQuery(value);
+    }, 300);
+  }
+
+  async function handleSortChange(newSortBy: CreatorSortCriteria) {
+    hapticService?.trigger("selection");
+    await creatorsDataState.changeSortOrder(
+      newSortBy,
+      "desc",
+      userRepository,
+      currentUserId
+    );
+  }
+
+  function handleLoadMore() {
+    creatorsDataState.loadMoreCreators(userRepository, currentUserId);
+  }
 </script>
 
 <div class="creators-panel">
@@ -220,14 +191,27 @@
       </div>
     </div>
 
-    <PanelSearch placeholder={t("browse_search_creators")} bind:value={searchQuery} />
+    <!-- Search + Sort row -->
+    <div class="search-sort-row">
+      <PanelSearch
+        placeholder={t("browse_search_creators")}
+        value={searchQuery}
+        oninput={handleSearchInput}
+        maxWidth="none"
+      />
+      {#if !searchResults}
+        <CreatorsSortBar {sortBy} onSortChange={handleSortChange} />
+      {/if}
+    </div>
 
     <PanelContent>
       {#if error}
         <PanelState type="error" title={t("browse_error")} message={error} />
-      {:else if isLoading}
+      {:else if isLoading && !creatorsDataState.isInitialized}
         <PanelState type="loading" message={t("browse_loading_creators")} />
-      {:else if filteredUsers.length === 0}
+      {:else if isSearching}
+        <PanelState type="loading" message="Searching..." />
+      {:else if displayUsers.length === 0}
         <PanelState
           type="empty"
           icon="fa-users"
@@ -237,103 +221,29 @@
             : t("browse_no_members")}
         />
       {:else}
-        <PanelGrid minCardWidth="240px" gap="20px">
-          {#each filteredUsers as user (user.id)}
-            <div
-              class="user-card"
-              style="--card-accent: {getUserColor(user)}"
-              onclick={() => handleUserClick(user)}
-              role="button"
-              tabindex="0"
-              aria-label="View profile of {user.displayName}"
-              onkeydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleUserClick(user);
-                }
-              }}
-            >
-              <!-- Avatar -->
-              <div class="user-avatar">
-                {#if user.avatar}
-                  <img
-                    src={user.avatar}
-                    alt={user.displayName}
-                    crossorigin="anonymous"
-                    referrerpolicy="no-referrer"
-                    onload={(e) =>
-                      handleAvatarLoad(
-                        user,
-                        e.currentTarget as HTMLImageElement
-                      )}
-                    onerror={(e) =>
-                      handleAvatarError(
-                        user,
-                        e.currentTarget as HTMLImageElement
-                      )}
-                  />
-                  <!-- Fallback placeholder (shown if image fails to load) -->
-                  <div
-                    class="avatar-placeholder"
-                    style="display: none;"
-                    aria-hidden="true"
-                  >
-                    <i class="fas fa-user" aria-hidden="true"></i>
-                  </div>
-                {:else}
-                  <div class="avatar-placeholder" aria-hidden="true">
-                    <i class="fas fa-user" aria-hidden="true"></i>
-                  </div>
-                {/if}
-              </div>
+        <!-- Featured creators section (only show when not searching) -->
+        {#if !searchResults && displayFeaturedUsers.length > 0}
+          <FeaturedCreatorsSection
+            users={displayFeaturedUsers}
+            {currentUserId}
+            {followingInProgress}
+            onUserClick={handleUserClick}
+            onFollowToggle={handleFollowToggle}
+            isLoading={isLoadingFeatured}
+          />
+        {/if}
 
-              <!-- User info -->
-              <div class="user-info">
-                <h3 class="display-name">{user.displayName}</h3>
-                <p class="username">@{user.username}</p>
-
-                <!-- Stats -->
-                <div class="user-stats">
-                  <div class="stat">
-                    <i class="fas fa-list" aria-hidden="true"></i>
-                    <span>{user.sequenceCount}</span>
-                  </div>
-                  <div class="stat">
-                    <i class="fas fa-folder" aria-hidden="true"></i>
-                    <span>{user.collectionCount}</span>
-                  </div>
-                  <div class="stat">
-                    <i class="fas fa-users" aria-hidden="true"></i>
-                    <span>{user.followerCount}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Actions - only show follow button if logged in and not own profile -->
-              {#if currentUserId && currentUserId !== user.id}
-                <div class="user-actions">
-                  <button
-                    class="follow-button"
-                    class:following={user.isFollowing}
-                    class:loading={followingInProgress.has(user.id)}
-                    disabled={followingInProgress.has(user.id)}
-                    aria-busy={followingInProgress.has(user.id)}
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      handleFollowToggle(user);
-                    }}
-                  >
-                    {#if followingInProgress.has(user.id)}
-                      <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                    {:else}
-                      {user.isFollowing ? t("browse_following") : t("browse_follow")}
-                    {/if}
-                  </button>
-                </div>
-              {/if}
-            </div>
-          {/each}
-        </PanelGrid>
+        <!-- Main virtualized grid -->
+        <VirtualizedCreatorGrid
+          users={displayUsers}
+          {currentUserId}
+          {followingInProgress}
+          hasMore={!searchResults && hasMore}
+          {isLoadingMore}
+          onUserClick={handleUserClick}
+          onFollowToggle={handleFollowToggle}
+          onLoadMore={handleLoadMore}
+        />
       {/if}
     </PanelContent>
   </div>
@@ -345,20 +255,19 @@
     justify-content: center;
     width: 100%;
     height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     /* Generous responsive padding */
     padding: 0 clamp(16px, 4vw, 48px);
   }
 
-  /* 2026 Centered content container - everything aligns to same width */
+  /* Centered content container - everything aligns to same width */
   .content-container {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
     width: 100%;
     max-width: 1100px;
-    padding-bottom: 48px;
+    height: 100%;
   }
 
   /* Top bar with navigation */
@@ -392,199 +301,25 @@
     color: var(--theme-text-dim);
   }
 
-  /* ============================================================================
-     USER CARD - Dynamic Avatar-Based Color Theming
-     --card-accent is set dynamically per card via inline style
-     ============================================================================ */
-  .user-card {
-    /* Fallback if no color extracted yet */
-    --card-accent: var(--theme-accent-strong);
-    /* Derive lighter variant using color-mix */
-    --card-accent-light: color-mix(in srgb, var(--card-accent) 80%, #fff);
-    --card-accent-glow: color-mix(in srgb, var(--card-accent) 25%, transparent);
-
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 16px;
-    /* Soft gradient fill using extracted color */
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--card-accent) 10%, rgba(255, 255, 255, 0.03)) 0%,
-      color-mix(in srgb, var(--card-accent) 5%, rgba(255, 255, 255, 0.02)) 100%
-    );
-    border: 1px solid color-mix(in srgb, var(--card-accent) 18%, transparent);
-    border-radius: 14px;
-    transition:
-      background 0.3s var(--ease-out, ease),
-      border-color 0.3s var(--ease-out, ease),
-      box-shadow 0.2s var(--ease-out, ease),
-      transform 0.2s var(--ease-out, ease);
-    cursor: pointer;
-  }
-
-  .user-card:hover {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--card-accent) 16%, var(--theme-card-bg)) 0%,
-      color-mix(in srgb, var(--card-accent) 10%, rgba(255, 255, 255, 0.03)) 100%
-    );
-    border-color: color-mix(in srgb, var(--card-accent) 40%, transparent);
-    transform: translateY(var(--hover-lift-md, -2px));
-    /* Dynamic color glow on hover */
-    box-shadow:
-      0 8px 24px var(--card-accent-glow),
-      0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .user-card:focus {
-    outline: 2px solid var(--card-accent);
-    outline-offset: 2px;
-  }
-
-  /* Avatar with dynamic color ring */
-  .user-avatar {
-    position: relative;
-    width: 56px;
-    height: 56px;
-    margin: 0 auto;
-    flex-shrink: 0;
-    /* Gradient ring using extracted color */
-    padding: 2px;
-    background: linear-gradient(
-      135deg,
-      var(--card-accent) 0%,
-      var(--card-accent-light) 100%
-    );
-    border-radius: 50%;
-    transition: background var(--duration-emphasis) var(--ease-out, ease);
-  }
-
-  .user-avatar img,
-  .avatar-placeholder {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-    /* Inner background to create ring effect */
-    background: #1a1a2e;
-  }
-
-  .avatar-placeholder {
+  /* Search + Sort row - aligned with grid cards */
+  .search-sort-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--card-accent) 20%, #1a1a2e) 0%,
-      #1a1a2e 100%
-    );
-  }
-
-  .avatar-placeholder i {
-    font-size: var(--font-size-xl);
-    color: var(--card-accent-light);
-    transition: color var(--duration-emphasis) var(--ease-out, ease);
-  }
-
-  /* User info */
-  .user-info {
-    text-align: center;
-    min-width: 0;
-  }
-
-  .display-name {
-    margin: 0;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--theme-text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .username {
-    margin: 2px 0 0 0;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* User stats */
-  .user-stats {
-    display: flex;
-    justify-content: center;
     gap: 12px;
-    margin-top: 6px;
+    /* Left: PanelContent (20px) + virtual-row (4px) = 24px
+       Right: Same + scrollbar (8px) = 32px */
+    padding: 0 32px 0 24px;
   }
 
-  .stat {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
+  .search-sort-row :global(.panel-search) {
+    flex: 1;
+    max-width: none;
+    padding: 0;
   }
 
-  .stat i {
-    font-size: var(--font-size-compact);
-    /* Dynamic color tinted icons */
-    color: var(--card-accent);
-    opacity: 0.75;
-    transition:
-      opacity 0.2s ease,
-      color 0.3s ease;
-  }
-
-  .user-card:hover .stat i {
-    opacity: 1;
-  }
-
-  /* Actions */
-  .user-actions {
-    display: flex;
-    margin-top: 4px;
-  }
-
-  .follow-button {
-    width: 100%;
-    padding: 6px 12px;
-    border: 1px solid var(--card-accent);
-    border-radius: 6px;
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-emphasis) var(--ease-out, ease);
-    background: var(--card-accent);
-    color: white;
-  }
-
-  .follow-button:hover {
-    filter: brightness(1.15);
-    box-shadow: 0 2px 8px var(--card-accent-glow);
-  }
-
-  .follow-button.following {
-    background: transparent;
-    border-color: color-mix(in srgb, var(--card-accent) 30%, transparent);
-    color: var(--theme-text-dim);
-  }
-
-  .follow-button.following:hover {
-    background: color-mix(in srgb, var(--card-accent) 10%, transparent);
-    border-color: color-mix(in srgb, var(--card-accent) 50%, transparent);
-    color: var(--card-accent-light);
-  }
-
-  .follow-button.loading {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-
-  .follow-button:disabled {
-    pointer-events: none;
+  /* Fix icon position when padding removed */
+  .search-sort-row :global(.panel-search__icon) {
+    left: 12px;
   }
 
   /* ============================================================================
@@ -596,8 +331,7 @@
     }
 
     .content-container {
-      gap: 16px;
-      padding-bottom: 24px;
+      gap: 12px;
     }
 
     .creators-topbar {
@@ -608,67 +342,16 @@
       font-size: var(--font-size-base);
     }
 
-    .user-card {
-      padding: 12px;
+    .search-sort-row {
+      flex-direction: column;
       gap: 8px;
-      border-radius: 12px;
+      /* Left: PanelContent mobile (16px) + virtual-row (4px) = 20px
+         Right: Same + scrollbar (8px) = 28px */
+      padding: 0 28px 0 20px;
     }
 
-    .user-avatar {
-      width: 48px;
-      height: 48px;
-      padding: 2px;
-    }
-
-    .avatar-placeholder i {
-      font-size: var(--font-size-lg);
-    }
-
-    .display-name {
-      font-size: var(--font-size-compact);
-    }
-
-    .username {
-      font-size: var(--font-size-compact);
-    }
-
-    .user-stats {
-      margin-top: 4px;
-      gap: 10px;
-    }
-
-    .stat {
-      font-size: var(--font-size-compact);
-      gap: 3px;
-    }
-
-    .stat i {
-      font-size: var(--font-size-compact);
-    }
-
-    .follow-button {
-      padding: 6px 12px;
-      font-size: var(--font-size-compact);
-    }
-  }
-
-  @media (max-width: 360px) {
-    .user-avatar {
-      width: 44px;
-      height: 44px;
-    }
-  }
-
-  /* ============================================================================
-     ACCESSIBILITY
-     ============================================================================ */
-  @media (prefers-reduced-motion: reduce) {
-    .user-card {
-      transition: none;
-    }
-
-    .user-card:hover {
-      transform: none;
+    .search-sort-row :global(.panel-search) {
+      width: 100%;
     }
   }
 </style>

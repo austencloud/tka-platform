@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import type { UserLocationWithProfile } from "../domain/models/user-location";
+  import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
 
   let {
     user,
@@ -28,13 +29,14 @@
   </button>
 
   <div class="profile-header">
-    {#if user.avatar}
-      <img src={user.avatar} alt={user.displayName} class="avatar" />
-    {:else}
-      <div class="avatar-placeholder">
-        <i class="fas fa-user" aria-hidden="true"></i>
-      </div>
-    {/if}
+    <RobustAvatar
+      src={user.avatar}
+      name={user.displayName}
+      alt={user.displayName}
+      customSize={56}
+      ring
+      ringColor="var(--theme-accent, #4a9eff)"
+    />
     <div class="profile-info">
       <h3>{user.displayName}</h3>
       <p class="username">@{user.username}</p>
@@ -127,28 +129,6 @@
     margin-bottom: 16px;
   }
 
-  .avatar,
-  .avatar-placeholder {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .avatar {
-    object-fit: cover;
-    border: 2px solid var(--theme-accent, #4a9eff);
-  }
-
-  .avatar-placeholder {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-size: 24px;
-  }
 
   .profile-info {
     flex: 1;
