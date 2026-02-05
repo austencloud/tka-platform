@@ -8,6 +8,9 @@
 <script lang="ts">
   import type { PropPreset } from "../../../domain/AppSettings";
   import { getPropTypeDisplayInfo } from "./PropTypeRegistry";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+
+  const NO_ROTATE_PROPS = new Set([PropType.HAND]);
 
   let {
     preset,
@@ -37,6 +40,8 @@
   const isCatDog = $derived(
     preset && preset.catDogMode && preset.bluePropType !== preset.redPropType
   );
+  const blueNoRotate = $derived(preset ? NO_ROTATE_PROPS.has(preset.bluePropType) : false);
+  const redNoRotate = $derived(preset ? NO_ROTATE_PROPS.has(preset.redPropType) : false);
 
   // Keyboard shortcut label (1-9, then 0 for slot 10)
   const keyLabel = $derived(index < 9 ? String(index + 1) : "0");
@@ -116,11 +121,11 @@
       <i class="fas fa-plus empty-icon" aria-hidden="true"></i>
     {:else if isCatDog && blueInfo && redInfo}
       <div class="dual-props">
-        <img src={blueInfo.image} alt="" class="mini-prop" />
-        <img src={redInfo.image} alt="" class="mini-prop red" />
+        <img src={blueInfo.image} alt="" class="mini-prop" class:no-rotate={blueNoRotate} />
+        <img src={redInfo.image} alt="" class="mini-prop red" class:no-rotate={redNoRotate} />
       </div>
     {:else if blueInfo}
-      <img src={blueInfo.image} alt="" class="mini-prop single" />
+      <img src={blueInfo.image} alt="" class="mini-prop single" class:no-rotate={blueNoRotate} />
     {/if}
   </span>
 
@@ -136,7 +141,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Square chip that fills column width */
     width: 100%;
     aspect-ratio: 1;
     padding: 6px;
@@ -147,6 +151,7 @@
     transition: all var(--duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+    box-sizing: border-box;
   }
 
   .preset-chip:hover {
@@ -254,7 +259,7 @@
     color: var(--theme-accent);
   }
 
-  /* Mini prop icons - scale with chip size */
+  /* Mini prop icons - rotated vertical for better fit in cells */
   .mini-prop {
     width: 60%;
     height: 60%;
@@ -266,6 +271,11 @@
     -webkit-user-select: none;
     user-select: none;
     pointer-events: none;
+    transform: rotate(-90deg);
+  }
+
+  .mini-prop.no-rotate {
+    transform: none;
   }
 
   .mini-prop.single {
@@ -277,18 +287,19 @@
 
   .dual-props {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 2px;
     width: 100%;
     height: 100%;
   }
 
   .dual-props .mini-prop {
-    width: 40%;
-    height: 55%;
+    width: 55%;
+    height: 40%;
     max-width: 50px;
-    max-height: 60px;
+    max-height: 40px;
   }
 
   .dual-props .mini-prop.red {

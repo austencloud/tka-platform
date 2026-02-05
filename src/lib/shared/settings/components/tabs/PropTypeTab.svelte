@@ -346,8 +346,29 @@
       </div>
     </header>
 
-    <!-- Presets -->
-    <div class="section">
+    <!-- Current Selection (front and center) -->
+    <div class="prop-display">
+      <CompactPropDisplay
+        bluePropType={selectedBluePropType}
+        redPropType={selectedRedPropType}
+        {catDogMode}
+        {blueBuugengFlipped}
+        {redBuugengFlipped}
+        onOpenSheet={handleOpenSheet}
+        onToggleFlip={handleToggleFlip}
+      />
+    </div>
+
+    <!-- CatDog Toggle -->
+    <div class="mode-row">
+      <CatDogToggle {catDogMode} onToggle={toggleCatDogMode} />
+      <span class="mode-hint">
+        {catDogMode ? t("settings_different_props") : t("settings_same_props")}
+      </span>
+    </div>
+
+    <!-- Presets (fills remaining space) -->
+    <div class="section presets-section">
       <h4 class="section-label">{t("settings_quick_presets")}</h4>
       <PresetChipBar
         presets={propPresets}
@@ -366,27 +387,6 @@
         <i class="fas fa-undo" aria-hidden="true"></i>
         <span>Reset to defaults</span>
       </button>
-    </div>
-
-    <!-- CatDog Toggle -->
-    <div class="mode-row">
-      <CatDogToggle {catDogMode} onToggle={toggleCatDogMode} />
-      <span class="mode-hint">
-        {catDogMode ? t("settings_different_props") : t("settings_same_props")}
-      </span>
-    </div>
-
-    <!-- Compact Prop Display -->
-    <div class="prop-display">
-      <CompactPropDisplay
-        bluePropType={selectedBluePropType}
-        redPropType={selectedRedPropType}
-        {catDogMode}
-        {blueBuugengFlipped}
-        {redBuugengFlipped}
-        onOpenSheet={handleOpenSheet}
-        onToggleFlip={handleToggleFlip}
-      />
     </div>
   </section>
 
@@ -442,8 +442,7 @@
     margin: 0 auto;
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     box-sizing: border-box;
   }
 
@@ -465,7 +464,7 @@
     }
   }
 
-  /* Controls Panel - mobile-first compact design */
+  /* Controls Panel - fills available height */
   .controls-panel {
     display: flex;
     flex-direction: column;
@@ -476,6 +475,9 @@
     border-radius: 12px;
     container-type: inline-size;
     container-name: controls-panel;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   /* Tablet: Slightly larger */
@@ -487,11 +489,10 @@
     }
   }
 
-  /* Desktop: Full styling */
+  /* Desktop: Fixed width, full styling */
   @media (min-width: 900px) {
     .controls-panel {
       flex: 0 0 clamp(380px, 28vw, 520px);
-      min-height: 0;
       overflow-y: auto;
       padding: clamp(20px, 5cqi, 32px);
       gap: clamp(16px, 4cqi, 28px);
@@ -510,6 +511,7 @@
       flex: 1;
       min-width: 0;
       height: 100%;
+      overflow-y: auto;
     }
   }
 
@@ -532,13 +534,14 @@
     }
   }
 
-  /* Header - compact on mobile */
+  /* Header - compact on mobile, never shrinks */
   .panel-header {
     display: flex;
     align-items: center;
     gap: 10px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--theme-stroke);
+    flex-shrink: 0;
   }
 
   .panel-icon {
@@ -623,6 +626,7 @@
     color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    flex-shrink: 0;
   }
 
   @media (min-width: 500px) {
@@ -641,11 +645,12 @@
     }
   }
 
-  /* Mode Row */
+  /* Mode Row - never shrinks */
   .mode-row {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-shrink: 0;
   }
 
   .mode-hint {
@@ -664,15 +669,15 @@
     }
   }
 
-  /* Prop Display - prominent on mobile */
+  /* Prop Display - front and center, right after header */
   .prop-display {
-    margin-top: 4px;
+    flex-shrink: 0;
   }
 
-  @media (min-width: 900px) {
-    .prop-display {
-      margin-top: auto;
-    }
+  /* Presets section absorbs remaining space, grid sizes naturally within */
+  .presets-section {
+    flex: 1;
+    min-height: 0;
   }
 
   /* Reset to Defaults Button */
@@ -690,6 +695,7 @@
     transition: all var(--duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
     align-self: flex-start;
+    flex-shrink: 0;
   }
 
   .reset-defaults-btn:hover {

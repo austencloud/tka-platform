@@ -69,40 +69,14 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    container-type: inline-size;
-    container-name: preset-bar;
   }
 
-  /* Base: Always use grid, let it wrap naturally */
+  /* 5-column grid, chips are square with reasonable max */
   .presets-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 8px;
     padding: 4px;
-  }
-
-  /* Slightly larger at 280px+ */
-  @container preset-bar (min-width: 280px) {
-    .presets-grid {
-      grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-      gap: 10px;
-    }
-  }
-
-  /* Larger chips at 360px+ */
-  @container preset-bar (min-width: 360px) {
-    .presets-grid {
-      grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
-      gap: 12px;
-    }
-  }
-
-  /* Desktop: Largest chips */
-  @container preset-bar (min-width: 450px) {
-    .presets-grid {
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 14px;
-    }
   }
 
   .preset-hint {
@@ -112,6 +86,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    flex-shrink: 0;
   }
 
   .preset-hint i {

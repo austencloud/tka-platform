@@ -80,6 +80,18 @@
 	// Effective expanded height: per-chip override or group default
 	let effectiveExpandedHeight = $derived(expandedHeight ?? ctx.expandedHeight);
 
+	// Auto-measure when no explicit expandedHeight is provided
+	let autoMeasure = $derived(expandedHeight == null);
+
+	// Measure content height after expansion renders and report to group
+	$effect(() => {
+		if (!isExpanding || !chipEl || !autoMeasure) return;
+		requestAnimationFrame(() => {
+			if (!chipEl || !isExpanding) return;
+			ctx.reportMeasuredHeight(id, chipEl.offsetHeight);
+		});
+	});
+
 	function handleChipClick() {
 		if (isExpanding) {
 			ctx.collapse();
@@ -126,9 +138,10 @@
 	class:expanding={isExpanding}
 	class:faded={isFaded}
 	class:measured={hasMeasured}
+	class:auto-height={autoMeasure}
 	style:--morph-progress={localMorphProgress}
 	style:--border-progress={staggeredBorderProgress}
-	style:--expanded-height="{effectiveExpandedHeight}px"
+	style:--expanded-height={autoMeasure ? undefined : `${effectiveExpandedHeight}px`}
 	style:left="{measuredLeft}px"
 	style:top="{measuredTop}px"
 	style:width="{measuredWidth}px"
@@ -155,8 +168,11 @@
 	{#if expandedContent}
 		<div
 			class="custom-content"
+			role="presentation"
 			style:opacity={localMorphProgress}
 			style:pointer-events={isExpanding && localMorphProgress > 0.5 ? "auto" : "none"}
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
 		>
 			{@render expandedContent({ collapse: ctx.collapse, morphProgress: localMorphProgress })}
 		</div>
@@ -238,20 +254,32 @@
 			0 0 0 1px rgba(99, 102, 241, 0.1);
 	}
 
+	/* Auto-height mode: fill container instead of using explicit height */
+	.chip.expanding.auto-height {
+		height: 100%;
+		min-height: 0;
+	}
+
+	/* Hide the collapsed label/value when expanded in auto-height mode */
+	.chip.expanding.auto-height .chip-content {
+		display: none;
+	}
+
 	.chip.faded {
 		opacity: 0;
 		pointer-events: none;
 	}
 
-	/* Content container */
+	/* Content container — padding sized so total content height (5+18+4+21+5=53px)
+	   fits within the chip's border-box content area (56px - ~3px border = ~53px).
+	   This keeps the chip at exactly 56px, matching the placeholder. */
 	.chip-content {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		gap: 4px;
-		padding: 8px 12px;
-		min-height: 56px;
+		padding: 5px 12px;
 		pointer-events: none;
 	}
 
@@ -331,6 +359,11 @@
 		flex-direction: column;
 		justify-content: center;
 		min-height: 0;
+	}
+
+	/* Auto-measured: natural sizing, no flex stretch */
+	.chip.expanding.auto-height .custom-content {
+		flex: none;
 	}
 
 	.chip:not(.expanding) .custom-content {

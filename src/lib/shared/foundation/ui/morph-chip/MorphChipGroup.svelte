@@ -34,6 +34,9 @@
 	let chipHeights = $state<Map<string, number>>(new Map());
 	let nextIndex = $state(0);
 
+	// Auto-measured height for the currently expanded chip (scalar for reliable reactivity)
+	let currentMeasuredHeight = $state<number | null>(null);
+
 	// Container element for child measurement
 	let containerEl = $state<HTMLElement | null>(null);
 
@@ -66,9 +69,16 @@
 	}
 
 	function collapse() {
+		currentMeasuredHeight = null;
 		expandedId = null;
 		morphSpring.set(0);
 		onExpandedChange?.(null);
+	}
+
+	function reportMeasuredHeight(id: string, height: number) {
+		if (expandedId === id) {
+			currentMeasuredHeight = height;
+		}
 	}
 
 	function registerChip(id: string, chipExpandedHeight?: number): number {
@@ -84,15 +94,20 @@
 		return index;
 	}
 
+	// Check if expanded chip is in auto-measure mode (no explicit height)
+	let expandedChipIsAutoMeasure = $derived(
+		expandedId != null && !chipHeights.has(expandedId)
+	);
+
 	function unregisterChip(id: string) {
 		chipRegistry.delete(id);
 		chipHeights.delete(id);
 	}
 
-	// Active expanded height: per-chip override or group default
+	// Active expanded height: measured > per-chip override > group default
 	let activeExpandedHeight = $derived(
 		expandedId != null
-			? (chipHeights.get(expandedId) ?? expandedHeight)
+			? (currentMeasuredHeight ?? chipHeights.get(expandedId) ?? expandedHeight)
 			: expandedHeight
 	);
 
@@ -123,6 +138,7 @@
 		registerChip,
 		unregisterChip,
 		onResize,
+		reportMeasuredHeight,
 	};
 
 	setMorphChipContext(context);
@@ -131,7 +147,7 @@
 <div
 	bind:this={containerEl}
 	class="morph-chip-group"
-	class:has-expanded={isExpanded}
+	class:has-expanded={isExpanded && !expandedChipIsAutoMeasure}
 	style:--chip-gap="{gap}px"
 	style:--expanded-height="{expandedHeight}px"
 	style:--active-expanded-height="{activeExpandedHeight}px"

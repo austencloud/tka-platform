@@ -87,4 +87,6 @@ export interface MorphChipContext {
 	unregisterChip: (id: string) => void;
 	/** Register a resize callback (returns unregister function) */
 	onResize: (callback: () => void) => () => void;
+	/** Report auto-measured content height for a chip */
+	reportMeasuredHeight: (id: string, height: number) => void;
 }

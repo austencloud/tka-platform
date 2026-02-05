@@ -244,16 +244,16 @@
   }
 
   .ios-checkmark.blue {
-    background: var(--prop-blue);
+    background: var(--prop-blue-text, #818cf8);
     box-shadow:
-      0 3px 10px color-mix(in srgb, var(--prop-blue) 50%, transparent),
+      0 3px 10px color-mix(in srgb, var(--prop-blue-text, #818cf8) 50%, transparent),
       0 1px 3px var(--theme-shadow);
   }
 
   .ios-checkmark.red {
-    background: var(--prop-red);
+    background: var(--prop-red-text, #f87171);
     box-shadow:
-      0 3px 10px color-mix(in srgb, var(--prop-red) 50%, transparent),
+      0 3px 10px color-mix(in srgb, var(--prop-red-text, #f87171) 50%, transparent),
       0 1px 3px var(--theme-shadow);
   }
 

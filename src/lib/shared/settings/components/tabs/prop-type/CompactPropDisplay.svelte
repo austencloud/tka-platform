@@ -76,7 +76,9 @@
 
     <span class="prop-name">{blueInfo.label}</span>
 
-    <span class="tap-hint">Tap to change</span>
+    <span class="change-affordance">
+      <i class="fas fa-chevron-right" aria-hidden="true"></i>
+    </span>
 
     <span class="action-buttons">
       {#if blueIsBuugeng}
@@ -124,7 +126,9 @@
 
       <span class="prop-name">{redInfo.label}</span>
 
-      <span class="tap-hint">Tap to change</span>
+      <span class="change-affordance">
+        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+      </span>
 
       <span class="action-buttons">
         {#if redIsBuugeng}
@@ -162,23 +166,23 @@
   .prop-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 12px;
+    padding: 12px 16px;
     background: var(--theme-card-bg);
     border: 1.5px solid var(--theme-stroke);
-    border-radius: 12px;
+    border-radius: 14px;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
-    min-height: 52px;
+    min-height: 64px;
     -webkit-tap-highlight-color: transparent;
   }
 
   @media (min-width: 500px) {
     .prop-row {
-      gap: 12px;
-      padding: 12px 16px;
+      gap: 14px;
+      padding: 14px 18px;
       border-radius: 14px;
-      min-height: 56px;
+      min-height: 72px;
     }
   }
 
@@ -193,23 +197,23 @@
 
   /* Hand-colored variants */
   .prop-row.blue {
-    border-color: color-mix(in srgb, var(--prop-blue) 30%, transparent);
-    background: color-mix(in srgb, var(--prop-blue) 6%, transparent);
+    border-color: color-mix(in srgb, var(--prop-blue-text, #818cf8) 30%, transparent);
+    background: color-mix(in srgb, var(--prop-blue-text, #818cf8) 6%, transparent);
   }
 
   .prop-row.blue:hover {
-    border-color: color-mix(in srgb, var(--prop-blue) 50%, transparent);
-    background: color-mix(in srgb, var(--prop-blue) 12%, transparent);
+    border-color: color-mix(in srgb, var(--prop-blue-text, #818cf8) 50%, transparent);
+    background: color-mix(in srgb, var(--prop-blue-text, #818cf8) 12%, transparent);
   }
 
   .prop-row.red {
-    border-color: color-mix(in srgb, var(--prop-red) 30%, transparent);
-    background: color-mix(in srgb, var(--prop-red) 6%, transparent);
+    border-color: color-mix(in srgb, var(--prop-red-text, #f87171) 30%, transparent);
+    background: color-mix(in srgb, var(--prop-red-text, #f87171) 6%, transparent);
   }
 
   .prop-row.red:hover {
-    border-color: color-mix(in srgb, var(--prop-red) 50%, transparent);
-    background: color-mix(in srgb, var(--prop-red) 12%, transparent);
+    border-color: color-mix(in srgb, var(--prop-red-text, #f87171) 50%, transparent);
+    background: color-mix(in srgb, var(--prop-red-text, #f87171) 12%, transparent);
   }
 
   /* Hand indicator */
@@ -227,19 +231,19 @@
   }
 
   .hand-indicator.blue .hand-dot {
-    background: var(--prop-blue);
-    box-shadow: 0 0 6px color-mix(in srgb, var(--prop-blue) 50%, transparent);
+    background: var(--prop-blue-text, #818cf8);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--prop-blue-text, #818cf8) 50%, transparent);
   }
 
   .hand-indicator.red .hand-dot {
-    background: var(--prop-red);
-    box-shadow: 0 0 6px color-mix(in srgb, var(--prop-red) 50%, transparent);
+    background: var(--prop-red-text, #f87171);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--prop-red-text, #f87171) 50%, transparent);
   }
 
   /* Prop icon - responsive size */
   .prop-icon {
-    width: 40px;
-    height: 40px;
+    width: 56px;
+    height: 56px;
     object-fit: contain;
     filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.3));
     flex-shrink: 0;
@@ -247,8 +251,8 @@
 
   @media (min-width: 500px) {
     .prop-icon {
-      width: 48px;
-      height: 48px;
+      width: 64px;
+      height: 64px;
     }
   }
 
@@ -263,33 +267,33 @@
 
   /* Prop name */
   .prop-name {
-    font-size: 14px;
-    font-weight: 600;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
     color: var(--theme-text);
     flex-shrink: 0;
   }
 
   @media (min-width: 500px) {
     .prop-name {
-      font-size: 15px;
+      font-size: 16px;
     }
   }
 
-  /* Tap hint */
-  .tap-hint {
+  /* Chevron affordance */
+  .change-affordance {
     flex: 1;
-    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
     color: var(--theme-text-dim);
-    font-style: italic;
-    text-align: right;
-    opacity: 0.7;
+    opacity: 0.5;
+    font-size: 14px;
+    transition: opacity var(--duration-fast) ease, transform var(--duration-fast) ease;
   }
 
-  /* Hide tap hint on narrow screens */
-  @media (max-width: 400px) {
-    .tap-hint {
-      display: none;
-    }
+  .prop-row:hover .change-affordance {
+    opacity: 0.8;
+    transform: translateX(2px);
   }
 
   /* Action buttons */
@@ -355,11 +359,16 @@
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .prop-row,
-    .action-btn {
+    .action-btn,
+    .change-affordance {
       transition: none;
     }
 
     .prop-row:active {
+      transform: none;
+    }
+
+    .prop-row:hover .change-affordance {
       transform: none;
     }
   }
