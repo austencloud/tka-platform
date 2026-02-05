@@ -1,0 +1,520 @@
+<!--
+  VoiceControlLab - Test the "Hey Tika" voice control system
+
+  Lets you start/stop the wake word detector, see live state,
+  view a command log, and test commands manually.
+-->
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+  import type { IWakeWordDetector } from "$lib/shared/voice-control/services/contracts/IWakeWordDetector";
+  import type { ICommandInterpreter } from "$lib/shared/voice-control/services/contracts/ICommandInterpreter";
+  import type { ICommandDispatcher } from "$lib/shared/voice-control/services/contracts/ICommandDispatcher";
+  import type { WakeWordState } from "$lib/shared/voice-control/domain/voice-command-types";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+
+  let detector: IWakeWordDetector | null = null;
+  let interpreter: ICommandInterpreter | null = null;
+  let dispatcher: ICommandDispatcher | null = null;
+
+  let supported = $state(false);
+  let listening = $state(false);
+  let wakeWordState = $state<WakeWordState>("idle");
+  let manualInput = $state("");
+
+  interface LogEntry {
+    time: string;
+    type: "command" | "result" | "error" | "info";
+    text: string;
+  }
+
+  let log = $state<LogEntry[]>([]);
+
+  function addLog(type: LogEntry["type"], text: string) {
+    const time = new Date().toLocaleTimeString("en-US", { hour12: false });
+    log = [{ time, type, text }, ...log].slice(0, 50);
+  }
+
+  onMount(() => {
+    try {
+      detector = container.items.wakeWordDetector as IWakeWordDetector;
+      interpreter = container.items.commandInterpreter as ICommandInterpreter;
+      dispatcher = container.items.commandDispatcher as ICommandDispatcher;
+      supported = detector.isSupported();
+      listening = detector.isListening();
+    } catch (e) {
+      addLog("error", `Failed to resolve services: ${e}`);
+      return;
+    }
+
+    const unsubCommand = detector.onCommand(async (event) => {
+      addLog("command", `"${event.command}" (confidence: ${event.confidence.toFixed(2)})`);
+
+      if (!interpreter || !dispatcher) return;
+
+      const context = {
+        currentModule: navigationState.currentModule,
+        currentTab: navigationState.activeTab,
+      };
+
+      const command = interpreter.interpret(event.command, context);
+
+      if (command.type === "unknown") {
+        addLog("error", `Unrecognized: "${event.command}"`);
+        return;
+      }
+
+      addLog("info", `Interpreted: ${command.type} → "${command.target}"`);
+      const result = await dispatcher.dispatch(command);
+      addLog("result", `${result.success ? "OK" : "FAIL"}: ${result.message}`);
+    });
+
+    const unsubState = detector.onStateChange((state) => {
+      wakeWordState = state;
+      listening = detector?.isListening() ?? false;
+    });
+
+    addLog("info", `Initialized. Speech API supported: ${supported}`);
+    if (listening) {
+      addLog("info", "Already listening (started by HeyTikaListener)");
+    }
+
+    return () => {
+      unsubCommand();
+      unsubState();
+    };
+  });
+
+  function toggleListening() {
+    if (!detector) return;
+    if (detector.isListening()) {
+      detector.stop();
+      listening = false;
+      addLog("info", "Stopped listening");
+    } else {
+      detector.start();
+      listening = true;
+      addLog("info", "Started listening");
+    }
+  }
+
+  async function sendManualCommand() {
+    if (!manualInput.trim() || !interpreter || !dispatcher) return;
+    const text = manualInput.trim();
+    manualInput = "";
+
+    addLog("command", `Manual: "${text}"`);
+
+    const context = {
+      currentModule: navigationState.currentModule,
+      currentTab: navigationState.activeTab,
+    };
+
+    const command = interpreter.interpret(text, context);
+
+    if (command.type === "unknown") {
+      addLog("error", `Unrecognized: "${text}"`);
+      return;
+    }
+
+    addLog("info", `Interpreted: ${command.type} → "${command.target}"`);
+    const result = await dispatcher.dispatch(command);
+    addLog("result", `${result.success ? "OK" : "FAIL"}: ${result.message}`);
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter") sendManualCommand();
+  }
+
+  function clearLog() {
+    log = [];
+  }
+
+  const stateColors: Record<WakeWordState, string> = {
+    idle: "#64748b",
+    listening: "#22c55e",
+    processing: "#f59e0b",
+    error: "#ef4444",
+  };
+</script>
+
+<div class="voice-lab">
+  <header class="lab-header">
+    <h1>Voice Control Lab</h1>
+    <p class="subtitle">Test "Hey Tika" wake word detection and command dispatch</p>
+  </header>
+
+  <div class="lab-content">
+    <!-- Status -->
+    <section class="status-section">
+      <h2>Status</h2>
+      <div class="state-display">
+        <div class="state-row">
+          <span class="label">Speech API</span>
+          <span class="value" class:success={supported} class:fail={!supported}>
+            {supported ? "Supported" : "Not supported"}
+          </span>
+        </div>
+        <div class="state-row">
+          <span class="label">Detector State</span>
+          <span class="value" style="color: {stateColors[wakeWordState]}">
+            {wakeWordState.toUpperCase()}
+          </span>
+        </div>
+        <div class="state-row">
+          <span class="label">Current Module</span>
+          <span class="value">{navigationState.currentModule}</span>
+        </div>
+        <div class="state-row">
+          <span class="label">Current Tab</span>
+          <span class="value">{navigationState.activeTab || "(none)"}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Controls -->
+    <section class="controls-section">
+      <h2>Controls</h2>
+      <div class="button-grid">
+        <button
+          class="lab-button"
+          class:primary={!listening}
+          class:danger={listening}
+          onclick={toggleListening}
+          disabled={!supported}
+        >
+          <i class="fas {listening ? 'fa-microphone-slash' : 'fa-microphone'}"></i>
+          {listening ? "Stop Listening" : "Start Listening"}
+        </button>
+        <button class="lab-button" onclick={clearLog}>
+          <i class="fas fa-trash"></i>
+          Clear Log
+        </button>
+      </div>
+    </section>
+
+    <!-- Manual input -->
+    <section class="manual-section">
+      <h2>Manual Command</h2>
+      <p class="hint">Type a command as if you just said "Hey Tika, ..." (don't include the wake word)</p>
+      <div class="manual-input-row">
+        <input
+          type="text"
+          bind:value={manualInput}
+          onkeydown={handleKeydown}
+          placeholder="go to compose"
+          class="manual-input"
+        />
+        <button class="lab-button primary" onclick={sendManualCommand} disabled={!manualInput.trim()}>
+          <i class="fas fa-paper-plane"></i>
+          Send
+        </button>
+      </div>
+    </section>
+
+    <!-- Command reference -->
+    <section class="reference-section">
+      <h2>Supported Commands</h2>
+      <div class="reference-grid">
+        <div class="ref-group">
+          <h3>Module Navigation</h3>
+          <ul>
+            <li>"go to compose"</li>
+            <li>"open browse"</li>
+            <li>"navigate to train"</li>
+            <li>"show settings"</li>
+          </ul>
+        </div>
+        <div class="ref-group">
+          <h3>Tab Switching</h3>
+          <ul>
+            <li>"switch to manage"</li>
+            <li>"go to gallery tab"</li>
+            <li>"open concepts tab"</li>
+            <li>"switch to construct"</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Log -->
+    <section class="log-section">
+      <h2>Event Log</h2>
+      <div class="log-container themed-scrollbar">
+        {#if log.length === 0}
+          <div class="log-empty">No events yet. Say "Hey Tika" or use manual input.</div>
+        {:else}
+          {#each log as entry}
+            <div class="log-entry {entry.type}">
+              <span class="log-time">{entry.time}</span>
+              <span class="log-badge {entry.type}">{entry.type}</span>
+              <span class="log-text">{entry.text}</span>
+            </div>
+          {/each}
+        {/if}
+      </div>
+    </section>
+  </div>
+</div>
+
+<style>
+  .voice-lab {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  .lab-header {
+    margin-bottom: 24px;
+  }
+
+  .lab-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--theme-text, white);
+    margin: 0 0 8px;
+  }
+
+  .subtitle {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-sm, 14px);
+    margin: 0;
+  }
+
+  .lab-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  section {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  section h2 {
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 12px;
+  }
+
+  .state-display {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .state-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+  }
+
+  .label {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-sm, 14px);
+  }
+
+  .value {
+    color: var(--theme-text, white);
+    font-weight: 600;
+    font-size: var(--font-size-sm, 14px);
+    font-family: monospace;
+  }
+
+  .value.success { color: #22c55e; }
+  .value.fail { color: #ef4444; }
+
+  .button-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .lab-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    min-height: 48px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 8px;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .lab-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .lab-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .lab-button.primary {
+    background: var(--theme-accent-strong, #8b5cf6);
+    border-color: var(--theme-accent-strong, #8b5cf6);
+  }
+
+  .lab-button.primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-accent-strong, #8b5cf6) 85%, white);
+  }
+
+  .lab-button.danger {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+  }
+
+  .lab-button.danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.25);
+  }
+
+  /* Manual input */
+  .hint {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    margin: 0 0 10px;
+  }
+
+  .manual-input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .manual-input {
+    flex: 1;
+    padding: 10px 14px;
+    min-height: 48px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 8px;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-sm, 14px);
+    font-family: monospace;
+    outline: none;
+  }
+
+  .manual-input::placeholder {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+  }
+
+  .manual-input:focus {
+    border-color: var(--theme-accent, #8b5cf6);
+  }
+
+  /* Reference */
+  .reference-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .ref-group h3 {
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    color: var(--theme-text, white);
+    margin: 0 0 8px;
+  }
+
+  .ref-group ul {
+    margin: 0;
+    padding: 0 0 0 16px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-family: monospace;
+    line-height: 1.8;
+  }
+
+  /* Log */
+  .log-container {
+    max-height: 300px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .log-empty {
+    text-align: center;
+    padding: 24px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-size: var(--font-size-sm, 14px);
+  }
+
+  .log-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    font-size: var(--font-size-compact, 12px);
+    font-family: monospace;
+  }
+
+  .log-time {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    flex-shrink: 0;
+  }
+
+  .log-badge {
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .log-badge.command { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+  .log-badge.result { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+  .log-badge.error { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+  .log-badge.info { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+
+  .log-text {
+    color: var(--theme-text, white);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 600px) {
+    .voice-lab {
+      padding: 16px;
+    }
+
+    .reference-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .manual-input-row {
+      flex-direction: column;
+    }
+
+    .button-grid {
+      flex-direction: column;
+    }
+
+    .lab-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>

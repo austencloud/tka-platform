@@ -636,6 +636,14 @@ export const LAB_TABS: Section[] = [
     color: "#10b981",
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
+  {
+    id: "voice",
+    label: "Voice",
+    icon: '<i class="fas fa-microphone" aria-hidden="true"></i>',
+    description: "Test Hey Tika voice control",
+    color: "#f43f5e",
+    gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs

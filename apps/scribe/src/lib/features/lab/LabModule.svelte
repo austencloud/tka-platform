@@ -34,6 +34,7 @@
       import("$lib/features/train/ml-training/components/MLTrainingModule.svelte"),
     community: () => import("$lib/features/community/Community.svelte"),
     connect: () => import("$lib/features/connect/ConnectModule.svelte"),
+    voice: () => import("./tabs/VoiceControlLab.svelte"),
   };
 
   // Get current tab, default to first tab
