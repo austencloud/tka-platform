@@ -93,7 +93,9 @@ export function uiConfigToGenerationOptions(
     !supportsSliceChoice &&
     (uiConfig.loopType.includes("mirrored") ||
       uiConfig.loopType.includes("swapped") ||
-      uiConfig.loopType.includes("inverted"));
+      uiConfig.loopType.includes("inverted") ||
+      uiConfig.loopType.includes("flipped") ||
+      uiConfig.loopType.includes("rewound"));
 
   const sliceSize = requiresHalved ? "halved" : uiConfig.sliceSize;
 

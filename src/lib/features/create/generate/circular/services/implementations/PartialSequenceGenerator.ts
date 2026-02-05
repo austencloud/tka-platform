@@ -165,6 +165,13 @@ export class PartialSequenceGenerator implements IPartialSequenceGenerator {
         sliceSize === SliceSize.HALVED
           ? Math.floor(options.length / 4) // 16 → 4 (rotation ×2, then mirror ×2)
           : Math.floor(options.length / 8); // 16 → 2 (rotation ×4, then mirror ×2)
+    } else if (
+      options.loopType === LOOPType.STRICT_FLIPPED ||
+      options.loopType === LOOPType.STRICT_REWOUND
+    ) {
+      // Flipped and Rewound: ALWAYS halved (executor ignores slice size)
+      // These executors always double the partial, so always divide by 2
+      wordLength = Math.floor(options.length / 2);
     } else {
       // Regular LOOP types: Only account for rotation/mirroring (not both)
       wordLength =
