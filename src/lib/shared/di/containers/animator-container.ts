@@ -12,6 +12,8 @@
 import { createContainer } from "iti";
 
 // === TIER 0: No dependencies ===
+import { DeviceTierDetector } from "$lib/shared/animation-engine/services/implementations/DeviceTierDetector";
+import { FrameBudgetMonitor } from "$lib/shared/animation-engine/services/implementations/FrameBudgetMonitor";
 import { ArrangeUndoManager } from "$lib/features/compose/tabs/arrange/services/implementations/ArrangeUndoManager";
 import { ArrangeGridSerializer } from "$lib/features/compose/tabs/arrange/services/implementations/ArrangeGridSerializer";
 import { AngleCalculator } from "$lib/features/compose/services/implementations/AngleCalculator";
@@ -97,7 +99,13 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
       animator: () => new Animator(),
       arrangeUndoManager: () => new ArrangeUndoManager(),
       arrangeGridSerializer: () => new ArrangeGridSerializer(),
+      deviceTierDetector: () => new DeviceTierDetector(),
     })
+    // === TIER 0.5: Depends on tier 0 ===
+    .add((ctx) => ({
+      frameBudgetMonitor: () =>
+        new FrameBudgetMonitor(ctx.deviceTierDetector.detect()),
+    }))
     // === TIER 1: Services with internal dependencies ===
     .add((ctx) => ({
       endpointCalculator: () =>

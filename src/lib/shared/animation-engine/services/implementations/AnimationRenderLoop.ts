@@ -10,6 +10,7 @@ import type { ITrailCapturer } from "$lib/features/compose/services/contracts/IT
 import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
 import { TrailMode } from "../../domain/types/TrailTypes";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
+import type { IFrameBudgetMonitor } from "../contracts/IFrameBudgetMonitor";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -20,6 +21,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private renderer: IAnimationRenderer | null = null;
   private TrailCapturer: ITrailCapturer | null = null;
   private pathCache: AnimationPathCache | null = null;
+  private frameBudgetMonitor: IFrameBudgetMonitor | null = null;
   private canvasSize: number = 950;
   private rafId: number | null = null;
   private needsRender: boolean = false;
@@ -43,6 +45,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.TrailCapturer = config.TrailCapturer;
     this.pathCache = config.pathCache;
     this.canvasSize = config.canvasSize;
+    this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
   }
 
   updateConfig(config: Partial<RenderLoopConfig>): void {
@@ -51,6 +54,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.TrailCapturer = config.TrailCapturer;
     if (config.pathCache !== undefined) this.pathCache = config.pathCache;
     if (config.canvasSize !== undefined) this.canvasSize = config.canvasSize;
+    if (config.frameBudgetMonitor !== undefined)
+      this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
   }
 
   start(getFrameParams: () => RenderFrameParams): void {
@@ -95,6 +100,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.renderer = null;
     this.TrailCapturer = null;
     this.pathCache = null;
+    this.frameBudgetMonitor = null;
     this.getFrameParamsCallback = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
@@ -172,6 +178,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
   private render(params: RenderFrameParams, currentTime: number): void {
     if (!this.renderer) return;
+
+    // Frame budget monitoring: measure render time for adaptive quality
+    const frameStart = this.frameBudgetMonitor?.beginFrame() ?? 0;
 
     const {
       stepData,
@@ -251,7 +260,13 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       redPropFlipped: params.redPropFlipped ?? false,
       bluePropType: params.bluePropType,
       redPropType: params.redPropType,
+      qualityHints: this.frameBudgetMonitor?.getQualityHints(),
     });
+
+    // End frame budget measurement (updates rolling averages, may trigger tier change)
+    if (this.frameBudgetMonitor) {
+      this.frameBudgetMonitor.endFrame(frameStart);
+    }
   }
 
   private gatherTrailPoints(
@@ -311,43 +326,31 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         }
       }
 
-      // Transform points in-place into reusable arrays (no .map() allocation)
-      const transformAndPush = (
-        points: TrailPoint[],
-        targetArray: TrailPoint[]
-      ): void => {
-        for (let i = 0; i < points.length; i++) {
-          const p = points[i]!;
-          // Mutate existing object if possible, otherwise push transformed
-          targetArray.push({
-            x: p.x * scaleFactor,
-            y: p.y * scaleFactor,
-            timestamp: p.timestamp,
-            propIndex: p.propIndex,
-            endType: p.endType,
-          });
-        }
-      };
+      // Zero-allocation hot path: fill directly into reusable arrays
+      // fillTrailPoints() reuses existing objects at each index, only allocating
+      // when the array needs to grow (first few frames, then steady state = 0 allocs)
 
       // Blue prop trails (both left and right endpoints)
-      transformAndPush(
-        this.pathCache.getTrailPoints(0, 0, startStep, currentStep),
-        this.reusableBlueTrailPoints
+      let blueCount = this.pathCache.fillTrailPoints(
+        0, 0, startStep, currentStep, scaleFactor,
+        this.reusableBlueTrailPoints, 0
       );
-      transformAndPush(
-        this.pathCache.getTrailPoints(0, 1, startStep, currentStep),
-        this.reusableBlueTrailPoints
+      blueCount += this.pathCache.fillTrailPoints(
+        0, 1, startStep, currentStep, scaleFactor,
+        this.reusableBlueTrailPoints, blueCount
       );
+      this.reusableBlueTrailPoints.length = blueCount;
 
       // Red prop trails (both left and right endpoints)
-      transformAndPush(
-        this.pathCache.getTrailPoints(1, 0, startStep, currentStep),
-        this.reusableRedTrailPoints
+      let redCount = this.pathCache.fillTrailPoints(
+        1, 0, startStep, currentStep, scaleFactor,
+        this.reusableRedTrailPoints, 0
       );
-      transformAndPush(
-        this.pathCache.getTrailPoints(1, 1, startStep, currentStep),
-        this.reusableRedTrailPoints
+      redCount += this.pathCache.fillTrailPoints(
+        1, 1, startStep, currentStep, scaleFactor,
+        this.reusableRedTrailPoints, redCount
       );
+      this.reusableRedTrailPoints.length = redCount;
     } else if (this.TrailCapturer) {
       // Fallback to real-time capture - use zero-allocation fill method
       this.TrailCapturer.fillTrailPointArrays(

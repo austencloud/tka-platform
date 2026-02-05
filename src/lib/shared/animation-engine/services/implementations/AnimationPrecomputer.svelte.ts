@@ -66,6 +66,7 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
 
   private pathCache: AnimationPathCache | null = null;
   private framePreRenderer: SequenceFramePreRenderer | null = null;
+  private precomputeAbortController: AbortController | null = null;
 
   initialize(config: PrecomputationServiceConfig): void {
     this.orchestrator = config.orchestrator;
@@ -125,6 +126,11 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
 
       this.state.isCachePrecomputing = true;
 
+      // Abort any in-flight precomputation before starting a new one
+      this.precomputeAbortController?.abort();
+      this.precomputeAbortController = new AbortController();
+      const signal = this.precomputeAbortController.signal;
+
       // Create path cache instance if needed
       // IMPORTANT: Always use standard 950x950 coordinate system for cache (matches viewBox)
       if (!this.pathCache) {
@@ -156,11 +162,12 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
         };
       };
 
-      // Pre-compute paths
+      // Pre-compute paths (non-blocking, chunked)
       const cacheData = await this.pathCache.precomputePaths(
         calculateStateFunc,
         totalSteps,
-        stepDurationMs
+        stepDurationMs,
+        { signal }
       );
 
       // Store in global cache for reuse across component remounts
@@ -168,6 +175,10 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
 
       this.state.pathCacheData = cacheData;
     } catch (error) {
+      // Silently ignore aborted precomputations (expected when sequence changes mid-compute)
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
       console.error(
         `❌ [${this.instanceId}] Failed to pre-compute animation paths:`,
         error
@@ -253,6 +264,8 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
   }
 
   dispose(): void {
+    this.precomputeAbortController?.abort();
+    this.precomputeAbortController = null;
     this.clearCaches();
     this.orchestrator = null;
     this.TrailCapturer = null;

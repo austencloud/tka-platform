@@ -57,6 +57,7 @@ export class Canvas2DApplicationManager {
   private ctx: CanvasRenderingContext2D | null = null;
   private currentSize: number = 500;
   private dpr: number = 1;
+  private maxDpr: number = Infinity;
   private backgroundAlpha: number = 1;
   private isInitialized: boolean = false;
   private darkModeEnabled: boolean = false;
@@ -79,7 +80,7 @@ export class Canvas2DApplicationManager {
 
     this.currentSize = size;
     this.backgroundAlpha = backgroundAlpha;
-    this.dpr = window.devicePixelRatio || 1;
+    this.dpr = Math.min(window.devicePixelRatio || 1, this.maxDpr);
 
     // Create canvas element with DPI-aware backing store
     // Physical pixels = logical size * devicePixelRatio for sharp rendering on high-DPI screens
@@ -118,7 +119,7 @@ export class Canvas2DApplicationManager {
     if (!this.isInitialized || !this.canvas || !this.ctx) return;
 
     this.currentSize = newSize;
-    this.dpr = window.devicePixelRatio || 1;
+    this.dpr = Math.min(window.devicePixelRatio || 1, this.maxDpr);
     this.canvas.width = Math.floor(newSize * this.dpr);
     this.canvas.height = Math.floor(newSize * this.dpr);
 
@@ -126,6 +127,20 @@ export class Canvas2DApplicationManager {
     this.ctx.scale(this.dpr, this.dpr);
     this.ctx.imageSmoothingEnabled = true;
     this.ctx.imageSmoothingQuality = "high";
+  }
+
+  /**
+   * Cap the device pixel ratio for quality adaptation.
+   * Lower DPR = fewer pixels to render = faster frames.
+   * Triggers a resize to apply immediately.
+   */
+  setMaxDpr(maxDpr: number): void {
+    if (maxDpr === this.maxDpr) return;
+    this.maxDpr = maxDpr;
+    // Re-apply if already initialized
+    if (this.isInitialized) {
+      this.resize(this.currentSize);
+    }
   }
 
   /**

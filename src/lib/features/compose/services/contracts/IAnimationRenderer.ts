@@ -10,6 +10,7 @@ import type {
   TrailPoint,
   TrailSettings,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import type { QualityHints } from "$lib/shared/animation-engine/domain/types/QualityTypes";
 
 /**
  * Visibility settings for animation rendering
@@ -49,6 +50,8 @@ export interface RenderSceneParams {
   // Prop types - used to apply prop-specific rendering rules (e.g., hands never rotate)
   bluePropType?: string;
   redPropType?: string;
+  // Quality hints for adaptive rendering (optional - full quality when absent)
+  qualityHints?: QualityHints;
 }
 
 export interface IAnimationRenderer {

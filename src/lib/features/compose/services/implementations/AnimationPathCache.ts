@@ -125,65 +125,83 @@ export class AnimationPathCache {
   }
 
   /**
-   * Pre-compute animation paths for entire sequence
+   * Pre-compute animation paths for entire sequence (non-blocking)
    *
-   * @param orchestrator - Animation orchestrator to calculate prop states
+   * Processes frames in chunks of FRAMES_PER_CHUNK, yielding to the browser
+   * between chunks via setTimeout(0) to prevent main-thread jank.
+   *
+   * @param calculateStateFunc - Function to calculate prop states at any beat
    * @param totalSteps - Total number of steps in sequence
    * @param stepDurationMs - Duration of each beat in milliseconds
+   * @param options - Optional abort signal and progress callback
    */
-  precomputePaths(
+  async precomputePaths(
     calculateStateFunc: (beat: number) => {
       blueProp: PropState;
       redProp: PropState;
     },
     totalSteps: number,
-    stepDurationMs: number
-  ): AnimationPathCacheData {
+    stepDurationMs: number,
+    options?: { signal?: AbortSignal; onProgress?: (percent: number) => void }
+  ): Promise<AnimationPathCacheData> {
     const totalDurationMs = totalSteps * stepDurationMs;
     const frameTimeMs = 1000 / this.config.cacheFps;
     const totalFrames = Math.ceil(totalDurationMs / frameTimeMs);
 
-    const bluePositions: PrecomputedPropPosition[] = [];
-    const redPositions: PrecomputedPropPosition[] = [];
+    // Pre-allocate arrays at known size to avoid push overhead
+    const bluePositions = new Array<PrecomputedPropPosition>(totalFrames + 1);
+    const redPositions = new Array<PrecomputedPropPosition>(totalFrames + 1);
 
-    // Pre-compute positions for every virtual frame
-    for (let frame = 0; frame <= totalFrames; frame++) {
-      const timestamp = frame * frameTimeMs;
-      const beat = timestamp / stepDurationMs; // Fractional beat number
+    // Reusable endpoint config (avoid per-frame allocation)
+    const endpointConfig: PropEndpointConfig = {
+      canvasSize: this.config.canvasSize,
+      propDimensions: this.config.propDimensions,
+    };
 
-      // Get prop states from orchestrator
-      const { blueProp, redProp } = calculateStateFunc(beat);
+    // Process in chunks to yield to browser (~6ms per chunk at 120fps)
+    const FRAMES_PER_CHUNK = 120;
+    let frame = 0;
 
-      // Calculate endpoints using shared calculator
-      const endpointConfig: PropEndpointConfig = {
-        canvasSize: this.config.canvasSize,
-        propDimensions: this.config.propDimensions,
-      };
+    while (frame <= totalFrames) {
+      // Check for cancellation between chunks
+      if (options?.signal?.aborted) {
+        throw new DOMException("Precomputation aborted", "AbortError");
+      }
 
-      const blueEndpoints = this.propPositionCalculator.calculateEndpoints(blueProp, endpointConfig);
-      const redEndpoints = this.propPositionCalculator.calculateEndpoints(redProp, endpointConfig);
+      const chunkEnd = Math.min(frame + FRAMES_PER_CHUNK, totalFrames + 1);
 
-      // Debug logging disabled - too noisy
-      // if (frame < 3) {
-      //   console.log(`🔧 CACHE FRAME ${frame} (beat ${beat.toFixed(2)}):`);
-      //   console.log(`   Blue: left=(${blueEndpoints.left.x.toFixed(1)}, ${blueEndpoints.left.y.toFixed(1)}), right=(${blueEndpoints.right.x.toFixed(1)}, ${blueEndpoints.right.y.toFixed(1)})`);
-      // }
+      for (; frame < chunkEnd; frame++) {
+        const timestamp = frame * frameTimeMs;
+        const beat = timestamp / stepDurationMs;
 
-      // Store positions
-      bluePositions.push({
-        beat,
-        timestamp,
-        propState: { ...blueProp },
-        endpoints: blueEndpoints,
-      });
+        const { blueProp, redProp } = calculateStateFunc(beat);
 
-      redPositions.push({
-        beat,
-        timestamp,
-        propState: { ...redProp },
-        endpoints: redEndpoints,
-      });
+        const blueEndpoints = this.propPositionCalculator.calculateEndpoints(blueProp, endpointConfig);
+        const redEndpoints = this.propPositionCalculator.calculateEndpoints(redProp, endpointConfig);
+
+        bluePositions[frame] = {
+          beat,
+          timestamp,
+          propState: { ...blueProp },
+          endpoints: blueEndpoints,
+        };
+
+        redPositions[frame] = {
+          beat,
+          timestamp,
+          propState: { ...redProp },
+          endpoints: redEndpoints,
+        };
+      }
+
+      // Report progress and yield to browser between chunks
+      if (frame <= totalFrames) {
+        options?.onProgress?.(Math.round((frame / (totalFrames + 1)) * 100));
+        await new Promise<void>(resolve => setTimeout(resolve, 0));
+      }
     }
+
+    options?.onProgress?.(100);
 
     // Build beat lookup tables
     const blueBeatLookup = this.buildBeatLookup(bluePositions);
@@ -268,6 +286,81 @@ export class AnimationPathCache {
     // }
 
     return trailPoints;
+  }
+
+  /**
+   * Fill caller-owned array with pre-computed trail points (zero-allocation hot path)
+   *
+   * Writes directly into the target array, reusing existing objects at each index.
+   * Only allocates when the array needs to grow (first few frames, then steady state = zero allocations).
+   *
+   * @param propIndex - 0 for blue, 1 for red
+   * @param endType - 0 for left end, 1 for right end (tip)
+   * @param startStep - Start beat number (fractional)
+   * @param endStep - End beat number (fractional)
+   * @param scaleFactor - Coordinate scale factor (canvasSize / 950)
+   * @param targetArray - Caller-owned array to write into
+   * @param targetOffset - Starting index in targetArray
+   * @returns Number of points written
+   */
+  fillTrailPoints(
+    propIndex: 0 | 1,
+    endType: 0 | 1,
+    startStep: number,
+    endStep: number,
+    scaleFactor: number,
+    targetArray: TrailPoint[],
+    targetOffset: number
+  ): number {
+    if (!this.cacheData?.isValid) {
+      return 0;
+    }
+
+    const propPath =
+      propIndex === 0
+        ? this.cacheData.bluePropPath
+        : this.cacheData.redPropPath;
+
+    const stepDurationMs =
+      this.cacheData.totalDurationMs / this.cacheData.totalSteps;
+    const frameTimeMs = 1000 / this.config.cacheFps;
+
+    const startTime = startStep * stepDurationMs;
+    const endTime = endStep * stepDurationMs;
+
+    const startFrame = Math.floor(startTime / frameTimeMs);
+    const endFrame = Math.ceil(endTime / frameTimeMs);
+
+    let writeIndex = targetOffset;
+
+    for (let frame = startFrame; frame <= endFrame; frame++) {
+      if (frame >= 0 && frame < propPath.positions.length) {
+        const position = propPath.positions[frame]!;
+        const endpoint =
+          endType === 0 ? position.endpoints.left : position.endpoints.right;
+
+        // Reuse existing object if available, otherwise push a new one
+        if (writeIndex < targetArray.length) {
+          const existing = targetArray[writeIndex]!;
+          existing.x = endpoint.x * scaleFactor;
+          existing.y = endpoint.y * scaleFactor;
+          existing.timestamp = position.timestamp;
+          existing.propIndex = propIndex;
+          existing.endType = endType;
+        } else {
+          targetArray.push({
+            x: endpoint.x * scaleFactor,
+            y: endpoint.y * scaleFactor,
+            timestamp: position.timestamp,
+            propIndex,
+            endType,
+          });
+        }
+        writeIndex++;
+      }
+    }
+
+    return writeIndex - targetOffset;
   }
 
   /**

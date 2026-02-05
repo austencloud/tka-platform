@@ -10,6 +10,7 @@ import type { ITrailCapturer } from "$lib/features/compose/services/contracts/IT
 import type { TrailSettings } from "../../domain/types/TrailTypes";
 import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
+import type { IFrameBudgetMonitor } from "./IFrameBudgetMonitor";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -23,6 +24,7 @@ export interface RenderLoopConfig {
   TrailCapturer: ITrailCapturer | null;
   pathCache: AnimationPathCache | null;
   canvasSize: number;
+  frameBudgetMonitor?: IFrameBudgetMonitor | null;
 }
 
 /**

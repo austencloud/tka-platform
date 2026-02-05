@@ -51,6 +51,9 @@ import { AnimationPrecomputer } from "./AnimationPrecomputer.svelte";
 import type { IAnimationPrecomputer } from "../contracts/IAnimationPrecomputer";
 import { AnimationRenderLoop } from "./AnimationRenderLoop";
 import type { IAnimationRenderLoop } from "../contracts/IAnimationRenderLoop";
+import type { IFrameBudgetMonitor } from "../contracts/IFrameBudgetMonitor";
+import { FrameBudgetMonitor } from "./FrameBudgetMonitor";
+import { DeviceTierDetector } from "./DeviceTierDetector";
 import { AnimationVisibilitySynchronizer } from "./AnimationVisibilitySynchronizer";
 import { GlyphTransitionController } from "./GlyphTransitionController.svelte";
 import type { IGlyphTransitionController } from "../contracts/IGlyphTransitionController";
@@ -203,6 +206,8 @@ export class AnimationEngine {
   private trailSettingsSyncService: TrailSettingsSynchronizer | null = null;
   private propTypeChangeService: PropTypeChanger | null = null;
   private canvasInitializer = new AnimatorCanvasInitializer();
+  private frameBudgetMonitor: IFrameBudgetMonitor =
+    new FrameBudgetMonitor(new DeviceTierDetector().detect());
 
   // ============================================================================
   // PRIVATE STATE
@@ -998,6 +1003,7 @@ export class AnimationEngine {
       TrailCapturer: this.trailCapturer,
       pathCache: this.precomputationService?.getPathCache() ?? null,
       canvasSize: this.canvasSize,
+      frameBudgetMonitor: this.frameBudgetMonitor,
     });
   }
 

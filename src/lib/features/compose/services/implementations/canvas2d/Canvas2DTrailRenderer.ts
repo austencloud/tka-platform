@@ -19,6 +19,7 @@ import {
   TrailEffect,
   TrackingMode,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import type { QualityHints } from "$lib/shared/animation-engine/domain/types/QualityTypes";
 
 // ============================================================================
 // CATMULL-ROM SPLINE (pure math, no framework dependencies)
@@ -156,7 +157,8 @@ export class Canvas2DTrailRenderer {
     trailSettings: TrailSettings,
     currentTime: number,
     hasBlue: boolean,
-    hasRed: boolean
+    hasRed: boolean,
+    qualityHints?: QualityHints
   ): void {
     if (!trailSettings.enabled || trailSettings.mode === TrailMode.OFF) {
       return;
@@ -169,7 +171,8 @@ export class Canvas2DTrailRenderer {
         blueTrailPoints,
         trailSettings.blueColor,
         trailSettings,
-        currentTime
+        currentTime,
+        qualityHints
       );
     }
 
@@ -180,7 +183,8 @@ export class Canvas2DTrailRenderer {
         redTrailPoints,
         trailSettings.redColor,
         trailSettings,
-        currentTime
+        currentTime,
+        qualityHints
       );
     }
   }
@@ -190,7 +194,8 @@ export class Canvas2DTrailRenderer {
     points: TrailPoint[],
     colorString: string,
     settings: TrailSettings,
-    currentTime: number
+    currentTime: number,
+    qualityHints?: QualityHints
   ): void {
     if (points.length < 2) return;
 
@@ -233,7 +238,8 @@ export class Canvas2DTrailRenderer {
         pointSet,
         colorString,
         settings,
-        currentTime
+        currentTime,
+        qualityHints
       );
     }
   }
@@ -243,7 +249,8 @@ export class Canvas2DTrailRenderer {
     points: TrailPoint[],
     color: string,
     settings: TrailSettings,
-    currentTime: number
+    currentTime: number,
+    qualityHints?: QualityHints
   ): void {
     if (points.length < 2) return;
 
@@ -260,12 +267,14 @@ export class Canvas2DTrailRenderer {
       }
     }
 
-    // Adaptive subdivision based on point count
+    // Adaptive subdivision based on point count AND quality tier
+    const targetTotal = qualityHints?.targetSubdivisions ?? TARGET_TOTAL_SUBDIVISIONS;
+    const maxPerSegment = qualityHints?.maxSubdivisionsPerSegment ?? MAX_SPLINE_SUBDIVISIONS;
     const subdivisionsPerSegment = Math.max(
       MIN_SPLINE_SUBDIVISIONS,
       Math.min(
-        MAX_SPLINE_SUBDIVISIONS,
-        Math.floor(TARGET_TOTAL_SUBDIVISIONS / points.length)
+        maxPerSegment,
+        Math.floor(targetTotal / points.length)
       )
     );
 
@@ -276,7 +285,9 @@ export class Canvas2DTrailRenderer {
 
     if (smoothPoints.length < 2) return;
 
-    const effect = settings.effect ?? TrailEffect.GLOW;
+    // Respect quality hints for glow: if hints say no glow, force NONE
+    const glowEnabled = qualityHints?.glowEnabled ?? true;
+    const effect = !glowEnabled ? TrailEffect.NONE : (settings.effect ?? TrailEffect.GLOW);
 
     // Always use tapered rendering (thick at head, thin at tail)
     const needsSegmentedRendering = true;
