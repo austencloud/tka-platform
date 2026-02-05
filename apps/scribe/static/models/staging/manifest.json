@@ -1,0 +1,3529 @@
+{
+  "generatedAt": "2026-01-23T01:26:39.282Z",
+  "totalModels": 329,
+  "byCategory": {
+    "misc": 91,
+    "rock": 131,
+    "cactus": 2,
+    "pine": 26,
+    "flower": 9,
+    "grass": 8,
+    "log": 11,
+    "mushroom": 6,
+    "bush": 6,
+    "tree": 33,
+    "palm": 6
+  },
+  "models": [
+    {
+      "name": "bed",
+      "path": "kenney-nature-kit/Models/GLTF format/bed.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bed_floor",
+      "path": "kenney-nature-kit/Models/GLTF format/bed_floor.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_center_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_center_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_center_stoneRound",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_center_stoneRound.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_center_wood",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_center_wood.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_center_woodRound",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_center_woodRound.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_side_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_side_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_side_stoneRound",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_side_stoneRound.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_side_wood",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_side_wood.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_side_woodRound",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_side_woodRound.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_stoneNarrow",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_stoneNarrow.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_stoneRound",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_stoneRound.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_stoneRoundNarrow",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_stoneRoundNarrow.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_wood",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_wood.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_woodNarrow",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_woodNarrow.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_woodRound",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_woodRound.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "bridge_woodRoundNarrow",
+      "path": "kenney-nature-kit/Models/GLTF format/bridge_woodRoundNarrow.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cactus_short",
+      "path": "kenney-nature-kit/Models/GLTF format/cactus_short.glb",
+      "category": "cactus",
+      "biomes": [
+        "desert"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cactus_tall",
+      "path": "kenney-nature-kit/Models/GLTF format/cactus_tall.glb",
+      "category": "cactus",
+      "biomes": [
+        "desert"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "campfire_bricks",
+      "path": "kenney-nature-kit/Models/GLTF format/campfire_bricks.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "campfire_logs",
+      "path": "kenney-nature-kit/Models/GLTF format/campfire_logs.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "campfire_planks",
+      "path": "kenney-nature-kit/Models/GLTF format/campfire_planks.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "campfire_stones",
+      "path": "kenney-nature-kit/Models/GLTF format/campfire_stones.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "canoe",
+      "path": "kenney-nature-kit/Models/GLTF format/canoe.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "canoe_paddle",
+      "path": "kenney-nature-kit/Models/GLTF format/canoe_paddle.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockCave_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockCave_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockCave_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockCave_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockDiagonal_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockDiagonal_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockDiagonal_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockDiagonal_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockHalf_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockHalf_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockHalf_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockHalf_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockQuarter_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockQuarter_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockQuarter_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockQuarter_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockSlopeHalfWalls_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockSlopeHalfWalls_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockSlopeHalfWalls_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockSlopeHalfWalls_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockSlopeWalls_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockSlopeWalls_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockSlopeWalls_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockSlopeWalls_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockSlope_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockSlope_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_blockSlope_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_blockSlope_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_block_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_block_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_block_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_block_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_cave_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_cave_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_cave_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_cave_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_cornerInnerLarge_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_cornerInnerLarge_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_cornerInnerLarge_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_cornerInnerLarge_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_cornerInnerTop_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_cornerInnerTop_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_cornerInnerTop_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_cornerInnerTop_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_cornerInner_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_cornerInner_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_cornerInner_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_cornerInner_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_cornerLarge_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_cornerLarge_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_cornerLarge_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_cornerLarge_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_cornerTop_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_cornerTop_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_cornerTop_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_cornerTop_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_corner_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_corner_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_corner_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_corner_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_diagonal_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_diagonal_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_diagonal_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_diagonal_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_halfCornerInner_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_halfCornerInner_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_halfCornerInner_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_halfCornerInner_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_halfCorner_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_halfCorner_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_halfCorner_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_halfCorner_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_half_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_half_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_half_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_half_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_large_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_large_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_large_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_large_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_stepsCornerInner_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_stepsCornerInner_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_stepsCornerInner_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_stepsCornerInner_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_stepsCorner_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_stepsCorner_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_stepsCorner_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_stepsCorner_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_steps_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_steps_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_steps_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_steps_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_topDiagonal_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_topDiagonal_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_topDiagonal_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_topDiagonal_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_top_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_top_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_top_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_top_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_waterfallTop_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_waterfallTop_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_waterfallTop_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_waterfallTop_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_waterfall_rock",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_waterfall_rock.glb",
+      "category": "rock",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "cliff_waterfall_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/cliff_waterfall_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_bambooStageA",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_bambooStageA.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_bambooStageB",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_bambooStageB.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_cornStageA",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_cornStageA.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_cornStageB",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_cornStageB.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_cornStageC",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_cornStageC.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_cornStageD",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_cornStageD.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_dirtDoubleRow",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_dirtDoubleRow.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_dirtDoubleRowCorner",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_dirtDoubleRowCorner.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_dirtDoubleRowEnd",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_dirtDoubleRowEnd.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_dirtRow",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_dirtRow.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_dirtRowCorner",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_dirtRowCorner.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_dirtRowEnd",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_dirtRowEnd.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_dirtSingle",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_dirtSingle.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_leafsStageA",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_leafsStageA.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_leafsStageB",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_leafsStageB.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_wheatStageA",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_wheatStageA.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crops_wheatStageB",
+      "path": "kenney-nature-kit/Models/GLTF format/crops_wheatStageB.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crop_carrot",
+      "path": "kenney-nature-kit/Models/GLTF format/crop_carrot.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crop_melon",
+      "path": "kenney-nature-kit/Models/GLTF format/crop_melon.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crop_pumpkin",
+      "path": "kenney-nature-kit/Models/GLTF format/crop_pumpkin.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "crop_turnip",
+      "path": "kenney-nature-kit/Models/GLTF format/crop_turnip.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "fence_bend",
+      "path": "kenney-nature-kit/Models/GLTF format/fence_bend.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "fence_bendCenter",
+      "path": "kenney-nature-kit/Models/GLTF format/fence_bendCenter.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "fence_corner",
+      "path": "kenney-nature-kit/Models/GLTF format/fence_corner.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "fence_gate",
+      "path": "kenney-nature-kit/Models/GLTF format/fence_gate.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "fence_planks",
+      "path": "kenney-nature-kit/Models/GLTF format/fence_planks.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "fence_planksDouble",
+      "path": "kenney-nature-kit/Models/GLTF format/fence_planksDouble.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "fence_simple",
+      "path": "kenney-nature-kit/Models/GLTF format/fence_simple.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "fence_simpleCenter",
+      "path": "kenney-nature-kit/Models/GLTF format/fence_simpleCenter.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "fence_simpleDiagonal",
+      "path": "kenney-nature-kit/Models/GLTF format/fence_simpleDiagonal.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "fence_simpleDiagonalCenter",
+      "path": "kenney-nature-kit/Models/GLTF format/fence_simpleDiagonalCenter.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "fence_simpleHigh",
+      "path": "kenney-nature-kit/Models/GLTF format/fence_simpleHigh.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "fence_simpleLow",
+      "path": "kenney-nature-kit/Models/GLTF format/fence_simpleLow.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "flower_purpleA",
+      "path": "kenney-nature-kit/Models/GLTF format/flower_purpleA.glb",
+      "category": "flower",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "flower_purpleB",
+      "path": "kenney-nature-kit/Models/GLTF format/flower_purpleB.glb",
+      "category": "flower",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "flower_purpleC",
+      "path": "kenney-nature-kit/Models/GLTF format/flower_purpleC.glb",
+      "category": "flower",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "flower_redA",
+      "path": "kenney-nature-kit/Models/GLTF format/flower_redA.glb",
+      "category": "flower",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "flower_redB",
+      "path": "kenney-nature-kit/Models/GLTF format/flower_redB.glb",
+      "category": "flower",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "flower_redC",
+      "path": "kenney-nature-kit/Models/GLTF format/flower_redC.glb",
+      "category": "flower",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "flower_yellowA",
+      "path": "kenney-nature-kit/Models/GLTF format/flower_yellowA.glb",
+      "category": "flower",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "flower_yellowB",
+      "path": "kenney-nature-kit/Models/GLTF format/flower_yellowB.glb",
+      "category": "flower",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "flower_yellowC",
+      "path": "kenney-nature-kit/Models/GLTF format/flower_yellowC.glb",
+      "category": "flower",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "grass",
+      "path": "kenney-nature-kit/Models/GLTF format/grass.glb",
+      "category": "grass",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "grass_large",
+      "path": "kenney-nature-kit/Models/GLTF format/grass_large.glb",
+      "category": "grass",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "grass_leafs",
+      "path": "kenney-nature-kit/Models/GLTF format/grass_leafs.glb",
+      "category": "grass",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "grass_leafsLarge",
+      "path": "kenney-nature-kit/Models/GLTF format/grass_leafsLarge.glb",
+      "category": "grass",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_grass",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_grass.glb",
+      "category": "grass",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathBend",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathBend.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathBendBank",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathBendBank.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathCorner",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathCorner.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathCornerSmall",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathCornerSmall.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathCross",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathCross.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathEnd",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathEnd.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathEndClosed",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathEndClosed.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathOpen",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathOpen.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathRocks",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathRocks.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathSide",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathSide.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathSideOpen",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathSideOpen.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathSplit",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathSplit.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathStraight",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathStraight.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_pathTile",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_pathTile.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverBend",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverBend.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverBendBank",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverBendBank.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverCorner",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverCorner.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverCornerSmall",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverCornerSmall.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverCross",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverCross.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverEnd",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverEnd.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverEndClosed",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverEndClosed.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverOpen",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverOpen.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverRocks",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverRocks.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverSide",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverSide.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverSideOpen",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverSideOpen.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverSplit",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverSplit.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverStraight",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverStraight.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "ground_riverTile",
+      "path": "kenney-nature-kit/Models/GLTF format/ground_riverTile.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "hanging_moss",
+      "path": "kenney-nature-kit/Models/GLTF format/hanging_moss.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "lily_large",
+      "path": "kenney-nature-kit/Models/GLTF format/lily_large.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "lily_small",
+      "path": "kenney-nature-kit/Models/GLTF format/lily_small.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "log",
+      "path": "kenney-nature-kit/Models/GLTF format/log.glb",
+      "category": "log",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "log_large",
+      "path": "kenney-nature-kit/Models/GLTF format/log_large.glb",
+      "category": "log",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "log_stack",
+      "path": "kenney-nature-kit/Models/GLTF format/log_stack.glb",
+      "category": "log",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "log_stackLarge",
+      "path": "kenney-nature-kit/Models/GLTF format/log_stackLarge.glb",
+      "category": "log",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "mushroom_red",
+      "path": "kenney-nature-kit/Models/GLTF format/mushroom_red.glb",
+      "category": "mushroom",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "mushroom_redGroup",
+      "path": "kenney-nature-kit/Models/GLTF format/mushroom_redGroup.glb",
+      "category": "mushroom",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "mushroom_redTall",
+      "path": "kenney-nature-kit/Models/GLTF format/mushroom_redTall.glb",
+      "category": "mushroom",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "mushroom_tan",
+      "path": "kenney-nature-kit/Models/GLTF format/mushroom_tan.glb",
+      "category": "mushroom",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "mushroom_tanGroup",
+      "path": "kenney-nature-kit/Models/GLTF format/mushroom_tanGroup.glb",
+      "category": "mushroom",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "mushroom_tanTall",
+      "path": "kenney-nature-kit/Models/GLTF format/mushroom_tanTall.glb",
+      "category": "mushroom",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "path_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/path_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "path_stoneCircle",
+      "path": "kenney-nature-kit/Models/GLTF format/path_stoneCircle.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "path_stoneCorner",
+      "path": "kenney-nature-kit/Models/GLTF format/path_stoneCorner.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "path_stoneEnd",
+      "path": "kenney-nature-kit/Models/GLTF format/path_stoneEnd.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "path_wood",
+      "path": "kenney-nature-kit/Models/GLTF format/path_wood.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "path_woodCorner",
+      "path": "kenney-nature-kit/Models/GLTF format/path_woodCorner.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "path_woodEnd",
+      "path": "kenney-nature-kit/Models/GLTF format/path_woodEnd.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "plant_bush",
+      "path": "kenney-nature-kit/Models/GLTF format/plant_bush.glb",
+      "category": "bush",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "plant_bushDetailed",
+      "path": "kenney-nature-kit/Models/GLTF format/plant_bushDetailed.glb",
+      "category": "bush",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "plant_bushLarge",
+      "path": "kenney-nature-kit/Models/GLTF format/plant_bushLarge.glb",
+      "category": "bush",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "plant_bushLargeTriangle",
+      "path": "kenney-nature-kit/Models/GLTF format/plant_bushLargeTriangle.glb",
+      "category": "bush",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "plant_bushSmall",
+      "path": "kenney-nature-kit/Models/GLTF format/plant_bushSmall.glb",
+      "category": "bush",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "plant_bushTriangle",
+      "path": "kenney-nature-kit/Models/GLTF format/plant_bushTriangle.glb",
+      "category": "bush",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "plant_flatShort",
+      "path": "kenney-nature-kit/Models/GLTF format/plant_flatShort.glb",
+      "category": "grass",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "plant_flatTall",
+      "path": "kenney-nature-kit/Models/GLTF format/plant_flatTall.glb",
+      "category": "grass",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "platform_beach",
+      "path": "kenney-nature-kit/Models/GLTF format/platform_beach.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "platform_grass",
+      "path": "kenney-nature-kit/Models/GLTF format/platform_grass.glb",
+      "category": "grass",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "platform_stone",
+      "path": "kenney-nature-kit/Models/GLTF format/platform_stone.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "pot_large",
+      "path": "kenney-nature-kit/Models/GLTF format/pot_large.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "pot_small",
+      "path": "kenney-nature-kit/Models/GLTF format/pot_small.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_largeA",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_largeA.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_largeB",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_largeB.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_largeC",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_largeC.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_largeD",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_largeD.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_largeE",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_largeE.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_largeF",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_largeF.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallA",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallA.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallB",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallB.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallC",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallC.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallD",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallD.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallE",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallE.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallF",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallF.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallFlatA",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallFlatA.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallFlatB",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallFlatB.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallFlatC",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallFlatC.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallG",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallG.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallH",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallH.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallI",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallI.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallTopA",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallTopA.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_smallTopB",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_smallTopB.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_tallA",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_tallA.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_tallB",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_tallB.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_tallC",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_tallC.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_tallD",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_tallD.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_tallE",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_tallE.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_tallF",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_tallF.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_tallG",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_tallG.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_tallH",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_tallH.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_tallI",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_tallI.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "rock_tallJ",
+      "path": "kenney-nature-kit/Models/GLTF format/rock_tallJ.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "sign",
+      "path": "kenney-nature-kit/Models/GLTF format/sign.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "statue_block",
+      "path": "kenney-nature-kit/Models/GLTF format/statue_block.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "statue_column",
+      "path": "kenney-nature-kit/Models/GLTF format/statue_column.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "statue_columnDamaged",
+      "path": "kenney-nature-kit/Models/GLTF format/statue_columnDamaged.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "statue_head",
+      "path": "kenney-nature-kit/Models/GLTF format/statue_head.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "statue_obelisk",
+      "path": "kenney-nature-kit/Models/GLTF format/statue_obelisk.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "statue_ring",
+      "path": "kenney-nature-kit/Models/GLTF format/statue_ring.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_largeA",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_largeA.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_largeB",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_largeB.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_largeC",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_largeC.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_largeD",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_largeD.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_largeE",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_largeE.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_largeF",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_largeF.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallA",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallA.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallB",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallB.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallC",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallC.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallD",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallD.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallE",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallE.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallF",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallF.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallFlatA",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallFlatA.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallFlatB",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallFlatB.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallFlatC",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallFlatC.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallG",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallG.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallH",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallH.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallI",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallI.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallTopA",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallTopA.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_smallTopB",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_smallTopB.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_tallA",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_tallA.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_tallB",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_tallB.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_tallC",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_tallC.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_tallD",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_tallD.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_tallE",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_tallE.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_tallF",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_tallF.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_tallG",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_tallG.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_tallH",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_tallH.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_tallI",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_tallI.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stone_tallJ",
+      "path": "kenney-nature-kit/Models/GLTF format/stone_tallJ.glb",
+      "category": "rock",
+      "biomes": [
+        "mountains",
+        "desert",
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stump_old",
+      "path": "kenney-nature-kit/Models/GLTF format/stump_old.glb",
+      "category": "log",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stump_oldTall",
+      "path": "kenney-nature-kit/Models/GLTF format/stump_oldTall.glb",
+      "category": "log",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stump_round",
+      "path": "kenney-nature-kit/Models/GLTF format/stump_round.glb",
+      "category": "log",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stump_roundDetailed",
+      "path": "kenney-nature-kit/Models/GLTF format/stump_roundDetailed.glb",
+      "category": "log",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stump_square",
+      "path": "kenney-nature-kit/Models/GLTF format/stump_square.glb",
+      "category": "log",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stump_squareDetailed",
+      "path": "kenney-nature-kit/Models/GLTF format/stump_squareDetailed.glb",
+      "category": "log",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "stump_squareDetailedWide",
+      "path": "kenney-nature-kit/Models/GLTF format/stump_squareDetailedWide.glb",
+      "category": "log",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tent_detailedClosed",
+      "path": "kenney-nature-kit/Models/GLTF format/tent_detailedClosed.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tent_detailedOpen",
+      "path": "kenney-nature-kit/Models/GLTF format/tent_detailedOpen.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tent_smallClosed",
+      "path": "kenney-nature-kit/Models/GLTF format/tent_smallClosed.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tent_smallOpen",
+      "path": "kenney-nature-kit/Models/GLTF format/tent_smallOpen.glb",
+      "category": "misc",
+      "biomes": [
+        "plains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_blocks",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_blocks.glb",
+      "category": "tree",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_blocks_dark",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_blocks_dark.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_blocks_fall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_blocks_fall.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_cone",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_cone.glb",
+      "category": "tree",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_cone_dark",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_cone_dark.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_cone_fall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_cone_fall.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_default",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_default.glb",
+      "category": "tree",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_default_dark",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_default_dark.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_default_fall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_default_fall.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_detailed",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_detailed.glb",
+      "category": "tree",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_detailed_dark",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_detailed_dark.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_detailed_fall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_detailed_fall.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_fat",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_fat.glb",
+      "category": "tree",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_fat_darkh",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_fat_darkh.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_fat_fall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_fat_fall.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_oak",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_oak.glb",
+      "category": "tree",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_oak_dark",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_oak_dark.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_oak_fall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_oak_fall.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_palm",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_palm.glb",
+      "category": "palm",
+      "biomes": [
+        "desert"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_palmBend",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_palmBend.glb",
+      "category": "palm",
+      "biomes": [
+        "desert"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_palmDetailedShort",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_palmDetailedShort.glb",
+      "category": "palm",
+      "biomes": [
+        "desert"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_palmDetailedTall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_palmDetailedTall.glb",
+      "category": "palm",
+      "biomes": [
+        "desert"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_palmShort",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_palmShort.glb",
+      "category": "palm",
+      "biomes": [
+        "desert"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_palmTall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_palmTall.glb",
+      "category": "palm",
+      "biomes": [
+        "desert"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineDefaultA",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineDefaultA.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineDefaultB",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineDefaultB.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineGroundA",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineGroundA.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineGroundB",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineGroundB.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineRoundA",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineRoundA.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineRoundB",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineRoundB.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineRoundC",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineRoundC.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineRoundD",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineRoundD.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineRoundE",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineRoundE.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineRoundF",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineRoundF.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineSmallA",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineSmallA.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineSmallB",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineSmallB.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineSmallC",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineSmallC.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineSmallD",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineSmallD.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineTallA",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineTallA.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineTallA_detailed",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineTallA_detailed.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineTallB",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineTallB.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineTallB_detailed",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineTallB_detailed.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineTallC",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineTallC.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineTallC_detailed",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineTallC_detailed.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineTallD",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineTallD.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_pineTallD_detailed",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_pineTallD_detailed.glb",
+      "category": "pine",
+      "biomes": [
+        "mountains",
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_plateau",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_plateau.glb",
+      "category": "tree",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_plateau_dark",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_plateau_dark.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_plateau_fall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_plateau_fall.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_simple",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_simple.glb",
+      "category": "tree",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_simple_dark",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_simple_dark.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_simple_fall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_simple_fall.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_small",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_small.glb",
+      "category": "tree",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_small_dark",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_small_dark.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_small_fall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_small_fall.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_tall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_tall.glb",
+      "category": "tree",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_tall_dark",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_tall_dark.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_tall_fall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_tall_fall.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_thin",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_thin.glb",
+      "category": "tree",
+      "biomes": [
+        "forest",
+        "plains"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_thin_dark",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_thin_dark.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    },
+    {
+      "name": "tree_thin_fall",
+      "path": "kenney-nature-kit/Models/GLTF format/tree_thin_fall.glb",
+      "category": "tree",
+      "biomes": [
+        "forest"
+      ],
+      "source": "Kenney"
+    }
+  ]
+}

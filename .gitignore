@@ -4,15 +4,16 @@ node_modules/
 .pnpm-debug.log*
 
 # Build and deployment artifacts
-# 🚨 CRITICAL: Use /build NOT **/build/** or build/
-# The leading slash (/) ensures we only ignore the root-level build output directory,
-# NOT source code directories like src/lib/modules/build/ which contain components!
-# Without the leading slash, git would ignore ALL directories named "build" at any depth.
-/build                          # Ignore ONLY root-level build directory (SvelteKit output)
+# Build outputs live under apps/*/build now (monorepo)
+/build
 /build/**
+apps/*/build/
+apps/*/.netlify/
+apps/*/.svelte-kit/
+apps/*/dev-dist/
 .netlify/
 dist/
-/dev-dist/                      # Vite PWA dev mode output
+/dev-dist/
 .output/
 /_app/
 
@@ -75,11 +76,12 @@ nul
 *.temp
 .cache/
 
-# SvelteKit
+# SvelteKit (root and nested)
 .svelte-kit/
 
 # TypeScript
 .tsbuildinfo
+**/.tsbuildinfo
 
 # Package manager lock files (keep your preferred one, remove others)
 # yarn.lock
