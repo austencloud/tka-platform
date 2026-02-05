@@ -594,13 +594,19 @@
       #app-loading img {
         width: 96px;
         height: 96px;
+        animation: logo-breathe 3s ease-in-out infinite;
+      }
+
+      @keyframes logo-breathe {
+        0%, 100% { opacity: 0.85; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.03); }
       }
 
       .loading-bar-track {
         width: 240px;
-        height: 4px;
+        height: 6px;
         background: rgba(255, 255, 255, 0.08);
-        border-radius: 2px;
+        border-radius: 3px;
         overflow: hidden;
       }
 
@@ -608,9 +614,15 @@
         width: 5%;
         height: 100%;
         background: linear-gradient(90deg, #38bdf8, #818cf8);
-        border-radius: 2px;
+        border-radius: 3px;
         transition: width 500ms cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+        animation: bar-pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes bar-pulse {
+        0%, 100% { box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+        50% { box-shadow: 0 0 14px rgba(56, 189, 248, 0.7); }
       }
 
       #app-loading p {
@@ -619,11 +631,17 @@
         font-size: 13px;
         color: rgba(255, 255, 255, 0.5);
         letter-spacing: 0.02em;
+        transition: opacity 200ms ease;
       }
 
       @media (prefers-reduced-motion: reduce) {
         .loading-bar-fill {
           transition: none;
+          animation: none;
+        }
+        #app-loading img {
+          animation: none;
+          opacity: 1;
         }
       }
     </style>
@@ -639,26 +657,138 @@
       <div class="loading-bar-track">
         <div class="loading-bar-fill" id="loading-bar-fill"></div>
       </div>
-      <p id="loading-text">Loading...</p>
+      <p id="loading-text"></p>
     </div>
     <script>
-      window.__tkaLoadProgress = function(percent, message) {
+      // Sims-style flavor text — shuffled each load for variety
+      var __tkaFlavorMessages = [
+        "Calibrating spin direction...",
+        "Consulting the ancient glyphs...",
+        "Warming up wrists...",
+        "Polishing the diamond grid...",
+        "Reticulating flower patterns...",
+        "Shuffling the alphabet...",
+        "Winding up the props...",
+        "Aligning the cardinal points...",
+        "Counting antispin rotations...",
+        "Negotiating with gravity...",
+        "Debating prospin vs inspin...",
+        "Stretching the time signature...",
+        "Tuning the isolation engine...",
+        "Rehearsing the entrance...",
+        "Checking staff balance...",
+        "Convincing electrons to flow...",
+        "Mapping the kinetic field...",
+        "Syncing the downbeat...",
+        "Charging the glow sticks...",
+        "Meditating on beta position...",
+        "Asking permission from physics...",
+        "Dusting off the notation...",
+        "Summoning the flow state..."
+      ];
+
+      // Fisher-Yates shuffle
+      for (var i = __tkaFlavorMessages.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = __tkaFlavorMessages[i];
+        __tkaFlavorMessages[i] = __tkaFlavorMessages[j];
+        __tkaFlavorMessages[j] = tmp;
+      }
+
+      var __tkaReadyMessages = [
+        "Let's spin.",
+        "Props loaded. You're up.",
+        "Ready to flow.",
+        "All systems go."
+      ];
+
+      // Trickle state
+      var __tkaTrickleIndex = 0;
+      var __tkaTricklePercent = 5;
+      var __tkaTrickleInterval = null;
+      var __tkaTrickleStopped = false;
+
+      // Show first flavor message immediately — no generic "Loading..."
+      var _initText = document.getElementById('loading-text');
+      if (_initText && __tkaFlavorMessages.length > 0) {
+        _initText.textContent = __tkaFlavorMessages[__tkaTrickleIndex];
+        __tkaTrickleIndex++;
+      }
+
+      // Trickle — advances 1% every 1.5s up to 18% with rotating messages
+      __tkaTrickleInterval = setInterval(function() {
+        if (__tkaTrickleStopped) return;
         var bar = document.getElementById('loading-bar-fill');
         var text = document.getElementById('loading-text');
         var screen = document.getElementById('app-loading');
+        if (!bar || !text) return;
+
+        __tkaTricklePercent = Math.min(__tkaTricklePercent + 1, 18);
+        bar.style.width = __tkaTricklePercent + '%';
+        if (screen) screen.setAttribute('aria-valuenow', String(__tkaTricklePercent));
+
+        // Rotate through flavor messages (direct swap — 800ms spacing means no flicker)
+        if (__tkaTrickleIndex < __tkaFlavorMessages.length) {
+          text.textContent = __tkaFlavorMessages[__tkaTrickleIndex];
+          __tkaTrickleIndex++;
+        }
+
+        // Cap reached — stop ticking but keep last message visible
+        if (__tkaTricklePercent >= 18) {
+          clearInterval(__tkaTrickleInterval);
+        }
+      }, 1500);
+
+      // Progress state — monotonic (never goes backwards, ignores calls after 100%)
+      var __tkaCurrentPercent = 5;
+      var __tkaFinished = false;
+      var __tkaLastTextTime = 0;
+      var __tkaMinTextGap = 500; // minimum ms between text changes — suppress rapid flickers
+
+      // Real progress function — called by SvelteKit as initialization proceeds.
+      // The BAR always advances smoothly (CSS transition handles interpolation).
+      // The TEXT only updates if enough time has passed — rapid bursts are collapsed
+      // so the user reads the first message, the bar slides, then sees "Ready".
+      window.__tkaLoadProgress = function(percent, message) {
+        // Monotonic: ignore out-of-order or duplicate calls
+        if (percent <= __tkaCurrentPercent || __tkaFinished) return;
+        __tkaCurrentPercent = percent;
+
+        // Stop trickle on first real checkpoint
+        if (!__tkaTrickleStopped) {
+          __tkaTrickleStopped = true;
+          clearInterval(__tkaTrickleInterval);
+        }
+
+        var bar = document.getElementById('loading-bar-fill');
+        var text = document.getElementById('loading-text');
+        var screen = document.getElementById('app-loading');
+
+        // Bar ALWAYS updates — CSS transition makes it smooth regardless of timing
         if (bar) bar.style.width = percent + '%';
-        if (text) text.textContent = message;
         if (screen) screen.setAttribute('aria-valuenow', String(percent));
+
+        var now = Date.now();
+
         if (percent >= 100) {
+          __tkaFinished = true;
+          var readyMsg = __tkaReadyMessages[Math.floor(Math.random() * __tkaReadyMessages.length)];
+          if (text) { text.style.opacity = '1'; text.textContent = readyMsg; }
           clearTimeout(window.__tkaLoadTimeout);
           setTimeout(function() {
             if (screen) {
               screen.classList.add('loaded');
               screen.addEventListener('transitionend', function() { screen.remove(); });
             }
-          }, 400);
+          }, 1000);
+        } else if (now - __tkaLastTextTime >= __tkaMinTextGap) {
+          // Enough time since last text change — update the message
+          if (text) { text.style.opacity = '1'; text.textContent = message; }
+          __tkaLastTextTime = now;
         }
+        // else: suppress text update (too soon), bar still advances silently
       };
+
       // Safety net: if progress never reaches 100%, force-dismiss after 15s
       window.__tkaLoadTimeout = setTimeout(function() {
         var screen = document.getElementById('app-loading');
