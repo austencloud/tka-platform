@@ -560,12 +560,114 @@
     <!-- Preload critical fonts if needed -->
     <!-- <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin> -->
 
+    <!-- Critical styles (inline for instant render, no external CSS dependency) -->
+    <style>
+      /* Prevent white flash on PWA launch - app.css loads with JS bundle,
+         so body has default white background until JS executes.
+         These inline rules ensure dark background from first paint. */
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #0a0a0a;
+        background: var(--gradient-cosmic, #0a0a0a);
+      }
+
+      #app-loading {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        background: var(--gradient-cosmic, #0a0a0a);
+        opacity: 1;
+        transition: opacity 400ms ease-out;
+      }
+
+      #app-loading.loaded {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #app-loading img {
+        width: 96px;
+        height: 96px;
+      }
+
+      .loading-bar-track {
+        width: 240px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .loading-bar-fill {
+        width: 5%;
+        height: 100%;
+        background: linear-gradient(90deg, #38bdf8, #818cf8);
+        border-radius: 2px;
+        transition: width 500ms cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+      }
+
+      #app-loading p {
+        margin: 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.5);
+        letter-spacing: 0.02em;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .loading-bar-fill {
+          transition: none;
+        }
+      }
+    </style>
+
     %sveltekit.head%
   </head>
   <body
     data-sveltekit-preload-data="hover"
     class="bg-background text-foreground"
   >
+    <div id="app-loading" aria-label="Loading TKA Scribe" role="progressbar" aria-valuenow="5" aria-valuemin="0" aria-valuemax="100">
+      <img src="%sveltekit.assets%/pwa/icons/icon-192x192.png" alt="" width="96" height="96" />
+      <div class="loading-bar-track">
+        <div class="loading-bar-fill" id="loading-bar-fill"></div>
+      </div>
+      <p id="loading-text">Loading...</p>
+    </div>
+    <script>
+      window.__tkaLoadProgress = function(percent, message) {
+        var bar = document.getElementById('loading-bar-fill');
+        var text = document.getElementById('loading-text');
+        var screen = document.getElementById('app-loading');
+        if (bar) bar.style.width = percent + '%';
+        if (text) text.textContent = message;
+        if (screen) screen.setAttribute('aria-valuenow', String(percent));
+        if (percent >= 100) {
+          clearTimeout(window.__tkaLoadTimeout);
+          setTimeout(function() {
+            if (screen) {
+              screen.classList.add('loaded');
+              screen.addEventListener('transitionend', function() { screen.remove(); });
+            }
+          }, 400);
+        }
+      };
+      // Safety net: if progress never reaches 100%, force-dismiss after 15s
+      window.__tkaLoadTimeout = setTimeout(function() {
+        var screen = document.getElementById('app-loading');
+        if (screen && !screen.classList.contains('loaded')) {
+          screen.classList.add('loaded');
+          screen.addEventListener('transitionend', function() { screen.remove(); });
+        }
+      }, 15000);
+    </script>
     <div style="display: contents">%sveltekit.body%</div>
   </body>
 </html>

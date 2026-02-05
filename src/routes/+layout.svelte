@@ -89,8 +89,37 @@
   }
 
   onMount(() => {
+    // Progress: SvelteKit has hydrated and onMount is running
+    // If __tkaLoadProgress exists (new app.html), use deterministic progress.
+    // If not (cached old app.html), dismiss the loading screen immediately.
+    if (typeof (window as any).__tkaLoadProgress === "function") {
+      (window as any).__tkaLoadProgress(20, "Starting up...");
+    } else {
+      const loadingScreen = document.getElementById('app-loading');
+      if (loadingScreen) {
+        loadingScreen.classList.add('loaded');
+        loadingScreen.addEventListener('transitionend', () => loadingScreen.remove());
+      }
+    }
+
     // 📊 ANALYTICS: Initialize PostHog first for early event capture
     initPostHog();
+
+    // 📊 ATTRIBUTION: Capture how users found us (UTM params, referrer, etc.)
+    // Must run before any navigation that might change URL params
+    (async () => {
+      try {
+        const { container } = await import("$lib/shared/di");
+        const persister = container?.items?.attributionPersister;
+        if (persister) {
+          // Get or create session and record current touch
+          persister.getOrCreateSession();
+        }
+      } catch (error) {
+        console.warn("Attribution capture failed:", error);
+        // Non-fatal - app works without attribution
+      }
+    })();
 
     // ⚡ CRITICAL: Initialize i18n and set HTML dir attribute
     initI18n();
@@ -135,6 +164,7 @@
         const { getFirestoreInstance } =
           await import("$lib/shared/auth/firebase");
         await getFirestoreInstance();
+        (window as any).__tkaLoadProgress?.(35, "Connecting...");
       } catch (error) {
         console.error("❌ [App Init] Firestore initialization failed:", error);
       }
@@ -143,6 +173,7 @@
       // This is required to catch auth state changes from social sign-in
       // Must await to process pending OAuth redirect results (e.g., account linking)
       await authState.initialize();
+      (window as any).__tkaLoadProgress?.(55, "Signing in...");
     })();
 
     // Note: Sequence restoration tester removed (now integrated into services)
