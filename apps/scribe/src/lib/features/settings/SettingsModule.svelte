@@ -202,6 +202,7 @@
   }
 </script>
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- Swipe zone wrapper for edge-swipe to exit -->
 <div
   class="settings-module settings-swipe-zone"

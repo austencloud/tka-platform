@@ -129,6 +129,25 @@ When running `/fb`, start your response with raw feedback details:
 
 ---
 
+## Feedback Images
+
+The `fetch-feedback.js` script auto-opens images in the user's default viewer when claiming or viewing feedback. Items with images show a 📸 indicator in the list view.
+
+**When images are present, Claude must:**
+
+1. **Read each image** using the Read tool with the absolute paths printed by the script
+2. **Describe what you see** before proposing solutions - narrate the key visual details so the user can confirm Claude is interpreting the screenshot correctly
+3. **Reference the images** throughout the discussion when relevant
+
+The user sees the images automatically (opened by the script). Claude sees them via the Read tool. Both parties are looking at the same thing.
+
+**Pass `--no-open` to suppress auto-open** if running in a non-interactive context:
+```bash
+node scripts/fetch-feedback.js claim <id> --no-open
+```
+
+---
+
 ## Model Triage (Mandatory)
 
 After displaying feedback, assess complexity to route to the most cost-effective model.

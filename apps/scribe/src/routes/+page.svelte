@@ -24,6 +24,9 @@
 
   onMount(() => {
     siteMode = detectSiteMode(window.location.origin);
+    if (siteMode === "app") {
+      (window as any).__tkaLoadProgress?.(60, "Resolving services...");
+    }
 
     // For landing mode, load saved background preference
     if (siteMode === "landing") {

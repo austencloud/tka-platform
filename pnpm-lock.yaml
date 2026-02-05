@@ -13,6 +13,12 @@ importers:
       '@austencloud/backgrounds':
         specifier: ^0.1.0
         version: 0.1.0
+      '@tka/animation-renderer':
+        specifier: workspace:*
+        version: link:../../packages/animation-renderer
+      '@tka/types':
+        specifier: workspace:*
+        version: link:../../packages/tka-types
       firebase:
         specifier: ^12.6.0
         version: 12.8.0
@@ -95,6 +101,12 @@ importers:
       '@threlte/extras':
         specifier: ^9.0.0
         version: 9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0)
+      '@tka/animation-renderer':
+        specifier: workspace:*
+        version: link:../../packages/animation-renderer
+      '@tka/types':
+        specifier: workspace:*
+        version: link:../../packages/tka-types
       ai:
         specifier: ^6.0.0
         version: 6.0.70(zod@4.3.6)
@@ -340,6 +352,19 @@ importers:
         specifier: ^7.4.0
         version: 7.4.0
 
+  packages/animation-renderer:
+    dependencies:
+      '@tka/types':
+        specifier: workspace:*
+        version: link:../tka-types
+    devDependencies:
+      svelte:
+        specifier: ^5.46.1
+        version: 5.49.2
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/mcp-game-controller:
     dependencies:
       '@modelcontextprotocol/sdk':
@@ -360,6 +385,25 @@ importers:
         version: 8.18.1
       typescript:
         specifier: ^5.7.0
+        version: 5.9.3
+
+  packages/pictograph:
+    dependencies:
+      '@tka/types':
+        specifier: workspace:*
+        version: link:../tka-types
+    devDependencies:
+      svelte:
+        specifier: ^5.46.1
+        version: 5.49.2
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/tka-types:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
         version: 5.9.3
 
 packages:

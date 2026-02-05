@@ -549,6 +549,7 @@
           <span class="cell-label">{cell.label}</span>
         </div>
 
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <!-- Resize handles (on hover or selected) -->
         {#if showHandles}
           <div

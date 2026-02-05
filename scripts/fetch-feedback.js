@@ -25,6 +25,7 @@ import { readFileSync } from "fs";
 import { execSync } from "child_process";
 import { existsSync, mkdirSync } from "fs";
 import { randomUUID } from "crypto";
+import { resolve } from "path";
 import config from "../apps/scribe/config/feedback.config.js";
 import cfClient from "./lib/cloud-functions-client.js";
 
@@ -642,6 +643,44 @@ async function downloadFeedbackImages(feedbackId, imageUrls) {
 }
 
 /**
+ * Open downloaded images for the user in their default image viewer.
+ * On Windows, uses PowerShell Start-Process. On macOS, uses open. On Linux, uses xdg-open.
+ * Skipped when --no-open flag is passed.
+ * @returns {boolean} true if images were opened, false if skipped
+ */
+function openImagesForUser(downloadedPaths) {
+  if (process.argv.includes("--no-open") || downloadedPaths.length === 0) {
+    return false;
+  }
+
+  const opener =
+    process.platform === "win32"
+      ? (p) => `powershell -Command "Start-Process '${p}'"`
+      : process.platform === "darwin"
+        ? (p) => `open "${p}"`
+        : (p) => `xdg-open "${p}"`;
+
+  let opened = 0;
+  for (const relPath of downloadedPaths) {
+    const absPath = resolve(relPath);
+    try {
+      execSync(opener(absPath), { stdio: "ignore" });
+      opened++;
+    } catch {
+      // Silently skip - image viewer not available
+    }
+  }
+
+  if (opened > 0) {
+    console.log(
+      `  🖼️  Opened ${opened} image${opened > 1 ? "s" : ""} in your default viewer`
+    );
+  }
+
+  return opened > 0;
+}
+
+/**
  * Atomically claim a feedback item using Firestore transaction
  * Prevents race conditions when multiple agents try to claim simultaneously
  *
@@ -958,8 +997,9 @@ async function listAllFeedback() {
         const title = (item.title || "No title").substring(0, 50);
         const { isOrphaned, isStale } = deriveEffectiveStatus(item);
         const suffix = isOrphaned ? " ⚠️ ORPHANED" : isStale ? " ⚠️ STALE" : "";
+        const hasImages = item.imageUrls?.length > 0 ? " 📸" : "";
         console.log(
-          `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}${suffix}`
+          `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}${hasImages}${suffix}`
         );
       });
     }
@@ -975,8 +1015,9 @@ async function listAllFeedback() {
         const isStale =
           item.claimedAt?.toDate?.() &&
           Date.now() - item.claimedAt.toDate().getTime() > STALE_CLAIM_MS;
+        const hasImages = item.imageUrls?.length > 0 ? " 📸" : "";
         console.log(
-          `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}`
+          `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}${hasImages}`
         );
         console.log(
           `       └─ Token: [${claimToken}] | Claimed: ${claimedAt}${isStale ? " ⚠️ STALE" : ""}`
@@ -988,8 +1029,9 @@ async function listAllFeedback() {
       console.log("\n  👁️ IN REVIEW (awaiting tester confirmation):\n");
       inReviewItems.forEach((item) => {
         const title = (item.title || "No title").substring(0, 50);
+        const hasImages = item.imageUrls?.length > 0 ? " 📸" : "";
         console.log(
-          `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}`
+          `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}${hasImages}`
         );
       });
     }
@@ -998,8 +1040,9 @@ async function listAllFeedback() {
       console.log("\n  ✅ COMPLETED (ready for release):\n");
       completedItems.forEach((item) => {
         const title = (item.title || "No title").substring(0, 50);
+        const hasImages = item.imageUrls?.length > 0 ? " 📸" : "";
         console.log(
-          `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}`
+          `     ${item.id.substring(0, 8)}... | ${item.type || "N/A"} | ${title}${item.title?.length > 50 ? "..." : ""}${hasImages}`
         );
       });
     }
@@ -1246,7 +1289,7 @@ async function claimNextFeedback(priorityFilter = null) {
       }
     }
 
-    // Download and display images if they exist
+    // Download, display, and auto-open images if they exist
     if (itemToClaim.imageUrls && itemToClaim.imageUrls.length > 0) {
       console.log("─".repeat(70));
       console.log(`  📸 IMAGES (${itemToClaim.imageUrls.length}):\n`);
@@ -1258,10 +1301,14 @@ async function claimNextFeedback(priorityFilter = null) {
 
       if (downloadedPaths.length > 0) {
         downloadedPaths.forEach((path, idx) => {
-          console.log(`     [${idx + 1}] Downloaded to: ${path}`);
+          const absPath = resolve(path);
+          console.log(`     [${idx + 1}] ${absPath}`);
         });
+        const opened = openImagesForUser(downloadedPaths);
         console.log(
-          `\n  ✅ Images ready to view - use the Read tool on the paths above`
+          opened
+            ? `\n  ✅ Images opened for user — Claude: use Read tool on the paths above`
+            : `\n  ✅ Images downloaded — Claude: use Read tool on the paths above`
         );
       }
     }
@@ -1891,7 +1938,7 @@ async function getFeedbackById(docId) {
       });
     }
 
-    // Download and display images if they exist
+    // Download, display, and auto-open images if they exist
     if (item.imageUrls && item.imageUrls.length > 0) {
       console.log("─".repeat(70));
       console.log(`  📸 IMAGES (${item.imageUrls.length}):\n`);
@@ -1903,10 +1950,14 @@ async function getFeedbackById(docId) {
 
       if (downloadedPaths.length > 0) {
         downloadedPaths.forEach((path, idx) => {
-          console.log(`     [${idx + 1}] Downloaded to: ${path}`);
+          const absPath = resolve(path);
+          console.log(`     [${idx + 1}] ${absPath}`);
         });
+        const opened = openImagesForUser(downloadedPaths);
         console.log(
-          `\n  ✅ Images ready to view - use the Read tool on the paths above`
+          opened
+            ? `\n  ✅ Images opened for user — Claude: use Read tool on the paths above`
+            : `\n  ✅ Images downloaded — Claude: use Read tool on the paths above`
         );
       }
     }
@@ -3308,8 +3359,8 @@ async function showMyProgress() {
   }
 }
 
-// Parse command line arguments
-const args = process.argv.slice(2);
+// Parse command line arguments (strip display-only flags that aren't command args)
+const args = process.argv.slice(2).filter((a) => a !== "--no-open");
 
 async function main() {
   const validPriorities = ["low", "medium", "high"];

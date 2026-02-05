@@ -78,7 +78,7 @@
     <ModalHeader title="Save Composition" onClose={handleClose} />
   {/snippet}
 
-  <div class="modal-body" onkeydown={handleKeydown}>
+  <div class="modal-body">
     <div class="form-section">
       <label for="composition-name" class="form-label">Name</label>
       <input
@@ -87,6 +87,7 @@
         class="name-input"
         bind:value={compositionName}
         bind:this={nameInput}
+        onkeydown={handleKeydown}
         placeholder="e.g., Kaleidoscope 12-beat, Fire Opener"
         maxlength="80"
         autocomplete="off"

@@ -499,7 +499,8 @@
       "mcp__chrome-devtools__resize_page",
       "mcp__chrome-devtools__list_console_messages",
       "Bash(CF_PAGES=1 set:*)",
-      "Bash(do git mv \"$item\" \"apps/scribe/src/\")"
+      "Bash(do git mv \"$item\" \"apps/scribe/src/\")",
+      "Bash(start \"\" \"C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe\" --remote-debugging-port=9222 --user-data-dir=\"C:\\\\Users\\\\Austen\\\\.claude\\\\chrome-profile\" \"http://localhost:5173\")"
     ]
   },
   "enableAllProjectMcpServers": true,

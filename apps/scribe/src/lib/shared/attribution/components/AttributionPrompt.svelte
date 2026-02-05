@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import type { TranslationKey } from "$lib/shared/i18n/i18n-types.js";
   import { container } from "$lib/shared/di";
   import { getAttributionPromptState } from "../state/attribution-prompt-state.svelte";
   import type {
@@ -19,9 +20,9 @@
   const options: Array<{
     id: SelfReportedSource;
     icon: string;
-    labelKey: string;
+    labelKey: TranslationKey;
     hasFollowUp: boolean;
-    followUpKey?: string;
+    followUpKey?: TranslationKey;
   }> = [
     {
       id: "search_engine",
@@ -157,8 +158,12 @@
 </script>
 
 {#if promptState.isVisible}
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="prompt-overlay" onclick={handleBackdropClick}>
+  <div
+    class="prompt-overlay"
+    onclick={handleBackdropClick}
+    onkeydown={(e) => { if (e.key === 'Escape') handleDismiss(); }}
+    role="presentation"
+  >
     <div class="prompt-panel" role="dialog" aria-labelledby="prompt-title" aria-modal="true">
       <button
         class="close-button"

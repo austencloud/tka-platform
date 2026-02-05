@@ -76,6 +76,8 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     [GridPositionGroup.GAMMA]: "#FFE66D", // Yellow for right angle
     [GridPositionGroup.ZETA]: "#9B59B6", // Purple for zeta
     [GridPositionGroup.ETA]: "#3498DB", // Blue for eta
+    [GridPositionGroup.TAU]: "#06b6d4", // Cyan for tau
+    [GridPositionGroup.TERRA]: "#fbbf24", // Amber/gold for terra
   };
 
   // Hand colors

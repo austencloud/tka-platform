@@ -9,13 +9,12 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "$lib/*": ["../src/lib/*"]
+      "$lib/*": ["../apps/scribe/src/lib/*"]
     },
     "outDir": "./dist",
     "declaration": true,
     "declarationDir": "./dist",
-    "noEmit": false,
-    "rootDir": "."
+    "noEmit": false
   },
   "include": ["index.ts", "src/**/*.ts", "test-loop.ts"],
   "exclude": ["node_modules"]
