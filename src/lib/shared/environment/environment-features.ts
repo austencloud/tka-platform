@@ -146,23 +146,19 @@ export function isAutomatedBrowser(): boolean {
 export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   create: true,
   browse: true,
-  community: false, // Global TKA community map (unreleased)
   feedback: true,
   premium: true, // Premium upsell shown to non-premium users
-  // inbox module retired - messages/notifications accessible via Dashboard widget drawer
   // Unreleased modules
   learn: false,
   tika: false, // Tika AI tutor (admin-only for now)
   compose: false,
   train: false,
-  "ml-training": false,
   admin: false,
   settings: true, // Settings always available
   choreo_card: false, // Choreo card generator (internal tool)
   word_card: false, // Legacy alias for choreo_card
   write: false, // Write module (unreleased)
   watch: false, // Watch videos/performances (unreleased)
-  connect: false, // Multiplayer sessions (unreleased)
   moderation: false, // Content moderation (admin-only)
-  lab: false, // Experimental features lab (admin-only) - consolidates realm, mandala, skewlab, poi-lab, background-builder, landing-preview, terrain-research
+  lab: false, // Experimental features lab (admin-only) - consolidates realm, mandala, skewlab, poi-lab, background-builder, landing-preview, terrain-research, ml-training, community, connect
 };

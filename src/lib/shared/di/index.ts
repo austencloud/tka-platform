@@ -80,6 +80,7 @@ import { createLanSyncContainer } from "./containers/lan-sync-container";
 import { createConnectContainer } from "./containers/connect-container";
 import { createDeviceSyncContainer } from "./containers/device-sync-container";
 import { conjoinedLabContainer } from "./containers/conjoined-lab-container";
+import { createAttributionContainer } from "./containers/attribution-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -273,6 +274,9 @@ const landingPreviewContainer = typeof window !== 'undefined' ? createLandingPre
 // Hall of Shame container - self-contained, no external dependencies
 const hallOfShameContainer = typeof window !== 'undefined' ? createHallOfShameContainer() : null as any;
 
+// Attribution container - self-contained, captures how users find the app
+const attributionContainer = typeof window !== 'undefined' ? createAttributionContainer() : null as any;
+
 
 // Watch container - needs collaborativeVideoManager from share and browseLoader from browse
 const watchContainer = typeof window !== 'undefined' ? createWatchContainer({
@@ -369,9 +373,23 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(deviceSyncContainer.items)
   .add(connectContainer.items)
   .add(conjoinedLabContainer.items)
+  // Attribution tracking services (using inline add to break type inference depth)
+  .add({
+    attributionCapture: () => attributionContainer?.items?.attributionCapture,
+    attributionPersister: () => attributionContainer?.items?.attributionPersister,
+    attributionPromptTrigger: () => attributionContainer?.items?.attributionPromptTrigger,
+  } as Record<string, () => unknown>)
   // Cross-container services (depend on multiple container outputs)
   .add({ deepLinkResolver: () => deepLinkResolver })
   .add({ sequenceDataProvider: () => sequenceDataProvider }) : null as any;
+
+// Late binding: Inject QR generator into ImageComposer after container is fully composed
+// This resolves the circular dependency between render-container and qr-container
+if (typeof window !== 'undefined' && container?.items?.imageComposer && container?.items?.qrCodeGenerator) {
+  (container.items.imageComposer as { setQRCodeGenerator: (g: unknown) => void }).setQRCodeGenerator(
+    container.items.qrCodeGenerator
+  );
+}
 
 // Export type for the composed container
 export type AppContainer = typeof container;

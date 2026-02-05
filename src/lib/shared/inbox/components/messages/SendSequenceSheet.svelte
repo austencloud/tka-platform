@@ -165,10 +165,11 @@
   function handleUserSelect(user: {
     uid: string;
     displayName: string;
-    email: string;
+    username?: string;
+    photoURL?: string;
   }) {
     hapticService?.trigger("selection");
-    sendToUser(user.uid, user.displayName || user.email);
+    sendToUser(user.uid, user.displayName || user.username || "Unknown");
   }
 
   function handleSuggestionClick(userId: string, displayName: string) {

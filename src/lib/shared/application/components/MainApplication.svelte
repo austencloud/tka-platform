@@ -13,6 +13,8 @@
   import { myFeedbackDetailState } from "$lib/features/feedback/state/my-feedback-detail-state.svelte";
   import FirstRunWizard from "../../onboarding/components/first-run/FirstRunWizard.svelte";
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
+  import AttributionPrompt from "../../attribution/components/AttributionPrompt.svelte";
+  import { getAttributionPromptState } from "../../attribution/state/attribution-prompt-state.svelte";
 
   import { getContext, onMount } from "svelte";
   import MainInterface from "../../MainInterface.svelte";
@@ -138,6 +140,9 @@
           return;
         }
 
+        // Progress: Services are resolved from DI container
+        (window as any).__tkaLoadProgress?.(70, "Loading settings...");
+
         // Initialize sheet router state (now that service is resolved)
         currentSheetType = sheetRouterService.getCurrentSheet();
 
@@ -165,6 +170,9 @@
         await settingsService.loadSettings();
         updateSettings(settingsService.currentSettings);
         ThemeService.initialize();
+
+        // Progress: Settings loaded, preparing workspace
+        (window as any).__tkaLoadProgress?.(85, "Preparing workspace...");
 
         // Apply background-based theme colors on startup
         // Must handle SOLID_COLOR and LINEAR_GRADIENT specially to use user's saved colors
@@ -198,6 +206,14 @@
         }
 
         setInitializationState(true, false, null, 0);
+
+        // Progress: Fully ready - triggers loading screen fade out
+        (window as any).__tkaLoadProgress?.(100, "Ready");
+
+        // Check if deferred attribution prompt should show (after app settles)
+        setTimeout(() => {
+          getAttributionPromptState().checkAndMaybeShow();
+        }, 5000); // Wait 5 seconds after init for smoother UX
       } catch (error) {
         console.error("Application initialization failed:", error);
         setInitializationError(
@@ -376,8 +392,8 @@
       <div class="auth-loading-spinner"></div>
       <p>Loading preferences...</p>
     </div>
-  {:else if !firstRunState.isDone()}
-    <!-- Authenticated but hasn't completed preferences wizard yet -->
+  {:else if !firstRunState.isDone() || firstRunState.shouldShow}
+    <!-- Authenticated but hasn't completed preferences wizard yet (or force-showing for preview) -->
     <FirstRunWizard
       onComplete={() => firstRunState.markCompleted()}
       onSkip={() => firstRunState.markSkipped()}
@@ -432,6 +448,9 @@
 
     <!-- Global Error Modal -->
     <ErrorModal />
+
+    <!-- Deferred Attribution Prompt (appears after engagement threshold) -->
+    <AttributionPrompt />
   {/if}
 </div>
 

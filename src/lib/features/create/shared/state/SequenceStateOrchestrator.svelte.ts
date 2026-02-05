@@ -216,6 +216,16 @@ export function createSequenceState(services: SequenceStateServices) {
         // Silently fail - activity logging is non-critical
       }
 
+      // Track sequence creation for attribution prompt eligibility
+      try {
+        const promptTrigger = container.items.attributionPromptTrigger as { recordInteraction: (type: string) => void } | undefined;
+        if (promptTrigger?.recordInteraction) {
+          promptTrigger.recordInteraction("sequence_create");
+        }
+      } catch {
+        // Silently fail - attribution tracking is non-critical
+      }
+
       return sequence;
     } catch (error) {
       const errorMessage =

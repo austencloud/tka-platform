@@ -15,6 +15,7 @@
 
   // Dynamic tab imports - add new experiments here
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
+    attribution: () => import("./tabs/AttributionLab.svelte"),
     skew: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
     poi: () => import("$lib/features/poi-lab/PoiLabModule.svelte"),
     avatar: () => import("./tabs/ProfileAvatarLab.svelte"),
@@ -27,6 +28,10 @@
     landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
     composition: () => import("$lib/features/constraint-layout-lab/CompositionLab.svelte"),
     conjoined: () => import("$lib/features/conjoined-lab/ConjoinedLabModule.svelte"),
+    "ml-training": () =>
+      import("$lib/features/train/ml-training/components/MLTrainingModule.svelte"),
+    community: () => import("$lib/features/community/Community.svelte"),
+    connect: () => import("$lib/features/connect/ConnectModule.svelte"),
   };
 
   // Get current tab, default to first tab

@@ -24,7 +24,8 @@
     onSelectUser: (user: {
       uid: string;
       displayName: string;
-      email: string;
+      username?: string;
+      photoURL?: string;
     }) => void;
     onRemoveFromQuickAccess: (uid: string) => void;
     onAddToQuickAccess: () => void;

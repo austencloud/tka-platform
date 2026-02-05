@@ -97,8 +97,8 @@
   function handleUserSelect(user: {
     uid: string;
     displayName: string;
-    email: string;
-    photoUrl?: string;
+    username?: string;
+    photoURL?: string;
   }) {
     if (selectedUsers.length >= MAX_PARTICIPANTS) {
       error = `Maximum ${MAX_PARTICIPANTS + 1} participants allowed`;
@@ -110,8 +110,8 @@
       ...selectedUsers,
       {
         id: user.uid,
-        displayName: user.displayName || user.email,
-        avatar: user.photoUrl,
+        displayName: user.displayName || user.username || "Unknown",
+        avatar: user.photoURL,
       },
     ];
     // Clear search

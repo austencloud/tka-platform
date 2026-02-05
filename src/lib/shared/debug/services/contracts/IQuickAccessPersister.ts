@@ -8,8 +8,8 @@
 export interface QuickAccessUser {
   uid: string;
   displayName: string;
-  email: string;
-  photoURL?: string | null;
+  username?: string;
+  photoURL?: string;
 }
 
 export interface IQuickAccessPersister {

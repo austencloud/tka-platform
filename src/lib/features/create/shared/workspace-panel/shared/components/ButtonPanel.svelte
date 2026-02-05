@@ -27,7 +27,7 @@
   import SequenceActionsButton from "./buttons/SequenceActionsButton.svelte";
   import ShareHubButton from "./buttons/ShareHubButton.svelte";
   import GeneratorHelpButton from "./buttons/GeneratorHelpButton.svelte";
-  import SpotlightButton from "./buttons/SpotlightButton.svelte";
+  import PropIndicatorButton from "./buttons/PropIndicatorButton.svelte";
     // TEMPORARY: Animation style toggle for A/B testing - delete after choosing preferred style
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
 
@@ -47,13 +47,11 @@
     onClearSequence,
     onSequenceActionsClick,
     onShareHub,
-    onSpotlight,
     visible = true,
   }: {
     onClearSequence?: () => void;
     onSequenceActionsClick?: () => void;
     onShareHub?: () => void;
-    onSpotlight?: () => void;
     visible?: boolean;
   } = $props();
 
@@ -64,15 +62,6 @@
   );
   const canClearSequence = $derived(CreateModuleState.canClearSequence());
   const isShareHubOpen = $derived(panelState.isShareHubPanelOpen);
-
-  // Check if sequence has content (for spotlight button visibility)
-  const activeSequenceState = $derived(
-    CreateModuleState.getActiveTabSequenceState()
-  );
-  const hasSequenceContent = $derived(
-    activeSequenceState.hasStartPosition ||
-    (activeSequenceState.currentSequence?.steps?.length ?? 0) > 0
-  );
 
   // Count center-zone buttons to key the container (for smooth cross-fade on layout changes)
   // Note: SequenceActions is now in left zone, not center
@@ -119,11 +108,9 @@
           <SequenceActionsButton onclick={onSequenceActionsClick} />
         </div>
       {/if}
-      {#if onSpotlight && hasSequenceContent}
-        <div transition:presenceTransition>
-          <SpotlightButton onclick={onSpotlight} />
-        </div>
-      {/if}
+      <div transition:presenceTransition>
+        <PropIndicatorButton />
+      </div>
     </div>
 
     <!-- CENTER ZONE: Main action button (Share Hub) -->

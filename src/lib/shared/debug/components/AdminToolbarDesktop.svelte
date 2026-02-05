@@ -29,7 +29,8 @@
     onSelectUser: (user: {
       uid: string;
       displayName: string;
-      email: string;
+      username?: string;
+      photoURL?: string;
     }) => void;
     onRemoveFromQuickAccess: (uid: string) => void;
     onAddToQuickAccess: () => void;
@@ -355,9 +356,7 @@
       <UserSearchInput
         onSelect={onSelectUser}
         selectedUserId={previewProfile?.uid || ""}
-        selectedUserDisplay={previewProfile?.displayName ||
-          previewProfile?.email ||
-          ""}
+        selectedUserDisplay={previewProfile?.displayName || ""}
         placeholder="Search users to preview..."
         disabled={isLoading}
         autofocus={true}

@@ -116,8 +116,8 @@
   function handleUserSelect(user: {
     uid: string;
     displayName: string;
-    email: string;
-    photoUrl?: string;
+    username?: string;
+    photoURL?: string;
   }) {
     // Check if already selected
     if (selectedUsers.some((u) => u.id === user.uid)) {
@@ -129,8 +129,8 @@
       ...selectedUsers,
       {
         id: user.uid,
-        displayName: user.displayName || user.email,
-        avatar: user.photoUrl,
+        displayName: user.displayName || user.username || "Unknown",
+        avatar: user.photoURL,
       },
     ];
     // Clear search

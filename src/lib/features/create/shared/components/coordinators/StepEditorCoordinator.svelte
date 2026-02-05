@@ -35,8 +35,7 @@
 
   // Tabs that support the Beat Editor Panel
   // Only tabs with beat sequences support individual beat editing
-  // Spell tab has its own self-contained UI and doesn't use shared panels
-  const SUPPORTED_TABS = new Set(["construct", "assemble", "generate"]);
+  const SUPPORTED_TABS = new Set(["construct", "assemble", "generate", "spell"]);
 
   // Get context
   const ctx = getCreateModuleContext();

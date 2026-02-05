@@ -112,9 +112,9 @@
     const newUser: QuickAccessUser = {
       uid: previewProfile.uid,
       displayName:
-        previewProfile.displayName || previewProfile.email || "Unknown",
-      email: previewProfile.email || "",
-      photoURL: previewProfile.photoURL,
+        previewProfile.displayName || previewProfile.username || "Unknown",
+      username: previewProfile.username,
+      photoURL: previewProfile.photoURL || undefined,
     };
     quickAccessUsers = quickAccessPersister.add(newUser);
 
@@ -133,7 +133,8 @@
   async function selectUser(user: {
     uid: string;
     displayName: string;
-    email: string;
+    username?: string;
+    photoURL?: string;
   }) {
     await loadUserPreview(user.uid, true);
     const previewedRole = userPreviewState.data.profile?.role as
@@ -211,7 +212,7 @@
 
       console.log("🗑️ Deleting wordcard thumbnails...");
       const wordcardCount = await cloudCache.deleteVariant("wordcard", (p) => {
-        introResetMessage = `Wordcard: ${p.deleted}/${p.total}`;
+        introResetMessage = `Choreo card: ${p.deleted}/${p.total}`;
       });
       totalDeleted += wordcardCount;
       console.log(`🗑️ Deleted ${wordcardCount} wordcard thumbnails`);

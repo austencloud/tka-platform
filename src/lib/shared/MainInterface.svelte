@@ -87,6 +87,7 @@
   // Sequence viewer drawer overlay (mobile)
   import SequenceViewerDrawerHost from "./sequence-viewer/components/SequenceViewerDrawerHost.svelte";
 
+
   // Initialize user preview context for app-wide access
   initUserPreviewContext();
 

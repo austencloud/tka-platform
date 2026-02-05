@@ -121,7 +121,8 @@
   async function handleAddMember(user: {
     uid: string;
     displayName: string;
-    email: string;
+    username?: string;
+    photoURL?: string;
   }) {
     if (!isAdmin) return;
 
