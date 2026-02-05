@@ -15,7 +15,6 @@ export const MODULE_ICONS = {
   train: "fa-running",
   library: "fa-book",
   feedback: "fa-comment-dots",
-  "ml-training": "fa-brain",
   admin: "fa-crown",
   settings: "fa-cog",
 } as const;

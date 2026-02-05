@@ -13,7 +13,6 @@ import {
   COMPOSE_TABS,
   TRAIN_TABS,
   FEEDBACK_TABS,
-  ML_TRAINING_TABS,
   ADMIN_TABS,
   SETTINGS_TABS,
   WATCH_TABS,
@@ -38,6 +37,10 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   mandala: "lab",
   "background-builder": "lab",
   "landing-preview": "lab",
+  // Standalone modules consolidated into Lab (Feb 2026)
+  "ml-training": "lab",
+  community: "lab",
+  connect: "lab",
 };
 
 /**
@@ -81,15 +84,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true,
     sections: BROWSE_TABS,
   },
-  {
-    id: "community",
-    label: "Community",
-    icon: '<i class="fas fa-globe" style="color: #14b8a6;" aria-hidden="true"></i>',
-    color: "#14b8a6", // Teal - global/community
-    description: "Browse the global TKA community map",
-    isMain: true,
-    sections: [], // Single-tab module - no sub-tabs
-  },
+  // community module consolidated into Lab (Feb 2026)
   {
     id: "learn",
     label: "Learn",
@@ -136,15 +131,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: WATCH_TABS,
     // Feed tab now has TikTok-style scroll experience
   },
-  {
-    id: "connect",
-    label: "Connect",
-    icon: '<i class="fas fa-users" style="color: #10b981;" aria-hidden="true"></i>',
-    color: "#10b981", // Emerald - connection/sync
-    description: "Sync with nearby spinners",
-    isMain: true,
-    sections: [], // Tabs handled internally
-  },
+  // connect module consolidated into Lab (Feb 2026)
   {
     id: "train",
     label: "Train",
@@ -196,15 +183,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: [], // Single-tab module
     adminOnly: true, // Admin-only
   },
-  {
-    id: "ml-training",
-    label: "ML Training",
-    icon: '<i class="fas fa-brain" style="color: #8b5cf6;" aria-hidden="true"></i>',
-    color: "#8b5cf6", // Purple - AI/ML
-    description: "Train prop detection models",
-    isMain: true, // Visibility controlled by getModuleDefinitions() based on tester status
-    sections: ML_TRAINING_TABS,
-  },
+  // ml-training module consolidated into Lab (Feb 2026)
   {
     id: "admin",
     label: "Admin",

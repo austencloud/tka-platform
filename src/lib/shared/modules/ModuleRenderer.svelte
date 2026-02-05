@@ -57,8 +57,8 @@
     // library module retired - backwards compat redirects to browse
     library: () =>
       import("../../features/browse/shared/components/BrowseModule.svelte"),
-    community: () =>
-      import("../../features/community/Community.svelte"),
+    // community module consolidated into Lab (Feb 2026)
+    community: () => import("../../features/lab/LabModule.svelte"),
     learn: () => import("../../features/learn/LearnTab.svelte"),
     premium: () => import("../../features/premium/PremiumModule.svelte"),
     // "animate" is a backwards-compat alias - deep links and old bookmarks may use it
@@ -78,9 +78,8 @@
       import("../../features/feedback/components/FeedbackModule.svelte"),
     admin: () =>
       import("../../features/admin/components/AdminDashboard.svelte"),
-    // ML Training module for prop detection model training
-    "ml-training": () =>
-      import("../../features/train/ml-training/components/MLTrainingModule.svelte"),
+    // ml-training module consolidated into Lab (Feb 2026)
+    "ml-training": () => import("../../features/lab/LabModule.svelte"),
     // Prop Tracking Lab - Skel2TKA proof of concept (video → notation)
     "prop-tracking-lab": () =>
       import("../../features/train/prop-tracking-lab/components/PropTrackingLabModule.svelte"),
@@ -88,8 +87,8 @@
     compose: () => import("../../features/compose/ComposeModule.svelte"),
     // watch module - video browsing hub
     watch: () => import("../../features/watch/WatchModule.svelte"),
-    // connect module - collaborative sync
-    connect: () => import("../../features/connect/ConnectModule.svelte"),
+    // connect module consolidated into Lab (Feb 2026)
+    connect: () => import("../../features/lab/LabModule.svelte"),
     // settings module - accessed via gear icon in sidebar footer
     settings: () => import("../../features/settings/SettingsModule.svelte"),
     // Tika module - AI tutor for TKA (standalone module)

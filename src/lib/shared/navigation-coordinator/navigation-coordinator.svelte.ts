@@ -159,6 +159,13 @@ export function moduleSections() {
     });
   }
 
+  // Browse module: Filter tabs based on feature flag access (collections, hall-of-shame, etc.)
+  if (module === "browse") {
+    return baseSections.filter((section: { id: string }) => {
+      return featureFlagService.canAccessTab("browse", section.id);
+    });
+  }
+
   return baseSections;
 }
 
@@ -300,8 +307,8 @@ export async function handleModuleChange(
 // Note: Compose module playback is an overlay, not a tab
 const TAB_ORDERS: Record<string, string[]> = {
   create: [
-    "assemble",
     "construct",
+    "assemble",
     "generate",
     "spell",
     "editor",

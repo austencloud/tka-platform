@@ -184,8 +184,8 @@
 
   async function handleLogoTap() {
     hapticService?.trigger("selection");
-    await onModuleChange?.("community");
-    navigationState.setActiveTab("support");
+    await onModuleChange?.("browse");
+    navigationState.setActiveTab("gallery");
   }
 
   function handleDebugTap() {

@@ -32,8 +32,8 @@ type NavigationControllerDeps = {
 };
 
 const CREATION_MODES: BuildModeId[] = [
-  "assemble",
   "construct",
+  "assemble",
   "generate",
   "spell",
 ] as const;

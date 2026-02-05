@@ -34,7 +34,6 @@ export interface Section {
 export type ModuleId =
   | "create"
   | "browse"
-  | "community" // Global TKA community map
   | "learn"
   | "tika" // Tika AI tutor (TKA Intelligent Knowledge Assistant)
   | "premium"
@@ -44,13 +43,12 @@ export type ModuleId =
   | "word_card" // Legacy alias for choreo_card
   | "write"
   | "feedback"
-  | "ml-training"
   | "admin"
   | "settings"
   | "watch" // Watch videos and performances
-  | "connect" // Multiplayer sessions
   | "moderation" // Content moderation (admin)
   | "lab"; // Experimental features lab (all experiments consolidated here)
+  // Consolidated into Lab (Feb 2026): community, ml-training, connect
 
 /**
  * Module Definition

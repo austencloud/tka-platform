@@ -424,6 +424,16 @@ export function createNavigationState() {
           // Silently fail - activity logging is non-critical
         }
 
+        // Track module visit for attribution prompt eligibility (non-blocking)
+        try {
+          const promptTrigger = tryResolveService<{ recordModuleVisit: (id: string) => void }>("attributionPromptTrigger");
+          if (promptTrigger?.recordModuleVisit) {
+            promptTrigger.recordModuleVisit(moduleId);
+          }
+        } catch {
+          // Silently fail - attribution tracking is non-critical
+        }
+
         // Update presence with new location (non-blocking)
         try {
           const presenceService = tryResolveService<IPresenceTracker>("presenceTracker");

@@ -13,19 +13,11 @@ import type { Section } from "../domain/types";
 // Note: Record removed (not implemented yet, users will use native camera apps)
 
 // Default tab for new users visiting /create without a specific tab.
-// Currently "construct" because "assemble" is still in testing.
+// "construct" is the default because it's the most complete/polished experience.
+// "assemble" is still in testing and should not be the first tab users see.
 export const DEFAULT_CREATE_TAB = "construct";
 
 export const CREATE_TABS: Section[] = [
-  {
-    id: "assemble",
-    label: "Assemble",
-    icon: '<i class="fas fa-puzzle-piece" aria-hidden="true"></i>',
-    description: "Build sequences one hand at a time (6 simple choices)",
-    color: "#8b5cf6",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-    metadata: { isCreationMethod: true },
-  },
   {
     id: "construct",
     label: "Construct",
@@ -33,6 +25,15 @@ export const CREATE_TABS: Section[] = [
     description: "Create sequences step by step (all options)",
     color: "#3b82f6",
     gradient: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
+    metadata: { isCreationMethod: true },
+  },
+  {
+    id: "assemble",
+    label: "Assemble",
+    icon: '<i class="fas fa-puzzle-piece" aria-hidden="true"></i>',
+    description: "Build sequences one hand at a time (6 simple choices)",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
     metadata: { isCreationMethod: true },
   },
   {
@@ -500,6 +501,14 @@ export const WATCH_TABS: Section[] = [
 // All experimental modules consolidated here instead of cluttering the sidebar
 export const LAB_TABS: Section[] = [
   {
+    id: "attribution",
+    label: "Attribution",
+    icon: '<i class="fas fa-compass" aria-hidden="true"></i>',
+    description: "Test deferred attribution prompt",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
+  },
+  {
     id: "skew",
     label: "Skew",
     icon: '<i class="fas fa-bezier-curve" aria-hidden="true"></i>',
@@ -584,6 +593,30 @@ export const LAB_TABS: Section[] = [
     label: "Conjoined",
     icon: '<i class="fas fa-link" aria-hidden="true"></i>',
     description: "Visualize sequences on conjoined grids",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
+  {
+    id: "ml-training",
+    label: "ML Training",
+    icon: '<i class="fas fa-brain" aria-hidden="true"></i>',
+    description: "Train prop detection models",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
+  },
+  {
+    id: "community",
+    label: "Community",
+    icon: '<i class="fas fa-globe" aria-hidden="true"></i>',
+    description: "Global TKA community map",
+    color: "#14b8a6",
+    gradient: "linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%)",
+  },
+  {
+    id: "connect",
+    label: "Connect",
+    icon: '<i class="fas fa-users" aria-hidden="true"></i>',
+    description: "Sync with nearby spinners",
     color: "#10b981",
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
