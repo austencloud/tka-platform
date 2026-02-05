@@ -5,8 +5,9 @@
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
   import ChoreoCard from "./ChoreoCard.svelte";
 
@@ -23,7 +24,13 @@
     showWord?: boolean;
     includeStartPosition?: boolean;
     onRetry: () => void;
+    onColumnCountChanged?: (count: number) => void;
+    onSelectSequence?: (sequence: SequenceData) => void;
   }
+
+  const MIN_COLUMNS = 1;
+  const MAX_COLUMNS = 4;
+  const SCROLL_THRESHOLD = 50;
 
   let {
     pages,
@@ -37,13 +44,50 @@
     showWord = true,
     includeStartPosition = true,
     onRetry,
+    onColumnCountChanged,
+    onSelectSequence,
   }: Props = $props();
 
   let hapticService: IHapticFeedback;
+  let cumulativeScrollDelta = 0;
+  let pageDisplayEl: HTMLDivElement;
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
+    // Must use { passive: false } so preventDefault() works on wheel events
+    pageDisplayEl?.addEventListener("wheel", handleWheel, { passive: false });
   });
+
+  onDestroy(() => {
+    pageDisplayEl?.removeEventListener("wheel", handleWheel);
+  });
+
+  function handleWheel(ev: WheelEvent) {
+    if (!ev.shiftKey || !onColumnCountChanged) return;
+
+    // Prevent horizontal scroll that Shift+wheel normally triggers
+    ev.preventDefault();
+
+    cumulativeScrollDelta += ev.deltaY;
+
+    if (cumulativeScrollDelta > SCROLL_THRESHOLD) {
+      // Scroll down = more columns (smaller pages)
+      const next = Math.min(MAX_COLUMNS, columnCount + 1);
+      if (next !== columnCount) {
+        onColumnCountChanged(next);
+        hapticService?.trigger("selection");
+      }
+      cumulativeScrollDelta = 0;
+    } else if (cumulativeScrollDelta < -SCROLL_THRESHOLD) {
+      // Scroll up = fewer columns (larger pages)
+      const next = Math.max(MIN_COLUMNS, columnCount - 1);
+      if (next !== columnCount) {
+        onColumnCountChanged(next);
+        hapticService?.trigger("selection");
+      }
+      cumulativeScrollDelta = 0;
+    }
+  }
 
   function handleRetry() {
     hapticService?.trigger("selection");
@@ -51,7 +95,7 @@
   }
 </script>
 
-<div class="page-display" style:--column-count={columnCount}>
+<div class="page-display" style:--column-count={columnCount} bind:this={pageDisplayEl}>
   {#if isLoading}
     <div class="state-container" role="status" aria-live="polite" aria-busy="true">
       <div class="spinner" aria-hidden="true"></div>
@@ -95,6 +139,7 @@
                   {showTKA}
                   {showWord}
                   {includeStartPosition}
+                  onSelect={onSelectSequence}
                 />
               {/each}
             </div>

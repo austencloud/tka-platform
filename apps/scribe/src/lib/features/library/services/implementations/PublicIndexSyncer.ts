@@ -22,8 +22,11 @@ import type { IContentModerator } from "$lib/features/moderation/services/contra
 import type { IContentAppealManager } from "$lib/features/moderation/services/contracts/IContentAppealManager";
 import { ContentModerationError } from "$lib/features/moderation/errors/ContentModerationError";
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";
+import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
 
 export class PublicIndexSyncer implements IPublicIndexSyncer {
+  private readonly difficultyCalculator = new SequenceDifficultyCalculator();
+
   constructor(
     private readonly contentModerator?: IContentModerator,
     private readonly contentAppealManager?: IContentAppealManager
@@ -68,6 +71,11 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       // Fetch LOOP label if exists (keyed by word)
       const loopType = await this.fetchLoopType(firestore, sequence.word);
 
+      // Calculate numeric level from steps if available
+      const level = sequence.steps?.length > 0
+        ? this.difficultyCalculator.calculateDifficultyLevel([...sequence.steps])
+        : undefined;
+
       const publicData = {
         id: sequence.id,
         sourceRef: `users/${userId}/sequences/${sequence.id}`,
@@ -80,6 +88,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         thumbnails: sequence.thumbnails.slice(0, 3) ?? [],
         sequenceLength: sequence.steps.length ?? 0,
         difficultyLevel: sequence.difficultyLevel,
+        level,
         loopType,
         forkCount: sequence.forkCount ?? 0,
         viewCount: sequence.viewCount ?? 0,

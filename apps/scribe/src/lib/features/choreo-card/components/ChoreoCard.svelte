@@ -29,6 +29,7 @@
     showTKA?: boolean;
     showWord?: boolean;
     includeStartPosition?: boolean;
+    onSelect?: (sequence: SequenceData) => void;
   }
 
   let {
@@ -40,6 +41,7 @@
     showTKA = true,
     showWord = true,
     includeStartPosition = true,
+    onSelect,
   }: Props = $props();
 
   let hapticService: IHapticFeedback;
@@ -109,13 +111,9 @@
     showQRCode: showQRCodes, // QR rendered in empty cell by ImageComposer
   });
 
-  // DEBUG: Log visibility settings changes
-  $effect(() => {
-    console.log(`[ChoreoCard] "${sequence.name}" visibilitySettings:`, visibilitySettings);
-  });
-
   function handleClick() {
     hapticService?.trigger("selection");
+    onSelect?.(sequence);
   }
 
   function handleKeyDown(event: KeyboardEvent) {

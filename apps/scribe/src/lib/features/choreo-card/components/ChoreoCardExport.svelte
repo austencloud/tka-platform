@@ -1,122 +1,139 @@
 <!--
   ChoreoCardExport.svelte - Export controls for Choreo Cards
 
-  Provides buttons to export current page or all filtered cards
-  as print-ready images with pure white backgrounds.
+  Single export button with progress feedback.
+  Renders sequences as print-ready PNGs in a zip file.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { IBrowseLoader } from "../../browse/sequences/display/services/contracts/IBrowseLoader";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   interface Props {
-    /** All filtered sequences (for "Export All") */
     sequences: SequenceData[];
-    /** Current page sequences (for "Export Page") */
-    currentPageSequences: SequenceData[];
-    /** Current visibility settings to pass to renderer */
     showGrid: boolean;
     showTKA: boolean;
     showWord: boolean;
     includeStartPosition: boolean;
-    /** Callback when export starts/ends (for loading state) */
-    onExportStart?: () => void;
-    onExportEnd?: () => void;
   }
 
   let {
     sequences,
-    currentPageSequences,
     showGrid,
     showTKA,
     showWord,
     includeStartPosition,
-    onExportStart,
-    onExportEnd,
   }: Props = $props();
 
   let hapticService: IHapticFeedback;
+  let browseLoader: IBrowseLoader;
   let isExporting = $state(false);
+  let exportCurrent = $state(0);
+  let exportTotal = $state(0);
+  let exportStage = $state<"loading" | "rendering" | "zipping">("loading");
+
+  const progressPercent = $derived(
+    exportTotal > 0 ? Math.round((exportCurrent / exportTotal) * 100) : 0
+  );
+
+  const progressLabel = $derived.by(() => {
+    if (exportStage === "loading") return `Loading ${exportCurrent} of ${exportTotal}...`;
+    if (exportStage === "zipping") return "Packaging zip file...";
+    return `Rendering ${exportCurrent} of ${exportTotal}`;
+  });
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
+    browseLoader = container.items.browseLoader;
   });
 
-  async function exportSequences(seqs: SequenceData[], filename: string) {
-    if (seqs.length === 0 || isExporting) return;
+  /** Ensure sequence has full step data for rendering */
+  async function ensureFullData(seq: SequenceData): Promise<SequenceData> {
+    if (seq.steps.length > 0) return seq;
+    const full = await browseLoader.loadFullSequenceData(seq.name || seq.word);
+    if (!full || full.steps.length === 0) {
+      throw new Error(`Could not load step data for "${seq.word}"`);
+    }
+    return full;
+  }
+
+  async function handleExport() {
+    if (sequences.length === 0 || isExporting) return;
 
     isExporting = true;
-    onExportStart?.();
+    exportCurrent = 0;
+    exportTotal = sequences.length;
+    exportStage = "loading";
     hapticService?.trigger("selection");
 
     try {
       const renderer = container.items.sequenceRenderer;
 
-      // For single sequence, download directly
-      if (seqs.length === 1 && seqs[0]) {
-        const blob = await renderer.renderSequenceToBlob(seqs[0], {
-          stepSize: 300, // Higher quality for print
-          format: "PNG",
-          quality: 1.0,
-          includeStartPosition,
-          addStepNumbers: true,
-          addWord: showWord,
-          addDifficultyLevel: false,
-          addUserInfo: false,
-          addReversalSymbols: true,
-          visibilityOverrides: {
-            darkMode: false,
-            printMode: true, // Pure white background for print
-            showGrid,
-            showTKA,
-          },
-        });
+      const renderOptions = {
+        stepSize: 300,
+        format: "PNG" as const,
+        quality: 1.0,
+        includeStartPosition,
+        addStepNumbers: true,
+        addWord: showWord,
+        addDifficultyLevel: false,
+        addUserInfo: false,
+        addReversalSymbols: true,
+        visibilityOverrides: {
+          darkMode: false,
+          printMode: true,
+          showGrid,
+          showTKA,
+        },
+      };
 
-        downloadBlob(blob, `${seqs[0].word || seqs[0].name || "choreo-card"}.png`);
+      // Single sequence - download PNG directly
+      if (sequences.length === 1 && sequences[0]) {
+        exportStage = "loading";
+        exportCurrent = 1;
+        const fullSeq = await ensureFullData(sequences[0]);
+        exportStage = "rendering";
+        const blob = await renderer.renderSequenceToBlob(fullSeq, renderOptions);
+        downloadBlob(blob, `${sequences[0].word || sequences[0].name || "choreo-card"}.png`);
         hapticService?.trigger("success");
         return;
       }
 
-      // For multiple sequences, create a zip file
+      // Multiple sequences - load all data first, then render into zip
+      exportStage = "loading";
+      const fullSequences: SequenceData[] = [];
+      for (let i = 0; i < sequences.length; i++) {
+        const seq = sequences[i];
+        if (!seq) continue;
+        exportCurrent = i + 1;
+        fullSequences.push(await ensureFullData(seq));
+      }
+
+      exportStage = "rendering";
       const JSZip = (await import("jszip")).default;
       const zip = new JSZip();
 
-      for (let i = 0; i < seqs.length; i++) {
-        const seq = seqs[i];
-        if (!seq) continue;
-
-        const blob = await renderer.renderSequenceToBlob(seq, {
-          stepSize: 300,
-          format: "PNG",
-          quality: 1.0,
-          includeStartPosition,
-          addStepNumbers: true,
-          addWord: showWord,
-          addDifficultyLevel: false,
-          addUserInfo: false,
-          addReversalSymbols: true,
-          visibilityOverrides: {
-            darkMode: false,
-            printMode: true,
-            showGrid,
-            showTKA,
-          },
-        });
-
+      for (let i = 0; i < fullSequences.length; i++) {
+        const seq = fullSequences[i]!;
+        exportCurrent = i + 1;
+        const blob = await renderer.renderSequenceToBlob(seq, renderOptions);
         const name = seq.word || seq.name || `card-${i + 1}`;
         zip.file(`${name}.png`, blob);
       }
 
+      exportStage = "zipping";
       const zipBlob = await zip.generateAsync({ type: "blob" });
-      downloadBlob(zipBlob, `${filename}.zip`);
+      downloadBlob(zipBlob, "choreo-cards.zip");
       hapticService?.trigger("success");
     } catch (error) {
       console.error("[ChoreoCardExport] Export failed:", error);
       hapticService?.trigger("error");
     } finally {
       isExporting = false;
-      onExportEnd?.();
+      exportCurrent = 0;
+      exportTotal = 0;
     }
   }
 
@@ -130,55 +147,34 @@
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
-
-  function handleExportPage() {
-    exportSequences(currentPageSequences, "choreo-cards-page");
-  }
-
-  function handleExportAll() {
-    exportSequences(sequences, "choreo-cards-all");
-  }
 </script>
 
 <div class="export-section">
   <h3 class="section-title">
     <i class="fas fa-download" aria-hidden="true"></i>
-    Export for Print
+    <span>Export</span>
   </h3>
 
-  <p class="section-description">
-    Export with pure white backgrounds for professional printing.
-  </p>
-
-  <div class="export-buttons">
+  {#if isExporting}
+    <div class="progress-container" role="progressbar" aria-valuenow={progressPercent} aria-valuemin={0} aria-valuemax={100}>
+      <div class="progress-label">{progressLabel}</div>
+      <div class="progress-track">
+        <div class="progress-fill" style:width="{progressPercent}%"></div>
+      </div>
+      <div class="progress-percent">{progressPercent}%</div>
+    </div>
+  {:else}
     <button
       class="export-btn"
-      onclick={handleExportPage}
-      disabled={isExporting || currentPageSequences.length === 0}
-      aria-label="Export current page as print-ready images"
+      onclick={handleExport}
+      disabled={sequences.length === 0}
+      aria-label="Export {sequences.length} sequences as print-ready images"
+      type="button"
     >
-      {#if isExporting}
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      {:else}
-        <i class="fas fa-file-image" aria-hidden="true"></i>
-      {/if}
-      <span>Export Page ({currentPageSequences.length})</span>
+      <i class="fas fa-file-archive" aria-hidden="true"></i>
+      <span>Export {sequences.length} cards</span>
     </button>
-
-    <button
-      class="export-btn export-all"
-      onclick={handleExportAll}
-      disabled={isExporting || sequences.length === 0}
-      aria-label="Export all filtered sequences as print-ready images"
-    >
-      {#if isExporting}
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      {:else}
-        <i class="fas fa-file-archive" aria-hidden="true"></i>
-      {/if}
-      <span>Export All ({sequences.length})</span>
-    </button>
-  </div>
+  {/if}
 </div>
 
 <style>
@@ -193,27 +189,16 @@
     align-items: center;
     gap: var(--spacing-xs);
     margin: 0;
-    font-size: var(--font-size-sm, 14px);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    color: var(--theme-text, #ffffff);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .section-title i {
-    color: var(--theme-accent, #f43f5e);
-    font-size: 0.875rem;
-  }
-
-  .section-description {
-    margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    line-height: 1.4;
-  }
-
-  .export-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
+    font-size: 0.7rem;
+    opacity: 0.7;
   }
 
   .export-btn {
@@ -221,9 +206,11 @@
     align-items: center;
     justify-content: center;
     gap: var(--spacing-xs);
+    width: 100%;
+    min-height: 48px;
     padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-accent-bg, rgba(99, 102, 241, 0.15));
+    border: 1px solid var(--theme-accent, #6366f1);
     border-radius: var(--border-radius-md, 8px);
     color: var(--theme-text, #ffffff);
     font-size: var(--font-size-sm, 14px);
@@ -233,8 +220,7 @@
   }
 
   .export-btn:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    background: var(--theme-accent-glow, rgba(99, 102, 241, 0.25));
   }
 
   .export-btn:focus-visible {
@@ -251,48 +237,59 @@
     font-size: 0.875rem;
   }
 
-  .export-all {
-    background: var(--theme-accent-bg, rgba(99, 102, 241, 0.15));
-    border-color: var(--theme-accent, #6366f1);
+  /* Progress */
+  .progress-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
-  .export-all:hover:not(:disabled) {
-    background: var(--theme-accent-glow, rgba(99, 102, 241, 0.25));
+  .progress-label {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
-  /* Mobile responsive */
+  .progress-track {
+    height: 6px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--theme-accent, #6366f1);
+    border-radius: 3px;
+    transition: width 150ms ease-out;
+  }
+
+  .progress-percent {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-accent, #6366f1);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Responsive */
   @media (max-width: 768px) {
     .export-section {
       flex-direction: row;
       align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .section-title {
-      font-size: var(--font-size-compact, 12px);
-    }
-
-    .section-description {
-      display: none;
-    }
-
-    .export-buttons {
-      flex-direction: row;
-      flex: 1;
     }
 
     .export-btn {
-      flex: 1;
       padding: var(--spacing-xs) var(--spacing-sm);
       font-size: var(--font-size-compact, 12px);
     }
+  }
 
-    .export-btn span {
-      display: none;
+  @media (prefers-reduced-motion: reduce) {
+    .export-btn {
+      transition: none;
     }
 
-    .export-btn i {
-      font-size: 1rem;
+    .progress-fill {
+      transition: none;
     }
   }
 </style>
