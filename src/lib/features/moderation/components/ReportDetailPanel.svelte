@@ -65,10 +65,6 @@
 						<span class="value">{report.reportedUserDisplayName}</span>
 					</div>
 					<div class="info-row">
-						<span class="label">Email:</span>
-						<span class="value">{report.reportedUserEmail || 'N/A'}</span>
-					</div>
-					<div class="info-row">
 						<span class="label">User ID:</span>
 						<code class="value-code">{report.reportedUserId}</code>
 					</div>

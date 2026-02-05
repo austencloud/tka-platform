@@ -15,7 +15,8 @@ export interface UserProfile {
   username: string;
   displayName: string;
   avatar?: string;
-  email?: string;
+  // NOTE: Email deliberately omitted - user documents are publicly readable
+  // Email is available via Firebase Auth for the user themselves
   sequenceCount: number;
   collectionCount: number;
   followerCount: number;

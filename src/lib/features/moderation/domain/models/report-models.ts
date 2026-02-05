@@ -35,12 +35,12 @@ export interface UserReport {
 	// Reporter info
 	reporterId: string;
 	reporterDisplayName: string;
-	reporterEmail: string;
+	// NOTE: reporterEmail removed for privacy - not stored in public user docs
 
 	// Reported user info
 	reportedUserId: string;
 	reportedUserDisplayName: string;
-	reportedUserEmail: string;
+	// NOTE: reportedUserEmail removed for privacy - not stored in public user docs
 
 	// Report content
 	category: ReportCategory;
@@ -58,7 +58,7 @@ export interface UserReport {
 export interface CreateReportInput {
 	reportedUserId: string;
 	reportedUserDisplayName: string;
-	reportedUserEmail: string;
+	// NOTE: reportedUserEmail removed for privacy
 	category: ReportCategory;
 	description: string;
 	evidenceUrls?: string[];

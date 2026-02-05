@@ -132,14 +132,13 @@
       users = users.filter((u) => u.role === roleFilter);
     }
 
-    // Apply search filter
+    // Apply search filter (by name and username only - email not exposed)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       users = users.filter(
         (u) =>
           u.displayName.toLowerCase().includes(q) ||
-          u.username.toLowerCase().includes(q) ||
-          (u.email?.toLowerCase().includes(q) ?? false)
+          u.username.toLowerCase().includes(q)
       );
     }
 

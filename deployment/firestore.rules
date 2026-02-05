@@ -44,6 +44,12 @@ service cloud.firestore {
         && (userData.role == 'admin' || userData.role == 'tester' || userData.role == 'premium' || userData.isAdmin == true);
     }
 
+    // Check if user has verified their age (18+) for Hall of Shame access
+    function isAgeVerified() {
+      let userData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return isAuthenticated() && userData.ageVerifiedAt != null;
+    }
+
     // ============================================================================
     // CONFIG COLLECTIONS
     // ============================================================================
@@ -56,6 +62,12 @@ service cloud.firestore {
 
     // Video categories configuration - readable by authenticated users, writable by admins
     match /config/videoCategories {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Quick performers configuration - readable by authenticated users, writable by admins
+    match /config/quickPerformers {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
@@ -305,7 +317,8 @@ service cloud.firestore {
       match /notifications/{notificationId} {
         // Admins can read for impersonation/preview mode
         allow read: if isOwner(userId) || isAdmin();
-        allow create, update: if isOwner(userId);
+        // Admins can create notifications on behalf of users (e.g., moderation warnings)
+        allow create, update: if isOwner(userId) || isAdmin();
         allow delete: if isOwner(userId) || isAdmin();
       }
 
@@ -333,6 +346,16 @@ service cloud.firestore {
       // SEQUENCE DRAFTS (Autosave)
       // -------------------------------------------------------------------------
       match /drafts/{draftId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
+      // USER CONNECTIONS (Private Notes About Other Users)
+      // -------------------------------------------------------------------------
+      // Users can only read/write their own connection data
+      // Connection data is private notes about other users, only visible to the author
+      match /connections/{connectionId} {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
@@ -522,9 +545,11 @@ service cloud.firestore {
         // Updating messages:
         // - Sender can update any field (edit content, delete, etc.)
         // - Any participant can update reactions (to add/remove their reaction)
+        // - Any participant can mark messages as read (readBy + readAt fields)
         allow update: if isConversationParticipant(conversationId)
           && (resource.data.senderId == request.auth.uid
-              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']));
+              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy', 'readAt']));
 
         // No hard deleting messages (soft delete via isDeleted flag)
         allow delete: if false;
@@ -611,10 +636,58 @@ service cloud.firestore {
     // VERSIONS COLLECTION (Release Management)
     // ============================================================================
 
-    // App versions - testers/admins can read, only admins can write
+    // App versions - all authenticated users can read release notes, only admins can write
     match /versions/{versionId} {
-      allow read: if isTester();
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
+    }
+
+    // ============================================================================
+    // AGENT SESSIONS (Feedback System Identity Tracking)
+    // ============================================================================
+
+    // Agent sessions - tracks which agents/sessions have active claims
+    // Used for bulletproof claim coordination
+    match /agentSessions/{sessionId} {
+      // Testers/admins can read all sessions (for debugging/monitoring)
+      allow read: if isTester();
+
+      // Sessions can only be created/updated by the owning user
+      // (verified server-side via Cloud Functions)
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
+
+      allow update: if isAuthenticated()
+        && resource.data.userId == request.auth.uid;
+
+      // Only admins or the owner can delete sessions
+      allow delete: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // ============================================================================
+    // EMERGENCY ACTIONS (Audit Trail)
+    // ============================================================================
+
+    // Emergency action log - tracks forced claim takeovers
+    // Write-only by Cloud Functions (Admin SDK), read by admins
+    match /emergencyActions/{actionId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false; // Admin SDK only
+    }
+
+    // ============================================================================
+    // ACTIVE FILE EDITS (Conflict Detection)
+    // ============================================================================
+
+    // Tracks which files are being edited by which agent/claim
+    // Enables conflict detection when multiple agents touch same file
+    match /activeFileEdits/{editId} {
+      // Testers can read to check for conflicts
+      allow read: if isTester();
+
+      // Write through Cloud Functions only for race safety
+      allow create, update, delete: if false;
     }
 
     // ============================================================================
@@ -641,6 +714,16 @@ service cloud.firestore {
       match /subtasks/{subtaskId} {
         allow read: if isTester();
         allow write: if isTester();
+      }
+
+      // Work journal subcollection - tamper-proof audit trail
+      // Read by testers for debugging, write ONLY via Admin SDK (Cloud Functions)
+      // This ensures the journal cannot be tampered with by clients
+      match /journal/{entryId} {
+        allow read: if isTester();
+        // IMPORTANT: All journal writes go through Cloud Functions
+        // This makes the journal tamper-proof - no client can delete/modify entries
+        allow create, update, delete: if false;
       }
     }
 
@@ -730,15 +813,29 @@ service cloud.firestore {
     // ============================================================================
 
     // App-wide metrics like global counters for the endless spinner
-    // Public read/write for anonymous users to participate in global counters
+    // Public read, but writes are restricted to prevent abuse
     match /appMetrics/{metricId} {
       // ANYONE can read metrics (for displaying global counters)
       allow read: if true;
 
-      // ANYONE can write (atomic increment of totalGenerated counter)
-      // This is intentionally permissive to allow anonymous users
-      // to contribute to the "sequences ever generated" counter
-      allow write: if true;
+      // Create: authenticated users can initialize the document
+      // Must include totalGenerated starting at 0 or 1
+      allow create: if isAuthenticated()
+        && request.resource.data.totalGenerated >= 0
+        && request.resource.data.totalGenerated <= 1;
+
+      // Update: authenticated users can increment the counter
+      // - Only totalGenerated and lastGeneratedAt fields can be modified
+      // - totalGenerated can only increase (prevents resetting to 0)
+      // - Increase limited to +10 per write to prevent massive jumps
+      allow update: if isAuthenticated()
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['totalGenerated', 'lastGeneratedAt'])
+        && request.resource.data.totalGenerated > resource.data.totalGenerated
+        && request.resource.data.totalGenerated <= resource.data.totalGenerated + 10;
+
+      // Delete: only admins (for cleanup)
+      allow delete: if isAdmin();
     }
 
     // ============================================================================
@@ -795,6 +892,141 @@ service cloud.firestore {
 
       // Only admins can create/update/delete
       allow create, update, delete: if isAdmin();
+    }
+
+    // ============================================================================
+    // USER REPORTS (Moderation System)
+    // ============================================================================
+
+    // User reports - community members can report problematic users
+    // Users can read their own submitted reports
+    // Admins can read all reports and update/delete them
+    match /userReports/{reportId} {
+      // Users can read their own reports, admins can read all
+      allow read: if isAuthenticated()
+        && (resource.data.reporterId == request.auth.uid || isAdmin());
+
+      // Authenticated users can submit reports (not about themselves)
+      allow create: if isAuthenticated()
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.reportedUserId != request.auth.uid;
+
+      // Only admins can update reports (status changes, resolution, etc.)
+      allow update: if isAdmin();
+
+      // Only admins can delete reports
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================================
+    // CONTENT APPEALS (Content Moderation Appeals)
+    // ============================================================================
+
+    // Content appeals - users can appeal flagged content moderation decisions
+    // Users can read/create their own appeals
+    // Admins can read all appeals and resolve them
+    match /contentAppeals/{appealId} {
+      // Users can read their own appeals, admins can read all
+      allow read: if isAuthenticated()
+        && (resource.data.ownerId == request.auth.uid || isAdmin());
+
+      // Users can create appeals for their own content
+      allow create: if isAuthenticated()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      // Only admins can update appeals (resolve them)
+      allow update: if isAdmin();
+
+      // Only admins can delete appeals
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================================
+    // HALL OF SHAME (Age-Gated Adult Content)
+    // ============================================================================
+
+    // Hall of Shame entries - age-verified users can browse, admins moderate
+    match /hallOfShame/{sequenceId} {
+      // Age-verified users can read approved, non-hidden entries
+      // Users can always see their own entries (any status)
+      // Admins can read all entries for moderation
+      allow read: if isAdmin()
+        || (isAuthenticated()
+            && isAgeVerified()
+            && (resource.data.status == 'approved' || resource.data.ownerId == request.auth.uid)
+            && resource.data.hidden != true);
+
+      // Users can submit their own sequences (pending status only)
+      // Enforces initial values to prevent manipulation
+      allow create: if isAuthenticated()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.voteCount == 0
+        && request.resource.data.viewCount == 0
+        && request.resource.data.reportCount == 0
+        && request.resource.data.featured == false
+        && request.resource.data.hidden == false;
+
+      // Only admins can approve/reject/feature/hide
+      allow update: if isAdmin();
+
+      // Users can delete their own pending submissions only
+      allow delete: if isAuthenticated()
+        && resource.data.ownerId == request.auth.uid
+        && resource.data.status == 'pending';
+    }
+
+    // Hall of Shame votes - one vote per user per sequence
+    // Document ID format: {voterId}_{sequenceId} for uniqueness enforcement
+    match /hallOfShameVotes/{voteId} {
+      // Age-verified users can read votes
+      allow read: if isAuthenticated() && isAgeVerified();
+
+      // One vote per user per sequence (enforced by document ID pattern)
+      allow create: if isAuthenticated()
+        && isAgeVerified()
+        && voteId == request.auth.uid + '_' + request.resource.data.sequenceId
+        && request.resource.data.voterId == request.auth.uid;
+
+      // Votes cannot be changed or deleted (permanent)
+      allow update, delete: if false;
+    }
+
+    // Hall of Shame rate limits - tracks daily submission count
+    match /hallOfShameRateLimits/{limitId} {
+      // Users can read/write their own rate limit docs
+      allow read, create, update: if isAuthenticated()
+        && limitId.matches(request.auth.uid + '_.*');
+      allow delete: if isAdmin();
+    }
+
+    // Hall of Shame reports - for post-approval issue tracking
+    match /hallOfShameReports/{reportId} {
+      // Only admins can read reports
+      allow read: if isAdmin();
+
+      // Age-verified users can submit reports
+      allow create: if isAuthenticated()
+        && isAgeVerified()
+        && request.resource.data.reporterId == request.auth.uid;
+
+      // Reports cannot be modified or deleted
+      allow update, delete: if false;
+    }
+
+    // ============================================================================
+    // LOOP LABELS (Admin Labeling Tool)
+    // ============================================================================
+
+    // LOOP labels - admin tool for labeling sequences with LOOP patterns
+    // Document ID is the sequence word (uppercase)
+    match /loop-labels/{word} {
+      // Authenticated users can read labels (needed for Browse to show LOOP icons)
+      allow read: if isAuthenticated();
+
+      // Only admins can write labels
+      allow write: if isAdmin();
     }
 
     // ============================================================================

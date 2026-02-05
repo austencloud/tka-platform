@@ -66,7 +66,7 @@
 
 <AdminDetailPanel
   title={user.displayName}
-  subtitle={user.email}
+  subtitle={"@" + user.username}
   icon="fa-user-cog"
   {onClose}
 >

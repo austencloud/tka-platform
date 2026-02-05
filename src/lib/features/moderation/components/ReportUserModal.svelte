@@ -91,7 +91,6 @@
 			await reportSubmitter.submit({
 				reportedUserId: reportModalState.targetUser.id,
 				reportedUserDisplayName: reportModalState.targetUser.displayName,
-				reportedUserEmail: reportModalState.targetUser.email,
 				category: reportModalState.selectedCategory!,
 				description: reportModalState.description
 			});

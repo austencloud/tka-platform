@@ -56,12 +56,12 @@ export class ReportSubmitter implements IReportSubmitter {
 			// Reporter info
 			reporterId: user.uid,
 			reporterDisplayName: user.displayName || 'Anonymous',
-			reporterEmail: user.email || '',
+			// NOTE: Email not stored for privacy
 
 			// Reported user info
 			reportedUserId: input.reportedUserId,
 			reportedUserDisplayName: input.reportedUserDisplayName,
-			reportedUserEmail: input.reportedUserEmail,
+			// NOTE: Email not stored for privacy
 
 			// Report content
 			category: input.category,
@@ -80,10 +80,8 @@ export class ReportSubmitter implements IReportSubmitter {
 			createdAt: new Date(),
 			reporterId: user.uid,
 			reporterDisplayName: user.displayName || 'Anonymous',
-			reporterEmail: user.email || '',
 			reportedUserId: input.reportedUserId,
 			reportedUserDisplayName: input.reportedUserDisplayName,
-			reportedUserEmail: input.reportedUserEmail,
 			category: input.category,
 			description: input.description,
 			evidenceUrls: input.evidenceUrls || [],

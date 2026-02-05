@@ -69,7 +69,7 @@
   // Handler for user selection
   function handleUserSelect(user: UserSearchResult) {
     targetUserId = user.uid;
-    targetUserDisplay = user.displayName || user.email;
+    targetUserDisplay = user.displayName || user.username || "Unknown";
   }
 
   // Severity options with colors

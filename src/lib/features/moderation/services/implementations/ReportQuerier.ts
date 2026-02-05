@@ -35,10 +35,10 @@ interface FirestoreReportData extends DocumentData {
 	createdAt: Timestamp;
 	reporterId: string;
 	reporterDisplayName: string;
-	reporterEmail: string;
+	// NOTE: reporterEmail removed for privacy - not stored in Firestore
 	reportedUserId: string;
 	reportedUserDisplayName: string;
-	reportedUserEmail: string;
+	// NOTE: reportedUserEmail removed for privacy - not stored in Firestore
 	category: ReportCategory;
 	description: string;
 	evidenceUrls?: string[];
@@ -214,10 +214,9 @@ export class ReportQuerier implements IReportQuerier {
 			createdAt: data.createdAt?.toDate() ?? new Date(),
 			reporterId: data.reporterId,
 			reporterDisplayName: data.reporterDisplayName,
-			reporterEmail: data.reporterEmail,
+			// NOTE: Email fields removed for privacy
 			reportedUserId: data.reportedUserId,
 			reportedUserDisplayName: data.reportedUserDisplayName,
-			reportedUserEmail: data.reportedUserEmail,
 			category: data.category,
 			description: data.description,
 			evidenceUrls: data.evidenceUrls,

@@ -10,7 +10,7 @@ import type { ReportCategory } from '../domain/models/report-models';
 interface ReportTargetUser {
 	id: string;
 	displayName: string;
-	email: string;
+	// NOTE: Email omitted for privacy - reports are tracked by user ID
 }
 
 interface ReportModalState {

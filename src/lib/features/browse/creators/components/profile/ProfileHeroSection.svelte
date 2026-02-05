@@ -22,7 +22,6 @@
     reportModalState.open({
       id: userProfile.id,
       displayName: userProfile.displayName,
-      email: userProfile.email || "",
     });
   }
 </script>

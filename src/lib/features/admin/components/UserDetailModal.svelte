@@ -181,9 +181,6 @@
               <div class="user-info">
                 <h3 class="display-name">{userProfile.displayName}</h3>
                 <p class="username">@{userProfile.username}</p>
-                {#if userProfile.email}
-                  <p class="email">{userProfile.email}</p>
-                {/if}
                 {#if userProfile.adminLabel}
                   <p class="admin-label">
                     <i class="fas fa-user-tag" aria-hidden="true"></i>
@@ -261,9 +258,6 @@
               <div class="user-info">
                 <h3 class="display-name">{userProfile.displayName}</h3>
                 <p class="username">@{userProfile.username}</p>
-                {#if userProfile.email}
-                  <p class="email">{userProfile.email}</p>
-                {/if}
               </div>
               <div class="status-badges">
                 {#if userProfile.isDisabled}
@@ -370,9 +364,6 @@
                 <div class="user-info">
                   <h3 class="display-name">{userProfile.displayName}</h3>
                   <p class="username">@{userProfile.username}</p>
-                  {#if userProfile.email}
-                    <p class="email">{userProfile.email}</p>
-                  {/if}
                   {#if userProfile.adminLabel}
                     <p class="admin-label">
                       <i class="fas fa-user-tag" aria-hidden="true"></i>
@@ -697,12 +688,6 @@
   .username {
     margin: 6px 0 0;
     font-size: var(--font-size-base);
-    color: var(--theme-text-dim);
-  }
-
-  .email {
-    margin: 4px 0 0;
-    font-size: var(--font-size-sm);
     color: var(--theme-text-dim);
   }
 

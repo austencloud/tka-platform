@@ -23,10 +23,10 @@ export type OverrideState = "inherit" | "grant" | "deny";
 
 /**
  * User data shape for the override editor
+ * NOTE: Email omitted for privacy - user documents are publicly readable
  */
 export interface UserData {
   id: string;
-  email: string;
   displayName: string;
   username: string;
   photoURL: string | null;

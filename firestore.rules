@@ -545,9 +545,11 @@ service cloud.firestore {
         // Updating messages:
         // - Sender can update any field (edit content, delete, etc.)
         // - Any participant can update reactions (to add/remove their reaction)
+        // - Any participant can mark messages as read (readBy + readAt fields)
         allow update: if isConversationParticipant(conversationId)
           && (resource.data.senderId == request.auth.uid
-              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']));
+              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy', 'readAt']));
 
         // No hard deleting messages (soft delete via isDeleted flag)
         allow delete: if false;
@@ -811,15 +813,29 @@ service cloud.firestore {
     // ============================================================================
 
     // App-wide metrics like global counters for the endless spinner
-    // Public read/write for anonymous users to participate in global counters
+    // Public read, but writes are restricted to prevent abuse
     match /appMetrics/{metricId} {
       // ANYONE can read metrics (for displaying global counters)
       allow read: if true;
 
-      // ANYONE can write (atomic increment of totalGenerated counter)
-      // This is intentionally permissive to allow anonymous users
-      // to contribute to the "sequences ever generated" counter
-      allow write: if true;
+      // Create: authenticated users can initialize the document
+      // Must include totalGenerated starting at 0 or 1
+      allow create: if isAuthenticated()
+        && request.resource.data.totalGenerated >= 0
+        && request.resource.data.totalGenerated <= 1;
+
+      // Update: authenticated users can increment the counter
+      // - Only totalGenerated and lastGeneratedAt fields can be modified
+      // - totalGenerated can only increase (prevents resetting to 0)
+      // - Increase limited to +10 per write to prevent massive jumps
+      allow update: if isAuthenticated()
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['totalGenerated', 'lastGeneratedAt'])
+        && request.resource.data.totalGenerated > resource.data.totalGenerated
+        && request.resource.data.totalGenerated <= resource.data.totalGenerated + 10;
+
+      // Delete: only admins (for cleanup)
+      allow delete: if isAdmin();
     }
 
     // ============================================================================

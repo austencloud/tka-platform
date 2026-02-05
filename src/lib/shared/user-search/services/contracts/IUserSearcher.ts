@@ -8,7 +8,7 @@
 export interface UserSearchResult {
   uid: string;
   displayName: string;
-  email: string;
+  username?: string;
   photoURL?: string;
 }
 
@@ -21,7 +21,7 @@ export interface UserSearchOptions {
 
 export interface IUserSearcher {
   /**
-   * Search users by display name or email
+   * Search users by display name or username
    * @param query - Search query (minimum 2 characters)
    * @param options - Search options
    * @returns Matching users

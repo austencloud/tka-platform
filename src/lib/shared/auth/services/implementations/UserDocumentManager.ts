@@ -78,8 +78,9 @@ export class UserDocumentManager implements IUserDocumentManager {
         const usernameLowercase = formatUsername(username);
 
         // Create user document first
+        // NOTE: Email deliberately NOT stored here - user documents are publicly readable
+        // Email is available via Firebase Auth for the user themselves
         await setDoc(userDocRef, {
-          email: user.email,
           displayName,
           username,
           usernameLowercase,
@@ -120,14 +121,33 @@ export class UserDocumentManager implements IUserDocumentManager {
             );
           }
         );
+
+        // Finalize attribution for new user (async, non-blocking)
+        // Converts anonymous session data to user attribution record
+        void import("$lib/shared/di").then(async ({ container }) => {
+          try {
+            const persister = container?.items?.attributionPersister;
+            if (persister) {
+              const { detectDeviceCategory } = await import("$lib/shared/attribution/config/referrer-patterns");
+              const signupContext = {
+                timestamp: new Date().toISOString(),
+                method: this.detectSignupMethod(user),
+                device: detectDeviceCategory(),
+              };
+              await persister.finalizeForUser(user.uid, signupContext);
+            }
+          } catch (err) {
+            console.warn(`[UserDocumentManager] Attribution finalization failed:`, err);
+          }
+        });
       } else {
         // EXISTING USER: Preserve username, update other fields
         const existingData = userDoc.data();
         const existingUsername = existingData?.username;
 
         // Build update object - don't overwrite username
+        // NOTE: Email deliberately NOT stored - user documents are publicly readable
         const updateData: Record<string, unknown> = {
-          email: user.email,
           displayName,
           photoURL: user.photoURL || null,
           avatar: user.photoURL || null,
@@ -151,6 +171,16 @@ export class UserDocumentManager implements IUserDocumentManager {
       );
       // Don't throw - this shouldn't block authentication
     }
+  }
+
+  /**
+   * Detect the signup method from user provider data
+   */
+  private detectSignupMethod(user: User): "google" | "apple" | "email" {
+    const providers = user.providerData.map((p) => p.providerId);
+    if (providers.includes("google.com")) return "google";
+    if (providers.includes("apple.com")) return "apple";
+    return "email";
   }
 
   /**

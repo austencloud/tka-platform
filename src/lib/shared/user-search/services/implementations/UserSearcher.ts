@@ -70,7 +70,7 @@ export class UserSearcher implements IUserSearcher {
         results.push({
           uid,
           displayName: data.displayName || data.name || "",
-          email: data.email || "",
+          username: data.username || undefined,
           photoURL: data.photoURL || data.avatar || undefined,
         });
         addedUids.add(uid);
@@ -94,17 +94,16 @@ export class UserSearcher implements IUserSearcher {
 
           const data = docSnap.data();
           const displayName = data.displayName || data.name || "";
-          const email = data.email || "";
           const username = data.username || "";
 
-          // Combine all searchable fields
-          const searchableText = `${displayName} ${email} ${username}`;
+          // Combine searchable fields (no email - privacy)
+          const searchableText = `${displayName} ${username}`;
 
           if (this.fuzzyMatch(searchableText, queryTerms)) {
             results.push({
               uid,
               displayName,
-              email,
+              username: username || undefined,
               photoURL: data.photoURL || data.avatar || undefined,
             });
             addedUids.add(uid);

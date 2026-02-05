@@ -113,7 +113,7 @@
 
   function handleSelectUser(user: UserResult) {
     hapticService?.trigger("selection");
-    searchQuery = user.displayName || user.email;
+    searchQuery = user.displayName || user.username || "";
     showResults = false;
     searchResults = [];
     onSelect(user);
@@ -220,13 +220,13 @@
         >
           <RobustAvatar
             src={user.photoURL}
-            name={user.displayName || user.email}
+            name={user.displayName || user.username || "User"}
             alt=""
             customSize={36}
           />
           <div class="result-info">
             <span class="result-name">{user.displayName || "No name"}</span>
-            <span class="result-email">{user.email}</span>
+            <span class="result-username">@{user.username || user.uid.slice(0, 8)}</span>
           </div>
           <i class="fas fa-check result-check" aria-hidden="true"></i>
         </button>
@@ -462,7 +462,7 @@
     text-overflow: ellipsis;
   }
 
-  .result-email {
+  .result-username {
     color: rgba(255, 255, 255, 0.75);
     font-size: var(--font-size-compact);
     white-space: nowrap;

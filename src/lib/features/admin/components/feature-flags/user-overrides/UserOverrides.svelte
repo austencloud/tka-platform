@@ -56,7 +56,6 @@
     // Convert UserProfile to UserData format for the editor
     const userData: UserData = {
       id: user.id,
-      email: user.email || "",
       displayName: user.displayName,
       username: user.username,
       photoURL: user.avatar || null,
