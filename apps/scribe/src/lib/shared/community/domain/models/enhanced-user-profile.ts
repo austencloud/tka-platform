@@ -21,6 +21,7 @@ export interface UserProfile {
   collectionCount: number;
   followerCount: number;
   joinedDate: Date;
+  lastActiveAt?: Date;
   isFollowing?: boolean;
 
   // Social links
@@ -74,13 +75,7 @@ export type CreatorFilterType =
   | "most-followers"
   | "newest";
 
-export type CreatorSortCriteria =
-  | "xp"
-  | "level"
-  | "sequences"
-  | "achievements"
-  | "followers"
-  | "joinedDate";
+export type CreatorSortCriteria = "lastActive" | "joinedDate";
 
 export interface CreatorQueryOptions {
   filter?: CreatorFilterType;

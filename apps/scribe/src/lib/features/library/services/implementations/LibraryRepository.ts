@@ -275,6 +275,12 @@ export class LibraryRepository implements ILibraryRepository {
         if (wasNew) {
           transaction.update(userDocRef, {
             sequenceCount: increment(1),
+            lastActivityDate: serverTimestamp(),
+          });
+        } else {
+          // Update activity timestamp for existing sequence edits too
+          transaction.update(userDocRef, {
+            lastActivityDate: serverTimestamp(),
           });
         }
 

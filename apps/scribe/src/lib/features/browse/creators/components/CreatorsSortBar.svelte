@@ -23,10 +23,7 @@
   }
 
   const sortOptions: SortOption[] = [
-    { value: "followers", label: "Most Followed", icon: "fa-users" },
-    { value: "sequences", label: "Most Sequences", icon: "fa-list" },
-    { value: "level", label: "Highest Level", icon: "fa-trophy" },
-    { value: "xp", label: "Most XP", icon: "fa-star" },
+    { value: "lastActive", label: "Recently Active", icon: "fa-clock" },
     { value: "joinedDate", label: "Recently Joined", icon: "fa-calendar" },
   ];
 

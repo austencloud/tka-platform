@@ -11,6 +11,7 @@
     extractDominantColor,
     getCachedOrFallbackColor,
   } from "$lib/shared/foundation/utils/color-extractor";
+  import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
@@ -43,6 +44,11 @@
 
   // Show follow button only if logged in and not own profile
   const showFollowButton = $derived(currentUserId && currentUserId !== user.id);
+
+  // Highlight users active in the last 24 hours
+  const isRecentlyActive = $derived(
+    user.lastActiveAt && (Date.now() - user.lastActiveAt.getTime()) < 86400000
+  );
 
   /**
    * Handle successful avatar image load - extract color
@@ -134,10 +140,12 @@
         <i class="fas fa-folder" aria-hidden="true"></i>
         <span>{user.collectionCount}</span>
       </div>
-      <div class="stat">
-        <i class="fas fa-users" aria-hidden="true"></i>
-        <span>{user.followerCount}</span>
-      </div>
+    </div>
+
+    <!-- Activity -->
+    <div class="activity-line" class:recent-activity={isRecentlyActive}>
+      <i class="fas fa-clock" aria-hidden="true"></i>
+      <span>{user.lastActiveAt ? formatTimeAgo(user.lastActiveAt) : 'New'}</span>
     </div>
   </div>
 
@@ -178,8 +186,7 @@
     flex-direction: column;
     gap: 10px;
     padding: 16px;
-    /* Fixed height ensures all cards match, with or without follow button */
-    height: 220px;
+    height: 100%;
     /* Soft gradient fill using extracted color */
     background: linear-gradient(
       135deg,
@@ -260,14 +267,23 @@
     transition: color var(--duration-emphasis) var(--ease-out, ease);
   }
 
+  /* When no follow button, center avatar + info as a group */
+  .user-card:not(:has(.user-actions)) {
+    justify-content: center;
+  }
+
+  /* When follow button exists, user-info fills the gap to push button down */
+  .user-card:has(.user-actions) .user-info {
+    flex: 1;
+  }
+
   /* User info */
   .user-info {
     text-align: center;
     min-width: 0;
-    flex: 1; /* Grow to fill space when no follow button */
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: center;
   }
 
   .display-name {
@@ -294,7 +310,6 @@
     display: flex;
     justify-content: center;
     gap: 12px;
-    margin-top: auto; /* Push to bottom of user-info flex container */
     padding-top: 6px;
   }
 
@@ -317,6 +332,31 @@
   }
 
   .user-card:hover .stat i {
+    opacity: 1;
+  }
+
+  /* Activity line */
+  .activity-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding-top: 4px;
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim);
+  }
+
+  .activity-line i {
+    font-size: var(--font-size-compact);
+    color: var(--card-accent);
+    opacity: 0.75;
+  }
+
+  .activity-line.recent-activity {
+    color: var(--card-accent);
+  }
+
+  .activity-line.recent-activity i {
     opacity: 1;
   }
 
@@ -394,7 +434,6 @@
     }
 
     .user-stats {
-      margin-top: 4px;
       gap: 10px;
     }
 

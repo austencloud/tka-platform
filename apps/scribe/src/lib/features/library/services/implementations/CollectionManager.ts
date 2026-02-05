@@ -250,6 +250,10 @@ export class CollectionManager implements ICollectionManager {
       updatedAt: serverTimestamp(),
     });
 
+    // Update user activity
+    const userDocRef = doc(firestore, `users/${userId}`);
+    await updateDoc(userDocRef, { lastActivityDate: serverTimestamp() });
+
     return {
       ...newCollection,
       id: collectionId,
