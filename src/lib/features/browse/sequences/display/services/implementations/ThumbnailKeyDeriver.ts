@@ -144,6 +144,7 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
         showGrid: true,
         showNonRadialPoints: false,
         handPointVisibility: "all" as const,
+        showQRCode: false, // QR codes OFF by default
       };
       // If any visibility setting differs from default, not using defaults
       if (input.visibility.showTKA !== undefined && input.visibility.showTKA !== defaultVisibility.showTKA)
@@ -155,6 +156,8 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
       if (input.visibility.showNonRadialPoints !== undefined && input.visibility.showNonRadialPoints !== defaultVisibility.showNonRadialPoints)
         return false;
       if (input.visibility.handPointVisibility !== undefined && input.visibility.handPointVisibility !== defaultVisibility.handPointVisibility)
+        return false;
+      if (input.visibility.showQRCode !== undefined && input.visibility.showQRCode !== defaultVisibility.showQRCode)
         return false;
     }
 
@@ -191,6 +194,8 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
       showGrid: input.visibility?.showGrid,
       handPointVisibility: input.visibility?.handPointVisibility,
       showNonRadialPoints: input.visibility?.showNonRadialPoints,
+      // QR code in empty cell
+      showQRCode: input.visibility?.showQRCode,
       // EXCLUDED: showTKA, showReversals - these are canonical (always ON)
     };
   }

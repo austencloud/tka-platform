@@ -199,4 +199,24 @@ export class QRCodeGenerator implements IQRCodeGenerator {
   getPresetStyle(preset: QRStylePreset): QRCodeStyle {
     return { ...STYLE_PRESETS[preset] };
   }
+
+  async generateAsImage(
+    sequence: SequenceData,
+    size: number,
+    options?: QRCodeOptions
+  ): Promise<HTMLImageElement> {
+    // Generate QR code with the specified size
+    const result = await this.generateForSequence(sequence, {
+      ...options,
+      size,
+    });
+
+    // Convert data URL to HTMLImageElement
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Failed to load QR code as image"));
+      img.src = result.dataUrl;
+    });
+  }
 }

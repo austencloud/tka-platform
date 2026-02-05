@@ -128,6 +128,21 @@ export interface IQRCodeGenerator {
   generateForUrl(url: string, options?: QRCodeOptions): Promise<QRCodeResult>;
 
   /**
+   * Generate a QR code as an HTMLImageElement for direct canvas rendering.
+   * Useful for baking QR codes into exported images.
+   *
+   * @param sequence - The sequence to create a QR code for
+   * @param size - Size in pixels for the QR code
+   * @param options - Generation options (margin, style)
+   * @returns HTMLImageElement ready for canvas drawing
+   */
+  generateAsImage(
+    sequence: SequenceData,
+    size: number,
+    options?: QRCodeOptions
+  ): Promise<HTMLImageElement>;
+
+  /**
    * Get the preset style configuration
    *
    * @param preset - The preset name

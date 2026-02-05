@@ -14,7 +14,6 @@
   import { loopDetector } from "$lib/features/loop-labeler/services/implementations/LOOPDetector";
   import { onMount } from "svelte";
   import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
-  import ChoreoCardQR from "./ChoreoCardQR.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
@@ -107,6 +106,12 @@
     showGrid,
     showNonRadialPoints: false, // Off by default for cleaner choreo cards
     handPointVisibility: handPointsVisible ? "all" as const : "active" as const,
+    showQRCode: showQRCodes, // QR rendered in empty cell by ImageComposer
+  });
+
+  // DEBUG: Log visibility settings changes
+  $effect(() => {
+    console.log(`[ChoreoCard] "${sequence.name}" visibilitySettings:`, visibilitySettings);
   });
 
   function handleClick() {
@@ -124,7 +129,6 @@
 <button
   class="choreo-card"
   class:print-mode={printMode}
-  class:with-qr={showQRCodes}
   onclick={handleClick}
   onkeydown={handleKeyDown}
   aria-label="View sequence {sequence.name}"
@@ -142,11 +146,6 @@
       {includeStartPosition}
       visibility={visibilitySettings}
     />
-    {#if showQRCodes}
-      <div class="qr-overlay">
-        <ChoreoCardQR {sequence} size={60} />
-      </div>
-    {/if}
     {#if hasLoopPattern}
       <div class="loop-overlay">
         <LOOPIconStrip
@@ -237,7 +236,7 @@
     color: var(--print-text-muted);
   }
 
-  /* Card content wrapper for QR overlay positioning */
+  /* Card content wrapper */
   .card-content {
     position: relative;
     width: 100%;
@@ -245,17 +244,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  /* QR code overlay - positioned bottom-left (below start position column) */
-  .qr-overlay {
-    position: absolute;
-    bottom: 4px;
-    left: 4px;
-    z-index: 1;
-    pointer-events: none; /* Allow clicks through to card */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    border-radius: 4px;
   }
 
   /* LOOP icons overlay - positioned top-right */
@@ -274,21 +262,6 @@
   .choreo-card.print-mode .loop-overlay {
     background: rgba(255, 255, 255, 0.85);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  }
-
-  /* Adjust card layout when QR codes are shown */
-  .choreo-card.with-qr .card-content {
-    /* Ensure thumbnail doesn't overlap QR code */
-    padding-bottom: 8px;
-  }
-
-  /* Print styles for QR codes */
-  @media print {
-    .qr-overlay {
-      box-shadow: none;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

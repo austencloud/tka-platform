@@ -76,6 +76,8 @@ export interface SequenceExportOptions {
     bluePropType?: PropType;
     /** Red prop type override (for cache key consistency) */
     redPropType?: PropType;
+    /** Render QR code in empty cell (if available) */
+    showQRCode?: boolean;
   };
 
   // User information

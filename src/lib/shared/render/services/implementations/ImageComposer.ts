@@ -34,6 +34,8 @@ import type { IStepNumberRenderer } from "../contracts/IStepNumberRenderer";
 import type { PictographMemoryCache } from "./PictographMemoryCache";
 import type { Canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
 import type { ILayerCompositor } from "../contracts/ILayerCompositor";
+import type { IQRCodeGenerator } from "../../../qr/services/contracts/IQRCodeGenerator";
+
 
 export class ImageComposer implements IImageComposer {
   // Create instance directly to avoid DI module loading order issues
@@ -68,8 +70,17 @@ export class ImageComposer implements IImageComposer {
     private readonly memoryCache: PictographMemoryCache,
     private readonly beatNumberRenderer: IStepNumberRenderer,
     private readonly canvas2DRenderer: Canvas2DDirectRenderer,
-    private readonly layerCompositor?: ILayerCompositor
+    private readonly layerCompositor?: ILayerCompositor,
+    private qrCodeGenerator?: IQRCodeGenerator
   ) {}
+
+  /**
+   * Inject QR code generator after container initialization.
+   * Required because qr-container is added after render-container.
+   */
+  setQRCodeGenerator(generator: IQRCodeGenerator): void {
+    this.qrCodeGenerator = generator;
+  }
 
   /**
    * Enable or disable compositional layer caching
@@ -369,6 +380,27 @@ export class ImageComposer implements IImageComposer {
         total: totalItems,
         stage: "rendering",
       });
+    }
+
+    // Step 5b: Render QR code in empty cell (if enabled and available)
+    console.log("[ImageComposer] QR check:", {
+      showQRCode: options.visibilityOverrides?.showQRCode,
+      qrGeneratorAvailable: !!this.qrCodeGenerator,
+    });
+    if (options.visibilityOverrides?.showQRCode && this.qrCodeGenerator) {
+      const emptyCell = this.findEmptyCellForQR(columns, rows, sequence, options);
+      console.log("[ImageComposer] Empty cell for QR:", emptyCell);
+      if (emptyCell) {
+        await this.renderQRCode(
+          ctx,
+          sequence,
+          emptyCell,
+          stepSize,
+          headerHeight,
+          isDarkMode
+        );
+        console.log("[ImageComposer] QR rendered at:", emptyCell);
+      }
     }
 
     // Step 6: Draw cell borders only between occupied cells
@@ -748,6 +780,86 @@ export class ImageComposer implements IImageComposer {
     }
 
     return occupied;
+  }
+
+  /**
+   * Find the best empty cell for placing a QR code.
+   * Prefers bottom-left empty cells (under the start position column).
+   *
+   * @returns Cell coordinates {col, row} or null if no empty cells
+   */
+  private findEmptyCellForQR(
+    columns: number,
+    rows: number,
+    sequence: SequenceData,
+    options: SequenceExportOptions
+  ): { col: number; row: number } | null {
+    const occupiedCells = this.getOccupiedCells(sequence, options, columns);
+
+    // Scan from bottom-left, preferring column 0 (under start position if present)
+    // This places QR in the most natural empty spot
+    for (let row = rows - 1; row >= 0; row--) {
+      for (let col = 0; col < columns; col++) {
+        if (!occupiedCells.has(`${col},${row}`)) {
+          return { col, row };
+        }
+      }
+    }
+
+    return null; // No empty cells found
+  }
+
+  /**
+   * Render a QR code into an empty cell on the canvas.
+   * The QR code is sized to 80% of the cell size with padding.
+   */
+  private async renderQRCode(
+    ctx: CanvasRenderingContext2D,
+    sequence: SequenceData,
+    cell: { col: number; row: number },
+    stepSize: number,
+    headerHeight: number,
+    isDarkMode: boolean
+  ): Promise<void> {
+    if (!this.qrCodeGenerator) {
+      return;
+    }
+
+    try {
+      // QR size is 80% of cell size for padding
+      const qrSize = Math.floor(stepSize * 0.8);
+      const padding = (stepSize - qrSize) / 2;
+
+      // Generate QR code as image
+      const qrImage = await this.qrCodeGenerator.generateAsImage(
+        sequence,
+        qrSize,
+        {
+          style: "modern",
+          margin: 1,
+        }
+      );
+
+      // Calculate position (center in cell)
+      const x = cell.col * stepSize + padding;
+      const y = cell.row * stepSize + headerHeight + padding;
+
+      // Draw white background for contrast (QR codes need high contrast)
+      // The QR generator already uses white background, but this ensures the cell is clean
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(
+        cell.col * stepSize,
+        cell.row * stepSize + headerHeight,
+        stepSize,
+        stepSize
+      );
+
+      // Draw the QR code
+      ctx.drawImage(qrImage, x, y, qrSize, qrSize);
+    } catch (error) {
+      console.error("[ImageComposer] Failed to render QR code:", error);
+      // Silently fail - QR is optional, sequence should still export
+    }
   }
 
   /**

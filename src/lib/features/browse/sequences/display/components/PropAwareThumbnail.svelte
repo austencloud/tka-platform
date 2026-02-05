@@ -111,7 +111,7 @@
   // Gallery variant has header + footer, wordcard uses natural aspect ratio
   const aspectRatio = $derived.by(() => {
     if (variant === "wordcard") {
-      return undefined; // Wordcard uses natural image aspect ratio
+      return undefined; // Choreo card uses natural image aspect ratio
     }
     return layoutCalculator.calculateGalleryAspectRatio(stepCount);
   });
@@ -135,6 +135,11 @@
     showBirthday,
     customNotesText,
     visibility,
+  });
+
+  // DEBUG: Log visibility changes
+  $effect(() => {
+    console.log(`[PropAwareThumbnail] "${sequenceName}" visibility:`, visibility);
   });
 
   // Intersection observer for lazy loading
@@ -238,6 +243,14 @@
     }
 
     const key = keyDeriver.deriveKey(renderInput);
+
+    // DEBUG: Log hash comparison
+    console.log(`[PropAwareThumbnail] "${sequenceName}" hash check:`, {
+      newHash: key.hash,
+      currentHash: currentKeyHash,
+      changed: key.hash !== currentKeyHash,
+      showQRCode: renderInput.visibility?.showQRCode,
+    });
 
     // Skip if key hasn't changed
     if (key.hash === currentKeyHash) {

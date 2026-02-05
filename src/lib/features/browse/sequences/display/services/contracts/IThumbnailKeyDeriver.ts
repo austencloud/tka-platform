@@ -21,6 +21,8 @@ export interface ThumbnailVisibilitySettings {
   showGrid?: boolean;
   showNonRadialPoints?: boolean;
   handPointVisibility?: "all" | "active";
+  /** Render QR code in an empty cell (if available) */
+  showQRCode?: boolean;
 }
 
 /**
