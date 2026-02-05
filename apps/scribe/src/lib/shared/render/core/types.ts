@@ -9,7 +9,7 @@
 // GRID TYPES
 // ============================================================================
 
-/** Grid locations (8 compass points) */
+/** Grid locations (8 compass points + center) */
 export type GridLocation =
   | "n"
   | "e"
@@ -18,7 +18,8 @@ export type GridLocation =
   | "ne"
   | "se"
   | "sw"
-  | "nw";
+  | "nw"
+  | "c";
 
 /** Grid rendering modes */
 export type GridMode = "diamond" | "box" | "skewed";
@@ -59,11 +60,20 @@ export type Orientation =
   | "out"
   | "clock"
   | "counter"
-  // Interradial orientations (Level 6 / poi)
-  | "clock_in"
-  | "clock_out"
-  | "counter_in"
-  | "counter_out";
+  // Interradial orientations (Level 6 / poi gravity at intercardinals)
+  | "clockIn"
+  | "clockOut"
+  | "counterIn"
+  | "counterOut"
+  // Centric orientations (Level 5 - prop at center, points toward compass direction)
+  | "centerN"
+  | "centerNE"
+  | "centerE"
+  | "centerSE"
+  | "centerS"
+  | "centerSW"
+  | "centerW"
+  | "centerNW";
 
 /** Rotation directions */
 export type RotationDirection = "cw" | "ccw" | "no_rot";
@@ -102,6 +112,20 @@ export interface ArrowPlacement {
 
 /** Hand path directions (movement between locations) */
 export type HandPath = "cw" | "ccw" | "dash" | "static";
+
+// ============================================================================
+// SPINNING PLANE (Level 6)
+// ============================================================================
+
+/**
+ * The plane in which spinning occurs.
+ * - wall: Default TKA grid. Spinning in front of body, viewed head-on.
+ * - wheel: Spinning beside body, viewed from the side. Grid rotated 90°.
+ * - overhead: Spinning above/below, viewed from above. Grid horizontal.
+ *
+ * All existing sequences default to "wall" when plane is omitted.
+ */
+export type SpinningPlane = "wall" | "wheel" | "overhead";
 
 // ============================================================================
 // VECTOR DIRECTIONS (for beta offset)

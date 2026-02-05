@@ -5,9 +5,9 @@
  * start/end locations, and grid mode.
  */
 
-import type { ArrowPlacement, Coordinates, GridLocation, GridMode, MotionType } from "../types";
-import { getLayer2PointCoordinates } from "./grid-position";
-import { calculateArrowRotation } from "./arrow-rotation";
+import type { ArrowPlacement, Coordinates, GridLocation, GridMode, MotionType } from "../types.js";
+import { getLayer2PointCoordinates } from "./grid-position.js";
+import { calculateArrowRotation } from "./arrow-rotation.js";
 
 // ============================================================================
 // ARROW LOCATION CALCULATION

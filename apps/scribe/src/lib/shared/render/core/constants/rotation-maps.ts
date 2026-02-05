@@ -4,7 +4,7 @@
  * Exact values from the original PropRotAngleManager.ts and ProAntiRotationMaps.ts
  */
 
-import type { GridLocation, Orientation } from "../types";
+import type { GridLocation, Orientation } from "../types.js";
 
 // ============================================================================
 // PROP ROTATION MAPS (by grid mode)
@@ -23,6 +23,7 @@ export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, numbe
     se: 0,
     sw: 0,
     nw: 0,
+    c: 0,
   },
   out: {
     n: 270,
@@ -33,6 +34,7 @@ export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, numbe
     se: 0,
     sw: 0,
     nw: 0,
+    c: 0,
   },
   clock: {
     n: 0,
@@ -43,6 +45,7 @@ export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, numbe
     se: 0,
     sw: 0,
     nw: 0,
+    c: 0,
   },
   counter: {
     n: 180,
@@ -53,9 +56,10 @@ export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, numbe
     se: 0,
     sw: 0,
     nw: 0,
+    c: 0,
   },
   // Interradial orientations (Level 6 / poi)
-  clock_in: {
+  clockIn: {
     n: 45,
     s: 225,
     w: 315,
@@ -64,8 +68,9 @@ export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, numbe
     se: 0,
     sw: 0,
     nw: 0,
+    c: 0,
   },
-  clock_out: {
+  clockOut: {
     n: 315,
     s: 135,
     w: 225,
@@ -74,8 +79,9 @@ export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, numbe
     se: 0,
     sw: 0,
     nw: 0,
+    c: 0,
   },
-  counter_in: {
+  counterIn: {
     n: 135,
     s: 315,
     w: 45,
@@ -84,8 +90,9 @@ export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, numbe
     se: 0,
     sw: 0,
     nw: 0,
+    c: 0,
   },
-  counter_out: {
+  counterOut: {
     n: 225,
     s: 45,
     w: 135,
@@ -94,7 +101,18 @@ export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, numbe
     se: 0,
     sw: 0,
     nw: 0,
+    c: 0,
   },
+  // Centric orientations (Level 5 - prop at center, pointing toward compass direction)
+  // SVG convention: 0=east, 90=south, 180=west, 270=north (clockwise)
+  centerN: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 270 },
+  centerNE: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 315 },
+  centerE: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 0 },
+  centerSE: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 45 },
+  centerS: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 90 },
+  centerSW: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 135 },
+  centerW: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 180 },
+  centerNW: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 225 },
 };
 
 /**
@@ -110,6 +128,7 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
     s: 0,
     e: 0,
     w: 0,
+    c: 0,
   },
   out: {
     ne: 315,
@@ -120,6 +139,7 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
     s: 0,
     e: 0,
     w: 0,
+    c: 0,
   },
   clock: {
     ne: 45,
@@ -130,6 +150,7 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
     s: 0,
     e: 0,
     w: 0,
+    c: 0,
   },
   counter: {
     ne: 225,
@@ -140,9 +161,10 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
     s: 0,
     e: 0,
     w: 0,
+    c: 0,
   },
   // Interradial orientations (Level 6 / poi)
-  clock_in: {
+  clockIn: {
     ne: 90,
     nw: 0,
     sw: 270,
@@ -151,8 +173,9 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
     s: 0,
     e: 0,
     w: 0,
+    c: 0,
   },
-  clock_out: {
+  clockOut: {
     ne: 0,
     nw: 270,
     sw: 180,
@@ -161,8 +184,9 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
     s: 0,
     e: 0,
     w: 0,
+    c: 0,
   },
-  counter_in: {
+  counterIn: {
     ne: 180,
     nw: 90,
     sw: 0,
@@ -171,8 +195,9 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
     s: 0,
     e: 0,
     w: 0,
+    c: 0,
   },
-  counter_out: {
+  counterOut: {
     ne: 270,
     nw: 180,
     sw: 90,
@@ -181,7 +206,18 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
     s: 0,
     e: 0,
     w: 0,
+    c: 0,
   },
+  // Centric orientations (Level 5 - prop at center, pointing toward compass direction)
+  // SVG convention: 0=east, 90=south, 180=west, 270=north (clockwise)
+  centerN: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 270 },
+  centerNE: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 315 },
+  centerE: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 0 },
+  centerSE: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 45 },
+  centerS: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 90 },
+  centerSW: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 135 },
+  centerW: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 180 },
+  centerNW: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 225 },
 };
 
 // ============================================================================
@@ -200,6 +236,7 @@ export const PRO_CLOCKWISE_MAP: Record<GridLocation, number> = {
   se: 90,
   sw: 180,
   nw: 270,
+  c: 0,
 };
 
 export const PRO_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
@@ -211,6 +248,7 @@ export const PRO_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
   se: 180,
   sw: 270,
   nw: 0,
+  c: 0,
 };
 
 /**
@@ -227,6 +265,7 @@ export const ANTI_CLOCKWISE_MAP: Record<GridLocation, number> = {
   se: 180,
   sw: 270,
   nw: 0,
+  c: 0,
 };
 
 export const ANTI_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
@@ -238,6 +277,7 @@ export const ANTI_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
   se: 90,
   sw: 180,
   nw: 270,
+  c: 0,
 };
 
 /**
@@ -252,6 +292,7 @@ export const STATIC_RADIAL_CLOCKWISE_MAP: Record<GridLocation, number> = {
   se: 135,
   sw: 225,
   nw: 315,
+  c: 0,
 };
 
 export const STATIC_RADIAL_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
@@ -263,6 +304,7 @@ export const STATIC_RADIAL_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> =
   se: 315,
   sw: 45,
   nw: 135,
+  c: 0,
 };
 
 /**
@@ -277,6 +319,7 @@ export const STATIC_NON_RADIAL_CLOCKWISE_MAP: Record<GridLocation, number> = {
   se: 90,
   sw: 180,
   nw: 270,
+  c: 0,
 };
 
 export const STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
@@ -288,6 +331,7 @@ export const STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP: Record<GridLocation, numbe
   se: 270,
   sw: 0,
   nw: 90,
+  c: 0,
 };
 
 /**
@@ -306,6 +350,7 @@ export const DASH_CLOCKWISE_MAP: Record<GridLocation, number> = {
   se: 135,
   sw: 225,
   nw: 315,
+  c: 0,
 };
 
 export const DASH_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
@@ -317,6 +362,7 @@ export const DASH_COUNTER_CLOCKWISE_MAP: Record<GridLocation, number> = {
   se: 135,
   sw: 225,
   nw: 315,
+  c: 0,
 };
 
 /**

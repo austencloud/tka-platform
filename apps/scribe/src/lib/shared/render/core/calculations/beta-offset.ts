@@ -5,8 +5,8 @@
  * they need to be offset from each other so they don't overlap.
  */
 
-import type { GridLocation, GridMode, Orientation, VectorDirection } from "../types";
-import { isCardinal } from "../types";
+import type { GridLocation, GridMode, Orientation, VectorDirection } from "../types.js";
+import { isCardinal } from "../types.js";
 import {
   DIAMOND_RADIAL_MAP,
   DIAMOND_NON_RADIAL_MAP,
@@ -15,7 +15,7 @@ import {
   SHIFT_RADIAL_MAP,
   SHIFT_NON_RADIAL_MAP,
   OPPOSITE_DIRECTIONS,
-} from "../constants/direction-maps";
+} from "../constants/direction-maps.js";
 
 // ============================================================================
 // CONSTANTS
@@ -55,6 +55,8 @@ export interface BetaOffsetInput {
 
 /**
  * Check if orientation is radial (IN or OUT)
+ * Interradial orientations (clockIn, clockOut, counterIn, counterOut) are NOT radial —
+ * they use non-radial (clock/counter) offset maps as a close approximation.
  */
 function isRadialOrientation(orientation: string | undefined): boolean {
   if (!orientation) return true; // Default to radial if not specified

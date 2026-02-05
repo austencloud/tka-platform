@@ -99,6 +99,26 @@ export const VERTICAL_MIRROR_POSITION_MAP: Record<GridPosition, GridPosition> = 
   [GridPosition.ETA14]: GridPosition.ETA4, // W-SW → E-SE
   [GridPosition.ETA15]: GridPosition.ETA3, // NW-W → NE-E
   [GridPosition.ETA16]: GridPosition.ETA2, // N-NW → N-NE
+
+  // Tau and Terra positions - Level 5 (centric mode)
+  // TODO: Implement proper mirror logic when Level 5 is fully specified
+  [GridPosition.TAU1]: GridPosition.TAU1,
+  [GridPosition.TAU2]: GridPosition.TAU2,
+  [GridPosition.TAU3]: GridPosition.TAU3,
+  [GridPosition.TAU4]: GridPosition.TAU4,
+  [GridPosition.TAU5]: GridPosition.TAU5,
+  [GridPosition.TAU6]: GridPosition.TAU6,
+  [GridPosition.TAU7]: GridPosition.TAU7,
+  [GridPosition.TAU8]: GridPosition.TAU8,
+  [GridPosition.TAU9]: GridPosition.TAU9,
+  [GridPosition.TAU10]: GridPosition.TAU10,
+  [GridPosition.TAU11]: GridPosition.TAU11,
+  [GridPosition.TAU12]: GridPosition.TAU12,
+  [GridPosition.TAU13]: GridPosition.TAU13,
+  [GridPosition.TAU14]: GridPosition.TAU14,
+  [GridPosition.TAU15]: GridPosition.TAU15,
+  [GridPosition.TAU16]: GridPosition.TAU16,
+  [GridPosition.TERRA1]: GridPosition.TERRA1,
 };
 
 /**
@@ -122,6 +142,7 @@ export const VERTICAL_MIRROR_LOCATION_MAP: Record<GridLocation, GridLocation> =
     [GridLocation.NORTHWEST]: GridLocation.NORTHEAST, // Flip NW/NE
     [GridLocation.SOUTHEAST]: GridLocation.SOUTHWEST, // Flip SE/SW
     [GridLocation.SOUTHWEST]: GridLocation.SOUTHEAST, // Flip SW/SE
+    [GridLocation.CENTER]: GridLocation.CENTER, // Center stays at center
   };
 
 /**
@@ -209,6 +230,26 @@ export const HORIZONTAL_MIRROR_POSITION_MAP: Record<GridPosition, GridPosition> 
     [GridPosition.ETA14]: GridPosition.ETA8, // W-SW → W-NW
     [GridPosition.ETA15]: GridPosition.ETA7, // NW-W → SW-W
     [GridPosition.ETA16]: GridPosition.ETA6, // N-NW → S-SW
+
+    // Tau and Terra positions - Level 5 (centric mode)
+    // TODO: Implement proper horizontal mirror logic when Level 5 is fully specified
+    [GridPosition.TAU1]: GridPosition.TAU1,
+    [GridPosition.TAU2]: GridPosition.TAU2,
+    [GridPosition.TAU3]: GridPosition.TAU3,
+    [GridPosition.TAU4]: GridPosition.TAU4,
+    [GridPosition.TAU5]: GridPosition.TAU5,
+    [GridPosition.TAU6]: GridPosition.TAU6,
+    [GridPosition.TAU7]: GridPosition.TAU7,
+    [GridPosition.TAU8]: GridPosition.TAU8,
+    [GridPosition.TAU9]: GridPosition.TAU9,
+    [GridPosition.TAU10]: GridPosition.TAU10,
+    [GridPosition.TAU11]: GridPosition.TAU11,
+    [GridPosition.TAU12]: GridPosition.TAU12,
+    [GridPosition.TAU13]: GridPosition.TAU13,
+    [GridPosition.TAU14]: GridPosition.TAU14,
+    [GridPosition.TAU15]: GridPosition.TAU15,
+    [GridPosition.TAU16]: GridPosition.TAU16,
+    [GridPosition.TERRA1]: GridPosition.TERRA1,
   };
 
 /**
@@ -234,6 +275,7 @@ export const HORIZONTAL_MIRROR_LOCATION_MAP: Record<
   [GridLocation.SOUTHEAST]: GridLocation.NORTHEAST, // Flip SE/NE
   [GridLocation.NORTHWEST]: GridLocation.SOUTHWEST, // Flip NW/SW
   [GridLocation.SOUTHWEST]: GridLocation.NORTHWEST, // Flip SW/NW
+  [GridLocation.CENTER]: GridLocation.CENTER, // Center stays at center
 };
 
 /**
@@ -324,6 +366,28 @@ export const SWAPPED_POSITION_MAP: Record<GridPosition, GridPosition> = {
   [GridPosition.ETA14]: GridPosition.ETA7, // (Red=SW, Blue=W) → (Red=W, Blue=SW)
   [GridPosition.ETA15]: GridPosition.ETA8, // (Red=W, Blue=NW) → (Red=NW, Blue=W)
   [GridPosition.ETA16]: GridPosition.ETA1, // (Red=NW, Blue=N) → (Red=N, Blue=NW)
+
+  // Tau positions - swap center and perimeter hands
+  // TAU1-8 (blue at center, red at perimeter) ↔ TAU9-16 (red at center, blue at perimeter)
+  [GridPosition.TAU1]: GridPosition.TAU9,
+  [GridPosition.TAU2]: GridPosition.TAU10,
+  [GridPosition.TAU3]: GridPosition.TAU11,
+  [GridPosition.TAU4]: GridPosition.TAU12,
+  [GridPosition.TAU5]: GridPosition.TAU13,
+  [GridPosition.TAU6]: GridPosition.TAU14,
+  [GridPosition.TAU7]: GridPosition.TAU15,
+  [GridPosition.TAU8]: GridPosition.TAU16,
+  [GridPosition.TAU9]: GridPosition.TAU1,
+  [GridPosition.TAU10]: GridPosition.TAU2,
+  [GridPosition.TAU11]: GridPosition.TAU3,
+  [GridPosition.TAU12]: GridPosition.TAU4,
+  [GridPosition.TAU13]: GridPosition.TAU5,
+  [GridPosition.TAU14]: GridPosition.TAU6,
+  [GridPosition.TAU15]: GridPosition.TAU7,
+  [GridPosition.TAU16]: GridPosition.TAU8,
+
+  // Terra - both at center, stays the same
+  [GridPosition.TERRA1]: GridPosition.TERRA1,
 };
 
 /**

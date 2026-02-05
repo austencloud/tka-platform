@@ -5,8 +5,8 @@
  * based on location and grid mode.
  */
 
-import type { Coordinates, GridLocation, GridMode } from "../types";
-import { isCardinal } from "../types";
+import type { Coordinates, GridLocation, GridMode } from "../types.js";
+import { isCardinal } from "../types.js";
 import {
   DIAMOND_HAND_POINTS,
   DIAMOND_LAYER2_POINTS,
@@ -15,7 +15,7 @@ import {
   FALLBACK_HAND_POINTS,
   FALLBACK_LAYER2_POINTS,
   CENTER_POINT,
-} from "../constants/grid-coordinates";
+} from "../constants/grid-coordinates.js";
 
 /**
  * Get hand point coordinates for a location and grid mode.

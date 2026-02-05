@@ -7,13 +7,14 @@
  * Platform-agnostic: uses ISequenceDataProvider for data loading.
  */
 
-import type { ITransitionGraph } from "../contracts/ITransitionGraph";
-import type { ISequenceDataProvider } from "../../data/contracts/ISequenceDataProvider";
+import type { ITransitionGraph } from "../contracts/ITransitionGraph.js";
+import type { ISequenceDataProvider } from "../../data/contracts/ISequenceDataProvider.js";
 import type {
   PositionGroup,
   LetterPositionInfo,
   LetterMappingsJson,
-} from "../../domain/models/SequenceEngineTypes";
+  LetterMappingData,
+} from "../../domain/models/SequenceEngineTypes.js";
 
 /**
  * Transition graph for letter sequence building.
@@ -44,7 +45,7 @@ export class TransitionGraph implements ITransitionGraph {
 
   private buildGraph(data: LetterMappingsJson): void {
     // Process each letter
-    for (const [letterStr, mapping] of Object.entries(data.letters)) {
+    for (const [letterStr, mapping] of Object.entries(data.letters) as [string, LetterMappingData][]) {
       const startGroup = this.positionToGroup(mapping.startPosition);
       const endGroup = this.positionToGroup(mapping.endPosition);
 

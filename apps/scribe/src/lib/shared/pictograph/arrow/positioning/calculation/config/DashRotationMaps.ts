@@ -15,6 +15,7 @@ export const dashClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 135,
   [GridLocation.SOUTHWEST]: 225,
   [GridLocation.NORTHWEST]: 315,
+  [GridLocation.CENTER]: 0,
 };
 
 export const dashCounterClockwiseMap: Record<GridLocation, number> = {
@@ -26,6 +27,7 @@ export const dashCounterClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 135,
   [GridLocation.SOUTHWEST]: 225,
   [GridLocation.NORTHWEST]: 315,
+  [GridLocation.CENTER]: 0,
 };
 
 /**

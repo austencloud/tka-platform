@@ -131,7 +131,7 @@ const LETTER_TYPE_FOLDER: Record<string, string> = {
   "S": "Type1", "T": "Type1", "U": "Type1", "V": "Type1",
   // Type 2: Shift (one hand shifts, one static)
   "W": "Type2", "X": "Type2", "Y": "Type2", "Z": "Type2",
-  "Σ": "Type2", "Δ": "Type2", "Θ": "Type2", "Ω": "Type2", "μ": "Type2", "ν": "Type2",
+  "Σ": "Type2", "Δ": "Type2", "Θ": "Type2", "Ω": "Type2", "Mu": "Type2", "Nu": "Type2",
   // Type 3: Cross-Shift (Shift + Dash combination)
   "W-": "Type3", "X-": "Type3", "Y-": "Type3", "Z-": "Type3",
   "Σ-": "Type3", "Δ-": "Type3", "Θ-": "Type3", "Ω-": "Type3",
@@ -667,7 +667,7 @@ ${svgParts.join("\n")}
     const [adjustX, adjustY] = calculateArrowAdjustment(
       adjustmentInput,
       motionAdjustmentInput,
-      placement.location
+      placement.location as GridLocation
     );
 
     // Apply adjustment to placement
@@ -1223,7 +1223,7 @@ ${turnNumbersSvg}
     if (dots.length === 0) return "";
 
     const circles = dots.map(
-      dot => `<circle cx="${dot.cx}" cy="${dot.cy}" r="${dot.r}" fill="${dot.color}"/>`
+      (dot: { cx: number; cy: number; r: number; color: string }) => `<circle cx="${dot.cx}" cy="${dot.cy}" r="${dot.r}" fill="${dot.color}"/>`
     );
 
     return `<g class="reversal-indicators">${circles.join("\n")}</g>`;

@@ -29,6 +29,8 @@ export interface MotionData {
   rotationDirection: string;
   startOrientation: string;
   endOrientation: string;
+  /** Spinning plane (Level 6). Defaults to "wall" when omitted. */
+  plane?: "wall" | "wheel" | "overhead";
 }
 
 export interface PictographData {

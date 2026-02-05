@@ -37,11 +37,11 @@ export enum Orientation {
   OUT = "out",
   CLOCK = "clock",
   COUNTER = "counter",
-  // Interradial orientations (Level 6 / poi)
-  CLOCK_IN = "clock_in",
-  CLOCK_OUT = "clock_out",
-  COUNTER_IN = "counter_in",
-  COUNTER_OUT = "counter_out",
+  // Interradial orientations (Level 6 / poi gravity at intercardinals)
+  CLOCK_IN = "clockIn",
+  CLOCK_OUT = "clockOut",
+  COUNTER_IN = "counterIn",
+  COUNTER_OUT = "counterOut",
 }
 
 // Rotation directions

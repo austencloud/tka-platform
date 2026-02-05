@@ -32,24 +32,28 @@ export class PropRotAngleManager {
       [GridLocation.SOUTH]: 270,
       [GridLocation.WEST]: 0,
       [GridLocation.EAST]: 180,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     [Orientation.OUT]: {
       [GridLocation.NORTH]: 270,
       [GridLocation.SOUTH]: 90,
       [GridLocation.WEST]: 180,
       [GridLocation.EAST]: 0,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     [Orientation.CLOCK]: {
       [GridLocation.NORTH]: 0,
       [GridLocation.SOUTH]: 180,
       [GridLocation.WEST]: 270,
       [GridLocation.EAST]: 90,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     [Orientation.COUNTER]: {
       [GridLocation.NORTH]: 180,
       [GridLocation.SOUTH]: 0,
       [GridLocation.WEST]: 90,
       [GridLocation.EAST]: 270,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     // Interradial orientations (Level 6 / poi) - interpolated angles
     // Note: These are approximate; exact values may need refinement
@@ -58,25 +62,64 @@ export class PropRotAngleManager {
       [GridLocation.SOUTH]: 225,
       [GridLocation.WEST]: 315,
       [GridLocation.EAST]: 135,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     [Orientation.CLOCK_OUT]: {
       [GridLocation.NORTH]: 315,
       [GridLocation.SOUTH]: 135,
       [GridLocation.WEST]: 225,
       [GridLocation.EAST]: 45,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     [Orientation.COUNTER_IN]: {
       [GridLocation.NORTH]: 135,
       [GridLocation.SOUTH]: 315,
       [GridLocation.WEST]: 45,
       [GridLocation.EAST]: 225,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     [Orientation.COUNTER_OUT]: {
       [GridLocation.NORTH]: 225,
       [GridLocation.SOUTH]: 45,
       [GridLocation.WEST]: 135,
       [GridLocation.EAST]: 315,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
+    // Center orientations at perimeter locations (shouldn't occur; 0 fallback)
+    [Orientation.CENTER_N]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_NE]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_E]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_SE]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_S]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_SW]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_W]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_NW]: {} as Record<GridLocation, number>,
+  };
+
+  /**
+   * Centric angle map: center orientations → SVG rotation angle.
+   * SVG convention: 0=east, 90=south, 180=west, 270=north (clockwise).
+   * Used when a prop is at GridLocation.CENTER (Level 5 Tau/Terra positions).
+   */
+  private static readonly CENTRIC_ANGLE_MAP: Record<Orientation, number> = {
+    // Center orientations - prop points toward compass direction
+    [Orientation.CENTER_N]: 270,
+    [Orientation.CENTER_NE]: 315,
+    [Orientation.CENTER_E]: 0,
+    [Orientation.CENTER_SE]: 45,
+    [Orientation.CENTER_S]: 90,
+    [Orientation.CENTER_SW]: 135,
+    [Orientation.CENTER_W]: 180,
+    [Orientation.CENTER_NW]: 225,
+    // Radial orientations at center are meaningless; fall back to 0
+    [Orientation.IN]: 0,
+    [Orientation.OUT]: 0,
+    [Orientation.CLOCK]: 0,
+    [Orientation.COUNTER]: 0,
+    [Orientation.CLOCK_IN]: 0,
+    [Orientation.CLOCK_OUT]: 0,
+    [Orientation.COUNTER_IN]: 0,
+    [Orientation.COUNTER_OUT]: 0,
   };
 
   /** Box grid angle mappings */
@@ -89,24 +132,28 @@ export class PropRotAngleManager {
       [GridLocation.NORTHWEST]: 45,
       [GridLocation.SOUTHWEST]: 315,
       [GridLocation.SOUTHEAST]: 225,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     [Orientation.OUT]: {
       [GridLocation.NORTHEAST]: 315,
       [GridLocation.NORTHWEST]: 225,
       [GridLocation.SOUTHWEST]: 135,
       [GridLocation.SOUTHEAST]: 45,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     [Orientation.CLOCK]: {
       [GridLocation.NORTHEAST]: 45,
       [GridLocation.NORTHWEST]: 315,
       [GridLocation.SOUTHWEST]: 225,
       [GridLocation.SOUTHEAST]: 135,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     [Orientation.COUNTER]: {
       [GridLocation.NORTHEAST]: 225,
       [GridLocation.NORTHWEST]: 135,
       [GridLocation.SOUTHWEST]: 45,
       [GridLocation.SOUTHEAST]: 315,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     // Interradial orientations (Level 6 / poi) - interpolated angles
     // Note: These are approximate; exact values may need refinement
@@ -115,25 +162,38 @@ export class PropRotAngleManager {
       [GridLocation.NORTHWEST]: 0,
       [GridLocation.SOUTHWEST]: 270,
       [GridLocation.SOUTHEAST]: 180,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     [Orientation.CLOCK_OUT]: {
       [GridLocation.NORTHEAST]: 0,
       [GridLocation.NORTHWEST]: 270,
       [GridLocation.SOUTHWEST]: 180,
       [GridLocation.SOUTHEAST]: 90,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     [Orientation.COUNTER_IN]: {
       [GridLocation.NORTHEAST]: 180,
       [GridLocation.NORTHWEST]: 90,
       [GridLocation.SOUTHWEST]: 0,
       [GridLocation.SOUTHEAST]: 270,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
     [Orientation.COUNTER_OUT]: {
       [GridLocation.NORTHEAST]: 270,
       [GridLocation.NORTHWEST]: 180,
       [GridLocation.SOUTHWEST]: 90,
       [GridLocation.SOUTHEAST]: 0,
+      [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
+    // Center orientations at perimeter locations (shouldn't occur; 0 fallback)
+    [Orientation.CENTER_N]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_NE]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_E]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_SE]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_S]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_SW]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_W]: {} as Record<GridLocation, number>,
+    [Orientation.CENTER_NW]: {} as Record<GridLocation, number>,
   };
 
   /** Creates a new PropRotAngleManager instance */
@@ -153,6 +213,9 @@ export class PropRotAngleManager {
 
   /** Calculates the rotation angle in degrees */
   getRotationAngle(): number {
+    if (this.location === GridLocation.CENTER) {
+      return PropRotAngleManager.CENTRIC_ANGLE_MAP[this.orientation] ?? 0;
+    }
     const angleMap = this.getAngleMapForLocation(this.location);
     const orientationAngles = angleMap[this.orientation];
     return orientationAngles[this.location] ?? 0;
@@ -181,6 +244,9 @@ export class PropRotAngleManager {
     orientation: Orientation,
     gridMode: GridMode
   ): number {
+    if (location === GridLocation.CENTER) {
+      return PropRotAngleManager.CENTRIC_ANGLE_MAP[orientation] ?? 0;
+    }
     const angleMap = PropRotAngleManager.getAngleMapForLocationStatic(
       location,
       gridMode

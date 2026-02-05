@@ -5,7 +5,7 @@
  * and rotation direction.
  */
 
-import type { GridLocation, MotionType } from "../types";
+import type { GridLocation, MotionType } from "../types.js";
 import {
   PRO_CLOCKWISE_MAP,
   PRO_COUNTER_CLOCKWISE_MAP,
@@ -20,7 +20,7 @@ import {
   DASH_NO_ROTATION_MAP,
   FLOAT_CLOCKWISE_MAP,
   FLOAT_COUNTER_CLOCKWISE_MAP,
-} from "../constants/rotation-maps";
+} from "../constants/rotation-maps.js";
 
 /**
  * Select rotation map based on motion type and rotation direction

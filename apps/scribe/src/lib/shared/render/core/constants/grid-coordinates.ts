@@ -5,7 +5,7 @@
  * This is the single source of truth for all grid positioning.
  */
 
-import type { Coordinates, GridLocation, GridMode } from "../types";
+import type { Coordinates, GridLocation, GridMode } from "../types.js";
 
 // ============================================================================
 // RAW COORDINATE DATA
@@ -25,6 +25,7 @@ export const DIAMOND_HAND_POINTS: Record<GridLocation, Coordinates | null> = {
   se: null,
   sw: null,
   nw: null,
+  c: { x: 475.0, y: 475.0 },
 };
 
 /**
@@ -40,6 +41,7 @@ export const DIAMOND_LAYER2_POINTS: Record<GridLocation, Coordinates | null> = {
   se: { x: 618.1, y: 618.1 },
   sw: { x: 331.9, y: 618.1 },
   nw: { x: 331.9, y: 331.9 },
+  c: { x: 475.0, y: 475.0 },
 };
 
 /**
@@ -55,6 +57,7 @@ export const BOX_HAND_POINTS: Record<GridLocation, Coordinates | null> = {
   se: { x: 576.2, y: 576.2 },
   sw: { x: 373.8, y: 576.2 },
   nw: { x: 373.8, y: 373.8 },
+  c: { x: 475.0, y: 475.0 },
 };
 
 /**
@@ -70,6 +73,7 @@ export const BOX_LAYER2_POINTS: Record<GridLocation, Coordinates | null> = {
   se: null,
   sw: null,
   nw: null,
+  c: { x: 475.0, y: 475.0 },
 };
 
 /**
@@ -108,6 +112,7 @@ export const FALLBACK_HAND_POINTS: Readonly<Record<GridLocation, Coordinates>> =
   se: { x: 576.2, y: 576.2 },
   sw: { x: 373.8, y: 576.2 },
   nw: { x: 373.8, y: 373.8 },
+  c: { x: 475.0, y: 475.0 },
 };
 
 /**
@@ -122,4 +127,5 @@ export const FALLBACK_LAYER2_POINTS: Readonly<Record<GridLocation, Coordinates>>
   se: { x: 618.1, y: 618.1 },
   sw: { x: 331.9, y: 618.1 },
   nw: { x: 331.9, y: 331.9 },
+  c: { x: 475.0, y: 475.0 },
 };

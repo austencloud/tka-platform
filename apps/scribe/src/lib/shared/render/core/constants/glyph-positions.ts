@@ -5,7 +5,7 @@
  * are placed within the 950x950 viewbox.
  */
 
-import { VIEWBOX_SIZE } from "./viewbox";
+import { VIEWBOX_SIZE } from "./viewbox.js";
 
 // ============================================================================
 // TKA GLYPH (bottom-left letter)

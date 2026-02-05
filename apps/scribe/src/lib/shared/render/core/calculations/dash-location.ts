@@ -5,7 +5,7 @@
  * Instead, their location is calculated based on the motion parameters.
  */
 
-import type { GridLocation, GridMode } from "../types";
+import type { GridLocation, GridMode } from "../types.js";
 import {
   PHI_DASH_PSI_DASH_LOCATION_MAP,
   LAMBDA_ZERO_TURNS_LOCATION_MAP,
@@ -19,7 +19,7 @@ import {
   LAMBDA_DASH_LETTERS,
   TYPE3_LETTERS,
   OPPOSITE_LOCATION_MAP,
-} from "../constants/dash-location-maps";
+} from "../constants/dash-location-maps.js";
 
 // ============================================================================
 // INPUT TYPE

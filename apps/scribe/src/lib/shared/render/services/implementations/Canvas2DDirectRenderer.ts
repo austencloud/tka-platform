@@ -940,9 +940,13 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
         try {
           const topImg = await assetLoader.getTurnNumberImage(parsed.top);
           if (topImg) {
-            const drawX = baseX + positions.top.x * scale;
+            // Use natural width for this turn value, centered within column width
+            // This matches SVG's preserveAspectRatio="xMidYMin meet" behavior
+            const topNaturalWidth = getTurnNumberWidth(parsed.top);
+            const centerOffset = ((columnWidth - topNaturalWidth) / 2) * scale;
+            const drawX = baseX + positions.top.x * scale + centerOffset;
             const drawY = baseY + positions.top.y * scale;
-            const drawWidth = columnWidth * scale;
+            const drawWidth = topNaturalWidth * scale;
             const drawHeight = TURN_NUMBER_HEIGHT * scale;
 
             // Draw with color tint
@@ -962,9 +966,13 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
         try {
           const bottomImg = await assetLoader.getTurnNumberImage(parsed.bottom);
           if (bottomImg) {
-            const drawX = baseX + positions.bottom.x * scale;
+            // Use natural width for this turn value, centered within column width
+            // This matches SVG's preserveAspectRatio="xMidYMin meet" behavior
+            const bottomNaturalWidth = getTurnNumberWidth(parsed.bottom);
+            const centerOffset = ((columnWidth - bottomNaturalWidth) / 2) * scale;
+            const drawX = baseX + positions.bottom.x * scale + centerOffset;
             const drawY = baseY + positions.bottom.y * scale;
-            const drawWidth = columnWidth * scale;
+            const drawWidth = bottomNaturalWidth * scale;
             const drawHeight = TURN_NUMBER_HEIGHT * scale;
 
             // Draw with color tint

@@ -17,6 +17,7 @@ export const staticRadialClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 135,
   [GridLocation.SOUTHWEST]: 225,
   [GridLocation.NORTHWEST]: 315,
+  [GridLocation.CENTER]: 0,
 };
 
 export const staticRadialCounterClockwiseMap: Record<GridLocation, number> = {
@@ -28,6 +29,7 @@ export const staticRadialCounterClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 135,
   [GridLocation.SOUTHWEST]: 225,
   [GridLocation.NORTHWEST]: 315,
+  [GridLocation.CENTER]: 0,
 };
 
 // Static arrow rotation for NON-RADIAL orientations (CLOCK/COUNTER) - Box Mode
@@ -40,6 +42,7 @@ export const staticNonRadialClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 315,
   [GridLocation.SOUTHWEST]: 45,
   [GridLocation.NORTHWEST]: 135,
+  [GridLocation.CENTER]: 0,
 };
 
 export const staticNonRadialCounterClockwiseMap: Record<GridLocation, number> =
@@ -52,6 +55,7 @@ export const staticNonRadialCounterClockwiseMap: Record<GridLocation, number> =
     [GridLocation.SOUTHEAST]: 315,
     [GridLocation.SOUTHWEST]: 45,
     [GridLocation.NORTHWEST]: 135,
+    [GridLocation.CENTER]: 0,
   };
 
 /**
@@ -75,6 +79,7 @@ export const staticRadialOverrideMap: Record<
   [GridLocation.SOUTHEAST]: { cw: 45, ccw: 45 },
   [GridLocation.SOUTHWEST]: { cw: 315, ccw: 315 },
   [GridLocation.NORTHWEST]: { cw: 225, ccw: 225 },
+  [GridLocation.CENTER]: { cw: 0, ccw: 0 },
 };
 
 // Static from NON-RADIAL (CLOCK/COUNTER) override angles
@@ -90,4 +95,5 @@ export const staticNonRadialOverrideMap: Record<
   [GridLocation.SOUTHEAST]: { cw: 135, ccw: 225 },
   [GridLocation.SOUTHWEST]: { cw: 225, ccw: 135 },
   [GridLocation.NORTHWEST]: { cw: 315, ccw: 45 },
+  [GridLocation.CENTER]: { cw: 0, ccw: 0 },
 };

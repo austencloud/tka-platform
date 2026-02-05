@@ -383,13 +383,8 @@ export class ImageComposer implements IImageComposer {
     }
 
     // Step 5b: Render QR code in empty cell (if enabled and available)
-    console.log("[ImageComposer] QR check:", {
-      showQRCode: options.visibilityOverrides?.showQRCode,
-      qrGeneratorAvailable: !!this.qrCodeGenerator,
-    });
     if (options.visibilityOverrides?.showQRCode && this.qrCodeGenerator) {
       const emptyCell = this.findEmptyCellForQR(columns, rows, sequence, options);
-      console.log("[ImageComposer] Empty cell for QR:", emptyCell);
       if (emptyCell) {
         await this.renderQRCode(
           ctx,

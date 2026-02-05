@@ -27,6 +27,9 @@ const GRAVITY_ORIENTATION_MAP: Record<GridLocation, Orientation> = {
   [GridLocation.SOUTHEAST]: Orientation.CLOCK_OUT, // Between E (clock) and S (out)
   [GridLocation.SOUTHWEST]: Orientation.COUNTER_OUT, // Between W (counter) and S (out)
   [GridLocation.NORTHWEST]: Orientation.COUNTER_IN, // Between W (counter) and N (in)
+
+  // Center position: gravity pulls downward = prop points south
+  [GridLocation.CENTER]: Orientation.CENTER_S,
 };
 
 export class PoiGravityOrientationDeriver implements IPoiGravityOrientationDeriver {

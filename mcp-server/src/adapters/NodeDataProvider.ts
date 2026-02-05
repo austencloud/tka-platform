@@ -11,9 +11,9 @@ import { fileURLToPath } from "url";
 import type {
   ISequenceDataProvider,
   LetterVariationData,
-} from "../../../src/lib/shared/sequence-engine/data/contracts/ISequenceDataProvider.js";
-import type { LetterMappingsJson } from "../../../src/lib/shared/sequence-engine/domain/models/SequenceEngineTypes.js";
-import { calculateOrientations } from "../core/orientation-calculator.js";
+} from "../../../apps/scribe/src/lib/shared/sequence-engine/data/contracts/ISequenceDataProvider.js";
+import type { LetterMappingsJson } from "../../../apps/scribe/src/lib/shared/sequence-engine/domain/models/SequenceEngineTypes.js";
+import { calculateOrientations } from "$lib/shared/render/core/calculations/orientation.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,9 +57,10 @@ export class NodeDataProvider implements ISequenceDataProvider {
 
     try {
       const content = fs.readFileSync(LETTER_MAPPINGS_PATH, "utf-8");
-      this.letterMappings = JSON.parse(content);
+      const parsed: LetterMappingsJson = JSON.parse(content);
+      this.letterMappings = parsed;
       this.initialized = true;
-      return this.letterMappings;
+      return parsed;
     } catch (error) {
       console.error("[MCP] Failed to load letter mappings:", error);
       throw error;

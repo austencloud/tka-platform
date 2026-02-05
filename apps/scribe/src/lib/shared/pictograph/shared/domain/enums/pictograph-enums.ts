@@ -77,12 +77,22 @@ export enum RotationDirection {
  * - COUNTER_OUT: Between COUNTER and OUT (gravity at SW)
  */
 export enum Orientation {
-  // Cardinal orientations
+  // Cardinal orientations (radial - relative to center)
   IN = "in",
   OUT = "out",
+  // Non-radial orientations (Level 3)
   CLOCK = "clock",
-  COUNTER = "counter",
-  // Interradial orientations (compound/diagonal)
+  COUNTER = "counter", 
+  // Centric orientations (Level 5 - prop at center, points toward compass direction)
+  CENTER_N = "centerN",
+  CENTER_NE = "centerNE",
+  CENTER_E = "centerE",
+  CENTER_SE = "centerSE",
+  CENTER_S = "centerS",
+  CENTER_SW = "centerSW",
+  CENTER_W = "centerW",
+  CENTER_NW = "centerNW",
+  // Interradial orientations (Level 6)
   CLOCK_IN = "clockIn",
   CLOCK_OUT = "clockOut",
   COUNTER_IN = "counterIn",

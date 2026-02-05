@@ -10,37 +10,63 @@
     color: "blue" | "red";
     orientation: string;
     onOrientationChange: (orientation: string) => void;
+    /** Enable interradial orientations (Level 6) */
+    showInterradial?: boolean;
   }
 
-  let { color, orientation, onOrientationChange }: Props = $props();
+  let { color, orientation, onOrientationChange, showInterradial = false }: Props = $props();
 
   // Popover state for this prop
   let popoverOpen = $state(false);
 
-  const orientationOptions = [
+  interface OrientationOpt {
+    value: string;
+    label: string;
+    icon: string;
+  }
+
+  const cardinalOptions: OrientationOpt[] = [
     { value: "in", label: "In", icon: "fa-arrow-down" },
     { value: "out", label: "Out", icon: "fa-arrow-up" },
     { value: "clock", label: "CW", icon: "fa-rotate-right" },
     { value: "counter", label: "CCW", icon: "fa-rotate-left" },
-  ] as const;
+  ];
 
-  const getOrientationOption = (value: string) => {
+  const interradialOptions: OrientationOpt[] = [
+    { value: "clockIn", label: "CW·In", icon: "fa-arrow-down-long" },
+    { value: "clockOut", label: "CW·Out", icon: "fa-arrow-up-long" },
+    { value: "counterIn", label: "CCW·In", icon: "fa-arrow-down-long" },
+    { value: "counterOut", label: "CCW·Out", icon: "fa-arrow-up-long" },
+  ];
+
+  const orientationOptions = $derived(
+    showInterradial ? [...cardinalOptions, ...interradialOptions] : cardinalOptions
+  );
+
+  const defaultOption: OrientationOpt = { value: "in", label: "In", icon: "fa-arrow-down" };
+
+  const getOrientationOption = (value: string): OrientationOpt => {
     return (
       orientationOptions.find((opt) => opt.value === value) ??
-      orientationOptions[0]
+      defaultOption
     );
   };
 
+  // Cycle order follows the 8-point radial cycle
+  const cardinalCycleOrder: string[] = ["in", "counter", "out", "clock"];
+  const fullCycleOrder: string[] = [
+    "in", "clockIn", "clock", "clockOut",
+    "out", "counterOut", "counter", "counterIn",
+  ];
+
   function cycleOrientation(direction: "prev" | "next"): string {
-    const order = ["in", "counter", "out", "clock"] as const;
-    const currentIndex = Math.max(
-      0,
-      order.indexOf(orientation as (typeof order)[number])
-    );
+    const order = showInterradial ? fullCycleOrder : cardinalCycleOrder;
+    const currentIndex = Math.max(0, order.indexOf(orientation));
+    const len = order.length;
     if (direction === "next") {
-      return order[(currentIndex + 1) % 4]!;
+      return order[(currentIndex + 1) % len]!;
     } else {
-      return order[(currentIndex - 1 + 4) % 4]!;
+      return order[(currentIndex - 1 + len) % len]!;
     }
   }
 
@@ -100,9 +126,9 @@
       </button>
     </div>
   {:else}
-    <!-- Popover view: 2x2 grid of options -->
-    <div class="options-grid">
-      {#each orientationOptions as opt}
+    <!-- Popover view: grid of orientation options -->
+    <div class="options-grid" class:expanded={showInterradial}>
+      {#each cardinalOptions as opt}
         <button
           class="option-btn"
           class:active={orientation === opt.value}
@@ -113,6 +139,19 @@
           <span>{opt.label}</span>
         </button>
       {/each}
+      {#if showInterradial}
+        {#each interradialOptions as opt}
+          <button
+            class="option-btn interradial"
+            class:active={orientation === opt.value}
+            onclick={(e) => handleOrientationClick(e, opt.value)}
+            aria-label="Set {color} orientation to {opt.label}"
+          >
+            <i class="fas {opt.icon}" aria-hidden="true"></i>
+            <span>{opt.label}</span>
+          </button>
+        {/each}
+      {/if}
     </div>
   {/if}
 </div>
@@ -237,6 +276,14 @@
 
   .option-btn:active:not(:disabled) {
     transform: scale(0.95);
+  }
+
+  .option-btn.interradial {
+    border-style: dashed;
+  }
+
+  .options-grid.expanded {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
   }
 
   /* ============================================================================

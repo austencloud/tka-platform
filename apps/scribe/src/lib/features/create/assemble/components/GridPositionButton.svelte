@@ -40,6 +40,7 @@ Supports enabled/disabled states and highlights current position.
     [GridLocation.SOUTHEAST]: "SE",
     [GridLocation.SOUTHWEST]: "SW",
     [GridLocation.NORTHWEST]: "NW",
+    [GridLocation.CENTER]: "C",
   };
 
   // Reactive label - updates when position changes

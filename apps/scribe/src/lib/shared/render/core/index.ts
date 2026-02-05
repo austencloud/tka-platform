@@ -24,9 +24,9 @@ export type {
   ArrowPlacement,
   HandPath,
   VectorDirection,
-} from "./types";
+} from "./types.js";
 
-export { CARDINAL_LOCATIONS, INTERCARDINAL_LOCATIONS, isCardinal } from "./types";
+export { CARDINAL_LOCATIONS, INTERCARDINAL_LOCATIONS, isCardinal } from "./types.js";
 
 // ============================================================================
 // CONSTANTS
@@ -43,7 +43,7 @@ export {
   SVG_OVERFLOW_RATIO,
   GRID_POINT_COLOR_LIGHT,
   GRID_POINT_COLOR_DARK,
-} from "./constants/viewbox";
+} from "./constants/viewbox.js";
 
 // Glyph position constants
 export {
@@ -56,7 +56,7 @@ export {
   ELEMENTAL_GLYPH,
   POSITION_GLYPH,
   REVERSAL_INDICATOR,
-} from "./constants/glyph-positions";
+} from "./constants/glyph-positions.js";
 
 // Grid coordinates
 export {
@@ -69,7 +69,7 @@ export {
   CENTER_POINT,
   FALLBACK_HAND_POINTS,
   FALLBACK_LAYER2_POINTS,
-} from "./constants/grid-coordinates";
+} from "./constants/grid-coordinates.js";
 
 // Rotation maps
 export {
@@ -88,7 +88,7 @@ export {
   DASH_NO_ROTATION_MAP,
   FLOAT_CLOCKWISE_MAP,
   FLOAT_COUNTER_CLOCKWISE_MAP,
-} from "./constants/rotation-maps";
+} from "./constants/rotation-maps.js";
 
 // Direction maps (for beta offset)
 export {
@@ -99,7 +99,7 @@ export {
   SHIFT_RADIAL_MAP,
   SHIFT_NON_RADIAL_MAP,
   OPPOSITE_DIRECTIONS,
-} from "./constants/direction-maps";
+} from "./constants/direction-maps.js";
 
 // Dash location maps
 export {
@@ -115,44 +115,44 @@ export {
   LAMBDA_DASH_LETTERS,
   TYPE3_LETTERS,
   OPPOSITE_LOCATION_MAP,
-} from "./constants/dash-location-maps";
+} from "./constants/dash-location-maps.js";
 
 // ============================================================================
 // CALCULATIONS
 // ============================================================================
 
 // Grid position
-export { getHandPointCoordinates, getLayer2PointCoordinates } from "./calculations/grid-position";
+export { getHandPointCoordinates, getLayer2PointCoordinates } from "./calculations/grid-position.js";
 
 // Prop placement
 export {
   calculatePropPlacement,
   calculatePropPosition,
   calculatePropRotation,
-} from "./calculations/prop-placement";
+} from "./calculations/prop-placement.js";
 
 // Arrow placement
 export {
   calculateArrowPlacement,
   calculateArrowPosition,
   calculateArrowLocation,
-} from "./calculations/arrow-placement";
+} from "./calculations/arrow-placement.js";
 
 // Arrow rotation
-export { calculateArrowRotation } from "./calculations/arrow-rotation";
+export { calculateArrowRotation } from "./calculations/arrow-rotation.js";
 
 // Dash location
-export { calculateDashLocation } from "./calculations/dash-location";
-export type { DashLocationInput } from "./calculations/dash-location";
+export { calculateDashLocation } from "./calculations/dash-location.js";
+export type { DashLocationInput } from "./calculations/dash-location.js";
 
 // Beta offset
-export { calculateBetaOffset } from "./calculations/beta-offset";
-export type { BetaMotionInput, BetaOffsetInput } from "./calculations/beta-offset";
+export { calculateBetaOffset } from "./calculations/beta-offset.js";
+export type { BetaMotionInput, BetaOffsetInput } from "./calculations/beta-offset.js";
 
 // Orientation
-export { calculateEndOrientation, calculateOrientations } from "./calculations/orientation";
-export type { OrientationInput } from "./calculations/orientation";
+export { calculateEndOrientation, calculateOrientations } from "./calculations/orientation.js";
+export type { OrientationInput } from "./calculations/orientation.js";
 
 // Reversal positions
-export { calculateReversalPositions, getReversalColors } from "./calculations/reversal-positions";
-export type { ReversalDotPosition, ReversalPositions } from "./calculations/reversal-positions";
+export { calculateReversalPositions, getReversalColors } from "./calculations/reversal-positions.js";
+export type { ReversalDotPosition, ReversalPositions } from "./calculations/reversal-positions.js";

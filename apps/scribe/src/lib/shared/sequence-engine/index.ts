@@ -31,7 +31,6 @@ export { TransitionGraph } from "./services/implementations/TransitionGraph";
 export {
   OrientationCalculator,
   OrientationPropagator,
-  calculateEndOrientation,
 } from "./services/implementations/OrientationPropagator";
 
 // Browser data provider (only for browser contexts)

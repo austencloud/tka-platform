@@ -100,6 +100,29 @@ const POSITION_LOCATIONS: Record<GridPosition, [GridLocation, GridLocation]> = {
   [GridPosition.ETA14]: [GridLocation.WEST, GridLocation.SOUTHWEST],
   [GridPosition.ETA15]: [GridLocation.NORTHWEST, GridLocation.WEST],
   [GridPosition.ETA16]: [GridLocation.NORTH, GridLocation.NORTHWEST],
+
+  // Tau positions - one hand at center, one at perimeter (Level 5)
+  // TAU1-8: Blue at center, red at perimeter
+  [GridPosition.TAU1]: [GridLocation.CENTER, GridLocation.NORTH],
+  [GridPosition.TAU2]: [GridLocation.CENTER, GridLocation.NORTHEAST],
+  [GridPosition.TAU3]: [GridLocation.CENTER, GridLocation.EAST],
+  [GridPosition.TAU4]: [GridLocation.CENTER, GridLocation.SOUTHEAST],
+  [GridPosition.TAU5]: [GridLocation.CENTER, GridLocation.SOUTH],
+  [GridPosition.TAU6]: [GridLocation.CENTER, GridLocation.SOUTHWEST],
+  [GridPosition.TAU7]: [GridLocation.CENTER, GridLocation.WEST],
+  [GridPosition.TAU8]: [GridLocation.CENTER, GridLocation.NORTHWEST],
+  // TAU9-16: Red at center, blue at perimeter
+  [GridPosition.TAU9]: [GridLocation.NORTH, GridLocation.CENTER],
+  [GridPosition.TAU10]: [GridLocation.NORTHEAST, GridLocation.CENTER],
+  [GridPosition.TAU11]: [GridLocation.EAST, GridLocation.CENTER],
+  [GridPosition.TAU12]: [GridLocation.SOUTHEAST, GridLocation.CENTER],
+  [GridPosition.TAU13]: [GridLocation.SOUTH, GridLocation.CENTER],
+  [GridPosition.TAU14]: [GridLocation.SOUTHWEST, GridLocation.CENTER],
+  [GridPosition.TAU15]: [GridLocation.WEST, GridLocation.CENTER],
+  [GridPosition.TAU16]: [GridLocation.NORTHWEST, GridLocation.CENTER],
+
+  // Terra - both hands at center
+  [GridPosition.TERRA1]: [GridLocation.CENTER, GridLocation.CENTER],
 };
 
 // Diamond mode positions (odd numbers for alpha/beta, odd for gamma)

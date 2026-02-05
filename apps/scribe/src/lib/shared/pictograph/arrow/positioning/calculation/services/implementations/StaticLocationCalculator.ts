@@ -29,6 +29,7 @@ export class StaticLocationCalculator implements IStaticLocationCalculator {
       [GridLocation.SOUTHWEST]: GridLocation.SOUTHWEST,
       [GridLocation.WEST]: GridLocation.WEST,
       [GridLocation.NORTHWEST]: GridLocation.NORTHWEST,
+      [GridLocation.CENTER]: GridLocation.CENTER,
     };
 
     const mappedLocation = locationMap[startLocation];

@@ -54,6 +54,7 @@ const LOCATION_ENCODE: Record<GridLocation, string> = {
   [GridLocation.SOUTHEAST]: "se",
   [GridLocation.SOUTHWEST]: "sw",
   [GridLocation.NORTHWEST]: "nw",
+  [GridLocation.CENTER]: "c",
 };
 
 const LOCATION_DECODE: Record<string, GridLocation> = Object.fromEntries(
@@ -70,6 +71,15 @@ const ORIENTATION_ENCODE: Record<Orientation, string> = {
   [Orientation.CLOCK_OUT]: "O",
   [Orientation.COUNTER_IN]: "N",
   [Orientation.COUNTER_OUT]: "U",
+  // Centric orientations (Level 5 - prop at center)
+  [Orientation.CENTER_N]: "1",
+  [Orientation.CENTER_NE]: "2",
+  [Orientation.CENTER_E]: "3",
+  [Orientation.CENTER_SE]: "4",
+  [Orientation.CENTER_S]: "5",
+  [Orientation.CENTER_SW]: "6",
+  [Orientation.CENTER_W]: "7",
+  [Orientation.CENTER_NW]: "8",
 };
 
 const ORIENTATION_DECODE: Record<string, Orientation> = Object.fromEntries(

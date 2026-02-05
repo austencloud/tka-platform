@@ -193,6 +193,27 @@ export const HALF_POSITION_MAP: Record<GridPosition, GridPosition> = {
   [GridPosition.ETA14]: GridPosition.ETA10,
   [GridPosition.ETA15]: GridPosition.ETA11,
   [GridPosition.ETA16]: GridPosition.ETA12,
+
+  // Tau positions - 180° rotation switches which hand is at center
+  [GridPosition.TAU1]: GridPosition.TAU9,
+  [GridPosition.TAU2]: GridPosition.TAU10,
+  [GridPosition.TAU3]: GridPosition.TAU11,
+  [GridPosition.TAU4]: GridPosition.TAU12,
+  [GridPosition.TAU5]: GridPosition.TAU13,
+  [GridPosition.TAU6]: GridPosition.TAU14,
+  [GridPosition.TAU7]: GridPosition.TAU15,
+  [GridPosition.TAU8]: GridPosition.TAU16,
+  [GridPosition.TAU9]: GridPosition.TAU1,
+  [GridPosition.TAU10]: GridPosition.TAU2,
+  [GridPosition.TAU11]: GridPosition.TAU3,
+  [GridPosition.TAU12]: GridPosition.TAU4,
+  [GridPosition.TAU13]: GridPosition.TAU5,
+  [GridPosition.TAU14]: GridPosition.TAU6,
+  [GridPosition.TAU15]: GridPosition.TAU7,
+  [GridPosition.TAU16]: GridPosition.TAU8,
+
+  // Terra - both hands at center, stays the same
+  [GridPosition.TERRA1]: GridPosition.TERRA1,
 };
 
 /**
@@ -279,6 +300,29 @@ export const QUARTER_POSITION_MAP_CW: Record<GridPosition, GridPosition> = {
   [GridPosition.ETA14]: GridPosition.ETA16,
   [GridPosition.ETA15]: GridPosition.ETA9,
   [GridPosition.ETA16]: GridPosition.ETA10,
+
+  // Tau 1-8 positions (90° CW = +2 positions within group)
+  [GridPosition.TAU1]: GridPosition.TAU3,
+  [GridPosition.TAU2]: GridPosition.TAU4,
+  [GridPosition.TAU3]: GridPosition.TAU5,
+  [GridPosition.TAU4]: GridPosition.TAU6,
+  [GridPosition.TAU5]: GridPosition.TAU7,
+  [GridPosition.TAU6]: GridPosition.TAU8,
+  [GridPosition.TAU7]: GridPosition.TAU1,
+  [GridPosition.TAU8]: GridPosition.TAU2,
+
+  // Tau 9-16 positions
+  [GridPosition.TAU9]: GridPosition.TAU11,
+  [GridPosition.TAU10]: GridPosition.TAU12,
+  [GridPosition.TAU11]: GridPosition.TAU13,
+  [GridPosition.TAU12]: GridPosition.TAU14,
+  [GridPosition.TAU13]: GridPosition.TAU15,
+  [GridPosition.TAU14]: GridPosition.TAU16,
+  [GridPosition.TAU15]: GridPosition.TAU9,
+  [GridPosition.TAU16]: GridPosition.TAU10,
+
+  // Terra - both hands at center, stays the same
+  [GridPosition.TERRA1]: GridPosition.TERRA1,
 };
 
 /**
@@ -365,6 +409,29 @@ export const QUARTER_POSITION_MAP_CCW: Record<GridPosition, GridPosition> = {
   [GridPosition.ETA14]: GridPosition.ETA12,
   [GridPosition.ETA15]: GridPosition.ETA13,
   [GridPosition.ETA16]: GridPosition.ETA14,
+
+  // Tau 1-8 positions (90° CCW = -2 positions = +6 mod 8)
+  [GridPosition.TAU1]: GridPosition.TAU7,
+  [GridPosition.TAU2]: GridPosition.TAU8,
+  [GridPosition.TAU3]: GridPosition.TAU1,
+  [GridPosition.TAU4]: GridPosition.TAU2,
+  [GridPosition.TAU5]: GridPosition.TAU3,
+  [GridPosition.TAU6]: GridPosition.TAU4,
+  [GridPosition.TAU7]: GridPosition.TAU5,
+  [GridPosition.TAU8]: GridPosition.TAU6,
+
+  // Tau 9-16 positions
+  [GridPosition.TAU9]: GridPosition.TAU15,
+  [GridPosition.TAU10]: GridPosition.TAU16,
+  [GridPosition.TAU11]: GridPosition.TAU9,
+  [GridPosition.TAU12]: GridPosition.TAU10,
+  [GridPosition.TAU13]: GridPosition.TAU11,
+  [GridPosition.TAU14]: GridPosition.TAU12,
+  [GridPosition.TAU15]: GridPosition.TAU13,
+  [GridPosition.TAU16]: GridPosition.TAU14,
+
+  // Terra - both hands at center, stays the same
+  [GridPosition.TERRA1]: GridPosition.TERRA1,
 };
 
 /**
@@ -516,6 +583,7 @@ export const LOCATION_MAP_EIGHTH_CW: Record<GridLocation, GridLocation> = {
   [GridLocation.SOUTHWEST]: GridLocation.WEST,
   [GridLocation.WEST]: GridLocation.NORTHWEST,
   [GridLocation.NORTHWEST]: GridLocation.NORTH,
+  [GridLocation.CENTER]: GridLocation.CENTER,
 };
 
 /**
@@ -532,6 +600,7 @@ export const LOCATION_MAP_CLOCKWISE: Record<GridLocation, GridLocation> = {
   [GridLocation.SOUTHEAST]: GridLocation.SOUTHWEST,
   [GridLocation.SOUTHWEST]: GridLocation.NORTHWEST,
   [GridLocation.NORTHWEST]: GridLocation.NORTHEAST,
+  [GridLocation.CENTER]: GridLocation.CENTER,
 };
 
 /**
@@ -551,6 +620,7 @@ export const LOCATION_MAP_COUNTER_CLOCKWISE: Record<
   [GridLocation.NORTHWEST]: GridLocation.SOUTHWEST,
   [GridLocation.SOUTHWEST]: GridLocation.SOUTHEAST,
   [GridLocation.SOUTHEAST]: GridLocation.NORTHEAST,
+  [GridLocation.CENTER]: GridLocation.CENTER,
 };
 
 /**
@@ -567,6 +637,7 @@ export const LOCATION_MAP_DASH: Record<GridLocation, GridLocation> = {
   [GridLocation.SOUTHEAST]: GridLocation.NORTHWEST,
   [GridLocation.SOUTHWEST]: GridLocation.NORTHEAST,
   [GridLocation.NORTHWEST]: GridLocation.SOUTHEAST,
+  [GridLocation.CENTER]: GridLocation.CENTER,
 };
 
 /**
@@ -583,6 +654,7 @@ export const LOCATION_MAP_STATIC: Record<GridLocation, GridLocation> = {
   [GridLocation.SOUTHEAST]: GridLocation.SOUTHEAST,
   [GridLocation.SOUTHWEST]: GridLocation.SOUTHWEST,
   [GridLocation.NORTHWEST]: GridLocation.NORTHWEST,
+  [GridLocation.CENTER]: GridLocation.CENTER,
 };
 
 /**

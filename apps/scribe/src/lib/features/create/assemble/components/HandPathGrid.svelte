@@ -86,6 +86,7 @@ The hand overlay shows the current position and animates between positions.
     [GridLocation.NORTH]: { row: 0, col: 1 },
     [GridLocation.NORTHEAST]: { row: 0, col: 2 },
     [GridLocation.WEST]: { row: 1, col: 0 },
+    [GridLocation.CENTER]: { row: 1, col: 1 },
     [GridLocation.EAST]: { row: 1, col: 2 },
     [GridLocation.SOUTHWEST]: { row: 2, col: 0 },
     [GridLocation.SOUTH]: { row: 2, col: 1 },
@@ -164,6 +165,7 @@ The hand overlay shows the current position and animates between positions.
       GridLocation.NORTHWEST,
     ],
     [GridMode.SKEWED]: [], // Not used in hand path assembly
+    [GridMode.CENTRIC]: [],
   };
 
   /**

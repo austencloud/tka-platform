@@ -29,6 +29,7 @@ function mirrorLocation(loc: GridLocation): GridLocation {
     [GridLocation.NORTHWEST]: GridLocation.NORTHEAST,
     [GridLocation.SOUTHEAST]: GridLocation.SOUTHWEST,
     [GridLocation.SOUTHWEST]: GridLocation.SOUTHEAST,
+    [GridLocation.CENTER]: GridLocation.CENTER,
   };
   return map[loc];
 }
@@ -44,6 +45,7 @@ function flipLocation(loc: GridLocation): GridLocation {
     [GridLocation.SOUTHEAST]: GridLocation.NORTHEAST,
     [GridLocation.NORTHWEST]: GridLocation.SOUTHWEST,
     [GridLocation.SOUTHWEST]: GridLocation.NORTHWEST,
+    [GridLocation.CENTER]: GridLocation.CENTER,
   };
   return map[loc];
 }
