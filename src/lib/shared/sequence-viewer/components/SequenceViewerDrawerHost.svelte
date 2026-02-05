@@ -22,15 +22,35 @@
   } from "../state/sequence-viewer-overlay-state.svelte";
   // Components
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
-  import MorphingFooter from "./MorphingFooter.svelte";
+  import ViewerFooter from "./ViewerFooter.svelte";
   import ExportModeContent from "./ExportModeContent.svelte";
   import ExportFooter from "./ExportFooter.svelte";
   import RampProgressIndicator from "./RampProgressIndicator.svelte";
+  import ViewerSettingsPopover from "./ViewerSettingsPopover.svelte";
 
   const overlay = getSequenceOverlayState();
 
+  // TODO: Add full settings panel with visibility toggles
+  // For now, the gear toggles dark mode (same as before)
+
+  // Width detection for responsive layout in split pane
+  let isMobileWidth = $state(true);
+
+  $effect(() => {
+    if (typeof window !== "undefined") {
+      const check = () => { isMobileWidth = window.innerWidth < 600; };
+      check();
+      window.addEventListener("resize", check);
+      return () => window.removeEventListener("resize", check);
+    }
+    return undefined;
+  });
+
   // Track drawer open state for binding
   let drawerOpen = $state(false);
+
+  // Settings popover state
+  let settingsOpen = $state(false);
 
   // Sync overlay state to drawer state
   $effect(() => {
@@ -86,7 +106,7 @@
   {#if overlay.sequence}
     <SequenceViewerOrchestrator
       sequence={overlay.sequence}
-      isMobile={true}
+      isMobile={isMobileWidth}
       initialBpm={overlay.initialBpm}
       initialStep={overlay.initialStep}
       onBack={handleDismiss}
@@ -113,13 +133,21 @@
                   <button
                     type="button"
                     class="header-action-btn"
-                    onclick={ctx.handleUnifiedDarkModeToggle}
-                    aria-label="Toggle dark mode"
+                    onclick={() => (settingsOpen = true)}
+                    aria-label="Settings"
+                    title="Viewer settings"
                   >
-                    <i class="fas {ctx.imgDarkMode ? 'fa-sun' : 'fa-moon'}" aria-hidden="true"></i>
+                    <i class="fas fa-cog" aria-hidden="true"></i>
                   </button>
                 {/if}
               </div>
+
+              <ViewerSettingsPopover
+                open={settingsOpen}
+                darkMode={ctx.imgDarkMode}
+                onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
+                onClose={() => (settingsOpen = false)}
+              />
             </header>
 
           <!-- Main content -->
@@ -165,7 +193,7 @@
                   catDogModeEnabled={ctx.catDogModeEnabled}
                   isFullscreen={ctx.isFullscreen}
                   fullscreenStackVertical={ctx.fullscreenStackVertical}
-                  isMobile={true}
+                  isMobile={isMobileWidth}
                   focusedPane={ctx.editingPane}
                   onFocusPane={ctx.enterEditMode}
                   onUnfocusPane={ctx.exitEditMode}
@@ -189,11 +217,13 @@
               onRetry={ctx.handleRetryExport}
             />
           {:else}
-            <MorphingFooter
+            <ViewerFooter
               bpm={ctx.bpmLocal}
               isPlaying={ctx.isPlayingLocal}
               isLoggedIn={ctx.isLoggedIn}
-              darkMode={ctx.imgDarkMode}
+              isSyncToggling={ctx.isSyncToggling}
+              isSyncActive={ctx.isSyncActive}
+              isSyncConnected={ctx.isSyncConnected}
               onBpmChange={ctx.handleBpmChange}
               onPlayPause={ctx.handlePlaybackToggle}
               onStepBack={ctx.stepFullBeatBackward}
@@ -204,19 +234,19 @@
               onCompose={() => ctx.handleOpenInCompose()}
               onShare={ctx.handleShare}
               onExport={ctx.enterExportMode}
-              onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
               onGetApp={ctx.handleGetApp}
               rampActive={ctx.rampActive}
               onRampStart={ctx.handleRampStart}
               onRampStop={ctx.handleRampStop}
+              onConnect={ctx.handleSyncToggle}
             />
-            {#if ctx.rampActive}
-              <RampProgressIndicator
-                progress={ctx.rampState.progress}
-                onStop={ctx.handleRampStop}
-                variant="floating"
-              />
-            {/if}
+          {/if}
+          {#if ctx.rampActive}
+            <RampProgressIndicator
+              progress={ctx.rampState.progress}
+              onStop={ctx.handleRampStop}
+              variant="floating"
+            />
           {/if}
         </div>
       {/snippet}

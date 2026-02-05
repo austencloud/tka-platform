@@ -88,6 +88,8 @@
 
     // Sync
     isSyncToggling: boolean;
+    isSyncActive: boolean;
+    isSyncConnected: boolean;
 
     // Auth
     isLoggedIn: boolean;
@@ -1027,6 +1029,8 @@
 
     // Sync
     isSyncToggling,
+    isSyncActive: lanSyncState.isActive,
+    isSyncConnected: lanSyncState.isConnected,
 
     // Auth
     isLoggedIn: authState.isAuthenticated,

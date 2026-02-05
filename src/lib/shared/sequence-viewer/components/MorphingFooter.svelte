@@ -31,6 +31,12 @@
     isLoggedIn: boolean;
     /** Unified dark mode state */
     darkMode: boolean;
+    /** Whether sync is currently connecting/disconnecting */
+    isSyncToggling?: boolean;
+    /** Whether sync is active (searching or connected) */
+    isSyncActive?: boolean;
+    /** Whether sync is connected to another device */
+    isSyncConnected?: boolean;
     /** Callback when BPM changes */
     onBpmChange: (bpm: number) => void;
     /** Callback to toggle play/pause */
@@ -61,6 +67,8 @@
     onRampStart?: () => void;
     /** Callback when ramp training stops */
     onRampStop?: () => void;
+    /** Callback when Connect is clicked (toggle LAN sync) */
+    onConnect?: () => void;
   }
 
   let {
@@ -68,6 +76,9 @@
     isPlaying,
     isLoggedIn,
     darkMode,
+    isSyncToggling = false,
+    isSyncActive = false,
+    isSyncConnected = false,
     onBpmChange,
     onPlayPause,
     onStepBack,
@@ -83,6 +94,7 @@
     rampActive = false,
     onRampStart,
     onRampStop,
+    onConnect,
   }: Props = $props();
 
   // Footer mode state machine
@@ -303,6 +315,20 @@
             <i class="fas fa-users" aria-hidden="true"></i>
             <span>Compose</span>
           </button>
+          {#if onConnect}
+            <button
+              type="button"
+              class="action-btn connect"
+              class:active={isSyncActive}
+              class:connected={isSyncConnected}
+              onclick={() => { haptic(); onConnect(); }}
+              disabled={isSyncToggling}
+              aria-label={isSyncConnected ? "Disconnect from sync" : isSyncActive ? "Searching..." : "Connect"}
+            >
+              <i class="fas {isSyncConnected ? 'fa-tower-broadcast' : isSyncActive ? 'fa-spinner fa-pulse' : 'fa-tower-broadcast'}" aria-hidden="true"></i>
+              <span>{isSyncConnected ? "Connected" : isSyncActive ? "Searching" : "Connect"}</span>
+            </button>
+          {/if}
         {:else}
           <button
             type="button"
@@ -612,6 +638,33 @@
     background: rgba(99, 102, 241, 0.25);
     border-color: rgba(99, 102, 241, 0.5);
     color: #a5b4fc;
+  }
+
+  .action-btn.connect {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.25);
+    color: #f59e0b;
+  }
+
+  .action-btn.connect:hover {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+
+  .action-btn.connect.active {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.35);
+  }
+
+  .action-btn.connect.connected {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.35);
+    color: #22c55e;
+  }
+
+  .action-btn.connect:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   /* ===========================

@@ -5,9 +5,7 @@
   Similar to ViewerHeader but with route-aware back navigation instead of modal close.
 -->
 <script lang="ts">
-  import SyncToggleButton from "$lib/shared/ui/components/SyncToggleButton.svelte";
-  import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
-  import ExpandButton from "$lib/shared/ui/components/ExpandButton.svelte";
+  import ViewerSettingsPopover from "$lib/shared/sequence-viewer/components/ViewerSettingsPopover.svelte";
 
   type ExportType = "animation" | "image" | "both";
 
@@ -18,18 +16,11 @@
     isMobile: boolean;
     darkMode: boolean;
     returnLabel: string;
-    isLoggedIn: boolean;
-    // Sync state
-    isSyncActive: boolean;
-    isSyncConnected: boolean;
-    isSyncToggling: boolean;
     // Callbacks
     onBack: () => void;
     onExitExportMode: () => void;
     onBackToExportTypeSelection: () => void;
-    onSyncToggle: () => void;
     onDarkModeToggle: () => void;
-    onEnterFullscreen: () => void;
   }
 
   let {
@@ -39,17 +30,14 @@
     isMobile,
     darkMode,
     returnLabel,
-    isLoggedIn,
-    isSyncActive,
-    isSyncConnected,
-    isSyncToggling,
     onBack,
     onExitExportMode,
     onBackToExportTypeSelection,
-    onSyncToggle,
     onDarkModeToggle,
-    onEnterFullscreen,
   }: Props = $props();
+
+  // Settings popover state
+  let settingsOpen = $state(false);
 </script>
 
 {#if isExportMode}
@@ -113,30 +101,23 @@
     </div>
 
     <div class="header-right">
-      {#if !isMobile}
-        <!-- Desktop controls: Sync (auth-only), dark mode, fullscreen -->
-        {#if isLoggedIn}
-          <SyncToggleButton
-            isSearching={isSyncActive && !isSyncConnected}
-            isConnected={isSyncConnected}
-            isToggling={isSyncToggling}
-            onToggle={onSyncToggle}
-            disabled={isSyncToggling}
-            size="small"
-          />
-        {/if}
-        <LightsToggleButton
-          lightsOn={!darkMode}
-          onToggle={onDarkModeToggle}
-          size="small"
-        />
-        <ExpandButton
-          isExpanded={isFullscreen}
-          onclick={onEnterFullscreen}
-          size="small"
-        />
-      {/if}
+      <button
+        type="button"
+        class="header-action-btn"
+        onclick={() => (settingsOpen = true)}
+        aria-label="Settings"
+        title="Viewer settings"
+      >
+        <i class="fas fa-cog" aria-hidden="true"></i>
+      </button>
     </div>
+
+    <ViewerSettingsPopover
+      open={settingsOpen}
+      {darkMode}
+      onDarkModeToggle={onDarkModeToggle}
+      onClose={() => (settingsOpen = false)}
+    />
   </header>
 {/if}
 
@@ -234,6 +215,30 @@
   .back-label {
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
+  }
+
+  .header-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    min-height: 48px;
+    background: none;
+    border: none;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 150ms ease, color 150ms ease;
+  }
+
+  .header-action-btn:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .header-action-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   /* Sequence title in header */

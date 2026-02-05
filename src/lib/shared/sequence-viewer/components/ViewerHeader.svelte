@@ -5,10 +5,7 @@
   Handles both normal view mode and export mode headers.
 -->
 <script lang="ts">
-  import SyncToggleButton from "$lib/shared/ui/components/SyncToggleButton.svelte";
-  import MultiPerformerButton from "$lib/shared/ui/components/MultiPerformerButton.svelte";
-  import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
-  import ExpandButton from "$lib/shared/ui/components/ExpandButton.svelte";
+  import ViewerSettingsPopover from "./ViewerSettingsPopover.svelte";
 
   type ExportType = "animation" | "image" | "both";
 
@@ -18,18 +15,11 @@
     isFullscreen: boolean;
     isMobile: boolean;
     darkMode: boolean;
-    // Sync state
-    isSyncActive: boolean;
-    isSyncConnected: boolean;
-    isSyncToggling: boolean;
     // Callbacks
     onClose: () => void;
     onExitExportMode: () => void;
     onBackToExportTypeSelection: () => void;
-    onSyncToggle: () => void;
-    onOpenInCompose: () => void;
     onDarkModeToggle: () => void;
-    onEnterFullscreen: () => void;
   }
 
   let {
@@ -38,17 +28,14 @@
     isFullscreen,
     isMobile,
     darkMode,
-    isSyncActive,
-    isSyncConnected,
-    isSyncToggling,
     onClose,
     onExitExportMode,
     onBackToExportTypeSelection,
-    onSyncToggle,
-    onOpenInCompose,
     onDarkModeToggle,
-    onEnterFullscreen,
   }: Props = $props();
+
+  // Settings popover state
+  let settingsOpen = $state(false);
 </script>
 
 {#if isExportMode}
@@ -94,33 +81,17 @@
     {/if}
 
     <div class="header-left">
-      {#if !isMobile}
-        <!-- Desktop: Full set of controls -->
-        <SyncToggleButton
-          isSearching={isSyncActive && !isSyncConnected}
-          isConnected={isSyncConnected}
-          isToggling={isSyncToggling}
-          onToggle={onSyncToggle}
-          disabled={isSyncToggling}
-          size="small"
-        />
-        <MultiPerformerButton
-          onclick={onOpenInCompose}
-          size="small"
-        />
-        <!-- Desktop: Quick light/dark toggle + fullscreen -->
-        <LightsToggleButton
-          lightsOn={!darkMode}
-          onToggle={onDarkModeToggle}
-          size="small"
-        />
-        <ExpandButton
-          isExpanded={isFullscreen}
-          onclick={onEnterFullscreen}
-          size="small"
-        />
-      {/if}
-      <!-- Mobile: No header buttons - settings moved to morphing footer -->
+      <button
+        type="button"
+        class="close-button back"
+        onclick={onClose}
+        aria-label="Back"
+      >
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        {#if !isMobile}
+          <span>Back</span>
+        {/if}
+      </button>
     </div>
 
     <div class="header-center">
@@ -130,13 +101,21 @@
     <div class="header-right">
       <button
         type="button"
-        class="close-button"
-        onclick={onClose}
-        aria-label="Close"
+        class="header-action-btn"
+        onclick={() => (settingsOpen = true)}
+        aria-label="Settings"
+        title="Viewer settings"
       >
-        <i class="fas fa-times" aria-hidden="true"></i>
+        <i class="fas fa-cog" aria-hidden="true"></i>
       </button>
     </div>
+
+    <ViewerSettingsPopover
+      open={settingsOpen}
+      {darkMode}
+      onDarkModeToggle={onDarkModeToggle}
+      onClose={() => (settingsOpen = false)}
+    />
   </header>
 {/if}
 
@@ -207,20 +186,51 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
+    gap: 6px;
+    min-width: 48px;
     height: 48px;
+    padding: 0 12px;
     background: transparent;
     border: none;
-    border-radius: 50%;
+    border-radius: 8px;
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.15s ease;
+  }
+
+  .close-button span {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
   }
 
   .close-button:hover {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, white);
+  }
+
+  .header-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    min-height: 48px;
+    background: none;
+    border: none;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 150ms ease, color 150ms ease;
+  }
+
+  .header-action-btn:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .header-action-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   /* Sequence title in header */

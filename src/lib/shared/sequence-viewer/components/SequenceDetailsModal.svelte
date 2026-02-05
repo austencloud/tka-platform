@@ -53,7 +53,6 @@
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { goto } from "$app/navigation";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import MorphingFooter from "./MorphingFooter.svelte";
   // Extracted child components
   import ViewerHeader from "./ViewerHeader.svelte";
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
@@ -179,16 +178,16 @@
     return undefined;
   });
 
-  // Swipe-to-dismiss handler (mobile only)
+  // Swipe-to-dismiss handler (works at all viewport sizes)
   const swipeDismiss = createModalSwipeDismiss();
 
   function handleTouchStart(e: TouchEvent) {
-    if (!isMobile || isFullscreen || isExportMode) return;
+    if (isFullscreen || isExportMode) return;
     swipeDismiss.handleTouchStart(e);
   }
 
   function handleTouchMove(e: TouchEvent) {
-    if (!isMobile || isFullscreen || isExportMode) return;
+    if (isFullscreen || isExportMode) return;
     const handled = swipeDismiss.handleTouchMove(e);
     if (handled) {
       // Only prevent default if the event is cancelable
@@ -1179,16 +1178,10 @@
       {isFullscreen}
       {isMobile}
       darkMode={imgDarkMode}
-      isSyncActive={lanSyncState.isActive}
-      isSyncConnected={lanSyncState.isConnected}
-      {isSyncToggling}
       onClose={handleClose}
       onExitExportMode={exitExportMode}
       onBackToExportTypeSelection={backToExportTypeSelection}
-      onSyncToggle={handleSyncToggle}
-      onOpenInCompose={() => handleOpenInCompose('stagger')}
       onDarkModeToggle={() => toggleImgSetting("darkMode")}
-      onEnterFullscreen={enterFullscreen}
     />
   {/snippet}
 
@@ -1290,61 +1283,35 @@
           onRetry={() => { sequenceModalExporter.clearError(); handleExport(); }}
         />
       {:else}
-        <!-- Footer: MorphingFooter on mobile, ViewerFooter on desktop -->
-        {#if isMobile}
-          <MorphingFooter
-            bpm={bpmLocal}
-            isPlaying={isPlayingLocal}
-            isLoggedIn={authState.isAuthenticated}
-            darkMode={imgDarkMode}
-            onBpmChange={handleBpmChange}
-            onPlayPause={handlePlaybackToggle}
-            onStepBack={handleStepFullBack}
-            onStepForward={handleStepFullFwd}
-            onStepHalfBack={handleStepHalfBack}
-            onStepHalfForward={handleStepHalfFwd}
-            onSave={handleSave}
-            onCompose={handleCompose}
-            onShare={handleShare}
-            onExport={enterExportMode}
-            onDarkModeToggle={handleUnifiedDarkModeToggle}
-            rampActive={rampActive}
-            onRampStart={() => handleRampStart()}
-            onRampStop={() => handleRampStop()}
+        <!-- Footer: ViewerFooter with MorphChip toolbar (handles all screen sizes) -->
+        <ViewerFooter
+          bpm={bpmLocal}
+          isPlaying={isPlayingLocal}
+          isLoggedIn={authState.isAuthenticated}
+          rampActive={rampActive}
+          isSyncToggling={isSyncToggling}
+          isSyncActive={lanSyncState.isActive}
+          isSyncConnected={lanSyncState.isConnected}
+          onBpmChange={handleBpmChange}
+          onPlayPause={handlePlaybackToggle}
+          onStepBack={handleStepFullBack}
+          onStepForward={handleStepFullFwd}
+          onStepHalfBack={handleStepHalfBack}
+          onStepHalfForward={handleStepHalfFwd}
+          onSave={handleSave}
+          onCompose={handleCompose}
+          onShare={handleShare}
+          onExport={enterExportMode}
+          onRampStart={() => handleRampStart()}
+          onRampStop={() => handleRampStop()}
+          onConnect={handleSyncToggle}
+        />
+        {#if rampActive}
+          <RampProgressIndicator
+            progress={rampState.progress}
+            onStop={() => handleRampStop()}
+            variant="floating"
           />
-          {#if rampActive}
-            <RampProgressIndicator
-              progress={rampState.progress}
-              onStop={() => handleRampStop()}
-              variant="floating"
-            />
-          {/if}
-        {:else}
-          <ViewerFooter
-            bpm={bpmLocal}
-            isPlaying={isPlayingLocal}
-            isLoggedIn={authState.isAuthenticated}
-            rampActive={rampActive}
-            onBpmChange={handleBpmChange}
-            onPlayPause={handlePlaybackToggle}
-            onStepBack={handleStepFullBack}
-            onStepForward={handleStepFullFwd}
-            onStepHalfBack={handleStepHalfBack}
-            onStepHalfForward={handleStepHalfFwd}
-            onSave={handleSave}
-            onCompose={handleCompose}
-            onShare={handleShare}
-            onExport={enterExportMode}
-            onRampStart={() => handleRampStart()}
-            onRampStop={() => handleRampStop()}
-          />
-          {#if rampActive}
-            <RampProgressIndicator
-              progress={rampState.progress}
-              onStop={() => handleRampStop()}
-              variant="inline"
-            />
-          {/if}
         {/if}
       {/if}
     {/if}

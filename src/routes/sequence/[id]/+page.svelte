@@ -9,7 +9,7 @@
   - initializeAppServices() for standalone access
   - SSR metadata (<svelte:head>)
   - View Transitions
-  - Swipe-to-dismiss gesture (mobile)
+  - Swipe-to-dismiss gesture (all viewports)
   - DrawerStack registration (blocks pull-to-refresh)
   - Browse gallery background (mobile drawer effect)
 -->
@@ -40,7 +40,6 @@
   // Components
   import ViewerSplitPane from "$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte";
   import ViewerFooter from "$lib/shared/sequence-viewer/components/ViewerFooter.svelte";
-  import MorphingFooter from "$lib/shared/sequence-viewer/components/MorphingFooter.svelte";
   import FullscreenControls from "$lib/shared/sequence-viewer/components/FullscreenControls.svelte";
   import ExportModeContent from "$lib/shared/sequence-viewer/components/ExportModeContent.svelte";
   import ExportFooter from "$lib/shared/sequence-viewer/components/ExportFooter.svelte";
@@ -82,7 +81,7 @@
   // Mobile detection
   let isMobile = $state(false);
 
-  // Swipe-to-dismiss (mobile only)
+  // Swipe-to-dismiss (works at all viewport sizes)
   const swipeDismiss = createModalSwipeDismiss();
   let currentSwipeY = $state(0);
   let currentIsSwiping = $state(false);
@@ -310,16 +309,16 @@
   }
 
   // ============================================================================
-  // SWIPE HANDLING (MOBILE)
+  // SWIPE HANDLING (ALL VIEWPORTS)
   // ============================================================================
 
   function handleTouchStart(e: TouchEvent, ctx: OrchestratorContext) {
-    if (!isMobile || ctx.isFullscreen || ctx.isExportMode) return;
+    if (ctx.isFullscreen || ctx.isExportMode) return;
     swipeDismiss.handleTouchStart(e);
   }
 
   function handleTouchMove(e: TouchEvent, ctx: OrchestratorContext) {
-    if (!isMobile || ctx.isFullscreen || ctx.isExportMode) return;
+    if (ctx.isFullscreen || ctx.isExportMode) return;
     const handled = swipeDismiss.handleTouchMove(e);
     currentSwipeY = swipeDismiss.state.swipeY;
     currentIsSwiping = swipeDismiss.state.isSwiping;
@@ -416,16 +415,10 @@
           {isMobile}
           darkMode={ctx.imgDarkMode}
           returnLabel={handoffData?.returnLabel || "Back"}
-          isLoggedIn={ctx.isLoggedIn}
-          isSyncActive={lanSyncState.isActive}
-          isSyncConnected={lanSyncState.isConnected}
-          isSyncToggling={ctx.isSyncToggling}
           onBack={ctx.onBack}
           onExitExportMode={ctx.exitExportMode}
           onBackToExportTypeSelection={ctx.backToExportTypeSelection}
-          onSyncToggle={ctx.handleSyncToggle}
           onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
-          onEnterFullscreen={ctx.enterFullscreen}
         />
 
         <!-- Main content -->
@@ -520,41 +513,15 @@
               onCancel={ctx.handleCancelExport}
               onRetry={ctx.handleRetryExport}
             />
-          {:else if isMobile}
-            <MorphingFooter
-              bpm={ctx.bpmLocal}
-              isPlaying={ctx.isPlayingLocal}
-              isLoggedIn={ctx.isLoggedIn}
-              darkMode={ctx.imgDarkMode}
-              onBpmChange={ctx.handleBpmChange}
-              onPlayPause={ctx.handlePlaybackToggle}
-              onStepBack={ctx.stepFullBeatBackward}
-              onStepForward={ctx.stepFullBeatForward}
-              onStepHalfBack={ctx.stepHalfBeatBackward}
-              onStepHalfForward={ctx.stepHalfBeatForward}
-              onSave={ctx.handleSave}
-              onCompose={() => ctx.handleOpenInCompose()}
-              onShare={ctx.handleShare}
-              onExport={ctx.enterExportMode}
-              onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
-              onGetApp={ctx.handleGetApp}
-              rampActive={ctx.rampActive}
-              onRampStart={ctx.handleRampStart}
-              onRampStop={ctx.handleRampStop}
-            />
-            {#if ctx.rampActive}
-              <RampProgressIndicator
-                progress={ctx.rampState.progress}
-                onStop={ctx.handleRampStop}
-                variant="floating"
-              />
-            {/if}
           {:else}
             <ViewerFooter
               bpm={ctx.bpmLocal}
               isPlaying={ctx.isPlayingLocal}
               isLoggedIn={ctx.isLoggedIn}
               rampActive={ctx.rampActive}
+              isSyncToggling={ctx.isSyncToggling}
+              isSyncActive={ctx.isSyncActive}
+              isSyncConnected={ctx.isSyncConnected}
               onBpmChange={ctx.handleBpmChange}
               onPlayPause={ctx.handlePlaybackToggle}
               onStepBack={ctx.stepFullBeatBackward}
@@ -568,12 +535,13 @@
               onGetApp={ctx.handleGetApp}
               onRampStart={ctx.handleRampStart}
               onRampStop={ctx.handleRampStop}
+              onConnect={ctx.handleSyncToggle}
             />
             {#if ctx.rampActive}
               <RampProgressIndicator
                 progress={ctx.rampState.progress}
                 onStop={ctx.handleRampStop}
-                variant="inline"
+                variant="floating"
               />
             {/if}
           {/if}

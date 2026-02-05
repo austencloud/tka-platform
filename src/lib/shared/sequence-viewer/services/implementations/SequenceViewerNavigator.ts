@@ -31,27 +31,40 @@ export interface OpenSequenceViewerOptions {
 /**
  * Open the sequence viewer using the appropriate method for the current device.
  *
- * On mobile (<768px): Opens the drawer overlay. The current module stays mounted
- * behind the drawer, so returning is instant.
+ * On compact devices (<=1024px): Opens the drawer overlay. The current module stays
+ * mounted behind the drawer, so returning is instant. Includes swipe-to-dismiss.
+ * Covers phones, folded/unfolded foldables, and small tablets.
  *
- * On desktop (>=768px): Navigates to the /sequence/[id] route with view transitions
+ * On desktop (>1024px): Navigates to the /sequence/[id] route with view transitions
  * and saves handoff data for instant loading.
  */
 export function openSequenceViewer(
 	sequence: SequenceData,
 	options: OpenSequenceViewerOptions
 ): void {
-	const isMobile = window.innerWidth < 768;
+	// Track sequence view for attribution prompt eligibility
+	try {
+		import('$lib/shared/di').then(({ container }) => {
+			const promptTrigger = container?.items?.attributionPromptTrigger as { recordInteraction?: (type: string) => void } | undefined;
+			if (promptTrigger?.recordInteraction) {
+				promptTrigger.recordInteraction('sequence_view');
+			}
+		});
+	} catch {
+		// Silently fail - attribution tracking is non-critical
+	}
 
-	if (isMobile) {
-		// Mobile: open drawer overlay, no route navigation
+	const useDrawer = window.innerWidth <= 1024;
+
+	if (useDrawer) {
+		// Compact (<=1024px): open drawer overlay, no route navigation
 		openSequenceOverlay(sequence, {
 			returnLabel: options.returnLabel,
 			initialBpm: options.initialBpm,
 			initialStep: options.initialStep,
 		});
 	} else {
-		// Desktop: navigate to route with handoff for instant loading
+		// Desktop (>1024px): navigate to route with handoff for instant loading
 		saveSequenceRouteHandoff({
 			sequence,
 			returnPath: options.returnPath,

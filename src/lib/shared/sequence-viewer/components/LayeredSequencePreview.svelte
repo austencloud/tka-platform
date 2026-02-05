@@ -487,19 +487,8 @@
   let containerObserver: ResizeObserver | undefined;
 
   // Calculate "contain" dimensions - fill container while maintaining aspect ratio
-  let resizeCallCount = 0;
-  let lastResizeLogTime = 0;
-
   function updateContainedDimensions() {
     if (!containerElement || !previewAspectRatio || !Number.isFinite(previewAspectRatio)) return;
-
-    resizeCallCount++;
-    const now = performance.now();
-    // Log resize calls but throttle to avoid console spam
-    if (now - lastResizeLogTime > 50) {
-      console.log(`[RESIZE] updateContainedDimensions called (call #${resizeCallCount})`);
-      lastResizeLogTime = now;
-    }
 
     const containerWidth = containerElement.clientWidth;
     const containerHeight = containerElement.clientHeight;
@@ -509,66 +498,68 @@
 
     const containerRatio = containerWidth / containerHeight;
 
+    let newWidth: number | null;
+    let newHeight: number | null;
+
     if (contentRatio > containerRatio) {
-      // Content is wider than container - constrain by width
-      containedWidth = containerWidth;
-      const newHeight = containerWidth / contentRatio;
-      containedHeight = Number.isFinite(newHeight) ? newHeight : null;
+      newWidth = containerWidth;
+      const h = containerWidth / contentRatio;
+      newHeight = Number.isFinite(h) ? h : null;
     } else {
-      // Content is taller than container - constrain by height
-      containedHeight = containerHeight;
-      const newWidth = containerHeight * contentRatio;
-      containedWidth = Number.isFinite(newWidth) ? newWidth : null;
+      newHeight = containerHeight;
+      const w = containerHeight * contentRatio;
+      newWidth = Number.isFinite(w) ? w : null;
     }
+
+    // Only update state if values actually changed (prevents ResizeObserver → state → resize loop)
+    const widthChanged = newWidth !== containedWidth && (newWidth === null || containedWidth === null || Math.abs(newWidth - containedWidth) > 0.5);
+    const heightChanged = newHeight !== containedHeight && (newHeight === null || containedHeight === null || Math.abs(newHeight - containedHeight) > 0.5);
+
+    if (widthChanged) containedWidth = newWidth;
+    if (heightChanged) containedHeight = newHeight;
   }
 
   // Track cell width for responsive sizing using ResizeObserver
-  let cellWidthCallCount = 0;
-  let lastCellWidthLogTime = 0;
-
   function updateCellWidth() {
     if (previewStackElement && columns > 0) {
-      cellWidthCallCount++;
-      const now = performance.now();
-      if (now - lastCellWidthLogTime > 50) {
-        console.log(`[RESIZE] updateCellWidth called (call #${cellWidthCallCount})`);
-        lastCellWidthLogTime = now;
-      }
-
-      // Calculate cell width from the preview stack width
       const stackWidth = previewStackElement.clientWidth;
-      const newCellWidth = stackWidth / columns;
-      // Guard against NaN/Infinity from division edge cases
-      cellWidth = Number.isFinite(newCellWidth) ? newCellWidth : 0;
+      const newCellWidth = Number.isFinite(stackWidth / columns) ? stackWidth / columns : 0;
+      // Only update state if value actually changed (prevents ResizeObserver loop)
+      if (Math.abs(newCellWidth - cellWidth) > 0.5) {
+        cellWidth = newCellWidth;
+      }
     }
   }
 
   // Track if initial render is complete
   let hasMounted = false;
+  let lastEffectRenderKey = "";
 
   // Re-render when relevant props or visibility settings change
   $effect(() => {
-    // Track all props that affect rendering
-    const _sequence = sequence;
-    const _sequenceSteps = sequence?.steps;
-    const _bluePropType = bluePropType;
-    const _redPropType = redPropType;
-    const _catDogModeEnabled = catDogModeEnabled;
-    const _showStepNumbers = showStepNumbers;
-    const _columnCount = columnCount;
-    // Visibility settings (included in cache key, so changes produce cache misses → re-render)
-    const _showNonRadial = showNonRadial;
-    const _handPointVis = handPointVis;
-    const _showTKA = showTKA;
-    const _showReversals = showReversals;
+    // Track all props that affect rendering by reading them (creates Svelte dependency)
+    const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
+    const stepCount = sequence?.steps?.length ?? 0;
+    const bpt = bluePropType;
+    const rpt = redPropType;
+    const cdm = catDogModeEnabled;
+    const ssn = showStepNumbers;
+    const cc = columnCount;
+    const snr = showNonRadial;
+    const hpv = handPointVis;
+    const stka = showTKA;
+    const sr = showReversals;
 
-    console.log(`[EFFECT] LayeredSequencePreview re-render effect triggered, hasMounted=${hasMounted}`);
+    // Build a key from all tracked values to detect actual changes
+    const renderKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${cc}-${snr}-${hpv}-${stka}-${sr}`;
 
-    if (hasMounted) {
-      untrack(() => {
-        renderAllCells();
-      });
-    }
+    if (!hasMounted) return;
+    if (renderKey === lastEffectRenderKey) return;
+    lastEffectRenderKey = renderKey;
+
+    untrack(() => {
+      renderAllCells();
+    });
   });
 
   // Set up ResizeObserver for container-based "contain" sizing
