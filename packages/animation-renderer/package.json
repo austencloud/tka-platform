@@ -1,0 +1,24 @@
+{
+  "name": "@tka/animation-renderer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Canvas-based animation rendering engine for TKA sequences",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": ["src"],
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "dependencies": {
+    "@tka/types": "workspace:*"
+  },
+  "devDependencies": {
+    "svelte": "^5.46.1",
+    "typescript": "^5.9.3"
+  }
+}

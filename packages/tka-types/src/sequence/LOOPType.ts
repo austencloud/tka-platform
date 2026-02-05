@@ -1,0 +1,16 @@
+export enum LOOPType {
+  STRICT_ROTATED = "strict_rotated",
+  STRICT_MIRRORED = "strict_mirrored",
+  STRICT_FLIPPED = "strict_flipped",
+  STRICT_SWAPPED = "strict_swapped",
+  STRICT_INVERTED = "strict_inverted",
+  SWAPPED_INVERTED = "swapped_inverted",
+  ROTATED_INVERTED = "rotated_inverted",
+  MIRRORED_SWAPPED = "mirrored_swapped",
+  MIRRORED_INVERTED = "mirrored_inverted",
+  ROTATED_SWAPPED = "rotated_swapped",
+  MIRRORED_ROTATED = "mirrored_rotated",
+  MIRRORED_INVERTED_ROTATED = "mirrored_inverted_rotated",
+  MIRRORED_ROTATED_INVERTED_SWAPPED = "mirrored_rotated_inverted_swapped",
+  STRICT_REWOUND = "strict_rewound",
+}
