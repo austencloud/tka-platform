@@ -528,7 +528,7 @@ export const LAB_TABS: Section[] = [
     id: "level6",
     label: "Level 6",
     icon: '<i class="fas fa-magnet" aria-hidden="true"></i>',
-    description: "Interradial orientations (poi gravity)",
+    description: "Interradial orientations at intercardinal positions",
     color: "#a855f7",
     gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
   },
@@ -643,6 +643,14 @@ export const LAB_TABS: Section[] = [
     description: "Test Hey Tika voice control",
     color: "#f43f5e",
     gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
+  },
+  {
+    id: "vtg",
+    label: "VTG",
+    icon: '<i class="fas fa-circle-half-stroke" aria-hidden="true"></i>',
+    description: "Map VTG modes to TKA letters and terminology",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
 ];
 

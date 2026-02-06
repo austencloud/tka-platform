@@ -1,0 +1,507 @@
+/**
+ * VTG Pattern Data
+ *
+ * Complete enumeration of all VTG modes mapped to TKA letters.
+ * Data sourced from vtg-calculator.ts lookup tables and compound-letters.json.
+ *
+ * Classification rules (Diamond grid mode — the default):
+ *   SS (Split-Same):     A, B, C       — alpha→alpha, fixed
+ *   TS (Together-Same):  G, H, I       — beta→beta, fixed
+ *   TO (Together-Opp):   D, E, F       — beta→alpha, position-dependent*
+ *   SO (Split-Opp):      J, K, L       — alpha→beta, position-dependent*
+ *   QS (Quarter-Same):   S, T, U, V    — gamma→gamma, fixed
+ *   QO (Quarter-Opp):    M, N, O, P, Q, R — gamma→gamma, fixed
+ *
+ * * D/E/F default to TO in Diamond mode but classify as SO at beta3/beta7.
+ *   J/K/L default to TO in Diamond mode but classify as SO at alpha1/alpha5.
+ *   The lab shows the PRIMARY classification with a note.
+ */
+
+import type {
+	VtgModeGroup,
+	VtgPatternEntry,
+	RotationGroup,
+	CompoundInfo,
+	TerminologyRow,
+	TurnRatioMapping,
+	BeyondVtgItem,
+} from "./vtg-lab-types";
+
+// ---------------------------------------------------------------------------
+// Helper to build pattern entries
+// ---------------------------------------------------------------------------
+
+function entry(
+	letter: string,
+	rotationStyle: "pro/pro" | "anti/anti" | "hybrid",
+	positionTransition: string,
+	isPositionDependent = false,
+	positionNote?: string
+): VtgPatternEntry {
+	return { letter, rotationStyle, positionTransition, isPositionDependent, positionNote };
+}
+
+// ---------------------------------------------------------------------------
+// SS — Split-Same (A, B, C)
+// ---------------------------------------------------------------------------
+
+const SS_GROUPS: RotationGroup[] = [
+	{
+		style: "pro/pro",
+		label: "Pro / Pro",
+		entries: [entry("A", "pro/pro", "alpha \u2192 alpha")],
+	},
+	{
+		style: "anti/anti",
+		label: "Anti / Anti",
+		entries: [entry("B", "anti/anti", "alpha \u2192 alpha")],
+	},
+	{
+		style: "hybrid",
+		label: "Hybrid",
+		entries: [entry("C", "hybrid", "alpha \u2192 alpha")],
+	},
+];
+
+// ---------------------------------------------------------------------------
+// TS — Together-Same (G, H, I)
+// ---------------------------------------------------------------------------
+
+const TS_GROUPS: RotationGroup[] = [
+	{
+		style: "pro/pro",
+		label: "Pro / Pro",
+		entries: [entry("G", "pro/pro", "beta \u2192 beta")],
+	},
+	{
+		style: "anti/anti",
+		label: "Anti / Anti",
+		entries: [entry("H", "anti/anti", "beta \u2192 beta")],
+	},
+	{
+		style: "hybrid",
+		label: "Hybrid",
+		entries: [entry("I", "hybrid", "beta \u2192 beta")],
+	},
+];
+
+// ---------------------------------------------------------------------------
+// TO — Together-Opposite (D, E, F)
+// ---------------------------------------------------------------------------
+
+const TO_NOTE =
+	"At beta3/beta7 in Diamond mode, these classify as Split-Opp instead.";
+
+const TO_GROUPS: RotationGroup[] = [
+	{
+		style: "pro/pro",
+		label: "Pro / Pro",
+		entries: [entry("D", "pro/pro", "beta \u2192 alpha", true, TO_NOTE)],
+	},
+	{
+		style: "anti/anti",
+		label: "Anti / Anti",
+		entries: [entry("E", "anti/anti", "beta \u2192 alpha", true, TO_NOTE)],
+	},
+	{
+		style: "hybrid",
+		label: "Hybrid",
+		entries: [entry("F", "hybrid", "beta \u2192 alpha", true, TO_NOTE)],
+	},
+];
+
+const TO_COMPOUNDS: CompoundInfo[] = [
+	{
+		name: "DJ",
+		components: ["D", "J"],
+		mnemonic: "Disco Jam",
+		rotationStyle: "pro/pro",
+		cycle: "beta \u2192 alpha \u2192 beta (full LOOP)",
+	},
+	{
+		name: "EK",
+		components: ["E", "K"],
+		mnemonic: "Exploding Kitten",
+		rotationStyle: "anti/anti",
+		cycle: "beta \u2192 alpha \u2192 beta (full LOOP)",
+	},
+	{
+		name: "FL",
+		components: ["F", "L"],
+		mnemonic: "Fruity Loops",
+		rotationStyle: "hybrid",
+		cycle: "beta \u2192 alpha \u2192 beta (full LOOP)",
+	},
+];
+
+// ---------------------------------------------------------------------------
+// SO — Split-Opposite (J, K, L)
+// ---------------------------------------------------------------------------
+
+const SO_NOTE =
+	"At alpha1/alpha5 in Diamond mode, these classify as Split-Opp. At other alpha positions, they classify as Tog-Opp.";
+
+const SO_GROUPS: RotationGroup[] = [
+	{
+		style: "pro/pro",
+		label: "Pro / Pro",
+		entries: [entry("J", "pro/pro", "alpha \u2192 beta", true, SO_NOTE)],
+	},
+	{
+		style: "anti/anti",
+		label: "Anti / Anti",
+		entries: [entry("K", "anti/anti", "alpha \u2192 beta", true, SO_NOTE)],
+	},
+	{
+		style: "hybrid",
+		label: "Hybrid",
+		entries: [entry("L", "hybrid", "alpha \u2192 beta", true, SO_NOTE)],
+	},
+];
+
+const SO_COMPOUNDS: CompoundInfo[] = TO_COMPOUNDS; // Same compounds, other half
+
+// ---------------------------------------------------------------------------
+// QS — Quarter-Same (S, T, U, V)
+// ---------------------------------------------------------------------------
+
+const QS_GROUPS: RotationGroup[] = [
+	{
+		style: "pro/pro",
+		label: "Pro / Pro",
+		entries: [
+			entry("S", "pro/pro", "gamma \u2192 gamma"),
+			entry("T", "pro/pro", "gamma \u2192 gamma"),
+		],
+	},
+	{
+		style: "anti/anti",
+		label: "Anti / Anti",
+		entries: [
+			entry("U", "anti/anti", "gamma \u2192 gamma"),
+			entry("V", "anti/anti", "gamma \u2192 gamma"),
+		],
+	},
+];
+
+// ---------------------------------------------------------------------------
+// QO — Quarter-Opposite (M, N, O, P, Q, R)
+// ---------------------------------------------------------------------------
+
+const QO_GROUPS: RotationGroup[] = [
+	{
+		style: "pro/pro",
+		label: "Pro / Pro",
+		entries: [
+			entry("M", "pro/pro", "gamma \u2192 gamma"),
+			entry("P", "pro/pro", "gamma \u2192 gamma"),
+		],
+	},
+	{
+		style: "anti/anti",
+		label: "Anti / Anti",
+		entries: [
+			entry("N", "anti/anti", "gamma \u2192 gamma"),
+			entry("Q", "anti/anti", "gamma \u2192 gamma"),
+		],
+	},
+	{
+		style: "hybrid",
+		label: "Hybrid",
+		entries: [
+			entry("O", "hybrid", "gamma \u2192 gamma"),
+			entry("R", "hybrid", "gamma \u2192 gamma"),
+		],
+	},
+];
+
+const QO_COMPOUNDS: CompoundInfo[] = [
+	{
+		name: "MP",
+		components: ["M", "P"],
+		mnemonic: "Magic Potion",
+		rotationStyle: "pro/pro",
+		cycle: "gamma \u2192 gamma (internal cycle)",
+	},
+	{
+		name: "NQ",
+		components: ["N", "Q"],
+		mnemonic: "Never Quit",
+		rotationStyle: "anti/anti",
+		cycle: "gamma \u2192 gamma (internal cycle)",
+	},
+	{
+		name: "OR",
+		components: ["O", "R"],
+		mnemonic: "Open Road",
+		rotationStyle: "hybrid",
+		cycle: "gamma \u2192 gamma (internal cycle)",
+	},
+];
+
+// ---------------------------------------------------------------------------
+// Assembled mode groups
+// ---------------------------------------------------------------------------
+
+export const VTG_MODE_GROUPS: VtgModeGroup[] = [
+	{
+		mode: "SS",
+		name: "Split-Same",
+		tkaPositionDescription: "Alpha \u2192 Alpha (hands at opposite points, stay opposite)",
+		tkaMotionDescription: "Both hands shift, same rotation direction",
+		letterType: "Type 1 (Dual-Shift)",
+		rotationGroups: SS_GROUPS,
+		compounds: [],
+		hasPositionDependentLetters: false,
+	},
+	{
+		mode: "TS",
+		name: "Together-Same",
+		tkaPositionDescription: "Beta \u2192 Beta (hands at same point, stay together)",
+		tkaMotionDescription: "Both hands shift, same rotation direction",
+		letterType: "Type 1 (Dual-Shift)",
+		rotationGroups: TS_GROUPS,
+		compounds: [],
+		hasPositionDependentLetters: false,
+	},
+	{
+		mode: "TO",
+		name: "Together-Opposite",
+		tkaPositionDescription: "Beta \u2192 Alpha (hands start together, end opposite)",
+		tkaMotionDescription: "Both hands shift, opposite rotation directions",
+		letterType: "Type 1 (Dual-Shift)",
+		rotationGroups: TO_GROUPS,
+		compounds: TO_COMPOUNDS,
+		hasPositionDependentLetters: true,
+		positionDependenceNote:
+			"In Diamond mode, D/E/F classify as TO at most positions, but as SO at beta3/beta7.",
+	},
+	{
+		mode: "SO",
+		name: "Split-Opposite",
+		tkaPositionDescription: "Alpha \u2192 Beta (hands start opposite, end together)",
+		tkaMotionDescription: "Both hands shift, opposite rotation directions",
+		letterType: "Type 1 (Dual-Shift)",
+		rotationGroups: SO_GROUPS,
+		compounds: SO_COMPOUNDS,
+		hasPositionDependentLetters: true,
+		positionDependenceNote:
+			"In Diamond mode, J/K/L classify as SO at alpha1/alpha5, but as TO at other alpha positions.",
+	},
+	{
+		mode: "QS",
+		name: "Quarter-Same",
+		tkaPositionDescription: "Gamma \u2192 Gamma (hands at right angle, stay at right angle)",
+		tkaMotionDescription: "Both hands shift, same rotation direction, 90\u00b0 phase offset",
+		letterType: "Type 1 (Dual-Shift)",
+		rotationGroups: QS_GROUPS,
+		compounds: [],
+		hasPositionDependentLetters: false,
+	},
+	{
+		mode: "QO",
+		name: "Quarter-Opposite",
+		tkaPositionDescription: "Gamma \u2192 Gamma (hands at right angle, stay at right angle)",
+		tkaMotionDescription: "Both hands shift, opposite rotation directions, 90\u00b0 phase offset",
+		letterType: "Type 1 (Dual-Shift)",
+		rotationGroups: QO_GROUPS,
+		compounds: QO_COMPOUNDS,
+		hasPositionDependentLetters: false,
+	},
+];
+
+// ---------------------------------------------------------------------------
+// Terminology comparison (VTG <-> TKA)
+// ---------------------------------------------------------------------------
+
+export const TERMINOLOGY_ROWS: TerminologyRow[] = [
+	// --- Timing (phase relationship between two props) ---
+	{
+		vtgTerm: "Together (tog)",
+		vtgMeaning: "Both props pass through the downbeat (south) at the same moment",
+		tkaTerm: "Beta",
+		tkaMeaning: "Both hands at the same grid point",
+	},
+	{
+		vtgTerm: "Split",
+		vtgMeaning: "Props 180\u00b0 out of phase: one at bottom when the other is at top",
+		tkaTerm: "Alpha",
+		tkaMeaning: "Hands at opposite grid points",
+	},
+	{
+		vtgTerm: "Quarter",
+		vtgMeaning: "Props 90\u00b0 out of phase (between together and split)",
+		tkaTerm: "Gamma",
+		tkaMeaning: "Hands form a right angle on the grid",
+	},
+	// --- Direction (relative rotation of two props) ---
+	{
+		vtgTerm: "Same direction",
+		vtgMeaning: "Both props rotate the same way (both CW or both CCW)",
+		tkaTerm: "Same rotation",
+		tkaMeaning: "Both hands pro/pro or anti/anti",
+	},
+	{
+		vtgTerm: "Opposite direction",
+		vtgMeaning: "Props rotate contrary to each other (one CW, one CCW)",
+		tkaTerm: "Opposite rotation",
+		tkaMeaning: "One hand pro, the other anti (hybrid)",
+	},
+	// --- Spin type (prop rotation relative to hand path) ---
+	{
+		vtgTerm: "Inspin (prospin)",
+		vtgMeaning: "Prop rotates the same direction as the hand's circular path",
+		tkaTerm: "Pro",
+		tkaMeaning: "Prop rotates with the hand's path direction",
+	},
+	{
+		vtgTerm: "Antispin",
+		vtgMeaning: "Prop rotates opposite to the hand's circular path",
+		tkaTerm: "Anti",
+		tkaMeaning: "Prop rotates against the hand's path direction",
+	},
+	// --- Reference system ---
+	{
+		vtgTerm: "Downbeat",
+		vtgMeaning: "The lowest point of the prop's circle (south / 6 o'clock). Anchor for all VTG timing.",
+		tkaTerm: "(no equivalent)",
+		tkaMeaning: "TKA is center-referenced, not ground-referenced",
+	},
+	// --- Flower shapes ---
+	{
+		vtgTerm: "Extension",
+		vtgMeaning: "1:1 inspin. Prop follows the arm with no extra rotation. Looks like a longer arm.",
+		tkaTerm: "Pro, 0 turns",
+		tkaMeaning: "Pro motion with zero additional prop turns per beat",
+	},
+	{
+		vtgTerm: "Cat-eye",
+		vtgMeaning: "1:1 antispin. Prop traces a lens shape (2 petals). The fundamental antispin pattern.",
+		tkaTerm: "Anti, 0 turns",
+		tkaMeaning: "Anti motion with zero additional prop turns per beat",
+	},
+	{
+		vtgTerm: "Flower",
+		vtgMeaning: "Any pattern where the prop traces petals as the hand moves in a circle. Petal count depends on turn ratio.",
+		tkaTerm: "(no single term)",
+		tkaMeaning: "TKA describes the components: motion type + turns + position transitions",
+	},
+	// --- Transitions ---
+	{
+		vtgTerm: "Stall",
+		vtgMeaning: "Prop stops momentarily, then continues. Used for direction changes and transitions.",
+		tkaTerm: "Static",
+		tkaMeaning: "Zero-turn static motion (hand at a grid point, prop not rotating)",
+	},
+	{
+		vtgTerm: "Hybrid",
+		vtgMeaning: "Each hand performs a different pattern (e.g., one extension, one antispin flower)",
+		tkaTerm: "Hybrid rotation",
+		tkaMeaning: "One hand pro, the other anti. Letters C, F, I, L, O, R, U, V.",
+	},
+	// --- Planes ---
+	{
+		vtgTerm: "Wall plane",
+		vtgMeaning: "Prop spins in a vertical circle facing the audience",
+		tkaTerm: "Wall (plane metadata)",
+		tkaMeaning: "Default plane. Optional annotation on motion data, not a level.",
+	},
+	{
+		vtgTerm: "Wheel plane",
+		vtgMeaning: "Prop spins in a vertical circle at the spinner's side",
+		tkaTerm: "Wheel (plane metadata)",
+		tkaMeaning: "Side view plane. Optional annotation on motion data.",
+	},
+];
+
+// ---------------------------------------------------------------------------
+// Turn ratio mappings (VTG ratios <-> TKA turns)
+// ---------------------------------------------------------------------------
+
+export const TURN_RATIO_MAPPINGS: TurnRatioMapping[] = [
+	{
+		vtgRatio: "1:1",
+		vtgDescription: "1 prop rotation per arm revolution. Inspin = extension (0 petals). Antispin = cat-eye (2 petals).",
+		tkaTurns: "0",
+		tkaDescription: "Zero additional turns. VTG 1 covers these 40 patterns.",
+	},
+	{
+		vtgRatio: "2:1",
+		vtgDescription: "2 prop rotations per arm revolution. Inspin = 1 petal. Antispin = 3 petals (triquetra).",
+		tkaTurns: "0.5",
+		tkaDescription: "Half turn per beat",
+	},
+	{
+		vtgRatio: "3:1",
+		vtgDescription: "3 prop rotations per arm revolution. Inspin = 2 petals. Antispin = 4 petals.",
+		tkaTurns: "1",
+		tkaDescription: "One turn per beat. VTG 2 covers these antispin flowers.",
+	},
+	{
+		vtgRatio: "4:1",
+		vtgDescription: "4 prop rotations per arm revolution. Inspin = 3 petals. Antispin = 5 petals.",
+		tkaTurns: "1.5",
+		tkaDescription: "One and a half turns per beat",
+	},
+	{
+		vtgRatio: "5:1",
+		vtgDescription: "5 prop rotations per arm revolution. Inspin = 4 petals. Antispin = 6 petals.",
+		tkaTurns: "2",
+		tkaDescription: "Two turns per beat",
+	},
+	{
+		vtgRatio: "7:1",
+		vtgDescription: "7 prop rotations per arm revolution. Inspin = 6 petals. Antispin = 8 petals.",
+		tkaTurns: "3",
+		tkaDescription: "Three turns per beat",
+	},
+];
+
+// ---------------------------------------------------------------------------
+// What TKA covers beyond VTG
+// ---------------------------------------------------------------------------
+
+export const BEYOND_VTG_ITEMS: BeyondVtgItem[] = [
+	{
+		title: "Types 2\u20136",
+		description:
+			"VTG only covers Type 1 (Dual-Shift) where both hands shift. TKA defines 5 additional letter types: Shift, Cross-Shift, Dash, Dual-Dash, and Static.",
+		icon: "fa-layer-group",
+		tkaFeature: "Letter Types 2\u20136",
+	},
+	{
+		title: "Skewed Positions (Level 4)",
+		description:
+			"One hand on a cardinal point, one on an intercardinal point. Creates Zeta (obtuse angle) and Eta (acute angle) positions that VTG has no classification for.",
+		icon: "fa-bezier-curve",
+		tkaFeature: "Level 4: Zeta & Eta",
+	},
+	{
+		title: "Centric Positions (Level 5)",
+		description:
+			"At least one hand at the center of the grid. Creates Tau (one hand center) and Terra (both hands center) positions.",
+		icon: "fa-bullseye",
+		tkaFeature: "Level 5: Tau & Terra",
+	},
+	{
+		title: "Interradial Orientations (Level 6)",
+		description:
+			"Prop orientations at 45\u00b0 between cardinal orientations: clockIn, clockOut, counterIn, counterOut. Relevant for poi gravity and advanced manipulation.",
+		icon: "fa-magnet",
+		tkaFeature: "Level 6: Interradial",
+	},
+	{
+		title: "Exact Position Tracking",
+		description:
+			"VTG says 'split' or 'together'. TKA tracks exactly which grid points: alpha1 vs alpha5, beta3 vs beta7. Two variations of the same VTG pattern can have different TKA positions.",
+		icon: "fa-crosshairs",
+		tkaFeature: "Numbered positions (alpha1\u2013alpha8, etc.)",
+	},
+	{
+		title: "Bridge & Transition Letters",
+		description:
+			"Letters like \u03a3, \u0394, \u0398, \u03a9 that bridge between positions VTG doesn't distinguish. These connect otherwise-unreachable letter combinations.",
+		icon: "fa-bridge",
+		tkaFeature: "Type 2\u20133 bridge letters",
+	},
+];
