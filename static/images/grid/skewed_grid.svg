@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Skewed Grid SVG
+
+  Shows all 8 positions (4 cardinal + 4 intercardinal) for skewed pictographs.
+  Used when one hand is in cardinal position (N/E/S/W) and another in intercardinal (NE/SE/SW/NW).
+
+  Only includes: center point, outer points (8), and non-strict hand points (8).
+  Layer2 points and strict points are NOT included - they're not needed for pictograph display.
+
+  NOTE: Colors are controlled by CSS in GridSvg.svelte via ID selectors.
+  Do NOT use currentColor here as it interferes with dark mode detection.
+-->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0" y="0" viewBox="0 0 950 950" xml:space="preserve">
+  <!-- Center point -->
+  <circle id="center_point" cx="475" cy="475" r="12"/>
+
+  <!-- Diamond grid (cardinal positions: N, E, S, W) -->
+  <g id="diamond-grid">
+    <!-- Outer points - filled circles -->
+    <circle id="n_diamond_outer_point" cx="475" cy="175" r="25"/>
+    <circle id="e_diamond_outer_point" cx="775" cy="475" r="25"/>
+    <circle id="s_diamond_outer_point" cx="475" cy="775" r="25"/>
+    <circle id="w_diamond_outer_point" cx="175" cy="475" r="25"/>
+
+    <!-- Hand points (non-strict) - where props attach -->
+    <circle id="n_diamond_hand_point" class="normal-hand-point" cx="475" cy="331.9" r="4.7"/>
+    <circle id="e_diamond_hand_point" class="normal-hand-point" cx="618.1" cy="475" r="4.7"/>
+    <circle id="s_diamond_hand_point" class="normal-hand-point" cx="475" cy="618.1" r="4.7"/>
+    <circle id="w_diamond_hand_point" class="normal-hand-point" cx="331.9" cy="475" r="4.7"/>
+  </g>
+
+  <!-- Box grid (intercardinal positions: NE, SE, SW, NW) -->
+  <g id="box-grid">
+    <!-- Outer points - rings (outline style to distinguish from diamond) -->
+    <!-- Using same stroke-width (13) as box mode for consistency -->
+    <!-- NW = upper-left corner (262.9, 262.9) -->
+    <circle id="nw_box_outer_point" class="box-outer-ring" cx="262.9" cy="262.9" r="25" fill="none" stroke-width="13" stroke-miterlimit="10"/>
+    <!-- NE = upper-right corner (687.1, 262.9) -->
+    <circle id="ne_box_outer_point" class="box-outer-ring" cx="687.1" cy="262.9" r="25" fill="none" stroke-width="13" stroke-miterlimit="10"/>
+    <!-- SE = lower-right corner (687.1, 687.1) -->
+    <circle id="se_box_outer_point" class="box-outer-ring" cx="687.1" cy="687.1" r="25" fill="none" stroke-width="13" stroke-miterlimit="10"/>
+    <!-- SW = lower-left corner (262.9, 687.1) -->
+    <circle id="sw_box_outer_point" class="box-outer-ring" cx="262.9" cy="687.1" r="25" fill="none" stroke-width="13" stroke-miterlimit="10"/>
+
+    <!-- Hand points (non-strict) - where props attach -->
+    <circle id="nw_box_hand_point" class="normal-hand-point" cx="373.8" cy="373.8" r="4.7"/>
+    <circle id="ne_box_hand_point" class="normal-hand-point" cx="576.2" cy="373.8" r="4.7"/>
+    <circle id="se_box_hand_point" class="normal-hand-point" cx="576.2" cy="576.2" r="4.7"/>
+    <circle id="sw_box_hand_point" class="normal-hand-point" cx="373.8" cy="576.2" r="4.7"/>
+  </g>
+</svg>

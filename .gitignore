@@ -169,7 +169,7 @@ mcp-server/basic-test.ts
 mcp-server/quick-test.mjs
 
 # Unity project artifacts (if not using tka-worlds exclusion)
-Library/
+/Library/
 Temp/
 Logs/
 UserSettings/
