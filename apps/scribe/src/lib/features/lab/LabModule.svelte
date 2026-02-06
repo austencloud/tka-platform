@@ -35,6 +35,7 @@
     community: () => import("$lib/features/community/Community.svelte"),
     connect: () => import("$lib/features/connect/ConnectModule.svelte"),
     voice: () => import("./tabs/VoiceControlLab.svelte"),
+    vtg: () => import("$lib/features/vtg-lab/VtgLabModule.svelte"),
   };
 
   // Get current tab, default to first tab
@@ -106,7 +107,6 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   }
 
   .lab-loading,

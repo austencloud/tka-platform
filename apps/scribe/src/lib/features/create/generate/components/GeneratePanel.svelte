@@ -25,6 +25,14 @@ Card-based architecture with integrated Generate button:
   import GeneratorHelpOverlay from "./help/GeneratorHelpOverlay.svelte";
   import GeneratorHelpModal from "./help/GeneratorHelpModal.svelte";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
+  import {
+    setGeneratorVoiceRef,
+    type GeneratorVoiceRef,
+  } from "../state/generator-voice-ref.svelte";
+  import { uiConfigToGenerationOptions } from "../shared/utils/config-mapper";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   // Get context for panel coordination (optional - may not be available in all contexts)
   const context = tryGetCreateModuleContext();
@@ -131,6 +139,32 @@ Card-based architecture with integrated Generate button:
     } catch {
       // Optional service
     }
+
+    // Register voice control ref so voice commands can access generator state
+    const voiceRef: GeneratorVoiceRef = {
+      getConfig: () => configState.config,
+      updateConfig: (updates) => configState.updateConfig(updates),
+      triggerGeneration: () => {
+        const propType =
+          (settingsService.settings.bluePropType as PropType) ||
+          PropTypeEnum.STAFF;
+        const options = uiConfigToGenerationOptions(
+          configState.config,
+          propType
+        );
+        actionsState.onGenerateClicked(options);
+      },
+      openHelpForControl: (controlId: GeneratorHelpId) => {
+        selectControlHelp(controlId);
+      },
+      getCurrentPropType: () =>
+        settingsService.settings.bluePropType || "staff",
+    };
+    setGeneratorVoiceRef(voiceRef);
+
+    return () => {
+      setGeneratorVoiceRef(null);
+    };
   });
 
   function handlePanelKeydown(event: KeyboardEvent) {

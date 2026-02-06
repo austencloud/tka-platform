@@ -9,7 +9,15 @@
 // Wake Word Detection
 // ============================================================================
 
-export type WakeWordState = "idle" | "listening" | "processing" | "error";
+/**
+ * Detector states:
+ * - idle: not running
+ * - listening: waiting for wake word ("Hey Tika")
+ * - command_mode: mic is hot, all speech becomes commands
+ * - processing: interpreting a command
+ * - error: speech API error
+ */
+export type WakeWordState = "idle" | "listening" | "command_mode" | "processing" | "error";
 
 export interface WakeWordEvent {
   /** The raw command text after stripping the wake word */
@@ -21,21 +29,29 @@ export interface WakeWordEvent {
 }
 
 // ============================================================================
-// Command Interpretation
+// Command Categories & Structured Commands
 // ============================================================================
 
-export type VoiceCommandType =
-  | "navigate_module"
-  | "switch_tab"
-  | "toggle_setting"
-  | "unknown";
+export type VoiceCommandCategory =
+  | "navigation"
+  | "settings"
+  | "playback"
+  | "create"
+  | "generator"
+  | "sequence"
+  | "ui"
+  | "search"
+  | "prop"
+  | "system";
 
 export interface VoiceCommand {
-  type: VoiceCommandType;
-  /** The resolved target (module ID, tab ID, or setting key) */
+  category: VoiceCommandCategory;
+  /** Specific action within the category: "play", "toggle", "undo", etc. */
+  action: string;
+  /** The resolved target (module ID, tab ID, setting key, prop type, etc.) */
   target: string;
   /** Additional arguments for the command */
-  args?: Record<string, string | boolean>;
+  args?: Record<string, string | boolean | number>;
   /** The original transcript text */
   rawText: string;
   /** Interpretation confidence (0-1) */

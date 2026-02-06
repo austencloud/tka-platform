@@ -1,8 +1,8 @@
 /**
  * CommandDispatcher
  *
- * Routes VoiceCommand objects to registered handlers based on command type.
- * Handlers self-register by declaring which types they support.
+ * Routes VoiceCommand objects to registered handlers based on command category.
+ * Handlers self-register by declaring which categories they support.
  */
 
 import type {
@@ -15,21 +15,21 @@ export class CommandDispatcher implements ICommandDispatcher {
   private handlers = new Map<string, IVoiceCommandHandler>();
 
   register(handler: IVoiceCommandHandler): void {
-    for (const type of handler.supportedTypes) {
-      if (this.handlers.has(type)) {
+    for (const category of handler.supportedCategories) {
+      if (this.handlers.has(category)) {
         console.warn(
-          `[HeyTika] Overwriting handler for command type "${type}"`
+          `[HeyTika] Overwriting handler for category "${category}"`
         );
       }
-      this.handlers.set(type, handler);
+      this.handlers.set(category, handler);
     }
   }
 
   async dispatch(command: VoiceCommand): Promise<CommandResult> {
-    const handler = this.handlers.get(command.type);
+    const handler = this.handlers.get(command.category);
     if (!handler) {
       console.warn(
-        `[HeyTika] No handler registered for command type "${command.type}"`
+        `[HeyTika] No handler registered for category "${command.category}"`
       );
       return {
         success: false,

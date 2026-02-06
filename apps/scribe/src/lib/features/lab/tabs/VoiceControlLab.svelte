@@ -12,6 +12,7 @@
   import type { ICommandDispatcher } from "$lib/shared/voice-control/services/contracts/ICommandDispatcher";
   import type { WakeWordState } from "$lib/shared/voice-control/domain/voice-command-types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { voiceControlState } from "$lib/shared/voice-control/state/voice-control-state.svelte";
 
   let detector: IWakeWordDetector | null = null;
   let interpreter: ICommandInterpreter | null = null;
@@ -47,6 +48,10 @@
       return;
     }
 
+    const unsubWakeWord = detector.onWakeWord(() => {
+      addLog("info", "Wake word detected — entering command mode");
+    });
+
     const unsubCommand = detector.onCommand(async (event) => {
       addLog("command", `"${event.command}" (confidence: ${event.confidence.toFixed(2)})`);
 
@@ -59,12 +64,12 @@
 
       const command = interpreter.interpret(event.command, context);
 
-      if (command.type === "unknown") {
+      if (command.category === "system" && command.action === "unknown") {
         addLog("error", `Unrecognized: "${event.command}"`);
         return;
       }
 
-      addLog("info", `Interpreted: ${command.type} → "${command.target}"`);
+      addLog("info", `Interpreted: ${command.category}:${command.action} → "${command.target}"`);
       const result = await dispatcher.dispatch(command);
       addLog("result", `${result.success ? "OK" : "FAIL"}: ${result.message}`);
     });
@@ -80,6 +85,7 @@
     }
 
     return () => {
+      unsubWakeWord();
       unsubCommand();
       unsubState();
     };
@@ -90,10 +96,14 @@
     if (detector.isListening()) {
       detector.stop();
       listening = false;
+      voiceControlState.setEnabled(false);
+      voiceControlState.setDetectorState("idle");
       addLog("info", "Stopped listening");
     } else {
       detector.start();
       listening = true;
+      voiceControlState.setEnabled(true);
+      voiceControlState.setDetectorState("listening");
       addLog("info", "Started listening");
     }
   }
@@ -112,12 +122,12 @@
 
     const command = interpreter.interpret(text, context);
 
-    if (command.type === "unknown") {
+    if (command.category === "system" && command.action === "unknown") {
       addLog("error", `Unrecognized: "${text}"`);
       return;
     }
 
-    addLog("info", `Interpreted: ${command.type} → "${command.target}"`);
+    addLog("info", `Interpreted: ${command.category}:${command.action} → "${command.target}"`);
     const result = await dispatcher.dispatch(command);
     addLog("result", `${result.success ? "OK" : "FAIL"}: ${result.message}`);
   }
@@ -133,6 +143,7 @@
   const stateColors: Record<WakeWordState, string> = {
     idle: "#64748b",
     listening: "#22c55e",
+    command_mode: "#3b82f6",
     processing: "#f59e0b",
     error: "#ef4444",
   };
@@ -159,6 +170,12 @@
           <span class="label">Detector State</span>
           <span class="value" style="color: {stateColors[wakeWordState]}">
             {wakeWordState.toUpperCase()}
+          </span>
+        </div>
+        <div class="state-row">
+          <span class="label">Command Mode</span>
+          <span class="value" style="color: {voiceControlState.commandMode ? '#3b82f6' : '#64748b'}">
+            {voiceControlState.commandMode ? "ACTIVE (mic hot)" : "OFF"}
           </span>
         </div>
         <div class="state-row">
@@ -232,6 +249,22 @@
             <li>"go to gallery tab"</li>
             <li>"open concepts tab"</li>
             <li>"switch to construct"</li>
+          </ul>
+        </div>
+        <div class="ref-group">
+          <h3>Command Mode</h3>
+          <ul>
+            <li>Say "Hey Tika" alone to enter</li>
+            <li>All speech becomes commands</li>
+            <li>Auto-exits after 15s of silence</li>
+          </ul>
+        </div>
+        <div class="ref-group">
+          <h3>Exit Command Mode</h3>
+          <ul>
+            <li>"stop" / "stop listening"</li>
+            <li>"done" / "exit" / "cancel"</li>
+            <li>"bye tika" / "goodbye"</li>
           </ul>
         </div>
       </div>
