@@ -11,7 +11,7 @@ export default defineConfig({
   ssr: {
     // Workspace packages ship raw TypeScript source, not pre-built JS.
     // Tell Vite to transform them instead of loading as native Node ESM.
-    noExternal: ["@tka/types", "@tka/animation-renderer"],
+    noExternal: ["@tka/types", "@tka/animation-renderer", "@tka/pictograph"],
   },
   server: {
     port: 5175,

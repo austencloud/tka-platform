@@ -6,7 +6,8 @@
   "description": "tkaflowarts.com - The Kinetic Alphabet landing site",
   "scripts": {
     "dev": "kill-port 5175 && vite dev --port 5175",
-    "build": "vite build",
+    "prebuild": "node scripts/sync-pictograph-assets.js && node scripts/generate-demo-sequences.js",
+    "build": "node scripts/sync-pictograph-assets.js && node scripts/generate-demo-sequences.js && vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
@@ -22,6 +23,7 @@
   "dependencies": {
     "@austencloud/backgrounds": "^0.1.0",
     "@tka/animation-renderer": "workspace:*",
+    "@tka/pictograph": "workspace:*",
     "@tka/types": "workspace:*",
     "firebase": "^12.6.0"
   }
