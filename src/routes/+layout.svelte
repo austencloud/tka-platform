@@ -164,7 +164,7 @@
         const { getFirestoreInstance } =
           await import("$lib/shared/auth/firebase");
         await getFirestoreInstance();
-        (window as any).__tkaLoadProgress?.(35, "Connecting...");
+        (window as any).__tkaLoadProgress?.(35, "Connecting to cloud...");
       } catch (error) {
         console.error("❌ [App Init] Firestore initialization failed:", error);
       }
@@ -173,7 +173,7 @@
       // This is required to catch auth state changes from social sign-in
       // Must await to process pending OAuth redirect results (e.g., account linking)
       await authState.initialize();
-      (window as any).__tkaLoadProgress?.(55, "Signing in...");
+      (window as any).__tkaLoadProgress?.(55, "Checking session...");
     })();
 
     // Note: Sequence restoration tester removed (now integrated into services)

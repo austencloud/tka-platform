@@ -8,8 +8,8 @@
  * Both Canvas2DDirectRenderer and MCP standalone-renderer use these values.
  */
 
-import { REVERSAL_INDICATOR } from "../constants/glyph-positions";
-import { BLUE_COLOR_DARK, BLUE_COLOR_LIGHT, RED_COLOR_DARK, RED_COLOR_LIGHT } from "../constants/viewbox";
+import { REVERSAL_INDICATOR } from "../constants/glyph-positions.js";
+import { BLUE_COLOR_DARK, BLUE_COLOR_LIGHT, RED_COLOR_DARK, RED_COLOR_LIGHT } from "../constants/viewbox.js";
 
 // ============================================================================
 // TYPES

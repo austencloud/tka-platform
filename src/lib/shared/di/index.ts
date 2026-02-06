@@ -81,6 +81,7 @@ import { createConnectContainer } from "./containers/connect-container";
 import { createDeviceSyncContainer } from "./containers/device-sync-container";
 import { conjoinedLabContainer } from "./containers/conjoined-lab-container";
 import { createAttributionContainer } from "./containers/attribution-container";
+import { createVoiceControlContainer } from "./containers/voice-control-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -277,6 +278,9 @@ const hallOfShameContainer = typeof window !== 'undefined' ? createHallOfShameCo
 // Attribution container - self-contained, captures how users find the app
 const attributionContainer = typeof window !== 'undefined' ? createAttributionContainer() : null as any;
 
+// Voice control container - "Hey Tika" wake word + command dispatch
+const voiceControlContainer = typeof window !== 'undefined' ? createVoiceControlContainer() : null as any;
+
 
 // Watch container - needs collaborativeVideoManager from share and browseLoader from browse
 const watchContainer = typeof window !== 'undefined' ? createWatchContainer({
@@ -324,64 +328,76 @@ const sequenceDataProvider = typeof window !== 'undefined' ? new SequenceDataPro
  *
  * In Node.js contexts, this will be null. Use manual dependency wiring instead.
  */
-export const container = typeof window !== 'undefined' ? createContainer()
+// Build container imperatively to avoid "type instantiation excessively deep" error.
+// A single chained expression with 30+ .add() calls exceeds TypeScript's generic depth limit.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildAppContainer(): any {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let c: any = createContainer();
+
   // Core infrastructure (must be first)
-  .add(coreContainer.items)
+  c = c.add(coreContainer.items);
   // Data and persistence
-  .add(dataContainer.items)
+  c = c.add(dataContainer.items);
   // Navigation
-  .add(navigationContainer.items)
+  c = c.add(navigationContainer.items);
   // Rendering
-  .add(renderContainer.items)
-  // NOTE: pictographContainer removed - all services now use direct imports
+  c = c.add(renderContainer.items);
   // Animation
-  .add(animatorContainer.items)
+  c = c.add(animatorContainer.items);
   // Features
-  .add(buildContainer.items)
+  c = c.add(buildContainer.items);
   // NOTE: browseContainer has naming conflicts (filterPersister, navigator)
   // Using upsert to allow overwriting - these should be renamed in a follow-up
-  .upsert(browseContainer.items)
-  .add(trainContainer.items)
-  .add(learnContainer.items)
-  .add(libraryContainer.items)
-  // Utilities
+  c = c.upsert(browseContainer.items);
+  c = c.add(trainContainer.items);
+  c = c.add(learnContainer.items);
+  c = c.add(libraryContainer.items);
   // NOTE: loopLabelerContainer has naming conflicts (loopDetector, navigator)
   // Using upsert to allow overwriting - these should be renamed in a follow-up
-  .upsert(loopLabelerContainer.items)
-  .add(gamificationContainer.items)
-  .add(feedbackContainer.items)
-  .add(shareContainer.items)
-  .add(adminContainer.items)
-  .add(promoContainer.items)
-  .add(keyboardContainer.items)
-  .add(analyticsContainer.items)
-  .add(presenceContainer.items)
-  .add(communityContainer.items)
-  .add(writeContainer.items)
-  .add(mandalaContainer.items)
-  .add(qrContainer.items)
-  .add(animation3DContainer.items)
-  .add(galleryContainer.items)
-  .add(backgroundBuilderContainer.items)
-  .add(delightContainer.items)
-  .add(poiLabContainer.items)
-  .add(landingPreviewContainer.items)
-  .add(moderationContainer.items)
-  .add(hallOfShameContainer.items)
-  .add(watchContainer.items)
-  .add(lanSyncContainer.items)
-  .add(deviceSyncContainer.items)
-  .add(connectContainer.items)
-  .add(conjoinedLabContainer.items)
-  // Attribution tracking services (using inline add to break type inference depth)
-  .add({
+  c = c.upsert(loopLabelerContainer.items);
+  c = c.add(gamificationContainer.items);
+  c = c.add(feedbackContainer.items);
+  c = c.add(shareContainer.items);
+  c = c.add(adminContainer.items);
+  c = c.add(promoContainer.items);
+  c = c.add(keyboardContainer.items);
+  c = c.add(analyticsContainer.items);
+  c = c.add(presenceContainer.items);
+  c = c.add(communityContainer.items);
+  c = c.add(writeContainer.items);
+  c = c.add(mandalaContainer.items);
+  c = c.add(qrContainer.items);
+  c = c.add(animation3DContainer.items);
+  c = c.add(galleryContainer.items);
+  c = c.add(backgroundBuilderContainer.items);
+  c = c.add(delightContainer.items);
+  c = c.add(poiLabContainer.items);
+  c = c.add(landingPreviewContainer.items);
+  c = c.add(moderationContainer.items);
+  c = c.add(hallOfShameContainer.items);
+  c = c.add(watchContainer.items);
+  c = c.add(lanSyncContainer.items);
+  c = c.add(deviceSyncContainer.items);
+  c = c.add(connectContainer.items);
+  c = c.add(conjoinedLabContainer.items);
+  // Attribution tracking services
+  c = c.add({
     attributionCapture: () => attributionContainer?.items?.attributionCapture,
     attributionPersister: () => attributionContainer?.items?.attributionPersister,
     attributionPromptTrigger: () => attributionContainer?.items?.attributionPromptTrigger,
-  } as Record<string, () => unknown>)
+  });
+  // Voice control ("Hey Tika") services
+  c = c.add(voiceControlContainer.items);
   // Cross-container services (depend on multiple container outputs)
-  .add({ deepLinkResolver: () => deepLinkResolver })
-  .add({ sequenceDataProvider: () => sequenceDataProvider }) : null as any;
+  c = c.add({ deepLinkResolver: () => deepLinkResolver });
+  c = c.add({ sequenceDataProvider: () => sequenceDataProvider });
+
+  return c;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const container: any = typeof window !== 'undefined' ? buildAppContainer() : null;
 
 // Late binding: Inject QR generator into ImageComposer after container is fully composed
 // This resolves the circular dependency between render-container and qr-container

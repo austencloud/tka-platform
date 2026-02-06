@@ -317,6 +317,7 @@
     </button>
   </header>
 
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="crop-stage"
     bind:this={containerEl}

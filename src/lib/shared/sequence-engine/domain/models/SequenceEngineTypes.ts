@@ -25,12 +25,30 @@ export type RotationDirection = "cw" | "ccw" | "noRotation";
 /**
  * Prop orientations.
  */
-export type Orientation = "in" | "out" | "clock" | "counter";
+export type Orientation =
+  | "in"
+  | "out"
+  | "clock"
+  | "counter"
+  // Interradial orientations (Level 6 / poi gravity at intercardinals)
+  | "clockIn"
+  | "clockOut"
+  | "counterIn"
+  | "counterOut"
+  // Centric orientations (Level 5 - prop at center)
+  | "centerN"
+  | "centerNE"
+  | "centerE"
+  | "centerSE"
+  | "centerS"
+  | "centerSW"
+  | "centerW"
+  | "centerNW";
 
 /**
  * Grid locations where hands can be placed.
  */
-export type GridLocation = "n" | "e" | "s" | "w" | "ne" | "se" | "sw" | "nw";
+export type GridLocation = "n" | "e" | "s" | "w" | "ne" | "se" | "sw" | "nw" | "c";
 
 /**
  * Categories of letters based on motion type patterns.
@@ -93,6 +111,8 @@ export interface MotionData {
   startOrientation?: string;
   endOrientation?: string;
   turns?: number | "fl";
+  /** Spinning plane (Level 6). Defaults to "wall" when omitted. */
+  plane?: "wall" | "wheel" | "overhead";
 }
 
 /**

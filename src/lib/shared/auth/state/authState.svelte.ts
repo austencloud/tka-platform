@@ -794,6 +794,45 @@ export async function updateInstagramUsername(username: string) {
 }
 
 /**
+ * Update user's pronouns
+ * @param pronouns - Free-text pronouns (e.g., "she/her", "they/them")
+ */
+export async function updatePronouns(pronouns: string) {
+  const user = _state.user;
+  if (!user) {
+    throw new Error("No authenticated user");
+  }
+
+  try {
+    const trimmed = pronouns.trim();
+    const valueToStore = trimmed || null;
+
+    const firestore = await getFirestoreInstance();
+    const userDocRef = doc(firestore, "users", user.uid);
+
+    await setDoc(
+      userDocRef,
+      { pronouns: valueToStore },
+      { merge: true }
+    );
+
+    return {
+      success: true,
+      message: valueToStore
+        ? "Pronouns updated successfully."
+        : "Pronouns cleared.",
+    };
+  } catch (error: unknown) {
+    console.error("❌ [authState] Pronouns update error:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to update pronouns. Please try again.";
+    throw new Error(message);
+  }
+}
+
+/**
  * Clean up the auth listener
  * Call this when your app unmounts (if ever)
  */
@@ -860,6 +899,7 @@ export const authState = {
   updateDisplayName,
   updateUsername,
   updateInstagramUsername,
+  updatePronouns,
   refreshUser,
   cleanup,
 };

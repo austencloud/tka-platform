@@ -43,6 +43,7 @@ const LOCATION_TO_ANGLE: Record<GridLocation, number> = {
   [GridLocation.SOUTHWEST]: 5,
   [GridLocation.WEST]: 6,
   [GridLocation.NORTHWEST]: 7,
+  [GridLocation.CENTER]: 0,
 };
 
 export class BeatSignatureGenerator implements IBeatSignatureGenerator {

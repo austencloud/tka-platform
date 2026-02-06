@@ -66,6 +66,8 @@ interface FirestoreUserData extends DocumentData {
   isFeatured?: boolean;
   bio?: string;
   instagramUsername?: string;
+  pronouns?: string;
+  lastActivityDate?: Timestamp;
   // Admin-related fields
   role?: UserRole;
   isDisabled?: boolean;
@@ -179,12 +181,8 @@ export class UserRepository implements IUserRepository {
    * Map sort criteria to Firestore field names
    */
   private readonly SORT_FIELD_MAP: Record<CreatorSortCriteria, string> = {
-    followers: "followerCount",
-    sequences: "sequenceCount",
-    level: "currentLevel",
-    xp: "totalXP",
+    lastActive: "lastActivityDate",
     joinedDate: "createdAt",
-    achievements: "achievementCount",
   };
 
   /**
@@ -200,7 +198,7 @@ export class UserRepository implements IUserRepository {
       const usersRef = collection(firestore, this.USERS_COLLECTION);
 
       // Get the Firestore field name for sorting
-      const sortField = this.SORT_FIELD_MAP[options.sortBy] || "followerCount";
+      const sortField = this.SORT_FIELD_MAP[options.sortBy] || "lastActivityDate";
       const sortDirection = options.sortDirection === "asc" ? "asc" : "desc";
 
       // Build query with server-side ordering
@@ -463,9 +461,10 @@ export class UserRepository implements IUserRepository {
         transaction.set(followingRef, followData);
         transaction.set(followersRef, followData);
 
-        // Update counts
+        // Update counts and activity
         transaction.update(currentUserRef, {
           followingCount: (currentUserData.followingCount ?? 0) + 1,
+          lastActivityDate: serverTimestamp(),
         });
         transaction.update(targetUserRef, {
           followerCount: (targetUserData.followerCount ?? 0) + 1,
@@ -538,12 +537,13 @@ export class UserRepository implements IUserRepository {
         transaction.delete(followingRef);
         transaction.delete(followersRef);
 
-        // Update counts (ensure we don't go below 0)
+        // Update counts (ensure we don't go below 0) and activity
         transaction.update(currentUserRef, {
           followingCount: Math.max(
             0,
             (currentUserData.followingCount ?? 0) - 1
           ),
+          lastActivityDate: serverTimestamp(),
         });
         transaction.update(targetUserRef, {
           followerCount: Math.max(0, (targetUserData.followerCount ?? 0) - 1),
@@ -782,6 +782,9 @@ export class UserRepository implements IUserRepository {
       // Get join date from createdAt timestamp
       const joinedDate = data.createdAt?.toDate() ?? new Date();
 
+      // Get last activity date (falls back to join date for users who haven't been active since field was added)
+      const lastActiveAt = data.lastActivityDate?.toDate() ?? joinedDate;
+
       // Gamification data (with fallbacks for users without gamification data)
       const totalXP = data.totalXP ?? 0;
       const currentLevel = data.currentLevel ?? 1;
@@ -791,6 +794,7 @@ export class UserRepository implements IUserRepository {
       const isFeatured = data.isFeatured ?? false;
       const bio = data.bio ?? undefined;
       const instagramUsername = data.instagramUsername ?? undefined;
+      const pronouns = data.pronouns ?? undefined;
 
       // Admin-related fields
       const role = data.role ?? "user";
@@ -814,8 +818,10 @@ export class UserRepository implements IUserRepository {
         followerCount,
         followingCount,
         joinedDate,
+        lastActiveAt,
         isFollowing,
         instagramUsername,
+        pronouns,
         totalXP,
         currentLevel,
         achievementCount,
@@ -925,16 +931,12 @@ export class UserRepository implements IUserRepository {
     const sorted = [...users];
 
     switch (options.sortBy) {
-      case "xp":
-        return sorted.sort((a, b) => b.totalXP - a.totalXP);
-      case "level":
-        return sorted.sort((a, b) => b.currentLevel - a.currentLevel);
-      case "sequences":
-        return sorted.sort((a, b) => b.sequenceCount - a.sequenceCount);
-      case "achievements":
-        return sorted.sort((a, b) => b.achievementCount - a.achievementCount);
-      case "followers":
-        return sorted.sort((a, b) => b.followerCount - a.followerCount);
+      case "lastActive":
+        return sorted.sort(
+          (a, b) =>
+            (b.lastActiveAt?.getTime() ?? 0) -
+            (a.lastActiveAt?.getTime() ?? 0)
+        );
       case "joinedDate":
         return sorted.sort(
           (a, b) => b.joinedDate.getTime() - a.joinedDate.getTime()

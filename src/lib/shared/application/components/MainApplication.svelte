@@ -16,6 +16,9 @@
   import AttributionPrompt from "../../attribution/components/AttributionPrompt.svelte";
   import { getAttributionPromptState } from "../../attribution/state/attribution-prompt-state.svelte";
   import SequenceViewerDrawerHost from "../../sequence-viewer/components/SequenceViewerDrawerHost.svelte";
+  import HeyTikaListener from "../../voice-control/components/HeyTikaListener.svelte";
+  import VoiceControlIndicator from "../../voice-control/components/VoiceControlIndicator.svelte";
+  import VoiceCommandHelpOverlay from "../../voice-control/components/VoiceCommandHelpOverlay.svelte";
 
   import { getContext, onMount } from "svelte";
   import MainInterface from "../../MainInterface.svelte";
@@ -168,12 +171,14 @@
 
         await restoreApplicationState();
         await initService.initialize();
+        (window as any).__tkaLoadProgress?.(78, "Restoring workspace...");
+
         await settingsService.loadSettings();
         updateSettings(settingsService.currentSettings);
         ThemeService.initialize();
 
-        // Progress: Settings loaded, preparing workspace
-        (window as any).__tkaLoadProgress?.(85, "Preparing workspace...");
+        // Progress: Settings loaded, applying theme
+        (window as any).__tkaLoadProgress?.(85, "Applying your theme...");
 
         // Apply background-based theme colors on startup
         // Must handle SOLID_COLOR and LINEAR_GRADIENT specially to use user's saved colors
@@ -195,6 +200,7 @@
         }
 
         // Initialize gamification system
+        (window as any).__tkaLoadProgress?.(92, "Initializing achievements...");
         try {
           const { initializeGamification } =
             await import("../../gamification/init/gamification-initializer");
@@ -208,7 +214,7 @@
 
         setInitializationState(true, false, null, 0);
 
-        // Progress: Fully ready - triggers loading screen fade out
+        // Progress: Fully ready - triggers loading screen fade out with random ready message
         (window as any).__tkaLoadProgress?.(100, "Ready");
 
         // Check if deferred attribution prompt should show (after app settles)
@@ -452,6 +458,11 @@
 
     <!-- Deferred Attribution Prompt (appears after engagement threshold) -->
     <AttributionPrompt />
+
+    <!-- Voice Control: "Hey Tika" wake word listener + visual indicator -->
+    <HeyTikaListener />
+    <VoiceControlIndicator />
+    <VoiceCommandHelpOverlay />
   {/if}
 
   <!-- Sequence Viewer Drawer (mobile overlay) - outside auth gate so external links work -->

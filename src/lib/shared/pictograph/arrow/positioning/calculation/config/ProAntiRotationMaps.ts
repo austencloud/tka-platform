@@ -18,6 +18,7 @@ export const proClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 90,
   [GridLocation.SOUTHWEST]: 180,
   [GridLocation.NORTHWEST]: 270,
+  [GridLocation.CENTER]: 0,
 };
 
 export const proCounterClockwiseMap: Record<GridLocation, number> = {
@@ -29,6 +30,7 @@ export const proCounterClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 180,
   [GridLocation.SOUTHWEST]: 270,
   [GridLocation.NORTHWEST]: 0,
+  [GridLocation.CENTER]: 0,
 };
 
 // ANTI rotation angles
@@ -41,6 +43,7 @@ export const antiClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 180,
   [GridLocation.SOUTHWEST]: 270,
   [GridLocation.NORTHWEST]: 0,
+  [GridLocation.CENTER]: 0,
 };
 
 export const antiCounterClockwiseMap: Record<GridLocation, number> = {
@@ -52,4 +55,5 @@ export const antiCounterClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 90,
   [GridLocation.SOUTHWEST]: 180,
   [GridLocation.NORTHWEST]: 270,
+  [GridLocation.CENTER]: 0,
 };

@@ -148,10 +148,23 @@
 </Drawer>
 
 <style>
-  /* Drawer sizing */
+  /* Drawer sizing - must be a definite height so .drawer-inner (flex:1) resolves correctly */
   :global(.prop-selector-drawer[data-placement="bottom"]) {
-    max-height: 85vh;
-    height: auto;
+    height: 85vh;
+    /* Center on desktop with a max width that suits the bento grid */
+    max-width: 480px;
+    left: 50% !important;
+    transform: translateX(-50%);
+    border-radius: var(--sheet-radius-large, 20px) var(--sheet-radius-large, 20px) 0 0;
+  }
+
+  /* Override transform for open/closed states so translateX(-50%) is preserved */
+  :global(.prop-selector-drawer[data-placement="bottom"][data-state="open"]) {
+    transform: translate(-50%, 0);
+  }
+
+  :global(.prop-selector-drawer[data-placement="bottom"][data-state="closed"]) {
+    transform: translate(-50%, 100%);
   }
 
   .drawer-content {

@@ -1,7 +1,8 @@
 <!--
-OrientationPickerGrid.svelte - 2x2 grid for selecting prop orientation
-Shows all 4 orientations: in, out, clock, counter
-50px touch targets for accessibility
+OrientationPickerGrid.svelte - Grid for selecting prop orientation
+Shows 4 cardinal orientations (in, out, clock, counter).
+When showInterradial=true, adds 4 interradial orientations (Level 6).
+50px touch targets for accessibility.
 -->
 <script lang="ts">
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -9,9 +10,15 @@ Shows all 4 orientations: in, out, clock, counter
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
-  let { currentOrientation = null, onOrientationChange } = $props<{
+  let {
+    currentOrientation = null,
+    onOrientationChange,
+    showInterradial = false,
+  } = $props<{
     currentOrientation: Orientation | null;
     onOrientationChange: (orientation: Orientation | null) => void;
+    /** Show interradial orientations (Level 6: clockIn, clockOut, counterIn, counterOut) */
+    showInterradial?: boolean;
   }>();
 
   let hapticService: IHapticFeedback | null = null;
@@ -20,13 +27,15 @@ Shows all 4 orientations: in, out, clock, counter
     hapticService = container.items.hapticFeedback ?? null;
   });
 
-  // Orientation options with display info
-  const orientationOptions: Array<{
+  interface OrientationOption {
     value: Orientation;
     label: string;
     icon: string;
     description: string;
-  }> = [
+  }
+
+  // Cardinal orientation options (Levels 1-4)
+  const cardinalOptions: OrientationOption[] = [
     {
       value: Orientation.IN,
       label: "In",
@@ -53,6 +62,38 @@ Shows all 4 orientations: in, out, clock, counter
     },
   ];
 
+  // Interradial orientation options (Level 6)
+  const interradialOptions: OrientationOption[] = [
+    {
+      value: Orientation.CLOCK_IN,
+      label: "CW·In",
+      icon: "↘",
+      description: "Between clockwise and inward (45° interradial)",
+    },
+    {
+      value: Orientation.CLOCK_OUT,
+      label: "CW·Out",
+      icon: "↗",
+      description: "Between clockwise and outward (45° interradial)",
+    },
+    {
+      value: Orientation.COUNTER_IN,
+      label: "CCW·In",
+      icon: "↙",
+      description: "Between counter-clockwise and inward (45° interradial)",
+    },
+    {
+      value: Orientation.COUNTER_OUT,
+      label: "CCW·Out",
+      icon: "↖",
+      description: "Between counter-clockwise and outward (45° interradial)",
+    },
+  ];
+
+  const orientationOptions = $derived(
+    showInterradial ? [...cardinalOptions, ...interradialOptions] : cardinalOptions
+  );
+
   function handleSelect(orientation: Orientation) {
     hapticService?.trigger("selection");
     // Toggle off if already selected
@@ -71,7 +112,7 @@ Shows all 4 orientations: in, out, clock, counter
 
 <div class="orientation-picker-grid">
   <div class="grid">
-    {#each orientationOptions as option (option.value)}
+    {#each cardinalOptions as option (option.value)}
       <button
         class="orientation-cell"
         class:selected={currentOrientation === option.value}
@@ -85,6 +126,27 @@ Shows all 4 orientations: in, out, clock, counter
       </button>
     {/each}
   </div>
+
+  {#if showInterradial}
+    <div class="interradial-divider">
+      <span class="divider-label">Interradial (Level 6)</span>
+    </div>
+    <div class="grid">
+      {#each interradialOptions as option (option.value)}
+        <button
+          class="orientation-cell interradial"
+          class:selected={currentOrientation === option.value}
+          onclick={() => handleSelect(option.value)}
+          aria-label="{option.label}: {option.description}"
+          title={option.description}
+          type="button"
+        >
+          <span class="orientation-icon">{option.icon}</span>
+          <span class="orientation-label">{option.label}</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
 
   {#if currentOrientation !== null}
     <button class="clear-button" onclick={handleClear} type="button">
@@ -163,6 +225,32 @@ Shows all 4 orientations: in, out, clock, counter
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+  }
+
+  .interradial-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .interradial-divider::before,
+  .interradial-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .divider-label {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .orientation-cell.interradial {
+    border-style: dashed;
   }
 
   .clear-button {

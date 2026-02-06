@@ -33,7 +33,7 @@ function createCreatorsDataState() {
   let pageSize = $state(DEFAULT_PAGE_SIZE);
 
   // Sort state
-  let sortBy = $state<CreatorSortCriteria>("followers");
+  let sortBy = $state<CreatorSortCriteria>("lastActive");
   let sortDirection = $state<SortDirection>("desc");
 
   // Search state

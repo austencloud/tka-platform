@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import type { TranslationKey } from "$lib/shared/i18n/i18n-types.js";
   import type {
     SelfReportedSource,
     SelfReportedAttribution,
@@ -22,9 +23,9 @@
   const options: Array<{
     id: SelfReportedSource;
     icon: string;
-    labelKey: string;
+    labelKey: TranslationKey;
     hasFollowUp: boolean;
-    followUpKey?: string;
+    followUpKey?: TranslationKey;
   }> = [
     {
       id: "search_engine",

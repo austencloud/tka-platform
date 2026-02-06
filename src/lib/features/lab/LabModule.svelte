@@ -16,7 +16,9 @@
   // Dynamic tab imports - add new experiments here
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
     attribution: () => import("./tabs/AttributionLab.svelte"),
-    skew: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
+    level4: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
+    level5: () => import("$lib/features/level5-lab/Level5LabModule.svelte"),
+    level6: () => import("$lib/features/level6-lab/Level6LabModule.svelte"),
     poi: () => import("$lib/features/poi-lab/PoiLabModule.svelte"),
     avatar: () => import("./tabs/ProfileAvatarLab.svelte"),
     "photo-picker": () => import("./tabs/PhotoPickerLab.svelte"),
@@ -32,6 +34,8 @@
       import("$lib/features/train/ml-training/components/MLTrainingModule.svelte"),
     community: () => import("$lib/features/community/Community.svelte"),
     connect: () => import("$lib/features/connect/ConnectModule.svelte"),
+    voice: () => import("./tabs/VoiceControlLab.svelte"),
+    vtg: () => import("$lib/features/vtg-lab/VtgLabModule.svelte"),
   };
 
   // Get current tab, default to first tab
@@ -103,7 +107,6 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   }
 
   .lab-loading,

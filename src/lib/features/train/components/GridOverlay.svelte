@@ -45,6 +45,7 @@
     [GridLocation.SOUTHWEST]: { x: 331.9, y: 618.1 }, // sw_diamond_layer2_point
     [GridLocation.WEST]: { x: 331.9, y: 475 }, // w_diamond_hand_point
     [GridLocation.NORTHWEST]: { x: 331.9, y: 331.9 }, // nw_diamond_layer2_point
+    [GridLocation.CENTER]: { x: 475, y: 475 }, // Center of grid
   };
 
   // Angles for each grid location (radians, 0 = East, counter-clockwise)
@@ -57,6 +58,7 @@
     [GridLocation.SOUTHWEST]: (5 * Math.PI) / 4,
     [GridLocation.SOUTH]: (3 * Math.PI) / 2,
     [GridLocation.SOUTHEAST]: (7 * Math.PI) / 4,
+    [GridLocation.CENTER]: 0,
   };
 
   // Radius from center to hand points

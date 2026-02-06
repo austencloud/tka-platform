@@ -160,6 +160,7 @@
   ontouchmove={handleTouchMove}
   ontouchend={handleTouchEnd}
   role="dialog"
+  tabindex="-1"
   aria-label="Sequence details"
 >
   <!-- Drag handle (always visible) -->

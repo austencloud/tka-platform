@@ -88,6 +88,7 @@
     [GridLocation.SOUTHWEST]: "SW",
     [GridLocation.WEST]: "W",
     [GridLocation.NORTHWEST]: "NW",
+    [GridLocation.CENTER]: "C",
   };
 
   // Get label position for the plane title (uses effectiveSize for consistency)

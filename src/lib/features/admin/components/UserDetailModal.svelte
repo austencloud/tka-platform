@@ -123,11 +123,9 @@
 <BaseModal
   bind:open
   onclose={() => onclose()}
-  size="lg"
+  size={layoutMode === "compact" ? "lg" : "xl"}
   closeOnBackdrop={true}
   closeOnEscape={true}
-  --modal-width="min(95vw, 1600px)"
-  --modal-max-height="min(90vh, 1200px)"
 >
   {#snippet header()}
     <header class="modal-header">
@@ -481,13 +479,10 @@
     outline-offset: 2px;
   }
 
-  /* Body Content */
+  /* Body Content - BaseModal's .modal-body handles overflow scrolling */
   .modal-body-content {
     padding: 20px;
     min-height: 300px;
-    /* Prevent content from overflowing modal - scroll if needed */
-    max-height: calc(90vh - 80px); /* Account for modal header */
-    overflow-y: auto;
   }
 
   .modal-body-content.layout-large {

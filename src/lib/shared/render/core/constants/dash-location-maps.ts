@@ -5,7 +5,7 @@
  * Instead, their location is calculated based on the motion parameters.
  */
 
-import type { GridLocation } from "../types";
+import type { GridLocation } from "../types.js";
 
 // ============================================================================
 // Φ_DASH and Ψ_DASH SPECIAL HANDLING MAP
@@ -86,6 +86,7 @@ export const NON_ZERO_TURNS_DASH_LOCATION_MAP: Record<string, Record<GridLocatio
     se: "sw",
     sw: "nw",
     nw: "ne",
+    c: "c",
   },
   counter_clockwise: {
     n: "w",
@@ -96,6 +97,7 @@ export const NON_ZERO_TURNS_DASH_LOCATION_MAP: Record<string, Record<GridLocatio
     se: "ne",
     sw: "se",
     nw: "sw",
+    c: "c",
   },
 };
 
@@ -171,4 +173,5 @@ export const OPPOSITE_LOCATION_MAP: Record<GridLocation, GridLocation> = {
   sw: "ne",
   se: "nw",
   nw: "se",
+  c: "c",
 };

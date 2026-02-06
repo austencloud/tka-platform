@@ -30,8 +30,13 @@ export interface PrepareOptions {
    * When provided, this value is used directly. When omitted, falls back to global settings.
    */
   redPropType?: PropType;
-  /** Load animated prop SVGs (300px width) instead of standard ones. Used by conjoined lab. */
-  useAnimatedVersion?: boolean;
+  /**
+   * Load grid-centered prop SVGs (from props/animated/) instead of thumbnail versions (from props/).
+   * Grid versions use the ghost-half centering strategy so the hand grip aligns with the grid point.
+   * Thumbnail versions are compact previews for prop pickers - NOT suitable for pictograph rendering.
+   * Defaults to true in PictographPreparer since pictographs always render on a grid.
+   */
+  useGridVersion?: boolean;
 }
 
 export interface IPictographPreparer {

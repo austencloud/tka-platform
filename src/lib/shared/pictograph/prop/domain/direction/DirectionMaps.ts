@@ -68,6 +68,10 @@ export const LETTER_I_RADIAL_MAP: Record<
     [MotionColor.RED]: VectorDirection.UPRIGHT,
     [MotionColor.BLUE]: VectorDirection.DOWNLEFT,
   },
+  [GridLocation.CENTER]: {
+    [MotionColor.RED]: VectorDirection.UP,
+    [MotionColor.BLUE]: VectorDirection.DOWN,
+  },
 };
 
 /**
@@ -108,6 +112,10 @@ export const LETTER_I_NON_RADIAL_MAP: Record<
   [GridLocation.NORTHWEST]: {
     [MotionColor.RED]: VectorDirection.DOWNRIGHT,
     [MotionColor.BLUE]: VectorDirection.UPLEFT,
+  },
+  [GridLocation.CENTER]: {
+    [MotionColor.RED]: VectorDirection.UP,
+    [MotionColor.BLUE]: VectorDirection.DOWN,
   },
 };
 
@@ -250,6 +258,7 @@ export const SHIFT_RADIAL_MAP: Record<
     [GridLocation.NORTHEAST]: VectorDirection.UPLEFT,
     [GridLocation.SOUTHWEST]: VectorDirection.UPLEFT,
   },
+  [GridLocation.CENTER]: {},
 };
 
 /**
@@ -287,6 +296,7 @@ export const SHIFT_NON_RADIAL_MAP: Record<
     [GridLocation.NORTHWEST]: VectorDirection.UPRIGHT,
     [GridLocation.SOUTHEAST]: VectorDirection.DOWNLEFT,
   },
+  [GridLocation.CENTER]: {},
   [GridLocation.NORTHWEST]: {
     [GridLocation.NORTHEAST]: VectorDirection.DOWNRIGHT,
     [GridLocation.SOUTHWEST]: VectorDirection.UPLEFT,

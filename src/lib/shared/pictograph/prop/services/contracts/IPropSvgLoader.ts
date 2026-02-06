@@ -22,13 +22,13 @@ export interface IPropSvgLoader {
    * Load prop SVG data with color transformation - fast direct approach
    * @param propData - Prop placement data
    * @param motionData - Motion data including prop type
-   * @param useAnimatedVersion - If true, loads {propType}_animated.svg instead of {propType}.svg
+   * @param useGridVersion - If true, loads grid-centered SVGs from props/animated/ (ghost-half centering)
    * @param options - Optional settings including themeMode for color selection
    */
   loadPropSvg(
     propData: PropPlacementData,
     motionData: MotionData,
-    useAnimatedVersion?: boolean,
+    useGridVersion?: boolean,
     options?: PropSvgLoadOptions
   ): Promise<PropRenderData>;
 

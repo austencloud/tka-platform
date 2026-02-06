@@ -85,6 +85,7 @@
   transition:fly={{ duration: 200, opacity: 0 }}
 ></div>
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="mobile-sheet"
   bind:this={swipe.element}

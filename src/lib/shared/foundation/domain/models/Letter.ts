@@ -37,8 +37,8 @@ export enum Letter {
   DELTA = "Δ",
   THETA = "Θ",
   OMEGA = "Ω",
-  MU = "μ",
-  NU = "ν",
+  MU = "Mu",
+  NU = "Nu",
 
   // Type3: Cross-Shift (8 cross variants)
   W_DASH = "W-",
@@ -103,7 +103,7 @@ export function getLetterType(letter: Letter): LetterType {
     return LetterType.TYPE1;
   }
 
-  // Type2: Shift (including μ, ν)
+  // Type2: Shift (including Mu, Nu)
   if (
     [
       Letter.W,

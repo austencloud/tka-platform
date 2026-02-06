@@ -1,7 +1,17 @@
 import admin from "firebase-admin";
 import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 let initialized = false;
+
+function findServiceAccountKey(): string | null {
+  // Check CWD first, then walk up to repo root
+  const candidates = [
+    "serviceAccountKey.json",
+    resolve("../../serviceAccountKey.json"), // apps/scribe -> repo root
+  ];
+  return candidates.find((p) => existsSync(p)) ?? null;
+}
 
 function loadServiceAccount(): unknown {
   const fromEnv = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
@@ -9,12 +19,13 @@ function loadServiceAccount(): unknown {
     return JSON.parse(fromEnv);
   }
 
-  if (existsSync("serviceAccountKey.json")) {
+  const keyPath = findServiceAccountKey();
+  if (keyPath) {
     try {
-      return JSON.parse(readFileSync("serviceAccountKey.json", "utf8"));
+      return JSON.parse(readFileSync(keyPath, "utf8"));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      throw new Error(`Failed to read serviceAccountKey.json: ${message}`);
+      throw new Error(`Failed to read ${keyPath}: ${message}`);
     }
   }
 

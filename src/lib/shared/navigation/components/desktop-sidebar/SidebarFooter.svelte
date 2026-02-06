@@ -8,6 +8,7 @@
   import { featureFlagService } from "../../../auth/services/PostHogFeatureFlagService.svelte";
   import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
   import ModuleQuickToggle from "./ModuleQuickToggle.svelte";
+  import { voiceControlState } from "../../../voice-control/state/voice-control-state.svelte";
 
   let { isCollapsed, onSettingsClick, isInSettings = false } = $props<{
     isCollapsed: boolean;
@@ -16,6 +17,25 @@
   }>();
 
   const isAdmin = $derived(featureFlagService.isAdmin);
+
+  const voiceActive = $derived(voiceControlState.enabled && voiceControlState.supported);
+  const inCommandMode = $derived(voiceControlState.commandMode);
+  const hasVoiceError = $derived(voiceControlState.detectorState === "error");
+
+  function handleMicClick() {
+    try {
+      const hapticService = container.items.hapticFeedback as IHapticFeedback;
+      hapticService?.trigger("selection");
+    } catch {
+      // Ignore if not available
+    }
+
+    if (inCommandMode) {
+      voiceControlState.exitCommandMode();
+    } else {
+      voiceControlState.enterCommandMode();
+    }
+  }
 
   const hasUnread = $derived(inboxState.totalUnreadCount > 0);
   const badgeCount = $derived(
@@ -112,19 +132,35 @@
     {/if}
   {/if}
 
-  <!-- Version Number (below inbox) -->
-  <button
-    class="version-badge"
-    class:collapsed={isCollapsed}
-    onclick={handleVersionClick}
-    aria-label="View Release Notes"
-  >
-    {#if isCollapsed}
-      <span class="version-number">v{__APP_VERSION__}</span>
-    {:else}
-      <span class="version-label">Version {__APP_VERSION__}</span>
+  <!-- Voice mic + Version row -->
+  <div class="version-row" class:collapsed={isCollapsed}>
+    {#if voiceActive}
+      <button
+        class="mic-button"
+        class:command-mode={inCommandMode}
+        class:error={hasVoiceError}
+        onclick={handleMicClick}
+        aria-label={inCommandMode ? "Stop voice command mode" : "Start voice command mode"}
+      >
+        <i class="fas fa-microphone" aria-hidden="true"></i>
+        {#if inCommandMode}
+          <div class="mic-glow-ring"></div>
+        {/if}
+      </button>
     {/if}
-  </button>
+    <button
+      class="version-badge"
+      class:collapsed={isCollapsed}
+      onclick={handleVersionClick}
+      aria-label="View Release Notes"
+    >
+      {#if isCollapsed}
+        <span class="version-number">v{__APP_VERSION__}</span>
+      {:else}
+        <span class="version-label">Version {__APP_VERSION__}</span>
+      {/if}
+    </button>
+  </div>
 </div>
 
 <style>
@@ -285,6 +321,81 @@
   }
 
   /* ============================================================================
+     VERSION ROW (mic button + version badge)
+     ============================================================================ */
+  .version-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .version-row.collapsed {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* ============================================================================
+     MIC BUTTON
+     ============================================================================ */
+  .mic-button {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mic-button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .mic-button:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    outline-offset: 2px;
+  }
+
+  /* Command mode: glowing green */
+  .mic-button.command-mode {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+  }
+
+  .mic-button.command-mode:hover {
+    background: rgba(34, 197, 94, 0.25);
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.4);
+  }
+
+  .mic-glow-ring {
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2px solid rgba(34, 197, 94, 0.4);
+    animation: mic-glow-pulse 2s ease-out infinite;
+  }
+
+  @keyframes mic-glow-pulse {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  /* Error state */
+  .mic-button.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: rgba(239, 68, 68, 0.6);
+  }
+
+  /* ============================================================================
      VERSION BADGE
      ============================================================================ */
   .version-badge {
@@ -303,7 +414,8 @@
     border: none;
     cursor: pointer;
     border-radius: 6px;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
   }
 
   .version-badge:hover {
@@ -330,5 +442,16 @@
   .version-label {
     /* Delayed fade-in animation when sidebar expands (Google Calendar-style) */
     animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mic-glow-ring {
+      animation: none;
+      opacity: 0.3;
+    }
+
+    .mic-button {
+      transition: none;
+    }
   }
 </style>

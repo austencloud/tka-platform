@@ -51,7 +51,6 @@
 
   async function loadAllData(uid: string) {
     analyticsService = container.items.postHogUserAnalytics;
-    isApiAvailable = analyticsService?.isAvailable() ?? false;
 
     if (!analyticsService) {
       isLoadingEngagement = false;
@@ -61,13 +60,16 @@
       return;
     }
 
-    // Load all data in parallel
+    // Load all data in parallel, then check if the API was reachable
     await Promise.all([
       loadEngagement(uid),
       loadActivityBreakdown(uid, selectedPeriod),
       loadContentMetrics(uid),
       loadRecentSessions(uid),
     ]);
+
+    // Update banner after queries complete (service tracks whether API responded)
+    isApiAvailable = analyticsService.isAvailable();
   }
 
   async function loadEngagement(uid: string) {

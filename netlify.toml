@@ -2,8 +2,7 @@
 # Optimized for maximum performance and caching
 
 [build]
-  command = "npm install && npm run build"
-  # adapter-netlify outputs to .netlify directory automatically
+  command = "pnpm install && pnpm build"
 
 [build.environment]
   NODE_VERSION = "22"
@@ -15,7 +14,7 @@
 
 # Production (main/release branch) - Public release with limited modules
 [context.production]
-  command = "npm install && npm run build"
+  command = "pnpm install && pnpm build"
   [context.production.environment]
     PUBLIC_ENVIRONMENT = "production"
     # Publicly released modules
@@ -36,7 +35,7 @@
 
 # Develop branch - Full feature preview for testing
 [context.develop]
-  command = "npm install && npm run build"
+  command = "pnpm install && pnpm build"
   [context.develop.environment]
     PUBLIC_ENVIRONMENT = "development"
     # All modules enabled in dev
@@ -56,7 +55,7 @@
 
 # Deploy previews (PRs) - Same as develop
 [context.deploy-preview]
-  command = "npm install && npm run build"
+  command = "pnpm install && pnpm build"
   [context.deploy-preview.environment]
     PUBLIC_ENVIRONMENT = "development"
     PUBLIC_ENABLE_CREATE_MODULE = "true"
@@ -74,7 +73,7 @@
 
 # Branch deploys (any other branch) - Same as develop
 [context.branch-deploy]
-  command = "npm install && npm run build"
+  command = "pnpm install && pnpm build"
   [context.branch-deploy.environment]
     PUBLIC_ENVIRONMENT = "development"
     PUBLIC_ENABLE_CREATE_MODULE = "true"

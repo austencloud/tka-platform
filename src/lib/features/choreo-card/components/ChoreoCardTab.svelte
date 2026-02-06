@@ -6,6 +6,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
   import { onMount } from "svelte";
   import type { IBrowseLoader } from "../../browse/sequences/display/services/contracts/IBrowseLoader";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
@@ -215,13 +216,12 @@
       result = result.filter((seq) => seq.sequenceLength === selectedLength);
     }
 
-    // Difficulty filter - calculate level dynamically from steps if not stored
+    // Difficulty filter - uses numeric level (1-5)
     if (difficulty !== null) {
       result = result.filter((seq) => {
-        // Use stored level if available, otherwise calculate from steps
         const level = seq.level ?? (seq.steps?.length > 0
           ? difficultyCalculator.calculateDifficultyLevel([...seq.steps])
-          : 1);
+          : undefined);
         return level === difficulty;
       });
     }
@@ -367,6 +367,13 @@
   function handleIncludeStartPositionChange(value: boolean) {
     includeStartPosition = value;
   }
+
+  function handleSelectSequence(sequence: SequenceData) {
+    openSequenceViewer(sequence, {
+      returnPath: "/choreo-cards",
+      returnLabel: "Choreo Cards",
+    });
+  }
 </script>
 
 <div class="choreo-card-tab">
@@ -424,10 +431,9 @@
         <div class="filter-divider"></div>
         <ChoreoCardExport
           sequences={filteredSequences}
-          currentPageSequences={filteredSequences}
           {showGrid}
           {showTKA}
-          showWord={showWord}
+          {showWord}
           {includeStartPosition}
         />
       </div>
@@ -447,6 +453,8 @@
         {showWord}
         {includeStartPosition}
         onRetry={loadSequences}
+        onColumnCountChanged={handleColumnCountChanged}
+        onSelectSequence={handleSelectSequence}
       />
     </main>
   </div>

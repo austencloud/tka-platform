@@ -1,0 +1,210 @@
+{
+  "name": "TKA Scribe Launcher",
+  "short_name": "TKA Launcher",
+  "description": "Advanced version management and development launcher for TKA Scribe",
+  "version": "2.0.0",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "theme_color": "#00d4ff",
+  "background_color": "#0f172a",
+  "scope": "/",
+  "id": "tka-launcher-pwa",
+
+  "categories": ["developer", "productivity", "utilities"],
+  "lang": "en-US",
+  "dir": "ltr",
+
+  "icons": [
+    {
+      "src": "/pwa/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa/icons/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/pwa/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+
+  "screenshots": [
+    {
+      "src": "/pwa/screenshot-desktop-1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "TKA Launcher Dashboard - Version Management"
+    },
+    {
+      "src": "/pwa/screenshot-desktop-2.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "TKA Launcher - Performance Monitoring"
+    },
+    {
+      "src": "/pwa/screenshot-mobile-1.png",
+      "sizes": "360x640",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "TKA Launcher Mobile - Version Cards"
+    }
+  ],
+
+  "shortcuts": [
+    {
+      "name": "Launch V2 Modern",
+      "short_name": "V2",
+      "description": "Quick launch V2 Modern version",
+      "url": "/launch/v2-modern",
+      "icons": [
+        {
+          "src": "/pwa/shortcut-v2.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Launch V1 Legacy",
+      "short_name": "V1",
+      "description": "Quick launch V1 Legacy version",
+      "url": "/launch/v1-legacy",
+      "icons": [
+        {
+          "src": "/pwa/shortcut-v1.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Performance Monitor",
+      "short_name": "Monitor",
+      "description": "View performance metrics",
+      "url": "/performance",
+      "icons": [
+        {
+          "src": "/pwa/shortcut-monitor.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Compare Versions",
+      "short_name": "Compare",
+      "description": "Side-by-side version comparison",
+      "url": "/compare",
+      "icons": [
+        {
+          "src": "/pwa/shortcut-compare.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "config",
+          "accept": [".json", ".js", ".ts", ".config.js"]
+        }
+      ]
+    }
+  },
+
+  "file_handlers": [
+    {
+      "action": "/handle-config",
+      "accept": {
+        "application/json": [".json"],
+        "text/javascript": [".js"],
+        "text/typescript": [".ts"],
+        "application/config": [".config.js", ".config.ts"]
+      }
+    }
+  ],
+
+  "protocol_handlers": [
+    {
+      "protocol": "tka-launcher",
+      "url": "/protocol?action=%s"
+    }
+  ],
+
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+
+  "handle_links": "preferred",
+
+  "capture_links": "existing-client-navigate",
+
+  "prefer_related_applications": false
+}

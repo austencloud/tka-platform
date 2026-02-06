@@ -1,0 +1,626 @@
+import { sveltekit } from "@sveltejs/kit/vite";
+import { SvelteKitPWA } from "@vite-pwa/sveltekit";
+// Paraglide removed - using lightweight JSON-based i18n in $lib/shared/i18n/
+import fs from "fs";
+import type { IncomingMessage, ServerResponse } from "http";
+import path from "path";
+import type { ViteDevServer } from "vite";
+import { defineConfig } from "vite";
+import { viteStaticCopy } from "vite-plugin-static-copy";
+import { visualizer } from "rollup-plugin-visualizer";
+
+// ============================================================================
+// CUSTOM PLUGINS
+// ============================================================================
+
+/**
+ * Serves PNG files from desktop directory
+ * 2025: Added error handling and proper caching
+ */
+import { fileURLToPath } from "node:url";
+const dirname =
+  typeof __dirname !== "undefined"
+    ? __dirname
+    : path.dirname(fileURLToPath(import.meta.url));
+
+const dictionaryPlugin = () => ({
+  name: "dictionary-files",
+  configureServer(server: ViteDevServer) {
+    server.middlewares.use(
+      "/dictionary",
+      (
+        req: IncomingMessage,
+        res: ServerResponse,
+        next: (err?: unknown) => void
+      ) => {
+        if (req.url && req.url.endsWith(".png")) {
+          try {
+            const decodedUrl = decodeURIComponent(req.url);
+            const relativePath = decodedUrl.substring(1);
+            const filePath = path.resolve(
+              "../../../desktop/data/dictionary",
+              relativePath
+            );
+            if (fs.existsSync(filePath)) {
+              res.setHeader("Content-Type", "image/png");
+              res.setHeader("Cache-Control", "public, max-age=31536000"); // 2026: Better caching
+              fs.createReadStream(filePath).pipe(res);
+              return;
+            }
+          } catch (error) {
+            console.error("Dictionary file error:", error);
+          }
+        }
+        next();
+      }
+    );
+  },
+});
+
+/**
+ * 📱 MOBILE DEBUGGING: CORS headers for font files
+ * - Fonts require CORS headers when accessed from different origins
+ * - Mobile devices connect via IP address, which browsers treat as cross-origin
+ * - Without this, Font Awesome icons won't load on mobile dev
+ */
+const fontCorsPlugin = () => ({
+  name: "font-cors-headers",
+  configureServer(server: ViteDevServer) {
+    server.middlewares.use(
+      (
+        req: IncomingMessage,
+        res: ServerResponse,
+        next: (err?: unknown) => void
+      ) => {
+        const url = req.url || "";
+
+        // Add CORS headers for font files
+        if (
+          url.includes(".woff2") ||
+          url.includes(".woff") ||
+          url.includes(".ttf") ||
+          url.includes(".otf") ||
+          url.includes(".eot")
+        ) {
+          res.setHeader("Access-Control-Allow-Origin", "*");
+          res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+          res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        }
+
+        next();
+      }
+    );
+  },
+});
+
+/**
+ * 🚀 2025 OPTIMIZATION: Aggressive no-cache during development
+ * - Disables ALL caching for development files
+ * - Works with browser cache and service workers
+ * - Ensures every change is immediately visible
+ */
+const devCachePlugin = () => ({
+  name: "dev-cache-headers",
+  configureServer(server: ViteDevServer) {
+    server.middlewares.use(
+      (
+        req: IncomingMessage,
+        res: ServerResponse,
+        next: (err?: unknown) => void
+      ) => {
+        const url = req.url || "";
+
+        // Skip WebSocket upgrade requests - critical for HMR
+        if (req.headers.upgrade === "websocket") {
+          next();
+          return;
+        }
+
+        // Disable caching for ALL HTML, CSS, JS files during dev (aggressive approach)
+        if (
+          url.includes(".css") ||
+          url.includes(".js") ||
+          url.includes(".svelte") ||
+          url.includes(".html") ||
+          url.includes("@vite") ||
+          url.includes("@fs") ||
+          url.includes("/")
+        ) {
+          const originalWriteHead = res.writeHead;
+          res.writeHead = function (...args: any[]) {
+            res.setHeader(
+              "Cache-Control",
+              "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+            );
+            res.setHeader("Pragma", "no-cache");
+            res.setHeader("Expires", "0");
+            res.setHeader("Surrogate-Control", "no-store");
+            res.setHeader("ETag", `"${Date.now()}"`); // Force cache miss
+            return originalWriteHead.apply(res, args);
+          };
+        }
+
+        next();
+      }
+    );
+  },
+});
+
+// Use relative path for vite-plugin-static-copy, absolute for dev server
+const webpEncoderWasmRelative =
+  "node_modules/webp-encoder/lib/assets/a.out.wasm";
+const webpEncoderWasmAbsolute = path.resolve(dirname, webpEncoderWasmRelative);
+
+/**
+ * 🎯 ARROW SPRITE HMR: Auto-reload when sprite is edited in Illustrator
+ * - Watches static/images/arrows-sprite.svg
+ * - Sends custom HMR event when file changes
+ * - ArrowSvgLoader listens and reloads sprite without page refresh
+ */
+const arrowSpriteHmrPlugin = () => ({
+  name: "arrow-sprite-hmr",
+  configureServer(server: ViteDevServer) {
+    const spritePath = path.resolve(dirname, "static/images/arrows-sprite.svg");
+
+    server.watcher.add(spritePath);
+
+    server.watcher.on("change", (changedPath: string) => {
+      if (changedPath.replace(/\\/g, "/").endsWith("arrows-sprite.svg")) {
+        console.log("🎯 Arrow sprite changed - sending HMR update");
+        server.ws.send({
+          type: "custom",
+          event: "arrow-sprite-update",
+          data: { timestamp: Date.now() },
+        });
+      }
+    });
+  },
+});
+
+const webpWasmDevPlugin = () => ({
+  name: "webp-wasm-dev-server",
+  configureServer(server: ViteDevServer) {
+    server.middlewares.use(
+      (
+        req: IncomingMessage,
+        res: ServerResponse,
+        next: (err?: unknown) => void
+      ) => {
+        if (
+          req.url &&
+          req.url.endsWith("a.out.wasm") &&
+          fs.existsSync(webpEncoderWasmAbsolute)
+        ) {
+          res.setHeader("Content-Type", "application/wasm");
+          fs.createReadStream(webpEncoderWasmAbsolute).pipe(res);
+          return;
+        }
+        next();
+      }
+    );
+  },
+});
+
+const webpStaticCopyPlugin = () => {
+  if (!fs.existsSync(webpEncoderWasmAbsolute)) {
+    return null;
+  }
+
+  return viteStaticCopy({
+    targets: [
+      {
+        src: webpEncoderWasmRelative,
+        dest: ".", // Copy to root - webp-encoder expects /a.out.wasm
+      },
+    ],
+  });
+};
+
+// Read package.json version at build time
+const packageJson = JSON.parse(
+  fs.readFileSync(path.resolve(dirname, "package.json"), "utf-8")
+);
+
+// ============================================================================
+// VITE 6.0 CONFIGURATION (2025 - Optimized for SvelteKit 2)
+// ============================================================================
+
+export default defineConfig({
+  // ============================================================================
+  // ENVIRONMENT & DEFINES
+  // ============================================================================
+  define: {
+    __DEFINES__: JSON.stringify({}),
+    __APP_VERSION__: JSON.stringify(packageJson.version),
+    "import.meta.env.VITE_APP_VERSION": JSON.stringify(packageJson.version),
+    // PWA flag - used by hooks.client.ts to conditionally import virtual:pwa-register
+    __PWA_ENABLED__: process.env.DISABLE_PWA !== "true",
+  },
+  plugins: [
+    sveltekit({
+      // Explicitly enable HMR and hot module replacement
+      hot: {
+        preserveLocalState: true,
+        injectCss: true,
+      },
+    }),
+    // ============================================================================
+    // PWA CONFIGURATION (Google Play Store / Installable Web App)
+    // Enabled by default for TKA Scribe. Set DISABLE_PWA=true for landing page builds.
+    // ============================================================================
+    process.env.DISABLE_PWA !== "true" &&
+      SvelteKitPWA({
+      registerType: "autoUpdate",
+      // Force service worker to root scope - prevents relative path issues on nested routes
+      scope: "/",
+      base: "/",
+      devOptions: {
+        enabled: true, // PWA enabled in dev for testing fullscreen mode
+        type: "module",
+        suppressWarnings: true, // Suppress "glob pattern doesn't match any files" warnings in dev
+      },
+      manifest: false, // We already have a manifest in static/pwa/
+      injectRegister: "auto",
+      workbox: {
+        // 🔇 Disable all workbox console logging
+        mode: "production",
+        disableDevLogs: true,
+        // Cache strategies for different asset types
+        // adapter-static outputs to root, NOT prerendered/ or client/ subdirs
+        // suppressWarnings in devOptions handles the "glob pattern doesn't match" warnings
+        globPatterns: process.env.NODE_ENV === "production"
+          ? [
+              // adapter-static output structure (root-level, no subdirs)
+              "**/*.{js,css,html,ico,png,svg,woff2,woff,webp,webmanifest}",
+            ]
+          : [], // Empty in dev - SW handles caching at runtime
+        // Exclude files from precaching that shouldn't be cached
+        globIgnores: [
+          "**/data/*.json", // sequence-index.json is 8MB+
+          "**/chunks/*.js", // Exclude ALL immutable chunks from precache - they're cached by browser anyway
+          // Dev/utility HTML pages - cause Cache.put() errors when precached
+          "render-pictograph.html",
+          "render-compare.html",
+          "icon-preview.html",
+          "legacy-sw.js", // Old SW shouldn't be cached by new SW
+          "google*.html", // Google site verification files
+          "server/**", // Server files shouldn't be precached
+        ],
+        // Disable the size limit check entirely - immutable chunks don't need precaching
+        maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
+        // SPA fallback - only in production (200.html is generated by adapter-static build)
+        // In dev mode, SvelteKit handles routing directly - explicitly disable to prevent stale SW issues
+        navigateFallback: process.env.NODE_ENV === "production" ? "/200.html" : undefined,
+        navigateFallbackDenylist:
+          process.env.NODE_ENV === "production"
+            ? [
+                /^\/api\//,
+                /^\/auth\//,
+                /^\/firebase/,
+                /firestore\.googleapis\.com/,
+                /firebaseapp\.com/,
+              ]
+            : undefined,
+        runtimeCaching: [
+          // ============================================================
+          // NETWORK-ONLY: Resources that must never be cached
+          // (Order matters: more specific patterns first)
+          // ============================================================
+          {
+            // 🔥 Firebase auth/config APIs - bypass service worker entirely
+            urlPattern: /^https:\/\/firebase\.googleapis\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            // 🔥 Firebase Auth identity toolkit - bypass service worker
+            urlPattern: /^https:\/\/identitytoolkit\.googleapis\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            // 🔥 Firebase Auth securetoken - bypass service worker
+            urlPattern: /^https:\/\/securetoken\.googleapis\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            // 🧠 MediaPipe models from Google Storage - large binary files, no CORS
+            // These return opaque responses and would cause Cache.put() errors
+            urlPattern: /^https:\/\/storage\.googleapis\.com\/mediapipe.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            // 🎬 TKA Firebase Storage videos (alternate URL format)
+            // Videos use storage.googleapis.com/{bucket}/... format
+            // NetworkOnly avoids caching large video files and prevents no-response errors
+            urlPattern: /^https:\/\/storage\.googleapis\.com\/the-kinetic-alphabet\.firebasestorage\.app\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            // 📦 CDN resources (jsdelivr, unpkg, cdnjs) - often return opaque responses
+            // Let the browser cache these natively instead of fighting with service worker
+            urlPattern: /^https:\/\/(cdn\.jsdelivr\.net|unpkg\.com|cdnjs\.cloudflare\.com)\/.*/i,
+            handler: "NetworkOnly",
+          },
+          // ============================================================
+          // CACHEABLE: Resources with proper CORS that we want to cache
+          // ============================================================
+          {
+            // Cache Google Fonts CSS
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "google-fonts-stylesheets",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 1 week
+              },
+              cacheableResponse: {
+                statuses: [0, 200], // Include 0 for opaque responses (fonts work offline)
+              },
+            },
+          },
+          {
+            // Cache Google Font files (gstatic.com has proper CORS)
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-webfonts",
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200], // Include 0 for opaque responses
+              },
+            },
+          },
+          {
+            // Cache static assets from Firebase Storage (thumbnails, images)
+            urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
+            handler: "StaleWhileRevalidate", // Changed from CacheFirst - safer for cross-origin
+            options: {
+              cacheName: "firebase-storage-cache",
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200], // Include 0 - Firebase Storage may return opaque
+              },
+            },
+          },
+          {
+            // Network-first for other googleapis.com APIs
+            urlPattern: /^https:\/\/.*\.googleapis\.com\/.*$/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-cache",
+              networkTimeoutSeconds: 10,
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 5, // 5 minutes
+              },
+              cacheableResponse: {
+                statuses: [200], // Only cache successful CORS responses for APIs
+              },
+            },
+          },
+          // ============================================================
+          // CATCH-ALL: Any other cross-origin request - don't cache
+          // ============================================================
+          {
+            // 🛡️ Catch-all for remaining cross-origin requests
+            urlPattern: /^https?:\/\/(?!localhost)/i,
+            handler: "NetworkOnly",
+          },
+        ],
+      },
+    }),
+    dictionaryPlugin(),
+    fontCorsPlugin(), // 📱 CORS headers for fonts (mobile debugging)
+    devCachePlugin(), // 🚀 2025: Smart caching (no-cache for CSS/JS, cache for SVGs)
+    arrowSpriteHmrPlugin(), // 🎯 Auto-reload arrows when sprite is edited in Illustrator
+    webpWasmDevPlugin(),
+    webpStaticCopyPlugin(),
+    // 📊 Bundle analyzer - generates stats.html when ANALYZE=true
+    process.env.ANALYZE === "true" &&
+      visualizer({
+        filename: "stats.html",
+        open: true,
+        gzipSize: true,
+        brotliSize: true,
+        template: "treemap", // or "sunburst", "network"
+      }),
+  ].filter(Boolean),
+  resolve: {
+    alias: {
+      // Aliases handled by SvelteKit
+    },
+    // Force browser builds during SSR to avoid Node.js require() issues
+    conditions: ["browser", "module", "import", "default"],
+  },
+  // ============================================================================
+  // BUILD (Production optimization)
+  // ============================================================================
+  build: {
+    // Source maps disabled in production for security (exposes original source)
+    // Enable locally with: VITE_SOURCEMAP=true npm run build
+    sourcemap: false,
+    target: "esnext",
+    minify: "esbuild",
+    // 2026: Fast default minification
+    cssMinify: "esbuild",
+    // 2026: Works with Svelte 5
+
+    rollupOptions: {
+      // Externalize server-only modules that can't be bundled
+      external: [
+        "@resvg/resvg-js",
+        /mcp-server/,
+      ],
+      output: {
+        // Strategic chunking for your actual dependencies
+        manualChunks: (id) => {
+          if (id.includes("node_modules")) {
+            // Heavy 3D libraries - Three.js ecosystem all in one chunk to avoid circular deps
+            if (
+              id.includes("three") ||
+              id.includes("@threlte") ||
+              id.includes("troika") ||
+              id.includes("postprocessing") ||
+              id.includes("three-perf") ||
+              id.includes("@dimforge/rapier")
+            )
+              return "vendor-three";
+            if (id.includes("fabric")) return "vendor-fabric";
+            if (id.includes("pdfjs-dist")) return "vendor-pdf";
+            if (id.includes("firebase")) return "vendor-firebase";
+            if (id.includes("dexie")) return "vendor-dexie";
+            // pixi.js is heavy (~500KB) - keep it in its own chunk
+            if (id.includes("pixi.js") || id.includes("pixi"))
+              return "vendor-pixi";
+            return "vendor";
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000, // Warn for 1MB+ chunks
+  },
+  // ============================================================================
+  // SSR
+  // ============================================================================
+  ssr: {
+    noExternal: [
+      "svelte",
+      "reflect-metadata", // Often has CJS issues
+      "gif.js", // May contain CJS code
+      "file-saver", // Often has CJS exports
+      "@tsparticles/basic",
+      "@tsparticles/engine",
+      "@tsparticles/preset-snow",
+      // Threlte packages need svelte export condition, keep bundled
+      "@threlte/core",
+      "@threlte/extras",
+      "@threlte/rapier",
+    ],
+    external: [
+      "pdfjs-dist",
+      "page-flip",
+      // MCP server has native dependencies that can't be bundled
+      /mcp-server/,
+      "@resvg/resvg-js",
+      // Three.js and related WebGL packages - must be external for SSR because
+      // they access WebGL constants at module load time which don't exist in Node.js
+      // (causes "Cannot read properties of undefined (reading 'VERTEX')" error)
+      "three",
+      /^three\//,
+      "troika-three-text",
+      "postprocessing",
+      "three-perf",
+      "@dimforge/rapier3d-compat",
+    ],
+    // Include svelte condition for threlte packages, but node/module first for SSR
+    resolve: {
+      conditions: ["svelte", "node", "module", "import", "default"],
+    },
+  },
+  // ============================================================================
+  // CSS
+  // ============================================================================
+  css: {
+    devSourcemap: true,
+  },
+  // ============================================================================
+  // DEPENDENCY PRE-BUNDLING (Vite 6.0)
+  // ⚡ PERFORMANCE: Only pre-bundle lightweight essentials + dependencies that need ESM transformation
+  // Heavy libraries (fabric, page-flip) are excluded and load on-demand when features are used
+  // This reduces initial dev server load time from 30s+ to ~5-10s
+  // ============================================================================
+  optimizeDeps: {
+    include: [
+      // Core DI & validation (lightweight, needed immediately)
+      "reflect-metadata",
+      "zod",
+
+      // UI components (lightweight)
+      "bits-ui",
+      "embla-carousel-svelte",
+
+      // Small utilities
+      "file-saver",
+
+      // ⚡ PERFORMANCE FIX: Pre-bundle dexie for proper ESM handling
+      // Needs Vite transformation despite being in dataModule (Tier 1)
+      "dexie",
+      // Threlte: avoid on-demand re-optimization (prevents stale dep 504s)
+      "@threlte/core",
+      "@threlte/extras",
+      // WebGPU renderer: pre-bundle to avoid 504 "Outdated Optimize Dep" errors
+      "three/webgpu",
+
+      // Prevent mid-session optimization reloads (lightweight deps browseed late)
+      "animate-css-grid",
+      "@tanstack/svelte-virtual",
+      "realtime-bpm-analyzer",
+      "threlte-postprocessing",
+      "threlte-postprocessing/effects",
+      "three/examples/jsm/controls/PointerLockControls.js",
+    ],
+    exclude: [
+      "pdfjs-dist",
+      // ⚡ Lazy-load these heavy libraries on-demand
+      "fabric", // ~500KB canvas library (loads when user uses animator)
+      "page-flip", // PDF flipbook (loads in learn module)
+    ],
+  },
+  // ============================================================================
+  // DEV SERVER (Vite 6.0 enhancements)
+  // ============================================================================
+  server: {
+    host: "0.0.0.0",
+    port: 5173,
+    strictPort: true, // 📱 Mobile debugging requires consistent port (ADB reverse tcp:5173)
+    headers: {
+      // Enable OAuth popups to communicate with parent window
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+      "Cross-Origin-Embedder-Policy": "unsafe-none",
+    },
+    fs: {
+      allow: [".", "../../", "../../../animator", "../../../desktop"],
+      strict: true, // 2026: Security best practice
+    },
+    hmr: {
+      overlay: true,
+      clientPort: 5173,
+      // Explicit client port
+      timeout: 30000, // 30s timeout instead of default 5s
+    },
+    watch: {
+      ignored: [
+        "**/node_modules/**",
+        "**/.git/**",
+        "**/dist/**",
+        // 🚨 CRITICAL: Use ./build/** NOT **/build/**
+        // The pattern **/build/** will match ANY directory named "build" at any depth.
+        // This could cause HMR to ignore source code directories.
+        // Only ignore the root-level build output directory.
+        "./build/**",
+        "**/.svelte-kit/**",
+      ],
+    },
+    // 2026: Preload critical files on dev start
+    warmup: {
+      clientFiles: [
+        "./src/lib/shared/**/*.ts",
+        "./src/lib/modules/**/*.svelte",
+      ],
+    },
+  },
+  // ============================================================================
+  // PREVIEW (Testing production builds)
+  // ============================================================================
+  preview: {
+    port: 4173,
+    strictPort: true,
+    host: "0.0.0.0",
+  },
+});

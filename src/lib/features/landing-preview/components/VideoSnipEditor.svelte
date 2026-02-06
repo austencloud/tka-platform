@@ -220,6 +220,7 @@
       onpointerup={handlePointerUp}
       onpointerleave={handlePointerUp}
       role="slider"
+      tabindex="0"
       aria-label="Video timeline"
       aria-valuemin={0}
       aria-valuemax={duration}

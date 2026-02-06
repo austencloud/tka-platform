@@ -7,6 +7,7 @@ export enum GridLocation {
   SOUTHEAST = "se",
   SOUTHWEST = "sw",
   NORTHWEST = "nw",
+  CENTER = "c",
 }
 
 export enum GridPositionGroup {
@@ -15,6 +16,8 @@ export enum GridPositionGroup {
   GAMMA = "gamma",
   ZETA = "zeta",
   ETA = "eta",
+  TAU = "tau",
+  TERRA = "terra",
 }
 
 export enum GridPosition {
@@ -88,10 +91,34 @@ export enum GridPosition {
   ETA14 = "eta14",
   ETA15 = "eta15",
   ETA16 = "eta16",
+
+  // Tau positions - one hand at center, other at perimeter (centric mode)
+  // TAU1-8: Blue at center, red at perimeter
+  TAU1 = "tau1",
+  TAU2 = "tau2",
+  TAU3 = "tau3",
+  TAU4 = "tau4",
+  TAU5 = "tau5",
+  TAU6 = "tau6",
+  TAU7 = "tau7",
+  TAU8 = "tau8",
+  // TAU9-16: Red at center, blue at perimeter
+  TAU9 = "tau9",
+  TAU10 = "tau10",
+  TAU11 = "tau11",
+  TAU12 = "tau12",
+  TAU13 = "tau13",
+  TAU14 = "tau14",
+  TAU15 = "tau15",
+  TAU16 = "tau16",
+
+  // Terra position - both hands at center (centric mode)
+  TERRA1 = "terra1",
 }
 
 export enum GridMode {
   DIAMOND = "diamond",
   BOX = "box",
   SKEWED = "skewed",
+  CENTRIC = "centric",
 }

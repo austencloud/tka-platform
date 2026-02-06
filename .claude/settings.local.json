@@ -498,7 +498,9 @@
       "mcp__chrome-devtools__evaluate_script",
       "mcp__chrome-devtools__resize_page",
       "mcp__chrome-devtools__list_console_messages",
-      "Bash(CF_PAGES=1 set:*)"
+      "Bash(CF_PAGES=1 set:*)",
+      "Bash(do test -f:*)",
+      "Bash(do test -d \"F:/tka-platform/src/lib/features/$dir/services\")"
     ]
   },
   "enableAllProjectMcpServers": true,

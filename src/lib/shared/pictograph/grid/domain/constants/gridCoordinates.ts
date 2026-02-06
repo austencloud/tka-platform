@@ -79,4 +79,20 @@ export const gridCoordinates: Record<
     },
     center_point: "(475.0, 475.0)",
   },
+  centric: {
+    hand_points: {
+      normal: {
+        c_centric_hand_point: "(475.0, 475.0)",
+      },
+      strict: {
+        c_centric_hand_point_strict: "(475.0, 475.0)",
+      },
+    },
+    layer2_points: {
+      normal: {},
+      strict: {},
+    },
+    outer_points: {},
+    center_point: "(475.0, 475.0)",
+  },
 };

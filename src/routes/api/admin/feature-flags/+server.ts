@@ -18,7 +18,7 @@ import type { RequestHandler } from "@sveltejs/kit";
 import { json, error } from "@sveltejs/kit";
 import { requireFirebaseUser } from "$lib/server/auth/requireFirebaseUser";
 import { getAdminDb } from "$lib/server/firebaseAdmin";
-import { env } from "$env/dynamic/private";
+import { POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID } from "$env/static/private";
 
 const POSTHOG_API_BASE = "https://us.i.posthog.com/api";
 
@@ -31,20 +31,20 @@ async function isAdmin(uid: string): Promise<boolean> {
 }
 
 function getPostHogHeaders() {
-  if (!env.POSTHOG_PERSONAL_API_KEY) {
+  if (!POSTHOG_PERSONAL_API_KEY) {
     throw error(500, "POSTHOG_PERSONAL_API_KEY not configured");
   }
   return {
-    Authorization: `Bearer ${env.POSTHOG_PERSONAL_API_KEY}`,
+    Authorization: `Bearer ${POSTHOG_PERSONAL_API_KEY}`,
     "Content-Type": "application/json",
   };
 }
 
 function getProjectId(): string {
-  if (!env.POSTHOG_PROJECT_ID) {
+  if (!POSTHOG_PROJECT_ID) {
     throw error(500, "POSTHOG_PROJECT_ID not configured");
   }
-  return env.POSTHOG_PROJECT_ID;
+  return POSTHOG_PROJECT_ID;
 }
 
 /**
@@ -191,7 +191,12 @@ export const PATCH: RequestHandler = async (event) => {
     );
 
     if (!listResponse.ok) {
-      throw error(listResponse.status, "Failed to find feature flag");
+      const errorText = await listResponse.text();
+      console.error("[feature-flags] List error:", errorText);
+      return json(
+        { success: false, message: `PostHog API error: ${listResponse.statusText}`, detail: errorText, code: "POSTHOG_LIST_FAILED" },
+        { status: listResponse.status }
+      );
     }
 
     const listData = await listResponse.json();
@@ -220,7 +225,10 @@ export const PATCH: RequestHandler = async (event) => {
       if (!createResponse.ok) {
         const errorText = await createResponse.text();
         console.error("[feature-flags] Create error:", errorText);
-        throw error(createResponse.status, "Failed to create feature flag");
+        return json(
+          { success: false, message: `Failed to create flag "${flagKey}"`, detail: errorText, code: "POSTHOG_CREATE_FAILED" },
+          { status: createResponse.status }
+        );
       }
 
       const created = await createResponse.json();
@@ -261,21 +269,35 @@ export const PATCH: RequestHandler = async (event) => {
     if (!updateResponse.ok) {
       const errorText = await updateResponse.text();
       console.error("[feature-flags] Update error:", errorText);
-      throw error(updateResponse.status, "Failed to update feature flag");
+      return json(
+        { success: false, message: `Failed to update flag "${flagKey}"`, detail: errorText, code: "POSTHOG_UPDATE_FAILED" },
+        { status: updateResponse.status }
+      );
     }
 
     const updated = await updateResponse.json();
     return json({ success: true, flag: updated, action: "updated", projectId });
   } catch (err: unknown) {
-    if (typeof err === "object" && err && "status" in err) {
-      throw err;
-    }
-    // Log the full error for debugging
     console.error("[feature-flags] PATCH Error:", err);
-    if (err instanceof Error) {
-      console.error("[feature-flags] Error message:", err.message);
-      console.error("[feature-flags] Error stack:", err.stack);
+
+    // SvelteKit HttpError (from throw error(status, message))
+    // Return as JSON directly — SvelteKit strips 5xx messages if we re-throw
+    if (typeof err === "object" && err !== null && "status" in err && "body" in err) {
+      const httpErr = err as { status: number; body: { message: string } };
+      return json(
+        { success: false, message: httpErr.body.message, code: "HTTP_ERROR" },
+        { status: httpErr.status }
+      );
     }
-    throw error(500, `Internal Error: ${err instanceof Error ? err.message : String(err)}`);
+
+    // Regular JS errors (network failures, JSON parse errors, etc.)
+    return json(
+      {
+        success: false,
+        message: err instanceof Error ? err.message : String(err),
+        code: "INTERNAL_ERROR",
+      },
+      { status: 500 }
+    );
   }
 };

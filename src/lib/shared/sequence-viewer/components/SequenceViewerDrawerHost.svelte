@@ -137,13 +137,14 @@
                 type="button"
                 class="drawer-back-button"
                 onclick={handleDismiss}
-                aria-label="Close sequence viewer"
+                aria-label="Back to {overlay.returnLabel}"
               >
                 <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                <span class="drawer-back-label">{overlay.returnLabel}</span>
               </button>
 
               <div class="drawer-header-title">
-                Sequence Viewer
+                {overlay.sequence?.word || 'Sequence Viewer'}
               </div>
 
               <div class="drawer-header-actions">
@@ -302,14 +303,13 @@
   .drawer-back-button {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 6px;
     background: none;
     border: none;
     color: var(--theme-accent, #f43f5e);
     font-size: 14px;
     cursor: pointer;
-    padding: 0;
-    min-width: 48px;
+    padding: 0 10px 0 12px;
     min-height: 48px;
     border-radius: 8px;
     transition: background 150ms ease;
@@ -325,7 +325,17 @@
   }
 
   .drawer-back-button i {
-    font-size: 12px;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  .drawer-back-label {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    white-space: nowrap;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .drawer-header-title {

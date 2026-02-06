@@ -13,7 +13,7 @@ export interface ILetterTypeClassifier {
    * Classify a letter into its type (1-6).
    *
    * Type 1: Dual-Shift (A-V)
-   * Type 2: Shift (W, X, Y, Z, Σ, Δ, Θ, Ω, μ, ν)
+   * Type 2: Shift (W, X, Y, Z, Σ, Δ, Θ, Ω, Mu, Nu)
    * Type 3: Cross-Shift (W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-)
    * Type 4: Dash (Φ, Ψ, Λ)
    * Type 5: Dual-Dash (Φ-, Ψ-, Λ-)

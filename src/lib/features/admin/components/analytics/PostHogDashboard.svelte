@@ -21,7 +21,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // PostHog project ID for dashboard links
-  const POSTHOG_PROJECT_ID = "98849";
+  const POSTHOG_PROJECT_ID = "299320";
   const POSTHOG_BASE_URL = `https://us.posthog.com/project/${POSTHOG_PROJECT_ID}`;
 
   // State

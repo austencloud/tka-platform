@@ -1,0 +1,48 @@
+# robots.txt for TKA Scribe - The Kinetic Alphabet
+# https://tkascribe.com
+
+User-agent: *
+Allow: /
+
+# Allow all major search engines full access
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+# Allow AI crawlers for discoverability in AI search
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Anthropic-AI
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# Block crawlers from internal/API routes
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_app/
+
+# Sitemap location
+Sitemap: https://tkascribe.com/sitemap.xml
+
+# Crawl-delay for polite crawling (optional, mainly for less sophisticated bots)
+Crawl-delay: 1

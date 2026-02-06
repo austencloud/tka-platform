@@ -21,10 +21,12 @@ export interface UserProfile {
   collectionCount: number;
   followerCount: number;
   joinedDate: Date;
+  lastActiveAt?: Date;
   isFollowing?: boolean;
 
   // Social links
   instagramUsername?: string;
+  pronouns?: string;
 
   // Admin-related fields
   role?: UserRole;
@@ -74,13 +76,7 @@ export type CreatorFilterType =
   | "most-followers"
   | "newest";
 
-export type CreatorSortCriteria =
-  | "xp"
-  | "level"
-  | "sequences"
-  | "achievements"
-  | "followers"
-  | "joinedDate";
+export type CreatorSortCriteria = "lastActive" | "joinedDate";
 
 export interface CreatorQueryOptions {
   filter?: CreatorFilterType;

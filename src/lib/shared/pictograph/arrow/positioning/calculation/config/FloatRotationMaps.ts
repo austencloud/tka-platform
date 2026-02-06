@@ -19,6 +19,7 @@ export const floatClockwiseHandpathMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 90,
   [GridLocation.SOUTHWEST]: 180,
   [GridLocation.NORTHWEST]: 270,
+  [GridLocation.CENTER]: 0,
 };
 
 export const floatCounterClockwiseHandpathMap: Record<GridLocation, number> = {
@@ -30,4 +31,5 @@ export const floatCounterClockwiseHandpathMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 270,
   [GridLocation.SOUTHWEST]: 0,
   [GridLocation.NORTHWEST]: 90,
+  [GridLocation.CENTER]: 0,
 };

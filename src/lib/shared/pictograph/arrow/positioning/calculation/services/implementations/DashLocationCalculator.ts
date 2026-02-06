@@ -195,6 +195,7 @@ export class DashLocationCalculator implements IDashLocationCalculator {
       [GridLocation.SOUTHEAST]: GridLocation.SOUTHWEST,
       [GridLocation.SOUTHWEST]: GridLocation.NORTHWEST,
       [GridLocation.NORTHWEST]: GridLocation.NORTHEAST,
+      [GridLocation.CENTER]: GridLocation.CENTER,
     },
     counter_clockwise: {
       [GridLocation.NORTH]: GridLocation.WEST,
@@ -205,6 +206,7 @@ export class DashLocationCalculator implements IDashLocationCalculator {
       [GridLocation.SOUTHEAST]: GridLocation.NORTHEAST,
       [GridLocation.SOUTHWEST]: GridLocation.SOUTHEAST,
       [GridLocation.NORTHWEST]: GridLocation.SOUTHWEST,
+      [GridLocation.CENTER]: GridLocation.CENTER,
     },
   };
 
@@ -479,6 +481,7 @@ export class DashLocationCalculator implements IDashLocationCalculator {
       [GridLocation.SOUTHWEST]: GridLocation.NORTHEAST,
       [GridLocation.SOUTHEAST]: GridLocation.NORTHWEST,
       [GridLocation.NORTHWEST]: GridLocation.SOUTHEAST,
+      [GridLocation.CENTER]: GridLocation.CENTER,
     };
     return oppositeMap[location] || location;
   }

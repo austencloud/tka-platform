@@ -23,4 +23,5 @@ export const LOCATION_ANGLES = {
   [GridLocation.SOUTHEAST]: HALF_PI / 2, // 45°
   [GridLocation.SOUTHWEST]: PI - HALF_PI / 2, // 135° (between S 90° and W 180°)
   [GridLocation.NORTHWEST]: PI + HALF_PI / 2, // 225° (between W 180° and N 270°)
+  [GridLocation.CENTER]: 0, // Center has no angle
 } as const;

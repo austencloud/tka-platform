@@ -141,6 +141,7 @@ export class PublicSequencesLoader implements IBrowseLoader {
       steps: [], // Empty - will be fetched on demand for rendering
       thumbnails: [...data.thumbnails],
       sequenceLength: data.sequenceLength,
+      level: data.level ?? this.difficultyStringToLevel(data.difficultyLevel),
       difficultyLevel: data.difficultyLevel,
       loopType: data.loopType as SequenceData["loopType"],
       isFavorite: false,
@@ -160,6 +161,17 @@ export class PublicSequencesLoader implements IBrowseLoader {
         },
       }),
     };
+  }
+
+  /** Convert legacy difficultyLevel string to numeric level */
+  private difficultyStringToLevel(difficultyLevel?: string): number | undefined {
+    if (!difficultyLevel) return undefined;
+    const map: Record<string, number> = {
+      beginner: 1,
+      intermediate: 2,
+      advanced: 3,
+    };
+    return map[difficultyLevel.toLowerCase()];
   }
 
   /**

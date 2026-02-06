@@ -140,6 +140,7 @@ export class LetterQueryHandler implements ILetterQueryHandler {
         [GridMode.DIAMOND]: diamondParseResult.rows,
         [GridMode.BOX]: boxParseResult.rows,
         [GridMode.SKEWED]: skewedParseResult.rows,
+        [GridMode.CENTRIC]: [],
       };
 
       this.isInitialized = true;

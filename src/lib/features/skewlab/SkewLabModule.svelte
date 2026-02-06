@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Skew Lab Module
+   * Level 4 Lab Module
    *
    * Admin-only experimental sandbox for validating skewed position rendering.
    * Has two tabs:
@@ -148,7 +148,7 @@
     });
 
     return {
-      id: `skewlab-${position}`,
+      id: `level4-${position}`,
       startPosition: position,
       endPosition: position,
       motions: {
@@ -167,10 +167,10 @@
   }
 </script>
 
-<div class="skewlab">
+<div class="level4-lab">
   <header class="header">
     <div class="title-row">
-      <h1>Skew Lab</h1>
+      <h1>Level 4</h1>
       <span class="badge">Admin</span>
     </div>
     <nav class="tabs">
@@ -291,7 +291,7 @@
 </div>
 
 <style>
-  .skewlab {
+  .level4-lab {
     height: 100%;
     display: flex;
     flex-direction: column;

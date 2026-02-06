@@ -5,10 +5,10 @@
  * grid location, orientation, and grid mode.
  */
 
-import type { Coordinates, GridLocation, GridMode, Orientation, PropPlacement } from "../types";
-import { isCardinal, CARDINAL_LOCATIONS } from "../types";
-import { getHandPointCoordinates } from "./grid-position";
-import { DIAMOND_PROP_ANGLES, BOX_PROP_ANGLES } from "../constants/rotation-maps";
+import type { Coordinates, GridLocation, GridMode, Orientation, PropPlacement } from "../types.js";
+import { isCardinal, CARDINAL_LOCATIONS } from "../types.js";
+import { getHandPointCoordinates } from "./grid-position.js";
+import { DIAMOND_PROP_ANGLES, BOX_PROP_ANGLES } from "../constants/rotation-maps.js";
 
 /**
  * Get the appropriate angle map based on grid mode and location

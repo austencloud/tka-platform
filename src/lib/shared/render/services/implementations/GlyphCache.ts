@@ -105,7 +105,7 @@ export class GlyphCache implements IGlyphCache {
     Letter.T,
     Letter.U,
     Letter.V,
-    // Type2: W-Z + Greek uppercase + μ, ν
+    // Type2: W-Z + Greek uppercase + Mu, Nu
     Letter.W,
     Letter.X,
     Letter.Y,

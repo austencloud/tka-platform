@@ -67,10 +67,10 @@ Dark mode: Uses white text on dark backgrounds, dark text on light backgrounds.
     hasValidData && duration !== 1.0 && displayText !== ""
   );
 
-  // Vertical positioning: centered between south outer point and bottom edge
+  // Vertical positioning: in the lower third of the space below the south outer point
   // South outer point: y ≈ 775, bottom of pictograph: y = 950
-  // Midpoint: (775 + 950) / 2 ≈ 862
-  const yPosition = 862;
+  // Place at ~75% of that gap for visual balance with the TKA letter row
+  const yPosition = 890;
 
   // ============================================================================
   // DURATION CHANGE ANIMATION
@@ -98,7 +98,7 @@ Dark mode: Uses white text on dark backgrounds, dark text on light backgrounds.
     y={yPosition}
     dominant-baseline="middle"
     text-anchor="middle"
-    font-size="72"
+    font-size="52"
     font-family="Inter, SF Pro Display, -apple-system, BlinkMacSystemFont, sans-serif"
     font-weight="600"
     fill={fillColor}

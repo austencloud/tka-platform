@@ -10,7 +10,7 @@
  * - For shift motions, the start->end transition
  */
 
-import type { GridLocation, VectorDirection } from "../types";
+import type { GridLocation, VectorDirection } from "../types.js";
 
 type ColorMap = Record<"blue" | "red", VectorDirection>;
 
@@ -30,6 +30,7 @@ export const DIAMOND_RADIAL_MAP: Record<GridLocation, ColorMap> = {
   se: { red: "right", blue: "left" },
   sw: { red: "right", blue: "left" },
   nw: { red: "right", blue: "left" },
+  c: { red: "right", blue: "left" },
 };
 
 /**
@@ -44,6 +45,7 @@ export const DIAMOND_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
   se: { red: "up", blue: "down" },
   sw: { red: "up", blue: "down" },
   nw: { red: "up", blue: "down" },
+  c: { red: "up", blue: "down" },
 };
 
 /**
@@ -58,10 +60,13 @@ export const BOX_RADIAL_MAP: Record<GridLocation, ColorMap> = {
   e: { red: "downright", blue: "upleft" },
   s: { red: "downright", blue: "upleft" },
   w: { red: "downright", blue: "upleft" },
+  c: { red: "right", blue: "left" },
 };
 
 /**
- * Box grid (NE/SE/SW/NW) - non-radial orientation
+ * Box grid (NE/SE/SW/NW) - non-radial orientation (CLOCK/COUNTER)
+ * Also used for interradial orientations (clockIn/clockOut/counterIn/counterOut)
+ * as a close approximation — both are perpendicular-ish to the radial axis.
  */
 export const BOX_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
   ne: { red: "upleft", blue: "downright" },
@@ -72,6 +77,7 @@ export const BOX_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
   e: { red: "upleft", blue: "downright" },
   s: { red: "upleft", blue: "downright" },
   w: { red: "upleft", blue: "downright" },
+  c: { red: "up", blue: "down" },
 };
 
 // ============================================================================
@@ -91,6 +97,7 @@ export const SHIFT_RADIAL_MAP: Record<GridLocation, Partial<Record<GridLocation,
   se: { ne: "downright", sw: "downright" },
   sw: { nw: "downleft", se: "downleft" },
   nw: { ne: "upleft", sw: "upleft" },
+  c: {},
 };
 
 /**
@@ -105,6 +112,7 @@ export const SHIFT_NON_RADIAL_MAP: Record<GridLocation, Partial<Record<GridLocat
   se: { ne: "downleft", sw: "upright" },
   sw: { nw: "upright", se: "downleft" },
   nw: { ne: "downright", sw: "upleft" },
+  c: {},
 };
 
 // ============================================================================
