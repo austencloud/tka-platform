@@ -16,7 +16,7 @@
  */
 
 import { createContainer } from "iti";
-import { Canvas2DDirectRenderer } from "../apps/scribe/src/lib/shared/render/services/implementations/Canvas2DDirectRenderer.js";
+import { Canvas2DDirectRenderer } from "../src/lib/shared/render/services/implementations/Canvas2DDirectRenderer.js";
 
 /**
  * Create a minimal container for Node.js CLI rendering

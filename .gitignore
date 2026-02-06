@@ -3,20 +3,16 @@
 node_modules/
 .pnpm-debug.log*
 
-# Wrangler local state
-.wrangler/
-
 # Build and deployment artifacts
-# Build outputs live under apps/*/build now (monorepo)
-/build
+# 🚨 CRITICAL: Use /build NOT **/build/** or build/
+# The leading slash (/) ensures we only ignore the root-level build output directory,
+# NOT source code directories like src/lib/modules/build/ which contain components!
+# Without the leading slash, git would ignore ALL directories named "build" at any depth.
+/build                          # Ignore ONLY root-level build directory (SvelteKit output)
 /build/**
-apps/*/build/
-apps/*/.netlify/
-apps/*/.svelte-kit/
-apps/*/dev-dist/
 .netlify/
 dist/
-/dev-dist/
+/dev-dist/                      # Vite PWA dev mode output
 .output/
 /_app/
 
@@ -79,12 +75,11 @@ nul
 *.temp
 .cache/
 
-# SvelteKit (root and nested)
+# SvelteKit
 .svelte-kit/
 
 # TypeScript
 .tsbuildinfo
-**/.tsbuildinfo
 
 # Package manager lock files (keep your preferred one, remove others)
 # yarn.lock
@@ -193,9 +188,3 @@ scripts/model-curator/
 
 # Monorepo remnants
 packages/manifest.json
-
-# Landing: pictograph assets synced from scribe at build time
-apps/landing/static/images/arrows/
-apps/landing/static/images/letters_trimmed/
-apps/landing/static/images/numbers/
-apps/landing/static/images/arrow.svg

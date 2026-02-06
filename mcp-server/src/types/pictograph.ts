@@ -14,10 +14,8 @@ export interface MotionData {
   endLocation: string;
   motionType: string;
   rotationDirection: string;
-  startOrientation: string; // "in" | "out" | "clock" | "counter" | "clockIn" | "clockOut" | "counterIn" | "counterOut"
-  endOrientation: string; // "in" | "out" | "clock" | "counter" | "clockIn" | "clockOut" | "counterIn" | "counterOut"
-  /** Spinning plane (Level 6). Defaults to "wall" when omitted. */
-  plane?: "wall" | "wheel" | "overhead";
+  startOrientation: string; // "in" | "out" | "clock" | "counter"
+  endOrientation: string; // "in" | "out" | "clock" | "counter"
 }
 
 /**

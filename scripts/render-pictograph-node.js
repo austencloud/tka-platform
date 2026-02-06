@@ -78,8 +78,8 @@ const OUTPUT_DIR = path.join(__dirname, '..', 'static', 'images', 'grant-feature
     };
 
     // Import the DI container and renderer
-    const { container } = await import('../apps/scribe/src/lib/shared/inversify/di.ts');
-    const { TYPES } = await import('../apps/scribe/src/lib/shared/inversify/types/core.types.ts');
+    const { container } = await import('../src/lib/shared/inversify/di.ts');
+    const { TYPES } = await import('../src/lib/shared/inversify/types/core.types.ts');
 
     // Get Canvas2DDirectRenderer from DI container
     const renderer = container.get(TYPES.IDirectRenderer);

@@ -39,13 +39,6 @@
       "collectionGroup": "users",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "lastActivityDate", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
         { "fieldPath": "isFeatured", "order": "ASCENDING" },
         { "fieldPath": "followerCount", "order": "DESCENDING" }
       ]

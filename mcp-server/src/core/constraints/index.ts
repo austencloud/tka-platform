@@ -58,12 +58,6 @@ export {
 export { ReversalConstraint, type ReversalMode } from "./implementations/reversal-constraint.js";
 
 export {
-  VtgTimingConstraint,
-  enforceVtgTiming,
-  preferVtgTiming,
-} from "./implementations/vtg-timing-constraint.js";
-
-export {
   HandPathReversalConstraint,
   type HandPathMode,
   HandPath,

@@ -17,8 +17,8 @@ import path from 'path';
 import {
 	baselineScenarios,
 	filterScenarios
-} from '../../apps/scribe/src/lib/features/learn/tika/evaluation/scenarios/baseline-scenarios';
-import type { TikaScenario } from '../../apps/scribe/src/lib/features/learn/tika/evaluation/types';
+} from '../../src/lib/features/learn/tika/evaluation/scenarios/baseline-scenarios';
+import type { TikaScenario } from '../../src/lib/features/learn/tika/evaluation/types';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types

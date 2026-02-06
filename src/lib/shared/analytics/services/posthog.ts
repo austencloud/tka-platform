@@ -1,0 +1,249 @@
+/**
+ * PostHog Analytics Integration
+ *
+ * Centralized PostHog initialization and utilities.
+ * Replaces Firebase Analytics and custom activity tracking.
+ *
+ * Features enabled:
+ * - Product Analytics (event tracking)
+ * - Session Replay (watch user sessions)
+ * - Feature Flags (with local evaluation)
+ * - Error Tracking
+ * - LLM Analytics (for Tika)
+ */
+
+import posthog from "posthog-js";
+import { browser } from "$app/environment";
+import {
+  PUBLIC_POSTHOG_KEY,
+  PUBLIC_POSTHOG_HOST,
+} from "$env/static/public";
+
+let initialized = false;
+
+/**
+ * Initialize PostHog analytics.
+ * Call once on app startup in +layout.svelte.
+ */
+export function initPostHog(): void {
+  if (!browser) return;
+  if (initialized) return;
+
+  if (!PUBLIC_POSTHOG_KEY) {
+    console.warn("[PostHog] No API key found. Analytics disabled.");
+    return;
+  }
+
+  posthog.init(PUBLIC_POSTHOG_KEY, {
+    api_host: PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+
+    // Capture pageviews automatically
+    capture_pageview: true,
+    capture_pageleave: true,
+
+    // Session replay - enabled by default
+    // Records user sessions for debugging and UX analysis
+    disable_session_recording: false,
+
+    // Autocapture clicks, form submissions, etc.
+    autocapture: true,
+
+    // Feature flags - load on init for immediate availability
+    bootstrap: {
+      featureFlags: {},
+    },
+
+    // Persist user identity across sessions
+    persistence: "localStorage+cookie",
+
+    // Session recording configuration for accurate replay
+    session_recording: {
+      maskAllInputs: false, // We want to see what users type (except sensitive)
+      maskInputOptions: {
+        password: true,
+        // Add other sensitive field types as needed
+      },
+      // Capture fonts for accurate text rendering in replay
+      collectFonts: true,
+      // Inline stylesheets to ensure CSS is captured (default is true, being explicit)
+      inlineStylesheet: true,
+    },
+
+    // Load feature flags immediately
+    loaded: (posthog) => {
+      // Reload feature flags to ensure fresh state
+      posthog.reloadFeatureFlags();
+
+      if (import.meta.env.DEV) {
+        console.log("[PostHog] Initialized successfully");
+      }
+    },
+  });
+
+  initialized = true;
+}
+
+/**
+ * Identify a user after authentication.
+ * Call when user logs in or auth state changes.
+ */
+export function identifyUser(
+  userId: string,
+  properties?: {
+    email?: string;
+    name?: string;
+    username?: string;
+    role?: string;
+    createdAt?: Date;
+    isPremium?: boolean;
+    isTester?: boolean;
+    isAdmin?: boolean;
+  }
+): void {
+  if (!browser || !initialized) return;
+
+  posthog.identify(userId, {
+    email: properties?.email,
+    name: properties?.name,
+    username: properties?.username,
+    role: properties?.role,
+    created_at: properties?.createdAt?.toISOString(),
+    is_premium: properties?.isPremium,
+    is_tester: properties?.isTester,
+    is_admin: properties?.isAdmin,
+  });
+}
+
+/**
+ * Reset user identity on logout.
+ */
+export function resetUser(): void {
+  if (!browser || !initialized) return;
+  posthog.reset();
+}
+
+/**
+ * Capture a custom event.
+ */
+export function captureEvent(
+  eventName: string,
+  properties?: Record<string, unknown>
+): void {
+  if (!browser || !initialized) return;
+  posthog.capture(eventName, properties);
+}
+
+/**
+ * Get a feature flag value.
+ * Returns the flag value or undefined if not set.
+ */
+export function getFeatureFlag(flagKey: string): boolean | string | undefined {
+  if (!browser || !initialized) return undefined;
+  return posthog.getFeatureFlag(flagKey);
+}
+
+/**
+ * Check if a feature flag is enabled.
+ * Returns true if the flag is enabled, false otherwise.
+ */
+export function isFeatureEnabled(flagKey: string): boolean {
+  if (!browser || !initialized) return false;
+  return posthog.isFeatureEnabled(flagKey) ?? false;
+}
+
+/**
+ * Get all feature flags for the current user.
+ */
+export function getAllFeatureFlags(): Record<string, boolean | string> {
+  if (!browser || !initialized) return {};
+  return posthog.featureFlags.getFlagVariants() || {};
+}
+
+/**
+ * Reload feature flags from server.
+ * Useful after user properties change.
+ */
+export function reloadFeatureFlags(): void {
+  if (!browser || !initialized) return;
+  posthog.reloadFeatureFlags();
+}
+
+/**
+ * Set user properties without identifying.
+ * Use for updating properties on an already-identified user.
+ */
+export function setUserProperties(
+  properties: Record<string, unknown>
+): void {
+  if (!browser || !initialized) return;
+  posthog.people.set(properties);
+}
+
+/**
+ * Start a session recording manually.
+ * Usually not needed as recording starts automatically.
+ */
+export function startSessionRecording(): void {
+  if (!browser || !initialized) return;
+  posthog.startSessionRecording();
+}
+
+/**
+ * Stop session recording.
+ */
+export function stopSessionRecording(): void {
+  if (!browser || !initialized) return;
+  posthog.stopSessionRecording();
+}
+
+/**
+ * Get the current session replay URL.
+ * Useful for support tickets or bug reports.
+ */
+export function getSessionReplayUrl(): string | null {
+  if (!browser || !initialized) return null;
+
+  const sessionId = posthog.get_session_id();
+  if (!sessionId) return null;
+
+  const projectId = posthog.config?.token;
+  if (!projectId) return null;
+
+  return `https://us.posthog.com/project/${projectId}/replay/${sessionId}`;
+}
+
+/**
+ * Opt user out of tracking (for privacy preferences).
+ */
+export function optOut(): void {
+  if (!browser || !initialized) return;
+  posthog.opt_out_capturing();
+}
+
+/**
+ * Opt user back into tracking.
+ */
+export function optIn(): void {
+  if (!browser || !initialized) return;
+  posthog.opt_in_capturing();
+}
+
+/**
+ * Check if user has opted out.
+ */
+export function hasOptedOut(): boolean {
+  if (!browser || !initialized) return false;
+  return posthog.has_opted_out_capturing();
+}
+
+/**
+ * Get the PostHog instance for advanced usage.
+ * Prefer using the exported functions above.
+ */
+export function getPostHogInstance(): typeof posthog | null {
+  if (!browser || !initialized) return null;
+  return posthog;
+}
+
+// Re-export posthog for direct access if needed
+export { posthog };

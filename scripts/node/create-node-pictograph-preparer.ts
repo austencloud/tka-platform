@@ -12,48 +12,48 @@ import { NodePropSvgLoader } from "./NodePropSvgLoader";
 import { NodeJsonCache } from "./NodeJsonCache";
 
 // Import pure logic services (work in both browser and Node.js)
-import { ArrowPathResolver } from "../../apps/scribe/src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowPathResolver";
-import { ArrowSvgParser } from "../../apps/scribe/src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowSvgParser";
-import { ArrowSvgColorTransformer } from "../../apps/scribe/src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowSvgColorTransformer";
-import { GridModeDeriver } from "../../apps/scribe/src/lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
-import { GridPositionDeriver } from "../../apps/scribe/src/lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
-import { BetaDetector } from "../../apps/scribe/src/lib/shared/pictograph/prop/services/implementations/BetaDetector";
-import { OrientationCalculator } from "../../apps/scribe/src/lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import { PropPlacer } from "../../apps/scribe/src/lib/shared/pictograph/prop/services/implementations/PropPlacer";
+import { ArrowPathResolver } from "../../src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowPathResolver";
+import { ArrowSvgParser } from "../../src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowSvgParser";
+import { ArrowSvgColorTransformer } from "../../src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowSvgColorTransformer";
+import { GridModeDeriver } from "../../src/lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
+import { GridPositionDeriver } from "../../src/lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
+import { BetaDetector } from "../../src/lib/shared/pictograph/prop/services/implementations/BetaDetector";
+import { OrientationCalculator } from "../../src/lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
+import { PropPlacer } from "../../src/lib/shared/pictograph/prop/services/implementations/PropPlacer";
 import { NodePictographPreparer } from "./NodePictographPreparer";
 
 // Import all arrow positioning services
-import { ArrowLifecycleManager } from "../../apps/scribe/src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowLifecycleManager";
-import { ArrowAdjustmentProcessor } from "../../apps/scribe/src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowAdjustmentProcessor";
-import { ArrowCoordinateTransformer } from "../../apps/scribe/src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowCoordinateTransformer";
-import { ArrowDataProcessor } from "../../apps/scribe/src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowDataProcessor";
-import { ArrowGridCoordinator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowGridCoordinator";
-import { ArrowPositioningOrchestrator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
-import { ArrowQuadrantCalculator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowQuadrantCalculator";
-import { ArrowAdjustmentCalculator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
-import { ArrowLocationCalculator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
-import { ArrowLocator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocator";
-import { ArrowRotationCalculator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowRotationCalculator";
-import { DashLocationCalculator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/DashLocationCalculator";
-import { DirectionalTupleCalculator, DirectionalTupleProcessor, QuadrantIndexCalculator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/DirectionalTupleProcessor";
-import { HandpathDirectionCalculator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/HandpathDirectionCalculator";
-import { ScreenSpaceAdjustmentTransformer } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
-import { ArrowPlacementKeyGenerator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/ArrowPlacementKeyGenerator";
-import { AttributeKeyGenerator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/AttributeKeyGenerator";
-import { SpecialPlacementOriKeyGenerator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
-import { RotationAngleOverrideKeyGenerator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
-import { TurnsTupleKeyGenerator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/TurnsTupleKeyGenerator";
-import { ArrowPlacer } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/ArrowPlacer";
-import { DefaultPlacer } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/DefaultPlacer";
-import { SpecialPlacer } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacer";
-import { SpecialPlacementDataProvider } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacementDataProvider";
-import { LetterClassifier } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/LetterClassifier";
-import { TurnsTupleGenerator } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
-import { SpecialPlacementLookup } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacementLookup";
-import { RotationOverrideManager } from "../../apps/scribe/src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/RotationOverrideManager";
-import { PropType } from "../../apps/scribe/src/lib/shared/pictograph/prop/domain/enums/PropType";
+import { ArrowLifecycleManager } from "../../src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowLifecycleManager";
+import { ArrowAdjustmentProcessor } from "../../src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowAdjustmentProcessor";
+import { ArrowCoordinateTransformer } from "../../src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowCoordinateTransformer";
+import { ArrowDataProcessor } from "../../src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowDataProcessor";
+import { ArrowGridCoordinator } from "../../src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowGridCoordinator";
+import { ArrowPositioningOrchestrator } from "../../src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
+import { ArrowQuadrantCalculator } from "../../src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowQuadrantCalculator";
+import { ArrowAdjustmentCalculator } from "../../src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
+import { ArrowLocationCalculator } from "../../src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
+import { ArrowLocator } from "../../src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocator";
+import { ArrowRotationCalculator } from "../../src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowRotationCalculator";
+import { DashLocationCalculator } from "../../src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/DashLocationCalculator";
+import { DirectionalTupleCalculator, DirectionalTupleProcessor, QuadrantIndexCalculator } from "../../src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/DirectionalTupleProcessor";
+import { HandpathDirectionCalculator } from "../../src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/HandpathDirectionCalculator";
+import { ScreenSpaceAdjustmentTransformer } from "../../src/lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
+import { ArrowPlacementKeyGenerator } from "../../src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/ArrowPlacementKeyGenerator";
+import { AttributeKeyGenerator } from "../../src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/AttributeKeyGenerator";
+import { SpecialPlacementOriKeyGenerator } from "../../src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
+import { RotationAngleOverrideKeyGenerator } from "../../src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
+import { TurnsTupleKeyGenerator } from "../../src/lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/TurnsTupleKeyGenerator";
+import { ArrowPlacer } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/ArrowPlacer";
+import { DefaultPlacer } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/DefaultPlacer";
+import { SpecialPlacer } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacer";
+import { SpecialPlacementDataProvider } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacementDataProvider";
+import { LetterClassifier } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/LetterClassifier";
+import { TurnsTupleGenerator } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
+import { SpecialPlacementLookup } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/SpecialPlacementLookup";
+import { RotationOverrideManager } from "../../src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/RotationOverrideManager";
+import { PropType } from "../../src/lib/shared/pictograph/prop/domain/enums/PropType";
 
-import type { ISvgConfig } from "../../apps/scribe/src/lib/shared/pictograph/shared/domain/models/svg-models";
+import type { ISvgConfig } from "../../src/lib/shared/pictograph/shared/domain/models/svg-models";
 
 // SVG config constant
 const SVG_CONFIG: ISvgConfig = {

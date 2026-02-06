@@ -1,0 +1,355 @@
+/**
+ * Prop SVG Loader Service - OPTIMIZED (2025 Best Practices)
+ *
+ * Fast, direct SVG loading for props with aggressive caching.
+ *
+ * Key optimizations:
+ * - Multi-level caching (raw SVG + transformed SVG by color)
+ * - Request deduplication (prevents duplicate concurrent fetches)
+ * - Cached metadata parsing (viewBox, center)
+ * - Performance monitoring (cache hit/miss tracking)
+ * - HMR-aware cache persistence (prevents mass refetches on code changes)
+ */
+
+import type { MotionData } from "../../../shared/domain/models/MotionData";
+import type { PropPlacementData } from "../../domain/models/PropPlacementData";
+import type { PropRenderData } from "../../domain/models/PropRenderData";
+import type {
+  IPropSvgLoader,
+  PropSvgLoadOptions,
+} from "../contracts/IPropSvgLoader";
+import { MotionColor } from "../../../shared/domain/enums/pictograph-enums";
+import {
+  applyMotionColorToSvg,
+  type ThemeMode,
+} from "../../../../utils/svg-color-utils";
+import { getAnimationVisibilityManager } from "../../../../animation-engine/state/animation-visibility-state.svelte";
+
+// ============================================================================
+// HMR-AWARE MODULE-LEVEL CACHE STORAGE
+// ============================================================================
+// Persist caches across HMR to prevent mass network requests during development.
+// Without this, every code change would trigger many SVG refetches.
+// ============================================================================
+
+const hmrRawSvgCache: Map<string, string> =
+  import.meta.hot?.data?.propRawSvgCache ?? new Map();
+const hmrTransformedSvgCache: Map<string, PropRenderData> =
+  import.meta.hot?.data?.propTransformedSvgCache ?? new Map();
+const hmrMetadataCache: Map<
+  string,
+  {
+    viewBox: { width: number; height: number };
+    center: { x: number; y: number };
+  }
+> = import.meta.hot?.data?.propMetadataCache ?? new Map();
+
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.propRawSvgCache = hmrRawSvgCache;
+    data.propTransformedSvgCache = hmrTransformedSvgCache;
+    data.propMetadataCache = hmrMetadataCache;
+  });
+}
+
+export class PropSvgLoader implements IPropSvgLoader {
+  // 🚀 OPTIMIZATION: Use HMR-aware module-level caches
+  private rawSvgCache = hmrRawSvgCache; // path -> raw SVG text
+  private transformedSvgCache = hmrTransformedSvgCache; // path:color:themeMode -> transformed data
+  private loadingPromises = new Map<string, Promise<string>>(); // path -> loading promise (not persisted)
+  private metadataCache = hmrMetadataCache;
+
+  // Performance monitoring
+  private cacheHits = 0;
+  private cacheMisses = 0;
+  /**
+   * Get the current theme mode based on dark mode setting
+   * Dark mode (Dark Mode) = "dark" theme, Light mode = "light" theme
+   */
+  private getCurrentThemeMode(): ThemeMode {
+    try {
+      const manager = getAnimationVisibilityManager();
+      return manager.isDarkMode() ? "dark" : "light";
+    } catch {
+      // Fallback to light mode if manager not available
+      return "light";
+    }
+  }
+
+  /**
+   * Load prop SVG data with color transformation
+   * 🚀 OPTIMIZED: Checks transformed cache first, then raw cache, then fetches
+   * @param propData - Prop placement data
+   * @param motionData - Motion data including prop type
+   * @param useAnimatedVersion - If true, loads {propType}_animated.svg for animation canvas (300px width)
+   * @param options - Optional settings including themeMode for color selection
+   */
+  async loadPropSvg(
+    propData: PropPlacementData,
+    motionData: MotionData,
+    useAnimatedVersion: boolean = false,
+    options?: PropSvgLoadOptions
+  ): Promise<PropRenderData> {
+    try {
+      // Get prop type and color
+      const propType = motionData.propType || "staff";
+      const color = motionData.color || MotionColor.BLUE;
+
+      // Use explicit theme mode if provided, otherwise fall back to global state
+      const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
+
+      // Create cache key including color AND theme mode for transformed prop cache
+      // Animated versions live in /images/props/animated/ (scaled to 300px width)
+      const path = useAnimatedVersion
+        ? `/images/props/animated/${propType}.svg`
+        : `/images/props/${propType}.svg`;
+      const transformedCacheKey = `${path}:${color}:${themeMode}`;
+
+      // 🚀 OPTIMIZATION: Check transformed cache first (fastest path)
+      if (this.transformedSvgCache.has(transformedCacheKey)) {
+        this.cacheHits++;
+        const cached = this.transformedSvgCache.get(transformedCacheKey)!;
+        // Return with updated position/rotation (these are per-instance)
+        return {
+          ...cached,
+          position: { x: propData.positionX, y: propData.positionY },
+          rotation: propData.rotationAngle,
+        };
+      }
+
+      this.cacheMisses++;
+
+      // Fetch raw SVG (uses raw cache + deduplication)
+      const originalSvgText = await this.fetchSvgContentCached(path);
+
+      // Parse SVG for viewBox and center (uses metadata cache)
+      const { viewBox, center } = this.parsePropSvgCached(
+        originalSvgText,
+        path
+      );
+
+      // Apply color transformation with current theme mode
+      const coloredSvgText = this.applyColorToSvg(
+        originalSvgText,
+        color,
+        themeMode
+      );
+
+      // Extract SVG content
+      const svgContent = this.extractSvgContent(coloredSvgText);
+
+      const result: PropRenderData = {
+        position: { x: propData.positionX, y: propData.positionY },
+        rotation: propData.rotationAngle,
+        svgData: {
+          svgContent,
+          viewBox,
+          center,
+        },
+        loaded: true,
+        error: null,
+      };
+
+      // 🚀 OPTIMIZATION: Cache transformed result
+      this.transformedSvgCache.set(transformedCacheKey, result);
+
+      return result;
+    } catch (error) {
+      console.error("❌ PropSvgLoader: Error loading prop SVG:", error);
+      return {
+        position: { x: 475, y: 475 },
+        rotation: 0,
+        svgData: null,
+        loaded: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  /**
+   * 🚀 NEW: Fetch SVG content with caching and deduplication
+   */
+  private async fetchSvgContentCached(path: string): Promise<string> {
+    // Check raw SVG cache
+    if (this.rawSvgCache.has(path)) {
+      return this.rawSvgCache.get(path)!;
+    }
+
+    // Check if already loading (prevents duplicate concurrent requests)
+    if (this.loadingPromises.has(path)) {
+      return this.loadingPromises.get(path)!;
+    }
+
+    // Create loading promise
+    const loadingPromise = this.fetchSvgContent(path);
+    this.loadingPromises.set(path, loadingPromise);
+
+    try {
+      const svgText = await loadingPromise;
+
+      // Cache the raw SVG
+      this.rawSvgCache.set(path, svgText);
+
+      // Clean up loading promise
+      this.loadingPromises.delete(path);
+
+      return svgText;
+    } catch (error) {
+      // Clean up on error
+      this.loadingPromises.delete(path);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch SVG content from a given path - direct fetch
+   */
+  async fetchSvgContent(path: string): Promise<string> {
+    const response = await fetch(path);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch SVG: ${response.status}`);
+    }
+    return await response.text();
+  }
+
+  /**
+   * 🚀 NEW: Parse prop SVG with caching
+   */
+  private parsePropSvgCached(
+    svgText: string,
+    cacheKey: string
+  ): {
+    viewBox: { width: number; height: number };
+    center: { x: number; y: number };
+  } {
+    // Check metadata cache
+    if (this.metadataCache.has(cacheKey)) {
+      return this.metadataCache.get(cacheKey)!;
+    }
+
+    // Parse and cache
+    const result = this.parsePropSvg(svgText);
+    this.metadataCache.set(cacheKey, result);
+    return result;
+  }
+
+  /**
+   * Parse prop SVG to extract viewBox and center
+   */
+  private parsePropSvg(svgText: string): {
+    viewBox: { width: number; height: number };
+    center: { x: number; y: number };
+  } {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgText, "image/svg+xml");
+    const svgElement = doc.querySelector("svg");
+
+    if (!svgElement) {
+      throw new Error("Invalid SVG: No SVG element found");
+    }
+
+    // Extract viewBox
+    const viewBoxAttr = svgElement.getAttribute("viewBox");
+    let width = 100,
+      height = 100;
+
+    if (viewBoxAttr) {
+      const [, , w, h] = viewBoxAttr.split(" ").map(Number);
+      width = w || 100;
+      height = h || 100;
+    }
+
+    return {
+      viewBox: { width, height },
+      center: { x: width / 2, y: height / 2 },
+    };
+  }
+
+  /**
+   * Apply color transformation to SVG
+   * Delegates to shared svg-color-utils for consistency across the app
+   */
+  private applyColorToSvg(
+    svgText: string,
+    color: MotionColor,
+    themeMode: ThemeMode
+  ): string {
+    return applyMotionColorToSvg(svgText, color, {
+      makeClassNamesUnique: true,
+      themeMode,
+    });
+  }
+
+  /**
+   * Extract SVG content (remove outer SVG wrapper)
+   */
+  private extractSvgContent(svgText: string): string {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgText, "image/svg+xml");
+    const svgElement = doc.querySelector("svg");
+
+    if (!svgElement) {
+      return svgText;
+    }
+
+    return svgElement.innerHTML;
+  }
+
+  /**
+   * 🚀 NEW: Clear caches (useful for testing or memory management)
+   */
+  clearCache(): void {
+    this.rawSvgCache.clear();
+    this.transformedSvgCache.clear();
+    this.loadingPromises.clear();
+    this.metadataCache.clear();
+    this.cacheHits = 0;
+    this.cacheMisses = 0;
+  }
+
+  /**
+   * 🚀 NEW: Get cache statistics for performance monitoring
+   */
+  getCacheStats() {
+    return {
+      rawCacheSize: this.rawSvgCache.size,
+      transformedCacheSize: this.transformedSvgCache.size,
+      metadataCacheSize: this.metadataCache.size,
+      cacheHits: this.cacheHits,
+      cacheMisses: this.cacheMisses,
+      hitRate:
+        this.cacheHits + this.cacheMisses > 0
+          ? (
+              (this.cacheHits / (this.cacheHits + this.cacheMisses)) *
+              100
+            ).toFixed(2) + "%"
+          : "0%",
+    };
+  }
+}
+
+// ============================================================================
+// DIRECT SINGLETON EXPORT
+// ============================================================================
+// Use this instead of container.items.propSvgLoader to avoid DI container rebuilds.
+// PropSvgLoader has no constructor dependencies.
+// ============================================================================
+
+// HMR-aware singleton instance
+let hmrPropSvgLoader: PropSvgLoader | null =
+  import.meta.hot?.data?.propSvgLoaderInstance ?? null;
+
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.propSvgLoaderInstance = hmrPropSvgLoader;
+  });
+}
+
+function getPropSvgLoader(): PropSvgLoader {
+  if (!hmrPropSvgLoader) {
+    hmrPropSvgLoader = new PropSvgLoader();
+  }
+  return hmrPropSvgLoader;
+}
+
+export const propSvgLoader = getPropSvgLoader();

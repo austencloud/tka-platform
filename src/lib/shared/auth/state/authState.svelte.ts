@@ -1,0 +1,865 @@
+/**
+ * AuthState - Core authentication state management using Svelte 5 runes
+ *
+ * This module manages the global authentication state and orchestrates auth operations
+ * using injected services from the DI container. It does NOT use Svelte 4 stores (writables).
+ *
+ * Responsibilities:
+ * - Reactive auth state ($state rune)
+ * - Firebase onAuthStateChanged listener
+ * - Role & permission resolution
+ * - Sign out orchestration
+ * - Email/display name updates
+ *
+ * Extracted responsibilities (now services):
+ * - Profile picture management → IProfilePictureManager
+ * - User document CRUD → IUserDocumentManager
+ *
+ * Preview mode integration:
+ * - getEffectiveUserId/Role/Admin check userPreviewState for admin preview mode
+ */
+
+import {
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+  updateEmail,
+  updateProfile,
+  sendEmailVerification,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  type User,
+} from "firebase/auth";
+import { container } from "../../di";
+
+// Service imports
+import type { IProfilePictureManager } from "../services/contracts/IProfilePictureManager";
+import type { IUserDocumentManager } from "../services/contracts/IUserDocumentManager";
+import { auth } from "../firebase";
+// Preview state for admin "View As" feature
+import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
+import type { IActivityLogger } from "../../analytics/services/contracts/IActivityLogger";
+import type { IUsernameValidator } from "../services/contracts/IUsernameValidator";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { getFirestoreInstance } from "../firebase";
+import { featureFlagService } from "../services/PostHogFeatureFlagService.svelte";
+import type { UserRole } from "../domain/models/UserRole";
+import { identifyUser, resetUser } from "../../analytics/services/posthog";
+
+interface AuthState {
+  user: User | null;
+  loading: boolean;
+  initialized: boolean;
+  isAdmin: boolean;
+  role: UserRole;
+}
+
+// Reactive state using Svelte 5 $state rune
+let _state = $state<AuthState>({
+  user: null,
+  loading: true,
+  initialized: false,
+  isAdmin: false,
+  role: "user",
+});
+
+// Auth listener cleanup
+let cleanupAuthListener: (() => void) | null = null;
+let cleanupSubscriptionListener: (() => void) | null = null;
+
+/**
+ * Get the effective user ID (previewed user or actual)
+ */
+export function getEffectiveUserId(): string | null {
+  if (userPreviewState.isActive && userPreviewState.data.profile) {
+    return userPreviewState.data.profile.uid;
+  }
+  return _state.user?.uid ?? null;
+}
+
+/**
+ * Get the effective user role (previewed user or actual)
+ */
+export function getEffectiveRole(): UserRole {
+  if (userPreviewState.isActive && userPreviewState.data.profile?.role) {
+    return userPreviewState.data.profile.role as UserRole;
+  }
+  return _state.role;
+}
+
+/**
+ * Check if the effective user is an admin
+ */
+export function isEffectiveAdmin(): boolean {
+  if (userPreviewState.isActive && userPreviewState.data.profile) {
+    return userPreviewState.data.profile.role === "admin";
+  }
+  return _state.isAdmin;
+}
+
+/**
+ * Get the user state (non-reactive snapshot)
+ */
+export function getUserState(): Readonly<AuthState> {
+  return { ..._state };
+}
+
+/**
+ * Reactive getter for user
+ */
+export function getUser(): User | null {
+  return _state.user;
+}
+
+/**
+ * Reactive getter for loading state
+ */
+export function isLoading(): boolean {
+  return _state.loading;
+}
+
+/**
+ * Reactive getter for initialized state
+ */
+export function isInitialized(): boolean {
+  return _state.initialized;
+}
+
+/**
+ * Reactive getter for admin status (actual user, not impersonated)
+ */
+export function isAdmin(): boolean {
+  return _state.isAdmin;
+}
+
+/**
+ * Reactive getter for role (actual user, not impersonated)
+ */
+export function getRole(): UserRole {
+  return _state.role;
+}
+
+/**
+ * Initialize subscription status listener
+ * Watches Firestore for subscription changes and syncs role to auth state
+ */
+async function initializeSubscriptionListener(user: User) {
+  // Clean up existing listener if any
+  if (cleanupSubscriptionListener) {
+    cleanupSubscriptionListener();
+    cleanupSubscriptionListener = null;
+  }
+
+  try {
+    const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+    const firestore = await getFirestoreInstance();
+    const { collection, onSnapshot } = await import("firebase/firestore");
+
+    const subscriptionsRef = collection(
+      firestore,
+      `customers/${user.uid}/subscriptions`
+    );
+
+    cleanupSubscriptionListener = onSnapshot(
+      subscriptionsRef,
+      async (snapshot) => {
+        // Skip initial snapshot (only react to changes)
+        if (snapshot.metadata.hasPendingWrites) return;
+
+        try {
+          // Force token refresh to get updated custom claims from server
+          const idTokenResult = await user.getIdTokenResult(true);
+          const newRole = (idTokenResult.claims.role as UserRole) || "user";
+          const newIsAdmin = idTokenResult.claims.admin === true;
+
+          // Only update if role actually changed
+          if (newRole !== _state.role || newIsAdmin !== _state.isAdmin) {
+            _state = {
+              ..._state,
+              role: newRole,
+              isAdmin: newIsAdmin,
+            };
+
+            // Re-initialize feature flags with new role
+            await featureFlagService.initialize(user.uid, newRole);
+          }
+        } catch (error) {
+          console.error("❌ [authState] Failed to refresh token:", error);
+        }
+      },
+      (error) => {
+        console.error("❌ [authState] Subscription listener error:", error);
+      }
+    );
+  } catch (error) {
+    console.error(
+      "❌ [authState] Failed to initialize subscription listener:",
+      error
+    );
+  }
+}
+
+/**
+ * Initialize the auth state listener
+ * Sets up Firebase onAuthStateChanged and orchestrates auth flows
+ */
+export async function initializeAuthListener() {
+  if (cleanupAuthListener) {
+    console.warn("⚠️ [authState] Auth listener already initialized");
+    return;
+  }
+
+  // CRITICAL: Ensure auth persistence is configured BEFORE setting up listener
+  // This prevents race conditions after cache clearing where onAuthStateChanged
+  // might not fire properly if IndexedDB persistence is still being set up
+  try {
+    const { ensureAuthPersistence } = await import("../firebase");
+    await ensureAuthPersistence();
+  } catch (error) {
+    console.warn("⚠️ [authState] Could not ensure auth persistence:", error);
+    // Continue anyway - auth will work, just might have stale state issues
+  }
+
+  // Create a promise that resolves when auth state is first determined
+  // CRITICAL: Add timeout to prevent infinite hang after cache clearing
+  const AUTH_TIMEOUT_MS = 10000; // 10 seconds max wait
+
+  const authReady = new Promise<User | null>((resolve) => {
+    let resolved = false;
+
+    // Timeout safety - if onAuthStateChanged never fires, resolve with null
+    const timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        console.warn(
+          "⚠️ [authState] Auth state timed out after 10s - treating as signed out"
+        );
+        resolve(null);
+      }
+    }, AUTH_TIMEOUT_MS);
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeoutId);
+        unsubscribe(); // Only need the first callback
+        resolve(user);
+      }
+    });
+  });
+
+  await authReady;
+
+  cleanupAuthListener = onAuthStateChanged(
+    auth,
+    async (user) => {
+      _state.loading = true;
+
+      // CRITICAL: Initialize Firestore before any services try to use it
+      // This prevents race condition errors with the lazy-loaded Firestore Proxy
+      if (user) {
+        try {
+          const { getFirestoreInstance } =
+            await import("$lib/shared/auth/firebase");
+          await getFirestoreInstance();
+        } catch (error) {
+          console.error(
+            "❌ [authState] Failed to initialize Firestore:",
+            error
+          );
+        }
+      }
+
+      let isAdmin = false;
+      let role: UserRole = "user";
+
+      if (user) {
+        try {
+          // Get user claims to determine role
+          const idTokenResult = await user.getIdTokenResult(true);
+          isAdmin = idTokenResult.claims.admin === true;
+          role = (idTokenResult.claims.role as UserRole) || "user";
+
+          // Create or update user document in Firestore
+          const userDocumentService = container.items.userDocumentManager;
+          if (userDocumentService) {
+            try {
+              await userDocumentService.createOrUpdateUserDocument(user);
+            } catch (error) {
+              console.error(
+                "❌ [authState] Failed to update user document:",
+                error
+              );
+            }
+          }
+
+          // Update profile pictures from OAuth providers (non-blocking)
+          const profilePictureService = container.items.profilePictureManager;
+          if (profilePictureService) {
+            profilePictureService
+              .updateFacebookProfilePictureIfNeeded(user)
+              .catch((error: unknown) => {
+                console.warn(
+                  "⚠️ [authState] Facebook profile picture update failed:",
+                  error
+                );
+              });
+            profilePictureService
+              .updateGoogleProfilePictureIfNeeded(user)
+              .catch((error: unknown) => {
+                console.warn(
+                  "⚠️ [authState] Google profile picture update failed:",
+                  error
+                );
+              });
+          }
+
+          // Initialize feature flags for this user
+          // Pass the role from auth token to prevent race condition with Firestore
+          try {
+            await featureFlagService.initialize(user.uid, role);
+          } catch (_error) {
+            console.warn(
+              "⚠️ [authState] Failed to initialize feature flags:",
+              _error
+            );
+          }
+        } catch (_error) {
+          console.warn("⚠️ [authState] Auth processing error:", _error);
+        }
+      } else {
+        // Initialize feature flags without user
+        try {
+          await featureFlagService.initialize(null);
+        } catch (_error) {
+          console.warn(
+            "⚠️ [authState] Failed to initialize feature flags:",
+            _error
+          );
+        }
+      }
+
+      _state = {
+        user,
+        loading: false,
+        initialized: true,
+        isAdmin,
+        role,
+      };
+
+      // 📊 PostHog user identification
+      if (user) {
+        identifyUser(user.uid, {
+          email: user.email ?? undefined,
+          name: user.displayName ?? undefined,
+          role,
+          createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime) : undefined,
+          isPremium: role === "premium" || role === "admin",
+          isTester: role === "tester" || role === "admin",
+          isAdmin,
+        });
+      } else {
+        // User logged out - reset PostHog identity
+        resetUser();
+      }
+
+      // Log session start for analytics (non-blocking)
+      if (user) {
+        try {
+          const activityService = container.items.activityLogger;
+          if (activityService) {
+            activityService.logSessionStart().catch((error: unknown) => {
+              console.warn(
+                "⚠️ [authState] Session start logging failed:",
+                error
+              );
+            });
+          }
+        } catch {
+          // Silently fail - activity logging is non-critical
+        }
+
+        // Initialize presence tracking (non-blocking)
+        (async () => {
+          try {
+            const presenceService = container.items.presenceTracker;
+            if (presenceService) {
+              await presenceService.initialize();
+            }
+          } catch (error) {
+            console.warn(
+              "⚠️ [authState] Presence initialization failed:",
+              error
+            );
+          }
+        })();
+
+        // Initialize settings Firebase sync (non-blocking)
+        import("$lib/shared/settings/state/SettingsState.svelte")
+          .then(async (settingsModule) => {
+            // Ensure Firestore is initialized before settings sync
+            const { getFirestoreInstance } =
+              await import("$lib/shared/auth/firebase");
+            await getFirestoreInstance();
+            await settingsModule.settingsService.initializeFirebaseSync();
+          })
+          .catch((error) => {
+            console.warn(
+              "⚠️ [authState] Settings sync initialization failed:",
+              error
+            );
+          });
+
+        // Initialize global arrow adjustments (non-blocking)
+        // This loads all admin-set arrow position overrides from Firestore
+        import(
+          "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton"
+        )
+          .then(async ({ initializeGlobalAdjustments }) => {
+            const { getFirestoreInstance } =
+              await import("$lib/shared/auth/firebase");
+            await getFirestoreInstance();
+            await initializeGlobalAdjustments();
+          })
+          .catch((error) => {
+            console.warn(
+              "⚠️ [authState] Global arrow adjustments initialization failed:",
+              error
+            );
+          });
+
+        // Sync first-run status FROM cloud (critical - must happen before UI renders)
+        // This ensures returning users on new devices don't see the wizard again
+        import("$lib/shared/onboarding/state/first-run-state.svelte")
+          .then(async ({ firstRunState }) => {
+            const { getFirestoreInstance } =
+              await import("$lib/shared/auth/firebase");
+            await getFirestoreInstance();
+            await firstRunState.syncFromCloud();
+          })
+          .catch(async (error) => {
+            console.warn("⚠️ [authState] First-run sync failed:", error);
+            // CRITICAL: Mark sync as complete even on failure to prevent stuck loading screen
+            // This allows new users to proceed to FirstRunWizard even if cloud sync fails
+            try {
+              const { firstRunState } =
+                await import("$lib/shared/onboarding/state/first-run-state.svelte");
+              firstRunState.markCloudSyncComplete();
+            } catch {
+              // If even the import fails, app is in a very bad state - nothing more we can do
+            }
+          });
+
+        // Initialize onboarding Firebase sync (non-blocking)
+        import("$lib/shared/onboarding/config/storage-keys")
+          .then(async (onboardingModule) => {
+            // Ensure Firestore is initialized before onboarding sync
+            const { getFirestoreInstance } =
+              await import("$lib/shared/auth/firebase");
+            await getFirestoreInstance();
+            await onboardingModule.syncOnboardingToCloud();
+          })
+          .catch((error) => {
+            console.warn("⚠️ [authState] Onboarding sync failed:", error);
+          });
+
+        // Initialize system collections (Favorites, etc.) - non-blocking
+        (async () => {
+          try {
+            // Ensure Firestore is initialized before collection operations
+            const { getFirestoreInstance } =
+              await import("$lib/shared/auth/firebase");
+            await getFirestoreInstance();
+
+            const collectionService = container.items.collectionManager;
+            if (collectionService?.ensureSystemCollections) {
+              await collectionService.ensureSystemCollections();
+            }
+          } catch (error) {
+            console.warn(
+              "⚠️ [authState] System collections init failed:",
+              error
+            );
+          }
+        })();
+
+        // Initialize subscription listener for real-time role sync
+        void initializeSubscriptionListener(user);
+      }
+
+      // Revalidate current module after auth state changes
+      if (typeof window !== "undefined") {
+        import("../../application/state/ui/module-state")
+          .then(async (moduleState) => {
+            await moduleState.revalidateCurrentModule();
+          })
+          .catch(() => {
+            // Ignore - module state may not be available yet
+          });
+      }
+    },
+    (_error) => {
+      console.error("❌ [authState] Auth state change error:", _error);
+      _state = {
+        user: null,
+        loading: false,
+        initialized: true,
+        isAdmin: false,
+        role: "user",
+      };
+    }
+  );
+}
+
+/**
+ * Sign out the current user
+ * Clears all sensitive data from client-side storage
+ */
+export async function signOut() {
+  try {
+    // Clear any auth-related localStorage items
+    const keysToRemove = Object.keys(localStorage).filter(
+      (key) =>
+        key.startsWith("tka_") ||
+        key.includes("auth") ||
+        key.includes("session")
+    );
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+    // Clear sessionStorage entirely
+    sessionStorage.clear();
+
+    // Note: Profile settings state is now context-based (profile-settings-context.svelte.ts)
+    // State is automatically cleaned up when the component unmounts, no manual reset needed
+
+    // Reset first-run cloud sync so next signin will sync fresh
+    try {
+      const { firstRunState } =
+        await import("../../onboarding/state/first-run-state.svelte");
+      firstRunState.resetCloudSync();
+    } catch {
+      // First-run state may not be loaded - that's ok
+    }
+
+    // Mark user as offline in presence system before signing out
+    try {
+      const presenceService = container.items.presenceTracker;
+      if (presenceService) {
+        await presenceService.goOffline();
+      }
+    } catch {
+      // Silently fail - presence is non-critical
+    }
+
+    // Clean up subscription listener
+    if (cleanupSubscriptionListener) {
+      cleanupSubscriptionListener();
+      cleanupSubscriptionListener = null;
+    }
+
+    // Clean up Firestore subscriptions BEFORE signing out
+    // This prevents permission errors when Firebase auth is invalidated
+    try {
+      const { settingsService } =
+        await import("../../settings/state/SettingsState.svelte");
+      settingsService.cleanup();
+    } catch {
+      // Settings service may not be loaded - that's ok
+    }
+
+    // Sign out from Firebase
+    await firebaseSignOut(auth);
+    // State will be updated automatically by onAuthStateChanged
+  } catch (_error) {
+    console.error("❌ [authState] Sign out error:", _error);
+    throw _error;
+  }
+}
+
+/**
+ * Change user email (requires re-authentication)
+ * @param newEmail - The new email address
+ * @param currentPassword - Current password for re-authentication
+ */
+export async function changeEmail(newEmail: string, currentPassword: string) {
+  const user = _state.user;
+  if (!user?.email) {
+    throw new Error("No authenticated user");
+  }
+
+  try {
+    // Re-authenticate user with current password
+    const credential = EmailAuthProvider.credential(
+      user.email,
+      currentPassword
+    );
+    await reauthenticateWithCredential(user, credential);
+
+    // Update email
+    await updateEmail(user, newEmail);
+
+    // Send verification email to new address
+    await sendEmailVerification(user);
+
+    return {
+      success: true,
+      message:
+        "Email updated successfully. Please check your inbox to verify your new email address.",
+    };
+  } catch (error: unknown) {
+    console.error("❌ [authState] Email change error:", error);
+
+    // Handle specific Firebase errors
+    if (error instanceof Error && "code" in error) {
+      const firebaseError = error as { code: string; message: string };
+      if (firebaseError.code === "auth/wrong-password") {
+        throw new Error("Incorrect password. Please try again.");
+      } else if (firebaseError.code === "auth/email-already-in-use") {
+        throw new Error("This email is already in use by another account.");
+      } else if (firebaseError.code === "auth/invalid-email") {
+        throw new Error("Invalid email address format.");
+      } else if (firebaseError.code === "auth/requires-recent-login") {
+        throw new Error(
+          "Please sign out and sign in again before changing your email."
+        );
+      } else {
+        throw new Error(
+          firebaseError.message || "Failed to change email. Please try again."
+        );
+      }
+    } else {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to change email. Please try again.";
+      throw new Error(message);
+    }
+  }
+}
+
+/**
+ * Refresh the current user's data from Firebase
+ * Used after operations that modify user data (like linking providers)
+ * to ensure the local state reflects the latest server state.
+ */
+export async function refreshUser(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    console.warn("⚠️ [authState] Cannot refresh - no user signed in");
+    return;
+  }
+
+  try {
+    // Reload user from Firebase to get fresh providerData
+    await user.reload();
+
+    // Get the refreshed user (reload mutates the object but we need to trigger reactivity)
+    const refreshedUser = auth.currentUser;
+
+    if (refreshedUser) {
+      // Update state with refreshed user to trigger Svelte reactivity
+      _state = {
+        ..._state,
+        user: refreshedUser,
+      };
+    }
+  } catch (error) {
+    console.error("❌ [authState] Failed to refresh user:", error);
+    throw error;
+  }
+}
+
+/**
+ * Update user's display name
+ * @param displayName - The new display name
+ */
+export async function updateDisplayName(displayName: string) {
+  const user = _state.user;
+  if (!user) {
+    throw new Error("No authenticated user");
+  }
+
+  try {
+    await updateProfile(user, {
+      displayName: displayName.trim() || null,
+    });
+
+    // Trigger Svelte reactivity by reassigning state with updated user
+    _state = {
+      ..._state,
+      user: auth.currentUser,
+    };
+
+    return {
+      success: true,
+      message: "Display name updated successfully.",
+    };
+  } catch (error: unknown) {
+    console.error("❌ [authState] Display name update error:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to update display name. Please try again.";
+    throw new Error(message);
+  }
+}
+
+/**
+ * Update user's username
+ * @param newUsername - The new username (case-preserving)
+ */
+export async function updateUsername(newUsername: string) {
+  const user = _state.user;
+  if (!user) {
+    throw new Error("No authenticated user");
+  }
+
+  try {
+    const usernameValidator = container.items.usernameValidator;
+
+    if (!usernameValidator) {
+      throw new Error("Username validation service not available");
+    }
+
+    // Get current username to release it later
+    const firestore = await getFirestoreInstance();
+    const userDocRef = doc(firestore, "users", user.uid);
+    const userDoc = await getDoc(userDocRef);
+    const currentUsername = userDoc.data()?.username;
+
+    // Claim new username (this validates and updates Firestore atomically)
+    await usernameValidator.claimUsername(user.uid, newUsername.trim());
+
+    // Release old username if different
+    if (
+      currentUsername &&
+      currentUsername.toLowerCase() !== newUsername.toLowerCase()
+    ) {
+      await usernameValidator.releaseUsername(currentUsername);
+    }
+
+    return {
+      success: true,
+      message: "Username updated successfully.",
+    };
+  } catch (error: unknown) {
+    console.error("❌ [authState] Username update error:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to update username. Please try again.";
+    throw new Error(message);
+  }
+}
+
+/**
+ * Update user's Instagram username
+ * @param username - The Instagram username (@ prefix will be stripped)
+ */
+export async function updateInstagramUsername(username: string) {
+  const user = _state.user;
+  if (!user) {
+    throw new Error("No authenticated user");
+  }
+
+  try {
+    // Normalize: trim whitespace and strip @ prefix if present
+    const normalized = username.trim().replace(/^@/, "");
+
+    // If empty, we'll store null to clear the field
+    const valueToStore = normalized || null;
+
+    const firestore = await getFirestoreInstance();
+    const userDocRef = doc(firestore, "users", user.uid);
+
+    await setDoc(
+      userDocRef,
+      { instagramUsername: valueToStore },
+      { merge: true }
+    );
+
+    return {
+      success: true,
+      message: valueToStore
+        ? "Instagram username updated successfully."
+        : "Instagram username cleared.",
+    };
+  } catch (error: unknown) {
+    console.error("❌ [authState] Instagram username update error:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to update Instagram username. Please try again.";
+    throw new Error(message);
+  }
+}
+
+/**
+ * Clean up the auth listener
+ * Call this when your app unmounts (if ever)
+ */
+export function cleanup() {
+  if (cleanupAuthListener) {
+    cleanupAuthListener();
+    cleanupAuthListener = null;
+  }
+  if (cleanupSubscriptionListener) {
+    cleanupSubscriptionListener();
+    cleanupSubscriptionListener = null;
+  }
+}
+
+/**
+ * Default export with all methods (for backward compatibility during migration)
+ */
+export const authState = {
+  // Direct state access (for Svelte 5 reactivity)
+  get user() {
+    return _state.user;
+  },
+  get loading() {
+    return _state.loading;
+  },
+  get initialized() {
+    return _state.initialized;
+  },
+  get isAdmin() {
+    return _state.isAdmin;
+  },
+  get role() {
+    return _state.role;
+  },
+  get isAuthenticated() {
+    return _state.user !== null;
+  },
+
+  // Effective user helpers (as properties)
+  get effectiveUserId() {
+    return getEffectiveUserId();
+  },
+  get effectiveRole() {
+    return getEffectiveRole();
+  },
+  get isEffectiveAdmin() {
+    return isEffectiveAdmin();
+  },
+
+  // Function-style getters (for explicit calls)
+  getUserState,
+  getUser,
+  isLoading,
+  isInitialized,
+  getRole,
+  getEffectiveUserId,
+  getEffectiveRole,
+
+  // Auth operations
+  initialize: initializeAuthListener, // Alias for backward compatibility
+  initializeAuthListener,
+  signOut,
+  changeEmail,
+  updateDisplayName,
+  updateUsername,
+  updateInstagramUsername,
+  refreshUser,
+  cleanup,
+};

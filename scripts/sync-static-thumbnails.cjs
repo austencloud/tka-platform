@@ -34,7 +34,7 @@ try {
 }
 
 const bucket = admin.storage().bucket();
-const STATIC_DIR = path.resolve(__dirname, "../apps/scribe/static/thumbnails");
+const STATIC_DIR = path.resolve(__dirname, "../static/thumbnails");
 
 /**
  * Download a file from URL to local path

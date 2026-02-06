@@ -26,7 +26,6 @@ import {
   maximizeHandPathContinuity,
   enforceHandPathContinuity,
 } from "../implementations/hand-path-constraint.js";
-import { enforceVtgTiming } from "../implementations/vtg-timing-constraint.js";
 
 /**
  * Available preset names.
@@ -42,8 +41,7 @@ export type PresetName =
   | "anti-ccw"
   | "no-dash"
   | "maximize-dash"
-  | "maximum-chaos"
-  | "vtg";
+  | "maximum-chaos";
 
 /**
  * Preset definitions.
@@ -149,17 +147,6 @@ export const PRESETS: PresetDefinition[] = [
       soft: [
         new ReversalConstraint("every"),
         new HandPathReversalConstraint("every"),
-      ],
-    },
-  },
-  {
-    name: "vtg",
-    description: "VTG-compatible: each hand maintains consistent motion type and rotation direction across all beats",
-    constraintSet: {
-      hard: [enforceVtgTiming()],
-      soft: [
-        new ContinuityConstraint("maximize"),
-        maximizeHandPathContinuity(),
       ],
     },
   },

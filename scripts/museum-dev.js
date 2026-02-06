@@ -23,7 +23,7 @@
 import admin from "firebase-admin";
 import { readFileSync, existsSync } from "fs";
 import { randomUUID } from "crypto";
-import config from "../apps/scribe/config/museum-dev.config.js";
+import config from "../config/museum-dev.config.js";
 import linking from "./lib/museum-linking.js";
 import attachments from "./lib/museum-attachments.js";
 

@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const SPRITE_PATH = path.join(__dirname, '../apps/scribe/static/images/arrows-sprite.svg');
+const SPRITE_PATH = path.join(__dirname, '../static/images/arrows-sprite.svg');
 
 // Skew arrows that need coordinate fixing
 // Format: { id: string, xOffset: number, yOffset: number }

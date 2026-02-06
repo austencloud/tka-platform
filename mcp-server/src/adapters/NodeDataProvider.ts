@@ -11,30 +11,29 @@ import { fileURLToPath } from "url";
 import type {
   ISequenceDataProvider,
   LetterVariationData,
-} from "../../../apps/scribe/src/lib/shared/sequence-engine/data/contracts/ISequenceDataProvider.js";
-import type { LetterMappingsJson } from "../../../apps/scribe/src/lib/shared/sequence-engine/domain/models/SequenceEngineTypes.js";
-import { calculateOrientations } from "$lib/shared/render/core/calculations/orientation.js";
+} from "../../../src/lib/shared/sequence-engine/data/contracts/ISequenceDataProvider.js";
+import type { LetterMappingsJson } from "../../../src/lib/shared/sequence-engine/domain/models/SequenceEngineTypes.js";
+import { calculateOrientations } from "../core/orientation-calculator.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Resolve paths relative to the monorepo structure
+// Resolve project root (parent of mcp-server)
 const isCompiled = __dirname.includes("dist");
 const MCP_SERVER_ROOT = isCompiled
   ? path.resolve(__dirname, "../../..") // dist/src/adapters -> mcp-server
   : path.resolve(__dirname, "../.."); // src/adapters -> mcp-server
-const MONOREPO_ROOT = path.resolve(MCP_SERVER_ROOT, "..");
-const SCRIBE_STATIC = path.resolve(MONOREPO_ROOT, "apps/scribe/static");
+const PROJECT_ROOT = path.resolve(MCP_SERVER_ROOT, "..");
 
 type GridMode = "diamond" | "box" | "skewed";
 
 const DATAFRAME_PATHS: Record<GridMode, string> = {
-  diamond: path.resolve(SCRIBE_STATIC, "data/pictographs/DiamondPictographDataframe.csv"),
-  box: path.resolve(SCRIBE_STATIC, "data/pictographs/BoxPictographDataframe.csv"),
-  skewed: path.resolve(SCRIBE_STATIC, "data/pictographs/SkewedPictographDataframe.csv"),
+  diamond: path.resolve(PROJECT_ROOT, "static/data/pictographs/DiamondPictographDataframe.csv"),
+  box: path.resolve(PROJECT_ROOT, "static/data/pictographs/BoxPictographDataframe.csv"),
+  skewed: path.resolve(PROJECT_ROOT, "static/data/pictographs/SkewedPictographDataframe.csv"),
 };
 
-const LETTER_MAPPINGS_PATH = path.resolve(SCRIBE_STATIC, "data/learn/letter-mappings.json");
+const LETTER_MAPPINGS_PATH = path.resolve(PROJECT_ROOT, "static/data/learn/letter-mappings.json");
 
 /**
  * Node.js-specific data provider using synchronous file reads.
@@ -58,10 +57,9 @@ export class NodeDataProvider implements ISequenceDataProvider {
 
     try {
       const content = fs.readFileSync(LETTER_MAPPINGS_PATH, "utf-8");
-      const parsed: LetterMappingsJson = JSON.parse(content);
-      this.letterMappings = parsed;
+      this.letterMappings = JSON.parse(content);
       this.initialized = true;
-      return parsed;
+      return this.letterMappings;
     } catch (error) {
       console.error("[MCP] Failed to load letter mappings:", error);
       throw error;

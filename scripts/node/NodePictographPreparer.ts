@@ -8,24 +8,24 @@
  * and replaced with a default settings provider.
  */
 
-import type { PictographData } from "../../apps/scribe/src/lib/shared/pictograph/shared/domain/models/PictographData";
-import type { MotionData } from "../../apps/scribe/src/lib/shared/pictograph/shared/domain/models/MotionData";
+import type { PictographData } from "../../src/lib/shared/pictograph/shared/domain/models/PictographData";
+import type { MotionData } from "../../src/lib/shared/pictograph/shared/domain/models/MotionData";
 import type {
   PreparedPictographData,
   PreparedRenderData,
-} from "../../apps/scribe/src/lib/shared/pictograph/shared/domain/models/PreparedPictographData";
+} from "../../src/lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import type {
   IPictographPreparer,
   PrepareOptions,
-} from "../../apps/scribe/src/lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
-import type { IArrowLifecycleManager } from "../../apps/scribe/src/lib/shared/pictograph/arrow/orchestration/services/contracts/IArrowLifecycleManager";
-import type { IPropSvgLoader } from "../../apps/scribe/src/lib/shared/pictograph/prop/services/contracts/IPropSvgLoader";
-import type { IPropPlacer } from "../../apps/scribe/src/lib/shared/pictograph/prop/services/contracts/IPropPlacer";
-import type { IGridModeDeriver } from "../../apps/scribe/src/lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
-import type { PropPosition } from "../../apps/scribe/src/lib/shared/pictograph/prop/domain/models/PropPosition";
-import type { PropAssets } from "../../apps/scribe/src/lib/shared/pictograph/prop/domain/models/PropAssets";
-import { GridMode } from "../../apps/scribe/src/lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "../../apps/scribe/src/lib/shared/pictograph/prop/domain/enums/PropType";
+} from "../../src/lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
+import type { IArrowLifecycleManager } from "../../src/lib/shared/pictograph/arrow/orchestration/services/contracts/IArrowLifecycleManager";
+import type { IPropSvgLoader } from "../../src/lib/shared/pictograph/prop/services/contracts/IPropSvgLoader";
+import type { IPropPlacer } from "../../src/lib/shared/pictograph/prop/services/contracts/IPropPlacer";
+import type { IGridModeDeriver } from "../../src/lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
+import type { PropPosition } from "../../src/lib/shared/pictograph/prop/domain/models/PropPosition";
+import type { PropAssets } from "../../src/lib/shared/pictograph/prop/domain/models/PropAssets";
+import { GridMode } from "../../src/lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { PropType } from "../../src/lib/shared/pictograph/prop/domain/enums/PropType";
 
 // Default settings for Node.js (no Svelte state dependency)
 const DEFAULT_NODE_SETTINGS = {

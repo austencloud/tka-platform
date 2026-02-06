@@ -8,8 +8,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const SPRITE_PATH = path.join(__dirname, '../apps/scribe/static/images/arrows-sprite.svg');
-const OUTPUT_DIR = path.join(__dirname, '../apps/scribe/static/images/arrows');
+const SPRITE_PATH = path.join(__dirname, '../static/images/arrows-sprite.svg');
+const OUTPUT_DIR = path.join(__dirname, '../static/images/arrows');
 
 // Read the sprite file
 const spriteContent = fs.readFileSync(SPRITE_PATH, 'utf-8');

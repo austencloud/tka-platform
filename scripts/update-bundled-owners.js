@@ -3,7 +3,7 @@
  */
 
 import { readFileSync, writeFileSync } from "fs";
-import config from "../apps/scribe/config/feedback.config.js";
+import config from "../config/feedback.config.js";
 
 // Use admin user from config
 const AUSTEN_USER = {

@@ -27,7 +27,7 @@ import type {
   PictographData,
 } from "../types.js";
 
-// Hand path direction enum (matches render/core/calculations/orientation.ts)
+// Hand path direction enum (matches orientation-calculator.ts)
 export enum HandPath {
   CLOCKWISE = "cw",
   COUNTER_CLOCKWISE = "ccw",
@@ -35,7 +35,7 @@ export enum HandPath {
   STATIC = "static",
 }
 
-// Hand path lookup tables (same as render/core/calculations/orientation.ts)
+// Hand path lookup tables (same as orientation-calculator.ts)
 const CLOCKWISE_PAIRS = [
   ["s", "w"], ["w", "n"], ["n", "e"], ["e", "s"],
   ["ne", "se"], ["se", "sw"], ["sw", "nw"], ["nw", "ne"],

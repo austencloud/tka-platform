@@ -7,7 +7,7 @@
 
 import { readFileSync } from "fs";
 import { join } from "path";
-import type { IJsonCache } from "../../apps/scribe/src/lib/shared/core/services/contracts/IJsonCache";
+import type { IJsonCache } from "../../src/lib/shared/core/services/contracts/IJsonCache";
 
 export class NodeJsonCache implements IJsonCache {
   private cache = new Map<string, unknown>();

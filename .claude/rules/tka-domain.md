@@ -140,36 +140,6 @@ Positions exist independent of props - they describe hand placement only.
 
 ---
 
-## Orientation System
-
-Prop orientations describe which direction a prop is pointing relative to the grid center.
-
-### Three Paradigms (by grid location)
-
-| Paradigm | Orientations | Used at | Level |
-|----------|-------------|---------|-------|
-| **Radial** | in, out, clock, counter | Cardinal points (N/E/S/W) | 1-4 |
-| **Compass** | centerN through centerNW | Center point only | 5 |
-| **Interradial** | clockIn, clockOut, counterIn, counterOut | Intercardinal points (NE/SE/SW/NW) | 6 |
-
-Level 6 is about **interradial orientations** - the 4 orientations at 45-degree angles between the cardinal orientations. Poi gravity is a separate concept (physical resting position due to gravity) that happens to produce interradial orientations at intercardinal positions, but gravity is NOT what defines Level 6.
-
-### The 8-Point Radial Cycle
-
-All radial and interradial orientations form an 8-point cycle, each step = 45 degrees:
-
-```
-in → clockIn → clock → clockOut → out → counterOut → counter → counterIn → (back to in)
-```
-
-Fractional turns map to steps: `steps = Math.round(turns * 4)`. Half turns = 2 steps, quarter turns = 1 step.
-
-### Spinning Plane (Level 6 metadata)
-
-Optional annotation on motion data: `"wall"` (default, head-on), `"wheel"` (side view), `"overhead"` (top-down).
-
----
-
 ## Other Terminology
 
 - **Pictograph**: Visual representation of one beat of motion

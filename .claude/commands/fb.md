@@ -94,14 +94,6 @@ node scripts/fetch-feedback.js claim <id>
 ```
 This atomically claims the item with a unique token, preventing race conditions with other agents.
 
-**STEP 3: Handle images (if present)**
-
-The claim output will show if images were downloaded and auto-opened. If images are present:
-- **Read each image** with the Read tool using the absolute paths printed by the script
-- **Describe what you see** before proposing solutions - narrate the visual details so the user can verify your interpretation
-
-Then proceed with display, triage, and confirmation as described in the "If argument provided" section below.
-
 ### If argument provided (feedback ID):
 
 1. **Claim the feedback:**
@@ -119,10 +111,12 @@ Then proceed with display, triage, and confirmation as described in the "If argu
    - Any existing notes or subtasks
 
 3. **If feedback has images attached:**
-   The script auto-opens images in the user's default viewer on claim/view. You still need to:
-   - **Read each image** with the Read tool using the absolute paths printed by the script
-   - **Describe what you see** before proposing solutions - narrate the key visual details so the user can confirm you're interpreting the screenshot correctly
-   - Example: "The screenshot shows the generator panel with the grid aspect ratio stretched vertically. The arrows are clipped at the edges."
+   - Read each image with the Read tool (so Claude can analyze it)
+   - **ALSO open each image for the user** so they see what you see:
+     ```bash
+     powershell -Command "Invoke-Item '<absolute-path-to-image>'"
+     ```
+   - This ensures both Claude and the user are looking at the same thing
 
 4. **Assess complexity** using model triage:
    - **TRIVIAL** (Haiku): Literal string swaps, single-line changes where solution is already known

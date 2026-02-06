@@ -7,7 +7,7 @@
 
 import admin from "firebase-admin";
 import { readFileSync } from "fs";
-import config from "../apps/scribe/config/feedback.config.js";
+import config from "../config/feedback.config.js";
 
 const serviceAccount = JSON.parse(
   readFileSync("./serviceAccountKey.json", "utf8")

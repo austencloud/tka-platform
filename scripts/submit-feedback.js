@@ -18,7 +18,7 @@
  *   node scripts/submit-feedback.js "Video drawer" "Implement video recording" --subtasks '[{"id":"1","title":"Create UI","description":"Build drawer UI","status":"pending"}]'
  */
 
-import config from "../apps/scribe/config/feedback.config.js";
+import config from "../config/feedback.config.js";
 
 // Known user profiles - use config for austen profile
 const USER_PROFILES = {

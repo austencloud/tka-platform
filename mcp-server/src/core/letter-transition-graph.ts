@@ -5,9 +5,9 @@
  * Provides the same API for backward compatibility with existing MCP code.
  */
 
-import { TransitionGraph } from "../../../apps/scribe/src/lib/shared/sequence-engine/services/implementations/TransitionGraph.js";
+import { TransitionGraph } from "../../../src/lib/shared/sequence-engine/services/implementations/TransitionGraph.js";
 import { getNodeDataProvider } from "../adapters/NodeDataProvider.js";
-import type { PositionGroup, LetterPositionInfo } from "../../../apps/scribe/src/lib/shared/sequence-engine/domain/models/SequenceEngineTypes.js";
+import type { PositionGroup, LetterPositionInfo } from "../../../src/lib/shared/sequence-engine/domain/models/SequenceEngineTypes.js";
 
 /**
  * Legacy wrapper class that delegates to the shared TransitionGraph.
@@ -46,7 +46,7 @@ export class LetterTransitionGraph {
       .then(() => {
         this.initialized = true;
       })
-      .catch((error: unknown) => {
+      .catch((error) => {
         console.error("[MCP] Failed to initialize LetterTransitionGraph:", error);
       });
 

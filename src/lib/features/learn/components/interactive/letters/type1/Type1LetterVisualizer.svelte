@@ -1,0 +1,399 @@
+<!--
+Type1LetterVisualizer - Displays a Type 1 (Dual-Shift) letter using the Pictograph component
+Shows letters A-V with their start/end positions and prospin/antispin motions
+-->
+<script lang="ts">
+  import type { Type1LetterData } from "./Type1LetterData";
+  import { container } from "$lib/shared/di";
+  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+  import {
+    GridMode,
+    GridPositionGroup,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import { onMount } from "svelte";
+
+  let {
+    letterData,
+    showLabels = true,
+    showPictograph = true,
+    size = "medium",
+  } = $props<{
+    letterData: Type1LetterData;
+    showLabels?: boolean;
+    showPictograph?: boolean;
+    size?: "small" | "medium" | "large";
+  }>();
+
+  const hapticService = container.items.hapticFeedback;
+
+  // State for loaded pictograph data
+  let pictographData = $state<PictographData | null>(null);
+  let isLoading = $state(true);
+  let error = $state<string | null>(null);
+
+  // Load pictograph data for the letter
+  onMount(async () => {
+    try {
+      const data = await letterQueryHandler.getPictographByLetter(
+        letterData.letter,
+        GridMode.DIAMOND
+      );
+
+      if (data) {
+        pictographData = data;
+      } else {
+        error = `No pictograph found for letter ${letterData.letter}`;
+      }
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Failed to load pictograph";
+      console.error(
+        "Failed to load pictograph for letter:",
+        letterData.letter,
+        e
+      );
+    } finally {
+      isLoading = false;
+    }
+  });
+
+  // Motion type colors for labels
+  const MOTION_COLORS: Record<MotionType, string> = {
+    [MotionType.PRO]: "#22D3EE", // Cyan for prospin
+    [MotionType.ANTI]: "#A855F7", // Purple for antispin
+    [MotionType.STATIC]: "#6B7280", // Gray for static
+    [MotionType.DASH]: "var(--semantic-warning)", // Amber for dash
+    [MotionType.FLOAT]: "var(--semantic-success)", // Emerald for float
+  };
+
+  // Position group colors
+  const POSITION_COLORS: Record<GridPositionGroup, string> = {
+    [GridPositionGroup.ALPHA]: "#FF6B6B", // Red/coral for opposite
+    [GridPositionGroup.BETA]: "#4ECDC4", // Teal for same
+    [GridPositionGroup.GAMMA]: "#FFE66D", // Yellow for right angle
+    [GridPositionGroup.ZETA]: "#9B59B6", // Purple for zeta
+    [GridPositionGroup.ETA]: "#3498DB", // Blue for eta
+  };
+
+  // Hand colors
+  const BLUE_COLOR = "#4A9EFF";
+  const RED_COLOR = "#FF4A9E";
+
+  // Get motion type label
+  function getMotionLabel(type: MotionType): string {
+    switch (type) {
+      case MotionType.PRO:
+        return "Prospin";
+      case MotionType.ANTI:
+        return "Antispin";
+      case MotionType.STATIC:
+        return "Static";
+      case MotionType.DASH:
+        return "Dash";
+      case MotionType.FLOAT:
+        return "Float";
+      default:
+        return type;
+    }
+  }
+
+  // Get position group label
+  function getPositionLabel(group: GridPositionGroup): string {
+    switch (group) {
+      case GridPositionGroup.ALPHA:
+        return "Alpha (Opposite)";
+      case GridPositionGroup.BETA:
+        return "Beta (Same)";
+      case GridPositionGroup.GAMMA:
+        return "Gamma (Right Angle)";
+      default:
+        return group;
+    }
+  }
+
+  // Derived: Check if motion is hybrid (different blue/red motions)
+  const isHybrid = $derived(letterData.blueMotion !== letterData.redMotion);
+
+  // Size configuration
+  type SizeKey = "small" | "medium" | "large";
+  const sizeConfig: Record<
+    SizeKey,
+    { pictographSize: number; fontSize: string }
+  > = {
+    small: { pictographSize: 100, fontSize: "1.25rem" },
+    medium: { pictographSize: 160, fontSize: "1.75rem" },
+    large: { pictographSize: 220, fontSize: "2.25rem" },
+  };
+
+  const currentSize = $derived(sizeConfig[size as SizeKey]);
+</script>
+
+<div class="type1-visualizer size-{size}">
+  <!-- Letter display header -->
+  {#if letterData}
+    {@const startGroup = letterData.startPositionGroup as GridPositionGroup}
+    {@const endGroup = letterData.endPositionGroup as GridPositionGroup}
+    <div class="letter-header">
+      <span class="letter-name" style="font-size: {currentSize.fontSize}">
+        {letterData.letter}
+      </span>
+      <span
+        class="position-transition"
+        style="color: {POSITION_COLORS[startGroup]}"
+      >
+        {startGroup} → {endGroup}
+      </span>
+    </div>
+  {/if}
+
+  <!-- Pictograph Display -->
+  {#if showPictograph}
+    <div
+      class="pictograph-container"
+      style="width: {currentSize.pictographSize}px; height: {currentSize.pictographSize}px;"
+    >
+      {#if isLoading}
+        <div class="loading-state">
+          <div class="loading-spinner"></div>
+        </div>
+      {:else if error}
+        <div class="error-state" role="alert" aria-live="assertive">
+          <span class="error-icon">⚠</span>
+          <span class="error-text">{error}</span>
+        </div>
+      {:else if pictographData}
+        <PictographContainer
+          {pictographData}
+          showTKA={true}
+          showReversals={false}
+          disableTransitions={true}
+        />
+      {/if}
+    </div>
+  {/if}
+
+  <!-- Motion info labels -->
+  {#if showLabels && letterData}
+    {@const blueMotion = letterData.blueMotion as MotionType}
+    {@const redMotion = letterData.redMotion as MotionType}
+    <div class="motion-info">
+      <div class="hand-info">
+        <span class="hand-dot" style="background: {BLUE_COLOR}"></span>
+        <span class="motion-type" style="color: {MOTION_COLORS[blueMotion]}">
+          {getMotionLabel(blueMotion)}
+        </span>
+      </div>
+      <div class="hand-info">
+        <span class="hand-dot" style="background: {RED_COLOR}"></span>
+        <span class="motion-type" style="color: {MOTION_COLORS[redMotion]}">
+          {getMotionLabel(redMotion)}
+        </span>
+      </div>
+    </div>
+
+    <!-- Motion pattern badge -->
+    <div class="pattern-info">
+      {#if isHybrid}
+        <span class="pattern-badge hybrid">Hybrid</span>
+      {:else if letterData.blueMotion === MotionType.PRO}
+        <span class="pattern-badge pro">Pro-Pro</span>
+      {:else}
+        <span class="pattern-badge anti">Anti-Anti</span>
+      {/if}
+    </div>
+
+    <!-- Description -->
+    {#if letterData.description}
+      <p class="description">{letterData.description}</p>
+    {/if}
+  {/if}
+</div>
+
+<style>
+  .type1-visualizer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 12px;
+    transition: all var(--duration-emphasis) ease;
+  }
+
+  .type1-visualizer:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg);
+  }
+
+  /* Size variants */
+  .size-small {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .size-large {
+    padding: 1.5rem;
+    gap: 1rem;
+  }
+
+  /* Letter header */
+  .letter-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .letter-name {
+    font-weight: 800;
+    color: white;
+    line-height: 1;
+  }
+
+  .position-transition {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
+  }
+
+  /* Pictograph container */
+  .pictograph-container {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px var(--theme-shadow);
+  }
+
+  /* Loading state */
+  .loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #22d3ee;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Error state */
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--semantic-error);
+  }
+
+  .error-icon {
+    font-size: 1.5rem;
+  }
+
+  .error-text {
+    font-size: 0.75rem;
+    text-align: center;
+  }
+
+  /* Motion info */
+  .motion-info {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .hand-info {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .hand-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .motion-type {
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  /* Pattern badge */
+  .pattern-info {
+    display: flex;
+    justify-content: center;
+  }
+
+  .pattern-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .pattern-badge.pro {
+    background: rgba(34, 211, 238, 0.15);
+    border: 1px solid rgba(34, 211, 238, 0.4);
+    color: #22d3ee;
+  }
+
+  .pattern-badge.anti {
+    background: rgba(168, 85, 247, 0.15);
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    color: #a855f7;
+  }
+
+  .pattern-badge.hybrid {
+    background: linear-gradient(
+      135deg,
+      rgba(34, 211, 238, 0.15),
+      rgba(168, 85, 247, 0.15)
+    );
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    color: #a855f7;
+  }
+
+  /* Description */
+  .description {
+    font-size: 0.8125rem;
+    color: var(--theme-text-dim);
+    text-align: center;
+    margin: 0;
+    max-width: 252px;
+    line-height: 1.4;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loading-spinner {
+      animation: none;
+    }
+  }
+</style>

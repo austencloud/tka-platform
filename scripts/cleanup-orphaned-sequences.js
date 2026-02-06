@@ -17,7 +17,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const INDEX_PATH = path.join(__dirname, '../apps/scribe/static/data/sequence-index.json');
+const INDEX_PATH = path.join(__dirname, '../static/data/sequence-index.json');
 const CONFIRM_FLAG = process.argv.includes('--confirm');
 
 console.log('🔍 Scanning for orphaned sequences...\n');

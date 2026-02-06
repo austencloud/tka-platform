@@ -13,7 +13,7 @@ import type { SequenceStep } from "../sequence-builder.js";
 /**
  * LOOP component primitives that can be detected
  */
-export type LOOPComponentId = "rotated" | "mirrored" | "swapped" | "inverted" | "flipped" | "rewound";
+export type LOOPComponentId = "rotated" | "mirrored" | "swapped" | "inverted";
 
 /**
  * Result of LOOP detection analysis
