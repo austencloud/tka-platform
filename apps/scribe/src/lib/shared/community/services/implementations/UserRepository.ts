@@ -66,6 +66,7 @@ interface FirestoreUserData extends DocumentData {
   isFeatured?: boolean;
   bio?: string;
   instagramUsername?: string;
+  pronouns?: string;
   lastActivityDate?: Timestamp;
   // Admin-related fields
   role?: UserRole;
@@ -793,6 +794,7 @@ export class UserRepository implements IUserRepository {
       const isFeatured = data.isFeatured ?? false;
       const bio = data.bio ?? undefined;
       const instagramUsername = data.instagramUsername ?? undefined;
+      const pronouns = data.pronouns ?? undefined;
 
       // Admin-related fields
       const role = data.role ?? "user";
@@ -819,6 +821,7 @@ export class UserRepository implements IUserRepository {
         lastActiveAt,
         isFollowing,
         instagramUsername,
+        pronouns,
         totalXP,
         currentLevel,
         achievementCount,

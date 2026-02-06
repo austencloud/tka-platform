@@ -31,6 +31,8 @@
   import ProfilePhotoPicker from "../ProfilePhotoPicker.svelte";
   import type { PhotoSelection } from "../../domain/photo-picker-types";
   import { updateProfile } from "firebase/auth";
+  import { doc, getDoc } from "firebase/firestore";
+  import { getFirestoreInstance } from "../../../auth/firebase";
   import { refreshUser } from "../../../auth/state/authState.svelte";
 
   import type { PreviewUserProfile } from "../../../debug/state/user-preview-state.svelte";
@@ -88,6 +90,9 @@
   // Cache clearing state
   let clearingCache = $state(false);
 
+  // Pronouns loaded from Firestore
+  let userPronouns = $state("");
+
   // Photo picker state
   let showPhotoPicker = $state(false);
 
@@ -108,13 +113,28 @@
     }
   });
 
-  onMount(() => {
+  onMount(async () => {
     hapticService = container.items.hapticFeedback;
     authService = container.items.authenticator;
     accountManager = container.items.accountManager;
     stepUpCoordinator = container.items.stepUpAuthCoordinator;
 
     setTimeout(() => (isVisible = true), 30);
+
+    // Load pronouns from Firestore
+    const user = authState.user;
+    if (user) {
+      try {
+        const firestore = await getFirestoreInstance();
+        const userDocRef = doc(firestore, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          userPronouns = userDoc.data()?.pronouns || "";
+        }
+      } catch (err) {
+        console.error("Failed to load pronouns:", err);
+      }
+    }
   });
 
   async function handleSignOut() {
@@ -385,6 +405,7 @@
         user={authState.user}
         onSignOut={handleSignOut}
         onAvatarClick={handleOpenPhotoPicker}
+        pronouns={userPronouns}
       />
 
       <!-- Settings Grid - Flexbox for natural fill behavior -->
@@ -416,6 +437,7 @@
               hasPasswordProvider={profileState.hasPasswordProvider(authState.user)}
               onChangePassword={handleChangePassword}
               {hapticService}
+              onPronounsChanged={(p) => (userPronouns = p)}
             />
           {/snippet}
         </GlassCard>

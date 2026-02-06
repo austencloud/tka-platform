@@ -6,7 +6,7 @@
    * Card accent color is extracted from avatar for personalized theming.
    */
 
-  import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
+  import type { EnhancedUserProfile, CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import {
     extractDominantColor,
     getCachedOrFallbackColor,
@@ -16,6 +16,7 @@
 
   interface Props {
     user: EnhancedUserProfile;
+    sortBy?: CreatorSortCriteria;
     accentColor?: string;
     currentUserId?: string;
     isFollowLoading?: boolean;
@@ -26,6 +27,7 @@
 
   const {
     user,
+    sortBy = "lastActive",
     accentColor,
     currentUserId,
     isFollowLoading = false,
@@ -128,6 +130,9 @@
   <!-- User info -->
   <div class="user-info">
     <h3 class="display-name">{user.displayName}</h3>
+    {#if user.pronouns}
+      <p class="pronouns">{user.pronouns}</p>
+    {/if}
     <p class="username">@{user.username}</p>
 
     <!-- Stats -->
@@ -142,11 +147,18 @@
       </div>
     </div>
 
-    <!-- Activity -->
-    <div class="activity-line" class:recent-activity={isRecentlyActive}>
-      <i class="fas fa-clock" aria-hidden="true"></i>
-      <span>{user.lastActiveAt ? formatTimeAgo(user.lastActiveAt) : 'New'}</span>
-    </div>
+    <!-- Activity / Join date (context-dependent on sort) -->
+    {#if sortBy === "joinedDate"}
+      <div class="activity-line">
+        <i class="fas fa-calendar" aria-hidden="true"></i>
+        <span>{formatTimeAgo(user.joinedDate)}</span>
+      </div>
+    {:else}
+      <div class="activity-line" class:recent-activity={isRecentlyActive}>
+        <i class="fas fa-clock" aria-hidden="true"></i>
+        <span>{user.lastActiveAt ? formatTimeAgo(user.lastActiveAt) : 'New'}</span>
+      </div>
+    {/if}
   </div>
 
   <!-- Actions - only show follow button if logged in and not own profile -->
@@ -294,6 +306,14 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .pronouns {
+    margin: 1px 0 0 0;
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim);
+    font-style: italic;
+    opacity: 0.7;
   }
 
   .username {

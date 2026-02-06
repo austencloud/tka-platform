@@ -44,6 +44,7 @@
 
   // Collected data
   let displayName = $state("");
+  let pronouns = $state("");
   let selectedTheme = $state<BackgroundType>(BackgroundType.SNOWFALL);
   let favoriteProp = $state<PropType>(PropType.STAFF);
   let pictographMode = $state<"light" | "dark">("light");
@@ -118,8 +119,9 @@
     }
   }
 
-  function handleDisplayNameComplete(name: string) {
+  function handleDisplayNameComplete(name: string, userPronouns: string) {
     displayName = name;
+    pronouns = userPronouns;
     handleNext("theme");
   }
 
@@ -218,6 +220,13 @@
         await settingsService.updateSetting("userName", displayName.trim());
       }
 
+      // Update pronouns if provided (non-blocking)
+      if (pronouns.trim()) {
+        authState.updatePronouns(pronouns.trim()).catch((err) => {
+          console.error("Failed to save pronouns:", err);
+        });
+      }
+
       // Update prop type for both hands
       await settingsService.updateSettings({
         bluePropType: favoriteProp,
@@ -302,6 +311,7 @@
     {:else if currentStep === "displayName"}
       <DisplayNameStep
         initialValue={displayName}
+        initialPronouns={pronouns}
         onNext={handleDisplayNameComplete}
         onBack={handleBack}
         onSkip={handleDisplayNameSkip}

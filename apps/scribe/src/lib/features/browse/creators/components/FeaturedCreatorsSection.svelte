@@ -6,12 +6,13 @@
    * at the top of the creators list. Limited to 6-8 users.
    */
 
-  import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
+  import type { EnhancedUserProfile, CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
   import CreatorCard from "./CreatorCard.svelte";
 
   interface Props {
     users: EnhancedUserProfile[];
+    sortBy?: CreatorSortCriteria;
     currentUserId?: string;
     followingInProgress: Set<string>;
     onUserClick: (user: EnhancedUserProfile) => void;
@@ -21,6 +22,7 @@
 
   const {
     users = [],
+    sortBy = "lastActive",
     currentUserId,
     followingInProgress = new Set(),
     onUserClick,
@@ -57,6 +59,7 @@
         {#each users as user (user.id)}
           <CreatorCard
             {user}
+            {sortBy}
             accentColor={userColors.get(user.id)}
             {currentUserId}
             isFollowLoading={followingInProgress.has(user.id)}

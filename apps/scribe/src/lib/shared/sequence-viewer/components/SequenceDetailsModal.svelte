@@ -49,6 +49,7 @@
   import { createModalAccessibilityHelper } from "../services/implementations/ModalAccessibilityHelper.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
+  import { setSequenceViewerRef } from "$lib/shared/coordinators/sequence-viewer-ref.svelte";
   import { getAnimationVisibilityManager, type TrailVisibility } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { goto } from "$app/navigation";
@@ -833,6 +834,13 @@
       if (!success) throw new Error("Failed to initialize playback");
 
       setAnimationPlaybackRef(playbackController);
+      setSequenceViewerRef({
+        enterExportMode,
+        save: handleSave,
+        share: handleShare,
+        openInCompose: handleCompose,
+        isInExportMode: () => isExportMode,
+      });
 
       lastLoadedSequenceId = sequenceId;
       modalAnimationState.setSequenceData(loadedSequence);
@@ -1022,6 +1030,7 @@
       playbackController.togglePlayback();
     }
     setAnimationPlaybackRef(null);
+    setSequenceViewerRef(null);
     // Clear URL state when closing modal
     clearModalUrlState();
     // Disconnect from LAN sync if connected

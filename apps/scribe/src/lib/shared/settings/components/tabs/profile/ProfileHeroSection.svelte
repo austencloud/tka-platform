@@ -2,15 +2,21 @@
 <script lang="ts">
   import RobustAvatar from "../../../../components/avatar/RobustAvatar.svelte";
   import type { User } from "firebase/auth";
+  import { fly, fade } from "svelte/transition";
 
   interface Props {
     user: User;
     onSignOut: () => void;
     disabled?: boolean;
     onAvatarClick?: () => void;
+    pronouns?: string;
   }
 
-  let { user, onSignOut, disabled = false, onAvatarClick }: Props = $props();
+  let { user, onSignOut, disabled = false, onAvatarClick, pronouns }: Props = $props();
+
+  const reducedMotion = typeof window !== "undefined"
+    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    : false;
 </script>
 
 <section class="glass-card profile-card">
@@ -43,6 +49,17 @@
     {/if}
     <div class="profile-info">
       <h2 class="profile-name">{user.displayName || "User"}</h2>
+      {#key pronouns}
+        {#if pronouns}
+          <p
+            class="profile-pronouns"
+            in:fly={{ y: reducedMotion ? 0 : -6, duration: reducedMotion ? 0 : 300, delay: reducedMotion ? 0 : 80 }}
+            out:fade={{ duration: reducedMotion ? 0 : 150 }}
+          >
+            {pronouns}
+          </p>
+        {/if}
+      {/key}
       {#if user.email}
         <p class="profile-email">{user.email}</p>
       {/if}
@@ -174,6 +191,14 @@
     margin: 0;
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  }
+
+  .profile-pronouns {
+    font-size: clamp(12px, 2cqi, 14px);
+    color: var(--theme-text-dim);
+    font-style: italic;
+    margin: 2px 0 0 0;
+    opacity: 0.8;
   }
 
   .profile-email {

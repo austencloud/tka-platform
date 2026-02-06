@@ -10,6 +10,7 @@
   import DisplayNameEditor from "./DisplayNameEditor.svelte";
   import UsernameEditor from "./UsernameEditor.svelte";
   import InstagramUsernameEditor from "./InstagramUsernameEditor.svelte";
+  import PronounsEditor from "./PronounsEditor.svelte";
   import PasswordChangeForm from "./PasswordChangeForm.svelte";
 
   interface Props {
@@ -17,9 +18,10 @@
     hasPasswordProvider: boolean;
     onChangePassword: () => Promise<void>;
     hapticService: IHapticFeedback | null;
+    onPronounsChanged?: (pronouns: string) => void;
   }
 
-  let { user, hasPasswordProvider, onChangePassword, hapticService }: Props =
+  let { user, hasPasswordProvider, onChangePassword, hapticService, onPronounsChanged }: Props =
     $props();
 </script>
 
@@ -33,6 +35,10 @@
   <div class="divider"></div>
 
   <InstagramUsernameEditor {user} {hapticService} />
+
+  <div class="divider"></div>
+
+  <PronounsEditor {user} {hapticService} {onPronounsChanged} />
 
   {#if hasPasswordProvider}
     <div class="divider"></div>

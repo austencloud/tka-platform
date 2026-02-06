@@ -225,6 +225,7 @@
         {#if !searchResults && displayFeaturedUsers.length > 0}
           <FeaturedCreatorsSection
             users={displayFeaturedUsers}
+            {sortBy}
             {currentUserId}
             {followingInProgress}
             onUserClick={handleUserClick}
@@ -236,6 +237,7 @@
         <!-- Main virtualized grid -->
         <VirtualizedCreatorGrid
           users={displayUsers}
+          {sortBy}
           {currentUserId}
           {followingInProgress}
           hasMore={!searchResults && hasMore}

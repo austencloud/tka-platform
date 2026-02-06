@@ -15,11 +15,12 @@
   } from "@tanstack/svelte-virtual";
   import { onMount, onDestroy, untrack } from "svelte";
   import { get } from "svelte/store";
-  import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
+  import type { EnhancedUserProfile, CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import CreatorCard from "./CreatorCard.svelte";
 
   interface Props {
     users: EnhancedUserProfile[];
+    sortBy?: CreatorSortCriteria;
     currentUserId?: string;
     followingInProgress: Set<string>;
     hasMore?: boolean;
@@ -31,6 +32,7 @@
 
   const {
     users = [],
+    sortBy = "lastActive",
     currentUserId,
     followingInProgress = new Set(),
     hasMore = false,
@@ -243,6 +245,7 @@
           <div role="gridcell" aria-colindex={colIndex + 1}>
             <CreatorCard
               {user}
+              {sortBy}
               accentColor={getUserColor(user.id)}
               {currentUserId}
               isFollowLoading={followingInProgress.has(user.id)}

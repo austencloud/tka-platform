@@ -102,6 +102,8 @@ export class UserDocumentManager implements IUserDocumentManager {
           achievementCount: 0,
           currentStreak: 0,
           longestStreak: 0,
+          // Optional profile fields
+          pronouns: null,
           // Admin status (default false)
           isAdmin: false,
         });

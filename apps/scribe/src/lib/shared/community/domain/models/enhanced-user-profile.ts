@@ -26,6 +26,7 @@ export interface UserProfile {
 
   // Social links
   instagramUsername?: string;
+  pronouns?: string;
 
   // Admin-related fields
   role?: UserRole;
