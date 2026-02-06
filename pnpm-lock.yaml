@@ -16,6 +16,9 @@ importers:
       '@tka/animation-renderer':
         specifier: workspace:*
         version: link:../../packages/animation-renderer
+      '@tka/pictograph':
+        specifier: workspace:*
+        version: link:../../packages/pictograph
       '@tka/types':
         specifier: workspace:*
         version: link:../../packages/tka-types

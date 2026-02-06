@@ -6,8 +6,9 @@
    * at intercardinal positions (NE/SE/SW/NW). Shows static pictographs in box mode
    * with all 8 radial orientations (4 cardinal + 4 interradial).
    *
-   * Gravity toggle auto-assigns the physically correct resting orientation
-   * based on hand location (poi gravity map).
+   * Optional gravity toggle auto-assigns resting orientations based on hand location.
+   * Note: Gravity is a separate concept from interradial orientations - it's included
+   * here as a convenience for testing physically correct defaults.
    */
 
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
@@ -231,7 +232,7 @@
       <span class="badge">Admin</span>
     </div>
     <p class="description">
-      Interradial orientations at intercardinal positions (box mode). Gravity toggle shows physically correct resting orientations.
+      Interradial orientations (clockIn, clockOut, counterIn, counterOut) at intercardinal positions in box mode.
     </p>
   </header>
 

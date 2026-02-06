@@ -17,6 +17,7 @@ import { browser } from "$app/environment";
 import {
   PUBLIC_POSTHOG_KEY,
   PUBLIC_POSTHOG_HOST,
+  PUBLIC_POSTHOG_PROJECT_ID,
 } from "$env/static/public";
 
 let initialized = false;
@@ -206,10 +207,9 @@ export function getSessionReplayUrl(): string | null {
   const sessionId = posthog.get_session_id();
   if (!sessionId) return null;
 
-  const projectId = posthog.config?.token;
-  if (!projectId) return null;
+  if (!PUBLIC_POSTHOG_PROJECT_ID) return null;
 
-  return `https://us.posthog.com/project/${projectId}/replay/${sessionId}`;
+  return `https://us.posthog.com/project/${PUBLIC_POSTHOG_PROJECT_ID}/replay/${sessionId}`;
 }
 
 /**

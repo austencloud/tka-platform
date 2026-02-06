@@ -152,6 +152,8 @@ Prop orientations describe which direction a prop is pointing relative to the gr
 | **Compass** | centerN through centerNW | Center point only | 5 |
 | **Interradial** | clockIn, clockOut, counterIn, counterOut | Intercardinal points (NE/SE/SW/NW) | 6 |
 
+Level 6 is about **interradial orientations** - the 4 orientations at 45-degree angles between the cardinal orientations. Poi gravity is a separate concept (physical resting position due to gravity) that happens to produce interradial orientations at intercardinal positions, but gravity is NOT what defines Level 6.
+
 ### The 8-Point Radial Cycle
 
 All radial and interradial orientations form an 8-point cycle, each step = 45 degrees:
@@ -161,16 +163,6 @@ in → clockIn → clock → clockOut → out → counterOut → counter → cou
 ```
 
 Fractional turns map to steps: `steps = Math.round(turns * 4)`. Half turns = 2 steps, quarter turns = 1 step.
-
-### Gravity Map (Level 6)
-
-At each grid location, gravity pulls the prop to a specific resting orientation:
-
-```
-NW: counterIn    N: in        NE: clockIn
-W: counter       C: centerS   E: clock
-SW: counterOut   S: out       SE: clockOut
-```
 
 ### Spinning Plane (Level 6 metadata)
 

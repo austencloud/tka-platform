@@ -68,25 +68,25 @@ When showInterradial=true, adds 4 interradial orientations (Level 6).
       value: Orientation.CLOCK_IN,
       label: "CW·In",
       icon: "↘",
-      description: "Between clockwise and inward (gravity at NE)",
+      description: "Between clockwise and inward (45° interradial)",
     },
     {
       value: Orientation.CLOCK_OUT,
       label: "CW·Out",
       icon: "↗",
-      description: "Between clockwise and outward (gravity at SE)",
+      description: "Between clockwise and outward (45° interradial)",
     },
     {
       value: Orientation.COUNTER_IN,
       label: "CCW·In",
       icon: "↙",
-      description: "Between counter-clockwise and inward (gravity at NW)",
+      description: "Between counter-clockwise and inward (45° interradial)",
     },
     {
       value: Orientation.COUNTER_OUT,
       label: "CCW·Out",
       icon: "↖",
-      description: "Between counter-clockwise and outward (gravity at SW)",
+      description: "Between counter-clockwise and outward (45° interradial)",
     },
   ];
 

@@ -500,7 +500,19 @@
       "mcp__chrome-devtools__list_console_messages",
       "Bash(CF_PAGES=1 set:*)",
       "Bash(do git mv \"$item\" \"apps/scribe/src/\")",
-      "Bash(start \"\" \"C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe\" --remote-debugging-port=9222 --user-data-dir=\"C:\\\\Users\\\\Austen\\\\.claude\\\\chrome-profile\" \"http://localhost:5173\")"
+      "Bash(start \"\" \"C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe\" --remote-debugging-port=9222 --user-data-dir=\"C:\\\\Users\\\\Austen\\\\.claude\\\\chrome-profile\" \"http://localhost:5173\")",
+      "Bash(F:/tka-platform/packages/pictograph/src/services/arrow/orchestration/contracts/IArrowGridCoordinator.ts << 'EOF'\nimport type { GridLocation, GridMode, MotionData } from \"@tka/types\";\nimport type { Point } from \"../../../../domain/Point\";\n\nexport interface IArrowGridCoordinator {\n  getInitialPosition\\(\n    motion: MotionData,\n    location: GridLocation,\n    gridMode?: GridMode\n  \\): Point;\n\n  getSceneCenter\\(\\): Point;\n\n  getSceneDimensions\\(\\): [number, number];\n\n  validateCoordinates\\(point: Point\\): boolean;\n\n  getAllHandPoints\\(\n    gridMode?: GridMode\n  \\): Partial<Record<GridLocation, Point>>;\n\n  getAllLayer2Points\\(\n    gridMode?: GridMode\n  \\): Partial<Record<GridLocation, Point>>;\n\n  getSupportedLocations\\(\\): GridLocation[];\n}\nEOF)",
+      "Bash(do echo -n \"$f: \")",
+      "Bash(F:/tka-platform/packages/pictograph/src/services/arrow/orchestration/contracts/IArrowDataProcessor.ts << 'EOF'\nimport type {\n  PictographData,\n  MotionData,\n  ArrowPlacementData,\n} from \"@tka/types\";\nimport type { Point } from \"../../../../domain/Point\";\n\nexport interface IArrowDataProcessor {\n  getMotionFromPictograph\\(\n    arrowColor: string,\n    pictographData: PictographData\n  \\): MotionData | undefined;\n\n  ensureValidPosition\\(initialPosition: Point\\): Point;\n\n  extractAdjustmentValues\\(adjustment: Point | number\\): [number, number];\n\n  updateArrowInPictograph\\(\n    pictographData: PictographData,\n    color: string,\n    updates: Partial<ArrowPlacementData>,\n    motionUpdates?: Partial<MotionData>\n  \\): PictographData;\n\n  validateArrowData\\(arrowData: ArrowPlacementData\\): boolean;\n\n  validateMotionData\\(motion: MotionData\\): boolean;\n\n  validatePictographData\\(pictographData: PictographData\\): boolean;\n\n  extractArrowColors\\(pictographData: PictographData\\): string[];\n\n  getArrowByColor\\(\n    pictographData: PictographData,\n    color: string\n  \\): ArrowPlacementData | undefined;\n\n  hasMotionData\\(pictographData: PictographData, color: string\\): boolean;\n\n  clonePictographData\\(pictographData: PictographData\\): PictographData;\n}\nEOF)",
+      "Bash(# Check what''s inside the arrow subdirectories find F:/tka-platform/apps/scribe/static/images/arrows -type f)",
+      "Bash(# Check what landing already has find F:/tka-platform/apps/landing/static/images -type f)",
+      "Bash(# Count all letter files and check structure find F:/tka-platform/apps/scribe/static/images/letters_trimmed -type f)",
+      "Bash(# Verify arrows synced find F:/tka-platform/apps/landing/static/images/arrows -name \"\"*.svg\"\" | wc -l && echo \"\"arrows\"\" && find F:/tka-platform/apps/landing/static/images/letters_trimmed -type f)",
+      "mcp__chrome-devtools__get_console_message",
+      "Bash(docker.exe:*)",
+      "Bash(\"docker compose\" version)",
+      "Bash(powershell.exe:*)",
+      "Bash(powershell.exe -Command \"docker --version\")"
     ]
   },
   "enableAllProjectMcpServers": true,
