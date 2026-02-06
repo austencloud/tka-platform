@@ -2,18 +2,21 @@
  * generate-demo-sequences.ts
  *
  * Build-time script that generates fresh demo sequences for the landing page.
+ * Every run produces NEW random sequences - nothing is hardcoded.
+ *
  * Produces two collections:
  *
  * 1. Motion type demos (shift, dash, static) - simple repeating patterns
  *    that teach the three fundamental hand motions.
  *
  * 2. Per-level pools following TKA's actual level system:
- *    Level 1 (No Turns): Zero turns on all motions, IN/OUT orientations only
+ *    Level 1 (No Turns): Zero turns on all motions
  *    Level 2 (Whole Turns): Adds 1, 2, 3 full turns per motion
  *    Level 3 (All Turns): Half-turns, quarter turns, and float
  *
- * Uses the quartered loop builder for circular animations.
- * Turn values are allocated per-level using the turn allocator.
+ * Uses generateRandomWord() to pick random letters, then the constrained
+ * beam-search builder (same as MCP generate_sequence) to build valid
+ * sequences with automatic bridge insertion.
  *
  * Run: npx tsx scripts/generate-demo-sequences.ts
  * Output: ../apps/landing/static/data/demo-sequences.json
@@ -22,9 +25,11 @@
 import * as path from "path";
 import * as fs from "fs";
 import { fileURLToPath } from "url";
-import { ensureDataLoaded } from "../src/shared/server-context.js";
 import {
-  buildSequenceFromLetters,
+  ensureDataLoaded,
+  generateRandomWord,
+} from "../src/shared/server-context.js";
+import {
   buildSequenceForLoop,
   parseWordToLetters,
   detectReversals,
@@ -32,6 +37,12 @@ import {
   type SequenceResult,
   type LoopConstraint,
 } from "../src/core/sequence-builder.js";
+import {
+  buildConstrainedSequence,
+  emptyConstraintSet,
+  getPresetConstraintSet,
+} from "../src/core/constraints/index.js";
+import { ensureTransitionGraphInitialized } from "../src/core/letter-transition-graph.js";
 import { allocateTurns } from "../src/core/turn-allocator.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -43,12 +54,13 @@ const __dirname = path.dirname(__filename);
 
 interface SequenceSpec {
   id: string;
-  words: string[];      // Try each word in order until one succeeds
   group: "motionTypes" | "level1" | "level2" | "level3";
-  targetBeats: number;  // Accept sequences with this many non-start steps
-  useLoop?: boolean;    // If true, use quartered loop builder
-  level: number;        // TKA level (1=no turns, 2=whole turns, 3=all turns)
-  maxTurns?: number;    // Max turn intensity (default: level-based)
+  targetBeats: number;
+  level: number;         // TKA level (1=no turns, 2=whole turns, 3=all turns)
+  maxTurns?: number;     // Max turn intensity (default: level-based)
+  fixedWord?: string;    // If set, use this exact word (motion type demos only)
+  useLoop?: boolean;     // If true, use quartered loop builder (motion type demos only)
+  maxAttempts?: number;  // How many random words to try (default: 20)
 }
 
 interface LandingMotionData {
@@ -121,55 +133,44 @@ interface DemoSequencesOutput {
 }
 
 // ---------------------------------------------------------------------------
-// Sequence Playlist
+// Sequence Specs
 // ---------------------------------------------------------------------------
 
-// Level system (from turn-allocator.ts):
-//   Level 1: 0 turns only
-//   Level 2: 0, 1, 2, 3 (whole numbers)
-//   Level 3: 0, 0.5, 1, 1.5, 2, 2.5, 3, "fl" (all values including float)
+// Motion type demos use fixed words - they're deliberately repeating
+// one letter/motion type to teach a single concept.
+// Level sequences use random generation - fresh words every build.
 
 const SPECS: SequenceSpec[] = [
-  // -----------------------------------------------------------------------
-  // Motion type demos - simple patterns teaching the three hand movements
-  // All at Level 1 (no turns) to keep focus on the motion type itself
-  // -----------------------------------------------------------------------
-  { id: "mt-static", words: ["αααα", "ββββ", "γγγγ"], group: "motionTypes", targetBeats: 4, level: 1 },
-  { id: "mt-shift", words: ["AAAA", "BBBB", "CCCC", "ABAB"], group: "motionTypes", targetBeats: 4, level: 1, useLoop: true },
-  { id: "mt-dash", words: ["ΦΨΦΨ", "ΛΛΛΛ"], group: "motionTypes", targetBeats: 4, level: 1 },
+  // Motion type demos - fixed words, specific motion types
+  { id: "mt-static", fixedWord: "αααα", group: "motionTypes", targetBeats: 4, level: 1 },
+  { id: "mt-shift", fixedWord: "AAAA", group: "motionTypes", targetBeats: 4, level: 1, useLoop: true },
+  { id: "mt-dash", fixedWord: "ΦΨΦΨ", group: "motionTypes", targetBeats: 4, level: 1 },
 
-  // -----------------------------------------------------------------------
-  // Level 1: No Turns
-  // Zero turns on all motions. IN/OUT orientations only.
-  // Various letter types to show position variety at the simplest level.
-  // -----------------------------------------------------------------------
-  { id: "l1-8a", words: ["AABBCCAA", "BBCCAABB", "ABCAABCA"], group: "level1", targetBeats: 8, level: 1, useLoop: true },
-  { id: "l1-8b", words: ["GGHHIIGG", "GHIGHIGH"], group: "level1", targetBeats: 8, level: 1, useLoop: true },
-  { id: "l1-8c", words: ["MMNNOOMM", "MONOMONO"], group: "level1", targetBeats: 8, level: 1, useLoop: true },
+  // Level 1: No Turns - 4 random 8-beat sequences
+  { id: "l1-8a", group: "level1", targetBeats: 8, level: 1 },
+  { id: "l1-8b", group: "level1", targetBeats: 8, level: 1 },
+  { id: "l1-8c", group: "level1", targetBeats: 8, level: 1 },
+  { id: "l1-8d", group: "level1", targetBeats: 8, level: 1 },
 
-  // -----------------------------------------------------------------------
-  // Level 2: Whole Turns
-  // Adds 1, 2, or 3 full turns per motion. Same letters, now with rotation.
-  // -----------------------------------------------------------------------
-  { id: "l2-8a", words: ["ABCABCAB", "ABABABAB"], group: "level2", targetBeats: 8, level: 2, maxTurns: 2, useLoop: true },
-  { id: "l2-8b", words: ["GHIGHIGH", "GHGHGHGH"], group: "level2", targetBeats: 8, level: 2, maxTurns: 2, useLoop: true },
-  { id: "l2-8c", words: ["DJDJDJDJ"], group: "level2", targetBeats: 8, level: 2, maxTurns: 2, useLoop: true },
+  // Level 2: Whole Turns - 4 random 8-beat sequences
+  { id: "l2-8a", group: "level2", targetBeats: 8, level: 2, maxTurns: 2 },
+  { id: "l2-8b", group: "level2", targetBeats: 8, level: 2, maxTurns: 2 },
+  { id: "l2-8c", group: "level2", targetBeats: 8, level: 2, maxTurns: 2 },
+  { id: "l2-8d", group: "level2", targetBeats: 8, level: 2, maxTurns: 2 },
 
-  // -----------------------------------------------------------------------
-  // Level 3: All Turns (half-turns, float)
-  // Half-turn precision and float. The full vocabulary of rotation.
-  // -----------------------------------------------------------------------
-  { id: "l3-8a", words: ["DJDJDJDJ"], group: "level3", targetBeats: 8, level: 3, maxTurns: 2, useLoop: true },
-  { id: "l3-8b", words: ["EKEKEKEK"], group: "level3", targetBeats: 8, level: 3, maxTurns: 2, useLoop: true },
-  { id: "l3-8c", words: ["FLFLFLFL"], group: "level3", targetBeats: 8, level: 3, maxTurns: 2, useLoop: true },
+  // Level 3: All Turns - 4 random 8-beat sequences
+  { id: "l3-8a", group: "level3", targetBeats: 8, level: 3, maxTurns: 2 },
+  { id: "l3-8b", group: "level3", targetBeats: 8, level: 3, maxTurns: 2 },
+  { id: "l3-8c", group: "level3", targetBeats: 8, level: 3, maxTurns: 2 },
+  { id: "l3-8d", group: "level3", targetBeats: 8, level: 3, maxTurns: 2 },
 ];
 
 // ---------------------------------------------------------------------------
-// Transform MCP SequenceStep → landing StepData format
+// Transform step data → landing StepData format
 // ---------------------------------------------------------------------------
 
-function mcpMotionToLanding(
-  motion: SequenceStep["blueMotion"],
+function motionToLanding(
+  motion: { motionType: string; rotationDirection: string; startLocation: string; endLocation: string; startOrientation: string; endOrientation: string },
   color: "blue" | "red",
   turns: number
 ): LandingMotionData {
@@ -204,8 +205,8 @@ function mcpMotionToLanding(
   };
 }
 
-function mcpStepToLandingStep(
-  step: SequenceStep,
+function stepToLandingStep(
+  step: { letter: string; startPosition: string; endPosition: string; blueMotion: any; redMotion: any; blueReversal?: boolean; redReversal?: boolean },
   seqId: string,
   index: number,
   blueTurns: number,
@@ -223,8 +224,8 @@ function mcpStepToLandingStep(
     endPosition: step.endPosition,
     gridMode: "diamond",
     motions: {
-      blue: mcpMotionToLanding(step.blueMotion, "blue", blueTurns),
-      red: mcpMotionToLanding(step.redMotion, "red", redTurns),
+      blue: motionToLanding(step.blueMotion, "blue", blueTurns),
+      red: motionToLanding(step.redMotion, "red", redTurns),
     },
   };
 }
@@ -238,7 +239,6 @@ function validateSequence(steps: LandingStepData[]): string | null {
     return "No steps";
   }
 
-  // Position continuity
   for (let i = 1; i < steps.length; i++) {
     const prev = steps[i - 1]!;
     const curr = steps[i]!;
@@ -251,7 +251,7 @@ function validateSequence(steps: LandingStepData[]): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Generation
+// Builders
 // ---------------------------------------------------------------------------
 
 const LOOP_CONSTRAINT: LoopConstraint = {
@@ -259,20 +259,58 @@ const LOOP_CONSTRAINT: LoopConstraint = {
   sliceSize: "quartered",
 };
 
-function tryBuildWord(
+const SMOOTH_CONSTRAINTS = getPresetConstraintSet("smooth") ?? emptyConstraintSet();
+
+function tryBuildConstrained(
   word: string,
   targetBeats: number,
-  allPictographs: ReturnType<typeof ensureDataLoaded>,
-  useLoop: boolean
+  allPictographs: ReturnType<typeof ensureDataLoaded>
 ): SequenceResult | null {
   const letters = parseWordToLetters(word);
 
-  let result: SequenceResult;
-  if (useLoop) {
-    result = buildSequenceForLoop(letters, allPictographs, LOOP_CONSTRAINT, 500);
-  } else {
-    result = buildSequenceFromLetters(letters, allPictographs, 500);
+  const result = buildConstrainedSequence({
+    letters,
+    allPictographs,
+    constraintSet: SMOOTH_CONSTRAINTS,
+    beamConfig: { maxBacktracks: 500 },
+  });
+
+  if (!result.success || result.steps.length === 0) {
+    return null;
   }
+
+  const beatSteps = result.steps.slice(1);
+  if (beatSteps.length < targetBeats) {
+    return null;
+  }
+
+  const steps: SequenceStep[] = result.steps.map((step, i) => ({
+    letter: step.letter,
+    variation: result.variationIndices[i] ?? 0,
+    startPosition: step.startPosition,
+    endPosition: step.endPosition,
+    blueMotion: step.blueMotion,
+    redMotion: step.redMotion,
+    stepNumber: i,
+    isBridge: (result.bridgeStepIndices ?? []).includes(i),
+  }));
+
+  return {
+    word: result.word,
+    steps,
+    startPosition: result.startPosition,
+    endPosition: result.endPosition,
+    isValid: true,
+  };
+}
+
+function tryBuildLoop(
+  word: string,
+  targetBeats: number,
+  allPictographs: ReturnType<typeof ensureDataLoaded>
+): SequenceResult | null {
+  const letters = parseWordToLetters(word);
+  const result = buildSequenceForLoop(letters, allPictographs, LOOP_CONSTRAINT, 500);
 
   if (!result.isValid || result.steps.length === 0) {
     return null;
@@ -286,68 +324,74 @@ function tryBuildWord(
   return result;
 }
 
+// ---------------------------------------------------------------------------
+// Core generation: builds one sequence from a spec
+// ---------------------------------------------------------------------------
+
 function generateSequence(
   spec: SequenceSpec,
   allPictographs: ReturnType<typeof ensureDataLoaded>
 ): LandingSequenceData | null {
   const useLoop = spec.useLoop ?? false;
+  const maxAttempts = spec.maxAttempts ?? 20;
 
-  for (const word of spec.words) {
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const result = tryBuildWord(word, spec.targetBeats, allPictographs, useLoop);
-      if (!result) continue;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Either use fixed word (motion type demos) or generate random
+    const word = spec.fixedWord ?? generateRandomWord(spec.targetBeats);
 
-      const beatSteps = result.steps.filter((s) => s.stepNumber > 0);
-      const usableSteps = beatSteps.slice(0, spec.targetBeats);
-      const stepsWithReversals = detectReversals(usableSteps);
+    const result = useLoop
+      ? tryBuildLoop(word, spec.targetBeats, allPictographs)
+      : tryBuildConstrained(word, spec.targetBeats, allPictographs);
 
-      // Allocate turns using the proper level-based allocator
-      const turnAllocation = allocateTurns(
-        spec.targetBeats,
-        spec.level,
-        spec.maxTurns
-      );
+    if (!result) continue;
 
-      // Transform to landing format with level-appropriate turns
-      const landingSteps = stepsWithReversals.map((step, i) => {
-        let blueTurns = turnAllocation.blue[i] ?? 0;
-        let redTurns = turnAllocation.red[i] ?? 0;
+    const beatSteps = result.steps.filter((s) => s.stepNumber > 0);
+    const usableSteps = beatSteps.slice(0, spec.targetBeats);
+    const stepsWithReversals = detectReversals(usableSteps);
 
-        // Convert "fl" to 0 for the landing format (float not visually distinct in demo)
-        if (blueTurns === "fl") blueTurns = 0;
-        if (redTurns === "fl") redTurns = 0;
+    const turnAllocation = allocateTurns(
+      spec.targetBeats,
+      spec.level,
+      spec.maxTurns
+    );
 
-        // Static motions always get 0 turns regardless of level
-        if (step.blueMotion.motionType === "static") blueTurns = 0;
-        if (step.redMotion.motionType === "static") redTurns = 0;
+    const landingSteps = stepsWithReversals.map((step, i) => {
+      let blueTurns = turnAllocation.blue[i] ?? 0;
+      let redTurns = turnAllocation.red[i] ?? 0;
 
-        return mcpStepToLandingStep(step, spec.id, i, blueTurns as number, redTurns as number);
-      });
+      if (blueTurns === "fl") blueTurns = 0;
+      if (redTurns === "fl") redTurns = 0;
 
-      const validationError = validateSequence(landingSteps);
-      if (validationError) {
-        console.error(`    [INVALID] ${word} attempt ${attempt + 1}: ${validationError}`);
-        continue;
-      }
+      if (step.blueMotion.motionType === "static") blueTurns = 0;
+      if (step.redMotion.motionType === "static") redTurns = 0;
 
-      return {
-        id: spec.id,
-        name: word,
-        word,
-        steps: landingSteps,
-        thumbnails: [],
-        isFavorite: false,
-        isCircular: true,
-        tags: ["demo", spec.group],
-        metadata: {},
-        gridMode: "diamond",
-        level: spec.level,
-        beatCount: landingSteps.length,
-      };
+      return stepToLandingStep(step, spec.id, i, blueTurns as number, redTurns as number);
+    });
+
+    const validationError = validateSequence(landingSteps);
+    if (validationError) {
+      continue;
     }
-    console.error(`    [FAIL] "${word}": no valid sequence after 5 attempts`);
+
+    const displayWord = landingSteps.map((s) => s.letter).join("");
+
+    return {
+      id: spec.id,
+      name: displayWord,
+      word: displayWord,
+      steps: landingSteps,
+      thumbnails: [],
+      isFavorite: false,
+      isCircular: useLoop,
+      tags: ["demo", spec.group],
+      metadata: {},
+      gridMode: "diamond",
+      level: spec.level,
+      beatCount: landingSteps.length,
+    };
   }
 
+  console.error(`    [FAIL] ${spec.id}: no valid sequence after ${maxAttempts} random words`);
   return null;
 }
 
@@ -355,11 +399,16 @@ function generateSequence(
 // Main
 // ---------------------------------------------------------------------------
 
-function main() {
+async function main() {
   console.error("[generate-demo-sequences] Starting...");
 
   const allPictographs = ensureDataLoaded("diamond");
   console.error(`[generate-demo-sequences] Loaded ${allPictographs.length} pictographs`);
+
+  // The constrained builder uses the transition graph for bridge finding.
+  // Must be initialized before any buildConstrainedSequence() calls.
+  const graph = await ensureTransitionGraphInitialized();
+  console.error(`[generate-demo-sequences] Transition graph initialized: ${graph.isInitialized()}`);
 
   const output: DemoSequencesOutput = {
     motionTypes: [],
@@ -372,18 +421,20 @@ function main() {
   let failures = 0;
 
   for (const spec of SPECS) {
-    const loopLabel = spec.useLoop ? " [quartered loop]" : "";
-    console.error(`  Generating ${spec.id}: ${spec.group}, ${spec.targetBeats}-count, L${spec.level}${loopLabel} [${spec.words.join(", ")}]`);
+    const label = spec.fixedWord
+      ? `fixed "${spec.fixedWord}"`
+      : `random ${spec.targetBeats}-letter words`;
+    console.error(`  ${spec.id}: ${spec.group} L${spec.level} (${label})`);
 
     const seq = generateSequence(spec, allPictographs);
 
     if (seq) {
       output[spec.group].push(seq);
       successes++;
-      console.error(`  [OK] "${seq.word}": ${seq.steps.length} steps`);
+      console.error(`    [OK] "${seq.word}" (${seq.steps.length} steps)`);
     } else {
       failures++;
-      console.error(`  [SKIP] ${spec.id}: all candidates failed`);
+      console.error(`    [SKIP] ${spec.id}: all attempts failed`);
     }
   }
 
@@ -406,7 +457,6 @@ function main() {
   console.error(
     `\n[generate-demo-sequences] Done. ${successes} sequences, ${failures} failed.`
   );
-  console.error(`Output: ${outputPath}`);
 
   for (const [key, seqs] of Object.entries(output)) {
     console.error(`  ${key}: ${seqs.length} sequences (${(seqs as LandingSequenceData[]).map((s) => `${s.word}[${s.beatCount}]`).join(", ")})`);
@@ -417,4 +467,7 @@ function main() {
   }
 }
 
-main();
+main().catch((err) => {
+  console.error("[generate-demo-sequences] Fatal error:", err);
+  process.exit(1);
+});

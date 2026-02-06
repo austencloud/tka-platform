@@ -9,7 +9,7 @@
  */
 
 import { browser } from "$app/environment";
-import { getAuth } from "firebase/auth";
+import { auth } from "$lib/shared/auth/firebase";
 import type {
   IPostHogUserAnalytics,
   UserEngagementSummary,
@@ -172,7 +172,7 @@ export class PostHogUserAnalytics implements IPostHogUserAnalytics {
     userId: string,
     extra?: Record<string, unknown>
   ): Promise<{ results: unknown[][] }> {
-    const user = getAuth().currentUser;
+    const user = auth.currentUser;
     if (!user) {
       throw new Error("Not signed in");
     }
