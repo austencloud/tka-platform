@@ -281,6 +281,83 @@ export { PropSvgLoader } from "./services/prop/implementations/PropSvgLoader";
 export type { IPropPlacer } from "./services/prop/contracts/IPropPlacer";
 export { PropPlacer } from "./services/prop/implementations/PropPlacer";
 
+// Arrow orchestration services
+export type { IArrowGridCoordinator } from "./services/arrow/orchestration/contracts/IArrowGridCoordinator";
+export { ArrowGridCoordinator } from "./services/arrow/orchestration/implementations/ArrowGridCoordinator";
+export type { IArrowDataProcessor } from "./services/arrow/orchestration/contracts/IArrowDataProcessor";
+export { ArrowDataProcessor } from "./services/arrow/orchestration/implementations/ArrowDataProcessor";
+export type { IArrowPositioningOrchestrator } from "./services/arrow/orchestration/contracts/IArrowPositioningOrchestrator";
+export { ArrowPositioningOrchestrator } from "./services/arrow/orchestration/implementations/ArrowPositioningOrchestrator";
+export type {
+  IArrowLifecycleManager,
+  ArrowLifecycleOptions,
+} from "./services/arrow/orchestration/contracts/IArrowLifecycleManager";
+export { ArrowLifecycleManager } from "./services/arrow/orchestration/implementations/ArrowLifecycleManager";
+
+// Arrow adjustment (interface only — scribe injects full implementation)
+export type { IArrowAdjustmentCalculator } from "./services/arrow/positioning/contracts/IArrowAdjustmentCalculator";
+
 // Shared services
+export type {
+  IPictographPreparer,
+  PrepareOptions,
+} from "./services/shared/contracts/IPictographPreparer";
+export { PictographPreparer } from "./services/shared/implementations/PictographPreparer";
 export type { ISvgPreloader } from "./services/shared/contracts/ISvgPreloader";
 export { SvgPreloader } from "./services/shared/implementations/SvgPreloader";
+
+// Domain - Point (replaces fabric.Point for arrow coordinate calculations)
+export { Point } from "./domain/Point";
+
+// ============================================================================
+// Factory
+// ============================================================================
+
+export {
+  createPictographPipeline,
+  type PictographPipeline,
+  type PictographPipelineOptions,
+} from "./factory/createPictographPipeline";
+
+// ============================================================================
+// Glyph services
+// ============================================================================
+
+export type {
+  ITurnColorInterpreter,
+  TurnColors,
+  TurnNumberColor,
+} from "./services/glyph/contracts/ITurnColorInterpreter";
+export { TurnColorInterpreter } from "./services/glyph/implementations/TurnColorInterpreter";
+export { TurnsTupleGenerator } from "./services/glyph/implementations/TurnsTupleGenerator";
+export { PropRotationStateTracker } from "./services/glyph/implementations/PropRotationStateTracker";
+
+// ============================================================================
+// Components
+// ============================================================================
+
+export { default as PictographRenderer } from "./components/PictographRenderer.svelte";
+export { default as GridSvg } from "./components/GridSvg.svelte";
+export {
+  default as PropSvg,
+  clearPropPositionCache,
+} from "./components/PropSvg.svelte";
+export {
+  default as ArrowSvg,
+  clearArrowPositionCache,
+} from "./components/ArrowSvg.svelte";
+export {
+  default as TKAGlyph,
+  getLetterDimensions,
+  preloadLetterDimensions,
+  getCachedSvgDataUrl,
+} from "./components/glyph/TKAGlyph.svelte";
+export { default as TurnsColumn } from "./components/glyph/TurnsColumn.svelte";
+export { default as DirectionDot } from "./components/glyph/DirectionDot.svelte";
+export { default as VTGGlyph } from "./components/glyph/VTGGlyph.svelte";
+export { default as ElementalGlyph } from "./components/glyph/ElementalGlyph.svelte";
+export { default as Dash } from "./components/Dash.svelte";
+export { default as StepNumber } from "./components/StepNumber.svelte";
+export { default as DurationGlyph } from "./components/DurationGlyph.svelte";
+export { default as ReversalIndicators } from "./components/ReversalIndicators.svelte";
+export { default as PositionGlyph } from "./components/PositionGlyph.svelte";

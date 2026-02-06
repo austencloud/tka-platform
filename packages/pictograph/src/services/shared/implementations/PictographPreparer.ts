@@ -26,13 +26,15 @@ import type { PictographConfig } from "../../../config/PictographConfig";
 export class PictographPreparer implements IPictographPreparer {
   private prepareCache = new Map<string, PreparedRenderData>();
   private pendingPrepares = new Map<string, Promise<PreparedRenderData>>();
+  private cacheHits = 0;
+  private cacheMisses = 0;
 
   constructor(
     private arrowManager: IArrowLifecycleManager,
     private propLoader: IPropSvgLoader,
     private propPlacer: IPropPlacer,
     private gridModeDeriver: IGridModeDeriver,
-    private config: PictographConfig
+    private config?: PictographConfig
   ) {}
 
   async prepareBatch(
@@ -59,6 +61,7 @@ export class PictographPreparer implements IPictographPreparer {
 
     const cached = this.prepareCache.get(cacheKey);
     if (cached) {
+      this.cacheHits++;
       return { ...pictograph, _prepared: cached };
     }
 
@@ -68,6 +71,7 @@ export class PictographPreparer implements IPictographPreparer {
       return { ...pictograph, _prepared: prepared };
     }
 
+    this.cacheMisses++;
     const preparePromise = this.doPrepare(pictograph, options);
     this.pendingPrepares.set(cacheKey, preparePromise);
 
@@ -111,6 +115,9 @@ export class PictographPreparer implements IPictographPreparer {
     const blue = pictograph.motions?.blue;
     const red = pictograph.motions?.red;
 
+    const bluePropType = options?.bluePropType ?? this.config?.getBluePropType() ?? "";
+    const redPropType = options?.redPropType ?? this.config?.getRedPropType() ?? "";
+
     const parts = [
       blue?.motionType ?? "none",
       blue?.startLocation ?? "",
@@ -119,7 +126,7 @@ export class PictographPreparer implements IPictographPreparer {
       blue?.turns ?? 0,
       blue?.startOrientation ?? "",
       blue?.endOrientation ?? "",
-      options?.bluePropType ?? this.config.getBluePropType(),
+      bluePropType,
       blue?.arrowPlacementData?.manualAdjustmentX ?? 0,
       blue?.arrowPlacementData?.manualAdjustmentY ?? 0,
       red?.motionType ?? "none",
@@ -129,7 +136,7 @@ export class PictographPreparer implements IPictographPreparer {
       red?.turns ?? 0,
       red?.startOrientation ?? "",
       red?.endOrientation ?? "",
-      options?.redPropType ?? this.config.getRedPropType(),
+      redPropType,
       red?.arrowPlacementData?.manualAdjustmentX ?? 0,
       red?.arrowPlacementData?.manualAdjustmentY ?? 0,
       options?.themeMode ?? "dark",
@@ -214,6 +221,9 @@ export class PictographPreparer implements IPictographPreparer {
     pictograph: PictographData,
     options?: PrepareOptions
   ): [string, MotionData][] {
+    const bluePropType = this.config?.getBluePropType();
+    const redPropType = this.config?.getRedPropType();
+
     return Object.entries(pictograph.motions || {})
       .filter((entry): entry is [string, MotionData] => entry[1] !== undefined)
       .map(([color, motion]) => {
@@ -231,14 +241,12 @@ export class PictographPreparer implements IPictographPreparer {
         }
 
         const settingsPropType =
-          color === "blue"
-            ? this.config.getBluePropType()
-            : this.config.getRedPropType();
+          color === "blue" ? bluePropType : redPropType;
         if (settingsPropType) {
-          return [
-            color,
-            { ...motion, propType: settingsPropType as PropType },
-          ] as [string, MotionData];
+          return [color, { ...motion, propType: settingsPropType }] as [
+            string,
+            MotionData,
+          ];
         }
         return [color, motion] as [string, MotionData];
       });

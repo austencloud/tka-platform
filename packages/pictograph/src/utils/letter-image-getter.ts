@@ -13,8 +13,8 @@ export function getBaseLetter(letter: string): string {
   return letter;
 }
 
-export function getLetterImagePath(letter: Letter): string {
-  const letterType = getLetterType(letter);
+export function getLetterImagePath(letter: Letter | string): string {
+  const letterType = getLetterType(letter as Letter);
 
   if (letterType === LetterType.TYPE3) {
     const baseLetter = getBaseLetter(letter);

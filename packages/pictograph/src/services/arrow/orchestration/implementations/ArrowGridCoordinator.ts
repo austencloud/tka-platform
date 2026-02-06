@@ -129,10 +129,10 @@ export class ArrowGridCoordinator implements IArrowGridCoordinator {
       });
 
       if (layer2Points[GridLocation.NORTH] && layer2Points[GridLocation.EAST]) {
-        layer2Points[GridLocation.NORTHEAST] = layer2Points[GridLocation.NORTH];
-        layer2Points[GridLocation.SOUTHEAST] = layer2Points[GridLocation.EAST];
-        layer2Points[GridLocation.SOUTHWEST] = layer2Points[GridLocation.SOUTH];
-        layer2Points[GridLocation.NORTHWEST] = layer2Points[GridLocation.WEST];
+        layer2Points[GridLocation.NORTHEAST] = layer2Points[GridLocation.NORTH]!;
+        layer2Points[GridLocation.SOUTHEAST] = layer2Points[GridLocation.EAST]!;
+        layer2Points[GridLocation.SOUTHWEST] = layer2Points[GridLocation.SOUTH]!;
+        layer2Points[GridLocation.NORTHWEST] = layer2Points[GridLocation.WEST]!;
       }
     }
 
@@ -163,10 +163,7 @@ export class ArrowGridCoordinator implements IArrowGridCoordinator {
       coords = layer2Points[location];
     }
 
-    if (!coords) {
-      return this.getSceneCenter();
-    }
-    return coords;
+    return coords ?? this.getSceneCenter();
   }
 
   private getHandPointCoords(location: GridLocation, gridMode: GridMode): Point {
@@ -180,10 +177,7 @@ export class ArrowGridCoordinator implements IArrowGridCoordinator {
       coords = handPoints[location];
     }
 
-    if (!coords) {
-      return this.getSceneCenter();
-    }
-    return coords;
+    return coords ?? this.getSceneCenter();
   }
 
   private inferGridModeFromLocation(location: GridLocation): GridMode {
