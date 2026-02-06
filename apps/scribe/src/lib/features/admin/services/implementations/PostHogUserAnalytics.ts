@@ -197,14 +197,12 @@ export class PostHogUserAnalytics implements IPostHogUserAnalytics {
     });
 
     if (!response.ok) {
-      this.available = false;
       throw new Error(`Analytics proxy returned ${response.status}`);
     }
 
     const body = await response.json();
 
     if (!body.success) {
-      this.available = false;
       throw new Error(body.message ?? "Unknown error");
     }
 
