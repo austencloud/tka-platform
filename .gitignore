@@ -193,3 +193,9 @@ scripts/model-curator/
 
 # Monorepo remnants
 packages/manifest.json
+
+# Landing: pictograph assets synced from scribe at build time
+apps/landing/static/images/arrows/
+apps/landing/static/images/letters_trimmed/
+apps/landing/static/images/numbers/
+apps/landing/static/images/arrow.svg
