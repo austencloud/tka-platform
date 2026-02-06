@@ -10,7 +10,7 @@ export interface IPropSvgLoader {
   loadPropSvg(
     propData: PropPlacementData,
     motionData: MotionData,
-    useAnimatedVersion?: boolean,
+    useGridVersion?: boolean,
     options?: PropSvgLoadOptions
   ): Promise<PropRenderData>;
 

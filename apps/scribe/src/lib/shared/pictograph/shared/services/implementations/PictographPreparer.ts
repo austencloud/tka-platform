@@ -165,8 +165,8 @@ export class PictographPreparer implements IPictographPreparer {
       red?.arrowPlacementData?.manualAdjustmentY ?? 0,
       // Theme affects colors
       options?.themeMode ?? "dark",
-      // Animated version uses larger SVGs (300px width)
-      options?.useAnimatedVersion ? "animated" : "standard",
+      // Grid version uses ghost-half centered SVGs
+      (options?.useGridVersion ?? true) ? "grid" : "thumbnail",
     ];
 
     return parts.join("|");
@@ -223,7 +223,7 @@ export class PictographPreparer implements IPictographPreparer {
             this.propLoader.loadPropSvg(
               motion.propPlacementData,
               motion,
-              options?.useAnimatedVersion ?? false,
+              options?.useGridVersion ?? true,
               options?.themeMode ? { themeMode: options.themeMode } : undefined
             ),
             this.propPlacer.calculatePlacement(pictograph, motion),

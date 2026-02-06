@@ -48,7 +48,7 @@ export class PropSvgLoader implements IPropSvgLoader {
   async loadPropSvg(
     propData: PropPlacementData,
     motionData: MotionData,
-    useAnimatedVersion: boolean = false,
+    useGridVersion: boolean = true,
     options?: PropSvgLoadOptions
   ): Promise<PropRenderData> {
     try {
@@ -57,7 +57,9 @@ export class PropSvgLoader implements IPropSvgLoader {
       const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
 
       const assetBasePath = this.config?.assetBasePath ?? "";
-      const path = useAnimatedVersion
+      // Grid versions in props/animated/ have ghost-half centering (hand grip at viewBox center).
+      // Thumbnail versions in props/ are compact previews for prop pickers.
+      const path = useGridVersion
         ? `${assetBasePath}/images/props/animated/${propType}.svg`
         : `${assetBasePath}/images/props/${propType}.svg`;
       const transformedCacheKey = `${path}:${color}:${themeMode}`;

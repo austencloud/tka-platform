@@ -8,6 +8,15 @@ export const DEMO_PROP_TYPES = [
   "minihoop",
 ];
 
+export const DEMO_PROP_LABELS: Record<string, string> = {
+  staff: "Staff",
+  buugeng: "Buugeng",
+  fan: "Fan",
+  triad: "Triad",
+  club: "Club",
+  minihoop: "Mini Hoop",
+};
+
 export interface FeatureCard {
   icon: string;
   title: string;

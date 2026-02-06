@@ -86,7 +86,7 @@
     try {
       preparedPictograph = await pictographPreparer.prepareSingle(pictograph, {
         themeMode: "dark",
-        useAnimatedVersion: true,
+        useGridVersion: true,
       });
     } catch (e) {
       console.error("Failed to prepare pictograph:", e);

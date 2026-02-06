@@ -8,7 +8,12 @@ export interface PrepareOptions {
   themeMode?: ThemeMode;
   bluePropType?: PropType;
   redPropType?: PropType;
-  useAnimatedVersion?: boolean;
+  /**
+   * Load grid-centered prop SVGs (from props/animated/) instead of thumbnail versions.
+   * Grid versions use ghost-half centering so the hand grip aligns with grid points.
+   * Defaults to true since pictographs render on a grid.
+   */
+  useGridVersion?: boolean;
 }
 
 export interface IPictographPreparer {

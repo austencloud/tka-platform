@@ -30,24 +30,33 @@ export class PostHogUserAnalytics implements IPostHogUserAnalytics {
 
   async getEngagementSummary(userId: string): Promise<UserEngagementSummary> {
     try {
-      const data = await this.query("engagement", userId);
+      // Fetch engagement basics and sessions in parallel
+      const [engData, sessions] = await Promise.all([
+        this.query("engagement", userId),
+        this.query("sessions", userId, { limit: 50 }),
+      ]);
 
-      if (data.results?.length > 0) {
-        const [lastActive, sessionsCount, totalDurationSec] = data.results[0] as [
-          string,
-          number,
-          number,
-        ];
-        const avgDuration =
-          sessionsCount > 0 ? (totalDurationSec * 1000) / sessionsCount : 0;
+      if (engData.results?.length > 0) {
+        const [lastActive, sessionsCount] = engData.results[0] as [string, number];
+
+        // Compute duration from sessions data (duration is index 3, in ms)
+        let totalDurationMs = 0;
+        if (sessions.results?.length > 0) {
+          for (const row of sessions.results) {
+            totalDurationMs += (row[3] as number) || 0;
+          }
+        }
+
+        const count = sessionsCount || 0;
+        const avgDuration = count > 0 ? totalDurationMs / count : 0;
 
         this.available = true;
         return {
           lastActiveAt: lastActive,
           memberSince: null,
-          sessionsCount: sessionsCount || 0,
+          sessionsCount: count,
           avgSessionDuration: avgDuration,
-          totalTimeSpent: (totalDurationSec || 0) * 1000,
+          totalTimeSpent: totalDurationMs,
         };
       }
     } catch (err) {

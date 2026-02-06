@@ -81,13 +81,16 @@ export class PropSvgLoader implements IPropSvgLoader {
    * 🚀 OPTIMIZED: Checks transformed cache first, then raw cache, then fetches
    * @param propData - Prop placement data
    * @param motionData - Motion data including prop type
-   * @param useAnimatedVersion - If true, loads {propType}_animated.svg for animation canvas (300px width)
+   * @param useGridVersion - If true, loads grid-centered SVGs from props/animated/ (ghost-half centering).
+   *   The "animated" directory name is historical - these are static SVGs designed for grid rendering
+   *   with a visible half and an invisible "ghost" half that centers the hand grip at the viewBox midpoint.
+   *   Thumbnail versions (props/) are compact previews for prop pickers, NOT for pictograph grids.
    * @param options - Optional settings including themeMode for color selection
    */
   async loadPropSvg(
     propData: PropPlacementData,
     motionData: MotionData,
-    useAnimatedVersion: boolean = false,
+    useGridVersion: boolean = true,
     options?: PropSvgLoadOptions
   ): Promise<PropRenderData> {
     try {
@@ -99,8 +102,9 @@ export class PropSvgLoader implements IPropSvgLoader {
       const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
 
       // Create cache key including color AND theme mode for transformed prop cache
-      // Animated versions live in /images/props/animated/ (scaled to 300px width)
-      const path = useAnimatedVersion
+      // Grid versions live in /images/props/animated/ (ghost-half centered for grid rendering)
+      // Thumbnail versions live in /images/props/ (compact previews for prop pickers)
+      const path = useGridVersion
         ? `/images/props/animated/${propType}.svg`
         : `/images/props/${propType}.svg`;
       const transformedCacheKey = `${path}:${color}:${themeMode}`;

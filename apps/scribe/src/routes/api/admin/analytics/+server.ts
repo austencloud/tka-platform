@@ -91,8 +91,7 @@ function buildEngagementQuery(userId: string): string {
   return `
     SELECT
       max(timestamp) as last_active,
-      count(distinct $session_id) as sessions_count,
-      sum(session_duration) / 1000 as total_duration_sec
+      count(distinct $session_id) as sessions_count
     FROM events
     WHERE distinct_id = {userId}
       AND timestamp > now() - interval 30 day

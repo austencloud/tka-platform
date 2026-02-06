@@ -2,7 +2,7 @@
   WhatIsTKASection.svelte (Landing - standalone)
 
   Two-part demonstration:
-  1. Motion Types - three animations showing static, shift, dash
+  1. Positions - static pictographs showing alpha, beta, gamma
   2. Levels - tabbed view showing one level at a time with 8-count sequences
 
   Controls at top. No "Try Another" - sequences auto-cycle with cross-fade.
@@ -10,12 +10,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { SequenceData } from "@tka/types";
-  import { DEMO_PROP_TYPES } from "$lib/landing-content";
+  import { DEMO_PROP_TYPES, DEMO_PROP_LABELS } from "$lib/landing-content";
   import LandingAnimationDemo from "./LandingAnimationDemo.svelte";
   import LandingPositionDemo from "./LandingPositionDemo.svelte";
 
   const APP_DOMAIN = "https://tkascribe.com";
 
+  // Reserved for future Learn section
   interface MotionTypeDef {
     label: string;
     description: string;
@@ -113,7 +114,17 @@
     darkMode = !darkMode;
   }
 
-  function handleChangeProp() {
+  function handlePropPrev() {
+    if (switching) return;
+    switching = true;
+    currentPropIndex =
+      (currentPropIndex - 1 + DEMO_PROP_TYPES.length) % DEMO_PROP_TYPES.length;
+    setTimeout(() => {
+      switching = false;
+    }, 500);
+  }
+
+  function handlePropNext() {
     if (switching) return;
     switching = true;
     currentPropIndex = (currentPropIndex + 1) % DEMO_PROP_TYPES.length;
@@ -121,6 +132,10 @@
       switching = false;
     }, 500);
   }
+
+  const currentPropLabel = $derived(
+    DEMO_PROP_LABELS[currentPropType] ?? currentPropType
+  );
 
   onMount(() => {
     let mounted = true;
@@ -135,8 +150,6 @@
 
         allSequences = data;
         loaded = true;
-
-        currentPropIndex = Math.floor(Math.random() * DEMO_PROP_TYPES.length);
       } catch (e) {
         console.error("Failed to load demo sequences:", e);
       }
@@ -188,25 +201,36 @@
           </svg>
         </button>
 
-        <button
-          class="control-btn prop-btn"
-          onclick={handleChangeProp}
-          disabled={switching}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
+        <div class="prop-selector">
+          <button
+            class="prop-arrow"
+            onclick={handlePropPrev}
+            disabled={switching}
+            aria-label="Previous prop"
           >
-            <path
-              d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
-              stroke-linecap="round"
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <div class="prop-label">
+            <img
+              src="/images/props/{currentPropType}.svg"
+              alt=""
+              class="prop-thumbnail"
             />
-          </svg>
-          <span>Change Prop</span>
-        </button>
+            <span>{currentPropLabel}</span>
+          </div>
+          <button
+            class="prop-arrow"
+            onclick={handlePropNext}
+            disabled={switching}
+            aria-label="Next prop"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <!-- Positions: Alpha, Beta, Gamma -->
@@ -216,33 +240,6 @@
           Two hands on a grid. Three ways they relate to each other.
         </p>
         <LandingPositionDemo {darkMode} />
-      </div>
-
-      <!-- Motion Types: three fundamental hand movements -->
-      <div class="subsection">
-        <h3 class="subsection-title">Three motion types</h3>
-        <p class="subsection-desc">
-          Every beat uses one of three movements per hand.
-        </p>
-
-        <div class="motion-types-grid">
-          {#each MOTION_TYPES as mt}
-            {@const seqs = getMotionTypeSeqs(mt.key)}
-            <div class="motion-type-column">
-              <div class="motion-type-header">
-                <h4>{mt.label}</h4>
-                <p>{mt.description}</p>
-              </div>
-              {#if seqs.length > 0}
-                <LandingAnimationDemo
-                  sequences={seqs}
-                  {darkMode}
-                  propType={currentPropType}
-                />
-              {/if}
-            </div>
-          {/each}
-        </div>
       </div>
 
       <!-- Levels: one at a time with tab selector -->
@@ -389,13 +386,62 @@
     border-color: rgba(255, 255, 255, 0.4);
   }
 
-  .prop-btn {
-    background: linear-gradient(135deg, #0d9488, #14b8a6);
-    box-shadow: 0 4px 16px rgba(13, 148, 136, 0.3);
+  .prop-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    border-radius: 100px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    overflow: hidden;
   }
 
-  .prop-btn:hover:not(:disabled) {
-    box-shadow: 0 8px 24px rgba(13, 148, 136, 0.4);
+  .prop-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    padding: 0;
+  }
+
+  .prop-arrow:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .prop-arrow:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .prop-arrow svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .prop-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: white;
+    min-width: 120px;
+    justify-content: center;
+    user-select: none;
+  }
+
+  .prop-thumbnail {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
   }
 
   /* Subsection headers */
@@ -417,37 +463,6 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     margin-bottom: 32px;
     line-height: 1.6;
-  }
-
-  /* Motion types: three columns */
-  .motion-types-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 32px;
-  }
-
-  .motion-type-column {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-width: 0;
-  }
-
-  .motion-type-header {
-    text-align: center;
-  }
-
-  .motion-type-header h4 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin-bottom: 4px;
-    line-height: 1.3;
-  }
-
-  .motion-type-header p {
-    font-size: 0.875rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    line-height: 1.5;
   }
 
   /* Level tabs */
@@ -579,33 +594,10 @@
     }
   }
 
-  /* Tablet */
-  @media (max-width: 1100px) {
-    .motion-types-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 24px;
-    }
-
-    .motion-type-column:last-child {
-      grid-column: 1 / -1;
-      max-width: 50%;
-      justify-self: center;
-    }
-  }
-
   /* Mobile */
   @media (max-width: 700px) {
     .what-is {
       padding: 80px 16px;
-    }
-
-    .motion-types-grid {
-      grid-template-columns: 1fr;
-      gap: 40px;
-    }
-
-    .motion-type-column:last-child {
-      max-width: 100%;
     }
 
     .section-header {
@@ -663,7 +655,8 @@
   @media (prefers-reduced-motion: reduce) {
     .link-card,
     .control-btn,
-    .level-tab {
+    .level-tab,
+    .prop-arrow {
       transition: none;
     }
 

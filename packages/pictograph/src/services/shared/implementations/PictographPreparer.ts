@@ -140,7 +140,7 @@ export class PictographPreparer implements IPictographPreparer {
       red?.arrowPlacementData?.manualAdjustmentX ?? 0,
       red?.arrowPlacementData?.manualAdjustmentY ?? 0,
       options?.themeMode ?? "dark",
-      options?.useAnimatedVersion ? "animated" : "standard",
+      (options?.useGridVersion ?? true) ? "grid" : "thumbnail",
     ];
 
     return parts.join("|");
@@ -189,7 +189,7 @@ export class PictographPreparer implements IPictographPreparer {
             this.propLoader.loadPropSvg(
               motion.propPlacementData,
               motion,
-              options?.useAnimatedVersion ?? false,
+              options?.useGridVersion ?? true,
               options?.themeMode ? { themeMode: options.themeMode } : undefined
             ),
             this.propPlacer.calculatePlacement(pictograph, motion),

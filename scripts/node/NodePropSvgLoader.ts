@@ -35,13 +35,13 @@ export class NodePropSvgLoader implements IPropSvgLoader {
    * Load prop SVG data with color transformation
    * @param propData - Prop placement data
    * @param motionData - Motion data including prop type
-   * @param useAnimatedVersion - If true, loads {propType}_animated.svg
+   * @param useGridVersion - If true, loads grid-centered SVGs (ghost-half centering)
    * @param options - Optional settings including themeMode for color selection
    */
   async loadPropSvg(
     propData: PropPlacementData,
     motionData: MotionData,
-    useAnimatedVersion: boolean = false,
+    useGridVersion: boolean = true,
     options?: PropSvgLoadOptions
   ): Promise<PropRenderData> {
     try {
@@ -53,7 +53,7 @@ export class NodePropSvgLoader implements IPropSvgLoader {
       const themeMode = options?.themeMode ?? "light";
 
       // Create cache key including color AND theme mode
-      const suffix = useAnimatedVersion ? "_animated" : "";
+      const suffix = useGridVersion ? "_animated" : "";
       const path = `/images/props/${propType}${suffix}.svg`;
       const transformedCacheKey = `${path}:${color}:${themeMode}`;
 
