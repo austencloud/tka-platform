@@ -25,8 +25,9 @@ import { GridLocation, GridMode, MotionType, Orientation } from "./enums.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Project root: mcp-server/src/core -> project root
-const PROJECT_ROOT = join(__dirname, "../../..");
+// Monorepo root: mcp-server/src/core -> tka-platform
+const MONOREPO_ROOT = join(__dirname, "../../..");
+const SCRIBE_STATIC = join(MONOREPO_ROOT, "apps/scribe/static");
 
 // ============================================================================
 // TYPES
@@ -87,8 +88,8 @@ export function calculateOriKey(blueEndOri: string, redEndOri: string): string {
 function loadSpecialPlacement(gridMode: GridMode, oriKey: string, letter: string): PlacementData | null {
   const gridModeStr = gridMode === GridMode.BOX ? "box" : gridMode === GridMode.SKEWED ? "skewed" : "diamond";
   const placementPath = join(
-    PROJECT_ROOT,
-    "static/data/arrow_placement",
+    SCRIBE_STATIC,
+    "data/arrow_placement",
     gridModeStr,
     "special",
     oriKey,
@@ -472,8 +473,8 @@ function loadDefaultPlacementData(gridMode: GridMode, motionType: string): Recor
   }
 
   const filePath = join(
-    PROJECT_ROOT,
-    "static/data/arrow_placement",
+    SCRIBE_STATIC,
+    "data/arrow_placement",
     gridModeStr,
     "default",
     `default_${gridModeStr}_${motionType}_placements.json`

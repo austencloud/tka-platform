@@ -122,19 +122,20 @@ export function saveAndOpenImage(pngBuffer: Buffer, label: string): string {
 // PICTOGRAPH DATA LOADING
 // ============================================================================
 
-// Resolve paths relative to the project root (parent of mcp-server)
+// Resolve paths relative to the monorepo structure
 // When compiled, __dirname is mcp-server/dist/src/shared
 // When running source, __dirname is mcp-server/src/shared
 const isCompiled = __dirname.includes("dist");
 const MCP_SERVER_ROOT = isCompiled
   ? path.resolve(__dirname, "../../..") // dist/src/shared -> mcp-server
   : path.resolve(__dirname, "../.."); // src/shared -> mcp-server
-const PROJECT_ROOT = path.resolve(MCP_SERVER_ROOT, "..");
+const MONOREPO_ROOT = path.resolve(MCP_SERVER_ROOT, "..");
+const SCRIBE_STATIC = path.resolve(MONOREPO_ROOT, "apps/scribe/static");
 
 const DATAFRAME_PATHS: Record<GridMode, string> = {
-  diamond: path.resolve(PROJECT_ROOT, "static/data/pictographs/DiamondPictographDataframe.csv"),
-  box: path.resolve(PROJECT_ROOT, "static/data/pictographs/BoxPictographDataframe.csv"),
-  skewed: path.resolve(PROJECT_ROOT, "static/data/pictographs/SkewedPictographDataframe.csv"),
+  diamond: path.resolve(SCRIBE_STATIC, "data/pictographs/DiamondPictographDataframe.csv"),
+  box: path.resolve(SCRIBE_STATIC, "data/pictographs/BoxPictographDataframe.csv"),
+  skewed: path.resolve(SCRIBE_STATIC, "data/pictographs/SkewedPictographDataframe.csv"),
 };
 
 // Cache for loaded dataframes

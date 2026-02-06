@@ -18,22 +18,23 @@ import { calculateOrientations } from "$lib/shared/render/core/calculations/orie
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Resolve project root (parent of mcp-server)
+// Resolve paths relative to the monorepo structure
 const isCompiled = __dirname.includes("dist");
 const MCP_SERVER_ROOT = isCompiled
   ? path.resolve(__dirname, "../../..") // dist/src/adapters -> mcp-server
   : path.resolve(__dirname, "../.."); // src/adapters -> mcp-server
-const PROJECT_ROOT = path.resolve(MCP_SERVER_ROOT, "..");
+const MONOREPO_ROOT = path.resolve(MCP_SERVER_ROOT, "..");
+const SCRIBE_STATIC = path.resolve(MONOREPO_ROOT, "apps/scribe/static");
 
 type GridMode = "diamond" | "box" | "skewed";
 
 const DATAFRAME_PATHS: Record<GridMode, string> = {
-  diamond: path.resolve(PROJECT_ROOT, "static/data/pictographs/DiamondPictographDataframe.csv"),
-  box: path.resolve(PROJECT_ROOT, "static/data/pictographs/BoxPictographDataframe.csv"),
-  skewed: path.resolve(PROJECT_ROOT, "static/data/pictographs/SkewedPictographDataframe.csv"),
+  diamond: path.resolve(SCRIBE_STATIC, "data/pictographs/DiamondPictographDataframe.csv"),
+  box: path.resolve(SCRIBE_STATIC, "data/pictographs/BoxPictographDataframe.csv"),
+  skewed: path.resolve(SCRIBE_STATIC, "data/pictographs/SkewedPictographDataframe.csv"),
 };
 
-const LETTER_MAPPINGS_PATH = path.resolve(PROJECT_ROOT, "static/data/learn/letter-mappings.json");
+const LETTER_MAPPINGS_PATH = path.resolve(SCRIBE_STATIC, "data/learn/letter-mappings.json");
 
 /**
  * Node.js-specific data provider using synchronous file reads.

@@ -20,6 +20,7 @@ import {
   type HandTarget as PerHandTarget,
 } from "../implementations/per-hand-dash-constraint.js";
 import { HandPathReversalConstraint } from "../implementations/hand-path-constraint.js";
+import { VtgTimingConstraint } from "../implementations/vtg-timing-constraint.js";
 import { containsConcept, canonicalize } from "./synonyms.js";
 
 /**
@@ -541,6 +542,27 @@ function detectHand(text: string): HandTarget {
 }
 
 // =============================================================================
+// VTG TIMING PATTERNS
+// =============================================================================
+
+const vtgTimingPattern: ConstraintPattern = {
+  id: "vtg-timing",
+  type: ConstraintType.VTG_TIMING,
+  description: "VTG-compatible motion consistency",
+  matches(text: string): boolean {
+    const lower = text.toLowerCase();
+    return (
+      lower.includes("vtg") ||
+      lower.includes("vulcan") ||
+      (lower.includes("consistent") && lower.includes("motion"))
+    );
+  },
+  build(): IConstraint {
+    return new VtgTimingConstraint("hard");
+  },
+};
+
+// =============================================================================
 // PATTERN REGISTRY
 // =============================================================================
 
@@ -549,6 +571,9 @@ function detectHand(text: string): HandTarget {
  * More specific patterns should come before general ones.
  */
 export const CONSTRAINT_PATTERNS: ConstraintPattern[] = [
+  // VTG timing (highest priority - specific system reference)
+  vtgTimingPattern,
+
   // Hand path patterns (specific hand path vs general reversal)
   enforceHandPathContinuityPattern,
   maximizeHandPathContinuityPattern,
