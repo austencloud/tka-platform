@@ -191,6 +191,7 @@
           hideProps: false,
           usePathCache: false,
           previewMode: false,
+          additionalLayerColors: [],
         },
         currentTime: performance.now(),
         visibility: {
