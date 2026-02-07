@@ -26,7 +26,7 @@
 		onToggleFavorite?: (id: string) => void;
 	} = $props();
 
-	let cardEl: HTMLButtonElement | undefined = $state();
+	let cardEl: HTMLDivElement | undefined = $state();
 
 	const modeConfig = $derived(COMPOSE_MODE_CONFIG[composition.mode]);
 	const thumbnailResolver = container?.items?.compositionThumbnailResolver as ICompositionThumbnailResolver | undefined;
