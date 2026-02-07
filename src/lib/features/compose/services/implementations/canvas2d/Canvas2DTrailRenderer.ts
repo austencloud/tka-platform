@@ -158,13 +158,17 @@ export class Canvas2DTrailRenderer {
     currentTime: number,
     hasBlue: boolean,
     hasRed: boolean,
-    qualityHints?: QualityHints
+    qualityHints?: QualityHints,
+    secondaryBlueTrailPoints?: TrailPoint[],
+    secondaryRedTrailPoints?: TrailPoint[],
+    hasSecondaryBlue?: boolean,
+    hasSecondaryRed?: boolean
   ): void {
     if (!trailSettings.enabled || trailSettings.mode === TrailMode.OFF) {
       return;
     }
 
-    // Render blue trail
+    // Render primary blue trail
     if (hasBlue && blueTrailPoints.length >= 2) {
       this.renderTrailSegments(
         ctx,
@@ -176,12 +180,36 @@ export class Canvas2DTrailRenderer {
       );
     }
 
-    // Render red trail
+    // Render primary red trail
     if (hasRed && redTrailPoints.length >= 2) {
       this.renderTrailSegments(
         ctx,
         redTrailPoints,
         trailSettings.redColor,
+        trailSettings,
+        currentTime,
+        qualityHints
+      );
+    }
+
+    // Render secondary blue trail (tunnel mode - purple)
+    if (hasSecondaryBlue && secondaryBlueTrailPoints && secondaryBlueTrailPoints.length >= 2) {
+      this.renderTrailSegments(
+        ctx,
+        secondaryBlueTrailPoints,
+        trailSettings.secondaryBlueColor,
+        trailSettings,
+        currentTime,
+        qualityHints
+      );
+    }
+
+    // Render secondary red trail (tunnel mode - orange)
+    if (hasSecondaryRed && secondaryRedTrailPoints && secondaryRedTrailPoints.length >= 2) {
+      this.renderTrailSegments(
+        ctx,
+        secondaryRedTrailPoints,
+        trailSettings.secondaryRedColor,
         trailSettings,
         currentTime,
         qualityHints

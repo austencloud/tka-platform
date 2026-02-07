@@ -203,7 +203,11 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
         params.currentTime,
         !!params.blueProp && params.visibility.blueMotionVisible,
         !!params.redProp && params.visibility.redMotionVisible,
-        params.qualityHints
+        params.qualityHints,
+        params.secondaryBlueTrailPoints,
+        params.secondaryRedTrailPoints,
+        !!params.secondaryBlueProp && params.visibility.blueMotionVisible,
+        !!params.secondaryRedProp && params.visibility.redMotionVisible
       );
       ctx.restore();
     }
