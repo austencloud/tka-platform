@@ -33,6 +33,7 @@ Last audit: 2025-12-27
   import type { StepData } from "../../../features/create/shared/domain/models/StepData";
   import type { PropState } from "../domain/PropState";
   import type { TrailSettings } from "../domain/types/TrailTypes";
+  import type { AdditionalLayerProps } from "$lib/features/compose/services/contracts/ITrailCapturer";
   import GlyphRenderer from "./GlyphRenderer.svelte";
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
@@ -46,8 +47,7 @@ Last audit: 2025-12-27
   let {
     blueProp,
     redProp,
-    secondaryBlueProp = null,
-    secondaryRedProp = null,
+    additionalLayers = [],
     gridVisible = true,
     gridMode = GridMode.DIAMOND,
     backgroundAlpha = 1,
@@ -79,8 +79,7 @@ Last audit: 2025-12-27
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
-    secondaryBlueProp?: PropState | null;
-    secondaryRedProp?: PropState | null;
+    additionalLayers?: AdditionalLayerProps[];
     gridVisible?: boolean;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;
@@ -178,8 +177,7 @@ Last audit: 2025-12-27
     const props = {
       blueProp,
       redProp,
-      secondaryBlueProp,
-      secondaryRedProp,
+      additionalLayers,
       gridVisible,
       gridMode,
       backgroundAlpha,

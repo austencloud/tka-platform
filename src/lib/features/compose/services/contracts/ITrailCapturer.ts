@@ -16,13 +16,21 @@ import type {
 import type { PropState } from "../../shared/domain/types/PropState";
 
 /**
+ * Prop states for one additional tunnel layer
+ */
+export interface AdditionalLayerProps {
+  blueProp: PropState | null;
+  redProp: PropState | null;
+}
+
+/**
  * Prop states for trail capture (distinct from the simpler PropStates in domain)
  */
 export interface TrailCapturePropStates {
   blueProp: PropState | null;
   redProp: PropState | null;
-  secondaryBlueProp?: PropState | null;
-  secondaryRedProp?: PropState | null;
+  /** Additional tunnel layers (index 0 = layer 1, up to 3 additional layers) */
+  additionalLayers?: AdditionalLayerProps[];
 }
 
 /**
@@ -77,10 +85,11 @@ export interface ITrailCapturer {
 
   /**
    * Get trail points for a specific prop/end combination
-   * @param propIndex - 0=blue, 1=red, 2=secondaryBlue, 3=secondaryRed
+   * @param propIndex - 0=blue, 1=red
    * @param endType - 0=left, 1=right
+   * @param layerIndex - 0=primary, 1+=additional layers (optional, defaults to 0)
    */
-  getTrailPoints(propIndex: 0 | 1 | 2 | 3, endType: 0 | 1): TrailPoint[];
+  getTrailPoints(propIndex: 0 | 1, endType: 0 | 1, layerIndex?: number): TrailPoint[];
 
   /**
    * Get all trail points for rendering
@@ -88,8 +97,7 @@ export interface ITrailCapturer {
   getAllTrailPoints(): {
     blue: TrailPoint[];
     red: TrailPoint[];
-    secondaryBlue: TrailPoint[];
-    secondaryRed: TrailPoint[];
+    additionalLayers: Array<{ blue: TrailPoint[]; red: TrailPoint[] }>;
   };
 
   /**
@@ -99,8 +107,7 @@ export interface ITrailCapturer {
   fillTrailPointArrays(
     blue: TrailPoint[],
     red: TrailPoint[],
-    secondaryBlue: TrailPoint[],
-    secondaryRed: TrailPoint[]
+    additionalLayers: Array<{ blue: TrailPoint[]; red: TrailPoint[] }>
   ): void;
 
   /**

@@ -19,11 +19,15 @@ export class Canvas2DImageLoader {
   // Image cache
   private bluePropImage: HTMLImageElement | null = null;
   private redPropImage: HTMLImageElement | null = null;
-  private secondaryBluePropImage: HTMLImageElement | null = null;
-  private secondaryRedPropImage: HTMLImageElement | null = null;
   private gridImage: HTMLImageElement | null = null;
   private glyphImage: HTMLImageElement | null = null;
   private previousGlyphImage: HTMLImageElement | null = null;
+
+  // Additional tunnel layer prop images (lazily populated)
+  private additionalLayerImages: Array<{
+    blue: HTMLImageElement | null;
+    red: HTMLImageElement | null;
+  }> = [];
 
   // Track prop dimensions (from SVG viewBox)
   private bluePropDimensions: { width: number; height: number } = {
@@ -145,7 +149,8 @@ export class Canvas2DImageLoader {
     }
   }
 
-  async loadSecondaryPropImages(
+  async loadAdditionalLayerPropImages(
+    layerIndex: number,
     propType: string,
     blueColor: string,
     redColor: string
@@ -156,8 +161,8 @@ export class Canvas2DImageLoader {
     try {
       const svgGenerator = container.items.svgGenerator as ISVGGenerator;
 
-      // Generate secondary prop SVGs with custom colors
-      const [secondaryBluePropData, secondaryRedPropData] = await Promise.all([
+      // Generate prop SVGs with custom colors for this layer
+      const [bluePropData, redPropData] = await Promise.all([
         svgGenerator.generatePropSvg(propType, blueColor),
         svgGenerator.generatePropSvg(propType, redColor),
       ]);
@@ -165,28 +170,32 @@ export class Canvas2DImageLoader {
       // Create new images
       const [newBlueImage, newRedImage] = await Promise.all([
         this.createImageFromSVG(
-          secondaryBluePropData.svg,
-          secondaryBluePropData.width,
-          secondaryBluePropData.height
+          bluePropData.svg,
+          bluePropData.width,
+          bluePropData.height
         ),
         this.createImageFromSVG(
-          secondaryRedPropData.svg,
-          secondaryRedPropData.width,
-          secondaryRedPropData.height
+          redPropData.svg,
+          redPropData.width,
+          redPropData.height
         ),
       ]);
 
-      // Swap references
-      this.secondaryBluePropImage = newBlueImage;
-      this.secondaryRedPropImage = newRedImage;
+      // Ensure array is large enough
+      while (this.additionalLayerImages.length <= layerIndex) {
+        this.additionalLayerImages.push({ blue: null, red: null });
+      }
 
-      return {
-        blue: this.secondaryBluePropImage,
-        red: this.secondaryRedPropImage,
+      // Swap references
+      this.additionalLayerImages[layerIndex] = {
+        blue: newBlueImage,
+        red: newRedImage,
       };
+
+      return { blue: newBlueImage, red: newRedImage };
     } catch (error) {
       console.error(
-        "[Canvas2DImageLoader] Failed to load secondary prop images:",
+        `[Canvas2DImageLoader] Failed to load additional layer ${layerIndex} prop images:`,
         error
       );
       throw error;
@@ -307,12 +316,14 @@ export class Canvas2DImageLoader {
     return this.redPropImage;
   }
 
-  getSecondaryBluePropImage(): HTMLImageElement | null {
-    return this.secondaryBluePropImage;
-  }
-
-  getSecondaryRedPropImage(): HTMLImageElement | null {
-    return this.secondaryRedPropImage;
+  getAdditionalLayerImages(layerIndex: number): {
+    blue: HTMLImageElement | null;
+    red: HTMLImageElement | null;
+  } {
+    if (layerIndex < this.additionalLayerImages.length) {
+      return this.additionalLayerImages[layerIndex]!;
+    }
+    return { blue: null, red: null };
   }
 
   getGridImage(): HTMLImageElement | null {
@@ -343,8 +354,7 @@ export class Canvas2DImageLoader {
     // Clear all image references (allows garbage collection)
     this.bluePropImage = null;
     this.redPropImage = null;
-    this.secondaryBluePropImage = null;
-    this.secondaryRedPropImage = null;
+    this.additionalLayerImages.length = 0;
     this.gridImage = null;
     this.glyphImage = null;
     this.previousGlyphImage = null;

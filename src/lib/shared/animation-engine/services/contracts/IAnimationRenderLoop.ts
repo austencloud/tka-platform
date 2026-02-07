@@ -6,7 +6,7 @@
  */
 
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
+import type { ITrailCapturer, AdditionalLayerProps } from "$lib/features/compose/services/contracts/ITrailCapturer";
 import type { TrailSettings } from "../../domain/types/TrailTypes";
 import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
@@ -52,8 +52,8 @@ export interface RenderVisibilitySettings {
 export interface RenderPropsState {
   blueProp: PropState | null;
   redProp: PropState | null;
-  secondaryBlueProp: PropState | null;
-  secondaryRedProp: PropState | null;
+  /** Additional tunnel layers (index 0 = layer 1, up to 3) */
+  additionalLayers: AdditionalLayerProps[];
   bluePropDimensions: PropDimensions;
   redPropDimensions: PropDimensions;
 }

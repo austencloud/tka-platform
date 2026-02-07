@@ -37,8 +37,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   // These are reused every frame instead of allocating new arrays
   private reusableBlueTrailPoints: TrailPoint[] = [];
   private reusableRedTrailPoints: TrailPoint[] = [];
-  private reusableSecondaryBlueTrailPoints: TrailPoint[] = [];
-  private reusableSecondaryRedTrailPoints: TrailPoint[] = [];
+  // Additional tunnel layer trail points (lazily populated)
+  private reusableAdditionalLayerTrails: Array<{
+    blue: TrailPoint[];
+    red: TrailPoint[];
+  }> = [];
 
   initialize(config: RenderLoopConfig): void {
     this.renderer = config.renderer;
@@ -105,8 +108,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
-    this.reusableSecondaryBlueTrailPoints.length = 0;
-    this.reusableSecondaryRedTrailPoints.length = 0;
+    this.reusableAdditionalLayerTrails.length = 0;
   }
 
   private renderLoop = (currentTime: number): void => {
@@ -138,8 +140,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         {
           blueProp: params.props.blueProp,
           redProp: params.props.redProp,
-          secondaryBlueProp: params.props.secondaryBlueProp,
-          secondaryRedProp: params.props.secondaryRedProp,
+          additionalLayers: params.props.additionalLayers.length > 0
+            ? params.props.additionalLayers
+            : undefined,
         },
         currentStep,
         currentTime
@@ -215,6 +218,28 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const effectiveRedMotionVisible =
       visibility.redMotionVisible && props.redProp !== null;
 
+    // Build additional layer render data
+    const additionalLayerRenderData = props.additionalLayers.map((layer, i) => {
+      const layerTrails = trailPoints.additionalLayers[i];
+      const colors = trailSettings.additionalLayerColors[i];
+      return {
+        blueProp: layer.blueProp,
+        redProp: layer.redProp,
+        blueTrailPoints:
+          effectiveTrailsVisible && effectiveBlueMotionVisible && layerTrails
+            ? layerTrails.blue
+            : [],
+        redTrailPoints:
+          effectiveTrailsVisible && effectiveRedMotionVisible && layerTrails
+            ? layerTrails.red
+            : [],
+        hasBlue: !!layer.blueProp && effectiveBlueMotionVisible,
+        hasRed: !!layer.redProp && effectiveRedMotionVisible,
+        blueColor: colors?.blue ?? "#8b5cf6",
+        redColor: colors?.red ?? "#f97316",
+      };
+    });
+
     // Render scene
     // NOTE: Props are passed regardless of visibility so the renderer can fade them out.
     // The renderer's fade managers handle visibility transition animations for:
@@ -223,8 +248,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.renderer.renderScene({
       blueProp: props.blueProp,
       redProp: props.redProp,
-      secondaryBlueProp: props.secondaryBlueProp,
-      secondaryRedProp: props.secondaryRedProp,
       gridVisible: effectiveGridVisible,
       gridMode: gridMode?.toString() ?? null,
       letter: letter ?? null,
@@ -239,14 +262,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         effectiveTrailsVisible && effectiveRedMotionVisible
           ? trailPoints.red
           : [],
-      secondaryBlueTrailPoints:
-        effectiveTrailsVisible && effectiveBlueMotionVisible
-          ? trailPoints.secondaryBlue
-          : [],
-      secondaryRedTrailPoints:
-        effectiveTrailsVisible && effectiveRedMotionVisible
-          ? trailPoints.secondaryRed
-          : [],
+      additionalLayers:
+        additionalLayerRenderData.length > 0
+          ? additionalLayerRenderData
+          : undefined,
       trailSettings,
       currentTime,
       visibility: {
@@ -275,15 +294,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   ): {
     blue: TrailPoint[];
     red: TrailPoint[];
-    secondaryBlue: TrailPoint[];
-    secondaryRed: TrailPoint[];
+    additionalLayers: Array<{ blue: TrailPoint[]; red: TrailPoint[] }>;
   } {
     // CRITICAL: Reuse arrays to prevent GC pressure on mobile
     // Clear arrays without deallocating (length = 0 keeps capacity)
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
-    this.reusableSecondaryBlueTrailPoints.length = 0;
-    this.reusableSecondaryRedTrailPoints.length = 0;
 
     // Detect animation loop (currentStep jumps backward significantly)
     // This happens when the sequence repeats from the beginning
@@ -356,16 +372,14 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.TrailCapturer.fillTrailPointArrays(
         this.reusableBlueTrailPoints,
         this.reusableRedTrailPoints,
-        this.reusableSecondaryBlueTrailPoints,
-        this.reusableSecondaryRedTrailPoints
+        this.reusableAdditionalLayerTrails
       );
     }
 
     return {
       blue: this.reusableBlueTrailPoints,
       red: this.reusableRedTrailPoints,
-      secondaryBlue: this.reusableSecondaryBlueTrailPoints,
-      secondaryRed: this.reusableSecondaryRedTrailPoints,
+      additionalLayers: this.reusableAdditionalLayerTrails,
     };
   }
 }

@@ -25,8 +25,10 @@ import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISe
 import type { PropState } from "../../domain/PropState";
 import type { TrailSettings } from "../../domain/types/TrailTypes";
 import type { RenderFrameParams } from "../contracts/IAnimationRenderLoop";
+import type { AdditionalLayerProps } from "$lib/features/compose/services/contracts/ITrailCapturer";
 import type { AnimationVisibilityState } from "../contracts/IAnimationVisibilitySynchronizer";
 import type { PreRenderProgress } from "$lib/features/compose/services/implementations/SequenceFramePreRenderer";
+import { TUNNEL_LAYER_COLORS } from "$lib/features/compose/compose/domain/types";
 
 import { loadAnimatorServices as loadServices } from "./AnimatorLoader";
 import { loadTrailSettings } from "$lib/features/compose/utils/animation-panel-persistence";
@@ -68,8 +70,7 @@ import { AnimatorCanvasInitializer } from "./AnimatorCanvasInitializer";
 export interface AnimationEngineProps {
   blueProp: PropState | null;
   redProp: PropState | null;
-  secondaryBlueProp?: PropState | null;
-  secondaryRedProp?: PropState | null;
+  additionalLayers?: AdditionalLayerProps[];
   gridVisible?: boolean;
   gridMode?: GridMode | null;
   backgroundAlpha?: number;
@@ -243,9 +244,9 @@ export class AnimationEngine {
   private prevBlueMotionVisible: boolean = true;
   private prevRedMotionVisible: boolean = true;
 
-  // Secondary texture loading for tunnel mode
-  private secondaryTexturesLoaded: boolean = false;
-  private secondaryTexturesLoading: boolean = false;
+  // Additional layer texture loading for tunnel mode (indexed by layer)
+  private additionalLayerTexturesLoaded: boolean[] = [];
+  private additionalLayerTexturesLoading: boolean[] = [];
 
   // Simple reference to last props for initial render (not a copy - avoids GC)
   private lastPropsRef: AnimationEngineProps | null = null;
@@ -261,8 +262,7 @@ export class AnimationEngine {
     props: {
       blueProp: null,
       redProp: null,
-      secondaryBlueProp: null,
-      secondaryRedProp: null,
+      additionalLayers: [],
       bluePropDimensions: DEFAULT_PROP_DIMENSIONS,
       redPropDimensions: DEFAULT_PROP_DIMENSIONS,
     },
@@ -458,8 +458,9 @@ export class AnimationEngine {
         this.state.currentRedPropType = newRed;
         this.state.currentPropType = newBlue;
 
-        // Reset secondary textures so they reload with new prop type
-        this.secondaryTexturesLoaded = false;
+        // Reset additional layer textures so they reload with new prop type
+        this.additionalLayerTexturesLoaded = [];
+        this.additionalLayerTexturesLoading = [];
 
         // Hot-swap textures
         this.loadPropTextures().then(() => {
@@ -491,8 +492,9 @@ export class AnimationEngine {
             this.propTypeChangeService.state.legacyPropType;
         }
 
-        // Reset secondary textures so they reload with new prop type
-        this.secondaryTexturesLoaded = false;
+        // Reset additional layer textures so they reload with new prop type
+        this.additionalLayerTexturesLoaded = [];
+        this.additionalLayerTexturesLoading = [];
 
         // Hot-swap textures without full re-initialization
         // The render loop keeps running with old textures until new ones load
@@ -507,44 +509,49 @@ export class AnimationEngine {
       }
     }
 
-    // Handle secondary prop textures for tunnel mode
-    // When secondary props are passed, we need to load different colored textures
-    const hasSecondaryProps =
-      props.secondaryBlueProp != null || props.secondaryRedProp != null;
+    // Handle additional layer prop textures for tunnel mode
+    // When additional layers are passed, load per-layer colored textures
+    const additionalLayers = props.additionalLayers ?? [];
 
-    if (
-      hasSecondaryProps &&
-      !this.secondaryTexturesLoaded &&
-      !this.secondaryTexturesLoading &&
-      this.animationRenderer
-    ) {
-      this.secondaryTexturesLoading = true;
+    if (additionalLayers.length > 0 && this.animationRenderer) {
+      for (let i = 0; i < additionalLayers.length; i++) {
+        const layer = additionalLayers[i]!;
+        const hasProps = layer.blueProp != null || layer.redProp != null;
 
-      // Use distinct colors for secondary props (purple/orange for visual distinction)
-      const secondaryBlueColor = "#6B46C1"; // Purple
-      const secondaryRedColor = "#F97316"; // Orange
+        if (
+          hasProps &&
+          !this.additionalLayerTexturesLoaded[i] &&
+          !this.additionalLayerTexturesLoading[i]
+        ) {
+          this.additionalLayerTexturesLoading[i] = true;
 
-      this.animationRenderer
-        .loadSecondaryPropTextures(
-          this.state.currentBluePropType,
-          secondaryBlueColor,
-          secondaryRedColor
-        )
-        .then(() => {
-          this.secondaryTexturesLoaded = true;
-          this.secondaryTexturesLoading = false;
+          // Use TUNNEL_LAYER_COLORS for this layer (offset by 1 since index 0 = primary layer)
+          const colors = TUNNEL_LAYER_COLORS[i + 1] ?? TUNNEL_LAYER_COLORS[1]!;
 
-          // Trigger re-render with secondary textures
-          if (this.state.isInitialized) {
-            this.renderLoopService?.triggerRender(() =>
-              this.getFrameParams(props)
-            );
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to load secondary prop textures:", err);
-          this.secondaryTexturesLoading = false;
-        });
+          this.animationRenderer
+            .loadAdditionalLayerPropTextures(
+              i,
+              this.state.currentBluePropType,
+              colors.left,
+              colors.right
+            )
+            .then(() => {
+              this.additionalLayerTexturesLoaded[i] = true;
+              this.additionalLayerTexturesLoading[i] = false;
+
+              // Trigger re-render with new layer textures
+              if (this.state.isInitialized) {
+                this.renderLoopService?.triggerRender(() =>
+                  this.getFrameParams(props)
+                );
+              }
+            })
+            .catch((err) => {
+              console.error(`Failed to load layer ${i} prop textures:`, err);
+              this.additionalLayerTexturesLoading[i] = false;
+            });
+        }
+      }
     }
 
     // Handle trail settings changes
@@ -1211,8 +1218,7 @@ export class AnimationEngine {
     // Mutate nested props object
     fp.props.blueProp = props.blueProp;
     fp.props.redProp = props.redProp;
-    fp.props.secondaryBlueProp = props.secondaryBlueProp ?? null;
-    fp.props.secondaryRedProp = props.secondaryRedProp ?? null;
+    fp.props.additionalLayers = props.additionalLayers ?? [];
     fp.props.bluePropDimensions = this.state.bluePropDimensions;
     fp.props.redPropDimensions = this.state.redPropDimensions;
 

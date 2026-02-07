@@ -13,6 +13,20 @@ import type {
 import type { QualityHints } from "$lib/shared/animation-engine/domain/types/QualityTypes";
 
 /**
+ * Complete render data for one additional tunnel layer (props + trails + colors)
+ */
+export interface AdditionalLayerRenderData {
+  blueProp: PropState | null;
+  redProp: PropState | null;
+  blueTrailPoints: TrailPoint[];
+  redTrailPoints: TrailPoint[];
+  hasBlue: boolean;
+  hasRed: boolean;
+  blueColor: string;
+  redColor: string;
+}
+
+/**
  * Visibility settings for animation rendering
  */
 export interface AnimationVisibilitySettings {
@@ -29,8 +43,6 @@ export interface AnimationVisibilitySettings {
 export interface RenderSceneParams {
   blueProp: PropState | null;
   redProp: PropState | null;
-  secondaryBlueProp?: PropState | null;
-  secondaryRedProp?: PropState | null;
   gridVisible: boolean;
   gridMode: string | null;
   letter: string | null;
@@ -39,8 +51,8 @@ export interface RenderSceneParams {
   redPropDimensions: { width: number; height: number };
   blueTrailPoints: TrailPoint[];
   redTrailPoints: TrailPoint[];
-  secondaryBlueTrailPoints?: TrailPoint[];
-  secondaryRedTrailPoints?: TrailPoint[];
+  /** Additional tunnel layers with props, trails, and colors */
+  additionalLayers?: AdditionalLayerRenderData[];
   trailSettings: TrailSettings;
   currentTime: number;
   visibility: AnimationVisibilitySettings;
@@ -97,12 +109,14 @@ export interface IAnimationRenderer {
   ): Promise<void>;
 
   /**
-   * Load secondary prop images with custom colors (for tunnel mode)
+   * Load prop images for an additional tunnel layer with custom colors
+   * @param layerIndex - Additional layer index (0 = first additional layer)
    * @param propType - Type of prop
    * @param blueColor - Hex color for the blue prop
    * @param redColor - Hex color for the red prop
    */
-  loadSecondaryPropTextures(
+  loadAdditionalLayerPropTextures(
+    layerIndex: number,
     propType: string,
     blueColor: string,
     redColor: string

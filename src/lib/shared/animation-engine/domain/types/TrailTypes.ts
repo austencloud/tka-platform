@@ -68,8 +68,8 @@ export interface TrailSettings {
   glowBlur: number;
   blueColor: string;
   redColor: string;
-  secondaryBlueColor: string; // Purple trail for tunnel mode secondary blue prop
-  secondaryRedColor: string; // Orange trail for tunnel mode secondary red prop
+  /** Colors for additional tunnel layers (index 0 = layer 1, up to 2 entries for layers 1-3) */
+  additionalLayerColors: Array<{ blue: string; red: string }>;
   minOpacity: number; // Minimum opacity for oldest points
   maxOpacity: number; // Maximum opacity for newest points
   trackingMode: TrackingMode; // Which end(s) to track
@@ -97,8 +97,11 @@ export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
   glowBlur: 3,
   blueColor: getMotionColor(MotionColor.BLUE, "dark"),
   redColor: getMotionColor(MotionColor.RED, "dark"),
-  secondaryBlueColor: "#8b5cf6", // Purple - matches TUNNEL_LAYER_COLORS[1].left
-  secondaryRedColor: "#f97316", // Orange - matches TUNNEL_LAYER_COLORS[1].right
+  additionalLayerColors: [
+    { blue: "#8b5cf6", red: "#f97316" }, // purple/orange - TUNNEL_LAYER_COLORS[1]
+    { blue: "#10b981", red: "#ec4899" }, // emerald/pink - TUNNEL_LAYER_COLORS[2]
+    { blue: "#06b6d4", red: "#eab308" }, // cyan/yellow - TUNNEL_LAYER_COLORS[3]
+  ],
   minOpacity: 0.25,
   maxOpacity: 1.0,
   trackingMode: TrackingMode.RIGHT_END,

@@ -20,6 +20,7 @@ import {
   TrackingMode,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { QualityHints } from "$lib/shared/animation-engine/domain/types/QualityTypes";
+import type { AdditionalLayerRenderData } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 
 // ============================================================================
 // CATMULL-ROM SPLINE (pure math, no framework dependencies)
@@ -159,10 +160,7 @@ export class Canvas2DTrailRenderer {
     hasBlue: boolean,
     hasRed: boolean,
     qualityHints?: QualityHints,
-    secondaryBlueTrailPoints?: TrailPoint[],
-    secondaryRedTrailPoints?: TrailPoint[],
-    hasSecondaryBlue?: boolean,
-    hasSecondaryRed?: boolean
+    additionalLayers?: AdditionalLayerRenderData[]
   ): void {
     if (!trailSettings.enabled || trailSettings.mode === TrailMode.OFF) {
       return;
@@ -192,28 +190,30 @@ export class Canvas2DTrailRenderer {
       );
     }
 
-    // Render secondary blue trail (tunnel mode - purple)
-    if (hasSecondaryBlue && secondaryBlueTrailPoints && secondaryBlueTrailPoints.length >= 2) {
-      this.renderTrailSegments(
-        ctx,
-        secondaryBlueTrailPoints,
-        trailSettings.secondaryBlueColor,
-        trailSettings,
-        currentTime,
-        qualityHints
-      );
-    }
-
-    // Render secondary red trail (tunnel mode - orange)
-    if (hasSecondaryRed && secondaryRedTrailPoints && secondaryRedTrailPoints.length >= 2) {
-      this.renderTrailSegments(
-        ctx,
-        secondaryRedTrailPoints,
-        trailSettings.secondaryRedColor,
-        trailSettings,
-        currentTime,
-        qualityHints
-      );
+    // Render additional tunnel layer trails
+    if (additionalLayers) {
+      for (const layer of additionalLayers) {
+        if (layer.hasBlue && layer.blueTrailPoints.length >= 2) {
+          this.renderTrailSegments(
+            ctx,
+            layer.blueTrailPoints,
+            layer.blueColor,
+            trailSettings,
+            currentTime,
+            qualityHints
+          );
+        }
+        if (layer.hasRed && layer.redTrailPoints.length >= 2) {
+          this.renderTrailSegments(
+            ctx,
+            layer.redTrailPoints,
+            layer.redColor,
+            trailSettings,
+            currentTime,
+            qualityHints
+          );
+        }
+      }
     }
   }
 

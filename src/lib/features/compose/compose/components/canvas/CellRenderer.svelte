@@ -4,13 +4,10 @@
    *
    * Supports:
    * - Single mode: One sequence per cell
-   * - Tunnel mode: 2 sequences overlaid (secondary textures auto-loaded by AnimationEngine)
+   * - Tunnel mode: Up to 4 sequences overlaid (additional layer textures auto-loaded by AnimationEngine)
    * - Rotation: CSS transform for 0°, 90°, 180°, 270°
    * - Mirroring: CSS scaleX(-1) for horizontal flip
    * - Synchronized playback via shared currentStep from composition state
-   *
-   * NOTE: For now, tunnel mode supports max 2 sequences. 3-4 sequence support
-   * would require layering multiple AnimatorCanvas components with z-index.
    */
 
   import { onMount, onDestroy } from "svelte";
@@ -20,6 +17,7 @@
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { createPlaybackControllerFactory } from "$lib/shared/di/containers/animator-container";
+  import type { AdditionalLayerProps } from "../../../services/contracts/ITrailCapturer";
 
   interface Props {
     cell: CellConfig;
@@ -220,8 +218,13 @@
   );
   const primaryLetter = $derived(primaryStepData?.letter ?? null);
 
-  // Derived: Secondary animation state (index 1, for dual-sequence tunnel)
-  const secondaryState = $derived(animationStates[1] ?? null);
+  // Derived: Additional layer props for tunnel mode (all states beyond primary)
+  const additionalLayerProps = $derived.by((): AdditionalLayerProps[] => {
+    return animationStates.slice(1).map((state) => ({
+      blueProp: state.bluePropState,
+      redProp: state.redPropState,
+    }));
+  });
 
   // Cleanup on destroy
   onDestroy(() => {
@@ -279,14 +282,13 @@
             </div>
           {/if}
         {/each}
-      {:else if isTunnel && sequenceCount === 2 && secondaryState?.sequenceData}
-        <!-- 2-sequence tunnel: Use secondary props on single canvas (more efficient) -->
+      {:else if isTunnel && sequenceCount >= 2 && additionalLayerProps.length > 0}
+        <!-- Multi-sequence tunnel: Use additionalLayers on single canvas -->
         <!-- Hide glyph/beat overlays - combined motions don't form a TKA letter -->
         <AnimatorCanvas
           blueProp={primaryState.bluePropState}
           redProp={primaryState.redPropState}
-          secondaryBlueProp={secondaryState.bluePropState}
-          secondaryRedProp={secondaryState.redPropState}
+          additionalLayers={additionalLayerProps}
           gridVisible={true}
           gridMode={primaryState.sequenceData.gridMode ?? null}
           letter={null}

@@ -12,9 +12,9 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
-  import type { IAnimationRenderer } from "../../../services/contracts/IAnimationRenderer";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
+  import type { AdditionalLayerProps } from "../../../services/contracts/ITrailCapturer";
   import {
     ANIMATION_LOAD_DELAY_MS,
     ANIMATION_AUTO_START_DELAY_MS,
@@ -72,7 +72,6 @@
   // Services
   let primaryPlaybackController: IAnimationPlaybackController | null = null;
   let secondaryPlaybackController: IAnimationPlaybackController | null = null;
-  let animationRenderer: IAnimationRenderer | null = null;
   let settingsService: ISettingsState | null = null;
 
   // Animation states (one for each sequence)
@@ -81,7 +80,6 @@
 
   let loading = $state(false);
   let error = $state<string | null>(null);
-  let secondaryTexturesLoaded = $state(false);
 
   // Track last loaded sequence IDs to prevent unnecessary remounts during prop type changes
   let lastLoadedPrimarySequenceId: string | null = null;
@@ -105,10 +103,6 @@
       // Create a new instance for secondary controller (tunnel mode needs two)
       secondaryPlaybackController = container.items.animationPlaybackController;
       settingsService = container.items.settingsState;
-      animationRenderer = container.items.animationRenderer;
-
-      // Load secondary prop textures for tunnel mode
-      loadSecondaryPropTextures();
     } catch (err) {
       console.error("Failed to initialize tunnel renderer:", err);
       error = "Failed to initialize animation services";
@@ -120,32 +114,20 @@
     };
   });
 
-  // Load secondary prop textures with tunnel colors
-  async function loadSecondaryPropTextures() {
-    if (!animationRenderer || !settingsService) return;
-
-    try {
-      const propType = settingsService.currentSettings.propType || "staff";
-
-      await animationRenderer.loadSecondaryPropTextures(
-        propType,
-        tunnelColors.secondary.blue,
-        tunnelColors.secondary.red
-      );
-
-      secondaryTexturesLoaded = true;
-    } catch (err) {
-      console.error("❌ Failed to load secondary prop textures:", err);
+  // Build additionalLayers prop for AnimatorCanvas
+  // Secondary layer textures are loaded automatically by AnimationEngine
+  const additionalLayerProps = $derived.by((): AdditionalLayerProps[] => {
+    if (!secondaryAnimationState.bluePropState && !secondaryAnimationState.redPropState) {
+      return [];
     }
-  }
-
-  // Reload secondary textures when tunnel colors change
-  $effect(() => {
-    if (secondaryTexturesLoaded) {
-      tunnelColors.secondary.blue;
-      tunnelColors.secondary.red;
-      loadSecondaryPropTextures();
-    }
+    return [{
+      blueProp: secondaryBlueVisible && secondaryVisible
+        ? secondaryAnimationState.bluePropState
+        : null,
+      redProp: secondaryRedVisible && secondaryVisible
+        ? secondaryAnimationState.redPropState
+        : null,
+    }];
   });
 
   // Load and start animations when sequences change
@@ -401,12 +383,7 @@
       redProp={primaryRedVisible && primaryVisible
         ? primaryAnimationState.redPropState
         : null}
-      secondaryBlueProp={secondaryBlueVisible && secondaryVisible
-        ? secondaryAnimationState.bluePropState
-        : null}
-      secondaryRedProp={secondaryRedVisible && secondaryVisible
-        ? secondaryAnimationState.redPropState
-        : null}
+      additionalLayers={additionalLayerProps}
       gridVisible={true}
       gridMode={primaryAnimationState.sequenceData?.gridMode ?? null}
       letter={primaryLetter}
