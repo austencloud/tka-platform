@@ -188,3 +188,7 @@ scripts/model-curator/
 
 # Monorepo remnants
 packages/manifest.json
+
+# Old functions/ dir (Firebase Cloud Functions moved to firebase-functions/)
+# Cloudflare Pages reserves "functions/" for Pages Functions - must not exist in repo
+functions/

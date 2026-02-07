@@ -30,7 +30,7 @@ export default tseslint.config(
       "coverage/",
       "archive/",
       "deployment/",
-      "functions/",
+      "firebase-functions/",
       "docs/migrations/",
       ".claude/hooks/",
       // Has .json in folder name which confuses TypeScript parser

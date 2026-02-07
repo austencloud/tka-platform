@@ -10,7 +10,7 @@
     "rules": "storage.rules"
   },
   "functions": {
-    "source": "functions",
+    "source": "firebase-functions",
     "codebase": "default",
     "runtime": "nodejs20",
     "ignore": ["node_modules", ".git", "*.log"],

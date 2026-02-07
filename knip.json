@@ -17,7 +17,7 @@
     "scripts/**/*.ts",
     "tests/**/*.ts",
     "tests/config/*.ts",
-    "functions/src/index.ts",
+    "firebase-functions/src/index.ts",
     "vite.config.ts",
     "svelte.config.js"
   ],
