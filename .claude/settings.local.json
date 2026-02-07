@@ -504,7 +504,10 @@
       "Bash(do echo \"=== $id ===\")",
       "mcp__chrome-devtools__new_page",
       "mcp__chrome-devtools__close_page",
-      "Bash(pwsh:*)"
+      "Bash(pwsh:*)",
+      "Bash(reg query:*)",
+      "Bash(wmic qfe list brief:*)",
+      "Bash(sfc /scannow:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
