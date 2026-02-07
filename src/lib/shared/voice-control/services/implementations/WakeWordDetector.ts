@@ -27,15 +27,29 @@ const WAKE_PHRASES = [
   "hey tica",
   "hey teeka",
   "hey tikka",
-  "a tika",
   "hey tika,",
 ];
 
 /** Max restart attempts before giving up (resets on successful start) */
 const MAX_RESTART_ATTEMPTS = 5;
 
-/** Base delay for restart backoff (ms) */
+/** Base delay for restart backoff (ms) — used when start() itself fails */
 const RESTART_BASE_DELAY_MS = 300;
+
+/**
+ * Delay before restarting after a silence timeout (no results in the session).
+ * Mobile browsers end recognition quickly even with continuous=true. A longer
+ * delay here prevents the rapid start/stop cycle that causes repeated browser
+ * audio indicators on mobile.
+ */
+const SILENCE_RESTART_DELAY_MS = 2000;
+
+/**
+ * After this many consecutive silent restarts (sessions that ended without
+ * any speech results), stop auto-restarting. The user probably walked away
+ * or isn't actively using voice. They can re-tap the mic to resume.
+ */
+const MAX_CONSECUTIVE_SILENT_RESTARTS = 8;
 
 /**
  * Returns the SpeechRecognition constructor if available, or null.
@@ -61,8 +75,18 @@ export class WakeWordDetector implements IWakeWordDetector {
   /** Monotonic ID to prevent stale onend handlers from restarting */
   private sessionId = 0;
 
-  /** Current consecutive restart failure count */
+  /** Current consecutive restart failure count (start() itself failed) */
   private restartAttempts = 0;
+
+  /** Whether the current recognition session received any speech results */
+  private hadResultsInSession = false;
+
+  /**
+   * Consecutive sessions that ended without any speech results.
+   * NOT reset by start() succeeding — only reset when we actually get speech.
+   * This is what prevents the infinite restart loop on mobile.
+   */
+  private consecutiveSilentRestarts = 0;
 
   /** AudioContext for the command mode entry chime */
   private audioContext: AudioContext | null = null;
@@ -79,6 +103,7 @@ export class WakeWordDetector implements IWakeWordDetector {
 
     this.intentionallyStopped = false;
     this.restartAttempts = 0;
+    this.consecutiveSilentRestarts = 0;
     this.warmUpAudioContext();
     this.startRecognition();
     console.log("[HeyTika] Wake word detector started");
@@ -176,6 +201,7 @@ export class WakeWordDetector implements IWakeWordDetector {
     // Bump session ID to invalidate any pending onend from old sessions
     this.sessionId++;
     const mySessionId = this.sessionId;
+    this.hadResultsInSession = false;
 
     const Ctor = getSpeechRecognitionCtor()!;
     const rec = new Ctor();
@@ -185,6 +211,9 @@ export class WakeWordDetector implements IWakeWordDetector {
     rec.lang = "en-US";
 
     rec.onresult = (event: SpeechRecognitionEvent) => {
+      this.hadResultsInSession = true;
+      this.consecutiveSilentRestarts = 0;
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         if (!result?.isFinal) continue;
@@ -253,23 +282,47 @@ export class WakeWordDetector implements IWakeWordDetector {
   }
 
   /**
-   * Schedule a restart with exponential backoff.
-   * Gives up after MAX_RESTART_ATTEMPTS consecutive failures.
+   * Schedule a restart, with different strategies for silence vs active sessions.
+   *
+   * Mobile browsers kill recognition sessions frequently even with continuous=true.
+   * Without this distinction, the detector enters a tight start→silence→restart loop
+   * that triggers the browser's audio indicator on every cycle — the "cha-ching" bug.
    */
   private scheduleRestart(): void {
     if (this.intentionallyStopped || !this.listening) return;
 
-    this.restartAttempts++;
-    if (this.restartAttempts > MAX_RESTART_ATTEMPTS) {
-      console.error(`[HeyTika] Failed to restart after ${MAX_RESTART_ATTEMPTS} attempts. Giving up.`);
-      this.listening = false;
-      this.setState("error");
+    if (this.hadResultsInSession) {
+      // Session had speech — restart quickly to keep the conversation flowing.
+      // Reset silent counter since the user is actively speaking.
+      this.consecutiveSilentRestarts = 0;
+      console.log("[HeyTika] Session had results, restarting quickly");
+      setTimeout(() => {
+        if (this.intentionallyStopped || !this.listening) return;
+        this.startRecognition();
+      }, RESTART_BASE_DELAY_MS);
       return;
     }
 
-    // Exponential backoff: 300, 600, 1200, 2400, 4800
-    const delay = RESTART_BASE_DELAY_MS * Math.pow(2, this.restartAttempts - 1);
-    console.log(`[HeyTika] Scheduling restart in ${delay}ms (attempt ${this.restartAttempts}/${MAX_RESTART_ATTEMPTS})`);
+    // Session ended without any speech results (silence timeout).
+    this.consecutiveSilentRestarts++;
+
+    if (this.consecutiveSilentRestarts > MAX_CONSECUTIVE_SILENT_RESTARTS) {
+      console.log(
+        `[HeyTika] ${MAX_CONSECUTIVE_SILENT_RESTARTS} consecutive silent sessions. ` +
+        "Pausing auto-restart — tap mic to resume."
+      );
+      this.listening = false;
+      this.setState("idle");
+      return;
+    }
+
+    // Use a longer delay for silent restarts to avoid the rapid on/off cycle
+    // that causes browser audio indicators on mobile.
+    const delay = SILENCE_RESTART_DELAY_MS;
+    console.log(
+      `[HeyTika] Silent session, restarting in ${delay}ms ` +
+      `(silent restart ${this.consecutiveSilentRestarts}/${MAX_CONSECUTIVE_SILENT_RESTARTS})`
+    );
 
     setTimeout(() => {
       if (this.intentionallyStopped || !this.listening) return;
