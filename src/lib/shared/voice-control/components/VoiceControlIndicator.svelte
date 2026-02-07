@@ -23,7 +23,9 @@
 
   const state = voiceControlState;
 
+  const isVisible = $derived(state.supported);
   const isActive = $derived(state.enabled && state.supported);
+  const isInactive = $derived(state.supported && !state.enabled);
   const inCommandMode = $derived(state.commandMode);
   const isProcessing = $derived(state.detectorState === "processing");
   const hasError = $derived(state.detectorState === "error");
@@ -61,20 +63,37 @@
             : "wake-word"
   );
 
+  function handleActivate() {
+    state.startListening();
+  }
+
   function handleDismiss() {
     state.exitCommandMode();
   }
 </script>
 
-{#if isActive}
+{#if isVisible}
   <div
-    class="voice-indicator {stateClass}"
+    class="voice-indicator {isInactive ? 'inactive' : stateClass}"
     role="status"
     aria-live="polite"
-    aria-label={inCommandMode ? "Voice command mode active. Microphone is listening." : "Voice control available. Say Hey Tika to activate."}
+    aria-label={isInactive
+      ? "Voice control available. Tap to enable."
+      : inCommandMode
+        ? "Voice command mode active. Microphone is listening."
+        : "Voice control available. Say Hey Tika to activate."}
   >
+    <!-- Inactive: tappable mic dot to activate voice control -->
+    {#if isInactive}
+      <button
+        class="wake-dot inactive-dot"
+        onclick={handleActivate}
+        aria-label="Enable voice control"
+      >
+        <i class="fas fa-microphone"></i>
+      </button>
     <!-- Command mode: expanded pill with animated border -->
-    {#if inCommandMode && !hasFeedback}
+    {:else if inCommandMode && !hasFeedback}
       <div class="command-mode-pill">
         <div class="glow-border"></div>
         <div class="pill-content">
@@ -148,6 +167,21 @@
     background: rgba(34, 197, 94, 0.14);
     color: rgba(34, 197, 94, 0.7);
     border-color: rgba(34, 197, 94, 0.25);
+  }
+
+  /* Inactive: dimmer, tappable to activate voice control */
+  .wake-dot.inactive-dot {
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.08);
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  .wake-dot.inactive-dot:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.15);
   }
 
   /* ═══════════════════════════════════════════════════════════

@@ -36,8 +36,8 @@
   let ttsProvider: ITTSProvider | null = null;
 
   function enterCommandMode() {
-    if (!wakeWordDetector) return;
-    wakeWordDetector.setCommandMode(true);
+    // voiceControlState.enterCommandMode() calls onEnterCommandMode callback,
+    // which tells the detector to setCommandMode(true)
     voiceControlState.enterCommandMode();
   }
 
@@ -231,9 +231,21 @@
       return;
     }
 
-    // When command mode auto-expires, tell the detector to drop back to wake word mode
+    // Bridge state callbacks → detector
     voiceControlState.setOnCommandModeExpired(() => {
       wakeWordDetector?.setCommandMode(false);
+    });
+
+    voiceControlState.setOnEnterCommandMode(() => {
+      wakeWordDetector?.setCommandMode(true);
+    });
+
+    // On-demand activation: UI calls startListening() → we start the detector
+    voiceControlState.setOnStartRequested(() => {
+      if (!wakeWordDetector) return;
+      wakeWordDetector.start();
+      voiceControlState.setEnabled(true);
+      voiceControlState.setDetectorState("listening");
     });
 
     // "Hey Tika" said alone → enter command mode
@@ -303,16 +315,24 @@
       if (state === "error") {
         console.warn("[HeyTika] Wake word detector entered error state");
       }
+      // Detector auto-paused (e.g., too many silent restarts on mobile).
+      // Show the inactive mic button so the user can tap to re-activate.
+      if (state === "idle" && voiceControlState.enabled && !wakeWordDetector!.isListening()) {
+        voiceControlState.setEnabled(false);
+        voiceControlState.exitCommandMode();
+        console.log("[HeyTika] Detector auto-paused, showing inactive mic");
+      }
     });
 
-    // Start listening (wake word mode)
-    wakeWordDetector.start();
-    voiceControlState.setEnabled(true);
-    voiceControlState.setDetectorState("listening");
+    // Don't auto-start. Voice control activates when the user clicks the mic button.
+    // This avoids the browser microphone permission prompt on page load.
 
     // Restore command mode if it was active before HMR
     if (voiceControlState.shouldRestoreCommandMode()) {
       console.log("[HeyTika] Restoring command mode after HMR");
+      wakeWordDetector.start();
+      voiceControlState.setEnabled(true);
+      voiceControlState.setDetectorState("listening");
       enterCommandMode();
       voiceControlState.showFeedback("success", "Listening...");
     }
@@ -323,6 +343,8 @@
       unsubState();
       wakeWordDetector?.stop();
       ttsProvider?.cancel();
+      voiceControlState.setOnStartRequested(null);
+      voiceControlState.setOnEnterCommandMode(null);
       voiceControlState.setEnabled(false);
       voiceControlState.setDetectorState("idle");
       voiceControlState.clearFeedback();

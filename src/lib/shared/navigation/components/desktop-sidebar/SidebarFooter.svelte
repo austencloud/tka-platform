@@ -18,7 +18,8 @@
 
   const isAdmin = $derived(featureFlagService.isAdmin);
 
-  const voiceActive = $derived(voiceControlState.enabled && voiceControlState.supported);
+  const voiceSupported = $derived(voiceControlState.supported);
+  const voiceEnabled = $derived(voiceControlState.enabled);
   const inCommandMode = $derived(voiceControlState.commandMode);
   const hasVoiceError = $derived(voiceControlState.detectorState === "error");
 
@@ -28,6 +29,14 @@
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available
+    }
+
+    if (!voiceEnabled) {
+      // First activation: start detector, then enter command mode.
+      // This is when the browser microphone permission prompt appears.
+      voiceControlState.startListening();
+      voiceControlState.enterCommandMode();
+      return;
     }
 
     if (inCommandMode) {
@@ -134,13 +143,14 @@
 
   <!-- Voice mic + Version row -->
   <div class="version-row" class:collapsed={isCollapsed}>
-    {#if voiceActive}
+    {#if voiceSupported}
       <button
         class="mic-button"
+        class:inactive={!voiceEnabled}
         class:command-mode={inCommandMode}
         class:error={hasVoiceError}
         onclick={handleMicClick}
-        aria-label={inCommandMode ? "Stop voice command mode" : "Start voice command mode"}
+        aria-label={!voiceEnabled ? "Enable voice control" : inCommandMode ? "Stop voice command mode" : "Start voice command mode"}
       >
         <i class="fas fa-microphone" aria-hidden="true"></i>
         {#if inCommandMode}
@@ -362,6 +372,17 @@
   .mic-button:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
     outline-offset: 2px;
+  }
+
+  /* Inactive: dimmer, indicates voice is available but not yet activated */
+  .mic-button.inactive {
+    background: rgba(255, 255, 255, 0.02);
+    color: rgba(255, 255, 255, 0.15);
+  }
+
+  .mic-button.inactive:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.4);
   }
 
   /* Command mode: glowing green */

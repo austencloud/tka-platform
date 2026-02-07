@@ -44,6 +44,12 @@ function createVoiceControlState() {
   /** Callback invoked when command mode auto-expires */
   let onCommandModeExpired: (() => void) | null = null;
 
+  /** Callback invoked when UI requests voice activation (mic button click) */
+  let onStartRequested: (() => void) | null = null;
+
+  /** Callback invoked when entering command mode (tells detector to setCommandMode) */
+  let onEnterCommandModeCallback: (() => void) | null = null;
+
   function clearCommandModeTimer() {
     if (commandModeTimer) {
       clearTimeout(commandModeTimer);
@@ -86,11 +92,37 @@ function createVoiceControlState() {
       onCommandModeExpired = cb;
     },
 
+    /**
+     * Register a callback for when the user requests voice activation.
+     * HeyTikaListener uses this to start the WakeWordDetector on demand.
+     */
+    setOnStartRequested(cb: (() => void) | null) {
+      onStartRequested = cb;
+    },
+
+    /**
+     * Register a callback for when command mode is entered.
+     * HeyTikaListener uses this to tell WakeWordDetector to setCommandMode(true).
+     */
+    setOnEnterCommandMode(cb: (() => void) | null) {
+      onEnterCommandModeCallback = cb;
+    },
+
+    /**
+     * Start voice control for the first time (triggered by user clicking mic).
+     * Calls the registered start callback which starts the WakeWordDetector.
+     */
+    startListening() {
+      if (enabled) return;
+      onStartRequested?.();
+    },
+
     enterCommandMode() {
       commandMode = true;
       detectorState = "command_mode";
       resetCommandModeTimer();
       try { sessionStorage.setItem(COMMAND_MODE_KEY, "1"); } catch { /* SSR / private browsing */ }
+      onEnterCommandModeCallback?.();
     },
 
     exitCommandMode() {
@@ -194,6 +226,8 @@ function createVoiceControlState() {
       if (feedbackTimer) clearTimeout(feedbackTimer);
       if (chatBubbleTimer) clearTimeout(chatBubbleTimer);
       onCommandModeExpired = null;
+      onStartRequested = null;
+      onEnterCommandModeCallback = null;
     },
   };
 }
