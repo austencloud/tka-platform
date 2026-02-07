@@ -10,7 +10,11 @@ node_modules/
 # Without the leading slash, git would ignore ALL directories named "build" at any depth.
 /build                          # Ignore ONLY root-level build directory (SvelteKit output)
 /build/**
+# App-level build directories (landing, etc.)
+apps/*/build/**
 .netlify/
+# Cloudflare Wrangler local dev files
+.wrangler/
 dist/
 /dev-dist/                      # Vite PWA dev mode output
 .output/
@@ -81,10 +85,9 @@ nul
 # TypeScript
 .tsbuildinfo
 
-# Package manager lock files (keep your preferred one, remove others)
-# yarn.lock
-# pnpm-lock.yaml
-# package-lock.json
+# Package manager lock files
+# pnpm-lock.yaml is auto-generated and large; commit only when intentional
+pnpm-lock.yaml
 
 # Generated thumbnail cache (synced from cloud during release, NOT committed to git)
 static/thumbnails/
@@ -155,6 +158,9 @@ downloads/
 # Temporary output files
 stdout.txt
 stderr.txt
+
+# Release workflow artifacts
+.release-changelog.json
 
 # Large asset directories (tutorials, guides, Unity project)
 _ARCHIVE/
