@@ -166,7 +166,7 @@ export class PictographPreparer implements IPictographPreparer {
       // Theme affects colors
       options?.themeMode ?? "dark",
       // Grid version uses ghost-half centered SVGs
-      (options?.useGridVersion ?? true) ? "grid" : "thumbnail",
+      (options?.useGridVersion ?? false) ? "grid" : "thumbnail",
     ];
 
     return parts.join("|");
@@ -223,7 +223,7 @@ export class PictographPreparer implements IPictographPreparer {
             this.propLoader.loadPropSvg(
               motion.propPlacementData,
               motion,
-              options?.useGridVersion ?? true,
+              options?.useGridVersion ?? false,
               options?.themeMode ? { themeMode: options.themeMode } : undefined
             ),
             this.propPlacer.calculatePlacement(pictograph, motion),

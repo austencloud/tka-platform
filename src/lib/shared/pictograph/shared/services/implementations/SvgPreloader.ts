@@ -190,7 +190,7 @@ export class SvgPreloader implements ISvgPreloader {
     let url: string;
 
     if (type === "prop") {
-      url = `/images/props/${name}.svg`;
+      url = `/images/props/pictograph/${name}.svg`;
     } else if (type === "grid") {
       url = `/images/grid/${name}.svg`;
     } else {

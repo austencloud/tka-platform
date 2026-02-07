@@ -17,121 +17,121 @@ export interface PropTypeDisplayInfo {
 export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
   {
     // === STAFF FAMILY ===
-    [PropType.STAFF]: { label: "Staff", image: "/images/props/staff.svg?v=2" },
+    [PropType.STAFF]: { label: "Staff", image: "/images/props/buttons/staff.svg?v=2" },
     [PropType.SIMPLESTAFF]: {
       label: "Simple Staff",
-      image: "/images/props/simple_staff.svg?v=2",
+      image: "/images/props/buttons/simple_staff.svg?v=2",
     },
     [PropType.BIGSTAFF]: {
       label: "Big Staff",
-      image: "/images/props/bigstaff.svg?v=2",
+      image: "/images/props/buttons/bigstaff.svg?v=2",
     },
     [PropType.STAFF2]: {
       label: "Staff V2",
-      image: "/images/props/staff_v2.svg?v=2",
+      image: "/images/props/buttons/staff_v2.svg?v=2",
     },
 
     // === CLUB FAMILY ===
-    [PropType.CLUB]: { label: "Club", image: "/images/props/club.svg" },
+    [PropType.CLUB]: { label: "Club", image: "/images/props/buttons/club.svg" },
     [PropType.BIGCLUB]: {
       label: "Big Club",
-      image: "/images/props/bigclub.svg",
+      image: "/images/props/buttons/bigclub.svg",
     },
 
     // === FAN FAMILY ===
-    [PropType.FAN]: { label: "Fan", image: "/images/props/fan.svg" },
-    [PropType.BIGFAN]: { label: "Big Fan", image: "/images/props/bigfan.svg" },
+    [PropType.FAN]: { label: "Fan", image: "/images/props/buttons/fan.svg" },
+    [PropType.BIGFAN]: { label: "Big Fan", image: "/images/props/buttons/bigfan.svg" },
 
     // === TRIAD FAMILY ===
-    [PropType.TRIAD]: { label: "Triad", image: "/images/props/triad.svg" },
+    [PropType.TRIAD]: { label: "Triad", image: "/images/props/buttons/triad.svg" },
     [PropType.BIGTRIAD]: {
       label: "Big Triad",
-      image: "/images/props/bigtriad.svg",
+      image: "/images/props/buttons/bigtriad.svg",
     },
 
     // === HOOP FAMILY ===
     [PropType.MINIHOOP]: {
       label: "Mini Hoop",
-      image: "/images/props/minihoop.svg",
+      image: "/images/props/buttons/minihoop.svg",
     },
     [PropType.BIGHOOP]: {
       label: "Big Hoop",
-      image: "/images/props/bighoop.svg",
+      image: "/images/props/buttons/bighoop.svg",
     },
 
     // === BUUGENG FAMILY ===
     [PropType.BUUGENG]: {
       label: "Buugeng",
-      image: "/images/props/buugeng.svg",
+      image: "/images/props/buttons/buugeng.svg",
     },
     [PropType.BIGBUUGENG]: {
       label: "Big Buugeng",
-      image: "/images/props/bigbuugeng.svg",
+      image: "/images/props/buttons/bigbuugeng.svg",
     },
     [PropType.FRACTALGENG]: {
       label: "Fractalgeng",
-      image: "/images/props/fractalgeng.svg",
+      image: "/images/props/buttons/fractalgeng.svg",
     },
 
     // === HAND ===
-    [PropType.HAND]: { label: "Hand", image: "/images/props/hand.svg" },
+    [PropType.HAND]: { label: "Hand", image: "/images/props/buttons/hand.svg" },
 
     // === TRIQUETRA FAMILY ===
     [PropType.TRIQUETRA]: {
       label: "Triquetra",
-      image: "/images/props/triquetra.svg",
+      image: "/images/props/buttons/triquetra.svg",
     },
     [PropType.TRIQUETRA2]: {
       label: "Triquetra 2",
-      image: "/images/props/triquetra2.svg",
+      image: "/images/props/buttons/triquetra2.svg",
     },
 
     // === SWORD ===
-    [PropType.SWORD]: { label: "Sword", image: "/images/props/sword.svg" },
+    [PropType.SWORD]: { label: "Sword", image: "/images/props/buttons/sword.svg" },
 
     // === CHICKEN FAMILY ===
     [PropType.CHICKEN]: {
       label: "Chicken",
-      image: "/images/props/chicken.svg",
+      image: "/images/props/buttons/chicken.svg",
     },
     [PropType.BIGCHICKEN]: {
       label: "Big Chicken",
-      image: "/images/props/bigchicken.svg",
+      image: "/images/props/buttons/bigchicken.svg",
     },
 
     // === GUITAR FAMILY ===
-    [PropType.GUITAR]: { label: "Guitar", image: "/images/props/guitar.svg" },
+    [PropType.GUITAR]: { label: "Guitar", image: "/images/props/buttons/guitar.svg" },
     [PropType.UKULELE]: {
       label: "Ukulele",
-      image: "/images/props/ukulele.svg",
+      image: "/images/props/buttons/ukulele.svg",
     },
 
     // === DOUBLESTAR FAMILY ===
     [PropType.DOUBLESTAR]: {
       label: "Double Star",
-      image: "/images/props/doublestar.svg",
+      image: "/images/props/buttons/doublestar.svg",
     },
     [PropType.BIGDOUBLESTAR]: {
       label: "Big Double Star",
-      image: "/images/props/bigdoublestar.svg",
+      image: "/images/props/buttons/bigdoublestar.svg",
     },
 
     // === EIGHTRINGS FAMILY ===
     [PropType.EIGHTRINGS]: {
       label: "Eight Rings",
-      image: "/images/props/eightrings.svg",
+      image: "/images/props/buttons/eightrings.svg",
     },
     [PropType.BIGEIGHTRINGS]: {
       label: "Big Eight Rings",
-      image: "/images/props/bigeightrings.svg",
+      image: "/images/props/buttons/bigeightrings.svg",
     },
 
     // === QUIAD ===
-    [PropType.QUIAD]: { label: "Quiad", image: "/images/props/quiad.svg" },
+    [PropType.QUIAD]: { label: "Quiad", image: "/images/props/buttons/quiad.svg" },
 
     // === POI FAMILY (Momentum-based) ===
     // Uses club.svg as placeholder until proper poi SVG (~175px) is created
-    [PropType.POI]: { label: "Poi", image: "/images/props/club.svg" },
+    [PropType.POI]: { label: "Poi", image: "/images/props/buttons/club.svg" },
   } as const;
 
 /**

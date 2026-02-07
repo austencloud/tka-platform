@@ -54,7 +54,7 @@ export class NodePropSvgLoader implements IPropSvgLoader {
 
       // Create cache key including color AND theme mode
       const suffix = useAnimatedVersion ? "_animated" : "";
-      const path = `/images/props/${propType}${suffix}.svg`;
+      const path = `/images/props/pictograph/${propType}${suffix}.svg`;
       const transformedCacheKey = `${path}:${color}:${themeMode}`;
 
       // Check transformed cache first

@@ -81,16 +81,16 @@ export class PropSvgLoader implements IPropSvgLoader {
    * 🚀 OPTIMIZED: Checks transformed cache first, then raw cache, then fetches
    * @param propData - Prop placement data
    * @param motionData - Motion data including prop type
-   * @param useGridVersion - If true, loads grid-centered SVGs from props/animated/ (ghost-half centering).
-   *   The "animated" directory name is historical - these are static SVGs designed for grid rendering
-   *   with a visible half and an invisible "ghost" half that centers the hand grip at the viewBox midpoint.
-   *   Thumbnail versions (props/) are compact previews for prop pickers, NOT for pictograph grids.
+   * @param useGridVersion - If true, loads grid-centered SVGs from props/animated/ (for animation canvas).
+   *   If false (default), loads from props/ which are sized for pictograph rendering.
+   *   The animated/ versions are wider (300px) with ghost-half centering for the animation canvas.
+   *   The props/ versions are the correct size for pictograph grids.
    * @param options - Optional settings including themeMode for color selection
    */
   async loadPropSvg(
     propData: PropPlacementData,
     motionData: MotionData,
-    useGridVersion: boolean = true,
+    useGridVersion: boolean = false,
     options?: PropSvgLoadOptions
   ): Promise<PropRenderData> {
     try {
@@ -102,11 +102,13 @@ export class PropSvgLoader implements IPropSvgLoader {
       const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
 
       // Create cache key including color AND theme mode for transformed prop cache
-      // Grid versions live in /images/props/animated/ (ghost-half centered for grid rendering)
-      // Thumbnail versions live in /images/props/ (compact previews for prop pickers)
+      // Three prop SVG folders, each independently maintained:
+      //   /images/props/animated/    → animation canvas (wider viewBox for rotation)
+      //   /images/props/pictograph/  → pictograph grid rendering
+      //   /images/props/buttons/     → UI thumbnails, prop selectors
       const path = useGridVersion
         ? `/images/props/animated/${propType}.svg`
-        : `/images/props/${propType}.svg`;
+        : `/images/props/pictograph/${propType}.svg`;
       const transformedCacheKey = `${path}:${color}:${themeMode}`;
 
       // 🚀 OPTIMIZATION: Check transformed cache first (fastest path)

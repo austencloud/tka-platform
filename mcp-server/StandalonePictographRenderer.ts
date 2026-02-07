@@ -270,7 +270,7 @@ ${svgParts.join("\n")}
       return "";
     }
 
-    const propPath = join(this.projectRoot, "static/images/props/staff.svg");
+    const propPath = join(this.projectRoot, "static/images/props/pictograph/staff.svg");
     if (!existsSync(propPath)) {
       console.error("[Renderer] Prop file not found:", propPath);
       return "";

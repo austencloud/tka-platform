@@ -31,10 +31,11 @@ export interface PrepareOptions {
    */
   redPropType?: PropType;
   /**
-   * Load grid-centered prop SVGs (from props/animated/) instead of thumbnail versions (from props/).
-   * Grid versions use the ghost-half centering strategy so the hand grip aligns with the grid point.
-   * Thumbnail versions are compact previews for prop pickers - NOT suitable for pictograph rendering.
-   * Defaults to true in PictographPreparer since pictographs always render on a grid.
+   * Load grid-centered prop SVGs (from props/animated/) instead of pictograph versions (from props/).
+   * Grid versions use the ghost-half centering strategy - designed for the animation canvas.
+   * Pictograph versions (props/) are sized for pictograph grid rendering.
+   * Defaults to false - pictographs use the non-animated versions.
+   * Set to true only for animation canvas rendering.
    */
   useGridVersion?: boolean;
 }
