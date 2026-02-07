@@ -144,7 +144,7 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
         showGrid: true,
         showNonRadialPoints: false,
         handPointVisibility: "all" as const,
-        showQRCode: true, // QR codes ON by default
+        showQRCode: false, // QR codes only enabled in choreo card context
       };
       // If any visibility setting differs from default, not using defaults
       if (input.visibility.showTKA !== undefined && input.visibility.showTKA !== defaultVisibility.showTKA)
