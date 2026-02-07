@@ -7,7 +7,7 @@ const config = {
 
   kit: {
     adapter: staticAdapter({
-      fallback: "200.html",
+      fallback: "index.html",
     }),
 
     // ============================================================================
