@@ -13,10 +13,9 @@
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
   import type { GridCell } from "../../state/arrange-grid-state.svelte";
-  import type { IAnimationRenderer } from "../../../../services/contracts/IAnimationRenderer";
-  import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
   import type { ISequenceAnimationOrchestrator } from "../../../../services/contracts/ISequenceAnimationOrchestrator";
   import { SequenceAnimationOrchestrator } from "../../../../services/implementations/SequenceAnimationOrchestrator";
+  import { AnimationStateManager } from "../../../../services/implementations/AnimationStateManager";
   import { createAnimationPanelState } from "../../../../state/animation-panel-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
@@ -45,8 +44,6 @@
   // Per-cell animation orchestrators (NOT shared singletons)
   let primaryOrchestrator: ISequenceAnimationOrchestrator | null = null;
   let secondaryOrchestrator: ISequenceAnimationOrchestrator | null = null;
-  let animationRenderer: IAnimationRenderer | null = null;
-  let settingsService: ISettingsState | null = null;
 
   // Animation states for primary and secondary layers
   const primaryAnimationState = createAnimationPanelState();
@@ -54,7 +51,6 @@
 
   // Local state
   let initialized = $state(false);
-  let secondaryTexturesLoaded = $state(false);
 
   // Derived: Get layer data
   const primaryLayer = $derived(cell.layers[0] || null);
@@ -128,21 +124,19 @@
   // Initialize services - create per-cell orchestrators
   onMount(() => {
     try {
-      // Get shared stateless services from DI
-      const animationStateService = container.items.animationStateService;
+      // Get shared STATELESS services from DI
       const stepCalculationService = container.items.stepCalculationService;
       const propInterpolationService = container.items.propInterpolationService;
-      settingsService = container.items.settingsState;
-      animationRenderer = container.items.animationRenderer;
 
-      // Create per-cell orchestrators (NOT shared singletons)
+      // Each orchestrator gets its own AnimationStateManager so they don't
+      // overwrite each other's prop state through the shared singleton.
       primaryOrchestrator = new SequenceAnimationOrchestrator(
-        animationStateService,
+        new AnimationStateManager(),
         stepCalculationService,
         propInterpolationService
       );
       secondaryOrchestrator = new SequenceAnimationOrchestrator(
-        animationStateService,
+        new AnimationStateManager(),
         stepCalculationService,
         propInterpolationService
       );
@@ -174,31 +168,19 @@
   });
 
   // Initialize secondary orchestrator when layer changes
+  // NOTE: Secondary prop textures are loaded automatically by AnimationEngine
+  // inside AnimatorCanvas when it receives non-null secondaryBlueProp/secondaryRedProp.
   $effect(() => {
     if (initialized && secondaryLayer && secondaryOrchestrator) {
-      initSecondary();
+      try {
+        secondaryOrchestrator.initializeWithDomainData(secondaryLayer.sequence);
+        secondaryAnimationState.setSequenceData(secondaryLayer.sequence);
+        secondaryAnimationState.setTotalSteps(secondaryLayer.sequence.steps?.length || 0);
+      } catch (err) {
+        console.error(`[CellCanvas ${cellIndex}] Secondary init failed:`, err);
+      }
     }
   });
-
-  async function initSecondary() {
-    if (!secondaryLayer || !animationRenderer || !settingsService || !secondaryOrchestrator) return;
-
-    try {
-      const propType = settingsService.currentSettings.propType || "staff";
-      await animationRenderer.loadSecondaryPropTextures(
-        propType,
-        secondaryLayer.propColors.left,
-        secondaryLayer.propColors.right
-      );
-      secondaryTexturesLoaded = true;
-
-      secondaryOrchestrator.initializeWithDomainData(secondaryLayer.sequence);
-      secondaryAnimationState.setSequenceData(secondaryLayer.sequence);
-      secondaryAnimationState.setTotalSteps(secondaryLayer.sequence.steps?.length || 0);
-    } catch (err) {
-      console.error(`[CellCanvas ${cellIndex}] Secondary init failed:`, err);
-    }
-  }
 
   // Sync step positions - calculate prop states and update animation state
   // IMPORTANT: Read the derived step value BEFORE the conditional so Svelte 5
