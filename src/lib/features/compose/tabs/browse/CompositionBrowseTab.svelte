@@ -18,7 +18,7 @@
 	import CompositionEmptyState from "./components/CompositionEmptyState.svelte";
 	import CompositionDetail from "./components/CompositionDetail.svelte";
 
-	const state = getCompositionBrowseState();
+	const browseState = getCompositionBrowseState();
 	const composeState = getComposeModuleState();
 
 	// Delete confirmation
@@ -28,25 +28,25 @@
 
 	// Load on mount
 	onMount(() => {
-		state.loadCompositions();
+		browseState.loadCompositions();
 	});
 
 	// Filter handlers
 	function handleFilterChange(filter: CompositionFilter) {
-		state.setFilter(filter);
+		browseState.setFilter(filter);
 	}
 
 	function handleSortChange(method: CompositionSortMethod, direction: SortDirection) {
-		state.setSort(method, direction);
+		browseState.setSort(method, direction);
 	}
 
 	// Grid handlers
 	function handleExpand(item: CompositionBrowseItem, rect: DOMRect) {
-		state.expandComposition(item, rect);
+		browseState.expandComposition(item, rect);
 	}
 
 	function handleToggleFavorite(id: string) {
-		state.toggleFavorite(id);
+		browseState.toggleFavorite(id);
 	}
 
 	// Detail handlers
@@ -55,24 +55,24 @@
 	}
 
 	function handleEdit(id?: string) {
-		const compositionId = id ?? state.expandedComposition?.id;
+		const compositionId = id ?? browseState.expandedComposition?.id;
 		if (!compositionId) return;
 
 		// Navigate to Arrange tab (composition loading is a future feature)
 		navigationState.setActiveTab("arrange");
 		composeState.setCurrentTab("arrange");
-		state.collapseDetail();
+		browseState.collapseDetail();
 	}
 
 	function handleDetailFavorite() {
-		if (state.expandedComposition) {
-			state.toggleFavorite(state.expandedComposition.id);
+		if (browseState.expandedComposition) {
+			browseState.toggleFavorite(browseState.expandedComposition.id);
 		}
 	}
 
 	async function handleDuplicate() {
-		if (!state.expandedComposition) return;
-		const newId = await state.duplicateComposition(state.expandedComposition.id);
+		if (!browseState.expandedComposition) return;
+		const newId = await browseState.duplicateComposition(browseState.expandedComposition.id);
 		if (newId) {
 			showToast({
 				message: "Composition duplicated",
@@ -83,15 +83,15 @@
 	}
 
 	function handleDeleteRequest() {
-		if (!state.expandedComposition) return;
-		pendingDeleteId = state.expandedComposition.id;
-		pendingDeleteName = state.expandedComposition.name || "Untitled";
+		if (!browseState.expandedComposition) return;
+		pendingDeleteId = browseState.expandedComposition.id;
+		pendingDeleteName = browseState.expandedComposition.name || "Untitled";
 		deleteDialogOpen = true;
 	}
 
 	async function confirmDelete() {
 		if (!pendingDeleteId) return;
-		await state.deleteComposition(pendingDeleteId);
+		await browseState.deleteComposition(pendingDeleteId);
 		showToast({
 			message: "Composition deleted",
 			type: "success",
@@ -107,18 +107,18 @@
 	}
 
 	function handleClose() {
-		state.collapseDetail();
+		browseState.collapseDetail();
 	}
 
 	// Retry on error
 	function handleRetry() {
-		state.clearError();
-		state.loadCompositions();
+		browseState.clearError();
+		browseState.loadCompositions();
 	}
 
 	function handleGridPlay(id: string) {
 		// Find the composition, expand it, then play
-		const item = state.filteredCompositions.find((c) => c.id === id);
+		const item = browseState.filteredCompositions.find((c) => c.id === id);
 		if (item) {
 			composeState.openPlayback("browse");
 		}
@@ -127,25 +127,25 @@
 
 <div class="browse-tab" style="container-type: inline-size">
 	<!-- Error state -->
-	{#if state.error}
+	{#if browseState.error}
 		<div class="error-state">
 			<i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-			<p>{state.error}</p>
+			<p>{browseState.error}</p>
 			<button type="button" class="retry-btn" onclick={handleRetry}>
 				<i class="fas fa-redo" aria-hidden="true"></i>
 				Try again
 			</button>
 		</div>
-	{:else if !state.isLoading && state.compositions.length === 0}
+	{:else if !browseState.isLoading && browseState.compositions.length === 0}
 		<!-- Empty state: template gallery -->
 		<CompositionEmptyState />
 	{:else}
 		<!-- Filter bar (only when compositions exist) -->
-		{#if state.compositions.length > 0}
+		{#if browseState.compositions.length > 0}
 			<CompositionFilterBar
-				filter={state.currentFilter}
-				sortMethod={state.sortMethod}
-				sortDirection={state.sortDirection}
+				filter={browseState.currentFilter}
+				sortMethod={browseState.sortMethod}
+				sortDirection={browseState.sortDirection}
 				onFilterChange={handleFilterChange}
 				onSortChange={handleSortChange}
 			/>
@@ -153,28 +153,28 @@
 
 		<!-- Scrollable content -->
 		<div class="content-area">
-			{#if state.isLoading}
+			{#if browseState.isLoading}
 				<CompositionGrid
 					compositions={[]}
 					isLoading={true}
 					onExpand={handleExpand}
 					onToggleFavorite={handleToggleFavorite}
 				/>
-			{:else if state.filteredCompositions.length === 0 && state.hasActiveFilters}
+			{:else if browseState.filteredCompositions.length === 0 && browseState.hasActiveFilters}
 				<!-- Filtered empty -->
 				<div class="filtered-empty">
 					<p>No compositions match your filters</p>
 					<button
 						type="button"
 						class="clear-filters-btn"
-						onclick={() => state.clearFilters()}
+						onclick={() => browseState.clearFilters()}
 					>
 						Clear filters
 					</button>
 				</div>
 			{:else}
 				<CompositionGrid
-					compositions={state.filteredCompositions}
+					compositions={browseState.filteredCompositions}
 					onExpand={handleExpand}
 					onToggleFavorite={handleToggleFavorite}
 					onPlay={handleGridPlay}
@@ -185,10 +185,10 @@
 	{/if}
 
 	<!-- Detail overlay -->
-	{#if state.viewMode === "detail" && state.expandedComposition}
+	{#if browseState.viewMode === "detail" && browseState.expandedComposition}
 		<CompositionDetail
-			composition={state.expandedComposition}
-			originRect={state.expandedCardRect}
+			composition={browseState.expandedComposition}
+			originRect={browseState.expandedCardRect}
 			onClose={handleClose}
 			onPlay={handlePlay}
 			onEdit={() => handleEdit()}
