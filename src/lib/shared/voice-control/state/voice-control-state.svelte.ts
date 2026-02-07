@@ -9,7 +9,7 @@
  * - Command mode: prominent indicator, mic is hot, all speech = commands
  */
 
-import type { WakeWordState } from "../domain/voice-command-types";
+import type { WakeWordState, VoiceCommand } from "../domain/voice-command-types";
 
 /** Auto-exit command mode after this many ms of no commands */
 const COMMAND_MODE_TIMEOUT_MS = 15_000;
@@ -18,8 +18,13 @@ const COMMAND_MODE_TIMEOUT_MS = 15_000;
 const COMMAND_MODE_KEY = "tka_voice_command_mode";
 
 export type IndicatorFeedback = {
-  type: "success" | "error";
+  type: "success" | "error" | "info";
   message: string;
+} | null;
+
+export type ChatBubbleState = {
+  text: string;
+  speaking: boolean;
 } | null;
 
 function createVoiceControlState() {
@@ -30,6 +35,9 @@ function createVoiceControlState() {
   let lastCommand = $state<string | null>(null);
   let feedback = $state<IndicatorFeedback>(null);
   let helpOverlayOpen = $state(false);
+  let lastResolvedCommands = $state<VoiceCommand[]>([]);
+  let chatBubble = $state<ChatBubbleState>(null);
+  let chatBubbleTimer: ReturnType<typeof setTimeout> | null = null;
   let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
   let commandModeTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -63,6 +71,8 @@ function createVoiceControlState() {
     get lastCommand() { return lastCommand; },
     get feedback() { return feedback; },
     get helpOverlayOpen() { return helpOverlayOpen; },
+    get lastResolvedCommands() { return lastResolvedCommands; },
+    get chatBubble() { return chatBubble; },
 
     setEnabled(value: boolean) { enabled = value; },
     setDetectorState(state: WakeWordState) { detectorState = state; },
@@ -114,8 +124,12 @@ function createVoiceControlState() {
       if (commandMode) resetCommandModeTimer();
     },
 
+    setLastResolvedCommands(commands: VoiceCommand[]) {
+      lastResolvedCommands = commands;
+    },
+
     /** Show a command result briefly, then auto-clear */
-    showFeedback(type: "success" | "error", message: string, command?: string) {
+    showFeedback(type: "success" | "error" | "info", message: string, command?: string) {
       if (command) lastCommand = command;
       feedback = { type, message };
 
@@ -124,6 +138,34 @@ function createVoiceControlState() {
         feedback = null;
         feedbackTimer = null;
       }, 2500);
+    },
+
+    showChatBubble(text: string, speaking: boolean) {
+      chatBubble = { text, speaking };
+      // Clear any existing auto-dismiss timer
+      if (chatBubbleTimer) clearTimeout(chatBubbleTimer);
+    },
+
+    setChatBubbleSpeaking(speaking: boolean) {
+      if (chatBubble) {
+        chatBubble = { ...chatBubble, speaking };
+      }
+      // Auto-dismiss 5s after speech finishes
+      if (!speaking && chatBubble) {
+        if (chatBubbleTimer) clearTimeout(chatBubbleTimer);
+        chatBubbleTimer = setTimeout(() => {
+          chatBubble = null;
+          chatBubbleTimer = null;
+        }, 5000);
+      }
+    },
+
+    dismissChatBubble() {
+      chatBubble = null;
+      if (chatBubbleTimer) {
+        clearTimeout(chatBubbleTimer);
+        chatBubbleTimer = null;
+      }
     },
 
     clearFeedback() {
@@ -150,6 +192,7 @@ function createVoiceControlState() {
     destroy() {
       clearCommandModeTimer();
       if (feedbackTimer) clearTimeout(feedbackTimer);
+      if (chatBubbleTimer) clearTimeout(chatBubbleTimer);
       onCommandModeExpired = null;
     },
   };

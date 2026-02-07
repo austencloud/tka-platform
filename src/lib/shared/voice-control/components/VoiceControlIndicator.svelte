@@ -34,7 +34,9 @@
     hasFeedback
       ? state.feedback?.type === "success"
         ? "fa-check"
-        : "fa-xmark"
+        : state.feedback?.type === "info"
+          ? "fa-circle-notch fa-spin"
+          : "fa-xmark"
       : isProcessing
         ? "fa-circle-notch fa-spin"
         : hasError
@@ -47,7 +49,9 @@
     hasFeedback
       ? state.feedback?.type === "success"
         ? "feedback-success"
-        : "feedback-error"
+        : state.feedback?.type === "info"
+          ? "feedback-info"
+          : "feedback-error"
       : inCommandMode
         ? "command-mode"
         : isProcessing
@@ -127,22 +131,23 @@
      ═══════════════════════════════════════════════════════════ */
 
   .wake-dot {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 15px;
+    background: rgba(34, 197, 94, 0.08);
+    color: rgba(34, 197, 94, 0.5);
+    border: 1.5px solid rgba(34, 197, 94, 0.15);
     transition: all 0.3s ease;
   }
 
   .wake-word:hover .wake-dot {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.35);
+    background: rgba(34, 197, 94, 0.14);
+    color: rgba(34, 197, 94, 0.7);
+    border-color: rgba(34, 197, 94, 0.25);
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -223,11 +228,12 @@
   }
 
   .dismiss-btn {
-    width: 28px;
-    height: 28px;
+    width: 48px;
+    height: 48px;
+    margin: -10px -12px -10px 0;
     border-radius: 50%;
     border: none;
-    background: rgba(255, 255, 255, 0.08);
+    background: transparent;
     color: rgba(255, 255, 255, 0.5);
     font-size: 12px;
     cursor: pointer;
@@ -267,6 +273,11 @@
     border: 1.5px solid rgba(239, 68, 68, 0.25);
   }
 
+  .feedback-info .feedback-pill {
+    background: rgba(59, 130, 246, 0.12);
+    border: 1.5px solid rgba(59, 130, 246, 0.25);
+  }
+
   .feedback-icon {
     width: 28px;
     height: 28px;
@@ -288,6 +299,11 @@
     color: #f87171;
   }
 
+  .feedback-info .feedback-icon {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+  }
+
   .feedback-text {
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
@@ -300,6 +316,10 @@
 
   .feedback-error .feedback-text {
     color: #f87171;
+  }
+
+  .feedback-info .feedback-text {
+    color: #60a5fa;
   }
 
   @keyframes feedback-enter {

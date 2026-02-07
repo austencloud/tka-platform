@@ -13,6 +13,8 @@ import { createContainer } from "iti";
 import { WakeWordDetector } from "../../voice-control/services/implementations/WakeWordDetector";
 import { CommandInterpreter } from "../../voice-control/services/implementations/CommandInterpreter";
 import { CommandDispatcher } from "../../voice-control/services/implementations/CommandDispatcher";
+import { LLMIntentResolver } from "../../voice-control/services/implementations/LLMIntentResolver";
+import { WebSpeechTTSProvider } from "../../voice-control/services/implementations/WebSpeechTTSProvider";
 
 // Handlers
 import { NavigationCommandHandler } from "../../voice-control/services/implementations/NavigationCommandHandler";
@@ -57,6 +59,8 @@ export function createVoiceControlContainer() {
   const container = createContainer()
     .add({
       wakeWordDetector: () => new WakeWordDetector(),
+      intentResolver: () => new LLMIntentResolver(),
+      ttsProvider: () => new WebSpeechTTSProvider(),
     })
     .add(() => {
       // Build the interpreter chain in priority order
