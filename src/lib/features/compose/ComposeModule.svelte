@@ -26,7 +26,7 @@
 
   // Import tab components
   import ArrangeTab from "./tabs/arrange/ArrangeTab.svelte";
-  import BrowseTab from "./tabs/browse/BrowseTab.svelte";
+  import BrowseTab from "./tabs/browse/CompositionBrowseTab.svelte";
   import TimelinePanel from "./timeline/components/TimelinePanel.svelte";
 
   // Import playback overlay (for Browse tab - legacy saved compositions)

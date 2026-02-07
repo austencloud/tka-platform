@@ -1,0 +1,312 @@
+<!--
+	CompositionBrowseTab.svelte
+
+	Tab orchestrator for the composition browse experience.
+	Wires together: filter bar, grid, empty state, detail view, and delete confirmation.
+-->
+<script lang="ts">
+	import { onMount } from "svelte";
+	import { getCompositionBrowseState } from "./state/composition-browse-state.svelte";
+	import type { CompositionBrowseItem, CompositionFilter, CompositionSortMethod, SortDirection } from "./state/composition-browse-state.svelte";
+	import { getComposeModuleState } from "../../shared/state/compose-module-state.svelte";
+	import { arrangeGridState } from "../arrange/state/arrange-grid-state.svelte";
+	import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+	import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+	import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
+	import CompositionFilterBar from "./components/CompositionFilterBar.svelte";
+	import CompositionGrid from "./components/CompositionGrid.svelte";
+	import CompositionEmptyState from "./components/CompositionEmptyState.svelte";
+	import CompositionDetail from "./components/CompositionDetail.svelte";
+
+	const state = getCompositionBrowseState();
+	const composeState = getComposeModuleState();
+
+	// Delete confirmation
+	let deleteDialogOpen = $state(false);
+	let pendingDeleteId = $state<string | null>(null);
+	let pendingDeleteName = $state("");
+
+	// Load on mount
+	onMount(() => {
+		state.loadCompositions();
+	});
+
+	// Filter handlers
+	function handleFilterChange(filter: CompositionFilter) {
+		state.setFilter(filter);
+	}
+
+	function handleSortChange(method: CompositionSortMethod, direction: SortDirection) {
+		state.setSort(method, direction);
+	}
+
+	// Grid handlers
+	function handleExpand(item: CompositionBrowseItem, rect: DOMRect) {
+		state.expandComposition(item, rect);
+	}
+
+	function handleToggleFavorite(id: string) {
+		state.toggleFavorite(id);
+	}
+
+	// Detail handlers
+	function handlePlay() {
+		composeState.openPlayback("browse");
+	}
+
+	function handleEdit(id?: string) {
+		const compositionId = id ?? state.expandedComposition?.id;
+		if (!compositionId) return;
+
+		// Navigate to Arrange tab (composition loading is a future feature)
+		navigationState.setActiveTab("arrange");
+		composeState.setCurrentTab("arrange");
+		state.collapseDetail();
+	}
+
+	function handleDetailFavorite() {
+		if (state.expandedComposition) {
+			state.toggleFavorite(state.expandedComposition.id);
+		}
+	}
+
+	async function handleDuplicate() {
+		if (!state.expandedComposition) return;
+		const newId = await state.duplicateComposition(state.expandedComposition.id);
+		if (newId) {
+			showToast({
+				message: "Composition duplicated",
+				type: "success",
+				duration: 3000,
+			});
+		}
+	}
+
+	function handleDeleteRequest() {
+		if (!state.expandedComposition) return;
+		pendingDeleteId = state.expandedComposition.id;
+		pendingDeleteName = state.expandedComposition.name || "Untitled";
+		deleteDialogOpen = true;
+	}
+
+	async function confirmDelete() {
+		if (!pendingDeleteId) return;
+		await state.deleteComposition(pendingDeleteId);
+		showToast({
+			message: "Composition deleted",
+			type: "success",
+			duration: 3000,
+		});
+		pendingDeleteId = null;
+		deleteDialogOpen = false;
+	}
+
+	function cancelDelete() {
+		pendingDeleteId = null;
+		deleteDialogOpen = false;
+	}
+
+	function handleClose() {
+		state.collapseDetail();
+	}
+
+	// Retry on error
+	function handleRetry() {
+		state.clearError();
+		state.loadCompositions();
+	}
+
+	function handleGridPlay(id: string) {
+		// Find the composition, expand it, then play
+		const item = state.filteredCompositions.find((c) => c.id === id);
+		if (item) {
+			composeState.openPlayback("browse");
+		}
+	}
+</script>
+
+<div class="browse-tab" style="container-type: inline-size">
+	<!-- Error state -->
+	{#if state.error}
+		<div class="error-state">
+			<i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+			<p>{state.error}</p>
+			<button type="button" class="retry-btn" onclick={handleRetry}>
+				<i class="fas fa-redo" aria-hidden="true"></i>
+				Try again
+			</button>
+		</div>
+	{:else if !state.isLoading && state.compositions.length === 0}
+		<!-- Empty state: template gallery -->
+		<CompositionEmptyState />
+	{:else}
+		<!-- Filter bar (only when compositions exist) -->
+		{#if state.compositions.length > 0}
+			<CompositionFilterBar
+				filter={state.currentFilter}
+				sortMethod={state.sortMethod}
+				sortDirection={state.sortDirection}
+				onFilterChange={handleFilterChange}
+				onSortChange={handleSortChange}
+			/>
+		{/if}
+
+		<!-- Scrollable content -->
+		<div class="content-area">
+			{#if state.isLoading}
+				<CompositionGrid
+					compositions={[]}
+					isLoading={true}
+					onExpand={handleExpand}
+					onToggleFavorite={handleToggleFavorite}
+				/>
+			{:else if state.filteredCompositions.length === 0 && state.hasActiveFilters}
+				<!-- Filtered empty -->
+				<div class="filtered-empty">
+					<p>No compositions match your filters</p>
+					<button
+						type="button"
+						class="clear-filters-btn"
+						onclick={() => state.clearFilters()}
+					>
+						Clear filters
+					</button>
+				</div>
+			{:else}
+				<CompositionGrid
+					compositions={state.filteredCompositions}
+					onExpand={handleExpand}
+					onToggleFavorite={handleToggleFavorite}
+					onPlay={handleGridPlay}
+					onEdit={handleEdit}
+				/>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- Detail overlay -->
+	{#if state.viewMode === "detail" && state.expandedComposition}
+		<CompositionDetail
+			composition={state.expandedComposition}
+			originRect={state.expandedCardRect}
+			onClose={handleClose}
+			onPlay={handlePlay}
+			onEdit={() => handleEdit()}
+			onFavorite={handleDetailFavorite}
+			onDuplicate={handleDuplicate}
+			onDelete={handleDeleteRequest}
+		/>
+	{/if}
+
+	<!-- Delete confirmation -->
+	<ConfirmDialog
+		bind:isOpen={deleteDialogOpen}
+		title="Delete composition?"
+		message="&quot;{pendingDeleteName}&quot; will be permanently deleted. This can't be undone."
+		confirmText="Delete"
+		cancelText="Keep"
+		onConfirm={confirmDelete}
+		onCancel={cancelDelete}
+		variant="danger"
+	/>
+</div>
+
+<style>
+	.browse-tab {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		width: 100%;
+		overflow: hidden;
+		position: relative;
+	}
+
+	.content-area {
+		flex: 1;
+		overflow-y: auto;
+		padding: 8px 12px 16px;
+		min-height: 0;
+	}
+
+	/* Error state */
+	.error-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
+		height: 100%;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+		text-align: center;
+		padding: 24px;
+	}
+
+	.error-state i {
+		font-size: 32px;
+		color: var(--semantic-warning, #f59e0b);
+	}
+
+	.error-state p {
+		margin: 0;
+		font-size: var(--font-size-min, 14px);
+	}
+
+	.retry-btn {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 16px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 8px;
+		color: var(--theme-text, #fff);
+		font-size: var(--font-size-sm, 14px);
+		cursor: pointer;
+		min-height: 48px;
+	}
+
+	.retry-btn:hover {
+		background: rgba(255, 255, 255, 0.1);
+	}
+
+	.retry-btn:focus-visible {
+		outline: 2px solid var(--theme-accent, #6366f1);
+		outline-offset: 2px;
+	}
+
+	/* Filtered empty */
+	.filtered-empty {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
+		padding: 48px 24px;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.filtered-empty p {
+		margin: 0;
+		font-size: var(--font-size-min, 14px);
+	}
+
+	.clear-filters-btn {
+		padding: 8px 16px;
+		background: transparent;
+		border: 1px solid var(--theme-accent, #6366f1);
+		border-radius: 8px;
+		color: var(--theme-accent, #6366f1);
+		font-size: var(--font-size-sm, 14px);
+		cursor: pointer;
+		min-height: 48px;
+	}
+
+	.clear-filters-btn:hover {
+		background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
+	}
+
+	.clear-filters-btn:focus-visible {
+		outline: 2px solid var(--theme-accent, #6366f1);
+		outline-offset: 2px;
+	}
+</style>

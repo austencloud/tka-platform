@@ -82,6 +82,7 @@ import { createDeviceSyncContainer } from "./containers/device-sync-container";
 import { conjoinedLabContainer } from "./containers/conjoined-lab-container";
 import { createAttributionContainer } from "./containers/attribution-container";
 import { createVoiceControlContainer } from "./containers/voice-control-container";
+import { createComposeBrowseContainer } from "./containers/compose-browse-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -281,6 +282,9 @@ const attributionContainer = typeof window !== 'undefined' ? createAttributionCo
 // Voice control container - "Hey Tika" wake word + command dispatch
 const voiceControlContainer = typeof window !== 'undefined' ? createVoiceControlContainer() : null as any;
 
+// Compose Browse container - self-contained, no external dependencies
+const composeBrowseContainer = typeof window !== 'undefined' ? createComposeBrowseContainer() : null as any;
+
 
 // Watch container - needs collaborativeVideoManager from share and browseLoader from browse
 const watchContainer = typeof window !== 'undefined' ? createWatchContainer({
@@ -389,6 +393,7 @@ function buildAppContainer(): any {
   });
   // Voice control ("Hey Tika") services
   c = c.add(voiceControlContainer.items);
+  c = c.add(composeBrowseContainer.items);
   // Cross-container services (depend on multiple container outputs)
   c = c.add({ deepLinkResolver: () => deepLinkResolver });
   c = c.add({ sequenceDataProvider: () => sequenceDataProvider });
