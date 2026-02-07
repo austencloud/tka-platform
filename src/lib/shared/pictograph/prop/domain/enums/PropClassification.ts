@@ -114,6 +114,48 @@ export function isBuugengFamilyProp(propType: string): boolean {
 }
 
 /**
+ * Strict Placed Props
+ * These props are physically larger and need to be positioned at strict handpoints
+ * (further from center) to avoid visual overlap with the grid.
+ *
+ * From desktop: legacy/enums/prop_type.py strict_placed_props
+ *
+ * IMPORTANT: The legacy check (`has_strict_placed_props`) requires ALL props in the
+ * pictograph to be of a strict type. If one hand is bighoop and the other is staff,
+ * normal handpoints are used. Use `pictographRequiresStrictHandpoints()` for this check.
+ */
+export const STRICT_PLACED_PROPS = [
+  "bighoop",
+  "doublestar",
+  "bigbuugeng",
+  "bigdoublestar",
+  "triquetra",
+] as const;
+
+/**
+ * Check if a single prop type requires strict handpoints
+ */
+export function isStrictPlacedProp(propType: string): boolean {
+  return (STRICT_PLACED_PROPS as readonly string[]).includes(
+    propType.toLowerCase()
+  );
+}
+
+/**
+ * Check if a pictograph should use strict handpoints.
+ * Returns true only when BOTH props are strict-placed types (matching legacy behavior).
+ * If either prop is non-strict, normal handpoints are used for both.
+ */
+export function pictographRequiresStrictHandpoints(
+  bluePropType: string,
+  redPropType: string
+): boolean {
+  return (
+    isStrictPlacedProp(bluePropType) && isStrictPlacedProp(redPropType)
+  );
+}
+
+/**
  * Check if a prop is big (requires larger spacing)
  */
 export function isBigProp(propType: string): boolean {

@@ -13,27 +13,42 @@ const INTERCARDINAL_LOCATIONS = new Set(["ne", "se", "sw", "nw"]);
 /**
  * DefaultPropPositioner - Calculates default prop positions using grid coordinates
  * Ported from legacy web app to ensure positioning parity
+ *
+ * Supports two handpoint sets:
+ * - Normal: default positioning for most props
+ * - Strict: further from center, used for large props (bighoop, bigdoublestar, etc.)
+ *
+ * From desktop: legacy/src/placement_managers/prop_placement_manager/handlers/default_prop_positioner.py
  */
 export class DefaultPropPositioner {
-  // Fallback coordinates matching actual grid data
-  private fallbackCoordinates: Record<string, { x: number; y: number }> = {
-    // Diamond mode (cardinal) - from gridCoordinates
+  // Fallback coordinates matching actual grid data (normal)
+  private static fallbackNormal: Record<string, { x: number; y: number }> = {
     n: { x: 475, y: 331.9 },
     e: { x: 618.1, y: 475 },
     s: { x: 475, y: 618.1 },
     w: { x: 331.9, y: 475 },
-    // Box mode (intercardinal) - from gridCoordinates
     ne: { x: 576.2, y: 373.8 },
     se: { x: 576.2, y: 576.2 },
     sw: { x: 373.8, y: 576.2 },
     nw: { x: 373.8, y: 373.8 },
   };
 
+  // Fallback coordinates for strict handpoints (further from center)
+  private static fallbackStrict: Record<string, { x: number; y: number }> = {
+    n: { x: 475, y: 325 },
+    e: { x: 625, y: 475 },
+    s: { x: 475, y: 625 },
+    w: { x: 325, y: 475 },
+    ne: { x: 581.1, y: 368.9 },
+    se: { x: 581.1, y: 581.1 },
+    sw: { x: 368.9, y: 581.1 },
+    nw: { x: 368.9, y: 368.9 },
+  };
+
   constructor(
     private gridData: GridPointData,
     private gridMode: GridMode
   ) {
-    // Validate grid data on initialization
     if (!gridData.allHandPointsNormal) {
       throw new Error("Invalid grid data provided to DefaultPropPositioner");
     }
@@ -41,12 +56,15 @@ export class DefaultPropPositioner {
 
   /**
    * Calculate coordinates for a prop based on its location
+   * @param useStrict - When true, uses strict handpoints (further from center)
    */
-  public calculateCoordinates(location: GridLocation | string): {
+  public calculateCoordinates(
+    location: GridLocation | string,
+    useStrict = false
+  ): {
     x: number;
     y: number;
   } {
-    // Normalize location to lowercase to match grid coordinate keys
     const normalizedLocation = (
       typeof location === "string" ? location : location
     ).toLowerCase();
@@ -61,14 +79,18 @@ export class DefaultPropPositioner {
       gridType = this.gridMode.valueOf();
     }
 
-    const pointName = `${normalizedLocation}_${gridType}_hand_point`;
-    const gridPoint = this.getGridPoint(pointName);
+    // Legacy: point_name = f"{loc}_{grid_mode}_hand_point{_strict if strict else ''}"
+    const suffix = useStrict ? "_strict" : "";
+    const pointName = `${normalizedLocation}_${gridType}_hand_point${suffix}`;
+    const gridPoint = this.getGridPoint(pointName, useStrict);
 
     if (gridPoint?.coordinates) {
       return gridPoint.coordinates;
     } else {
-      const fallback = this.getFallbackCoordinates(normalizedLocation);
-      return fallback;
+      const fallbacks = useStrict
+        ? DefaultPropPositioner.fallbackStrict
+        : DefaultPropPositioner.fallbackNormal;
+      return fallbacks[normalizedLocation] || { x: 475, y: 475 };
     }
   }
 
@@ -76,11 +98,15 @@ export class DefaultPropPositioner {
    * Get grid point by name from grid data
    */
   private getGridPoint(
-    pointName: string
+    pointName: string,
+    useStrict: boolean
   ): { coordinates: { x: number; y: number } } | null {
-    // Try to find the point in allHandPointsNormal
-    if (this.gridData.allHandPointsNormal[pointName]) {
-      const point = this.gridData.allHandPointsNormal[pointName];
+    const handPoints = useStrict
+      ? this.gridData.allHandPointsStrict
+      : this.gridData.allHandPointsNormal;
+
+    if (handPoints[pointName]) {
+      const point = handPoints[pointName];
       if (point.coordinates) {
         return { coordinates: point.coordinates };
       }
@@ -95,8 +121,8 @@ export class DefaultPropPositioner {
     ];
 
     for (const altName of alternativeNames) {
-      if (this.gridData.allHandPointsNormal[altName]) {
-        const point = this.gridData.allHandPointsNormal[altName];
+      if (handPoints[altName]) {
+        const point = handPoints[altName];
         if (point.coordinates) {
           return { coordinates: point.coordinates };
         }
@@ -107,27 +133,21 @@ export class DefaultPropPositioner {
   }
 
   /**
-   * Get fallback coordinates for a location
-   */
-  private getFallbackCoordinates(location: string): { x: number; y: number } {
-    return this.fallbackCoordinates[location] || { x: 475, y: 475 }; // Center fallback
-  }
-
-  /**
    * Static helper method for quick coordinate calculation
+   * @param useStrict - When true, uses strict handpoints for large props
    */
   static calculatePosition(
     location: GridLocation,
-    gridMode: GridMode
+    gridMode: GridMode,
+    useStrict = false
   ): { x: number; y: number } {
     try {
       const gridPointData = createGridPointData(gridMode);
       const positioner = new DefaultPropPositioner(gridPointData, gridMode);
-      const result = positioner.calculateCoordinates(location);
+      const result = positioner.calculateCoordinates(location, useStrict);
       return result;
     } catch (error) {
       console.error("Error calculating position:", error);
-      // Return center as ultimate fallback
       return { x: 475, y: 475 };
     }
   }

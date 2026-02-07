@@ -19,6 +19,7 @@ import {
   getBetaOffsetSize,
   isBuugengFamilyProp,
   isUnilateralProp,
+  pictographRequiresStrictHandpoints,
 } from "../../domain/enums/PropClassification";
 
 // Settings interface for Node.js contexts where getSettings() isn't available
@@ -85,10 +86,31 @@ export class PropPlacer implements IPropPlacer {
     motionData: MotionData,
     gridMode: GridMode
   ): Promise<{ x: number; y: number }> {
+    // Determine if strict handpoints are needed (large props like bighoop)
+    // Legacy: pictograph_checker.has_strict_placed_props() - true when BOTH props are strict types
+    const globalSettings = this.settings ? null : getSettings();
+    const resolvedSettings = this.settings ?? {
+      bluePropType: globalSettings?.bluePropType,
+      redPropType: globalSettings?.redPropType,
+    };
+    const bluePropType =
+      resolvedSettings.bluePropType ??
+      pictographData.motions.blue?.propType ??
+      "staff";
+    const redPropType =
+      resolvedSettings.redPropType ??
+      pictographData.motions.red?.propType ??
+      "staff";
+    const useStrict = pictographRequiresStrictHandpoints(
+      bluePropType,
+      redPropType
+    );
+
     // Calculate base position from motion data (not from existing propPlacementData)
     const basePosition = DefaultPropPositioner.calculatePosition(
       motionData.endLocation,
-      gridMode
+      gridMode,
+      useStrict
     );
 
     // Apply beta offset if this is a beta position
