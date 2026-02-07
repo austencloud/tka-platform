@@ -35,7 +35,7 @@
   let {
     sequence,
     printMode = false,
-    showQRCodes = false,
+    showQRCodes = true,
     handPointsVisible = true,
     showGrid = true,
     showTKA = true,

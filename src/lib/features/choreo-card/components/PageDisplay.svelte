@@ -37,7 +37,7 @@
     isLoading,
     error,
     columnCount = 1,
-    showQRCodes = false,
+    showQRCodes = true,
     handPointsVisible = true,
     showGrid = true,
     showTKA = true,

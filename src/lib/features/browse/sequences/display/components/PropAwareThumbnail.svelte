@@ -137,10 +137,7 @@
     visibility,
   });
 
-  // DEBUG: Log visibility changes
-  $effect(() => {
-    console.log(`[PropAwareThumbnail] "${sequenceName}" visibility:`, visibility);
-  });
+
 
   // Intersection observer for lazy loading
   let observer: IntersectionObserver | null = null;
@@ -243,14 +240,6 @@
     }
 
     const key = keyDeriver.deriveKey(renderInput);
-
-    // DEBUG: Log hash comparison
-    console.log(`[PropAwareThumbnail] "${sequenceName}" hash check:`, {
-      newHash: key.hash,
-      currentHash: currentKeyHash,
-      changed: key.hash !== currentKeyHash,
-      showQRCode: renderInput.visibility?.showQRCode,
-    });
 
     // Skip if key hasn't changed
     if (key.hash === currentKeyHash) {

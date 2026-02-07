@@ -107,7 +107,7 @@
   let favorites = $state<boolean>(getPersistedBoolean(STORAGE_KEY_FAVORITES, false));
   let gridMode = $state<string | null>(getPersistedString(STORAGE_KEY_GRID_MODE));
   let author = $state<string | null>(getPersistedString(STORAGE_KEY_AUTHOR));
-  let showQRCodes = $state<boolean>(getPersistedBoolean(STORAGE_KEY_SHOW_QR, false));
+  let showQRCodes = $state<boolean>(getPersistedBoolean(STORAGE_KEY_SHOW_QR, true));
 
   // Visibility state (local to choreo cards, defaults match global settings but can be overridden)
   let handPointsVisible = $state<boolean>(getPersistedBoolean(STORAGE_KEY_HAND_POINTS, true));
