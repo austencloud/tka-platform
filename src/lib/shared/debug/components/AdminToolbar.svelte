@@ -12,7 +12,6 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { slide } from "svelte/transition";
   import { featureFlagService } from "$lib/shared/auth/services/PostHogFeatureFlagService.svelte";
   import {
     userPreviewState,
@@ -79,8 +78,11 @@
   const isUserPreview = $derived(userPreviewState.isActive);
   const previewProfile = $derived(userPreviewState.data.profile);
 
-  // Show toolbar if F9 is toggled OR user is being previewed
-  const showToolbar = $derived(isAdmin && (isOpen || isUserPreview));
+  // Desktop: show top bar only when F9 toggled (impersonation indicator is now the border + bottom bar)
+  const showDesktopToolbar = $derived(isAdmin && !isMobile && isOpen);
+
+  // Mobile: bottom sheet only (FAB and preview banner removed - impersonation uses border + bottom bar)
+  const showMobileSheet = $derived(isAdmin && isMobile && isOpen);
 
   // Tab Intro
   const currentModule = $derived(navigationState.currentModule);
@@ -144,6 +146,8 @@
       featureFlagService.setDebugRoleOverride(previewedRole);
     }
     adminToolbarState.closeSearch();
+    // Dismiss toolbar after selection - the border + bottom bar indicate impersonation
+    adminToolbarState.close();
   }
 
   function handleClearPreview() {
@@ -343,61 +347,63 @@
   });
 </script>
 
-{#if showToolbar}
-  {#if isMobile}
-    <AdminToolbarMobile
-      {quickAccessUsers}
-      {previewProfile}
-      {isUserPreview}
-      {isSearchOpen}
-      isLoading={userPreviewState.isLoading}
-      {introResetMessage}
-      canResetIntro={canResetIntro()}
-      {isCurrentUserInQuickAccess}
-      onSelectUser={selectUser}
-      onRemoveFromQuickAccess={removeFromQuickAccess}
-      onAddToQuickAccess={addToQuickAccess}
-      onClearPreview={handleClearPreview}
-      onToggleSearch={handleToggleSearch}
-      onResetTabIntro={resetTabIntro}
-      onPreviewFirstRun={previewFirstRunWizard}
-      onPreviewSidebarTour={previewSidebarTour}
-      onResetHelpDiscovery={resetHelpButtonDiscovery}
-      onClearCloudThumbnails={clearCloudThumbnails}
-      {isClearingThumbnails}
-      onClearLocalCache={clearLocalPictographCache}
-      {isClearingLocalCache}
-      onClearThumbnailCache={clearThumbnailLocalCache}
-      {isClearingThumbnailCache}
-      onClose={handleClose}
-    />
-  {:else}
-    <AdminToolbarDesktop
-      {quickAccessUsers}
-      {previewProfile}
-      {isUserPreview}
-      {isSearchOpen}
-      isLoading={userPreviewState.isLoading}
-      {introResetMessage}
-      canResetIntro={canResetIntro()}
-      currentIntroTitle={currentIntro?.title || null}
-      {isCurrentUserInQuickAccess}
-      onSelectUser={selectUser}
-      onRemoveFromQuickAccess={removeFromQuickAccess}
-      onAddToQuickAccess={addToQuickAccess}
-      onClearPreview={handleClearPreview}
-      onToggleSearch={handleToggleSearch}
-      onResetTabIntro={resetTabIntro}
-      onPreviewFirstRun={previewFirstRunWizard}
-      onPreviewSidebarTour={previewSidebarTour}
-      onResetHelpDiscovery={resetHelpButtonDiscovery}
-      onClearCloudThumbnails={clearCloudThumbnails}
-      {isClearingThumbnails}
-      onClearLocalCache={clearLocalPictographCache}
-      {isClearingLocalCache}
-      onClearThumbnailCache={clearThumbnailLocalCache}
-      {isClearingThumbnailCache}
-      onClose={handleClose}
-    />
-  {/if}
+<!-- Desktop: unchanged top bar (F9 toggle or preview active) -->
+{#if showDesktopToolbar}
+  <AdminToolbarDesktop
+    {quickAccessUsers}
+    {previewProfile}
+    {isUserPreview}
+    {isSearchOpen}
+    isLoading={userPreviewState.isLoading}
+    {introResetMessage}
+    canResetIntro={canResetIntro()}
+    currentIntroTitle={currentIntro?.title || null}
+    {isCurrentUserInQuickAccess}
+    onSelectUser={selectUser}
+    onRemoveFromQuickAccess={removeFromQuickAccess}
+    onAddToQuickAccess={addToQuickAccess}
+    onClearPreview={handleClearPreview}
+    onToggleSearch={handleToggleSearch}
+    onResetTabIntro={resetTabIntro}
+    onPreviewFirstRun={previewFirstRunWizard}
+    onPreviewSidebarTour={previewSidebarTour}
+    onResetHelpDiscovery={resetHelpButtonDiscovery}
+    onClearCloudThumbnails={clearCloudThumbnails}
+    {isClearingThumbnails}
+    onClearLocalCache={clearLocalPictographCache}
+    {isClearingLocalCache}
+    onClearThumbnailCache={clearThumbnailLocalCache}
+    {isClearingThumbnailCache}
+    onClose={handleClose}
+  />
+{/if}
+
+<!-- Mobile: bottom sheet (independently dismissable) -->
+{#if showMobileSheet}
+  <AdminToolbarMobile
+    {quickAccessUsers}
+    {previewProfile}
+    {isUserPreview}
+    {isSearchOpen}
+    isLoading={userPreviewState.isLoading}
+    {introResetMessage}
+    canResetIntro={canResetIntro()}
+    {isCurrentUserInQuickAccess}
+    onSelectUser={selectUser}
+    onRemoveFromQuickAccess={removeFromQuickAccess}
+    onAddToQuickAccess={addToQuickAccess}
+    onClearPreview={handleClearPreview}
+    onToggleSearch={handleToggleSearch}
+    onResetTabIntro={resetTabIntro}
+    onPreviewFirstRun={previewFirstRunWizard}
+    onPreviewSidebarTour={previewSidebarTour}
+    onResetHelpDiscovery={resetHelpButtonDiscovery}
+    onClearCloudThumbnails={clearCloudThumbnails}
+    {isClearingThumbnails}
+    onClearLocalCache={clearLocalPictographCache}
+    {isClearingLocalCache}
+    onClearThumbnailCache={clearThumbnailLocalCache}
+    {isClearingThumbnailCache}
+    onClose={handleClose}
+  />
 {/if}

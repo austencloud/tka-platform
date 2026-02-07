@@ -1,8 +1,11 @@
 /**
  * createSwipeDismiss - Swipe-to-dismiss gesture handler for bottom sheets
  *
- * Returns reactive state and handlers for implementing swipe-to-dismiss behavior.
- * When the user swipes down past a threshold, onDismiss is called.
+ * Auto-attaches non-passive touch listeners when the element is bound,
+ * so it works correctly on scrollable containers (overflow-y: auto).
+ *
+ * Handles the scroll vs. dismiss conflict: only initiates dismiss when
+ * the element is scrolled to the top and the user swipes downward.
  *
  * @example
  * ```svelte
@@ -13,13 +16,9 @@
  *   });
  * </script>
  *
- * <div
- *   bind:this={swipe.element}
- *   ontouchstart={swipe.handleTouchStart}
- *   ontouchmove={swipe.handleTouchMove}
- *   ontouchend={swipe.handleTouchEnd}
- *   style:transform={swipe.transform}
- * >
+ * <div bind:this={swipe.element}>
+ *   <!-- content -->
+ * </div>
  * ```
  */
 
@@ -31,18 +30,10 @@ export interface SwipeDismissOptions {
 }
 
 export interface SwipeDismissState {
-  /** Bind this to the swipeable element */
+  /** Bind this to the swipeable element. Listeners auto-attach. */
   element: HTMLElement | null;
-  /** Current Y translation (for inline transform) */
-  transform: string;
-  /** Whether user is actively dragging */
+  /** Whether user is actively dragging to dismiss */
   isDragging: boolean;
-  /** Touch start handler */
-  handleTouchStart: (e: TouchEvent) => void;
-  /** Touch move handler */
-  handleTouchMove: (e: TouchEvent) => void;
-  /** Touch end handler */
-  handleTouchEnd: () => void;
   /** Reset the element transform */
   reset: () => void;
 }
@@ -53,32 +44,45 @@ export function createSwipeDismiss(
   const threshold = options.threshold ?? 100;
 
   let element = $state<HTMLElement | null>(null);
-  let touchStartY = $state(0);
-  let touchCurrentY = $state(0);
-  let isDragging = $state(false);
 
-  const deltaY = $derived(Math.max(0, touchCurrentY - touchStartY));
-  const transform = $derived(
-    isDragging && deltaY > 0 ? `translateY(${deltaY}px)` : ""
-  );
+  // Plain variables - no reactivity needed, only used inside handlers
+  let touchStartY = 0;
+  let touchCurrentY = 0;
+  let isDragging = false;
+  let isSwipingToDismiss = false;
 
   function handleTouchStart(e: TouchEvent) {
     const touch = e.touches[0];
     if (!touch) return;
+
+    // Only allow swipe-to-dismiss when scrolled to top
+    if (element && element.scrollTop > 0) return;
+
     touchStartY = touch.clientY;
     touchCurrentY = touchStartY;
     isDragging = true;
+    isSwipingToDismiss = false;
   }
 
   function handleTouchMove(e: TouchEvent) {
     if (!isDragging) return;
     const touch = e.touches[0];
     if (!touch) return;
-    touchCurrentY = touch.clientY;
 
-    // Apply transform directly for smooth feedback
-    if (element && deltaY > 0) {
-      element.style.transform = `translateY(${deltaY}px)`;
+    touchCurrentY = touch.clientY;
+    const delta = touchCurrentY - touchStartY;
+
+    // Once we detect a downward swipe while at scroll top, lock into dismiss mode
+    if (delta > 10 && element && element.scrollTop <= 0) {
+      isSwipingToDismiss = true;
+    }
+
+    if (isSwipingToDismiss && delta > 0) {
+      // Prevent native scroll so the dismiss gesture isn't interrupted.
+      // This requires non-passive listener (set up in $effect below).
+      e.preventDefault();
+      element!.style.transform = `translateY(${delta}px)`;
+      element!.style.transition = "none";
     }
   }
 
@@ -86,21 +90,49 @@ export function createSwipeDismiss(
     if (!isDragging) return;
     isDragging = false;
 
-    const finalDelta = touchCurrentY - touchStartY;
-
-    if (finalDelta > threshold) {
-      options.onDismiss();
+    if (isSwipingToDismiss) {
+      const finalDelta = touchCurrentY - touchStartY;
+      if (finalDelta > threshold) {
+        options.onDismiss();
+      }
     }
 
-    // Reset transform
+    isSwipingToDismiss = false;
+    reset();
+  }
+
+  function handleTouchCancel() {
+    // Browser cancelled the touch (e.g. scroll takeover). Clean up.
+    isDragging = false;
+    isSwipingToDismiss = false;
     reset();
   }
 
   function reset() {
     if (element) {
       element.style.transform = "";
+      element.style.transition = "";
     }
   }
+
+  // Auto-attach listeners with correct passive flags when element is bound.
+  // touchmove MUST be non-passive so preventDefault() works on scrollable containers.
+  $effect(() => {
+    const el = element;
+    if (!el) return;
+
+    el.addEventListener("touchstart", handleTouchStart, { passive: true });
+    el.addEventListener("touchmove", handleTouchMove, { passive: false });
+    el.addEventListener("touchend", handleTouchEnd, { passive: true });
+    el.addEventListener("touchcancel", handleTouchCancel, { passive: true });
+
+    return () => {
+      el.removeEventListener("touchstart", handleTouchStart);
+      el.removeEventListener("touchmove", handleTouchMove);
+      el.removeEventListener("touchend", handleTouchEnd);
+      el.removeEventListener("touchcancel", handleTouchCancel);
+    };
+  });
 
   return {
     get element() {
@@ -109,15 +141,9 @@ export function createSwipeDismiss(
     set element(el: HTMLElement | null) {
       element = el;
     },
-    get transform() {
-      return transform;
-    },
     get isDragging() {
       return isDragging;
     },
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd,
     reset,
   };
 }

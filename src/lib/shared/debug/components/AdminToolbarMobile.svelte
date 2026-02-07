@@ -71,8 +71,11 @@
     onClose,
   }: Props = $props();
 
-  // Swipe-to-dismiss gesture - reactive to onClose changes
-  const swipe = $derived(createSwipeDismiss({ threshold: 100, onDismiss: onClose }));
+  // Swipe-to-dismiss gesture - auto-attaches non-passive touch listeners
+  const swipe = createSwipeDismiss({
+    threshold: 100,
+    onDismiss: () => onClose(),
+  });
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -85,13 +88,9 @@
   transition:fly={{ duration: 200, opacity: 0 }}
 ></div>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="mobile-sheet"
   bind:this={swipe.element}
-  ontouchstart={swipe.handleTouchStart}
-  ontouchmove={swipe.handleTouchMove}
-  ontouchend={swipe.handleTouchEnd}
   transition:fly={{ y: 300, duration: 250 }}
 >
   <!-- Handle bar - visual hint for swipe -->
@@ -112,20 +111,6 @@
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
   </div>
-
-  <!-- Preview indicator -->
-  {#if isUserPreview && previewProfile}
-    <div class="mobile-preview-banner">
-      <i class="fas fa-eye" aria-hidden="true"></i>
-      <span
-        >Previewing: {previewProfile.displayName || previewProfile.email}</span
-      >
-      <button type="button" class="banner-action" onclick={onClearPreview}>
-        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
-        <span>Exit</span>
-      </button>
-    </div>
-  {/if}
 
   <!-- Quick Access Chips - Always visible, horizontal scroll -->
   <div class="sheet-section">
@@ -365,50 +350,6 @@
   .sheet-close:active {
     background: rgba(239, 68, 68, 0.2);
     color: var(--semantic-error);
-  }
-
-  .mobile-preview-banner {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 12px 16px;
-    padding: 12px 16px;
-    background: rgba(59, 130, 246, 0.15);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    border-radius: 12px;
-    color: #93c5fd;
-    font-size: var(--font-size-sm);
-  }
-
-  .mobile-preview-banner > i:first-child {
-    color: var(--semantic-info);
-    font-size: var(--font-size-lg);
-  }
-
-  .mobile-preview-banner > span {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .banner-action {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid rgba(239, 68, 68, 0.4);
-    border-radius: 8px;
-    color: #fca5a5;
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast);
-  }
-
-  .banner-action:active {
-    background: rgba(239, 68, 68, 0.3);
   }
 
   .sheet-section {

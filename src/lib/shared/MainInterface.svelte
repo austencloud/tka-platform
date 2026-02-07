@@ -69,8 +69,12 @@
 
   // Debug tools
   import AdminToolbar from "./debug/components/AdminToolbar.svelte";
+  import ImpersonationBar from "./debug/components/ImpersonationBar.svelte";
   import { initUserPreviewContext } from "./debug/context/user-preview-context";
-  import { userPreviewState } from "./debug/state/user-preview-state.svelte";
+  import {
+    userPreviewState,
+    clearUserPreview,
+  } from "./debug/state/user-preview-state.svelte";
   import { adminToolbarState } from "./debug/state/admin-toolbar-state.svelte";
   import { featureFlagService } from "./auth/services/PostHogFeatureFlagService.svelte";
   import ToastContainer from "./toast/components/ToastContainer.svelte";
@@ -114,9 +118,37 @@
   });
   // Show banner offset when user preview OR admin toolbar is open
   const isAdmin = $derived(featureFlagService.userRole === "admin");
-  const isPreviewMode = $derived(
-    isAdmin && (userPreviewState.isActive || adminToolbarState.isOpen)
+
+  // Window width tracking for mobile detection
+  const MOBILE_BREAKPOINT = 768;
+  let mainWindowWidth = $state(
+    typeof window !== "undefined" ? window.innerWidth : 1024
   );
+  const isMainMobile = $derived(mainWindowWidth < MOBILE_BREAKPOINT);
+
+  $effect(() => {
+    if (typeof window === "undefined") return;
+    mainWindowWidth = window.innerWidth;
+    const handleResize = () => {
+      mainWindowWidth = window.innerWidth;
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  });
+
+  // Desktop: top bar needs padding only when admin toolbar is explicitly open (F9)
+  // Mobile: no top bar at all, so isPreviewMode is always false on mobile
+  const isPreviewMode = $derived(
+    isAdmin && !isMainMobile && adminToolbarState.isOpen
+  );
+
+  // Impersonation indicator (border + bottom bar) - independent of toolbar open state
+  const isImpersonating = $derived(isAdmin && userPreviewState.isActive);
+
+  function handleExitPreview() {
+    clearUserPreview();
+    featureFlagService.clearDebugRoleOverride();
+  }
 
   // Desktop sidebar visibility management
   let desktopSidebarVisibility: ReturnType<
@@ -232,6 +264,7 @@
   class:nav-landscape={layoutState.isPrimaryNavLandscape}
   class:has-desktop-sidebar={showDesktopSidebar}
   class:has-preview-banner={isPreviewMode}
+  class:is-impersonating={isImpersonating}
   style="--primary-nav-height: {layoutState.primaryNavHeight}px; --desktop-sidebar-width: {desktopSidebarState.width}px;"
 >
   <!-- Desktop Navigation Sidebar (only on desktop in side-by-side layout) -->
@@ -285,6 +318,14 @@
         isUIVisible={isPrimaryNavVisible()}
         onRevealNav={handleRevealNav}
         isDashboard={false}
+      />
+    {/if}
+
+    <!-- Impersonation bar (below nav, both platforms) -->
+    {#if isImpersonating && userPreviewState.data.profile}
+      <ImpersonationBar
+        previewProfile={userPreviewState.data.profile}
+        onExitPreview={handleExitPreview}
       />
     {/if}
   </div>
@@ -360,7 +401,13 @@
     padding-left: var(--desktop-sidebar-width, 280px);
   }
 
-  /* Debug banner support (user preview OR role override) - push content down */
+  /* Impersonation border - 3px blue outline around entire viewport */
+  .main-interface.is-impersonating {
+    border: 3px solid rgba(59, 130, 246, 0.7);
+    box-sizing: border-box;
+  }
+
+  /* Debug banner support (desktop admin toolbar open) - push content down */
   /* Banner height: 56px content + 2px border = 58px total */
   .main-interface.has-preview-banner {
     padding-top: 58px;
@@ -372,9 +419,9 @@
   }
 
   @media (max-width: 768px) {
-    /* Mobile banner: 48px content + 2px border = 50px total */
+    /* Mobile: no top admin bar, so no padding-top needed */
     .main-interface.has-preview-banner {
-      padding-top: 50px;
+      padding-top: 0;
     }
   }
 
