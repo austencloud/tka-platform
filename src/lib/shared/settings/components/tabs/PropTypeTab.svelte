@@ -621,7 +621,7 @@
 
   .section-label {
     margin: 0;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim);
     text-transform: uppercase;
@@ -685,7 +685,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
+    padding: 10px 16px;
+    min-height: 48px;
     background: transparent;
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
@@ -709,7 +710,7 @@
   }
 
   .reset-defaults-btn i {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .reset-defaults-btn:focus-visible {

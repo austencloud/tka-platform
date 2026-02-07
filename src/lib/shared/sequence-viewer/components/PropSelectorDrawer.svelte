@@ -170,6 +170,7 @@
   .drawer-content {
     display: flex;
     flex-direction: column;
+    height: 100%;
   }
 
   /* Header */
@@ -193,8 +194,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     background: transparent;
     border: none;
     border-radius: 8px;
@@ -271,6 +272,8 @@
 
   /* Grid container */
   .grid-container {
+    flex: 1;
+    min-height: 0;
     padding: 8px;
     overflow-y: auto;
   }

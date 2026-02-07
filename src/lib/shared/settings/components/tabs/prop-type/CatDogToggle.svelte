@@ -30,6 +30,7 @@
     align-items: center;
     gap: 8px;
     padding: 10px 16px;
+    min-height: 48px;
     background: var(--theme-card-bg, var(--theme-card-bg));
     border: 1px solid var(--theme-stroke);
     border-radius: 100px;
