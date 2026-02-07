@@ -11,6 +11,7 @@ import type { ITikaModelProvider, ModelConfig } from "../contracts/ITikaModelPro
 
 const MODELS: Record<string, ModelConfig> = {
   "sonnet-4": { provider: "anthropic", modelId: "claude-sonnet-4-20250514" },
+  haiku: { provider: "anthropic", modelId: "claude-haiku-4-5-20251001" },
   deepseek: { provider: "deepseek", modelId: "deepseek-chat" },
 };
 
