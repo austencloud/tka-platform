@@ -70,6 +70,7 @@
   onpointerup={clearLongPress}
   onpointerleave={clearLongPress}
   onpointercancel={clearLongPress}
+  oncontextmenu={(e) => e.preventDefault()}
   aria-label="Open menu{badgeCount > 0
     ? `, ${badgeCount} unread notifications`
     : ''}"

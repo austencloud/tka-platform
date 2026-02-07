@@ -461,6 +461,17 @@ export function getModuleDefinitions() {
       return ["create", "browse"].includes(module.id);
     }
 
+    // Defense in depth: adminOnly modules require admin role regardless of feature flags.
+    // The feature flag service stores role overrides in localStorage (browser-local),
+    // and the PostHog API proxy doesn't exist on the static production site,
+    // so we enforce adminOnly directly from the module definition.
+    if (module.adminOnly) {
+      const effectiveRole = featureFlagService.effectiveRole;
+      if (effectiveRole !== "admin") {
+        return false;
+      }
+    }
+
     // Use feature flag service for all access checks
     // When impersonating, the Impersonator syncs the role to featureFlagService.debugRoleOverride
     // so canAccessModule() automatically respects the impersonated role
