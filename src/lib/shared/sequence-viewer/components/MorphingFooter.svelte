@@ -15,7 +15,7 @@
   - No auto-hide - controls stay visible until user collapses
 -->
 <script lang="ts">
-  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
+  import { ChipToggle } from '@austencloud/chip-toggle';
   import TempoControl from "./TempoControl.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";

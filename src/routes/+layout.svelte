@@ -16,6 +16,8 @@
   import { initPostHog } from "$lib/shared/analytics/services/posthog";
   import { consumeSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
   import "../app.css";
+  // Chip toggle tokens — maps --chip-* to TKA design values
+  import "@austencloud/chip-toggle/css/tka-tokens.css";
   // Import modern view transitions CSS
   import "$lib/shared/transitions/view-transitions.css";
 

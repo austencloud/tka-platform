@@ -4,7 +4,7 @@
    *
    * Controls: Noclip mode, collision info
    */
-  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
+  import { ChipToggle } from '@austencloud/chip-toggle';
 
   interface Props {
     noclipEnabled: boolean;

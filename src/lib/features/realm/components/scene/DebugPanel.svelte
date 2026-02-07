@@ -6,7 +6,7 @@
    * Shows real-time state from all managers - position, biome, fog, water,
    * textures, chunks, vegetation, and performance metrics.
    */
-  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
+  import { ChipToggle } from '@austencloud/chip-toggle';
 
   // ============================================================================
   // TYPES

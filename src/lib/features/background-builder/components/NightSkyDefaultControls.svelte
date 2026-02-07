@@ -1,8 +1,7 @@
 <script lang="ts">
   import type { QualityLevel } from "@austencloud/backgrounds";
   import type { NightSkyDensityPreset } from "../domain/lab-settings-types";
-  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
-  import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
 
   interface LayerState {

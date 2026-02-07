@@ -5,8 +5,7 @@
     EcologicalPattern,
     QualityLevel,
   } from "@austencloud/backgrounds";
-  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
-  import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
 
   interface PreviewStats {
     fireflies: number;

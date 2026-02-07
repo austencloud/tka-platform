@@ -19,8 +19,7 @@
   import SessionChat from "../multiplayer/components/SessionChat.svelte";
 
   // UI primitives
-  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
-  import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
 
   interface Props {
     /** Gallery state - named galleryState to avoid Svelte compiler treating 'state' as a store */

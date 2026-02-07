@@ -4,7 +4,7 @@
    *
    * Controls: Fog, Water, Textures
    */
-  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
+  import { ChipToggle } from '@austencloud/chip-toggle';
 
   interface AtmosphereState {
     fogEnabled: boolean;

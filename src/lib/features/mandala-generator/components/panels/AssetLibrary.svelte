@@ -74,7 +74,7 @@
 
   // Staff types - use actual staff SVGs
   const STAFF_TYPES = [
-    { id: "staff", label: "Staff", path: "/images/props/staff.svg" },
+    { id: "staff", label: "Staff", path: "/images/props/buttons/staff.svg" },
   ] as const;
 
   // Color options

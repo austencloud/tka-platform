@@ -4,7 +4,7 @@
    *
    * Controls: Tree, grass, rock, bush visibility and counts
    */
-  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
+  import { ChipToggle } from '@austencloud/chip-toggle';
 
   interface VegetationStats {
     trees: number;

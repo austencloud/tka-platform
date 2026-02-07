@@ -9,8 +9,7 @@
     fishDebugConfig,
     type QualityLevel,
   } from "@austencloud/backgrounds";
-  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
-  import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
   import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
   import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
   import PersonalityBars from "./PersonalityBars.svelte";

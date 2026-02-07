@@ -1,8 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { SnowfallBackgroundSystem, type QualityLevel } from "@austencloud/backgrounds";
-  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
-  import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
   import LabPreviewCanvas from "./LabPreviewCanvas.svelte";
 
   // Background system
