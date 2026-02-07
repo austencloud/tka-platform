@@ -2,7 +2,7 @@
  * Arrange Grid State
  *
  * State management for the Arrange tab grid composition mode.
- * Supports a freeform 4x4 grid where each position can be enabled/disabled,
+ * Supports a freeform 6x6 grid where each position can be enabled/disabled,
  * allowing for non-rectangular layouts (L-shapes, T-shapes, scattered, etc.).
  *
  * Each enabled cell is a "tunnel" that can hold up to 4 performers/layers.
@@ -27,8 +27,8 @@ import type {
 
 import { ArrangeGridSerializer } from "../services/implementations/ArrangeGridSerializer";
 
-// Grid dimensions (fixed 4x4 grid)
-export const GRID_SIZE = 4;
+// Grid dimensions (fixed 6x6 grid)
+export const GRID_SIZE = 6;
 const MAX_LAYERS_PER_CELL = 4;
 
 /**
@@ -36,9 +36,9 @@ const MAX_LAYERS_PER_CELL = 4;
  */
 export interface GridCell {
   id: string;
-  /** Row position (0-3) */
+  /** Row position (0-5) */
   row: number;
-  /** Column position (0-3) */
+  /** Column position (0-5) */
   col: number;
   /** Is this cell enabled/visible? */
   enabled: boolean;
@@ -53,7 +53,7 @@ export interface GridCell {
 }
 
 /**
- * Grid configuration - now stores all 16 positions
+ * Grid configuration - stores all 36 positions (6x6 grid)
  */
 export interface GridConfig {
   cells: GridCell[];
@@ -152,7 +152,8 @@ function deepCloneCells(source: GridCell[]): GridCell[] {
 // LocalStorage persistence (inline to avoid circular imports)
 // =========================================================================
 
-const STORAGE_KEY = "compose-arrange-grid-v5";
+const STORAGE_KEY = "compose-arrange-grid-v6";
+const STORAGE_KEY_V5 = "compose-arrange-grid-v5";
 const STORAGE_KEY_V4 = "compose-arrange-grid-v4";
 const SAVED_COMPOSITIONS_KEY = "compose-saved-compositions";
 
@@ -162,7 +163,7 @@ function loadFromStorage(): GridConfig {
   }
 
   try {
-    // Try v5 first (4x4 grid)
+    // Try v6 first (6x6 grid)
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const config = JSON.parse(stored) as GridConfig;
@@ -175,25 +176,57 @@ function loadFromStorage(): GridConfig {
       }
     }
 
-    // Try migrating from v4 (3x3 grid -> 4x4 grid)
+    // Try migrating from v5 (4x4 grid -> 6x6 grid)
+    const storedV5 = localStorage.getItem(STORAGE_KEY_V5);
+    if (storedV5) {
+      const configV5 = JSON.parse(storedV5) as GridConfig;
+      if (configV5.cells.length === 16) {
+        const newCells = createInitialGrid();
+        for (const oldCell of configV5.cells) {
+          if (oldCell.row < 4 && oldCell.col < 4) {
+            const newIndex = oldCell.row * GRID_SIZE + oldCell.col;
+            const newCell = newCells[newIndex];
+            if (newCell) {
+              newCells[newIndex] = {
+                ...newCell,
+                enabled: oldCell.enabled,
+                layers: oldCell.layers ?? [],
+                beatOffset: oldCell.beatOffset ?? 0,
+                colSpan: Math.min(oldCell.colSpan ?? 1, GRID_SIZE - oldCell.col),
+                rowSpan: Math.min(oldCell.rowSpan ?? 1, GRID_SIZE - oldCell.row),
+                mediaType: oldCell.mediaType ?? "animation",
+              };
+            }
+          }
+        }
+        const migratedConfig = { cells: newCells };
+        saveToStorage(migratedConfig);
+        localStorage.removeItem(STORAGE_KEY_V5);
+        return migratedConfig;
+      }
+    }
+
+    // Try migrating from v4 (3x3 grid -> 6x6 grid)
     const storedV4 = localStorage.getItem(STORAGE_KEY_V4);
     if (storedV4) {
       const configV4 = JSON.parse(storedV4) as GridConfig;
       if (configV4.cells.length === 9) {
         const newCells = createInitialGrid();
         for (const oldCell of configV4.cells) {
-          const newIndex = oldCell.row * GRID_SIZE + oldCell.col;
-          const newCell = newCells[newIndex];
-          if (newCell && oldCell.row < 3 && oldCell.col < 3) {
-            newCells[newIndex] = {
-              ...newCell,
-              enabled: oldCell.enabled,
-              layers: oldCell.layers ?? [],
-              beatOffset: oldCell.beatOffset ?? 0,
-              colSpan: Math.min(oldCell.colSpan ?? 1, GRID_SIZE - oldCell.col),
-              rowSpan: Math.min(oldCell.rowSpan ?? 1, GRID_SIZE - oldCell.row),
-              mediaType: oldCell.mediaType ?? "animation",
-            };
+          if (oldCell.row < 3 && oldCell.col < 3) {
+            const newIndex = oldCell.row * GRID_SIZE + oldCell.col;
+            const newCell = newCells[newIndex];
+            if (newCell) {
+              newCells[newIndex] = {
+                ...newCell,
+                enabled: oldCell.enabled,
+                layers: oldCell.layers ?? [],
+                beatOffset: oldCell.beatOffset ?? 0,
+                colSpan: Math.min(oldCell.colSpan ?? 1, GRID_SIZE - oldCell.col),
+                rowSpan: Math.min(oldCell.rowSpan ?? 1, GRID_SIZE - oldCell.row),
+                mediaType: oldCell.mediaType ?? "animation",
+              };
+            }
           }
         }
         const migratedConfig = { cells: newCells };
@@ -403,46 +436,44 @@ function createArrangeGridState() {
 
     switch (preset) {
       case "hero-thumbs": {
+        // Large hero (5x5) + 5 thumbnails across bottom row
         const heroIdx = getCellIndex(0, 0);
         const heroCell = newCells[heroIdx];
         if (heroCell) {
-          newCells[heroIdx] = { ...heroCell, enabled: true, colSpan: 3, rowSpan: 3 };
+          newCells[heroIdx] = { ...heroCell, enabled: true, colSpan: 5, rowSpan: 5 };
         }
-        const thumbLeft = newCells[getCellIndex(3, 0)];
-        if (thumbLeft) {
-          newCells[getCellIndex(3, 0)] = { ...thumbLeft, enabled: true };
-        }
-        const thumbMid = newCells[getCellIndex(3, 1)];
-        if (thumbMid) {
-          newCells[getCellIndex(3, 1)] = { ...thumbMid, enabled: true };
-        }
-        const thumbRight = newCells[getCellIndex(3, 2)];
-        if (thumbRight) {
-          newCells[getCellIndex(3, 2)] = { ...thumbRight, enabled: true };
+        for (let col = 0; col < 5; col++) {
+          const thumbIdx = getCellIndex(5, col);
+          const thumb = newCells[thumbIdx];
+          if (thumb) {
+            newCells[thumbIdx] = { ...thumb, enabled: true };
+          }
         }
         break;
       }
       case "main-banner": {
+        // Full-width main (6x5) + full-width banner (6x1)
         const mainIdx = getCellIndex(0, 0);
         const mainCell = newCells[mainIdx];
         if (mainCell) {
-          newCells[mainIdx] = { ...mainCell, enabled: true, colSpan: 4, rowSpan: 3 };
+          newCells[mainIdx] = { ...mainCell, enabled: true, colSpan: 6, rowSpan: 5 };
         }
-        const banner = newCells[getCellIndex(3, 0)];
+        const banner = newCells[getCellIndex(5, 0)];
         if (banner) {
-          newCells[getCellIndex(3, 0)] = { ...banner, enabled: true, colSpan: 4 };
+          newCells[getCellIndex(5, 0)] = { ...banner, enabled: true, colSpan: 6 };
         }
         break;
       }
       case "pip": {
+        // Large main (5x6) + small PIP overlay
         const mainIdx = getCellIndex(0, 0);
         const mainCell = newCells[mainIdx];
         if (mainCell) {
-          newCells[mainIdx] = { ...mainCell, enabled: true, colSpan: 3, rowSpan: 4 };
+          newCells[mainIdx] = { ...mainCell, enabled: true, colSpan: 5, rowSpan: 6 };
         }
-        const pip = newCells[getCellIndex(0, 3)];
+        const pip = newCells[getCellIndex(0, 5)];
         if (pip) {
-          newCells[getCellIndex(0, 3)] = { ...pip, enabled: true };
+          newCells[getCellIndex(0, 5)] = { ...pip, enabled: true };
         }
         break;
       }
@@ -820,7 +851,7 @@ function createArrangeGridState() {
       this.setCellSpan(cellId, 1, 1);
     },
 
-    // Preset layouts (for 4x4 grid) - includes spanning presets
+    // Preset layouts (for 6x6 grid) - includes spanning presets
     setPresetLayout(
       preset:
         | "single"
@@ -881,7 +912,7 @@ function createArrangeGridState() {
     },
 
     /**
-     * Apply a spanning layout preset (for 4x4 grid).
+     * Apply a spanning layout preset (for 6x6 grid).
      * Public entry point wraps in its own undo entry.
      */
     setSpanningPreset(preset: "hero-thumbs" | "main-banner" | "pip") {

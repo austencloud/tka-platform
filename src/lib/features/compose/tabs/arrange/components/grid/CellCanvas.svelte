@@ -18,6 +18,7 @@
   import { AnimationStateManager } from "../../../../services/implementations/AnimationStateManager";
   import { createAnimationPanelState } from "../../../../state/animation-panel-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import type { AdditionalLayerProps } from "../../../../services/contracts/ITrailCapturer";
 
   let {
     cell,
@@ -43,18 +44,20 @@
 
   // Per-cell animation orchestrators (NOT shared singletons)
   let primaryOrchestrator: ISequenceAnimationOrchestrator | null = null;
-  let secondaryOrchestrator: ISequenceAnimationOrchestrator | null = null;
+  // Additional layer orchestrators (layers 1-3, indexed from 0)
+  let additionalOrchestrators: ISequenceAnimationOrchestrator[] = [];
 
-  // Animation states for primary and secondary layers
+  // Animation states for primary and additional layers
   const primaryAnimationState = createAnimationPanelState();
-  const secondaryAnimationState = createAnimationPanelState();
+  let additionalAnimationStates: ReturnType<typeof createAnimationPanelState>[] = [];
 
   // Local state
   let initialized = $state(false);
 
   // Derived: Get layer data
   const primaryLayer = $derived(cell.layers[0] || null);
-  const secondaryLayer = $derived(cell.layers[1] || null);
+  // Additional layers (1-3): all layers beyond primary
+  const extraLayers = $derived(cell.layers.slice(1));
   const hasLayers = $derived(cell.layers.length > 0);
   const isAnimationType = $derived(cell.mediaType === "animation");
 
@@ -94,13 +97,15 @@
     return skipStartPosition ? wrapped + 1 : wrapped;
   });
 
-  const secondaryCurrentStep = $derived.by(() => {
-    if (!secondaryLayer) return 0;
-    const stepCount = secondaryLayer.sequence.steps?.length || 1;
-    const actualBeats = skipStartPosition ? stepCount : stepCount + 1;
-    const layerBeat = effectiveBeat + secondaryLayer.beatOffset;
-    const wrapped = layerBeat % actualBeats;
-    return skipStartPosition ? wrapped + 1 : wrapped;
+  // Current steps for each additional layer
+  const additionalCurrentSteps = $derived.by(() => {
+    return extraLayers.map((layer) => {
+      const stepCount = layer.sequence.steps?.length || 1;
+      const actualBeats = skipStartPosition ? stepCount : stepCount + 1;
+      const layerBeat = effectiveBeat + layer.beatOffset;
+      const wrapped = layerBeat % actualBeats;
+      return skipStartPosition ? wrapped + 1 : wrapped;
+    });
   });
 
   // Get current step data. The orchestrator step is 1-based (step=1 uses steps[0]),
@@ -113,12 +118,15 @@
     return primaryLayer.sequence.steps[stepIndex] || null;
   });
 
-  const secondaryStepData = $derived.by(() => {
-    if (!secondaryLayer?.sequence.steps) return null;
-    const stepIndex = Math.floor(
-      Math.max(0, Math.min(secondaryCurrentStep - 1, secondaryLayer.sequence.steps.length - 1))
-    );
-    return secondaryLayer.sequence.steps[stepIndex] || null;
+  // Build additionalLayers prop array from additional orchestrator states
+  const additionalLayerProps = $derived.by((): AdditionalLayerProps[] => {
+    return extraLayers.map((_layer, i) => {
+      const animState = additionalAnimationStates[i];
+      return {
+        blueProp: animState?.bluePropState ?? null,
+        redProp: animState?.redPropState ?? null,
+      };
+    });
   });
 
   // Initialize services - create per-cell orchestrators
@@ -135,11 +143,18 @@
         stepCalculationService,
         propInterpolationService
       );
-      secondaryOrchestrator = new SequenceAnimationOrchestrator(
-        new AnimationStateManager(),
-        stepCalculationService,
-        propInterpolationService
-      );
+
+      // Create orchestrators for up to 3 additional layers
+      for (let i = 0; i < 3; i++) {
+        additionalOrchestrators.push(
+          new SequenceAnimationOrchestrator(
+            new AnimationStateManager(),
+            stepCalculationService,
+            propInterpolationService
+          )
+        );
+        additionalAnimationStates.push(createAnimationPanelState());
+      }
 
       initialized = true;
     } catch (err) {
@@ -149,9 +164,9 @@
 
   onDestroy(() => {
     primaryAnimationState.dispose();
-    secondaryAnimationState.dispose();
+    for (const state of additionalAnimationStates) state.dispose();
     primaryOrchestrator?.dispose();
-    secondaryOrchestrator?.dispose();
+    for (const orch of additionalOrchestrators) orch.dispose();
   });
 
   // Initialize primary orchestrator when layer changes
@@ -167,17 +182,24 @@
     }
   });
 
-  // Initialize secondary orchestrator when layer changes
-  // NOTE: Secondary prop textures are loaded automatically by AnimationEngine
-  // inside AnimatorCanvas when it receives non-null secondaryBlueProp/secondaryRedProp.
+  // Initialize additional orchestrators when layers change
+  // NOTE: Additional layer prop textures are loaded automatically by AnimationEngine
+  // inside AnimatorCanvas when it receives non-empty additionalLayers.
   $effect(() => {
-    if (initialized && secondaryLayer && secondaryOrchestrator) {
-      try {
-        secondaryOrchestrator.initializeWithDomainData(secondaryLayer.sequence);
-        secondaryAnimationState.setSequenceData(secondaryLayer.sequence);
-        secondaryAnimationState.setTotalSteps(secondaryLayer.sequence.steps?.length || 0);
-      } catch (err) {
-        console.error(`[CellCanvas ${cellIndex}] Secondary init failed:`, err);
+    if (initialized) {
+      for (let i = 0; i < extraLayers.length; i++) {
+        const layer = extraLayers[i]!;
+        const orch = additionalOrchestrators[i];
+        const animState = additionalAnimationStates[i];
+        if (orch && animState) {
+          try {
+            orch.initializeWithDomainData(layer.sequence);
+            animState.setSequenceData(layer.sequence);
+            animState.setTotalSteps(layer.sequence.steps?.length || 0);
+          } catch (err) {
+            console.error(`[CellCanvas ${cellIndex}] Layer ${i + 1} init failed:`, err);
+          }
+        }
       }
     }
   });
@@ -196,12 +218,18 @@
     }
   });
 
+  // Sync step positions for additional layers
   $effect(() => {
-    const step = secondaryCurrentStep;
-    if (secondaryOrchestrator?.isInitialized() && secondaryLayer) {
-      secondaryOrchestrator.calculateState(step);
-      const states = secondaryOrchestrator.getCurrentPropStates();
-      secondaryAnimationState.setPropStates(states.blue, states.red);
+    const steps = additionalCurrentSteps;
+    for (let i = 0; i < extraLayers.length; i++) {
+      const step = steps[i] ?? 0;
+      const orch = additionalOrchestrators[i];
+      const animState = additionalAnimationStates[i];
+      if (orch?.isInitialized() && animState) {
+        orch.calculateState(step);
+        const states = orch.getCurrentPropStates();
+        animState.setPropStates(states.blue, states.red);
+      }
     }
   });
 
@@ -235,8 +263,7 @@
       <AnimatorCanvas
         blueProp={primaryAnimationState.bluePropState}
         redProp={primaryAnimationState.redPropState}
-        secondaryBlueProp={secondaryLayer ? secondaryAnimationState.bluePropState : null}
-        secondaryRedProp={secondaryLayer ? secondaryAnimationState.redPropState : null}
+        additionalLayers={additionalLayerProps}
         gridVisible={true}
         gridMode={primaryLayer?.sequence.gridMode ?? null}
         letter={primaryStepData?.letter || null}

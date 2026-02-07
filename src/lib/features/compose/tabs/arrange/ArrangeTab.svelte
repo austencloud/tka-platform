@@ -3,7 +3,7 @@
    * ArrangeTab - Grid-based composition builder
    *
    * Architecture:
-   * - Freeform 4x4 grid where each cell can be toggled on/off
+   * - Freeform 6x6 grid where each cell can be toggled on/off
    * - Supports non-rectangular layouts (L-shapes, T-shapes, scattered, etc.)
    * - Each enabled cell is a "tunnel" that can hold up to 4 performers/layers
    * - Global sync playback with optional per-cell beat offsets
@@ -50,7 +50,7 @@
   let editingLayerIndex = $state<number | null>(null);
   let showSaveModal = $state(false);
 
-  // Zoom mode: "auto" zooms to fit enabled cells, "full" shows entire 4x4
+  // Zoom mode: "auto" zooms to fit enabled cells, "full" shows entire 6x6
   let zoomMode = $state<"auto" | "full">("auto");
 
   // Derived: selected cell data

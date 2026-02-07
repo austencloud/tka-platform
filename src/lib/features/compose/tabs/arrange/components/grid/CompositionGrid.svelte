@@ -42,7 +42,7 @@
     occupiedPositions: Map<string, string>;
     /** Pre-computed grid bounds from state (auto mode) */
     stateGridBounds: GridBoundsInfo;
-    /** "auto" = zoom to enabled cells, "full" = show entire 4x4 grid */
+    /** "auto" = zoom to enabled cells, "full" = show entire 6x6 grid */
     zoomMode?: "auto" | "full";
     onSelectCell: (cellId: string) => void;
     onSetCellSpan: (cellId: string, colSpan: number, rowSpan: number, newCol?: number, newRow?: number) => void;
@@ -119,7 +119,7 @@
   // Get only enabled cells for rendering
   const enabledCells = $derived(cells.filter((c) => c.enabled));
 
-  // Grid bounds: use pre-computed state bounds for auto mode, full 4x4 for full mode
+  // Grid bounds: use pre-computed state bounds for auto mode, full 6x6 for full mode
   const FULL_GRID_BOUNDS: GridBoundsInfo = { minRow: 0, maxRow: GRID_SIZE - 1, minCol: 0, maxCol: GRID_SIZE - 1, rows: GRID_SIZE, cols: GRID_SIZE };
   const gridBounds = $derived(zoomMode === "full" ? FULL_GRID_BOUNDS : stateGridBounds);
 
