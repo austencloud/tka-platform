@@ -51,13 +51,13 @@
   .impersonation-bar {
     position: relative;
     flex-shrink: 0;
-    height: 36px;
+    min-height: 48px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 12px;
+    padding: 0 4px 0 12px;
     background: rgba(30, 58, 138, 0.9);
-    border-top: 1px solid rgba(59, 130, 246, 0.4);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.4);
   }
 
   .bar-left {

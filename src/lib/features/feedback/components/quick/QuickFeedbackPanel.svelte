@@ -486,11 +486,13 @@
     width: 100%;
     max-width: none;
     height: 100vh;
+    height: 100dvh; /* Modern: accounts for iPhone browser chrome */
   }
 
   .quick-feedback-panel.bottom-sheet {
     flex-direction: column;
-    height: 100vh;
+    /* Use 100% to fill drawer-inner, not viewport units which overflow past the handle */
+    height: 100%;
     max-height: none;
     padding-top: max(12px, env(safe-area-inset-top));
     padding-bottom: max(12px, env(safe-area-inset-bottom));

@@ -287,6 +287,14 @@
 
   <!-- Content + Navigation Wrapper (flex layout) -->
   <div class="content-wrapper">
+    <!-- Impersonation bar (top of content, both platforms) -->
+    {#if isImpersonating && userPreviewState.data.profile}
+      <ImpersonationBar
+        previewProfile={userPreviewState.data.profile}
+        onExitPreview={handleExitPreview}
+      />
+    {/if}
+
     <!-- Main Content Area -->
     <main
       id="main-content"
@@ -321,13 +329,6 @@
       />
     {/if}
 
-    <!-- Impersonation bar (below nav, both platforms) -->
-    {#if isImpersonating && userPreviewState.data.profile}
-      <ImpersonationBar
-        previewProfile={userPreviewState.data.profile}
-        onExitPreview={handleExitPreview}
-      />
-    {/if}
   </div>
 
   <!-- Domain Managers -->

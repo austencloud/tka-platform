@@ -186,7 +186,8 @@ dialog.drawer-content {
   right: 0;
   width: 100%;
   max-width: 100%;
-  max-height: calc(100vh);
+  max-height: 100vh;
+  max-height: 100dvh; /* Modern: accounts for iPhone browser chrome */
 
   margin: 0;
   border-top-left-radius: var(
