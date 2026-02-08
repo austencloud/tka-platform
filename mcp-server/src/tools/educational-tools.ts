@@ -30,8 +30,8 @@ export function registerEducationalTools(server: McpServer): void {
             text: `TKA Quick Reference:
 - Grid: 8 points (N,E,S,W + NE,SE,SW,NW) + center (Level 5)
 - Positions: Alpha=opposite, Beta=same, Gamma=right-angle, Zeta=obtuse, Eta=acute, Tau=one-center, Terra=both-center
-- Hand motions: Static=stay, Shift=adjacent(90°), Dash=opposite(180°)
-- Prop rotations: Pro=with hand path, Anti=against, Float=none, Isolation=pro at 0 turns
+- Hand paths: Static=stay, Shift=arc to adjacent, Dash=straight to opposite(180°), Hash=straight to/from center (L5, "half-dash")
+- Prop rotations: Pro=with hand path (0 turns=isolation, preserves center-relative orientation), Anti=against, Float=holds absolute spatial angle
 - Types: 1=Dual-Shift(A-V), 2=Shift(W-Ω), 3=Cross-Shift(W--Ω-), 4=Dash(Φ,Ψ,Λ), 5=Dual-Dash(Φ-,Ψ-,Λ-), 6=Static(α,β,γ)
 - "[Letter] dash" = Type 3 with "-" suffix (e.g. "Σ dash" = Σ-)
 - Orientations: in, out, clock, counter + Level 7 interradial: clockIn, clockOut, counterIn, counterOut
@@ -73,23 +73,24 @@ Pictographs use a grid with up to 9 points:
 - **Tau (τ)**: One hand at center, one not (Level 5)
 - **Terra**: Both hands at center (Level 5)
 
-## Hand Motions
+## Hand Paths
 
 - **Static**: Hand stays at current grid point
-- **Shift**: Hand moves to adjacent grid point (90°)
-- **Dash**: Hand moves to opposite grid point (180°)
+- **Shift**: Hand arcs along the perimeter to an adjacent grid point (curved path)
+- **Dash**: Hand moves in a straight line to the opposite grid point (180°)
+- **Hash**: Hand moves in a straight line to or from the center point (Level 5). A "half-dash."
 
 ## Prop Rotation Types
 
-- **Pro (prospin)**: Prop rotates with hand's travel direction. At 0 turns = isolation (prop appears fixed in space)
+- **Pro (prospin)**: Prop rotates with hand's travel direction. At 0 turns = isolation (center-relative orientation preserved, creating the visual effect of a fixed point — distinct from float, which holds absolute spatial angle)
 - **Anti (antispin)**: Prop rotates against hand's travel. Creates petal-like patterns
 - **Float**: Prop does not rotate at all during a shift. Pure translation
 
 ## Orientations
 
-The facing direction of a prop. Eight values across the level system:
-- **Base** (Levels 1-6): in, out, clock, counter
-- **Interradial** (Level 7): clockIn, clockOut, counterIn, counterOut
+The facing direction of a prop relative to the performer's center. Eight values across the level system:
+- **Cardinal** (all levels): in, out, clock, counter
+- **Interradial** (Level 7+): clockIn, clockOut, counterIn, counterOut — at 45° between the cardinal orientations
 
 ## Turns
 
@@ -139,24 +140,25 @@ Pairs that complete a full cycle of motion:
 - **EK** (Exploding Kitten): anti/anti compound
 - **FL** (Fruity Loops): hybrid compound
 - **MP** (Magic Potion), **NQ** (Never Quit), **OR** (Open Road): γ→γ compounds
-- **ΦΨ**: dash compound
+- **ΦΨ**: dash compound (one hand dashes, one stays static)
 
 ## VTG (Vulcan Tech Gospel)
 
 An older, widely-adopted notation from the Vulcan Lofts in Oakland. Ground-referenced (downbeat = south).
-- **Split-Same (SS)**: props 180° out of phase, same direction. Alpha letters (A, B, C) are always SS.
-- **Together-Same (TS)**: props in sync, same direction. Beta letters (G, H, I) are always TS.
-- **Split-Opposite (SO)**: out of phase, opposite directions.
-- **Together-Opposite (TO)**: in sync, opposite directions.
+"Same/opposite" refers to **hand path direction** (both hands arc the same way vs opposite ways), not prop rotation direction.
+- **Split-Same (SS)**: props 180° out of phase, hands arc same way. Alpha letters (A, B, C) are always SS.
+- **Together-Same (TS)**: props in sync, hands arc same way. Beta letters (G, H, I) are always TS.
+- **Split-Opposite (SO)**: out of phase, hands arc opposite ways.
+- **Together-Opposite (TO)**: in sync, hands arc opposite ways.
 
 TKA maps: split = alpha (opposite), tog/together = beta (same point).
 
 ## Reversals
 
-Three types of directional changes:
-- **Hand reversal**: Hand goes back, prop continues. Switches pro↔anti. No notation.
-- **Prop reversal**: Hand continues, prop reverses. Switches pro↔anti. Marked R/R.
-- **Full reversal**: Both retrace. Maintains pro/anti. Marked R/R.
+Three types of directional changes, indicated by colored dots on the left edge of the pictograph:
+- **Hand reversal**: Hand goes back, prop continues. Switches pro↔anti.
+- **Prop reversal**: Hand continues, prop reverses. Switches pro↔anti.
+- **Full reversal**: Both retrace. Maintains pro/anti.
 
 ## LOOPs (Circular Sequences)
 
@@ -232,9 +234,9 @@ Use \`list_letter_variations\` to see all variations for a specific letter.`;
         const rd = motion.rotationDirection;
         if (mt === "static") return "static (no hand movement)";
         if (mt === "dash") return "dash (moves to opposite point)";
-        // shift with rotation info
-        const rotLabel = rd === "cw" ? "pro (clockwise)" : rd === "ccw" ? "anti (counter-clockwise)" : mt;
-        return `${rotLabel} ${mt}`;
+        // shift: motionType is pro/anti, rotationDirection is the absolute CW/CCW
+        const dirLabel = rd === "cw" ? "clockwise" : rd === "ccw" ? "counter-clockwise" : "";
+        return dirLabel ? `${mt} (${dirLabel})` : mt;
       };
 
       const explanation = `# Letter: ${letter}
@@ -314,6 +316,14 @@ Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter
         "full reversal": "full-reversal",
         "motion type": "shift",
         "grid mode": "diamond",
+        "half-dash": "hash",
+        "half dash": "hash",
+        "base rotation": "base-rotation",
+        "interradials": "interradial",
+        "conjoined": "conjoined-grid",
+        "conjoined grid": "conjoined-grid",
+        "rubik's cube": "rubiks-cube",
+        "rubiks cube": "rubiks-cube",
       };
 
       const resolvedTerm = aliases[normalizedTerm] || normalizedTerm;
@@ -418,9 +428,8 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
         if (motion.motionType === "static") return "static";
         if (motion.motionType === "dash") return "dash";
         const dir = motion.rotationDirection;
-        if (dir === "cw") return "pro (clockwise)";
-        if (dir === "ccw") return "anti (counter-clockwise)";
-        return motion.motionType;
+        const dirLabel = dir === "cw" ? "clockwise" : dir === "ccw" ? "counter-clockwise" : "";
+        return dirLabel ? `${motion.motionType} (${dirLabel})` : motion.motionType;
       };
 
       const similarities: string[] = [];

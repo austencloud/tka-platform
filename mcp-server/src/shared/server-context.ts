@@ -193,6 +193,9 @@ function loadDataframe(gridMode: GridMode): PictographData[] {
         startOrientation: "in",
       });
 
+      // Skip blank/separator lines in the CSV
+      if (!row.letter || row.letter.trim() === "") continue;
+
       pictographs.push({
         letter: row.letter,
         startPosition: row.startPosition,
