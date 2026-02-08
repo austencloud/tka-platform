@@ -7,7 +7,7 @@
  */
 
 import type { AnimationMode } from "../../../shared/domain/AnimationMode";
-import type { Composition, GridLayout } from "../../../compose/domain/types";
+import type { CellConfig, Composition, GridLayout } from "../../../compose/domain/types";
 import { dexieCompositionRepository } from "../../../services/implementations/DexieCompositionRepository";
 
 // ============================================================================
@@ -19,6 +19,7 @@ export interface CompositionBrowseItem {
 	name: string;
 	mode: AnimationMode;
 	layout: GridLayout;
+	cells: CellConfig[];
 	cellCount: number;
 	sequenceCount: number;
 	thumbnailUrl?: string;
@@ -74,6 +75,7 @@ function compositionToBrowseItem(composition: Composition): CompositionBrowseIte
 		name: composition.name,
 		mode: inferModeFromComposition(composition),
 		layout: composition.layout,
+		cells: composition.cells,
 		cellCount: composition.layout.rows * composition.layout.cols,
 		sequenceCount: allSequences.length,
 		thumbnailUrl: composition.thumbnailUrl,

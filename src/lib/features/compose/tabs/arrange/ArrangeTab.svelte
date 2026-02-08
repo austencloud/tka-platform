@@ -265,14 +265,23 @@
     showSaveModal = true;
   }
 
-  function handleSaveModalConfirm(name: string) {
-    gridState.saveComposition(name);
-    showSaveModal = false;
-    showToast({
-      message: `Saved "${name}"`,
-      type: "success",
-      duration: 3000,
-    });
+  async function handleSaveModalConfirm(name: string) {
+    try {
+      await gridState.saveComposition(name);
+      showSaveModal = false;
+      showToast({
+        message: `Saved "${name}"`,
+        type: "success",
+        duration: 3000,
+      });
+    } catch (err) {
+      console.error("Failed to save composition:", err);
+      showToast({
+        message: "Failed to save composition",
+        type: "error",
+        duration: 4000,
+      });
+    }
   }
 
   function handleSaveModalClose() {

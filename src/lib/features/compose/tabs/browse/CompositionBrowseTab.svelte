@@ -15,7 +15,6 @@
 	import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 	import CompositionFilterBar from "./components/CompositionFilterBar.svelte";
 	import CompositionGrid from "./components/CompositionGrid.svelte";
-	import CompositionEmptyState from "./components/CompositionEmptyState.svelte";
 	import CompositionDetail from "./components/CompositionDetail.svelte";
 
 	const browseState = getCompositionBrowseState();
@@ -54,14 +53,31 @@
 		composeState.openPlayback("browse");
 	}
 
-	function handleEdit(id?: string) {
+	async function handleEdit(id?: string) {
 		const compositionId = id ?? browseState.expandedComposition?.id;
 		if (!compositionId) return;
 
-		// Navigate to Arrange tab (composition loading is a future feature)
-		navigationState.setActiveTab("arrange");
-		composeState.setCurrentTab("arrange");
-		browseState.collapseDetail();
+		try {
+			const loaded = await arrangeGridState.loadComposition(compositionId);
+			if (!loaded) {
+				showToast({
+					message: "Composition not found",
+					type: "error",
+					duration: 3000,
+				});
+				return;
+			}
+			navigationState.setActiveTab("arrange");
+			composeState.setCurrentTab("arrange");
+			browseState.collapseDetail();
+		} catch (err) {
+			console.error("Failed to load composition:", err);
+			showToast({
+				message: "Failed to load composition",
+				type: "error",
+				duration: 4000,
+			});
+		}
 	}
 
 	function handleDetailFavorite() {
@@ -137,8 +153,22 @@
 			</button>
 		</div>
 	{:else if !browseState.isLoading && browseState.compositions.length === 0}
-		<!-- Empty state: template gallery -->
-		<CompositionEmptyState />
+		<!-- Empty state -->
+		<div class="empty-state">
+			<i class="fas fa-layer-group empty-icon" aria-hidden="true"></i>
+			<p class="empty-title">No compositions yet</p>
+			<p class="empty-hint">Save a composition from the Arrange tab to see it here.</p>
+			<button
+				type="button"
+				class="go-arrange-btn"
+				onclick={() => {
+					navigationState.setActiveTab("arrange");
+					composeState.setCurrentTab("arrange");
+				}}
+			>
+				Go to Arrange
+			</button>
+		</div>
 	{:else}
 		<!-- Filter bar (only when compositions exist) -->
 		{#if browseState.compositions.length > 0}
@@ -306,6 +336,63 @@
 	}
 
 	.clear-filters-btn:focus-visible {
+		outline: 2px solid var(--theme-accent, #6366f1);
+		outline-offset: 2px;
+	}
+
+	/* Empty state */
+	.empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
+		height: 100%;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+		text-align: center;
+		padding: 24px;
+	}
+
+	.empty-icon {
+		font-size: 40px;
+		opacity: 0.3;
+	}
+
+	.empty-title {
+		margin: 0;
+		font-size: var(--font-size-min, 14px);
+		font-weight: 500;
+		color: var(--theme-text, #fff);
+	}
+
+	.empty-hint {
+		margin: 0;
+		font-size: var(--font-size-sm, 14px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.go-arrange-btn {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 10px 20px;
+		margin-top: 8px;
+		background: var(--theme-accent, #6366f1);
+		border: none;
+		border-radius: 8px;
+		color: #fff;
+		font-size: var(--font-size-sm, 14px);
+		font-weight: 500;
+		cursor: pointer;
+		min-height: 48px;
+		transition: opacity 0.15s ease;
+	}
+
+	.go-arrange-btn:hover {
+		opacity: 0.85;
+	}
+
+	.go-arrange-btn:focus-visible {
 		outline: 2px solid var(--theme-accent, #6366f1);
 		outline-offset: 2px;
 	}

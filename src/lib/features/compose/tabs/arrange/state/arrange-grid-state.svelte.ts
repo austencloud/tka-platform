@@ -19,6 +19,7 @@ import {
 } from "../../../compose/domain/types";
 
 import type { CellMediaType } from "../../../compose/domain/types";
+import type { Composition } from "../../../compose/domain/types";
 import { sequenceTransformer } from "$lib/features/create/shared/services/implementations/sequence-transforms/SequenceTransformer";
 import { container } from "$lib/shared/di";
 import type {
@@ -27,6 +28,8 @@ import type {
 } from "../services/contracts/IArrangeUndoManager";
 
 import { ArrangeGridSerializer } from "../services/implementations/ArrangeGridSerializer";
+import { ArrangeCompositionConverter } from "../services/implementations/ArrangeCompositionConverter";
+import { dexieCompositionRepository } from "../../../services/implementations/DexieCompositionRepository";
 
 // Maximum backing array dimensions (8x8 = 64 cells)
 export const MAX_GRID_SIZE = 8;
@@ -256,25 +259,44 @@ function saveToStorage(config: GridConfig): void {
   }
 }
 
-function loadSavedCompositions(): SavedComposition[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem(SAVED_COMPOSITIONS_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-function persistSavedCompositions(compositions: SavedComposition[]): void {
+/**
+ * One-time migration: move any compositions saved to localStorage
+ * into Dexie so they appear in the Browse tab.
+ */
+async function migrateLocalStorageCompositions(): Promise<void> {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(
-      SAVED_COMPOSITIONS_KEY,
-      JSON.stringify(compositions)
-    );
+    const stored = localStorage.getItem(SAVED_COMPOSITIONS_KEY);
+    if (!stored) return;
+
+    const saved: SavedComposition[] = JSON.parse(stored);
+    if (!Array.isArray(saved) || saved.length === 0) {
+      localStorage.removeItem(SAVED_COMPOSITIONS_KEY);
+      return;
+    }
+
+    const converter = new ArrangeCompositionConverter();
+
+    for (const comp of saved) {
+      const composition = converter.gridCellsToComposition(comp.id, comp.name, {
+        cells: comp.cells,
+        gridRows: comp.gridRows ?? 2,
+        gridCols: comp.gridCols ?? 2,
+        bpm: comp.bpm ?? 120,
+        skipStartPosition: comp.skipStartPosition ?? true,
+      });
+      // Preserve original creation date
+      composition.createdAt = new Date(comp.createdAt);
+      composition.updatedAt = new Date(comp.createdAt);
+
+      await dexieCompositionRepository.saveComposition(composition);
+    }
+
+    localStorage.removeItem(SAVED_COMPOSITIONS_KEY);
+    console.log(`Migrated ${saved.length} composition(s) from localStorage to Dexie`);
   } catch (err) {
-    console.warn("Failed to save compositions:", err);
+    console.warn("Failed to migrate localStorage compositions:", err);
+    // Non-fatal — compositions remain in localStorage for next attempt
   }
 }
 
@@ -343,6 +365,9 @@ function createArrangeGridState() {
     undoDescription = undoManager.undoDescription;
     redoDescription = undoManager.redoDescription;
   });
+
+  // Fire-and-forget: migrate any old localStorage compositions to Dexie
+  migrateLocalStorageCompositions();
 
   /**
    * Wrap a synchronous mutation in undo capture/commit.
@@ -680,6 +705,14 @@ function createArrangeGridState() {
       if (clamped === gridRows) return;
       withUndo("SET_GRID_ROWS" as ArrangeUndoOperationType, `Set rows to ${clamped}`, () => {
         gridRows = clamped;
+        // Clamp rowSpans that exceed new bounds
+        const newCells = cells.map((cell) => {
+          if (cell.row + cell.rowSpan > clamped) {
+            return { ...cell, rowSpan: Math.max(1, clamped - cell.row) };
+          }
+          return cell;
+        });
+        cells = newCells;
         // Deselect if selected cell is now out of bounds
         if (selectedCellId) {
           const cell = cells.find((c) => c.id === selectedCellId);
@@ -696,6 +729,14 @@ function createArrangeGridState() {
       if (clamped === gridCols) return;
       withUndo("SET_GRID_COLS" as ArrangeUndoOperationType, `Set columns to ${clamped}`, () => {
         gridCols = clamped;
+        // Clamp colSpans that exceed new bounds
+        const newCells = cells.map((cell) => {
+          if (cell.col + cell.colSpan > clamped) {
+            return { ...cell, colSpan: Math.max(1, clamped - cell.col) };
+          }
+          return cell;
+        });
+        cells = newCells;
         if (selectedCellId) {
           const cell = cells.find((c) => c.id === selectedCellId);
           if (cell && cell.col >= gridCols) {
@@ -716,6 +757,23 @@ function createArrangeGridState() {
         () => {
           gridRows = clampedRows;
           gridCols = clampedCols;
+
+          // Clamp cell spans that would exceed the new grid bounds
+          const newCells = cells.map((cell) => {
+            let { colSpan, rowSpan } = cell;
+            if (cell.col + colSpan > clampedCols) {
+              colSpan = Math.max(1, clampedCols - cell.col);
+            }
+            if (cell.row + rowSpan > clampedRows) {
+              rowSpan = Math.max(1, clampedRows - cell.row);
+            }
+            if (colSpan !== cell.colSpan || rowSpan !== cell.rowSpan) {
+              return { ...cell, colSpan, rowSpan };
+            }
+            return cell;
+          });
+          cells = newCells;
+
           if (selectedCellId) {
             const cell = cells.find((c) => c.id === selectedCellId);
             if (cell && (cell.row >= gridRows || cell.col >= gridCols)) {
@@ -1381,41 +1439,42 @@ function createArrangeGridState() {
     },
 
     /**
-     * Save current grid state as a named composition.
+     * Save current grid state as a named composition to Dexie.
      * @returns The saved composition's ID
      */
-    saveComposition(name: string): string {
+    async saveComposition(name: string): Promise<string> {
       const id = `comp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const composition: SavedComposition = {
-        id,
-        name,
-        createdAt: Date.now(),
-        cells: deepCloneCells(cells),
-        bpm: playbackBpm,
-        skipStartPosition,
+      const converter = new ArrangeCompositionConverter();
+      const snapshot = $state.snapshot(cells) as GridCell[];
+
+      const composition = converter.gridCellsToComposition(id, name, {
+        cells: snapshot,
         gridRows,
         gridCols,
-      };
-      const all = loadSavedCompositions();
-      all.push(composition);
-      persistSavedCompositions(all);
+        bpm: playbackBpm,
+        skipStartPosition,
+      });
+
+      await dexieCompositionRepository.saveComposition(composition);
       return id;
     },
 
     /**
-     * Load a saved composition into the working grid.
+     * Load a saved composition from Dexie into the working grid.
      */
-    loadComposition(id: string): boolean {
-      const all = loadSavedCompositions();
-      const comp = all.find((c) => c.id === id);
-      if (!comp) return false;
+    async loadComposition(id: string): Promise<boolean> {
+      const composition = await dexieCompositionRepository.getComposition(id);
+      if (!composition) return false;
 
-      withUndo("LOAD_COMPOSITION", `Load: ${comp.name}`, () => {
-        cells = deepCloneCells(comp.cells);
-        gridRows = comp.gridRows ?? 2;
-        gridCols = comp.gridCols ?? 2;
-        playbackBpm = comp.bpm;
-        skipStartPosition = comp.skipStartPosition;
+      const converter = new ArrangeCompositionConverter();
+      const restored = converter.compositionToGridState(composition);
+
+      withUndo("LOAD_COMPOSITION", `Load: ${composition.name}`, () => {
+        cells = restored.cells;
+        gridRows = restored.gridRows;
+        gridCols = restored.gridCols;
+        playbackBpm = restored.bpm;
+        skipStartPosition = restored.skipStartPosition;
         selectedCellId = null;
         isPlaying = false;
         stopPlaybackLoop();
@@ -1426,18 +1485,20 @@ function createArrangeGridState() {
     },
 
     /**
-     * List all saved compositions (newest first).
+     * List all saved compositions from Dexie (newest first).
      */
-    getSavedCompositions(): SavedComposition[] {
-      return loadSavedCompositions().sort((a, b) => b.createdAt - a.createdAt);
+    async getSavedCompositions(): Promise<Composition[]> {
+      return dexieCompositionRepository.getCompositions({
+        sortBy: "updatedAt",
+        sortDirection: "desc",
+      });
     },
 
     /**
-     * Delete a saved composition.
+     * Delete a saved composition from Dexie.
      */
-    deleteSavedComposition(id: string): void {
-      const all = loadSavedCompositions();
-      persistSavedCompositions(all.filter((c) => c.id !== id));
+    async deleteSavedComposition(id: string): Promise<void> {
+      await dexieCompositionRepository.deleteComposition(id);
     },
 
     // Reset
