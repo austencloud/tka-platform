@@ -9,6 +9,7 @@ import { container } from "$lib/shared/di";
 import { GridMode } from "../../../../../shared/pictograph/grid/domain/enums/grid-enums";
 import type { PictographData } from "../../../../../shared/pictograph/shared/domain/models/PictographData";
 import type { ISettingsState } from "../../../../../shared/settings/services/contracts/ISettingsState";
+import { Orientation } from "../../../../../shared/pictograph/shared/domain/enums/pictograph-enums";
 import { startPositionManager } from "../services/implementations/StartPositionManager";
 
 export function createSimplifiedStartPositionState() {
@@ -26,6 +27,7 @@ export function createSimplifiedStartPositionState() {
   let allVariations = $state<PictographData[]>([]);
   let selectedPosition = $state<PictographData | null>(null);
   let currentGridMode = $state<GridMode>(GridMode.DIAMOND); // Default, loaded async
+  let currentOrientation = $state<Orientation>(Orientation.IN);
   const selectionListeners = new Set<
     (position: PictographData | null, source: "user" | "sync") => void
   >();
@@ -44,9 +46,10 @@ export function createSimplifiedStartPositionState() {
   }
 
   // Load positions on initialization - always succeeds with hardcoded positions
-  async function loadPositions(gridMode: GridMode = currentGridMode) {
+  async function loadPositions(gridMode: GridMode = currentGridMode, orientation: Orientation = currentOrientation) {
     currentGridMode = gridMode;
-    positions = await startPositionManager.getStartPositions(gridMode);
+    currentOrientation = orientation;
+    positions = await startPositionManager.getStartPositions(gridMode, orientation);
 
     // Persist grid mode to settings when it changes
     try {
@@ -66,9 +69,10 @@ export function createSimplifiedStartPositionState() {
   }
 
   // Load all 16 start position variations for the current grid mode
-  async function loadAllVariations(gridMode: GridMode = currentGridMode) {
+  async function loadAllVariations(gridMode: GridMode = currentGridMode, orientation: Orientation = currentOrientation) {
     currentGridMode = gridMode;
-    allVariations = await startPositionManager.getAllStartPositionVariations(gridMode);
+    currentOrientation = orientation;
+    allVariations = startPositionManager.getAllStartPositionVariations(gridMode, orientation);
 
     // Persist grid mode to settings when it changes
     try {
@@ -77,6 +81,13 @@ export function createSimplifiedStartPositionState() {
     } catch (error) {
       console.warn("Failed to persist grid mode to settings", error);
     }
+  }
+
+  // Change orientation and reload all position sets
+  async function setOrientation(orientation: Orientation) {
+    currentOrientation = orientation;
+    positions = await startPositionManager.getStartPositions(currentGridMode, orientation);
+    allVariations = startPositionManager.getAllStartPositionVariations(currentGridMode, orientation);
   }
 
   // Select a position
@@ -121,9 +132,13 @@ export function createSimplifiedStartPositionState() {
     get currentGridMode() {
       return currentGridMode;
     },
+    get currentOrientation() {
+      return currentOrientation;
+    },
 
     // Actions
     selectPosition,
+    setOrientation,
     setSelectedPosition,
     clearSelectedPosition,
     loadPositions,

@@ -7,12 +7,13 @@
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export interface IStartPositionManager {
   // Core functionality - load and select positions
-  getStartPositions(gridMode: GridMode): Promise<PictographData[]>;
-  getDefaultStartPositions(gridMode: GridMode): PictographData[];
-  getAllStartPositionVariations(gridMode: GridMode): PictographData[];
+  getStartPositions(gridMode: GridMode, orientation?: Orientation): Promise<PictographData[]>;
+  getDefaultStartPositions(gridMode: GridMode, orientation?: Orientation): PictographData[];
+  getAllStartPositionVariations(gridMode: GridMode, orientation?: Orientation): PictographData[];
   selectStartPosition(position: PictographData): void;
 
   // System method for setting start position in sequence

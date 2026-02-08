@@ -10,7 +10,7 @@
     color: "blue" | "red";
     orientation: string;
     onOrientationChange: (orientation: string) => void;
-    /** Enable interradial orientations (Level 6) */
+    /** Enable interradial orientations (Level 7) */
     showInterradial?: boolean;
   }
 

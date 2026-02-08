@@ -15,7 +15,9 @@ Controls moved below the grid for better UX
     createSimplifiedStartPositionState,
     type SimplifiedStartPositionState,
   } from "../state/start-position-state.svelte";
+  import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import AdvancedStartPositionPicker from "./AdvancedStartPositionPicker.svelte";
+  import OrientationCycler from "./OrientationCycler.svelte";
   import PictographGrid from "./PictographGrid.svelte";
 
   // Local storage key for persisting picker preferences
@@ -62,6 +64,7 @@ Controls moved below the grid for better UX
       const prefs = JSON.parse(stored) as {
         showAdvanced?: boolean;
         gridMode?: string;
+        orientation?: string;
       };
 
       // Restore advanced/simple view preference
@@ -70,6 +73,12 @@ Controls moved below the grid for better UX
         if (showAdvancedPicker) {
           onNavigateToAdvanced?.();
         }
+      }
+
+      // Restore orientation preference (validate against enum)
+      const validOrientations = [Orientation.IN, Orientation.CLOCK, Orientation.OUT, Orientation.COUNTER] as string[];
+      if (prefs.orientation && validOrientations.includes(prefs.orientation)) {
+        void pickerState.setOrientation(prefs.orientation as Orientation);
       }
 
       // Restore grid mode preference (Diamond/Box)
@@ -96,6 +105,7 @@ Controls moved below the grid for better UX
         showAdvanced: showAdvancedPicker,
         gridMode:
           pickerState.currentGridMode === GridMode.DIAMOND ? "DIAMOND" : "BOX",
+        orientation: pickerState.currentOrientation,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
     } catch (error) {
@@ -161,6 +171,13 @@ Controls moved below the grid for better UX
         : GridMode.DIAMOND;
     await pickerState.loadPositions(newMode);
     await pickerState.loadAllVariations(newMode);
+    persistPreferences();
+  }
+
+  // Handle orientation change from cycler
+  async function handleOrientationChange(orientation: Orientation) {
+    hapticService?.trigger("selection");
+    await pickerState.setOrientation(orientation);
     persistPreferences();
   }
 </script>
@@ -239,6 +256,11 @@ Controls moved below the grid for better UX
       </svg>
       <span class="control-label">{viewModeLabel}</span>
     </button>
+
+    <OrientationCycler
+      orientation={pickerState.currentOrientation}
+      onOrientationChange={handleOrientationChange}
+    />
 
     <button
       class="control-button"
@@ -457,6 +479,11 @@ Controls moved below the grid for better UX
     .control-icon {
       width: 16px;
       height: 16px;
+    }
+
+    /* Hide all text labels to save space for the orientation cycler */
+    .control-label {
+      display: none;
     }
   }
 </style>

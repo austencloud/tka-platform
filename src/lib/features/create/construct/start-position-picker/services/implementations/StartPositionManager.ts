@@ -21,11 +21,11 @@ import type { IGridPositionDeriver } from "../../../../../../shared/pictograph/g
 export class StartPositionManager implements IStartPositionManager {
   constructor(private gridPositionDeriver: IGridPositionDeriver) {}
 
-  async getStartPositions(gridMode: GridMode): Promise<PictographData[]> {
-    return this.getDefaultStartPositions(gridMode);
+  async getStartPositions(gridMode: GridMode, orientation?: Orientation): Promise<PictographData[]> {
+    return this.getDefaultStartPositions(gridMode, orientation);
   }
 
-  getDefaultStartPositions(gridMode: GridMode): PictographData[] {
+  getDefaultStartPositions(gridMode: GridMode, orientation?: Orientation): PictographData[] {
     // Define start position locations based on grid mode
     const startPositionKeys =
       gridMode === "diamond"
@@ -40,10 +40,10 @@ export class StartPositionManager implements IStartPositionManager {
             { position: GridPosition.GAMMA12, letter: Letter.GAMMA },
           ];
 
-    return this.createPictographsFromPositions(startPositionKeys, gridMode);
+    return this.createPictographsFromPositions(startPositionKeys, gridMode, orientation);
   }
 
-  getAllStartPositionVariations(gridMode: GridMode): PictographData[] {
+  getAllStartPositionVariations(gridMode: GridMode, orientation?: Orientation): PictographData[] {
     // Get all 16 start position variations for the specified grid mode
     // Based on legacy advanced start position picker
     const allVariations =
@@ -87,12 +87,13 @@ export class StartPositionManager implements IStartPositionManager {
             { position: GridPosition.GAMMA16, letter: Letter.GAMMA },
           ];
 
-    return this.createPictographsFromPositions(allVariations, gridMode);
+    return this.createPictographsFromPositions(allVariations, gridMode, orientation);
   }
 
   private createPictographsFromPositions(
     positions: Array<{ position: GridPosition; letter: Letter }>,
-    gridMode: GridMode
+    gridMode: GridMode,
+    orientation: Orientation = Orientation.IN
   ): PictographData[] {
     return positions.map((pos) => {
       // Get the hand locations for this position (blue and red hand locations)
@@ -105,8 +106,8 @@ export class StartPositionManager implements IStartPositionManager {
         motionType: MotionType.STATIC,
         startLocation: blueLocation,
         endLocation: blueLocation, // Start positions: start === end
-        startOrientation: Orientation.IN,
-        endOrientation: Orientation.IN,
+        startOrientation: orientation,
+        endOrientation: orientation,
         rotationDirection: RotationDirection.NO_ROTATION,
         turns: 0,
         color: MotionColor.BLUE,
@@ -120,8 +121,8 @@ export class StartPositionManager implements IStartPositionManager {
         motionType: MotionType.STATIC,
         startLocation: redLocation,
         endLocation: redLocation, // Start positions: start === end
-        startOrientation: Orientation.IN,
-        endOrientation: Orientation.IN,
+        startOrientation: orientation,
+        endOrientation: orientation,
         rotationDirection: RotationDirection.NO_ROTATION,
         turns: 0,
         color: MotionColor.RED,
