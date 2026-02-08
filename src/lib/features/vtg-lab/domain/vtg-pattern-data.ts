@@ -484,11 +484,11 @@ export const BEYOND_VTG_ITEMS: BeyondVtgItem[] = [
 		tkaFeature: "Level 5: Tau & Terra",
 	},
 	{
-		title: "Interradial Orientations (Level 6)",
+		title: "Interradial Orientations (Level 7)",
 		description:
 			"Prop orientations at 45\u00b0 between cardinal orientations: clockIn, clockOut, counterIn, counterOut. Relevant for poi gravity and advanced manipulation.",
 		icon: "fa-magnet",
-		tkaFeature: "Level 6: Interradial",
+		tkaFeature: "Level 7: Interradial",
 	},
 	{
 		title: "Exact Position Tracking",

@@ -4,7 +4,7 @@
  * Platform-agnostic interface for accessing letter and motion data.
  * Implementations differ between Node.js (MCP) and browser contexts.
  */
-import type { LetterMappingsJson } from "../../domain/models/SequenceEngineTypes";
+import type { LetterMappingsJson } from "../../domain/models/SequenceEngineTypes.js";
 /**
  * Interface for loading sequence-related data.
  * Allows the sequence engine to work in both Node.js and browser contexts.

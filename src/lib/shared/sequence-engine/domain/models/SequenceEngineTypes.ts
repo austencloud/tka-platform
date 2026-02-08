@@ -30,7 +30,7 @@ export type Orientation =
   | "out"
   | "clock"
   | "counter"
-  // Interradial orientations (Level 6 / poi gravity at intercardinals)
+  // Interradial orientations (Level 7 / poi gravity at intercardinals)
   | "clockIn"
   | "clockOut"
   | "counterIn"
@@ -111,7 +111,7 @@ export interface MotionData {
   startOrientation?: string;
   endOrientation?: string;
   turns?: number | "fl";
-  /** Spinning plane (Level 6). Defaults to "wall" when omitted. */
+  /** Spinning plane (future concept, not yet assigned to a level). Defaults to "wall" when omitted. */
   plane?: "wall" | "wheel" | "overhead";
 }
 

@@ -60,7 +60,7 @@ export type Orientation =
   | "out"
   | "clock"
   | "counter"
-  // Interradial orientations (Level 6 / poi gravity at intercardinals)
+  // Interradial orientations (Level 7 / poi gravity at intercardinals)
   | "clockIn"
   | "clockOut"
   | "counterIn"
@@ -114,7 +114,7 @@ export interface ArrowPlacement {
 export type HandPath = "cw" | "ccw" | "dash" | "static";
 
 // ============================================================================
-// SPINNING PLANE (Level 6)
+// SPINNING PLANE (Future - not yet assigned to a level)
 // ============================================================================
 
 /**
@@ -124,6 +124,7 @@ export type HandPath = "cw" | "ccw" | "dash" | "static";
  * - overhead: Spinning above/below, viewed from above. Grid horizontal.
  *
  * All existing sequences default to "wall" when plane is omitted.
+ * Note: Level 7 is interradial orientations. Planes are a separate future concept (Level 8).
  */
 export type SpinningPlane = "wall" | "wheel" | "overhead";
 

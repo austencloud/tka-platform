@@ -21,11 +21,11 @@ export type RotationDirection = "cw" | "ccw" | "noRotation";
 /**
  * Prop orientations.
  */
-export type Orientation = "in" | "out" | "clock" | "counter";
+export type Orientation = "in" | "out" | "clock" | "counter" | "clockIn" | "clockOut" | "counterIn" | "counterOut" | "centerN" | "centerNE" | "centerE" | "centerSE" | "centerS" | "centerSW" | "centerW" | "centerNW";
 /**
  * Grid locations where hands can be placed.
  */
-export type GridLocation = "n" | "e" | "s" | "w" | "ne" | "se" | "sw" | "nw";
+export type GridLocation = "n" | "e" | "s" | "w" | "ne" | "se" | "sw" | "nw" | "c";
 /**
  * Categories of letters based on motion type patterns.
  */
@@ -76,6 +76,8 @@ export interface MotionData {
     startOrientation?: string;
     endOrientation?: string;
     turns?: number | "fl";
+    /** Spinning plane (future concept, not yet assigned to a level). Defaults to "wall" when omitted. */
+    plane?: "wall" | "wheel" | "overhead";
 }
 /**
  * A step in a sequence (one beat of motion).

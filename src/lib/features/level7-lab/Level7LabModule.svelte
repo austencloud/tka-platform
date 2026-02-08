@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Level 6 Lab Module
+   * Level 7 Lab Module
    *
    * Admin-only experimental sandbox for validating interradial orientation rendering
    * at intercardinal positions (NE/SE/SW/NW). Shows static pictographs in box mode
@@ -199,7 +199,7 @@
     });
 
     return {
-      id: `level6-${position}`,
+      id: `level7-${position}`,
       startPosition: position,
       endPosition: position,
       motions: {
@@ -225,10 +225,10 @@
   const totalCount = $derived(ALPHA_POSITIONS.length + BETA_POSITIONS.length + GAMMA_POSITIONS.length);
 </script>
 
-<div class="level6-lab">
+<div class="level7-lab">
   <header class="header">
     <div class="title-row">
-      <h1>Level 6</h1>
+      <h1>Level 7</h1>
       <span class="badge">Admin</span>
     </div>
     <p class="description">
@@ -348,7 +348,7 @@
 </div>
 
 <style>
-  .level6-lab {
+  .level7-lab {
     height: 100%;
     display: flex;
     flex-direction: column;
