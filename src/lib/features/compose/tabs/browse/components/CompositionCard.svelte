@@ -11,6 +11,7 @@
 	import { COMPOSE_MODE_CONFIG } from "$lib/features/compose/shared/domain/compose-mode-config";
 	import { container } from "$lib/shared/di";
 	import type { ICompositionThumbnailResolver } from "../services/contracts/ICompositionThumbnailResolver";
+	import CompositionMiniPreview from "./CompositionMiniPreview.svelte";
 
 	const {
 		composition,
@@ -36,6 +37,10 @@
 	);
 	const placeholderSvg = $derived(
 		thumbnailResolver?.generatePlaceholderSvg(composition.mode, modeConfig.accent) ?? ""
+	);
+
+	const hasRenderableCells = $derived(
+		composition.cells.length > 0 && composition.sequenceCount > 0
 	);
 
 	const layoutLabel = $derived(
@@ -92,9 +97,11 @@
 	onclick={handleClick}
 	onkeydown={handleKeyDown}
 >
-	<!-- Thumbnail / Placeholder -->
+	<!-- Thumbnail / Mini Preview / Placeholder -->
 	<div class="card-media">
-		{#if thumbnailUrl}
+		{#if hasRenderableCells}
+			<CompositionMiniPreview cells={composition.cells} layout={composition.layout} />
+		{:else if thumbnailUrl}
 			<img src={thumbnailUrl} alt={composition.name} class="thumbnail" />
 		{:else if placeholderSvg}
 			<div class="placeholder" style="background: {modeConfig.gradient}">
