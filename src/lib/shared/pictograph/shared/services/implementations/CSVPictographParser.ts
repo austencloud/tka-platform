@@ -32,6 +32,10 @@ function mapHandPath(value: string | undefined): HandPath | null {
       return HandPath.DASH;
     case "static":
       return HandPath.STATIC;
+    case "hashin":
+      return HandPath.HASH_IN;
+    case "hashout":
+      return HandPath.HASH_OUT;
     default:
       return null;
   }

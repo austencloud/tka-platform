@@ -30,6 +30,8 @@ export enum HandPath {
   COUNTER_CLOCKWISE = "ccw",
   DASH = "dash",
   STATIC = "static",
+  HASH_IN = "hashIn",
+  HASH_OUT = "hashOut",
 }
 
 /**
@@ -64,6 +66,18 @@ const DASH_PAIRS = new Set([
 /**
  * Determine hand path direction from start and end locations
  */
+// Center → perimeter (hash-out)
+const HASH_OUT_PAIRS = new Set([
+  "c_n", "c_e", "c_s", "c_w",
+  "c_ne", "c_se", "c_sw", "c_nw",
+]);
+
+// Perimeter → center (hash-in)
+const HASH_IN_PAIRS = new Set([
+  "n_c", "e_c", "s_c", "w_c",
+  "ne_c", "se_c", "sw_c", "nw_c",
+]);
+
 function getHandPathDirection(startLocation: string, endLocation: string): HandPath {
   // Static: same location
   if (startLocation === endLocation) {
@@ -84,6 +98,14 @@ function getHandPathDirection(startLocation: string, endLocation: string): HandP
     return HandPath.DASH;
   }
 
+  if (HASH_OUT_PAIRS.has(key)) {
+    return HandPath.HASH_OUT;
+  }
+
+  if (HASH_IN_PAIRS.has(key)) {
+    return HandPath.HASH_IN;
+  }
+
   // Fallback for unknown pairs - treat as static
   return HandPath.STATIC;
 }
@@ -94,18 +116,22 @@ function getHandPathDirection(startLocation: string, endLocation: string): HandP
  * Dash and static are directionally neutral.
  */
 function isHandPathReversal(prevPath: HandPath, currentPath: HandPath): boolean {
-  // Dash and static are neutral - no reversal
-  if (
-    prevPath === HandPath.DASH ||
-    prevPath === HandPath.STATIC ||
-    currentPath === HandPath.DASH ||
-    currentPath === HandPath.STATIC
-  ) {
+  // Dash, static, and hash are directionally neutral - no reversal
+  if (isNeutralHandPath(prevPath) || isNeutralHandPath(currentPath)) {
     return false;
   }
 
   // Only cw↔ccw is a reversal
   return prevPath !== currentPath;
+}
+
+function isNeutralHandPath(path: HandPath): boolean {
+  return (
+    path === HandPath.DASH ||
+    path === HandPath.STATIC ||
+    path === HandPath.HASH_IN ||
+    path === HandPath.HASH_OUT
+  );
 }
 
 /**

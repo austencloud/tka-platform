@@ -152,8 +152,27 @@ export class MotionSignatureGenerator implements IMotionSignatureGenerator {
   }
 
   private extractLocationDelta(motion: MotionData): LocationDelta {
-    const startAngle = LOCATION_TO_ANGLE[motion.startLocation];
-    const endAngle = LOCATION_TO_ANGLE[motion.endLocation];
+    const startLoc = motion.startLocation;
+    const endLoc = motion.endLocation;
+
+    // Handle center-involved movements (hash paths)
+    const startIsCenter = startLoc === GridLocation.CENTER;
+    const endIsCenter = endLoc === GridLocation.CENTER;
+
+    if (startIsCenter && endIsCenter) {
+      return { steps: 0, direction: HandPath.STATIC };
+    }
+    if (startIsCenter && !endIsCenter) {
+      // Center → perimeter = hash-out (half-dash distance)
+      return { steps: 2, direction: HandPath.HASH_OUT };
+    }
+    if (!startIsCenter && endIsCenter) {
+      // Perimeter → center = hash-in (half-dash distance)
+      return { steps: 2, direction: HandPath.HASH_IN };
+    }
+
+    const startAngle = LOCATION_TO_ANGLE[startLoc];
+    const endAngle = LOCATION_TO_ANGLE[endLoc];
 
     // Calculate angular distance (0-7 steps)
     let steps = (endAngle - startAngle + 8) % 8;

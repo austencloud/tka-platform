@@ -1,0 +1,40 @@
+{
+  "name": "@austencloud/feedback-types",
+  "version": "0.2.0",
+  "description": "Canonical domain models, enums, and configuration for the AustenCloud feedback system. Shared across all apps and tools.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "feedback",
+    "kanban",
+    "types",
+    "domain-models",
+    "austencloud"
+  ],
+  "author": "Austen Cloud <austencloud@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/austencloud/shared-packages.git",
+    "directory": "packages/feedback-types"
+  }
+}

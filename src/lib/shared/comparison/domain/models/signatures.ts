@@ -73,6 +73,8 @@ export interface LocationDelta {
    * - ccw = counter-clockwise around the grid
    * - static = no movement
    * - dash = straight across (ambiguous direction)
+   * - hashIn = straight line toward center (perimeter → center)
+   * - hashOut = straight line away from center (center → perimeter)
    */
   readonly direction: HandPath;
 }

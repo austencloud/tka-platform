@@ -31,6 +31,7 @@ export class DefaultPropPositioner {
     se: { x: 576.2, y: 576.2 },
     sw: { x: 373.8, y: 576.2 },
     nw: { x: 373.8, y: 373.8 },
+    c: { x: 475, y: 475 },
   };
 
   // Fallback coordinates for strict handpoints (further from center)
@@ -43,6 +44,7 @@ export class DefaultPropPositioner {
     se: { x: 581.1, y: 581.1 },
     sw: { x: 368.9, y: 581.1 },
     nw: { x: 368.9, y: 368.9 },
+    c: { x: 475, y: 475 },
   };
 
   constructor(

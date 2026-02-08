@@ -56,11 +56,14 @@ const STATIC_PAIRS = [
   ["c", "c"],
 ];
 
-// Center → perimeter and perimeter → center: STATIC
-// (no meaningful CW/CCW direction from/to center)
-const CENTER_PERIMETER_PAIRS = [
+// Center → perimeter (hash-out): hand moves away from center
+const HASH_OUT_PAIRS = [
   ["c", "n"], ["c", "e"], ["c", "s"], ["c", "w"],
   ["c", "ne"], ["c", "se"], ["c", "sw"], ["c", "nw"],
+];
+
+// Perimeter → center (hash-in): hand moves toward center
+const HASH_IN_PAIRS = [
   ["n", "c"], ["e", "c"], ["s", "c"], ["w", "c"],
   ["ne", "c"], ["se", "c"], ["sw", "c"], ["nw", "c"],
 ];
@@ -80,8 +83,16 @@ DASH_PAIRS.forEach(([start, end]) => {
   handpathMap.set(`${start}_${end}`, "dash");
 });
 
-STATIC_PAIRS.concat(CENTER_PERIMETER_PAIRS).forEach(([start, end]) => {
+STATIC_PAIRS.forEach(([start, end]) => {
   handpathMap.set(`${start}_${end}`, "static");
+});
+
+HASH_OUT_PAIRS.forEach(([start, end]) => {
+  handpathMap.set(`${start}_${end}`, "hashOut");
+});
+
+HASH_IN_PAIRS.forEach(([start, end]) => {
+  handpathMap.set(`${start}_${end}`, "hashIn");
 });
 
 /**
@@ -248,6 +259,7 @@ function calculateRadialFractionalTurnOrientation(
  */
 function calculateFloatOrientation(startOrientation: Orientation, handpathDirection: HandPath): Orientation {
   if (handpathDirection !== "cw" && handpathDirection !== "ccw") {
+    // dash, static, hashIn, hashOut all preserve orientation for float
     return startOrientation;
   }
 
