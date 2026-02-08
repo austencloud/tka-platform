@@ -312,6 +312,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     // Use cache for perfect gap-free trails (if available and valid)
     const usingCache = this.pathCache && this.pathCache.isValid() && currentStep !== null;
+
     if (usingCache && this.pathCache) {
       const scaleFactor = this.canvasSize / 950;
 

@@ -116,7 +116,6 @@ export const DEFAULT_PATH_CACHE_CONFIG: PathCacheConfig = {
 export class AnimationPathCache {
   private cacheData: AnimationPathCacheData | null = null;
   private config: PathCacheConfig;
-
   // Shared calculator for prop endpoint positions
   private readonly propPositionCalculator = new PropPositionCalculator();
 

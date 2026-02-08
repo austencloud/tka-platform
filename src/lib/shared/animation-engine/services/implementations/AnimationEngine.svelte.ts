@@ -596,7 +596,10 @@ export class AnimationEngine {
     // This ensures duration changes are reflected in the animation
     if (props.sequenceData && this.orchestrator) {
       const newHash = this.getSequenceContentHash(props.sequenceData);
+      // DEBUG-TRANSFORM: Log every hash comparison to trace transform detection
       if (newHash !== this.lastSequenceContentHash) {
+        console.log(`[TRANSFORM-DIAG] Hash CHANGED: "${this.lastSequenceContentHash?.slice(0, 60)}..." → "${newHash.slice(0, 60)}..."`);
+        console.log(`[TRANSFORM-DIAG] usePathCache=${this.state.trailSettings.usePathCache}, hasPrecompService=${!!this.precomputationService}`);
         this.orchestrator.initializeWithDomainData(props.sequenceData);
         this.lastSequenceContentHash = newHash;
 
@@ -608,9 +611,10 @@ export class AnimationEngine {
           this.precomputationService
         ) {
           const totalSteps = props.sequenceData.steps.length;
-          // Default to 1000ms/beat if duration not specified
-          const stepDurationMs = props.sequenceData.steps[0]?.duration ?? 1000;
+          // 1 second per beat (step.duration is beat COUNT, not milliseconds)
+          const stepDurationMs = 1000;
 
+          console.log(`[TRANSFORM-DIAG] Triggering precomputation for ${totalSteps} steps`);
           // Precompute paths and update render loop's cache reference
           this.precomputationService
             .precomputeAnimationPaths(
@@ -622,10 +626,17 @@ export class AnimationEngine {
             .then(() => {
               // Update render loop with the now-populated cache
               const pathCache = this.precomputationService?.getPathCache();
+              console.log(`[TRANSFORM-DIAG] Precomputation DONE. pathCache=${!!pathCache}, valid=${pathCache?.isValid()}, renderLoop=${!!this.renderLoopService}`);
               if (pathCache && this.renderLoopService) {
                 this.renderLoopService.updateConfig({ pathCache });
+                console.log(`[TRANSFORM-DIAG] Render loop updated with new cache`);
               }
+            })
+            .catch((err) => {
+              console.error(`[TRANSFORM-DIAG] Precomputation FAILED:`, err);
             });
+        } else {
+          console.log(`[TRANSFORM-DIAG] Precomputation SKIPPED - usePathCache=${this.state.trailSettings.usePathCache}`);
         }
       }
     }
@@ -1102,6 +1113,7 @@ export class AnimationEngine {
       if (newSize && newSize !== this.canvasSize) {
         this.canvasSize = newSize;
         this.trailCapturer?.updateConfig({ canvasSize: newSize });
+        this.renderLoopService?.updateConfig({ canvasSize: newSize });
       }
     }
   }
@@ -1194,12 +1206,27 @@ export class AnimationEngine {
 
   /**
    * Generate a hash string representing sequence content that affects animation.
-   * Includes beat durations, beat count, and sequence ID for change detection.
+   * Includes motion data fingerprint so transforms (rotate, mirror, etc.) trigger re-precomputation.
    */
   private getSequenceContentHash(seq: SequenceData): string {
-    const beatDurations = seq.steps?.map((b) => b.duration ?? 1).join(",") || "";
     const stepCount = seq.steps?.length || 0;
-    return `${seq.id || seq.word || "unknown"}-${stepCount}-${beatDurations}`;
+    // Build a compact fingerprint of each step's motion data.
+    // Transforms change startLocation, endLocation, rotationDirection, orientations —
+    // we must detect these changes to re-precompute path caches.
+    const motionFingerprint = seq.steps
+      ?.map((s) => {
+        const b = s.motions?.blue;
+        const r = s.motions?.red;
+        const bPart = b
+          ? `${b.startLocation}${b.endLocation}${b.motionType}${b.rotationDirection}${b.turns}`
+          : "_";
+        const rPart = r
+          ? `${r.startLocation}${r.endLocation}${r.motionType}${r.rotationDirection}${r.turns}`
+          : "_";
+        return `${bPart}|${rPart}`;
+      })
+      .join(";") || "";
+    return `${seq.id || seq.word || "unknown"}-${stepCount}-${motionFingerprint}`;
   }
 
   /**

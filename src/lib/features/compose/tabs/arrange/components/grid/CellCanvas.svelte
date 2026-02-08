@@ -173,12 +173,17 @@
   $effect(() => {
     if (initialized && primaryLayer && primaryOrchestrator) {
       try {
+        // DEBUG-CELL: Log cell layer state
+        console.log(`[CELL-DIAG ${cellIndex}] Primary init: layers=${cell.layers.length}, mediaType=${cell.mediaType}, seq.word=${primaryLayer.sequence?.word}, steps=${primaryLayer.sequence?.steps?.length}, hasMotions=${!!primaryLayer.sequence?.steps?.[0]?.motions}`);
         primaryOrchestrator.initializeWithDomainData(primaryLayer.sequence);
         primaryAnimationState.setSequenceData(primaryLayer.sequence);
         primaryAnimationState.setTotalSteps(primaryLayer.sequence.steps?.length || 0);
       } catch (err) {
         console.error(`[CellCanvas ${cellIndex}] Primary init failed:`, err);
       }
+    } else {
+      // DEBUG-CELL: Log why init was skipped
+      console.log(`[CELL-DIAG ${cellIndex}] Primary init SKIPPED: initialized=${initialized}, primaryLayer=${!!primaryLayer}, primaryOrchestrator=${!!primaryOrchestrator}`);
     }
   });
 
@@ -187,18 +192,23 @@
   // inside AnimatorCanvas when it receives non-empty additionalLayers.
   $effect(() => {
     if (initialized) {
+      // DEBUG-CELL: Log extra layers state
+      console.log(`[CELL-DIAG ${cellIndex}] Extra layers init: extraLayers=${extraLayers.length}, orchs=${additionalOrchestrators.length}, states=${additionalAnimationStates.length}`);
       for (let i = 0; i < extraLayers.length; i++) {
         const layer = extraLayers[i]!;
         const orch = additionalOrchestrators[i];
         const animState = additionalAnimationStates[i];
         if (orch && animState) {
           try {
+            console.log(`[CELL-DIAG ${cellIndex}] Layer ${i + 1}: seq.word=${layer.sequence?.word}, steps=${layer.sequence?.steps?.length}`);
             orch.initializeWithDomainData(layer.sequence);
             animState.setSequenceData(layer.sequence);
             animState.setTotalSteps(layer.sequence.steps?.length || 0);
           } catch (err) {
             console.error(`[CellCanvas ${cellIndex}] Layer ${i + 1} init failed:`, err);
           }
+        } else {
+          console.warn(`[CELL-DIAG ${cellIndex}] Layer ${i + 1}: MISSING orch=${!!orch} animState=${!!animState}`);
         }
       }
     }

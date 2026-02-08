@@ -161,7 +161,6 @@ interface LastCapturedPoint {
 export class TrailCapturer implements ITrailCapturer {
   // Shared calculator for prop endpoint positions
   private readonly propPositionCalculator = new PropPositionCalculator();
-
   // Configuration
   private config: TrailCaptureConfig = {
     canvasSize: 500,

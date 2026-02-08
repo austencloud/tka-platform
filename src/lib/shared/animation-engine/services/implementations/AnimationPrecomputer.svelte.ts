@@ -34,8 +34,22 @@ const MAX_GLOBAL_CACHE_SIZE = 20;
 const globalPathCacheMap = new Map<string, AnimationPathCache>();
 
 function getSequencePathHash(seq: SequenceData, totalSteps: number, stepDurationMs: number): string {
-  const durations = seq.steps?.map((s) => s.duration ?? 1).join(",") || "";
-  return `${seq.id || seq.word || "?"}-${totalSteps}-${stepDurationMs}-${durations}`;
+  // Include motion data fingerprint so transforms (rotate, mirror, etc.) produce distinct hashes.
+  // Without this, transformed sequences return stale untransformed cached paths.
+  const motionFingerprint = seq.steps
+    ?.map((s) => {
+      const b = s.motions?.blue;
+      const r = s.motions?.red;
+      const bPart = b
+        ? `${b.startLocation}${b.endLocation}${b.motionType}${b.rotationDirection}${b.turns}`
+        : "_";
+      const rPart = r
+        ? `${r.startLocation}${r.endLocation}${r.motionType}${r.rotationDirection}${r.turns}`
+        : "_";
+      return `${bPart}|${rPart}`;
+    })
+    .join(";") || "";
+  return `${seq.id || seq.word || "?"}-${totalSteps}-${stepDurationMs}-${motionFingerprint}`;
 }
 
 function storeInGlobalCache(hash: string, cache: AnimationPathCache): void {
@@ -114,15 +128,18 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
 
     try {
       const hash = getSequencePathHash(seqData, totalSteps, stepDurationMs);
+      console.log(`[TRANSFORM-DIAG precompute] hash="${hash.slice(0, 80)}...", globalCacheSize=${globalPathCacheMap.size}, globalCacheKeys=[${[...globalPathCacheMap.keys()].map(k => k.slice(0, 40)).join(', ')}]`);
 
       // Check global cache first — avoids re-precomputing after drag-to-move
       const cached = globalPathCacheMap.get(hash);
       if (cached?.isValid()) {
+        console.log(`[TRANSFORM-DIAG precompute] HIT global cache for hash "${hash.slice(0, 40)}..."`);
         this.pathCache = cached;
         this.TrailCapturer.setAnimationCacheService(cached);
         this.state.pathCacheData = cached.getCacheData();
         return;
       }
+      console.log(`[TRANSFORM-DIAG precompute] MISS global cache, will precompute fresh`);
 
       this.state.isCachePrecomputing = true;
 
