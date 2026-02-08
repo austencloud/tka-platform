@@ -510,7 +510,17 @@
       "Bash(sfc /scannow:*)",
       "Bash(findstr:*)",
       "Bash(printenv:*)",
-      "mcp__tka-domain__get_position_info"
+      "mcp__tka-domain__get_position_info",
+      "Bash(wmic product:*)",
+      "Bash(wmic qfe get:*)",
+      "Bash(reg add:*)",
+      "Bash(reg import:*)",
+      "mcp__tka-domain__list_letters_by_type",
+      "mcp__tka-domain__compare_letters",
+      "Bash(magick:*)",
+      "Bash(convert:*)",
+      "Bash(start wscript:*)",
+      "Bash(schtasks //create //tn \"HandleLeakWatchdog\" //tr \"wscript.exe C:\\\\Users\\\\Austen\\\\scripts\\\\handle-watchdog.vbs\" //sc onlogon //rl highest //f)"
     ]
   },
   "enableAllProjectMcpServers": true,
