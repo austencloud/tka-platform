@@ -1,19 +1,19 @@
 {
   "alpha": {
-    "definition": "A position where the two hands are at opposite grid points (180 degrees apart).",
-    "examples": ["alpha1: hands at N and S", "alpha3: hands at E and W"],
+    "definition": "A position where the two hands are at opposite grid points (180 degrees apart). Note: the Type 6 letter α (lowercase) shares this name because a static letter is essentially a held position — the same concept. When someone asks 'what is alpha?', context determines whether they mean the position (hands opposite) or the letter (both hands static at opposite points).",
+    "examples": ["alpha1: hands at N and S", "alpha3: hands at E and W", "The Type 6 letter α represents holding an alpha position with no motion"],
     "relatedTerms": ["beta", "gamma", "position"],
     "category": "position"
   },
   "beta": {
-    "definition": "A position where both hands are at the same grid point (0 degrees apart).",
+    "definition": "A position where both hands are at the same grid point (0 degrees apart). The Type 6 letter β (lowercase) shares this name — it represents holding a beta position with no motion, which is also a natural start position for 'together' patterns.",
     "examples": ["beta1: both hands at N", "beta5: both hands at NE"],
     "relatedTerms": ["alpha", "gamma", "position"],
     "category": "position"
   },
   "gamma": {
-    "definition": "A position where the hands form a right angle (90 degrees apart on adjacent grid points).",
-    "examples": ["gamma1: hands at N and E", "gamma5: hands at N and NW"],
+    "definition": "A position where the hands form a right angle (90 degrees apart on adjacent grid points). The Type 6 letter γ (lowercase) shares this name — it represents holding a gamma position with no motion.",
+    "examples": ["gamma1: hands at N and E", "gamma5: hands at NE and NW (box mode)"],
     "relatedTerms": ["alpha", "beta", "position"],
     "category": "position"
   },
@@ -28,6 +28,66 @@
     "examples": ["One hand cardinal, one intercardinal, forming ~45 degree angle"],
     "relatedTerms": ["zeta", "skewed", "position"],
     "category": "position"
+  },
+  "tau": {
+    "definition": "A position where one hand is at the center grid point and the other is at a non-center point. Introduced in Level 5 with centric grid mode.",
+    "examples": ["One hand at center, one hand at N", "One hand at center, one hand at NE"],
+    "relatedTerms": ["terra", "centric", "position"],
+    "category": "position"
+  },
+  "terra": {
+    "definition": "A position where both hands are at the center grid point. Introduced in Level 5 with centric grid mode.",
+    "examples": ["Both hands stacked at the center of the grid"],
+    "relatedTerms": ["tau", "centric", "position"],
+    "category": "position"
+  },
+  "position": {
+    "definition": "Where the two hands are relative to each other on the grid. Defined by the angle between them. Seven positions exist across the level system: alpha, beta, gamma, zeta, eta, tau, and terra.",
+    "examples": ["Alpha = hands opposite (180°)", "Beta = hands together (0°)", "Gamma = right angle (90°)"],
+    "relatedTerms": ["alpha", "beta", "gamma", "zeta", "eta", "tau", "terra"],
+    "category": "general"
+  },
+  "letter": {
+    "definition": "The fundamental unit of TKA notation. Each letter encodes a specific combination of hand motions and prop rotations for one beat. There are 47 letters organized into 6 types (22 + 8 + 8 + 3 + 3 + 3). Future levels will add more letters for centric positions (Tau, Terra, etc.).",
+    "examples": ["A is a Type 1 letter (both hands shift, both pro)", "Σ is a Type 2 letter (one shifts, one static)", "α is a Type 6 letter (both static)"],
+    "relatedTerms": ["pictograph", "variation", "type", "word"],
+    "category": "general"
+  },
+  "word": {
+    "definition": "A sequence of TKA letters that spells out a choreographic phrase. Each letter in the word is one beat of motion. Words can be any length and may require bridge letters between certain transitions.",
+    "examples": ["CAKE is a 4-letter word (4 beats)", "SMACKDOWN is a 9-letter word", "DJ is a 2-letter compound word"],
+    "relatedTerms": ["letter", "sequence", "bridge", "compound"],
+    "category": "general"
+  },
+  "sequence": {
+    "definition": "An ordered series of pictographs representing choreography. A sequence includes a start position (beat 0) followed by one pictograph per letter in the word. The visual output is called a choreo card.",
+    "examples": ["A 4-letter word produces a sequence with 5 pictographs (start + 4 beats)", "Sequences can be rendered as grid layouts or single-row strips"],
+    "relatedTerms": ["word", "pictograph", "step", "loop"],
+    "category": "general"
+  },
+  "compound": {
+    "definition": "A pair of letters that together complete a full cycle of motion, returning to the starting position type. In continuous spinning, you always perform compound units rather than individual letters.",
+    "examples": ["DJ (Disco Jam): D (beta→alpha) + J (alpha→beta) = complete cycle", "EK (Exploding Kitten): anti/anti compound", "FL (Fruity Loops): hybrid compound"],
+    "relatedTerms": ["letter", "loop", "vtg"],
+    "category": "general"
+  },
+  "bridge": {
+    "definition": "A letter automatically inserted between two letters in a word when no direct transition exists between them. The sequence generator handles bridge insertion transparently.",
+    "examples": ["Σ inserted between B and O when no B→O transition exists", "Bridge letters appear in the generated sequence but not in the word spelling"],
+    "relatedTerms": ["word", "sequence", "transition"],
+    "category": "general"
+  },
+  "level": {
+    "definition": "A progressive difficulty tier that unlocks new positions, grid modes, turn counts, and orientations. Level 1: 0 turns only. Level 2: whole turns (0-3). Level 3: half turns and float. Level 4: skewed grid (zeta, eta positions). Level 5: centric grid with center point (tau, terra positions, not yet implemented). Level 6: conjoined grids (dual grids sharing a junction point, new position combinations). Level 7: interradial orientations (clockIn, clockOut, counterIn, counterOut — completes 2D mastery). Level 8: atomics (two props on different spinning planes simultaneously). Level 9: Rubik's cube tech (in-between points across intersecting planes, same expansion skewed brought to single-plane).",
+    "examples": ["Level 1: alpha, beta, gamma positions with 0 turns only", "Level 4: introduces zeta, eta positions with skewed grid", "Level 6: conjoined grids expand the spatial canvas with dual grids", "Level 7: interradial orientations double angular precision (completes 2D)", "Level 8: one prop on wall plane, one on wheel plane (atomics)", "Level 9: skewed-equivalent access to in-between points across multiple planes"],
+    "relatedTerms": ["turns", "position", "orientation", "spinning-plane", "atomic", "rubiks-cube", "conjoined-grid"],
+    "category": "general"
+  },
+  "glyph": {
+    "definition": "A visual notation element displayed on a pictograph. Glyphs annotate the pictograph with additional information beyond the prop and arrow positions.",
+    "examples": ["TKA glyph: shows the letter name and turn numbers", "VTG glyph: shows timing relationship between hands", "Position glyph: shows start and end positions"],
+    "relatedTerms": ["pictograph", "vtg", "tka"],
+    "category": "notation"
   },
   "prop": {
     "definition": "The physical object being manipulated (staff, fan, club, poi, etc.). The prop is what rotates. The hand is just the vehicle that carries it between grid points.",
@@ -48,43 +108,55 @@
     "category": "general"
   },
   "pro": {
-    "definition": "A motion type where the prop rotates in the same direction as the hand's travel. At 0 turns during a shift, the prop rotates 90 degrees with the hand path. Also called 'prospin' or 'isolation' (because the prop's orientation relative to the center point stays constant).",
+    "definition": "A prop rotation type where the prop rotates in the same direction as the hand's travel. At 0 turns during a shift, the prop rotates 90 degrees with the hand path. Also called 'prospin'. At 0 turns specifically, this is called an 'isolation' because the prop appears fixed in space.",
     "examples": ["Hand shifts W to N clockwise, prop rotates 90 degrees clockwise", "At 0 turns: orientation preserved (e.g. in stays in)"],
     "relatedTerms": ["anti", "float", "isolation", "rotation"],
     "category": "rotation"
   },
   "anti": {
-    "definition": "A motion type where the prop rotates opposite to the hand's travel. At 0 turns during a shift, the prop rotates 90 degrees against the hand path. Also called 'antispin'. Creates petal-like patterns.",
+    "definition": "A prop rotation type where the prop rotates opposite to the hand's travel. At 0 turns during a shift, the prop rotates 90 degrees against the hand path. Also called 'antispin'. Creates petal-like patterns.",
     "examples": ["Hand shifts W to N clockwise, prop rotates 90 degrees counter-clockwise", "At 0 turns: orientation switches (e.g. in becomes out)"],
     "relatedTerms": ["pro", "float", "rotation"],
     "category": "rotation"
   },
   "isolation": {
-    "definition": "Another name for pro motion. Called an isolation because the prop's orientation relative to the center point remains constant as the hand moves. The prop appears to stay fixed in space while the hand orbits around it.",
-    "examples": ["Pro at 0 turns during a shift is an isolation"],
-    "relatedTerms": ["pro", "rotation"],
+    "definition": "Pro motion at 0 turns. The prop's orientation relative to the center point remains constant as the hand moves, making the prop appear fixed in space while the hand orbits around it. With additional turns, the motion is still pro but no longer an isolation since the prop visibly rotates.",
+    "examples": ["Pro at 0 turns during a shift: prop stays fixed, hand orbits", "DJ compound uses isolation (pro/pro at 0 turns)"],
+    "relatedTerms": ["pro", "turns", "rotation"],
+    "category": "rotation"
+  },
+  "prospin": {
+    "definition": "Full name for pro. A prop rotation type where the prop rotates in the same direction as the hand's travel.",
+    "examples": ["Hand shifts W to N clockwise, prop rotates 90 degrees clockwise"],
+    "relatedTerms": ["pro", "antispin", "rotation"],
+    "category": "rotation"
+  },
+  "antispin": {
+    "definition": "Full name for anti. A prop rotation type where the prop rotates opposite to the hand's travel. Creates petal-like patterns.",
+    "examples": ["Hand shifts W to N clockwise, prop rotates 90 degrees counter-clockwise"],
+    "relatedTerms": ["anti", "prospin", "rotation"],
     "category": "rotation"
   },
   "float": {
-    "definition": "A motion type where the hand shifts to an adjacent point but the prop does not rotate at all. Pure translation with zero prop rotation. Similar to a dash (also pure translation) but moves to an adjacent point instead of the opposite point.",
+    "definition": "A prop rotation type where the prop does not rotate at all during a shift. The hand moves to an adjacent point but the prop maintains its exact facing. Pure translation with zero prop rotation.",
     "examples": ["Hand moves from W to N, prop maintains its exact facing in space", "Like sliding the prop sideways without spinning it"],
-    "relatedTerms": ["pro", "anti", "dash", "shift"],
-    "category": "motion"
+    "relatedTerms": ["pro", "anti", "shift", "rotation"],
+    "category": "rotation"
   },
   "static": {
-    "definition": "A motion type where the hand stays at its current grid point. At 0 turns, the prop does not rotate.",
-    "examples": ["Type 6 letters (alpha, beta, gamma) have both hands static", "Type 2 letters have one static hand and one shifting hand"],
-    "relatedTerms": ["shift", "dash", "float", "motion"],
+    "definition": "A hand motion type where the hand stays at its current grid point. The prop may still rotate (with turns), but the hand does not move.",
+    "examples": ["Type 6 letters (α, β, γ) have both hands static", "Type 2 letters have one static hand and one shifting hand"],
+    "relatedTerms": ["shift", "dash", "motion"],
     "category": "motion"
   },
   "shift": {
-    "definition": "A hand movement to an adjacent grid point (90 degrees around the grid). The prop behavior during a shift depends on the motion type: pro rotates with the hand path, anti rotates against it, float does not rotate.",
+    "definition": "A hand motion type where the hand moves to an adjacent grid point (90 degrees around the grid). The prop behavior during a shift depends on the rotation type: pro rotates with the hand path, anti rotates against it, float does not rotate.",
     "examples": ["N to E is a shift", "NE to SE is a shift", "Type 1 and Type 2 letters use shifts"],
-    "relatedTerms": ["static", "dash", "motion"],
+    "relatedTerms": ["static", "dash", "pro", "anti", "float"],
     "category": "motion"
   },
   "dash": {
-    "definition": "A hand movement to the opposite grid point (180 degrees across the grid). At 0 turns, the prop does not rotate — it translates straight through the center. Pure translation, like float, but covering a greater distance.",
+    "definition": "A hand motion type where the hand moves to the opposite grid point (180 degrees across the grid). At 0 turns, the prop does not rotate — it translates straight through the center. Pure translation, like float, but covering a greater distance.",
     "examples": ["N to S is a dash", "NE to SW is a dash", "Type 4 and Type 5 letters use dashes"],
     "relatedTerms": ["static", "shift", "float", "motion"],
     "category": "motion"
@@ -98,13 +170,13 @@
   "turns": {
     "definition": "Additional prop rotation beyond the base rotation inherent to the motion type. 1 turn = 180 degrees of additional rotation. At 0 turns, pro and anti still produce base rotation from the hand path. The turn count measures rotation on top of that base behavior.",
     "examples": ["0 turns with pro shift: prop rotates 90 degrees (base only, no additional)", "1 turn with pro shift: prop rotates 90 degrees base + 180 degrees additional", "0 turns with dash: no rotation (pure translation)"],
-    "relatedTerms": ["rotation", "pro", "anti", "float"],
-    "category": "motion"
+    "relatedTerms": ["rotation", "pro", "anti", "float", "level"],
+    "category": "rotation"
   },
   "orientation": {
-    "definition": "The facing direction of a prop at any point during a step. Four possible values: in (toward center), out (away from center), clock (clockwise-facing), counter (counter-clockwise-facing). Orientation changes based on motion type, turns, and rotation direction.",
-    "examples": ["Pro at 0 turns preserves orientation (in stays in)", "Anti at 0 turns switches orientation (in becomes out)", "Dash at 0 turns: orientation changes as a geometric consequence of translation through center"],
-    "relatedTerms": ["pro", "anti", "turns", "rotation"],
+    "definition": "The facing direction of a prop at any point during a step. Eight possible values across the level system. Base orientations (Levels 1-6): in (toward center), out (away from center), clock (clockwise-facing), counter (counter-clockwise-facing). Interradial orientations (Level 7): clockIn, clockOut, counterIn, counterOut — the four orientations at 45 degrees between base orientations.",
+    "examples": ["Pro at 0 turns preserves orientation (in stays in)", "Anti at 0 turns switches orientation (in becomes out)", "Level 7 adds clockIn, clockOut, counterIn, counterOut between base orientations"],
+    "relatedTerms": ["pro", "anti", "turns", "rotation", "level"],
     "category": "rotation"
   },
   "step": {
@@ -114,49 +186,61 @@
     "category": "general"
   },
   "dual-shift": {
-    "definition": "A letter type (Type 1) where both hands shift simultaneously to adjacent points.",
-    "examples": ["Letters A through V", "Most common letter type with 22 letters"],
-    "relatedTerms": ["shift", "type 1", "letter type"],
+    "definition": "A letter type (Type 1) where both hands shift simultaneously to adjacent points. The largest type with 22 letters (A through V).",
+    "examples": ["Letters A through V", "A: both hands shift, both pro", "C: both hands shift, hybrid (one pro, one anti)"],
+    "relatedTerms": ["shift", "letter"],
     "category": "letterType"
   },
   "cross-shift": {
-    "definition": "A letter type (Type 3) where one hand shifts and one hand dashes. Also called 'dash letters' due to the '-' suffix.",
-    "examples": ["W-, X-, Y-, Z-", "Sigma dash (Sigma-) is a Type 3 letter"],
-    "relatedTerms": ["shift", "dash", "type 3", "letter type"],
+    "definition": "A letter type (Type 3) where one hand shifts and one hand dashes simultaneously. Named with a '-' suffix (e.g. W-, Σ-). When someone says 'Sigma dash', they mean the Type 3 letter Σ-, not a letter with dash motion.",
+    "examples": ["W-, X-, Y-, Z-", "Σ- (Sigma dash) is a Type 3 letter"],
+    "relatedTerms": ["shift", "dash", "letter"],
     "category": "letterType"
   },
   "dual-dash": {
-    "definition": "A letter type (Type 5) where both hands dash simultaneously.",
-    "examples": ["Phi-, Psi-, Lambda-", "Only 3 letters in this type"],
-    "relatedTerms": ["dash", "type 5", "letter type"],
+    "definition": "A letter type (Type 5) where both hands dash simultaneously. Named with a '-' suffix like Type 3.",
+    "examples": ["Φ-, Ψ-, Λ-", "Only 3 letters in this type"],
+    "relatedTerms": ["dash", "letter"],
     "category": "letterType"
   },
   "diamond": {
     "definition": "A grid mode where hands are placed only on cardinal points (N, E, S, W). The default grid mode.",
     "examples": ["Standard positions like alpha1 (N/S) use diamond mode"],
-    "relatedTerms": ["box", "skewed", "grid"],
+    "relatedTerms": ["box", "skewed", "centric", "grid"],
     "category": "grid"
   },
   "box": {
     "definition": "A grid mode where hands are placed only on intercardinal points (NE, SE, SW, NW).",
     "examples": ["Position beta5 (both hands at NE) uses box mode"],
-    "relatedTerms": ["diamond", "skewed", "grid"],
+    "relatedTerms": ["diamond", "skewed", "centric", "grid"],
     "category": "grid"
   },
   "skewed": {
-    "definition": "A grid mode introduced in Level 4 where one hand is on a cardinal point and one is on an intercardinal point.",
+    "definition": "A grid mode introduced in Level 4 where one hand is on a cardinal point and one is on an intercardinal point. Creates zeta and eta positions.",
     "examples": ["Hand at N and hand at NE", "Creates zeta and eta positions"],
-    "relatedTerms": ["diamond", "box", "grid", "zeta", "eta"],
+    "relatedTerms": ["diamond", "box", "centric", "zeta", "eta"],
+    "category": "grid"
+  },
+  "centric": {
+    "definition": "A grid mode introduced in Level 5 where at least one hand is at the center grid point. Creates tau and terra positions. Not yet implemented in TKA Scribe.",
+    "examples": ["One hand at center, one at N (tau position)", "Both hands at center (terra position)"],
+    "relatedTerms": ["diamond", "box", "skewed", "tau", "terra"],
+    "category": "grid"
+  },
+  "center": {
+    "definition": "The 9th grid point, located at the center of the grid. Introduced in Level 5 with centric grid mode. Not yet implemented in TKA Scribe.",
+    "examples": ["Tau position: one hand at center", "Terra position: both hands at center"],
+    "relatedTerms": ["centric", "tau", "terra", "cardinal", "intercardinal"],
     "category": "grid"
   },
   "pictograph": {
-    "definition": "A visual representation of one step of motion in TKA. Shows two props, arrows indicating motion, and position glyphs.",
-    "examples": ["Each letter has multiple pictograph variations", "Pictographs can be sequenced to create choreography"],
-    "relatedTerms": ["step", "sequence", "letter"],
+    "definition": "A visual representation of one step of motion in TKA. Shows two props, arrows indicating motion, and optional glyphs for letter name, timing, positions, and reversals.",
+    "examples": ["Each letter has multiple pictograph variations", "Pictographs can be sequenced into choreo cards"],
+    "relatedTerms": ["step", "sequence", "letter", "glyph"],
     "category": "general"
   },
   "variation": {
-    "definition": "A specific instance of a letter with particular starting/ending positions and locations. Each letter can have many variations.",
+    "definition": "A specific instance of a letter with particular starting/ending positions and locations. Each letter can have many variations that all produce the same letter classification but differ in where on the grid they happen.",
     "examples": ["Letter A has variations starting from alpha1, alpha3, etc.", "Variations differ by rotation direction and grid locations"],
     "relatedTerms": ["letter", "pictograph", "position"],
     "category": "general"
@@ -164,13 +248,13 @@
   "cardinal": {
     "definition": "The four main compass points on the grid: North (N), East (E), South (S), West (W).",
     "examples": ["Diamond mode uses cardinal points", "N is at the top of the pictograph"],
-    "relatedTerms": ["intercardinal", "grid", "location"],
+    "relatedTerms": ["intercardinal", "diamond", "grid"],
     "category": "grid"
   },
   "intercardinal": {
     "definition": "The four diagonal compass points on the grid: Northeast (NE), Southeast (SE), Southwest (SW), Northwest (NW).",
     "examples": ["Box mode uses intercardinal points", "NE is at the top-right of the pictograph"],
-    "relatedTerms": ["cardinal", "grid", "location"],
+    "relatedTerms": ["cardinal", "box", "grid"],
     "category": "grid"
   },
   "cw": {
@@ -179,23 +263,137 @@
     "relatedTerms": ["ccw", "rotation", "direction"],
     "category": "rotation"
   },
+  "clockwise": {
+    "definition": "Clockwise rotation direction, as viewed from above the performer. Abbreviated as 'cw'.",
+    "examples": ["Hand path moving N -> E -> S -> W is clockwise"],
+    "relatedTerms": ["counterclockwise", "ccw", "cw", "rotation"],
+    "category": "rotation"
+  },
   "ccw": {
     "definition": "Counter-clockwise rotation direction, as viewed from above the performer.",
     "examples": ["Hand path moving N -> W -> S -> E is counter-clockwise"],
     "relatedTerms": ["cw", "rotation", "direction"],
     "category": "rotation"
   },
+  "counterclockwise": {
+    "definition": "Counter-clockwise rotation direction, as viewed from above the performer. Abbreviated as 'ccw'.",
+    "examples": ["Hand path moving N -> W -> S -> E is counter-clockwise"],
+    "relatedTerms": ["clockwise", "cw", "ccw", "rotation"],
+    "category": "rotation"
+  },
   "vtg": {
-    "definition": "Vertical Timing Glyph - a notation showing the relative timing of the two hands during a beat.",
-    "examples": ["Shows whether hands move together, split, or in sequence"],
-    "relatedTerms": ["timing", "glyph", "pictograph"],
+    "definition": "Vulcan Tech Gospel — an older, widely-adopted notation framework for poi/flow arts created by Noel Yee and spinners at the Vulcan Lofts in Oakland, CA. TKA uses VTG as a secondary notation layer. VTG is ground-referenced: the 'downbeat' (south/bottom of the circle) is the anchor point for all timing and direction classifications.",
+    "examples": ["Split-Same (SS): props 180° out of phase, both rotating same way", "Together-Same (TS): props in sync, both same direction", "Split-Opposite (SO): props out of phase, opposite directions", "Together-Opposite (TO): props in sync, opposite directions"],
+    "relatedTerms": ["split", "tog", "downbeat", "timing"],
+    "category": "notation"
+  },
+  "split": {
+    "definition": "A VTG timing classification where the two props are 180 degrees out of phase — one is at the downbeat (south) when the other is at the top. In TKA terms, split timing corresponds to alpha positions (hands at opposite points).",
+    "examples": ["Letters A, B, C (alpha to alpha) are always split-same", "DJ compound can be split-opp depending on variation"],
+    "relatedTerms": ["tog", "vtg", "alpha", "downbeat"],
+    "category": "notation"
+  },
+  "tog": {
+    "definition": "Short for 'together'. A VTG timing classification where both props pass through the downbeat (south) at the same moment. In TKA terms, together timing corresponds to beta positions (hands at the same point).",
+    "examples": ["Letters G, H, I (beta to beta) are always tog-same", "DJ compound can be tog-opp depending on variation"],
+    "relatedTerms": ["split", "vtg", "beta", "downbeat"],
+    "category": "notation"
+  },
+  "together": {
+    "definition": "A VTG timing classification where both props pass through the downbeat (south) at the same moment. Abbreviated as 'tog'. In TKA terms, together timing corresponds to beta positions (hands at the same point).",
+    "examples": ["Letters G, H, I (beta to beta) are always together-same"],
+    "relatedTerms": ["split", "vtg", "tog", "beta"],
+    "category": "notation"
+  },
+  "downbeat": {
+    "definition": "The reference point for VTG timing, located at the south (bottom) of the circle. VTG classifies patterns based on when and how props pass through the downbeat. TKA uses center-referenced positions instead, but maps to VTG for compatibility.",
+    "examples": ["Both props at south simultaneously = together timing", "Props 180° out of phase relative to south = split timing"],
+    "relatedTerms": ["vtg", "split", "tog"],
+    "category": "notation"
+  },
+  "split-same": {
+    "definition": "A VTG category where props are 180° out of phase (split) and both rotate the same direction. Abbreviated SS.",
+    "examples": ["Letters A, B, C (alpha to alpha) are always split-same"],
+    "relatedTerms": ["split", "vtg", "together-same", "split-opposite"],
+    "category": "notation"
+  },
+  "together-same": {
+    "definition": "A VTG category where props are in sync (together) and both rotate the same direction. Abbreviated TS or tog-same.",
+    "examples": ["Letters G, H, I (beta to beta) are always together-same"],
+    "relatedTerms": ["tog", "vtg", "split-same", "together-opposite"],
+    "category": "notation"
+  },
+  "split-opposite": {
+    "definition": "A VTG category where props are 180° out of phase (split) and rotate in opposite directions. Abbreviated SO or split-opp.",
+    "examples": ["DJ east-start variation is split-opposite"],
+    "relatedTerms": ["split", "vtg", "split-same", "together-opposite"],
+    "category": "notation"
+  },
+  "together-opposite": {
+    "definition": "A VTG category where props are in sync (together) and rotate in opposite directions. Abbreviated TO or tog-opp.",
+    "examples": ["DJ south-start variation is together-opposite"],
+    "relatedTerms": ["tog", "vtg", "together-same", "split-opposite"],
     "category": "notation"
   },
   "reversal": {
-    "definition": "A change in prop rotation direction during a movement. Shown as dots on the pictograph.",
-    "examples": ["Prop changes from clockwise to counter-clockwise mid-beat"],
-    "relatedTerms": ["rotation", "pro", "anti"],
+    "definition": "A directional change in a TKA sequence. There are three distinct types: hand reversal (hand returns to previous point, prop continues — switches pro/anti), prop reversal (hand continues, prop reverses direction — switches pro/anti, marked with R/R notation), and full reversal (both hand and prop retrace — maintains pro/anti).",
+    "examples": ["Hand reversal: hand goes back, prop keeps spinning same way. Switches prospin to antispin.", "Prop reversal: hand continues forward, prop switches direction. Marked with R/R between pictographs.", "Full reversal: everything rewinds. Pro stays pro, anti stays anti."],
+    "relatedTerms": ["hand-reversal", "prop-reversal", "full-reversal", "rotation"],
     "category": "motion"
+  },
+  "hand-reversal": {
+    "definition": "A reversal where the hand returns to the grid point it came from, but the prop continues rotating in the same direction. This switches prospin to antispin (or vice versa) because the hand's path direction reverses while the prop doesn't. The least disruptive reversal type. No special notation required.",
+    "examples": ["Hand was at N, shifted to E, now shifts back to N. Prop keeps spinning the same way."],
+    "relatedTerms": ["reversal", "prop-reversal", "full-reversal"],
+    "category": "motion"
+  },
+  "prop-reversal": {
+    "definition": "A reversal where the hand continues to the next grid point but the prop reverses its rotation direction. Switches prospin to antispin (or vice versa). Less intuitive than hand reversal. Marked with R/R notation in the corresponding hand's color between pictographs.",
+    "examples": ["Hand continues N to E, but prop switches from clockwise to counter-clockwise. Marked R/R."],
+    "relatedTerms": ["reversal", "hand-reversal", "full-reversal"],
+    "category": "motion"
+  },
+  "full-reversal": {
+    "definition": "A reversal where both the hand and prop retrace their paths, like pressing rewind. The hand returns to its previous point AND the prop reverses direction. Unlike hand and prop reversals, this maintains the rotation type: prospin stays prospin, antispin stays antispin. Marked with R/R notation.",
+    "examples": ["Hand goes back to previous point AND prop reverses. Everything rewinds. Pro stays pro."],
+    "relatedTerms": ["reversal", "hand-reversal", "prop-reversal"],
+    "category": "motion"
+  },
+  "rotated": {
+    "definition": "A LOOP transformation where positions rotate around the grid to return home. The second half continues rotating in the same direction as the first half to complete a full 360 degrees. Not to be confused with rewound, where hands reverse direction.",
+    "examples": ["Halved: two halves, each rotates 180° (total 360°)", "Quartered: four quarters, each rotates 90° (total 360°)"],
+    "relatedTerms": ["loop", "mirrored", "rewound"],
+    "category": "sequence"
+  },
+  "mirrored": {
+    "definition": "A LOOP transformation where positions mirror across the vertical axis (left-right swap) to return home.",
+    "examples": ["Hand at E mirrors to W", "Left-right positions swap across the vertical midline"],
+    "relatedTerms": ["loop", "flipped", "rotated"],
+    "category": "sequence"
+  },
+  "flipped": {
+    "definition": "A LOOP transformation where positions mirror across the horizontal axis (top-bottom swap) to return home.",
+    "examples": ["Hand at N flips to S", "Top-bottom positions swap across the horizontal midline"],
+    "relatedTerms": ["loop", "mirrored", "rotated"],
+    "category": "sequence"
+  },
+  "swapped": {
+    "definition": "A LOOP transformation where the blue and red hands swap roles. What the blue hand did, the red hand now does (and vice versa). Changes body motion significantly.",
+    "examples": ["Blue was at N doing pro, now red is at N doing pro", "Body has to reorganize to execute the swapped version"],
+    "relatedTerms": ["loop", "mirrored", "inverted"],
+    "category": "sequence"
+  },
+  "inverted": {
+    "definition": "A LOOP transformation where motion types flip between pro and anti. Prospin becomes antispin and vice versa.",
+    "examples": ["Pro motion in first half becomes anti in second half", "Changes the visual pattern significantly while keeping hand paths the same"],
+    "relatedTerms": ["loop", "swapped", "pro", "anti"],
+    "category": "sequence"
+  },
+  "rewound": {
+    "definition": "A LOOP transformation where the second half plays in reverse — hands trace their path backwards to return home. Like pressing rewind on a video. Not to be confused with rotated, where hands continue forward in the same direction.",
+    "examples": ["First half: A→B→C→D. Second half: D→C→B→A (rewound back home)"],
+    "relatedTerms": ["loop", "rotated", "full-reversal"],
+    "category": "sequence"
   },
   "negative-space": {
     "definition": "Passing the prop through space around the body without turning the torso.",
@@ -214,14 +412,98 @@
   "thumb-orientation": {
     "definition": "Tracking whether thumbs point inward or outward on each beat to verify prop rotation.",
     "examples": ["thumbs-in: starting position with thumbs toward center", "thumbs-out: thumbs away from center"],
-    "relatedTerms": ["prospin", "antispin", "rotation"],
+    "relatedTerms": ["orientation", "pro", "anti"],
     "category": "execution",
     "importance": "Track rotations and check position on every beat"
   },
   "loop": {
-    "definition": "A circular sequence that returns to its starting position through transformations (rotation, mirroring, swapping, etc.).",
-    "examples": ["DJII (8-count)", "AABB with mirrored-swapped transformation"],
-    "relatedTerms": ["sequence", "word", "transformation"],
+    "definition": "A circular sequence that returns to its starting position through transformations. Six base transformations (rotated, mirrored, flipped, swapped, inverted, rewound) can be combined into compound types like mirrored-swapped or rotated-inverted. The word repeats with transformations applied until it arrives back home.",
+    "examples": ["DJII (8-count rewound loop)", "AABB with mirrored-swapped transformation", "16-count loops use 4-letter words repeated 4 times", "Compound LOOP types combine multiple base transformations"],
+    "relatedTerms": ["sequence", "word", "rotated", "mirrored", "rewound", "compound", "halved", "quartered"],
     "category": "sequence"
+  },
+  "transition": {
+    "definition": "The connection between two consecutive letters in a sequence. A valid transition requires the end position of one letter to match the start position of the next. When no valid transition exists, a bridge letter is inserted.",
+    "examples": ["A ends at alpha, next letter starts at alpha = valid transition", "B ends at alpha, O starts at gamma = needs bridge letter"],
+    "relatedTerms": ["bridge", "sequence", "word"],
+    "category": "general"
+  },
+  "inversion": {
+    "definition": "A formal relationship between two letters that differ only in their rotation type (pro vs anti). Each letter has an inversion pair. These pairs are used in LOOP generation with the inverted transformation.",
+    "examples": ["A (pro/pro) ↔ B (anti/anti)", "D (pro/pro) ↔ E (anti/anti)", "W (pro) ↔ X (anti)", "Σ ↔ Δ, Θ ↔ Ω"],
+    "relatedTerms": ["pro", "anti", "inverted", "letter"],
+    "category": "general"
+  },
+  "beat": {
+    "definition": "The fundamental timing unit in TKA. One beat = one letter = one pictograph. A sequence of N letters has N beats of motion plus a start position (beat 0). Each beat shows what both hands and props do during that moment.",
+    "examples": ["A 4-letter word is 4 beats long", "Beat 0 is the start position (no motion yet)", "Each beat corresponds to one pictograph in the choreo card"],
+    "relatedTerms": ["step", "letter", "pictograph", "sequence"],
+    "category": "general"
+  },
+  "choreo-card": {
+    "definition": "The visual output of sequence generation — a composite image showing all pictographs in a sequence arranged in a grid or strip layout. Includes optional header (word, difficulty), beat numbers, reversal indicators, and footer (username, notes, date).",
+    "examples": ["A 4-letter word produces a choreo card with 5 pictographs (start + 4 beats)", "Grid layout arranges pictographs in rows, strip layout puts them in a single row"],
+    "relatedTerms": ["sequence", "pictograph", "word"],
+    "category": "notation"
+  },
+  "blue": {
+    "definition": "The color assigned to one of the two hands/props in TKA notation. Blue is conventionally the left hand or lead hand. In pictographs, the blue prop and arrow are rendered in blue. The choice of blue vs red is a notational convention, not a physical requirement.",
+    "examples": ["Blue hand starts at N, shifts to E", "Blue prop shown in blue on the pictograph"],
+    "relatedTerms": ["red", "prop", "pictograph"],
+    "category": "general"
+  },
+  "red": {
+    "definition": "The color assigned to the other hand/prop in TKA notation. Red is conventionally the right hand or follow hand. In pictographs, the red prop and arrow are rendered in red.",
+    "examples": ["Red hand starts at S, shifts to W", "Red prop shown in red on the pictograph"],
+    "relatedTerms": ["blue", "prop", "pictograph"],
+    "category": "general"
+  },
+  "constraint": {
+    "definition": "A rule applied during sequence generation that controls the style of the output. Constraints can be hard (must be satisfied) or soft (best-effort). Specified via preset names or natural language. Without constraints, the legacy random-walk builder is used. With any constraint, the reliable beam-search builder is activated.",
+    "examples": ["constraintPreset: 'smooth' minimizes reversals", "constraintPreset: 'isolation' forces all pro motions", "Natural language: 'maximize flow with blue clockwise'"],
+    "relatedTerms": ["sequence", "word", "pro", "anti", "reversal"],
+    "category": "sequence"
+  },
+  "constraint-preset": {
+    "definition": "A predefined set of constraints with a short name. Available presets: smooth (maximize flow), smooth-hands (hand path continuity), smooth-props (prop spin continuity), reversal (maximize direction changes), isolation (all pro), antispin (all anti), pro-cw (pro + clockwise), anti-ccw (anti + counter-clockwise), no-dash (shifts only), maximize-dash (prefer Type 4/5), maximum-chaos (maximize all reversals).",
+    "examples": ["'smooth' preset minimizes both hand path and prop reversals", "'isolation' forces all pro motions like the DJ compound", "'maximum-chaos' maximizes every possible reversal"],
+    "relatedTerms": ["constraint", "sequence", "pro", "anti", "reversal"],
+    "category": "sequence"
+  },
+  "halved": {
+    "definition": "A LOOP slice size where the sequence is divided into two halves of 180 degrees each. The transformation is applied once to create the second half, completing a 360-degree cycle. Used with the rotated LOOP type.",
+    "examples": ["A 4-letter word halved: first 4 beats + transformed 4 beats = 8-beat LOOP", "Each half covers 180 degrees of the full rotation"],
+    "relatedTerms": ["quartered", "loop", "rotated"],
+    "category": "sequence"
+  },
+  "quartered": {
+    "definition": "A LOOP slice size where the sequence is divided into four quarters of 90 degrees each. The transformation is applied three times to create quarters 2-4, completing a 360-degree cycle. Used with the rotated LOOP type.",
+    "examples": ["A 4-letter word quartered: 4 beats repeated 4 times = 16-beat LOOP", "Each quarter covers 90 degrees of the full rotation"],
+    "relatedTerms": ["halved", "loop", "rotated"],
+    "category": "sequence"
+  },
+  "spinning-plane": {
+    "definition": "The plane in space on which a prop pattern is executed. Three planes exist: wall (vertical, facing the audience), wheel (vertical, perpendicular to audience), and overhead (horizontal, above the performer). All existing levels (1-6) can place 2D patterns on any single plane. Level 7 (atomics) introduces patterns where two props are on different planes simultaneously.",
+    "examples": ["Wall plane: the prop traces a circle facing the audience", "Wheel plane: the prop traces a circle like a bicycle wheel (side view)", "Overhead plane: the prop traces a circle above the performer's head"],
+    "relatedTerms": ["atomic", "level", "prop"],
+    "category": "general"
+  },
+  "conjoined-grid": {
+    "definition": "A Level 6 concept where two grids share a junction point, expanding the spatial canvas while staying in 2D. Each grid shows one hand's motion. The junction point creates new position combinations that can't exist on a single grid — including patterns with two center points. Uses existing terminology (alpha, beta, gamma, etc.) to express new spatial relationships across the paired grids. More accessible than interradials as the next step after centric mode.",
+    "examples": ["Two grids sharing a north/south junction, blue hand on grid A, red hand on grid B", "Layouts: left-right, top-bottom, diagonal arrangements", "Patterns where hands are spatially further apart than a single grid allows"],
+    "relatedTerms": ["level", "centric", "position"],
+    "category": "grid"
+  },
+  "atomic": {
+    "definition": "A Level 8 concept where two props operate on different spinning planes simultaneously. One prop might be on the wall plane while the other is on the wheel plane. Analogous to how Level 4 expanded from single-grid (diamond or box) to mixed-grid (skewed), Level 8 expands from single-plane to mixed-plane. By this level, the full 2D system (including interradial orientations from Level 7) is complete, so all 2D knowledge carries into 3D. Not yet implemented.",
+    "examples": ["Left hand doing a wall-plane pattern while right hand does a wheel-plane pattern", "Intersecting two planes creates 3D motion even though each individual prop traces a 2D circle"],
+    "relatedTerms": ["spinning-plane", "level", "skewed", "rubiks-cube"],
+    "category": "general"
+  },
+  "rubiks-cube": {
+    "definition": "Level 9 concept. Within the multi-plane context of Level 8 (atomics), the points between the relative cardinal points on each plane become individually accessible. The same expansion that Level 4 (skewed) brought to single-plane grid work, Level 9 brings to multi-plane work. Named for the Rubik's cube geometry that emerges when three intersecting planes each have their in-between points addressed. Completes 3D mastery the same way Level 7 (interradials) completes 2D mastery. Not yet implemented.",
+    "examples": ["Level 4 mixed cardinal and intercardinal on one plane (skewed). Level 9 mixes equivalent points across two intersecting planes.", "The 3D grid formed by wall + wheel + overhead planes with in-between access resembles a Rubik's cube"],
+    "relatedTerms": ["atomic", "spinning-plane", "skewed", "level"],
+    "category": "general"
   }
 }

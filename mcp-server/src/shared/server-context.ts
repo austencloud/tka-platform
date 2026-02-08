@@ -171,6 +171,10 @@ function loadDataframe(gridMode: GridMode): PictographData[] {
         row[header] = values[index] || "";
       });
 
+      // Orientations for isolated variations default to "in" start.
+      // When building sequences, orientation-propagation.ts chains each step's
+      // end orientation into the next step's start, so the correct orientations
+      // propagate through the sequence regardless of this default.
       const blueOrientations = calculateOrientations({
         motionType: row.blueMotionType,
         turns: 0,

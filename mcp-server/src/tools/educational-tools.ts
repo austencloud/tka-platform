@@ -28,11 +28,16 @@ export function registerEducationalTools(server: McpServer): void {
           content: [{
             type: "text" as const,
             text: `TKA Quick Reference:
-- Grid: 8 points (N,E,S,W + NE,SE,SW,NW)
-- Positions: Alpha=opposite, Beta=same, Gamma=right-angle
-- Motions: Static=stay, Shift=adjacent, Dash=opposite
+- Grid: 8 points (N,E,S,W + NE,SE,SW,NW) + center (Level 5)
+- Positions: Alpha=opposite, Beta=same, Gamma=right-angle, Zeta=obtuse, Eta=acute, Tau=one-center, Terra=both-center
+- Hand motions: Static=stay, Shift=adjacent(90°), Dash=opposite(180°)
+- Prop rotations: Pro=with hand path, Anti=against, Float=none, Isolation=pro at 0 turns
 - Types: 1=Dual-Shift(A-V), 2=Shift(W-Ω), 3=Cross-Shift(W--Ω-), 4=Dash(Φ,Ψ,Λ), 5=Dual-Dash(Φ-,Ψ-,Λ-), 6=Static(α,β,γ)
-- "[Letter] dash" = Type 3 with "-" suffix (e.g. "Σ dash" = Σ-)`,
+- "[Letter] dash" = Type 3 with "-" suffix (e.g. "Σ dash" = Σ-)
+- Orientations: in, out, clock, counter + Level 7 interradial: clockIn, clockOut, counterIn, counterOut
+- VTG (Vulcan Tech Gospel): Split-Same, Tog-Same, Split-Opp, Tog-Opp
+- Levels: 1=0 turns, 2=whole turns, 3=half turns+float, 4=skewed grid, 5=centric grid, 6=conjoined grids, 7=interradials (2D complete), 8=atomics (3D), 9=Rubik's cube (3D complete)
+- Compounds: DJ, EK, FL (β↔α cycles), MP, NQ, OR (γ→γ cycles), ΦΨ (dash cycle)`,
           }],
         };
       }
@@ -43,74 +48,129 @@ export function registerEducationalTools(server: McpServer): void {
 TKA is a notation system for flow arts with dual wielded props (staff, fans, clubs, etc.) that encodes hand positions and movements into letters. Each "pictograph" represents one beat of motion showing:
 - Two props (blue and red) at specific grid positions
 - Motion arrows showing how each hand moves
-- Start and end positions (Alpha, Beta, or Gamma)
+- Start and end positions
 
 ## The Grid System
 
-Pictographs use a diamond grid with 8 points:
-- **Cardinal**: North (n), East (e), South (s), West (w)
-- **Intercardinal**: Northeast (ne), Southeast (se), Southwest (sw), Northwest (nw)
+Pictographs use a grid with up to 9 points:
+- **Cardinal** (4): North (n), East (e), South (s), West (w)
+- **Intercardinal** (4): Northeast (ne), Southeast (se), Southwest (sw), Northwest (nw)
+- **Center** (1): The center point (Level 5)
+
+**Grid Modes:**
+- **Diamond**: Cardinal points only (default)
+- **Box**: Intercardinal points only
+- **Skewed**: One cardinal + one intercardinal (Level 4)
+- **Centric**: At least one hand at center (Level 5, not yet implemented)
 
 ## Hand Positions
 
-- **Alpha (α)**: Hands across from each other (opposite points)
-- **Beta (β)**: Hands at the same point
-- **Gamma (γ)**: Hands form a right angle (adjacent points)
+- **Alpha (α)**: Hands at opposite points (180°)
+- **Beta (β)**: Hands at the same point (0°)
+- **Gamma (γ)**: Hands form a right angle (90°)
+- **Zeta (ζ)**: Hands form an obtuse angle (~135°, Level 4)
+- **Eta (η)**: Hands form an acute angle (~45°, Level 4)
+- **Tau (τ)**: One hand at center, one not (Level 5)
+- **Terra**: Both hands at center (Level 5)
 
-## Motion Types
+## Hand Motions
 
-Each hand can perform one of 4 motion types:
-- **Static**: Hand stays at current grid point (no motion)
-- **Shift**: Hand moves to an adjacent grid point (90° movement)
-- **Dash**: Hand moves to the opposite grid point (180° movement)
-- **Pro/Anti**: Refers to prop rotation direction (prospin = with hand path, antispin = against)
+- **Static**: Hand stays at current grid point
+- **Shift**: Hand moves to adjacent grid point (90°)
+- **Dash**: Hand moves to opposite grid point (180°)
+
+## Prop Rotation Types
+
+- **Pro (prospin)**: Prop rotates with hand's travel direction. At 0 turns = isolation (prop appears fixed in space)
+- **Anti (antispin)**: Prop rotates against hand's travel. Creates petal-like patterns
+- **Float**: Prop does not rotate at all during a shift. Pure translation
+
+## Orientations
+
+The facing direction of a prop. Eight values across the level system:
+- **Base** (Levels 1-6): in, out, clock, counter
+- **Interradial** (Level 7): clockIn, clockOut, counterIn, counterOut
+
+## Turns
+
+Additional prop rotation beyond base behavior. 1 turn = 180° additional rotation.
+- Level 1: 0 turns only
+- Level 2: whole turns (0, 1, 2, 3)
+- Level 3: half turns + float (0, 0.5, 1, 1.5, 2, 2.5, 3)
+
+## Spinning Planes
+
+Props trace circles on a plane in space. Three planes exist:
+- **Wall**: Vertical, facing the audience
+- **Wheel**: Vertical, perpendicular to audience (like a bicycle wheel)
+- **Overhead**: Horizontal, above the performer
+
+All levels 1-7 work on a single plane at a time (any of the three). Level 8 (atomics) will introduce patterns where two props are on different planes simultaneously — analogous to how Level 4 expanded from single-grid to mixed-grid.
+
+## Conjoined Grids (Level 6)
+
+Two grids sharing a junction point, each showing one hand's motion. Expands the spatial canvas while staying in 2D. Creates new position combinations that can't exist on a single grid, including patterns with two center points. Uses existing position terminology (alpha, beta, gamma) to express the new spatial relationships across paired grids.
 
 ## The 6 Letter Types
 
 ### Type 1: Dual-Shift (22 letters: A-V)
 Both hands shift. The most common type.
-- Letters: A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V
 
-### Type 2: Shift (8 letters)
-One hand shifts, one hand stays static.
-- Letters: W, X, Y, Z, Σ (Sigma), Δ (Delta), Θ (Theta), Ω (Omega)
+### Type 2: Shift (8 letters: W, X, Y, Z, Σ, Δ, Θ, Ω)
+One hand shifts, one stays static.
 
-### Type 3: Cross-Shift / "Dash Letters" (8 letters)
-One hand shifts + one hand dashes. These have a "-" suffix.
-- Letters: W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-
-- **CRITICAL**: When someone says "Sigma dash" or "W dash", they mean the Type 3 letter (Σ-, W-), NOT a letter that uses dash motion.
+### Type 3: Cross-Shift (8 letters: W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-)
+One hand shifts + one hand dashes. Named with "-" suffix.
+- **CRITICAL**: "Sigma dash" = Σ- (the Type 3 letter), NOT "Sigma with dash motion"
 
-### Type 4: Dash (3 letters)
+### Type 4: Dash (3 letters: Φ, Ψ, Λ)
 One hand dashes, one stays static.
-- Letters: Φ (Phi), Ψ (Psi), Λ (Lambda)
 
-### Type 5: Dual-Dash (3 letters)
-Both hands dash simultaneously. These also have a "-" suffix.
-- Letters: Φ-, Ψ-, Λ-
+### Type 5: Dual-Dash (3 letters: Φ-, Ψ-, Λ-)
+Both hands dash. Named with "-" suffix.
 
-### Type 6: Static (3 letters)
+### Type 6: Static (3 letters: α, β, γ)
 Both hands remain stationary.
-- Letters: α (alpha), β (beta), γ (gamma)
 
-## Naming Convention Summary
+## Compound Letters
 
-| User Says | They Mean | Type |
-|-----------|-----------|------|
-| "Sigma" or "Σ" | Σ | Type 2 (Shift) |
-| "Sigma dash" or "Σ-" | Σ- | Type 3 (Cross-Shift) |
-| "W" | W | Type 2 (Shift) |
-| "W dash" or "W-" | W- | Type 3 (Cross-Shift) |
-| "Phi" or "Φ" | Φ | Type 4 (Dash) |
-| "Phi dash" or "Φ-" | Φ- | Type 5 (Dual-Dash) |
+Pairs that complete a full cycle of motion:
+- **DJ** (Disco Jam): D (β→α) + J (α→β) — pro/pro isolation
+- **EK** (Exploding Kitten): anti/anti compound
+- **FL** (Fruity Loops): hybrid compound
+- **MP** (Magic Potion), **NQ** (Never Quit), **OR** (Open Road): γ→γ compounds
+- **ΦΨ**: dash compound
+
+## VTG (Vulcan Tech Gospel)
+
+An older, widely-adopted notation from the Vulcan Lofts in Oakland. Ground-referenced (downbeat = south).
+- **Split-Same (SS)**: props 180° out of phase, same direction. Alpha letters (A, B, C) are always SS.
+- **Together-Same (TS)**: props in sync, same direction. Beta letters (G, H, I) are always TS.
+- **Split-Opposite (SO)**: out of phase, opposite directions.
+- **Together-Opposite (TO)**: in sync, opposite directions.
+
+TKA maps: split = alpha (opposite), tog/together = beta (same point).
+
+## Reversals
+
+Three types of directional changes:
+- **Hand reversal**: Hand goes back, prop continues. Switches pro↔anti. No notation.
+- **Prop reversal**: Hand continues, prop reverses. Switches pro↔anti. Marked R/R.
+- **Full reversal**: Both retrace. Maintains pro/anti. Marked R/R.
+
+## LOOPs (Circular Sequences)
+
+Sequences that return home through transformations:
+- **Rotated**: Positions continue rotating same direction (180° or 90° slices)
+- **Mirrored**: Left-right swap across vertical axis
+- **Flipped**: Top-bottom swap across horizontal axis
+- **Swapped**: Blue↔Red hand roles swap
+- **Inverted**: Pro↔Anti motions swap
+- **Rewound**: Second half plays in reverse
 
 ## Variations
 
-Each letter has multiple **variations** - different ways to execute the same letter type based on:
-- Starting position (alpha1, alpha3, beta1, gamma5, etc.)
-- Ending position
-- Rotation directions (cw = clockwise, ccw = counter-clockwise)
-- Start/end locations on the grid
-
+Each letter has multiple variations based on starting/ending positions, rotation directions, and grid locations.
 Use \`list_letter_variations\` to see all variations for a specific letter.`;
 
       return {
@@ -166,6 +226,17 @@ Use \`list_letter_variations\` to see all variations for a specific letter.`;
 
       const varData = variations[Math.min(variation, variations.length - 1)];
 
+      // Describe rotation type in human-readable form
+      const describeMotion = (motion: typeof varData.blueMotion) => {
+        const mt = motion.motionType;
+        const rd = motion.rotationDirection;
+        if (mt === "static") return "static (no hand movement)";
+        if (mt === "dash") return "dash (moves to opposite point)";
+        // shift with rotation info
+        const rotLabel = rd === "cw" ? "pro (clockwise)" : rd === "ccw" ? "anti (counter-clockwise)" : mt;
+        return `${rotLabel} ${mt}`;
+      };
+
       const explanation = `# Letter: ${letter}
 
 ## Type Information
@@ -176,8 +247,8 @@ ${fullTypeInfo?.description || ""}
 ${fullTypeInfo?.characteristics ? "**Characteristics:**\n" + fullTypeInfo.characteristics.map(c => `- ${c}`).join("\n") : ""}
 
 ## Motion Pattern
-- **Blue hand:** ${varData.blueMotion.motionType}${varData.blueMotion.rotationDirection !== "noRotation" ? ` (${varData.blueMotion.rotationDirection})` : ""}
-- **Red hand:** ${varData.redMotion.motionType}${varData.redMotion.rotationDirection !== "noRotation" ? ` (${varData.redMotion.rotationDirection})` : ""}
+- **Blue hand:** ${describeMotion(varData.blueMotion)}
+- **Red hand:** ${describeMotion(varData.redMotion)}
 
 ## Variation ${variation} Details
 - **Start position:** ${varData.startPosition}
@@ -207,12 +278,73 @@ Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter
     async ({ term }) => {
       const glossary = getGlossary();
       const normalizedTerm = term.toLowerCase().trim();
-      const entry = glossary[normalizedTerm];
+
+      // Alias map for common alternate spellings and abbreviations
+      const aliases: Record<string, string> = {
+        "counter-clockwise": "counterclockwise",
+        "counter clockwise": "counterclockwise",
+        "prospin": "prospin",
+        "antispin": "antispin",
+        "pro-spin": "prospin",
+        "anti-spin": "antispin",
+        "type 1": "dual-shift",
+        "type1": "dual-shift",
+        "type 2": "shift",
+        "type2": "shift",
+        "type 3": "cross-shift",
+        "type3": "cross-shift",
+        "type 4": "dash",
+        "type4": "dash",
+        "type 5": "dual-dash",
+        "type5": "dual-dash",
+        "type 6": "static",
+        "type6": "static",
+        "tog-same": "together-same",
+        "tog same": "together-same",
+        "ts": "together-same",
+        "split-opp": "split-opposite",
+        "split opp": "split-opposite",
+        "so": "split-opposite",
+        "tog-opp": "together-opposite",
+        "tog opp": "together-opposite",
+        "to": "together-opposite",
+        "ss": "split-same",
+        "hand reversal": "hand-reversal",
+        "prop reversal": "prop-reversal",
+        "full reversal": "full-reversal",
+        "motion type": "shift",
+        "grid mode": "diamond",
+      };
+
+      const resolvedTerm = aliases[normalizedTerm] || normalizedTerm;
+      const entry = glossary[resolvedTerm];
 
       if (!entry) {
-        const possibleMatches = Object.keys(glossary)
+        // Fuzzy match: check for substring matches and Levenshtein-like proximity
+        const allKeys = Object.keys(glossary);
+        const possibleMatches = allKeys
           .filter(key => key.includes(normalizedTerm) || normalizedTerm.includes(key))
           .slice(0, 5);
+
+        // If no substring match, try finding keys that share significant characters
+        if (possibleMatches.length === 0) {
+          const scored = allKeys
+            .map(key => {
+              let score = 0;
+              const shorter = normalizedTerm.length < key.length ? normalizedTerm : key;
+              const longer = normalizedTerm.length < key.length ? key : normalizedTerm;
+              for (const char of shorter) {
+                if (longer.includes(char)) score++;
+              }
+              return { key, score: score / longer.length };
+            })
+            .filter(({ score }) => score > 0.5)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5);
+          if (scored.length > 0) {
+            possibleMatches.push(...scored.map(s => s.key));
+          }
+        }
 
         return {
           content: [
@@ -221,7 +353,7 @@ Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter
               text: `Term "${term}" not found in the TKA glossary.${
                 possibleMatches.length > 0
                   ? `\n\nDid you mean: ${possibleMatches.join(", ")}?`
-                  : "\n\nAvailable terms include: " + Object.keys(glossary).slice(0, 10).join(", ") + "..."
+                  : "\n\nAvailable terms include: " + allKeys.slice(0, 10).join(", ") + "..."
               }`,
             },
           ],
@@ -281,6 +413,16 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
       const rep1 = var1[0];
       const rep2 = var2[0];
 
+      // Helper to describe rotation type
+      const describeRotation = (motion: typeof rep1.blueMotion) => {
+        if (motion.motionType === "static") return "static";
+        if (motion.motionType === "dash") return "dash";
+        const dir = motion.rotationDirection;
+        if (dir === "cw") return "pro (clockwise)";
+        if (dir === "ccw") return "anti (counter-clockwise)";
+        return motion.motionType;
+      };
+
       const similarities: string[] = [];
       const differences: string[] = [];
 
@@ -290,6 +432,7 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
         differences.push(`Different types: ${letter1} is Type ${typeNum1} (${letterTypes[typeNum1]?.name}), ${letter2} is Type ${typeNum2} (${letterTypes[typeNum2]?.name})`);
       }
 
+      // Compare motion types
       if (rep1.blueMotion.motionType === rep2.blueMotion.motionType) {
         similarities.push(`Both have ${rep1.blueMotion.motionType} blue motion`);
       } else {
@@ -302,10 +445,63 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
         differences.push(`Red motion differs: ${letter1} uses ${rep1.redMotion.motionType}, ${letter2} uses ${rep2.redMotion.motionType}`);
       }
 
+      // Compare rotation directions (the key differentiator for same-type letters)
+      if (rep1.blueMotion.rotationDirection === rep2.blueMotion.rotationDirection) {
+        if (rep1.blueMotion.rotationDirection !== "noRotation") {
+          similarities.push(`Both have ${describeRotation(rep1.blueMotion)} blue rotation`);
+        }
+      } else {
+        differences.push(`Blue rotation differs: ${letter1} is ${describeRotation(rep1.blueMotion)}, ${letter2} is ${describeRotation(rep2.blueMotion)}`);
+      }
+
+      if (rep1.redMotion.rotationDirection === rep2.redMotion.rotationDirection) {
+        if (rep1.redMotion.rotationDirection !== "noRotation") {
+          similarities.push(`Both have ${describeRotation(rep1.redMotion)} red rotation`);
+        }
+      } else {
+        differences.push(`Red rotation differs: ${letter1} is ${describeRotation(rep1.redMotion)}, ${letter2} is ${describeRotation(rep2.redMotion)}`);
+      }
+
+      // Compare position patterns
+      const startPos1 = rep1.startPosition.replace(/\d+/g, "");
+      const endPos1 = rep1.endPosition.replace(/\d+/g, "");
+      const startPos2 = rep2.startPosition.replace(/\d+/g, "");
+      const endPos2 = rep2.endPosition.replace(/\d+/g, "");
+      const pattern1 = `${startPos1}→${endPos1}`;
+      const pattern2 = `${startPos2}→${endPos2}`;
+
+      if (pattern1 === pattern2) {
+        similarities.push(`Same position pattern: ${pattern1}`);
+      } else {
+        differences.push(`Position pattern differs: ${letter1} is ${pattern1}, ${letter2} is ${pattern2}`);
+      }
+
       if (Math.abs(var1.length - var2.length) <= 2) {
         similarities.push(`Similar variation count: ${letter1} has ${var1.length}, ${letter2} has ${var2.length}`);
       } else {
         differences.push(`Different variation counts: ${letter1} has ${var1.length}, ${letter2} has ${var2.length}`);
+      }
+
+      // Detect special relationships
+      const relationships: string[] = [];
+
+      // Check inversion pair (same motions, opposite rotations)
+      if (
+        rep1.blueMotion.motionType === rep2.blueMotion.motionType &&
+        rep1.redMotion.motionType === rep2.redMotion.motionType &&
+        rep1.blueMotion.rotationDirection !== rep2.blueMotion.rotationDirection &&
+        rep1.blueMotion.rotationDirection !== "noRotation" &&
+        pattern1 === pattern2
+      ) {
+        relationships.push(`**Inversion pair**: ${letter1} and ${letter2} are the same motion with opposite rotations (pro↔anti). Used in the inverted LOOP transformation.`);
+      }
+
+      // Check compound pair (opposite position transitions)
+      if (
+        startPos1 === endPos2 && endPos1 === startPos2 &&
+        startPos1 !== endPos1
+      ) {
+        relationships.push(`**Compound pair**: ${letter1} (${pattern1}) and ${letter2} (${pattern2}) complete a full cycle together.`);
       }
 
       const output = `# Comparison: ${letter1} vs ${letter2}
@@ -314,8 +510,9 @@ ${entry.examples.map(e => `- ${e}`).join("\n")}
 | Property | ${letter1} | ${letter2} |
 |----------|------------|------------|
 | Type | ${typeNum1} (${letterTypes[typeNum1]?.name || "?"}) | ${typeNum2} (${letterTypes[typeNum2]?.name || "?"}) |
-| Blue motion | ${rep1.blueMotion.motionType} | ${rep2.blueMotion.motionType} |
-| Red motion | ${rep1.redMotion.motionType} | ${rep2.redMotion.motionType} |
+| Blue motion | ${describeRotation(rep1.blueMotion)} ${rep1.blueMotion.motionType} | ${describeRotation(rep2.blueMotion)} ${rep2.blueMotion.motionType} |
+| Red motion | ${describeRotation(rep1.redMotion)} ${rep1.redMotion.motionType} | ${describeRotation(rep2.redMotion)} ${rep2.redMotion.motionType} |
+| Position pattern | ${pattern1} | ${pattern2} |
 | Variations | ${var1.length} | ${var2.length} |
 
 ## Similarities
@@ -323,6 +520,7 @@ ${similarities.length > 0 ? similarities.map(s => `- ${s}`).join("\n") : "- No m
 
 ## Differences
 ${differences.length > 0 ? differences.map(d => `- ${d}`).join("\n") : "- No major differences"}
+${relationships.length > 0 ? `\n## Relationships\n${relationships.map(r => `- ${r}`).join("\n")}` : ""}
 
 ## When to Use Each
 - **${letter1}:** ${letterTypes[typeNum1]?.description || "Type " + typeNum1 + " letter"}
@@ -399,9 +597,9 @@ ${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)
   // Tool: get_position_info
   server.tool(
     "get_position_info",
-    "Get detailed information about a TKA position (alpha, beta, gamma, zeta, eta) including grid configuration and examples.",
+    "Get detailed information about a TKA position (alpha, beta, gamma, zeta, eta, tau, terra) including grid configuration and examples.",
     {
-      position: z.string().describe("Position name (alpha, beta, gamma, zeta, eta)"),
+      position: z.string().describe("Position name (alpha, beta, gamma, zeta, eta, tau, terra)"),
     },
     async ({ position }) => {
       const normalizedPos = position.toLowerCase().trim();
@@ -445,7 +643,7 @@ ${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)
           gridDescription: "One hand is 90° away from the other, creating an 'L' shape.",
           examples: [
             "gamma1: Hands at N and E (diamond mode)",
-            "gamma5: Hands at N and NW (diamond-to-box transition)",
+            "gamma5: Hands at NE and NW (box mode, 90° apart)",
             "gamma9: Hands at NE and SE (box mode)",
           ],
           level: 1,
@@ -471,6 +669,27 @@ ${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)
             "Hands at E and SE (skewed mode)",
           ],
           level: 4,
+        },
+        tau: {
+          name: "Tau (τ)",
+          angleDegrees: "variable",
+          description: "One hand is at the center grid point, the other at a non-center point. Introduced in Level 5 with centric grid mode. Not yet implemented in TKA Scribe.",
+          gridDescription: "The center point is the 9th grid location. Tau positions have one hand there and one at any of the 8 outer points.",
+          examples: [
+            "One hand at center, one at N",
+            "One hand at center, one at NE",
+          ],
+          level: 5,
+        },
+        terra: {
+          name: "Terra",
+          angleDegrees: "0° (both at center)",
+          description: "Both hands are at the center grid point. Introduced in Level 5 with centric grid mode. Not yet implemented in TKA Scribe.",
+          gridDescription: "Both props stacked at the center of the grid. Similar to beta (both at same point) but at the unique center location.",
+          examples: [
+            "Both hands at center",
+          ],
+          level: 5,
         },
       };
 

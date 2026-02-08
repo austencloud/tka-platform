@@ -30,12 +30,16 @@ import {
   registerUtilityTools,
 } from "./src/tools/index.js";
 import { ensureTransitionGraphInitialized } from "./src/core/letter-transition-graph.js";
+import { loadKnowledgeBase } from "./src/shared/server-context.js";
 
 // Create MCP server instance
 const server = new McpServer({
   name: "tka-domain",
   version: "2.0.0",
 });
+
+// Load knowledge base (glossary, letter types)
+loadKnowledgeBase();
 
 // Register all tool groups
 registerDataTools(server);

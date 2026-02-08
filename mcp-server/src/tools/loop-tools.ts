@@ -21,6 +21,8 @@ import {
   executeLOOP,
   findBridgeLettersForLoop,
   isLOOPValidForPositionPair,
+  detectLOOPFromSteps,
+  isSequenceCircular,
 } from "../core/loop/index.js";
 
 /**
@@ -98,6 +100,67 @@ export function registerLoopTools(server: McpServer): void {
           loopType: t,
           name: LOOP_TYPE_LABELS[t],
         })),
+      };
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(output, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  // Tool: detect_loop_pattern
+  server.tool(
+    "detect_loop_pattern",
+    "Analyze a sequence to detect if it's circular and identify LOOP transformation patterns (rotated, mirrored, swapped, inverted). Useful for understanding what kind of LOOP a word produces.",
+    {
+      word: z.string().describe('The sequence word to analyze, e.g., "DJII" or "AABB"'),
+      gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
+      maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts"),
+    },
+    async ({ word, gridMode = "diamond", maxAttempts = 500 }) => {
+      const allPictographs = ensureDataLoaded(gridMode);
+      const letters = parseWordToLetters(word.toUpperCase());
+
+      if (letters.length === 0) {
+        return {
+          content: [
+            { type: "text" as const, text: `No valid letters in "${word}". Use list_available_letters to see valid letters.` },
+          ],
+          isError: true,
+        };
+      }
+
+      const result = buildSequenceFromLetters(letters, allPictographs, maxAttempts);
+
+      if (!result.isValid) {
+        return {
+          content: [
+            { type: "text" as const, text: `Failed to generate sequence for "${word}": ${result.error}` },
+          ],
+          isError: true,
+        };
+      }
+
+      const detection = detectLOOPFromSteps(result.steps);
+      const circular = isSequenceCircular(result.steps);
+
+      const output = {
+        word: result.word,
+        isCircular: circular,
+        startPosition: result.startPosition,
+        endPosition: result.endPosition,
+        stepCount: result.steps.length - 1,
+        detection: {
+          components: detection.components,
+          isFreeform: detection.isFreeform,
+          rotationDirection: detection.rotationDirection,
+          description: detection.description,
+        },
       };
 
       return {
