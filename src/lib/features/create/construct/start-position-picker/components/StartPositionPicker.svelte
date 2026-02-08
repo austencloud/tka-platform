@@ -191,12 +191,12 @@ Controls moved below the grid for better UX
     <div class="header-right"></div>
   </header>
 
-  <!-- Animated transition container - keyed on view mode AND grid mode -->
+  <!-- Animated transition container - keyed on view mode only (grid mode animates in-place) -->
   <div class="picker-view">
-    {#key `${showAdvancedPicker}-${pickerState.currentGridMode}`}
+    {#key showAdvancedPicker}
       <div
         class="picker-content"
-        in:scale={{ start: 0.92, duration: 300, delay: 150, easing: cubicOut }}
+        in:scale={{ start: 0.92, duration: 250, delay: 200, easing: cubicOut }}
         out:scale={{ start: 0.92, duration: 200, easing: cubicOut }}
       >
         {#if showAdvancedPicker}
@@ -388,6 +388,9 @@ Controls moved below the grid for better UX
     justify-content: center;
     gap: 8px;
 
+    /* Fixed width so buttons don't shift when label text changes */
+    width: 150px;
+
     /* Touch target */
     min-height: var(--min-touch-target, 48px);
     padding: 10px 20px;
@@ -472,6 +475,7 @@ Controls moved below the grid for better UX
     }
 
     .control-button {
+      width: auto;
       padding: 8px 14px;
       font-size: var(--font-size-compact);
     }

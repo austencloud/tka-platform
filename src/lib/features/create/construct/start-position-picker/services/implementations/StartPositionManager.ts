@@ -95,7 +95,7 @@ export class StartPositionManager implements IStartPositionManager {
     gridMode: GridMode,
     orientation: Orientation = Orientation.IN
   ): PictographData[] {
-    return positions.map((pos) => {
+    return positions.map((pos, index) => {
       // Get the hand locations for this position (blue and red hand locations)
       const [blueLocation, redLocation] = this.getHandLocationsForPosition(
         pos.position
@@ -135,7 +135,7 @@ export class StartPositionManager implements IStartPositionManager {
       // Create proper pictograph data using factory function (like the original working implementation)
       // Note: gridMode is stored in the motion data, not the pictograph itself
       return createPictographData({
-        id: `start-${pos.position}`, // Use the position enum as the unique identifier
+        id: `start-pos-${index}`, // Stable across grid modes so components animate in-place
         letter: pos.letter,
         startPosition: pos.position,
         endPosition: pos.position,

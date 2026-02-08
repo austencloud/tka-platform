@@ -30,11 +30,11 @@
   onMount(() => {
     hapticService = container.items.hapticFeedback;
 
-    // Allow container queries to take effect after layout animation completes
-    // (workspace collapse animation is 450ms, add buffer for safety)
+    // Brief stabilization to let container queries settle after layout change
+    // Matches the parent's in:scale delay (200ms) so both views feel symmetric
     const stabilizationTimer = setTimeout(() => {
       isLayoutStabilizing = false;
-    }, 500);
+    }, 200);
 
     return () => clearTimeout(stabilizationTimer);
   });

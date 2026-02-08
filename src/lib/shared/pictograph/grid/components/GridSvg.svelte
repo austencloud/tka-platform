@@ -498,7 +498,15 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     }
 
     const previousRotation = cumulativeRotation;
-    const direction = getGridRotationDirection();
+    // Determine direction from the mode transition itself:
+    // Diamond→Box = clockwise (+45), Box→Diamond = counterclockwise (-45)
+    // Only fall back to global state for sequence transform rotations (same-mode rotations)
+    const direction =
+      previousGridMode === GridMode.DIAMOND && gridMode === GridMode.BOX
+        ? 1
+        : previousGridMode === GridMode.BOX && gridMode === GridMode.DIAMOND
+          ? -1
+          : getGridRotationDirection();
     const newRotation = cumulativeRotation + 45 * direction;
 
     // Animate rotation smoothly if element is available
