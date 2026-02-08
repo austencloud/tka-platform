@@ -36,6 +36,18 @@ const DASH_PAIRS = new Set([
   "ne_sw", "sw_ne", "se_nw", "nw_se",   // Intercardinal opposites
 ]);
 
+// Center → perimeter (hash-out)
+const HASH_OUT_PAIRS = new Set([
+  "c_n", "c_e", "c_s", "c_w",
+  "c_ne", "c_se", "c_sw", "c_nw",
+]);
+
+// Perimeter → center (hash-in)
+const HASH_IN_PAIRS = new Set([
+  "n_c", "e_c", "s_c", "w_c",
+  "ne_c", "se_c", "sw_c", "nw_c",
+]);
+
 /**
  * Derive hand path direction from start and end locations
  */
@@ -57,6 +69,14 @@ function deriveHandPath(startLocation: string, endLocation: string): HandPath {
 
   if (DASH_PAIRS.has(key)) {
     return HandPath.DASH;
+  }
+
+  if (HASH_OUT_PAIRS.has(key)) {
+    return HandPath.HASH_OUT;
+  }
+
+  if (HASH_IN_PAIRS.has(key)) {
+    return HandPath.HASH_IN;
   }
 
   // Fallback for unknown pairs - treat as static
@@ -181,18 +201,22 @@ export class SpellStatsCalculator implements ISpellStatsCalculator {
     // Need both to compare
     if (!prevPath || !currPath) return false;
 
-    // Dash and static are neutral - no reversal
-    if (
-      prevPath === HandPath.DASH ||
-      prevPath === HandPath.STATIC ||
-      currPath === HandPath.DASH ||
-      currPath === HandPath.STATIC
-    ) {
+    // Dash, static, and hash are directionally neutral - no reversal
+    if (this.isNeutralHandPath(prevPath) || this.isNeutralHandPath(currPath)) {
       return false;
     }
 
     // Only cw↔ccw is a reversal
     return prevPath !== currPath;
+  }
+
+  private isNeutralHandPath(path: HandPath): boolean {
+    return (
+      path === HandPath.DASH ||
+      path === HandPath.STATIC ||
+      path === HandPath.HASH_IN ||
+      path === HandPath.HASH_OUT
+    );
   }
 }
 

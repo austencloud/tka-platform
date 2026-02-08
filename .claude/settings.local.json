@@ -508,6 +508,8 @@
       "Bash(reg query:*)",
       "Bash(wmic qfe list brief:*)",
       "Bash(sfc /scannow:*)",
+      "Bash(findstr:*)",
+      "Bash(printenv:*)",
       "mcp__tka-domain__get_position_info"
     ]
   },

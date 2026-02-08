@@ -21,6 +21,8 @@ export enum HandPath {
   COUNTER_CLOCKWISE = "ccw",
   DASH = "dash",
   STATIC = "static",
+  HASH_IN = "hashIn",
+  HASH_OUT = "hashOut",
 }
 
 // ============================================================================
@@ -45,6 +47,19 @@ const DASH_PAIRS = [
 const STATIC_PAIRS = [
   ["n", "n"], ["e", "e"], ["s", "s"], ["w", "w"],
   ["ne", "ne"], ["se", "se"], ["sw", "sw"], ["nw", "nw"],
+  ["c", "c"],
+];
+
+// Center → perimeter (hash-out): hand moves away from center
+const HASH_OUT_PAIRS = [
+  ["c", "n"], ["c", "e"], ["c", "s"], ["c", "w"],
+  ["c", "ne"], ["c", "se"], ["c", "sw"], ["c", "nw"],
+];
+
+// Perimeter → center (hash-in): hand moves toward center
+const HASH_IN_PAIRS = [
+  ["n", "c"], ["e", "c"], ["s", "c"], ["w", "c"],
+  ["ne", "c"], ["se", "c"], ["sw", "c"], ["nw", "c"],
 ];
 
 // Build handpath map
@@ -64,6 +79,14 @@ DASH_PAIRS.forEach(([start, end]) => {
 
 STATIC_PAIRS.forEach(([start, end]) => {
   handpathMap.set(`${start}_${end}`, HandPath.STATIC);
+});
+
+HASH_OUT_PAIRS.forEach(([start, end]) => {
+  handpathMap.set(`${start}_${end}`, HandPath.HASH_OUT);
+});
+
+HASH_IN_PAIRS.forEach(([start, end]) => {
+  handpathMap.set(`${start}_${end}`, HandPath.HASH_IN);
 });
 
 /**

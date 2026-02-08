@@ -38,6 +38,8 @@ export enum HandPath {
   COUNTER_CLOCKWISE = "ccw",
   DASH = "dash",
   STATIC = "static",
+  HASH_IN = "hashIn",
+  HASH_OUT = "hashOut",
 }
 
 /**

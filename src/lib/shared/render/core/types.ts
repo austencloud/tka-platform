@@ -111,7 +111,7 @@ export interface ArrowPlacement {
 // ============================================================================
 
 /** Hand path directions (movement between locations) */
-export type HandPath = "cw" | "ccw" | "dash" | "static";
+export type HandPath = "cw" | "ccw" | "dash" | "static" | "hashIn" | "hashOut";
 
 // ============================================================================
 // SPINNING PLANE (Future - not yet assigned to a level)

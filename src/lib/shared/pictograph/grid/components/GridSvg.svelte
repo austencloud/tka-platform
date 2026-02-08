@@ -57,6 +57,8 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     se_box_hand_point: GridLocation.SOUTHEAST,
     sw_box_hand_point: GridLocation.SOUTHWEST,
     nw_box_hand_point: GridLocation.NORTHWEST,
+    // Center hand point (for centric mode)
+    center_point: GridLocation.CENTER,
   };
 
   // State

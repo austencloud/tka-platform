@@ -33,6 +33,8 @@ export enum HandPath {
   COUNTER_CLOCKWISE = "ccw",
   DASH = "dash",
   STATIC = "static",
+  HASH_IN = "hashIn",
+  HASH_OUT = "hashOut",
 }
 
 // Hand path lookup tables (same as orientation-calculator.ts)
@@ -54,6 +56,19 @@ const DASH_PAIRS = [
 const STATIC_PAIRS = [
   ["n", "n"], ["e", "e"], ["s", "s"], ["w", "w"],
   ["ne", "ne"], ["se", "se"], ["sw", "sw"], ["nw", "nw"],
+  ["c", "c"],
+];
+
+// Center → perimeter (hash-out)
+const HASH_OUT_PAIRS = [
+  ["c", "n"], ["c", "e"], ["c", "s"], ["c", "w"],
+  ["c", "ne"], ["c", "se"], ["c", "sw"], ["c", "nw"],
+];
+
+// Perimeter → center (hash-in)
+const HASH_IN_PAIRS = [
+  ["n", "c"], ["e", "c"], ["s", "c"], ["w", "c"],
+  ["ne", "c"], ["se", "c"], ["sw", "c"], ["nw", "c"],
 ];
 
 // Build lookup map
@@ -75,6 +90,14 @@ STATIC_PAIRS.forEach(([start, end]) => {
   handpathMap.set(`${start}_${end}`, HandPath.STATIC);
 });
 
+HASH_OUT_PAIRS.forEach(([start, end]) => {
+  handpathMap.set(`${start}_${end}`, HandPath.HASH_OUT);
+});
+
+HASH_IN_PAIRS.forEach(([start, end]) => {
+  handpathMap.set(`${start}_${end}`, HandPath.HASH_IN);
+});
+
 /**
  * Get hand path direction from start/end locations.
  */
@@ -91,10 +114,18 @@ export function getHandpathDirection(startLocation: string | undefined, endLocat
  * Only cw ↔ ccw counts as a reversal.
  * Dash and static are neutral (not considered reversals).
  */
+function isNeutralHandPath(path: HandPath): boolean {
+  return (
+    path === HandPath.STATIC ||
+    path === HandPath.DASH ||
+    path === HandPath.HASH_IN ||
+    path === HandPath.HASH_OUT
+  );
+}
+
 function isHandPathReversal(prev: HandPath, current: HandPath): boolean {
-  // Static or dash doesn't count as directional
-  if (prev === HandPath.STATIC || prev === HandPath.DASH) return false;
-  if (current === HandPath.STATIC || current === HandPath.DASH) return false;
+  // Static, dash, and hash are directionally neutral
+  if (isNeutralHandPath(prev) || isNeutralHandPath(current)) return false;
 
   // Opposite circular directions = reversal
   return (
