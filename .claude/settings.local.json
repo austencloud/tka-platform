@@ -507,7 +507,8 @@
       "Bash(pwsh:*)",
       "Bash(reg query:*)",
       "Bash(wmic qfe list brief:*)",
-      "Bash(sfc /scannow:*)"
+      "Bash(sfc /scannow:*)",
+      "mcp__tka-domain__get_position_info"
     ]
   },
   "enableAllProjectMcpServers": true,
