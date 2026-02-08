@@ -1,15 +1,21 @@
 # TKA Domain Knowledge
 
+## What TKA Is
+
+TKA (The Kinetic Alphabet) is a notation system for two-handed prop manipulation. It is **prop-agnostic** — it describes hand positions and prop rotation behaviors that apply regardless of what prop is being used. Do not describe TKA as being "for poi" or any specific prop type.
+
+---
+
 ## The 6 Letter Types
 
 | Type | Name | Description | Letters |
 |------|------|-------------|---------|
 | 1 | Dual-Shift | Both hands shift | A-V (22 letters) |
-| 2 | Shift | One shifts, one static | W, X, Y, Z, Σ, Δ, Θ, Ω |
-| 3 | Cross-Shift | One shifts + one dashes | W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω- |
-| 4 | Dash | One dashes, one static | Φ, Ψ, Λ |
-| 5 | Dual-Dash | Both hands dash | Φ-, Ψ-, Λ- |
-| 6 | Static | Both hands stationary | α, β, γ |
+| 2 | Shift | One shifts, one static | W, X, Y, Z, &Sigma;, &Delta;, &Theta;, &Omega; |
+| 3 | Cross-Shift | One shifts + one dashes | W-, X-, Y-, Z-, &Sigma;-, &Delta;-, &Theta;-, &Omega;- |
+| 4 | Dash | One dashes, one static | &Phi;, &Psi;, &Lambda; |
+| 5 | Dual-Dash | Both hands dash | &Phi;-, &Psi;-, &Lambda;- |
+| 6 | Static | Both hands stationary | &alpha;, &beta;, &gamma; |
 
 ### CRITICAL: Motion Type Precision
 
@@ -30,9 +36,9 @@ What makes Type 1 unique is that both hands **shift** - not that both move. Alwa
 
 | User Says | They Mean | Type |
 |-----------|-----------|------|
-| "Sigma dash" | Σ- | Type 3 |
+| "Sigma dash" | &Sigma;- | Type 3 |
 | "W dash" | W- | Type 3 |
-| "Phi dash" | Φ- | Type 5 |
+| "Phi dash" | &Phi;- | Type 5 |
 
 The "-" suffix does NOT mean "letter with dash motion type". It's a naming convention for Type 3 (Cross-Shift) and Type 5 (Dual-Dash) letters.
 
@@ -40,7 +46,7 @@ The "-" suffix does NOT mean "letter with dash motion type". It's a naming conve
 
 ## MCP Server Tools
 
-### ⛔ CRITICAL: Just Generate. No Pre-Checks.
+### CRITICAL: Just Generate. No Pre-Checks.
 
 **When a user asks for a sequence, call `generate_sequence` IMMEDIATELY.**
 
@@ -98,6 +104,294 @@ Do NOT call `analyze_word_feasibility` first. The generator handles everything:
 - **Skewed**: One hand cardinal, one intercardinal (mixing grid systems)
 - **Centric**: At least one hand at center (Level 5 - not yet implemented)
 
+**Adjacency:** On both 4-point and 8-point grids, each perimeter point has exactly 2 adjacent neighbors (CW and CCW along the perimeter). On a 4-point grid, the opposite point is 1 (reachable via dash). On an 8-point grid, there are 6 non-opposite, non-self perimeter points reachable via shift arcs of varying length.
+
+---
+
+## Hand Paths
+
+A hand path describes the trajectory of the hand from one grid point to another. The geometric shape of the path (curved vs straight) determines which rotation types are available.
+
+| Path | Trajectory | Geometry | Available from |
+|------|-----------|----------|----------------|
+| **Static** | Stay at current point | No movement | Any point |
+| **Shift** | Arc along perimeter to adjacent point (CW or CCW) | Curved arc | Any perimeter point |
+| **Dash** | Straight line to diametrically opposite point | Straight line | Any perimeter point |
+| **Hash** | Straight line to/from center | Straight line | Between perimeter and center (L5+) |
+
+**The geometric distinction matters:** Shifts follow curved arcs around the grid. Dashes and hashes follow straight lines through the grid. This determines whether pro/anti/float distinctions exist (they require a curve to define "with" vs "against").
+
+Hash is a "half-dash" — a straight-line path to or from the center point rather than to the opposite perimeter point.
+
+---
+
+## The Base Rotation Principle
+
+**Turn counts in TKA measure ADDITIONAL rotation on top of an inherent base rotation.** This is the most commonly misunderstood concept.
+
+Every motion has a **base rotation** — the natural prop behavior during the hand path at 0 additional turns:
+
+**For shifts (curved arcs):** The arc itself causes center-relative angular change. The prop's relationship to the center changes as the hand moves along the curve. At 0 turns:
+- **Pro base:** Prop rotates with the arc. Center-relative orientation is preserved.
+- **Anti base:** Prop rotates against the arc. Center-relative orientation reverses.
+
+This means 0-turn pro and 0-turn anti are two DIFFERENT states for shifts, even though "0 turns" sounds like "no rotation." The prop IS rotating in both cases — it's just rotating at the base rate with zero additional turns.
+
+**For dashes, hashes, and statics (straight lines or no movement):** There is no arc, so base rotation at 0 turns means truly no rotation. The prop translates along the line (or stays put) without spinning. This is why 0 turns for these motion types produces exactly 1 state (no rotation = no direction to speak of).
+
+### Why This Matters
+
+| Motion | 0 turns | States |
+|--------|---------|--------|
+| Shift | Pro base OR anti base (two distinct behaviors) | 2 |
+| Dash | No rotation (one behavior) | 1 |
+| Hash | No rotation (one behavior) | 1 |
+| Static | No rotation (one behavior) | 1 |
+
+Adding 1+ turns to any motion type introduces CW/CCW direction (2 states per turn count).
+
+---
+
+## Motion Types (Complete)
+
+### Shift Motion Types (curved arc required)
+
+| Type | Behavior | Turn count |
+|------|----------|------------|
+| **Pro** | Rotates with the arc direction | 0, 1, 2, 3, ... |
+| **Anti** | Rotates against the arc direction | 0, 1, 2, 3, ... |
+| **Float** | Holds absolute spatial angle (no rotation in world space) | N/A |
+
+Pro and anti are defined relative to the arc: "with" and "against" the hand's curved path. They are NOT absolute CW/CCW — the same pro motion at different grid positions rotates different absolute directions.
+
+**Float** is the absence of prop rotation in absolute spatial terms. Because the hand is moving along a curve, the center-relative orientation CHANGES even though the prop itself holds still in space. Float has no turn count. It is a single binary state. There are no "degrees of float" and negative turns do not exist.
+
+**Float only applies to shifts** because it requires a curved hand path. Without a curve, there is no distinction between float and 0-turn static — the prop isn't rotating either way.
+
+### Non-Shift Motion Types (straight line or stationary)
+
+| Type | Behavior | Turn count |
+|------|----------|------------|
+| **Dash** | Prop rotates during straight-line traverse to opposite point | 0, 1, 2, 3, ... |
+| **Hash** | Prop rotates during straight-line traverse to/from center | 0, 1, 2, 3, ... |
+| **Static** | Prop rotates in place (hand doesn't move) | 0, 1, 2, 3, ... |
+
+At 0 turns: no rotation, no direction (1 state).
+At 1+ turns: CW or CCW direction (2 states per turn count).
+
+### Skews (L4+ only, 8-point grid)
+
+When the 8-point grid is available, shifts can traverse arcs longer or shorter than a standard single-segment arc:
+
+- **Skew+** (shift+): Extended arc (e.g., S to NE, spanning 3 segments)
+- **Skew-** (shift-): Shortened arc (less than one standard segment)
+
+Skews support all three shift motion types (pro, anti, float). They are theoretically unbounded in arc length. For enumeration purposes, the standard single-segment shift is counted; skews are noted as an extension.
+
+**CHU:** A skew++ (double-extended arc) with float has been identified as a distinct phenomenon. TKA does NOT give it a separate motion type — it is expressible as an extended-arc float shift within the existing framework. The decision not to add a 6th motion type was deliberate: CHU is a specific combination of existing parameters, not a fundamentally new behavior.
+
+---
+
+## Center-Relative Orientation
+
+**All orientations in TKA are measured from the prop to the performer's center point.** This is not an arbitrary choice — it makes the entire orientation algebra work.
+
+### Cardinal Orientations (4)
+
+| Orientation | Meaning |
+|-------------|---------|
+| **in** | Prop faces toward center |
+| **out** | Prop faces away from center |
+| **clock** | Prop faces clockwise (perpendicular to center axis) |
+| **counter** | Prop faces counter-clockwise (perpendicular to center axis) |
+
+### Interradial Orientations (4, L7+)
+
+| Orientation | Meaning |
+|-------------|---------|
+| **clockIn** | 45 degrees between clock and in |
+| **clockOut** | 45 degrees between clock and out |
+| **counterIn** | 45 degrees between counter and in |
+| **counterOut** | 45 degrees between counter and out |
+
+### Center Orientations (8, L5+)
+
+For the center point, orientation uses compass directions: centerN, centerNE, centerE, centerSE, centerS, centerSW, centerW, centerNW.
+
+### Why Center-Relative?
+
+When a hand traces a curved arc, the angle from prop to center changes continuously. A prop that rotates with the arc maintains a constant angle to center (= preserves orientation). A prop that rotates against the arc reverses its angle to center (= reverses orientation). A prop that holds a fixed absolute spatial angle sees its center-relative angle change as the hand moves.
+
+This is why:
+- 0-turn pro preserves orientation (rotating with the arc = constant center angle)
+- 0-turn anti reverses orientation (rotating against the arc = flipped center angle)
+- Float changes center-relative orientation (prop holds still in space, but the center angle shifts)
+
+---
+
+## Orientation Algebra
+
+### Whole-Turn Parity Rules
+
+| Motion type | Even turns (0, 2, ...) | Odd turns (1, 3, ...) |
+|-------------|------------------------|------------------------|
+| Pro, Static | Preserves orientation | Reverses orientation |
+| Anti, Dash, Hash | Reverses orientation | Preserves orientation |
+
+"Reverses" means in&harr;out, clock&harr;counter (and interradial pairs at L7+: clockIn&harr;counterOut, clockOut&harr;counterIn).
+
+### Fractional Turns (Half-turns at L3+, Quarter-turns at L7+)
+
+Half turns (0.5, 1.5, 2.5) produce orientations 90 degrees from the start. Quarter turns (0.25, 0.75, 1.25, ...) produce interradial orientations using the 8-point radial cycle:
+
+`in -> clockIn -> clock -> clockOut -> out -> counterOut -> counter -> counterIn`
+
+Each quarter turn = 1 step. Direction rule:
+- **Anti/Dash/Hash:** Step SAME direction as rotation
+- **Pro/Static:** Step OPPOSITE direction to rotation
+
+### Float Orientation
+
+Float holds absolute spatial angle. As the hand arcs, the center-relative orientation changes by an amount determined by arc length and direction. For a standard single-segment shift: a CW arc shifts orientation one position CW in the radial cycle; a CCW arc shifts one position CCW. Float only changes orientation for CW/CCW hand paths; a dash/static hand path with float would preserve orientation (but float doesn't apply to those).
+
+---
+
+## Combinatorial Motion Space
+
+The complete enumeration of single-hand motions from any grid point, stratified by level.
+
+### Formulas
+
+Given maximum turn count T (number of distinct turn values) and float availability F (1 for shifts, 0 otherwise):
+
+- **Per shift destination:** 2(T) + F states (T pro values + T anti values + F float)
+- **Per dash/hash/static destination:** 2T - 1 states (1 directionless 0-turn + (T-1) turn values x 2 directions)
+
+*At 0 turns: shifts have 2 states (pro base, anti base). Dashes/hashes/statics have 1 state (no rotation = no direction).*
+
+### Level-by-Level Totals
+
+**L1: 0 turns only, 4-point grid, no float**
+
+| Path | Destinations | Per dest | Subtotal |
+|------|-------------|----------|----------|
+| Shift | 2 (CW, CCW neighbor) | 2 (pro0, anti0) | 4 |
+| Dash | 1 (opposite) | 1 (0-turn, directionless) | 1 |
+| Static | 1 (stay) | 1 | 1 |
+| **Total** | | | **6** |
+
+**L2: Whole turns 0-3, 4-point grid, no float**
+
+T = 4 turn values (0,1,2,3). Per shift dest = 2(4) = 8. Per dash/static = 2(4)-1 = 7.
+
+| Path | Dest | Per dest | Subtotal |
+|------|------|----------|----------|
+| Shift | 2 | 8 | 16 |
+| Dash | 1 | 7 | 7 |
+| Static | 1 | 7 | 7 |
+| **Total** | | | **30** |
+
+**L3: Half-turns 0-3 (7 values: 0, 0.5, 1, 1.5, 2, 2.5, 3), 4-point grid, float**
+
+T = 7. Per shift dest = 2(7) + 1 = 15. Per dash/static = 2(7)-1 = 13.
+
+| Path | Dest | Per dest | Subtotal |
+|------|------|----------|----------|
+| Shift | 2 | 15 | 30 |
+| Dash | 1 | 13 | 13 |
+| Static | 1 | 13 | 13 |
+| **Total** | | | **56** |
+
+**L4: Same turns as L3, 8-point grid, float** (skews exist but are unbounded)
+
+8-point grid: 6 shift destinations per perimeter point (all non-opposite, non-self perimeter points).
+
+| Path | Dest | Per dest | Subtotal |
+|------|------|----------|----------|
+| Shift | 6 | 15 | 90 |
+| Dash | 1 | 13 | 13 |
+| Static | 1 | 13 | 13 |
+| **Total** | | | **116** |
+
+**L5: Same turns, 9-point grid (add center), float**
+
+From perimeter point:
+
+| Path | Dest | Per dest | Subtotal |
+|------|------|----------|----------|
+| Shift | 6 | 15 | 90 |
+| Dash | 1 | 13 | 13 |
+| Hash (to center) | 1 | 13 | 13 |
+| Static | 1 | 13 | 13 |
+| **From perimeter** | | | **129** |
+
+From center point:
+
+| Path | Dest | Per dest | Subtotal |
+|------|------|----------|----------|
+| Hash (to 8 perimeter) | 8 | 13 | 104 |
+| Static | 1 | 13 | 13 |
+| **From center** | | | **117** |
+
+**Ceiling (L7+): Quarter-turns 0-3 (13 values), 9-point grid, float**
+
+T = 13. Per shift dest = 2(13) + 1 = 27. Per dash/hash/static = 2(13)-1 = 25.
+
+| Path | Dest | Per dest | Subtotal |
+|------|------|----------|----------|
+| Shift | 6 | 27 | 162 |
+| Dash | 1 | 25 | 25 |
+| Hash | 1 | 25 | 25 |
+| Static | 1 | 25 | 25 |
+| **From perimeter** | | | **237** |
+
+From center: 8 x 25 + 25 = **225**
+
+### Summary Table
+
+| Level | Grid | Turn values | Float | From perimeter | From center |
+|-------|------|-------------|-------|----------------|-------------|
+| L1 | 4-pt | 1 (0 only) | No | **6** | -- |
+| L2 | 4-pt | 4 (0,1,2,3) | No | **30** | -- |
+| L3 | 4-pt | 7 (0-3 + halves) | Yes | **56** | -- |
+| L4 | 8-pt | 7 | Yes | **116** | -- |
+| L5 | 9-pt | 7 | Yes | **129** | **117** |
+| Ceiling | 9-pt | 13 (0-3 + quarters) | Yes | **237** | **225** |
+
+The original estimate of 214 possibilities was based on incorrect assumptions (0-turn dash/static counted as having CW/CCW direction, and no center point). The validated ceiling is 237 from perimeter, 225 from center.
+
+---
+
+## Level System
+
+### Locked-In Order (Feb 2026)
+
+| Level | Concept | What it adds | Arc |
+|-------|---------|-------------|-----|
+| 1 | Foundation | 0 turns, basic positions | Foundation |
+| 2 | Whole turns | 0-3 whole turns | Foundation |
+| 3 | Half turns + float | Halves, float motion type | Foundation |
+| 4 | Skewed grid | 8-point grid, skew+ and skew- | Grid mixing |
+| 5 | Centric | Center point, hash hand path, tau/terra positions | New grid point |
+| 6 | Conjoined grids | Dual grids sharing a junction point, new position combinations | Canvas expansion |
+| 7 | Interradial orientations | 8 orientations (clockIn/Out, counterIn/Out), quarter turns, completes 2D | 2D COMPLETE |
+| 8 | Atomics | Multi-plane / 3D (wall, wheel, overhead) | New dimension |
+| 9 | Rubik's cube | Skewed across intersecting planes | 3D COMPLETE |
+
+### Why This Order
+
+**Conjoined before interradials (L6 before L7):**
+- Conjoined grids are visually exciting and immediately accessible ("your grid just doubled")
+- Interradials are mathematically dense (doubling orientation vocabulary from 4 to 8)
+- Exciting-then-dense beats dense-then-exciting in learning progression
+- Interradials at L7 serve as the completionist capstone for 2D mastery
+
+**Interradials before 3D (L7 before L8):**
+- Interradials are a 2D precision concept. Learning them in 2D where they're intuitive means the learner doesn't have to learn interradials AND 3D simultaneously
+- All 2D knowledge carries forward into 3D. L7 completes the 2D vocabulary before the dimensional leap.
+
+**Symmetry:** L7 completes 2D the way L9 completes 3D. Both are "precision passes" after spatial expansion (conjoined at L6, atomics at L8).
+
 ---
 
 ## Positions (Hand Locations)
@@ -121,29 +415,9 @@ Positions exist independent of props - they describe hand placement only.
 **Level progression:**
 - Levels 1-3: Alpha, Beta, Gamma (diamond/box modes)
 - Level 4: Zeta, Eta (skewed mode)
-- Level 5: Tau, Terra (centric mode - not yet implemented)
-
----
-
-## Motion Types
-
-| Type | Movement | Description |
-|------|----------|-------------|
-| **Static** | None | Hand stays at current grid point |
-| **Shift** | Adjacent | Hand moves to adjacent grid point |
-| **Dash** | Opposite | Hand moves to opposite grid point |
-
-**Rotation Direction** (for props):
-- **Pro** (prospin): Prop rotates with the hand's path direction
-- **Anti** (antispin): Prop rotates against the hand's path direction
-- **cw/ccw**: Clockwise / counter-clockwise
-
----
-
-## Other Terminology
-
-- **Pictograph**: Visual representation of one beat of motion
-- **Variation**: Different ways to execute the same letter (different start/end locations)
+- Level 5: Tau, Terra (centric mode)
+- Level 6: New position combinations from conjoined grids
+- Level 7: Existing positions gain interradial orientation options
 
 ---
 
@@ -151,15 +425,15 @@ Positions exist independent of props - they describe hand placement only.
 
 Compound letters are pairs that complete each other to create circular (LOOP) motion. When you spin continuously, you don't do D or J separately - you do DJ as a compound unit.
 
-### Type 1 β↔α Compounds (Dual-Shift)
+### Type 1 beta-alpha Compounds (Dual-Shift)
 
 | Compound | Components | Mnemonic | Style |
 |----------|------------|----------|-------|
-| DJ | D (β→α) + J (α→β) | "Disco Jam" | Pro/Pro (isolation) |
-| EK | E (β→α) + K (α→β) | "Exploding Kitten" | Anti/Anti |
-| FL | F (β→α) + L (α→β) | "Fruity Loops" | Hybrid (anti/pro) |
+| DJ | D (beta to alpha) + J (alpha to beta) | "Disco Jam" | Pro/Pro (isolation) |
+| EK | E (beta to alpha) + K (alpha to beta) | "Exploding Kitten" | Anti/Anti |
+| FL | F (beta to alpha) + L (alpha to beta) | "Fruity Loops" | Hybrid (anti/pro) |
 
-### Gamma Internal Compounds (γ→γ)
+### Gamma Internal Compounds (gamma to gamma)
 
 | Compound | Components | Mnemonic |
 |----------|------------|----------|
@@ -171,13 +445,13 @@ Compound letters are pairs that complete each other to create circular (LOOP) mo
 
 | Compound | Components |
 |----------|------------|
-| ΦΨ | Φ (β→α) + Ψ (α→β) |
+| Phi-Psi | Phi (beta to alpha) + Psi (alpha to beta) |
 
 ### Why Compounds Matter
 
-- D alone is β→α (half a cycle)
-- J alone is α→β (half a cycle)
-- DJ together = β→α→β (complete cycle)
+- D alone is beta to alpha (half a cycle)
+- J alone is alpha to beta (half a cycle)
+- DJ together = beta to alpha to beta (complete cycle)
 - In continuous motion, you're always doing the compound
 - VTG timing (split vs tog) applies to the compound unit, not individual letters
 
@@ -185,36 +459,36 @@ Compound letters are pairs that complete each other to create circular (LOOP) mo
 
 ## VTG (Vulcan Tech Gospel)
 
-VTG is an older, widely-adopted notation framework for poi/flow arts created by Noel Yee and spinners at the Vulcan Lofts in Oakland, CA. Many flow artists learn VTG before encountering TKA.
+VTG is an older, widely-adopted notation framework for flow arts created by Noel Yee and spinners at the Vulcan Lofts in Oakland, CA. Many flow artists learn VTG before encountering TKA.
 
 ### The Downbeat Reference
 
 **VTG is ground-referenced.** The "downbeat" (south / bottom of the circle) is the anchor point for all timing and direction classifications.
 
 - **Together (tog):** Both props pass through the downbeat at the same moment
-- **Split:** Props are 180° out of phase - one at downbeat when the other is at top
+- **Split:** Props are 180 degrees out of phase - one at downbeat when the other is at top
 
 ### The Four VTG Categories
 
 | VTG Term | Abbreviation | Timing | Direction |
 |----------|--------------|--------|-----------|
-| **Split-Same** | SS | Props 180° out of phase | Both rotating same way |
+| **Split-Same** | SS | Props 180 degrees out of phase | Both rotating same way |
 | **Together-Same** | TS, tog-same | Props in sync | Both rotating same way |
-| **Split-Opposite** | SO, split-opp | Props 180° out of phase | Rotating opposite ways |
+| **Split-Opposite** | SO, split-opp | Props 180 degrees out of phase | Rotating opposite ways |
 | **Together-Opposite** | TO, tog-opp | Props in sync | Rotating opposite ways |
 
 ### VTG Classification: Fixed vs Orientation-Dependent
 
 **Letters that stay in the same position have fixed VTG timing:**
-- **A, B, C** (alpha→alpha): always **split-same** - hands stay at opposite points
-- **G, H, I** (beta→beta): always **tog-same** - hands stay together
+- **A, B, C** (alpha to alpha): always **split-same** - hands stay at opposite points
+- **G, H, I** (beta to beta): always **tog-same** - hands stay together
 
 **Compound letters vary by variation:**
 - **DJ, EK, FL** can be split-opp OR tog-opp depending on which variation
 
 The VTG classification applies to the **compound**, not individual letters:
-- DJ east-start variation → **split-opp**
-- DJ south-start variation → **tog-opp**
+- DJ east-start variation = **split-opp**
+- DJ south-start variation = **tog-opp**
 
 This is because VTG timing depends on where the hands are relative to the downbeat (south) at any given moment. TKA stores `timing` and `direction` per variation to track this.
 
@@ -240,7 +514,7 @@ This is because VTG timing depends on where the hands are relative to the downbe
 
 VTG pedagogy starts with **tog-same** (hands together) because it feels grounded for beginners.
 
-TKA's alphabetical order starts with **split-same** (A, B, C = alpha→alpha) because it's the first position pattern in the systematic organization.
+TKA's alphabetical order starts with **split-same** (A, B, C = alpha to alpha) because it's the first position pattern in the systematic organization.
 
 This means:
 - VTG would start with G, H, I (tog-same)
@@ -282,3 +556,10 @@ When users use incorrect TKA terminology, **explicitly correct it** before answe
 - **Gamma** = hands form a right angle
 
 The numbered variants are intermediate/advanced knowledge for those who want to specify exact grid locations.
+
+---
+
+## Other Terminology
+
+- **Pictograph**: Visual representation of one beat of motion
+- **Variation**: Different ways to execute the same letter (different start/end locations)
