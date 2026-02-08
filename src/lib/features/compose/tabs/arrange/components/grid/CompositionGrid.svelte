@@ -514,7 +514,9 @@
           {@const cell = getCellAt(row, col)}
           {@const isOccupied = occupiedPositions.has(posKey)}
 
-          {#if cell}
+          {#if isOccupied}
+            <!-- Skip - this position is covered by a spanning cell -->
+          {:else if cell}
             <div
               class="cell-wrapper"
               class:is-pressing={pressingCellId === cell.id}
@@ -553,8 +555,6 @@
                 onResizeStart={handleResizeStart}
               />
             </div>
-          {:else if isOccupied}
-            <!-- Skip - this position is covered by a spanning cell -->
           {:else}
             <div class="cell-placeholder" class:drop-target={isDragActive}></div>
           {/if}
