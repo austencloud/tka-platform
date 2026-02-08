@@ -48,7 +48,7 @@
     "category": "general"
   },
   "letter": {
-    "definition": "The fundamental unit of TKA notation. Each letter encodes a specific combination of hand motions and prop rotations for one beat. There are 47 letters organized into 6 types (22 + 8 + 8 + 3 + 3 + 3). Future levels will add more letters for centric positions (Tau, Terra, etc.).",
+    "definition": "The fundamental unit of TKA notation. Each letter encodes a specific combination of hand motions and prop rotations for one beat. There are currently 47 letters organized into 6 types (22 + 8 + 8 + 3 + 3 + 3). Future levels will add more letters for centric positions (Tau, Terra, etc.).",
     "examples": ["A is a Type 1 letter (both hands shift, both pro)", "Σ is a Type 2 letter (one shifts, one static)", "α is a Type 6 letter (both static)"],
     "relatedTerms": ["pictograph", "variation", "type", "word"],
     "category": "general"
@@ -67,8 +67,8 @@
   },
   "compound": {
     "definition": "A pair of letters that together complete a full cycle of motion, returning to the starting position type. In continuous spinning, you always perform compound units rather than individual letters.",
-    "examples": ["DJ (Disco Jam): D (beta→alpha) + J (alpha→beta) = complete cycle", "EK (Exploding Kitten): anti/anti compound", "FL (Fruity Loops): hybrid compound"],
-    "relatedTerms": ["letter", "loop", "vtg"],
+    "examples": ["DJ (Disco Jam): D (β→α) + J (α→β) = pro/pro isolation cycle", "EK (Exploding Kitten): anti/anti compound", "FL (Fruity Loops): hybrid (anti/pro) compound", "MP (Magic Potion), NQ (Never Quit), OR (Open Road): γ→γ compounds", "ΦΨ (Phi-Psi): dash compound (β→α→β, one hand dashes while the other stays static)"],
+    "relatedTerms": ["letter", "loop", "vtg", "isolation"],
     "category": "general"
   },
   "bridge": {
@@ -108,39 +108,39 @@
     "category": "general"
   },
   "pro": {
-    "definition": "A prop rotation type where the prop rotates in the same direction as the hand's travel. At 0 turns during a shift, the prop rotates 90 degrees with the hand path. Also called 'prospin'. At 0 turns specifically, this is called an 'isolation' because the prop appears fixed in space.",
-    "examples": ["Hand shifts W to N clockwise, prop rotates 90 degrees clockwise", "At 0 turns: orientation preserved (e.g. in stays in)"],
+    "definition": "A prop rotation type where the prop rotates in the same direction as the hand's arc. Also called 'prospin'. At 0 turns, center-relative orientation is preserved (e.g. in stays in) — this specific case is called an 'isolation', where the prop rotates with the arc creating the visual effect of a fixed point (distinct from float, which holds absolute spatial angle). At higher turn counts, the parity rules apply: even turns (0, 2) preserve orientation, odd turns (1, 3) reverse it.",
+    "examples": ["Hand shifts W to N clockwise, prop rotates clockwise with the arc", "0-turn pro: center-relative orientation preserved (isolation)", "1-turn pro: orientation reverses", "2-turn pro: orientation preserved again"],
     "relatedTerms": ["anti", "float", "isolation", "rotation"],
     "category": "rotation"
   },
   "anti": {
-    "definition": "A prop rotation type where the prop rotates opposite to the hand's travel. At 0 turns during a shift, the prop rotates 90 degrees against the hand path. Also called 'antispin'. Creates petal-like patterns.",
-    "examples": ["Hand shifts W to N clockwise, prop rotates 90 degrees counter-clockwise", "At 0 turns: orientation switches (e.g. in becomes out)"],
+    "definition": "A prop rotation type where the prop rotates opposite to the hand's arc. Also called 'antispin'. Creates petal-like patterns in continuous motion. At 0 turns, orientation reverses (e.g. in becomes out). At higher turn counts, the parity rules apply: even turns (0, 2) reverse orientation, odd turns (1, 3) preserve it — the opposite of pro.",
+    "examples": ["Hand shifts W to N clockwise, prop rotates counter-clockwise against the arc", "0-turn anti: orientation reverses (in becomes out)", "1-turn anti: orientation preserved", "2-turn anti: orientation reverses again"],
     "relatedTerms": ["pro", "float", "rotation"],
     "category": "rotation"
   },
   "isolation": {
-    "definition": "Pro motion at 0 turns. The prop's orientation relative to the center point remains constant as the hand moves, making the prop appear fixed in space while the hand orbits around it. With additional turns, the motion is still pro but no longer an isolation since the prop visibly rotates.",
-    "examples": ["Pro at 0 turns during a shift: prop stays fixed, hand orbits", "DJ compound uses isolation (pro/pro at 0 turns)"],
+    "definition": "Pro motion at 0 turns. The prop's center-relative orientation remains constant as the hand moves — the prop rotates with the arc, creating the visual effect of a fixed point while the hand orbits around it. Distinct from float, where the prop literally holds its absolute spatial angle. With additional turns, the motion is still pro but no longer an isolation since the prop visibly rotates beyond the base rate.",
+    "examples": ["Pro at 0 turns during a shift: center-relative orientation preserved, prop appears fixed", "DJ compound uses isolation (pro/pro at 0 turns)"],
     "relatedTerms": ["pro", "turns", "rotation"],
     "category": "rotation"
   },
   "prospin": {
-    "definition": "Full name for pro. A prop rotation type where the prop rotates in the same direction as the hand's travel.",
-    "examples": ["Hand shifts W to N clockwise, prop rotates 90 degrees clockwise"],
+    "definition": "Full name for pro. A prop rotation type where the prop rotates in the same direction as the hand's arc.",
+    "examples": ["Hand shifts W to N clockwise, prop rotates clockwise with the arc"],
     "relatedTerms": ["pro", "antispin", "rotation"],
     "category": "rotation"
   },
   "antispin": {
-    "definition": "Full name for anti. A prop rotation type where the prop rotates opposite to the hand's travel. Creates petal-like patterns.",
-    "examples": ["Hand shifts W to N clockwise, prop rotates 90 degrees counter-clockwise"],
+    "definition": "Full name for anti. A prop rotation type where the prop rotates opposite to the hand's arc. Creates petal-like patterns.",
+    "examples": ["Hand shifts W to N clockwise, prop rotates counter-clockwise against the arc"],
     "relatedTerms": ["anti", "prospin", "rotation"],
     "category": "rotation"
   },
   "float": {
-    "definition": "A prop rotation type where the prop does not rotate at all during a shift. The hand moves to an adjacent point but the prop maintains its exact facing. Pure translation with zero prop rotation.",
-    "examples": ["Hand moves from W to N, prop maintains its exact facing in space", "Like sliding the prop sideways without spinning it"],
-    "relatedTerms": ["pro", "anti", "shift", "rotation"],
+    "definition": "A prop rotation type where the prop does not rotate at all during a shift — it holds its absolute spatial angle. Float only applies to shifts because it requires a curved hand path; without a curve, there is no distinction between float and 0-turn static. Because the hand traces an arc while the prop holds still, the center-relative orientation changes even though there is no prop rotation. Float has no turn count — it is a single binary state.",
+    "examples": ["Hand moves from W to N, prop maintains its exact facing in space", "Center-relative orientation changes as the hand arcs (e.g., 'in' may become 'clock')", "Only meaningful during shifts — a non-moving or straight-line hand path has no float distinction"],
+    "relatedTerms": ["pro", "anti", "shift", "rotation", "orientation"],
     "category": "rotation"
   },
   "static": {
@@ -150,31 +150,31 @@
     "category": "motion"
   },
   "shift": {
-    "definition": "A hand motion type where the hand moves to an adjacent grid point (90 degrees around the grid). The prop behavior during a shift depends on the rotation type: pro rotates with the hand path, anti rotates against it, float does not rotate.",
-    "examples": ["N to E is a shift", "NE to SE is a shift", "Type 1 and Type 2 letters use shifts"],
+    "definition": "A hand motion type where the hand arcs along the perimeter to an adjacent grid point. The curved arc is what distinguishes shifts from dashes and hashes (straight lines). The prop behavior during a shift depends on the rotation type: pro rotates with the arc, anti rotates against it, float holds absolute spatial angle. On a 4-point grid, adjacent points are 90° apart; on an 8-point grid, 45° apart.",
+    "examples": ["N to E is a shift (4-point grid, 90° arc)", "NE to SE is a shift (8-point grid, 45° arc)", "Type 1 and Type 2 letters use shifts"],
     "relatedTerms": ["static", "dash", "pro", "anti", "float"],
     "category": "motion"
   },
   "dash": {
-    "definition": "A hand motion type where the hand moves to the opposite grid point (180 degrees across the grid). At 0 turns, the prop does not rotate — it translates straight through the center. Pure translation, like float, but covering a greater distance.",
+    "definition": "A hand motion type where the hand moves in a straight line to the diametrically opposite grid point (180 degrees across the grid). At 0 turns, the prop does not rotate — it translates along the straight path without spinning. Unlike shifts (curved arcs), dashes follow straight lines, so pro/anti/float distinctions do not apply. At 1+ turns, the prop rotates CW or CCW during the traverse.",
     "examples": ["N to S is a dash", "NE to SW is a dash", "Type 4 and Type 5 letters use dashes"],
-    "relatedTerms": ["static", "shift", "float", "motion"],
+    "relatedTerms": ["static", "shift", "hash", "motion"],
     "category": "motion"
   },
   "hand-path": {
-    "definition": "The path a hand traces when moving between grid points. For a shift, the hand path covers 90 degrees around the grid. For a dash, 180 degrees across. The hand path determines the base rotation that pro and anti motions produce.",
-    "examples": ["W to N clockwise is a 90-degree hand path", "N to S is a 180-degree hand path (dash)"],
-    "relatedTerms": ["shift", "dash", "pro", "anti"],
+    "definition": "The trajectory a hand traces when moving between grid points. Four types: static (stay), shift (curved arc along perimeter to adjacent point), dash (straight line to opposite point), hash (straight line to/from center). The geometric shape of the path matters: shifts follow curved arcs (enabling pro/anti/float distinctions), while dashes and hashes follow straight lines (no pro/anti/float). The hand path determines the base rotation behavior.",
+    "examples": ["W to N clockwise is a curved shift arc", "N to S is a straight-line dash", "N to center is a hash (half-dash)"],
+    "relatedTerms": ["shift", "dash", "hash", "static", "pro", "anti", "float", "base-rotation"],
     "category": "motion"
   },
   "turns": {
-    "definition": "Additional prop rotation beyond the base rotation inherent to the motion type. 1 turn = 180 degrees of additional rotation. At 0 turns, pro and anti still produce base rotation from the hand path. The turn count measures rotation on top of that base behavior.",
+    "definition": "Additional prop rotation beyond the base rotation inherent to the motion type. 1 turn = 180 degrees of additional rotation. This unit is a deliberate pedagogical choice: at 180°, whole turns 0-3 stay as clean small integers (Level 2), half turns produce cardinal orientation shifts of 90° (Level 3), and quarter turns produce interradial orientations at 45° (Level 7). If 1 turn were 360°, interradials would require 1/8 turns; if 90°, Level 2 would need 6 turn values. At 0 turns, pro and anti still produce base rotation from the hand path. The turn count measures rotation on top of that base behavior.",
     "examples": ["0 turns with pro shift: prop rotates 90 degrees (base only, no additional)", "1 turn with pro shift: prop rotates 90 degrees base + 180 degrees additional", "0 turns with dash: no rotation (pure translation)"],
     "relatedTerms": ["rotation", "pro", "anti", "float", "level"],
     "category": "rotation"
   },
   "orientation": {
-    "definition": "The facing direction of a prop at any point during a step. Eight possible values across the level system. Base orientations (Levels 1-6): in (toward center), out (away from center), clock (clockwise-facing), counter (counter-clockwise-facing). Interradial orientations (Level 7): clockIn, clockOut, counterIn, counterOut — the four orientations at 45 degrees between base orientations.",
+    "definition": "The facing direction of a prop relative to the performer's center point. Eight possible values across the level system. Cardinal orientations (all levels): in (toward center), out (away from center), clock (clockwise-facing), counter (counter-clockwise-facing). Interradial orientations (Level 7+): clockIn, clockOut, counterIn, counterOut — the four orientations at 45 degrees between cardinal orientations.",
     "examples": ["Pro at 0 turns preserves orientation (in stays in)", "Anti at 0 turns switches orientation (in becomes out)", "Level 7 adds clockIn, clockOut, counterIn, counterOut between base orientations"],
     "relatedTerms": ["pro", "anti", "turns", "rotation", "level"],
     "category": "rotation"
@@ -282,8 +282,8 @@
     "category": "rotation"
   },
   "vtg": {
-    "definition": "Vulcan Tech Gospel — an older, widely-adopted notation framework for poi/flow arts created by Noel Yee and spinners at the Vulcan Lofts in Oakland, CA. TKA uses VTG as a secondary notation layer. VTG is ground-referenced: the 'downbeat' (south/bottom of the circle) is the anchor point for all timing and direction classifications.",
-    "examples": ["Split-Same (SS): props 180° out of phase, both rotating same way", "Together-Same (TS): props in sync, both same direction", "Split-Opposite (SO): props out of phase, opposite directions", "Together-Opposite (TO): props in sync, opposite directions"],
+    "definition": "Vulcan Tech Gospel — an older, widely-adopted notation framework for flow arts created by Noel Yee and spinners at the Vulcan Lofts in Oakland, CA. TKA uses VTG as a secondary notation layer. VTG is ground-referenced: the 'downbeat' (south/bottom of the circle) is the anchor point for all timing and direction classifications. 'Same/opposite' in VTG refers to hand path direction (both hands arc the same way vs opposite ways), not prop rotation direction.",
+    "examples": ["Split-Same (SS): props 180° out of phase, hands arc same way", "Together-Same (TS): props in sync, hands arc same way", "Split-Opposite (SO): props out of phase, hands arc opposite ways", "Together-Opposite (TO): props in sync, hands arc opposite ways"],
     "relatedTerms": ["split", "tog", "downbeat", "timing"],
     "category": "notation"
   },
@@ -312,32 +312,32 @@
     "category": "notation"
   },
   "split-same": {
-    "definition": "A VTG category where props are 180° out of phase (split) and both rotate the same direction. Abbreviated SS.",
+    "definition": "A VTG category where props are 180° out of phase (split) and both hands arc the same direction. Abbreviated SS.",
     "examples": ["Letters A, B, C (alpha to alpha) are always split-same"],
     "relatedTerms": ["split", "vtg", "together-same", "split-opposite"],
     "category": "notation"
   },
   "together-same": {
-    "definition": "A VTG category where props are in sync (together) and both rotate the same direction. Abbreviated TS or tog-same.",
+    "definition": "A VTG category where props are in sync (together) and both hands arc the same direction. Abbreviated TS or tog-same.",
     "examples": ["Letters G, H, I (beta to beta) are always together-same"],
     "relatedTerms": ["tog", "vtg", "split-same", "together-opposite"],
     "category": "notation"
   },
   "split-opposite": {
-    "definition": "A VTG category where props are 180° out of phase (split) and rotate in opposite directions. Abbreviated SO or split-opp.",
+    "definition": "A VTG category where props are 180° out of phase (split) and hands arc in opposite directions. Abbreviated SO or split-opp.",
     "examples": ["DJ east-start variation is split-opposite"],
     "relatedTerms": ["split", "vtg", "split-same", "together-opposite"],
     "category": "notation"
   },
   "together-opposite": {
-    "definition": "A VTG category where props are in sync (together) and rotate in opposite directions. Abbreviated TO or tog-opp.",
+    "definition": "A VTG category where props are in sync (together) and hands arc in opposite directions. Abbreviated TO or tog-opp.",
     "examples": ["DJ south-start variation is together-opposite"],
     "relatedTerms": ["tog", "vtg", "together-same", "split-opposite"],
     "category": "notation"
   },
   "reversal": {
-    "definition": "A directional change in a TKA sequence. There are three distinct types: hand reversal (hand returns to previous point, prop continues — switches pro/anti), prop reversal (hand continues, prop reverses direction — switches pro/anti, marked with R/R notation), and full reversal (both hand and prop retrace — maintains pro/anti).",
-    "examples": ["Hand reversal: hand goes back, prop keeps spinning same way. Switches prospin to antispin.", "Prop reversal: hand continues forward, prop switches direction. Marked with R/R between pictographs.", "Full reversal: everything rewinds. Pro stays pro, anti stays anti."],
+    "definition": "A directional change in a TKA sequence. There are three distinct types: hand reversal (hand returns to previous point, prop continues — switches pro/anti), prop reversal (hand continues, prop reverses direction — switches pro/anti), and full reversal (both hand and prop retrace — maintains pro/anti). Reversals are indicated by colored dots on the left edge of the pictograph.",
+    "examples": ["Hand reversal: hand goes back, prop keeps spinning same way. Switches prospin to antispin.", "Prop reversal: hand continues forward, prop switches direction.", "Full reversal: everything rewinds. Pro stays pro, anti stays anti.", "Colored dots appear on the left edge of the pictograph when a reversal occurs"],
     "relatedTerms": ["hand-reversal", "prop-reversal", "full-reversal", "rotation"],
     "category": "motion"
   },
@@ -348,13 +348,13 @@
     "category": "motion"
   },
   "prop-reversal": {
-    "definition": "A reversal where the hand continues to the next grid point but the prop reverses its rotation direction. Switches prospin to antispin (or vice versa). Less intuitive than hand reversal. Marked with R/R notation in the corresponding hand's color between pictographs.",
-    "examples": ["Hand continues N to E, but prop switches from clockwise to counter-clockwise. Marked R/R."],
+    "definition": "A reversal where the hand continues to the next grid point but the prop reverses its rotation direction. Switches prospin to antispin (or vice versa). Less intuitive than hand reversal. Indicated by a colored dot on the left edge of the pictograph in the corresponding hand's color.",
+    "examples": ["Hand continues N to E, but prop switches from clockwise to counter-clockwise."],
     "relatedTerms": ["reversal", "hand-reversal", "full-reversal"],
     "category": "motion"
   },
   "full-reversal": {
-    "definition": "A reversal where both the hand and prop retrace their paths, like pressing rewind. The hand returns to its previous point AND the prop reverses direction. Unlike hand and prop reversals, this maintains the rotation type: prospin stays prospin, antispin stays antispin. Marked with R/R notation.",
+    "definition": "A reversal where both the hand and prop retrace their paths, like pressing rewind. The hand returns to its previous point AND the prop reverses direction. Unlike hand and prop reversals, this maintains the rotation type: prospin stays prospin, antispin stays antispin. Indicated by a colored dot on the left edge of the pictograph.",
     "examples": ["Hand goes back to previous point AND prop reverses. Everything rewinds. Pro stays pro."],
     "relatedTerms": ["reversal", "hand-reversal", "prop-reversal"],
     "category": "motion"
@@ -483,7 +483,7 @@
     "category": "sequence"
   },
   "spinning-plane": {
-    "definition": "The plane in space on which a prop pattern is executed. Three planes exist: wall (vertical, facing the audience), wheel (vertical, perpendicular to audience), and overhead (horizontal, above the performer). All existing levels (1-6) can place 2D patterns on any single plane. Level 7 (atomics) introduces patterns where two props are on different planes simultaneously.",
+    "definition": "The plane in space on which a prop pattern is executed. Three planes exist: wall (vertical, facing the audience), wheel (vertical, perpendicular to audience), and overhead (horizontal, above the performer). All levels 1-7 work on a single plane at a time (any of the three). Level 8 (atomics) introduces patterns where two props are on different planes simultaneously.",
     "examples": ["Wall plane: the prop traces a circle facing the audience", "Wheel plane: the prop traces a circle like a bicycle wheel (side view)", "Overhead plane: the prop traces a circle above the performer's head"],
     "relatedTerms": ["atomic", "level", "prop"],
     "category": "general"
@@ -505,5 +505,23 @@
     "examples": ["Level 4 mixed cardinal and intercardinal on one plane (skewed). Level 9 mixes equivalent points across two intersecting planes.", "The 3D grid formed by wall + wheel + overhead planes with in-between access resembles a Rubik's cube"],
     "relatedTerms": ["atomic", "spinning-plane", "skewed", "level"],
     "category": "general"
+  },
+  "hash": {
+    "definition": "A hand motion type where the hand moves in a straight line to or from the center grid point. A 'half-dash' — the same straight-line traverse as a dash, but covering half the distance (center to perimeter or perimeter to center instead of perimeter to opposite perimeter). Introduced in Level 5 with centric grid mode. Like dashes, hashes follow straight lines, so pro/anti/float distinctions do not apply. At 0 turns, the prop does not rotate. At 1+ turns, the prop rotates CW or CCW during the traverse.",
+    "examples": ["N to center is a hash", "Center to E is a hash", "The name 'hash' is a play on 'half-dash'"],
+    "relatedTerms": ["dash", "shift", "static", "centric", "tau", "motion"],
+    "category": "motion"
+  },
+  "interradial": {
+    "definition": "The four orientations at 45 degrees between the base cardinal orientations, introduced at Level 7. These double the angular precision of the orientation system from 4 values to 8. The four interradial orientations are: clockIn (between clock and in), clockOut (between clock and out), counterIn (between counter and in), counterOut (between counter and out). Quarter turns (0.25, 0.75, etc.) produce interradial orientations using the 8-point radial cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn.",
+    "examples": ["clockIn: prop faces 45° between clock and in", "Level 7 doubles orientation vocabulary from 4 to 8", "Quarter turns step through the 8-point radial cycle"],
+    "relatedTerms": ["orientation", "level", "clock", "counter"],
+    "category": "rotation"
+  },
+  "base-rotation": {
+    "definition": "The inherent prop rotation that occurs at 0 additional turns during any motion. Turn counts in TKA measure ADDITIONAL rotation on top of this base. For shifts (curved arcs), the arc causes center-relative angular change even at 0 turns — 0-turn pro and 0-turn anti are two different states because the prop either rotates with or against the arc. For dashes, hashes, and statics (straight lines or no movement), there is no arc, so base rotation at 0 turns means truly no rotation — producing exactly 1 state, not 2.",
+    "examples": ["0-turn pro shift: prop rotates with the arc (base rotation preserves orientation)", "0-turn anti shift: prop rotates against the arc (base rotation reverses orientation)", "0-turn dash: no rotation, no direction (just one state)"],
+    "relatedTerms": ["turns", "pro", "anti", "shift", "dash", "orientation"],
+    "category": "rotation"
   }
 }

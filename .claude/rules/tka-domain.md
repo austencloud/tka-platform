@@ -150,6 +150,16 @@ This means 0-turn pro and 0-turn anti are two DIFFERENT states for shifts, even 
 
 Adding 1+ turns to any motion type introduces CW/CCW direction (2 states per turn count).
 
+### Turn Unit: 1 Turn = 180° Additional Rotation
+
+TKA defines 1 turn as 180° of additional prop rotation beyond base behavior. This is a deliberate pedagogical choice:
+
+- If 1 turn = 360°, quarter turns (Level 7) would be 1/8 turns — fractional chaos
+- If 1 turn = 90°, Level 2 would need 6 turn values (0-6) instead of the clean 0-3
+- At 180°, the math stays clean at every level: whole turns 0-3 are small integers, half turns (90°) produce cardinal orientation shifts, and quarter turns (45°) produce interradial orientations
+
+This also makes the orientation parity rules intuitive: each additional turn (180°) flips orientation once, so even turns preserve and odd turns reverse.
+
 ---
 
 ## Motion Types (Complete)
@@ -445,7 +455,7 @@ Compound letters are pairs that complete each other to create circular (LOOP) mo
 
 | Compound | Components |
 |----------|------------|
-| Phi-Psi | Phi (beta to alpha) + Psi (alpha to beta) |
+| Phi-Psi | Phi (beta to alpha) + Psi (alpha to beta) — one hand dashes, one stays static |
 
 ### Why Compounds Matter
 
@@ -470,18 +480,22 @@ VTG is an older, widely-adopted notation framework for flow arts created by Noel
 
 ### The Four VTG Categories
 
-| VTG Term | Abbreviation | Timing | Direction |
-|----------|--------------|--------|-----------|
-| **Split-Same** | SS | Props 180 degrees out of phase | Both rotating same way |
-| **Together-Same** | TS, tog-same | Props in sync | Both rotating same way |
-| **Split-Opposite** | SO, split-opp | Props 180 degrees out of phase | Rotating opposite ways |
-| **Together-Opposite** | TO, tog-opp | Props in sync | Rotating opposite ways |
+"Same" and "opposite" in VTG refer to **hand path direction** — whether both hands arc the same way (both CW or both CCW). This is distinct from prop rotation direction, which depends on the pro/anti classification of each hand independently.
+
+| VTG Term | Abbreviation | Timing | Hand Path Direction |
+|----------|--------------|--------|---------------------|
+| **Split-Same** | SS | Props 180 degrees out of phase | Both hands arc the same way |
+| **Together-Same** | TS, tog-same | Props in sync | Both hands arc the same way |
+| **Split-Opposite** | SO, split-opp | Props 180 degrees out of phase | Hands arc opposite ways |
+| **Together-Opposite** | TO, tog-opp | Props in sync | Hands arc opposite ways |
+
+Note: VTG's "same/opposite" classification does not describe prop rotation direction. A letter like C (one hand pro, one hand anti) is still "same" because both hands arc the same direction. Prop rotation direction only becomes classifiable in VTG when both props have matching turn values, which TKA does not assume — turn values change constantly.
 
 ### VTG Classification: Fixed vs Orientation-Dependent
 
 **Letters that stay in the same position have fixed VTG timing:**
-- **A, B, C** (alpha to alpha): always **split-same** - hands stay at opposite points
-- **G, H, I** (beta to beta): always **tog-same** - hands stay together
+- **A, B, C** (alpha to alpha): always **split-same** — hands stay at opposite points, both arcing the same direction
+- **G, H, I** (beta to beta): always **tog-same** — hands stay together, both arcing the same direction
 
 **Compound letters vary by variation:**
 - **DJ, EK, FL** can be split-opp OR tog-opp depending on which variation
