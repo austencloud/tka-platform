@@ -605,6 +605,34 @@ export default defineConfig({
         // Only ignore the root-level build output directory.
         "./build/**",
         "**/.svelte-kit/**",
+        // 🚨 HANDLE LEAK FIX: Chokidar creates one fs.watch() per directory.
+        // On Windows, each = one kernel handle via ReadDirectoryChangesW.
+        // Without these ignores, ~12,000 unnecessary directories get watched,
+        // causing 50,000-83,000 kernel handles and system-wide degradation.
+        // Only src/ and static/ need HMR watching.
+        "./_ARCHIVE/**",
+        "./tka-worlds/**",
+        "./firebase-functions/**",
+        "./functions/**",
+        "./mcp-server/**",
+        "./apps/**",
+        "./packages/**",
+        "./android-twa/**",
+        "./_GUIDE/**",
+        "./Assets/**",
+        "./deployment/**",
+        "./docs/**",
+        "./feedback-images/**",
+        "./messages/**",
+        "./scripts/**",
+        "./tests/**",
+        "./.netlify/**",
+        "./.playwright-mcp/**",
+        "./.wrangler/**",
+        "./.husky/**",
+        "./.github/**",
+        "./.vscode/**",
+        "./dev-dist/**",
       ],
     },
     // 2026: Preload critical files on dev start
