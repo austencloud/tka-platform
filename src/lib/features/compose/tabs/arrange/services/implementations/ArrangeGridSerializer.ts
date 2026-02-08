@@ -20,10 +20,10 @@ interface RegistryEntry {
 
 export class ArrangeGridSerializer implements IArrangeGridSerializer {
   serialize(context: SerializationContext): string {
-    const { cells, bpm, skipStartPosition, gridSize } = context;
+    const { cells, bpm, skipStartPosition, gridRows, gridCols } = context;
 
     const enabled = cells
-      .filter((c) => c.enabled && c.layers.length > 0)
+      .filter((c) => c.layers.length > 0)
       .sort((a, b) => (a.row !== b.row ? a.row - b.row : a.col - b.col));
 
     // Build sequence registry: fingerprint -> { id, refLayer }
@@ -63,7 +63,7 @@ export class ArrangeGridSerializer implements IArrangeGridSerializer {
     lines.push("Composition Template");
     lines.push("====================");
     lines.push(
-      `${enabled.length}/${gridSize * gridSize} cells | BPM ${bpm} | ${skipStartPosition ? "Skip start" : "Show start"}`
+      `${enabled.length}/${gridRows * gridCols} cells | ${gridRows}\u00d7${gridCols} grid | BPM ${bpm} | ${skipStartPosition ? "Skip start" : "Show start"}`
     );
 
     // SEQUENCES section

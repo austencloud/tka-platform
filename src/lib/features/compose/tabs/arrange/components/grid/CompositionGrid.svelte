@@ -2,7 +2,7 @@
   CompositionGrid.svelte
 
   Renders the grid of cells for composition.
-  Supports sparse layouts (non-rectangular) - only renders enabled cells.
+  Grid dimensions controlled by gridRows/gridCols - all cells within bounds render.
   Supports cell spanning (colSpan/rowSpan) for complex layouts.
   Dynamically sizes cells to fill available space while maintaining square aspect ratio.
   Supports drag-to-resize cells by grabbing edges/corners.
@@ -10,7 +10,7 @@
 <script lang="ts">
   import CellCanvas from "./CellCanvas.svelte";
   import CellResizeHandles from "./CellResizeHandles.svelte";
-  import { GRID_SIZE, arrangeGridState, type GridCell } from "../../state/arrange-grid-state.svelte";
+  import { arrangeGridState, type GridCell } from "../../state/arrange-grid-state.svelte";
 
   interface GridBoundsInfo {
     minRow: number;
@@ -23,30 +23,29 @@
 
   let {
     cells,
+    gridRows,
+    gridCols,
     currentBeat,
     isPlaying,
     skipStartPosition = true,
     selectedCellId,
     occupiedPositions,
     stateGridBounds,
-    zoomMode = "auto",
     onSelectCell,
     onSetCellSpan,
-    onToggleCell,
   }: {
     cells: GridCell[];
+    gridRows: number;
+    gridCols: number;
     currentBeat: number;
     isPlaying: boolean;
     skipStartPosition?: boolean;
     selectedCellId: string | null;
     occupiedPositions: Map<string, string>;
-    /** Pre-computed grid bounds from state (auto mode) */
+    /** Pre-computed grid bounds from state */
     stateGridBounds: GridBoundsInfo;
-    /** "auto" = zoom to enabled cells, "full" = show entire 6x6 grid */
-    zoomMode?: "auto" | "full";
     onSelectCell: (cellId: string) => void;
     onSetCellSpan: (cellId: string, colSpan: number, rowSpan: number, newCol?: number, newRow?: number) => void;
-    onToggleCell?: (row: number, col: number) => void;
   } = $props();
 
   // Grid gap must match the CSS `gap` value on `.grid-content`
@@ -116,12 +115,11 @@
   let containerWidth = $state(0);
   let containerHeight = $state(0);
 
-  // Get only enabled cells for rendering
-  const enabledCells = $derived(cells.filter((c) => c.enabled));
+  // Get visible cells for rendering (within current grid dimensions)
+  const visibleCells = $derived(cells.filter((c) => c.row < gridRows && c.col < gridCols));
 
-  // Grid bounds: use pre-computed state bounds for auto mode, full 6x6 for full mode
-  const FULL_GRID_BOUNDS: GridBoundsInfo = { minRow: 0, maxRow: GRID_SIZE - 1, minCol: 0, maxCol: GRID_SIZE - 1, rows: GRID_SIZE, cols: GRID_SIZE };
-  const gridBounds = $derived(zoomMode === "full" ? FULL_GRID_BOUNDS : stateGridBounds);
+  // Grid bounds: always match current dimensions
+  const gridBounds = $derived(stateGridBounds);
 
   // Calculate cell size reactively based on container AND gridBounds
   // Goal: Fill 90% of container, clamped at 800px max
@@ -143,8 +141,9 @@
     // Use the smaller dimension to keep cells square
     const naturalSize = Math.floor(Math.min(maxCellFromWidth, maxCellFromHeight));
 
-    // Hard limits: min 80px (spanning cells provide adequate visual size), max 800px
-    return Math.max(80, Math.min(naturalSize, 800));
+    // Hard limits: min 80px (spanning cells provide adequate visual size), max 400px
+    // 400px prevents single/small grids (1x1, 2x2) from producing enormous cells
+    return Math.max(80, Math.min(naturalSize, 400));
   });
 
   // ResizeObserver to track container size
@@ -164,7 +163,7 @@
 
   // Check if a cell should be rendered at a specific grid position
   function getCellAt(row: number, col: number): GridCell | undefined {
-    return enabledCells.find((c) => c.row === row && c.col === col);
+    return visibleCells.find((c) => c.row === row && c.col === col);
   }
 
 
@@ -174,7 +173,7 @@
     direction: ResizeDirection,
     e: PointerEvent
   ) {
-    const cell = enabledCells.find((c) => c.id === cellId);
+    const cell = visibleCells.find((c) => c.id === cellId);
     if (!cell) return;
 
     resizeState = {
@@ -226,7 +225,7 @@
     } else if (dir === "right" || dir === "top-right" || dir === "bottom-right") {
       // Dragging right edge: positive delta = expand right
       const colDelta = Math.round(deltaX / unitSize);
-      targetColSpan = Math.max(1, Math.min(GRID_SIZE - state.originalCol, state.originalColSpan + colDelta));
+      targetColSpan = Math.max(1, Math.min(gridCols - state.originalCol, state.originalColSpan + colDelta));
     }
 
     // Handle vertical resizing
@@ -240,15 +239,15 @@
     } else if (dir === "bottom" || dir === "bottom-left" || dir === "bottom-right") {
       // Dragging bottom edge: positive delta = expand down
       const rowDelta = Math.round(deltaY / unitSize);
-      targetRowSpan = Math.max(1, Math.min(GRID_SIZE - state.originalRow, state.originalRowSpan + rowDelta));
+      targetRowSpan = Math.max(1, Math.min(gridRows - state.originalRow, state.originalRowSpan + rowDelta));
     }
 
     // Ensure we don't exceed grid bounds
-    if (targetCol + targetColSpan > GRID_SIZE) {
-      targetColSpan = GRID_SIZE - targetCol;
+    if (targetCol + targetColSpan > gridCols) {
+      targetColSpan = gridCols - targetCol;
     }
-    if (targetRow + targetRowSpan > GRID_SIZE) {
-      targetRowSpan = GRID_SIZE - targetRow;
+    if (targetRow + targetRowSpan > gridRows) {
+      targetRowSpan = gridRows - targetRow;
     }
 
     // Always valid - we'll absorb any cells that get in the way
@@ -285,7 +284,7 @@
     // Don't start drag if already resizing
     if (resizeState) return;
 
-    const cell = enabledCells.find((c) => c.id === cellId);
+    const cell = visibleCells.find((c) => c.id === cellId);
     if (!cell) return;
 
     const element = e.currentTarget as HTMLElement;
@@ -370,8 +369,8 @@
     const rowOffset = Math.round(deltaY / unitSize);
 
     // Apply offset and clamp so the entire span fits within the grid
-    const targetCol = Math.max(0, Math.min(GRID_SIZE - state.colSpan, state.originCol + colOffset));
-    const targetRow = Math.max(0, Math.min(GRID_SIZE - state.rowSpan, state.originRow + rowOffset));
+    const targetCol = Math.max(0, Math.min(gridCols - state.colSpan, state.originCol + colOffset));
+    const targetRow = Math.max(0, Math.min(gridRows - state.rowSpan, state.originRow + rowOffset));
 
     dragState = { ...dragState!, targetCol, targetRow };
   }
@@ -506,13 +505,7 @@
   style:--cell-size="{cellSize}px"
   style:--grid-gap="{GRID_GAP}px"
 >
-  {#if enabledCells.length === 0}
-    <div class="empty-state">
-      <i class="fas fa-th" aria-hidden="true"></i>
-      <p>Enable cells in the grid picker to start</p>
-    </div>
-  {:else}
-    <div class="grid-content">
+  <div class="grid-content">
       {#each { length: gridBounds.rows } as _, rowOffset}
         {#each { length: gridBounds.cols } as _, colOffset}
           {@const row = gridBounds.minRow + rowOffset}
@@ -554,24 +547,14 @@
               <CellResizeHandles
                 cellId={cell.id}
                 canResizeLeft={cell.colSpan > 1 || cell.col > 0}
-                canResizeRight={cell.colSpan > 1 || cell.col + cell.colSpan < GRID_SIZE}
+                canResizeRight={cell.colSpan > 1 || cell.col + cell.colSpan < gridCols}
                 canResizeTop={cell.rowSpan > 1 || cell.row > 0}
-                canResizeBottom={cell.rowSpan > 1 || cell.row + cell.rowSpan < GRID_SIZE}
+                canResizeBottom={cell.rowSpan > 1 || cell.row + cell.rowSpan < gridRows}
                 onResizeStart={handleResizeStart}
               />
             </div>
           {:else if isOccupied}
             <!-- Skip - this position is covered by a spanning cell -->
-          {:else if zoomMode === "full"}
-            <!-- In full mode, show clickable empty slot to enable cell -->
-            <button
-              class="cell-slot-empty"
-              class:drop-target={isDragActive}
-              onclick={() => onToggleCell?.(row, col)}
-              aria-label="Enable cell at row {row + 1}, column {col + 1}"
-            >
-              <i class="fas fa-plus" aria-hidden="true"></i>
-            </button>
           {:else}
             <div class="cell-placeholder" class:drop-target={isDragActive}></div>
           {/if}
@@ -597,7 +580,6 @@
         <div class="drag-ghost" style={dragGhostStyle}></div>
       {/if}
     </div>
-  {/if}
 </div>
 
 <style>
@@ -678,66 +660,6 @@
     height: var(--cell-size, 200px);
   }
 
-  /* Clickable empty slot in full grid mode */
-  .cell-slot-empty {
-    width: var(--cell-size, 200px);
-    height: var(--cell-size, 200px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: var(--border-radius-md, 8px);
-    cursor: pointer;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease,
-      color 0.15s ease;
-  }
-
-  .cell-slot-empty i {
-    font-size: 1.5rem;
-    opacity: 0.5;
-    transition: opacity 0.15s ease;
-  }
-
-  .cell-slot-empty:hover {
-    background: rgba(139, 92, 246, 0.1);
-    border-color: var(--theme-accent, #8b5cf6);
-    color: var(--theme-accent, #8b5cf6);
-  }
-
-  .cell-slot-empty:hover i {
-    opacity: 1;
-  }
-
-  .cell-slot-empty:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-md, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    text-align: center;
-    padding: var(--spacing-xl, 24px);
-  }
-
-  .empty-state i {
-    font-size: 3rem;
-    opacity: 0.5;
-  }
-
-  .empty-state p {
-    margin: 0;
-    font-size: var(--font-size-min, 14px);
-  }
-
   /* Resize ghost preview - absolute positioned to avoid layout shifts */
   .resize-ghost {
     position: absolute;
@@ -784,11 +706,6 @@
     transition: background 0.2s ease, border-color 0.2s ease;
   }
 
-  .cell-slot-empty.drop-target {
-    border-color: rgba(139, 92, 246, 0.4);
-    background: rgba(139, 92, 246, 0.08);
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .cell-wrapper.is-pressing {
       animation: none;
@@ -799,8 +716,7 @@
       animation: none;
     }
 
-    .drag-ghost,
-    .cell-slot-empty {
+    .drag-ghost {
       transition: none;
     }
   }

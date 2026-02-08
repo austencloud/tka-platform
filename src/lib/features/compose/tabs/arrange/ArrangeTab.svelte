@@ -3,14 +3,14 @@
    * ArrangeTab - Grid-based composition builder
    *
    * Architecture:
-   * - Freeform 6x6 grid where each cell can be toggled on/off
-   * - Supports non-rectangular layouts (L-shapes, T-shapes, scattered, etc.)
-   * - Each enabled cell is a "tunnel" that can hold up to 4 performers/layers
+   * - User-configurable grid dimensions (1-8 rows, 1-8 columns)
+   * - Each cell is a "tunnel" that can hold up to 4 performers/layers
+   * - Supports cell spanning (colSpan/rowSpan) for complex layouts
    * - Global sync playback with optional per-cell beat offsets
    *
    * Flow:
-   * 1. Toggle cells on/off using the grid picker (or use presets)
-   * 2. Click an enabled cell to select it
+   * 1. Set grid dimensions using steppers or presets
+   * 2. Click a cell to select it
    * 3. Add sequences to the selected cell
    * 4. Play to see all cells animate together
    *
@@ -50,16 +50,21 @@
   let editingLayerIndex = $state<number | null>(null);
   let showSaveModal = $state(false);
 
-  // Zoom mode: "auto" zooms to fit enabled cells, "full" shows entire 6x6
-  let zoomMode = $state<"auto" | "full">("auto");
-
   // Derived: selected cell data
   const selectedCell = $derived(gridState.selectedCell);
   const selectedCellId = $derived(gridState.selectedCellId);
 
-  // Grid layout handlers
-  function handleToggleCell(row: number, col: number) {
-    gridState.toggleCell(row, col);
+  // Grid dimension handlers
+  function handleSetGridRows(n: number) {
+    gridState.setGridRows(n);
+  }
+
+  function handleSetGridCols(n: number) {
+    gridState.setGridCols(n);
+  }
+
+  function handleSetDimensions(rows: number, cols: number) {
+    gridState.setGridDimensions(rows, cols);
   }
 
   function handlePresetLayout(
@@ -69,7 +74,6 @@
       | "horizontal"
       | "line"
       | "square"
-      | "all"
       | "hero-thumbs"
       | "main-banner"
       | "pip"
@@ -142,12 +146,6 @@
   function handleClearCell() {
     if (selectedCellId !== null) {
       gridState.clearCell(selectedCellId);
-    }
-  }
-
-  function handleRemoveCell() {
-    if (selectedCell) {
-      gridState.toggleCell(selectedCell.row, selectedCell.col);
     }
   }
 
@@ -301,14 +299,10 @@
     switch (e.key) {
       case "Delete":
       case "Backspace":
-        // Two-step delete: clear layers first, then remove empty cell
-        if (selectedCellId !== null && selectedCell) {
+        // Clear layers from the selected cell
+        if (selectedCellId !== null && selectedCell && selectedCell.layers.length > 0) {
           e.preventDefault();
-          if (selectedCell.layers.length > 0) {
-            handleClearCell();
-          } else {
-            handleRemoveCell();
-          }
+          handleClearCell();
         }
         break;
 
@@ -365,10 +359,6 @@
           } else {
             handleUndo();
           }
-        } else {
-          // Bare Z toggles zoom mode
-          e.preventDefault();
-          zoomMode = zoomMode === "auto" ? "full" : "auto";
         }
         break;
 
@@ -398,12 +388,12 @@
   }
 
   function navigateToAdjacentCell(direction: string) {
-    const enabledCells = gridState.enabledCells;
-    if (enabledCells.length === 0) return;
+    const visible = gridState.visibleCells;
+    if (visible.length === 0) return;
 
     // If no cell selected, select the first one
     if (!selectedCell) {
-      const sorted = [...enabledCells].sort((a, b) => {
+      const sorted = [...visible].sort((a, b) => {
         if (a.row !== b.row) return a.row - b.row;
         return a.col - b.col;
       });
@@ -433,7 +423,7 @@
     }
 
     // Find cell at target position (or closest in that direction)
-    const cellAtTarget = enabledCells.find(
+    const cellAtTarget = visible.find(
       (c) => c.row === targetRow && c.col === targetCol
     );
 
@@ -441,7 +431,7 @@
       gridState.selectCell(cellAtTarget.id);
     } else {
       // Try to find any cell in that direction
-      const candidates = enabledCells.filter((c) => {
+      const candidates = visible.filter((c) => {
         switch (direction) {
           case "ArrowUp":
             return c.row < selectedCell.row;
@@ -518,38 +508,18 @@
           </button>
         </div>
 
-        <!-- Zoom toggle -->
-        <div class="zoom-controls">
-          <button
-            class="zoom-btn"
-            class:active={zoomMode === "auto"}
-            onclick={() => (zoomMode = "auto")}
-            title="Fit to content"
-          >
-            <i class="fas fa-compress-alt" aria-hidden="true"></i>
-          </button>
-          <button
-            class="zoom-btn"
-            class:active={zoomMode === "full"}
-            onclick={() => (zoomMode = "full")}
-            title="Show full grid"
-          >
-            <i class="fas fa-th" aria-hidden="true"></i>
-          </button>
-        </div>
-
         <CompositionGrid
           cells={gridState.cells}
+          gridRows={gridState.gridRows}
+          gridCols={gridState.gridCols}
           currentBeat={gridState.currentBeat}
           isPlaying={gridState.isPlaying}
           skipStartPosition={gridState.skipStartPosition}
           selectedCellId={gridState.selectedCellId}
           occupiedPositions={gridState.occupiedPositions}
           stateGridBounds={gridState.gridBounds}
-          {zoomMode}
           onSelectCell={handleSelectCell}
           onSetCellSpan={handleSetCellSpan}
-          onToggleCell={handleToggleCell}
         />
       </div>
 
@@ -558,11 +528,12 @@
         <!-- Grid Layout Controls -->
         <div class="panel-section grid-section">
           <GridLayoutControls
-            cells={gridState.cells}
-            enabledCount={gridState.enabledCount}
-            occupiedPositions={gridState.occupiedPositions}
+            gridRows={gridState.gridRows}
+            gridCols={gridState.gridCols}
             hasContent={gridState.hasAnyLayers}
-            onToggleCell={handleToggleCell}
+            onSetGridRows={handleSetGridRows}
+            onSetGridCols={handleSetGridCols}
+            onSetDimensions={handleSetDimensions}
             onPresetLayout={handlePresetLayout}
           />
         </div>
@@ -579,7 +550,6 @@
               onRemoveLayer={handleRemoveLayer}
               onEditLayerOffset={handleEditLayerOffset}
               onClearCell={handleClearCell}
-              onRemoveCell={handleRemoveCell}
               onMediaTypeChange={handleMediaTypeChange}
               onCopyLayer={handleCopyLayer}
               onPasteLayer={handlePasteLayer}
@@ -746,46 +716,6 @@
   .util-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #8b5cf6);
     outline-offset: 2px;
-  }
-
-  /* Zoom controls */
-  .zoom-controls {
-    position: absolute;
-    top: var(--spacing-sm, 8px);
-    right: var(--spacing-sm, 8px);
-    display: flex;
-    gap: 2px;
-    z-index: 20;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-md, 8px);
-    padding: 2px;
-  }
-
-  .zoom-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    border-radius: var(--border-radius-sm, 4px);
-    cursor: pointer;
-    transition:
-      background 0.15s ease,
-      color 0.15s ease;
-  }
-
-  .zoom-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--theme-text, white);
-  }
-
-  .zoom-btn.active {
-    background: var(--theme-accent, #8b5cf6);
-    color: white;
   }
 
   /* Control panel - right side */

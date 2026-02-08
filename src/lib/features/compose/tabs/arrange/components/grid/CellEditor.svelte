@@ -34,7 +34,7 @@
     onRemoveLayer: (layerIndex: number) => void;
     onEditLayerOffset: (layerIndex: number) => void;
     onClearCell: () => void;
-    onRemoveCell: () => void;
+    onRemoveCell?: () => void;
     onMediaTypeChange: (mediaType: CellMediaType) => void;
     onCopyLayer?: (layerIndex: number) => void;
     onPasteLayer?: () => void;
@@ -128,14 +128,16 @@
           Paste
         </button>
       {/if}
-      <button
-        class="remove-cell-btn"
-        onclick={onRemoveCell}
-        title="Remove this cell from the grid (Delete)"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-        Remove Cell
-      </button>
+      {#if onRemoveCell}
+        <button
+          class="remove-cell-btn"
+          onclick={onRemoveCell}
+          title="Remove this cell from the grid"
+        >
+          <i class="fas fa-times" aria-hidden="true"></i>
+          Remove Cell
+        </button>
+      {/if}
     </div>
   {:else}
     <div class="layers-list">
@@ -239,14 +241,16 @@
         <i class="fas fa-eraser" aria-hidden="true"></i>
         Clear
       </button>
-      <button
-        class="remove-cell-btn"
-        onclick={onRemoveCell}
-        title="Remove this cell from the grid (Delete)"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-        Remove
-      </button>
+      {#if onRemoveCell}
+        <button
+          class="remove-cell-btn"
+          onclick={onRemoveCell}
+          title="Remove this cell from the grid"
+        >
+          <i class="fas fa-times" aria-hidden="true"></i>
+          Remove
+        </button>
+      {/if}
     </div>
 
     <!-- Display Mode Toggle (only when exactly 1 layer) -->

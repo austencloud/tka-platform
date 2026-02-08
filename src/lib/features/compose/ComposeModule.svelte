@@ -91,7 +91,7 @@
 
         // Set up single cell layout and add the sequence
         arrangeGridState.setPresetLayout("single");
-        const firstCell = arrangeGridState.enabledCells[0];
+        const firstCell = arrangeGridState.visibleCells[0];
         const word = handoff.sequence.word || handoff.sequence.name || "Sequence";
 
         if (firstCell) {

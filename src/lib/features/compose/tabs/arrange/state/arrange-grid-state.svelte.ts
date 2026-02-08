@@ -2,10 +2,11 @@
  * Arrange Grid State
  *
  * State management for the Arrange tab grid composition mode.
- * Supports a freeform 6x6 grid where each position can be enabled/disabled,
- * allowing for non-rectangular layouts (L-shapes, T-shapes, scattered, etc.).
+ * Supports a user-configurable grid (1-8 rows, 1-8 columns).
+ * Backing array is always MAX_GRID_SIZE x MAX_GRID_SIZE (64 cells).
+ * Only cells within the current gridRows x gridCols are visible.
  *
- * Each enabled cell is a "tunnel" that can hold up to 4 performers/layers.
+ * Each visible cell is a "tunnel" that can hold up to 4 performers/layers.
  * Global sync playback: one play button controls all cells together,
  * with optional per-cell beat offsets.
  */
@@ -27,8 +28,8 @@ import type {
 
 import { ArrangeGridSerializer } from "../services/implementations/ArrangeGridSerializer";
 
-// Grid dimensions (fixed 6x6 grid)
-export const GRID_SIZE = 6;
+// Maximum backing array dimensions (8x8 = 64 cells)
+export const MAX_GRID_SIZE = 8;
 const MAX_LAYERS_PER_CELL = 4;
 
 /**
@@ -36,27 +37,27 @@ const MAX_LAYERS_PER_CELL = 4;
  */
 export interface GridCell {
   id: string;
-  /** Row position (0-5) */
+  /** Row position (0-7) */
   row: number;
-  /** Column position (0-5) */
+  /** Column position (0-7) */
   col: number;
-  /** Is this cell enabled/visible? */
-  enabled: boolean;
   layers: TunnelLayerConfig[];
   beatOffset: number; // Cell-level offset for staggered playback
-  /** Number of columns this cell spans (1-3) */
+  /** Number of columns this cell spans (1-8) */
   colSpan: number;
-  /** Number of rows this cell spans (1-3) */
+  /** Number of rows this cell spans (1-8) */
   rowSpan: number;
   /** Media type for this cell (default: animation for tunnel mode) */
   mediaType: CellMediaType;
 }
 
 /**
- * Grid configuration - stores all 36 positions (6x6 grid)
+ * Grid configuration - stores all 64 positions (8x8 grid)
  */
 export interface GridConfig {
   cells: GridCell[];
+  gridRows: number;
+  gridCols: number;
 }
 
 /**
@@ -69,6 +70,8 @@ export interface SavedComposition {
   cells: GridCell[];
   bpm: number;
   skipStartPosition: boolean;
+  gridRows: number;
+  gridCols: number;
 }
 
 // LCM calculation for polyrhythmic beat counts
@@ -85,10 +88,6 @@ function calculateCellBeats(cell: GridCell, skipStart: boolean): number {
 
   const beatCounts = cell.layers.map((layer) => {
     const stepCount = layer.sequence.steps?.length || 1;
-    // steps.length = number of motion beats (start position is stored separately
-    // in sequence.startPosition, NOT in the steps array).
-    // When skipStart=true (seamless loop): total = stepCount
-    // When skipStart=false (show start pose): total = stepCount + 1
     return skipStart ? stepCount : stepCount + 1;
   });
 
@@ -97,13 +96,18 @@ function calculateCellBeats(cell: GridCell, skipStart: boolean): number {
   return beatCounts.reduce((acc, count) => lcm(acc, count), firstCount);
 }
 
-function calculateTotalBeats(cells: GridCell[], skipStart: boolean): number {
-  const enabledCellsWithLayers = cells.filter(
-    (c) => c.enabled && c.layers.length > 0
+function calculateTotalBeats(
+  cells: GridCell[],
+  skipStart: boolean,
+  rows: number,
+  cols: number
+): number {
+  const visibleWithLayers = cells.filter(
+    (c) => c.row < rows && c.col < cols && c.layers.length > 0
   );
-  if (enabledCellsWithLayers.length === 0) return 0;
+  if (visibleWithLayers.length === 0) return 0;
 
-  const beatCounts = enabledCellsWithLayers.map((cell) =>
+  const beatCounts = visibleWithLayers.map((cell) =>
     calculateCellBeats(cell, skipStart)
   );
   const firstCount = beatCounts[0];
@@ -115,12 +119,11 @@ export function generateCellId(row: number, col: number): string {
   return `cell-${row}-${col}`;
 }
 
-export function createCell(row: number, col: number, enabled: boolean): GridCell {
+export function createCell(row: number, col: number): GridCell {
   return {
     id: generateCellId(row, col),
     row,
     col,
-    enabled,
     layers: [],
     beatOffset: 0,
     colSpan: 1,
@@ -131,10 +134,9 @@ export function createCell(row: number, col: number, enabled: boolean): GridCell
 
 export function createInitialGrid(): GridCell[] {
   const cells: GridCell[] = [];
-  for (let row = 0; row < GRID_SIZE; row++) {
-    for (let col = 0; col < GRID_SIZE; col++) {
-      // Start with just cell (0,0) enabled
-      cells.push(createCell(row, col, row === 0 && col === 0));
+  for (let row = 0; row < MAX_GRID_SIZE; row++) {
+    for (let col = 0; col < MAX_GRID_SIZE; col++) {
+      cells.push(createCell(row, col));
     }
   }
   return cells;
@@ -152,86 +154,84 @@ function deepCloneCells(source: GridCell[]): GridCell[] {
 // LocalStorage persistence (inline to avoid circular imports)
 // =========================================================================
 
-const STORAGE_KEY = "compose-arrange-grid-v6";
-const STORAGE_KEY_V5 = "compose-arrange-grid-v5";
-const STORAGE_KEY_V4 = "compose-arrange-grid-v4";
+const STORAGE_KEY = "compose-arrange-grid-v7";
+const STORAGE_KEY_V6 = "compose-arrange-grid-v6";
 const SAVED_COMPOSITIONS_KEY = "compose-saved-compositions";
+
+const DEFAULT_GRID_ROWS = 2;
+const DEFAULT_GRID_COLS = 2;
+
+/** v6 GridCell had an `enabled` boolean field */
+interface V6GridCell {
+  id: string;
+  row: number;
+  col: number;
+  enabled: boolean;
+  layers: TunnelLayerConfig[];
+  beatOffset: number;
+  colSpan: number;
+  rowSpan: number;
+  mediaType?: CellMediaType;
+}
 
 function loadFromStorage(): GridConfig {
   if (typeof window === "undefined") {
-    return { cells: createInitialGrid() };
+    return {
+      cells: createInitialGrid(),
+      gridRows: DEFAULT_GRID_ROWS,
+      gridCols: DEFAULT_GRID_COLS,
+    };
   }
 
   try {
-    // Try v6 first (6x6 grid)
+    // Try v7 first (8x8 backing array + gridRows/gridCols)
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const config = JSON.parse(stored) as GridConfig;
-      if (config.cells.length === GRID_SIZE * GRID_SIZE) {
+      if (config.cells.length === MAX_GRID_SIZE * MAX_GRID_SIZE) {
         const migratedCells = config.cells.map((cell) => ({
           ...cell,
           mediaType: cell.mediaType ?? "animation",
         }));
-        return { cells: migratedCells };
+        return {
+          cells: migratedCells,
+          gridRows: clampDimension(config.gridRows ?? DEFAULT_GRID_ROWS),
+          gridCols: clampDimension(config.gridCols ?? DEFAULT_GRID_COLS),
+        };
       }
     }
 
-    // Try migrating from v5 (4x4 grid -> 6x6 grid)
-    const storedV5 = localStorage.getItem(STORAGE_KEY_V5);
-    if (storedV5) {
-      const configV5 = JSON.parse(storedV5) as GridConfig;
-      if (configV5.cells.length === 16) {
+    // Migrate from v6 (6x6 grid with enabled toggles -> 8x8 with dimensions)
+    const storedV6 = localStorage.getItem(STORAGE_KEY_V6);
+    if (storedV6) {
+      const configV6 = JSON.parse(storedV6) as { cells: V6GridCell[] };
+      if (configV6.cells.length === 36) {
         const newCells = createInitialGrid();
-        for (const oldCell of configV5.cells) {
-          if (oldCell.row < 4 && oldCell.col < 4) {
-            const newIndex = oldCell.row * GRID_SIZE + oldCell.col;
+
+        for (const oldCell of configV6.cells) {
+          if (oldCell.row < 6 && oldCell.col < 6) {
+            const newIndex = oldCell.row * MAX_GRID_SIZE + oldCell.col;
             const newCell = newCells[newIndex];
             if (newCell) {
               newCells[newIndex] = {
                 ...newCell,
-                enabled: oldCell.enabled,
                 layers: oldCell.layers ?? [],
                 beatOffset: oldCell.beatOffset ?? 0,
-                colSpan: Math.min(oldCell.colSpan ?? 1, GRID_SIZE - oldCell.col),
-                rowSpan: Math.min(oldCell.rowSpan ?? 1, GRID_SIZE - oldCell.row),
-                mediaType: oldCell.mediaType ?? "animation",
+                colSpan: Math.min(oldCell.colSpan ?? 1, MAX_GRID_SIZE - oldCell.col),
+                rowSpan: Math.min(oldCell.rowSpan ?? 1, MAX_GRID_SIZE - oldCell.row),
+                mediaType: (oldCell.mediaType ?? "animation") as CellMediaType,
               };
             }
           }
         }
-        const migratedConfig = { cells: newCells };
-        saveToStorage(migratedConfig);
-        localStorage.removeItem(STORAGE_KEY_V5);
-        return migratedConfig;
-      }
-    }
 
-    // Try migrating from v4 (3x3 grid -> 6x6 grid)
-    const storedV4 = localStorage.getItem(STORAGE_KEY_V4);
-    if (storedV4) {
-      const configV4 = JSON.parse(storedV4) as GridConfig;
-      if (configV4.cells.length === 9) {
-        const newCells = createInitialGrid();
-        for (const oldCell of configV4.cells) {
-          if (oldCell.row < 3 && oldCell.col < 3) {
-            const newIndex = oldCell.row * GRID_SIZE + oldCell.col;
-            const newCell = newCells[newIndex];
-            if (newCell) {
-              newCells[newIndex] = {
-                ...newCell,
-                enabled: oldCell.enabled,
-                layers: oldCell.layers ?? [],
-                beatOffset: oldCell.beatOffset ?? 0,
-                colSpan: Math.min(oldCell.colSpan ?? 1, GRID_SIZE - oldCell.col),
-                rowSpan: Math.min(oldCell.rowSpan ?? 1, GRID_SIZE - oldCell.row),
-                mediaType: oldCell.mediaType ?? "animation",
-              };
-            }
-          }
-        }
-        const migratedConfig = { cells: newCells };
+        const migratedConfig: GridConfig = {
+          cells: newCells,
+          gridRows: 6,
+          gridCols: 6,
+        };
         saveToStorage(migratedConfig);
-        localStorage.removeItem(STORAGE_KEY_V4);
+        localStorage.removeItem(STORAGE_KEY_V6);
         return migratedConfig;
       }
     }
@@ -239,7 +239,11 @@ function loadFromStorage(): GridConfig {
     console.warn("Failed to load grid config from localStorage:", err);
   }
 
-  return { cells: createInitialGrid() };
+  return {
+    cells: createInitialGrid(),
+    gridRows: DEFAULT_GRID_ROWS,
+    gridCols: DEFAULT_GRID_COLS,
+  };
 }
 
 function saveToStorage(config: GridConfig): void {
@@ -274,6 +278,10 @@ function persistSavedCompositions(compositions: SavedComposition[]): void {
   }
 }
 
+function clampDimension(n: number): number {
+  return Math.max(1, Math.min(MAX_GRID_SIZE, Math.round(n)));
+}
+
 /**
  * Create the grid state
  */
@@ -285,6 +293,8 @@ function createArrangeGridState() {
 
   // Core reactive state
   let cells = $state<GridCell[]>(initialConfig.cells);
+  let gridRows = $state(initialConfig.gridRows);
+  let gridCols = $state(initialConfig.gridCols);
   let isPlaying = $state(false);
   let currentBeat = $state(0);
   let selectedCellId = $state<string | null>(null);
@@ -390,7 +400,7 @@ function createArrangeGridState() {
 
   // Helper to save current state
   function save() {
-    saveToStorage({ cells });
+    saveToStorage({ cells, gridRows, gridCols });
   }
 
   // Get cell by position
@@ -400,16 +410,16 @@ function createArrangeGridState() {
 
   // Get cell index by position
   function getCellIndex(row: number, col: number): number {
-    return row * GRID_SIZE + col;
+    return row * MAX_GRID_SIZE + col;
   }
 
   /**
-   * Compute occupied positions map from current cells.
+   * Compute occupied positions map from visible cells.
    * Used internally for guard clauses that need this before `this` is available.
    */
   function computeOccupiedPositions(): Map<string, string> {
     const occupied = new Map<string, string>();
-    for (const cell of cells.filter((c) => c.enabled)) {
+    for (const cell of cells.filter((c) => c.row < gridRows && c.col < gridCols)) {
       for (let r = cell.row; r < cell.row + cell.rowSpan; r++) {
         for (let c = cell.col; c < cell.col + cell.colSpan; c++) {
           if (r === cell.row && c === cell.col) continue;
@@ -425,55 +435,45 @@ function createArrangeGridState() {
    * so that preset layouts can wrap the entire operation (including spanning) in one undo entry.
    */
   function applySpanningPreset(preset: "hero-thumbs" | "main-banner" | "pip"): void {
-    // Reset all cells to disabled with 1x1 span
+    // Reset all cells to 1x1 span with no layers
     const newCells = cells.map((cell) => ({
       ...cell,
-      enabled: false,
       colSpan: 1,
       rowSpan: 1,
-      layers: [],
+      layers: [] as TunnelLayerConfig[],
     }));
 
     switch (preset) {
       case "hero-thumbs": {
         // Large hero (5x5) + 5 thumbnails across bottom row
+        gridRows = 6;
+        gridCols = 5;
         const heroIdx = getCellIndex(0, 0);
         const heroCell = newCells[heroIdx];
         if (heroCell) {
-          newCells[heroIdx] = { ...heroCell, enabled: true, colSpan: 5, rowSpan: 5 };
-        }
-        for (let col = 0; col < 5; col++) {
-          const thumbIdx = getCellIndex(5, col);
-          const thumb = newCells[thumbIdx];
-          if (thumb) {
-            newCells[thumbIdx] = { ...thumb, enabled: true };
-          }
+          newCells[heroIdx] = { ...heroCell, colSpan: 5, rowSpan: 5 };
         }
         break;
       }
       case "main-banner": {
         // Full-width main (6x5) + full-width banner (6x1)
+        gridRows = 6;
+        gridCols = 6;
         const mainIdx = getCellIndex(0, 0);
         const mainCell = newCells[mainIdx];
         if (mainCell) {
-          newCells[mainIdx] = { ...mainCell, enabled: true, colSpan: 6, rowSpan: 5 };
-        }
-        const banner = newCells[getCellIndex(5, 0)];
-        if (banner) {
-          newCells[getCellIndex(5, 0)] = { ...banner, enabled: true, colSpan: 6 };
+          newCells[mainIdx] = { ...mainCell, colSpan: 6, rowSpan: 5 };
         }
         break;
       }
       case "pip": {
         // Large main (5x6) + small PIP overlay
+        gridRows = 6;
+        gridCols = 6;
         const mainIdx = getCellIndex(0, 0);
         const mainCell = newCells[mainIdx];
         if (mainCell) {
-          newCells[mainIdx] = { ...mainCell, enabled: true, colSpan: 5, rowSpan: 6 };
-        }
-        const pip = newCells[getCellIndex(0, 5)];
-        if (pip) {
-          newCells[getCellIndex(0, 5)] = { ...pip, enabled: true };
+          newCells[mainIdx] = { ...mainCell, colSpan: 5, rowSpan: 6 };
         }
         break;
       }
@@ -501,7 +501,7 @@ function createArrangeGridState() {
       const beatsPerMs = playbackBpm / 60 / 1000;
       const beatIncrement = deltaMs * beatsPerMs;
 
-      const total = calculateTotalBeats(cells, skipStartPosition);
+      const total = calculateTotalBeats(cells, skipStartPosition, gridRows, gridCols);
       if (total > 0) {
         currentBeat = (currentBeat + beatIncrement) % total;
       }
@@ -528,7 +528,7 @@ function createArrangeGridState() {
     if (isPlaying) return;
     stopPlaybackLoop();
 
-    const total = calculateTotalBeats(cells, skipStartPosition);
+    const total = calculateTotalBeats(cells, skipStartPosition, gridRows, gridCols);
     if (total <= 0) return;
 
     const startBeat = currentBeat;
@@ -570,6 +570,12 @@ function createArrangeGridState() {
     get cells() {
       return cells;
     },
+    get gridRows() {
+      return gridRows;
+    },
+    get gridCols() {
+      return gridCols;
+    },
     get isPlaying() {
       return isPlaying;
     },
@@ -604,20 +610,17 @@ function createArrangeGridState() {
     },
 
     // Computed getters
-    get enabledCells() {
-      return cells.filter((c) => c.enabled);
-    },
-    get enabledCount() {
-      return cells.filter((c) => c.enabled).length;
+    get visibleCells() {
+      return cells.filter((c) => c.row < gridRows && c.col < gridCols);
     },
     get totalBeats() {
-      return calculateTotalBeats(cells, skipStartPosition);
+      return calculateTotalBeats(cells, skipStartPosition, gridRows, gridCols);
     },
     get skipStartPosition() {
       return skipStartPosition;
     },
     get hasAnyLayers() {
-      return cells.some((c) => c.enabled && c.layers.length > 0);
+      return cells.some((c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0);
     },
     get selectedCell() {
       if (selectedCellId === null) return null;
@@ -631,11 +634,11 @@ function createArrangeGridState() {
 
     /**
      * Get 1-based display index for a cell (sorted by row, then column).
-     * Returns 0 if the cell is not found among enabled cells.
+     * Returns 0 if the cell is not found among visible cells.
      */
     getCellDisplayIndex(cellId: string): number {
-      const enabled = cells.filter((c) => c.enabled);
-      const sorted = [...enabled].sort((a, b) => {
+      const visible = cells.filter((c) => c.row < gridRows && c.col < gridCols);
+      const sorted = [...visible].sort((a, b) => {
         if (a.row !== b.row) return a.row - b.row;
         return a.col - b.col;
       });
@@ -651,82 +654,77 @@ function createArrangeGridState() {
       return computeOccupiedPositions();
     },
 
-    // Grid layout bounds (for rendering) - accounts for cell spans
+    // Grid layout bounds - always the current dimensions
     get gridBounds() {
-      const enabled = cells.filter((c) => c.enabled);
-      if (enabled.length === 0) {
-        return { minRow: 0, maxRow: 0, minCol: 0, maxCol: 0, rows: 1, cols: 1 };
-      }
-
-      // Account for spans: a cell at (0,0) with colSpan=3 contributes cols 0,1,2
-      const rowStarts = enabled.map((c) => c.row);
-      const rowEnds = enabled.map((c) => c.row + c.rowSpan - 1);
-      const colStarts = enabled.map((c) => c.col);
-      const colEnds = enabled.map((c) => c.col + c.colSpan - 1);
-
-      const minRow = Math.min(...rowStarts);
-      const maxRow = Math.max(...rowEnds);
-      const minCol = Math.min(...colStarts);
-      const maxCol = Math.max(...colEnds);
-
       return {
-        minRow,
-        maxRow,
-        minCol,
-        maxCol,
-        rows: maxRow - minRow + 1,
-        cols: maxCol - minCol + 1,
+        minRow: 0,
+        maxRow: gridRows - 1,
+        minCol: 0,
+        maxCol: gridCols - 1,
+        rows: gridRows,
+        cols: gridCols,
       };
     },
 
     // For backward compatibility with existing components
     get rows() {
-      return this.gridBounds.rows;
+      return gridRows;
     },
     get cols() {
-      return this.gridBounds.cols;
+      return gridCols;
     },
 
-    // Cell toggle
-    toggleCell(row: number, col: number) {
-      const index = getCellIndex(row, col);
-      const cell = cells[index];
-      if (!cell) return;
-
-      // Check if this position is occupied by a spanning cell
-      const occupyingId = computeOccupiedPositions().get(`${row}-${col}`);
-      if (occupyingId) return;
-
-      const isDisabling = cell.enabled;
-      const hasContent = cell.layers.length > 0;
-
-      withUndo(
-        "TOGGLE_CELL",
-        isDisabling ? `Disable cell (${row},${col})` : `Enable cell (${row},${col})`,
-        () => {
-          const newCells = [...cells];
-          newCells[index] = {
-            ...cell,
-            enabled: !cell.enabled,
-            layers: isDisabling && hasContent ? [] : cell.layers,
-            colSpan: isDisabling ? 1 : cell.colSpan,
-            rowSpan: isDisabling ? 1 : cell.rowSpan,
-          };
-          cells = newCells;
-
-          if (isDisabling && selectedCellId === cell.id) {
+    // Grid dimension setters
+    setGridRows(n: number) {
+      const clamped = clampDimension(n);
+      if (clamped === gridRows) return;
+      withUndo("SET_GRID_ROWS" as ArrangeUndoOperationType, `Set rows to ${clamped}`, () => {
+        gridRows = clamped;
+        // Deselect if selected cell is now out of bounds
+        if (selectedCellId) {
+          const cell = cells.find((c) => c.id === selectedCellId);
+          if (cell && cell.row >= gridRows) {
             selectedCellId = null;
           }
+        }
+        save();
+      });
+    },
 
+    setGridCols(n: number) {
+      const clamped = clampDimension(n);
+      if (clamped === gridCols) return;
+      withUndo("SET_GRID_COLS" as ArrangeUndoOperationType, `Set columns to ${clamped}`, () => {
+        gridCols = clamped;
+        if (selectedCellId) {
+          const cell = cells.find((c) => c.id === selectedCellId);
+          if (cell && cell.col >= gridCols) {
+            selectedCellId = null;
+          }
+        }
+        save();
+      });
+    },
+
+    setGridDimensions(rows: number, cols: number) {
+      const clampedRows = clampDimension(rows);
+      const clampedCols = clampDimension(cols);
+      if (clampedRows === gridRows && clampedCols === gridCols) return;
+      withUndo(
+        "SET_PRESET_LAYOUT" as ArrangeUndoOperationType,
+        `Set grid to ${clampedRows}x${clampedCols}`,
+        () => {
+          gridRows = clampedRows;
+          gridCols = clampedCols;
+          if (selectedCellId) {
+            const cell = cells.find((c) => c.id === selectedCellId);
+            if (cell && (cell.row >= gridRows || cell.col >= gridCols)) {
+              selectedCellId = null;
+            }
+          }
           save();
         }
       );
-    },
-
-    // Check if cell is enabled
-    isCellEnabled(row: number, col: number): boolean {
-      const cell = getCellAt(row, col);
-      return cell?.enabled ?? false;
     },
 
     /**
@@ -738,7 +736,7 @@ function createArrangeGridState() {
     },
 
     /**
-     * Set the span for a cell. Validates bounds and disables overlapping cells.
+     * Set the span for a cell. Validates bounds and handles overlapping cells.
      * Optionally moves the cell to a new origin position (for resizing from left/top edges).
      * When moving, the cell's content is transferred to the new position.
      * @returns true if span was set successfully, false if invalid
@@ -752,19 +750,19 @@ function createArrangeGridState() {
     ): boolean {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
-      if (!cell || !cell.enabled) return false;
+      if (!cell) return false;
 
-      // Validate spans
-      colSpan = Math.max(1, Math.min(colSpan, GRID_SIZE));
-      rowSpan = Math.max(1, Math.min(rowSpan, GRID_SIZE));
+      // Validate spans against current grid dimensions
+      colSpan = Math.max(1, Math.min(colSpan, gridCols));
+      rowSpan = Math.max(1, Math.min(rowSpan, gridRows));
 
       // Use new position if provided, otherwise keep current
-      const targetCol = newCol !== undefined ? Math.max(0, Math.min(newCol, GRID_SIZE - 1)) : cell.col;
-      const targetRow = newRow !== undefined ? Math.max(0, Math.min(newRow, GRID_SIZE - 1)) : cell.row;
+      const targetCol = newCol !== undefined ? Math.max(0, Math.min(newCol, gridCols - 1)) : cell.col;
+      const targetRow = newRow !== undefined ? Math.max(0, Math.min(newRow, gridRows - 1)) : cell.row;
 
       // Check bounds with new position
-      if (targetCol + colSpan > GRID_SIZE) return false;
-      if (targetRow + rowSpan > GRID_SIZE) return false;
+      if (targetCol + colSpan > gridCols) return false;
+      if (targetRow + rowSpan > gridRows) return false;
 
       const isMoving = targetCol !== cell.col || targetRow !== cell.row;
 
@@ -782,14 +780,13 @@ function createArrangeGridState() {
               id: newOriginCell.id,
               row: newOriginCell.row,
               col: newOriginCell.col,
-              enabled: true,
               colSpan,
               rowSpan,
             };
           }
 
           if (oldOriginIdx !== newOriginIdx) {
-            newCells[oldOriginIdx] = createCell(cell.row, cell.col, false);
+            newCells[oldOriginIdx] = createCell(cell.row, cell.col);
           }
 
           for (let r = targetRow; r < targetRow + rowSpan; r++) {
@@ -797,10 +794,9 @@ function createArrangeGridState() {
               const idx = getCellIndex(r, c);
               if (idx === newOriginIdx || idx === oldOriginIdx) continue;
               const targetCell = newCells[idx];
-              if (targetCell?.enabled) {
+              if (targetCell && targetCell.layers.length > 0) {
                 newCells[idx] = {
                   ...targetCell,
-                  enabled: false,
                   layers: [],
                   colSpan: 1,
                   rowSpan: 1,
@@ -818,10 +814,9 @@ function createArrangeGridState() {
               if (r === cell.row && c === cell.col) continue;
               const idx = getCellIndex(r, c);
               const targetCell = newCells[idx];
-              if (targetCell?.enabled) {
+              if (targetCell && targetCell.layers.length > 0) {
                 newCells[idx] = {
                   ...targetCell,
-                  enabled: false,
                   layers: [],
                   colSpan: 1,
                   rowSpan: 1,
@@ -851,7 +846,7 @@ function createArrangeGridState() {
       this.setCellSpan(cellId, 1, 1);
     },
 
-    // Preset layouts (for 6x6 grid) - includes spanning presets
+    // Preset layouts - dimension-based presets + spanning presets
     setPresetLayout(
       preset:
         | "single"
@@ -859,7 +854,6 @@ function createArrangeGridState() {
         | "horizontal"
         | "line"
         | "square"
-        | "all"
         | "hero-thumbs"
         | "main-banner"
         | "pip"
@@ -871,39 +865,36 @@ function createArrangeGridState() {
           return;
         }
 
-        // Non-spanning presets: reset all spans to 1x1
-        const newCells = cells.map((cell) => {
-          let enabled = false;
+        // Dimension-based presets: set dimensions, reset spans
+        switch (preset) {
+          case "single":
+            gridRows = 1;
+            gridCols = 1;
+            break;
+          case "vertical":
+            gridRows = 2;
+            gridCols = 1;
+            break;
+          case "horizontal":
+            gridRows = 1;
+            gridCols = 2;
+            break;
+          case "line":
+            gridRows = 1;
+            gridCols = 6;
+            break;
+          case "square":
+            gridRows = 2;
+            gridCols = 2;
+            break;
+        }
 
-          switch (preset) {
-            case "single":
-              enabled = cell.row === 0 && cell.col === 0;
-              break;
-            case "vertical":
-              enabled = cell.col === 0 && cell.row < 2;
-              break;
-            case "horizontal":
-              enabled = cell.row === 0 && cell.col < 2;
-              break;
-            case "line":
-              enabled = cell.row === 0;
-              break;
-            case "square":
-              enabled = cell.row < 2 && cell.col < 2;
-              break;
-            case "all":
-              enabled = true;
-              break;
-          }
-
-          return {
-            ...cell,
-            enabled,
-            colSpan: 1,
-            rowSpan: 1,
-            layers: enabled ? cell.layers : [],
-          };
-        });
+        // Reset all spans to 1x1 (content is preserved)
+        const newCells = cells.map((cell) => ({
+          ...cell,
+          colSpan: 1,
+          rowSpan: 1,
+        }));
 
         cells = newCells;
         selectedCellId = null;
@@ -912,7 +903,7 @@ function createArrangeGridState() {
     },
 
     /**
-     * Apply a spanning layout preset (for 6x6 grid).
+     * Apply a spanning layout preset.
      * Public entry point wraps in its own undo entry.
      */
     setSpanningPreset(preset: "hero-thumbs" | "main-banner" | "pip") {
@@ -924,14 +915,14 @@ function createArrangeGridState() {
     // Cell selection
     selectCell(cellId: string) {
       const cell = cells.find((c) => c.id === cellId);
-      if (cell && cell.enabled) {
+      if (cell && cell.row < gridRows && cell.col < gridCols) {
         selectedCellId = cellId;
       }
     },
 
     selectCellAt(row: number, col: number) {
       const cell = getCellAt(row, col);
-      if (cell && cell.enabled) {
+      if (cell && cell.row < gridRows && cell.col < gridCols) {
         selectedCellId = cell.id;
       }
     },
@@ -947,7 +938,7 @@ function createArrangeGridState() {
     getRequiredBeatCount(): number | null {
       for (const cell of cells) {
         const firstLayer = cell.layers[0];
-        if (cell.enabled && firstLayer) {
+        if (cell.row < gridRows && cell.col < gridCols && firstLayer) {
           return firstLayer.sequence.steps?.length ?? null;
         }
       }
@@ -961,10 +952,10 @@ function createArrangeGridState() {
     ): { success: boolean; error?: string } {
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
-      if (!cell || !cell.enabled || cell.layers.length >= MAX_LAYERS_PER_CELL) {
+      if (!cell || cell.layers.length >= MAX_LAYERS_PER_CELL) {
         return {
           success: false,
-          error: "Cannot add layer - cell full, disabled, or invalid",
+          error: "Cannot add layer - cell full or invalid",
         };
       }
 
@@ -1114,7 +1105,7 @@ function createArrangeGridState() {
 
     // Playback (global sync)
     play() {
-      if (!cells.some((c) => c.enabled && c.layers.length > 0)) return;
+      if (!cells.some((c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0)) return;
       isPlaying = true;
       startPlaybackLoop();
     },
@@ -1134,7 +1125,7 @@ function createArrangeGridState() {
       if (isPlaying) {
         isPlaying = false;
         stopPlaybackLoop();
-      } else if (cells.some((c) => c.enabled && c.layers.length > 0)) {
+      } else if (cells.some((c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0)) {
         isPlaying = true;
         startPlaybackLoop();
       }
@@ -1208,10 +1199,10 @@ function createArrangeGridState() {
       // Run guard clauses before undo capture
       const cellIndex = cells.findIndex((c) => c.id === cellId);
       const cell = cells[cellIndex];
-      if (!cell || !cell.enabled || cell.layers.length >= MAX_LAYERS_PER_CELL) {
+      if (!cell || cell.layers.length >= MAX_LAYERS_PER_CELL) {
         return {
           success: false,
-          error: "Cannot add layer - cell full, disabled, or invalid",
+          error: "Cannot add layer - cell full or invalid",
         };
       }
 
@@ -1261,10 +1252,7 @@ function createArrangeGridState() {
         return { success: false, error: "Invalid cell or layer" };
       }
 
-      // Snapshot reactive proxies BEFORE async work. Svelte 5 proxies passed
-      // through an await boundary and then spread via { ...proxy } can produce
-      // stale or inconsistent results. Snapshotting here gives the transformer
-      // and the subsequent mutation plain objects to work with.
+      // Snapshot reactive proxies BEFORE async work
       const sequenceSnapshot = $state.snapshot(layer.sequence) as SequenceData;
       const layerSnapshot = $state.snapshot(layer) as TunnelLayerConfig;
       const cellSnapshot = $state.snapshot(cell) as GridCell;
@@ -1359,10 +1347,10 @@ function createArrangeGridState() {
      * Suggest a composition name based on current grid content.
      */
     suggestCompositionName(): string {
-      const enabled = cells.filter((c) => c.enabled);
-      const cellCount = enabled.length;
+      const visible = cells.filter((c) => c.row < gridRows && c.col < gridCols);
+      const cellCount = gridRows * gridCols;
       const words = new Set<string>();
-      for (const cell of enabled) {
+      for (const cell of visible) {
         for (const layer of cell.layers) {
           const word = layer.sequence.intendedWord || layer.sequence.word;
           if (word) words.add(word);
@@ -1384,10 +1372,11 @@ function createArrangeGridState() {
      */
     serializeState(): string {
       return serializer.serialize({
-        cells,
+        cells: this.visibleCells.filter((c) => c.layers.length > 0),
         bpm: playbackBpm,
         skipStartPosition,
-        gridSize: GRID_SIZE,
+        gridRows,
+        gridCols,
       });
     },
 
@@ -1404,6 +1393,8 @@ function createArrangeGridState() {
         cells: deepCloneCells(cells),
         bpm: playbackBpm,
         skipStartPosition,
+        gridRows,
+        gridCols,
       };
       const all = loadSavedCompositions();
       all.push(composition);
@@ -1421,6 +1412,8 @@ function createArrangeGridState() {
 
       withUndo("LOAD_COMPOSITION", `Load: ${comp.name}`, () => {
         cells = deepCloneCells(comp.cells);
+        gridRows = comp.gridRows ?? 2;
+        gridCols = comp.gridCols ?? 2;
         playbackBpm = comp.bpm;
         skipStartPosition = comp.skipStartPosition;
         selectedCellId = null;
@@ -1453,6 +1446,8 @@ function createArrangeGridState() {
         isPlaying = false;
         stopPlaybackLoop();
         cells = createInitialGrid();
+        gridRows = DEFAULT_GRID_ROWS;
+        gridCols = DEFAULT_GRID_COLS;
         currentBeat = 0;
         selectedCellId = null;
         showSequencePicker = false;

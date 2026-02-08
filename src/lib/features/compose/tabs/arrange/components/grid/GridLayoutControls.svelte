@@ -1,19 +1,14 @@
 <!--
   GridLayoutControls.svelte
 
-  Freeform grid layout picker - click cells to enable/disable them.
-  Allows any arrangement: L-shapes, T-shapes, scattered cells, etc.
-
-  Design principles:
-  - 48px minimum touch targets (WCAG AAA)
-  - Visual click-to-toggle grid
-  - Theme-consistent styling
-  - Smooth animations
+  Grid dimension picker + spanning presets for the arrange grid.
+  8x8 grid of cells using the old toggle-grid visual style.
+  Active cells (within current dimensions) are filled accent with checkmarks.
+  Click any cell to set grid dimensions to that position.
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { GRID_SIZE } from "../../state/arrange-grid-state.svelte";
 
   type PresetType =
     | "single"
@@ -21,95 +16,149 @@
     | "horizontal"
     | "line"
     | "square"
-    | "all"
     | "hero-thumbs"
     | "main-banner"
     | "pip";
 
   let {
-    cells,
-    enabledCount,
-    occupiedPositions,
+    gridRows,
+    gridCols,
     hasContent,
-    onToggleCell,
+    onSetGridRows,
+    onSetGridCols,
+    onSetDimensions,
     onPresetLayout,
   }: {
-    cells: Array<{ row: number; col: number; enabled: boolean; colSpan: number; rowSpan: number }>;
-    enabledCount: number;
-    occupiedPositions: Map<string, string>;
+    gridRows: number;
+    gridCols: number;
     hasContent: boolean;
-    onToggleCell: (row: number, col: number) => void;
+    onSetGridRows: (n: number) => void;
+    onSetGridCols: (n: number) => void;
+    onSetDimensions: (rows: number, cols: number) => void;
     onPresetLayout: (preset: PresetType) => void;
   } = $props();
 
   const haptic = container.items.hapticFeedback as IHapticFeedback;
 
-  // Confirmation state for destructive preset changes
-  let pendingPreset = $state<PresetType | null>(null);
+  const MAX_GRID = 8;
 
-  // Generate grid positions (6x6)
-  const gridPositions = Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, i) => ({
-    row: Math.floor(i / GRID_SIZE),
-    col: i % GRID_SIZE,
+  // --- Hover preview state ---
+  let hoverRows = $state<number | null>(null);
+  let hoverCols = $state<number | null>(null);
+
+  const displayRows = $derived(hoverRows ?? gridRows);
+  const displayCols = $derived(hoverCols ?? gridCols);
+  const displayTotal = $derived(displayRows * displayCols);
+  const isPreviewing = $derived(hoverRows !== null || hoverCols !== null);
+
+  // --- Confirmation state ---
+  let pendingPreset = $state<PresetType | null>(null);
+  let pendingDimensions = $state<{ rows: number; cols: number } | null>(null);
+
+  // --- Grid cells ---
+  const gridPositions = Array.from({ length: MAX_GRID * MAX_GRID }, (_, i) => ({
+    row: Math.floor(i / MAX_GRID),
+    col: i % MAX_GRID,
   }));
 
-  // Check if a position is enabled
-  function isEnabled(row: number, col: number): boolean {
-    const cell = cells.find((c) => c.row === row && c.col === col);
-    return cell?.enabled ?? false;
+  function getCellState(
+    row: number,
+    col: number,
+  ): "active" | "preview" | "inactive" {
+    if (row < gridRows && col < gridCols) return "active";
+    if (row < displayRows && col < displayCols) return "preview";
+    return "inactive";
   }
 
-  // Check if a position is occupied by a spanning cell
-  function isOccupied(row: number, col: number): boolean {
-    return occupiedPositions.has(`${row}-${col}`);
+  function handleCellPointerEnter(row: number, col: number) {
+    hoverRows = row + 1;
+    hoverCols = col + 1;
   }
 
-  // Get the cell that occupies this position (if any)
-  function getOccupyingCell(row: number, col: number): { row: number; col: number; colSpan: number; rowSpan: number } | null {
-    const occupyingId = occupiedPositions.get(`${row}-${col}`);
-    if (!occupyingId) return null;
-    // Parse the cell ID to get row/col
-    const match = occupyingId.match(/cell-(\d+)-(\d+)/);
-    if (!match) return null;
-    const originRow = parseInt(match[1]!, 10);
-    const originCol = parseInt(match[2]!, 10);
-    const cell = cells.find((c) => c.row === originRow && c.col === originCol);
-    return cell ? { row: cell.row, col: cell.col, colSpan: cell.colSpan, rowSpan: cell.rowSpan } : null;
+  function handleGridPointerLeave() {
+    hoverRows = null;
+    hoverCols = null;
   }
 
   function handleCellClick(row: number, col: number) {
-    // Don't allow clicking occupied positions
-    if (isOccupied(row, col)) return;
-    haptic.trigger("selection");
-    onToggleCell(row, col);
-  }
+    const newRows = row + 1;
+    const newCols = col + 1;
+    if (newRows === gridRows && newCols === gridCols) return;
 
-  function handleCellKeyDown(e: KeyboardEvent, row: number, col: number) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleCellClick(row, col);
+    haptic.trigger("selection");
+
+    if (hasContent) {
+      pendingDimensions = { rows: newRows, cols: newCols };
+      pendingPreset = null;
+    } else {
+      onSetDimensions(newRows, newCols);
     }
   }
 
-  function handlePreset(preset: PresetType) {
+  // --- Keyboard ---
+  function handleKeydown(e: KeyboardEvent) {
+    let newRows = gridRows;
+    let newCols = gridCols;
+
+    switch (e.key) {
+      case "ArrowUp":
+        e.preventDefault();
+        newRows = Math.max(1, gridRows - 1);
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        newRows = Math.min(MAX_GRID, gridRows + 1);
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        newCols = Math.max(1, gridCols - 1);
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        newCols = Math.min(MAX_GRID, gridCols + 1);
+        break;
+      default:
+        return;
+    }
+
+    if (newRows === gridRows && newCols === gridCols) return;
+
+    haptic.trigger("selection");
+
+    if (hasContent) {
+      pendingDimensions = { rows: newRows, cols: newCols };
+      pendingPreset = null;
+    } else {
+      onSetDimensions(newRows, newCols);
+    }
+  }
+
+  // --- Spanning presets ---
+  function handleSpanningPreset(preset: PresetType) {
     haptic.trigger("selection");
     if (hasContent) {
       pendingPreset = preset;
+      pendingDimensions = null;
     } else {
       onPresetLayout(preset);
     }
   }
 
-  function confirmPreset() {
+  // --- Confirmation ---
+  function confirmChange() {
+    haptic.trigger("warning");
     if (pendingPreset) {
-      haptic.trigger("warning");
       onPresetLayout(pendingPreset);
       pendingPreset = null;
+    } else if (pendingDimensions) {
+      onSetDimensions(pendingDimensions.rows, pendingDimensions.cols);
+      pendingDimensions = null;
     }
   }
 
-  function cancelPreset() {
+  function cancelChange() {
     pendingPreset = null;
+    pendingDimensions = null;
   }
 </script>
 
@@ -118,36 +167,38 @@
   <div class="grid-section">
     <div
       class="toggle-grid"
-      role="grid"
-      aria-label="Grid layout selector - click cells to enable or disable"
+      role="group"
+      aria-label="Grid dimensions: {gridRows} rows by {gridCols} columns"
+      tabindex="0"
+      onkeydown={handleKeydown}
+      onpointerleave={handleGridPointerLeave}
     >
-      {#each gridPositions as pos (pos.row * GRID_SIZE + pos.col)}
-        {@const enabled = isEnabled(pos.row, pos.col)}
-        {@const occupied = isOccupied(pos.row, pos.col)}
+      {#each gridPositions as pos (pos.row * MAX_GRID + pos.col)}
+        {@const state = getCellState(pos.row, pos.col)}
         <button
           class="grid-cell"
-          class:enabled
-          class:occupied
-          role="gridcell"
-          aria-selected={enabled}
-          aria-disabled={occupied}
-          aria-label="Cell row {pos.row + 1}, column {pos.col + 1}, {enabled ? 'enabled' : occupied ? 'covered by spanning cell' : 'disabled'}"
+          class:enabled={state === "active"}
+          class:preview={state === "preview"}
+          tabindex="-1"
+          aria-label="Set grid to {pos.col + 1} columns by {pos.row + 1} rows"
+          onpointerenter={() => handleCellPointerEnter(pos.row, pos.col)}
           onclick={() => handleCellClick(pos.row, pos.col)}
-          onkeydown={(e) => handleCellKeyDown(e, pos.row, pos.col)}
         >
-          {#if enabled}
+          {#if state === "active"}
             <i class="fas fa-check" aria-hidden="true"></i>
-          {:else if occupied}
-            <i class="fas fa-link" aria-hidden="true"></i>
           {/if}
         </button>
       {/each}
     </div>
 
-    <!-- Cell count -->
-    <div class="count-label">
-      <span class="count-value">{enabledCount}</span>
-      <span class="count-text">{enabledCount === 1 ? "cell" : "cells"}</span>
+    <!-- Dimension Label -->
+    <div class="count-label" aria-live="polite">
+      <span class="count-value" class:previewing={isPreviewing}>
+        {displayCols} &times; {displayRows}
+      </span>
+      <span class="count-text">
+        ({displayTotal} {displayTotal === 1 ? "cell" : "cells"})
+      </span>
     </div>
   </div>
 
@@ -155,101 +206,32 @@
   <div class="presets-section">
     <span class="presets-label">Presets</span>
 
-    {#if pendingPreset}
-      <!-- Confirmation bar replaces preset grid when content would be lost -->
-      <div class="confirm-bar" role="alertdialog" aria-label="Confirm layout change">
+    {#if pendingPreset || pendingDimensions}
+      <div
+        class="confirm-bar"
+        role="alertdialog"
+        aria-label="Confirm layout change"
+      >
         <p class="confirm-text">
           Sequences in affected cells will be cleared.
         </p>
         <div class="confirm-actions">
-          <button class="confirm-cancel" onclick={cancelPreset}>
+          <button class="confirm-cancel" onclick={cancelChange}>
             Cancel
           </button>
-          <button class="confirm-apply" onclick={confirmPreset}>
+          <button class="confirm-apply" onclick={confirmChange}>
             Change Layout
           </button>
         </div>
         <p class="confirm-hint">Ctrl+Z to undo after applying</p>
       </div>
     {:else}
-      <div class="presets-grid">
+      <div class="spanning-presets">
         <button
           class="preset-btn"
-          onclick={() => handlePreset("single")}
-          aria-label="Single cell layout"
-          title="1 cell"
-        >
-          <div class="preset-icon single">
-            <span></span>
-          </div>
-        </button>
-        <button
-          class="preset-btn"
-          onclick={() => handlePreset("horizontal")}
-          aria-label="2 cells horizontal layout"
-          title="2 cells horizontal"
-        >
-          <div class="preset-icon horizontal">
-            <span></span>
-            <span></span>
-          </div>
-        </button>
-        <button
-          class="preset-btn"
-          onclick={() => handlePreset("vertical")}
-          aria-label="2 cells vertical layout"
-          title="2 cells vertical"
-        >
-          <div class="preset-icon vertical">
-            <span></span>
-            <span></span>
-          </div>
-        </button>
-        <button
-          class="preset-btn"
-          onclick={() => handlePreset("square")}
-          aria-label="2×2 square layout"
-          title="2×2 square"
-        >
-          <div class="preset-icon square">
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        </button>
-        <button
-          class="preset-btn"
-          onclick={() => handlePreset("line")}
-          aria-label="Horizontal line layout"
-          title="1×6 row"
-        >
-          <div class="preset-icon line">
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        </button>
-        <button
-          class="preset-btn"
-          onclick={() => handlePreset("all")}
-          aria-label="Full 6×6 grid layout"
-          title="6×6 grid"
-        >
-          <div class="preset-icon all">
-            {#each Array(36) as _}
-              <span></span>
-            {/each}
-          </div>
-        </button>
-        <button
-          class="preset-btn"
-          onclick={() => handlePreset("hero-thumbs")}
+          onclick={() => handleSpanningPreset("hero-thumbs")}
           aria-label="Hero with thumbnails layout"
-          title="5×5 hero + 5 thumbnails"
+          title="5x5 hero + thumbnails"
         >
           <div class="preset-icon hero-thumbs">
             <span class="span-5x5"></span>
@@ -262,9 +244,9 @@
         </button>
         <button
           class="preset-btn"
-          onclick={() => handlePreset("main-banner")}
+          onclick={() => handleSpanningPreset("main-banner")}
           aria-label="Main with banner layout"
-          title="6×5 main + full-width banner"
+          title="6x5 main + banner"
         >
           <div class="preset-icon main-banner">
             <span class="span-6x5"></span>
@@ -273,7 +255,7 @@
         </button>
         <button
           class="preset-btn"
-          onclick={() => handlePreset("pip")}
+          onclick={() => handleSpanningPreset("pip")}
           aria-label="Picture-in-picture layout"
           title="Large main + small overlay"
         >
@@ -305,19 +287,25 @@
 
   .toggle-grid {
     display: grid;
-    grid-template-rows: repeat(6, 1fr);
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    grid-template-columns: repeat(8, 1fr);
     gap: 4px;
     padding: 10px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-lg, 12px);
+    outline: none;
+  }
+
+  .toggle-grid:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
   }
 
   .grid-cell {
     aspect-ratio: 1;
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 28px;
+    min-height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -328,10 +316,11 @@
     transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     color: transparent;
+    padding: 0;
   }
 
   .grid-cell i {
-    font-size: 14px;
+    font-size: 12px;
     transition: transform 150ms ease;
   }
 
@@ -342,20 +331,22 @@
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
   }
 
-  .grid-cell.occupied {
-    background: var(--theme-accent, #8b5cf6);
-    border: 2px solid var(--theme-accent, #8b5cf6);
-    opacity: 0.4;
-    color: white;
-    cursor: not-allowed;
-  }
-
-  .grid-cell.occupied i {
-    font-size: 10px;
+  .grid-cell.preview {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 15%,
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98))
+    );
+    border: 2px solid
+      color-mix(
+        in srgb,
+        var(--theme-accent, #8b5cf6) 40%,
+        transparent
+      );
   }
 
   @media (hover: hover) {
-    .grid-cell:hover:not(.enabled) {
+    .grid-cell:not(.enabled):not(.preview):hover {
       background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
       border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     }
@@ -375,6 +366,7 @@
     outline-offset: 2px;
   }
 
+  /* ====== COUNT LABEL ====== */
   .count-label {
     display: flex;
     align-items: baseline;
@@ -386,6 +378,11 @@
     font-weight: 700;
     color: var(--theme-text, white);
     font-variant-numeric: tabular-nums;
+    transition: color 150ms ease;
+  }
+
+  .count-value.previewing {
+    color: var(--theme-accent, #8b5cf6);
   }
 
   .count-text {
@@ -407,9 +404,8 @@
     letter-spacing: 0.5px;
   }
 
-  .presets-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+  .spanning-presets {
+    display: flex;
     gap: var(--spacing-sm, 8px);
   }
 
@@ -447,7 +443,7 @@
   /* Preset icons */
   .preset-icon {
     display: grid;
-    gap: 2px;
+    gap: 1px;
   }
 
   .preset-icon span {
@@ -456,69 +452,9 @@
     opacity: 0.7;
   }
 
-  .preset-icon.single {
-    grid-template-columns: 1fr;
-  }
-
-  .preset-icon.single span {
-    width: 16px;
-    height: 16px;
-  }
-
-  .preset-icon.vertical {
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(2, 1fr);
-  }
-
-  .preset-icon.vertical span {
-    width: 10px;
-    height: 10px;
-  }
-
-  .preset-icon.horizontal {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .preset-icon.horizontal span {
-    width: 10px;
-    height: 10px;
-  }
-
-  .preset-icon.line {
-    grid-template-columns: repeat(6, 1fr);
-  }
-
-  .preset-icon.line span {
-    width: 4px;
-    height: 4px;
-  }
-
-  .preset-icon.square {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-  }
-
-  .preset-icon.square span {
-    width: 8px;
-    height: 8px;
-  }
-
-  .preset-icon.all {
-    grid-template-columns: repeat(6, 1fr);
-    grid-template-rows: repeat(6, 1fr);
-  }
-
-  .preset-icon.all span {
-    width: 3px;
-    height: 3px;
-  }
-
-  /* Spanning preset icons */
   .preset-icon.hero-thumbs {
-    display: grid;
     grid-template-columns: repeat(6, 1fr);
     grid-template-rows: repeat(6, 1fr);
-    gap: 1px;
     width: 24px;
     height: 24px;
   }
@@ -534,10 +470,8 @@
   }
 
   .preset-icon.main-banner {
-    display: grid;
     grid-template-columns: repeat(6, 1fr);
     grid-template-rows: repeat(6, 1fr);
-    gap: 1px;
     width: 24px;
     height: 24px;
   }
@@ -553,10 +487,8 @@
   }
 
   .preset-icon.pip {
-    display: grid;
     grid-template-columns: repeat(6, 1fr);
     grid-template-rows: repeat(6, 1fr);
-    gap: 1px;
     width: 24px;
     height: 24px;
   }

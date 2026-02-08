@@ -11,7 +11,8 @@ export interface SerializationContext {
   cells: GridCell[];
   bpm: number;
   skipStartPosition: boolean;
-  gridSize: number;
+  gridRows: number;
+  gridCols: number;
 }
 
 export interface IArrangeGridSerializer {

@@ -12,7 +12,8 @@ import type { GridCell } from "../../state/arrange-grid-state.svelte";
  * Types of undoable operations in the Arrange grid
  */
 export type ArrangeUndoOperationType =
-  | "TOGGLE_CELL"
+  | "SET_GRID_ROWS"
+  | "SET_GRID_COLS"
   | "SET_PRESET_LAYOUT"
   | "SET_CELL_SPAN"
   | "ADD_LAYER"
