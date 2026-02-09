@@ -427,6 +427,14 @@ service cloud.firestore {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
+
+      // -------------------------------------------------------------------------
+      // VOICE SESSIONS (Voice Command Recording & Analysis)
+      // -------------------------------------------------------------------------
+      match /voiceSessions/{sessionId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
     }
 
     // ============================================================================
