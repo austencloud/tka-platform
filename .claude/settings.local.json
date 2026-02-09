@@ -529,7 +529,9 @@
       "Bash(\"/c/Program Files \\(x86\\)/cloudflared/cloudflared.exe\" --version)",
       "Bash(start \"\" \"C:\\\\tka-platform\\\\tests\\\\screenshots\\\\gallery.html\")",
       "Bash(SCREENSHOT_PUBLIC=true SCREENSHOT_DEVICE_FILTER=iphone-se npx playwright test:*)",
-      "Bash(SCREENSHOT_PUBLIC=true npx playwright test:*)"
+      "Bash(SCREENSHOT_PUBLIC=true npx playwright test:*)",
+      "Bash(SCREENSHOT_DEVICE_FILTER=iphone-se SCREENSHOT_ROUTES=create--constructor npx playwright test:*)",
+      "Bash(export PATH=\"$PATH:/c/Users/Austen/platform-tools\")"
     ]
   },
   "enableAllProjectMcpServers": true,
