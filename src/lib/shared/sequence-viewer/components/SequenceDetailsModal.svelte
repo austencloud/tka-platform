@@ -163,15 +163,24 @@
 
   // Mobile detection for responsive behaviors
   let isMobile = $state(false);
+  let isLandscapeMobile = $state(false);
 
   $effect(() => {
     if (browser) {
+      const detector = container.items.deviceDetector;
       const checkMobile = () => {
         isMobile = window.innerWidth < 768;
+        isLandscapeMobile = detector.isLandscapeMobile();
       };
       checkMobile();
       window.addEventListener("resize", checkMobile);
-      return () => window.removeEventListener("resize", checkMobile);
+      const cleanupCapabilities = detector.onCapabilitiesChanged(() => {
+        checkMobile();
+      });
+      return () => {
+        window.removeEventListener("resize", checkMobile);
+        cleanupCapabilities();
+      };
     }
     return undefined;
   });
@@ -1163,6 +1172,7 @@
       {exportType}
       {isFullscreen}
       {isMobile}
+      {isLandscapeMobile}
       darkMode={imgDarkMode}
       onClose={handleClose}
       onExitExportMode={exitExportMode}
@@ -1177,6 +1187,7 @@
     class="modal-body-content"
     data-view-mode={viewMode}
     data-fullscreen={isFullscreen}
+    data-landscape={isLandscapeMobile || undefined}
     onclick={isFullscreen ? handleFullscreenTap : undefined}
     onkeydown={isFullscreen ? (e) => { if (e.key === 'Enter' || e.key === ' ') handleFullscreenTap(); } : undefined}
     ontouchstart={handleTouchStart}
@@ -1245,6 +1256,7 @@
         {isFullscreen}
         {fullscreenStackVertical}
         {isMobile}
+        {isLandscapeMobile}
         focusedPane={editingPane}
         onFocusPane={enterEditMode}
         onUnfocusPane={exitEditMode}
@@ -1252,10 +1264,37 @@
         onCanvasReady={handleCanvasReady}
       />
     {/if}
+
+    <!-- Landscape: Footer rendered inline as right column (not in BaseModal footer slot) -->
+    {#if isLandscapeMobile && !isFullscreen && !isExportMode}
+      <ViewerFooter
+        landscape={true}
+        bpm={bpmLocal}
+        isPlaying={isPlayingLocal}
+        isLoggedIn={authState.isAuthenticated}
+        rampActive={rampActive}
+        isSyncToggling={isSyncToggling}
+        isSyncActive={lanSyncState.isActive}
+        isSyncConnected={lanSyncState.isConnected}
+        onBpmChange={handleBpmChange}
+        onPlayPause={handlePlaybackToggle}
+        onStepBack={handleStepFullBack}
+        onStepForward={handleStepFullFwd}
+        onStepHalfBack={handleStepHalfBack}
+        onStepHalfForward={handleStepHalfFwd}
+        onSave={handleSave}
+        onCompose={handleCompose}
+        onShare={handleShare}
+        onExport={enterExportMode}
+        onRampStart={() => handleRampStart()}
+        onRampStop={() => handleRampStop()}
+        onConnect={handleSyncToggle}
+      />
+    {/if}
   </div>
 
   {#snippet footer()}
-    {#if !isFullscreen}
+    {#if !isFullscreen && !isLandscapeMobile}
       {#if isExportMode}
         <!-- Export footer: shows button when type is selected, hint when selecting -->
         <ExportFooter
@@ -1368,6 +1407,11 @@
     overflow: hidden;
     /* Create stacking context for view transitions */
     position: relative;
+  }
+
+  /* Landscape: row layout with content + controls column */
+  .modal-body-content[data-landscape="true"] {
+    flex-direction: row;
   }
 
   /* Desktop: 90% viewport sizing - immersive but still modal */
