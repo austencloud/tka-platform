@@ -80,9 +80,11 @@ import { createLanSyncContainer } from "./containers/lan-sync-container";
 import { createConnectContainer } from "./containers/connect-container";
 import { createDeviceSyncContainer } from "./containers/device-sync-container";
 import { conjoinedLabContainer } from "./containers/conjoined-lab-container";
+import { multiGridContainer } from "./containers/multi-grid-container";
 import { createAttributionContainer } from "./containers/attribution-container";
 import { createVoiceControlContainer } from "./containers/voice-control-container";
 import { createComposeBrowseContainer } from "./containers/compose-browse-container";
+import { createVoiceSessionContainer } from "./containers/voice-session-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -285,6 +287,9 @@ const voiceControlContainer = typeof window !== 'undefined' ? createVoiceControl
 // Compose Browse container - self-contained, no external dependencies
 const composeBrowseContainer = typeof window !== 'undefined' ? createComposeBrowseContainer() : null as any;
 
+// Voice session recording, formatting, and persistence
+const voiceSessionContainer = typeof window !== 'undefined' ? createVoiceSessionContainer() : null as any;
+
 
 // Watch container - needs collaborativeVideoManager from share and browseLoader from browse
 const watchContainer = typeof window !== 'undefined' ? createWatchContainer({
@@ -385,6 +390,7 @@ function buildAppContainer(): any {
   c = c.add(deviceSyncContainer.items);
   c = c.add(connectContainer.items);
   c = c.add(conjoinedLabContainer.items);
+  c = c.add(multiGridContainer.items);
   // Attribution tracking services
   c = c.add({
     attributionCapture: () => attributionContainer?.items?.attributionCapture,
@@ -393,6 +399,8 @@ function buildAppContainer(): any {
   });
   // Voice control ("Hey Tika") services
   c = c.add(voiceControlContainer.items);
+  // Voice session recording + analysis
+  c = c.add(voiceSessionContainer.items);
   c = c.add(composeBrowseContainer.items);
   // Cross-container services (depend on multiple container outputs)
   c = c.add({ deepLinkResolver: () => deepLinkResolver });

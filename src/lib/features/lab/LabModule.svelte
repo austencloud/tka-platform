@@ -30,6 +30,7 @@
     landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
     composition: () => import("$lib/features/constraint-layout-lab/CompositionLab.svelte"),
     level6: () => import("$lib/features/conjoined-lab/ConjoinedLabModule.svelte"),
+    "multi-grid": () => import("$lib/features/multi-grid-lab/MultiGridLabModule.svelte"),
     "ml-training": () =>
       import("$lib/features/train/ml-training/components/MLTrainingModule.svelte"),
     community: () => import("$lib/features/community/Community.svelte"),

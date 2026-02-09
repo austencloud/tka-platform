@@ -613,6 +613,14 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
   {
+    id: "multi-grid",
+    label: "Multi-Grid",
+    icon: '<i class="fas fa-border-all" aria-hidden="true"></i>',
+    description: "N-grid topology explorer (arbitrary arrangements)",
+    color: "#0d9488",
+    gradient: "linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%)",
+  },
+  {
     id: "ml-training",
     label: "ML Training",
     icon: '<i class="fas fa-brain" aria-hidden="true"></i>',
