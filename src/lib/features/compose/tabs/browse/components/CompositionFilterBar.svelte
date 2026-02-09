@@ -27,7 +27,7 @@
 	} = $props();
 
 	// Local search state (debounced)
-	let searchInput = $state(filter.searchQuery ?? "");
+	let searchInput = $state("");
 	let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 
 	function handleSearchInput(e: Event) {
@@ -54,7 +54,7 @@
 		})),
 	];
 
-	let modeValue = $state<string>(filter.mode ?? "all");
+	let modeValue = $state<string>("all");
 
 	function handleModeChange(value: string) {
 		modeValue = value;
@@ -69,7 +69,7 @@
 		{ value: "cellCount" as const, label: "Size" },
 	];
 
-	let sortValue = $state<CompositionSortMethod>(sortMethod);
+	let sortValue = $state<CompositionSortMethod>("date");
 
 	function handleSortChange(value: CompositionSortMethod) {
 		sortValue = value;
@@ -77,15 +77,16 @@
 	}
 
 	// Favorites toggle
-	let favoritesActive = $state(filter.favorites ?? false);
+	let favoritesActive = $state(false);
 
 	function toggleFavorites() {
 		favoritesActive = !favoritesActive;
 		onFilterChange({ ...filter, favorites: favoritesActive || undefined });
 	}
 
-	// Sync external filter changes
+	// Sync from props (runs immediately on mount and on any prop change)
 	$effect(() => {
+		searchInput = filter.searchQuery ?? "";
 		modeValue = filter.mode ?? "all";
 		favoritesActive = filter.favorites ?? false;
 		sortValue = sortMethod;
