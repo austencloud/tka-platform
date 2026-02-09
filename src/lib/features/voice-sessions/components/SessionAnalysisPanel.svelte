@@ -64,7 +64,7 @@
 </script>
 
 <section class="analysis-section">
-  <button class="section-header" onclick={() => { collapsed = !collapsed; if (!collapsed && !analysis && !loading) runAnalysis(); }} aria-expanded={!collapsed}>
+  <button class="section-header" onclick={() => { collapsed = !collapsed; if (!collapsed && !analysis && !loading) runAnalysis(); }} aria-expanded={!collapsed} aria-label={collapsed ? "Expand pattern analysis" : "Collapse pattern analysis"}>
     <h2>
       Pattern Analysis
       {#if analysis}
@@ -527,8 +527,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 14px;
-    min-height: 40px;
+    padding: 12px 16px;
+    min-height: 48px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 8px;

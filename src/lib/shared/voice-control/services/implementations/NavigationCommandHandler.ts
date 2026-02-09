@@ -40,7 +40,6 @@ export class NavigationCommandHandler implements IVoiceCommandHandler {
 
     try {
       await handleModuleChange(moduleId as ModuleId);
-      console.log(`[HeyTika] Navigated to ${moduleDef.label}`);
       return {
         success: true,
         message: `Navigated to ${moduleDef.label}`,
@@ -54,7 +53,6 @@ export class NavigationCommandHandler implements IVoiceCommandHandler {
   private switchTab(tabId: string): CommandResult {
     try {
       handleSectionChange(tabId);
-      console.log(`[HeyTika] Switched to tab: ${tabId}`);
       return {
         success: true,
         message: `Switched to ${tabId} tab`,

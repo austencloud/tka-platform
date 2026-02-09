@@ -18,6 +18,7 @@ import type { VoiceCommandCategory } from "../../domain/voice-command-types";
 import type {
   IVoiceSessionRecorder,
   RecordEventParams,
+  SessionEndedCallback,
 } from "../contracts/IVoiceSessionRecorder";
 
 export class VoiceSessionRecorder implements IVoiceSessionRecorder {
@@ -26,6 +27,7 @@ export class VoiceSessionRecorder implements IVoiceSessionRecorder {
   private sessionStartMs = 0;
   private events: VoiceSessionEvent[] = [];
   private eventIndex = 0;
+  private sessionEndedCallback: SessionEndedCallback | null = null;
 
   startSession(): void {
     if (this.recording) return;
@@ -54,6 +56,7 @@ export class VoiceSessionRecorder implements IVoiceSessionRecorder {
     };
 
     this.reset();
+    this.sessionEndedCallback?.(session);
     return session;
   }
 
@@ -67,6 +70,10 @@ export class VoiceSessionRecorder implements IVoiceSessionRecorder {
       events: [...this.events],
       startedAt: this.sessionStartedAt,
     };
+  }
+
+  onSessionEnded(callback: SessionEndedCallback | null): void {
+    this.sessionEndedCallback = callback;
   }
 
   recordEvent(params: RecordEventParams): void {

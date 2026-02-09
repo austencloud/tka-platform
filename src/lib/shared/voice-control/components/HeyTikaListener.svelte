@@ -25,6 +25,7 @@
   import type { IIntentResolver } from "../services/contracts/IIntentResolver";
   import type { ITTSProvider } from "../services/contracts/ITTSProvider";
   import type { IVoiceSessionRecorder } from "../services/contracts/IVoiceSessionRecorder";
+  import type { IVoiceSessionRepository } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionRepository";
   import { navigationState } from "../../navigation/state/navigation-state.svelte";
   import { voiceControlState } from "../state/voice-control-state.svelte";
   import { classifyTier } from "../ai/tier-classifier";
@@ -36,6 +37,7 @@
   let intentResolver: IIntentResolver | null = null;
   let ttsProvider: ITTSProvider | null = null;
   let sessionRecorder: IVoiceSessionRecorder | null = null;
+  let sessionRepository: IVoiceSessionRepository | null = null;
 
   function getContext() {
     return {
@@ -45,12 +47,24 @@
   }
 
   function enterCommandMode() {
+    // Auto-start recording when command mode is entered
+    if (sessionRecorder && !sessionRecorder.isRecording()) {
+      sessionRecorder.startSession();
+      console.log("[HeyTika] Auto-started session recording");
+    }
+
     // voiceControlState.enterCommandMode() calls onEnterCommandMode callback,
     // which tells the detector to setCommandMode(true)
     voiceControlState.enterCommandMode();
   }
 
   function exitCommandMode() {
+    // Auto-end recording when command mode exits
+    if (sessionRecorder?.isRecording()) {
+      sessionRecorder.endSession();
+      // Session save is handled by the onSessionEnded callback
+    }
+
     // voiceControlState.exitCommandMode() triggers the onCommandModeExpired callback,
     // which tells the detector to setCommandMode(false). Single path for all exits.
     voiceControlState.exitCommandMode();
@@ -298,10 +312,31 @@
       intentResolver = container.items.intentResolver as IIntentResolver;
       ttsProvider = container.items.ttsProvider as ITTSProvider;
       sessionRecorder = container.items.voiceSessionRecorder as IVoiceSessionRecorder;
+      sessionRepository = container.items.voiceSessionRepository as IVoiceSessionRepository;
     } catch (error) {
       console.error("[HeyTika] Failed to resolve voice control services:", error);
       return;
     }
+
+    // Auto-save sessions when they end (always-on recording)
+    sessionRecorder.onSessionEnded(async (session) => {
+      if (session.events.length === 0) {
+        console.log("[HeyTika] Skipping auto-save: empty session");
+        return;
+      }
+
+      try {
+        await sessionRepository!.saveSession(session);
+        console.log(`[HeyTika] Auto-saved session ${session.id} (${session.events.length} events)`);
+
+        // Enforce session limit in background (don't block)
+        sessionRepository!.enforceSessionLimit().catch((err) => {
+          console.warn("[HeyTika] Session limit enforcement failed:", err);
+        });
+      } catch (error) {
+        console.warn("[HeyTika] Auto-save failed:", error);
+      }
+    });
 
     voiceControlState.setSupported(wakeWordDetector.isSupported());
 
@@ -439,6 +474,12 @@
     }
 
     return () => {
+      // End any in-progress recording before unmount
+      if (sessionRecorder?.isRecording()) {
+        sessionRecorder.endSession();
+      }
+      sessionRecorder?.onSessionEnded(null);
+
       unsubWakeWord();
       unsubCommand();
       unsubState();

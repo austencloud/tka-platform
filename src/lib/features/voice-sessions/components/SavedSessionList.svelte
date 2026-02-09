@@ -8,6 +8,7 @@
   import { onMount } from "svelte";
   import type { IVoiceSessionRepository } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionRepository";
   import type { IVoiceSessionFormatter } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionFormatter";
+  import type { IVoiceSessionReplayer } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionReplayer";
   import type { VoiceSessionPreview, VoiceSession } from "$lib/shared/voice-control/domain/voice-session-types";
   import SavedSessionItem from "./SavedSessionItem.svelte";
   import SessionDetailView from "./SessionDetailView.svelte";
@@ -15,10 +16,12 @@
   let {
     repository,
     formatter,
+    replayer = null,
     refreshTrigger = 0,
   }: {
     repository: IVoiceSessionRepository;
     formatter: IVoiceSessionFormatter;
+    replayer?: IVoiceSessionReplayer | null;
     refreshTrigger?: number;
   } = $props();
 
@@ -111,7 +114,7 @@
 </script>
 
 <section class="saved-sessions-section">
-  <button class="section-header" onclick={() => collapsed = !collapsed} aria-expanded={!collapsed}>
+  <button class="section-header" onclick={() => collapsed = !collapsed} aria-expanded={!collapsed} aria-label={collapsed ? "Expand saved sessions" : "Collapse saved sessions"}>
     <h2>
       Saved Sessions
       {#if sessions.length > 0 && !loading}
@@ -138,6 +141,7 @@
         <SessionDetailView
           session={selectedSession}
           {formatter}
+          {replayer}
           onClose={closeDetail}
           onDelete={() => requestDelete(selectedSessionId!)}
         />
@@ -169,9 +173,9 @@
 
   <!-- Delete Confirmation -->
   {#if deleteTargetId}
-    <div class="confirm-overlay" role="dialog" aria-label="Confirm delete">
+    <div class="confirm-overlay" role="alertdialog" aria-modal="true" aria-labelledby="confirm-delete-desc">
       <div class="confirm-dialog">
-        <p>Delete this voice session? This can't be undone.</p>
+        <p id="confirm-delete-desc">Delete this voice session? This can't be undone.</p>
         <div class="confirm-actions">
           <button class="confirm-btn cancel" onclick={cancelDelete} disabled={deleting}>Cancel</button>
           <button class="confirm-btn delete" onclick={confirmDelete} disabled={deleting}>

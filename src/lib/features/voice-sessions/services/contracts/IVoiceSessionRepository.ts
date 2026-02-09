@@ -27,4 +27,7 @@ export interface IVoiceSessionRepository {
 
   /** Delete a session. */
   deleteSession(sessionId: string): Promise<void>;
+
+  /** Delete oldest sessions if count exceeds MAX_SESSIONS_PER_USER. */
+  enforceSessionLimit(): Promise<number>;
 }

@@ -20,6 +20,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import type {
   VoiceSession,
   VoiceSessionPreview,
@@ -76,12 +77,16 @@ export class VoiceSessionRepository implements IVoiceSessionRepository {
     );
 
     try {
-      await setDoc(docRef, sanitizeForFirestore({
-        ...sessionWithUser,
-        startedAt: session.startedAt,
-        endedAt: session.endedAt,
-        savedAt: serverTimestamp(),
-      }));
+      await trackWrite(
+        () =>
+          setDoc(docRef, sanitizeForFirestore({
+            ...sessionWithUser,
+            startedAt: session.startedAt,
+            endedAt: session.endedAt,
+            savedAt: serverTimestamp(),
+          })),
+        "voice-sessions"
+      );
 
       return sessionWithUser;
     } catch (error) {
@@ -150,10 +155,48 @@ export class VoiceSessionRepository implements IVoiceSessionRepository {
     );
 
     try {
-      await deleteDoc(docRef);
+      await trackWrite(() => deleteDoc(docRef), "voice-sessions");
     } catch (error) {
       console.error("[VoiceSessionRepository] Failed to delete session:", error);
       throw new VoiceSessionError("Failed to delete voice session", "NETWORK");
+    }
+  }
+
+  async enforceSessionLimit(): Promise<number> {
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+
+    const collectionRef = collection(
+      firestore,
+      getUserVoiceSessionsPath(userId)
+    );
+
+    // Query all sessions ordered by date (oldest first)
+    const q = query(
+      collectionRef,
+      orderBy("startedAt", "asc")
+    );
+
+    try {
+      const snapshot = await getDocs(q);
+      const totalCount = snapshot.size;
+      const excess = totalCount - VOICE_SESSION_LIMITS.MAX_SESSIONS_PER_USER;
+
+      if (excess <= 0) return 0;
+
+      // Delete the oldest sessions to get back within limit
+      let deleted = 0;
+      for (const docSnap of snapshot.docs) {
+        if (deleted >= excess) break;
+        await trackWrite(() => deleteDoc(docSnap.ref), "voice-sessions");
+        deleted++;
+      }
+
+      console.log(`[VoiceSessionRepository] Enforced session limit: deleted ${deleted} oldest sessions`);
+      return deleted;
+    } catch (error) {
+      console.error("[VoiceSessionRepository] Failed to enforce session limit:", error);
+      return 0;
     }
   }
 

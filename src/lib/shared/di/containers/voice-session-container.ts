@@ -2,7 +2,7 @@
  * Voice Session DI Container
  *
  * Registers services for recording, formatting, persisting, analyzing,
- * and replaying voice command sessions.
+ * replaying, and promoting voice command sessions.
  */
 
 import { createContainer } from "iti";
@@ -11,6 +11,7 @@ import { VoiceSessionFormatter } from "$lib/features/voice-sessions/services/imp
 import { VoiceSessionRepository } from "$lib/features/voice-sessions/services/implementations/VoiceSessionRepository";
 import { VoiceSessionAnalyzer } from "$lib/features/voice-sessions/services/implementations/VoiceSessionAnalyzer";
 import { VoiceSessionReplayer } from "$lib/features/voice-sessions/services/implementations/VoiceSessionReplayer";
+import { TierPromotionEngine } from "$lib/features/voice-sessions/services/implementations/TierPromotionEngine";
 import type { ICommandInterpreter } from "$lib/shared/voice-control/services/contracts/ICommandInterpreter";
 
 export interface VoiceSessionContainerDeps {
@@ -24,6 +25,7 @@ export function createVoiceSessionContainer(deps: VoiceSessionContainerDeps) {
     voiceSessionRepository: () => new VoiceSessionRepository(),
     voiceSessionAnalyzer: () => new VoiceSessionAnalyzer(),
     voiceSessionReplayer: () => new VoiceSessionReplayer(deps.commandInterpreter),
+    tierPromotionEngine: () => new TierPromotionEngine(),
   });
 }
 

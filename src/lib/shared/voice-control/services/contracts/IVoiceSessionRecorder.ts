@@ -27,6 +27,9 @@ export interface RecordEventParams {
   chatDetails?: ChatResponseDetails;
 }
 
+/** Callback fired when a session ends. Used by HeyTikaListener for auto-save. */
+export type SessionEndedCallback = (session: VoiceSession) => void;
+
 export interface IVoiceSessionRecorder {
   /** Start a new recording session. No-op if already recording. */
   startSession(): void;
@@ -42,4 +45,7 @@ export interface IVoiceSessionRecorder {
 
   /** Record a single command event into the current session. No-op if not recording. */
   recordEvent(params: RecordEventParams): void;
+
+  /** Register a callback that fires when a session ends. Used for auto-save. */
+  onSessionEnded(callback: SessionEndedCallback | null): void;
 }
