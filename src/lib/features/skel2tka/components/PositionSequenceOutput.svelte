@@ -1,0 +1,218 @@
+<!--
+  PositionSequenceOutput - Beat sequence displayed as position badges
+
+  Shows each detected beat as a badge with the position label (alpha, beta, gamma)
+  and the blue/red grid locations. Provides a textual summary of the sequence.
+-->
+<script lang="ts">
+  import type { DetectedBeat } from "../domain/models";
+
+  interface Props {
+    beats: DetectedBeat[];
+  }
+
+  const { beats }: Props = $props();
+
+  function formatTime(seconds: number): string {
+    const s = seconds.toFixed(1);
+    return `${s}s`;
+  }
+
+  /** Color for position labels */
+  function positionColor(label: string | null): string {
+    switch (label) {
+      case "alpha":
+        return "#3b82f6";
+      case "beta":
+        return "#22c55e";
+      case "gamma":
+        return "#f59e0b";
+      default:
+        return "#6b7280";
+    }
+  }
+</script>
+
+<div class="sequence-output">
+  <h3 class="section-title">Detected Beats ({beats.length})</h3>
+
+  {#if beats.length === 0}
+    <p class="empty-state">No beats detected. Try a video with visible hand movements.</p>
+  {:else}
+    <div class="beat-list">
+      {#each beats as beat}
+        <div class="beat-card">
+          <div class="beat-header">
+            <span class="beat-number">Beat {beat.index + 1}</span>
+            <span class="beat-time">
+              {formatTime(beat.startTime)} - {formatTime(beat.endTime)}
+            </span>
+          </div>
+
+          <div class="beat-body">
+            {#if beat.positionLabel}
+              <span
+                class="position-badge"
+                style="--badge-color: {positionColor(beat.positionLabel)}"
+              >
+                {beat.positionLabel}
+              </span>
+            {:else}
+              <span class="position-badge unknown">?</span>
+            {/if}
+
+            <div class="hand-positions">
+              {#each beat.positions as pos}
+                <span class="hand-label" class:blue={pos.hand === "blue"} class:red={pos.hand === "red"}>
+                  {pos.hand}: {pos.location.toUpperCase()}
+                  <span class="confidence">({(pos.confidence * 100).toFixed(0)}%)</span>
+                </span>
+              {/each}
+            </div>
+          </div>
+
+          <div class="beat-meta">
+            {beat.frameCount} frames
+          </div>
+        </div>
+      {/each}
+    </div>
+
+    <div class="summary">
+      <span class="summary-label">Sequence:</span>
+      <span class="summary-value">
+        {beats.map((b) => b.positionLabel ?? "?").join(" -> ")}
+      </span>
+    </div>
+  {/if}
+</div>
+
+<style>
+  .sequence-output {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .section-title {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+    margin: 0;
+  }
+
+  .empty-state {
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    margin: 0;
+  }
+
+  .beat-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .beat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    min-width: 120px;
+  }
+
+  .beat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .beat-number {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .beat-time {
+    font-size: var(--font-size-xs, 11px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+  }
+
+  .beat-body {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .position-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: white;
+    background: var(--badge-color, #6b7280);
+    text-transform: capitalize;
+  }
+
+  .position-badge.unknown {
+    background: #6b7280;
+  }
+
+  .hand-positions {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .hand-label {
+    font-size: var(--font-size-xs, 11px);
+    text-transform: capitalize;
+  }
+
+  .hand-label.blue {
+    color: var(--prop-blue, #4a90d9);
+  }
+
+  .hand-label.red {
+    color: var(--prop-red, #d94a4a);
+  }
+
+  .confidence {
+    opacity: 0.6;
+  }
+
+  .beat-meta {
+    font-size: var(--font-size-xs, 11px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.35));
+  }
+
+  .summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 8px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .summary-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    white-space: nowrap;
+  }
+
+  .summary-value {
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text, #ffffff);
+    font-family: monospace;
+    word-break: break-all;
+  }
+</style>

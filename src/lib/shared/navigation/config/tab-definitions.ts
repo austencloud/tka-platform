@@ -668,6 +668,14 @@ export const LAB_TABS: Section[] = [
     color: "#22d3ee",
     gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
   },
+  {
+    id: "skel2tka",
+    label: "Skel2TKA",
+    icon: '<i class="fas fa-video" aria-hidden="true"></i>',
+    description: "Video-to-TKA notation pipeline",
+    color: "#f43f5e",
+    gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs

@@ -38,6 +38,7 @@
     voice: () => import("./tabs/VoiceControlLab.svelte"),
     vtg: () => import("$lib/features/vtg-lab/VtgLabModule.svelte"),
     "screenshot-gallery": () => import("./tabs/ScreenshotGalleryLab.svelte"),
+    skel2tka: () => import("$lib/features/skel2tka/Skel2TKALab.svelte"),
   };
 
   // Get current tab, default to first tab

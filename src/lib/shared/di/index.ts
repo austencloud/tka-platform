@@ -86,6 +86,7 @@ import { createVoiceControlContainer } from "./containers/voice-control-containe
 import { createComposeBrowseContainer } from "./containers/compose-browse-container";
 import { createComposeArrangeContainer } from "./containers/compose-arrange-container";
 import { createVoiceSessionContainer } from "./containers/voice-session-container";
+import { createSkel2TKAContainer } from "./containers/skel2tka-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -215,6 +216,9 @@ const loopLabelerContainer = typeof window !== 'undefined' ? createLoopLabelerCo
 const trainContainer = typeof window !== 'undefined' ? createTrainContainer(
   gamificationContainer.items.achievementManager
 ) : null as any;
+
+// Skel2TKA container - self-contained with its own IMAGE mode MediaPipe instance
+const skel2tkaContainer = typeof window !== 'undefined' ? createSkel2TKAContainer() : null as any;
 
 // Admin container needs activityLogger and presenceTracker
 const adminContainer = typeof window !== 'undefined' ? createAdminContainer({
@@ -410,6 +414,8 @@ function buildAppContainer(): any {
   c = c.add(voiceSessionContainer.items);
   c = c.add(composeBrowseContainer.items);
   c = c.add(composeArrangeContainer.items);
+  // Skel2TKA video-to-notation pipeline
+  c = c.add(skel2tkaContainer.items);
   // Cross-container services (depend on multiple container outputs)
   c = c.add({ deepLinkResolver: () => deepLinkResolver });
   c = c.add({ sequenceDataProvider: () => sequenceDataProvider });
