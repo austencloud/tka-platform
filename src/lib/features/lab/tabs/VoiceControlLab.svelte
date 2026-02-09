@@ -13,11 +13,14 @@
   import type { IVoiceSessionRecorder } from "$lib/shared/voice-control/services/contracts/IVoiceSessionRecorder";
   import type { IVoiceSessionFormatter } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionFormatter";
   import type { IVoiceSessionRepository } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionRepository";
+  import type { IVoiceSessionAnalyzer } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionAnalyzer";
+  import type { IVoiceSessionReplayer } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionReplayer";
   import type { WakeWordState } from "$lib/shared/voice-control/domain/voice-command-types";
   import type { VoiceSession } from "$lib/shared/voice-control/domain/voice-session-types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { voiceControlState } from "$lib/shared/voice-control/state/voice-control-state.svelte";
   import SavedSessionList from "$lib/features/voice-sessions/components/SavedSessionList.svelte";
+  import SessionAnalysisPanel from "$lib/features/voice-sessions/components/SessionAnalysisPanel.svelte";
 
   let detector: IWakeWordDetector | null = null;
   let interpreter: ICommandInterpreter | null = null;
@@ -25,6 +28,8 @@
   let sessionRecorder: IVoiceSessionRecorder | null = null;
   let sessionFormatter = $state<IVoiceSessionFormatter | null>(null);
   let sessionRepository = $state<IVoiceSessionRepository | null>(null);
+  let sessionAnalyzer = $state<IVoiceSessionAnalyzer | null>(null);
+  let sessionReplayer = $state<IVoiceSessionReplayer | null>(null);
 
   let supported = $state(false);
   let listening = $state(false);
@@ -65,6 +70,8 @@
       sessionRecorder = container.items.voiceSessionRecorder as IVoiceSessionRecorder;
       sessionFormatter = container.items.voiceSessionFormatter as IVoiceSessionFormatter;
       sessionRepository = container.items.voiceSessionRepository as IVoiceSessionRepository;
+      sessionAnalyzer = container.items.voiceSessionAnalyzer as IVoiceSessionAnalyzer;
+      sessionReplayer = container.items.voiceSessionReplayer as IVoiceSessionReplayer;
       supported = detector.isSupported();
       listening = detector.isListening();
       recording = sessionRecorder.isRecording();
@@ -404,7 +411,16 @@
       <SavedSessionList
         repository={sessionRepository}
         formatter={sessionFormatter}
+        replayer={sessionReplayer}
         {refreshTrigger}
+      />
+    {/if}
+
+    <!-- Pattern Analysis -->
+    {#if sessionRepository && sessionAnalyzer}
+      <SessionAnalysisPanel
+        repository={sessionRepository}
+        analyzer={sessionAnalyzer}
       />
     {/if}
 
