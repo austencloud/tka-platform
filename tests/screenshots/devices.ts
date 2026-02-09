@@ -153,30 +153,35 @@ export const PUBLIC_ROUTES: RouteConfig[] = [
     label: "landing",
     requiresAuth: false,
     isModule: false,
+    waitSelector: ".landing-page",
   },
   {
     path: "/about",
     label: "about",
     requiresAuth: false,
     isModule: false,
+    waitSelector: ".about-page",
   },
   {
     path: "/privacy",
     label: "privacy",
     requiresAuth: false,
     isModule: false,
+    waitSelector: ".privacy-page",
   },
   {
     path: "/terms",
     label: "terms",
     requiresAuth: false,
     isModule: false,
+    waitSelector: ".terms-page",
   },
   {
     path: "/roots",
     label: "roots",
     requiresAuth: false,
     isModule: false,
+    waitSelector: ".roots-page",
   },
 ];
 

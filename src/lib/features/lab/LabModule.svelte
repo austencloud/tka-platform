@@ -37,6 +37,7 @@
     connect: () => import("$lib/features/connect/ConnectModule.svelte"),
     voice: () => import("./tabs/VoiceControlLab.svelte"),
     vtg: () => import("$lib/features/vtg-lab/VtgLabModule.svelte"),
+    "screenshot-gallery": () => import("./tabs/ScreenshotGalleryLab.svelte"),
   };
 
   // Get current tab, default to first tab

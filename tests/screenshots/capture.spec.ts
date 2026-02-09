@@ -8,13 +8,17 @@
 
 import { test, type Page } from "@playwright/test";
 import { existsSync, readFileSync } from "fs";
-import { join } from "path";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 import {
   PUBLIC_ROUTES,
   ALL_ROUTES,
   matchRoutes,
   type RouteConfig,
 } from "./devices";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Timeout constants — values determined by observing average load times + buffer
 const TIMEOUTS = {
@@ -37,7 +41,7 @@ const TIMEOUTS = {
   LOADING_DISAPPEAR: 8000,
   FINAL_SETTLE: 500,
   SPA_RELOAD_SETTLE: 1500,
-  PUBLIC_ROUTE_SETTLE: 1000,
+  PUBLIC_ROUTE_SETTLE: 3000,
 } as const;
 
 // ─── Resolve which routes to capture ──────────────────────────────────────────
@@ -244,13 +248,98 @@ async function dismissModals(page: Page): Promise<void> {
   }
 }
 
+// ─── Splash Screen Dismissal ─────────────────────────────────────────────────
+
+/**
+ * Force-dismiss the app.html splash screen via JavaScript injection.
+ *
+ * Public routes bypass the main +layout.svelte which calls __tkaLoadProgress(100).
+ * Without that call, the splash only disappears after its 15-second safety timeout.
+ * Instead of waiting 15s per test, we call __tkaLoadProgress(100) ourselves to
+ * trigger the normal dismissal flow (crossfade "Ready" message → fade out → remove).
+ *
+ * We then wait for the element to actually detach from the DOM, with a generous
+ * timeout to cover the fade animation (~1.4s) plus buffer.
+ */
+async function dismissSplashScreen(page: Page): Promise<void> {
+  // Trigger the normal dismissal flow if the splash is still present
+  await page.evaluate(() => {
+    const screen = document.getElementById("app-loading");
+    if (screen && typeof (window as any).__tkaLoadProgress === "function") {
+      (window as any).__tkaLoadProgress(100, "Ready");
+    } else if (screen) {
+      // Fallback: directly remove if the progress function isn't available
+      screen.classList.add("loaded");
+      screen.addEventListener("transitionend", () => screen.remove());
+      // Safety: remove after 500ms even if transitionend doesn't fire
+      setTimeout(() => screen.remove(), 500);
+    }
+  });
+
+  // Wait for the splash element to be fully removed from the DOM
+  try {
+    await page.waitForSelector("#app-loading", {
+      state: "detached",
+      timeout: 5000,
+    });
+  } catch {
+    // Already gone, or was never present
+  }
+}
+
 // ─── Content Stabilization ────────────────────────────────────────────────────
 
 async function stabilize(page: Page, route: RouteConfig): Promise<void> {
-  // Wait for fonts
+  // 1. Dismiss the splash screen immediately via JS injection.
+  //    Public routes bypass the main layout that calls __tkaLoadProgress(100),
+  //    so the splash would otherwise sit for 15 seconds on its safety timeout.
+  await dismissSplashScreen(page);
+
+  // 2. Wait for route-specific content selector — proves actual page content rendered.
+  //    This is the CRITICAL check. Without this, we capture black/splash screens.
+  if (route.waitSelector) {
+    const selectors = route.waitSelector.split(",").map((s) => s.trim());
+    let found = false;
+    for (const selector of selectors) {
+      try {
+        await page.waitForSelector(selector, {
+          state: "visible",
+          timeout: TIMEOUTS.SELECTOR_WAIT,
+        });
+        found = true;
+        break;
+      } catch {
+        // Try next selector
+      }
+    }
+    if (!found) {
+      console.warn(`[stabilize] No content selector found for ${route.label}`);
+    }
+  }
+
+  // 3. Wait for network to settle (non-blocking — fonts, images, etc.)
+  await page
+    .waitForLoadState("networkidle", { timeout: TIMEOUTS.NETWORK_IDLE })
+    .catch(() => {});
+
+  // 4. Wait for fonts to finish loading
   await page.evaluate(() => document.fonts.ready);
 
-  // Freeze animations for consistent screenshots
+  // 5. Also wait for generic "Loading" text (used by some component loading states)
+  try {
+    const loading = page.locator("text=Loading");
+    if (await loading.isVisible({ timeout: 300 }).catch(() => false)) {
+      await loading.waitFor({
+        state: "hidden",
+        timeout: TIMEOUTS.LOADING_DISAPPEAR,
+      });
+    }
+  } catch {
+    // Not present, fine
+  }
+
+  // 6. Freeze animations for deterministic screenshots.
+  //    Done AFTER content loads so CSS animations don't interfere with rendering.
   await page.addStyleTag({
     content: `
       *, *::before, *::after {
@@ -262,35 +351,7 @@ async function stabilize(page: Page, route: RouteConfig): Promise<void> {
     `,
   });
 
-  // Wait for network to settle (non-blocking)
-  await page
-    .waitForLoadState("networkidle", { timeout: TIMEOUTS.NETWORK_IDLE })
-    .catch(() => {});
-
-  // Wait for route-specific selector
-  if (route.waitSelector) {
-    const selectors = route.waitSelector.split(",").map((s) => s.trim());
-    for (const selector of selectors) {
-      try {
-        await page.waitForSelector(selector, { timeout: TIMEOUTS.SELECTOR_WAIT });
-        break;
-      } catch {
-        // Try next selector
-      }
-    }
-  }
-
-  // Wait for "Loading" to disappear
-  try {
-    await page.waitForSelector("text=Loading", {
-      state: "hidden",
-      timeout: TIMEOUTS.LOADING_DISAPPEAR,
-    });
-  } catch {
-    // Loading text might not be present
-  }
-
-  // Final settle
+  // 7. Final settle — let the paint cycle complete after freezing animations
   await page.waitForTimeout(TIMEOUTS.FINAL_SETTLE);
 }
 
@@ -338,6 +399,7 @@ if (publicRoutes.length > 0) {
       test(`${route.label}`, async ({ page }, testInfo) => {
         const deviceSlug = testInfo.project.name;
         await page.goto(route.path, { waitUntil: "load", timeout: TIMEOUTS.ROUTE_LOAD });
+        await dismissSplashScreen(page);
         await stabilize(page, route);
 
         const filename = `${route.label}--${deviceSlug}.png`;

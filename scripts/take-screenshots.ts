@@ -15,7 +15,12 @@
 
 import { execSync } from "child_process";
 import { existsSync, mkdirSync, rmSync, readdirSync } from "fs";
-import { join } from "path";
+import http from "http";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const ROOT = join(__dirname, "..");
 const CAPTURES_DIR = join(ROOT, "tests", "screenshots", "captures");
@@ -39,12 +44,23 @@ if (devicesIdx !== -1 && args[devicesIdx + 1]) {
 }
 
 // Route patterns: anything that doesn't start with "--"
-const routePatterns = args.filter(
-  (a) =>
-    !a.startsWith("--") &&
-    a !== deviceFilter &&
-    (args.indexOf(a) === 0 || args[args.indexOf(a) - 1] !== "--devices")
-);
+// Git Bash on Windows expands /foo to C:/Program Files/Git/foo — detect and strip
+function stripGitBashExpansion(arg: string): string {
+  const gitBashPrefix = /^[A-Z]:\/Program Files\/Git\//i;
+  if (gitBashPrefix.test(arg)) {
+    return "/" + arg.replace(gitBashPrefix, "");
+  }
+  return arg;
+}
+
+const routePatterns = args
+  .filter(
+    (a) =>
+      !a.startsWith("--") &&
+      a !== deviceFilter &&
+      (args.indexOf(a) === 0 || args[args.indexOf(a) - 1] !== "--devices")
+  )
+  .map(stripGitBashExpansion);
 
 // ─── Env Vars ─────────────────────────────────────────────────────────────────
 
@@ -57,25 +73,29 @@ if (routePatterns.length > 0) env.SCREENSHOT_ROUTES = routePatterns.join(",");
 
 // ─── Preflight Checks ─────────────────────────────────────────────────────────
 
-function checkDevServer(): boolean {
-  try {
-    execSync("curl -s -o /dev/null -w '%{http_code}' http://localhost:5173", {
-      timeout: 5000,
-      stdio: "pipe",
+function checkDevServer(): Promise<boolean> {
+  // Use 127.0.0.1 explicitly — Node 18+ resolves "localhost" to IPv6 (::1) first,
+  // but Vite only binds to IPv4 by default, causing ERR_CONNECTION_REFUSED.
+  return new Promise((resolve) => {
+    const req = http.get("http://127.0.0.1:5173", { timeout: 5000 }, (res) => {
+      res.resume();
+      resolve(res.statusCode !== undefined && res.statusCode < 500);
     });
-    return true;
-  } catch {
-    return false;
-  }
+    req.on("error", () => resolve(false));
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-function main() {
+async function main() {
   console.log("\n  Screenshot Capture\n");
 
   // Check dev server
-  if (!checkDevServer()) {
+  if (!(await checkDevServer())) {
     console.error(
       "  Dev server not reachable at localhost:5173.\n" +
         "  Start it first: npm run dev (in VS Code)\n"
@@ -134,7 +154,7 @@ function main() {
       cwd: ROOT,
       stdio: "inherit",
       env,
-      timeout: 300_000, // 5 minutes max
+      timeout: 900_000, // 15 minutes max (1 worker × 9 devices × ~15s/test)
     });
   } catch (error) {
     // Playwright may exit non-zero if some tests fail. Continue to gallery.

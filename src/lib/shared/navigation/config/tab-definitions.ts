@@ -660,6 +660,14 @@ export const LAB_TABS: Section[] = [
     color: "#f59e0b",
     gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
+  {
+    id: "screenshot-gallery",
+    label: "Screenshots",
+    icon: '<i class="fas fa-camera" aria-hidden="true"></i>',
+    description: "Multi-device screenshot gallery",
+    color: "#22d3ee",
+    gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs

@@ -12,8 +12,12 @@
  */
 
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, copyFileSync } from "fs";
-import { join, basename } from "path";
+import { join, basename, dirname } from "path";
+import { fileURLToPath } from "url";
 import { DEVICES } from "./devices";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const CAPTURES_DIR = join(__dirname, "captures");
 const BASELINES_DIR = join(__dirname, "baselines");
@@ -202,6 +206,12 @@ function imageToDataUrl(filePath: string): string {
   return `data:image/png;base64,${buffer.toString("base64")}`;
 }
 
+function getDeviceDimensions(slug: string): { w: number; h: number } | null {
+  const device = DEVICES.find((d) => d.slug === slug);
+  if (!device) return null;
+  return { w: device.width, h: device.height };
+}
+
 function generateHTML(
   groups: Map<string, CaptureInfo[]>,
   diffs: Map<string, DiffResult>
@@ -213,25 +223,38 @@ function generateHTML(
   );
 
   let sectionsHTML = "";
+  let diffModalData: Array<{
+    id: string;
+    label: string;
+    device: string;
+    currentUrl: string;
+    baselineUrl: string;
+    diffUrl: string;
+    percent: number;
+  }> = [];
 
   for (const [routeLabel, captures] of groups) {
-    // Sort by device category: phones, tablets, desktops
+    // Sort by device category then by width (smallest first for natural phone comparison)
     const order = { phone: 0, tablet: 1, desktop: 2 };
     captures.sort((a, b) => {
       const catA = getCategory(a.deviceSlug);
       const catB = getCategory(b.deviceSlug);
-      return (order[catA] ?? 3) - (order[catB] ?? 3);
+      const catDiff = (order[catA] ?? 3) - (order[catB] ?? 3);
+      if (catDiff !== 0) return catDiff;
+      const dimA = getDeviceDimensions(a.deviceSlug);
+      const dimB = getDeviceDimensions(b.deviceSlug);
+      return (dimA?.w ?? 0) - (dimB?.w ?? 0);
     });
 
     let cardsHTML = "";
     for (const cap of captures) {
       const dataUrl = imageToDataUrl(cap.path);
       const category = getCategory(cap.deviceSlug);
+      const dims = getDeviceDimensions(cap.deviceSlug);
+      const dimsLabel = dims ? `${dims.w}x${dims.h}` : "";
       const diff = diffs.get(cap.filename);
 
       let diffBadge = "";
-      let diffImageHTML = "";
-
       if (diff) {
         const color =
           diff.diffPercent === 0
@@ -239,30 +262,38 @@ function generateHTML(
             : diff.diffPercent < 1
               ? "#ff9800"
               : "#f44336";
-        diffBadge = `<span class="diff-badge" style="background:${color}">${diff.diffPercent}% diff</span>`;
+        const diffId = `diff-${cap.filename.replace(/[^a-zA-Z0-9]/g, "-")}`;
+        diffBadge = `<button class="diff-badge" style="background:${color}" onclick="event.stopPropagation(); openDiffModal('${diffId}')">${diff.diffPercent}% diff</button>`;
 
         if (diff.diffDataUrl) {
-          diffImageHTML = `
-            <div class="diff-row">
-              <div class="diff-label">Baseline</div>
-              <img src="${imageToDataUrl(join(BASELINES_DIR, cap.filename))}" class="diff-img" alt="baseline" />
-              <div class="diff-label">Diff</div>
-              <img src="${diff.diffDataUrl}" class="diff-img" alt="diff overlay" />
-            </div>
-          `;
+          diffModalData.push({
+            id: diffId,
+            label: routeLabel,
+            device: cap.deviceSlug,
+            currentUrl: dataUrl,
+            baselineUrl: imageToDataUrl(join(BASELINES_DIR, cap.filename)),
+            diffUrl: diff.diffDataUrl,
+            percent: diff.diffPercent,
+          });
         }
       }
 
+      // Calculate proportional width based on aspect ratio at fixed row height
+      const aspectRatio = dims ? dims.w / dims.h : 0.5;
+
       cardsHTML += `
-        <div class="card" data-category="${category}" data-device="${cap.deviceSlug}">
+        <div class="card" data-category="${category}" data-device="${cap.deviceSlug}"
+             style="--aspect: ${aspectRatio.toFixed(4)}">
           <div class="card-header">
             <span class="device-name">${cap.deviceSlug}</span>
+            <span class="device-dims">${dimsLabel}</span>
             <span class="device-cat ${category}">${category}</span>
             ${diffBadge}
           </div>
-          <img src="${dataUrl}" class="screenshot" alt="${routeLabel} on ${cap.deviceSlug}"
-               onclick="openLightbox(this.src, '${routeLabel} — ${cap.deviceSlug}')" />
-          ${diffImageHTML}
+          <div class="screenshot-frame">
+            <img src="${dataUrl}" class="screenshot" alt="${routeLabel} on ${cap.deviceSlug}"
+                 onclick="openLightbox(this.src, '${routeLabel} — ${cap.deviceSlug} (${dimsLabel})')" />
+          </div>
         </div>
       `;
     }
@@ -270,8 +301,40 @@ function generateHTML(
     sectionsHTML += `
       <section class="route-section">
         <h2>${routeLabel}</h2>
-        <div class="device-grid">${cardsHTML}</div>
+        <div class="device-row">${cardsHTML}</div>
       </section>
+    `;
+  }
+
+  // Build diff modals HTML
+  let diffModalsHTML = "";
+  for (const dm of diffModalData) {
+    const color =
+      dm.percent === 0 ? "#4caf50" : dm.percent < 1 ? "#ff9800" : "#f44336";
+    diffModalsHTML += `
+      <div class="diff-modal" id="${dm.id}" onclick="if(event.target===this)closeDiffModal()">
+        <div class="diff-modal-content">
+          <div class="diff-modal-header">
+            <span>${dm.label} — ${dm.device}</span>
+            <span class="diff-badge-inline" style="background:${color}">${dm.percent}% diff</span>
+            <button class="diff-close" onclick="closeDiffModal()">&times;</button>
+          </div>
+          <div class="diff-three-up">
+            <div class="diff-column">
+              <div class="diff-col-label">Baseline</div>
+              <img src="${dm.baselineUrl}" alt="baseline" />
+            </div>
+            <div class="diff-column">
+              <div class="diff-col-label">Current</div>
+              <img src="${dm.currentUrl}" alt="current" />
+            </div>
+            <div class="diff-column">
+              <div class="diff-col-label">Diff</div>
+              <img src="${dm.diffUrl}" alt="diff" />
+            </div>
+          </div>
+        </div>
+      </div>
     `;
   }
 
@@ -289,6 +352,8 @@ function generateHTML(
       color: #e0e0e0;
       padding: 24px;
     }
+
+    /* ── Header ── */
     header {
       display: flex;
       justify-content: space-between;
@@ -301,9 +366,15 @@ function generateHTML(
     }
     header h1 { font-size: 20px; font-weight: 600; }
     .meta { font-size: 13px; color: #888; }
+    .controls {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
     .filters {
       display: flex;
-      gap: 8px;
+      gap: 6px;
     }
     .filter-btn {
       padding: 6px 14px;
@@ -317,79 +388,114 @@ function generateHTML(
     }
     .filter-btn:hover { border-color: #888; }
     .filter-btn.active { background: #2a6ccf; border-color: #2a6ccf; color: #fff; }
-    .route-section { margin-bottom: 48px; }
+
+    .size-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #888;
+    }
+    .size-control input[type="range"] {
+      width: 100px;
+      accent-color: #2a6ccf;
+    }
+
+    /* ── Route sections ── */
+    .route-section { margin-bottom: 40px; }
     .route-section h2 {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 500;
-      margin-bottom: 16px;
-      padding: 8px 12px;
+      margin-bottom: 12px;
+      padding: 6px 12px;
       background: #1a1a2a;
       border-radius: 6px;
       display: inline-block;
     }
-    .device-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
+
+    /* ── Device row: horizontal flex, scroll when needed ── */
+    .device-row {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.15) transparent;
+      align-items: flex-start;
     }
+    .device-row::-webkit-scrollbar { height: 6px; }
+    .device-row::-webkit-scrollbar-track { background: transparent; }
+    .device-row::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.15);
+      border-radius: 3px;
+    }
+
+    /* ── Card: width proportional to device aspect ratio ── */
     .card {
+      flex: 0 0 auto;
+      width: calc(var(--row-height, 600px) * var(--aspect, 0.5));
+      min-width: 120px;
       background: #1a1a1a;
       border: 1px solid #2a2a2a;
       border-radius: 8px;
       overflow: hidden;
-      transition: opacity 0.2s;
+      transition: border-color 0.15s;
     }
+    .card:hover { border-color: #444; }
     .card.hidden { display: none; }
+
     .card-header {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      font-size: 13px;
+      gap: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
       border-bottom: 1px solid #2a2a2a;
+      flex-wrap: wrap;
     }
-    .device-name { font-weight: 500; }
+    .device-name { font-weight: 600; font-size: 12px; }
+    .device-dims { color: #666; font-size: 11px; font-variant-numeric: tabular-nums; }
     .device-cat {
-      font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 4px;
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 3px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     .device-cat.phone { background: #1a3a2a; color: #4caf50; }
     .device-cat.tablet { background: #2a2a1a; color: #ff9800; }
     .device-cat.desktop { background: #1a2a3a; color: #42a5f5; }
+
     .diff-badge {
       margin-left: auto;
-      font-size: 11px;
+      font-size: 10px;
       padding: 2px 6px;
-      border-radius: 4px;
+      border-radius: 3px;
       color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    .diff-badge:hover { filter: brightness(1.2); }
+
+    /* ── Screenshot frame: fixed height, contains image ── */
+    .screenshot-frame {
+      height: var(--row-height, 600px);
+      overflow: hidden;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      background: #111;
     }
     .screenshot {
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: contain;
+      object-position: top center;
       display: block;
       cursor: pointer;
     }
-    .diff-row {
-      padding: 8px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .diff-label {
-      font-size: 11px;
-      color: #888;
-      text-align: center;
-    }
-    .diff-img {
-      width: 100%;
-      height: auto;
-      border-radius: 4px;
-    }
 
-    /* Lightbox */
+    /* ── Lightbox ── */
     .lightbox {
       display: none;
       position: fixed;
@@ -413,6 +519,76 @@ function generateHTML(
       font-size: 14px;
       color: #aaa;
     }
+
+    /* ── Diff modal: three-up comparison ── */
+    .diff-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+    .diff-modal.open { display: flex; }
+    .diff-modal-content {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      max-width: 95vw;
+      max-height: 95vh;
+      overflow: auto;
+    }
+    .diff-modal-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #333;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .diff-badge-inline {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #fff;
+    }
+    .diff-close {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .diff-close:hover { color: #fff; }
+    .diff-three-up {
+      display: flex;
+      gap: 2px;
+      padding: 12px;
+    }
+    .diff-column {
+      flex: 1;
+      min-width: 0;
+    }
+    .diff-col-label {
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .diff-column img {
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -421,15 +597,24 @@ function generateHTML(
       <h1>Screenshot Gallery</h1>
       <div class="meta">${totalScreenshots} screenshots across ${groups.size} screens — ${timestamp}${compareMode ? " — COMPARE MODE" : ""}</div>
     </div>
-    <div class="filters">
-      <button class="filter-btn active" onclick="filterDevices('all')">All</button>
-      <button class="filter-btn" onclick="filterDevices('phone')">Phone</button>
-      <button class="filter-btn" onclick="filterDevices('tablet')">Tablet</button>
-      <button class="filter-btn" onclick="filterDevices('desktop')">Desktop</button>
+    <div class="controls">
+      <div class="filters">
+        <button class="filter-btn active" onclick="filterDevices('all', this)">All</button>
+        <button class="filter-btn" onclick="filterDevices('phone', this)">Phone</button>
+        <button class="filter-btn" onclick="filterDevices('tablet', this)">Tablet</button>
+        <button class="filter-btn" onclick="filterDevices('desktop', this)">Desktop</button>
+      </div>
+      <div class="size-control">
+        <label for="row-height">Height</label>
+        <input type="range" id="row-height" min="300" max="900" value="600" oninput="setRowHeight(this.value)" />
+        <span id="row-height-label">600px</span>
+      </div>
     </div>
   </header>
 
   ${sectionsHTML}
+
+  ${diffModalsHTML}
 
   <div class="lightbox" id="lightbox" onclick="closeLightbox()">
     <img id="lightbox-img" src="" alt="" />
@@ -437,32 +622,42 @@ function generateHTML(
   </div>
 
   <script>
-    function filterDevices(category) {
-      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
-
+    function filterDevices(category, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
       document.querySelectorAll('.card').forEach(card => {
-        if (category === 'all' || card.dataset.category === category) {
-          card.classList.remove('hidden');
-        } else {
-          card.classList.add('hidden');
-        }
+        card.classList.toggle('hidden', category !== 'all' && card.dataset.category !== category);
       });
     }
 
+    function setRowHeight(px) {
+      document.documentElement.style.setProperty('--row-height', px + 'px');
+      document.getElementById('row-height-label').textContent = px + 'px';
+    }
+
     function openLightbox(src, caption) {
-      const lb = document.getElementById('lightbox');
       document.getElementById('lightbox-img').src = src;
       document.getElementById('lightbox-caption').textContent = caption;
-      lb.classList.add('open');
+      document.getElementById('lightbox').classList.add('open');
     }
 
     function closeLightbox() {
       document.getElementById('lightbox').classList.remove('open');
     }
 
+    function openDiffModal(id) {
+      document.getElementById(id).classList.add('open');
+    }
+
+    function closeDiffModal() {
+      document.querySelectorAll('.diff-modal.open').forEach(m => m.classList.remove('open'));
+    }
+
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'Escape') {
+        closeDiffModal();
+        closeLightbox();
+      }
     });
   </script>
 </body>

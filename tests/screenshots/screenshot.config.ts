@@ -30,15 +30,15 @@ const activeDevices = resolveDeviceFilter();
 export default defineConfig({
   testDir: ".",
   testMatch: "capture.spec.ts",
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
-  workers: 4,
+  workers: 1,
   timeout: 60_000,
   reporter: [["list"]],
 
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: "http://127.0.0.1:5173",
     trace: "off",
     screenshot: "off",
     video: "off",
