@@ -101,7 +101,6 @@
     hapticService?.trigger("selection");
     // TODO: Implement video/media lightbox for feed items
     // Previously used spotlight viewer which has been deprecated
-    console.log("[FeedTab] Card clicked:", item.contentType, item.videoUrl || item.animationUrl || item.thumbnailUrl);
   }
 
   function handleCreatorClick(creatorId: string, creatorName: string) {

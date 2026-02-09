@@ -74,12 +74,10 @@ export class VideoCuratorLoader implements IVideoCuratorLoader {
 
       if (snapshot.exists()) {
         const data = snapshot.data();
-        console.log("[VideoCuratorLoader] Loaded categories from Firestore:", data.categories);
         if (data.categories && Array.isArray(data.categories)) {
           return data.categories;
         }
       }
-      console.log("[VideoCuratorLoader] No categories in Firestore, using defaults");
       return DEFAULT_CATEGORIES;
     } catch (e) {
       console.warn("Failed to load categories, using defaults:", e);
@@ -97,12 +95,10 @@ export class VideoCuratorLoader implements IVideoCuratorLoader {
 
       if (snapshot.exists()) {
         const data = snapshot.data();
-        console.log("[VideoCuratorLoader] Loaded quick performers from Firestore:", data.performers);
         if (data.performers && Array.isArray(data.performers)) {
           return data.performers;
         }
       }
-      console.log("[VideoCuratorLoader] No quick performers in Firestore, using defaults");
       return DEFAULT_QUICK_PERFORMERS;
     } catch (e) {
       console.warn("Failed to load quick performers, using defaults:", e);

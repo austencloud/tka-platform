@@ -234,44 +234,28 @@
   });
 
   function enterEditMode(pane: 'animation' | 'image') {
-    const start = performance.now();
-    console.log(`[MODAL TIMING] enterEditMode('${pane}') START`);
-
     hapticService?.trigger("selection");
-    console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: haptic triggered`);
-
     editingPane = pane;
-    console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: editingPane set`);
 
     // On desktop, also enter fullscreen for maximum screen real estate
     if (!isMobile && !isFullscreen) {
       isFullscreen = true;
-      console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: isFullscreen set to true`);
     }
 
     accessibilityHelper.announce(`${pane === 'animation' ? 'Animation' : 'Image'} expanded. Tap to collapse.`);
-    console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: enterEditMode COMPLETE`);
   }
 
   function exitEditMode() {
-    const start = performance.now();
-    console.log(`[MODAL TIMING] exitEditMode START`);
-
     hapticService?.trigger("selection");
-    console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: haptic triggered`);
-
     editingPane = null;
-    console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: editingPane set to null`);
 
     // On desktop, also exit fullscreen when unfocusing
     if (!isMobile && isFullscreen) {
       isFullscreen = false;
       fullscreenControlsVisible = false;
-      console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: isFullscreen set to false`);
     }
 
     accessibilityHelper.announce("Split view restored");
-    console.log(`[MODAL TIMING] +${(performance.now() - start).toFixed(2)}ms: exitEditMode COMPLETE`);
   }
 
   // Export mode functions
@@ -504,10 +488,7 @@
   // Sync fullscreen state to dialog element (BaseModal doesn't pass data attributes through)
   // This effect tracks isFullscreen and updates the dialog's data-fullscreen attribute
   $effect(() => {
-    const effectStart = performance.now();
-    // Track isFullscreen dependency explicitly
     const fullscreenState = isFullscreen;
-    console.log(`[EFFECT TIMING] fullscreen sync effect running, isFullscreen=${fullscreenState}`);
 
     const dialog = document.querySelector("dialog.sequence-details-modal") as HTMLDialogElement | null;
     if (dialog) {
@@ -517,7 +498,6 @@
         dialog.removeAttribute("data-fullscreen");
       }
     }
-    console.log(`[EFFECT TIMING] fullscreen sync effect done in ${(performance.now() - effectStart).toFixed(2)}ms`);
   });
 
   function loadViewMode(): ViewMode {

@@ -348,7 +348,6 @@
       const currentHash = getSequenceHash(currentSequence);
       if (currentHash !== lastSequenceHash && lastSequenceHash !== null) {
         // Sequence content changed - sync to animation
-        console.log('[ShareHubCoordinator] Syncing sequence changes to animation');
         playbackController.updateSequenceData(currentSequence);
         animationPanelState.setSequenceData(currentSequence);
       }

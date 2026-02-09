@@ -128,19 +128,14 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
 
     try {
       const hash = getSequencePathHash(seqData, totalSteps, stepDurationMs);
-      console.log(`[TRANSFORM-DIAG precompute] hash="${hash.slice(0, 80)}...", globalCacheSize=${globalPathCacheMap.size}, globalCacheKeys=[${[...globalPathCacheMap.keys()].map(k => k.slice(0, 40)).join(', ')}]`);
-
       // Check global cache first — avoids re-precomputing after drag-to-move
       const cached = globalPathCacheMap.get(hash);
       if (cached?.isValid()) {
-        console.log(`[TRANSFORM-DIAG precompute] HIT global cache for hash "${hash.slice(0, 40)}..."`);
         this.pathCache = cached;
         this.TrailCapturer.setAnimationCacheService(cached);
         this.state.pathCacheData = cached.getCacheData();
         return;
       }
-      console.log(`[TRANSFORM-DIAG precompute] MISS global cache, will precompute fresh`);
-
       this.state.isCachePrecomputing = true;
 
       // Abort any in-flight precomputation before starting a new one

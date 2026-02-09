@@ -140,7 +140,6 @@ export class SvgImageCache {
                 /<svg([^>]*)>/,
                 `<svg$1 width="${width}" height="${height}">`
               );
-              console.log(`[SvgImageCache] Added width=${width} height=${height} to SVG`);
             }
           }
         }
@@ -201,15 +200,11 @@ export class SvgImageCache {
       const relativePath = url.startsWith('/') ? url.slice(1) : url;
       const filePath = path.join(process.cwd(), 'static', relativePath);
 
-      console.log(`[SvgImageCache] Loading from file system: ${filePath}`);
-
       // Read the SVG file
       const svgContent = fs.readFileSync(filePath, 'utf-8');
-      console.log(`[SvgImageCache] Read ${svgContent.length} bytes`);
 
       // Convert SVG string to Image using our existing method
       const img = await this.nodeSvgToImage(svgContent);
-      console.log(`[SvgImageCache] Converted to image: ${img.width}x${img.height}`);
       return img;
     } catch (error) {
       console.error(`[SvgImageCache] Failed to load ${url}:`, error);

@@ -7,7 +7,6 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 
 export class VideoCuratorPersister implements IVideoCuratorPersister {
   async saveCategories(categories: VideoCategory[]): Promise<void> {
-    console.log("[VideoCuratorPersister] Saving categories:", categories);
     const { doc, setDoc } = await import("firebase/firestore");
     const db = await getFirestoreInstance();
 
@@ -15,11 +14,9 @@ export class VideoCuratorPersister implements IVideoCuratorPersister {
       categories,
       updatedAt: new Date(),
     });
-    console.log("[VideoCuratorPersister] Categories saved successfully");
   }
 
   async saveQuickPerformers(performers: UserProfile[]): Promise<void> {
-    console.log("[VideoCuratorPersister] Saving quick performers:", performers);
     const { doc, setDoc } = await import("firebase/firestore");
     const db = await getFirestoreInstance();
 
@@ -27,7 +24,6 @@ export class VideoCuratorPersister implements IVideoCuratorPersister {
       performers: performers.map((p) => ({ id: p.id, displayName: p.displayName })),
       updatedAt: new Date(),
     });
-    console.log("[VideoCuratorPersister] Quick performers saved successfully");
   }
 
   async updateVideo(shortcode: string, updates: VideoUpdateData): Promise<void> {

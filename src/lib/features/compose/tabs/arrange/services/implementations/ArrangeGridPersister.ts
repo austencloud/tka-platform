@@ -175,9 +175,6 @@ export class ArrangeGridPersister implements IArrangeGridPersister {
       }
 
       localStorage.removeItem(SAVED_COMPOSITIONS_KEY);
-      console.log(
-        `Migrated ${saved.length} composition(s) from localStorage to Dexie`
-      );
     } catch (err) {
       console.warn("Failed to migrate localStorage compositions:", err);
       // Non-fatal - compositions remain in localStorage for next attempt

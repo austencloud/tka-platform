@@ -9,8 +9,7 @@
 
   let isPickerOpen = $state(false);
 
-  async function handlePhotoSelected(photoData: PhotoSelection) {
-    console.log("Photo selected:", photoData);
+  async function handlePhotoSelected(_photoData: PhotoSelection) {
     isPickerOpen = false;
   }
 </script>

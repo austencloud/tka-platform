@@ -596,10 +596,7 @@ export class AnimationEngine {
     // This ensures duration changes are reflected in the animation
     if (props.sequenceData && this.orchestrator) {
       const newHash = this.getSequenceContentHash(props.sequenceData);
-      // DEBUG-TRANSFORM: Log every hash comparison to trace transform detection
       if (newHash !== this.lastSequenceContentHash) {
-        console.log(`[TRANSFORM-DIAG] Hash CHANGED: "${this.lastSequenceContentHash?.slice(0, 60)}..." → "${newHash.slice(0, 60)}..."`);
-        console.log(`[TRANSFORM-DIAG] usePathCache=${this.state.trailSettings.usePathCache}, hasPrecompService=${!!this.precomputationService}`);
         this.orchestrator.initializeWithDomainData(props.sequenceData);
         this.lastSequenceContentHash = newHash;
 
@@ -614,7 +611,6 @@ export class AnimationEngine {
           // 1 second per beat (step.duration is beat COUNT, not milliseconds)
           const stepDurationMs = 1000;
 
-          console.log(`[TRANSFORM-DIAG] Triggering precomputation for ${totalSteps} steps`);
           // Precompute paths and update render loop's cache reference
           this.precomputationService
             .precomputeAnimationPaths(
@@ -626,17 +622,13 @@ export class AnimationEngine {
             .then(() => {
               // Update render loop with the now-populated cache
               const pathCache = this.precomputationService?.getPathCache();
-              console.log(`[TRANSFORM-DIAG] Precomputation DONE. pathCache=${!!pathCache}, valid=${pathCache?.isValid()}, renderLoop=${!!this.renderLoopService}`);
               if (pathCache && this.renderLoopService) {
                 this.renderLoopService.updateConfig({ pathCache });
-                console.log(`[TRANSFORM-DIAG] Render loop updated with new cache`);
               }
             })
             .catch((err) => {
               console.error(`[TRANSFORM-DIAG] Precomputation FAILED:`, err);
             });
-        } else {
-          console.log(`[TRANSFORM-DIAG] Precomputation SKIPPED - usePathCache=${this.state.trailSettings.usePathCache}`);
         }
       }
     }

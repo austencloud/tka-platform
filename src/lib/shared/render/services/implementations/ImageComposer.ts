@@ -396,7 +396,6 @@ export class ImageComposer implements IImageComposer {
           effectiveBluePropType,
           effectiveRedPropType
         );
-        console.log("[ImageComposer] QR rendered at:", emptyCell);
       }
     }
 
@@ -564,14 +563,11 @@ export class ImageComposer implements IImageComposer {
           this.layer1Misses++;
           this.compositionFreshRenders++;
 
-          const freshStart = performance.now();
-
           // Ensure Canvas 2D renderer is initialized (loads assets on first call)
           await this.ensureCanvas2DInitialized();
 
           // Render pictograph directly to canvas
           // Note: stepNumber is handled separately via overlay, so we pass undefined here
-          const renderStart = performance.now();
           const pictographCanvas = await this.canvas2DRenderer.renderPictograph(
             pictographData,
             {
@@ -581,17 +577,8 @@ export class ImageComposer implements IImageComposer {
               redPropType: redPropType,
             }
           );
-          const renderTime = performance.now() - renderStart;
-
           // Convert canvas to image for caching
-          const convertStart = performance.now();
           img = await this.canvasToImage(pictographCanvas);
-          const convertTime = performance.now() - convertStart;
-
-          const freshTotal = performance.now() - freshStart;
-          if (freshTotal > 100) {
-            console.log(`[Fresh] ${freshTotal.toFixed(0)}ms total: render=${renderTime.toFixed(0)}ms, toImage=${convertTime.toFixed(0)}ms`);
-          }
 
           // Convert image to blob for L1 cache (async, non-blocking)
           this.imageToBlob(img).then((blob) => {

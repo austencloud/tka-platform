@@ -54,7 +54,6 @@
       return;
     }
 
-    console.log("[ModalUrlRestorer] Redirecting legacy modal URL to /sequence/ route:", state);
     isLoading = true;
     loadError = null;
 

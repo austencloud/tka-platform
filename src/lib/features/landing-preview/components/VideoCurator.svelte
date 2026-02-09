@@ -182,7 +182,6 @@
 
   function enterRenameMode() {
     // TODO: Implement rename mode if needed
-    console.log("Rename mode not yet implemented");
   }
 
   function selectVideo(video: ShowcaseVideo) {

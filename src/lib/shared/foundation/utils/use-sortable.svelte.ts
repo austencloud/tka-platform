@@ -28,29 +28,11 @@ export function useSortable(
       return;
     }
 
-    console.log("[useSortable] Creating Sortable instance on:", sortableEl);
-
     const sortable = Sortable.create(sortableEl, {
       ...options,
-      // Debug callbacks to verify SortableJS is working
-      onStart: (evt) => {
-        console.log("[useSortable] Drag started", evt);
-        options?.onStart?.(evt);
-      },
-      onMove: (evt, originalEvent) => {
-        console.log("[useSortable] Drag move", evt);
-        return options?.onMove?.(evt, originalEvent);
-      },
-      onEnd: (evt) => {
-        console.log("[useSortable] Drag ended", evt);
-        options?.onEnd?.(evt);
-      },
     });
 
-    console.log("[useSortable] Sortable instance created:", sortable);
-
     return () => {
-      console.log("[useSortable] Destroying Sortable instance");
       sortable.destroy();
     };
   });

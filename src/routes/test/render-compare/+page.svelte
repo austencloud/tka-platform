@@ -402,16 +402,6 @@
           const beat = sequence.steps[stepIdx]!;
           sequenceProgress = { ...sequenceProgress, currentStep: stepIdx + 1 };
 
-          // Debug: log first beat's motion data structure
-          if (seqIdx === 0 && stepIdx === 0) {
-            console.log('[RenderCompare] First beat data:', {
-              letter: beat.letter,
-              motions: beat.motions,
-              blueMotion: beat.motions?.blue,
-              redMotion: beat.motions?.red
-            });
-          }
-
           // Convert beat to PictographData format
           // PropType is viewer preference - use STAFF as default for testing
           // Each motion may have its own propType; if not, use default

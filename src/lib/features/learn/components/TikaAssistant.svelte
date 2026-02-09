@@ -162,11 +162,6 @@
 		if (!response) return
 
 		// TODO: Save feedback to Firebase with provider info for A/B analysis
-		console.log('Feedback:', type, {
-			provider: response.provider,
-			source: response.source,
-			questionType: response.questionType
-		})
 
 		// Visual feedback
 		if (type === 'positive') {

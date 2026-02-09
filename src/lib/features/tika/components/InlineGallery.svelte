@@ -55,7 +55,6 @@
 
   // Fetch all gallery images
   $effect(() => {
-    console.log("[InlineGallery] dev flag =", dev, "| items:", gallery.items.map(i => i.letter));
     fetchGalleryImages();
   });
 

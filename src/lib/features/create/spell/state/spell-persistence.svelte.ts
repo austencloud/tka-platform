@@ -229,7 +229,6 @@ export function clearSpellState(): void {
     LEGACY_KEYS.forEach((key) => {
       localStorage.removeItem(key);
     });
-    console.log("[SpellPersistence] State cleared");
   } catch (error) {
     console.warn("[SpellPersistence] Failed to clear state:", error);
   }

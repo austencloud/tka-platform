@@ -25,7 +25,6 @@ export class DeepLinkResolver implements IDeepLinkResolver {
     // 1. Try session cache first (for HMR and same-tab refresh)
     const cached = getCachedSequence(sequenceId);
     if (cached) {
-      console.log(`[DeepLinkResolver] Found in cache: ${sequenceId}`);
       return { sequence: cached, source: "cache", error: null };
     }
 
@@ -33,7 +32,6 @@ export class DeepLinkResolver implements IDeepLinkResolver {
     try {
       const local = await this.sequenceRepository.getSequence(sequenceId);
       if (local) {
-        console.log(`[DeepLinkResolver] Found in local repository: ${sequenceId}`);
         return { sequence: local, source: "local", error: null };
       }
     } catch (err) {
@@ -46,7 +44,6 @@ export class DeepLinkResolver implements IDeepLinkResolver {
       const publicSequence =
         await this.publicSequencesLoader.loadFullSequenceData(sequenceId);
       if (publicSequence) {
-        console.log(`[DeepLinkResolver] Found in public sequences: ${sequenceId}`);
         return { sequence: publicSequence, source: "public", error: null };
       }
     } catch (err) {

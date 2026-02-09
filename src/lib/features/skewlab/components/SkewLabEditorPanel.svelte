@@ -190,14 +190,12 @@
   });
 
   // Turns change handler (placeholder - skewed pictographs don't persist turns changes yet)
-  function handleTurnsChange(color: MotionColor, delta: number) {
+  function handleTurnsChange(_color: MotionColor, _delta: number) {
     // TODO: Implement turns modification for skewed pictographs
-    console.log(`Turns change: ${color} ${delta > 0 ? "+" : ""}${delta}`);
   }
 
-  function handleRotationChange(color: MotionColor, direction: RotationDirection) {
+  function handleRotationChange(_color: MotionColor, _direction: RotationDirection) {
     // TODO: Implement rotation modification for skewed pictographs
-    console.log(`Rotation change: ${color} → ${direction}`);
   }
 
   // Dummy handler for step data update (ArrowAdjustmentPanel uses this for immediate feedback)

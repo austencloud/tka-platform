@@ -108,10 +108,7 @@
     }
   }
 
-  function handleValidation(seqId: string, isValid: boolean) {
-    console.log(
-      `Sequence ${seqId} marked as ${isValid ? "VALID" : "INVALID"} Choo Choo`
-    );
+  function handleValidation(_seqId: string, _isValid: boolean) {
     // Could store this for training data later
   }
 

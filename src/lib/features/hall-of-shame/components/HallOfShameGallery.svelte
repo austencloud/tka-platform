@@ -72,15 +72,6 @@
     const user = currentUser;
     const checking = isCheckingVerification;
 
-    // Debug logging
-    console.log("[HallOfShameGallery] Effect check:", {
-      authInitialized: initialized,
-      hasUser: !!user,
-      userId: user?.uid,
-      hasAgeVerifier: !!ageVerifier,
-      isCheckingVerification: checking,
-    });
-
     // Only proceed if auth is initialized and we're still in checking state
     if (initialized && checking) {
       if (user) {
