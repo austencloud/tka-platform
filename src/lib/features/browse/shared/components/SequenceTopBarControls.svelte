@@ -239,10 +239,14 @@
     width: 100%;
   }
 
-  /* Source toggle section — constrained width */
+  /* Source toggle section — auto-sizes to content */
   .source-section {
     flex-shrink: 0;
-    width: clamp(120px, 22vw, 220px);
+  }
+
+  /* Override SegmentedControl's width:100% so it sizes to content here */
+  .source-section :global(.segmented-control) {
+    width: auto;
   }
 
   /* Right actions — search, zoom, filter */
@@ -423,10 +427,6 @@
     .sequence-topbar-controls {
       padding: 8px 12px;
     }
-
-    .source-section {
-      width: clamp(100px, 30vw, 180px);
-    }
   }
 
   /* Fallback for browsers without container query support */
@@ -437,10 +437,6 @@
 
     .sequence-topbar-controls {
       padding: 8px 12px;
-    }
-
-    .source-section {
-      width: clamp(100px, 30vw, 180px);
     }
   }
 

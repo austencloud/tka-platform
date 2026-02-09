@@ -22,6 +22,19 @@ import type { StepData } from "../../../../features/create/shared/domain/models/
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 
 /**
+ * Canvas type that works in both main thread and Web Workers.
+ * OffscreenCanvas is used when available (workers + modern browsers).
+ * Falls back to HTMLCanvasElement on main thread when OffscreenCanvas unavailable.
+ */
+export type RenderCanvas = HTMLCanvasElement | OffscreenCanvas;
+
+/**
+ * 2D rendering context type that works with both HTMLCanvasElement and OffscreenCanvas.
+ * The intersection type captures the common API surface used for drawing.
+ */
+export type RenderContext2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+
+/**
  * Layer types for compositional caching
  *
  * - base: Props + Arrows (no grid dots)
@@ -60,7 +73,7 @@ export interface LayerVisibility {
  * Result from a layer render operation
  */
 export interface LayerRenderResult {
-  canvas: HTMLCanvasElement;
+  canvas: RenderCanvas;
   cacheKey: string;
   fromCache: boolean;
   renderTimeMs: number;
@@ -70,7 +83,7 @@ export interface LayerRenderResult {
  * Result from a full composition
  */
 export interface CompositionResult {
-  canvas: HTMLCanvasElement;
+  canvas: RenderCanvas;
   timing: {
     totalMs: number;
     baseLayerMs: number;

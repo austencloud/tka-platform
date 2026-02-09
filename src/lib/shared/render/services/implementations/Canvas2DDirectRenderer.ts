@@ -64,7 +64,7 @@ import type { PictographData } from "../../../pictograph/shared/domain/models/Pi
 import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
 import { GridMode, GridPosition } from "../../../pictograph/grid/domain/enums/grid-enums";
-import { getSvgImageCache } from "./SvgImageCache";
+import { getSvgImageCache, type DrawableImage } from "./SvgImageCache";
 import { getSvgAssetLoader } from "./SvgAssetLoader";
 import { getLetterImagePath, isDashLetter } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
 import { Letter, getLetterType } from "../../../foundation/domain/models/Letter";
@@ -194,9 +194,17 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   }
 
   isSupported(): boolean {
-    if (typeof document === "undefined") return false;
-    const canvas = document.createElement("canvas");
-    return !!canvas.getContext("2d");
+    // Check for OffscreenCanvas (works in workers)
+    if (typeof OffscreenCanvas !== "undefined") {
+      const canvas = new OffscreenCanvas(1, 1);
+      return !!canvas.getContext("2d");
+    }
+    // Fallback to HTMLCanvasElement (main thread only)
+    if (typeof document !== "undefined") {
+      const canvas = document.createElement("canvas");
+      return !!canvas.getContext("2d");
+    }
+    return false;
   }
 
   async initialize(): Promise<void> {
@@ -722,8 +730,8 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
    * Transform order matches SVG: translate → rotate → mirror → scale → center
    */
   private drawElementWithTransform(
-    ctx: CanvasRenderingContext2D,
-    img: HTMLImageElement,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    img: DrawableImage,
     params: {
       x: number;
       y: number;
@@ -990,18 +998,16 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
    * Draw an image with a color tint (for turn numbers)
    */
   private drawColoredImage(
-    ctx: CanvasRenderingContext2D,
-    img: HTMLImageElement,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    img: DrawableImage,
     x: number,
     y: number,
     width: number,
     height: number,
     color: string
   ): void {
-    // Create offscreen canvas to apply color
-    const offscreen = document.createElement("canvas");
-    offscreen.width = width;
-    offscreen.height = height;
+    // Create offscreen canvas to apply color (works in both main thread and workers)
+    const offscreen = new OffscreenCanvas(Math.ceil(width), Math.ceil(height));
     const offCtx = offscreen.getContext("2d");
 
     if (!offCtx) {
@@ -1385,7 +1391,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     svgPath: string,
     cacheKey: string,
     svgCache: ReturnType<typeof getSvgImageCache>
-  ): Promise<HTMLImageElement | null> {
+  ): Promise<DrawableImage | null> {
     try {
       const response = await fetch(svgPath);
       if (!response.ok) return null;

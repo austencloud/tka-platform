@@ -189,20 +189,20 @@ export const APP_MODULES: RouteConfig[] = [
   // Create module
   {
     path: "/app",
-    label: "create--constructor",
+    label: "create--construct",
     requiresAuth: true,
     isModule: true,
     moduleId: "create",
-    tabId: "constructor",
+    tabId: "construct",
     waitSelector: ".option-picker, .option-grid",
   },
   {
     path: "/app",
-    label: "create--generator",
+    label: "create--generate",
     requiresAuth: true,
     isModule: true,
     moduleId: "create",
-    tabId: "generator",
+    tabId: "generate",
     waitSelector: ".generate-panel, .card-based-settings",
   },
   {
@@ -283,11 +283,11 @@ export const APP_MODULES: RouteConfig[] = [
   },
   {
     path: "/app",
-    label: "settings--background",
+    label: "settings--theme",
     requiresAuth: true,
     isModule: true,
     moduleId: "settings",
-    tabId: "background",
+    tabId: "theme",
     waitSelector: ".background-selector, .ios-background-card",
   },
   {

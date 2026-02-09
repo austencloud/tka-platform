@@ -1,34 +1,36 @@
 /**
  * SVG Asset Loader
  *
- * Pre-loads static SVG assets (grids, common elements) as HTMLImageElement
- * objects for fast Canvas 2D drawing. This is distinct from SvgImageCache
- * which handles dynamic SVG strings from PictographPreparer.
+ * Pre-loads static SVG assets (grids, common elements) as DrawableImage
+ * objects (ImageBitmap or HTMLImageElement) for fast Canvas 2D drawing.
+ * This is distinct from SvgImageCache which handles dynamic SVG strings
+ * from PictographPreparer.
  *
  * Static assets are loaded once on initialization and reused across all renders.
+ * Works in both main thread and Web Workers.
  */
 
-import { getSvgImageCache } from "./SvgImageCache";
+import { getSvgImageCache, type DrawableImage } from "./SvgImageCache";
 import { Letter } from "../../../foundation/domain/models/Letter";
 import { getLetterImagePath } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
 
 export interface LetterAsset {
-  image: HTMLImageElement;
+  image: DrawableImage;
   dimensions: { width: number; height: number };
 }
 
 export interface LoadedAssets {
   grids: {
-    diamond: HTMLImageElement | null;
-    box: HTMLImageElement | null;
-    diamondNonRadial: HTMLImageElement | null;
-    boxNonRadial: HTMLImageElement | null;
+    diamond: DrawableImage | null;
+    box: DrawableImage | null;
+    diamondNonRadial: DrawableImage | null;
+    boxNonRadial: DrawableImage | null;
   };
   letters: Map<string, LetterAsset>;
-  turnNumbers: Map<string, HTMLImageElement>;
+  turnNumbers: Map<string, DrawableImage>;
 }
 
-// HMR-aware singleton storage
+// HMR-aware singleton storage (only in main thread with Vite dev)
 const hmrAssetLoader: { instance: SvgAssetLoader | null } =
   import.meta.hot?.data?.assetLoader ?? { instance: null };
 
@@ -123,14 +125,14 @@ export class SvgAssetLoader {
   /**
    * Get the appropriate grid image for the given mode
    */
-  getGridImage(gridMode: "diamond" | "box"): HTMLImageElement | null {
+  getGridImage(gridMode: "diamond" | "box"): DrawableImage | null {
     return gridMode === "box" ? this.assets.grids.box : this.assets.grids.diamond;
   }
 
   /**
    * Get the non-radial points overlay for the given mode
    */
-  getNonRadialPointsImage(gridMode: "diamond" | "box"): HTMLImageElement | null {
+  getNonRadialPointsImage(gridMode: "diamond" | "box"): DrawableImage | null {
     return gridMode === "box"
       ? this.assets.grids.boxNonRadial
       : this.assets.grids.diamondNonRadial;
@@ -168,8 +170,8 @@ export class SvgAssetLoader {
     try {
       // Get SVG content - detect environment (browser vs Node.js)
       let svgText: string;
-      if (typeof window !== 'undefined' && typeof fetch !== 'undefined') {
-        // Browser: use fetch
+      if (typeof fetch !== 'undefined') {
+        // Browser or Worker: use fetch
         const response = await fetch(letterPath);
         if (!response.ok) return null;
         svgText = await response.text();
@@ -207,7 +209,7 @@ export class SvgAssetLoader {
   /**
    * @deprecated Use getLetterAsset() instead - returns both image and dimensions
    */
-  async getLetterImage(letterPath: string): Promise<HTMLImageElement | null> {
+  async getLetterImage(letterPath: string): Promise<DrawableImage | null> {
     const asset = await this.getLetterAsset(letterPath);
     return asset?.image ?? null;
   }
@@ -215,7 +217,7 @@ export class SvgAssetLoader {
   /**
    * Load a turn number SVG as an image (lazy-loaded and cached)
    */
-  async getTurnNumberImage(turnValue: number | string): Promise<HTMLImageElement | null> {
+  async getTurnNumberImage(turnValue: number | string): Promise<DrawableImage | null> {
     const key = String(turnValue);
     const cached = this.assets.turnNumbers.get(key);
     if (cached) return cached;

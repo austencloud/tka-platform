@@ -3,7 +3,14 @@
  *
  * Renders individual pictograph cells with two-layer caching:
  * 1. IndexedDB (PictographBlobCache) - persists across sessions
- * 2. LayerCompositor's memory cache - fast in-session reuse
+ * 2. WorkerRenderPool / LayerCompositor - off-thread rendering
+ *
+ * Rendering pipeline:
+ * 1. Check IndexedDB cache → instant blob URL on hit
+ * 2. On miss: prepareSingle() on main thread (DOM-free data prep)
+ * 3. Send prepared data to WorkerRenderPool → renders on Web Worker
+ * 4. Cache resulting blob in IndexedDB (fire-and-forget)
+ * 5. Return blob URL to component
  *
  * Cache key includes ALL render parameters to ensure stale images
  * aren't served when visibility settings change.
@@ -15,9 +22,9 @@ import type {
   PreviewCellRenderOptions,
 } from "../contracts/IPreviewCellRenderer";
 import type { LayerRenderOptions, LayerVisibility } from "$lib/shared/render/services/contracts/ILayerCompositor";
-import { layerCompositor } from "$lib/shared/render/services/implementations/LayerCompositor";
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
+import { getWorkerRenderPool } from "$lib/shared/render/services/implementations/WorkerRenderPool";
 
 export class PreviewCellRenderer implements IPreviewCellRenderer {
   /**
@@ -67,24 +74,10 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
   }
 
   /**
-   * Convert an HTMLCanvasElement to a Blob asynchronously.
-   * Unlike toDataURL() which blocks the main thread for PNG encoding,
-   * toBlob() delegates encoding to a background thread.
-   */
-  private canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
-    return new Promise((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error("toBlob returned null"))),
-        "image/png"
-      );
-    });
-  }
-
-  /**
    * Render a single pictograph and return a blob URL.
    * Uses blob URLs (URL.createObjectURL) instead of data URLs for two reasons:
    * 1. Cache hits: createObjectURL is instant vs FileReader.readAsDataURL (~5ms)
-   * 2. Cache misses: toBlob is async (background thread) vs toDataURL (blocks main thread ~20-50ms)
+   * 2. Cache misses: rendering happens off-thread via WorkerRenderPool
    *
    * IMPORTANT: Callers must call URL.revokeObjectURL() on returned URLs when done.
    */
@@ -107,7 +100,7 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
       // Cache miss or error, proceed to render
     }
 
-    // Prepare the pictograph data
+    // Prepare the pictograph data (DOM-free, runs on main thread)
     const prepared = await pictographPreparer.prepareSingle(pictographData, {
       themeMode: isDark ? "dark" : "light",
       bluePropType: options.bluePropType,
@@ -134,16 +127,14 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
       showReversals: options.showReversals ?? true,
     };
 
-    // Compose the pictograph
-    const result = await layerCompositor.compose(
+    // Render via WorkerRenderPool (off-thread when available, main-thread fallback)
+    const pool = getWorkerRenderPool();
+    const blob = await pool.render(
       prepared,
       renderOptions,
       visibility,
       options.showStepNumbers ? stepNumber : undefined
     );
-
-    // Convert canvas to blob asynchronously (doesn't block main thread)
-    const blob = await this.canvasToBlob(result.canvas);
 
     // Cache the blob to IndexedDB asynchronously (don't await)
     pictographBlobCache.set(cacheKey, blob).catch(() => {

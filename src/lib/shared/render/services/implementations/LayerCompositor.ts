@@ -36,6 +36,8 @@ import type {
   LayerRenderResult,
   CompositionResult,
   LayerCacheStats,
+  RenderCanvas,
+  RenderContext2D,
 } from "../contracts/ILayerCompositor";
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
 import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
@@ -53,6 +55,7 @@ import {
 import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn-position-calculator";
 import { isDashLetter } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
 import { calculateReversalPositions } from "../../core";
+import type { DrawableImage } from "./SvgImageCache";
 
 // Constants matching Canvas2DDirectRenderer
 const VIEWBOX_SIZE = 950;
@@ -128,15 +131,29 @@ const GRID_POINTS_CACHE_LIMIT = 500; // Varies by handPointVisibility/showNonRad
 const TKA_CACHE_LIMIT = 500; // Shared across pictographs, smaller needed
 const REVERSAL_CACHE_LIMIT = 10; // Only 4 states per size
 
+/**
+ * Create a canvas that works in both main thread and Web Workers.
+ * Prefers OffscreenCanvas for worker compatibility.
+ */
+function createCanvas(width: number, height: number): RenderCanvas {
+  if (typeof OffscreenCanvas !== "undefined") {
+    return new OffscreenCanvas(width, height);
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  return canvas;
+}
+
 export class LayerCompositor implements ILayerCompositor {
   private keyDeriver = new LayerKeyDeriver();
   private turnColorInterpreter = new TurnColorInterpreter();
 
-  // Layer caches (LRU maps)
-  private baseCache = new Map<string, HTMLCanvasElement>();
-  private gridPointsCache = new Map<string, HTMLCanvasElement>();
-  private tkaCache = new Map<string, HTMLCanvasElement>();
-  private reversalCache = new Map<string, HTMLCanvasElement>();
+  // Layer caches (LRU maps) - uses OffscreenCanvas for worker compatibility
+  private baseCache = new Map<string, RenderCanvas>();
+  private gridPointsCache = new Map<string, RenderCanvas>();
+  private tkaCache = new Map<string, RenderCanvas>();
+  private reversalCache = new Map<string, RenderCanvas>();
 
   // Shared Canvas2D renderer (initialized once)
   private canvas2DRenderer: InstanceType<typeof import("./Canvas2DDirectRenderer").Canvas2DDirectRenderer> | null = null;
@@ -219,9 +236,7 @@ export class LayerCompositor implements ILayerCompositor {
 
     // 5. Composite all layers
     const compositeStart = performance.now();
-    const canvas = document.createElement("canvas");
-    canvas.width = options.size;
-    canvas.height = options.size;
+    const canvas = createCanvas(options.size, options.size);
     const ctx = canvas.getContext("2d")!;
 
     // Draw base layer (props + arrows)
@@ -521,7 +536,7 @@ export class LayerCompositor implements ILayerCompositor {
   private async renderBaseLayerInternal(
     pictograph: PreparedPictographData,
     options: LayerRenderOptions
-  ): Promise<HTMLCanvasElement> {
+  ): Promise<RenderCanvas> {
     // Use shared renderer instance (initialized once)
     const renderer = await this.ensureCanvas2DRenderer();
 
@@ -548,10 +563,8 @@ export class LayerCompositor implements ILayerCompositor {
   private async renderTKAOverlayInternal(
     pictograph: PreparedPictographData,
     options: Pick<LayerRenderOptions, "size" | "darkMode">
-  ): Promise<HTMLCanvasElement> {
-    const canvas = document.createElement("canvas");
-    canvas.width = options.size;
-    canvas.height = options.size;
+  ): Promise<RenderCanvas> {
+    const canvas = createCanvas(options.size, options.size);
     const ctx = canvas.getContext("2d")!;
 
     // Transparent background (overlay only)
@@ -599,10 +612,8 @@ export class LayerCompositor implements ILayerCompositor {
   private async renderGridPointsOverlayInternal(
     pictograph: PreparedPictographData,
     options: LayerRenderOptions
-  ): Promise<HTMLCanvasElement> {
-    const canvas = document.createElement("canvas");
-    canvas.width = options.size;
-    canvas.height = options.size;
+  ): Promise<RenderCanvas> {
+    const canvas = createCanvas(options.size, options.size);
     const ctx = canvas.getContext("2d")!;
 
     // Transparent background
@@ -693,10 +704,8 @@ export class LayerCompositor implements ILayerCompositor {
    * - Both reversals: RED on top, BLUE on bottom, spaced by DOT_SPACING
    * - All dots are at X_POSITION (71.5) on the left edge
    */
-  private renderReversalOverlayInternal(stepData: StepData, size: number, darkMode: boolean): HTMLCanvasElement {
-    const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
+  private renderReversalOverlayInternal(stepData: StepData, size: number, darkMode: boolean): RenderCanvas {
+    const canvas = createCanvas(size, size);
     const ctx = canvas.getContext("2d")!;
 
     // Transparent background
@@ -727,7 +736,7 @@ export class LayerCompositor implements ILayerCompositor {
    * Draw beat number (not cached, simple text)
    */
   private drawStepNumber(
-    ctx: CanvasRenderingContext2D,
+    ctx: RenderContext2D,
     stepNumber: number,
     size: number,
     darkMode: boolean
@@ -751,7 +760,7 @@ export class LayerCompositor implements ILayerCompositor {
   // ========== Helper methods (simplified from Canvas2DDirectRenderer) ==========
 
   private async drawTKAGlyph(
-    ctx: CanvasRenderingContext2D,
+    ctx: RenderContext2D,
     letter: Letter,
     size: number,
     darkMode: boolean
@@ -803,7 +812,7 @@ export class LayerCompositor implements ILayerCompositor {
    * Positioned to the right of the letter, vertically centered
    */
   private drawDash(
-    ctx: CanvasRenderingContext2D,
+    ctx: RenderContext2D,
     letterDimensions: { width: number; height: number },
     scale: number,
     darkMode: boolean
@@ -833,7 +842,7 @@ export class LayerCompositor implements ILayerCompositor {
   }
 
   private async drawTurnsColumn(
-    ctx: CanvasRenderingContext2D,
+    ctx: RenderContext2D,
     pictograph: PreparedPictographData,
     letterDimensions: { width: number; height: number },
     scale: number,
@@ -926,7 +935,7 @@ export class LayerCompositor implements ILayerCompositor {
   }
 
   private drawDirectionDot(
-    ctx: CanvasRenderingContext2D,
+    ctx: RenderContext2D,
     pictograph: PreparedPictographData,
     letterDimensions: { width: number; height: number },
     scale: number,
@@ -972,18 +981,16 @@ export class LayerCompositor implements ILayerCompositor {
    * Draw an image with a color tint (for turn numbers)
    */
   private drawColoredImage(
-    ctx: CanvasRenderingContext2D,
-    img: HTMLImageElement,
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    img: DrawableImage,
     x: number,
     y: number,
     width: number,
     height: number,
     color: string
   ): void {
-    // Create offscreen canvas to apply color
-    const offscreen = document.createElement("canvas");
-    offscreen.width = width;
-    offscreen.height = height;
+    // Create offscreen canvas to apply color (works in both main thread and workers)
+    const offscreen = new OffscreenCanvas(Math.ceil(width), Math.ceil(height));
     const offCtx = offscreen.getContext("2d");
 
     if (!offCtx) {

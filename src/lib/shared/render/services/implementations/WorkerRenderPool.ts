@@ -1,0 +1,347 @@
+/**
+ * WorkerRenderPool
+ *
+ * Manages a pool of Web Workers for off-main-thread pictograph rendering.
+ * Uses round-robin task distribution with promise-based response matching.
+ *
+ * Architecture:
+ * - Spawns min(navigator.hardwareConcurrency, 4) workers
+ * - Each worker has its own SvgAssetLoader + LayerCompositor
+ * - Workers are lazily initialized on first render request
+ * - Falls back to main-thread LayerCompositor when workers unavailable
+ *
+ * Fallback triggers:
+ * - typeof Worker === "undefined" (SSR)
+ * - typeof OffscreenCanvas === "undefined" (old browsers)
+ * - Worker creation fails (CSP restrictions)
+ */
+
+import type { IWorkerRenderPool } from "../contracts/IWorkerRenderPool";
+import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
+import type { LayerRenderOptions, LayerVisibility } from "../contracts/ILayerCompositor";
+import type {
+  WorkerInMessage,
+  WorkerOutMessage,
+  RenderResultMessage,
+  ErrorMessage,
+} from "../../workers/pictograph-render.worker";
+import { supportsWorkerRendering } from "./RenderFactory";
+
+interface PendingRender {
+  resolve: (blob: Blob) => void;
+  reject: (error: Error) => void;
+}
+
+interface WorkerEntry {
+  worker: Worker;
+  ready: boolean;
+  pendingCount: number;
+}
+
+export class WorkerRenderPool implements IWorkerRenderPool {
+  private workers: WorkerEntry[] = [];
+  private pendingRenders = new Map<number, PendingRender>();
+  private nextRequestId = 0;
+  private nextWorkerIndex = 0;
+  private initialized = false;
+  private initializing: Promise<void> | null = null;
+  private useWorkers: boolean;
+  private terminated = false;
+
+  // Main-thread fallback (lazy-loaded)
+  private fallbackCompositor: InstanceType<typeof import("./LayerCompositor").LayerCompositor> | null = null;
+
+  constructor() {
+    this.useWorkers = supportsWorkerRendering();
+  }
+
+  isUsingWorkers(): boolean {
+    return this.useWorkers && !this.terminated;
+  }
+
+  async render(
+    preparedData: PreparedPictographData,
+    options: LayerRenderOptions,
+    visibility: LayerVisibility,
+    stepNumber?: number
+  ): Promise<Blob> {
+    if (this.terminated) {
+      throw new Error("WorkerRenderPool has been terminated");
+    }
+
+    // Ensure pool is initialized
+    await this.ensureInitialized();
+
+    // If using workers, send to worker pool
+    if (this.useWorkers && this.workers.length > 0) {
+      return this.renderOnWorker(preparedData, options, visibility, stepNumber);
+    }
+
+    // Fallback: main-thread rendering
+    return this.renderOnMainThread(preparedData, options, visibility, stepNumber);
+  }
+
+  terminate(): void {
+    this.terminated = true;
+    for (const entry of this.workers) {
+      entry.worker.terminate();
+    }
+    this.workers = [];
+
+    // Reject all pending renders
+    for (const [id, pending] of this.pendingRenders) {
+      pending.reject(new Error("Worker pool terminated"));
+    }
+    this.pendingRenders.clear();
+  }
+
+  // ============ Initialization ============
+
+  private async ensureInitialized(): Promise<void> {
+    if (this.initialized) return;
+
+    if (this.initializing) {
+      await this.initializing;
+      return;
+    }
+
+    this.initializing = this.doInitialize();
+    await this.initializing;
+    this.initializing = null;
+  }
+
+  private async doInitialize(): Promise<void> {
+    if (!this.useWorkers) {
+      // No worker support — fall back to main thread
+      this.initialized = true;
+      return;
+    }
+
+    try {
+      const poolSize = Math.min(navigator.hardwareConcurrency || 2, 4);
+
+      // Create workers
+      const workerEntries: WorkerEntry[] = [];
+      const initPromises: Promise<void>[] = [];
+
+      for (let i = 0; i < poolSize; i++) {
+        try {
+          const worker = new Worker(
+            new URL("../../workers/pictograph-render.worker.ts", import.meta.url),
+            { type: "module" }
+          );
+
+          const entry: WorkerEntry = {
+            worker,
+            ready: false,
+            pendingCount: 0,
+          };
+
+          // Set up message handler
+          worker.onmessage = (event: MessageEvent<WorkerOutMessage>) => {
+            this.handleWorkerMessage(event.data);
+          };
+
+          worker.onerror = (error) => {
+            console.warn(`[WorkerRenderPool] Worker ${i} error:`, error.message);
+          };
+
+          workerEntries.push(entry);
+
+          // Send init message and wait for response
+          const initPromise = new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error(`Worker ${i} init timeout`));
+            }, 10000);
+
+            const originalHandler = worker.onmessage;
+            worker.onmessage = (event: MessageEvent<WorkerOutMessage>) => {
+              if (event.data.type === "init-done") {
+                clearTimeout(timeout);
+                entry.ready = true;
+                worker.onmessage = originalHandler;
+                resolve();
+              } else if (event.data.type === "error") {
+                clearTimeout(timeout);
+                worker.onmessage = originalHandler;
+                reject(new Error((event.data as ErrorMessage).message));
+              }
+            };
+
+            const initMsg: WorkerInMessage = { type: "init" };
+            worker.postMessage(initMsg);
+          });
+
+          initPromises.push(initPromise);
+        } catch (error) {
+          console.warn(`[WorkerRenderPool] Failed to create worker ${i}:`, error);
+        }
+      }
+
+      // Wait for all workers to initialize
+      const results = await Promise.allSettled(initPromises);
+
+      // Only keep workers that initialized successfully
+      for (let i = 0; i < workerEntries.length; i++) {
+        if (results[i]?.status === "fulfilled") {
+          this.workers.push(workerEntries[i]!);
+        } else {
+          workerEntries[i]?.worker.terminate();
+          console.warn(`[WorkerRenderPool] Worker ${i} failed to initialize`);
+        }
+      }
+
+      if (this.workers.length === 0) {
+        console.warn("[WorkerRenderPool] No workers initialized, falling back to main thread");
+        this.useWorkers = false;
+      } else {
+        // Set up persistent message handlers now that init is complete
+        for (const entry of this.workers) {
+          entry.worker.onmessage = (event: MessageEvent<WorkerOutMessage>) => {
+            this.handleWorkerMessage(event.data);
+          };
+        }
+      }
+    } catch (error) {
+      console.warn("[WorkerRenderPool] Worker pool creation failed, falling back to main thread:", error);
+      this.useWorkers = false;
+    }
+
+    this.initialized = true;
+  }
+
+  // ============ Worker Rendering ============
+
+  private renderOnWorker(
+    preparedData: PreparedPictographData,
+    options: LayerRenderOptions,
+    visibility: LayerVisibility,
+    stepNumber?: number
+  ): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const id = this.nextRequestId++;
+
+      // Store the pending render
+      this.pendingRenders.set(id, { resolve, reject });
+
+      // Pick the worker with the fewest pending tasks (least-loaded)
+      const worker = this.pickWorker();
+      worker.pendingCount++;
+
+      // Send render request
+      const msg: WorkerInMessage = {
+        type: "render",
+        id,
+        preparedData,
+        options,
+        visibility,
+        stepNumber,
+      };
+
+      worker.worker.postMessage(msg);
+    });
+  }
+
+  private pickWorker(): WorkerEntry {
+    // Least-loaded worker selection
+    let bestEntry = this.workers[0]!;
+    let bestCount = bestEntry.pendingCount;
+
+    for (let i = 1; i < this.workers.length; i++) {
+      const entry = this.workers[i]!;
+      if (entry.pendingCount < bestCount) {
+        bestEntry = entry;
+        bestCount = entry.pendingCount;
+      }
+    }
+
+    return bestEntry;
+  }
+
+  private handleWorkerMessage(msg: WorkerOutMessage): void {
+    switch (msg.type) {
+      case "render-result": {
+        const result = msg as RenderResultMessage;
+        const pending = this.pendingRenders.get(result.id);
+        if (pending) {
+          this.pendingRenders.delete(result.id);
+          this.decrementPendingCount();
+          pending.resolve(result.blob);
+        }
+        break;
+      }
+
+      case "error": {
+        const error = msg as ErrorMessage;
+        const pending = this.pendingRenders.get(error.id);
+        if (pending) {
+          this.pendingRenders.delete(error.id);
+          this.decrementPendingCount();
+          pending.reject(new Error(error.message));
+        }
+        break;
+      }
+    }
+  }
+
+  private decrementPendingCount(): void {
+    // Decrement the count on whichever worker has the highest pending count
+    // (approximate, since we don't track which worker handled which request)
+    let maxEntry: WorkerEntry | null = null;
+    let maxCount = 0;
+    for (const entry of this.workers) {
+      if (entry.pendingCount > maxCount) {
+        maxEntry = entry;
+        maxCount = entry.pendingCount;
+      }
+    }
+    if (maxEntry && maxEntry.pendingCount > 0) {
+      maxEntry.pendingCount--;
+    }
+  }
+
+  // ============ Main Thread Fallback ============
+
+  private async renderOnMainThread(
+    preparedData: PreparedPictographData,
+    options: LayerRenderOptions,
+    visibility: LayerVisibility,
+    stepNumber?: number
+  ): Promise<Blob> {
+    if (!this.fallbackCompositor) {
+      const { LayerCompositor } = await import("./LayerCompositor");
+      this.fallbackCompositor = new LayerCompositor();
+    }
+
+    const result = await this.fallbackCompositor.compose(
+      preparedData,
+      options,
+      visibility,
+      stepNumber
+    );
+
+    // Convert canvas to blob
+    const canvas = result.canvas;
+    if (canvas instanceof OffscreenCanvas) {
+      return canvas.convertToBlob({ type: "image/png" });
+    }
+
+    // HTMLCanvasElement fallback
+    return new Promise((resolve, reject) => {
+      (canvas as HTMLCanvasElement).toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error("toBlob returned null"))),
+        "image/png"
+      );
+    });
+  }
+}
+
+// Singleton instance
+let poolInstance: WorkerRenderPool | null = null;
+
+export function getWorkerRenderPool(): WorkerRenderPool {
+  if (!poolInstance) {
+    poolInstance = new WorkerRenderPool();
+  }
+  return poolInstance;
+}

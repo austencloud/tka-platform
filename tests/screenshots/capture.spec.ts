@@ -143,7 +143,7 @@ async function loginWithCredentials(
   // wait for the login UI. We use a generous timeout because the splash
   // takes up to 15 seconds on the safety timeout path.
 
-  console.log("[login] Waiting for splash to clear and auth UI to appear...");
+  // Wait for splash to clear, then detect login screen
 
   // Wait for the splash screen to go away first. For auth routes hitting "/",
   // the splash may sit for up to 15 seconds since __tkaLoadProgress(100) is only
@@ -153,9 +153,9 @@ async function loginWithCredentials(
       state: "detached",
       timeout: 20_000,
     });
-    console.log("[login] Splash screen dismissed");
+    // Splash dismissed
   } catch {
-    console.log("[login] Splash still present after 20s, force-removing...");
+    // Force-remove splash after 20s timeout
     await dismissSplashScreen(page);
   }
 
@@ -175,12 +175,11 @@ async function loginWithCredentials(
     await page.waitForTimeout(500);
   }
 
-  console.log(`[login] Auth UI detected: ${loginVisible}`);
   if (!loginVisible) return true; // Already logged in — no login screen appeared within 10s
 
   // Step 1: Click "Continue with email" to expand the email auth section.
   //         Use evaluate() + click to bypass Svelte transition visibility issues.
-  console.log("[login] Clicking 'Continue with email'...");
+
   await page.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll("button, .email-toggle"));
     const emailBtn = buttons.find((b) => b.textContent?.includes("Continue with email"));
@@ -189,7 +188,6 @@ async function loginWithCredentials(
   await page.waitForTimeout(800);
 
   // Step 2: Switch from "Magic Link" (default) to "Password" tab
-  console.log("[login] Clicking 'Password' tab...");
   await page.evaluate(() => {
     const tabs = Array.from(document.querySelectorAll('button[role="tab"]'));
     const pwTab = tabs.find((t) => t.textContent?.includes("Password"));
@@ -198,7 +196,6 @@ async function loginWithCredentials(
   await page.waitForTimeout(800);
 
   // Step 3: Fill email — use evaluate to set value directly
-  console.log("[login] Filling email...");
   await page.evaluate((email) => {
     const input = document.querySelector('input[type="email"]') as HTMLInputElement;
     if (input) {
@@ -208,7 +205,6 @@ async function loginWithCredentials(
   }, credentials.email);
 
   // Step 4: Fill password
-  console.log("[login] Filling password...");
   await page.evaluate((password) => {
     const input = document.querySelector('input[type="password"]') as HTMLInputElement;
     if (input) {
@@ -219,12 +215,10 @@ async function loginWithCredentials(
 
   // Step 5: Submit
   await page.waitForTimeout(300);
-  console.log("[login] Clicking Sign In...");
   await page.evaluate(() => {
     const btn = document.querySelector('button[type="submit"]') as HTMLElement;
     if (btn) btn.click();
   });
-  console.log("[login] Submitted, waiting for auth...");
 
   // Step 6: Wait for login to complete — poll until login text disappears
   for (let i = 0; i < 30; i++) {
@@ -234,7 +228,6 @@ async function loginWithCredentials(
       return text.includes("Sign in to continue") || text.includes("Welcome back");
     });
     if (!stillOnLogin) {
-      console.log("[login] Login succeeded");
       return true;
     }
     // Check for error messages
@@ -243,42 +236,30 @@ async function loginWithCredentials(
       return el?.textContent || null;
     });
     if (hasError) {
-      console.error(`[login] Auth error: ${hasError}`);
+      console.warn(`[login] Auth error: ${hasError}`);
       return false;
     }
   }
 
-  console.error("[login] Login timed out after 15s");
+  console.warn("[login] Login timed out after 15s");
   return false;
 }
 
 async function suppressOnboarding(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    localStorage.setItem("tka-last-seen-version", "99.99.99");
-    localStorage.setItem("tka-landing-dismissed", "true");
-    localStorage.setItem("tka-sidebar-tour-completed", "true");
+  // Build tab intro keys from the actual route configs to stay in sync
+  const tabIntroKeys = authRoutes
+    .filter((r) => r.moduleId && r.tabId)
+    .map((r) => `tabIntroSeen:${r.moduleId}:${r.tabId}`);
 
-    const tabIntros = [
-      "tabIntroSeen:create:constructor",
-      "tabIntroSeen:create:generator",
-      "tabIntroSeen:create:assembler",
-      "tabIntroSeen:create:spell",
-      "tabIntroSeen:learn:concepts",
-      "tabIntroSeen:learn:codex",
-      "tabIntroSeen:discover:gallery",
-      "tabIntroSeen:discover:sequences",
-      "tabIntroSeen:discover:creators",
-      "tabIntroSeen:library:sequences",
-      "tabIntroSeen:library:favorites",
-      "tabIntroSeen:compose:playback",
-      "tabIntroSeen:compose:arrange",
-      "tabIntroSeen:compose:timeline",
-      "tabIntroSeen:train:practice",
-      "tabIntroSeen:settings:theme",
-      "tabIntroSeen:settings:visibility",
-    ];
-    tabIntros.forEach((key) => localStorage.setItem(key, "true"));
-  });
+  await page.evaluate(
+    (keys) => {
+      localStorage.setItem("tka-last-seen-version", "99.99.99");
+      localStorage.setItem("tka-landing-dismissed", "true");
+      localStorage.setItem("tka-sidebar-tour-completed", "true");
+      keys.forEach((key) => localStorage.setItem(key, "true"));
+    },
+    tabIntroKeys
+  );
 }
 
 async function setTheme(page: Page, dark: boolean): Promise<void> {
@@ -438,18 +419,15 @@ async function navigateToRoute(page: Page, route: RouteConfig): Promise<void> {
     return;
   }
 
-  // SPA module — set localStorage and reload
-  await page.evaluate(
-    ([moduleId, tabId]) => {
-      localStorage.setItem("tka-current-module", moduleId);
-      if (tabId) {
-        localStorage.setItem("tka-active-tab", tabId);
-      }
-    },
-    [route.moduleId!, route.tabId ?? ""]
-  );
+  // SPA module — navigate via URL path.
+  // The catch-all route ([...path]/+page.svelte) renders MainApplication,
+  // and navigation-state.svelte.ts parses the URL to set module + tab.
+  // URL is the source of truth — it OVERRIDES localStorage values.
+  const urlPath = route.tabId
+    ? `/${route.moduleId}/${route.tabId}`
+    : `/${route.moduleId}`;
 
-  await page.reload({ waitUntil: "load", timeout: TIMEOUTS.ROUTE_LOAD });
+  await page.goto(urlPath, { waitUntil: "load", timeout: TIMEOUTS.ROUTE_LOAD });
   await dismissSplashScreen(page);
   await page.waitForTimeout(TIMEOUTS.SPA_RELOAD_SETTLE);
 }
@@ -527,10 +505,10 @@ if (authRoutes.length > 0 && hasAuth) {
 
         await suppressOnboarding(page);
         await setTheme(page, isDark);
-        await dismissModals(page);
 
-        // Navigate to the target module/tab
+        // Navigate to the target module/tab via URL
         await navigateToRoute(page, route);
+        await dismissModals(page);
         await stabilize(page, route);
 
         const filename = `${route.label}--${deviceSlug}.png`;

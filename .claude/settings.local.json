@@ -531,7 +531,8 @@
       "Bash(SCREENSHOT_PUBLIC=true SCREENSHOT_DEVICE_FILTER=iphone-se npx playwright test:*)",
       "Bash(SCREENSHOT_PUBLIC=true npx playwright test:*)",
       "Bash(SCREENSHOT_DEVICE_FILTER=iphone-se SCREENSHOT_ROUTES=create--constructor npx playwright test:*)",
-      "Bash(export PATH=\"$PATH:/c/Users/Austen/platform-tools\")"
+      "Bash(export PATH=\"$PATH:/c/Users/Austen/platform-tools\")",
+      "Bash(SCREENSHOT_ROUTES=\"create,browse,settings\" SCREENSHOT_DEVICE_FILTER=\"iphone-16-pro\" npx playwright test:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

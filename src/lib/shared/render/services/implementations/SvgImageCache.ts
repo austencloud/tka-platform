@@ -1,23 +1,30 @@
 /**
  * SVG Image Cache
  *
- * Converts SVG strings to HTMLImageElement objects and caches them.
+ * Converts SVG strings to ImageBitmap objects and caches them.
  * This is the key optimization - converting SVG once and reusing the image.
  *
- * SVG → Image conversion is ~5ms
- * Drawing cached image is ~0.1ms
+ * Uses ImageBitmap instead of HTMLImageElement for two reasons:
+ * 1. ImageBitmap works in both main thread and Web Workers
+ * 2. ImageBitmap is GPU-ready and draws faster on canvas
+ *
+ * SVG → ImageBitmap conversion is ~5ms
+ * Drawing cached ImageBitmap is ~0.1ms
  */
 
+/** Union type for drawable images (works with canvas drawImage) */
+export type DrawableImage = ImageBitmap | HTMLImageElement;
+
 export class SvgImageCache {
-  private cache = new Map<string, HTMLImageElement>();
-  private pendingLoads = new Map<string, Promise<HTMLImageElement>>();
+  private cache = new Map<string, DrawableImage>();
+  private pendingLoads = new Map<string, Promise<DrawableImage>>();
 
   /**
    * Get or create an image from an SVG string
    * @param svgString The SVG content as a string
    * @param cacheKey Optional cache key (defaults to hash of SVG string)
    */
-  async getImage(svgString: string, cacheKey?: string): Promise<HTMLImageElement> {
+  async getImage(svgString: string, cacheKey?: string): Promise<DrawableImage> {
     const key = cacheKey || this.hashString(svgString);
 
     // Check cache first
@@ -48,7 +55,7 @@ export class SvgImageCache {
   /**
    * Get or create an image from an SVG URL
    */
-  async getImageFromUrl(url: string): Promise<HTMLImageElement> {
+  async getImageFromUrl(url: string): Promise<DrawableImage> {
     // Check cache first
     const cached = this.cache.get(url);
     if (cached) {
@@ -75,20 +82,33 @@ export class SvgImageCache {
   }
 
   /**
-   * Convert SVG string to HTMLImageElement
+   * Convert SVG string to a drawable image
    * Detects environment and uses appropriate method (browser vs Node.js)
    */
-  private svgToImage(svgString: string): Promise<HTMLImageElement> {
-    // Detect environment - check for browser globals
-    if (typeof window !== 'undefined' && typeof Blob !== 'undefined' && typeof URL !== 'undefined') {
-      return this.browserSvgToImage(svgString);
-    } else {
-      return this.nodeSvgToImage(svgString);
+  private svgToImage(svgString: string): Promise<DrawableImage> {
+    // Check for browser with ImageBitmap support (main thread or worker)
+    if (typeof createImageBitmap !== "undefined" && typeof Blob !== "undefined") {
+      return this.bitmapSvgToImage(svgString);
     }
+    // Browser without ImageBitmap (very old) - fall back to HTMLImageElement
+    if (typeof window !== "undefined" && typeof Blob !== "undefined" && typeof URL !== "undefined") {
+      return this.browserSvgToImage(svgString);
+    }
+    // Node.js
+    return this.nodeSvgToImage(svgString);
   }
 
   /**
-   * Browser implementation using Blob + createObjectURL
+   * Browser/Worker implementation using createImageBitmap (preferred)
+   * Works in both main thread and Web Workers.
+   */
+  private async bitmapSvgToImage(svgString: string): Promise<ImageBitmap> {
+    const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    return createImageBitmap(blob);
+  }
+
+  /**
+   * Browser fallback using HTMLImageElement (for environments without createImageBitmap)
    */
   private browserSvgToImage(svgString: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
@@ -158,19 +178,30 @@ export class SvgImageCache {
    * Load image from URL
    * Detects environment and uses appropriate method (browser vs Node.js)
    */
-  private async loadImageFromUrl(url: string): Promise<HTMLImageElement> {
-    // Detect environment
-    if (typeof window !== 'undefined' && typeof fetch !== 'undefined') {
-      // Browser: use standard Image loading
-      return this.browserLoadImageFromUrl(url);
-    } else {
-      // Node.js: read from file system and convert SVG
-      return this.nodeLoadImageFromUrl(url);
+  private async loadImageFromUrl(url: string): Promise<DrawableImage> {
+    // Check for createImageBitmap (browser main thread or worker)
+    if (typeof createImageBitmap !== "undefined" && typeof fetch !== "undefined") {
+      return this.bitmapLoadImageFromUrl(url);
     }
+    // Browser without ImageBitmap
+    if (typeof window !== "undefined" && typeof fetch !== "undefined") {
+      return this.browserLoadImageFromUrl(url);
+    }
+    // Node.js: read from file system and convert SVG
+    return this.nodeLoadImageFromUrl(url);
   }
 
   /**
-   * Browser implementation for loading images from URLs
+   * Browser/Worker implementation using createImageBitmap (preferred)
+   */
+  private async bitmapLoadImageFromUrl(url: string): Promise<ImageBitmap> {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return createImageBitmap(blob);
+  }
+
+  /**
+   * Browser fallback for loading images from URLs
    */
   private browserLoadImageFromUrl(url: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
@@ -239,6 +270,12 @@ export class SvgImageCache {
    * Clear the cache
    */
   clear() {
+    // Close ImageBitmaps to free GPU memory
+    for (const img of this.cache.values()) {
+      if (img instanceof ImageBitmap) {
+        img.close();
+      }
+    }
     this.cache.clear();
     this.pendingLoads.clear();
   }
