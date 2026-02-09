@@ -247,12 +247,12 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
     const letterTypes = this.pictographLoader.getLetterTypes();
     const typeInfo = letterTypes[typeKey];
 
-    const letters = canonicalDef.letters
+    const letters: string[] = canonicalDef.letters
       .split(", ")
-      .flatMap((l) =>
-        l.includes("through") ? LETTER_TYPES[typeKey]?.letters || [] : [l.trim()]
+      .flatMap((l: string) =>
+        l.includes("through") ? (LETTER_TYPES[typeKey]?.letters as string[]) || [] : [l.trim()]
       );
-    const exampleLetters = typeInfo?.letters || letters;
+    const exampleLetters: string[] = (typeInfo?.letters as string[]) || letters;
 
     const explanation = `**Type ${type} (${canonicalDef.name})**: ${canonicalDef.description}. Blue hand ${canonicalDef.motionPattern.blue}, red hand ${canonicalDef.motionPattern.red}.`;
 
@@ -270,7 +270,7 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
         }
       }
     } else {
-      galleryItems = exampleLetters.map((letter) => ({ letter }));
+      galleryItems = exampleLetters.map((letter: string) => ({ letter }));
     }
 
     return {

@@ -177,6 +177,113 @@ const arrowSpriteHmrPlugin = () => ({
   },
 });
 
+/**
+ * Serves screenshot captures and baselines from tests/screenshots/
+ * Also provides a manifest endpoint that scans the captures directory.
+ * Dev-only — never included in production builds.
+ */
+const screenshotsPlugin = () => ({
+  name: "screenshots-gallery",
+  configureServer(server: ViteDevServer) {
+    const capturesDir = path.resolve(dirname, "tests/screenshots/captures");
+    const baselinesDir = path.resolve(dirname, "tests/screenshots/baselines");
+
+    // Manifest endpoint — scans captures dir and returns structured metadata
+    server.middlewares.use(
+      "/screenshots/manifest.json",
+      (
+        _req: IncomingMessage,
+        res: ServerResponse,
+        _next: (err?: unknown) => void
+      ) => {
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Cache-Control", "no-cache");
+
+        if (!fs.existsSync(capturesDir)) {
+          res.end(JSON.stringify({ captures: [], timestamp: null }));
+          return;
+        }
+
+        const files = fs
+          .readdirSync(capturesDir)
+          .filter((f) => f.endsWith(".png"));
+
+        let latestMtime = 0;
+        const captures = files.map((filename) => {
+          const stat = fs.statSync(path.join(capturesDir, filename));
+          if (stat.mtimeMs > latestMtime) latestMtime = stat.mtimeMs;
+
+          // Parse filename: "routeLabel--deviceSlug.png"
+          const base = filename.replace(/\.png$/, "");
+          const lastDash = base.lastIndexOf("--");
+          const routeLabel = lastDash > 0 ? base.substring(0, lastDash) : base;
+          const deviceSlug = lastDash > 0 ? base.substring(lastDash + 2) : "";
+          const hasBaseline = fs.existsSync(
+            path.join(baselinesDir, filename)
+          );
+
+          return { filename, routeLabel, deviceSlug, hasBaseline };
+        });
+
+        res.end(
+          JSON.stringify({
+            captures,
+            timestamp: latestMtime > 0 ? new Date(latestMtime).toISOString() : null,
+          })
+        );
+      }
+    );
+
+    // Serve capture PNGs
+    server.middlewares.use(
+      "/screenshots/captures",
+      (
+        req: IncomingMessage,
+        res: ServerResponse,
+        next: (err?: unknown) => void
+      ) => {
+        if (req.url && req.url.endsWith(".png")) {
+          const filePath = path.resolve(
+            capturesDir,
+            decodeURIComponent(req.url.substring(1))
+          );
+          if (fs.existsSync(filePath)) {
+            res.setHeader("Content-Type", "image/png");
+            res.setHeader("Cache-Control", "no-cache");
+            fs.createReadStream(filePath).pipe(res);
+            return;
+          }
+        }
+        next();
+      }
+    );
+
+    // Serve baseline PNGs
+    server.middlewares.use(
+      "/screenshots/baselines",
+      (
+        req: IncomingMessage,
+        res: ServerResponse,
+        next: (err?: unknown) => void
+      ) => {
+        if (req.url && req.url.endsWith(".png")) {
+          const filePath = path.resolve(
+            baselinesDir,
+            decodeURIComponent(req.url.substring(1))
+          );
+          if (fs.existsSync(filePath)) {
+            res.setHeader("Content-Type", "image/png");
+            res.setHeader("Cache-Control", "no-cache");
+            fs.createReadStream(filePath).pipe(res);
+            return;
+          }
+        }
+        next();
+      }
+    );
+  },
+});
+
 const webpWasmDevPlugin = () => ({
   name: "webp-wasm-dev-server",
   configureServer(server: ViteDevServer) {
@@ -416,6 +523,7 @@ export default defineConfig({
       },
     }),
     dictionaryPlugin(),
+    screenshotsPlugin(), // Screenshot gallery for Lab module
     fontCorsPlugin(), // 📱 CORS headers for fonts (mobile debugging)
     devCachePlugin(), // 🚀 2025: Smart caching (no-cache for CSS/JS, cache for SVGs)
     arrowSpriteHmrPlugin(), // 🎯 Auto-reload arrows when sprite is edited in Illustrator

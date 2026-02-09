@@ -464,7 +464,7 @@ export class TikaQuizGenerator implements ITikaQuizGenerator {
   private getLettersFromType(typeNum: number, count: number): string[] {
     const typeInfo = LETTER_TYPES[typeNum.toString()];
     if (!typeInfo) return [];
-    return this.shuffleArray(typeInfo.letters).slice(0, count);
+    return this.shuffleArray(typeInfo.letters as string[]).slice(0, count);
   }
 
   private getLettersNotFromType(excludeType: number, count: number): string[] {

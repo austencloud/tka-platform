@@ -165,9 +165,11 @@
 <div class="grid-layout-controls">
   <!-- Interactive Grid -->
   <div class="grid-section">
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
       class="toggle-grid"
-      role="group"
+      role="toolbar"
       aria-label="Grid dimensions: {gridRows} rows by {gridCols} columns"
       tabindex="0"
       onkeydown={handleKeydown}

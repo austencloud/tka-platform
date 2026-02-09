@@ -526,7 +526,10 @@
       "Bash(do echo -n \"$dir: \")",
       "Bash(PATH=\"/c/Program Files/nodejs:$PATH\")",
       "Bash(cloudflared:*)",
-      "Bash(\"/c/Program Files \\(x86\\)/cloudflared/cloudflared.exe\" --version)"
+      "Bash(\"/c/Program Files \\(x86\\)/cloudflared/cloudflared.exe\" --version)",
+      "Bash(start \"\" \"C:\\\\tka-platform\\\\tests\\\\screenshots\\\\gallery.html\")",
+      "Bash(SCREENSHOT_PUBLIC=true SCREENSHOT_DEVICE_FILTER=iphone-se npx playwright test:*)",
+      "Bash(SCREENSHOT_PUBLIC=true npx playwright test:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
