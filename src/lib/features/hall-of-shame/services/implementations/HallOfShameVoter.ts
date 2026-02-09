@@ -15,6 +15,7 @@ import {
 	collection,
 	query,
 	where,
+	documentId,
 	serverTimestamp,
 	runTransaction
 } from 'firebase/firestore';
@@ -128,23 +129,20 @@ export class HallOfShameVoter implements IHallOfShameVoter {
 
 		try {
 			const firestore = await getFirestoreInstance();
-
-			// Batch check votes - Firestore 'in' query supports up to 30 items
+			const votesRef = collection(firestore, this.VOTES_COLLECTION);
 			const BATCH_SIZE = 30;
 
 			for (let i = 0; i < sequenceIds.length; i += BATCH_SIZE) {
 				const batch = sequenceIds.slice(i, i + BATCH_SIZE);
 				const voteIds = batch.map((seqId) => `${voterId}_${seqId}`);
 
-				// Check which vote documents exist
-				for (const voteId of voteIds) {
-					const voteRef = doc(firestore, this.VOTES_COLLECTION, voteId);
-					const voteDoc = await getDoc(voteRef);
+				const batchQuery = query(votesRef, where(documentId(), 'in', voteIds));
+				const snapshot = await getDocs(batchQuery);
 
-					if (voteDoc.exists()) {
-						const sequenceId = voteId.replace(`${voterId}_`, '');
-						result.set(sequenceId, true);
-					}
+				for (const voteDoc of snapshot.docs) {
+					// Extract sequenceId from vote doc ID (format: voterId_sequenceId)
+					const sequenceId = voteDoc.id.substring(voterId.length + 1);
+					result.set(sequenceId, true);
 				}
 			}
 

@@ -169,6 +169,7 @@
 		align-items: center;
 		gap: 10px;
 		padding: 12px 16px;
+		min-height: 48px;
 		background: rgba(255, 255, 255, 0.05);
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 8px;
@@ -181,8 +182,9 @@
 	}
 
 	.checkbox-label input[type='checkbox'] {
-		width: 18px;
-		height: 18px;
+		width: 24px;
+		height: 24px;
+		min-width: 24px;
 		accent-color: #ef4444;
 		cursor: pointer;
 	}

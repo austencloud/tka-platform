@@ -10,6 +10,7 @@ import {
 	doc,
 	getDoc,
 	getDocs,
+	setDoc,
 	updateDoc,
 	increment,
 	query,
@@ -200,7 +201,7 @@ export class ShameQueueManager implements IShameQueueManager {
 			// Store detailed report (optional, for admin review)
 			if (reason) {
 				const reportRef = doc(collection(firestore, this.REPORTS_COLLECTION));
-				await updateDoc(reportRef, {
+				await setDoc(reportRef, {
 					sequenceId,
 					reporterId,
 					reason,

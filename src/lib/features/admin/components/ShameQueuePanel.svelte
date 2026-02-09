@@ -13,6 +13,9 @@
     ShameCategory,
   } from "$lib/features/hall-of-shame/domain/models/hall-of-shame-models";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
+  import ModalFooter from "$lib/shared/foundation/ui/modal/ModalFooter.svelte";
 
   // State
   let pendingEntries = $state<HallOfShameEntry[]>([]);
@@ -393,26 +396,20 @@
 </div>
 
 <!-- Reject Modal -->
-{#if showRejectModal && rejectingEntry}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    class="modal-backdrop"
-    onclick={closeRejectModal}
-    onkeydown={(e) => e.key === "Escape" && closeRejectModal()}
-    role="presentation"
-  >
-    <div
-      class="modal-content"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.key === "Escape" && closeRejectModal()}
-      role="dialog"
-      aria-labelledby="reject-modal-title"
-      aria-modal="true"
-      tabindex="-1"
-    >
-      <h3 id="reject-modal-title">Reject Submission</h3>
-      <p>Rejecting: <strong>{rejectingEntry.word}</strong></p>
+{#if rejectingEntry}
+  <BaseModal bind:open={showRejectModal} onclose={closeRejectModal} size="sm" animation="pop" labelledBy="reject-modal-title">
+    {#snippet header()}
+      <ModalHeader
+        title="Reject Submission"
+        subtitle="Rejecting: {rejectingEntry?.word ?? ''}"
+        icon="fa-times-circle"
+        iconColor="#ef4444"
+        onClose={closeRejectModal}
+        id="reject-modal-title"
+      />
+    {/snippet}
 
+    <div class="reject-modal-body">
       <label for="reject-reason" class="field-label">
         Rejection reason (required)
       </label>
@@ -423,21 +420,23 @@
         rows="3"
         class="reason-input"
       ></textarea>
+    </div>
 
-      <div class="modal-actions">
-        <button class="modal-btn cancel" onclick={closeRejectModal}>
+    {#snippet footer()}
+      <ModalFooter align="end">
+        <button class="secondary" onclick={closeRejectModal}>
           Cancel
         </button>
         <button
-          class="modal-btn confirm"
+          class="danger"
           onclick={handleReject}
-          disabled={!rejectReason.trim() || processingId === rejectingEntry.id}
+          disabled={!rejectReason.trim() || processingId === rejectingEntry?.id}
         >
           Reject
         </button>
-      </div>
-    </div>
-  </div>
+      </ModalFooter>
+    {/snippet}
+  </BaseModal>
 {/if}
 
 <style>
@@ -790,43 +789,17 @@
     color: var(--theme-text);
   }
 
-  /* Modal styles */
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.7);
+  /* Reject modal body */
+  .reject-modal-body {
+    padding: var(--modal-padding, 24px);
     display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-  }
-
-  .modal-content {
-    background: var(--theme-panel-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    max-width: 400px;
-    width: 100%;
-  }
-
-  .modal-content h3 {
-    margin: 0 0 0.5rem;
-    font-size: 1.25rem;
-    color: var(--theme-text);
-  }
-
-  .modal-content p {
-    margin: 0 0 1rem;
-    color: var(--theme-text-dim);
-    font-size: 0.875rem;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .field-label {
     display: block;
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
+    font-size: var(--font-size-min, 14px);
     font-weight: 500;
     color: var(--theme-text);
   }
@@ -838,7 +811,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 0.5rem;
     color: var(--theme-text);
-    font-size: 0.875rem;
+    font-size: var(--font-size-min, 14px);
     font-family: inherit;
     resize: vertical;
   }
@@ -846,47 +819,6 @@
   .reason-input:focus {
     outline: none;
     border-color: var(--theme-accent);
-  }
-
-  .modal-actions {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: flex-end;
-    margin-top: 1rem;
-  }
-
-  .modal-btn {
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .modal-btn.cancel {
-    background: transparent;
-    border: 1px solid var(--theme-stroke);
-    color: var(--theme-text-dim);
-  }
-
-  .modal-btn.cancel:hover {
-    background: var(--theme-card-bg);
-  }
-
-  .modal-btn.confirm {
-    background: var(--semantic-error, #ef4444);
-    border: none;
-    color: white;
-  }
-
-  .modal-btn.confirm:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, black);
-  }
-
-  .modal-btn.confirm:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 
   @media (max-width: 640px) {
