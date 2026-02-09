@@ -40,7 +40,7 @@
     thumbnailService: IBrowseThumbnailProvider | null;
     showSections?: boolean;
     onAction?: (action: string, sequence: SequenceData) => void;
-    /** Pinch-to-zoom column override (2-6). Active on any touch device. */
+    /** Pinch-to-zoom column override. Mobile: 2-3, Desktop: 2-5. */
     pinchColumnOverride?: number;
     /** True for ~200ms after column change (for CSS transition timing) */
     isTransitioning?: boolean;
@@ -120,12 +120,12 @@
     }
 
     // Responsive column counts based on container width
-    if (containerWidth === 0) return 2; // Default
+    // Mobile (< 768px): max 3 columns; Desktop: up to 5
+    if (containerWidth === 0) return 2;
     if (containerWidth >= 1600) return 5;
     if (containerWidth >= 1200) return 4;
     if (containerWidth >= 800) return 3;
-    if (containerWidth >= 481) return 2;
-    return 2; // minimum
+    return 2;
   });
 
   // Initialize ResizeObserver for responsive column count

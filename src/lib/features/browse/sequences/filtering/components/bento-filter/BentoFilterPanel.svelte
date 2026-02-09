@@ -2,11 +2,12 @@
 BentoFilterPanel.svelte - Modern Bento box style filter panel
 Displays filter cards in a responsive grid
 Uses shared parameter cards from $lib/shared/components/parameter-cards
+Includes grid size controls on mobile (zoom moved from toolbar)
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-    import { onMount } from "svelte";
+  import { onMount } from "svelte";
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";
 
@@ -20,6 +21,9 @@ Uses shared parameter cards from $lib/shared/components/parameter-cards
 
   // Local filter cards
   import LOOPTypeFilterCard from "./LOOPTypeFilterCard.svelte";
+
+  // Grid zoom state
+  import { gridZoomManager } from "../../../../shared/state/grid-zoom-state.svelte";
 
   let {
     currentFilter = { type: "all", value: null },
@@ -49,6 +53,11 @@ Uses shared parameter cards from $lib/shared/components/parameter-cards
   onMount(() => {
     hapticService = container.items.hapticFeedback;
   });
+
+  // Zoom state
+  const currentColumns = $derived(gridZoomManager.columns);
+  const canZoomIn = $derived(gridZoomManager.canZoomIn);
+  const canZoomOut = $derived(gridZoomManager.canZoomOut);
 
   // Derived filter values
   const currentLevel = $derived(
@@ -101,9 +110,45 @@ Uses shared parameter cards from $lib/shared/components/parameter-cards
       onFilterChange("cap_type", value);
     }
   }
+
+  function handleZoomIn() {
+    hapticService?.trigger("selection");
+    gridZoomManager.zoomIn();
+  }
+
+  function handleZoomOut() {
+    hapticService?.trigger("selection");
+    gridZoomManager.zoomOut();
+  }
 </script>
 
 <div class="bento-filter-panel">
+  <!-- Grid Size Control (mobile only — desktop has zoom in toolbar) -->
+  <div class="grid-size-control">
+    <span class="grid-size-label">Grid size</span>
+    <div class="grid-size-buttons">
+      <button
+        class="grid-size-btn"
+        onclick={handleZoomOut}
+        disabled={!canZoomOut}
+        type="button"
+        aria-label="Fewer columns (larger cards)"
+      >
+        <i class="fas fa-minus" aria-hidden="true"></i>
+      </button>
+      <span class="grid-size-value">{currentColumns}</span>
+      <button
+        class="grid-size-btn"
+        onclick={handleZoomIn}
+        disabled={!canZoomIn}
+        type="button"
+        aria-label="More columns (smaller cards)"
+      >
+        <i class="fas fa-plus" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
   <!-- Filter Cards Grid -->
   <div class="cards-grid">
     <LevelCard
@@ -167,6 +212,81 @@ Uses shared parameter cards from $lib/shared/components/parameter-cards
     overflow-y: auto;
   }
 
+  /* Grid Size Control — mobile only */
+  .grid-size-control {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 12px;
+  }
+
+  .grid-size-label {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    color: var(--theme-text-dim);
+  }
+
+  .grid-size-buttons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--theme-panel-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .grid-size-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
+  }
+
+  .grid-size-btn:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
+  }
+
+  .grid-size-btn:active:not(:disabled) {
+    transform: scale(0.92);
+  }
+
+  .grid-size-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .grid-size-value {
+    min-width: 24px;
+    text-align: center;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Show grid size control on mobile */
+  @media (max-width: 640px) {
+    .grid-size-control {
+      display: flex;
+    }
+  }
+
   /* Cards Grid - Default: 3 columns (6 sub-columns, cards span 2) */
   .cards-grid {
     container-type: inline-size;
@@ -193,6 +313,13 @@ Uses shared parameter cards from $lib/shared/components/parameter-cards
     .cards-grid {
       grid-template-columns: repeat(6, minmax(0, 1fr));
       grid-auto-rows: minmax(auto, 160px);
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .grid-size-btn {
+      transition: none !important;
     }
   }
 </style>

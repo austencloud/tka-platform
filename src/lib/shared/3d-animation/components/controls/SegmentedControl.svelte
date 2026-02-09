@@ -17,8 +17,8 @@
     value: T;
     /** Callback when selection changes */
     onchange: (value: T) => void;
-    /** Prop color for accent */
-    color?: "blue" | "red";
+    /** Color for accent indicator */
+    color?: "blue" | "red" | "accent";
     /** Size variant */
     size?: "sm" | "md";
   }
@@ -44,6 +44,7 @@
   class:sm={size === "sm"}
   class:blue={color === "blue"}
   class:red={color === "red"}
+  class:accent={color === "accent"}
   style="--count: {options.length}"
 >
   <div class="indicator" style="--index: {selectedIndex}"></div>
@@ -93,6 +94,10 @@
 
   .red .indicator {
     background: var(--prop-red);
+  }
+
+  .accent .indicator {
+    background: var(--theme-accent);
   }
 
   .segment {

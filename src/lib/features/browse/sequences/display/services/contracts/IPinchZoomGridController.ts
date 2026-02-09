@@ -7,7 +7,7 @@
 
 /** State emitted during pinch gestures */
 export interface PinchZoomState {
-	/** Current column count (discrete: 2-6) */
+	/** Current column count. Mobile: 2-3, Desktop: 2-5 */
 	columns: number;
 	/** Whether gesture is active */
 	isGesturing: boolean;
@@ -36,7 +36,7 @@ export interface IPinchZoomGridController {
 
 	/**
 	 * Set the current column count (for initializing from settings).
-	 * @param columns Current column count (2-6)
+	 * @param columns Current column count. Mobile: 2-3, Desktop: 2-5
 	 */
 	setColumnCount(columns: number): void;
 

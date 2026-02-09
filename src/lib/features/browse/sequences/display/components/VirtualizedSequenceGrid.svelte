@@ -36,7 +36,7 @@
     sequences: SequenceData[];
     thumbnailService: IBrowseThumbnailProvider | null;
     onAction?: (action: string, sequence: SequenceData) => void;
-    /** Pinch-to-zoom column override (2-6). When set, overrides responsive columns. */
+    /** Pinch-to-zoom column override. Mobile: 2-3, Desktop: 2-5. Overrides responsive columns. */
     pinchColumnOverride?: number;
   }>();
 
@@ -105,8 +105,7 @@
     if (containerWidth >= 1600) return 5;
     if (containerWidth >= 1200) return 4;
     if (containerWidth >= 800) return 3;
-    if (containerWidth >= 481) return 2;
-    return 2; // minimum
+    return 2;
   });
 
   // Calculate row count based on sequences and columns

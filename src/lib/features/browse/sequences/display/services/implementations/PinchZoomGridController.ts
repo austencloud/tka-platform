@@ -13,7 +13,9 @@ import type { IPinchZoomGridController, PinchZoomState } from "../contracts/IPin
 
 /** Column count limits */
 const MIN_COLUMNS = 2;
-const MAX_COLUMNS = 6;
+const MAX_COLUMNS_MOBILE = 3;
+const MAX_COLUMNS_DESKTOP = 5;
+const MOBILE_BREAKPOINT = 768;
 
 /** Scale threshold to trigger column change (lower = snappier response) */
 const SCALE_THRESHOLD = 1.15;
@@ -100,8 +102,14 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 		this.onStateChange = callback;
 	}
 
+	private get maxColumns(): number {
+		return window.innerWidth < MOBILE_BREAKPOINT
+			? MAX_COLUMNS_MOBILE
+			: MAX_COLUMNS_DESKTOP;
+	}
+
 	setColumnCount(columns: number): void {
-		this.currentColumns = Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, columns));
+		this.currentColumns = Math.max(MIN_COLUMNS, Math.min(this.maxColumns, columns));
 	}
 
 	isTouchDevice(): boolean {
@@ -243,7 +251,7 @@ export class PinchZoomGridController implements IPinchZoomGridController {
 	private changeColumns(delta: number): void {
 		const newColumns = Math.max(
 			MIN_COLUMNS,
-			Math.min(MAX_COLUMNS, this.currentColumns + delta)
+			Math.min(this.maxColumns, this.currentColumns + delta)
 		);
 
 		if (newColumns !== this.currentColumns) {

@@ -1,9 +1,11 @@
 <!--
-Sequence Top Bar Controls - 2026 Modern Design (Compact)
-- Source toggle chips (Community / My Library) on far left
-- Sort chips centered
-- Filter button opens drawer with scope toggle + drill-down filters
-- Active filter shown as dismissible chip
+  Sequence Top Bar Controls - 2026 Modern Design
+  - Source toggle via SegmentedControl (sliding indicator)
+  - Sort popover (compact chip, spring-animated dropdown)
+  - Expandable search bar
+  - Zoom controls (desktop only, mobile via filter drawer)
+  - Filter button with active badge
+  - Micro-interactions: hover lift, active press, spring animations
 -->
 <script lang="ts">
   import { sequenceControlsManager } from "../state/sequence-controls-state.svelte";
@@ -15,6 +17,8 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
   import { onMount } from "svelte";
   import { BrowseSortMethod } from "../domain/enums/browse-enums";
   import ExpandableSearchBar from "./ExpandableSearchBar.svelte";
+  import SortPopover from "./SortPopover.svelte";
+  import SegmentedControl from "$lib/shared/3d-animation/components/controls/SegmentedControl.svelte";
 
   interface Props {
     onSourceChange?: (source: SequenceSource) => void;
@@ -22,17 +26,17 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
 
   let { onSourceChange }: Props = $props();
 
-  // Get source state
+  // Source state
   const currentSource = $derived(sequenceSourceManager.current);
   const canViewMyLibrary = $derived(sequenceSourceManager.canViewMyLibrary);
 
-  // Get sequence controls from global reactive state
+  // Sequence controls from global reactive state
   const sequenceControls = $derived(sequenceControlsManager.current);
 
-  // Check if filter panel is already open (hide button to avoid redundant UI)
+  // Filter panel state
   const isFilterPanelOpen = $derived(sequencePanelManager.isFiltersOpen);
 
-  // Grid zoom state
+  // Grid zoom state (desktop only)
   const currentColumns = $derived(gridZoomManager.columns);
   const canZoomIn = $derived(gridZoomManager.canZoomIn);
   const canZoomOut = $derived(gridZoomManager.canZoomOut);
@@ -40,12 +44,12 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
   // Services
   let hapticService: IHapticFeedback | null = null;
 
-  // Check if there's an active filter
+  // Active filter detection
   const hasActiveFilter = $derived(
     sequenceControls?.currentFilter?.type !== "all"
   );
 
-  // Get active filter label for display
+  // Active filter label
   const activeFilterLabel = $derived.by(() => {
     if (!sequenceControls?.currentFilter) return null;
     const filter = sequenceControls.currentFilter;
@@ -59,30 +63,31 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     return filter.type;
   });
 
-  // Track if search is active (to avoid showing both search input and filter chip)
+  // Track if search is the active filter
   const isSearchFilter = $derived(
     sequenceControls?.currentFilter?.type === "contains_letters"
   );
 
-  // Sort options
-  const sortOptions = [
-    { id: BrowseSortMethod.ALPHABETICAL, label: "A-Z", icon: "fa-font" },
-    { id: BrowseSortMethod.DATE_ADDED, label: "New", icon: "fa-clock" },
-    {
-      id: BrowseSortMethod.DIFFICULTY_LEVEL,
-      label: "Level",
-      icon: "fa-signal",
-    },
-    {
-      id: BrowseSortMethod.SEQUENCE_LENGTH,
-      label: "Length",
-      icon: "fa-ruler",
-    },
-  ];
+  // Source toggle options for SegmentedControl
+  const sourceOptions = $derived.by(() => {
+    const opts: { value: SequenceSource; label: string }[] = [
+      { value: "community", label: "Community" },
+    ];
+    if (canViewMyLibrary) {
+      opts.push({ value: "my-library", label: "My Library" });
+    }
+    return opts;
+  });
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
   });
+
+  function handleSourceChange(source: SequenceSource) {
+    hapticService?.trigger("selection");
+    sequenceSourceManager.setSource(source);
+    onSourceChange?.(source);
+  }
 
   function handleSortChange(method: BrowseSortMethod) {
     hapticService?.trigger("selection");
@@ -103,12 +108,6 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     }
   }
 
-  function handleSourceChange(source: SequenceSource) {
-    hapticService?.trigger("selection");
-    sequenceSourceManager.setSource(source);
-    onSourceChange?.(source);
-  }
-
   function handleZoomIn() {
     hapticService?.trigger("selection");
     gridZoomManager.zoomIn();
@@ -121,7 +120,6 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
 
   function handleSearch(query: string) {
     if (!sequenceControls) return;
-
     if (query.trim()) {
       sequenceControls.onFilterChange({
         type: "contains_letters",
@@ -143,56 +141,32 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
 {#if sequenceControls}
   <div class="sequence-topbar-controls">
     <div class="controls-row">
-      <!-- Left: Source toggle -->
-      <div class="nav-section">
-        <div class="source-toggle">
-          <button
-            class="source-chip"
-            class:active={currentSource === "community"}
-            onclick={() => handleSourceChange("community")}
-          >
-            <i class="fas fa-globe" aria-hidden="true"></i>
-            <span class="chip-label">Community</span>
-          </button>
-          {#if canViewMyLibrary}
-            <button
-              class="source-chip"
-              class:active={currentSource === "my-library"}
-              onclick={() => handleSourceChange("my-library")}
-            >
-              <i class="fas fa-bookmark" aria-hidden="true"></i>
-              <span class="chip-label">My Library</span>
-            </button>
-          {/if}
-        </div>
+      <!-- Source toggle: SegmentedControl with sliding indicator -->
+      <div class="source-section">
+        <SegmentedControl
+          options={sourceOptions}
+          value={currentSource}
+          onchange={handleSourceChange}
+          color="accent"
+          size="sm"
+        />
       </div>
 
-      <!-- Center: Sort Chips (truly centered) -->
-      <div class="center-section">
-        <div class="sort-chips">
-          {#each sortOptions as opt}
-            <button
-              class="sort-chip"
-              class:active={sequenceControls.currentSortMethod === opt.id}
-              onclick={() => handleSortChange(opt.id)}
-            >
-              <i class="fas {opt.icon}" aria-hidden="true"></i>
-              <span class="chip-label">{opt.label}</span>
-            </button>
-          {/each}
-        </div>
-      </div>
+      <!-- Sort: compact popover chip -->
+      <SortPopover
+        currentMethod={sequenceControls.currentSortMethod}
+        onSortChange={handleSortChange}
+      />
 
-      <!-- Right: Search + Zoom controls + Filter controls -->
-      <div class="filter-section">
-        <!-- Expandable Search Bar -->
+      <!-- Right actions: Search + Zoom + Active Filter + Filter Button -->
+      <div class="actions-section">
         <ExpandableSearchBar
           onSearch={handleSearch}
           onClear={handleSearchClear}
           placeholder="Search sequences..."
         />
 
-        <!-- Grid Zoom Controls -->
+        <!-- Grid Zoom Controls (desktop only) -->
         <div class="zoom-controls">
           <button
             class="zoom-button"
@@ -217,7 +191,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
           </button>
         </div>
 
-        <!-- Active Filter (if any) - Don't show for search filters (handled by search bar) -->
+        <!-- Active Filter chip (not shown for search filters) -->
         {#if hasActiveFilter && activeFilterLabel && !isSearchFilter}
           <button class="active-filter-chip" onclick={handleClearFilter}>
             <span>{activeFilterLabel}</span>
@@ -225,7 +199,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
           </button>
         {/if}
 
-        <!-- Filter Button - Hidden when filter panel is already open -->
+        <!-- Filter Button (hidden when panel is open) -->
         {#if !isFilterPanelOpen}
           <button
             class="filter-button"
@@ -247,174 +221,38 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
 
 <style>
   .sequence-topbar-controls {
-    --control-height: var(--min-touch-target);
-    --padding-vertical: 10px;
+    --control-height: var(--min-touch-target, 48px);
 
     display: flex;
     align-items: center;
-    padding: var(--padding-vertical) 16px;
+    padding: 10px 16px;
     background: var(--theme-panel-bg);
     width: 100%;
-    /* Prevent collapse when filter panel is open and sections are empty */
-    min-height: calc(var(--control-height) + var(--padding-vertical) * 2);
+    min-height: calc(var(--control-height) + 20px);
   }
 
-  /* Three-section layout: left (nav) - center (chips) - right (filter) */
+  /* Single-row flexbox layout — no absolute centering */
   .controls-row {
     display: flex;
     align-items: center;
+    gap: 10px;
     width: 100%;
-    position: relative;
   }
 
-  /* Left section - source toggle */
-  .nav-section {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 12px;
-    min-width: 104px;
+  /* Source toggle section — constrained width */
+  .source-section {
+    flex-shrink: 0;
+    width: clamp(120px, 22vw, 220px);
   }
 
-  /* Source Toggle */
-  .source-toggle {
-    display: flex;
-    gap: 4px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 100px;
-    padding: 3px;
-  }
-
-  .source-chip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 0 12px;
-    min-height: calc(var(--control-height) - 8px);
-    background: transparent;
-    border: none;
-    border-radius: 100px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    white-space: nowrap;
-  }
-
-  .source-chip:hover {
-    color: var(--theme-text);
-    background: color-mix(in srgb, var(--theme-text) 5%, transparent);
-  }
-
-  .source-chip.active {
-    background: var(--theme-accent);
-    color: var(--theme-text);
-    font-weight: 600;
-  }
-
-  .source-chip i {
-    font-size: var(--font-size-compact);
-  }
-
-  /* Center section - absolutely centered chips */
-  .center-section {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    justify-content: center;
-  }
-
-  /* Right section - filter controls */
-  .filter-section {
-    flex: 1;
+  /* Right actions — search, zoom, filter */
+  .actions-section {
     display: flex;
     justify-content: flex-end;
     align-items: center;
     gap: 8px;
-  }
-
-  /* Sort Chips */
-  .sort-chips {
-    display: flex;
-    gap: 6px;
-  }
-
-  .sort-chip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 0 14px;
-    min-height: var(--control-height);
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 100px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    white-space: nowrap;
-  }
-
-  .sort-chip:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text);
-  }
-
-  .sort-chip.active {
-    background: var(--semantic-info, var(--semantic-info));
-    border-color: var(--semantic-info, var(--semantic-info));
-    color: var(--theme-text);
-  }
-
-  .sort-chip i {
-    font-size: var(--font-size-compact);
-  }
-
-  /* Active Filter Chip */
-  .active-filter-chip {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 12px 0 16px;
-    min-height: var(--control-height);
-    background: color-mix(
-      in srgb,
-      var(--semantic-info, var(--semantic-info)) 15%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(
-        in srgb,
-        var(--semantic-info, var(--semantic-info)) 30%,
-        transparent
-      );
-    border-radius: 100px;
-    color: var(--semantic-info, var(--semantic-info));
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    white-space: nowrap;
-  }
-
-  .active-filter-chip:hover {
-    background: color-mix(
-      in srgb,
-      var(--semantic-info, var(--semantic-info)) 25%,
-      transparent
-    );
-  }
-
-  .active-filter-chip i {
-    font-size: var(--font-size-compact);
-    opacity: 0.8;
+    flex: 1;
+    min-width: 0;
   }
 
   /* Zoom Controls */
@@ -426,6 +264,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     padding: 2px;
+    flex-shrink: 0;
   }
 
   .zoom-button {
@@ -438,14 +277,21 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     border: none;
     border-radius: 6px;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
   }
 
   .zoom-button:hover:not(:disabled) {
     background: var(--theme-card-hover-bg);
     color: var(--theme-text);
+  }
+
+  .zoom-button:active:not(:disabled) {
+    transform: scale(0.92);
   }
 
   .zoom-button:disabled {
@@ -456,10 +302,44 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
   .zoom-indicator {
     min-width: 20px;
     text-align: center;
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Active Filter Chip */
+  .active-filter-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px 0 16px;
+    min-height: var(--control-height);
+    background: color-mix(in srgb, var(--semantic-info) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-info) 30%, transparent);
+    border-radius: 100px;
+    color: var(--semantic-info);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .active-filter-chip:hover {
+    background: color-mix(in srgb, var(--semantic-info) 25%, transparent);
+  }
+
+  .active-filter-chip:active {
+    transform: scale(0.97);
+  }
+
+  .active-filter-chip i {
+    font-size: var(--font-size-compact, 12px);
+    opacity: 0.8;
   }
 
   /* Filter Button */
@@ -473,30 +353,36 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: var(--font-size-base);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-base, 16px);
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
     flex-shrink: 0;
   }
 
   .filter-button:hover {
     background: var(--theme-card-hover-bg);
     color: var(--theme-text);
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .filter-button:active {
+    transform: scale(0.95);
+  }
+
+  .filter-button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 
   .filter-button.has-active {
-    background: color-mix(
-      in srgb,
-      var(--semantic-info, var(--semantic-info)) 15%,
-      transparent
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--semantic-info, var(--semantic-info)) 30%,
-      transparent
-    );
-    color: var(--semantic-info, var(--semantic-info));
+    background: color-mix(in srgb, var(--semantic-info) 15%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-info) 30%, transparent);
+    color: var(--semantic-info);
   }
 
   .filter-badge {
@@ -508,50 +394,64 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--semantic-info, var(--semantic-info));
+    background: var(--semantic-info);
     border-radius: 50%;
     color: var(--theme-text);
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
+    animation: badgePop 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  /* Mobile responsive - hide labels on small screens */
-  @media (max-width: 640px) {
+  @keyframes badgePop {
+    0% {
+      transform: scale(0);
+    }
+    60% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Mobile: hide zoom controls (available in filter drawer) */
+  @container (max-width: 640px) {
+    .zoom-controls {
+      display: none;
+    }
+
     .sequence-topbar-controls {
       padding: 8px 12px;
     }
 
-    .source-toggle {
-      padding: 2px;
-    }
-
-    .source-chip {
-      padding: 0 10px;
-      min-height: 32px;
-    }
-
-    .sort-chip {
-      padding: 0 10px;
-    }
-
-    .chip-label {
-      display: none;
-    }
-
-    .sort-chip i,
-    .source-chip i {
-      font-size: var(--font-size-base);
+    .source-section {
+      width: clamp(100px, 30vw, 180px);
     }
   }
 
-  /* Very small screens - even more compact */
-  @media (max-width: 400px) {
-    .source-toggle {
-      gap: 2px;
+  /* Fallback for browsers without container query support */
+  @media (max-width: 640px) {
+    .zoom-controls {
+      display: none;
     }
 
-    .source-chip {
-      padding: 0 8px;
+    .sequence-topbar-controls {
+      padding: 8px 12px;
+    }
+
+    .source-section {
+      width: clamp(100px, 30vw, 180px);
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .filter-button,
+    .filter-badge,
+    .active-filter-chip,
+    .zoom-button {
+      transition: none !important;
+      animation: none !important;
     }
   }
 </style>

@@ -12,7 +12,11 @@
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
 const MIN_COLUMNS = 2;
-const MAX_COLUMNS = 6;
+const MAX_COLUMNS_MOBILE = 3;
+const MAX_COLUMNS_DESKTOP = 5;
+
+/** Mobile breakpoint — matches common tablet/phone threshold */
+const MOBILE_BREAKPOINT = 768;
 
 // Preserve state across HMR
 function getInitialColumns(): number {
@@ -25,7 +29,7 @@ function getInitialColumns(): number {
 }
 
 class GridZoomManager {
-	// Current column count (2-6)
+	// Current column count
 	columns = $state<number>(getInitialColumns());
 
 	// True for ~200ms after column change (for CSS transition)
@@ -34,10 +38,22 @@ class GridZoomManager {
 	private transitionTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	/**
+	 * Max columns allowed for the current viewport.
+	 * Mobile (< 768px): 3 columns max
+	 * Desktop (>= 768px): 5 columns max
+	 */
+	get maxColumns(): number {
+		if (typeof window === "undefined") return MAX_COLUMNS_DESKTOP;
+		return window.innerWidth < MOBILE_BREAKPOINT
+			? MAX_COLUMNS_MOBILE
+			: MAX_COLUMNS_DESKTOP;
+	}
+
+	/**
 	 * Set column count directly (from pinch controller or buttons)
 	 */
 	setColumns(newColumns: number) {
-		const clamped = Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, newColumns));
+		const clamped = Math.max(MIN_COLUMNS, Math.min(this.maxColumns, newColumns));
 		if (clamped !== this.columns) {
 			this.columns = clamped;
 			this.triggerTransition();
@@ -63,7 +79,7 @@ class GridZoomManager {
 	 * Check if zoom in is possible
 	 */
 	get canZoomIn() {
-		return this.columns < MAX_COLUMNS;
+		return this.columns < this.maxColumns;
 	}
 
 	/**
@@ -79,7 +95,7 @@ class GridZoomManager {
 	initFromSettings() {
 		const saved = settingsService.settings.gridZoomLevel;
 		if (saved !== undefined && saved !== this.columns) {
-			this.columns = Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, saved));
+			this.columns = Math.max(MIN_COLUMNS, Math.min(this.maxColumns, saved));
 		}
 	}
 
