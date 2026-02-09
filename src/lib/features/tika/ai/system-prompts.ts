@@ -13,17 +13,19 @@ import {
 	getLevelConstraints,
 	getExplanationGuidance,
 } from '@tka/domain'
+import type { MasteryContext } from '$lib/features/learn/domain/quiz-history-types'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Main System Prompt Builder
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Build a system prompt for Tika based on user level and language
+ * Build a system prompt for Tika based on user level, language, and mastery data
  */
 export function buildSystemPrompt(
 	userOverlay: UserKnowledgeOverlay,
-	language: string = 'en'
+	language: string = 'en',
+	masteryContext?: MasteryContext
 ): string {
 	const glossary = GLOSSARIES[language] || GLOSSARIES['en']
 	const majorLevel = userOverlay.majorLevel || 1
@@ -451,7 +453,48 @@ Common ambiguities:
 **When you don't know:**
 - Say "I'm not sure" rather than inventing an answer
 - Offer to help investigate if possible
-- Don't claim capabilities or limitations you haven't verified`
+- Don't claim capabilities or limitations you haven't verified
+${masteryContext ? buildMasterySection(masteryContext) : ''}`
+}
+
+/**
+ * Build the mastery context section for the system prompt.
+ * Informs Tika about what the user knows and where they need help.
+ */
+function buildMasterySection(ctx: MasteryContext): string {
+	const sections: string[] = ['\n## User Learning Profile']
+
+	if (ctx.masteredConcepts.length > 0) {
+		sections.push(
+			`\n**Mastered (don't re-explain unless asked):** ${ctx.masteredConcepts.join(', ')}`
+		)
+	}
+
+	if (ctx.strugglingConcepts.length > 0) {
+		sections.push(
+			`\n**Needs extra help (provide detailed explanations):** ${ctx.strugglingConcepts.join(', ')}`
+		)
+	}
+
+	if (ctx.suggestedNext.length > 0) {
+		sections.push(
+			`\n**Suggested next concepts:** ${ctx.suggestedNext.join(', ')}`
+		)
+		sections.push(
+			'If the user asks "what should I learn next?" or seems unsure where to go, suggest these concepts.'
+		)
+	}
+
+	if (ctx.dueForReview.length > 0) {
+		sections.push(
+			`\n**Due for review (spaced repetition):** ${ctx.dueForReview.join(', ')}`
+		)
+		sections.push(
+			'If appropriate, suggest the user review these concepts to reinforce their knowledge.'
+		)
+	}
+
+	return sections.join('\n')
 }
 
 /**

@@ -17,7 +17,11 @@
   import TikaReviewPanel from "./components/TikaReviewPanel.svelte";
   import TikaHistoryDrawer from "./components/TikaHistoryDrawer.svelte";
   import { getEffectiveUserId, authState } from "$lib/shared/auth/state/authState.svelte";
-  import { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
+  import { container } from "$lib/shared/di";
+  import type { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
+  import type { IQuizHistoryRecorder } from "$lib/features/learn/services/contracts/IQuizHistoryRecorder";
+  import type { IConceptRecommender } from "$lib/features/learn/services/contracts/IConceptRecommender";
+  import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
   import { TikaSessionRepository } from "./services/implementations/TikaSessionRepository";
   import { TIKA_LIMITS } from "./data/firestore-paths";
   import type { ModelOption } from "./types";
@@ -74,12 +78,69 @@
   // User identity
   const userId = $derived(getEffectiveUserId() || "anonymous");
 
-  // Progress tracker for user level detection
-  const progressTracker = browser ? new ConceptProgressTracker() : null;
+  // Progress tracker and mastery services from DI container
+  const progressTracker: ConceptProgressTracker | null = browser
+    ? container?.items?.conceptProgressTracker ?? null
+    : null;
+  const quizHistoryRecorder: IQuizHistoryRecorder | null = browser
+    ? container?.items?.quizHistoryRecorder ?? null
+    : null;
+  const conceptRecommender: IConceptRecommender | null = browser
+    ? container?.items?.conceptRecommender ?? null
+    : null;
+
   const completedConcepts = $derived.by(() => {
     if (!progressTracker) return [];
     const progress = progressTracker.getProgress();
     return Array.from(progress.completedConcepts);
+  });
+
+  // Mastery context for adaptive TIKA responses
+  let masteryContext = $state<MasteryContext | undefined>(undefined);
+
+  // Load mastery context when user is authenticated
+  $effect(() => {
+    if (!isAuthenticated || !userId || userId === "anonymous") return;
+    if (!quizHistoryRecorder || !conceptRecommender || !progressTracker) return;
+
+    // Initialize Firestore sync for progress tracker
+    progressTracker.initializeForUser(userId);
+
+    // Load mastery data asynchronously
+    quizHistoryRecorder
+      .getAllMasteryScores(userId)
+      .then((masteryScores) => {
+        const progress = progressTracker.getProgress();
+        const completedIds = progress.completedConcepts;
+
+        const masteredConcepts: string[] = [];
+        const strugglingConcepts: string[] = [];
+
+        for (const [conceptId, mastery] of masteryScores) {
+          if (mastery.mastered) {
+            masteredConcepts.push(conceptId);
+          } else if (mastery.averageScore < 60) {
+            strugglingConcepts.push(conceptId);
+          }
+        }
+
+        const suggestedNext = conceptRecommender
+          .getNextConcepts(completedIds, 3)
+          .map((c) => c.id);
+
+        const dueForReview =
+          conceptRecommender.getConceptsDueForReview(masteryScores);
+
+        masteryContext = {
+          masteredConcepts,
+          strugglingConcepts,
+          suggestedNext,
+          dueForReview,
+        };
+      })
+      .catch((error) => {
+        console.warn("[TIKA] Failed to load mastery context:", error);
+      });
   });
 
   // Initialize Chat class from AI SDK with persistence
@@ -91,6 +152,7 @@
           body: () => ({
             userId,
             completedConcepts,
+            masteryContext,
             language: "en",
             model: selectedModel,
           }),

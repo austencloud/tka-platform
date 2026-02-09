@@ -1,10 +1,11 @@
 /**
  * Learn Module ITI Container
  *
- * Provides services for the Codex and Quiz features in the Learn module.
+ * Provides services for the Codex, Quiz, and Learning Progress features.
  * Services are organized by dependency order:
- * - Tier 1: No dependencies (CodexLetterMappingRepo, CodexPictographUpdater, etc.)
- * - Tier 2: Depends on Tier 1 (QuizRepoManager, Codex)
+ * - Tier 1: No dependencies (standalone services)
+ * - Tier 2: Depends on Tier 1 (QuizRepoManager, ConceptProgressTracker)
+ * - Tier 3: Depends on Tier 1 + Tier 2 (Codex)
  */
 
 import { createContainer } from "iti";
@@ -15,6 +16,9 @@ import { QuizRepoManager } from "$lib/features/learn/quiz/services/implementatio
 import { QuizSessionManager } from "$lib/features/learn/quiz/services/implementations/QuizSessionManager";
 import { QuizResultsAnalyzer } from "$lib/features/learn/quiz/QuizResultsAnalyzer";
 import { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
+import { UserKnowledgeProfilePersister } from "$lib/features/learn/services/implementations/UserKnowledgeProfilePersister";
+import { QuizHistoryRecorder } from "$lib/features/learn/services/implementations/QuizHistoryRecorder";
+import { ConceptRecommender } from "$lib/features/learn/services/implementations/ConceptRecommender";
 import { SoundPlayer } from "$lib/shared/audio/services/implementations/SoundPlayer";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 
@@ -40,13 +44,17 @@ export function createLearnContainer(letterQueryHandler: ILetterQueryHandler) {
       codexPictographUpdater: () => new CodexPictographUpdater(),
       quizSessionManager: () => new QuizSessionManager(),
       quizResultsAnalyzer: () => new QuizResultsAnalyzer(),
-      conceptProgressTracker: () => new ConceptProgressTracker(),
+      userKnowledgeProfilePersister: () => new UserKnowledgeProfilePersister(),
+      quizHistoryRecorder: () => new QuizHistoryRecorder(),
+      conceptRecommender: () => new ConceptRecommender(),
       soundPlayer: () => new SoundPlayer(),
     })
     // === Tier 2: Services with internal dependencies ===
     .add((ctx) => ({
       quizRepoManager: () =>
         new QuizRepoManager(ctx.codexLetterMappingRepo),
+      conceptProgressTracker: () =>
+        new ConceptProgressTracker(ctx.userKnowledgeProfilePersister),
     }))
     // === Tier 3: Codex depends on multiple Tier 1 and Tier 2 services ===
     .add((ctx) => ({

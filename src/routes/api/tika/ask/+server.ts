@@ -17,6 +17,7 @@ import type { RequestHandler } from "@sveltejs/kit";
 import { streamText, tool, convertToModelMessages, type UIMessage, jsonSchema } from "ai";
 import { env } from "$env/dynamic/private";
 import { buildSystemPrompt } from "$lib/features/tika/ai/system-prompts";
+import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
 import {
   deriveUserOverlay,
   getTypeComparison,
@@ -429,6 +430,7 @@ interface TIKARequest {
   question?: string;
   userId?: string;
   completedConcepts?: string[];
+  masteryContext?: MasteryContext;
   language?: string;
   model?: string;
 }
@@ -459,11 +461,11 @@ export const POST: RequestHandler = async ({ request }) => {
       }
     }
 
-    // Build system prompt based on user progress
+    // Build system prompt based on user progress and mastery data
     const completedConcepts = body.completedConcepts || [];
     const language = body.language || "en";
     const userOverlay = deriveUserOverlay(completedConcepts);
-    const systemPrompt = buildSystemPrompt(userOverlay, language);
+    const systemPrompt = buildSystemPrompt(userOverlay, language, body.masteryContext);
 
     // Handle both new streaming format (messages array) and legacy format (question string)
     let messages: UIMessage[];

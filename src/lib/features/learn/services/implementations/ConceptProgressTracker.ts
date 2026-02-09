@@ -3,6 +3,16 @@
  *
  * Manages user progress through the TKA learning path.
  * Handles concept unlocking, progress tracking, and persistence.
+ *
+ * Dual-write strategy:
+ * - localStorage: Instant reads/writes for responsive UI
+ * - Firestore (via IUserKnowledgeProfilePersister): Durable, cross-device sync
+ *
+ * On initialization:
+ * - Loads from localStorage first (instant)
+ * - If a persister is provided, loads from Firestore and merges
+ *   (Firestore wins on conflict if its lastUpdated is newer)
+ * - Subscribes to Firestore changes for cross-device sync
  */
 
 import { TKA_CONCEPTS, isConceptUnlocked } from "../../domain/concepts";
@@ -12,18 +22,94 @@ import type {
   LearningProgress,
 } from "../../domain/types";
 import type { IConceptProgressTracker } from "../contracts/IConceptProgressTracker";
+import type { IUserKnowledgeProfilePersister } from "../contracts/IUserKnowledgeProfilePersister";
 
 const STORAGE_KEY = "tka_learning_progress";
 
 export class ConceptProgressTracker implements IConceptProgressTracker {
   private progress: LearningProgress;
   private subscribers: Set<(progress: LearningProgress) => void> = new Set();
+  private persister: IUserKnowledgeProfilePersister | null;
+  private userId: string | null = null;
+  private firestoreUnsubscribe: (() => void) | null = null;
+  private initialized = false;
 
-  constructor() {
-    this.progress = this.loadProgress();
+  constructor(persister?: IUserKnowledgeProfilePersister) {
+    this.persister = persister ?? null;
+    this.progress = this.loadFromLocalStorage();
   }
 
-  private loadProgress(): LearningProgress {
+  /**
+   * Initialize Firestore sync for an authenticated user.
+   * Call this when the user signs in.
+   * Loads from Firestore, merges with localStorage, and subscribes to changes.
+   */
+  async initializeForUser(userId: string): Promise<void> {
+    if (this.initialized && this.userId === userId) return;
+
+    this.userId = userId;
+    this.initialized = true;
+
+    if (!this.persister) return;
+
+    // Load from Firestore
+    const firestoreProgress = await this.persister.loadProgress(userId);
+
+    if (firestoreProgress) {
+      // Merge: Firestore wins if newer
+      const localTimestamp = this.progress.lastUpdated.getTime();
+      const firestoreTimestamp = firestoreProgress.lastUpdated.getTime();
+
+      if (firestoreTimestamp >= localTimestamp) {
+        this.progress = firestoreProgress;
+        this.saveToLocalStorage();
+        this.notifySubscribers();
+      } else {
+        // Local is newer (offline edits), push to Firestore
+        await this.persister.saveProgress(userId, this.progress);
+      }
+    } else {
+      // No Firestore data exists - upload current localStorage data
+      if (this.progress.completedConcepts.size > 0 || this.progress.concepts.size > 0) {
+        await this.persister.saveProgress(userId, this.progress);
+      }
+    }
+
+    // Subscribe to real-time changes for cross-device sync
+    this.cleanupFirestoreSubscription();
+    this.firestoreUnsubscribe = this.persister.subscribeToProgress(
+      userId,
+      (remoteProgress) => {
+        // Only apply remote changes if they're newer than local
+        if (
+          remoteProgress.lastUpdated.getTime() >
+          this.progress.lastUpdated.getTime()
+        ) {
+          this.progress = remoteProgress;
+          this.saveToLocalStorage();
+          this.notifySubscribers();
+        }
+      }
+    );
+  }
+
+  /**
+   * Clean up Firestore subscription. Call on sign-out.
+   */
+  disconnect(): void {
+    this.cleanupFirestoreSubscription();
+    this.userId = null;
+    this.initialized = false;
+  }
+
+  private cleanupFirestoreSubscription(): void {
+    if (this.firestoreUnsubscribe) {
+      this.firestoreUnsubscribe();
+      this.firestoreUnsubscribe = null;
+    }
+  }
+
+  private loadFromLocalStorage(): LearningProgress {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -39,6 +125,10 @@ export class ConceptProgressTracker implements IConceptProgressTracker {
       console.warn("Failed to load learning progress:", error);
     }
 
+    return this.createEmptyProgress();
+  }
+
+  private createEmptyProgress(): LearningProgress {
     return {
       concepts: new Map(),
       completedConcepts: new Set(),
@@ -50,7 +140,7 @@ export class ConceptProgressTracker implements IConceptProgressTracker {
     };
   }
 
-  private saveProgress(): void {
+  private saveToLocalStorage(): void {
     try {
       const data = {
         ...this.progress,
@@ -59,9 +149,23 @@ export class ConceptProgressTracker implements IConceptProgressTracker {
         lastUpdated: this.progress.lastUpdated.toISOString(),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      this.notifySubscribers();
     } catch (error) {
-      console.error("Failed to save learning progress:", error);
+      console.error("Failed to save learning progress to localStorage:", error);
+    }
+  }
+
+  private saveProgress(): void {
+    // Instant local write
+    this.saveToLocalStorage();
+    this.notifySubscribers();
+
+    // Async Firestore write (fire-and-forget)
+    if (this.persister && this.userId) {
+      this.persister
+        .saveProgress(this.userId, this.progress)
+        .catch((error) => {
+          console.error("Failed to save progress to Firestore:", error);
+        });
     }
   }
 
@@ -274,15 +378,7 @@ export class ConceptProgressTracker implements IConceptProgressTracker {
   }
 
   resetProgress(): void {
-    this.progress = {
-      concepts: new Map(),
-      completedConcepts: new Set(),
-      overallProgress: 0,
-      totalCorrect: 0,
-      totalTimeSpent: 0,
-      badges: [],
-      lastUpdated: new Date(),
-    };
+    this.progress = this.createEmptyProgress();
     this.saveProgress();
   }
 
