@@ -10,18 +10,37 @@
   import type { IWakeWordDetector } from "$lib/shared/voice-control/services/contracts/IWakeWordDetector";
   import type { ICommandInterpreter } from "$lib/shared/voice-control/services/contracts/ICommandInterpreter";
   import type { ICommandDispatcher } from "$lib/shared/voice-control/services/contracts/ICommandDispatcher";
+  import type { IVoiceSessionRecorder } from "$lib/shared/voice-control/services/contracts/IVoiceSessionRecorder";
+  import type { IVoiceSessionFormatter } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionFormatter";
+  import type { IVoiceSessionRepository } from "$lib/features/voice-sessions/services/contracts/IVoiceSessionRepository";
   import type { WakeWordState } from "$lib/shared/voice-control/domain/voice-command-types";
+  import type { VoiceSession } from "$lib/shared/voice-control/domain/voice-session-types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { voiceControlState } from "$lib/shared/voice-control/state/voice-control-state.svelte";
 
   let detector: IWakeWordDetector | null = null;
   let interpreter: ICommandInterpreter | null = null;
   let dispatcher: ICommandDispatcher | null = null;
+  let sessionRecorder: IVoiceSessionRecorder | null = null;
+  let sessionFormatter: IVoiceSessionFormatter | null = null;
+  let sessionRepository: IVoiceSessionRepository | null = null;
 
   let supported = $state(false);
   let listening = $state(false);
   let wakeWordState = $state<WakeWordState>("idle");
   let manualInput = $state("");
+
+  // Session recording state
+  let recording = $state(false);
+  let sessionEventCount = $state(0);
+  let sessionDuration = $state("0s");
+  let sessionStatusMessage = $state("");
+  let durationInterval: ReturnType<typeof setInterval> | null = null;
+  let sessionStartTime: number | null = null;
+  let lastSession = $state<VoiceSession | null>(null);
+  let copySuccess = $state(false);
+  let saveSuccess = $state(false);
+  let saving = $state(false);
 
   interface LogEntry {
     time: string;
@@ -41,8 +60,12 @@
       detector = container.items.wakeWordDetector as IWakeWordDetector;
       interpreter = container.items.commandInterpreter as ICommandInterpreter;
       dispatcher = container.items.commandDispatcher as ICommandDispatcher;
+      sessionRecorder = container.items.voiceSessionRecorder as IVoiceSessionRecorder;
+      sessionFormatter = container.items.voiceSessionFormatter as IVoiceSessionFormatter;
+      sessionRepository = container.items.voiceSessionRepository as IVoiceSessionRepository;
       supported = detector.isSupported();
       listening = detector.isListening();
+      recording = sessionRecorder.isRecording();
     } catch (e) {
       addLog("error", `Failed to resolve services: ${e}`);
       return;
@@ -88,6 +111,7 @@
       unsubWakeWord();
       unsubCommand();
       unsubState();
+      if (durationInterval) clearInterval(durationInterval);
     };
   });
 
@@ -138,6 +162,96 @@
 
   function clearLog() {
     log = [];
+  }
+
+  // =========================================================================
+  // Session Recording
+  // =========================================================================
+
+  function toggleRecording() {
+    if (!sessionRecorder) return;
+
+    if (recording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }
+
+  function startRecording() {
+    if (!sessionRecorder) return;
+    sessionRecorder.startSession();
+    recording = true;
+    sessionEventCount = 0;
+    sessionStartTime = Date.now();
+    sessionStatusMessage = "";
+    addLog("info", "Session recording started");
+
+    durationInterval = setInterval(() => {
+      if (sessionStartTime) {
+        const elapsed = Date.now() - sessionStartTime;
+        const secs = Math.floor(elapsed / 1000);
+        sessionDuration = secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}m ${secs % 60}s`;
+      }
+      // Update event count from recorder
+      const current = sessionRecorder?.getCurrentSession();
+      if (current) {
+        sessionEventCount = current.events.length;
+      }
+    }, 1000);
+  }
+
+  function stopRecording() {
+    if (!sessionRecorder) return;
+    const session = sessionRecorder.endSession();
+    recording = false;
+    if (durationInterval) {
+      clearInterval(durationInterval);
+      durationInterval = null;
+    }
+
+    if (session) {
+      lastSession = session;
+      addLog("info", `Session ended: ${session.events.length} events, ${formatDuration(session.durationMs)}`);
+      sessionStatusMessage = `${session.events.length} events recorded`;
+    } else {
+      addLog("info", "No session data");
+    }
+  }
+
+  async function copySession() {
+    if (!lastSession || !sessionFormatter) return;
+    const markdown = sessionFormatter.formatForAnalysis(lastSession);
+    try {
+      await navigator.clipboard.writeText(markdown);
+      copySuccess = true;
+      addLog("info", "Session copied to clipboard");
+      setTimeout(() => { copySuccess = false; }, 2000);
+    } catch (err) {
+      addLog("error", `Failed to copy: ${err}`);
+    }
+  }
+
+  async function saveSession() {
+    if (!lastSession || !sessionRepository) return;
+    saving = true;
+    try {
+      await sessionRepository.saveSession(lastSession);
+      saveSuccess = true;
+      addLog("info", `Session saved: ${lastSession.id}`);
+      setTimeout(() => { saveSuccess = false; }, 2000);
+    } catch (err) {
+      addLog("error", `Failed to save: ${err}`);
+    } finally {
+      saving = false;
+    }
+  }
+
+  function formatDuration(ms: number): string {
+    if (ms < 1000) return `${ms}ms`;
+    const secs = Math.floor(ms / 1000);
+    if (secs < 60) return `${secs}s`;
+    return `${Math.floor(secs / 60)}m ${secs % 60}s`;
   }
 
   const stateColors: Record<WakeWordState, string> = {
@@ -208,6 +322,78 @@
           Clear Log
         </button>
       </div>
+    </section>
+
+    <!-- Session Recording -->
+    <section class="session-section">
+      <h2>Session Recording</h2>
+      <div class="session-controls">
+        <button
+          class="lab-button"
+          class:danger={recording}
+          class:primary={!recording}
+          onclick={toggleRecording}
+        >
+          <i class="fas {recording ? 'fa-stop' : 'fa-circle'}" style={recording ? 'color: #ef4444' : 'color: #ef4444'}></i>
+          {recording ? "Stop Recording" : "Record Session"}
+        </button>
+
+        {#if recording}
+          <div class="session-status">
+            <span class="recording-indicator"></span>
+            <span class="session-stat">{sessionDuration}</span>
+            <span class="session-stat">{sessionEventCount} events</span>
+          </div>
+        {/if}
+
+        {#if lastSession && !recording}
+          <button
+            class="lab-button"
+            onclick={copySession}
+            disabled={copySuccess}
+          >
+            <i class="fas {copySuccess ? 'fa-check' : 'fa-copy'}"></i>
+            {copySuccess ? "Copied" : "Copy for AI"}
+          </button>
+          <button
+            class="lab-button"
+            onclick={saveSession}
+            disabled={saving || saveSuccess}
+          >
+            <i class="fas {saveSuccess ? 'fa-check' : 'fa-cloud-upload-alt'}"></i>
+            {saveSuccess ? "Saved" : saving ? "Saving..." : "Save Session"}
+          </button>
+        {/if}
+      </div>
+
+      {#if lastSession && !recording}
+        <div class="session-summary">
+          <div class="state-row">
+            <span class="label">Events</span>
+            <span class="value">{lastSession.stats.totalEvents}</span>
+          </div>
+          <div class="state-row">
+            <span class="label">Success</span>
+            <span class="value" style="color: #22c55e">{lastSession.stats.successCount}</span>
+          </div>
+          <div class="state-row">
+            <span class="label">Failed</span>
+            <span class="value" style="color: #ef4444">{lastSession.stats.failureCount}</span>
+          </div>
+          <div class="state-row">
+            <span class="label">Unresolved</span>
+            <span class="value" style="color: #f59e0b">{lastSession.stats.unresolvedCount}</span>
+          </div>
+          <div class="state-row">
+            <span class="label">Avg Latency</span>
+            <span class="value">{lastSession.stats.avgLatencyMs}ms</span>
+          </div>
+        </div>
+      {/if}
+
+      {#if sessionStatusMessage && !recording}
+        <p class="hint">{sessionStatusMessage}</p>
+      {/if}
     </section>
 
     <!-- Manual input -->
@@ -417,6 +603,51 @@
 
   .lab-button.danger:hover:not(:disabled) {
     background: rgba(239, 68, 68, 0.25);
+  }
+
+  /* Session recording */
+  .session-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .session-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 8px;
+  }
+
+  .recording-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .session-stat {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-compact, 12px);
+    font-family: monospace;
+    font-weight: 600;
+  }
+
+  .session-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
   /* Manual input */

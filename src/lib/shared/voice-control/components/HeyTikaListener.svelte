@@ -24,6 +24,7 @@
   import type { ICommandDispatcher } from "../services/contracts/ICommandDispatcher";
   import type { IIntentResolver } from "../services/contracts/IIntentResolver";
   import type { ITTSProvider } from "../services/contracts/ITTSProvider";
+  import type { IVoiceSessionRecorder } from "../services/contracts/IVoiceSessionRecorder";
   import { navigationState } from "../../navigation/state/navigation-state.svelte";
   import { voiceControlState } from "../state/voice-control-state.svelte";
   import { classifyTier } from "../ai/tier-classifier";
@@ -34,6 +35,14 @@
   let commandDispatcher: ICommandDispatcher | null = null;
   let intentResolver: IIntentResolver | null = null;
   let ttsProvider: ITTSProvider | null = null;
+  let sessionRecorder: IVoiceSessionRecorder | null = null;
+
+  function getContext() {
+    return {
+      module: navigationState.currentModule,
+      tab: navigationState.activeTab,
+    };
+  }
 
   function enterCommandMode() {
     // voiceControlState.enterCommandMode() calls onEnterCommandMode callback,
@@ -48,29 +57,10 @@
   }
 
   /**
-   * Dispatch a single VoiceCommand and return the result.
-   * Used by both Tier 1 (regex) and Tier 2 (LLM) paths.
-   */
-  async function dispatchCommand(command: VoiceCommand, rawEvent: string) {
-    if (!commandDispatcher) return;
-
-    const result = await commandDispatcher.dispatch(command);
-    voiceControlState.refreshCommandModeTimer();
-
-    if (result.success) {
-      console.log(`[HeyTika] ${result.message}`);
-      voiceControlState.showFeedback("success", result.message, rawEvent);
-    } else {
-      console.warn(`[HeyTika] Command failed: ${result.message}`);
-      voiceControlState.showFeedback("error", result.message, rawEvent);
-    }
-  }
-
-  /**
    * Tier 2: LLM-powered intent resolution.
    * Called when regex chain returns "unknown" and tier classifier says "action".
    */
-  async function resolveTier2(rawText: string, rawEvent: string) {
+  async function resolveTier2(rawText: string, rawEvent: string, startMs: number) {
     if (!intentResolver || !commandDispatcher) return;
 
     const context = {
@@ -91,7 +81,7 @@
     // If LLM says this is a question, route to Tier 3 (voice-to-chat)
     if (resolution.escalateToChat) {
       console.log(`[HeyTika] Tier 2 → Tier 3: "${rawText}" is a question, escalating to chat`);
-      await resolveTier3(rawText, rawEvent);
+      await resolveTier3(rawText, rawEvent, startMs);
       return;
     }
 
@@ -104,6 +94,22 @@
     if (isUnknown || resolution.commands.length === 0) {
       console.log(`[HeyTika] Tier 2 failed: "${rawText}" not recognized`);
       voiceControlState.showFeedback("error", `"${rawText}"?`, rawEvent);
+
+      // Record unresolved event
+      sessionRecorder?.recordEvent({
+        transcript: rawText,
+        speechConfidence: 0,
+        tier: "unresolved",
+        interpretedCommand: null,
+        dispatchResult: null,
+        context: getContext(),
+        latencyMs: Math.round(performance.now() - startMs),
+        llmDetails: {
+          escalatedToChat: false,
+          confidence: resolution.confidence,
+          commandCount: 0,
+        },
+      });
       return;
     }
 
@@ -112,7 +118,32 @@
 
     // Dispatch all resolved commands sequentially
     for (const command of resolution.commands) {
-      await dispatchCommand(command, rawEvent);
+      const result = await commandDispatcher.dispatch(command);
+      voiceControlState.refreshCommandModeTimer();
+
+      // Record Tier 2 event
+      sessionRecorder?.recordEvent({
+        transcript: rawText,
+        speechConfidence: 0,
+        tier: "tier2_llm",
+        interpretedCommand: command,
+        dispatchResult: result,
+        context: getContext(),
+        latencyMs: Math.round(performance.now() - startMs),
+        llmDetails: {
+          escalatedToChat: false,
+          confidence: resolution.confidence,
+          commandCount: resolution.commands.length,
+        },
+      });
+
+      if (result.success) {
+        console.log(`[HeyTika] ${result.message}`);
+        voiceControlState.showFeedback("success", result.message, rawEvent);
+      } else {
+        console.warn(`[HeyTika] Command failed: ${result.message}`);
+        voiceControlState.showFeedback("error", result.message, rawEvent);
+      }
     }
   }
 
@@ -121,7 +152,7 @@
    * Sends the question to /api/tika/ask, collects the streamed response,
    * speaks it via TTS, and shows a chat bubble.
    */
-  async function resolveTier3(rawText: string, rawEvent: string) {
+  async function resolveTier3(rawText: string, rawEvent: string, startMs: number) {
     voiceControlState.showFeedback("info", "Thinking...", rawEvent);
     voiceControlState.refreshCommandModeTimer();
 
@@ -138,6 +169,16 @@
 
       if (!response.ok) {
         voiceControlState.showFeedback("error", "Couldn't get an answer", rawEvent);
+
+        sessionRecorder?.recordEvent({
+          transcript: rawText,
+          speechConfidence: 0,
+          tier: "tier3_chat",
+          interpretedCommand: null,
+          dispatchResult: { success: false, message: `HTTP ${response.status}` },
+          context: getContext(),
+          latencyMs: Math.round(performance.now() - startMs),
+        });
         return;
       }
 
@@ -146,6 +187,16 @@
 
       if (!responseText) {
         voiceControlState.showFeedback("error", "No response", rawEvent);
+
+        sessionRecorder?.recordEvent({
+          transcript: rawText,
+          speechConfidence: 0,
+          tier: "tier3_chat",
+          interpretedCommand: null,
+          dispatchResult: { success: false, message: "Empty response" },
+          context: getContext(),
+          latencyMs: Math.round(performance.now() - startMs),
+        });
         return;
       }
 
@@ -159,14 +210,41 @@
       voiceControlState.clearFeedback();
       voiceControlState.refreshCommandModeTimer();
 
+      let spokeTTS = false;
       if (ttsProvider?.isSupported()) {
         await ttsProvider.speak(responseText);
+        spokeTTS = true;
       }
 
       voiceControlState.setChatBubbleSpeaking(false);
+
+      // Record Tier 3 event
+      sessionRecorder?.recordEvent({
+        transcript: rawText,
+        speechConfidence: 0,
+        tier: "tier3_chat",
+        interpretedCommand: null,
+        dispatchResult: { success: true, message: "Chat responded" },
+        context: getContext(),
+        latencyMs: Math.round(performance.now() - startMs),
+        chatDetails: {
+          responseText,
+          spokeTTS,
+        },
+      });
     } catch (error) {
       console.warn("[HeyTika] Tier 3 failed:", error);
       voiceControlState.showFeedback("error", "Couldn't get an answer", rawEvent);
+
+      sessionRecorder?.recordEvent({
+        transcript: rawText,
+        speechConfidence: 0,
+        tier: "tier3_chat",
+        interpretedCommand: null,
+        dispatchResult: { success: false, message: String(error) },
+        context: getContext(),
+        latencyMs: Math.round(performance.now() - startMs),
+      });
     }
   }
 
@@ -219,6 +297,7 @@
       commandDispatcher = container.items.commandDispatcher as ICommandDispatcher;
       intentResolver = container.items.intentResolver as IIntentResolver;
       ttsProvider = container.items.ttsProvider as ITTSProvider;
+      sessionRecorder = container.items.voiceSessionRecorder as IVoiceSessionRecorder;
     } catch (error) {
       console.error("[HeyTika] Failed to resolve voice control services:", error);
       return;
@@ -258,6 +337,8 @@
     const unsubCommand = wakeWordDetector.onCommand(async (event) => {
       if (!commandInterpreter || !commandDispatcher) return;
 
+      const commandStartMs = performance.now();
+
       const context = {
         currentModule: navigationState.currentModule,
         currentTab: navigationState.activeTab,
@@ -296,17 +377,37 @@
 
         if (tier === "question") {
           console.log(`[HeyTika] Tier 3: "${event.command}" classified as question`);
-          await resolveTier3(event.command, event.command);
+          await resolveTier3(event.command, event.command, commandStartMs);
           return;
         }
 
         // Tier 2: action intent → LLM resolution
-        await resolveTier2(event.command, event.command);
+        await resolveTier2(event.command, event.command, commandStartMs);
         return;
       }
 
       // Tier 1 matched → dispatch directly
-      await dispatchCommand(command, event.command);
+      const result = await commandDispatcher.dispatch(command);
+      voiceControlState.refreshCommandModeTimer();
+
+      // Record Tier 1 event
+      sessionRecorder?.recordEvent({
+        transcript: event.command,
+        speechConfidence: event.confidence,
+        tier: "tier1_regex",
+        interpretedCommand: command,
+        dispatchResult: result,
+        context: getContext(),
+        latencyMs: Math.round(performance.now() - commandStartMs),
+      });
+
+      if (result.success) {
+        console.log(`[HeyTika] ${result.message}`);
+        voiceControlState.showFeedback("success", result.message, event.command);
+      } else {
+        console.warn(`[HeyTika] Command failed: ${result.message}`);
+        voiceControlState.showFeedback("error", result.message, event.command);
+      }
     });
 
     // Sync detector state → reactive store
