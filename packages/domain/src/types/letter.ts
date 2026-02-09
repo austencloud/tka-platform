@@ -1,0 +1,40 @@
+export interface MotionPattern {
+  blueMotion: string;
+  redMotion: string;
+  note?: string;
+}
+
+export interface LetterTypeDefinition {
+  name: string;
+  description: string;
+  characteristics: string[];
+  letters: string[];
+  motionPattern: MotionPattern;
+}
+
+/** Union of all 47 TKA letters */
+export type Letter =
+  | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I"
+  | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R"
+  | "S" | "T" | "U" | "V"
+  | "W" | "X" | "Y" | "Z" | "Σ" | "Δ" | "Θ" | "Ω"
+  | "W-" | "X-" | "Y-" | "Z-" | "Σ-" | "Δ-" | "Θ-" | "Ω-"
+  | "Φ" | "Ψ" | "Λ"
+  | "Φ-" | "Ψ-" | "Λ-"
+  | "α" | "β" | "γ";
+
+export type LetterTypeNumber = 1 | 2 | 3 | 4 | 5 | 6;
+
+export type LetterTypeName =
+  | "Dual-Shift"
+  | "Shift"
+  | "Cross-Shift"
+  | "Dash"
+  | "Dual-Dash"
+  | "Static";
+
+export interface LetterTypeInfo {
+  type: string;
+  name: string;
+  typeNumber: LetterTypeNumber;
+}

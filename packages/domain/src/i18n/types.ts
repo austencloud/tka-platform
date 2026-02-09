@@ -1,0 +1,35 @@
+export interface DomainGlossary {
+  // Positions
+  alpha: string;
+  beta: string;
+  gamma: string;
+  // Motions
+  static: string;
+  shift: string;
+  dash: string;
+  // Rotations
+  pro: string;
+  anti: string;
+  prospin: string;
+  antispin: string;
+  // Grid
+  grid: string;
+  diamond: string;
+  box: string;
+  // Notation
+  pictograph: string;
+  arrow: string;
+  // Other
+  orientation: string;
+  turn: string;
+  sequence: string;
+  reversal: string;
+  // Level 3+
+  float: string;
+  // Level 5+
+  hash: string;
+  // Level 6+
+  compound: string;
+  // Level 7+
+  interradial: string;
+}
