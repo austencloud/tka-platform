@@ -131,52 +131,125 @@ async function loginWithCredentials(
   page: Page,
   credentials: Credentials
 ): Promise<boolean> {
-  const loginVisible = await page
-    .locator("text=Sign in to continue")
-    .or(page.locator("text=Welcome back"))
-    .isVisible({ timeout: TIMEOUTS.AUTH_UI_VISIBLE })
-    .catch(() => false);
+  // The app's startup sequence for unauthenticated users:
+  //   1. Splash screen covers everything (app.html #app-loading)
+  //   2. SvelteKit hydrates, +layout.svelte advances progress to ~55%
+  //   3. Firebase auth check completes → "Checking authentication..." state
+  //   4. Not authenticated → renders LandingPage ("Welcome back!")
+  //   5. __tkaLoadProgress(100) is NEVER called (it's in the authenticated path)
+  //   6. Splash eventually disappears via 15-second safety timeout
+  //
+  // Strategy: wait for the splash to go away (naturally or force it), THEN
+  // wait for the login UI. We use a generous timeout because the splash
+  // takes up to 15 seconds on the safety timeout path.
 
-  if (!loginVisible) return true; // Already logged in
+  console.log("[login] Waiting for splash to clear and auth UI to appear...");
 
-  // Might need to click "Continue with email" first
-  let emailInput = page.locator('input[type="email"]');
-  if (!(await emailInput.isVisible({ timeout: TIMEOUTS.INPUT_VISIBLE }).catch(() => false))) {
-    const emailButton = page.locator("text=Continue with email");
-    if (await emailButton.isVisible({ timeout: TIMEOUTS.INPUT_VISIBLE }).catch(() => false)) {
-      await emailButton.click();
-      await page.waitForTimeout(TIMEOUTS.INPUT_VISIBLE);
+  // Wait for the splash screen to go away first. For auth routes hitting "/",
+  // the splash may sit for up to 15 seconds since __tkaLoadProgress(100) is only
+  // called in the authenticated initialization path.
+  try {
+    await page.waitForSelector("#app-loading", {
+      state: "detached",
+      timeout: 20_000,
+    });
+    console.log("[login] Splash screen dismissed");
+  } catch {
+    console.log("[login] Splash still present after 20s, force-removing...");
+    await dismissSplashScreen(page);
+  }
+
+  // Wait for the app to settle into either login screen or authenticated state.
+  // Poll the DOM text content directly — Playwright's isVisible() can return false
+  // for elements mid-Svelte-transition even when they're rendered and readable.
+  let loginVisible = false;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const hasLoginText = await page.evaluate(() => {
+      const text = document.body.innerText;
+      return text.includes("Sign in to continue") || text.includes("Welcome back");
+    });
+    if (hasLoginText) {
+      loginVisible = true;
+      break;
+    }
+    await page.waitForTimeout(500);
+  }
+
+  console.log(`[login] Auth UI detected: ${loginVisible}`);
+  if (!loginVisible) return true; // Already logged in — no login screen appeared within 10s
+
+  // Step 1: Click "Continue with email" to expand the email auth section.
+  //         Use evaluate() + click to bypass Svelte transition visibility issues.
+  console.log("[login] Clicking 'Continue with email'...");
+  await page.evaluate(() => {
+    const buttons = Array.from(document.querySelectorAll("button, .email-toggle"));
+    const emailBtn = buttons.find((b) => b.textContent?.includes("Continue with email"));
+    if (emailBtn) (emailBtn as HTMLElement).click();
+  });
+  await page.waitForTimeout(800);
+
+  // Step 2: Switch from "Magic Link" (default) to "Password" tab
+  console.log("[login] Clicking 'Password' tab...");
+  await page.evaluate(() => {
+    const tabs = Array.from(document.querySelectorAll('button[role="tab"]'));
+    const pwTab = tabs.find((t) => t.textContent?.includes("Password"));
+    if (pwTab) (pwTab as HTMLElement).click();
+  });
+  await page.waitForTimeout(800);
+
+  // Step 3: Fill email — use evaluate to set value directly
+  console.log("[login] Filling email...");
+  await page.evaluate((email) => {
+    const input = document.querySelector('input[type="email"]') as HTMLInputElement;
+    if (input) {
+      input.value = email;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }, credentials.email);
+
+  // Step 4: Fill password
+  console.log("[login] Filling password...");
+  await page.evaluate((password) => {
+    const input = document.querySelector('input[type="password"]') as HTMLInputElement;
+    if (input) {
+      input.value = password;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }, credentials.password);
+
+  // Step 5: Submit
+  await page.waitForTimeout(300);
+  console.log("[login] Clicking Sign In...");
+  await page.evaluate(() => {
+    const btn = document.querySelector('button[type="submit"]') as HTMLElement;
+    if (btn) btn.click();
+  });
+  console.log("[login] Submitted, waiting for auth...");
+
+  // Step 6: Wait for login to complete — poll until login text disappears
+  for (let i = 0; i < 30; i++) {
+    await page.waitForTimeout(500);
+    const stillOnLogin = await page.evaluate(() => {
+      const text = document.body.innerText;
+      return text.includes("Sign in to continue") || text.includes("Welcome back");
+    });
+    if (!stillOnLogin) {
+      console.log("[login] Login succeeded");
+      return true;
+    }
+    // Check for error messages
+    const hasError = await page.evaluate(() => {
+      const el = document.querySelector(".message.error");
+      return el?.textContent || null;
+    });
+    if (hasError) {
+      console.error(`[login] Auth error: ${hasError}`);
+      return false;
     }
   }
 
-  // Fill credentials
-  emailInput = page.locator('input[type="email"]');
-  if (await emailInput.isVisible({ timeout: TIMEOUTS.EMAIL_INPUT_VISIBLE }).catch(() => false)) {
-    await emailInput.fill(credentials.email);
-  }
-
-  const passwordInput = page.locator('input[type="password"]');
-  if (await passwordInput.isVisible({ timeout: TIMEOUTS.INPUT_VISIBLE }).catch(() => false)) {
-    await passwordInput.fill(credentials.password);
-  }
-
-  // Submit
-  await page.waitForTimeout(TIMEOUTS.PRE_SUBMIT_DELAY);
-  const signInBtn = page.locator(
-    'button:has-text("Sign In"), button:has-text("Sign in"), button:has-text("Log in")'
-  );
-  if (await signInBtn.first().isVisible({ timeout: TIMEOUTS.INPUT_VISIBLE }).catch(() => false)) {
-    await signInBtn.first().click();
-    await page.waitForTimeout(TIMEOUTS.POST_LOGIN_SETTLE);
-  }
-
-  // Verify login succeeded
-  const stillOnLogin = await page
-    .locator("text=Sign in to continue")
-    .isVisible({ timeout: TIMEOUTS.LOGIN_VERIFY })
-    .catch(() => false);
-
-  return !stillOnLogin;
+  console.error("[login] Login timed out after 15s");
+  return false;
 }
 
 async function suppressOnboarding(page: Page): Promise<void> {
@@ -377,6 +450,7 @@ async function navigateToRoute(page: Page, route: RouteConfig): Promise<void> {
   );
 
   await page.reload({ waitUntil: "load", timeout: TIMEOUTS.ROUTE_LOAD });
+  await dismissSplashScreen(page);
   await page.waitForTimeout(TIMEOUTS.SPA_RELOAD_SETTLE);
 }
 
@@ -421,7 +495,6 @@ if (authRoutes.length > 0 && hasAuth) {
       const page = await context.newPage();
 
       await page.goto("/", { waitUntil: "load", timeout: TIMEOUTS.INITIAL_LOAD });
-      await page.waitForTimeout(TIMEOUTS.POST_CLICK_SETTLE);
       await bypassLandingPage(page);
 
       const loggedIn = await loginWithCredentials(page, credentials!);
@@ -443,9 +516,15 @@ if (authRoutes.length > 0 && hasAuth) {
 
         // Each test does its own login (contexts are isolated in Playwright)
         await page.goto("/", { waitUntil: "load", timeout: TIMEOUTS.INITIAL_LOAD });
-        await page.waitForTimeout(TIMEOUTS.POST_CLICK_SETTLE);
         await bypassLandingPage(page);
-        await loginWithCredentials(page, credentials!);
+
+        const loggedIn = await loginWithCredentials(page, credentials!);
+        if (!loggedIn) {
+          throw new Error(
+            `Login failed for ${route.label}. Check credentials in screenshot-config.local.json.`
+          );
+        }
+
         await suppressOnboarding(page);
         await setTheme(page, isDark);
         await dismissModals(page);

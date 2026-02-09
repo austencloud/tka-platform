@@ -63,8 +63,9 @@ async function main() {
 
   // Check if adb is available
   if (!exec("adb version")) {
-    console.error("❌ ADB not found in PATH");
-    process.exit(1);
+    console.log("⚠️  ADB not found in PATH. Skipping device setup.");
+    console.log("   Install Android SDK Platform-Tools to enable mobile testing.");
+    return { success: false, devices: [] };
   }
 
   // Get connected devices
