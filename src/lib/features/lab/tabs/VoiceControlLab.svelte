@@ -17,13 +17,14 @@
   import type { VoiceSession } from "$lib/shared/voice-control/domain/voice-session-types";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { voiceControlState } from "$lib/shared/voice-control/state/voice-control-state.svelte";
+  import SavedSessionList from "$lib/features/voice-sessions/components/SavedSessionList.svelte";
 
   let detector: IWakeWordDetector | null = null;
   let interpreter: ICommandInterpreter | null = null;
   let dispatcher: ICommandDispatcher | null = null;
   let sessionRecorder: IVoiceSessionRecorder | null = null;
-  let sessionFormatter: IVoiceSessionFormatter | null = null;
-  let sessionRepository: IVoiceSessionRepository | null = null;
+  let sessionFormatter = $state<IVoiceSessionFormatter | null>(null);
+  let sessionRepository = $state<IVoiceSessionRepository | null>(null);
 
   let supported = $state(false);
   let listening = $state(false);
@@ -41,6 +42,7 @@
   let copySuccess = $state(false);
   let saveSuccess = $state(false);
   let saving = $state(false);
+  let refreshTrigger = $state(0);
 
   interface LogEntry {
     time: string;
@@ -239,6 +241,7 @@
       await sessionRepository.saveSession(lastSession);
       saveSuccess = true;
       addLog("info", `Session saved: ${lastSession.id}`);
+      refreshTrigger++;
       setTimeout(() => { saveSuccess = false; }, 2000);
     } catch (err) {
       addLog("error", `Failed to save: ${err}`);
@@ -395,6 +398,15 @@
         <p class="hint">{sessionStatusMessage}</p>
       {/if}
     </section>
+
+    <!-- Saved Sessions -->
+    {#if sessionRepository && sessionFormatter}
+      <SavedSessionList
+        repository={sessionRepository}
+        formatter={sessionFormatter}
+        {refreshTrigger}
+      />
+    {/if}
 
     <!-- Manual input -->
     <section class="manual-section">
