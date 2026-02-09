@@ -4,15 +4,15 @@ WordHeader.svelte
 Word/sequence name display for animation area.
 Displays ABOVE the canvas as a full-width header (matches image export style).
 
-Uses simplifyRepeatedWord to handle repeated words (e.g., "ABAB" → "AB").
-Does NOT truncate - allows full word length when needed for uniqueness.
+Uses simplifyAndTruncate to match the workspace WordLabel's shortened display.
+Truncates to 12 letter units max to reduce visual overwhelm during playback.
 Dark mode: Controlled via prop (for preview isolation) or falls back to :root.dark class.
 Supports letter highlighting during animation playback.
 -->
 <script lang="ts">
   import { cubicOut, backOut } from "svelte/easing";
   import { safeSlide } from "$lib/shared/utils/transitions";
-  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+  import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   let {
     word = null,
@@ -52,7 +52,7 @@ Supports letter highlighting during animation playback.
       // Word changed while visible: exit old, then enter new
       animationPhase = "exiting";
 
-      const oldLetterCount = displayedWord ? simplifyRepeatedWord(displayedWord).length : 1;
+      const oldLetterCount = displayedWord ? simplifyAndTruncate(displayedWord, 12).length : 1;
       const exitDuration = EXIT_DURATION_BASE + (oldLetterCount * EXIT_STAGGER_PER_LETTER);
 
       setTimeout(() => {
@@ -84,8 +84,9 @@ Supports letter highlighting during animation playback.
   });
 
   // Derive display text from displayedWord (the word currently showing)
+  // Uses simplifyAndTruncate to match the workspace WordLabel's shortened display
   const displayText = $derived(
-    displayedWord ? simplifyRepeatedWord(displayedWord) : null
+    displayedWord ? simplifyAndTruncate(displayedWord, 12) : null
   );
 
   // Computed: Whether animation highlighting is active
