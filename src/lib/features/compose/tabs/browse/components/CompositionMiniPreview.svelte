@@ -23,6 +23,10 @@
 
 	onDestroy(() => {
 		destroyed = true;
+		// Revoke blob URLs to free memory
+		for (const url of cellImages.values()) {
+			if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+		}
 	});
 
 	// Render all cell previews when cells change
@@ -32,6 +36,10 @@
 
 	async function renderPreviews(currentCells: CellConfig[], _layout: GridLayout): Promise<void> {
 		isRendering = true;
+		// Revoke old blob URLs before replacing
+		for (const url of cellImages.values()) {
+			if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+		}
 		const newImages = new Map<string, string>();
 
 		const renderPromises = currentCells.map(async (cell) => {

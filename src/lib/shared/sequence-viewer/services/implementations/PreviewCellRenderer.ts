@@ -67,7 +67,26 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
   }
 
   /**
-   * Render a single pictograph to a data URL (with IndexedDB caching)
+   * Convert an HTMLCanvasElement to a Blob asynchronously.
+   * Unlike toDataURL() which blocks the main thread for PNG encoding,
+   * toBlob() delegates encoding to a background thread.
+   */
+  private canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error("toBlob returned null"))),
+        "image/png"
+      );
+    });
+  }
+
+  /**
+   * Render a single pictograph and return a blob URL.
+   * Uses blob URLs (URL.createObjectURL) instead of data URLs for two reasons:
+   * 1. Cache hits: createObjectURL is instant vs FileReader.readAsDataURL (~5ms)
+   * 2. Cache misses: toBlob is async (background thread) vs toDataURL (blocks main thread ~20-50ms)
+   *
+   * IMPORTANT: Callers must call URL.revokeObjectURL() on returned URLs when done.
    */
   async renderCell(
     pictographData: PictographData,
@@ -78,17 +97,11 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
     // Generate cache key
     const cacheKey = this.deriveCacheKey(pictographData, stepNumber, isDark, options);
 
-    // Check IndexedDB cache first
+    // Check IndexedDB cache first — blob URL creation is instant
     try {
       const cachedBlob = await pictographBlobCache.get(cacheKey);
       if (cachedBlob) {
-        // Convert blob to data URL
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(cachedBlob);
-        });
+        return URL.createObjectURL(cachedBlob);
       }
     } catch {
       // Cache miss or error, proceed to render
@@ -129,19 +142,16 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
       options.showStepNumbers ? stepNumber : undefined
     );
 
-    // Convert canvas to data URL
-    const dataUrl = result.canvas.toDataURL("image/png");
+    // Convert canvas to blob asynchronously (doesn't block main thread)
+    const blob = await this.canvasToBlob(result.canvas);
 
-    // Cache the result asynchronously (don't await)
-    result.canvas.toBlob((blob) => {
-      if (blob) {
-        pictographBlobCache.set(cacheKey, blob).catch(() => {
-          // Ignore cache write errors
-        });
-      }
-    }, "image/png");
+    // Cache the blob to IndexedDB asynchronously (don't await)
+    pictographBlobCache.set(cacheKey, blob).catch(() => {
+      // Ignore cache write errors
+    });
 
-    return dataUrl;
+    // Return blob URL — caller must revoke when done
+    return URL.createObjectURL(blob);
   }
 }
 

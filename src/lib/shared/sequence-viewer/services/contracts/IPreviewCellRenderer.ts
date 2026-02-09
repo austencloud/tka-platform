@@ -45,13 +45,16 @@ export interface PreviewCellRenderOptions {
 
 export interface IPreviewCellRenderer {
   /**
-   * Render a single pictograph cell to a data URL with IndexedDB caching.
+   * Render a single pictograph cell with IndexedDB caching.
+   * Returns a blob URL (URL.createObjectURL) for non-blocking performance.
+   *
+   * IMPORTANT: Callers must call URL.revokeObjectURL() on returned URLs when done.
    *
    * @param pictographData - The pictograph data to render
    * @param stepNumber - Optional step number to display (1-indexed), undefined for start position
    * @param isDark - Whether to render in dark mode
    * @param options - Render options including size and visibility settings
-   * @returns PNG data URL
+   * @returns Blob URL string
    */
   renderCell(
     pictographData: PictographData,

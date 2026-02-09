@@ -56,7 +56,17 @@
   function storePreviewInCache(key: string, data: CachedPreview): void {
     if (globalPreviewCache.size >= MAX_PREVIEW_CACHE && !globalPreviewCache.has(key)) {
       const oldest = globalPreviewCache.keys().next().value;
-      if (oldest !== undefined) globalPreviewCache.delete(oldest);
+      if (oldest !== undefined) {
+        // Revoke blob URLs from evicted cache entry
+        const evicted = globalPreviewCache.get(oldest);
+        if (evicted) {
+          for (const cell of evicted.cells) {
+            if (cell.lightUrl.startsWith("blob:")) URL.revokeObjectURL(cell.lightUrl);
+            if (cell.darkUrl.startsWith("blob:")) URL.revokeObjectURL(cell.darkUrl);
+          }
+        }
+        globalPreviewCache.delete(oldest);
+      }
     }
     globalPreviewCache.set(key, data);
   }
@@ -417,67 +427,84 @@
         return;
       }
 
-      const newCells: CellData[] = [];
+      // Clear old URLs before progressive render
+      clearCellUrls();
 
-      // Render start position
+      // Show grid layout immediately (isLoading = false) so the grid skeleton
+      // is visible while cells render. Cells appear progressively as they complete.
+      isLoading = false;
+
+      // Progressive rendering: launch all cell renders in parallel, insert each
+      // into the cells array as it completes. Users see cells appearing rapidly
+      // instead of a blank screen followed by all-at-once.
+      const completedCells: CellData[] = [];
+
+      function insertCell(cell: CellData) {
+        // Insert in sorted position (by index) for correct display order
+        const insertIdx = completedCells.findIndex(c => c.index > cell.index);
+        if (insertIdx === -1) {
+          completedCells.push(cell);
+        } else {
+          completedCells.splice(insertIdx, 0, cell);
+        }
+        // Trigger Svelte reactivity with a new array reference
+        cells = [...completedCells];
+      }
+
+      const renderPromises: Promise<void>[] = [];
+
+      // Start position render
       const firstStep = sequence.steps[0];
       if (sequence.startPosition || firstStep) {
         const startData = sequence.startPosition || createStartPositionFromBeatStart(firstStep!);
-
-        const [lightUrl, darkUrl] = await Promise.all([
-          previewCellRenderer.renderCell(startData, undefined, false, renderOptions),
-          previewCellRenderer.renderCell(startData, undefined, true, renderOptions),
-        ]);
-
         const { gridColumn, gridRow } = calculateGridPosition(-1, cols);
-        newCells.push({
-          index: -1,
-          label: "Start",
-          lightUrl,
-          darkUrl,
-          gridColumn,
-          gridRow,
-        });
+
+        renderPromises.push(
+          Promise.all([
+            previewCellRenderer.renderCell(startData, undefined, false, renderOptions),
+            previewCellRenderer.renderCell(startData, undefined, true, renderOptions),
+          ]).then(([lightUrl, darkUrl]) => {
+            insertCell({ index: -1, label: "Start", lightUrl, darkUrl, gridColumn, gridRow });
+          })
+        );
       }
 
-      // Render each step
+      // Step renders - all launched in parallel
       for (let i = 0; i < sequence.steps.length; i++) {
         const step = sequence.steps[i];
         if (!step) continue;
 
-        const [lightUrl, darkUrl] = await Promise.all([
-          previewCellRenderer.renderCell(step, i + 1, false, renderOptions),
-          previewCellRenderer.renderCell(step, i + 1, true, renderOptions),
-        ]);
+        const stepIndex = i;
+        const { gridColumn, gridRow } = calculateGridPosition(stepIndex, cols);
 
-        const { gridColumn, gridRow } = calculateGridPosition(i, cols);
-        newCells.push({
-          index: i,
-          label: String(i + 1),
-          lightUrl,
-          darkUrl,
-          gridColumn,
-          gridRow,
-        });
+        renderPromises.push(
+          Promise.all([
+            previewCellRenderer.renderCell(step, stepIndex + 1, false, renderOptions),
+            previewCellRenderer.renderCell(step, stepIndex + 1, true, renderOptions),
+          ]).then(([lightUrl, darkUrl]) => {
+            insertCell({ index: stepIndex, label: String(stepIndex + 1), lightUrl, darkUrl, gridColumn, gridRow });
+          })
+        );
       }
 
-      // Clear old URLs
-      clearCellUrls();
-
-      cells = newCells;
+      // Wait for all to complete (they've already been progressively displayed)
+      await Promise.all(renderPromises);
 
       // Store in global cache for reuse across component remounts
-      storePreviewInCache(cacheKey, { cells: newCells, columns: cols, rows: rws });
+      storePreviewInCache(cacheKey, { cells: completedCells, columns: cols, rows: rws });
     } catch (error) {
       console.error("Failed to render cells:", error);
     } finally {
-      isLoading = false;
       isRendering = false;
     }
   }
 
   function clearCellUrls() {
-    // Data URLs don't need to be revoked, but if we switch to blob URLs we'd do it here
+    // Revoke blob URLs to free memory (blob URLs hold a reference to the blob)
+    for (const cell of cells) {
+      if (cell.lightUrl.startsWith("blob:")) URL.revokeObjectURL(cell.lightUrl);
+      if (cell.darkUrl.startsWith("blob:")) URL.revokeObjectURL(cell.darkUrl);
+    }
     cells = [];
   }
 
