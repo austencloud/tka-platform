@@ -13,6 +13,11 @@ import {
   getGlossary,
   getLetterTypes,
 } from "../shared/server-context.js";
+import {
+  TERM_ALIASES,
+  resolveTermAlias,
+  POSITION_DEFINITIONS,
+} from "@tka/domain";
 
 export function registerEducationalTools(server: McpServer): void {
   // Tool: get_alphabet_info
@@ -281,52 +286,7 @@ Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter
       const glossary = getGlossary();
       const normalizedTerm = term.toLowerCase().trim();
 
-      // Alias map for common alternate spellings and abbreviations
-      const aliases: Record<string, string> = {
-        "counter-clockwise": "counterclockwise",
-        "counter clockwise": "counterclockwise",
-        "prospin": "prospin",
-        "antispin": "antispin",
-        "pro-spin": "prospin",
-        "anti-spin": "antispin",
-        "type 1": "dual-shift",
-        "type1": "dual-shift",
-        "type 2": "shift",
-        "type2": "shift",
-        "type 3": "cross-shift",
-        "type3": "cross-shift",
-        "type 4": "dash",
-        "type4": "dash",
-        "type 5": "dual-dash",
-        "type5": "dual-dash",
-        "type 6": "static",
-        "type6": "static",
-        "tog-same": "together-same",
-        "tog same": "together-same",
-        "ts": "together-same",
-        "split-opp": "split-opposite",
-        "split opp": "split-opposite",
-        "so": "split-opposite",
-        "tog-opp": "together-opposite",
-        "tog opp": "together-opposite",
-        "to": "together-opposite",
-        "ss": "split-same",
-        "hand reversal": "hand-reversal",
-        "prop reversal": "prop-reversal",
-        "full reversal": "full-reversal",
-        "motion type": "shift",
-        "grid mode": "diamond",
-        "half-dash": "hash",
-        "half dash": "hash",
-        "base rotation": "base-rotation",
-        "interradials": "interradial",
-        "conjoined": "conjoined-grid",
-        "conjoined grid": "conjoined-grid",
-        "rubik's cube": "rubiks-cube",
-        "rubiks cube": "rubiks-cube",
-      };
-
-      const resolvedTerm = aliases[normalizedTerm] || normalizedTerm;
+      const resolvedTerm = resolveTermAlias(normalizedTerm);
       const entry = glossary[resolvedTerm];
 
       if (!entry) {
@@ -613,99 +573,10 @@ ${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)
     async ({ position }) => {
       const normalizedPos = position.toLowerCase().trim();
 
-      const positions: Record<string, {
-        name: string;
-        angleDegrees: string;
-        description: string;
-        gridDescription: string;
-        examples: string[];
-        level: number;
-      }> = {
-        alpha: {
-          name: "Alpha (α)",
-          angleDegrees: "180°",
-          description: "Hands are at opposite grid points, forming a straight line through the center.",
-          gridDescription: "Examples: N/S, E/W, NE/SW, NW/SE. The hands are as far apart as possible.",
-          examples: [
-            "alpha1: Hands at N and S (diamond mode, vertical axis)",
-            "alpha3: Hands at E and W (diamond mode, horizontal axis)",
-            "alpha5: Hands at NE and SW (box mode, diagonal)",
-          ],
-          level: 1,
-        },
-        beta: {
-          name: "Beta (β)",
-          angleDegrees: "0°",
-          description: "Both hands are at the same grid point, stacked on top of each other.",
-          gridDescription: "Both props share a single location. This is the 'together' position.",
-          examples: [
-            "beta1: Both hands at N (diamond mode)",
-            "beta5: Both hands at NE (box mode)",
-            "beta3: Both hands at E (diamond mode)",
-          ],
-          level: 1,
-        },
-        gamma: {
-          name: "Gamma (γ)",
-          angleDegrees: "90°",
-          description: "Hands form a right angle, positioned on adjacent grid points.",
-          gridDescription: "One hand is 90° away from the other, creating an 'L' shape.",
-          examples: [
-            "gamma1: Hands at N and E (diamond mode)",
-            "gamma5: Hands at NE and NW (box mode, 90° apart)",
-            "gamma9: Hands at NE and SE (box mode)",
-          ],
-          level: 1,
-        },
-        zeta: {
-          name: "Zeta (ζ)",
-          angleDegrees: "~135°",
-          description: "Hands form an obtuse angle. Introduced in Level 4 with skewed grid mode.",
-          gridDescription: "One hand is on a cardinal point, the other on an intercardinal point, forming an angle greater than 90°.",
-          examples: [
-            "Hands at N and SE (skewed mode, ~135°)",
-            "Hands at E and NW (skewed mode)",
-          ],
-          level: 4,
-        },
-        eta: {
-          name: "Eta (η)",
-          angleDegrees: "~45°",
-          description: "Hands form an acute angle. Introduced in Level 4 with skewed grid mode.",
-          gridDescription: "One hand is on a cardinal point, the other on an intercardinal point, forming an angle less than 90°.",
-          examples: [
-            "Hands at N and NE (skewed mode, ~45°)",
-            "Hands at E and SE (skewed mode)",
-          ],
-          level: 4,
-        },
-        tau: {
-          name: "Tau (τ)",
-          angleDegrees: "variable",
-          description: "One hand is at the center grid point, the other at a non-center point. Introduced in Level 5 with centric grid mode. Not yet implemented in TKA Scribe.",
-          gridDescription: "The center point is the 9th grid location. Tau positions have one hand there and one at any of the 8 outer points.",
-          examples: [
-            "One hand at center, one at N",
-            "One hand at center, one at NE",
-          ],
-          level: 5,
-        },
-        terra: {
-          name: "Terra",
-          angleDegrees: "0° (both at center)",
-          description: "Both hands are at the center grid point. Introduced in Level 5 with centric grid mode. Not yet implemented in TKA Scribe.",
-          gridDescription: "Both props stacked at the center of the grid. Similar to beta (both at same point) but at the unique center location.",
-          examples: [
-            "Both hands at center",
-          ],
-          level: 5,
-        },
-      };
-
-      const posInfo = positions[normalizedPos];
+      const posInfo = POSITION_DEFINITIONS[normalizedPos as keyof typeof POSITION_DEFINITIONS];
 
       if (!posInfo) {
-        const availablePositions = Object.keys(positions).join(", ");
+        const availablePositions = Object.keys(POSITION_DEFINITIONS).join(", ");
         return {
           content: [
             {
@@ -726,7 +597,7 @@ ${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)
 
       const output = `# ${posInfo.name}
 
-**Angle:** ${posInfo.angleDegrees} between hands
+**Angle:** ${posInfo.angle} between hands
 
 **Description:** ${posInfo.description}
 
@@ -741,7 +612,7 @@ ${posInfo.examples.map(e => `- ${e}`).join("\n")}
 - Used as starting position: ${startCount} pictographs
 - Used as ending position: ${endCount} pictographs
 
-**Related:** ${Object.keys(positions).filter(p => p !== normalizedPos).join(", ")}`;
+**Related:** ${Object.keys(POSITION_DEFINITIONS).filter(p => p !== normalizedPos).join(", ")}`;
 
       return {
         content: [{ type: "text" as const, text: output }],

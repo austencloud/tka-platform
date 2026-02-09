@@ -1,12 +1,8 @@
 {
   "mcpServers": {
     "tka-domain": {
-      "command": "cmd",
-      "args": [
-        "/c",
-        "cd /d F:\\tka-platform\\mcp-server && npx -y tsx index.ts"
-      ],
-      "env": {}
+      "command": "npx.cmd",
+      "args": ["-y", "@austencloud/tka-domain-mcp@latest"]
     },
     "chrome-devtools": {
       "command": "npx.cmd",

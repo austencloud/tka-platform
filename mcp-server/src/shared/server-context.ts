@@ -244,97 +244,34 @@ export function getAllPictographs(): PictographData[] {
 }
 
 // ============================================================================
-// LETTER TYPE DEFINITIONS
+// DOMAIN KNOWLEDGE (from @tka/domain)
 // ============================================================================
 
-export const TKA_LETTER_TYPES = {
-  type1: {
-    name: "Type 1: Dual-Shift",
-    description: "Both hands shift (move to adjacent grid point)",
-    letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"],
-  },
-  type2: {
-    name: "Type 2: Shift",
-    description: "One hand shifts, one hand stays static",
-    letters: ["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω"],
-  },
-  type3: {
-    name: "Type 3: Cross-Shift (Dash Letters)",
-    description: "One hand shifts + one hand dashes. The '-' suffix indicates Type 3.",
-    letters: ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"],
-  },
-  type4: {
-    name: "Type 4: Dash",
-    description: "One hand dashes (moves to opposite grid point), one stays static",
-    letters: ["Φ", "Ψ", "Λ"],
-  },
-  type5: {
-    name: "Type 5: Dual-Dash",
-    description: "Both hands dash simultaneously",
-    letters: ["Φ-", "Ψ-", "Λ-"],
-  },
-  type6: {
-    name: "Type 6: Static",
-    description: "Both hands remain stationary (no hand motion)",
-    letters: ["α", "β", "γ"],
-  },
-};
+import {
+  GLOSSARY,
+  LETTER_TYPES,
+  LETTER_TO_TYPE as DOMAIN_LETTER_TO_TYPE,
+} from "@tka/domain";
+import type { GlossaryEntry, LetterTypeDefinition } from "@tka/domain";
 
+export { GLOSSARY, LETTER_TYPES };
+
+/** Letter→type lookup. Re-exported for consumers that use { type, name } shape. */
 export const LETTER_TO_TYPE: Record<string, { type: string; name: string }> = {};
-for (const [typeKey, typeInfo] of Object.entries(TKA_LETTER_TYPES)) {
-  for (const letter of typeInfo.letters) {
-    LETTER_TO_TYPE[letter] = { type: typeKey, name: typeInfo.name };
-  }
+for (const [letter, info] of Object.entries(DOMAIN_LETTER_TO_TYPE)) {
+  LETTER_TO_TYPE[letter] = { type: info.type, name: info.name };
 }
-
-// ============================================================================
-// KNOWLEDGE BASE
-// ============================================================================
-
-export interface GlossaryEntry {
-  definition: string;
-  examples: string[];
-  relatedTerms: string[];
-  category: string;
-}
-
-export interface LetterTypeInfo {
-  name: string;
-  description: string;
-  characteristics: string[];
-  letters: string[];
-  motionPattern: {
-    blueMotion: string;
-    redMotion: string;
-    note?: string;
-  };
-}
-
-const GLOSSARY_PATH = path.resolve(MCP_SERVER_ROOT, "./data/tka-glossary.json");
-const LETTER_TYPES_PATH = path.resolve(MCP_SERVER_ROOT, "./data/letter-types.json");
-
-let glossary: Record<string, GlossaryEntry> = {};
-let letterTypes: Record<string, LetterTypeInfo> = {};
 
 export function loadKnowledgeBase(): void {
-  try {
-    if (fs.existsSync(GLOSSARY_PATH)) {
-      glossary = JSON.parse(fs.readFileSync(GLOSSARY_PATH, "utf-8"));
-    }
-    if (fs.existsSync(LETTER_TYPES_PATH)) {
-      letterTypes = JSON.parse(fs.readFileSync(LETTER_TYPES_PATH, "utf-8"));
-    }
-  } catch (error) {
-    console.error("[MCP] Failed to load knowledge base:", error);
-  }
+  // No-op: @tka/domain data is statically imported
 }
 
 export function getGlossary(): Record<string, GlossaryEntry> {
-  return glossary;
+  return GLOSSARY;
 }
 
-export function getLetterTypes(): Record<string, LetterTypeInfo> {
-  return letterTypes;
+export function getLetterTypes(): Record<string, LetterTypeDefinition> {
+  return LETTER_TYPES;
 }
 
 // ============================================================================

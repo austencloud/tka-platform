@@ -9,7 +9,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   ensureDataLoaded,
-  TKA_LETTER_TYPES,
+  LETTER_TYPES,
 } from "../shared/server-context.js";
 
 export function registerDataTools(server: McpServer): void {
@@ -199,7 +199,7 @@ export function registerDataTools(server: McpServer): void {
 
       if (compact) {
         const byType: string[] = [];
-        for (const [_typeKey, typeInfo] of Object.entries(TKA_LETTER_TYPES)) {
+        for (const [_typeKey, typeInfo] of Object.entries(LETTER_TYPES)) {
           const presentLetters = typeInfo.letters.filter((l) => availableLetters.has(l));
           if (presentLetters.length > 0) {
             byType.push(`${typeInfo.name.split(":")[0]}: ${presentLetters.join(",")}`);
@@ -217,7 +217,7 @@ export function registerDataTools(server: McpServer): void {
         "",
       ];
 
-      for (const [_typeKey, typeInfo] of Object.entries(TKA_LETTER_TYPES)) {
+      for (const [_typeKey, typeInfo] of Object.entries(LETTER_TYPES)) {
         const presentLetters = typeInfo.letters.filter((l) => availableLetters.has(l));
         if (presentLetters.length > 0) {
           output.push(`## ${typeInfo.name}`);
