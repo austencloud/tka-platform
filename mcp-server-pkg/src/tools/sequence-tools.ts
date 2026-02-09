@@ -1,0 +1,738 @@
+/**
+ * Sequence Generation Tools
+ *
+ * Primary tools:
+ * - generate_sequence: Generate and open in viewer (default choice)
+ * - get_sequence_data: Get data only, no image (for Claude analysis)
+ *
+ * Utility tools:
+ * - parse_constraints: Debug constraint parsing
+ * - analyze_word_feasibility: Check if constraints are achievable for a word
+ */
+
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+import { ensureDataLoaded, saveAndOpenImage, generateRandomWord } from "../shared/server-context.js";
+import {
+  buildSequenceFromLetters,
+  parseWordToLetters,
+  type SequenceResult,
+  type BridgeSelections,
+} from "../core/sequence-builder.js";
+import { renderSequenceToImage, LOOPComponent } from "../core/sequence-renderer.js";
+import { allocateTurns } from "../core/turn-allocator.js";
+import { detectLOOPFromSteps, type LOOPComponentId } from "../core/loop/index.js";
+import {
+  parseConstraintSet,
+  parseConstraints,
+  emptyConstraintSet,
+  getPresetConstraintSet,
+  buildConstrainedSequence,
+  listPresets,
+  getTransitionMatrix,
+  analyzeWordFeasibility,
+  suggestAlternatives,
+  explainConstraintImpossibility,
+  type PresetName,
+  type ConstraintSet,
+} from "../core/constraints/index.js";
+import type { PictographData } from "../types/pictograph.js";
+
+/**
+ * Build sequence from constraints or legacy mode.
+ * Shared by generate_sequence_image and view_sequence.
+ */
+function buildSequenceWithConstraints(
+  letters: string[],
+  allPictographs: PictographData[],
+  constraintSet: ConstraintSet,
+  maxAttempts: number,
+  parsedBridgeSelections?: BridgeSelections
+): { result: SequenceResult | null; error?: string } {
+  const useConstrainedBuilder = constraintSet.hard.length > 0 || constraintSet.soft.length > 0;
+
+  if (useConstrainedBuilder) {
+    const constrainedResult = buildConstrainedSequence({
+      letters,
+      allPictographs,
+      constraintSet,
+      beamConfig: { maxBacktracks: maxAttempts },
+    });
+
+    if (!constrainedResult.success && !constrainedResult.steps.length) {
+      return { result: null, error: constrainedResult.error };
+    }
+
+    // Create a Set from bridgeStepIndices for O(1) lookup
+    const bridgeIndicesSet = new Set(constrainedResult.bridgeStepIndices ?? []);
+
+    return {
+      result: {
+        word: constrainedResult.word,
+        steps: constrainedResult.steps.map((step, i) => ({
+          letter: step.letter,
+          variation: constrainedResult.variationIndices[i] ?? 0,
+          startPosition: step.startPosition,
+          endPosition: step.endPosition,
+          blueMotion: step.blueMotion,
+          redMotion: step.redMotion,
+          stepNumber: i,
+          isBridge: bridgeIndicesSet.has(i),
+        })),
+        startPosition: constrainedResult.startPosition,
+        endPosition: constrainedResult.endPosition,
+        isValid: true,
+        bridgeStepIndices: constrainedResult.bridgeStepIndices,
+      },
+    };
+  }
+
+  // Legacy builder for unconstrained generation
+  const result = buildSequenceFromLetters(letters, allPictographs, maxAttempts, parsedBridgeSelections);
+  return { result };
+}
+
+/**
+ * Parse constraints from preset or natural language string.
+ */
+function resolveConstraintSet(
+  constraintPreset?: string,
+  constraints?: string
+): ConstraintSet {
+  if (constraintPreset) {
+    const presetConstraints = getPresetConstraintSet(constraintPreset as PresetName);
+    if (presetConstraints) return presetConstraints;
+  } else if (constraints) {
+    const parsed = parseConstraintSet(constraints);
+    return parsed.constraintSet;
+  }
+  return emptyConstraintSet();
+}
+
+/**
+ * Convert detected LOOP component IDs to renderer enum values.
+ */
+function convertLOOPComponentsToEnum(components: LOOPComponentId[]): LOOPComponent[] {
+  return components.map(c => {
+    switch (c) {
+      case "rotated": return LOOPComponent.ROTATED;
+      case "mirrored": return LOOPComponent.MIRRORED;
+      case "flipped": return LOOPComponent.FLIPPED;
+      case "swapped": return LOOPComponent.SWAPPED;
+      case "inverted": return LOOPComponent.INVERTED;
+      case "rewound": return LOOPComponent.REWOUND;
+      default: return LOOPComponent.ROTATED;
+    }
+  });
+}
+
+export function registerSequenceTools(server: McpServer): void {
+  // Tool: parse_constraints
+  server.tool(
+    "parse_constraints",
+    "Parse a natural language constraint string without generating a sequence. Useful for understanding how constraints will be interpreted.",
+    {
+      constraints: z.string().describe('Natural language constraints to parse, e.g., "maximize flow with blue clockwise"'),
+    },
+    async ({ constraints }) => {
+      const result = parseConstraints(constraints);
+
+      const output = {
+        recognized: result.constraints.map(c => ({
+          type: c.type,
+          mode: c.mode,
+          description: c.description,
+        })),
+        unrecognized: result.unrecognized,
+        confidence: Math.round(result.confidence * 100) / 100,
+        normalized: result.normalized,
+        warnings: result.warnings,
+      };
+
+      // Also list available presets
+      const presets = listPresets();
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `## Parsed Constraints\n\n${JSON.stringify(output, null, 2)}\n\n## Available Presets\n\n${presets.map(p => `- **${p.name}**: ${p.description}`).join("\n")}`,
+          },
+        ],
+      };
+    }
+  );
+
+  // Tool: analyze_word_feasibility
+  server.tool(
+    "analyze_word_feasibility",
+    "Analyze whether specific constraints are achievable for a word BEFORE attempting generation. Returns detailed feasibility report including which transitions block certain constraints and suggests alternatives.",
+    {
+      word: z.string().describe('The word to analyze, e.g., "DICKWIPE" or "ABC"'),
+      gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode to analyze"),
+    },
+    async ({ word, gridMode = "diamond" }) => {
+      const allPictographs = ensureDataLoaded(gridMode);
+      const letters = parseWordToLetters(word.toUpperCase());
+
+      if (letters.length === 0) {
+        return {
+          content: [
+            { type: "text" as const, text: `Cannot analyze: no valid letters in "${word}"` },
+          ],
+          isError: true,
+        };
+      }
+
+      if (letters.length < 2) {
+        return {
+          content: [
+            { type: "text" as const, text: `Single-letter words have no transitions to analyze. All constraints are trivially satisfiable.` },
+          ],
+        };
+      }
+
+      // Get or build the transition matrix
+      const matrix = getTransitionMatrix(allPictographs, gridMode);
+
+      // Analyze the word
+      const feasibility = analyzeWordFeasibility(word, letters, matrix);
+
+      // Build response
+      const sections: string[] = [];
+
+      sections.push(`## Word Feasibility Analysis: "${word}"\n`);
+      sections.push(`Letters: ${letters.join(" → ")}`);
+      sections.push(`Total transitions: ${letters.length - 1}\n`);
+
+      // Constraint feasibility summary
+      sections.push(`### Constraint Feasibility\n`);
+      sections.push(`| Constraint | Achievable | Details |`);
+      sections.push(`|------------|------------|---------|`);
+
+      // No handpath reversals
+      const noHandStatus = feasibility.canAvoidAllHandReversals ? "✅ Yes" : "❌ No";
+      const noHandDetails = feasibility.canAvoidAllHandReversals
+        ? "All transitions can maintain continuous hand paths"
+        : `${feasibility.handReversalBlockers.length} blocking transition(s)`;
+      sections.push(`| No handpath reversals | ${noHandStatus} | ${noHandDetails} |`);
+
+      // No prop reversals
+      const noPropStatus = feasibility.canAvoidAllPropReversals ? "✅ Yes" : "❌ No";
+      const noPropDetails = feasibility.canAvoidAllPropReversals
+        ? "All transitions can maintain consistent prop spin"
+        : `${feasibility.propReversalBlockers.length} blocking transition(s)`;
+      sections.push(`| No prop reversals | ${noPropStatus} | ${noPropDetails} |`);
+
+      // Hand reversal every beat
+      const everyHandStatus = feasibility.canHaveHandReversalEveryBeat ? "✅ Yes" : "❌ No";
+      const everyHandDetails = feasibility.canHaveHandReversalEveryBeat
+        ? "All transitions can produce a hand reversal"
+        : `${feasibility.noHandReversalPossible.length} transition(s) are always continuous`;
+      sections.push(`| Hand reversal every beat | ${everyHandStatus} | ${everyHandDetails} |`);
+
+      // Reversal range
+      sections.push(`\n### Reversal Range\n`);
+      sections.push(`- **Handpath reversals:** ${feasibility.minHandReversals} (minimum) to ${feasibility.maxHandReversals} (maximum) out of ${letters.length - 1} transitions`);
+      sections.push(`- **Prop reversals:** ${feasibility.minPropReversals} (minimum) to ${feasibility.maxPropReversals} (maximum) out of ${letters.length - 1} transitions`);
+
+      // Blocking transitions
+      if (feasibility.handReversalBlockers.length > 0) {
+        sections.push(`\n### Transitions That ALWAYS Require Hand Reversal\n`);
+        sections.push(feasibility.handReversalBlockers.map(t => `- ${t}`).join("\n"));
+        const explanation = explainConstraintImpossibility(feasibility, "no-hand-reversals");
+        if (explanation) {
+          sections.push(`\n*${explanation}*`);
+        }
+      }
+
+      if (feasibility.propReversalBlockers.length > 0) {
+        sections.push(`\n### Transitions That ALWAYS Require Prop Reversal\n`);
+        sections.push(feasibility.propReversalBlockers.map(t => `- ${t}`).join("\n"));
+      }
+
+      if (feasibility.noHandReversalPossible.length > 0 && !feasibility.canHaveHandReversalEveryBeat) {
+        sections.push(`\n### Transitions That Can NEVER Produce Hand Reversal\n`);
+        sections.push(feasibility.noHandReversalPossible.map(t => `- ${t}`).join("\n"));
+        const explanation = explainConstraintImpossibility(feasibility, "hand-reversal-every-beat");
+        if (explanation) {
+          sections.push(`\n*${explanation}*`);
+        }
+      }
+
+      // Suggestions
+      const suggestions = suggestAlternatives(feasibility);
+      if (suggestions.length > 0) {
+        sections.push(`\n### Suggestions\n`);
+        sections.push(suggestions.map(s => `💡 ${s}`).join("\n\n"));
+      }
+
+      // Recommended presets
+      sections.push(`\n### Recommended Presets for This Word\n`);
+      if (feasibility.canAvoidAllHandReversals && feasibility.canAvoidAllPropReversals) {
+        sections.push(`- **smooth** - Maximize overall flow (both hand and prop continuity achievable)`);
+      } else if (feasibility.canAvoidAllHandReversals) {
+        sections.push(`- **smooth-hands** - Maximize hand path continuity (achievable for this word)`);
+      } else if (feasibility.canAvoidAllPropReversals) {
+        sections.push(`- **smooth-props** - Maximize prop spin continuity (achievable for this word)`);
+      } else {
+        sections.push(`- **smooth** - Will minimize reversals even though zero isn't achievable`);
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: sections.join("\n"),
+          },
+        ],
+      };
+    }
+  );
+
+  // Tool: get_sequence_data
+  server.tool(
+    "get_sequence_data",
+    "Get sequence data without rendering an image. Use when Claude needs to analyze step data, check positions, or verify generation before showing to user. For showing sequences to users, use generate_sequence instead.",
+    {
+      word: z.string().describe('The sequence word, e.g., "ABC" or "DEFGH"'),
+      gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
+      maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
+      bridgeSelections: z.record(z.string(), z.number()).optional().describe('Map of bridge transition index to preferred bridge option index. E.g., {"0": 1} uses the 2nd bridge option for the first bridge needed.'),
+      constraints: z.string().optional().describe('Natural language constraints, e.g., "maximize continuity, all pro motions", "smooth flow with blue clockwise"'),
+      constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "pro-cw", "anti-ccw", "no-dash", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset: smooth (maximize continuity), reversal (break every beat), isolation (all pro), antispin (all anti), pro-cw, anti-ccw, no-dash, maximize-dash (prefer Type 4/5 letters), maximum-chaos, smooth-hands (hand path continuity), smooth-props (prop spin continuity)'),
+      compact: z.boolean().optional().default(false).describe("Compact output - summary only without full step data (saves ~2000+ tokens for long sequences)"),
+    },
+    async ({ word, gridMode = "diamond", maxAttempts = 500, bridgeSelections, constraints, constraintPreset, compact = false }) => {
+      const allPictographs = ensureDataLoaded(gridMode);
+
+      // Parse word to individual letters
+      const letters = parseWordToLetters(word.toUpperCase());
+
+      if (letters.length === 0) {
+        return {
+          content: [
+            { type: "text" as const, text: `Cannot generate sequence: no valid letters in "${word}"` },
+          ],
+          isError: true,
+        };
+      }
+
+      // Determine which constraint set to use
+      let constraintSet = emptyConstraintSet();
+      let parseResult: ReturnType<typeof parseConstraints> | undefined;
+
+      if (constraintPreset) {
+        // Use preset
+        const presetConstraints = getPresetConstraintSet(constraintPreset as PresetName);
+        if (presetConstraints) {
+          constraintSet = presetConstraints;
+        }
+      } else if (constraints) {
+        // Parse natural language constraints
+        const parsed = parseConstraintSet(constraints);
+        constraintSet = parsed.constraintSet;
+        parseResult = parsed.parseResult;
+      }
+
+      // Check if we should use constrained or legacy builder
+      const useConstrainedBuilder = constraintSet.hard.length > 0 || constraintSet.soft.length > 0;
+
+      if (useConstrainedBuilder) {
+        // Run feasibility analysis to generate warnings
+        let feasibilityWarnings: string[] = [];
+        if (letters.length >= 2) {
+          const matrix = getTransitionMatrix(allPictographs, gridMode);
+          const feasibility = analyzeWordFeasibility(word, letters, matrix);
+
+          // Check if user requested constraints that can't be fully satisfied
+          const hasReversalConstraint = constraintSet.soft.some(c => c.type === "reversal");
+          const hasHandPathEveryConstraint = constraintSet.soft.some(
+            c => c.type === "handPath" && c.description.includes("every")
+          );
+          const hasContinuityConstraint = constraintSet.soft.some(c => c.type === "continuity");
+          const hasHandPathContinuityConstraint = constraintSet.soft.some(
+            c => c.type === "handPath" && c.description.includes("continuous")
+          );
+
+          // Warning for reversal preset if prop reversal every beat is impossible
+          if (hasReversalConstraint && !feasibility.canHavePropReversalEveryBeat) {
+            feasibilityWarnings.push(
+              `Prop reversal every beat is not achievable for "${word}". ` +
+              `Maximum: ${feasibility.maxPropReversals}/${letters.length - 1} transitions.`
+            );
+          }
+
+          // Warning for hand path reversal every beat
+          if (hasHandPathEveryConstraint && !feasibility.canHaveHandReversalEveryBeat) {
+            feasibilityWarnings.push(
+              `Hand path reversal every beat is not achievable for "${word}". ` +
+              `Maximum: ${feasibility.maxHandReversals}/${letters.length - 1} transitions.`
+            );
+          }
+
+          // Warning for smooth if no prop reversals is impossible
+          if (hasContinuityConstraint && !feasibility.canAvoidAllPropReversals) {
+            feasibilityWarnings.push(
+              `Zero prop reversals is not achievable for "${word}". ` +
+              `Minimum: ${feasibility.minPropReversals} unavoidable reversal(s).`
+            );
+          }
+
+          // Warning for smooth-hands if no handpath reversals is impossible
+          if (hasHandPathContinuityConstraint && !feasibility.canAvoidAllHandReversals) {
+            feasibilityWarnings.push(
+              `Zero hand path reversals is not achievable for "${word}". ` +
+              `Minimum: ${feasibility.minHandReversals} unavoidable reversal(s).`
+            );
+          }
+        }
+
+        // Use the new constrained builder with beam search
+        const result = buildConstrainedSequence({
+          letters,
+          allPictographs,
+          constraintSet,
+          beamConfig: {
+            maxBacktracks: maxAttempts,
+          },
+        });
+
+        if (!result.success && !result.steps.length) {
+          return {
+            content: [
+              { type: "text" as const, text: `Failed to generate constrained sequence for "${word}": ${result.error}` },
+            ],
+            isError: true,
+          };
+        }
+
+        // Build response with constraint report
+        const response: Record<string, unknown> = {
+          word: result.word,
+          steps: result.steps.map((step, i) => ({
+            ...step,
+            variation: result.variationIndices[i] ?? 0,
+            stepNumber: i,
+          })),
+          startPosition: result.startPosition,
+          endPosition: result.endPosition,
+          stepCount: result.steps.length - 1,
+          constraintReport: {
+            score: result.constraintReport.score,
+            satisfied: result.constraintReport.satisfied,
+            details: result.constraintReport.details.map(d => ({
+              constraint: d.constraint,
+              score: d.score,
+              description: d.description,
+              mode: d.mode,
+            })),
+          },
+        };
+
+        // Include parse info if constraints were parsed from text
+        if (parseResult) {
+          (response.constraintReport as Record<string, unknown>).parseConfidence = parseResult.confidence;
+          if (parseResult.unrecognized.length > 0) {
+            (response.constraintReport as Record<string, unknown>).unrecognized = parseResult.unrecognized;
+          }
+          if (parseResult.warnings.length > 0) {
+            (response.constraintReport as Record<string, unknown>).warnings = parseResult.warnings;
+          }
+        }
+
+        // Include feasibility warnings if constraints can't be fully satisfied
+        if (feasibilityWarnings.length > 0) {
+          (response.constraintReport as Record<string, unknown>).feasibilityWarnings = feasibilityWarnings;
+        }
+
+        // Include bridge information if bridges were used
+        if (result.bridges && result.bridges.length > 0) {
+          response.bridges = result.bridges.map(b => ({
+            transitionIndex: b.transitionIndex,
+            fromLetter: b.fromLetter,
+            toLetter: b.toLetter,
+            availableOptions: b.availableOptions,
+            selectedBridge: b.selectedBridge,
+            selectedIndex: b.selectedIndex,
+            constraintScored: b.constraintScored,
+          }));
+        }
+
+        // Compact mode - summary only
+        if (compact) {
+          const score = result.constraintReport.score;
+          const satisfiedConstraints = result.constraintReport.details
+            .filter(d => d.score >= 0.8) // Consider 80%+ as satisfied
+            .map(d => d.constraint)
+            .join(", ") || "none";
+          const bridgeCount = result.bridges?.length || 0;
+          return {
+            content: [{
+              type: "text" as const,
+              text: `${result.word}: ${result.steps.length} beats | ${result.startPosition}→${result.endPosition} | Score: ${score.toFixed(2)} | Satisfied: ${satisfiedConstraints}${bridgeCount > 0 ? ` | Bridges: ${bridgeCount}` : ""}`,
+            }],
+          };
+        }
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(response, null, 2),
+            },
+          ],
+        };
+      }
+
+      // Fall back to legacy builder for unconstrained generation
+      const parsedBridgeSelections: BridgeSelections | undefined = bridgeSelections
+        ? Object.fromEntries(
+            Object.entries(bridgeSelections).map(([k, v]) => [parseInt(k, 10), v])
+          )
+        : undefined;
+
+      const result = buildSequenceFromLetters(letters, allPictographs, maxAttempts, parsedBridgeSelections);
+
+      if (!result.isValid) {
+        return {
+          content: [
+            { type: "text" as const, text: `Failed to generate sequence for "${word}": ${result.error}` },
+          ],
+          isError: true,
+        };
+      }
+
+      // Compact mode - summary only
+      if (compact) {
+        const bridgeCount = result.bridges?.length || 0;
+        return {
+          content: [{
+            type: "text" as const,
+            text: `${result.word}: ${result.steps.length} beats | ${result.startPosition}→${result.endPosition}${bridgeCount > 0 ? ` | Bridges: ${bridgeCount}` : ""}`,
+          }],
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify({
+              word: result.word,
+              steps: result.steps,
+              startPosition: result.startPosition,
+              endPosition: result.endPosition,
+              stepCount: result.steps.length - 1,
+              bridges: result.bridges,
+            }, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  // Tool: generate_sequence (primary tool for sequence generation)
+  server.tool(
+    "generate_sequence",
+    "Generate a TKA sequence and open it in the system image viewer. This is the PRIMARY tool for sequence generation - use it by default. Returns minimal text confirmation (~50 tokens). For analyzing step data without showing to user, use get_sequence_data instead.",
+    {
+      word: z.string().describe('The sequence word, e.g., "ABC"'),
+      gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
+      layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
+      cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
+      showStepNumbers: z.boolean().optional().default(true).describe("Show beat numbers overlaid on each pictograph"),
+      showWord: z.boolean().optional().default(true).describe("Show word header at the top"),
+      displayWord: z.string().optional().describe("Override the word shown in the header. Use when generating extra letters (e.g., word='CAKEQ' but displayWord='CAKE' shows 'CAKE' in header while generating all 5 letters)"),
+      darkMode: z.boolean().optional().default(true).describe("Use dark background"),
+      maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
+      showDifficulty: z.boolean().optional().default(true).describe("Show difficulty level badge in header"),
+      userName: z.string().optional().describe("Username to show in footer (bottom-left)"),
+      notes: z.string().optional().describe("Notes to show in footer (bottom-center)"),
+      birthday: z.string().optional().describe("Birthday/creation date in ISO format (bottom-right), e.g., '2024-01-15'"),
+      bridgeSelections: z.record(z.string(), z.number()).optional().describe('Map of bridge transition index to preferred bridge option index.'),
+      level: z.number().min(1).max(3).optional().default(1).describe("Difficulty level: 1=beginner (0 turns only), 2=intermediate (0-3 whole turns), 3=advanced (0-3 plus halves and float)"),
+      turnIntensity: z.number().min(0).max(3).optional().describe("Maximum turn intensity (0-3)."),
+      loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP components for the pie chart glyph."),
+      constraints: z.string().optional().describe('Natural language constraints, e.g., "maximize continuity, all pro motions"'),
+      constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "pro-cw", "anti-ccw", "no-dash", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset'),
+      showReversals: z.boolean().optional().default(true).describe("Show reversal indicators (colored dots on left edge when prop direction changes from previous step). Defaults to true."),
+    },
+    async ({ word, gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, maxAttempts = 500, showDifficulty = true, userName, notes, birthday, bridgeSelections, level = 1, turnIntensity, loopComponents, constraints, constraintPreset, showReversals = true }) => {
+      // GUARDRAIL: Require tagline before generating sequences.
+      // When notes is not provided, block generation and remind Claude to present
+      // tagline options to the user first. This prevents generating sequences without
+      // the humor training workflow (see sequence-generation.md).
+      // Opt-out: pass notes="none" to explicitly skip the tagline.
+      if (!notes) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: [
+                `BLOCKED: No tagline (notes) provided for "${word}".`,
+                ``,
+                `You MUST present 4 tagline options to the user BEFORE generating.`,
+                ``,
+                `Workflow:`,
+                `1. Read humor profile: mcp-server/src/core/humor-profile.json`,
+                `2. Present 4 tagline options spanning different humor lenses`,
+                `3. Wait for user to pick one (or provide their own)`,
+                `4. Call generate_sequence again with notes="<chosen tagline>"`,
+                ``,
+                `If the user explicitly said "no tagline" or "skip tagline", pass notes="none".`,
+              ].join("\n"),
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const allPictographs = ensureDataLoaded(gridMode);
+      const letters = parseWordToLetters(word.toUpperCase());
+
+      if (letters.length === 0) {
+        return {
+          content: [
+            { type: "text" as const, text: `Cannot generate sequence image: no valid letters in "${word}"` },
+          ],
+          isError: true,
+        };
+      }
+
+      const parsedBridgeSelections: BridgeSelections | undefined = bridgeSelections
+        ? Object.fromEntries(
+            Object.entries(bridgeSelections).map(([k, v]) => [parseInt(k, 10), v])
+          )
+        : undefined;
+
+      const constraintSet = resolveConstraintSet(constraintPreset, constraints);
+
+      // Inline feasibility check when constraints are specified
+      let feasibilityWarnings: string[] = [];
+      const hasConstraints = constraintSet.hard.length > 0 || constraintSet.soft.length > 0;
+
+      if (hasConstraints && letters.length >= 2) {
+        const matrix = getTransitionMatrix(allPictographs, gridMode);
+        const feasibility = analyzeWordFeasibility(word, letters, matrix);
+
+        // Check specific constraint types against feasibility
+        const hasContinuityConstraint = constraintSet.soft.some(c => c.type === "continuity");
+        const hasHandPathContinuityConstraint = constraintSet.soft.some(
+          c => c.type === "handPath" && c.description.includes("continuous")
+        );
+        const hasReversalConstraint = constraintSet.soft.some(c => c.type === "reversal");
+
+        if (hasContinuityConstraint && !feasibility.canAvoidAllPropReversals) {
+          feasibilityWarnings.push(
+            `Prop continuity limited: min ${feasibility.minPropReversals} reversal(s) unavoidable`
+          );
+        }
+        if (hasHandPathContinuityConstraint && !feasibility.canAvoidAllHandReversals) {
+          feasibilityWarnings.push(
+            `Hand continuity limited: min ${feasibility.minHandReversals} reversal(s) unavoidable`
+          );
+        }
+        if (hasReversalConstraint && !feasibility.canHavePropReversalEveryBeat) {
+          feasibilityWarnings.push(
+            `Max reversals: ${feasibility.maxPropReversals}/${letters.length - 1} beats`
+          );
+        }
+      }
+
+      const { result, error } = buildSequenceWithConstraints(
+        letters, allPictographs, constraintSet, maxAttempts, parsedBridgeSelections
+      );
+
+      if (!result || !result.isValid) {
+        return {
+          content: [
+            { type: "text" as const, text: `Failed to generate sequence for "${word}": ${error || result?.error || "unknown error"}` },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        const birthdayDate = birthday ? new Date(birthday) : undefined;
+        const stepCount = result.steps.length - 1;
+        const turnAllocation = allocateTurns(stepCount, level, turnIntensity);
+
+        // Determine LOOP components: use explicit or auto-detect
+        let finalLoopComponents: LOOPComponent[] | undefined;
+        let loopDetectionInfo = "";
+
+        if (loopComponents && loopComponents.length > 0) {
+          // Use explicitly provided LOOP components
+          finalLoopComponents = loopComponents.map(c => {
+            switch (c) {
+              case "rotated": return LOOPComponent.ROTATED;
+              case "mirrored": return LOOPComponent.MIRRORED;
+              case "swapped": return LOOPComponent.SWAPPED;
+              case "inverted": return LOOPComponent.INVERTED;
+              default: return LOOPComponent.ROTATED;
+            }
+          });
+          loopDetectionInfo = `LOOP: ${loopComponents.join(", ")}`;
+        } else {
+          // Auto-detect LOOP pattern from sequence steps
+          const loopResult = detectLOOPFromSteps(result.steps);
+          if (loopResult.isCircular && loopResult.components.length > 0) {
+            finalLoopComponents = convertLOOPComponentsToEnum(loopResult.components);
+            loopDetectionInfo = `LOOP detected: ${loopResult.components.join(" + ")}`;
+          } else if (loopResult.isCircular) {
+            loopDetectionInfo = "Circular (freeform)";
+          }
+        }
+
+        // Use displayWord (if provided) as the seedWord to override the header display
+        const pngBuffer = await renderSequenceToImage(result.steps, result.word, {
+          layout,
+          cellSize,
+          showStepNumbers,
+          showWord,
+          darkMode,
+          padding: 8,
+          showDifficulty,
+          userName,
+          notes,
+          birthday: birthdayDate,
+          level,
+          turnAllocation,
+          loopComponents: finalLoopComponents,
+          showReversals,
+          seedWord: displayWord?.toUpperCase(),
+        });
+
+        // Save to temp and open in system viewer
+        // Use displayWord for filename if provided (cleaner temp file names)
+        const tempPath = saveAndOpenImage(pngBuffer, `seq-${displayWord ?? word}`);
+
+        const loopLine = loopDetectionInfo ? `\n${loopDetectionInfo}` : "";
+        const warningsLine = feasibilityWarnings.length > 0
+          ? `\nConstraint notes: ${feasibilityWarnings.join("; ")}`
+          : "";
+
+        // Return ONLY minimal text - NO image data (saves 30-100k tokens)
+        // Show displayWord in message if it differs from word
+        const headerWord = displayWord ?? word;
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Opened sequence "${headerWord}" in system viewer.\n${result.steps.length - 1} beats, ${layout} layout, ${cellSize}px cells${loopLine}${warningsLine}\nFile: ${tempPath}`,
+            },
+          ],
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          content: [
+            { type: "text" as const, text: `Failed to render sequence image: ${errorMessage}` },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+}

@@ -340,6 +340,7 @@ with pre-prepared data for better performance.
         };
         const result = await pictographPreparer.prepareSingle(data as PictographData, prepareOptions);
         if (!cancelled) {
+          console.log(`[PictographContainer] preparedData SET | blue pos:`, result._prepared?.propPositions?.blue, `red pos:`, result._prepared?.propPositions?.red);
           preparedData = result;
         }
       } catch (error) {
@@ -365,7 +366,9 @@ with pre-prepared data for better performance.
   const contentKey = $derived.by(() => {
     if (!pictographData) return "empty";
     // Just use id - transforms keep same id, loading different sequence changes id
-    return pictographData.id || "no-id";
+    const key = pictographData.id || "no-id";
+    console.log(`[PictographContainer] contentKey=${key} id=${pictographData.id}`);
+    return key;
   });
 </script>
 

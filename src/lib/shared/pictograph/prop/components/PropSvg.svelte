@@ -122,6 +122,10 @@ even when Svelte recreates the component instance.
   let previousRotation: number | null = null;
   let previousSnapshot: MotionSnapshot | null = null;
 
+  // Debug: track instance lifecycle
+  const instanceId = Math.random().toString(36).slice(2, 6);
+  console.log(`[PropSvg:${motionData?.color}:${instanceId}] MOUNTED`);
+
   // Track displayed position for smooth CSS transitions
   // CSS transitions require the old value to be rendered before the new value
   // We achieve this by deferring position updates by one frame
@@ -196,6 +200,8 @@ even when Svelte recreates the component instance.
     const targetX = propPosition?.x ?? 0;
     const targetY = propPosition?.y ?? 0;
 
+    console.log(`[PropSvg:${motionData?.color}:${instanceId}] POS effect | from=(${displayedX},${displayedY}) to=(${targetX},${targetY}) cellIndex=${cellIndex}`);
+
     // Cancel any pending position update
     if (pendingPositionFrame !== null) {
       cancelAnimationFrame(pendingPositionFrame);
@@ -255,7 +261,10 @@ even when Svelte recreates the component instance.
       rotationDirection: motionData?.rotationDirection,
     };
 
-    if (previousSnapshot === null || previousRotation === null) {
+    const isFirstRender = previousSnapshot === null || previousRotation === null;
+    console.log(`[PropSvg:${motionData?.color}:${instanceId}] ROT effect | first=${isFirstRender} prev=${previousRotation} target=${targetRotation} displayed=${displayedRotation}`);
+
+    if (isFirstRender) {
       displayedRotation = targetRotation;
     } else {
       const direction = determineAnimationDirection(previousSnapshot, snapshot);

@@ -1,0 +1,93 @@
+{
+  "description": "Formal relationships between letters used in LOOP generation and polyrhythmic analysis",
+  "transformations": {
+    "inversion": {
+      "description": "Pro to Anti motion type swap",
+      "pattern": "Same section transitions, opposite rotation",
+      "pairs": [
+        ["A", "B"],
+        ["D", "E"],
+        ["G", "H"],
+        ["J", "K"],
+        ["M", "N"],
+        ["P", "Q"],
+        ["S", "T"],
+        ["U", "V"],
+        ["W", "X"],
+        ["Y", "Z"],
+        ["Σ", "Δ"],
+        ["Θ", "Ω"]
+      ],
+      "pairDescriptions": {
+        "AB": "alpha to alpha prospin vs antispin",
+        "DE": "beta to alpha isolation vs antispin",
+        "GH": "beta to beta prospin vs antispin",
+        "JK": "alpha to beta isolation vs antispin",
+        "MN": "gamma to gamma isolation vs antispin",
+        "PQ": "gamma to gamma isolation vs antispin",
+        "ST": "gamma to gamma quarter-same iso vs antispin",
+        "UV": "gamma to gamma quarter-same iso vs antispin",
+        "WX": "gamma to alpha pro vs anti",
+        "YZ": "gamma to beta pro vs anti",
+        "ΣΔ": "alpha to gamma pro vs anti",
+        "ΘΩ": "beta to gamma pro vs anti"
+      }
+    },
+    "compound": {
+      "description": "Alpha to Beta transition pairs that complete circular motion",
+      "pattern": "Same rotation, opposite section transition direction",
+      "note": "Combined, these pairs complete a circular motion returning home",
+      "pairs": [
+        { "letters": ["D", "J"], "mnemonic": "Disco Jam", "rotation": "isolation" },
+        { "letters": ["E", "K"], "mnemonic": "Exploding Kitten", "rotation": "antispin" },
+        { "letters": ["F", "L"], "mnemonic": "Fruity Loops", "rotation": "hybrid" },
+        { "letters": ["M", "P"], "mnemonic": "Magic Potion", "rotation": "isolation" },
+        { "letters": ["N", "Q"], "mnemonic": "Never Quit", "rotation": "antispin" },
+        { "letters": ["O", "R"], "mnemonic": "Open Road", "rotation": "hybrid" },
+        { "letters": ["Φ", "Ψ"], "mnemonic": null, "rotation": "dash" }
+      ]
+    },
+    "alphaBetaCounterpart": {
+      "description": "Letters sharing gamma endpoint but swapping alpha vs beta",
+      "alternateNames": ["cross-section complementary", "alternate counterpart"],
+      "pattern": "These letters share a common gamma connection but differ in their alpha/beta relationship. Important for polyrhythmic sequence analysis.",
+      "subTypes": {
+        "gammaConvergent": {
+          "description": "Both letters end at gamma, from different origins",
+          "pairs": [
+            { "letters": ["Σ", "Θ"], "note": "alpha to gamma vs beta to gamma (prospin)" },
+            { "letters": ["Δ", "Ω"], "note": "alpha to gamma vs beta to gamma (antispin)" },
+            { "letters": ["Σ-", "Θ-"], "note": "beta to gamma vs alpha to gamma (prospin)" },
+            { "letters": ["Δ-", "Ω-"], "note": "beta to gamma vs alpha to gamma (antispin)" }
+          ]
+        },
+        "gammaDivergent": {
+          "description": "Both letters start at gamma, to different destinations",
+          "pairs": [
+            { "letters": ["W", "Y"], "note": "gamma to alpha vs gamma to beta (prospin)" },
+            { "letters": ["X", "Z"], "note": "gamma to alpha vs gamma to beta (antispin)" },
+            { "letters": ["W-", "Y-"], "note": "gamma to alpha vs gamma to beta (prospin)" },
+            { "letters": ["X-", "Z-"], "note": "gamma to alpha vs gamma to beta (antispin)" }
+          ]
+        }
+      }
+    },
+    "gammaInternal": {
+      "description": "Gamma to Gamma transitions within the same section",
+      "note": "These letters combine freely with each other (all in combines_with)",
+      "groups": {
+        "quarterOpp": ["M", "N", "O", "P", "Q", "R"],
+        "quarterSame": ["S", "T", "U", "V"]
+      }
+    }
+  },
+  "polyrhythmicRelevance": {
+    "description": "In polyrhythmic LOOPs like the 3:4 example (D-Σ-P-M-Y-D-J-Θ-M-P-W-J)",
+    "observations": [
+      "Beat pairs often follow alphaBetaCounterpart patterns",
+      "D to J and Σ to Θ relationships repeat at the polyrhythmic interval",
+      "Motion types (pro/anti) may follow Period 3",
+      "Spatial positions (section transitions) may follow Period 4"
+    ]
+  }
+}

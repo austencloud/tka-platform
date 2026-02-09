@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "presets": [
+    {
+      "id": "preset-comfy-16",
+      "name": "Comfy 16",
+      "description": "Go-to comfortable sequence - 4 letters x quartered = 16 beats",
+      "icon": "🎯",
+      "config": {
+        "loopType": "strict_rotated",
+        "sliceSize": "quartered",
+        "wordLength": 4,
+        "constraintPreset": "smooth",
+        "turnIntensity": 1,
+        "level": 2
+      },
+      "createdAt": 1737500000000,
+      "updatedAt": 1737500000000
+    },
+    {
+      "id": "preset-mirrored-inverted",
+      "name": "Mirrored/Inverted",
+      "description": "Soft spot combo - halved LOOP, can go level 3 with 1.5 turns",
+      "icon": "🪞",
+      "config": {
+        "loopType": "strict_rotated",
+        "sliceSize": "halved",
+        "loopComponents": ["mirrored", "inverted"],
+        "constraintPreset": "smooth",
+        "turnIntensity": 1,
+        "level": 2
+      },
+      "createdAt": 1737500000000,
+      "updatedAt": 1737500000000
+    },
+    {
+      "id": "preset-rewound-inverted",
+      "name": "Rewound/Inverted",
+      "description": "Experimental - time reversal with inversion",
+      "icon": "🔄",
+      "config": {
+        "loopType": "rewound",
+        "loopComponents": ["inverted"],
+        "constraintPreset": "smooth",
+        "level": 2
+      },
+      "createdAt": 1737500000000,
+      "updatedAt": 1737500000000
+    }
+  ],
+  "lastModified": 1737500000000
+}

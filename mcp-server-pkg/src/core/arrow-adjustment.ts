@@ -1,0 +1,664 @@
+/**
+ * Arrow Adjustment Pipeline
+ *
+ * Handles special placement lookups and directional tuple processing
+ * to position arrows with pixel-perfect accuracy matching the browser renderer.
+ *
+ * Pipeline:
+ * 1. Load special placement JSON for letter/gridMode/oriKey
+ * 2. Look up adjustment by turns tuple and arrow key (color or motion type)
+ * 3. Generate directional tuples from base adjustment
+ * 4. Select tuple by quadrant index (based on arrow location)
+ * 5. Return final adjustment [x, y]
+ */
+
+import { readFileSync, existsSync, appendFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+// Debug logging to file
+function debugLog(msg: string) {
+  appendFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../debug-arrow.txt"), msg + "\n");
+}
+import { GridLocation, GridMode, MotionType, Orientation } from "./enums.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Package root: src/core -> package root (or dist/src/core -> package root)
+const inDist = __dirname.includes("dist");
+const PACKAGE_ROOT = inDist ? join(__dirname, "../../..") : join(__dirname, "../..");
+const ASSETS_ROOT = join(PACKAGE_ROOT, "assets");
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface MotionAdjustmentInput {
+  letter: string;
+  motionType: string;
+  rotationDirection: string;
+  startLocation: string;
+  endLocation: string;
+  color: "blue" | "red";
+  turns?: number | "fl";
+  endOrientation?: string;
+}
+
+export interface PictographAdjustmentInput {
+  letter: string;
+  blueMotion: MotionAdjustmentInput;
+  redMotion: MotionAdjustmentInput;
+  gridMode: GridMode;
+  endPosition?: string; // e.g., "alpha5", "beta3", "gamma11"
+}
+
+type TurnsTupleKey = string; // e.g., "(1, 1)", "(fl, 0.5)"
+type AdjustmentKey = string; // "blue", "red", "pro", "anti", "float"
+type PlacementData = Record<string, Record<TurnsTupleKey, Record<AdjustmentKey, [number, number]>>>;
+
+// ============================================================================
+// ORI KEY CALCULATION
+// ============================================================================
+
+/**
+ * Calculate orientation key based on motion end orientations.
+ * - from_layer1: both motions have radial orientation (IN/OUT)
+ * - from_layer2: both motions have non-radial orientation (CLOCK/COUNTER)
+ * - from_layer3_blue1_red2: blue radial, red non-radial
+ * - from_layer3_blue2_red1: blue non-radial, red radial
+ */
+export function calculateOriKey(blueEndOri: string, redEndOri: string): string {
+  const blueLayer = ["in", "out"].includes(blueEndOri.toLowerCase()) ? 1 : 2;
+  const redLayer = ["in", "out"].includes(redEndOri.toLowerCase()) ? 1 : 2;
+
+  if (blueLayer === 1 && redLayer === 1) return "from_layer1";
+  if (blueLayer === 2 && redLayer === 2) return "from_layer2";
+  if (blueLayer === 1 && redLayer === 2) return "from_layer3_blue1_red2";
+  if (blueLayer === 2 && redLayer === 1) return "from_layer3_blue2_red1";
+  return "from_layer1";
+}
+
+// ============================================================================
+// SPECIAL PLACEMENT LOOKUP
+// ============================================================================
+
+/**
+ * Load special placement data for a letter.
+ */
+function loadSpecialPlacement(gridMode: GridMode, oriKey: string, letter: string): PlacementData | null {
+  const gridModeStr = gridMode === GridMode.BOX ? "box" : gridMode === GridMode.SKEWED ? "skewed" : "diamond";
+  const placementPath = join(
+    ASSETS_ROOT,
+    "data/arrow_placement",
+    gridModeStr,
+    "special",
+    oriKey,
+    `${letter}_placements.json`
+  );
+
+  if (!existsSync(placementPath)) {
+    debugLog(`[PLACEMENT] File not found: ${placementPath}`);
+    return null;
+  }
+  debugLog(`[PLACEMENT] File found: ${placementPath}`);
+
+  try {
+    const content = readFileSync(placementPath, "utf-8");
+    return JSON.parse(content) as PlacementData;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Format turns tuple key: "(blueTurns, redTurns)"
+ */
+function formatTurnsTuple(blueTurns?: number | "fl", redTurns?: number | "fl"): string {
+  const blue = blueTurns === "fl" ? "fl" : (blueTurns ?? 0);
+  const red = redTurns === "fl" ? "fl" : (redTurns ?? 0);
+  return `(${blue}, ${red})`;
+}
+
+/**
+ * Look up base adjustment from special placement data.
+ * Tries color key first, then motion type key.
+ */
+function lookupBaseAdjustment(
+  data: PlacementData,
+  letter: string,
+  turnsTuple: string,
+  color: "blue" | "red",
+  motionType: string
+): [number, number] | null {
+  const letterData = data[letter];
+  if (!letterData) return null;
+
+  const tupleData = letterData[turnsTuple];
+  if (!tupleData) return null;
+
+  // Try color key first
+  if (tupleData[color]) {
+    return tupleData[color];
+  }
+
+  // Try motion type key
+  const normalizedType = motionType.toLowerCase();
+  if (tupleData[normalizedType]) {
+    return tupleData[normalizedType];
+  }
+
+  return null;
+}
+
+// ============================================================================
+// QUADRANT INDEX CALCULATION
+// ============================================================================
+
+/**
+ * Calculate quadrant index for tuple selection.
+ * Index order: NE=0, SE=1, SW=2, NW=3 (for diamond shift) or N=0, E=1, S=2, W=3 (for box shift)
+ */
+function calculateQuadrantIndex(
+  location: GridLocation,
+  motionType: MotionType,
+  gridMode: GridMode
+): number {
+  const isShiftMotion = [MotionType.PRO, MotionType.ANTI, MotionType.FLOAT].includes(motionType);
+
+  if (gridMode === GridMode.DIAMOND) {
+    if (isShiftMotion) {
+      // Diamond shift: NE=0, SE=1, SW=2, NW=3
+      const mapping: Record<string, number> = {
+        [GridLocation.NORTHEAST]: 0,
+        [GridLocation.SOUTHEAST]: 1,
+        [GridLocation.SOUTHWEST]: 2,
+        [GridLocation.NORTHWEST]: 3,
+      };
+      return mapping[location] ?? 0;
+    } else {
+      // Diamond static/dash: N=0, E=1, S=2, W=3
+      const mapping: Record<string, number> = {
+        [GridLocation.NORTH]: 0,
+        [GridLocation.EAST]: 1,
+        [GridLocation.SOUTH]: 2,
+        [GridLocation.WEST]: 3,
+      };
+      return mapping[location] ?? 0;
+    }
+  } else {
+    // Box mode
+    if (isShiftMotion) {
+      // Box shift: N=0, E=1, S=2, W=3
+      const mapping: Record<string, number> = {
+        [GridLocation.NORTH]: 0,
+        [GridLocation.EAST]: 1,
+        [GridLocation.SOUTH]: 2,
+        [GridLocation.WEST]: 3,
+      };
+      return mapping[location] ?? 0;
+    } else {
+      // Box static/dash: NE=0, SE=1, SW=2, NW=3
+      const mapping: Record<string, number> = {
+        [GridLocation.NORTHEAST]: 0,
+        [GridLocation.SOUTHEAST]: 1,
+        [GridLocation.SOUTHWEST]: 2,
+        [GridLocation.NORTHWEST]: 3,
+      };
+      return mapping[location] ?? 0;
+    }
+  }
+}
+
+// ============================================================================
+// DIRECTIONAL TUPLE GENERATION
+// ============================================================================
+
+type Tuple = [number, number];
+
+/**
+ * Generate directional tuples from base adjustment.
+ * Returns 4 tuples for indices 0-3 (NE, SE, SW, NW or N, E, S, W).
+ */
+function generateDirectionalTuples(
+  motionType: string,
+  rotationDirection: string,
+  startLocation: string,
+  endLocation: string,
+  baseX: number,
+  baseY: number
+): Tuple[] {
+  const mt = motionType.toLowerCase();
+  const rot = rotationDirection.toLowerCase();
+
+  // Infer grid mode from motion locations
+  const cardinals = ["n", "e", "s", "w"];
+  const gridIsDiamond = cardinals.includes(startLocation.toLowerCase()) || cardinals.includes(endLocation.toLowerCase());
+
+  const isCW = rot === "clockwise" || rot === "cw";
+  const isCCW = rot === "counter_clockwise" || rot === "ccw";
+  const isNoRot = rot === "norotation" || rot === "no_rotation";
+
+  const tuple = (a: number, b: number): Tuple => [a, b];
+
+  // SHIFT (pro/anti/float) for diamond grid
+  const shiftDiamond = (): Tuple[] => {
+    if (mt === "float") {
+      // Determine cw/ccw from start->end
+      const order = ["ne", "se", "sw", "nw"];
+      const idxStart = order.indexOf(startLocation.toLowerCase());
+      const idxEnd = order.indexOf(endLocation.toLowerCase());
+      const cwStep = (idxStart + 1) % 4 === idxEnd;
+      if (cwStep) {
+        return [
+          tuple(baseX, baseY),
+          tuple(-baseY, baseX),
+          tuple(-baseX, -baseY),
+          tuple(baseY, -baseX),
+        ];
+      } else {
+        return [
+          tuple(-baseY, -baseX),
+          tuple(baseX, -baseY),
+          tuple(baseY, baseX),
+          tuple(-baseX, baseY),
+        ];
+      }
+    }
+    if (mt === "pro" && isCW)
+      return [
+        tuple(baseX, baseY),
+        tuple(-baseY, baseX),
+        tuple(-baseX, -baseY),
+        tuple(baseY, -baseX),
+      ];
+    if (mt === "pro" && isCCW)
+      return [
+        tuple(-baseY, -baseX),
+        tuple(baseX, -baseY),
+        tuple(baseY, baseX),
+        tuple(-baseX, baseY),
+      ];
+    if (mt === "anti" && isCW)
+      return [
+        tuple(-baseY, -baseX),
+        tuple(baseX, -baseY),
+        tuple(baseY, baseX),
+        tuple(-baseX, baseY),
+      ];
+    if (mt === "anti" && isCCW)
+      return [
+        tuple(baseX, baseY),
+        tuple(-baseY, baseX),
+        tuple(-baseX, -baseY),
+        tuple(baseY, -baseX),
+      ];
+    return [tuple(baseX, baseY), tuple(baseX, baseY), tuple(baseX, baseY), tuple(baseX, baseY)];
+  };
+
+  // SHIFT (pro/anti/float) for box grid
+  const shiftBox = (): Tuple[] => {
+    if (mt === "float") {
+      const order = ["n", "e", "s", "w"];
+      const idxStart = order.indexOf(startLocation.toLowerCase());
+      const idxEnd = order.indexOf(endLocation.toLowerCase());
+      const cwStep = (idxStart + 1) % 4 === idxEnd;
+      if (cwStep) {
+        return [
+          tuple(baseX, baseY),
+          tuple(-baseY, baseX),
+          tuple(-baseX, -baseY),
+          tuple(baseY, -baseX),
+        ];
+      } else {
+        return [
+          tuple(-baseY, -baseX),
+          tuple(baseX, -baseY),
+          tuple(baseY, baseX),
+          tuple(-baseX, baseY),
+        ];
+      }
+    }
+    if (mt === "pro" && isCW)
+      return [
+        tuple(-baseX, baseY),
+        tuple(-baseY, -baseX),
+        tuple(baseX, -baseY),
+        tuple(baseY, baseX),
+      ];
+    if (mt === "pro" && isCCW)
+      return [
+        tuple(baseX, baseY),
+        tuple(-baseY, baseX),
+        tuple(-baseX, -baseY),
+        tuple(baseY, -baseX),
+      ];
+    if (mt === "anti" && isCW)
+      return [
+        tuple(-baseX, baseY),
+        tuple(-baseY, -baseX),
+        tuple(baseX, -baseY),
+        tuple(baseY, baseX),
+      ];
+    if (mt === "anti" && isCCW)
+      return [
+        tuple(baseX, baseY),
+        tuple(-baseY, baseX),
+        tuple(-baseX, -baseY),
+        tuple(baseY, -baseX),
+      ];
+    return [tuple(baseX, baseY), tuple(baseX, baseY), tuple(baseX, baseY), tuple(baseX, baseY)];
+  };
+
+  // DASH for diamond grid
+  // NOTE: The browser's DirectionalTupleProcessor has a bug where isNoRot never matches
+  // (it checks rot === "noRotation" but rot is already lowercased). This means the browser
+  // ALWAYS falls through to the default tuple for noRotation cases. We must match that
+  // behavior for parity - noRotation uses the same uniform fallback as the default case.
+  const dashDiamond = (): Tuple[] => {
+    if (isCW)
+      return [
+        tuple(baseX, -baseY),
+        tuple(baseY, baseX),
+        tuple(-baseX, baseY),
+        tuple(-baseY, -baseX),
+      ];
+    if (isCCW)
+      return [
+        tuple(-baseX, -baseY),
+        tuple(baseY, -baseX),
+        tuple(baseX, baseY),
+        tuple(-baseY, baseX),
+      ];
+    // noRotation and default both use uniform tuple (browser parity - see note above)
+    return [tuple(baseX, baseY), tuple(baseX, baseY), tuple(baseX, baseY), tuple(baseX, baseY)];
+  };
+
+  // DASH for box grid
+  // Same browser parity issue as dashDiamond - noRotation falls through to default
+  const dashBox = (): Tuple[] => {
+    if (isCW)
+      return [
+        tuple(-baseY, baseX),
+        tuple(-baseX, -baseY),
+        tuple(baseY, -baseX),
+        tuple(baseX, baseY),
+      ];
+    if (isCCW)
+      return [
+        tuple(-baseX, baseY),
+        tuple(-baseY, -baseX),
+        tuple(baseX, -baseY),
+        tuple(baseY, baseX),
+      ];
+    // noRotation and default both use uniform tuple (browser parity)
+    return [tuple(baseX, baseY), tuple(baseX, baseY), tuple(baseX, baseY), tuple(baseX, baseY)];
+  };
+
+  // STATIC for diamond grid
+  const staticDiamond = (): Tuple[] => {
+    if (isCW)
+      return [
+        tuple(baseX, -baseY),
+        tuple(baseY, baseX),
+        tuple(-baseX, baseY),
+        tuple(-baseY, -baseX),
+      ];
+    if (isCCW)
+      return [
+        tuple(-baseX, -baseY),
+        tuple(baseY, -baseX),
+        tuple(baseX, baseY),
+        tuple(-baseY, baseX),
+      ];
+    return [
+      tuple(baseX, baseY),
+      tuple(-baseX, -baseY),
+      tuple(-baseY, baseX),
+      tuple(baseY, -baseX),
+    ];
+  };
+
+  // STATIC for box grid
+  const staticBox = (): Tuple[] => {
+    if (isCW)
+      return [
+        tuple(baseX, baseY),
+        tuple(-baseY, baseX),
+        tuple(-baseX, -baseY),
+        tuple(baseY, -baseX),
+      ];
+    if (isCCW)
+      return [
+        tuple(-baseY, -baseX),
+        tuple(baseX, -baseY),
+        tuple(baseY, baseX),
+        tuple(-baseX, baseY),
+      ];
+    return [
+      tuple(baseX, baseY),
+      tuple(-baseY, baseX),
+      tuple(-baseX, -baseY),
+      tuple(baseY, -baseX),
+    ];
+  };
+
+  // Dispatch by motion type and grid
+  if (mt === "dash") {
+    return gridIsDiamond ? dashDiamond() : dashBox();
+  } else if (mt === "static") {
+    return gridIsDiamond ? staticDiamond() : staticBox();
+  } else {
+    // pro/anti/float
+    return gridIsDiamond ? shiftDiamond() : shiftBox();
+  }
+}
+
+// ============================================================================
+// DEFAULT PLACEMENT JSON LOADING
+// ============================================================================
+
+// Cache for loaded default placement data
+const defaultPlacementCache: Record<string, Record<string, Record<string, [number, number]>>> = {};
+
+/**
+ * Load default placement data from JSON files.
+ * Files are at: static/data/arrow_placement/{gridMode}/default/default_{gridMode}_{motionType}_placements.json
+ */
+function loadDefaultPlacementData(gridMode: GridMode, motionType: string): Record<string, Record<string, [number, number]>> | null {
+  const gridModeStr = gridMode === GridMode.BOX ? "box" : "diamond";
+  const cacheKey = `${gridModeStr}_${motionType}`;
+
+  if (defaultPlacementCache[cacheKey]) {
+    return defaultPlacementCache[cacheKey];
+  }
+
+  const filePath = join(
+    ASSETS_ROOT,
+    "data/arrow_placement",
+    gridModeStr,
+    "default",
+    `default_${gridModeStr}_${motionType}_placements.json`
+  );
+
+  if (!existsSync(filePath)) {
+    return null;
+  }
+
+  try {
+    const content = readFileSync(filePath, "utf-8");
+    const data = JSON.parse(content) as Record<string, Record<string, [number, number]>>;
+    defaultPlacementCache[cacheKey] = data;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Determine position type (alpha, beta, gamma) from end position string.
+ */
+function getPositionType(endPosition?: string): string {
+  if (!endPosition) return "alpha";
+  const lower = endPosition.toLowerCase();
+  if (lower.startsWith("alpha")) return "alpha";
+  if (lower.startsWith("beta")) return "beta";
+  if (lower.startsWith("gamma")) return "gamma";
+  return "alpha";
+}
+
+/**
+ * Determine the layer type based on end orientation.
+ * layer1 = radial (IN/OUT), layer2 = non-radial (CLOCK/COUNTER)
+ */
+function getLayerType(endOrientation?: string): string {
+  if (!endOrientation) return "layer1";
+  const lower = endOrientation.toLowerCase();
+  if (lower === "in" || lower === "out") return "layer1";
+  if (lower === "clock" || lower === "counter") return "layer2";
+  return "layer1";
+}
+
+/**
+ * Generate the placement key for default lookup.
+ * Format: {motionType}_to_{layer}_{positionType}
+ */
+function generatePlacementKey(
+  motionType: string,
+  endOrientation?: string,
+  endPosition?: string
+): string {
+  const posType = getPositionType(endPosition);
+  const layerType = getLayerType(endOrientation);
+  return `${motionType}_to_${layerType}_${posType}`;
+}
+
+/**
+ * Get default adjustment from JSON data.
+ */
+function getDefaultAdjustment(
+  motionType: string,
+  turns: number | "fl" | undefined,
+  gridMode: GridMode,
+  endOrientation?: string,
+  endPosition?: string
+): [number, number] {
+  const normalizedType = motionType.toLowerCase();
+  const data = loadDefaultPlacementData(gridMode, normalizedType);
+
+  if (!data) {
+    return [0, 0];
+  }
+
+  const placementKey = generatePlacementKey(normalizedType, endOrientation, endPosition);
+  const turnsStr = turns === "fl" ? "fl" : (turns ?? 0).toString();
+
+  const keyData = data[placementKey];
+  if (keyData && keyData[turnsStr]) {
+    return keyData[turnsStr];
+  }
+
+  // Try without the layer suffix as fallback
+  const simpleKey = `${normalizedType}_to_layer1_${getPositionType(endPosition)}`;
+  const simpleData = data[simpleKey];
+  if (simpleData && simpleData[turnsStr]) {
+    return simpleData[turnsStr];
+  }
+
+  return [0, 0];
+}
+
+// ============================================================================
+// MAIN ADJUSTMENT FUNCTION
+// ============================================================================
+
+/**
+ * Calculate arrow adjustment for a motion.
+ *
+ * The adjustment pipeline:
+ * 1. Get base adjustment from motion type + turns (ALWAYS applied)
+ * 2. Process through directional tuples based on location/quadrant
+ * 3. Optionally add special placement overrides if they exist
+ *
+ * @param pictograph - Full pictograph data (needed for both motions' turns)
+ * @param motion - The specific motion to get adjustment for
+ * @param arrowLocation - Calculated arrow location (NE, SE, etc.)
+ * @returns Adjustment [x, y]
+ */
+export function calculateArrowAdjustment(
+  pictograph: PictographAdjustmentInput,
+  motion: MotionAdjustmentInput,
+  arrowLocation: GridLocation
+): [number, number] {
+  // UNCONDITIONAL DEBUG LOG
+  debugLog(`[ENTRY] calculateArrowAdjustment called: letter=${pictograph.letter}, motion.color=${motion.color}, motion.motionType=${motion.motionType}`);
+  debugLog(`[DEBUG PATH] gridMode=${pictograph.gridMode}, blueEndOri=${pictograph.blueMotion.endOrientation}, redEndOri=${pictograph.redMotion.endOrientation}`);
+
+  // 1. Try to get special placement override first
+  const blueEndOri = pictograph.blueMotion.endOrientation || "in";
+  const redEndOri = pictograph.redMotion.endOrientation || "in";
+  const oriKey = calculateOriKey(blueEndOri, redEndOri);
+
+  const placementData = loadSpecialPlacement(pictograph.gridMode, oriKey, pictograph.letter);
+
+  let baseX = 0;
+  let baseY = 0;
+  let hasSpecialPlacement = false;
+
+  if (placementData) {
+    const turnsTuple = formatTurnsTuple(pictograph.blueMotion.turns, pictograph.redMotion.turns);
+    const specialAdjustment = lookupBaseAdjustment(
+      placementData,
+      pictograph.letter,
+      turnsTuple,
+      motion.color,
+      motion.motionType
+    );
+
+    if (specialAdjustment) {
+      baseX = specialAdjustment[0];
+      baseY = specialAdjustment[1];
+      hasSpecialPlacement = true;
+    }
+  }
+
+  // 2. If no special placement, use default adjustment from JSON files
+  if (!hasSpecialPlacement) {
+    const defaultAdj = getDefaultAdjustment(
+      motion.motionType,
+      motion.turns,
+      pictograph.gridMode,
+      motion.endOrientation,
+      pictograph.endPosition
+    );
+    baseX = defaultAdj[0];
+    baseY = defaultAdj[1];
+  }
+
+  // 3. Generate directional tuples from the adjustment values
+  const tuples = generateDirectionalTuples(
+    motion.motionType,
+    motion.rotationDirection,
+    motion.startLocation,
+    motion.endLocation,
+    baseX,
+    baseY
+  );
+
+  // 4. Calculate quadrant index and select tuple
+  const motionTypeEnum = motion.motionType.toLowerCase() as MotionType;
+  const quadrantIndex = calculateQuadrantIndex(arrowLocation, motionTypeEnum, pictograph.gridMode);
+  const selectedTuple = tuples[quadrantIndex] || [0, 0];
+
+  // DEBUG: Log W- dash adjustments
+  if (pictograph.letter === "W-" && motion.color === "blue") {
+    debugLog(`[DEBUG W- BLUE] letter=${pictograph.letter}, motionType=${motion.motionType}, rotDir=${motion.rotationDirection}`);
+    debugLog(`[DEBUG W- BLUE] startLoc=${motion.startLocation}, endLoc=${motion.endLocation}, turns=${motion.turns}`);
+    debugLog(`[DEBUG W- BLUE] arrowLocation=${arrowLocation}, quadrantIndex=${quadrantIndex}`);
+    debugLog(`[DEBUG W- BLUE] hasSpecialPlacement=${hasSpecialPlacement}, baseX=${baseX}, baseY=${baseY}`);
+    debugLog(`[DEBUG W- BLUE] tuples=${JSON.stringify(tuples)}`);
+    debugLog(`[DEBUG W- BLUE] selectedTuple=${JSON.stringify(selectedTuple)}`);
+  }
+
+  return selectedTuple;
+}

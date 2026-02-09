@@ -520,7 +520,11 @@
       "Bash(magick:*)",
       "Bash(convert:*)",
       "Bash(start wscript:*)",
-      "Bash(schtasks //create //tn \"HandleLeakWatchdog\" //tr \"wscript.exe C:\\\\Users\\\\Austen\\\\scripts\\\\handle-watchdog.vbs\" //sc onlogon //rl highest //f)"
+      "Bash(schtasks //create //tn \"HandleLeakWatchdog\" //tr \"wscript.exe C:\\\\Users\\\\Austen\\\\scripts\\\\handle-watchdog.vbs\" //sc onlogon //rl highest //f)",
+      "Bash(animation)",
+      "Bash(pictograph \")",
+      "Bash(do echo -n \"$dir: \")",
+      "Bash(PATH=\"/c/Program Files/nodejs:$PATH\")"
     ]
   },
   "enableAllProjectMcpServers": true,

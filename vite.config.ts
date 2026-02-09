@@ -491,6 +491,7 @@ export default defineConfig({
   ssr: {
     noExternal: [
       "svelte",
+      "@tka/domain",
       "reflect-metadata", // Often has CJS issues
       "gif.js", // May contain CJS code
       "file-saver", // Often has CJS exports
@@ -595,44 +596,45 @@ export default defineConfig({
       timeout: 30000, // 30s timeout instead of default 5s
     },
     watch: {
+      // 🚨 HANDLE LEAK FIX: Chokidar creates one fs.watch() per directory.
+      // On Windows, each = one kernel handle via ReadDirectoryChangesW.
+      // Without filtering, ~12,000 directories get watched = 50,000-83,000 handles.
+      // Only src/ and static/ need HMR. Everything else is ignored.
       ignored: [
         "**/node_modules/**",
         "**/.git/**",
-        "**/dist/**",
-        // 🚨 CRITICAL: Use ./build/** NOT **/build/**
-        // The pattern **/build/** will match ANY directory named "build" at any depth.
-        // This could cause HMR to ignore source code directories.
-        // Only ignore the root-level build output directory.
-        "./build/**",
         "**/.svelte-kit/**",
-        // 🚨 HANDLE LEAK FIX: Chokidar creates one fs.watch() per directory.
-        // On Windows, each = one kernel handle via ReadDirectoryChangesW.
-        // Without these ignores, ~12,000 unnecessary directories get watched,
-        // causing 50,000-83,000 kernel handles and system-wide degradation.
-        // Only src/ and static/ need HMR watching.
-        "./_ARCHIVE/**",
-        "./tka-worlds/**",
-        "./firebase-functions/**",
-        "./functions/**",
-        "./mcp-server/**",
-        "./apps/**",
-        "./packages/**",
-        "./android-twa/**",
-        "./_GUIDE/**",
-        "./Assets/**",
-        "./deployment/**",
-        "./docs/**",
-        "./feedback-images/**",
-        "./messages/**",
-        "./scripts/**",
-        "./tests/**",
-        "./.netlify/**",
-        "./.playwright-mcp/**",
-        "./.wrangler/**",
-        "./.husky/**",
-        "./.github/**",
-        "./.vscode/**",
-        "./dev-dist/**",
+        // Ignore every root-level directory except src/ and static/.
+        // Uses **/ prefix (not ./) because chokidar receives absolute paths on Windows.
+        // These directory names are unique to the project root and won't match inside src/.
+        "**/_ARCHIVE/**",
+        "**/tka-worlds/**",
+        "**/firebase-functions/**",
+        "**/functions/**",
+        "**/mcp-server/**",
+        "**/apps/**",
+        "**/packages/**",
+        "**/android-twa/**",
+        "**/_GUIDE/**",
+        "**/Assets/**",
+        "**/deployment/**",
+        "**/docs/**",
+        "**/feedback-images/**",
+        "**/messages/**",
+        "**/scripts/**",
+        "**/tests/**",
+        "**/.netlify/**",
+        "**/.playwright-mcp/**",
+        "**/.wrangler/**",
+        "**/.husky/**",
+        "**/.github/**",
+        "**/.vscode/**",
+        "**/dev-dist/**",
+        "**/build/**",
+        "**/dist/**",
+        // static/ has 514 subdirs (364 in gallery/ alone). Arrow sprite HMR
+        // uses server.watcher.add() for its specific file, so bulk watching isn't needed.
+        "**/static/**",
       ],
     },
     // 2026: Preload critical files on dev start
