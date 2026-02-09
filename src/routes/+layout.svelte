@@ -95,7 +95,7 @@
     // If __tkaLoadProgress exists (new app.html), use deterministic progress.
     // If not (cached old app.html), dismiss the loading screen immediately.
     if (typeof (window as any).__tkaLoadProgress === "function") {
-      (window as any).__tkaLoadProgress(20, "Starting up...");
+      (window as any).__tkaLoadProgress(72, "Starting up...");
     } else {
       const loadingScreen = document.getElementById('app-loading');
       if (loadingScreen) {
@@ -166,7 +166,7 @@
         const { getFirestoreInstance } =
           await import("$lib/shared/auth/firebase");
         await getFirestoreInstance();
-        (window as any).__tkaLoadProgress?.(35, "Connecting to cloud...");
+        (window as any).__tkaLoadProgress?.(76, "Connecting to cloud...");
       } catch (error) {
         console.error("❌ [App Init] Firestore initialization failed:", error);
       }
@@ -175,7 +175,7 @@
       // This is required to catch auth state changes from social sign-in
       // Must await to process pending OAuth redirect results (e.g., account linking)
       await authState.initialize();
-      (window as any).__tkaLoadProgress?.(55, "Checking session...");
+      (window as any).__tkaLoadProgress?.(80, "Checking session...");
     })();
 
     // Note: Sequence restoration tester removed (now integrated into services)

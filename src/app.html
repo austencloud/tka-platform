@@ -705,11 +705,15 @@
         "All systems go."
       ];
 
-      // Trickle state
-      var __tkaTrickleIndex = 0;
-      var __tkaTricklePercent = 5;
-      var __tkaTrickleInterval = null;
-      var __tkaTrickleStopped = false;
+      // --- Phase A: Resource-tracking loading bar (5% → 70%) ---
+      // Uses PerformanceObserver to track real /_app/ resource loads.
+      // Self-calibrating: saves observed bytes to localStorage for next visit.
+
+      var __tkaFlavorIndex = 0;
+      var __tkaObserver = null;
+      var __tkaTrickleFallback = null;
+      var __tkaPhaseAPercent = 5;
+      var __tkaLastMilestone = 0; // tracks which 10% threshold we last crossed
 
       // Crossfade: fade out → swap text → fade in (200ms each via CSS transition)
       var __tkaFadeTimer = null;
@@ -726,60 +730,145 @@
       // Show first flavor message immediately (no fade — nothing to fade from)
       var _initText = document.getElementById('loading-text');
       if (_initText && __tkaFlavorMessages.length > 0) {
-        _initText.textContent = __tkaFlavorMessages[__tkaTrickleIndex];
-        __tkaTrickleIndex++;
+        _initText.textContent = __tkaFlavorMessages[__tkaFlavorIndex];
+        __tkaFlavorIndex++;
       }
 
-      // Trickle — advances 1% every 1.5s up to 18% with rotating messages
-      __tkaTrickleInterval = setInterval(function() {
-        if (__tkaTrickleStopped) return;
+      // Self-calibrating expected bytes: use saved value or conservative seed
+      var __tkaExpectedBytes = 3000000; // 3MB seed for first visit
+      try {
+        var savedBytes = localStorage.getItem('tka-load-bytes');
+        if (savedBytes) {
+          var parsed = parseInt(savedBytes, 10);
+          if (parsed > 0) __tkaExpectedBytes = parsed;
+        }
+      } catch(e) {}
+
+      var __tkaLoadedBytes = 0;
+      var __tkaResourceCount = 0;
+      var __tkaCap = 70;
+
+      function __tkaUpdateBar(percent) {
+        // Monotonic within Phase A — never go backwards
+        if (percent <= __tkaPhaseAPercent) return;
+        __tkaPhaseAPercent = Math.min(percent, __tkaCap);
+
         var bar = document.getElementById('loading-bar-fill');
-        var text = document.getElementById('loading-text');
         var screen = document.getElementById('app-loading');
-        if (!bar || !text) return;
+        if (bar) bar.style.width = __tkaPhaseAPercent + '%';
+        if (screen) screen.setAttribute('aria-valuenow', String(Math.round(__tkaPhaseAPercent)));
 
-        __tkaTricklePercent = Math.min(__tkaTricklePercent + 1, 18);
-        bar.style.width = __tkaTricklePercent + '%';
-        if (screen) screen.setAttribute('aria-valuenow', String(__tkaTricklePercent));
+        // Rotate flavor message at 10% threshold crossings
+        var milestone = Math.floor(__tkaPhaseAPercent / 10);
+        if (milestone > __tkaLastMilestone) {
+          __tkaLastMilestone = milestone;
+          var text = document.getElementById('loading-text');
+          if (text) {
+            var msgIndex = __tkaFlavorIndex % __tkaFlavorMessages.length;
+            __tkaCrossfade(text, __tkaFlavorMessages[msgIndex]);
+            __tkaFlavorIndex++;
+          }
+        }
+      }
 
-        // Rotate through flavor messages with crossfade
-        if (__tkaTrickleIndex < __tkaFlavorMessages.length) {
-          __tkaCrossfade(text, __tkaFlavorMessages[__tkaTrickleIndex]);
-          __tkaTrickleIndex++;
+      function __tkaProcessResources(entries) {
+        for (var i = 0; i < entries.length; i++) {
+          var entry = entries[i];
+          // Only count /_app/ resources (SvelteKit chunks)
+          if (entry.name && entry.name.indexOf('/_app/') !== -1) {
+            // encodedBodySize = compressed body size (same-origin, works even from cache)
+            var size = entry.encodedBodySize || entry.transferSize || 0;
+            if (size > 0) {
+              __tkaLoadedBytes += size;
+              __tkaResourceCount++;
+            }
+          }
         }
 
-        // Cap reached — stop ticking but keep last message visible
-        if (__tkaTricklePercent >= 18) {
-          clearInterval(__tkaTrickleInterval);
-        }
-      }, 1500);
+        if (__tkaResourceCount > 0) {
+          // Cancel trickle fallback — real resources are arriving
+          if (__tkaTrickleFallback) {
+            clearTimeout(__tkaTrickleFallback);
+            __tkaTrickleFallback = null;
+          }
 
-      // Progress state — monotonic (never goes backwards, ignores calls after 100%)
+          var rawPercent = (__tkaLoadedBytes / __tkaExpectedBytes) * __tkaCap;
+          __tkaUpdateBar(Math.min(rawPercent, __tkaCap));
+        }
+      }
+
+      // Set up PerformanceObserver for resource tracking
+      var __tkaObserverSupported = typeof PerformanceObserver !== 'undefined';
+      if (__tkaObserverSupported) {
+        try {
+          __tkaObserver = new PerformanceObserver(function(list) {
+            __tkaProcessResources(list.getEntries());
+          });
+          __tkaObserver.observe({ type: 'resource', buffered: true });
+        } catch(e) {
+          __tkaObserverSupported = false;
+        }
+      }
+
+      // Fallback: if no resources detected after 2s (old browser), use decelerating trickle
+      __tkaTrickleFallback = setTimeout(function() {
+        __tkaTrickleFallback = null;
+        // Only activate if no real resources arrived
+        if (__tkaResourceCount > 0) return;
+
+        // Disconnect observer if it exists but isn't producing results
+        if (__tkaObserver) {
+          try { __tkaObserver.disconnect(); } catch(e) {}
+          __tkaObserver = null;
+        }
+
+        var trickleInterval = setInterval(function() {
+          var increment = Math.max(0.5, (__tkaCap - __tkaPhaseAPercent) * 0.08);
+          __tkaUpdateBar(__tkaPhaseAPercent + increment);
+
+          if (__tkaPhaseAPercent >= __tkaCap - 0.5) {
+            clearInterval(trickleInterval);
+          }
+        }, 600);
+      }, 2000);
+
+      // --- Phase B: App init checkpoints (72% → 100%) ---
+      // Called by SvelteKit components as initialization proceeds.
+
       var __tkaCurrentPercent = 5;
       var __tkaFinished = false;
       var __tkaLastTextTime = 0;
-      var __tkaMinTextGap = 500; // minimum ms between text changes — suppress rapid flickers
+      var __tkaMinTextGap = 500; // minimum ms between text changes
 
-      // Real progress function — called by SvelteKit as initialization proceeds.
-      // The BAR always advances smoothly (CSS transition handles interpolation).
-      // The TEXT crossfades when enough time has passed — rapid bursts are collapsed
-      // so the user reads the first message, the bar slides, then sees "Ready".
       window.__tkaLoadProgress = function(percent, message) {
         // Monotonic: ignore out-of-order or duplicate calls
         if (percent <= __tkaCurrentPercent || __tkaFinished) return;
         __tkaCurrentPercent = percent;
 
-        // Stop trickle on first real checkpoint
-        if (!__tkaTrickleStopped) {
-          __tkaTrickleStopped = true;
-          clearInterval(__tkaTrickleInterval);
+        // First checkpoint call: disconnect observer, save calibration
+        if (__tkaObserver) {
+          try { __tkaObserver.disconnect(); } catch(e) {}
+          __tkaObserver = null;
+
+          // Save observed bytes for next visit's calibration
+          if (__tkaLoadedBytes > 0) {
+            try {
+              localStorage.setItem('tka-load-bytes', String(__tkaLoadedBytes));
+            } catch(e) {}
+          }
+        }
+
+        // Cancel trickle fallback if still pending
+        if (__tkaTrickleFallback) {
+          clearTimeout(__tkaTrickleFallback);
+          __tkaTrickleFallback = null;
         }
 
         var bar = document.getElementById('loading-bar-fill');
         var text = document.getElementById('loading-text');
         var screen = document.getElementById('app-loading');
 
-        // Bar ALWAYS updates — CSS transition makes it smooth regardless of timing
+        // Bar ALWAYS updates — CSS transition makes it smooth
         if (bar) bar.style.width = percent + '%';
         if (screen) screen.setAttribute('aria-valuenow', String(percent));
 
@@ -798,11 +887,9 @@
             }
           }, 1400);
         } else if (now - __tkaLastTextTime >= __tkaMinTextGap) {
-          // Enough time since last text change — crossfade to new message
           if (text) __tkaCrossfade(text, message);
           __tkaLastTextTime = now;
         }
-        // else: suppress text update (too soon), bar still advances silently
       };
 
       // Safety net: if progress never reaches 100%, force-dismiss after 15s
