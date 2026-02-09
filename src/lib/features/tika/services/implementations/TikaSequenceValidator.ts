@@ -12,33 +12,7 @@ import type {
   SequenceTransition,
   InvalidTransition,
 } from "../contracts/ITikaSequenceValidator";
-
-// Static letter type mappings
-const TKA_LETTER_TYPES: Record<string, { letters: string[]; name: string }> = {
-  "1": {
-    name: "Dual-Shift",
-    letters: [
-      "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
-      "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V",
-    ],
-  },
-  "2": { name: "Shift", letters: ["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω"] },
-  "3": {
-    name: "Cross-Shift",
-    letters: ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"],
-  },
-  "4": { name: "Dash", letters: ["Φ", "Ψ", "Λ"] },
-  "5": { name: "Dual-Dash", letters: ["Φ-", "Ψ-", "Λ-"] },
-  "6": { name: "Static", letters: ["α", "β", "γ"] },
-};
-
-// Build reverse lookup
-const LETTER_TO_TYPE: Record<string, { type: string; name: string }> = {};
-for (const [typeKey, typeInfo] of Object.entries(TKA_LETTER_TYPES)) {
-  for (const letter of typeInfo.letters) {
-    LETTER_TO_TYPE[letter] = { type: typeKey, name: typeInfo.name };
-  }
-}
+import { LETTER_TO_TYPE, LETTER_TYPES } from "@tka/domain";
 
 export class TikaSequenceValidator implements ITikaSequenceValidator {
   constructor(private pictographLoader: ITikaPictographLoader) {}
@@ -185,5 +159,3 @@ export class TikaSequenceValidator implements ITikaSequenceValidator {
   }
 }
 
-// Export static mappings for use by other services
-export { TKA_LETTER_TYPES, LETTER_TO_TYPE };

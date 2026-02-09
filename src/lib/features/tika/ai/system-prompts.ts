@@ -7,240 +7,12 @@
  * 3. Support multiple languages via glossaries
  */
 
-import { KNOWLEDGE_GRAPH, type UserKnowledgeOverlay } from './knowledge-graph'
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Multilingual Glossaries
-// ═══════════════════════════════════════════════════════════════════════════
-
-export interface DomainGlossary {
-	// Positions
-	alpha: string
-	beta: string
-	gamma: string
-	// Motions
-	static: string
-	shift: string
-	dash: string
-	// Rotations
-	pro: string
-	anti: string
-	prospin: string
-	antispin: string
-	// Grid
-	grid: string
-	diamond: string
-	box: string
-	// Notation
-	pictograph: string
-	arrow: string
-	// Other
-	orientation: string
-	turn: string
-	sequence: string
-	reversal: string
-}
-
-export const GLOSSARIES: Record<string, DomainGlossary> = {
-	en: {
-		alpha: 'alpha',
-		beta: 'beta',
-		gamma: 'gamma',
-		static: 'static',
-		shift: 'shift',
-		dash: 'dash',
-		pro: 'pro',
-		anti: 'anti',
-		prospin: 'prospin',
-		antispin: 'antispin',
-		grid: 'grid',
-		diamond: 'diamond',
-		box: 'box',
-		pictograph: 'pictograph',
-		arrow: 'arrow',
-		orientation: 'orientation',
-		turn: 'turn',
-		sequence: 'sequence',
-		reversal: 'reversal'
-	},
-	es: {
-		alpha: 'alfa',
-		beta: 'beta',
-		gamma: 'gama',
-		static: 'estático',
-		shift: 'desplazamiento',
-		dash: 'embestida',
-		pro: 'pro',
-		anti: 'anti',
-		prospin: 'prospin',
-		antispin: 'antispin',
-		grid: 'cuadrícula',
-		diamond: 'diamante',
-		box: 'caja',
-		pictograph: 'pictograma',
-		arrow: 'flecha',
-		orientation: 'orientación',
-		turn: 'giro',
-		sequence: 'secuencia',
-		reversal: 'reversión'
-	},
-	fr: {
-		alpha: 'alpha',
-		beta: 'bêta',
-		gamma: 'gamma',
-		static: 'statique',
-		shift: 'décalage',
-		dash: 'tiret',
-		pro: 'pro',
-		anti: 'anti',
-		prospin: 'prospin',
-		antispin: 'antispin',
-		grid: 'grille',
-		diamond: 'diamant',
-		box: 'boîte',
-		pictograph: 'pictogramme',
-		arrow: 'flèche',
-		orientation: 'orientation',
-		turn: 'tour',
-		sequence: 'séquence',
-		reversal: 'renversement'
-	},
-	ja: {
-		alpha: 'アルファ',
-		beta: 'ベータ',
-		gamma: 'ガンマ',
-		static: 'スタティック',
-		shift: 'シフト',
-		dash: 'ダッシュ',
-		pro: 'プロ',
-		anti: 'アンチ',
-		prospin: 'プロスピン',
-		antispin: 'アンチスピン',
-		grid: 'グリッド',
-		diamond: 'ダイヤモンド',
-		box: 'ボックス',
-		pictograph: 'ピクトグラフ',
-		arrow: '矢印',
-		orientation: 'オリエンテーション',
-		turn: 'ターン',
-		sequence: 'シーケンス',
-		reversal: 'リバーサル'
-	},
-	de: {
-		alpha: 'Alpha',
-		beta: 'Beta',
-		gamma: 'Gamma',
-		static: 'statisch',
-		shift: 'Verschiebung',
-		dash: 'Strich',
-		pro: 'Pro',
-		anti: 'Anti',
-		prospin: 'Prospin',
-		antispin: 'Antispin',
-		grid: 'Raster',
-		diamond: 'Diamant',
-		box: 'Kasten',
-		pictograph: 'Piktogramm',
-		arrow: 'Pfeil',
-		orientation: 'Ausrichtung',
-		turn: 'Drehung',
-		sequence: 'Sequenz',
-		reversal: 'Umkehrung'
-	},
-	pt: {
-		alpha: 'alfa',
-		beta: 'beta',
-		gamma: 'gama',
-		static: 'estático',
-		shift: 'deslocamento',
-		dash: 'traço',
-		pro: 'pro',
-		anti: 'anti',
-		prospin: 'prospin',
-		antispin: 'antispin',
-		grid: 'grade',
-		diamond: 'diamante',
-		box: 'caixa',
-		pictograph: 'pictograma',
-		arrow: 'seta',
-		orientation: 'orientação',
-		turn: 'giro',
-		sequence: 'sequência',
-		reversal: 'reversão'
-	}
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Level Constraints
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Get the terms available at each major level
- */
-function getLevelConstraints(majorLevel: 1 | 2 | 3 | 4): string {
-	const constraints: string[] = []
-
-	if (majorLevel >= 1) {
-		constraints.push(
-			'Level 1 terms: grid, diamond, box, cardinal, intercardinal, alpha, beta, gamma, position, static, shift, dash, motion, pro, anti, prospin, antispin, orientation, in, out, Type 1-6, pictograph, arrow, sequence, LOOP, reversal'
-		)
-	}
-	if (majorLevel >= 2) {
-		constraints.push('Level 2 terms: turn, turn number, 180°, half turn, orientation swap')
-	}
-	if (majorLevel >= 3) {
-		constraints.push('Level 3 terms: quarter turn, 90°, non-radial, clock, counter, cw, ccw')
-	}
-	if (majorLevel >= 4) {
-		constraints.push('Level 4 terms: skew, skewed, mixed grid, +/-, double skew')
-	}
-
-	return constraints.join('\n')
-}
-
-/**
- * Generate explanation level guidance
- */
-function getExplanationGuidance(majorLevel: 1 | 2 | 3 | 4): string {
-	switch (majorLevel) {
-		case 1:
-			return `The user is at Level 1 (Base Letters). They know:
-- Grid points and positions (alpha, beta, gamma)
-- Motion types (static, shift, dash)
-- Rotation directions (pro, anti)
-- The 6 letter types
-- How to read pictographs
-- Sequences and LOOPs
-
-DO NOT use concepts from Level 2+ (turns, quarter turns, skews).
-Focus on the foundational concepts.`
-
-		case 2:
-			return `The user is at Level 2 (Turns). They know all of Level 1 plus:
-- Whole-number turns (180° rotations)
-- How turns swap orientations
-- Turn variations
-
-DO NOT use concepts from Level 3+ (quarter turns, clock/counter, skews).`
-
-		case 3:
-			return `The user is at Level 3 (Quarter Turns). They know Levels 1-2 plus:
-- 90° turn units
-- Non-radial orientations (clock, counter)
-- Expanded position variations
-
-DO NOT use concepts from Level 4 (skews).`
-
-		case 4:
-			return `The user is at Level 4 (Skews). They know all TKA concepts:
-- All previous levels
-- Skewed positions (mixing diamond/box)
-- Four skew categories
-- Double skews
-
-You can use any TKA terminology.`
-	}
-}
+import type { UserKnowledgeOverlay, MajorLevel } from '@tka/domain'
+import {
+	GLOSSARIES,
+	getLevelConstraints,
+	getExplanationGuidance,
+} from '@tka/domain'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Main System Prompt Builder
@@ -685,7 +457,7 @@ Common ambiguities:
 /**
  * Build a focused prompt for specific question types
  */
-export function buildLetterPrompt(letter: string, majorLevel: 1 | 2 | 3 | 4): string {
+export function buildLetterPrompt(letter: string, majorLevel: MajorLevel): string {
 	return `Explain the TKA letter "${letter}" at a level appropriate for someone at Level ${majorLevel}.
 
 Focus on:
@@ -700,7 +472,7 @@ Keep it concise but complete.`
 export function buildComparisonPrompt(
 	letter1: string,
 	letter2: string,
-	majorLevel: 1 | 2 | 3 | 4
+	majorLevel: MajorLevel
 ): string {
 	return `Compare the TKA letters "${letter1}" and "${letter2}" at a level appropriate for someone at Level ${majorLevel}.
 
@@ -712,7 +484,7 @@ Focus on:
 Keep it concise.`
 }
 
-export function buildTermPrompt(term: string, majorLevel: 1 | 2 | 3 | 4): string {
+export function buildTermPrompt(term: string, majorLevel: MajorLevel): string {
 	return `Explain the TKA term "${term}" at a level appropriate for someone at Level ${majorLevel}.
 
 Use simple language and concrete examples. Keep it to 2-3 sentences.`

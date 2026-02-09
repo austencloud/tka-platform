@@ -25,8 +25,9 @@ import {
   TYPE_DEFINITIONS,
   POSITION_DEFINITIONS,
   MOTION_TYPE_DEFINITIONS,
-} from "$lib/features/tika/ai/canonical-responses";
-import { LETTER_TO_TYPE, TKA_LETTER_TYPES } from "./TikaSequenceValidator";
+  LETTER_TO_TYPE,
+  LETTER_TYPES,
+} from "@tka/domain";
 
 // Position to static letter mapping
 const POSITION_STATIC_LETTERS: Record<string, string> = {
@@ -249,7 +250,7 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
     const letters = canonicalDef.letters
       .split(", ")
       .flatMap((l) =>
-        l.includes("through") ? TKA_LETTER_TYPES[typeKey]?.letters || [] : [l.trim()]
+        l.includes("through") ? LETTER_TYPES[typeKey]?.letters || [] : [l.trim()]
       );
     const exampleLetters = typeInfo?.letters || letters;
 
@@ -302,7 +303,7 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
   }
 
   showPositionExamples(position: string): PositionExamplesResult | string {
-    const positionDef = POSITION_DEFINITIONS[position.toLowerCase()];
+    const positionDef = POSITION_DEFINITIONS[position.toLowerCase() as keyof typeof POSITION_DEFINITIONS];
     if (!positionDef) {
       return `Position "${position}" not recognized. Valid positions: alpha, beta, gamma, zeta, eta`;
     }

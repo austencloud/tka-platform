@@ -17,8 +17,8 @@ import type { RequestHandler } from "@sveltejs/kit";
 import { streamText, tool, convertToModelMessages, type UIMessage, jsonSchema } from "ai";
 import { env } from "$env/dynamic/private";
 import { buildSystemPrompt } from "$lib/features/tika/ai/system-prompts";
-import { deriveUserOverlay } from "$lib/features/tika/ai/knowledge-graph";
 import {
+  deriveUserOverlay,
   getTypeComparison,
   getTypeExplanation,
   getPositionExplanation,
@@ -31,7 +31,7 @@ import {
   getAlphabetOverview,
   getCommonAnswer,
   getTypeNamingOrigin,
-} from "$lib/features/tika/ai/canonical-responses";
+} from "@tka/domain";
 import {
   toDisplayOutput,
   filterLetterExplanation,

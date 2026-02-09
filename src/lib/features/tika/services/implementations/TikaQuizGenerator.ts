@@ -5,9 +5,13 @@
  * motion pattern chips, and text-based options.
  */
 
-import { TYPE_DEFINITIONS } from "$lib/features/tika/ai/canonical-responses";
-import { POSITION_DEFINITIONS, MOTION_TYPE_DEFINITIONS } from "$lib/features/tika/ai/canonical-responses";
-import { TKA_LETTER_TYPES, LETTER_TO_TYPE } from "./TikaSequenceValidator";
+import {
+  TYPE_DEFINITIONS,
+  POSITION_DEFINITIONS,
+  MOTION_TYPE_DEFINITIONS,
+  LETTER_TYPES,
+  LETTER_TO_TYPE,
+} from "@tka/domain";
 import type {
   ITikaQuizGenerator,
   QuizResult,
@@ -41,7 +45,7 @@ export class TikaQuizGenerator implements ITikaQuizGenerator {
       return this.generateLetterQuiz(topic.toUpperCase(), quizType, difficulty);
     }
 
-    if (POSITION_DEFINITIONS[normalizedTopic]) {
+    if (POSITION_DEFINITIONS[normalizedTopic as keyof typeof POSITION_DEFINITIONS]) {
       return this.generatePositionQuiz(normalizedTopic, quizType, difficulty);
     }
 
@@ -458,13 +462,13 @@ export class TikaQuizGenerator implements ITikaQuizGenerator {
   }
 
   private getLettersFromType(typeNum: number, count: number): string[] {
-    const typeInfo = TKA_LETTER_TYPES[typeNum.toString()];
+    const typeInfo = LETTER_TYPES[typeNum.toString()];
     if (!typeInfo) return [];
     return this.shuffleArray(typeInfo.letters).slice(0, count);
   }
 
   private getLettersNotFromType(excludeType: number, count: number): string[] {
-    const otherTypes = Object.keys(TKA_LETTER_TYPES)
+    const otherTypes = Object.keys(LETTER_TYPES)
       .filter((t) => t !== excludeType.toString())
       .map((t) => parseInt(t));
 
