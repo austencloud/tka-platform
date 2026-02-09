@@ -44,15 +44,16 @@
 		}
 	});
 
-	// Status text for desktop variant
+	// Status text for desktop variant (includes pending count when syncing)
 	const statusText = $derived.by(() => {
+		const count = syncStatusState.pendingCount;
 		switch (displayState) {
 			case "offline":
-				return "Offline";
+				return count > 0 ? `Offline (${count})` : "Offline";
 			case "syncing":
-				return "Syncing...";
+				return count > 1 ? `Syncing ${count}...` : "Syncing...";
 			case "pending":
-				return "Pending";
+				return count > 1 ? `Pending (${count})` : "Pending";
 			case "error":
 				return "Sync Error";
 			default:

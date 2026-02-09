@@ -8,6 +8,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import type {
   ILOOPLabelsFirebaseRepository,
   LabeledSequence,
@@ -50,10 +51,14 @@ export class LOOPLabelsFirebaseRepository
       const firestore = await this.ensureFirestore();
       this.syncStatus = "syncing";
 
-      await setDoc(doc(firestore, LOOP_LABELS_COLLECTION, word), {
-        ...label,
-        updatedAt: new Date().toISOString(),
-      });
+      await trackWrite(
+        () =>
+          setDoc(doc(firestore, LOOP_LABELS_COLLECTION, word), {
+            ...label,
+            updatedAt: new Date().toISOString(),
+          }),
+        "loop-labels"
+      );
 
       this.syncStatus = "synced";
       console.log(`[LOOP Labels] Saved "${word}" to Firebase`);
@@ -69,7 +74,10 @@ export class LOOPLabelsFirebaseRepository
       const firestore = await this.ensureFirestore();
       this.syncStatus = "syncing";
 
-      await deleteDoc(doc(firestore, LOOP_LABELS_COLLECTION, word));
+      await trackWrite(
+        () => deleteDoc(doc(firestore, LOOP_LABELS_COLLECTION, word)),
+        "loop-labels"
+      );
 
       this.syncStatus = "synced";
       console.log(`[LOOP Labels] Deleted "${word}" from Firebase`);

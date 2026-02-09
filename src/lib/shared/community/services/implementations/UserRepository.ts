@@ -23,6 +23,7 @@ import {
 import type { Timestamp, DocumentData, DocumentSnapshot } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { getUserAchievementsPath } from "$lib/shared/gamification/data/firestore-collections";
 import { ALL_ACHIEVEMENTS } from "$lib/shared/gamification/domain/constants/achievement-definitions";
 import type {
@@ -415,61 +416,60 @@ export class UserRepository implements IUserRepository {
 
     try {
       const firestore = await getFirestoreInstance();
-      await runTransaction(firestore, async (transaction) => {
-        // Document references
-        const followingRef = doc(
-          firestore,
-          `${this.USERS_COLLECTION}/${currentUserId}/following/${targetUserId}`
-        );
-        const followersRef = doc(
-          firestore,
-          `${this.USERS_COLLECTION}/${targetUserId}/followers/${currentUserId}`
-        );
-        const currentUserRef = doc(
-          firestore,
-          this.USERS_COLLECTION,
-          currentUserId
-        );
-        const targetUserRef = doc(
-          firestore,
-          this.USERS_COLLECTION,
-          targetUserId
-        );
+      await trackWrite(
+        () =>
+          runTransaction(firestore, async (transaction) => {
+            const followingRef = doc(
+              firestore,
+              `${this.USERS_COLLECTION}/${currentUserId}/following/${targetUserId}`
+            );
+            const followersRef = doc(
+              firestore,
+              `${this.USERS_COLLECTION}/${targetUserId}/followers/${currentUserId}`
+            );
+            const currentUserRef = doc(
+              firestore,
+              this.USERS_COLLECTION,
+              currentUserId
+            );
+            const targetUserRef = doc(
+              firestore,
+              this.USERS_COLLECTION,
+              targetUserId
+            );
 
-        // Check if already following
-        const followingDoc = await transaction.get(followingRef);
-        if (followingDoc.exists()) {
-          return; // Already following, no-op
-        }
+            const followingDoc = await transaction.get(followingRef);
+            if (followingDoc.exists()) {
+              return;
+            }
 
-        // Get current counts
-        const currentUserDoc = await transaction.get(currentUserRef);
-        const targetUserDoc = await transaction.get(targetUserRef);
+            const currentUserDoc = await transaction.get(currentUserRef);
+            const targetUserDoc = await transaction.get(targetUserRef);
 
-        if (!currentUserDoc.exists() || !targetUserDoc.exists()) {
-          throw new Error("User not found");
-        }
+            if (!currentUserDoc.exists() || !targetUserDoc.exists()) {
+              throw new Error("User not found");
+            }
 
-        const currentUserData = currentUserDoc.data() as FirestoreUserData;
-        const targetUserData = targetUserDoc.data() as FirestoreUserData;
+            const currentUserData = currentUserDoc.data() as FirestoreUserData;
+            const targetUserData = targetUserDoc.data() as FirestoreUserData;
 
-        // Create follow documents
-        const followData: FollowDocument = {
-          createdAt: serverTimestamp() as Timestamp,
-        };
+            const followData: FollowDocument = {
+              createdAt: serverTimestamp() as Timestamp,
+            };
 
-        transaction.set(followingRef, followData);
-        transaction.set(followersRef, followData);
+            transaction.set(followingRef, followData);
+            transaction.set(followersRef, followData);
 
-        // Update counts and activity
-        transaction.update(currentUserRef, {
-          followingCount: (currentUserData.followingCount ?? 0) + 1,
-          lastActivityDate: serverTimestamp(),
-        });
-        transaction.update(targetUserRef, {
-          followerCount: (targetUserData.followerCount ?? 0) + 1,
-        });
-      });
+            transaction.update(currentUserRef, {
+              followingCount: (currentUserData.followingCount ?? 0) + 1,
+              lastActivityDate: serverTimestamp(),
+            });
+            transaction.update(targetUserRef, {
+              followerCount: (targetUserData.followerCount ?? 0) + 1,
+            });
+          }),
+        "community"
+      );
     } catch (error) {
       console.error(`[UserRepository] Error following user:`, error);
       toast.error("Failed to follow user. Please try again.");
@@ -495,60 +495,59 @@ export class UserRepository implements IUserRepository {
 
     try {
       const firestore = await getFirestoreInstance();
-      await runTransaction(firestore, async (transaction) => {
-        // Document references
-        const followingRef = doc(
-          firestore,
-          `${this.USERS_COLLECTION}/${currentUserId}/following/${targetUserId}`
-        );
-        const followersRef = doc(
-          firestore,
-          `${this.USERS_COLLECTION}/${targetUserId}/followers/${currentUserId}`
-        );
-        const currentUserRef = doc(
-          firestore,
-          this.USERS_COLLECTION,
-          currentUserId
-        );
-        const targetUserRef = doc(
-          firestore,
-          this.USERS_COLLECTION,
-          targetUserId
-        );
+      await trackWrite(
+        () =>
+          runTransaction(firestore, async (transaction) => {
+            const followingRef = doc(
+              firestore,
+              `${this.USERS_COLLECTION}/${currentUserId}/following/${targetUserId}`
+            );
+            const followersRef = doc(
+              firestore,
+              `${this.USERS_COLLECTION}/${targetUserId}/followers/${currentUserId}`
+            );
+            const currentUserRef = doc(
+              firestore,
+              this.USERS_COLLECTION,
+              currentUserId
+            );
+            const targetUserRef = doc(
+              firestore,
+              this.USERS_COLLECTION,
+              targetUserId
+            );
 
-        // Check if actually following
-        const followingDoc = await transaction.get(followingRef);
-        if (!followingDoc.exists()) {
-          return; // Not following, no-op
-        }
+            const followingDoc = await transaction.get(followingRef);
+            if (!followingDoc.exists()) {
+              return;
+            }
 
-        // Get current counts
-        const currentUserDoc = await transaction.get(currentUserRef);
-        const targetUserDoc = await transaction.get(targetUserRef);
+            const currentUserDoc = await transaction.get(currentUserRef);
+            const targetUserDoc = await transaction.get(targetUserRef);
 
-        if (!currentUserDoc.exists() || !targetUserDoc.exists()) {
-          throw new Error("User not found");
-        }
+            if (!currentUserDoc.exists() || !targetUserDoc.exists()) {
+              throw new Error("User not found");
+            }
 
-        const currentUserData = currentUserDoc.data() as FirestoreUserData;
-        const targetUserData = targetUserDoc.data() as FirestoreUserData;
+            const currentUserData = currentUserDoc.data() as FirestoreUserData;
+            const targetUserData = targetUserDoc.data() as FirestoreUserData;
 
-        // Delete follow documents
-        transaction.delete(followingRef);
-        transaction.delete(followersRef);
+            transaction.delete(followingRef);
+            transaction.delete(followersRef);
 
-        // Update counts (ensure we don't go below 0) and activity
-        transaction.update(currentUserRef, {
-          followingCount: Math.max(
-            0,
-            (currentUserData.followingCount ?? 0) - 1
-          ),
-          lastActivityDate: serverTimestamp(),
-        });
-        transaction.update(targetUserRef, {
-          followerCount: Math.max(0, (targetUserData.followerCount ?? 0) - 1),
-        });
-      });
+            transaction.update(currentUserRef, {
+              followingCount: Math.max(
+                0,
+                (currentUserData.followingCount ?? 0) - 1
+              ),
+              lastActivityDate: serverTimestamp(),
+            });
+            transaction.update(targetUserRef, {
+              followerCount: Math.max(0, (targetUserData.followerCount ?? 0) - 1),
+            });
+          }),
+        "community"
+      );
     } catch (error) {
       console.error(`[UserRepository] Error unfollowing user:`, error);
       toast.error("Failed to unfollow user. Please try again.");

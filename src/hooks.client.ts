@@ -31,14 +31,32 @@ if (browser && !dev && typeof __PWA_ENABLED__ !== "undefined" && __PWA_ENABLED__
     .then(({ registerSW }) => {
       registerSW({
         immediate: true,
-        onRegisteredSW() {
-          // Service worker registered
+        onRegisteredSW(_swUrl: string, registration: ServiceWorkerRegistration | undefined) {
+          console.log("[PWA] Service worker registered");
+          // Register Background Sync if supported — retries failed network writes after restart
+          if (registration?.active && "sync" in registration) {
+            (registration as ServiceWorkerRegistration & { sync: { register(tag: string): Promise<void> } })
+              .sync.register("tka-sync-queue")
+              .catch(() => {
+                // Background Sync not supported in this browser — graceful degradation
+              });
+          }
         },
         onOfflineReady() {
-          // App ready to work offline
+          // Lazy-import toast to avoid blocking SW registration
+          import("$lib/shared/toast/state/toast-state.svelte")
+            .then(({ toast }) => {
+              toast.success("App ready for offline use", 4000);
+            })
+            .catch(() => {});
         },
         onNeedRefresh() {
-          // Auto-update when new version is available
+          // Persistent toast (duration 0 = stays until dismissed)
+          import("$lib/shared/toast/state/toast-state.svelte")
+            .then(({ toast }) => {
+              toast.info("Update available. Refresh to apply.", 0);
+            })
+            .catch(() => {});
         },
         onRegisterError(error: Error) {
           console.error("Service worker registration failed:", error);

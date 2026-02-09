@@ -52,6 +52,9 @@ import { FirebaseSettingsPersister } from "../../settings/services/implementatio
 // Onboarding services
 import { OnboardingPersister } from "../../onboarding/services/implementations/OnboardingPersister";
 
+// Offline services
+import { ConflictResolver } from "../../offline/services/implementations/ConflictResolver";
+
 // Library services
 import { TagManager } from "../../../features/library/services/implementations/TagManager";
 
@@ -110,6 +113,9 @@ const firebaseSettingsPersister = new FirebaseSettingsPersister();
 
 // Onboarding services (singletons)
 const onboardingPersister = new OnboardingPersister();
+
+// Offline services (singletons)
+const conflictResolver = new ConflictResolver();
 
 // Library services (singletons)
 const tagManager = new TagManager();
@@ -189,6 +195,10 @@ export const coreContainer = createContainer()
   // === LIBRARY SERVICES ===
   .add({
     tagManager: () => tagManager,
+  })
+  // === OFFLINE SERVICES ===
+  .add({
+    conflictResolver: () => conflictResolver,
   });
 
 // ============================================================================

@@ -237,6 +237,7 @@ const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer(
     tagManager: coreContainer.items.tagManager,
     orientationCycleDetector: buildContainer.items.orientationCycleDetector,
     publicIndexSyncer: null as any, // Will use internal one
+    conflictResolver: coreContainer.items.conflictResolver,
   },
   librarySaveService: {
     sharer: shareContainer.items.sharer,

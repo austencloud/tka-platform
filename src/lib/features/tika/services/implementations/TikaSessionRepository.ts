@@ -24,6 +24,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import type { UIMessage } from "ai";
 import type { ITikaSessionRepository } from "../contracts/ITikaSessionRepository";
 import {
@@ -167,13 +168,17 @@ export class TikaSessionRepository implements ITikaSessionRepository {
     }
 
     try {
-      await setDoc(
-        docRef,
-        sanitizeForFirestore({
-          ...session,
-          createdAt,
-          updatedAt: serverTimestamp(),
-        })
+      await trackWrite(
+        () =>
+          setDoc(
+            docRef,
+            sanitizeForFirestore({
+              ...session,
+              createdAt,
+              updatedAt: serverTimestamp(),
+            })
+          ),
+        "tika"
       );
 
       return session;
@@ -249,7 +254,7 @@ export class TikaSessionRepository implements ITikaSessionRepository {
     );
 
     try {
-      await deleteDoc(docRef);
+      await trackWrite(() => deleteDoc(docRef), "tika");
     } catch (error) {
       console.error("[TikaSessionRepository] Failed to delete session:", error);
       throw new TikaSessionError("Failed to delete conversation", "NETWORK");
@@ -323,20 +328,27 @@ export class TikaSessionRepository implements ITikaSessionRepository {
 
     try {
       if (flagged) {
-        await updateDoc(docRef, {
-          flaggedForReview: true,
-          flaggedAt: serverTimestamp(),
-          reviewStatus: "pending",
-          // Clear any previous review metadata when re-flagging
-          reviewMetadata: null,
-        });
+        await trackWrite(
+          () =>
+            updateDoc(docRef, {
+              flaggedForReview: true,
+              flaggedAt: serverTimestamp(),
+              reviewStatus: "pending",
+              reviewMetadata: null,
+            }),
+          "tika"
+        );
       } else {
-        await updateDoc(docRef, {
-          flaggedForReview: false,
-          flaggedAt: null,
-          reviewStatus: null,
-          reviewMetadata: null,
-        });
+        await trackWrite(
+          () =>
+            updateDoc(docRef, {
+              flaggedForReview: false,
+              flaggedAt: null,
+              reviewStatus: null,
+              reviewMetadata: null,
+            }),
+          "tika"
+        );
       }
     } catch (error) {
       console.error("[TikaSessionRepository] Failed to flag session:", error);
@@ -519,10 +531,14 @@ export class TikaSessionRepository implements ITikaSessionRepository {
         reviewedAt: new Date(),
       };
 
-      await updateDoc(docRef, {
-        reviewStatus: newStatus,
-        reviewMetadata: sanitizeForFirestore(updatedMetadata),
-      });
+      await trackWrite(
+        () =>
+          updateDoc(docRef, {
+            reviewStatus: newStatus,
+            reviewMetadata: sanitizeForFirestore(updatedMetadata),
+          }),
+        "tika"
+      );
 
       return this.mapDocToSession(
         {

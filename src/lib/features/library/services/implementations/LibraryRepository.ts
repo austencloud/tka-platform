@@ -9,6 +9,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -19,7 +20,6 @@ import {
   serverTimestamp,
   writeBatch,
   increment,
-  runTransaction,
   getCountFromServer,
   arrayUnion,
   documentId,
@@ -34,6 +34,7 @@ import type { IAchievementManager } from "$lib/shared/gamification/services/cont
 import type { ITagManager } from "../contracts/ITagManager";
 import type { IOrientationCycleDetector } from "../../../create/generate/circular/services/contracts/IOrientationCycleDetector";
 import type { IPublicIndexSyncer } from "../contracts/IPublicIndexSyncer";
+import type { IConflictResolver } from "$lib/shared/offline/services/contracts/IConflictResolver";
 import { migrateSequenceTags } from "../migrations/tag-migration";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
@@ -73,11 +74,19 @@ export class LibraryError extends Error {
 }
 
 export class LibraryRepository implements ILibraryRepository {
+  /**
+   * Cache of the last-known local sequences from subscription callbacks.
+   * Used by conflict detection to provide the user's local version when
+   * a server snapshot arrives with a higher _version than expected.
+   */
+  private localSequenceCache = new Map<string, LibrarySequence>();
+
   constructor(
     private achievementService: IAchievementManager,
     private tagService: ITagManager,
     private orientationCycleDetector: IOrientationCycleDetector,
-    private publicIndexSyncer: IPublicIndexSyncer
+    private publicIndexSyncer: IPublicIndexSyncer,
+    private conflictResolver?: IConflictResolver
   ) {}
 
   /**
@@ -200,134 +209,141 @@ export class LibraryRepository implements ILibraryRepository {
     );
     const userDocRef = doc(firestore, `users/${userId}`);
 
-    // Use transaction to safely handle read-modify-write
-    const { librarySequence, isNewSequence } = await trackWrite(() =>
-      runTransaction(firestore, async (transaction) => {
-        // Read existing document within transaction
-        const existingDoc = await transaction.get(sequenceDocRef);
-        const wasNew = !existingDoc.exists();
+    // Check if this is a new or existing sequence using local cache
+    // getDoc reads from cache first when offline persistence is enabled
+    const existingDoc = await getDoc(sequenceDocRef);
+    const isNewSequence = !existingDoc.exists();
 
-        let libSeq: LibrarySequence;
+    let libSeq: LibrarySequence;
 
-        if (existingDoc.exists()) {
-          // Update existing
-          const existing = this.mapDocToLibrarySequence(
-            existingDoc.data(),
-            sequenceId
-          );
-          libSeq = {
-            ...existing,
-            ...sequence,
-            id: sequenceId,
-            updatedAt: new Date(),
-          };
-        } else {
-          // Create new
-          libSeq = createLibrarySequence(
-            { ...sequence, id: sequenceId },
-            userId,
-            { visibility: "public" } // Default to public
-          );
-        }
+    if (existingDoc.exists()) {
+      const existing = this.mapDocToLibrarySequence(
+        existingDoc.data(),
+        sequenceId
+      );
+      libSeq = {
+        ...existing,
+        ...sequence,
+        id: sequenceId,
+        updatedAt: new Date(),
+      };
+    } else {
+      libSeq = createLibrarySequence(
+        { ...sequence, id: sequenceId },
+        userId,
+        { visibility: "public" }
+      );
+    }
 
-        // Migrate tags to sequenceTags if needed (sync operation)
-        if (!libSeq.sequenceTags || libSeq.sequenceTags.length === 0) {
-          // Note: Tag migration needs to happen outside transaction
-          // because it may involve async Firestore operations
-          libSeq = {
-            ...libSeq,
-            sequenceTags: [],
-            tagIds: [],
-          };
-        }
+    // Migrate tags to sequenceTags if needed
+    if (!libSeq.sequenceTags || libSeq.sequenceTags.length === 0) {
+      libSeq = {
+        ...libSeq,
+        sequenceTags: [],
+        tagIds: [],
+      };
+    }
 
-        // Detect orientation cycle count for circular sequences (sync CPU operation)
-        if (libSeq.isCircular) {
-          try {
-            const cycleResult =
-              this.orientationCycleDetector.detectOrientationCycle(libSeq);
-            libSeq = {
-              ...libSeq,
-              orientationCycleCount: cycleResult.cycleCount,
-            };
-          } catch (error) {
-            console.error(
-              "[LibraryRepository] Orientation cycle detection failed:",
-              error
-            );
-          }
-        }
-
-        // Write sequence document
-        // IMPORTANT: birthday is set once on creation and NEVER changes
-        transaction.set(sequenceDocRef, {
+    // Detect orientation cycle count for circular sequences (sync CPU operation)
+    if (libSeq.isCircular) {
+      try {
+        const cycleResult =
+          this.orientationCycleDetector.detectOrientationCycle(libSeq);
+        libSeq = {
           ...libSeq,
-          birthday: existingDoc.exists()
-            ? libSeq.birthday // Preserve existing birthday
-            : libSeq.birthday || serverTimestamp(), // Use provided birthday or default to now
-          createdAt: existingDoc.exists()
-            ? libSeq.createdAt
-            : serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
+          orientationCycleCount: cycleResult.cycleCount,
+        };
+      } catch (error) {
+        console.error(
+          "[LibraryRepository] Orientation cycle detection failed:",
+          error
+        );
+      }
+    }
 
-        // Increment user's sequenceCount if this is a new sequence
-        if (wasNew) {
-          transaction.update(userDocRef, {
+    // Write sequence document using setDoc — works offline, queues in Firestore cache
+    // IMPORTANT: birthday is set once on creation and NEVER changes
+    const writeData = {
+      ...libSeq,
+      birthday: existingDoc.exists()
+        ? libSeq.birthday
+        : libSeq.birthday || serverTimestamp(),
+      createdAt: existingDoc.exists()
+        ? libSeq.createdAt
+        : serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      _version: ((existingDoc.data()?._version as number) || 0) + 1,
+    };
+
+    // Fire-and-forget: setDoc queues locally, syncs when online
+    // trackWrite monitors the sync status but we don't block on it
+    trackWrite(() => setDoc(sequenceDocRef, writeData), "library").catch((error) => {
+      console.error("[LibraryRepository] Failed to save sequence:", error);
+      toast.error("Failed to save sequence. Will retry when online.");
+    });
+
+    // Track the local write version for conflict detection
+    const newVersion = writeData._version as number;
+    this.conflictResolver?.trackLocalWrite(sequenceId, newVersion);
+
+    // Update user stats — separate non-blocking write
+    if (isNewSequence) {
+      trackWrite(
+        () =>
+          updateDoc(userDocRef, {
             sequenceCount: increment(1),
             lastActivityDate: serverTimestamp(),
-          });
-        } else {
-          // Update activity timestamp for existing sequence edits too
-          transaction.update(userDocRef, {
-            lastActivityDate: serverTimestamp(),
-          });
-        }
-
-        return { librarySequence: libSeq, isNewSequence: wasNew };
-      })
-    );
-
-    // Post-transaction: Tag migration (involves async Firestore operations)
-    let finalSequence = librarySequence;
-    if (
-      !librarySequence.sequenceTags ||
-      librarySequence.sequenceTags.length === 0
-    ) {
-      try {
-        const migrationResult = await migrateSequenceTags(
-          librarySequence,
-          this.tagService
-        );
-        finalSequence = {
-          ...librarySequence,
-          sequenceTags: migrationResult.sequenceTags,
-          tagIds: migrationResult.tagIds,
-        };
-        // Update with migrated tags (outside transaction is fine for this)
-        await updateDoc(sequenceDocRef, {
-          sequenceTags: migrationResult.sequenceTags,
-          tagIds: migrationResult.tagIds,
-        });
-      } catch (error) {
-        console.error("[LibraryRepository] Tag migration failed:", error);
-      }
+          }),
+        "library"
+      ).catch((error) => {
+        console.error("[LibraryRepository] Failed to update user stats:", error);
+      });
+    } else {
+      updateDoc(userDocRef, {
+        lastActivityDate: serverTimestamp(),
+      }).catch((error) => {
+        console.error("[LibraryRepository] Failed to update activity:", error);
+      });
     }
 
-    // Post-transaction: Track XP for creating sequence
+    // Post-write: Tag migration (async, non-blocking)
+    let finalSequence = libSeq;
+    if (!libSeq.sequenceTags || libSeq.sequenceTags.length === 0) {
+      migrateSequenceTags(libSeq, this.tagService)
+        .then((migrationResult) => {
+          finalSequence = {
+            ...libSeq,
+            sequenceTags: migrationResult.sequenceTags,
+            tagIds: migrationResult.tagIds,
+          };
+          updateDoc(sequenceDocRef, {
+            sequenceTags: migrationResult.sequenceTags,
+            tagIds: migrationResult.tagIds,
+          }).catch((err) =>
+            console.error("[LibraryRepository] Tag update failed:", err)
+          );
+        })
+        .catch((error) => {
+          console.error("[LibraryRepository] Tag migration failed:", error);
+        });
+    }
+
+    // Post-write: Track XP (async, non-blocking)
     if (isNewSequence) {
-      try {
-        await this.achievementService.trackAction("sequence_created", {
+      this.achievementService
+        .trackAction("sequence_created", {
           stepCount: sequence.steps.length ?? 0,
-        });
-      } catch (_e) {
-        console.warn("Failed to track achievement:", _e);
-      }
+        })
+        .catch((_e) => console.warn("Failed to track achievement:", _e));
     }
 
-    // Post-transaction: Sync to public index
+    // Post-write: Sync to public index (async, non-blocking)
     if (finalSequence.visibility === "public") {
-      await this.publicIndexSyncer.syncToPublicIndex(finalSequence, userId);
+      this.publicIndexSyncer
+        .syncToPublicIndex(finalSequence, userId)
+        .catch((error) =>
+          console.error("[LibraryRepository] Public index sync failed:", error)
+        );
     }
 
     return finalSequence;
@@ -354,44 +370,48 @@ export class LibraryRepository implements ILibraryRepository {
     const userId = this.getUserId();
     const docRef = doc(firestore, getUserSequencePath(userId, sequenceId));
 
-    // Get existing
+    // Read existing from local cache (fast — Firestore serves from cache first)
     const existing = await this.getSequence(sequenceId);
     if (!existing) {
       throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
     }
 
-    // Apply updates
+    // Apply updates locally for immediate return
     const updated = {
       ...existing,
       ...updates,
       id: sequenceId,
-      ownerId: userId, // Can't change owner
+      ownerId: userId,
       updatedAt: new Date(),
     };
 
-    try {
-      await trackWrite(() =>
+    // Fire-and-forget: queue write locally, sync when online
+    trackWrite(
+      () =>
         updateDoc(docRef, {
           ...updates,
           updatedAt: serverTimestamp(),
-        })
-      );
-    } catch (error) {
+        }),
+      "library"
+    ).catch((error) => {
       console.error("[LibraryRepository] Failed to update sequence:", error);
-      toast.error("Failed to update sequence. Please try again.");
-      throw new LibraryError(
-        "Failed to update sequence",
-        "NETWORK",
-        sequenceId
-      );
-    }
+      toast.error("Failed to update sequence. Will retry when online.");
+    });
 
-    // Handle visibility changes
+    // Handle visibility changes (async, non-blocking)
     if (updates.visibility && updates.visibility !== existing.visibility) {
       if (updates.visibility === "public") {
-        await this.publicIndexSyncer.syncToPublicIndex(updated, userId);
+        this.publicIndexSyncer
+          .syncToPublicIndex(updated, userId)
+          .catch((err) =>
+            console.error("[LibraryRepository] Public index sync failed:", err)
+          );
       } else if (existing.visibility === "public") {
-        await this.publicIndexSyncer.removeFromPublicIndex(sequenceId);
+        this.publicIndexSyncer
+          .removeFromPublicIndex(sequenceId)
+          .catch((err) =>
+            console.error("[LibraryRepository] Public index remove failed:", err)
+          );
       }
     }
 
@@ -407,47 +427,35 @@ export class LibraryRepository implements ILibraryRepository {
       return; // Already deleted
     }
 
-    // Remove from public index if public
+    // Remove from public index if public (async, non-blocking)
     if (existing.visibility === "public") {
-      try {
-        await this.publicIndexSyncer.removeFromPublicIndex(sequenceId);
-      } catch (error) {
+      this.publicIndexSyncer.removeFromPublicIndex(sequenceId).catch((error) =>
         console.warn(
           "[LibraryRepository] Failed to remove from public index:",
           error
-        );
-        // Continue with deletion - public index sync can be fixed later
-      }
+        )
+      );
     }
 
-    // Delete the sequence
-    try {
-      await trackWrite(() =>
-        deleteDoc(doc(firestore, getUserSequencePath(userId, sequenceId)))
-      );
-    } catch (error) {
+    // Fire-and-forget: delete queues locally, syncs when online
+    trackWrite(
+      () => deleteDoc(doc(firestore, getUserSequencePath(userId, sequenceId))),
+      "library"
+    ).catch((error) => {
       console.error("[LibraryRepository] Failed to delete sequence:", error);
-      toast.error("Failed to delete sequence. Please try again.");
-      throw new LibraryError(
-        "Failed to delete sequence",
-        "NETWORK",
-        sequenceId
-      );
-    }
+      toast.error("Failed to delete sequence. Will retry when online.");
+    });
 
-    // Decrement user's sequenceCount
-    try {
-      const userDocRef = doc(firestore, `users/${userId}`);
-      await updateDoc(userDocRef, {
-        sequenceCount: increment(-1),
-      });
-    } catch (error) {
+    // Decrement user's sequenceCount (async, non-blocking)
+    const userDocRef = doc(firestore, `users/${userId}`);
+    updateDoc(userDocRef, {
+      sequenceCount: increment(-1),
+    }).catch((error) => {
       console.error(
         `[LibraryRepository] Failed to decrement sequenceCount for user ${userId}:`,
         error
       );
-      // Don't throw - sequence is already deleted, count will be inconsistent but not critical
-    }
+    });
   }
 
   async getSequences(
@@ -618,9 +626,33 @@ export class LibraryRepository implements ILibraryRepository {
           q,
           (snapshot) => {
             const sequences: LibrarySequence[] = [];
-            snapshot.forEach((doc) => {
-              sequences.push(this.mapDocToLibrarySequence(doc.data(), doc.id));
+            snapshot.forEach((docSnap) => {
+              const serverSeq = this.mapDocToLibrarySequence(docSnap.data(), docSnap.id);
+              sequences.push(serverSeq);
+
+              // Check for conflicts on server-originated changes
+              // hasPendingWrites means this is our own local write echoing back
+              if (this.conflictResolver && !docSnap.metadata.hasPendingWrites) {
+                const localSeq = this.localSequenceCache.get(docSnap.id);
+                if (localSeq) {
+                  const conflict = this.conflictResolver.detectConflict(localSeq, serverSeq);
+                  if (conflict) {
+                    this.conflictResolver.promptForResolution(conflict).then((resolution) => {
+                      this.conflictResolver!.resolveConflict(conflict, resolution);
+                      if (resolution === "keep-local") {
+                        this.resaveSequenceForConflict(localSeq);
+                      }
+                    });
+                  }
+                }
+              }
             });
+
+            // Update local cache with latest snapshot data
+            for (const seq of sequences) {
+              this.localSequenceCache.set(seq.id, seq);
+            }
+
             callback(sequences);
           },
           (error) => {
@@ -643,6 +675,35 @@ export class LibraryRepository implements ILibraryRepository {
         unsubscribe();
       }
     };
+  }
+
+  /**
+   * Re-save a sequence after user chose "keep-local" in conflict resolution.
+   * Writes the local version with an incremented _version to overwrite the server.
+   */
+  private async resaveSequenceForConflict(sequence: LibrarySequence): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const userId = this.getUserId();
+      const sequenceDocRef = doc(firestore, getUserSequencePath(userId, sequence.id));
+
+      const newVersion = ((sequence._version ?? 0) + 1);
+      trackWrite(
+        () => setDoc(sequenceDocRef, {
+          ...sequence,
+          _version: newVersion,
+          updatedAt: serverTimestamp(),
+        }),
+        "library"
+      ).catch((error) => {
+        console.error("[LibraryRepository] Failed to re-save after conflict resolution:", error);
+        toast.error("Failed to save your version. Will retry when online.");
+      });
+
+      this.conflictResolver?.trackLocalWrite(sequence.id, newVersion);
+    } catch (error) {
+      console.error("[LibraryRepository] Conflict re-save failed:", error);
+    }
   }
 
   subscribeToSequence(
@@ -785,7 +846,7 @@ export class LibraryRepository implements ILibraryRepository {
     }
 
     try {
-      await trackWrite(() => batch.commit());
+      await trackWrite(() => batch.commit(), "library");
     } catch (error) {
       console.error("[LibraryRepository] Failed to delete sequences:", error);
       toast.error("Failed to delete sequences. Please try again.");
@@ -811,7 +872,7 @@ export class LibraryRepository implements ILibraryRepository {
     }
 
     try {
-      await trackWrite(() => batch.commit());
+      await trackWrite(() => batch.commit(), "library");
     } catch (error) {
       console.error("[LibraryRepository] Failed to move to collection:", error);
       toast.error("Failed to move sequences. Please try again.");
@@ -840,7 +901,7 @@ export class LibraryRepository implements ILibraryRepository {
     }
 
     try {
-      await trackWrite(() => batch.commit());
+      await trackWrite(() => batch.commit(), "library");
     } catch (error) {
       console.error("[LibraryRepository] Failed to add tags:", error);
       toast.error("Failed to add tags. Please try again.");
@@ -900,7 +961,7 @@ export class LibraryRepository implements ILibraryRepository {
 
     // Commit all visibility updates in one batch
     try {
-      await trackWrite(() => batch.commit());
+      await trackWrite(() => batch.commit(), "library");
     } catch (error) {
       console.error("[LibraryRepository] Failed to update visibility:", error);
       toast.error("Failed to update visibility. Please try again.");

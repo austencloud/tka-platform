@@ -20,6 +20,7 @@ import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IFirebaseVideoUploader } from "$lib/shared/share/services/contracts/IFirebaseVideoUploader";
 import type { IContentModerator } from "$lib/features/moderation/services/contracts/IContentModerator";
 import type { IContentAppealManager } from "$lib/features/moderation/services/contracts/IContentAppealManager";
+import type { IConflictResolver } from "$lib/shared/offline/services/contracts/IConflictResolver";
 
 /**
  * Library Repository dependencies
@@ -29,6 +30,7 @@ interface LibraryRepositoryDeps {
   tagManager: ITagManager;
   orientationCycleDetector: IOrientationCycleDetector;
   publicIndexSyncer: IPublicIndexSyncer;
+  conflictResolver?: IConflictResolver;
 }
 
 /**
@@ -72,7 +74,8 @@ export function createLibraryContainer(deps: {
         deps.libraryRepository.achievementManager,
         deps.libraryRepository.tagManager,
         deps.libraryRepository.orientationCycleDetector,
-        deps.libraryRepository.publicIndexSyncer
+        deps.libraryRepository.publicIndexSyncer,
+        deps.libraryRepository.conflictResolver
       ),
     librarySaveService: () =>
       new LibrarySaveService(

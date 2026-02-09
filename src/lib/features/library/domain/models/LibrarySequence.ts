@@ -101,6 +101,19 @@ export interface LibrarySequence extends SequenceData {
   readonly starCount: number;
 
   // ============================================================
+  // SYNC & CONFLICT DETECTION
+  // ============================================================
+
+  /**
+   * Monotonically increasing version counter for conflict detection.
+   * Incremented on every save. Used to detect when the same sequence
+   * was edited on multiple devices while one was offline.
+   * - 0 for legacy sequences without versioning
+   * - 1+ for versioned sequences
+   */
+  readonly _version?: number;
+
+  // ============================================================
   // TIMESTAMPS
   // ============================================================
 
