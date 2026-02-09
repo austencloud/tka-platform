@@ -92,6 +92,12 @@
     return isNaN(num) ? null : num;
   }
 
+  function persist(key: string, value: string | null) {
+    if (typeof window === "undefined") return;
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  }
+
   // Run migration before reading state
   migrateStorageKeys();
 
@@ -120,92 +126,6 @@
   let authors = $derived(
     [...new Set(sequences.map((s) => s.author).filter((a): a is string => Boolean(a)))].sort()
   );
-
-  // Persist filter changes
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY_LENGTH, String(selectedLength));
-    }
-  });
-
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY_COLUMNS, String(columnCount));
-    }
-  });
-
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      if (difficulty !== null) {
-        localStorage.setItem(STORAGE_KEY_DIFFICULTY, String(difficulty));
-      } else {
-        localStorage.removeItem(STORAGE_KEY_DIFFICULTY);
-      }
-    }
-  });
-
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY_FAVORITES, String(favorites));
-    }
-  });
-
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      if (gridMode !== null) {
-        localStorage.setItem(STORAGE_KEY_GRID_MODE, gridMode);
-      } else {
-        localStorage.removeItem(STORAGE_KEY_GRID_MODE);
-      }
-    }
-  });
-
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      if (author !== null) {
-        localStorage.setItem(STORAGE_KEY_AUTHOR, author);
-      } else {
-        localStorage.removeItem(STORAGE_KEY_AUTHOR);
-      }
-    }
-  });
-
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY_SHOW_QR, String(showQRCodes));
-    }
-  });
-
-  // Persist visibility settings
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY_HAND_POINTS, String(handPointsVisible));
-    }
-  });
-
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY_SHOW_GRID, String(showGrid));
-    }
-  });
-
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY_SHOW_TKA, String(showTKA));
-    }
-  });
-
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY_SHOW_WORD, String(showWord));
-    }
-  });
-
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY_INCLUDE_START_POS, String(includeStartPosition));
-    }
-  });
 
   // Filtered sequences based on all filters
   let filteredSequences = $derived.by(() => {
@@ -320,52 +240,64 @@
 
   function handleLengthSelected(length: number) {
     selectedLength = length;
+    persist(STORAGE_KEY_LENGTH, String(length));
   }
 
   function handleColumnCountChanged(count: number) {
     columnCount = count;
+    persist(STORAGE_KEY_COLUMNS, String(count));
   }
 
   // Filter handlers
   function handleDifficultyChange(value: number | null) {
     difficulty = value;
+    persist(STORAGE_KEY_DIFFICULTY, value !== null ? String(value) : null);
   }
 
   function handleFavoritesChange(value: boolean) {
     favorites = value;
+    persist(STORAGE_KEY_FAVORITES, String(value));
   }
 
   function handleGridModeChange(value: string | null) {
     gridMode = value;
+    persist(STORAGE_KEY_GRID_MODE, value);
   }
 
   function handleAuthorChange(value: string | null) {
     author = value;
+    persist(STORAGE_KEY_AUTHOR, value);
   }
 
   function handleShowQRCodesChange(value: boolean) {
     showQRCodes = value;
+    persist(STORAGE_KEY_SHOW_QR, String(value));
   }
 
   // Visibility handlers
   function handleHandPointsChange(value: boolean) {
     handPointsVisible = value;
+    persist(STORAGE_KEY_HAND_POINTS, String(value));
   }
 
   function handleShowGridChange(value: boolean) {
     showGrid = value;
+    persist(STORAGE_KEY_SHOW_GRID, String(value));
   }
 
   function handleShowTKAChange(value: boolean) {
     showTKA = value;
+    persist(STORAGE_KEY_SHOW_TKA, String(value));
   }
 
   function handleShowWordChange(value: boolean) {
     showWord = value;
+    persist(STORAGE_KEY_SHOW_WORD, String(value));
   }
 
   function handleIncludeStartPositionChange(value: boolean) {
     includeStartPosition = value;
+    persist(STORAGE_KEY_INCLUDE_START_POS, String(value));
   }
 
   function handleSelectSequence(sequence: SequenceData) {
