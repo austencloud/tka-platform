@@ -123,6 +123,33 @@ A hand path describes the trajectory of the hand from one grid point to another.
 
 Hash is a "half-dash" — a straight-line path to or from the center point rather than to the opposite perimeter point.
 
+### Extended Dashes (L6+, conjoined grids — DESIGN PHASE)
+
+When two grids share a junction point (Level 6), new straight-line paths emerge that cross the grid boundary. These follow the same extension pattern as shifts (skew+/skew++):
+
+| Variant | Path | Distance | Analogy |
+|---------|------|----------|---------|
+| **Dash** (standard) | Perimeter → opposite perimeter, same grid | 1 grid diameter | Standard shift |
+| **Dash+** | Perimeter → center of *other* grid | ~1.5 grid radii (crosses junction) | Hash-like distance, but cross-grid |
+| **Dash++** | Perimeter of one grid → opposite perimeter of other grid | ~2 grid diameters | Skew++ (maximum extension) |
+
+**Key properties:**
+
+- **Still geometrically straight lines.** Dash+/++ follow straight-line trajectories through the junction, not curved arcs. This means they follow dash rotation rules, not shift rules.
+- **0 turns = 1 directionless state.** Same as standard dash — no arc means no pro/anti distinction at base rotation.
+- **1+ turns = CW/CCW.** Same rotation behavior as any straight-line path.
+- **Letter classification unchanged.** A dash+ or dash++ is still a "dash" for letter type purposes. One hand doing dash++ while the other shifts = Type 3 (Cross-Shift). Both hands doing dash++ = Type 5 (Dual-Dash). The existing letter set covers these — no new letters needed.
+
+**What doesn't exist pre-L6:** Standard dashes only reach the opposite point on the same grid. There's nowhere for a straight line to go beyond that. The second grid creates new destinations that happen to be reachable via straight-line paths through the junction.
+
+**Relationship to hash:** Hash (L5) is a straight-line path from perimeter to center of the *same* grid. Dash+ is a straight-line path from perimeter to center of the *other* grid. Geometrically similar (perimeter to a center point), but dash+ crosses the junction. Whether dash+ should be classified as "hash to the remote center" or "extended dash" is a design decision — the rotation behavior is identical either way since both are straight lines.
+
+**Open questions (to resolve before implementation):**
+1. Grid location addressing — how to distinguish "east on Grid A" from "east on Grid B" in the data model
+2. Whether dash+ is a new hand path type or a modifier on existing dash (parallels the skew+/skew- modifier pattern)
+3. Which specific cross-grid straight lines are valid (depends on grid arrangement and junction geometry)
+4. Orientation reference point — which grid's center defines "center-relative" for a cross-grid motion?
+
 ---
 
 ## The Base Rotation Principle
@@ -383,7 +410,7 @@ The original estimate of 214 possibilities was based on incorrect assumptions (0
 | 3 | Half turns + float | Halves, float motion type | Foundation |
 | 4 | Skewed grid | 8-point grid, skew+ and skew- | Grid mixing |
 | 5 | Centric | Center point, hash hand path, tau/terra positions | New grid point |
-| 6 | Conjoined grids | Dual grids sharing a junction point, new position combinations | Canvas expansion |
+| 6 | Conjoined grids | Dual grids sharing a junction point, new position combinations, extended dashes (dash+/dash++) | Canvas expansion |
 | 7 | Interradial orientations | 8 orientations (clockIn/Out, counterIn/Out), quarter turns, completes 2D | 2D COMPLETE |
 | 8 | Atomics | Multi-plane / 3D (wall, wheel, overhead) | New dimension |
 | 9 | Rubik's cube | Skewed across intersecting planes | 3D COMPLETE |
