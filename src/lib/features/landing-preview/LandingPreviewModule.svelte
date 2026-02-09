@@ -19,7 +19,6 @@
   // Internal tabs - these are NOT sidebar tabs, they're internal to this module
   const INTERNAL_TABS = [
     { id: "landing", label: "Landing", icon: "fa-rocket" },
-    { id: "hero-lab", label: "Hero Lab", icon: "fa-flask" },
     { id: "videos", label: "Videos", icon: "fa-film" },
     { id: "about", label: "About", icon: "fa-info-circle" },
     { id: "roots", label: "Roots", icon: "fa-seedling" },
@@ -51,7 +50,7 @@
   // Dev-only components (not public pages)
   import VideoGalleryPrototypes from "./components/VideoGalleryPrototypes.svelte";
   import VideoCurator from "./components/VideoCurator.svelte";
-  import HeroPrototypes from "./components/HeroPrototypes.svelte";
+
 
   const STORAGE_KEY = "tka-landing-theme";
   const DEFAULT_BACKGROUND = BackgroundType.NIGHT_SKY;
@@ -66,7 +65,7 @@
   let currentTab = $state("landing");
 
   // Dev-only tabs that don't load a public page component
-  const devOnlyTabs = ["videos", "curator", "hero-lab"];
+  const devOnlyTabs = ["videos", "curator"];
 
   // Load page component when tab changes
   $effect(() => {
@@ -180,9 +179,7 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="content-area" bind:this={contentArea} onclick={handleLinkClick} role="main">
-    {#if currentTab === "hero-lab"}
-      <HeroPrototypes />
-    {:else if currentTab === "videos"}
+    {#if currentTab === "videos"}
       <VideoGalleryPrototypes />
     {:else if currentTab === "curator"}
       <VideoCurator />
