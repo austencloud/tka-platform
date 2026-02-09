@@ -97,8 +97,6 @@
     initialPlaybackTimeMs?: number;
     /** Initial view mode to restore */
     initialViewMode?: ViewMode;
-    /** Initial stagger open state to restore */
-    initialStaggerOpen?: boolean;
   }
 
   let {
@@ -108,7 +106,6 @@
     initialBpm,
     initialPlaybackTimeMs,
     initialViewMode,
-    initialStaggerOpen,
   }: Props = $props();
 
   // Internal open state - syncs with prop, allows BaseModal to write to it

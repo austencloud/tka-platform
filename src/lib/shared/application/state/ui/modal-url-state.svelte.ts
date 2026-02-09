@@ -4,7 +4,7 @@
  * Syncs modal state with URL search params to survive HMR and enable deep linking.
  *
  * URL Schema:
- * - ?modal=sequence&id=<sequenceId>&view=split|animation|image[&stagger=true]
+ * - ?modal=sequence&id=<sequenceId>&view=split|animation|image
  * - ?modal=spotlight&id=<sequenceId>&mode=split|animation|image|stepgrid|video
  *
  * Usage:
@@ -31,7 +31,6 @@ export interface ModalUrlState {
   modal: ModalType;
   sequenceId: string | null;
   view: SequenceViewMode;
-  stagger: boolean;
   spotlightMode: SpotlightDisplayMode;
   /** Playback time in milliseconds (for restoring exact position) */
   playbackTimeMs: number;
@@ -47,7 +46,6 @@ const DEFAULT_STATE: ModalUrlState = {
   modal: null,
   sequenceId: null,
   view: "split",
-  stagger: false,
   spotlightMode: "split",
   playbackTimeMs: 0,
   bpm: 60,
@@ -97,7 +95,6 @@ function parseUrlParams(searchParams: URLSearchParams): ModalUrlState {
   const modal = searchParams.get("modal") as ModalType;
   const sequenceId = searchParams.get("id");
   const view = (searchParams.get("view") || "split") as SequenceViewMode;
-  const stagger = searchParams.get("stagger") === "true";
   const spotlightMode = (searchParams.get("mode") || "split") as SpotlightDisplayMode;
   const playbackTimeMs = parseInt(searchParams.get("t") || "0", 10) || 0;
   const bpm = parseInt(searchParams.get("bpm") || "60", 10) || 60;
@@ -106,7 +103,6 @@ function parseUrlParams(searchParams: URLSearchParams): ModalUrlState {
     modal: modal === "sequence" || modal === "spotlight" ? modal : null,
     sequenceId,
     view,
-    stagger,
     spotlightMode,
     playbackTimeMs,
     bpm,
@@ -124,9 +120,6 @@ function buildUrlParams(state: Partial<ModalUrlState>): URLSearchParams {
   }
   if (state.modal === "sequence" && state.view && state.view !== "split") {
     params.set("view", state.view);
-  }
-  if (state.modal === "sequence" && state.stagger) {
-    params.set("stagger", "true");
   }
   if (state.modal === "spotlight" && state.spotlightMode && state.spotlightMode !== "split") {
     params.set("mode", state.spotlightMode);
@@ -166,8 +159,7 @@ export function isModalOpenFromUrl(): boolean {
  */
 export function setSequenceModalUrl(
   sequence: SequenceData,
-  view: SequenceViewMode = "split",
-  stagger: boolean = false
+  view: SequenceViewMode = "split"
 ): void {
   const sequenceId = sequence.id || sequence.word || "unknown";
 
@@ -178,18 +170,8 @@ export function setSequenceModalUrl(
     modal: "sequence",
     sequenceId,
     view,
-    stagger,
   });
 
-  updateUrl(params);
-}
-
-/**
- * Update stagger mode in URL (preserves other params)
- */
-export function setStaggerModeUrl(stagger: boolean): void {
-  const newState = { ...currentState, stagger };
-  const params = buildUrlParams(newState);
   updateUrl(params);
 }
 
@@ -310,7 +292,6 @@ function buildNewUrl(params: URLSearchParams): URL {
   newUrl.searchParams.delete("modal");
   newUrl.searchParams.delete("id");
   newUrl.searchParams.delete("view");
-  newUrl.searchParams.delete("stagger");
   newUrl.searchParams.delete("mode");
   newUrl.searchParams.delete("t");
   newUrl.searchParams.delete("bpm");
