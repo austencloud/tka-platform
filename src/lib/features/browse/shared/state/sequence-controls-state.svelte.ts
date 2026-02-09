@@ -9,7 +9,35 @@
 import type { BrowseSortMethod } from "../domain/enums/browse-enums";
 import type { BrowseFilterValue } from "../domain/types/browse-types";
 
-type SequenceFilter = { type: string; value: BrowseFilterValue };
+/**
+ * Filter type covers BrowseFilterType enum values, UI-facing variants, and the "all" sentinel.
+ * Some components use camelCase names (startingLetter, startingPosition) while the enum
+ * uses snake_case (starting_letter). Both are valid at this layer; the factory casts
+ * to BrowseFilterType before passing to the filter service.
+ */
+export type SequenceFilterType =
+  | "all"
+  | "starting_letter"
+  | "contains_letters"
+  | "length"
+  | "difficulty"
+  | "author"
+  | "gridMode"
+  | "startPosition"
+  | "endPosition"
+  | "recent"
+  | "favorites"
+  | "all_sequences"
+  | "cap_type"
+  | "startingLetter"
+  | "startingPosition"
+  // FilterPreset values used by ViewPresetsSheet
+  | "practice"
+  | "easy"
+  | "medium"
+  | "hard";
+
+export type SequenceFilter = { type: SequenceFilterType; value: BrowseFilterValue };
 
 export interface SequenceControlsState {
   currentFilter: SequenceFilter;

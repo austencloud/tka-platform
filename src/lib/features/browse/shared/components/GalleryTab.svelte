@@ -4,6 +4,10 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { FilterPreset } from "../domain/types/browse-types";
+  import type { createBrowseState } from "../state/browse-state-factory.svelte";
+  import type { SequenceFilterType } from "../state/sequence-controls-state.svelte";
+
+  type BrowseState = ReturnType<typeof createBrowseState>;
 
   import BrowseLayout from "./BrowseLayout.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
@@ -20,7 +24,7 @@
   interface Props {
     isMobile: boolean;
     drawerWidth: string;
-    galleryState: any;
+    galleryState: BrowseState;
     error: string | null;
     onSequenceAction: (action: string, sequence: SequenceData) => Promise<void>;
     onContainerScroll: (event: CustomEvent<{ scrollTop: number }>) => void;
@@ -53,7 +57,7 @@
   );
 
   // Handler functions
-  function handleFilterChange(type: string, value?: BrowseFilterValue) {
+  function handleFilterChange(type: SequenceFilterType, value?: BrowseFilterValue) {
     galleryState.handleFilterChange(type, value);
   }
 

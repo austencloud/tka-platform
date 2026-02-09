@@ -68,6 +68,20 @@
     sequenceControls?.currentFilter?.type === "contains_letters"
   );
 
+  // Screen reader announcement for filter changes
+  const filterAnnouncement = $derived.by(() => {
+    if (!sequenceControls?.currentFilter) return "";
+    const filter = sequenceControls.currentFilter;
+    if (filter.type === "all") return "All sequences shown";
+    if (filter.type === "favorites") return "Showing favorites";
+    if (filter.type === "difficulty") return `Filtered by level ${filter.value}`;
+    if (filter.type === "startingLetter") return `Filtered by letter ${filter.value}`;
+    if (filter.type === "length") return `Filtered by ${filter.value} steps`;
+    if (filter.type === "startingPosition") return `Filtered by position ${filter.value}`;
+    if (filter.type === "contains_letters") return `Searching for "${filter.value}"`;
+    return `Filter active: ${filter.type}`;
+  });
+
   // Source toggle options for SegmentedControl
   const sourceOptions = $derived.by(() => {
     const opts: { value: SequenceSource; label: string }[] = [
@@ -139,6 +153,11 @@
 </script>
 
 {#if sequenceControls}
+  <!-- Screen reader announcement for filter/sort changes -->
+  <div class="sr-only" aria-live="polite" aria-atomic="true">
+    {filterAnnouncement}
+  </div>
+
   <div class="sequence-topbar-controls">
     <div class="controls-row">
       <!-- Source toggle: SegmentedControl with sliding indicator -->
@@ -220,6 +239,19 @@
 {/if}
 
 <style>
+  /* Visually hidden but accessible to screen readers */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .sequence-topbar-controls {
     --control-height: var(--min-touch-target, 48px);
 

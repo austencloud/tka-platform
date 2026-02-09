@@ -24,6 +24,7 @@ import type { ISectionManager } from "../services/contracts/ISectionManager";
 import type { ILibraryRepository } from "../../../library/services/contracts/ILibraryRepository";
 import type { SequenceSource } from "../state/sequence-source-state.svelte";
 import type { IFavoritesManager } from "../services/contracts/IFavoritesManager";
+import type { SequenceFilterType } from "../state/sequence-controls-state.svelte";
 import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
 
 const STORAGE_KEY = "tka-browse-gallery-controls";
@@ -31,7 +32,7 @@ const STORAGE_KEY = "tka-browse-gallery-controls";
 interface PersistedControlsState {
   sortMethod: BrowseSortMethod;
   sortDirection: "asc" | "desc";
-  filter: { type: string; value: BrowseFilterValue };
+  filter: { type: SequenceFilterType; value: BrowseFilterValue };
 }
 
 export function createBrowseState() {
@@ -94,7 +95,7 @@ export function createBrowseState() {
   );
   let sortDirection = $state<"asc" | "desc">(persisted?.sortDirection || "asc");
   const showSections = $state<boolean>(true);
-  let currentFilter = $state<{ type: string; value: BrowseFilterValue }>(
+  let currentFilter = $state<{ type: SequenceFilterType; value: BrowseFilterValue }>(
     persisted?.filter || {
       type: "all",
       value: null,
@@ -377,7 +378,7 @@ export function createBrowseState() {
 
   // Handle filter changes
   async function handleFilterChange(
-    type: string,
+    type: SequenceFilterType,
     value?: BrowseFilterValue
   ): Promise<void> {
     currentFilter = { type, value: value || null };

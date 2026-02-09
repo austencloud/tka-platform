@@ -9,6 +9,7 @@ Includes grid size controls on mobile (zoom moved from toolbar)
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
+  import type { SequenceFilterType } from "../../../../shared/state/sequence-controls-state.svelte";
   import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";
 
   // Shared parameter cards
@@ -34,11 +35,11 @@ Includes grid size controls on mobile (zoom moved from toolbar)
     onOpenLetterSheet = () => {},
     onOpenOptionsSheet = () => {},
   } = $props<{
-    currentFilter?: { type: string; value: BrowseFilterValue };
+    currentFilter?: { type: SequenceFilterType; value: BrowseFilterValue };
     startPosition?: PictographData | null;
     endPosition?: PictographData | null;
     loopTypeCounts?: Record<string, number>;
-    onFilterChange?: (type: string, value?: BrowseFilterValue) => void;
+    onFilterChange?: (type: SequenceFilterType, value?: BrowseFilterValue) => void;
     onOpenLetterSheet?: () => void;
     onOpenOptionsSheet?: () => void;
   }>();
