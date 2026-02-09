@@ -11,7 +11,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { arrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowPositioningOrchestrator";
 
 export type TransformId = "mirror" | "flip" | "invert" | "rotate" | "swap" | "rewind";
@@ -70,40 +70,50 @@ function hasMovement(motion: MotionData): boolean {
 }
 
 /**
- * Enhance a motion for invert demos by adding turns=1 if it has rotation direction.
- * This makes the rotation visible so the invert effect can be demonstrated.
+ * Enhance a motion for invert demos by adding turns=1 only to dash motions.
+ * Shifts already show pro/anti distinction at 0 turns, but dashes at 0 turns
+ * have no rotation direction — so we add 1 turn to make the invert visible.
+ *
+ * When adding turns, we must also assign a rotation direction (CW) since the
+ * original 0-turn dash had NO_ROTATION. Without a direction, the arrow
+ * positioning system can't place the arrow correctly.
  */
 function enhanceMotionForInvert(motion: MotionData): MotionData {
   const currentTurns = typeof motion.turns === 'number' ? motion.turns : 0;
-  if (!hasRotation(motion) || currentTurns > 0) {
-    return motion; // Already has turns or no rotation - no change needed
+  if (currentTurns > 0) {
+    return motion; // Already has turns - no change needed
   }
-  // Add 1 turn to make rotation visible
+  // Only dash motions need enhancement — at 0 turns they have no direction
+  if (motion.motionType !== MotionType.DASH) {
+    return motion;
+  }
   return createMotionData({
     ...motion,
     turns: 1,
+    rotationDirection: RotationDirection.CLOCKWISE,
   });
 }
 
 /**
- * Enhance a pictograph for invert demos by adding turns to motions with rotation.
- * Also recalculates arrow placement to match the new turn values.
+ * Enhance a pictograph for invert demos by adding turns to dash motions.
+ * Shifts show pro/anti at 0 turns so they stay unchanged. Dashes need 1 turn
+ * to have a visible rotation direction. Recalculates arrow placement after.
  */
 async function enhancePictographForInvert(pictograph: PictographData): Promise<PictographData> {
   const blue = pictograph.motions?.blue;
   const red = pictograph.motions?.red;
 
-  // Check if any motion needs enhancement
-  const blueTurns = blue && typeof blue.turns === 'number' ? blue.turns : 0;
-  const redTurns = red && typeof red.turns === 'number' ? red.turns : 0;
-  const blueNeedsEnhancement = blue && hasRotation(blue) && blueTurns === 0;
-  const redNeedsEnhancement = red && hasRotation(red) && redTurns === 0;
+  // Only dash motions at 0 turns need enhancement
+  const isDashAt0 = (m: MotionData | undefined) =>
+    m && m.motionType === MotionType.DASH && (typeof m.turns !== 'number' || m.turns === 0);
+  const blueNeedsEnhancement = isDashAt0(blue);
+  const redNeedsEnhancement = isDashAt0(red);
 
   if (!blueNeedsEnhancement && !redNeedsEnhancement) {
     return pictograph; // No enhancement needed
   }
 
-  // Create enhanced pictograph with turns=1 for rotating motions
+  // Create enhanced pictograph with turns=1 for dash motions
   const enhancedPictograph: PictographData = {
     ...pictograph,
     motions: {
@@ -119,6 +129,41 @@ async function enhancePictographForInvert(pictograph: PictographData): Promise<P
     console.warn("Failed to recalculate arrow placement for invert demo:", error);
     return enhancedPictograph; // Return without recalculated placement as fallback
   }
+}
+
+/**
+ * Reclassify the letter of a pictograph by matching its motions against the dataframe.
+ * After transforms like invert (pro↔anti), the motion combination maps to a different letter.
+ * Returns the pictograph with the updated letter, or unchanged if no match is found.
+ */
+export async function reclassifyLetter(pictograph: PictographData): Promise<PictographData> {
+  const blue = pictograph.motions?.blue;
+  const red = pictograph.motions?.red;
+  if (!blue || !red) return pictograph;
+
+  const allPictographs = await loadAllPictographs();
+
+  // Find a dataframe entry that matches the transformed motion properties
+  const match = allPictographs.find(p => {
+    const pBlue = p.motions?.blue;
+    const pRed = p.motions?.red;
+    if (!pBlue || !pRed) return false;
+
+    return (
+      pBlue.motionType === blue.motionType &&
+      pBlue.startLocation === blue.startLocation &&
+      pBlue.endLocation === blue.endLocation &&
+      pRed.motionType === red.motionType &&
+      pRed.startLocation === red.startLocation &&
+      pRed.endLocation === red.endLocation
+    );
+  });
+
+  if (match?.letter) {
+    return { ...pictograph, letter: match.letter };
+  }
+
+  return pictograph;
 }
 
 /**

@@ -12,7 +12,7 @@
     type TransformId,
   } from "../../domain/transforms/transform-help-content";
   import { portal } from "$lib/features/create/generate/components/modals/portal";
-  import { getRandomPictographForTransform } from "../../domain/transforms/pictograph-example-loader";
+  import { getRandomPictographForTransform, reclassifyLetter } from "../../domain/transforms/pictograph-example-loader";
   import {
     applyMirror,
     applyFlip,
@@ -87,29 +87,38 @@
     }
   }
 
-  function applyTransform() {
+  async function applyTransform() {
     if (!displayedPictograph || !isTransform) return;
 
+    let transformed: PictographData;
     switch (transformId) {
       case "mirror":
-        displayedPictograph = applyMirror(displayedPictograph);
+        transformed = applyMirror(displayedPictograph);
         break;
       case "flip":
-        displayedPictograph = applyFlip(displayedPictograph);
+        transformed = applyFlip(displayedPictograph);
         break;
       case "invert":
-        displayedPictograph = applyInvert(displayedPictograph);
+        transformed = applyInvert(displayedPictograph);
         break;
       case "rotate":
-        displayedPictograph = applyRotate(displayedPictograph, "cw");
+        transformed = applyRotate(displayedPictograph, "cw");
         break;
       case "swap":
-        displayedPictograph = applySwap(displayedPictograph);
+        transformed = applySwap(displayedPictograph);
         break;
       case "rewind":
-        displayedPictograph = applyRewind(displayedPictograph);
+        transformed = applyRewind(displayedPictograph);
         break;
+      default:
+        return;
     }
+
+    // Reclassify letter before assigning — transforms change motion types/locations,
+    // which means the pictograph now corresponds to a different letter.
+    // Single assignment avoids triggering two preparation cycles.
+    transformed = await reclassifyLetter(transformed);
+    displayedPictograph = transformed;
   }
 
   // Handle keyboard
