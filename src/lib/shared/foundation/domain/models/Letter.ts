@@ -37,8 +37,8 @@ export enum Letter {
   DELTA = "Δ",
   THETA = "Θ",
   OMEGA = "Ω",
-  MU = "Mu",
-  NU = "Nu",
+  MU = "μ",
+  NU = "ν",
 
   // Type3: Cross-Shift (8 cross variants)
   W_DASH = "W-",

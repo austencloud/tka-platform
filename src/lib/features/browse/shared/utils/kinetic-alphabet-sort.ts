@@ -42,9 +42,9 @@ const KINETIC_ALPHABET_ORDER = [
   "Δ",
   "Θ",
   "Ω",
-  // Advanced Type 2s (spelled out for readability)
-  "Mu",
-  "Nu",
+  // Advanced Type 2s
+  "μ",
+  "ν",
   // Type 3: Cross-Shift
   "W-",
   "X-",

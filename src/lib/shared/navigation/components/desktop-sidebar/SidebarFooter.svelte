@@ -9,6 +9,7 @@
   import NetworkStatusIndicator from "../../../offline/components/NetworkStatusIndicator.svelte";
   import ModuleQuickToggle from "./ModuleQuickToggle.svelte";
   import { voiceControlState } from "../../../voice-control/state/voice-control-state.svelte";
+  import { getSettings } from "../../../application/state/app-state.svelte";
 
   let { isCollapsed, onSettingsClick, isInSettings = false } = $props<{
     isCollapsed: boolean;
@@ -18,7 +19,9 @@
 
   const isAdmin = $derived(featureFlagService.isAdmin);
 
-  const voiceSupported = $derived(voiceControlState.supported);
+  // Voice control is opt-in via Settings > Preferences
+  const voiceControlOptIn = $derived(getSettings()?.voiceControlEnabled === true);
+  const voiceSupported = $derived(voiceControlOptIn && voiceControlState.supported);
   const voiceEnabled = $derived(voiceControlState.enabled);
   const inCommandMode = $derived(voiceControlState.commandMode);
   const hasVoiceError = $derived(voiceControlState.detectorState === "error");

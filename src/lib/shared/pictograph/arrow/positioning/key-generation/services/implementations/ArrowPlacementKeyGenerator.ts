@@ -248,8 +248,8 @@ export class ArrowPlacementKeyGenerator implements IArrowPlacementKeyGenerator {
       // Type1 with lowercase gamma
       "γ",
       // Type2 Mu and Nu
-      "Mu",
-      "Nu",
+      "μ",
+      "ν",
     ];
 
     const hasAlphaProps = letter ? alphaLetters.includes(letter) : false;

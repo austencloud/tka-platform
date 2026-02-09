@@ -41,6 +41,12 @@ export function getLetterImagePath(letter: Letter): string {
     return `/images/letters_trimmed/${LetterType.TYPE4}/${baseLetter}.svg`;
   }
 
+  // TAU_DASH (τ-) is Type4, but its base letter τ lives in Type6.
+  // The dash overlay is rendered separately by the Dash component.
+  if (letter === "τ-") {
+    return `/images/letters_trimmed/${LetterType.TYPE6}/τ.svg`;
+  }
+
   // For all other letter types, use the combined SVG
   return `/images/letters_trimmed/${letterType}/${letter}.svg`;
 }

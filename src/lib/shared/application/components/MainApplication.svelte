@@ -75,6 +75,9 @@
   let initializationError = $derived(getInitializationError());
   let settings = $derived(getSettings());
 
+  // Voice control opt-in (hidden by default, enabled in Settings > Preferences)
+  const voiceControlEnabled = $derived(settings?.voiceControlEnabled === true);
+
   // Auth state for gating
   const isAuthenticated = $derived(authState.isAuthenticated);
   const authLoading = $derived(authState.loading);
@@ -459,10 +462,12 @@
     <!-- Deferred Attribution Prompt (appears after engagement threshold) -->
     <AttributionPrompt />
 
-    <!-- Voice Control: "Hey Tika" wake word listener + visual indicator -->
-    <HeyTikaListener />
-    <VoiceControlIndicator />
-    <VoiceCommandHelpOverlay />
+    <!-- Voice Control: opt-in via Settings > Preferences -->
+    {#if voiceControlEnabled}
+      <HeyTikaListener />
+      <VoiceControlIndicator />
+      <VoiceCommandHelpOverlay />
+    {/if}
   {/if}
 
   <!-- Sequence Viewer Drawer (mobile overlay) - outside auth gate so external links work -->

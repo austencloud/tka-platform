@@ -51,6 +51,7 @@
     !currentSettings?.skipClearConfirmation
   );
   const musicianMode = $derived(currentSettings?.musicianMode ?? false);
+  const voiceControlEnabled = $derived(currentSettings?.voiceControlEnabled ?? false);
   const defaultTimeSignature = $derived<TimeSignatureKey>(
     currentSettings?.defaultTimeSignature ?? "4/4"
   );
@@ -83,6 +84,14 @@
     onSettingUpdate?.({
       key: "musicianMode",
       value: !musicianMode,
+    });
+  }
+
+  function handleToggleVoiceControl() {
+    hapticService?.trigger("selection");
+    onSettingUpdate?.({
+      key: "voiceControlEnabled",
+      value: !voiceControlEnabled,
     });
   }
 
@@ -212,6 +221,35 @@
     </div>
   </section>
 
+  <!-- Experimental Section -->
+  <section class="section">
+    <h2 class="section-title">
+      <i class="fas fa-flask" aria-hidden="true"></i>
+      Experimental
+    </h2>
+
+    <div class="toggle-list">
+      <!-- Voice Control -->
+      <button
+        type="button"
+        class="toggle-row"
+        onclick={handleToggleVoiceControl}
+        aria-pressed={voiceControlEnabled}
+      >
+        <div class="toggle-info">
+          <span class="toggle-label">Voice Control</span>
+          <span class="toggle-description">
+            Say "Hey Tika" followed by a command to control the app hands-free.
+            Shows a microphone button on mobile and in the sidebar on desktop.
+          </span>
+        </div>
+        <div class="toggle-switch" class:active={voiceControlEnabled}>
+          <div class="toggle-knob"></div>
+        </div>
+      </button>
+    </div>
+  </section>
+
   <!-- Helpful tip -->
   <div class="tip-card">
     <i class="fas fa-lightbulb" aria-hidden="true"></i>
@@ -305,6 +343,10 @@
 
   .section-title i.fa-music {
     color: #a855f7;
+  }
+
+  .section-title i.fa-flask {
+    color: #22c55e;
   }
 
   /* Toggle List */
