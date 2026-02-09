@@ -13,9 +13,9 @@ TKA (The Kinetic Alphabet) is a notation system for two-handed prop manipulation
 | 1 | Dual-Shift | Both hands shift | A-V (22 letters) |
 | 2 | Shift | One shifts, one static | W, X, Y, Z, &Sigma;, &Delta;, &Theta;, &Omega; |
 | 3 | Cross-Shift | One shifts + one dashes | W-, X-, Y-, Z-, &Sigma;-, &Delta;-, &Theta;-, &Omega;- |
-| 4 | Dash | One dashes, one static | &Phi;, &Psi;, &Lambda; |
+| 4 | Dash | One dashes, one static | &Phi;, &Psi;, &Lambda;, &tau;- |
 | 5 | Dual-Dash | Both hands dash | &Phi;-, &Psi;-, &Lambda;- |
-| 6 | Static | Both hands stationary | &alpha;, &beta;, &gamma; |
+| 6 | Static | Both hands stationary | &alpha;, &beta;, &gamma;, &zeta;, &eta;, &tau;, ⊕ |
 
 ### CRITICAL: Motion Type Precision
 
@@ -39,8 +39,11 @@ What makes Type 1 unique is that both hands **shift** - not that both move. Alwa
 | "Sigma dash" | &Sigma;- | Type 3 |
 | "W dash" | W- | Type 3 |
 | "Phi dash" | &Phi;- | Type 5 |
+| "Tau dash" | &tau;- | Type 4 |
 
-The "-" suffix does NOT mean "letter with dash motion type". It's a naming convention for Type 3 (Cross-Shift) and Type 5 (Dual-Dash) letters.
+The "-" suffix does NOT mean "letter with dash motion type". It's a naming convention for Type 3 (Cross-Shift), Type 4 (Dash), and Type 5 (Dual-Dash) letters.
+
+**Note:** &tau;- is Type 4 (one dashes, one static) where the static hand is at center. It has no Type 5 (dual-dash) variant because a hand at center cannot perform a standard dash (no "opposite" of center exists).
 
 ---
 
@@ -112,26 +115,58 @@ Do NOT call `analyze_word_feasibility` first. The generator handles everything:
 
 A hand path describes the trajectory of the hand from one grid point to another. The geometric shape of the path (curved vs straight) determines which rotation types are available.
 
-| Path | Trajectory | Geometry | Available from |
-|------|-----------|----------|----------------|
-| **Static** | Stay at current point | No movement | Any point |
-| **Shift** | Arc along perimeter to adjacent point (CW or CCW) | Curved arc | Any perimeter point |
-| **Dash** | Straight line to diametrically opposite point | Straight line | Any perimeter point |
-| **Hash** | Straight line to/from center | Straight line | Between perimeter and center (L5+) |
+There are **three fundamental hand path families**, distinguished by geometry:
 
-**The geometric distinction matters:** Shifts follow curved arcs around the grid. Dashes and hashes follow straight lines through the grid. This determines whether pro/anti/float distinctions exist (they require a curve to define "with" vs "against").
+| Family | Geometry | Base path | Modifiers |
+|--------|----------|-----------|-----------|
+| **Static** | No movement | Stay at current point | — |
+| **Shift** | Curved arc | Arc to adjacent perimeter point | +/- (skew) |
+| **Dash** | Straight line | Straight to opposite perimeter point | +/- (extended/shortened) |
 
-Hash is a "half-dash" — a straight-line path to or from the center point rather than to the opposite perimeter point.
+**The geometric distinction matters:** Shifts follow curved arcs around the grid. Dashes follow straight lines through the grid. This determines whether pro/anti/float distinctions exist (they require a curve to define "with" vs "against").
+
+### The +/- Path Modifier System
+
+Both shifts and dashes support **path length modifiers** that extend or shorten the standard path. These are displayed per-hand in the turns column of the TKA glyph, alongside the turn count.
+
+**For shifts (L4+, 8-point grid):**
+
+| Modifier | Name | Path |
+|----------|------|------|
+| (none) | Standard shift | Arc to adjacent point (1 segment) |
+| + | Skew+ | Extended arc (e.g., S→NE, 3 segments) |
+| - | Skew- | Shortened arc (less than 1 segment) |
+| ++ | Skew++ | Double-extended arc |
+
+**For dashes (L5+/L6+):**
+
+| Modifier | Name | Path | Level |
+|----------|------|------|-------|
+| (none) | Standard dash | Perimeter → opposite perimeter | L1+ |
+| - | Dash- | Perimeter → center (or center → perimeter) | L5+ |
+| + | Dash+ | Perimeter → center of *other* grid | L6+ |
+| ++ | Dash++ | Perimeter → opposite perimeter of *other* grid | L6+ |
+
+**Dash- is called "hash"** — a shortened dash to/from center instead of to the opposite perimeter point. Same geometry, same rotation rules, half the distance. "Hash" is the official name for dash-, just as "skew" is the official name for shift+/-.
+
+### Why Three Families, Not Five
+
+Dash and "hash" share identical physics: straight-line trajectory, 0 turns = no rotation (1 state), 1+ turns = CW/CCW (2 states per turn count). They differ only in distance. The +/- modifier captures this cleanly without creating a separate hand path type. Similarly, skew+/- are not separate hand paths from shift — they're length variants of the same curved-arc family.
+
+This means the letter type system classifies by **hand path family** (shift, dash, static), and the +/- modifier is a per-hand parameter stored in variation data:
+
+| Type | Combination | Includes |
+|------|------------|----------|
+| 1 | shift + shift | Standard shifts, skew+/- variants |
+| 2 | shift + static | |
+| 3 | shift + dash | shift + dash, shift + dash-, shift + dash+ |
+| 4 | dash + static | dash + static, dash- + static |
+| 5 | dash + dash | dash + dash, **dash + dash-**, dash- + dash- |
+| 6 | static + static | |
 
 ### Extended Dashes (L6+, conjoined grids — DESIGN PHASE)
 
-When two grids share a junction point (Level 6), new straight-line paths emerge that cross the grid boundary. These follow the same extension pattern as shifts (skew+/skew++):
-
-| Variant | Path | Distance | Analogy |
-|---------|------|----------|---------|
-| **Dash** (standard) | Perimeter → opposite perimeter, same grid | 1 grid diameter | Standard shift |
-| **Dash+** | Perimeter → center of *other* grid | ~1.5 grid radii (crosses junction) | Hash-like distance, but cross-grid |
-| **Dash++** | Perimeter of one grid → opposite perimeter of other grid | ~2 grid diameters | Skew++ (maximum extension) |
+When two grids share a junction point (Level 6), new straight-line paths emerge that cross the grid boundary. These use the same +/- modifier system as shifts and L5 dashes:
 
 **Key properties:**
 
@@ -142,13 +177,12 @@ When two grids share a junction point (Level 6), new straight-line paths emerge 
 
 **What doesn't exist pre-L6:** Standard dashes only reach the opposite point on the same grid. There's nowhere for a straight line to go beyond that. The second grid creates new destinations that happen to be reachable via straight-line paths through the junction.
 
-**Relationship to hash:** Hash (L5) is a straight-line path from perimeter to center of the *same* grid. Dash+ is a straight-line path from perimeter to center of the *other* grid. Geometrically similar (perimeter to a center point), but dash+ crosses the junction. Whether dash+ should be classified as "hash to the remote center" or "extended dash" is a design decision — the rotation behavior is identical either way since both are straight lines.
+**Dash- vs Dash+:** Dash- (L5) goes to the center of the *same* grid. Dash+ (L6) goes to the center of the *other* grid. Both are straight-line paths to a center point — one local, one remote.
 
 **Open questions (to resolve before implementation):**
 1. Grid location addressing — how to distinguish "east on Grid A" from "east on Grid B" in the data model
-2. Whether dash+ is a new hand path type or a modifier on existing dash (parallels the skew+/skew- modifier pattern)
-3. Which specific cross-grid straight lines are valid (depends on grid arrangement and junction geometry)
-4. Orientation reference point — which grid's center defines "center-relative" for a cross-grid motion?
+2. Which specific cross-grid straight lines are valid (depends on grid arrangement and junction geometry)
+3. Orientation reference point — which grid's center defines "center-relative" for a cross-grid motion?
 
 ---
 
@@ -164,15 +198,14 @@ Every motion has a **base rotation** — the natural prop behavior during the ha
 
 This means 0-turn pro and 0-turn anti are two DIFFERENT states for shifts, even though "0 turns" sounds like "no rotation." The prop IS rotating in both cases — it's just rotating at the base rate with zero additional turns.
 
-**For dashes, hashes, and statics (straight lines or no movement):** There is no arc, so base rotation at 0 turns means truly no rotation. The prop translates along the line (or stays put) without spinning. This is why 0 turns for these motion types produces exactly 1 state (no rotation = no direction to speak of).
+**For dashes, hashes, and statics (straight lines or no movement):** There is no arc, so base rotation at 0 turns means truly no rotation. The prop translates along the line (or stays put) without spinning. This is why 0 turns for these motion types produces exactly 1 state (no rotation = no direction to speak of). Hash follows identical rotation physics to dash — the +/- modifier changes distance, not behavior.
 
 ### Why This Matters
 
 | Motion | 0 turns | States |
 |--------|---------|--------|
-| Shift | Pro base OR anti base (two distinct behaviors) | 2 |
-| Dash | No rotation (one behavior) | 1 |
-| Hash | No rotation (one behavior) | 1 |
+| Shift (incl. skews) | Pro base OR anti base (two distinct behaviors) | 2 |
+| Dash (incl. hash) | No rotation (one behavior) | 1 |
 | Static | No rotation (one behavior) | 1 |
 
 Adding 1+ turns to any motion type introduces CW/CCW direction (2 states per turn count).
@@ -210,11 +243,13 @@ Pro and anti are defined relative to the arc: "with" and "against" the hand's cu
 | Type | Behavior | Turn count |
 |------|----------|------------|
 | **Dash** | Prop rotates during straight-line traverse to opposite point | 0, 1, 2, 3, ... |
-| **Hash** | Prop rotates during straight-line traverse to/from center | 0, 1, 2, 3, ... |
+| **Hash** (dash-) | Prop rotates during straight-line traverse to/from center | 0, 1, 2, 3, ... |
 | **Static** | Prop rotates in place (hand doesn't move) | 0, 1, 2, 3, ... |
 
 At 0 turns: no rotation, no direction (1 state).
 At 1+ turns: CW or CCW direction (2 states per turn count).
+
+Hash is dash with a **-** modifier — same rotation physics, shorter distance. Just as "skew" names shift+/-, "hash" names dash-.
 
 ### Skews (L4+ only, 8-point grid)
 
@@ -378,7 +413,7 @@ T = 13. Per shift dest = 2(13) + 1 = 27. Per dash/hash/static = 2(13)-1 = 25.
 |------|------|----------|----------|
 | Shift | 6 | 27 | 162 |
 | Dash | 1 | 25 | 25 |
-| Hash | 1 | 25 | 25 |
+| Hash (to center) | 1 | 25 | 25 |
 | Static | 1 | 25 | 25 |
 | **From perimeter** | | | **237** |
 

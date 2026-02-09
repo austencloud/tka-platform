@@ -38,14 +38,23 @@ export enum HandPath {
   COUNTER_CLOCKWISE = "ccw",
   DASH = "dash",
   STATIC = "static",
-  HASH_IN = "hashIn",
-  HASH_OUT = "hashOut",
+  // Hash (dash-): shortened dash to/from center. Same geometry and rotation rules as dash.
+  HASH_IN = "hashIn", // perimeter → center
+  HASH_OUT = "hashOut", // center → perimeter
 }
 
 /**
- * Skew direction for skewed motions (crossing between cardinal/intercardinal).
- * - PLUS: Motion goes one step further than normal (larger arc)
- * - MINUS: Motion goes one step less than normal (smaller arc)
+ * Path length modifier for shifts and dashes.
+ *
+ * For shifts (L4+): modifies arc length on 8-point grid.
+ *   - PLUS (skew+): Extended arc (e.g., S to NE, spanning 3 segments)
+ *   - MINUS (skew-): Shortened arc (less than one standard segment)
+ *
+ * For dashes (L5+): modifies straight-line distance.
+ *   - PLUS (dash+, L6): Extended to cross-grid destination
+ *   - MINUS (dash-): Shortened to center = hash
+ *
+ * Displayed per-hand in the turns column of the TKA glyph.
  */
 export enum SkewDirection {
   PLUS = "+",

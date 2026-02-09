@@ -50,10 +50,11 @@ export enum Letter {
   THETA_DASH = "Θ-",
   OMEGA_DASH = "Ω-",
 
-  // Type4: Dash (3 Greek dash letters)
+  // Type4: Dash (4 Greek dash letters — one dashes, one static)
   PHI = "Φ",
   PSI = "Ψ",
   LAMBDA = "Λ",
+  TAU_DASH = "τ-",
 
   // Type5: Dual-Dash (3 dual dash variants)
   PHI_DASH = "Φ-",
@@ -137,8 +138,8 @@ export function getLetterType(letter: Letter): LetterType {
     return LetterType.TYPE3;
   }
 
-  // Type4: Dash
-  if ([Letter.PHI, Letter.PSI, Letter.LAMBDA].includes(letter)) {
+  // Type4: Dash (one dashes, one static)
+  if ([Letter.PHI, Letter.PSI, Letter.LAMBDA, Letter.TAU_DASH].includes(letter)) {
     return LetterType.TYPE4;
   }
 
