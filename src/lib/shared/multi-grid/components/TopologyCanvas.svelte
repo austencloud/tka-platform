@@ -23,6 +23,7 @@
   import type { ViewBoxData } from "../services/contracts/ITopologyRenderer";
   import type { TopologyPropRenderData } from "../services/contracts/ITopologyPropLoader";
   import type { BetaOffset } from "../services/contracts/ITopologyBetaSeparator";
+  import type { GridLocation } from "$lib/shared/render/core/types";
   import { TopologyRenderer } from "../services/implementations/TopologyRenderer";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -109,7 +110,7 @@
   }
 
   // Get hand point locations for a grid (for click targets)
-  function getHandPointsForGrid(gridMode: string): readonly string[] {
+  function getHandPointsForGrid(gridMode: string): readonly GridLocation[] {
     return HAND_POINT_LOCATIONS[gridMode as keyof typeof HAND_POINT_LOCATIONS] ?? [];
   }
 

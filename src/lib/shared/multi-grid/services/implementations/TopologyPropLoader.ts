@@ -163,12 +163,14 @@ export class TopologyPropLoader implements ITopologyPropLoader {
     center: { x: number; y: number };
   } {
     const viewBoxMatch = svgText.match(/viewBox="([^"]+)"/);
-    if (viewBoxMatch) {
+    if (viewBoxMatch?.[1]) {
       const parts = viewBoxMatch[1].split(/\s+/).map(Number);
-      if (parts.length === 4) {
+      const w = parts[2];
+      const h = parts[3];
+      if (parts.length === 4 && w !== undefined && h !== undefined) {
         return {
-          viewBox: { width: parts[2], height: parts[3] },
-          center: { x: parts[2] / 2, y: parts[3] / 2 },
+          viewBox: { width: w, height: h },
+          center: { x: w / 2, y: h / 2 },
         };
       }
     }
