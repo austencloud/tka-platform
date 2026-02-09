@@ -333,6 +333,16 @@
     padding: clamp(8px, 2cqi, 12px);
   }
 
+  /* Landscape phones: wide + short - side-by-side type selector and textarea */
+  @container feedback-form (min-width: 500px) {
+    .feedback-form:not(.input-mode) {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px 12px;
+    }
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     *,

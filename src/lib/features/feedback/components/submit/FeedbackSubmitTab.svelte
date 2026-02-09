@@ -191,6 +191,46 @@
     }
   }
 
+  /* Landscape phones: wide + short - use full width */
+  @container submit-tab (min-width: 600px) and (max-height: 420px) {
+    .submit-tab {
+      justify-content: flex-start;
+      padding-top: 8px;
+    }
+
+    .submit-container {
+      width: min(100%, 720px);
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .submit-header {
+      flex-direction: column;
+      text-align: left;
+      align-items: flex-start;
+      gap: 4px;
+      padding-bottom: 0;
+      flex-shrink: 0;
+      width: auto;
+    }
+
+    .header-icon {
+      width: 28px;
+      height: 28px;
+      font-size: var(--font-size-compact);
+      border-radius: 8px;
+    }
+
+    .header-title {
+      font-size: 0.9375rem;
+    }
+
+    .header-subtitle {
+      display: none;
+    }
+  }
+
   /* Hide scrollbar but allow if absolutely needed */
   .submit-tab::-webkit-scrollbar {
     width: 4px;
