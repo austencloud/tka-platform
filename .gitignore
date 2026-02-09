@@ -140,6 +140,10 @@ android-twa/keystore.properties
 # Screenshot capture credentials
 scripts/screenshot-capture/screenshot-config.local.json
 
+# Multi-device screenshot testing (captures are ephemeral, baselines are committed)
+tests/screenshots/captures/
+tests/screenshots/gallery.html
+
 # Claude Code temporary directories
 tmpclaude-*/
 tmpclaude-*
