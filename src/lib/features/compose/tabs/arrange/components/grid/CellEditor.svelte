@@ -23,6 +23,7 @@
     onRemoveCell,
     onMediaTypeChange,
     onCopyLayer,
+    onCopyCell,
     onPasteLayer,
     onTransformLayer,
   }: {
@@ -37,6 +38,7 @@
     onRemoveCell?: () => void;
     onMediaTypeChange: (mediaType: CellMediaType) => void;
     onCopyLayer?: (layerIndex: number) => void;
+    onCopyCell?: () => void;
     onPasteLayer?: () => void;
     onTransformLayer?: (layerIndex: number, transformType: TransformType) => void;
   } = $props();
@@ -102,15 +104,27 @@
 <div class="cell-editor">
   <div class="editor-header">
     <h4>Cell {cellIndex + 1}</h4>
-    <div class="header-badges">
-      {#if cell.colSpan > 1 || cell.rowSpan > 1}
-        <span class="size-badge" title="Drag cell edges to resize">
-          {sizeLabel}
-        </span>
+    <div class="header-actions">
+      {#if onCopyCell && cell.layers.length > 0}
+        <button
+          class="icon-btn"
+          onclick={onCopyCell}
+          aria-label="Copy all sequences in cell"
+          title="Copy cell ({cell.layers.length} sequence{cell.layers.length === 1 ? '' : 's'})"
+        >
+          <i class="fas fa-copy" aria-hidden="true"></i>
+        </button>
       {/if}
-      {#if cell.mediaType === "animation"}
-        <span class="layer-count">{cell.layers.length}/{MAX_LAYERS}</span>
-      {/if}
+      <div class="header-badges">
+        {#if cell.colSpan > 1 || cell.rowSpan > 1}
+          <span class="size-badge" title="Drag cell edges to resize">
+            {sizeLabel}
+          </span>
+        {/if}
+        {#if cell.mediaType === "animation"}
+          <span class="layer-count">{cell.layers.length}/{MAX_LAYERS}</span>
+        {/if}
+      </div>
     </div>
   </div>
 
@@ -302,6 +316,12 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     color: var(--theme-text, white);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
   }
 
   .header-badges {

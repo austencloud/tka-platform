@@ -17,7 +17,7 @@
    * Desktop-first. Mobile gets attention in Phase B.
    */
 
-  import { arrangeGridState } from "./state/arrange-grid-state.svelte";
+  import { arrangeGridState, type GridCell } from "./state/arrange-grid-state.svelte";
   import GridLayoutControls from "./components/grid/GridLayoutControls.svelte";
   import CompositionGrid from "./components/grid/CompositionGrid.svelte";
   import CellEditor from "./components/grid/CellEditor.svelte";
@@ -29,9 +29,14 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CellMediaType } from "../../compose/domain/types";
   import type { TransformType } from "../../compose/domain/types";
+  import { container } from "$lib/shared/di";
+  import type { KeyboardContext, KeyboardCallbacks } from "./services/contracts/IArrangeKeyboardHandler";
 
   // Use singleton grid state
   const gridState = arrangeGridState;
+
+  // Keyboard handler from DI
+  const keyboardHandler = container.items.arrangeKeyboardHandler;
 
   // Mobile detection
   let isMobile = $state(false);
@@ -163,12 +168,28 @@
     }
   }
 
+  function handleCopyCell() {
+    if (selectedCellId !== null) {
+      const cell = gridState.cells.find((c: GridCell) => c.id === selectedCellId);
+      if (cell && cell.layers.length > 0) {
+        gridState.copyCellLayers(selectedCellId);
+        const count = cell.layers.length;
+        showToast({
+          message: count === 1 ? "Sequence copied" : `${count} sequences copied`,
+          type: "info",
+          duration: 2000,
+        });
+      }
+    }
+  }
+
   function handlePasteLayer() {
     if (selectedCellId !== null) {
       const result = gridState.pasteSequenceToCell(selectedCellId);
       if (result.success) {
+        const count = result.pastedCount ?? 1;
         showToast({
-          message: "Sequence pasted",
+          message: count === 1 ? "Sequence pasted" : `${count} sequences pasted`,
           type: "success",
           duration: 2000,
         });
@@ -249,7 +270,6 @@
     return 0;
   }
 
-
   // Utility actions
   async function handleCopyState() {
     const state = gridState.serializeState();
@@ -288,100 +308,7 @@
     showSaveModal = false;
   }
 
-  // Keyboard shortcuts
-  function handleKeyDown(e: KeyboardEvent) {
-    // Don't intercept if user is typing in an input
-    const target = e.target as HTMLElement;
-    if (
-      target.tagName === "INPUT" ||
-      target.tagName === "TEXTAREA" ||
-      target.isContentEditable
-    ) {
-      return;
-    }
-
-    // Don't intercept if modals are open
-    if (gridState.showSequencePicker || showStaggerControls || showSaveModal) {
-      return;
-    }
-
-    switch (e.key) {
-      case "Delete":
-      case "Backspace":
-        // Clear layers from the selected cell
-        if (selectedCellId !== null && selectedCell && selectedCell.layers.length > 0) {
-          e.preventDefault();
-          handleClearCell();
-        }
-        break;
-
-      case "Escape":
-        // Deselect cell
-        if (selectedCellId !== null) {
-          e.preventDefault();
-          gridState.deselectCell();
-        }
-        break;
-
-      case "ArrowUp":
-      case "ArrowDown":
-      case "ArrowLeft":
-      case "ArrowRight":
-        e.preventDefault();
-        navigateToAdjacentCell(e.key);
-        break;
-
-      case " ":
-        // Space for play/pause (only when not focused on a button)
-        if (target.tagName !== "BUTTON" && gridState.hasAnyLayers) {
-          e.preventDefault();
-          handlePlayPause();
-        }
-        break;
-
-      case "c":
-        // Ctrl+C to copy first layer of selected cell
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-          if (selectedCellId !== null && selectedCell?.layers.length) {
-            handleCopyLayer(0);
-          }
-        }
-        break;
-
-      case "v":
-        // Ctrl+V to paste into selected cell
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-          if (selectedCellId !== null && gridState.clipboard) {
-            handlePasteLayer();
-          }
-        }
-        break;
-
-      case "z":
-      case "Z":
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-          if (e.shiftKey) {
-            handleRedo();
-          } else {
-            handleUndo();
-          }
-        }
-        break;
-
-      case "y":
-      case "Y":
-        // Ctrl+Y = redo (Windows convention)
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-          handleRedo();
-        }
-        break;
-    }
-  }
-
+  // Undo/redo with toast feedback
   function handleUndo() {
     const desc = gridState.undo();
     if (desc) {
@@ -396,89 +323,47 @@
     }
   }
 
-  function navigateToAdjacentCell(direction: string) {
-    const visible = gridState.visibleCells;
-    if (visible.length === 0) return;
-
-    // If no cell selected, select the first one
-    if (!selectedCell) {
-      const sorted = [...visible].sort((a, b) => {
-        if (a.row !== b.row) return a.row - b.row;
-        return a.col - b.col;
-      });
-      if (sorted[0]) {
-        gridState.selectCell(sorted[0].id);
+  // Keyboard callbacks wired to component handlers
+  const keyboardCallbacks: KeyboardCallbacks = {
+    clearCell: handleClearCell,
+    deselectCell: () => gridState.deselectCell(),
+    selectCell: (directionOrId: string) => {
+      // When called from keyboard handler, directionOrId is an arrow key direction
+      const direction = directionOrId as "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight";
+      const targetId = keyboardHandler.findAdjacentCell(
+        direction,
+        selectedCell,
+        gridState.visibleCells
+      );
+      if (targetId) {
+        gridState.selectCell(targetId);
       }
-      return;
-    }
+    },
+    playPause: handlePlayPause,
+    copyCell: handleCopyCell,
+    pasteLayer: handlePasteLayer,
+    undo: handleUndo,
+    redo: handleRedo,
+  };
 
-    // Calculate target position
-    let targetRow = selectedCell.row;
-    let targetCol = selectedCell.col;
-
-    switch (direction) {
-      case "ArrowUp":
-        targetRow--;
-        break;
-      case "ArrowDown":
-        targetRow++;
-        break;
-      case "ArrowLeft":
-        targetCol--;
-        break;
-      case "ArrowRight":
-        targetCol++;
-        break;
-    }
-
-    // Find cell at target position (or closest in that direction)
-    const cellAtTarget = visible.find(
-      (c) => c.row === targetRow && c.col === targetCol
-    );
-
-    if (cellAtTarget) {
-      gridState.selectCell(cellAtTarget.id);
-    } else {
-      // Try to find any cell in that direction
-      const candidates = visible.filter((c) => {
-        switch (direction) {
-          case "ArrowUp":
-            return c.row < selectedCell.row;
-          case "ArrowDown":
-            return c.row > selectedCell.row;
-          case "ArrowLeft":
-            return c.col < selectedCell.col;
-          case "ArrowRight":
-            return c.col > selectedCell.col;
-          default:
-            return false;
-        }
-      });
-
-      if (candidates.length > 0) {
-        // Pick the closest one
-        candidates.sort((a, b) => {
-          const distA =
-            Math.abs(a.row - selectedCell.row) +
-            Math.abs(a.col - selectedCell.col);
-          const distB =
-            Math.abs(b.row - selectedCell.row) +
-            Math.abs(b.col - selectedCell.col);
-          return distA - distB;
-        });
-        if (candidates[0]) {
-          gridState.selectCell(candidates[0].id);
-        }
-      }
-    }
-  }
-
-  // Register keyboard listener
+  // Register keyboard listener via service
   $effect(() => {
     if (typeof window === "undefined" || isMobile) return;
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    const onKeyDown = (e: KeyboardEvent) => {
+      const context: KeyboardContext = {
+        isModalOpen: gridState.showSequencePicker || showStaggerControls || showSaveModal,
+        isMobile,
+        selectedCell,
+        selectedCellId,
+        hasClipboard: gridState.clipboard !== null,
+        hasAnyLayers: gridState.hasAnyLayers,
+      };
+      keyboardHandler.handleKeyDown(e, context, keyboardCallbacks);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   });
 </script>
 
@@ -561,6 +446,7 @@
               onClearCell={handleClearCell}
               onMediaTypeChange={handleMediaTypeChange}
               onCopyLayer={handleCopyLayer}
+              onCopyCell={handleCopyCell}
               onPasteLayer={handlePasteLayer}
               onTransformLayer={handleTransformLayer}
             />

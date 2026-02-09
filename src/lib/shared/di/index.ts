@@ -84,6 +84,7 @@ import { multiGridContainer } from "./containers/multi-grid-container";
 import { createAttributionContainer } from "./containers/attribution-container";
 import { createVoiceControlContainer } from "./containers/voice-control-container";
 import { createComposeBrowseContainer } from "./containers/compose-browse-container";
+import { createComposeArrangeContainer } from "./containers/compose-arrange-container";
 import { createVoiceSessionContainer } from "./containers/voice-session-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
@@ -287,8 +288,13 @@ const voiceControlContainer = typeof window !== 'undefined' ? createVoiceControl
 // Compose Browse container - self-contained, no external dependencies
 const composeBrowseContainer = typeof window !== 'undefined' ? createComposeBrowseContainer() : null as any;
 
-// Voice session recording, formatting, and persistence
-const voiceSessionContainer = typeof window !== 'undefined' ? createVoiceSessionContainer() : null as any;
+// Compose Arrange container - beat calculation, persistence, playback, transforms
+const composeArrangeContainer = typeof window !== 'undefined' ? createComposeArrangeContainer() : null as any;
+
+// Voice session recording, formatting, persistence, analysis, and replay
+const voiceSessionContainer = typeof window !== 'undefined' ? createVoiceSessionContainer({
+  commandInterpreter: voiceControlContainer.items.commandInterpreter,
+}) : null as any;
 
 
 // Watch container - needs collaborativeVideoManager from share and browseLoader from browse
@@ -402,6 +408,7 @@ function buildAppContainer(): any {
   // Voice session recording + analysis
   c = c.add(voiceSessionContainer.items);
   c = c.add(composeBrowseContainer.items);
+  c = c.add(composeArrangeContainer.items);
   // Cross-container services (depend on multiple container outputs)
   c = c.add({ deepLinkResolver: () => deepLinkResolver });
   c = c.add({ sequenceDataProvider: () => sequenceDataProvider });
