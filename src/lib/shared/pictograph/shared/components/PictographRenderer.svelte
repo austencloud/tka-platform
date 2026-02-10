@@ -415,8 +415,9 @@ Usage:
       />
 
       <!-- Duration glyph (shows "2×", "0.5×", etc. when duration != 1) -->
+      <!-- In timeline mode, use widthMultiplier as the live duration (reflects drag preview) -->
       <DurationGlyph
-        {duration}
+        duration={isExpanded ? widthMultiplier : duration}
         {hasValidData}
         {darkMode}
         centerX={expandedWidth / 2}

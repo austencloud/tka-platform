@@ -7,6 +7,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 import { container } from "$lib/shared/di";
+import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 /**
  * Handles loading and initializing sequence animation data.
@@ -125,7 +126,7 @@ export class SequenceAnimationLoader implements ISequenceAnimationLoader {
         .map((step) => step.letter)
         .join("") || "";
     if (!derivedWord) return seq;
-    return { ...seq, word: derivedWord };
+    return { ...seq, word: simplifyRepeatedWord(derivedWord) };
   }
 
   private calculateStepFromTimeMs(timeMs: number, bpm: number): number {

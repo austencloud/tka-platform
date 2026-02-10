@@ -53,6 +53,7 @@
     selectedStepNumbers = new Set<number>(),
     isMultiSelectMode = false,
     onStartLongPress,
+    onDurationChange,
     timeSignature = undefined,
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
@@ -77,6 +78,7 @@
     selectedStepNumbers?: Set<number>;
     isMultiSelectMode?: boolean;
     onStartLongPress?: () => void;
+    onDurationChange?: (stepNumber: number, newDuration: number) => void;
     timeSignature?: TimeSignatureKey;
   }>();
 
@@ -397,6 +399,7 @@
       onStartClick={handleStartClick}
       {onStepDelete}
       {onStepLongPress}
+      {onDurationChange}
       {getBeatKey}
       {getDurationDisplay}
       bind:scrollContainerRef

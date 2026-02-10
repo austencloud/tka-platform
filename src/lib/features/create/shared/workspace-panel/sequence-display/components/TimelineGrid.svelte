@@ -9,6 +9,7 @@
   import { getTimelineWidthMultiplier } from "../utils/grid-calculations";
   import StepCell from "./StepCell.svelte";
   import StartTile from "./StartTile.svelte";
+  import DurationResizeHandle from "./DurationResizeHandle.svelte";
 
   let {
     steps,
@@ -29,6 +30,7 @@
     onStartClick,
     onStepDelete,
     onStepLongPress,
+    onDurationChange,
     getBeatKey,
     getDurationDisplay,
     scrollContainerRef = $bindable(),
@@ -51,10 +53,62 @@
     onStartClick?: () => void;
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: (stepNumber: number) => void;
+    onDurationChange?: (stepNumber: number, newDuration: number) => void;
     getBeatKey: (beat: StepData, index: number) => string;
     getDurationDisplay: (stepIndex: number) => string;
     scrollContainerRef?: HTMLElement;
   }>();
+
+  // --- Duration resize drag state ---
+  const MIN_DURATION = 0.25;
+  const MAX_DURATION = 4.0;
+  const SNAP_INCREMENT = 0.25;
+
+  let resizingStepIndex = $state<number | null>(null);
+  let resizingPreviewDuration = $state<number | null>(null);
+  let resizingInitialDuration = $state(0);
+  let lastSnappedValue = $state(0);
+
+  function handleResizeDragStart(stepIndex: number, currentDuration: number) {
+    resizingStepIndex = stepIndex;
+    resizingInitialDuration = currentDuration;
+    resizingPreviewDuration = currentDuration;
+    lastSnappedValue = Math.round(currentDuration / SNAP_INCREMENT) * SNAP_INCREMENT;
+  }
+
+  function handleResizeDrag(pixelDelta: number) {
+    if (resizingStepIndex === null || timelineUnitSize <= 0) return;
+    const raw = resizingInitialDuration + pixelDelta / timelineUnitSize;
+    resizingPreviewDuration = Math.max(MIN_DURATION, Math.min(MAX_DURATION, raw));
+
+    // Haptic feedback at snap boundaries
+    const currentSnapped =
+      Math.round(resizingPreviewDuration / SNAP_INCREMENT) * SNAP_INCREMENT;
+    if (currentSnapped !== lastSnappedValue) {
+      lastSnappedValue = currentSnapped;
+    }
+  }
+
+  function handleResizeDragEnd() {
+    if (resizingStepIndex === null || resizingPreviewDuration === null) return;
+    const snapped =
+      Math.round(resizingPreviewDuration / SNAP_INCREMENT) * SNAP_INCREMENT;
+    const clampedSnapped = Math.max(MIN_DURATION, Math.min(MAX_DURATION, snapped));
+    const step = steps[resizingStepIndex];
+    onDurationChange?.(step.stepNumber, clampedSnapped);
+    resizingStepIndex = null;
+    resizingPreviewDuration = null;
+  }
+
+  function getEffectiveMultiplier(
+    stepIndex: number,
+    baseDuration: number
+  ): number {
+    if (stepIndex === resizingStepIndex && resizingPreviewDuration !== null) {
+      return resizingPreviewDuration;
+    }
+    return getTimelineWidthMultiplier(baseDuration);
+  }
 </script>
 
 <div
@@ -105,6 +159,7 @@
               !isDeleting &&
               stepIndex > removingStepIndex}
             {@const musicalPosition = getDurationDisplay(stepIndex)}
+            {@const effectiveDuration = getEffectiveMultiplier(stepIndex, duration)}
             <div
               class="timeline-cell step-container"
               class:deleting={isDeleting}
@@ -112,7 +167,7 @@
               class:hidden-for-sequential={displayState.shouldBeatBeHidden(stepIndex)}
               class:timeline-selected={selectedStepNumber === step.stepNumber}
               class:timeline-practice={practiceStepNumber === step.stepNumber}
-              style:--duration-multiplier={getTimelineWidthMultiplier(duration)}
+              style:--duration-multiplier={getEffectiveMultiplier(stepIndex, duration)}
               style:animation-delay={shouldSlide
                 ? `${Math.min(stepIndex - removingStepIndex - 1, 5) * 50}ms`
                 : "0ms"}
@@ -130,9 +185,16 @@
                 highlightStyle={highlightedSteps?.get(step.stepNumber) ?? null}
                 {musicalPosition}
                 isTimelineMode={true}
-                widthMultiplier={duration}
+                widthMultiplier={effectiveDuration}
                 animationEpoch={displayState.animationEpoch}
               />
+              {#if onDurationChange}
+                <DurationResizeHandle
+                  onDragStart={() => handleResizeDragStart(stepIndex, duration)}
+                  onDrag={(delta) => handleResizeDrag(delta)}
+                  onDragEnd={() => handleResizeDragEnd()}
+                />
+              {/if}
             </div>
           {/each}
         </div>

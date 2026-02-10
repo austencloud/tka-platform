@@ -12,6 +12,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { ISequenceDataProvider } from "../contracts/ISequenceDataProvider";
 import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
+import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 export class SequenceDataProvider implements ISequenceDataProvider {
   constructor(
@@ -46,7 +47,7 @@ export class SequenceDataProvider implements ISequenceDataProvider {
         .join("") || "";
 
     if (!derivedWord) return sequence;
-    return { ...sequence, word: derivedWord };
+    return { ...sequence, word: simplifyRepeatedWord(derivedWord) };
   }
 
   async hydrateSequence(sequence: SequenceData): Promise<SequenceData> {

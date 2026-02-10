@@ -56,6 +56,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   // Get context
   const ctx = getCreateModuleContext();
@@ -432,9 +433,10 @@
     if (!derivedWord) return sequence;
 
     // Return new object with word populated
+    // simplifyRepeatedWord handles LOOP sequences where steps contain both halves
     return {
       ...sequence,
-      word: derivedWord,
+      word: simplifyRepeatedWord(derivedWord),
     };
   }
 

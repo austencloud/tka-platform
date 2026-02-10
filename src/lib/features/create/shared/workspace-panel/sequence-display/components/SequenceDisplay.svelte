@@ -11,6 +11,8 @@
   import SaveToLibraryButton from "../../shared/components/buttons/SaveToLibraryButton.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getIsTimelineMode } from "../state/timeline-mode.svelte";
+  import { updateStepDuration } from "../../../services/implementations/step-operations/DurationHandler";
+  import { UndoOperationType } from "../../../services/contracts/IUndoManager";
 
   let {
     sequenceState,
@@ -107,6 +109,14 @@
     hapticService?.trigger("selection");
     onStartPositionSelected?.();
   }
+
+  function handleDurationChange(stepNumber: number, newDuration: number) {
+    hapticService?.trigger("selection");
+    CreateModuleState.pushUndoSnapshot(
+      UndoOperationType.MODIFY_BEAT_PROPERTIES
+    );
+    updateStepDuration(stepNumber, newDuration, CreateModuleState);
+  }
 </script>
 
 <div class="sequence-container">
@@ -168,6 +178,7 @@
           {isSideBySideLayout}
           {activeMode}
           {isTimelineMode}
+          onDurationChange={handleDurationChange}
         />
       </div>
     </div>
