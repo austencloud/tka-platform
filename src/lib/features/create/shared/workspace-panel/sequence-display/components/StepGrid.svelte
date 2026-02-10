@@ -125,7 +125,18 @@
     if (!isTimelineMode) return 0;
     const hasStart = startPosition && !startPosition.isBlank;
     const totalUnits = hasStart ? timelineRowCapacity + 1 : timelineRowCapacity;
-    return calculateTimelineUnitSize(containerWidth, totalUnits);
+    const widthBased = calculateTimelineUnitSize(containerWidth, totalUnits);
+
+    // Constrain by available height so all rows fit without scrolling
+    if (containerHeight > 0 && timelineRows.length > 0) {
+      const gaps = (timelineRows.length - 1) * 1; // 1px gap between rows
+      const padding = 8; // vertical padding (4px top + 4px bottom from scroll container)
+      const availableHeight = containerHeight - gaps - padding;
+      const heightBased = Math.floor(availableHeight / timelineRows.length);
+      return Math.max(48, Math.min(widthBased, heightBased));
+    }
+
+    return widthBased;
   });
 
   const timelinePadding = $derived.by(() => {
