@@ -450,6 +450,8 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   dispose(): void {
     this.stopStepPlayback();
     this.loopService.stop();
+    // Clear shared animation state so workspace highlighting stops
+    this.syncIsPlaying(false);
     this.loopCompleteCallback = null;
     this.state = null;
     this.sequenceData = null;

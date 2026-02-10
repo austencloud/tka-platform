@@ -145,7 +145,11 @@ export class AnimationPathCache {
   ): Promise<AnimationPathCacheData> {
     const totalDurationMs = totalSteps * stepDurationMs;
     const frameTimeMs = 1000 / this.config.cacheFps;
-    const totalFrames = Math.ceil(totalDurationMs / frameTimeMs);
+    // Cache covers totalSteps + 1 beats so the last beat's full motion is included.
+    // During playback, beat N animates from currentStep N to N+1, so we need
+    // cached positions up to beat totalSteps + 1 (not just totalSteps).
+    const cacheDurationMs = (totalSteps + 1) * stepDurationMs;
+    const totalFrames = Math.ceil(cacheDurationMs / frameTimeMs);
 
     // Pre-allocate arrays at known size to avoid push overhead
     const bluePositions = new Array<PrecomputedPropPosition>(totalFrames + 1);

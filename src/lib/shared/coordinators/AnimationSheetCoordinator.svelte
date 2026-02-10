@@ -556,13 +556,16 @@
     }
   });
 
-  // Notify parent when current beat changes
+  // Notify parent when current beat changes during active playback
   // currentStep uses 1-indexed beat numbers: 1.x = beat 1, 2.x = beat 2, etc.
   // currentStep < 1 = start position (beat 0)
+  // IMPORTANT: Only sync while playing. When stopped, clear the beat number
+  // so word header highlighting doesn't persist after closing the viewer.
   $effect(() => {
-    const currentStep = animationPanelState.currentStep;
-    if (animationPanelState.isPlaying || currentStep > 0) {
-      _animatingBeatNumber = Math.floor(currentStep);
+    if (animationPanelState.isPlaying) {
+      _animatingBeatNumber = Math.floor(animationPanelState.currentStep);
+    } else {
+      _animatingBeatNumber = null;
     }
   });
 
