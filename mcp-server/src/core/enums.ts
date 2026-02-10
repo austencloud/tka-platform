@@ -37,7 +37,7 @@ export enum Orientation {
   OUT = "out",
   CLOCK = "clock",
   COUNTER = "counter",
-  // Interradial orientations (Level 7 / poi)
+  // Interradial orientations (Level 7)
   CLOCK_IN = "clock_in",
   CLOCK_OUT = "clock_out",
   COUNTER_IN = "counter_in",

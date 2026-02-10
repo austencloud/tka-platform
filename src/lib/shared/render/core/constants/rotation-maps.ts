@@ -58,7 +58,7 @@ export const DIAMOND_PROP_ANGLES: Record<Orientation, Record<GridLocation, numbe
     nw: 0,
     c: 0,
   },
-  // Interradial orientations (Level 7 / poi)
+  // Interradial orientations (Level 7)
   clockIn: {
     n: 45,
     s: 225,
@@ -163,7 +163,7 @@ export const BOX_PROP_ANGLES: Record<Orientation, Record<GridLocation, number>> 
     w: 0,
     c: 0,
   },
-  // Interradial orientations (Level 7 / poi)
+  // Interradial orientations (Level 7)
   clockIn: {
     ne: 90,
     nw: 0,

@@ -81,7 +81,7 @@ export enum RotationDirection {
  * - CLOCK: Perpendicular, 90° clockwise from radial
  * - COUNTER: Perpendicular, 90° counter-clockwise from radial
  *
- * Interradial orientations (Level 7 / poi gravity at intercardinals):
+ * Interradial orientations (Level 7 - 45° between cardinal orientations):
  * - CLOCK_IN: Between CLOCK and IN (gravity at NE)
  * - CLOCK_OUT: Between CLOCK and OUT (gravity at SE)
  * - COUNTER_IN: Between COUNTER and IN (gravity at NW)

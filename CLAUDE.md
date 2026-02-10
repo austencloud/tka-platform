@@ -204,7 +204,7 @@ These are real mistakes Claude made on this project. Don't repeat them.
 | BAD (what Claude wrote) | GOOD (what it should be) | Why |
 |-------------------------|--------------------------|-----|
 | "Flow Artists in Motion" | "Real Performances" | Vague marketing fluff vs. specific |
-| "Watch skilled performers bring sequences to life" | "Sequences performed with staves, poi, and fans" | Empty praise vs. concrete description |
+| "Watch skilled performers bring sequences to life" | "Sequences performed with staves, fans, and clubs" | Empty praise vs. concrete description |
 | "Empower your flow journey" | "Practice mode with camera feedback" | Meaningless vs. what it actually does |
 | "Seamlessly integrate notation into your practice" | "See the pictograph while you spin" | Corporate speak vs. plain language |
 | "Unlock the full potential of your movement vocabulary" | "Search the sequence library" | Buzzwords vs. what you actually do |

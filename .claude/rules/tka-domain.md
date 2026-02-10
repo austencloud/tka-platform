@@ -2,7 +2,9 @@
 
 ## What TKA Is
 
-TKA (The Kinetic Alphabet) is a notation system for two-handed prop manipulation. It is **prop-agnostic** — it describes hand positions and prop rotation behaviors that apply regardless of what prop is being used. Do not describe TKA as being "for poi" or any specific prop type.
+TKA (The Kinetic Alphabet) is a notation system for two-handed prop manipulation, **built for static props** (staff, fans, clubs, buugeng). Static props are gripped directly, so the performer controls orientation. They can be held at any orientation and moved to any point with controlled rotation, free from gravity. Every previous notation system mapped what gravity makes spinning props do. TKA maps what's possible when gravity isn't a constraint.
+
+**Momentum-based props (poi)** can perform many TKA sequences but not all of them. Gravity restricts which orientations and transitions are physically possible. The Poi Lab module exists to identify the poi-legal subset. **Never list poi alongside static props as if they're equals.** Poi is a restricted subset, not a first-class citizen of the system.
 
 ---
 

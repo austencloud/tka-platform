@@ -396,7 +396,7 @@
       "mustInclude": ["notation", "movement"],
       "mustNotInclude": ["turn", "quarter", "skew"],
       "expectedTools": ["get_alphabet_info"],
-      "keyFacts": ["TKA is a notation system", "Used for flow arts like poi and staff", "Describes hand and prop movements"]
+      "keyFacts": ["TKA is a notation system", "Built for static props like staff and fans", "Describes hand and prop movements"]
     },
     "difficulty": "easy"
   },

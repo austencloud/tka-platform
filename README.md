@@ -1,130 +1,83 @@
-# TKA Worlds
+# TKA Scribe
 
-Unity companion app for TKA Scribe - immersive 3D environments for flow arts visualization.
+Sequence editor and notation platform for two-handed prop manipulation. Think sheet music, but for flow arts.
+
+TKA (The Kinetic Alphabet) is a notation system built for static props -- staff, fans, clubs, buugeng, and other props you grip directly. Static props can be held at any orientation and moved to any point with controlled rotation, free from gravity. Every previous notation system mapped what gravity makes spinning props do. TKA maps what's possible when gravity isn't a constraint.
+
+Momentum-based props like poi can perform many TKA sequences, but not all of them. The Poi Lab module exists to identify which sequences are poi-legal.
+
+## Stack
+
+- **SvelteKit** with Svelte 5 runes
+- **TypeScript** (strict)
+- **Firebase** (Firestore, Auth, Storage, Functions)
+- **ITI** for dependency injection
+- **Vite** for builds
+- **Vitest** + **Playwright** for testing
 
 ## Getting Started
 
-### 1. Open in Unity Hub
+```bash
+npm install
+npm run dev
+```
 
-1. Open Unity Hub
-2. Click "Add" → "Add project from disk"
-3. Select the `TKAWorlds` folder
-4. Unity will detect it as a 2022.3 project and install packages
+Dev server runs on port 5173.
 
-### 2. First Launch
+## Modules
 
-Unity will:
-- Import all packages (Burst, Mathematics, Cinemachine, URP, etc.)
-- Compile all scripts
-- Create default assets
+| Module | What it does |
+|--------|-------------|
+| **Create** | Build sequences manually or with the generator |
+| **Browse** | Search and explore the sequence library |
+| **Learn** | Interactive lessons on TKA concepts |
+| **Tika** | AI tutor that teaches TKA through conversation |
+| **Compose** | Arrange sequences into longer animations |
+| **Watch** | Community video feed |
+| **Train** | Camera-based practice with real-time scoring |
+| **Write** | Author choreography acts |
+| **Choreo Card** | Printable reference cards for sequences |
+| **Settings** | Props, backgrounds, visibility, AI preferences |
 
-This may take 5-10 minutes on first launch.
-
-### 3. Create a Test Scene
-
-1. File → New Scene → Basic (URP)
-2. Save as `Assets/Scenes/TestScene.unity`
-3. Create empty GameObject, name it "World"
-4. Add `WorldManager` component
-5. Set Realm ID to "procedural"
-6. Hit Play
+Admin-only: Lab (experiments), Admin (system config), Moderation (user reports).
 
 ## Project Structure
 
 ```
-Assets/
-├── Scripts/
-│   ├── Core/              # Core types, configs, managers
-│   │   ├── BiomeType.cs
-│   │   ├── ChunkData.cs
-│   │   ├── RealmConfig.cs
-│   │   ├── RealmPreset.cs
-│   │   ├── DefaultRealms.cs
-│   │   ├── BiomeCharacteristics.cs
-│   │   └── WorldManager.cs
-│   ├── Generation/        # Terrain & biome generation
-│   │   ├── SeededNoise.cs
-│   │   └── BiomeClassifier.cs
-│   ├── Rendering/         # Materials, vegetation, atmosphere
-│   ├── Physics/           # Player controller, colliders
-│   ├── Camera/            # Camera modes (orbit, 3rd, 1st person)
-│   ├── Avatar/            # Avatar animation, sequence playback
-│   └── Integration/       # Sequence import from web app
-│       └── SequenceData.cs
-├── Shaders/
-│   └── TerrainSplat.shader
-├── Compute/
-│   └── TerrainGenerate.compute
-├── Resources/
-│   ├── Vegetation/
-│   └── Textures/
-└── Scenes/
+src/
+  lib/
+    features/       # Feature modules (create, browse, learn, etc.)
+    shared/         # Shared infrastructure
+      di/           # Dependency injection containers
+      pictograph/   # Pictograph rendering engine
+      animation-engine/
+      navigation/
+      settings/
+      ...
+  routes/           # SvelteKit routes
+mcp-server/         # TKA domain MCP server (alphabet data, rendering)
+firebase-functions/ # Cloud functions
+scripts/            # Build and utility scripts
+tests/              # Unit and E2E tests
 ```
 
-## Implementation Status
+## Architecture
 
-### Phase 1: Foundation ✅
-- [x] Project structure
-- [x] Core data types (ChunkData, RealmConfig, BiomeType)
-- [x] Noise system (SeededNoise with Burst)
-- [x] Biome classifier (Whittaker diagram)
-- [x] Sequence import models
-- [x] Default realm presets
-- [x] Package manifest
+Services live in DI containers, not utility files. Every service has an interface (`services/contracts/IName.ts`) and an implementation (`services/implementations/Name.ts`), registered in the appropriate ITI container under `src/lib/shared/di/`.
 
-### Phase 2: Terrain Generation (Next)
-- [ ] TerrainGenerator using compute shader
-- [ ] ChunkMeshBuilder
-- [ ] Terrain material setup
+No barrel exports. Direct imports only.
 
-### Phase 3: Chunk Streaming
-- [ ] ChunkManager
-- [ ] LOD system
-- [ ] Memory budget enforcement
+## Scripts
 
-### Phase 4: Rendering
-- [ ] Terrain splat shader (triplanar)
-- [ ] VegetationInstancer
-- [ ] AtmosphereController
-- [ ] WaterController
-
-### Phase 5: Player & Camera
-- [ ] PlayerController (CharacterController)
-- [ ] CameraModeController (Cinemachine)
-- [ ] TerrainColliderManager
-
-### Phase 6: Avatar & Animation
-- [ ] AvatarController
-- [ ] SequencePlayer
-- [ ] PropController
-
-## Data Flow
-
+```bash
+npm run dev        # Start dev server
+npm run build      # Production build
+npm run check      # TypeScript + Svelte check
+npm test           # Unit tests (Vitest)
+npm run test:e2e   # E2E tests (Playwright)
+npm run lint       # Prettier + ESLint
 ```
-Web App (TKA Scribe)          Unity (TKA Worlds)
-┌────────────────────┐        ┌────────────────────┐
-│  Create sequence   │        │  Load sequence     │
-│  Export JSON       │───────▶│  Parse SequenceData│
-│                    │        │  Animate avatar    │
-└────────────────────┘        └────────────────────┘
-```
-
-## Realm Configurations
-
-Matching the web app:
-
-| Realm | Description |
-|-------|-------------|
-| `performance-stage` | Campground clearing with fire pit, surrounded by forest |
-| `procedural` | Infinite procedural terrain for exploration |
-| `flat-testing` | Flat plane for testing |
-
-## Requirements
-
-- Unity 2022.3 LTS
-- URP (Universal Render Pipeline)
-- Packages: Burst, Mathematics, Cinemachine, Input System
 
 ## License
 
-Part of The Kinetic Alphabet project.
+AGPL-3.0-or-later

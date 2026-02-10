@@ -69,7 +69,7 @@ const HAND_RADIUS_STAFF_RATIO = 0.6;
 const SHOULDER_HEIGHT_RATIO = 0.82;
 
 /**
- * Staff diameter - standard contact staff
+ * Staff diameter - standard double staff
  */
 const STAFF_DIAMETER_CM = 2.5; // ~1 inch
 

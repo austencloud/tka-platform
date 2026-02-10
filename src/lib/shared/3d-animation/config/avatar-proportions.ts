@@ -109,7 +109,7 @@ export interface PropConfig {
 }
 
 /**
- * 34" contact staff
+ * 34" double staff
  */
 export const STAFF_34_INCH: PropConfig = {
   length: 34 * INCHES_TO_CM, // 86.4 cm

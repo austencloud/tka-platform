@@ -55,7 +55,7 @@ export class PropRotAngleManager {
       [GridLocation.EAST]: 270,
       [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
-    // Interradial orientations (Level 7 / poi) - interpolated angles
+    // Interradial orientations (Level 7) - interpolated angles
     // Note: These are approximate; exact values may need refinement
     [Orientation.CLOCK_IN]: {
       [GridLocation.NORTH]: 45,
@@ -155,7 +155,7 @@ export class PropRotAngleManager {
       [GridLocation.SOUTHEAST]: 315,
       [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
-    // Interradial orientations (Level 7 / poi) - interpolated angles
+    // Interradial orientations (Level 7) - interpolated angles
     // Note: These are approximate; exact values may need refinement
     [Orientation.CLOCK_IN]: {
       [GridLocation.NORTHEAST]: 90,
