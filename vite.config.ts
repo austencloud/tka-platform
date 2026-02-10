@@ -1,6 +1,7 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import { SvelteKitPWA } from "@vite-pwa/sveltekit";
 // Paraglide removed - using lightweight JSON-based i18n in $lib/shared/i18n/
+import { spawn, type ChildProcess } from "child_process";
 import fs from "fs";
 import type { IncomingMessage, ServerResponse } from "http";
 import path from "path";
@@ -182,11 +183,25 @@ const arrowSpriteHmrPlugin = () => ({
  * Also provides a manifest endpoint that scans the captures directory.
  * Dev-only — never included in production builds.
  */
+interface CaptureJob {
+  id: string;
+  status: "running" | "completed" | "failed";
+  total: number;
+  completed: number;
+  startedAt: number;
+  finishedAt: number | null;
+  error: string | null;
+  process: ChildProcess | null;
+}
+
+const captureJobs = new Map<string, CaptureJob>();
+
 const screenshotsPlugin = () => ({
   name: "screenshots-gallery",
   configureServer(server: ViteDevServer) {
     const capturesDir = path.resolve(dirname, "tests/screenshots/captures");
     const baselinesDir = path.resolve(dirname, "tests/screenshots/baselines");
+    const screenshotConfigPath = path.resolve(dirname, "tests/screenshots/screenshot.config.ts");
 
     // Manifest endpoint — scans captures dir and returns structured metadata
     server.middlewares.use(
@@ -234,50 +249,262 @@ const screenshotsPlugin = () => ({
       }
     );
 
+    // Validate and serve a PNG from a specific directory (path traversal safe)
+    function servePng(
+      baseDir: string,
+      req: IncomingMessage,
+      res: ServerResponse,
+      next: (err?: unknown) => void
+    ): void {
+      if (!req.url || !req.url.endsWith(".png")) {
+        next();
+        return;
+      }
+
+      const requestedFile = decodeURIComponent(req.url.substring(1));
+
+      // Reject anything that isn't a simple filename (no slashes, no ..)
+      if (!/^[a-zA-Z0-9_-]+\.png$/.test(requestedFile)) {
+        res.statusCode = 400;
+        res.end("Invalid filename");
+        return;
+      }
+
+      const filePath = path.join(baseDir, requestedFile);
+
+      // Belt-and-suspenders: verify resolved path stays within baseDir
+      if (!filePath.startsWith(baseDir)) {
+        res.statusCode = 403;
+        res.end("Forbidden");
+        return;
+      }
+
+      if (fs.existsSync(filePath)) {
+        res.setHeader("Content-Type", "image/png");
+        res.setHeader("Cache-Control", "no-cache");
+        fs.createReadStream(filePath).pipe(res);
+        return;
+      }
+
+      next();
+    }
+
     // Serve capture PNGs
     server.middlewares.use(
       "/screenshots/captures",
-      (
-        req: IncomingMessage,
-        res: ServerResponse,
-        next: (err?: unknown) => void
-      ) => {
-        if (req.url && req.url.endsWith(".png")) {
-          const filePath = path.resolve(
-            capturesDir,
-            decodeURIComponent(req.url.substring(1))
-          );
-          if (fs.existsSync(filePath)) {
-            res.setHeader("Content-Type", "image/png");
-            res.setHeader("Cache-Control", "no-cache");
-            fs.createReadStream(filePath).pipe(res);
-            return;
-          }
-        }
-        next();
-      }
+      (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) =>
+        servePng(capturesDir, req, res, next)
     );
 
     // Serve baseline PNGs
     server.middlewares.use(
       "/screenshots/baselines",
+      (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) =>
+        servePng(baselinesDir, req, res, next)
+    );
+
+    // Validation: lowercase letters, digits, hyphens only (route labels use -- as separator)
+    const SAFE_SLUG = /^[a-z0-9-]+$/;
+
+    // POST /screenshots/capture — spawn a selective Playwright capture job
+    // GET  /screenshots/capture/:jobId — poll job status
+    server.middlewares.use(
+      "/screenshots/capture",
       (
         req: IncomingMessage,
         res: ServerResponse,
         next: (err?: unknown) => void
       ) => {
-        if (req.url && req.url.endsWith(".png")) {
-          const filePath = path.resolve(
-            baselinesDir,
-            decodeURIComponent(req.url.substring(1))
-          );
-          if (fs.existsSync(filePath)) {
-            res.setHeader("Content-Type", "image/png");
-            res.setHeader("Cache-Control", "no-cache");
-            fs.createReadStream(filePath).pipe(res);
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Cache-Control", "no-cache");
+
+        // ── GET /screenshots/capture/:jobId ──
+        if (req.method === "GET") {
+          const match = req.url?.match(/^\/([a-z0-9-]+)$/);
+          if (!match) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: "Invalid job ID format" }));
             return;
           }
+
+          const job = captureJobs.get(match[1]);
+          if (!job) {
+            res.statusCode = 404;
+            res.end(JSON.stringify({ error: "Job not found" }));
+            return;
+          }
+
+          // Count new files since job started to derive progress
+          if (job.status === "running" && fs.existsSync(capturesDir)) {
+            const currentFiles = fs
+              .readdirSync(capturesDir)
+              .filter((f) => f.endsWith(".png"));
+            // Only count files modified after job started (this job's output)
+            const jobFiles = currentFiles.filter((f) => {
+              const stat = fs.statSync(path.join(capturesDir, f));
+              return stat.mtimeMs >= job.startedAt;
+            });
+            job.completed = jobFiles.length;
+          }
+
+          res.end(
+            JSON.stringify({
+              id: job.id,
+              status: job.status,
+              total: job.total,
+              completed: job.completed,
+              startedAt: job.startedAt,
+              finishedAt: job.finishedAt,
+              error: job.error,
+            })
+          );
+          return;
         }
+
+        // ── POST /screenshots/capture ──
+        if (req.method === "POST") {
+          // Reject concurrent captures
+          for (const [, job] of captureJobs) {
+            if (job.status === "running") {
+              res.statusCode = 409;
+              res.end(
+                JSON.stringify({
+                  error: "Capture already in progress",
+                  jobId: job.id,
+                })
+              );
+              return;
+            }
+          }
+
+          let body = "";
+          req.on("data", (chunk: Buffer) => {
+            body += chunk.toString();
+          });
+          req.on("end", () => {
+            let routes: unknown;
+            let devices: unknown;
+
+            try {
+              const parsed = JSON.parse(body);
+              routes = parsed.routes;
+              devices = parsed.devices;
+            } catch {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: "Invalid JSON body" }));
+              return;
+            }
+
+            // Type and format validation
+            if (!Array.isArray(routes) || !Array.isArray(devices)) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: "routes and devices must be arrays" }));
+              return;
+            }
+
+            if (routes.length === 0 || devices.length === 0) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: "routes and devices arrays are required" }));
+              return;
+            }
+
+            if (routes.length > 50 || devices.length > 20) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: "Too many routes or devices" }));
+              return;
+            }
+
+            // Sanitize: only allow safe slug characters
+            const safeRoutes = routes.filter(
+              (r): r is string => typeof r === "string" && SAFE_SLUG.test(r)
+            );
+            const safeDevices = devices.filter(
+              (d): d is string => typeof d === "string" && SAFE_SLUG.test(d)
+            );
+
+            if (safeRoutes.length === 0 || safeDevices.length === 0) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: "Invalid route or device format" }));
+              return;
+            }
+
+            const jobId = `cap-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+            const total = safeRoutes.length * safeDevices.length;
+
+            const captureEnv: Record<string, string> = {
+              ...(process.env as Record<string, string>),
+              SCREENSHOT_ROUTES: safeRoutes.join(","),
+              SCREENSHOT_DEVICE_FILTER: safeDevices.join(","),
+            };
+
+            const child = spawn(
+              "npx",
+              ["playwright", "test", "--config", screenshotConfigPath],
+              {
+                cwd: dirname,
+                env: captureEnv,
+                stdio: "pipe",
+                shell: true,
+              }
+            );
+
+            const job: CaptureJob = {
+              id: jobId,
+              status: "running",
+              total,
+              completed: 0,
+              startedAt: Date.now(),
+              finishedAt: null,
+              error: null,
+              process: child,
+            };
+            captureJobs.set(jobId, job);
+
+            let stderrOutput = "";
+            child.stderr?.on("data", (data: Buffer) => {
+              stderrOutput += data.toString();
+            });
+
+            child.on("close", (code) => {
+              job.process = null;
+              job.finishedAt = Date.now();
+
+              // Count files modified after job start for final count
+              if (fs.existsSync(capturesDir)) {
+                const finalFiles = fs
+                  .readdirSync(capturesDir)
+                  .filter((f) => {
+                    if (!f.endsWith(".png")) return false;
+                    const stat = fs.statSync(path.join(capturesDir, f));
+                    return stat.mtimeMs >= job.startedAt;
+                  });
+                job.completed = finalFiles.length;
+              }
+
+              if (code === 0 || job.completed > 0) {
+                job.status = "completed";
+              } else {
+                job.status = "failed";
+                job.error =
+                  stderrOutput.slice(-500) ||
+                  `Playwright exited with code ${code}`;
+              }
+            });
+
+            child.on("error", (err) => {
+              job.process = null;
+              job.status = "failed";
+              job.finishedAt = Date.now();
+              job.error = err.message;
+            });
+
+            res.statusCode = 202;
+            res.end(JSON.stringify({ jobId, total }));
+          });
+          return;
+        }
+
+        // Other methods — pass through
         next();
       }
     );

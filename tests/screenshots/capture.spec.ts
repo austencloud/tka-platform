@@ -349,6 +349,19 @@ async function stabilize(page: Page, route: RouteConfig): Promise<void> {
   //    so the splash would otherwise sit for 15 seconds on its safety timeout.
   await dismissSplashScreen(page);
 
+  // 1b. For auth routes, wait for Firebase auth to resolve.
+  //     After splash dismissal, the app may show "Checking authentication..."
+  //     while Firebase reads IndexedDB. Wait for that to clear.
+  if (route.requiresAuth) {
+    for (let i = 0; i < 40; i++) {
+      const checking = await page.evaluate(() =>
+        document.body.innerText.includes("Checking authentication")
+      ).catch(() => false);
+      if (!checking) break;
+      await page.waitForTimeout(500);
+    }
+  }
+
   // 2. Wait for route-specific content selector — proves actual page content rendered.
   //    This is the CRITICAL check. Without this, we capture black/splash screens.
   if (route.waitSelector) {
@@ -376,8 +389,8 @@ async function stabilize(page: Page, route: RouteConfig): Promise<void> {
     .waitForLoadState("networkidle", { timeout: TIMEOUTS.NETWORK_IDLE })
     .catch(() => {});
 
-  // 4. Wait for fonts to finish loading
-  await page.evaluate(() => document.fonts.ready);
+  // 4. Wait for fonts to finish loading (guard against navigation destroying context)
+  await page.evaluate(() => document.fonts.ready).catch(() => {});
 
   // 5. Also wait for generic "Loading" text (used by some component loading states)
   try {
@@ -428,7 +441,20 @@ async function navigateToRoute(page: Page, route: RouteConfig): Promise<void> {
     : `/${route.moduleId}`;
 
   await page.goto(urlPath, { waitUntil: "load", timeout: TIMEOUTS.ROUTE_LOAD });
-  await dismissSplashScreen(page);
+
+  // For auth routes using the shared context, Firebase auth is in IndexedDB.
+  // MainApplication will call __tkaLoadProgress(100) after auth resolves,
+  // dismissing the splash naturally. Wait for that instead of force-dismissing.
+  try {
+    await page.waitForSelector("#app-loading", {
+      state: "detached",
+      timeout: 20_000,
+    });
+  } catch {
+    // If splash is stuck (safety timeout exceeded), force-dismiss
+    await dismissSplashScreen(page);
+  }
+
   await page.waitForTimeout(TIMEOUTS.SPA_RELOAD_SETTLE);
 }
 
@@ -467,46 +493,45 @@ if (publicRoutes.length > 0) {
 // Auth-required routes
 if (authRoutes.length > 0 && hasAuth) {
   test.describe("App modules", () => {
+    // Share a single browser context across all auth tests for this device project.
+    // Firebase auth persists in IndexedDB (not captured by storageState), so we
+    // keep the context alive to avoid re-logging in for every test (~20-35s saved each).
+    let sharedContext: import("@playwright/test").BrowserContext;
+
     test.beforeAll(async ({ browser }) => {
-      // Validate credentials once by doing a quick login
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      sharedContext = await browser.newContext();
+      const page = await sharedContext.newPage();
 
       await page.goto("/", { waitUntil: "load", timeout: TIMEOUTS.INITIAL_LOAD });
       await bypassLandingPage(page);
 
       const loggedIn = await loginWithCredentials(page, credentials!);
       if (!loggedIn) {
-        const currentUrl = page.url();
+        await sharedContext.close();
         throw new Error(
-          `Login failed (still on: ${currentUrl}).\n` +
-            "Check SCREENSHOT_TEST_EMAIL / SCREENSHOT_TEST_PASSWORD.\n" +
+          "Login failed. Check credentials in screenshot-config.local.json.\n" +
             "Possible causes: wrong credentials, UI changed, network timeout."
         );
       }
 
-      await context.close();
+      // Set onboarding + theme so every subsequent page inherits them
+      await suppressOnboarding(page);
+      await setTheme(page, isDark);
+      await page.close();
+    });
+
+    test.afterAll(async () => {
+      if (sharedContext) await sharedContext.close();
     });
 
     for (const route of authRoutes) {
-      test(`${route.label}`, async ({ page }, testInfo) => {
+      test(`${route.label}`, async ({}, testInfo) => {
         const deviceSlug = testInfo.project.name;
 
-        // Each test does its own login (contexts are isolated in Playwright)
-        await page.goto("/", { waitUntil: "load", timeout: TIMEOUTS.INITIAL_LOAD });
-        await bypassLandingPage(page);
+        // New page in the shared context — inherits auth + localStorage
+        const page = await sharedContext.newPage();
 
-        const loggedIn = await loginWithCredentials(page, credentials!);
-        if (!loggedIn) {
-          throw new Error(
-            `Login failed for ${route.label}. Check credentials in screenshot-config.local.json.`
-          );
-        }
-
-        await suppressOnboarding(page);
-        await setTheme(page, isDark);
-
-        // Navigate to the target module/tab via URL
+        // Navigate directly to the target module/tab via URL
         await navigateToRoute(page, route);
         await dismissModals(page);
         await stabilize(page, route);
@@ -516,6 +541,8 @@ if (authRoutes.length > 0 && hasAuth) {
           path: join(captureDir, filename),
           fullPage: false,
         });
+
+        await page.close();
       });
     }
   });
