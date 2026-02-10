@@ -354,7 +354,6 @@
 						<!-- Interactive mode: Use layered preview for animated toggles (requires full beat data) -->
 						<LayeredSequencePreview
 							{sequence}
-							showWord={addWord}
 							showStepNumbers={addStepNumbers}
 							showDifficultyLevel={addDifficultyLevel}
 							{includeStartPosition}

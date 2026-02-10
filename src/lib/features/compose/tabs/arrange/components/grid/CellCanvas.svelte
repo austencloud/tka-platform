@@ -292,7 +292,6 @@
         highlightedStepIndex={primaryCurrentStep}
         showHighlight={isPlaying}
         darkMode={true}
-        showWord={false}
         showCreatorName={false}
         showNotes={false}
         showBirthday={false}

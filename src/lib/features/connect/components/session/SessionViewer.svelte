@@ -200,7 +200,6 @@
 						<div class="pictograph-container">
 							<LayeredSequencePreview
 								{sequence}
-								showWord={true}
 								showStepNumbers={true}
 								showDifficultyLevel={false}
 								includeStartPosition={true}
@@ -220,7 +219,6 @@
 							<div class="split-right">
 								<LayeredSequencePreview
 									{sequence}
-									showWord={false}
 									showStepNumbers={true}
 									showDifficultyLevel={false}
 									includeStartPosition={true}

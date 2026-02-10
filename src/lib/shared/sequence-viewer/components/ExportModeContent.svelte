@@ -124,7 +124,6 @@
         <LayeredSequencePreview
           {sequence}
           showHighlight={false}
-          showWord={exportOptions.imageShowWord}
           showStepNumbers={exportOptions.imageShowStepNumbers}
           showDifficultyLevel={exportOptions.imageShowDifficulty}
           includeStartPosition={exportOptions.imageIncludeStartPosition}

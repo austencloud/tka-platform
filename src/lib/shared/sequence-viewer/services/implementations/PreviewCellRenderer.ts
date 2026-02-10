@@ -25,53 +25,9 @@ import type { LayerRenderOptions, LayerVisibility } from "$lib/shared/render/ser
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
 import { getWorkerRenderPool } from "$lib/shared/render/services/implementations/WorkerRenderPool";
+import { cellCacheKeyDeriver } from "./CellCacheKeyDeriver";
 
 export class PreviewCellRenderer implements IPreviewCellRenderer {
-  /**
-   * Generate a cache key for a pictograph based on its data and render options.
-   * Uses djb2 hash for compact keys.
-   */
-  private deriveCacheKey(
-    pictographData: PictographData,
-    stepNumber: number | undefined,
-    isDark: boolean,
-    options: PreviewCellRenderOptions
-  ): string {
-    // Build a deterministic key from ALL rendering parameters
-    // Every setting that affects the final pixel output MUST be in this key,
-    // otherwise the IndexedDB blob cache returns stale images.
-    const keyParts = [
-      pictographData.letter || "start",
-      pictographData.motions?.blue?.motionType || "none",
-      pictographData.motions?.blue?.startLocation || "",
-      pictographData.motions?.blue?.endLocation || "",
-      pictographData.motions?.blue?.turns ?? 0,
-      pictographData.motions?.red?.motionType || "none",
-      pictographData.motions?.red?.startLocation || "",
-      pictographData.motions?.red?.endLocation || "",
-      pictographData.motions?.red?.turns ?? 0,
-      options.bluePropType || "staff",
-      options.catDogModeEnabled
-        ? (options.redPropType || "staff")
-        : (options.bluePropType || "staff"),
-      isDark ? "dark" : "light",
-      options.showStepNumbers ? (stepNumber ?? "none") : "nonum",
-      options.size,
-      // Visibility settings that change the rendered output
-      options.showNonRadialPoints ? "nr1" : "nr0",
-      options.handPointVisibility ?? "all",
-      options.showTKA ? "tka1" : "tka0",
-      options.showReversals ? "rev1" : "rev0",
-    ];
-
-    // djb2 hash
-    const str = keyParts.join("|");
-    let hash = 5381;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
-    }
-    return `lsp-${Math.abs(hash).toString(36)}`;
-  }
 
   /**
    * Render a single pictograph and return a blob URL.
@@ -87,8 +43,8 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
     isDark: boolean,
     options: PreviewCellRenderOptions
   ): Promise<string> {
-    // Generate cache key
-    const cacheKey = this.deriveCacheKey(pictographData, stepNumber, isDark, options);
+    // Generate cache key via shared deriver (same keys as CellPreWarmer)
+    const cacheKey = cellCacheKeyDeriver.deriveCacheKey(pictographData, stepNumber, isDark, options);
 
     // Check IndexedDB cache first — blob URL creation is instant
     try {

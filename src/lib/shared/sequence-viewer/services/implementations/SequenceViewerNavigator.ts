@@ -11,6 +11,7 @@
 
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
 import { openSequenceOverlay } from '../../state/sequence-viewer-overlay-state.svelte';
+import { cellPreWarmer } from './CellPreWarmer';
 
 export interface OpenSequenceViewerOptions {
 	/** Path to return to when closing (e.g., "/browse/gallery") */
@@ -50,6 +51,10 @@ export function openSequenceViewer(
 	} catch {
 		// Silently fail - attribution tracking is non-critical
 	}
+
+	// Pre-warm pictograph cells at highest priority while the drawer animates.
+	// By the time LayeredSequencePreview mounts, cells are already in IndexedDB.
+	cellPreWarmer.preWarmSequence(sequence, "user-blocking");
 
 	// Always use drawer overlay - keeps the underlying module mounted
 	// so content is immediately visible behind the drawer on dismiss

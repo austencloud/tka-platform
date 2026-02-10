@@ -8,7 +8,7 @@
   - Independent visibility toggles without full re-render
 
   Structure:
-  - Header section (word + difficulty badge) - animates in/out
+  - Header section (difficulty badge + LOOP glyph) - animates in/out
   - Grid section (individual pictograph cells, each animatable)
   - Footer section (name, notes, birthday) - each animates independently
 -->
@@ -21,7 +21,6 @@
   import { onMount, onDestroy, untrack } from "svelte";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
-  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
@@ -74,7 +73,6 @@
   interface Props {
     sequence: SequenceData;
     // Visibility toggles
-    showWord?: boolean;
     showStepNumbers?: boolean;
     showDifficultyLevel?: boolean;
     includeStartPosition?: boolean;
@@ -101,7 +99,6 @@
 
   const {
     sequence,
-    showWord = true,
     showStepNumbers = true,
     showDifficultyLevel = true,
     includeStartPosition = true,
@@ -198,15 +195,6 @@
   // Layout calculations
   const difficultyCalculator = new SequenceDifficultyCalculator();
 
-  // Derive word from sequence (with null safety)
-  const derivedWord = $derived.by(() => {
-    const rawWord = sequence.word || (sequence.steps ?? [])
-      .filter(beat => beat.letter)
-      .map(beat => beat.letter)
-      .join("");
-    return simplifyRepeatedWord(rawWord);
-  });
-
   // Calculate difficulty level (with null safety)
   const difficultyLevel = $derived.by(() => {
     if (!sequence?.steps?.length) return 1;
@@ -229,9 +217,9 @@
     return null;
   });
 
-  // Show header when word, difficulty, or LOOP glyph is enabled
+  // Show header when difficulty or LOOP glyph is enabled
   const showHeader = $derived(
-    (showWord && derivedWord) || showDifficultyLevel || (showLoopGlyph && loopComponents)
+    showDifficultyLevel || (showLoopGlyph && loopComponents)
   );
 
   // Show footer when any footer element is enabled
@@ -310,7 +298,6 @@
     return Math.floor(cellWidth / 7);
   });
 
-  const wordFontSize = $derived(Math.max(10, scaledHeaderHeight * 0.9));
   const badgeSize = $derived(Math.max(16, scaledHeaderHeight * 0.9));
   const badgePadding = $derived(Math.max(2, scaledHeaderHeight * 0.05));
   const badgeNumberFontSize = $derived(Math.max(8, Math.floor(badgeSize / 1.75)));
@@ -427,44 +414,56 @@
         return;
       }
 
-      // Clear old URLs before progressive render
+      // Clear old URLs before render
       clearCellUrls();
 
-      // Show grid layout immediately (isLoading = false) so the grid skeleton
-      // is visible while cells render. Cells appear progressively as they complete.
-      isLoading = false;
+      // Pre-populate ALL cells with placeholders immediately.
+      // This gives the grid its full dimensions from frame one — no layout shift
+      // as individual cells render. The 1x1 transparent PNG is instant to decode.
+      const TRANSPARENT_PIXEL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAABJRElEQkSuQmCC";
+      const placeholderCells: CellData[] = [];
 
-      // Progressive rendering: launch all cell renders in parallel, insert each
-      // into the cells array as it completes. Users see cells appearing rapidly
-      // instead of a blank screen followed by all-at-once.
-      const completedCells: CellData[] = [];
-
-      function insertCell(cell: CellData) {
-        // Insert in sorted position (by index) for correct display order
-        const insertIdx = completedCells.findIndex(c => c.index > cell.index);
-        if (insertIdx === -1) {
-          completedCells.push(cell);
-        } else {
-          completedCells.splice(insertIdx, 0, cell);
-        }
-        // Trigger Svelte reactivity with a new array reference
-        cells = [...completedCells];
+      // Start position placeholder
+      const firstStep = sequence.steps[0];
+      if (sequence.startPosition || firstStep) {
+        const { gridColumn, gridRow } = calculateGridPosition(-1, cols);
+        placeholderCells.push({
+          index: -1, label: "Start",
+          lightUrl: TRANSPARENT_PIXEL, darkUrl: TRANSPARENT_PIXEL,
+          gridColumn, gridRow,
+        });
       }
 
+      // Step placeholders
+      for (let i = 0; i < sequence.steps.length; i++) {
+        const { gridColumn, gridRow } = calculateGridPosition(i, cols);
+        placeholderCells.push({
+          index: i, label: String(i + 1),
+          lightUrl: TRANSPARENT_PIXEL, darkUrl: TRANSPARENT_PIXEL,
+          gridColumn, gridRow,
+        });
+      }
+
+      // Show grid with full dimensions immediately (placeholders fill all cells)
+      cells = placeholderCells;
+      isLoading = false;
+
+      // Now render all cells in parallel. As each completes, update the
+      // existing cell in-place (no layout shift — cell already has its spot).
       const renderPromises: Promise<void>[] = [];
 
       // Start position render
-      const firstStep = sequence.steps[0];
       if (sequence.startPosition || firstStep) {
         const startData = sequence.startPosition || createStartPositionFromBeatStart(firstStep!);
-        const { gridColumn, gridRow } = calculateGridPosition(-1, cols);
-
         renderPromises.push(
           Promise.all([
             previewCellRenderer.renderCell(startData, undefined, false, renderOptions),
             previewCellRenderer.renderCell(startData, undefined, true, renderOptions),
           ]).then(([lightUrl, darkUrl]) => {
-            insertCell({ index: -1, label: "Start", lightUrl, darkUrl, gridColumn, gridRow });
+            const idx = cells.findIndex(c => c.index === -1);
+            if (idx !== -1) {
+              cells[idx] = { ...cells[idx]!, lightUrl, darkUrl };
+            }
           })
         );
       }
@@ -475,23 +474,24 @@
         if (!step) continue;
 
         const stepIndex = i;
-        const { gridColumn, gridRow } = calculateGridPosition(stepIndex, cols);
-
         renderPromises.push(
           Promise.all([
             previewCellRenderer.renderCell(step, stepIndex + 1, false, renderOptions),
             previewCellRenderer.renderCell(step, stepIndex + 1, true, renderOptions),
           ]).then(([lightUrl, darkUrl]) => {
-            insertCell({ index: stepIndex, label: String(stepIndex + 1), lightUrl, darkUrl, gridColumn, gridRow });
+            const idx = cells.findIndex(c => c.index === stepIndex);
+            if (idx !== -1) {
+              cells[idx] = { ...cells[idx]!, lightUrl, darkUrl };
+            }
           })
         );
       }
 
-      // Wait for all to complete (they've already been progressively displayed)
+      // Wait for all renders to complete
       await Promise.all(renderPromises);
 
       // Store in global cache for reuse across component remounts
-      storePreviewInCache(cacheKey, { cells: completedCells, columns: cols, rows: rws });
+      storePreviewInCache(cacheKey, { cells: [...cells], columns: cols, rows: rws });
     } catch (error) {
       console.error("Failed to render cells:", error);
     } finally {
@@ -697,15 +697,6 @@
             </div>
           {/if}
 
-          {#if showWord && derivedWord}
-            <span
-              class="word-text"
-              style="font-size: {wordFontSize}px;"
-            >
-              {derivedWord}
-            </span>
-          {/if}
-
           {#if showLoopGlyph && loopComponents}
             <div
               class="loop-icon-badge"
@@ -893,16 +884,6 @@
     font-family: Georgia, serif;
     font-weight: bold;
     flex-shrink: 0;
-  }
-
-  .word-text {
-    font-family: Georgia, serif;
-    font-weight: 700;
-    color: #1f2937;
-  }
-
-  .dark-mode .word-text {
-    color: #ffffff;
   }
 
   .loop-icon-badge {

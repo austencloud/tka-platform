@@ -13,6 +13,7 @@
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";
+  import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
 
   /**
    * VirtualizedSequenceGrid - High-performance grid for large sequence lists
@@ -204,6 +205,27 @@
     };
   });
 
+  // Pre-warm pictograph cells for visible sequences at background priority.
+  // Uses scheduler.postTask("background") internally — never competes with gallery rendering.
+  $effect(() => {
+    const rows = virtualRows;
+    if (!rows.length) return;
+
+    untrack(() => {
+      for (const row of rows) {
+        const rowSequences = getRowSequences(row.index);
+        for (const seq of rowSequences) {
+          cellPreWarmer.preWarmSequence(seq, "background");
+        }
+      }
+    });
+  });
+
+  // Handle hover pre-warming — called by ChoreoCard's onHover prop
+  function handleSequenceHover(seq: SequenceData) {
+    cellPreWarmer.preWarmSequence(seq, "user-visible");
+  }
+
   // Reconfigure virtualizer when rowCount or estimatedRowHeight changes
   $effect(() => {
     // Capture reactive dependencies
@@ -261,6 +283,7 @@
               variations={seqVariations}
               onPrimaryAction={(seq) =>
                 handleSequenceAction("view-detail", seq, seqVariations)}
+              onHover={handleSequenceHover}
               bluePropType={propSettings.bluePropType}
               redPropType={propSettings.redPropType}
               catDogModeEnabled={isCatDog}

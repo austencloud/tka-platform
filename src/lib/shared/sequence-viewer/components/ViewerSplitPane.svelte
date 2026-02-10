@@ -208,7 +208,6 @@
           {highlightedStepIndex}
           showHighlight={isPlaying || highlightedStepIndex !== null}
           {onStepClick}
-          showWord={imgShowWord}
           showStepNumbers={true}
           showDifficultyLevel={imgShowDifficulty}
           includeStartPosition={imgShowStartPos}

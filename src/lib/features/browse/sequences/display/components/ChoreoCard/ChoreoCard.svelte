@@ -44,6 +44,7 @@ LOOP badge:
     sequence,
     variations = [],
     onPrimaryAction = () => {},
+    onHover,
     selected = false,
     bluePropType = undefined,
     redPropType = undefined,
@@ -53,6 +54,8 @@ LOOP badge:
     sequence: SequenceData;
     variations?: SequenceData[];
     onPrimaryAction?: (sequence: SequenceData) => void;
+    /** Fires on pointer enter (debounced 150ms) for cache pre-warming */
+    onHover?: (sequence: SequenceData) => void;
     selected?: boolean;
     bluePropType?: PropType;
     redPropType?: PropType;
@@ -146,6 +149,24 @@ LOOP badge:
     onPrimaryAction(displayedSequence);
   }
 
+  // Debounced hover handler — avoids pre-warming during fast scroll-past
+  let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function handlePointerEnter() {
+    if (!onHover) return;
+    hoverTimer = setTimeout(() => {
+      onHover(displayedSequence);
+      hoverTimer = null;
+    }, 150);
+  }
+
+  function handlePointerLeave() {
+    if (hoverTimer !== null) {
+      clearTimeout(hoverTimer);
+      hoverTimer = null;
+    }
+  }
+
   // Reset index when the base sequence changes
   $effect(() => {
     // Depend on sequence.id to detect base sequence change
@@ -154,7 +175,14 @@ LOOP badge:
   });
 </script>
 
-<button class="choreo-card" class:selected class:light-mode={lightMode} onclick={handlePrimaryAction}>
+<button
+  class="choreo-card"
+  class:selected
+  class:light-mode={lightMode}
+  onclick={handlePrimaryAction}
+  onpointerenter={handlePointerEnter}
+  onpointerleave={handlePointerLeave}
+>
   <!-- view-transition-name enables Google Photos-style morph animation to /sequence/[id] -->
   <div
     class="thumbnail-container"
