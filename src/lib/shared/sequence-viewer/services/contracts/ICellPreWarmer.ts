@@ -32,6 +32,13 @@ export interface ICellPreWarmer {
   preWarmSequence(sequence: SequenceData, priority: PreWarmPriority): void;
 
   /**
+   * Pre-warm all cells and return a Promise that resolves when complete.
+   * Use this when you need to guarantee the cache is warm before continuing
+   * (e.g., before setting sequence data that triggers a preview render).
+   */
+  preWarmSequenceAsync(sequence: SequenceData): Promise<void>;
+
+  /**
    * Cancel any in-flight pre-warming for a specific sequence.
    * Aborts pending renders to free worker pool capacity.
    */

@@ -212,6 +212,7 @@
                   isFullscreen={ctx.isFullscreen}
                   fullscreenStackVertical={ctx.fullscreenStackVertical}
                   isMobile={isMobileWidth}
+                  onRenderProgress={ctx.onRenderProgress}
                   focusedPane={ctx.editingPane}
                   onFocusPane={ctx.enterEditMode}
                   onUnfocusPane={ctx.exitEditMode}

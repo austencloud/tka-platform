@@ -36,7 +36,7 @@
   // Keyed by sequence content + render options hash. Capped at 10 entries (LRU).
   // ============================================================================
   interface CachedPreview {
-    cells: { index: number; label: string; lightUrl: string; darkUrl: string; gridColumn: number; gridRow: number }[];
+    cells: { index: number; label: string; imageUrl: string; gridColumn: number; gridRow: number }[];
     columns: number;
     rows: number;
   }
@@ -47,9 +47,10 @@
     seq: SequenceData,
     opts: PreviewCellRenderOptions,
     colCount: number | null,
+    isDark: boolean,
   ): string {
     const stepLetters = seq.steps?.map(s => s.letter ?? "?").join("") ?? "";
-    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.bluePropType ?? ""}-${opts.redPropType ?? ""}-${colCount ?? "auto"}`;
+    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.bluePropType ?? ""}-${opts.redPropType ?? ""}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}`;
   }
 
   function storePreviewInCache(key: string, data: CachedPreview): void {
@@ -60,8 +61,7 @@
         const evicted = globalPreviewCache.get(oldest);
         if (evicted) {
           for (const cell of evicted.cells) {
-            if (cell.lightUrl.startsWith("blob:")) URL.revokeObjectURL(cell.lightUrl);
-            if (cell.darkUrl.startsWith("blob:")) URL.revokeObjectURL(cell.darkUrl);
+            if (cell.imageUrl.startsWith("blob:")) URL.revokeObjectURL(cell.imageUrl);
           }
         }
         globalPreviewCache.delete(oldest);
@@ -95,6 +95,8 @@
     onStepClick?: (stepIndex: number) => void;  // 0-indexed step that was clicked
     // Layout override
     columnCount?: number | null;  // Override auto-calculated column count (null = auto)
+    // Render progress callback (loaded cells, total cells)
+    onRenderProgress?: (loaded: number, total: number) => void;
   }
 
   const {
@@ -116,6 +118,7 @@
     showHighlight = false,
     onStepClick,
     columnCount = null,
+    onRenderProgress,
   }: Props = $props();
 
   // Constants
@@ -166,8 +169,8 @@
   interface CellData {
     index: number;          // -1 for start position, 0+ for steps
     label: string;          // "Start" or step number
-    lightUrl: string;       // Light mode image URL
-    darkUrl: string;        // Dark mode image URL
+    imageUrl: string;       // Rendered image URL (current mode only)
+    isLoaded: boolean;      // Whether the real image has loaded (false = show spinner)
     gridColumn: number;     // 1-based CSS grid column
     gridRow: number;        // 1-based CSS grid row
   }
@@ -404,13 +407,18 @@
       // Build render options once for all cells
       const renderOptions = buildRenderOptions();
 
+      // Only render the current mode — halves total render count
+      const isDark = darkMode;
+
       // Check global cache — avoids re-rendering after drag-to-move
-      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount);
+      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark);
       const cached = globalPreviewCache.get(cacheKey);
       if (cached && cached.columns === cols && cached.rows === rws) {
-        cells = cached.cells;
+        cells = cached.cells.map(c => ({ ...c, isLoaded: true }));
         isLoading = false;
         isRendering = false;
+        // Signal 100% immediately for cache hits
+        onRenderProgress?.(cached.cells.length, cached.cells.length);
         return;
       }
 
@@ -419,8 +427,7 @@
 
       // Pre-populate ALL cells with placeholders immediately.
       // This gives the grid its full dimensions from frame one — no layout shift
-      // as individual cells render. The 1x1 transparent PNG is instant to decode.
-      const TRANSPARENT_PIXEL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAABJRElEQkSuQmCC";
+      // as individual cells render. Cells show a spinner until loaded.
       const placeholderCells: CellData[] = [];
 
       // Start position placeholder
@@ -429,7 +436,7 @@
         const { gridColumn, gridRow } = calculateGridPosition(-1, cols);
         placeholderCells.push({
           index: -1, label: "Start",
-          lightUrl: TRANSPARENT_PIXEL, darkUrl: TRANSPARENT_PIXEL,
+          imageUrl: "", isLoaded: false,
           gridColumn, gridRow,
         });
       }
@@ -439,7 +446,7 @@
         const { gridColumn, gridRow } = calculateGridPosition(i, cols);
         placeholderCells.push({
           index: i, label: String(i + 1),
-          lightUrl: TRANSPARENT_PIXEL, darkUrl: TRANSPARENT_PIXEL,
+          imageUrl: "", isLoaded: false,
           gridColumn, gridRow,
         });
       }
@@ -448,47 +455,38 @@
       cells = placeholderCells;
       isLoading = false;
 
-      // Now render all cells in parallel. As each completes, update the
-      // existing cell in-place (no layout shift — cell already has its spot).
-      const renderPromises: Promise<void>[] = [];
+      const totalCellCount = placeholderCells.length;
+      let loadedCount = 0;
+
+      // Render cells SEQUENTIALLY (start → 1 → 2 → 3...) so animation can
+      // chase the render frontier. Perceived time is much shorter than parallel
+      // because cells appear in meaningful order.
 
       // Start position render
       if (sequence.startPosition || firstStep) {
         const startData = sequence.startPosition || createStartPositionFromBeatStart(firstStep!);
-        renderPromises.push(
-          Promise.all([
-            previewCellRenderer.renderCell(startData, undefined, false, renderOptions),
-            previewCellRenderer.renderCell(startData, undefined, true, renderOptions),
-          ]).then(([lightUrl, darkUrl]) => {
-            const idx = cells.findIndex(c => c.index === -1);
-            if (idx !== -1) {
-              cells[idx] = { ...cells[idx]!, lightUrl, darkUrl };
-            }
-          })
-        );
+        const imageUrl = await previewCellRenderer.renderCell(startData, undefined, isDark, renderOptions);
+        const idx = cells.findIndex(c => c.index === -1);
+        if (idx !== -1) {
+          cells[idx] = { ...cells[idx]!, imageUrl, isLoaded: true };
+        }
+        loadedCount++;
+        onRenderProgress?.(loadedCount, totalCellCount);
       }
 
-      // Step renders - all launched in parallel
+      // Step renders — in order, one at a time
       for (let i = 0; i < sequence.steps.length; i++) {
         const step = sequence.steps[i];
         if (!step) continue;
 
-        const stepIndex = i;
-        renderPromises.push(
-          Promise.all([
-            previewCellRenderer.renderCell(step, stepIndex + 1, false, renderOptions),
-            previewCellRenderer.renderCell(step, stepIndex + 1, true, renderOptions),
-          ]).then(([lightUrl, darkUrl]) => {
-            const idx = cells.findIndex(c => c.index === stepIndex);
-            if (idx !== -1) {
-              cells[idx] = { ...cells[idx]!, lightUrl, darkUrl };
-            }
-          })
-        );
+        const imageUrl = await previewCellRenderer.renderCell(step, i + 1, isDark, renderOptions);
+        const idx = cells.findIndex(c => c.index === i);
+        if (idx !== -1) {
+          cells[idx] = { ...cells[idx]!, imageUrl, isLoaded: true };
+        }
+        loadedCount++;
+        onRenderProgress?.(loadedCount, totalCellCount);
       }
-
-      // Wait for all renders to complete
-      await Promise.all(renderPromises);
 
       // Store in global cache for reuse across component remounts
       storePreviewInCache(cacheKey, { cells: [...cells], columns: cols, rows: rws });
@@ -502,8 +500,7 @@
   function clearCellUrls() {
     // Revoke blob URLs to free memory (blob URLs hold a reference to the blob)
     for (const cell of cells) {
-      if (cell.lightUrl.startsWith("blob:")) URL.revokeObjectURL(cell.lightUrl);
-      if (cell.darkUrl.startsWith("blob:")) URL.revokeObjectURL(cell.darkUrl);
+      if (cell.imageUrl.startsWith("blob:")) URL.revokeObjectURL(cell.imageUrl);
     }
     cells = [];
   }
@@ -576,9 +573,10 @@
     const hpv = handPointVis;
     const stka = showTKA;
     const sr = showReversals;
+    const dm = darkMode;
 
     // Build a key from all tracked values to detect actual changes
-    const renderKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${cc}-${snr}-${hpv}-${stka}-${sr}`;
+    const renderKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${cc}-${snr}-${hpv}-${stka}-${sr}-${dm}`;
 
     if (!hasMounted) return;
     if (renderKey === lastEffectRenderKey) return;
@@ -697,6 +695,15 @@
             </div>
           {/if}
 
+          {#if sequence.word}
+            <span
+              class="word-title"
+              style="font-size: {Math.max(10, Math.floor(scaledHeaderHeight * 0.55))}px;"
+            >
+              {sequence.word}
+            </span>
+          {/if}
+
           {#if showLoopGlyph && loopComponents}
             <div
               class="loop-icon-badge"
@@ -729,22 +736,18 @@
               type="button"
               aria-label="Go to step {cell.label}"
             >
-              <!-- Light mode image -->
-              <img
-                class="cell-image light-image"
-                class:hidden={darkMode}
-                src={cell.lightUrl}
-                alt={cell.label}
-                draggable="false"
-              />
-              <!-- Dark mode image -->
-              <img
-                class="cell-image dark-image"
-                class:visible={darkMode}
-                src={cell.darkUrl}
-                alt={cell.label}
-                draggable="false"
-              />
+              {#if cell.isLoaded}
+                <img
+                  class="cell-image"
+                  src={cell.imageUrl}
+                  alt={cell.label}
+                  draggable="false"
+                />
+              {:else}
+                <div class="cell-spinner-container">
+                  <div class="cell-spinner"></div>
+                </div>
+              {/if}
             </button>
           {:else}
             <div
@@ -753,22 +756,18 @@
               class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
               style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
             >
-              <!-- Light mode image -->
-              <img
-                class="cell-image light-image"
-                class:hidden={darkMode}
-                src={cell.lightUrl}
-                alt={cell.label}
-                draggable="false"
-              />
-              <!-- Dark mode image -->
-              <img
-                class="cell-image dark-image"
-                class:visible={darkMode}
-                src={cell.darkUrl}
-                alt={cell.label}
-                draggable="false"
-              />
+              {#if cell.isLoaded}
+                <img
+                  class="cell-image"
+                  src={cell.imageUrl}
+                  alt={cell.label}
+                  draggable="false"
+                />
+              {:else}
+                <div class="cell-spinner-container">
+                  <div class="cell-spinner"></div>
+                </div>
+              {/if}
             </div>
           {/if}
         {/each}
@@ -817,6 +816,7 @@
     box-sizing: border-box;
     /* Padding to accommodate highlight scale + glow on edge cells */
     padding: 12px;
+    position: relative;
   }
 
   .loading-placeholder {
@@ -884,6 +884,22 @@
     font-family: Georgia, serif;
     font-weight: bold;
     flex-shrink: 0;
+  }
+
+  .word-title {
+    font-family: Georgia, serif;
+    font-weight: bold;
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60%;
+  }
+
+  .dark-mode .word-title {
+    color: #fff;
   }
 
   .loop-icon-badge {
@@ -966,26 +982,23 @@
     user-select: none;
   }
 
-  /* Light/dark mode crossfade */
-  .light-image {
-    opacity: 1;
-    transition: opacity 0.25s ease-out;
+  /* Per-cell loading spinner */
+  .cell-spinner-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1;
   }
 
-  .light-image.hidden {
-    opacity: 0;
-  }
-
-  .dark-image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    opacity: 0;
-    transition: opacity 0.25s ease-out;
-  }
-
-  .dark-image.visible {
-    opacity: 1;
+  .cell-spinner {
+    width: 24%;
+    height: 24%;
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-top-color: var(--theme-accent, #6366f1);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
   }
 
   /* Clickable cells */
@@ -1080,7 +1093,8 @@
 
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .spinner {
+    .spinner,
+    .cell-spinner {
       animation: none;
     }
 
@@ -1091,11 +1105,6 @@
     .pictograph-cell.current {
       animation: none;
       transform: scale(1);
-    }
-
-    .light-image,
-    .dark-image {
-      transition: none;
     }
   }
 </style>

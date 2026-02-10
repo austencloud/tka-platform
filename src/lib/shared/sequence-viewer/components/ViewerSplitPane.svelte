@@ -46,6 +46,8 @@
     isMobile: boolean;
     isLandscapeMobile?: boolean;
     focusedPane: FocusedPane;
+    // Render progress
+    onRenderProgress?: (loaded: number, total: number) => void;
     // Callbacks
     onFocusPane: (pane: "animation" | "image") => void;
     onUnfocusPane: () => void;
@@ -77,6 +79,7 @@
     fullscreenStackVertical,
     isMobile,
     isLandscapeMobile = false,
+    onRenderProgress,
     focusedPane,
     onFocusPane,
     onUnfocusPane,
@@ -211,6 +214,7 @@
           {highlightedStepIndex}
           showHighlight={isPlaying || highlightedStepIndex !== null}
           {onStepClick}
+          {onRenderProgress}
           showStepNumbers={true}
           showDifficultyLevel={imgShowDifficulty}
           includeStartPosition={imgShowStartPos}

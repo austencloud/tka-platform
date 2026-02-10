@@ -33,12 +33,12 @@ import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte
 import { isCatDogMode } from "$lib/features/browse/sequences/display/utils/prop-mode-helpers";
 import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
 
-/** Cell to be rendered: pictograph data + step number + cache key per mode */
+/** Cell to be rendered: pictograph data + step number + cache key */
 interface CellTask {
   pictographData: PictographData;
   stepNumber: number | undefined;
-  lightKey: string;
-  darkKey: string;
+  cacheKey: string;
+  isDark: boolean;
 }
 
 /** Check if the Prioritized Task Scheduling API is available */
@@ -53,44 +53,6 @@ function hasSchedulerYield(): boolean {
     && typeof globalThis.scheduler!.yield === "function";
 }
 
-/**
- * Schedule a task with the appropriate priority.
- * Falls back to requestIdleCallback (background) or queueMicrotask (others).
- */
-function scheduleTask(
-  fn: () => void | Promise<void>,
-  priority: PreWarmPriority,
-  signal?: AbortSignal
-): void {
-  if (signal?.aborted) return;
-
-  if (hasSchedulerApi()) {
-    globalThis.scheduler!.postTask(fn, { priority, signal }).catch(() => {
-      // AbortError is expected on cancellation — swallow it
-    });
-    return;
-  }
-
-  // Fallback for browsers without scheduler API
-  if (priority === "background") {
-    if (typeof requestIdleCallback !== "undefined") {
-      const id = requestIdleCallback(() => {
-        if (!signal?.aborted) fn();
-      });
-      signal?.addEventListener("abort", () => cancelIdleCallback(id), { once: true });
-    } else {
-      const id = setTimeout(() => {
-        if (!signal?.aborted) fn();
-      }, 50);
-      signal?.addEventListener("abort", () => clearTimeout(id), { once: true });
-    }
-  } else {
-    // user-visible and user-blocking: run immediately via microtask
-    queueMicrotask(() => {
-      if (!signal?.aborted) fn();
-    });
-  }
-}
 
 export class CellPreWarmer implements ICellPreWarmer {
   /** Active AbortControllers keyed by sequence ID */
@@ -100,19 +62,12 @@ export class CellPreWarmer implements ICellPreWarmer {
   private completedSequences = new Set<string>();
 
   preWarmSequence(sequence: SequenceData, priority: PreWarmPriority): void {
-    if (!sequence.steps?.length) {
-      console.log(`[CellPreWarmer] ⚠️ No steps for ${sequence.word ?? sequence.id} — skipping`);
-      return;
-    }
+    if (!sequence.steps?.length) return;
 
     const seqId = sequence.id;
 
     // Already fully pre-warmed — skip
-    if (this.completedSequences.has(seqId)) {
-      console.log(`[CellPreWarmer] ✅ Already completed: ${sequence.word ?? seqId}`);
-      return;
-    }
-    console.log(`[CellPreWarmer] 🔥 preWarmSequence "${sequence.word ?? seqId}" priority=${priority} steps=${sequence.steps.length}`);
+    if (this.completedSequences.has(seqId)) return;
 
     // If there's already a warm in progress at equal or higher priority, skip.
     // Higher priority upgrades: cancel the old one and re-start.
@@ -136,14 +91,32 @@ export class CellPreWarmer implements ICellPreWarmer {
     (controller as AbortController & { _priority?: PreWarmPriority })._priority = priority;
     this.activeWarms.set(seqId, controller);
 
+    const isDark = settingsService.settings.darkMode ?? false;
     const renderOptions = this.buildRenderOptions();
-    const cellTasks = this.buildCellTasks(sequence, renderOptions);
+    const cellTasks = this.buildCellTasks(sequence, renderOptions, isDark);
 
     if (priority === "background") {
       this.warmSequential(seqId, cellTasks, renderOptions, controller.signal);
     } else {
       this.warmParallel(seqId, cellTasks, renderOptions, controller.signal);
     }
+  }
+
+  async preWarmSequenceAsync(sequence: SequenceData): Promise<void> {
+    if (!sequence.steps?.length) return;
+
+    const seqId = sequence.id;
+    if (this.completedSequences.has(seqId)) return;
+
+    const controller = new AbortController();
+    this.activeWarms.set(seqId, controller);
+
+    const isDark = settingsService.settings.darkMode ?? false;
+    const renderOptions = this.buildRenderOptions();
+    const cellTasks = this.buildCellTasks(sequence, renderOptions, isDark);
+
+    // Render ALL cells in parallel and await completion
+    await this.warmParallel(seqId, cellTasks, renderOptions, controller.signal);
   }
 
   cancelPreWarm(sequenceId: string): void {
@@ -192,7 +165,8 @@ export class CellPreWarmer implements ICellPreWarmer {
 
   private buildCellTasks(
     sequence: SequenceData,
-    options: PreviewCellRenderOptions
+    options: PreviewCellRenderOptions,
+    isDark: boolean
   ): CellTask[] {
     const tasks: CellTask[] = [];
 
@@ -203,8 +177,8 @@ export class CellPreWarmer implements ICellPreWarmer {
       tasks.push({
         pictographData: startData,
         stepNumber: undefined,
-        lightKey: cellCacheKeyDeriver.deriveCacheKey(startData, undefined, false, options),
-        darkKey: cellCacheKeyDeriver.deriveCacheKey(startData, undefined, true, options),
+        cacheKey: cellCacheKeyDeriver.deriveCacheKey(startData, undefined, isDark, options),
+        isDark,
       });
     }
 
@@ -216,8 +190,8 @@ export class CellPreWarmer implements ICellPreWarmer {
       tasks.push({
         pictographData: step,
         stepNumber,
-        lightKey: cellCacheKeyDeriver.deriveCacheKey(step, stepNumber, false, options),
-        darkKey: cellCacheKeyDeriver.deriveCacheKey(step, stepNumber, true, options),
+        cacheKey: cellCacheKeyDeriver.deriveCacheKey(step, stepNumber, isDark, options),
+        isDark,
       });
     }
 
@@ -279,7 +253,7 @@ export class CellPreWarmer implements ICellPreWarmer {
   }
 
   // =========================================================================
-  // Render a single cell (both light and dark) if not already cached
+  // Render a single cell (current mode only) if not already cached
   // =========================================================================
 
   private async renderCellIfNeeded(
@@ -287,22 +261,14 @@ export class CellPreWarmer implements ICellPreWarmer {
     options: PreviewCellRenderOptions,
     signal: AbortSignal
   ): Promise<void> {
-    // Check both modes — render whichever is missing
-    const [lightCached, darkCached] = await Promise.all([
-      pictographBlobCache.has(task.lightKey),
-      pictographBlobCache.has(task.darkKey),
-    ]);
+    const cached = await pictographBlobCache.has(task.cacheKey);
+    if (cached) return;
 
-    if (lightCached && darkCached) {
-      console.log(`[CellPreWarmer] ✅ Both cached: step=${task.stepNumber}`);
-      return;
-    }
-    console.log(`[CellPreWarmer] 🎨 Rendering step=${task.stepNumber} lightCached=${lightCached} darkCached=${darkCached} lightKey=${task.lightKey} darkKey=${task.darkKey}`);
     if (signal.aborted) return;
 
     // Prepare the pictograph data (DOM-free, main thread)
     const prepared = await pictographPreparer.prepareSingle(task.pictographData, {
-      themeMode: "dark", // Theme mode for SVG asset loading; actual render mode is per-call below
+      themeMode: task.isDark ? "dark" : "light",
       bluePropType: options.bluePropType,
       redPropType: options.catDogModeEnabled
         ? options.redPropType
@@ -318,54 +284,25 @@ export class CellPreWarmer implements ICellPreWarmer {
       showReversals: options.showReversals ?? true,
     };
 
-    // Render both modes in parallel
-    const renderPromises: Promise<void>[] = [];
+    const renderOptions: LayerRenderOptions = {
+      size: options.size,
+      darkMode: task.isDark,
+      showNonRadialPoints: options.showNonRadialPoints ?? true,
+      handPointVisibility: options.handPointVisibility ?? "all",
+      bluePropType: options.bluePropType,
+      redPropType: options.catDogModeEnabled
+        ? options.redPropType
+        : options.bluePropType,
+    };
 
-    if (!lightCached) {
-      const lightOptions: LayerRenderOptions = {
-        size: options.size,
-        darkMode: false,
-        showNonRadialPoints: options.showNonRadialPoints ?? true,
-        handPointVisibility: options.handPointVisibility ?? "all",
-        bluePropType: options.bluePropType,
-        redPropType: options.catDogModeEnabled
-          ? options.redPropType
-          : options.bluePropType,
-      };
-      renderPromises.push(
-        pool.render(prepared, lightOptions, visibility, options.showStepNumbers ? task.stepNumber : undefined)
-          .then(async blob => {
-            if (!signal.aborted) {
-              await pictographBlobCache.set(task.lightKey, blob);
-            }
-          })
-          .catch(() => {}) // Swallow render/cache errors — pre-warming is best-effort
-      );
+    try {
+      const blob = await pool.render(prepared, renderOptions, visibility, options.showStepNumbers ? task.stepNumber : undefined);
+      if (!signal.aborted) {
+        await pictographBlobCache.set(task.cacheKey, blob);
+      }
+    } catch {
+      // Swallow render/cache errors — pre-warming is best-effort
     }
-
-    if (!darkCached) {
-      const darkOptions: LayerRenderOptions = {
-        size: options.size,
-        darkMode: true,
-        showNonRadialPoints: options.showNonRadialPoints ?? true,
-        handPointVisibility: options.handPointVisibility ?? "all",
-        bluePropType: options.bluePropType,
-        redPropType: options.catDogModeEnabled
-          ? options.redPropType
-          : options.bluePropType,
-      };
-      renderPromises.push(
-        pool.render(prepared, darkOptions, visibility, options.showStepNumbers ? task.stepNumber : undefined)
-          .then(async blob => {
-            if (!signal.aborted) {
-              await pictographBlobCache.set(task.darkKey, blob);
-            }
-          })
-          .catch(() => {})
-      );
-    }
-
-    await Promise.allSettled(renderPromises);
   }
 }
 

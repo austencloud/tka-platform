@@ -525,12 +525,7 @@ export class ImageComposer implements IImageComposer {
     );
 
     // Fire-and-forget — preview cache write is best-effort
-    console.log(`[WriteThrough] Writing preview key: ${previewKey} | step=${stepNumber} | dark=${isDark} | size=${stepSize} | blob=${blob.size}bytes`);
-    this.blobCache.set(previewKey, blob).then(() => {
-      console.log(`[WriteThrough] ✅ Stored: ${previewKey}`);
-    }).catch((err) => {
-      console.warn(`[WriteThrough] ❌ Failed: ${previewKey}`, err);
-    });
+    this.blobCache.set(previewKey, blob).catch(() => {});
   }
 
   /**
@@ -562,8 +557,6 @@ export class ImageComposer implements IImageComposer {
     redPropType?: PropType
   ): Promise<void> {
     try {
-      console.log(`[ImageComposer] renderPictographAt step=${stepNumber} size=${stepSize} letter=${pictographData.letter ?? 'start'}`);
-
       // CRITICAL: Merge prop type overrides into visibility settings.
       // This ensures snapshotted prop types are passed through to PictographPreparer,
       // preventing race conditions where global settings could change during async rendering.

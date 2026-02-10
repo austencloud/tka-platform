@@ -91,6 +91,9 @@
     isSyncActive: boolean;
     isSyncConnected: boolean;
 
+    // Render progress
+    onRenderProgress: (loaded: number, total: number) => void;
+
     // Auth
     isLoggedIn: boolean;
     userName: string;
@@ -147,6 +150,7 @@
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { sequenceModalPersistence } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalPersistence";
+  import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
   import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalExporter";
   import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/implementations/ModalAccessibilityHelper.svelte";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
@@ -221,6 +225,15 @@
   let animationServicesReady = $state(false);
   let animationLoading = $state(false);
   let lastLoadedSequenceId: string | null = null;
+
+  // Render progress tracking for sequential cell rendering
+  let cellsLoaded = $state(0);
+  let totalCells = $state(0);
+
+  function handleRenderProgress(loaded: number, total: number) {
+    cellsLoaded = loaded;
+    totalCells = total;
+  }
 
   // Local reactive state for animation (synced via observer pattern)
   let isPlayingLocal = $state(false);
@@ -459,6 +472,10 @@
       const loadedSequence = await sequenceDataProvider.hydrateSequence(seq);
       if (!loadedSequence) throw new Error("Failed to load sequence");
 
+      // Pre-warm at user-blocking priority (fire-and-forget).
+      // First open renders fresh; second open is instant from IndexedDB cache.
+      cellPreWarmer.preWarmSequence(loadedSequence, "user-blocking");
+
       modalAnimationState.setShouldLoop(true);
       const success = playbackController.initialize(loadedSequence, modalAnimationState);
       if (!success) throw new Error("Failed to initialize playback");
@@ -474,12 +491,23 @@
         playbackController.setSpeed(speedMultiplier);
       }
 
-      // Auto-start after brief delay
-      setTimeout(() => {
-        if (viewMode !== "image") {
-          playbackController?.togglePlayback();
+      // Auto-start when enough cells are rendered (or after max wait).
+      // This replaces the old fixed 300ms delay with render-aware coordination.
+      const MINIMUM_CELLS = 4;
+      const MAX_WAIT_MS = 500;
+      const CHECK_INTERVAL_MS = 50;
+      const startTime = Date.now();
+
+      const checkReady = setInterval(() => {
+        const enough = cellsLoaded >= Math.min(MINIMUM_CELLS, totalCells) && totalCells > 0;
+        const timedOut = Date.now() - startTime >= MAX_WAIT_MS;
+        if (enough || timedOut) {
+          clearInterval(checkReady);
+          if (viewMode !== "image") {
+            playbackController?.togglePlayback();
+          }
         }
-      }, 300);
+      }, CHECK_INTERVAL_MS);
     } catch (err) {
       console.warn("[SequenceViewerOrchestrator] Animation not available:", err);
       modalAnimationState.setError("Animation data not available");
@@ -1031,6 +1059,9 @@
     isSyncToggling,
     isSyncActive: lanSyncState.isActive,
     isSyncConnected: lanSyncState.isConnected,
+
+    // Render progress
+    onRenderProgress: handleRenderProgress,
 
     // Auth
     isLoggedIn: authState.isAuthenticated,

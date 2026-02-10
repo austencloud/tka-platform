@@ -50,13 +50,9 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
     try {
       const cachedBlob = await pictographBlobCache.get(cacheKey);
       if (cachedBlob) {
-        console.log(`[PreviewCell] ✅ CACHE HIT: ${cacheKey} | step=${stepNumber} | dark=${isDark} | size=${options.size}`);
         return URL.createObjectURL(cachedBlob);
-      } else {
-        console.log(`[PreviewCell] ❌ CACHE MISS: ${cacheKey} | step=${stepNumber} | dark=${isDark} | size=${options.size} | letter=${pictographData.letter}`);
       }
     } catch {
-      console.log(`[PreviewCell] ⚠️ CACHE ERROR: ${cacheKey}`);
       // Cache miss or error, proceed to render
     }
 
