@@ -15,8 +15,6 @@
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
   import AttributionPrompt from "../../attribution/components/AttributionPrompt.svelte";
   import { getAttributionPromptState } from "../../attribution/state/attribution-prompt-state.svelte";
-  import ThemeDiscoveryNudge from "../../settings/components/ThemeDiscoveryNudge.svelte";
-  import { themeDiscoveryState } from "../../settings/state/theme-discovery-state.svelte";
   import SequenceViewerDrawerHost from "../../sequence-viewer/components/SequenceViewerDrawerHost.svelte";
   import HeyTikaListener from "../../voice-control/components/HeyTikaListener.svelte";
   import VoiceControlIndicator from "../../voice-control/components/VoiceControlIndicator.svelte";
@@ -235,7 +233,6 @@
         // Check if deferred prompts should show (after app settles)
         setTimeout(() => {
           getAttributionPromptState().checkAndMaybeShow();
-          themeDiscoveryState.checkAndMaybeShow();
         }, 5000); // Wait 5 seconds after init for smoother UX
       } catch (error) {
         console.error("Application initialization failed:", error);
@@ -474,9 +471,6 @@
 
     <!-- Deferred Attribution Prompt (appears after engagement threshold) -->
     <AttributionPrompt />
-
-    <!-- Theme Discovery Nudge (for users who haven't explored backgrounds) -->
-    <ThemeDiscoveryNudge />
 
     <!-- Voice Control: opt-in via Settings > Preferences -->
     {#if voiceControlEnabled}

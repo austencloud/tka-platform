@@ -51,7 +51,6 @@ import { WordDeriver } from "../../foundation/services/implementations/WordDeriv
 // Settings services
 import { settingsService } from "../../settings/state/SettingsState.svelte";
 import { FirebaseSettingsPersister } from "../../settings/services/implementations/FirebaseSettingsPersister";
-import { ThemeDiscoveryTrigger } from "../../settings/services/implementations/ThemeDiscoveryTrigger";
 
 // Feature flag services
 import { GlobalFeatureFlagPersister } from "../../auth/services/implementations/GlobalFeatureFlagPersister";
@@ -118,7 +117,6 @@ const stepUpAuthCoordinator = new StepUpAuthCoordinator();
 
 // Settings services (singletons)
 const firebaseSettingsPersister = new FirebaseSettingsPersister();
-const themeDiscoveryTrigger = new ThemeDiscoveryTrigger();
 
 // Feature flag services (singletons)
 const globalFeatureFlagPersister = new GlobalFeatureFlagPersister();
@@ -153,7 +151,6 @@ export const coreContainer = createContainer()
     settingsPersister: () => firebaseSettingsPersister,
     globalFeatureFlagPersister: () => globalFeatureFlagPersister,
     userFeatureFlagPersister: () => userFeatureFlagPersister,
-    themeDiscoveryTrigger: () => themeDiscoveryTrigger,
   })
   // === DEVICE SERVICES (singletons) ===
   .add({
