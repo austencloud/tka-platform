@@ -72,9 +72,15 @@ export class WorkerRenderPool implements IWorkerRenderPool {
     // Ensure pool is initialized
     await this.ensureInitialized();
 
-    // If using workers, send to worker pool
+    // If using workers, send to worker pool with automatic main-thread fallback
     if (this.useWorkers && this.workers.length > 0) {
-      return this.renderOnWorker(preparedData, options, visibility, stepNumber);
+      try {
+        return await this.renderOnWorker(preparedData, options, visibility, stepNumber);
+      } catch {
+        // Worker render failed (e.g., SVG loading issues in worker context)
+        // Fall back to main-thread rendering silently
+        return this.renderOnMainThread(preparedData, options, visibility, stepNumber);
+      }
     }
 
     // Fallback: main-thread rendering

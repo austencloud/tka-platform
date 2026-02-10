@@ -1,15 +1,16 @@
 /**
  * SVG Image Cache
  *
- * Converts SVG strings to ImageBitmap objects and caches them.
+ * Converts SVG strings to drawable images and caches them.
  * This is the key optimization - converting SVG once and reusing the image.
  *
- * Uses ImageBitmap instead of HTMLImageElement for two reasons:
- * 1. ImageBitmap works in both main thread and Web Workers
- * 2. ImageBitmap is GPU-ready and draws faster on canvas
+ * Environment strategy:
+ * - Main thread: HTMLImageElement (reliable SVG rendering via browser engine)
+ * - Web Workers: ImageBitmap via createImageBitmap (only option without DOM)
+ * - Node.js: canvas package's Image
  *
- * SVG → ImageBitmap conversion is ~5ms
- * Drawing cached ImageBitmap is ~0.1ms
+ * DrawableImage union type (ImageBitmap | HTMLImageElement) allows canvas
+ * drawImage() to accept either type transparently.
  */
 
 /** Union type for drawable images (works with canvas drawImage) */
@@ -83,16 +84,23 @@ export class SvgImageCache {
 
   /**
    * Convert SVG string to a drawable image
-   * Detects environment and uses appropriate method (browser vs Node.js)
+   * Detects environment and uses appropriate method.
+   *
+   * IMPORTANT: Main thread MUST use HTMLImageElement for SVGs.
+   * createImageBitmap() is unreliable with SVGs (fails on malformed SVGs,
+   * SVGs without explicit width/height, SVGs with special characters, etc.)
+   * HTMLImageElement goes through the browser's full SVG renderer which is
+   * far more forgiving. createImageBitmap is only used in workers where
+   * HTMLImageElement is unavailable.
    */
   private svgToImage(svgString: string): Promise<DrawableImage> {
-    // Check for browser with ImageBitmap support (main thread or worker)
-    if (typeof createImageBitmap !== "undefined" && typeof Blob !== "undefined") {
-      return this.bitmapSvgToImage(svgString);
-    }
-    // Browser without ImageBitmap (very old) - fall back to HTMLImageElement
+    // Main thread: use HTMLImageElement (reliable for all SVGs)
     if (typeof window !== "undefined" && typeof Blob !== "undefined" && typeof URL !== "undefined") {
       return this.browserSvgToImage(svgString);
+    }
+    // Worker: try createImageBitmap (only option without DOM)
+    if (typeof createImageBitmap !== "undefined" && typeof Blob !== "undefined") {
+      return this.bitmapSvgToImage(svgString);
     }
     // Node.js
     return this.nodeSvgToImage(svgString);
@@ -101,9 +109,29 @@ export class SvgImageCache {
   /**
    * Browser/Worker implementation using createImageBitmap (preferred)
    * Works in both main thread and Web Workers.
+   *
+   * CRITICAL: createImageBitmap requires SVGs to have explicit width/height
+   * attributes. SVGs with only viewBox will fail with "InvalidStateError:
+   * The source image could not be decoded." We extract dimensions from
+   * viewBox and inject them if missing.
    */
   private async bitmapSvgToImage(svgString: string): Promise<ImageBitmap> {
-    const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    let processedSvg = svgString;
+
+    // Ensure SVG has explicit width/height (required for createImageBitmap)
+    if (!svgString.includes('width=') || !svgString.includes('height=')) {
+      const viewBoxMatch = svgString.match(
+        /viewBox\s*=\s*["'][\d.-]+\s+[\d.-]+\s+([\d.-]+)\s+([\d.-]+)["']/
+      );
+      if (viewBoxMatch) {
+        processedSvg = svgString.replace(
+          /<svg([^>]*)>/,
+          `<svg$1 width="${viewBoxMatch[1]}" height="${viewBoxMatch[2]}">`
+        );
+      }
+    }
+
+    const blob = new Blob([processedSvg], { type: "image/svg+xml;charset=utf-8" });
     return createImageBitmap(blob);
   }
 
@@ -176,16 +204,19 @@ export class SvgImageCache {
 
   /**
    * Load image from URL
-   * Detects environment and uses appropriate method (browser vs Node.js)
+   * Detects environment and uses appropriate method.
+   *
+   * Same rationale as svgToImage: main thread uses HTMLImageElement for
+   * reliable SVG handling, workers use createImageBitmap as only option.
    */
   private async loadImageFromUrl(url: string): Promise<DrawableImage> {
-    // Check for createImageBitmap (browser main thread or worker)
-    if (typeof createImageBitmap !== "undefined" && typeof fetch !== "undefined") {
-      return this.bitmapLoadImageFromUrl(url);
-    }
-    // Browser without ImageBitmap
+    // Main thread: use HTMLImageElement (reliable for all SVGs)
     if (typeof window !== "undefined" && typeof fetch !== "undefined") {
       return this.browserLoadImageFromUrl(url);
+    }
+    // Worker: try createImageBitmap (only option without DOM)
+    if (typeof createImageBitmap !== "undefined" && typeof fetch !== "undefined") {
+      return this.bitmapLoadImageFromUrl(url);
     }
     // Node.js: read from file system and convert SVG
     return this.nodeLoadImageFromUrl(url);
@@ -193,9 +224,20 @@ export class SvgImageCache {
 
   /**
    * Browser/Worker implementation using createImageBitmap (preferred)
+   * For SVG URLs, fetches as text and routes through bitmapSvgToImage
+   * to ensure width/height attributes are present.
    */
   private async bitmapLoadImageFromUrl(url: string): Promise<ImageBitmap> {
     const response = await fetch(url);
+
+    // SVG files need special handling — createImageBitmap fails on SVGs
+    // without explicit width/height attributes
+    const contentType = response.headers.get("content-type") || "";
+    if (url.endsWith(".svg") || contentType.includes("svg")) {
+      const svgText = await response.text();
+      return this.bitmapSvgToImage(svgText);
+    }
+
     const blob = await response.blob();
     return createImageBitmap(blob);
   }

@@ -201,7 +201,10 @@ export class SvgAssetLoader {
       this.assets.letters.set(letterPath, asset);
       return asset;
     } catch (error) {
-      console.error(`[SvgAssetLoader] Failed to load letter ${letterPath}:`, error);
+      // Only log in main thread (avoid flooding worker console)
+      if (typeof window !== "undefined") {
+        console.warn(`[SvgAssetLoader] Failed to load letter ${letterPath}:`, error);
+      }
       return null;
     }
   }
