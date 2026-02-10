@@ -435,6 +435,22 @@ service cloud.firestore {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
+
+      // -------------------------------------------------------------------------
+      // TURN PATTERNS (Sequence Turn Pattern Templates)
+      // -------------------------------------------------------------------------
+      match /turnPatterns/{patternId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
+      // ROTATION DIRECTION PATTERNS (Sequence Rotation Direction Templates)
+      // -------------------------------------------------------------------------
+      match /rotationDirectionPatterns/{patternId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
     }
 
     // ============================================================================

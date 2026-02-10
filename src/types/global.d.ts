@@ -113,6 +113,26 @@ declare global {
     }
   }
 
+  // Prioritized Task Scheduling API (Chromium 94+)
+  // https://developer.mozilla.org/en-US/docs/Web/API/Prioritized_Task_Scheduling_API
+  interface Scheduler {
+    postTask<T>(
+      callback: () => T | Promise<T>,
+      options?: {
+        priority?: "user-blocking" | "user-visible" | "background";
+        signal?: AbortSignal;
+        delay?: number;
+      }
+    ): Promise<T>;
+    yield(options?: {
+      priority?: "user-blocking" | "user-visible" | "background" | "inherit";
+      signal?: AbortSignal;
+    }): Promise<void>;
+  }
+
+  // eslint-disable-next-line no-var
+  var scheduler: Scheduler | undefined;
+
   // Custom events
   interface CustomEventMap {
     "theme-change": CustomEvent<{ theme: "light" | "dark" }>;

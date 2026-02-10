@@ -87,6 +87,7 @@ import { createComposeBrowseContainer } from "./containers/compose-browse-contai
 import { createComposeArrangeContainer } from "./containers/compose-arrange-container";
 import { createVoiceSessionContainer } from "./containers/voice-session-container";
 import { createSkel2TKAContainer } from "./containers/skel2tka-container";
+import { labContainer } from "./containers/lab-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -416,6 +417,8 @@ function buildAppContainer(): any {
   c = c.add(composeArrangeContainer.items);
   // Skel2TKA video-to-notation pipeline
   c = c.add(skel2tkaContainer.items);
+  // Lab module services (screenshot capture, etc.)
+  c = c.add(labContainer.items);
   // Cross-container services (depend on multiple container outputs)
   c = c.add({ deepLinkResolver: () => deepLinkResolver });
   c = c.add({ sequenceDataProvider: () => sequenceDataProvider });

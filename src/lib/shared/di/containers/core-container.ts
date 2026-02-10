@@ -27,9 +27,12 @@ import { UsernameValidator } from "../../auth/services/implementations/UsernameV
 // Subscription services
 import { SubscriptionManager } from "../../subscription/services/implementations/SubscriptionManager";
 
-// Device services
-import { DeviceDetector } from "../../device/services/implementations/DeviceDetector";
-import { ViewportManager } from "../../device/services/implementations/ViewportManager.svelte";
+// Device services — import the module-level singletons, NOT the classes
+// These are the single source of truth for viewport/device state.
+// Creating new instances would cause dual-singleton bugs (two resize listeners,
+// two caches, divergent state during resize/initialization).
+import { deviceDetector as deviceDetectorSingleton } from "../../device/services/implementations/DeviceDetector";
+import { viewportManager as viewportManagerSingleton } from "../../device/services/implementations/ViewportManager.svelte";
 
 // Mobile services
 import { MobileFullscreenManager } from "../../mobile/services/implementations/MobileFullscreenManager";
@@ -48,6 +51,11 @@ import { WordDeriver } from "../../foundation/services/implementations/WordDeriv
 // Settings services
 import { settingsService } from "../../settings/state/SettingsState.svelte";
 import { FirebaseSettingsPersister } from "../../settings/services/implementations/FirebaseSettingsPersister";
+import { ThemeDiscoveryTrigger } from "../../settings/services/implementations/ThemeDiscoveryTrigger";
+
+// Feature flag services
+import { GlobalFeatureFlagPersister } from "../../auth/services/implementations/GlobalFeatureFlagPersister";
+import { UserFeatureFlagPersister } from "../../auth/services/implementations/UserFeatureFlagPersister";
 
 // Onboarding services
 import { OnboardingPersister } from "../../onboarding/services/implementations/OnboardingPersister";
@@ -96,9 +104,9 @@ if (import.meta.hot) {
 // ============================================================================
 // Services that need to be singletons are instantiated once at module level
 
-// Device services (singletons - need to persist viewport state)
-const viewportManager = new ViewportManager();
-const deviceDetector = new DeviceDetector(viewportManager);
+// Device services — reuse the module-level singletons (single source of truth)
+const viewportManager = viewportManagerSingleton;
+const deviceDetector = deviceDetectorSingleton;
 
 // Auth services (singletons)
 const profilePictureManager = new ProfilePictureManager();
@@ -110,6 +118,11 @@ const stepUpAuthCoordinator = new StepUpAuthCoordinator();
 
 // Settings services (singletons)
 const firebaseSettingsPersister = new FirebaseSettingsPersister();
+const themeDiscoveryTrigger = new ThemeDiscoveryTrigger();
+
+// Feature flag services (singletons)
+const globalFeatureFlagPersister = new GlobalFeatureFlagPersister();
+const userFeatureFlagPersister = new UserFeatureFlagPersister();
 
 // Onboarding services (singletons)
 const onboardingPersister = new OnboardingPersister();
@@ -138,6 +151,9 @@ export const coreContainer = createContainer()
   .add({
     settingsState: () => settingsService,
     settingsPersister: () => firebaseSettingsPersister,
+    globalFeatureFlagPersister: () => globalFeatureFlagPersister,
+    userFeatureFlagPersister: () => userFeatureFlagPersister,
+    themeDiscoveryTrigger: () => themeDiscoveryTrigger,
   })
   // === DEVICE SERVICES (singletons) ===
   .add({

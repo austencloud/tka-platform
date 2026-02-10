@@ -6,9 +6,13 @@
  */
 
 import type { DeviceContext } from "../domain/models/feedback-models";
+import { container } from "$lib/shared/di";
 
 /**
  * Capture current device/browser context
+ *
+ * Uses the centralized DeviceDetector for touch detection to stay
+ * consistent with the rest of the app's device classification.
  */
 export function captureDeviceContext(
   currentModule?: string,
@@ -16,12 +20,13 @@ export function captureDeviceContext(
 ): DeviceContext {
   // Get app version from package.json (injected at build time via Vite)
   const appVersion = import.meta.env.VITE_APP_VERSION || "unknown";
+  const deviceDetector = container.items.deviceDetector;
 
   return {
     // Device & Browser
     userAgent: navigator.userAgent,
     platform: navigator.platform,
-    isTouchDevice: "ontouchstart" in window || navigator.maxTouchPoints > 0,
+    isTouchDevice: deviceDetector.isTouchDevice(),
 
     // Viewport & Screen
     viewportWidth: window.innerWidth,

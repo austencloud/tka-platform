@@ -532,15 +532,26 @@
       "Bash(SCREENSHOT_PUBLIC=true npx playwright test:*)",
       "Bash(SCREENSHOT_DEVICE_FILTER=iphone-se SCREENSHOT_ROUTES=create--constructor npx playwright test:*)",
       "Bash(export PATH=\"$PATH:/c/Users/Austen/platform-tools\")",
-      "Bash(SCREENSHOT_ROUTES=\"create,browse,settings\" SCREENSHOT_DEVICE_FILTER=\"iphone-16-pro\" npx playwright test:*)"
+      "Bash(SCREENSHOT_ROUTES=\"create,browse,settings\" SCREENSHOT_DEVICE_FILTER=\"iphone-16-pro\" npx playwright test:*)",
+      "Bash(SCREENSHOT_DEVICE_FILTER=\"iphone-se\" npx playwright test:*)",
+      "Bash(SCREENSHOT_DEVICE_FILTER=\"iphone-16-pro\" npx playwright test:*)",
+      "Bash(SCREENSHOT_DEVICE_FILTER=\"iphone-se,ipad-mini,desktop-hd\" npx playwright test:*)",
+      "Bash(powercfg:*)",
+      "Bash(cmd.exe /c \"powercfg /list\")",
+      "Bash(cmd.exe /c \"powercfg /getactivescheme\")",
+      "Bash(powershell.exe -Command:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(SCREENSHOT_DEVICE_FILTER=\"ipad-mini\" SCREENSHOT_ROUTES=\"create\" npx playwright test:*)",
+      "Bash(tasklist:*)",
+      "Bash(cmd.exe /c \"tasklist /FI \"\"IMAGENAME eq node.exe\"\" /FO CSV\")",
+      "WebFetch(domain:9to5google.com)",
+      "WebFetch(domain:www.sanjaydey.com)"
     ]
   },
-  "enableAllProjectMcpServers": true,
+  "enableAllProjectMcpServers": false,
   "enabledMcpjsonServers": [
-    "playwright",
-    "memory",
     "tka-domain",
-    "game-controller",
-    "gmail-fixer"
-  ]
+    "chrome-devtools"
+  ],
+  "disabledMcpjsonServers": []
 }
