@@ -12,9 +12,13 @@
   import type { DeviceCategory } from "../../services/contracts/IScreenshotOrchestrator";
   import type { ScreenshotMetadata } from "../../services/contracts/IScreenshotUploader";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { IScreenshotTagController } from "../../services/contracts/IScreenshotTagController";
+  import type { MediaTag, TagColor } from "@austencloud/media-tagging-types";
+  import { TAG_COLORS } from "@austencloud/media-tagging-types";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { MediaSpotlight, type MediaItem, type SpotlightConfig } from "@austencloud/media-spotlight";
+  import { TagChip, TagCreatorModal } from "@austencloud/media-tagging-ui";
 
   interface Props {
     /** Incremented externally to force a manifest refresh (e.g. after capture) */
@@ -24,10 +28,86 @@
   let { refreshToken = 0 }: Props = $props();
 
   let hapticService: IHapticFeedback;
+  let tagController: IScreenshotTagController;
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
+    tagController = container.items.screenshotTagController;
   });
+
+  // ─── Tag state ──────────────────────────────────────────────────────────────
+
+  let allTags = $state<MediaTag[]>([]);
+  let tagUnsubscribe: (() => void) | null = null;
+  let activeTagFilter = $state<string | null>(null);
+  let tagPanelTarget = $state<GalleryItem | null>(null);
+  let tagPanelPosition = $state<{ x: number; y: number }>({ x: 0, y: 0 });
+  let showTagCreator = $state(false);
+
+  // Long-press for mobile tagging
+  let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  const LONG_PRESS_MS = 500;
+
+  function loadTags() {
+    tagUnsubscribe?.();
+    tagUnsubscribe = tagController?.subscribeTags((tags) => {
+      allTags = tags;
+    }) ?? null;
+  }
+
+  function getTagById(tagId: string): MediaTag | undefined {
+    return allTags.find((t) => t.id === tagId);
+  }
+
+  async function handleToggleTagOnScreenshot(tagId: string) {
+    if (!tagPanelTarget || sourceMode !== "cloud") return;
+    await tagController.toggleTagOnScreenshot(tagId, tagPanelTarget.id);
+  }
+
+  async function handleCreateTag(name: string, color: TagColor, category: string) {
+    await tagController.createTag(name, color, category);
+  }
+
+  function openTagPanel(item: GalleryItem, e: MouseEvent | TouchEvent) {
+    if (sourceMode !== "cloud") return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    if ("clientX" in e) {
+      tagPanelTarget = item;
+      tagPanelPosition = { x: e.clientX, y: e.clientY };
+    } else {
+      const touch = (e as TouchEvent).touches?.[0];
+      if (touch) {
+        tagPanelTarget = item;
+        tagPanelPosition = { x: touch.clientX, y: touch.clientY };
+      }
+    }
+  }
+
+  function closeTagPanel() {
+    tagPanelTarget = null;
+  }
+
+  function startLongPress(item: GalleryItem, e: TouchEvent) {
+    if (sourceMode !== "cloud") return;
+    longPressTimer = setTimeout(() => {
+      openTagPanel(item, e);
+      longPressTimer = null;
+    }, LONG_PRESS_MS);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }
+
+  function setTagFilter(tagId: string | null) {
+    activeTagFilter = activeTagFilter === tagId ? null : tagId;
+    hapticService?.trigger("selection");
+  }
 
   // ─── Source mode ───────────────────────────────────────────────────────────
 
@@ -50,9 +130,14 @@
 
     if (mode === "cloud") {
       loadCloudScreenshots();
+      loadTags();
     } else {
       cloudScreenshots = [];
       cloudError = null;
+      tagUnsubscribe?.();
+      tagUnsubscribe = null;
+      allTags = [];
+      activeTagFilter = null;
       fetchManifest();
     }
   }
@@ -238,9 +323,25 @@
     return filtered;
   });
 
+  /** Apply tag filter on top of device filter */
+  const tagFilteredModuleGroups = $derived.by(() => {
+    if (!activeTagFilter) return filteredModuleGroups;
+
+    const filtered = new Map<string, Map<string, GalleryItem[]>>();
+    for (const [moduleId, routeMap] of filteredModuleGroups) {
+      const filteredRoutes = new Map<string, GalleryItem[]>();
+      for (const [route, items] of routeMap) {
+        const matching = items.filter((c) => c.tagIds.includes(activeTagFilter!));
+        if (matching.length > 0) filteredRoutes.set(route, matching);
+      }
+      if (filteredRoutes.size > 0) filtered.set(moduleId, filteredRoutes);
+    }
+    return filtered;
+  });
+
   const flatItems = $derived.by(() => {
     const result: GalleryItem[] = [];
-    for (const [, routeMap] of filteredModuleGroups) {
+    for (const [, routeMap] of tagFilteredModuleGroups) {
       for (const [, items] of routeMap) {
         result.push(...items);
       }
@@ -415,13 +516,18 @@
     }
   });
 
-  // Cleanup cloud subscription on unmount
+  // Cleanup cloud + tag subscriptions on unmount
   $effect(() => {
     return () => {
       if (cloudUnsubscribe) {
         cloudUnsubscribe();
         cloudUnsubscribe = null;
       }
+      if (tagUnsubscribe) {
+        tagUnsubscribe();
+        tagUnsubscribe = null;
+      }
+      cancelLongPress();
     };
   });
 </script>
@@ -508,6 +614,40 @@
         </span>
       </div>
     </div>
+
+    <!-- Tag filter chips (cloud mode only) -->
+    {#if sourceMode === "cloud" && allTags.length > 0}
+      <div class="tag-filter-row">
+        <span class="tag-filter-label">Tags:</span>
+        <div class="tag-filter-chips">
+          {#each allTags as tag (tag.id)}
+            <TagChip
+              label={tag.name}
+              color={tag.color}
+              size="sm"
+              interactive={true}
+              selected={activeTagFilter === tag.id}
+              onclick={() => setTagFilter(tag.id)}
+            />
+          {/each}
+        </div>
+        {#if activeTagFilter}
+          <button
+            class="clear-tag-filter"
+            onclick={() => setTagFilter(null)}
+          >
+            Clear
+          </button>
+        {/if}
+        <button
+          class="add-tag-btn"
+          onclick={() => { showTagCreator = true; }}
+          title="Create new tag"
+        >
+          +
+        </button>
+      </div>
+    {/if}
   {/if}
 
   <!-- Content -->
@@ -541,7 +681,7 @@
     </div>
   {:else}
     <div class="module-sections">
-      {#each [...filteredModuleGroups.entries()] as [moduleId, routeMap], sectionIdx (moduleId)}
+      {#each [...tagFilteredModuleGroups.entries()] as [moduleId, routeMap], sectionIdx (moduleId)}
         {@const isCollapsed = collapsedModules[moduleId] ?? false}
         {@const routeCount = routeMap.size}
         {@const captureCount = [...routeMap.values()].reduce((sum, arr) => sum + arr.length, 0)}
@@ -574,6 +714,11 @@
                         class="capture-card"
                         style="--aspect: {aspect}; --card-i: {cardIdx};"
                         onclick={() => openSpotlight(item)}
+                        oncontextmenu={(e) => openTagPanel(item, e)}
+                        ontouchstart={(e) => startLongPress(item, e)}
+                        ontouchend={cancelLongPress}
+                        ontouchmove={cancelLongPress}
+                        ontouchcancel={cancelLongPress}
                         aria-label="View {item.deviceName} screenshot of {formatRouteLabel(item.routeLabel)}"
                       >
                         <div class="screenshot-frame">
@@ -595,9 +740,16 @@
                           <span class="device-dims">{getDeviceDims(item.deviceSlug)}</span>
                         </div>
                         {#if item.tagIds.length > 0}
-                          <div class="tag-indicator">
-                            <i class="fas fa-tags"></i>
-                            <span>{item.tagIds.length}</span>
+                          <div class="card-tags">
+                            {#each item.tagIds.slice(0, 3) as tagId (tagId)}
+                              {@const tag = getTagById(tagId)}
+                              {#if tag}
+                                <TagChip label={tag.name} color={tag.color} size="sm" />
+                              {/if}
+                            {/each}
+                            {#if item.tagIds.length > 3}
+                              <span class="tag-overflow">+{item.tagIds.length - 3}</span>
+                            {/if}
                           </div>
                         {/if}
                       </button>
@@ -633,6 +785,61 @@
     </div>
   {/if}
 </div>
+
+<!-- Tag context panel (right-click on card in cloud mode) -->
+{#if tagPanelTarget}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="tag-panel-backdrop" onclick={closeTagPanel} onkeydown={(e) => e.key === 'Escape' && closeTagPanel()}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="tag-context-panel"
+      style="left: {tagPanelPosition.x}px; top: {tagPanelPosition.y}px;"
+      onclick={(e) => e.stopPropagation()}
+    >
+      <div class="tag-panel-header">
+        <span class="tag-panel-title">Tag screenshot</span>
+        <button class="tag-panel-close" onclick={closeTagPanel}>×</button>
+      </div>
+      <div class="tag-panel-tags">
+        {#if allTags.length === 0}
+          <p class="tag-panel-empty">No tags yet. Create one below.</p>
+        {:else}
+          {#each allTags as tag (tag.id)}
+            {@const isApplied = tagPanelTarget.tagIds.includes(tag.id)}
+            <button
+              class="tag-panel-item"
+              class:applied={isApplied}
+              onclick={() => handleToggleTagOnScreenshot(tag.id)}
+            >
+              <TagChip
+                label={isApplied ? `✓ ${tag.name}` : tag.name}
+                color={tag.color}
+                size="sm"
+                interactive={true}
+              />
+            </button>
+          {/each}
+        {/if}
+      </div>
+      <button
+        class="tag-panel-create"
+        onclick={() => { showTagCreator = true; closeTagPanel(); }}
+      >
+        + New tag
+      </button>
+    </div>
+  </div>
+{/if}
+
+<!-- Tag creator modal (shared component) -->
+{#if showTagCreator}
+  <TagCreatorModal
+    tags={allTags}
+    categoryLabels={{}}
+    onCreate={handleCreateTag}
+    onClose={() => { showTagCreator = false; }}
+  />
+{/if}
 
 <!-- MediaSpotlight Viewer -->
 <MediaSpotlight
@@ -1023,25 +1230,179 @@
     margin-left: auto;
   }
 
-  /* Tag indicator */
-  .tag-indicator {
+  /* Card tags */
+  .card-tags {
     position: absolute;
     top: 6px;
     right: 6px;
     display: flex;
-    align-items: center;
     gap: 3px;
+    flex-wrap: wrap;
+    max-width: 70%;
+    justify-content: flex-end;
+    pointer-events: none;
+  }
+
+  .tag-overflow {
+    display: flex;
+    align-items: center;
     padding: 2px 6px;
     border-radius: 10px;
     background: rgba(0, 0, 0, 0.7);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
     font-size: 10px;
-    pointer-events: none;
   }
 
-  .tag-indicator i {
-    font-size: 9px;
+  /* Tag filter row */
+  .tag-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
   }
+
+  .tag-filter-label {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-weight: 600;
+  }
+
+  .tag-filter-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .clear-tag-filter {
+    padding: 3px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 150ms ease-out;
+  }
+
+  .clear-tag-filter:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, #fff);
+  }
+
+  .add-tag-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.2));
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 150ms ease-out;
+  }
+
+  .add-tag-btn:hover {
+    border-color: var(--theme-accent, #3b82f6);
+    color: var(--theme-accent, #3b82f6);
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  /* Tag context panel */
+  .tag-panel-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+  }
+
+  .tag-context-panel {
+    position: fixed;
+    width: 240px;
+    max-height: 320px;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 101;
+  }
+
+  .tag-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .tag-panel-title {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+  }
+
+  .tag-panel-close {
+    background: transparent;
+    border: none;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .tag-panel-tags {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-content: flex-start;
+  }
+
+  .tag-panel-empty {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    text-align: center;
+    width: 100%;
+    padding: 16px 0;
+  }
+
+  .tag-panel-item {
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .tag-panel-create {
+    padding: 8px 12px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    background: transparent;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    color: var(--theme-accent, #3b82f6);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: background 150ms ease-out;
+  }
+
+  .tag-panel-create:hover {
+    background: rgba(59, 130, 246, 0.08);
+  }
+
+  /* Tag creator uses shared TagCreatorModal component — no inline styles needed */
 
   /* State messages */
   .state-message {
