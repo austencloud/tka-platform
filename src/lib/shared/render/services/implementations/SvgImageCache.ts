@@ -110,29 +110,44 @@ export class SvgImageCache {
    * Browser/Worker implementation using createImageBitmap (preferred)
    * Works in both main thread and Web Workers.
    *
-   * CRITICAL: createImageBitmap requires SVGs to have explicit width/height
-   * attributes. SVGs with only viewBox will fail with "InvalidStateError:
-   * The source image could not be decoded." We extract dimensions from
-   * viewBox and inject them if missing.
+   * On main thread: Routes through Image element first because createImageBitmap(svgBlob)
+   * is unreliable - it requires explicit width/height and fails on many valid SVGs.
+   * Image element handles SVG parsing leniently, then we create ImageBitmap from it.
+   *
+   * In workers: No Image element available, so we inject dimensions and use blob directly.
    */
   private async bitmapSvgToImage(svgString: string): Promise<ImageBitmap> {
-    let processedSvg = svgString;
-
-    // Ensure SVG has explicit width/height (required for createImageBitmap)
-    if (!svgString.includes('width=') || !svgString.includes('height=')) {
-      const viewBoxMatch = svgString.match(
-        /viewBox\s*=\s*["'][\d.-]+\s+[\d.-]+\s+([\d.-]+)\s+([\d.-]+)["']/
-      );
-      if (viewBoxMatch) {
-        processedSvg = svgString.replace(
-          /<svg([^>]*)>/,
-          `<svg$1 width="${viewBoxMatch[1]}" height="${viewBoxMatch[2]}">`
-        );
-      }
+    // Main thread: use Image element intermediary (reliable SVG parsing)
+    if (typeof HTMLImageElement !== "undefined") {
+      return this.bitmapSvgViaImageElement(svgString);
     }
-
-    const blob = new Blob([processedSvg], { type: "image/svg+xml;charset=utf-8" });
+    // Worker: ensure dimensions exist, then use blob directly
+    const processed = this.sanitizeSvgForCreateImageBitmap(svgString);
+    const blob = new Blob([processed], { type: "image/svg+xml;charset=utf-8" });
     return createImageBitmap(blob);
+  }
+
+  /**
+   * Load SVG string via Image element, then convert to ImageBitmap.
+   * Image element handles SVG quirks (missing dimensions, namespace issues) gracefully.
+   */
+  private bitmapSvgViaImageElement(svgString: string): Promise<ImageBitmap> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        createImageBitmap(img).then(resolve, reject);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("Failed to load SVG as image"));
+      };
+
+      img.src = url;
+    });
   }
 
   /**
@@ -224,20 +239,29 @@ export class SvgImageCache {
 
   /**
    * Browser/Worker implementation using createImageBitmap (preferred)
-   * For SVG URLs, fetches as text and routes through bitmapSvgToImage
-   * to ensure width/height attributes are present.
+   *
+   * On main thread: Routes through Image element for reliable SVG handling.
+   * In workers: Fetches as blob, injecting dimensions for SVGs.
    */
   private async bitmapLoadImageFromUrl(url: string): Promise<ImageBitmap> {
-    const response = await fetch(url);
-
-    // SVG files need special handling — createImageBitmap fails on SVGs
-    // without explicit width/height attributes
-    const contentType = response.headers.get("content-type") || "";
-    if (url.endsWith(".svg") || contentType.includes("svg")) {
-      const svgText = await response.text();
-      return this.bitmapSvgToImage(svgText);
+    // Main thread: use Image element (handles SVGs without dimensions)
+    if (typeof HTMLImageElement !== "undefined") {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => createImageBitmap(img).then(resolve, reject);
+        img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+        img.src = url;
+      });
     }
-
+    // Worker: fetch and handle SVGs specially
+    const response = await fetch(url);
+    if (url.endsWith(".svg")) {
+      let svgText = await response.text();
+      svgText = this.sanitizeSvgForCreateImageBitmap(svgText);
+      const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+      return createImageBitmap(blob);
+    }
     const blob = await response.blob();
     return createImageBitmap(blob);
   }
@@ -283,6 +307,41 @@ export class SvgImageCache {
       console.error(`[SvgImageCache] Failed to load ${url}:`, error);
       throw new Error(`Failed to load image from ${url}: ${error}`);
     }
+  }
+
+  /**
+   * Sanitize SVG for createImageBitmap() compatibility.
+   * Required in Web Workers where Image element isn't available.
+   *
+   * createImageBitmap uses a strict XML parser that rejects:
+   * 1. SVGs without explicit width/height (can't determine intrinsic size)
+   * 2. Malformed attributes with HTML entities (e.g., style="style=&quot;...&quot;")
+   *
+   * The Image element on main thread is lenient about both issues.
+   */
+  private sanitizeSvgForCreateImageBitmap(svgString: string): string {
+    let processed = svgString;
+
+    // Strip malformed double-encoded style attributes found in letter SVGs.
+    // Pattern: style="style=&quot;enable-background:new 0 0 200.0 100.0&quot;"
+    // The enable-background property is deprecated and safe to remove.
+    processed = processed.replace(/\s+style="style=&quot;[^"]*&quot;"/g, '');
+
+    // Ensure explicit width/height (required for intrinsic size)
+    if (!/<svg[^>]*\bwidth\s*=/.test(processed) || !/<svg[^>]*\bheight\s*=/.test(processed)) {
+      const viewBoxMatch = processed.match(/viewBox\s*=\s*["']([^"']+)["']/);
+      const viewBoxValue = viewBoxMatch?.[1];
+      if (viewBoxValue) {
+        const parts = viewBoxValue.split(/\s+/).map(Number);
+        const width = parts[2] || 100;
+        const height = parts[3] || 100;
+        processed = processed.replace(/<svg/, `<svg width="${width}" height="${height}"`);
+      } else {
+        processed = processed.replace(/<svg/, '<svg width="100" height="100"');
+      }
+    }
+
+    return processed;
   }
 
   /**

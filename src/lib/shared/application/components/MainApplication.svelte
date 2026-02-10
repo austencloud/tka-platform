@@ -150,7 +150,7 @@
         }
 
         // Progress: Services are resolved from DI container
-        (window as any).__tkaLoadProgress?.(70, "Loading settings...");
+        (window as any).__tkaLoadProgress?.(88, "Loading settings...");
 
         // Initialize sheet router state (now that service is resolved)
         currentSheetType = sheetRouterService.getCurrentSheet();
@@ -176,14 +176,14 @@
 
         await restoreApplicationState();
         await initService.initialize();
-        (window as any).__tkaLoadProgress?.(78, "Restoring workspace...");
+        (window as any).__tkaLoadProgress?.(92, "Restoring workspace...");
 
         await settingsService.loadSettings();
         updateSettings(settingsService.currentSettings);
         ThemeService.initialize();
 
         // Progress: Settings loaded, applying theme
-        (window as any).__tkaLoadProgress?.(85, "Applying your theme...");
+        (window as any).__tkaLoadProgress?.(95, "Applying your theme...");
 
         // Apply background-based theme colors on startup
         // Must handle SOLID_COLOR and LINEAR_GRADIENT specially to use user's saved colors
@@ -205,7 +205,7 @@
         }
 
         // Initialize gamification system
-        (window as any).__tkaLoadProgress?.(92, "Initializing achievements...");
+        (window as any).__tkaLoadProgress?.(98, "Initializing achievements...");
         try {
           const { initializeGamification } =
             await import("../../gamification/init/gamification-initializer");

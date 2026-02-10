@@ -45,29 +45,48 @@
   let isAnimating = $state(false);
   let isVisible = $state(false);
 
+  // Keyboard navigation: tracks focused option index within the listbox
+  let focusedIndex = $state(-1);
+
   const currentIcon = $derived(
     sortOptions.find((o) => o.id === currentMethod)?.icon ?? "fa-sort"
   );
   const currentLabel = $derived(chipLabels[currentMethod] ?? "Sort");
 
+  /** Duration (ms) for the popover exit animation — matches CSS transition */
+  const EXIT_ANIMATION_MS = 180;
+
   function openPopover() {
     isOpen = true;
+    // Set initial focus to the currently selected option
+    focusedIndex = sortOptions.findIndex((o) => o.id === currentMethod);
+    if (focusedIndex < 0) focusedIndex = 0;
     // Trigger entrance animation after DOM paint
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         isAnimating = true;
         isVisible = true;
+        // Focus the active option after animation starts
+        focusOptionAtIndex(focusedIndex);
       });
     });
   }
 
   function closePopover() {
     isVisible = false;
+    focusedIndex = -1;
     // Wait for exit animation before removing from DOM
     setTimeout(() => {
       isOpen = false;
       isAnimating = false;
-    }, 180);
+    }, EXIT_ANIMATION_MS);
+  }
+
+  /** Move DOM focus to the option button at the given index */
+  function focusOptionAtIndex(index: number) {
+    if (!popoverEl) return;
+    const options = popoverEl.querySelectorAll<HTMLButtonElement>('[role="option"]');
+    options[index]?.focus();
   }
 
   function handleToggle() {
@@ -84,10 +103,47 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape" && isOpen) {
-      event.stopPropagation();
-      closePopover();
-      triggerEl?.focus();
+    if (!isOpen) return;
+
+    switch (event.key) {
+      case "Escape":
+        event.stopPropagation();
+        closePopover();
+        triggerEl?.focus();
+        break;
+      case "ArrowDown": {
+        event.preventDefault();
+        const next = (focusedIndex + 1) % sortOptions.length;
+        focusedIndex = next;
+        focusOptionAtIndex(next);
+        break;
+      }
+      case "ArrowUp": {
+        event.preventDefault();
+        const prev = (focusedIndex - 1 + sortOptions.length) % sortOptions.length;
+        focusedIndex = prev;
+        focusOptionAtIndex(prev);
+        break;
+      }
+      case "Home":
+        event.preventDefault();
+        focusedIndex = 0;
+        focusOptionAtIndex(0);
+        break;
+      case "End":
+        event.preventDefault();
+        focusedIndex = sortOptions.length - 1;
+        focusOptionAtIndex(focusedIndex);
+        break;
+      case "Enter":
+      case " ": {
+        const focused = sortOptions[focusedIndex];
+        if (focused) {
+          event.preventDefault();
+          handleSelect(focused.id);
+        }
+        break;
+      }
     }
   }
 
@@ -137,14 +193,20 @@
       bind:this={popoverEl}
       role="listbox"
       aria-label="Sort options"
+      aria-activedescendant={focusedIndex >= 0 ? `sort-option-${focusedIndex}` : undefined}
+      onkeydown={handleKeydown}
+      tabindex="-1"
     >
       {#each sortOptions as option, i}
         <button
+          id="sort-option-{i}"
           class="sort-option"
           class:selected={currentMethod === option.id}
+          class:focused={focusedIndex === i}
           onclick={() => handleSelect(option.id)}
           role="option"
           aria-selected={currentMethod === option.id}
+          tabindex={focusedIndex === i ? 0 : -1}
           style="transition-delay: {isVisible ? i * 30 : 0}ms"
         >
           <i class="fas {option.icon} option-icon" aria-hidden="true"></i>
@@ -262,7 +324,7 @@
     gap: 10px;
     width: 100%;
     padding: 0 14px;
-    min-height: 44px;
+    min-height: 48px; /* WCAG AAA touch target */
     background: transparent;
     border: none;
     border-radius: 10px;
@@ -291,7 +353,8 @@
       opacity 150ms ease;
   }
 
-  .sort-option:hover {
+  .sort-option:hover,
+  .sort-option.focused {
     background: color-mix(in srgb, var(--theme-text) 8%, transparent);
     color: var(--theme-text);
   }

@@ -14,6 +14,7 @@
     exportType: ExportType | null;
     isFullscreen: boolean;
     isMobile: boolean;
+    isLandscapeMobile?: boolean;
     darkMode: boolean;
     // Callbacks
     onClose: () => void;
@@ -29,6 +30,7 @@
     exportType,
     isFullscreen,
     isMobile,
+    isLandscapeMobile = false,
     darkMode,
     onClose,
     onExitExportMode,
@@ -76,10 +78,11 @@
   <header
     class="details-header"
     class:mobile={isMobile}
+    class:landscape={isLandscapeMobile}
     data-hidden={isFullscreen}
   >
     <!-- Mobile: Swipe handle indicator for swipe-to-dismiss -->
-    {#if isMobile}
+    {#if isMobile && !isLandscapeMobile}
       <div class="swipe-handle" aria-hidden="true"></div>
     {/if}
 
@@ -97,9 +100,11 @@
       </button>
     </div>
 
-    <div class="header-center">
-      <h2 class="sequence-title">Sequence Viewer</h2>
-    </div>
+    {#if !isLandscapeMobile}
+      <div class="header-center">
+        <h2 class="sequence-title">Sequence Viewer</h2>
+      </div>
+    {/if}
 
     <div class="header-right">
       <button
@@ -249,6 +254,38 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* Landscape: compact overlay header */
+  .details-header.landscape {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.6) 0%,
+      rgba(0, 0, 0, 0.3) 60%,
+      transparent 100%
+    );
+    border-bottom: none;
+    padding: 6px 8px;
+    grid-template-columns: auto 1fr auto;
+    pointer-events: none;
+  }
+
+  .details-header.landscape .header-left,
+  .details-header.landscape .header-right {
+    pointer-events: auto;
+  }
+
+  .details-header.landscape .close-button,
+  .details-header.landscape .header-action-btn {
+    min-width: 40px;
+    min-height: 40px;
+    height: 40px;
+    color: rgba(255, 255, 255, 0.8);
   }
 
   @media (prefers-reduced-motion: reduce) {

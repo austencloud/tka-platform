@@ -44,6 +44,7 @@
     isFullscreen: boolean;
     fullscreenStackVertical: boolean;
     isMobile: boolean;
+    isLandscapeMobile?: boolean;
     focusedPane: FocusedPane;
     // Callbacks
     onFocusPane: (pane: "animation" | "image") => void;
@@ -75,6 +76,7 @@
     isFullscreen,
     fullscreenStackVertical,
     isMobile,
+    isLandscapeMobile = false,
     focusedPane,
     onFocusPane,
     onUnfocusPane,
@@ -118,6 +120,7 @@
 <div
   class="split-view view-container"
   data-fullscreen-stack={isFullscreen ? (fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
+  data-landscape={isLandscapeMobile || undefined}
   data-focused={focusedPane}
   in:fade={{ duration: 250, delay: 50, easing: cubicOut }}
   out:fade={{ duration: 150, easing: cubicOut }}
@@ -419,6 +422,31 @@
     .media-pane {
       padding: 24px;
     }
+  }
+
+  /* ========================================
+     LANDSCAPE MOBILE: Horizontal layout
+     Side-by-side on landscape phones
+     ======================================== */
+
+  .split-view[data-landscape="true"] {
+    grid-template-rows: 1fr;
+    grid-template-columns: 50% 50%;
+  }
+
+  .split-view[data-landscape="true"] .preview-column {
+    border-top: none;
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .split-view[data-landscape="true"][data-focused="animation"] {
+    grid-template-rows: 1fr;
+    grid-template-columns: 100% 0%;
+  }
+
+  .split-view[data-landscape="true"][data-focused="image"] {
+    grid-template-rows: 1fr;
+    grid-template-columns: 0% 100%;
   }
 
   /* ========================================

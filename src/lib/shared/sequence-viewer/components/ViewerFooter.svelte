@@ -34,6 +34,8 @@
     isLoggedIn: boolean;
     /** Whether controls should be visible (for auto-hide) */
     controlsVisible?: boolean;
+    /** Whether to render as a landscape vertical column */
+    landscape?: boolean;
     /** Whether tempo ramp is currently active */
     rampActive?: boolean;
     /** Shareable URL for the sequence */
@@ -81,6 +83,7 @@
     isPlaying,
     isLoggedIn,
     controlsVisible = true,
+    landscape = false,
     rampActive = false,
     sequenceUrl = "",
     isSyncToggling = false,
@@ -102,6 +105,9 @@
     onPreviewModeChange,
     onConnect,
   }: Props = $props();
+
+  // Landscape BPM popover state
+  let bpmPopoverOpen = $state(false);
 
   // Layout detection using ResizeObserver on the footer element.
   // Two layouts for consistency:
@@ -135,6 +141,101 @@
   });
 </script>
 
+{#if landscape}
+  <!-- Landscape mobile: Vertical column of icon-only buttons on the right side -->
+  <aside class="landscape-controls" aria-label="Playback and actions">
+    <!-- Play/Pause (prominent, larger) -->
+    <button
+      type="button"
+      class="landscape-btn play-pause"
+      onclick={onPlayPause}
+      aria-label={isPlaying ? "Pause" : "Play"}
+    >
+      <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+    </button>
+
+    <!-- Step controls -->
+    <button
+      type="button"
+      class="landscape-btn"
+      onclick={onStepBack}
+      aria-label="Step backward"
+    >
+      <i class="fas fa-backward-step" aria-hidden="true"></i>
+    </button>
+    <button
+      type="button"
+      class="landscape-btn"
+      onclick={onStepForward}
+      aria-label="Step forward"
+    >
+      <i class="fas fa-forward-step" aria-hidden="true"></i>
+    </button>
+
+    <!-- BPM display / popover trigger -->
+    <div class="landscape-bpm-wrapper">
+      <button
+        type="button"
+        class="landscape-btn bpm-trigger"
+        onclick={() => (bpmPopoverOpen = !bpmPopoverOpen)}
+        aria-label="Adjust BPM: {bpm}"
+        aria-expanded={bpmPopoverOpen}
+      >
+        <span class="bpm-value">{bpm}</span>
+        <span class="bpm-label">BPM</span>
+      </button>
+
+      {#if bpmPopoverOpen}
+        <!-- BPM popover overlay -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="bpm-popover-backdrop"
+          onclick={() => (bpmPopoverOpen = false)}
+          onkeydown={(e) => { if (e.key === "Escape") bpmPopoverOpen = false; }}
+        ></div>
+        <div class="bpm-popover" role="dialog" aria-label="Tempo control">
+          <TempoControl
+            {bpm}
+            {onBpmChange}
+            {rampActive}
+            {onRampStart}
+            {onRampStop}
+          />
+        </div>
+      {/if}
+    </div>
+
+    <div class="landscape-divider" aria-hidden="true"></div>
+
+    <!-- Action buttons -->
+    {#if isLoggedIn}
+      <button
+        type="button"
+        class="landscape-btn save"
+        onclick={onSave}
+        aria-label="Save"
+      >
+        <i class="fas fa-bookmark" aria-hidden="true"></i>
+      </button>
+    {/if}
+    <button
+      type="button"
+      class="landscape-btn share"
+      onclick={onShare}
+      aria-label="Share"
+    >
+      <i class="fas fa-share" aria-hidden="true"></i>
+    </button>
+    <button
+      type="button"
+      class="landscape-btn download"
+      onclick={() => onExport()}
+      aria-label="Download"
+    >
+      <i class="fas fa-download" aria-hidden="true"></i>
+    </button>
+  </aside>
+{:else}
 <footer
   bind:this={footerEl}
   class="viewer-footer"
@@ -256,8 +357,138 @@
     </div>
   {/if}
 </footer>
+{/if}
 
 <style>
+  /* ===========================
+     LANDSCAPE VERTICAL CONTROLS
+     =========================== */
+
+  .landscape-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 6px;
+    padding-right: calc(6px + env(safe-area-inset-right, 0px));
+    width: 72px;
+    height: 100%;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    justify-content: center;
+  }
+
+  .landscape-controls::-webkit-scrollbar {
+    display: none;
+  }
+
+  .landscape-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: transparent;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+    transition: all var(--duration-fast, 150ms) ease;
+  }
+
+  .landscape-btn:active {
+    transform: scale(0.9);
+    transition-duration: 0ms;
+  }
+
+  .landscape-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .landscape-btn.play-pause {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--theme-accent, #6366f1);
+    border-color: transparent;
+    color: white;
+    font-size: 18px;
+  }
+
+  .landscape-btn.play-pause:active {
+    background: var(--theme-accent-hover, #4f46e5);
+  }
+
+  /* Color-coded landscape buttons */
+  .landscape-btn.save { color: #22c55e; border-color: rgba(34, 197, 94, 0.25); }
+  .landscape-btn.share { color: #a855f7; border-color: rgba(168, 85, 247, 0.25); }
+  .landscape-btn.download { color: #818cf8; border-color: rgba(99, 102, 241, 0.35); }
+
+  .landscape-divider {
+    width: 32px;
+    height: 1px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    flex-shrink: 0;
+    margin: 2px 0;
+  }
+
+  /* BPM trigger in landscape */
+  .landscape-btn.bpm-trigger {
+    flex-direction: column;
+    gap: 0;
+    height: 48px;
+    width: 48px;
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .bpm-value {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: var(--theme-text, white);
+    line-height: 1;
+  }
+
+  .bpm-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1;
+  }
+
+  /* BPM popover */
+  .landscape-bpm-wrapper {
+    position: relative;
+  }
+
+  .bpm-popover-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+  }
+
+  .bpm-popover {
+    position: absolute;
+    right: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 100;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    padding: 12px;
+    min-width: 200px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+
   /* ===========================
      FOOTER BASE
      =========================== */
@@ -448,11 +679,13 @@
      =========================== */
 
   @media (prefers-reduced-motion: reduce) {
-    .action-btn {
+    .action-btn,
+    .landscape-btn {
       transition: none;
     }
 
-    .action-btn:active {
+    .action-btn:active,
+    .landscape-btn:active {
       transform: none;
     }
   }

@@ -132,7 +132,7 @@
   }
 
   .segment.selected {
-    color: white;
+    color: var(--theme-text-on-accent, white);
   }
 
   .segment i {

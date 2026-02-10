@@ -72,13 +72,12 @@ export class WorkerRenderPool implements IWorkerRenderPool {
     // Ensure pool is initialized
     await this.ensureInitialized();
 
-    // If using workers, send to worker pool with automatic main-thread fallback
+    // If using workers, send to worker pool (with main-thread fallback)
     if (this.useWorkers && this.workers.length > 0) {
       try {
         return await this.renderOnWorker(preparedData, options, visibility, stepNumber);
       } catch {
-        // Worker render failed (e.g., SVG loading issues in worker context)
-        // Fall back to main-thread rendering silently
+        // Worker failed — fall back to main-thread rendering silently
         return this.renderOnMainThread(preparedData, options, visibility, stepNumber);
       }
     }
@@ -234,15 +233,17 @@ export class WorkerRenderPool implements IWorkerRenderPool {
       const worker = this.pickWorker();
       worker.pendingCount++;
 
-      // Send render request
-      const msg: WorkerInMessage = {
+      // Strip Svelte 5 reactive proxies via JSON round-trip.
+      // postMessage uses structured clone which cannot handle Proxy objects,
+      // and PictographPreparer returns $state-wrapped data.
+      const msg: WorkerInMessage = JSON.parse(JSON.stringify({
         type: "render",
         id,
         preparedData,
         options,
         visibility,
         stepNumber,
-      };
+      }));
 
       worker.worker.postMessage(msg);
     });

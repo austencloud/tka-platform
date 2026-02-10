@@ -545,7 +545,9 @@
       "Bash(tasklist:*)",
       "Bash(cmd.exe /c \"tasklist /FI \"\"IMAGENAME eq node.exe\"\" /FO CSV\")",
       "WebFetch(domain:9to5google.com)",
-      "WebFetch(domain:www.sanjaydey.com)"
+      "WebFetch(domain:www.sanjaydey.com)",
+      "Bash(# Check for any manifest-related files find F:/tka-platform/build/ -name \"\"*.json\"\" -not -path \"\"*/data/*\"\")",
+      "Bash(/c/Program Files/nodejs/npm.cmd run build)"
     ]
   },
   "enableAllProjectMcpServers": false,

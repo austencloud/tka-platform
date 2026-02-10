@@ -43,22 +43,30 @@
   let showGreekPicker = $state(false);
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** Search fires after this delay to avoid thrashing on every keystroke */
+  const SEARCH_DEBOUNCE_MS = 250;
+
+  /**
+   * Collapse delay must exceed the browser's blur→mousedown race.
+   * Without this, the search bar collapses before Greek picker clicks register.
+   */
+  const COLLAPSE_DELAY_MS = 150;
+
   // Expand and focus input
   function handleExpand(event: MouseEvent) {
     event.stopPropagation();
     isExpanded = true;
-    // Focus after DOM update
+    // Focus after DOM update via microtask
     setTimeout(() => inputRef?.focus(), 0);
   }
 
   // Collapse if empty
   function handleCollapse() {
-    // Delay collapse to allow Greek picker clicks to register
     setTimeout(() => {
       if (!inputValue.trim() && !showGreekPicker) {
         isExpanded = false;
       }
-    }, 150);
+    }, COLLAPSE_DELAY_MS);
   }
 
   // Handle input change with debounce
@@ -74,7 +82,7 @@
     // Debounce search
     debounceTimer = setTimeout(() => {
       onSearch(inputValue.trim());
-    }, 250);
+    }, SEARCH_DEBOUNCE_MS);
   }
 
   // Clear search
@@ -102,6 +110,9 @@
   }
 
   // Toggle Greek letter picker
+  // Uses onmousedown (not onclick) intentionally: the input's onblur fires before
+  // onclick would register, collapsing the search bar before the picker can open.
+  // mousedown fires before blur, allowing the picker to intercept.
   function toggleGreekPicker(event: MouseEvent) {
     event.stopPropagation();
     event.preventDefault();
@@ -109,6 +120,7 @@
   }
 
   // Insert Greek letter at cursor position
+  // Uses onmousedown for the same reason as toggleGreekPicker above.
   function insertLetter(char: string) {
     if (!inputRef) return;
 
@@ -126,7 +138,7 @@
     }
     debounceTimer = setTimeout(() => {
       onSearch(inputValue.trim());
-    }, 250);
+    }, SEARCH_DEBOUNCE_MS);
 
     // Re-focus input and set cursor after inserted char
     setTimeout(() => {
@@ -150,9 +162,11 @@
   }
 
   onMount(() => {
-    document.addEventListener("click", handleClickOutside);
+    // Use capture phase to match SortPopover's click-outside pattern,
+    // ensuring the handler fires even if stopPropagation is called downstream.
+    document.addEventListener("click", handleClickOutside, true);
     return () => {
-      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("click", handleClickOutside, true);
       if (debounceTimer) {
         clearTimeout(debounceTimer);
       }
@@ -321,6 +335,7 @@
   }
 
   .clear-button {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -336,6 +351,17 @@
     flex-shrink: 0;
   }
 
+  /* Expand tap target to 48px minimum for WCAG AAA */
+  .clear-button::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 48px;
+    min-height: 48px;
+  }
+
   .clear-button:hover {
     background: color-mix(in srgb, var(--theme-text) 10%, transparent);
     color: var(--theme-text);
@@ -348,6 +374,7 @@
 
   /* Greek letter toggle button */
   .greek-toggle {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -362,6 +389,17 @@
     cursor: pointer;
     transition: all var(--duration-fast) ease;
     flex-shrink: 0;
+  }
+
+  /* Expand tap target to 48px minimum for WCAG AAA */
+  .greek-toggle::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 48px;
+    min-height: 48px;
   }
 
   .greek-toggle:hover {
@@ -399,11 +437,12 @@
   }
 
   .greek-letter {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     background: transparent;
     border: 1px solid transparent;
     border-radius: 6px;
@@ -412,6 +451,17 @@
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
+  }
+
+  /* Expand tap target to 48px minimum for WCAG AAA */
+  .greek-letter::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 48px;
+    min-height: 48px;
   }
 
   .greek-letter:hover {
@@ -439,18 +489,20 @@
       width: 24px;
       height: 24px;
       font-size: var(--font-size-min, 14px);
+      /* 48px tap target maintained via ::after pseudo-element */
     }
 
     .greek-picker {
       grid-template-columns: repeat(5, 1fr);
-      min-width: 160px;
+      min-width: 240px;
       padding: 6px;
     }
 
     .greek-letter {
-      width: 28px;
-      height: 28px;
+      width: 40px;
+      height: 40px;
       font-size: var(--font-size-base, 16px);
+      /* 48px tap target maintained via ::after pseudo-element */
     }
   }
 </style>
