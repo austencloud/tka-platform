@@ -53,11 +53,9 @@ const DEFAULT_PROP_PRESETS: PropPreset[] = [
 
 const DEFAULT_SETTINGS: AppSettings = {
   gridMode: GridMode.DIAMOND,
-  // Use solidColor (black) as default to avoid flash while localStorage loads
-  backgroundType: BackgroundType.SOLID_COLOR,
+  backgroundType: BackgroundType.NIGHT_SKY,
   backgroundQuality: "medium",
   backgroundEnabled: true,
-  backgroundColor: "#000000", // Black background for solidColor
   hapticFeedback: true,
   reducedMotion: false,
   catDogMode: false, // Default: both hands use the same prop
@@ -192,7 +190,9 @@ class SettingsState implements ISettingsState {
           // On initial login, also apply background if local doesn't have one set
           // or if local is still using the default
           const localBackground = settingsState.backgroundType;
-          const isUsingDefault = localBackground === BackgroundType.SOLID_COLOR;
+          const isUsingDefault =
+            localBackground === BackgroundType.NIGHT_SKY ||
+            localBackground === BackgroundType.SOLID_COLOR;
 
           if (firebaseSettings.backgroundType && isUsingDefault) {
             // Apply Firebase background preference on initial login
@@ -639,6 +639,17 @@ class SettingsState implements ISettingsState {
       // Migration: Populate empty propPresets with defaults for existing users
       if (!merged.propPresets || merged.propPresets.length === 0) {
         merged.propPresets = DEFAULT_PROP_PRESETS;
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
+      }
+
+      // Migration: Move default-Black users to Night Sky
+      // Users who never changed from the old default (solid black) get the new default
+      if (
+        merged.backgroundType === BackgroundType.SOLID_COLOR &&
+        merged.backgroundColor === "#000000"
+      ) {
+        merged.backgroundType = BackgroundType.NIGHT_SKY;
+        delete merged.backgroundColor;
         localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
       }
 

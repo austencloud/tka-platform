@@ -15,6 +15,8 @@
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
   import AttributionPrompt from "../../attribution/components/AttributionPrompt.svelte";
   import { getAttributionPromptState } from "../../attribution/state/attribution-prompt-state.svelte";
+  import ThemeDiscoveryNudge from "../../settings/components/ThemeDiscoveryNudge.svelte";
+  import { themeDiscoveryState } from "../../settings/state/theme-discovery-state.svelte";
   import SequenceViewerDrawerHost from "../../sequence-viewer/components/SequenceViewerDrawerHost.svelte";
   import HeyTikaListener from "../../voice-control/components/HeyTikaListener.svelte";
   import VoiceControlIndicator from "../../voice-control/components/VoiceControlIndicator.svelte";
@@ -220,9 +222,20 @@
         // Progress: Fully ready - triggers loading screen fade out with random ready message
         (window as any).__tkaLoadProgress?.(100, "Ready");
 
-        // Check if deferred attribution prompt should show (after app settles)
+        // Record session start for theme discovery trigger
+        try {
+          const trigger = container.items.themeDiscoveryTrigger;
+          if (trigger && typeof trigger.recordSessionStart === "function") {
+            trigger.recordSessionStart();
+          }
+        } catch {
+          // Non-critical
+        }
+
+        // Check if deferred prompts should show (after app settles)
         setTimeout(() => {
           getAttributionPromptState().checkAndMaybeShow();
+          themeDiscoveryState.checkAndMaybeShow();
         }, 5000); // Wait 5 seconds after init for smoother UX
       } catch (error) {
         console.error("Application initialization failed:", error);
@@ -371,8 +384,8 @@
   <!-- Background Host - Uses reactive settings, controller survives HMR -->
   {#if settings.backgroundEnabled}
     <BackgroundHost
-      backgroundType={settings.backgroundType || BackgroundType.SOLID_COLOR}
-      backgroundColor={settings.backgroundColor || "#000000"}
+      backgroundType={settings.backgroundType || BackgroundType.NIGHT_SKY}
+      backgroundColor={settings.backgroundColor}
       {...settings.gradientColors
         ? { gradientColors: settings.gradientColors }
         : {}}
@@ -461,6 +474,9 @@
 
     <!-- Deferred Attribution Prompt (appears after engagement threshold) -->
     <AttributionPrompt />
+
+    <!-- Theme Discovery Nudge (for users who haven't explored backgrounds) -->
+    <ThemeDiscoveryNudge />
 
     <!-- Voice Control: opt-in via Settings > Preferences -->
     {#if voiceControlEnabled}

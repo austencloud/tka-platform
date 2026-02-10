@@ -32,6 +32,13 @@
   onMount(() => {
     setTimeout(() => (isVisible = true), 30);
 
+    // Record that user has visited the background tab (for theme discovery nudge)
+    try {
+      localStorage.setItem("tka-background-tab-visited", "true");
+    } catch {
+      // non-critical
+    }
+
     function handleSelect(e: Event) {
       const detail = (e as CustomEvent<BackgroundCardSelectDetail>).detail;
       const type = detail.type as BackgroundType;
