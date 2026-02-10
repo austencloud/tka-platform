@@ -104,7 +104,7 @@
     {#if !compact}
       <h2>Real Performances</h2>
       <p class="section-intro">
-        Sequences performed with staves, poi, and fans.
+        Sequences performed with staves, fans, and clubs.
       </p>
     {/if}
 
