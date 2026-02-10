@@ -90,13 +90,7 @@
     return () => window.removeEventListener("resize", handleResize);
   });
 
-  // The sequence actions side panel needs ~450px to render 2-column buttons
-  // comfortably. Below 1100px total viewport, even if the global layout says
-  // side-by-side, this panel uses the mobile bottom sheet instead.
-  const SIDE_PANEL_MIN_WIDTH = 1100;
-  const isMobileLayout = $derived(
-    !isSideBySideLayout || viewportWidth < SIDE_PANEL_MIN_WIDTH
-  );
+  const isMobileLayout = $derived(!isSideBySideLayout);
 
   // Compact mode for mobile portrait - horizontal icon+text layout
   // Applies to most mobile widths, disabled at tablet/desktop widths

@@ -33,7 +33,6 @@ import type { ModuleId } from "../../navigation/domain/types";
 import { MODULE_DEFINITIONS } from "../../navigation/config/module-definitions";
 import { isModuleEnabledInEnvironment } from "../../environment/environment-features";
 import {
-  isFeatureEnabled,
   getFeatureFlag,
   reloadFeatureFlags,
   getAllFeatureFlags,
@@ -324,6 +323,19 @@ function getEffectiveMinimumRole(featureId: FeatureId): UserRole {
 }
 
 /**
+ * Get the effective role, with security validation of debugRoleOverride.
+ * EVERY code path that uses debugRoleOverride MUST go through this function.
+ * If a non-admin has a debugRoleOverride set (console tampering), it's cleared.
+ */
+function getValidatedEffectiveRole(): UserRole {
+  if (_state.debugRoleOverride && _state.userRole !== "admin") {
+    console.error("[SECURITY] Unauthorized debugRoleOverride detected on non-admin account - clearing");
+    _state.debugRoleOverride = null;
+  }
+  return _state.debugRoleOverride ?? _state.userRole;
+}
+
+/**
  * Check if a feature is accessible based on role and overrides.
  *
  * Two independent questions must BOTH be true:
@@ -375,16 +387,7 @@ function checkFeatureAccess(featureId: FeatureId): boolean {
   }
 
   // 4. Role check - ALWAYS runs, even for per-user enabled features
-  // localStorage enabledFeatures must never bypass role requirements
-  //
-  // SECURITY: If debugRoleOverride is set, verify the actual user is admin.
-  // This prevents console tampering (e.g. featureFlagState.debugRoleOverride = 'admin').
-  if (_state.debugRoleOverride && _state.userRole !== "admin") {
-    console.error("[SECURITY] Unauthorized debugRoleOverride detected on non-admin account - clearing");
-    _state.debugRoleOverride = null;
-    return false;
-  }
-  const effectiveRole = _state.debugRoleOverride ?? _state.userRole;
+  const effectiveRole = getValidatedEffectiveRole();
   return hasRolePrivilege(effectiveRole, getEffectiveMinimumRole(featureId));
 }
 
@@ -542,7 +545,7 @@ export const postHogFeatureFlagService = {
     }
 
     // Role check - always runs when feature is enabled
-    const effectiveRole = _state.debugRoleOverride ?? _state.userRole;
+    const effectiveRole = getValidatedEffectiveRole();
     return hasRolePrivilege(effectiveRole, getEffectiveMinimumRole(featureId));
   },
 
@@ -577,14 +580,12 @@ export const postHogFeatureFlagService = {
 
   /** Check if user is at least tester level */
   get isTester(): boolean {
-    const effectiveRole = _state.debugRoleOverride ?? _state.userRole;
-    return hasRolePrivilege(effectiveRole, "tester");
+    return hasRolePrivilege(getValidatedEffectiveRole(), "tester");
   },
 
   /** Check if user is at least premium level */
   get isPremium(): boolean {
-    const effectiveRole = _state.debugRoleOverride ?? _state.userRole;
-    return hasRolePrivilege(effectiveRole, "premium");
+    return hasRolePrivilege(getValidatedEffectiveRole(), "premium");
   },
 
   // ===== Debug Role Override (Admin Only) =====
@@ -594,9 +595,9 @@ export const postHogFeatureFlagService = {
     return _state.debugRoleOverride;
   },
 
-  /** Get effective role (override or actual) */
+  /** Get effective role (override or actual, with security validation) */
   get effectiveRole(): UserRole {
-    return _state.debugRoleOverride ?? _state.userRole;
+    return getValidatedEffectiveRole();
   },
 
   /** Set debug role override (admin only) */

@@ -100,12 +100,19 @@ export class CellPreWarmer implements ICellPreWarmer {
   private completedSequences = new Set<string>();
 
   preWarmSequence(sequence: SequenceData, priority: PreWarmPriority): void {
-    if (!sequence.steps?.length) return;
+    if (!sequence.steps?.length) {
+      console.log(`[CellPreWarmer] ⚠️ No steps for ${sequence.word ?? sequence.id} — skipping`);
+      return;
+    }
 
     const seqId = sequence.id;
 
     // Already fully pre-warmed — skip
-    if (this.completedSequences.has(seqId)) return;
+    if (this.completedSequences.has(seqId)) {
+      console.log(`[CellPreWarmer] ✅ Already completed: ${sequence.word ?? seqId}`);
+      return;
+    }
+    console.log(`[CellPreWarmer] 🔥 preWarmSequence "${sequence.word ?? seqId}" priority=${priority} steps=${sequence.steps.length}`);
 
     // If there's already a warm in progress at equal or higher priority, skip.
     // Higher priority upgrades: cancel the old one and re-start.
@@ -167,7 +174,7 @@ export class CellPreWarmer implements ICellPreWarmer {
     const catDogModeEnabled = isCatDogMode(bluePropType, redPropType, catDogMode);
 
     return {
-      size: 480, // Same CELL_SIZE as LayeredSequencePreview
+      size: 240, // Same CELL_SIZE as LayeredSequencePreview (matches thumbnail pipeline)
       bluePropType,
       redPropType,
       catDogModeEnabled,
@@ -286,7 +293,11 @@ export class CellPreWarmer implements ICellPreWarmer {
       pictographBlobCache.has(task.darkKey),
     ]);
 
-    if (lightCached && darkCached) return;
+    if (lightCached && darkCached) {
+      console.log(`[CellPreWarmer] ✅ Both cached: step=${task.stepNumber}`);
+      return;
+    }
+    console.log(`[CellPreWarmer] 🎨 Rendering step=${task.stepNumber} lightCached=${lightCached} darkCached=${darkCached} lightKey=${task.lightKey} darkKey=${task.darkKey}`);
     if (signal.aborted) return;
 
     // Prepare the pictograph data (DOM-free, main thread)

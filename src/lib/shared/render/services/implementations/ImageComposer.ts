@@ -18,6 +18,8 @@ import { getVisibilityStateManager } from "../../../pictograph/shared/state/visi
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { pictographPreparer } from "../../../pictograph/shared/services/implementations/PictographPreparer";
+import { cellCacheKeyDeriver } from "../../../sequence-viewer/services/implementations/CellCacheKeyDeriver";
+import type { PreviewCellRenderOptions } from "../../../sequence-viewer/services/contracts/IPreviewCellRenderer";
 
 import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
@@ -481,6 +483,56 @@ export class ImageComposer implements IImageComposer {
     return canvas;
   }
 
+  // =========================================================================
+  // Write-through to preview cache
+  // When ImageComposer renders a cell for a thumbnail, also write it to
+  // PictographBlobCache under the key that PreviewCellRenderer expects.
+  // This means when the user clicks a sequence, the preview finds every
+  // cell already cached — instant display, zero re-rendering.
+  // =========================================================================
+
+  private writeThroughToPreviewCache(
+    pictographData: StepData | PictographData,
+    stepNumber: number | undefined,
+    stepSize: number,
+    visibilitySettings: PictographVisibilityOptions,
+    blob: Blob
+  ): void {
+    const isDark = visibilitySettings.darkMode ?? false;
+    const blueProp = visibilitySettings.bluePropType;
+    const redProp = visibilitySettings.redPropType;
+    const catDogModeEnabled = !!(blueProp && redProp && blueProp !== redProp);
+
+    const previewOptions: PreviewCellRenderOptions = {
+      size: stepSize,
+      bluePropType: blueProp,
+      redPropType: redProp,
+      catDogModeEnabled,
+      showStepNumbers: stepNumber !== undefined,
+      showNonRadialPoints: visibilitySettings.showNonRadialPoints ?? true,
+      handPointVisibility: (visibilitySettings.handPointVisibility === "none"
+        ? "active"
+        : visibilitySettings.handPointVisibility ?? "all") as "all" | "active",
+      showTKA: visibilitySettings.showTKA ?? true,
+      showReversals: visibilitySettings.showReversals ?? true,
+    };
+
+    const previewKey = cellCacheKeyDeriver.deriveCacheKey(
+      pictographData as PictographData,
+      stepNumber,
+      isDark,
+      previewOptions
+    );
+
+    // Fire-and-forget — preview cache write is best-effort
+    console.log(`[WriteThrough] Writing preview key: ${previewKey} | step=${stepNumber} | dark=${isDark} | size=${stepSize} | blob=${blob.size}bytes`);
+    this.blobCache.set(previewKey, blob).then(() => {
+      console.log(`[WriteThrough] ✅ Stored: ${previewKey}`);
+    }).catch((err) => {
+      console.warn(`[WriteThrough] ❌ Failed: ${previewKey}`, err);
+    });
+  }
+
   /**
    * Render a single pictograph directly onto the canvas at the specified grid position
    * 🚀 PERF: Uses two-layer cache to avoid re-rendering identical pictographs
@@ -510,6 +562,8 @@ export class ImageComposer implements IImageComposer {
     redPropType?: PropType
   ): Promise<void> {
     try {
+      console.log(`[ImageComposer] renderPictographAt step=${stepNumber} size=${stepSize} letter=${pictographData.letter ?? 'start'}`);
+
       // CRITICAL: Merge prop type overrides into visibility settings.
       // This ensures snapshotted prop types are passed through to PictographPreparer,
       // preventing race conditions where global settings could change during async rendering.
@@ -580,11 +634,16 @@ export class ImageComposer implements IImageComposer {
           // Convert canvas to image for caching
           img = await this.canvasToImage(pictographCanvas);
 
-          // Convert image to blob for L1 cache (async, non-blocking)
+          // Convert image to blob for L1 cache + preview write-through (async, non-blocking)
           this.imageToBlob(img).then((blob) => {
             this.blobCache.set(blobKey, blob).catch((err) => {
               console.warn("[ImageComposer] Failed to cache blob:", err);
             });
+            // Write-through: also store under preview-compatible key so
+            // PreviewCellRenderer finds it instantly when the user opens this sequence
+            this.writeThroughToPreviewCache(
+              pictographData, stepNumber, stepSize, finalVisibilitySettings, blob
+            );
           });
         }
 
@@ -1148,6 +1207,30 @@ export class ImageComposer implements IImageComposer {
     const x = column * stepSize;
     const y = row * stepSize + titleOffset;
     ctx.drawImage(result.canvas, x, y, stepSize, stepSize);
+
+    // Write-through to preview cache (fire-and-forget, non-blocking)
+    // Convert the composited canvas to a blob and store under preview-compatible key
+    if (!result.cacheStats.baseFromCache) {
+      const canvas = result.canvas;
+      const convertToBlob = async (): Promise<Blob | null> => {
+        if ("toBlob" in canvas && typeof canvas.toBlob === "function") {
+          return new Promise<Blob | null>((resolve) =>
+            (canvas as HTMLCanvasElement).toBlob((b) => resolve(b), "image/png")
+          );
+        }
+        if ("convertToBlob" in canvas && typeof canvas.convertToBlob === "function") {
+          return (canvas as OffscreenCanvas).convertToBlob({ type: "image/png" });
+        }
+        return null;
+      };
+      convertToBlob().then((blob) => {
+        if (blob) {
+          this.writeThroughToPreviewCache(
+            pictographData, stepNumber, stepSize, visibilitySettings, blob
+          );
+        }
+      }).catch(() => {});
+    }
   }
 }
 

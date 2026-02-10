@@ -42,6 +42,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   import TurnIntensityCard from "./cards/TurnIntensityCard.svelte";
   import GenerateButtonCard from "./cards/GenerateButtonCard.svelte";
   import StartEndCard from "./cards/StartEndCard.svelte";
+  import CompactSettingsToolbar from "./CompactSettingsToolbar.svelte";
 
   // Props
   let {
@@ -230,57 +231,111 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   });
 </script>
 
-<div class="card-settings-container" class:help-mode={helpMode} class:help-mode-exiting={helpModeExiting}>
-  <!-- LOOP Expanded Overlay - covers cards when open -->
-  {#if panelState?.isLOOPPanelOpen && panelState.loopSelectedComponents && panelState.loopOnChange}
-    <LOOPExpandedOverlay
-      currentType={panelState.loopCurrentType!}
-      selectedComponents={panelState.loopSelectedComponents}
-      onChange={panelState.loopOnChange}
-      onClose={() => panelState.closeLOOPPanel()}
+<div class="settings-mode-wrapper">
+  <!-- Compact mode: morph chip toolbar for small viewports -->
+  <div class="compact-mode">
+    <CompactSettingsToolbar
+      {config}
+      {isFreeformMode}
+      {updateConfig}
+      {isGenerating}
+      {onGenerateClicked}
+      {startEndState}
+      {helpMode}
+      {helpModeExiting}
+      {onHelpSelect}
     />
-  {/if}
+  </div>
 
-  {#each cards as card (card.id)}
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <div
-      class="card-wrapper"
-      class:help-clickable={helpMode && hasHelp(card.id)}
-      style:grid-column="span {card.gridColumnSpan}"
-      animate:flip={{ duration: 300, easing: quintOut }}
-      in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
-      out:scale={{ start: 0.95, duration: 250, easing: quintOut }}
-      onclick={(e) => handleCardClick(card.id, e)}
-      role={helpMode && hasHelp(card.id) ? "button" : undefined}
-    >
-      <!-- Props are dynamically typed by CardConfigurator - type assertion needed -->
-      <!-- Colors are overridden based on current background for visibility -->
-      {#if card.id === "level"}
-        <LevelCard {...card.props as any} color={cardColors.level.color} shadowColor={cardColors.level.shadowColor} />
-      {:else if card.id === "length"}
-        <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} />
-      {:else if card.id === "generation-mode"}
-        <GenerationModeCard {...card.props as any} color={cardColors.mode.color} shadowColor={cardColors.mode.shadowColor} />
-      {:else if card.id === "grid-mode"}
-        <GridModeCard {...card.props as any} color={cardColors.gridMode.color} shadowColor={cardColors.gridMode.shadowColor} />
-      {:else if card.id === "prop-continuity"}
-        <PropContinuityCard {...card.props as any} color={cardColors.continuity.color} shadowColor={cardColors.continuity.shadowColor} />
-      {:else if card.id === "slice-size"}
-        <SliceSizeCard {...card.props as any} color={cardColors.sliceSize.color} shadowColor={cardColors.sliceSize.shadowColor} />
-      {:else if card.id === "turn-intensity"}
-        <TurnIntensityCard {...card.props as any} color={cardColors.turnIntensity.color} shadowColor={cardColors.turnIntensity.shadowColor} />
-      {:else if card.id === "loop-type"}
-        <LOOPCard {...card.props as any} />
-      {:else if card.id === "start-end"}
-        <StartEndCard {...card.props as any} color={cardColors.startEnd.color} shadowColor={cardColors.startEnd.shadowColor} />
-      {:else if card.id === "generate-button"}
-        <GenerateButtonCard {...card.props as any} />
+  <!-- Card mode: full card grid for normal/large viewports -->
+  <div class="card-mode">
+    <div class="card-settings-container" class:help-mode={helpMode} class:help-mode-exiting={helpModeExiting}>
+      <!-- LOOP Expanded Overlay - covers cards when open -->
+      {#if panelState?.isLOOPPanelOpen && panelState.loopSelectedComponents && panelState.loopOnChange}
+        <LOOPExpandedOverlay
+          currentType={panelState.loopCurrentType!}
+          selectedComponents={panelState.loopSelectedComponents}
+          onChange={panelState.loopOnChange}
+          onClose={() => panelState.closeLOOPPanel()}
+        />
       {/if}
+
+      {#each cards as card (card.id)}
+        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+        <div
+          class="card-wrapper"
+          class:help-clickable={helpMode && hasHelp(card.id)}
+          style:grid-column="span {card.gridColumnSpan}"
+          animate:flip={{ duration: 300, easing: quintOut }}
+          in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
+          out:scale={{ start: 0.95, duration: 250, easing: quintOut }}
+          onclick={(e) => handleCardClick(card.id, e)}
+          role={helpMode && hasHelp(card.id) ? "button" : undefined}
+        >
+          <!-- Props are dynamically typed by CardConfigurator - type assertion needed -->
+          <!-- Colors are overridden based on current background for visibility -->
+          {#if card.id === "level"}
+            <LevelCard {...card.props as any} color={cardColors.level.color} shadowColor={cardColors.level.shadowColor} />
+          {:else if card.id === "length"}
+            <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} />
+          {:else if card.id === "generation-mode"}
+            <GenerationModeCard {...card.props as any} color={cardColors.mode.color} shadowColor={cardColors.mode.shadowColor} />
+          {:else if card.id === "grid-mode"}
+            <GridModeCard {...card.props as any} color={cardColors.gridMode.color} shadowColor={cardColors.gridMode.shadowColor} />
+          {:else if card.id === "prop-continuity"}
+            <PropContinuityCard {...card.props as any} color={cardColors.continuity.color} shadowColor={cardColors.continuity.shadowColor} />
+          {:else if card.id === "slice-size"}
+            <SliceSizeCard {...card.props as any} color={cardColors.sliceSize.color} shadowColor={cardColors.sliceSize.shadowColor} />
+          {:else if card.id === "turn-intensity"}
+            <TurnIntensityCard {...card.props as any} color={cardColors.turnIntensity.color} shadowColor={cardColors.turnIntensity.shadowColor} />
+          {:else if card.id === "loop-type"}
+            <LOOPCard {...card.props as any} />
+          {:else if card.id === "start-end"}
+            <StartEndCard {...card.props as any} color={cardColors.startEnd.color} shadowColor={cardColors.startEnd.shadowColor} />
+          {:else if card.id === "generate-button"}
+            <GenerateButtonCard {...card.props as any} />
+          {/if}
+        </div>
+      {/each}
     </div>
-  {/each}
+  </div>
 </div>
 
 <style>
+  /* ============================================================ */
+  /* MODE SWITCHING: compact chips vs card grid via container query */
+  /* ============================================================ */
+
+  .settings-mode-wrapper {
+    display: contents;
+  }
+
+  /* Default: card mode visible, compact hidden */
+  .compact-mode {
+    display: none;
+  }
+
+  .card-mode {
+    display: contents;
+  }
+
+  /* When tool panel is short (iPhone SE compact), show compact mode */
+  @container tool-panel (max-height: 340px) {
+    .compact-mode {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .card-mode {
+      display: none;
+    }
+  }
+
+  /* ============================================================ */
+  /* CARD GRID (existing styles) */
+  /* ============================================================ */
+
   .card-settings-container {
     /* Position relative for LOOP expanded overlay */
     position: relative;

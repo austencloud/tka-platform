@@ -427,19 +427,19 @@
   }
 
   /* ===== BUTTON BASE STYLES ===== */
+  /* Default: horizontal layout (icon left, label right) — fits all panel widths */
   .grid-btn {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 12px 8px;
-    border-radius: 12px;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 10px;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
-    text-align: center;
+    text-align: left;
     min-height: var(--min-touch-target, 44px);
-    container-type: size;
   }
 
   .grid-btn:disabled {
@@ -456,10 +456,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    font-size: var(--font-size-lg);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: var(--font-size-base);
     flex-shrink: 0;
     color: white;
   }
@@ -467,14 +467,14 @@
   .btn-text {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 2px;
+    align-items: flex-start;
+    gap: 1px;
     min-width: 0;
-    width: 100%;
+    flex: 1;
   }
 
   .btn-label {
-    font-size: var(--font-size-min, 14px);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: rgba(255, 255, 255, 0.95);
     white-space: nowrap;
@@ -484,21 +484,13 @@
   }
 
   .btn-desc {
-    font-size: var(--font-size-compact, 12px);
-    color: rgba(255, 255, 255, 0.65);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
+    display: none;
   }
 
   /* Mobile mode: hide descriptions, smaller icons */
   .actions-container.mobile .grid-btn {
     padding: 8px 4px;
     gap: 4px;
-  }
-  .actions-container.mobile .btn-desc {
-    display: none;
   }
   .actions-container.mobile .btn-icon {
     width: 36px;
@@ -507,21 +499,6 @@
   }
   .actions-container.mobile .btn-label {
     font-size: var(--font-size-compact, 12px);
-  }
-
-  /* Taller buttons: larger icons and text */
-  @container (min-height: 90px) {
-    .btn-icon {
-      width: 48px;
-      height: 48px;
-      font-size: var(--font-size-xl);
-    }
-    .btn-label {
-      font-size: var(--font-size-md, 16px);
-    }
-    .btn-desc {
-      font-size: var(--font-size-compact, 12px);
-    }
   }
 
   /* ===== BUTTON COLORS - CSS custom properties for each button ===== */
@@ -659,19 +636,7 @@
     pointer-events: none;
   }
 
-  /* ===== COMPACT MODE: Horizontal layout for very small screens ===== */
-  .actions-container.compact .grid-btn {
-    flex-direction: row;
-    justify-content: flex-start;
-    text-align: left;
-    gap: 8px;
-    padding: 6px 10px;
-  }
-
-  .actions-container.compact .btn-text {
-    align-items: flex-start;
-  }
-
+  /* ===== COMPACT MODE: Even tighter for very narrow mobile ===== */
   .actions-container.compact .btn-icon {
     width: 26px;
     height: 26px;
@@ -679,34 +644,12 @@
     border-radius: 6px;
   }
 
+  .actions-container.compact .grid-btn {
+    padding: 4px 8px;
+    gap: 6px;
+  }
+
   .actions-container.compact .btn-label {
     font-size: 0.7rem;
-  }
-
-  /* Compact mode: TRANSFORM section uses 3 columns */
-  .actions-container.compact .transform-section .section-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  /* Compact mode: PATTERNS section uses mixed grid for long labels */
-  .actions-container.compact .patterns-section .section-grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
-
-  .actions-container.compact .patterns-section .grid-btn {
-    grid-column: span 2;
-    order: 1;
-  }
-
-  /* Long labels get more space and appear last */
-  .actions-container.compact .patterns-section .grid-btn.turn-pattern,
-  .actions-container.compact .patterns-section .grid-btn.extend {
-    grid-column: span 3;
-    order: 2;
-  }
-
-  /* Compact mode: EDIT section uses 2 columns */
-  .actions-container.compact .edit-section .section-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 </style>

@@ -143,9 +143,7 @@
                 <span class="drawer-back-label">{overlay.returnLabel}</span>
               </button>
 
-              <div class="drawer-header-title">
-                {overlay.sequence?.word || 'Sequence Viewer'}
-              </div>
+              <div class="drawer-header-title">Sequence Viewer</div>
 
               <div class="drawer-header-actions">
                 {#if !ctx.isExportMode}

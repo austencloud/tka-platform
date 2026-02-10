@@ -121,7 +121,7 @@
   // Constants
   // Render at high resolution for crisp display on 4K monitors
   // Images scale down cleanly on lower-resolution displays
-  const CELL_SIZE = 480; // Render size for each pictograph
+  const CELL_SIZE = 240; // Match thumbnail pipeline (240px) for instant cache hits from gallery
 
   // LOOP type resolver for parsing loopType to components
   const loopTypeResolver = new LOOPTypeResolver();

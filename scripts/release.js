@@ -447,34 +447,29 @@ function suggestVersion(currentVersion, changelogEntries) {
     return `${major}.${minor}.${patch + 1}`;
   }
 
-  // Analyze feature significance
-  const significantKeywords = [
+  // Minor bump ONLY for genuinely new user-facing capabilities.
+  // "New capability" = users can do something they literally could not do before.
+  // Improvements to existing features (redesigns, performance, infrastructure) are patches.
+  const newCapabilityKeywords = [
     "new module",
-    "major",
-    "refactor",
-    "redesign",
-    "architecture",
     "new tab",
     "new feature set",
-    "migration",
-    "overhaul",
   ];
 
   const allChangeText = changelogEntries
     .map((e) => e.text.toLowerCase())
     .join(" ");
 
-  const hasSignificantChange = significantKeywords.some((keyword) =>
+  const hasNewCapability = newCapabilityKeywords.some((keyword) =>
     allChangeText.includes(keyword)
   );
 
-  if (hasSignificantChange) {
-    // Significant feature → minor bump
+  if (hasNewCapability) {
+    // Genuinely new capability → minor bump
     return `${major}.${minor + 1}.0`;
   }
 
-  // Regular features but not significant → patch bump
-  // (avoids version inflation from small features)
+  // Features that improve existing capabilities → patch bump
   return `${major}.${minor}.${patch + 1}`;
 }
 
@@ -1143,9 +1138,9 @@ async function main() {
   const suggestedMinor = parseInt(suggestedParts[1]) || 0;
 
   if (suggestedMinor > currentMinor) {
-    console.log("   (minor bump - significant features detected)");
+    console.log("   (minor bump - new user-facing capability detected)");
   } else {
-    console.log("   (patch bump - regular changes)");
+    console.log("   (patch bump - fixes and improvements)");
   }
 
   console.log("   💡 Override with: --version X.Y.Z");

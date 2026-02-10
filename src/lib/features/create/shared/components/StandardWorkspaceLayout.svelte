@@ -286,6 +286,15 @@
 
   .tool-panel-container {
     position: relative;
+    container-type: size;
+    container-name: tool-panel;
+  }
+
+  /* Compact viewports: give workspace more room (60/40 instead of 55/45) */
+  @media (max-height: 700px) {
+    .layout-wrapper.workspace-visible {
+      grid-template-rows: 3fr 2fr;
+    }
   }
 
   /* Simple prompt when workspace is empty */

@@ -97,8 +97,28 @@ git push && git push --tags
 
 ## Version Bump Rules
 
-- **Minor** (0.1.0 -> 0.2.0): At least one feature
-- **Patch** (0.1.0 -> 0.1.1): Only bug fixes
+### Minor bump (0.X.0): New user-facing capability
+
+Something users literally could not do before:
+- New module (e.g., Compose module launches)
+- New tab within a module (e.g., adding a Challenges tab to Train)
+- Entirely new workflow
+
+### Patch bump (0.X.Y): Everything else
+
+- Bug fixes
+- Performance improvements
+- Mobile layout fixes
+- Redesigns of existing UI
+- Improvements to existing features
+- New background options, theme changes
+- Infrastructure work
+
+### The test
+
+"Can users do something today that they literally could not do yesterday?"
+- Yes → minor
+- No, but things work better → patch
 
 ---
 
