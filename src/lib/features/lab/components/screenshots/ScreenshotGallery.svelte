@@ -1,12 +1,20 @@
 <!--
   ScreenshotGallery — Module-organized gallery with collapsible sections,
-  "not captured" placeholders, device filter chips, and click-to-lightbox.
+  "not captured" placeholders, device filter chips, Ctrl+Scroll zoom, S/M/L presets,
+  and MediaSpotlight viewer.
 
-  Fetches manifest from the Vite dev server at /screenshots/manifest.json.
+  Supports two source modes:
+  - Local: fetches manifest from Vite dev server at /screenshots/manifest.json
+  - Cloud: subscribes to Firestore via ScreenshotLoader for real-time updates
 -->
 <script lang="ts">
   import { untrack } from "svelte";
   import type { DeviceCategory } from "../../services/contracts/IScreenshotOrchestrator";
+  import type { ScreenshotMetadata } from "../../services/contracts/IScreenshotUploader";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { container } from "$lib/shared/di";
+  import { onMount } from "svelte";
+  import { MediaSpotlight, type MediaItem, type SpotlightConfig } from "@austencloud/media-spotlight";
 
   interface Props {
     /** Incremented externally to force a manifest refresh (e.g. after capture) */
@@ -14,6 +22,42 @@
   }
 
   let { refreshToken = 0 }: Props = $props();
+
+  let hapticService: IHapticFeedback;
+
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
+  });
+
+  // ─── Source mode ───────────────────────────────────────────────────────────
+
+  type SourceMode = "local" | "cloud";
+
+  let sourceMode = $state<SourceMode>("local");
+  let cloudUnsubscribe: (() => void) | null = null;
+
+  function setSourceMode(mode: SourceMode) {
+    if (mode === sourceMode) return;
+    hapticService?.trigger("selection");
+
+    // Clean up previous cloud subscription
+    if (cloudUnsubscribe) {
+      cloudUnsubscribe();
+      cloudUnsubscribe = null;
+    }
+
+    sourceMode = mode;
+
+    if (mode === "cloud") {
+      loadCloudScreenshots();
+    } else {
+      cloudScreenshots = [];
+      cloudError = null;
+      fetchManifest();
+    }
+  }
+
+  // ─── Local mode state ─────────────────────────────────────────────────────
 
   interface CaptureInfo {
     filename: string;
@@ -27,9 +71,22 @@
     timestamp: string | null;
   }
 
+  let captures = $state<CaptureInfo[]>([]);
+  let timestamp = $state<string | null>(null);
+  let loading = $state(true);
+  let fetchError = $state<string | null>(null);
+
+  // ─── Cloud mode state ─────────────────────────────────────────────────────
+
+  let cloudScreenshots = $state<ScreenshotMetadata[]>([]);
+  let cloudLoading = $state(false);
+  let cloudError = $state<string | null>(null);
+
+  // ─── Shared state ─────────────────────────────────────────────────────────
+
   type FilterCategory = "all" | DeviceCategory;
 
-  // Device dimensions lookup — hardcoded to avoid importing test files
+  // Device dimensions lookup
   const DEVICE_MAP: Record<
     string,
     { name: string; w: number; h: number; category: DeviceCategory }
@@ -47,7 +104,6 @@
 
   const ALL_DEVICE_SLUGS = Object.keys(DEVICE_MAP);
 
-  // Module display names for grouping
   const MODULE_NAMES: Record<string, string> = {
     public: "Public Pages",
     create: "Create",
@@ -59,52 +115,122 @@
     feedback: "Feedback",
   };
 
-  let captures = $state<CaptureInfo[]>([]);
-  let timestamp = $state<string | null>(null);
-  let loading = $state(true);
-  let fetchError = $state<string | null>(null);
+  const SIZE_PRESETS = [
+    { label: "S", value: 200 },
+    { label: "M", value: 340 },
+    { label: "L", value: 520 },
+  ] as const;
+
   let activeFilter = $state<FilterCategory>("all");
   let columnMin = $state(280);
-  let lightboxSrc = $state<string | null>(null);
-  let lightboxCaption = $state("");
   let collapsedModules = $state<Record<string, boolean>>({});
+  let spotlightOpen = $state(false);
+  let spotlightIndex = $state(0);
+  let galleryElement = $state<HTMLDivElement | null>(null);
 
-  // Parse module from route label (e.g. "create--construct" -> "create", "landing" -> "public")
+  const activePreset = $derived.by(() => {
+    for (const preset of SIZE_PRESETS) {
+      if (Math.abs(columnMin - preset.value) <= 30) return preset.label;
+    }
+    return null;
+  });
+
+  // ─── Unified data model ───────────────────────────────────────────────────
+
+  /** Normalized capture item used for display in both modes */
+  interface GalleryItem {
+    id: string;
+    filename: string;
+    routeLabel: string;
+    module: string;
+    deviceSlug: string;
+    deviceCategory: DeviceCategory;
+    deviceName: string;
+    width: number;
+    height: number;
+    imageUrl: string;
+    tagIds: string[];
+    capturedAt: Date | null;
+  }
+
+  /** Convert local CaptureInfo to GalleryItem */
+  function localToGalleryItem(c: CaptureInfo): GalleryItem {
+    const device = DEVICE_MAP[c.deviceSlug];
+    return {
+      id: c.filename,
+      filename: c.filename,
+      routeLabel: c.routeLabel,
+      module: getModuleFromLabel(c.routeLabel),
+      deviceSlug: c.deviceSlug,
+      deviceCategory: device?.category ?? "desktop",
+      deviceName: device?.name ?? c.deviceSlug,
+      width: device?.w ?? 0,
+      height: device?.h ?? 0,
+      imageUrl: `/screenshots/captures/${c.filename}`,
+      tagIds: [],
+      capturedAt: null,
+    };
+  }
+
+  /** Convert cloud ScreenshotMetadata to GalleryItem */
+  function cloudToGalleryItem(s: ScreenshotMetadata): GalleryItem {
+    return {
+      id: s.id,
+      filename: s.filename,
+      routeLabel: s.routeLabel,
+      module: s.module,
+      deviceSlug: s.deviceSlug,
+      deviceCategory: s.deviceCategory,
+      deviceName: s.deviceName,
+      width: s.width,
+      height: s.height,
+      imageUrl: s.downloadUrl,
+      tagIds: s.tagIds,
+      capturedAt: s.capturedAt,
+    };
+  }
+
+  /** All gallery items from the active source */
+  const galleryItems = $derived.by(() => {
+    if (sourceMode === "cloud") {
+      return cloudScreenshots.map(cloudToGalleryItem);
+    }
+    return captures.map(localToGalleryItem);
+  });
+
+  const isLoading = $derived(sourceMode === "local" ? loading : cloudLoading);
+  const errorMessage = $derived(sourceMode === "local" ? fetchError : cloudError);
+  const hasItems = $derived(galleryItems.length > 0);
+
+  // ─── Grouping & filtering ─────────────────────────────────────────────────
+
   function getModuleFromLabel(label: string): string {
     const dashIdx = label.indexOf("--");
     if (dashIdx > 0) return label.substring(0, dashIdx);
-    // Public routes have no module prefix
     const publicLabels = ["landing", "about", "privacy", "terms", "roots"];
     if (publicLabels.includes(label)) return "public";
     return label;
   }
 
-  // Group captures by module, then by route within each module
   const moduleGroups = $derived.by(() => {
-    const groups = new Map<string, Map<string, CaptureInfo[]>>();
-
-    for (const capture of captures) {
-      const moduleId = getModuleFromLabel(capture.routeLabel);
-
-      if (!groups.has(moduleId)) groups.set(moduleId, new Map());
-      const routeMap = groups.get(moduleId)!;
-
-      if (!routeMap.has(capture.routeLabel)) routeMap.set(capture.routeLabel, []);
-      routeMap.get(capture.routeLabel)!.push(capture);
+    const groups = new Map<string, Map<string, GalleryItem[]>>();
+    for (const item of galleryItems) {
+      if (!groups.has(item.module)) groups.set(item.module, new Map());
+      const routeMap = groups.get(item.module)!;
+      if (!routeMap.has(item.routeLabel)) routeMap.set(item.routeLabel, []);
+      routeMap.get(item.routeLabel)!.push(item);
     }
-
     return groups;
   });
 
-  // Apply device filter
   const filteredModuleGroups = $derived.by(() => {
     if (activeFilter === "all") return moduleGroups;
 
-    const filtered = new Map<string, Map<string, CaptureInfo[]>>();
+    const filtered = new Map<string, Map<string, GalleryItem[]>>();
     for (const [moduleId, routeMap] of moduleGroups) {
-      const filteredRoutes = new Map<string, CaptureInfo[]>();
+      const filteredRoutes = new Map<string, GalleryItem[]>();
       for (const [route, items] of routeMap) {
-        const matching = items.filter((c) => DEVICE_MAP[c.deviceSlug]?.category === activeFilter);
+        const matching = items.filter((c) => c.deviceCategory === activeFilter);
         if (matching.length > 0) filteredRoutes.set(route, matching);
       }
       if (filteredRoutes.size > 0) filtered.set(moduleId, filteredRoutes);
@@ -112,11 +238,46 @@
     return filtered;
   });
 
-  const stats = $derived({
-    totalScreenshots: captures.length,
-    routeCount: new Set(captures.map((c) => c.routeLabel)).size,
-    deviceCount: new Set(captures.map((c) => c.deviceSlug)).size,
+  const flatItems = $derived.by(() => {
+    const result: GalleryItem[] = [];
+    for (const [, routeMap] of filteredModuleGroups) {
+      for (const [, items] of routeMap) {
+        result.push(...items);
+      }
+    }
+    return result;
   });
+
+  const spotlightItems: MediaItem[] = $derived(
+    flatItems.map((item) => ({
+      id: item.id,
+      url: item.imageUrl,
+      type: "image" as const,
+      alt: `${formatRouteLabel(item.routeLabel)} on ${item.deviceName}`,
+      name: `${item.deviceName} — ${formatRouteLabel(item.routeLabel)}`,
+      width: item.width || undefined,
+      height: item.height || undefined,
+    }))
+  );
+
+  const spotlightConfig: SpotlightConfig = {
+    showFilmstrip: true,
+    showArrows: true,
+    showClose: true,
+    enableSwipeNav: true,
+    enableSwipeDismiss: true,
+    enablePinchZoom: true,
+    enableDoubleTapZoom: true,
+    loop: false,
+  };
+
+  const stats = $derived({
+    totalScreenshots: galleryItems.length,
+    routeCount: new Set(galleryItems.map((c) => c.routeLabel)).size,
+    deviceCount: new Set(galleryItems.map((c) => c.deviceSlug)).size,
+  });
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────
 
   function getAspectRatio(slug: string): number {
     const d = DEVICE_MAP[slug];
@@ -156,19 +317,22 @@
     return new Date(iso).toLocaleString();
   }
 
-  function openLightbox(capture: CaptureInfo) {
-    lightboxSrc = `/screenshots/captures/${capture.filename}`;
-    const device = DEVICE_MAP[capture.deviceSlug];
-    lightboxCaption = `${formatRouteLabel(capture.routeLabel)} — ${device?.name ?? capture.deviceSlug} (${getDeviceDims(capture.deviceSlug)})`;
+  function openSpotlight(item: GalleryItem) {
+    const idx = flatItems.findIndex((c) => c.id === item.id);
+    spotlightIndex = idx >= 0 ? idx : 0;
+    spotlightOpen = true;
   }
 
-  function closeLightbox() {
-    lightboxSrc = null;
-    lightboxCaption = "";
+  function handleWheel(e: WheelEvent) {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 20 : -20;
+    columnMin = Math.max(180, Math.min(600, columnMin + delta));
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape" && lightboxSrc) closeLightbox();
+  function setPreset(value: number) {
+    hapticService?.trigger("selection");
+    columnMin = value;
   }
 
   function toggleModuleCollapse(moduleId: string) {
@@ -178,9 +342,9 @@
     };
   }
 
-  /** Get devices that are missing for a given route (not captured) */
-  function getMissingDevices(routeCaptures: CaptureInfo[]): string[] {
-    const capturedSlugs = new Set(routeCaptures.map((c) => c.deviceSlug));
+  function getMissingDevices(routeItems: GalleryItem[]): string[] {
+    if (sourceMode === "cloud") return []; // Cloud mode doesn't track missing devices
+    const capturedSlugs = new Set(routeItems.map((c) => c.deviceSlug));
     return ALL_DEVICE_SLUGS.filter((slug) => {
       if (!capturedSlugs.has(slug)) {
         if (activeFilter === "all") return true;
@@ -196,6 +360,8 @@
     { value: "tablet", label: "Tablet" },
     { value: "desktop", label: "Desktop" },
   ];
+
+  // ─── Local manifest fetching ──────────────────────────────────────────────
 
   async function fetchManifest() {
     loading = true;
@@ -214,41 +380,102 @@
     }
   }
 
-  // Fetch on mount
+  // ─── Cloud Firestore loading ──────────────────────────────────────────────
+
+  function loadCloudScreenshots() {
+    cloudLoading = true;
+    cloudError = null;
+
+    try {
+      const loader = container.items.screenshotLoader;
+      cloudUnsubscribe = loader.subscribeToScreenshots((screenshots: ScreenshotMetadata[]) => {
+        cloudScreenshots = screenshots;
+        cloudLoading = false;
+      });
+    } catch (err) {
+      cloudError = err instanceof Error ? err.message : String(err);
+      cloudLoading = false;
+    }
+  }
+
+  // ─── Lifecycle ────────────────────────────────────────────────────────────
+
+  // Fetch local manifest on mount (default mode)
   $effect(() => {
-    untrack(() => fetchManifest());
+    untrack(() => {
+      if (sourceMode === "local") fetchManifest();
+    });
   });
 
-  // Re-fetch when refreshToken changes
+  // Re-fetch when refreshToken changes (local mode only)
   $effect(() => {
-    // Read refreshToken to track dependency
     const _ = refreshToken;
-    if (_ > 0) {
+    if (_ > 0 && sourceMode === "local") {
       untrack(() => fetchManifest());
     }
   });
+
+  // Cleanup cloud subscription on unmount
+  $effect(() => {
+    return () => {
+      if (cloudUnsubscribe) {
+        cloudUnsubscribe();
+        cloudUnsubscribe = null;
+      }
+    };
+  });
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-<div class="gallery">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class="gallery"
+  bind:this={galleryElement}
+  onwheel={handleWheel}
+>
   <!-- Header -->
   <header class="gallery-header">
     <div class="header-left">
       <h3>Gallery</h3>
-      {#if !loading && captures.length > 0}
+      {#if !isLoading && hasItems}
         <span class="stats">
           {stats.totalScreenshots} screenshots, {stats.routeCount} routes, {stats.deviceCount} devices
         </span>
       {/if}
     </div>
-    {#if timestamp}
-      <span class="timestamp">Last capture: {formatTimestamp(timestamp)}</span>
-    {/if}
+
+    <div class="header-right">
+      <!-- Source mode toggle -->
+      <div class="source-toggle" role="radiogroup" aria-label="Screenshot source">
+        <button
+          class="source-btn"
+          class:active={sourceMode === "local"}
+          role="radio"
+          aria-checked={sourceMode === "local"}
+          onclick={() => setSourceMode("local")}
+        >
+          <i class="fas fa-folder"></i>
+          Local
+        </button>
+        <button
+          class="source-btn"
+          class:active={sourceMode === "cloud"}
+          role="radio"
+          aria-checked={sourceMode === "cloud"}
+          onclick={() => setSourceMode("cloud")}
+        >
+          <i class="fas fa-cloud"></i>
+          Cloud
+        </button>
+      </div>
+
+      {#if sourceMode === "local" && timestamp}
+        <span class="timestamp">Last capture: {formatTimestamp(timestamp)}</span>
+      {/if}
+    </div>
   </header>
 
   <!-- Controls -->
-  {#if !loading && captures.length > 0}
+  {#if !isLoading && hasItems}
     <div class="controls">
       <div class="filter-chips" role="radiogroup" aria-label="Filter by device category">
         {#each FILTERS as filter}
@@ -257,53 +484,69 @@
             class:active={activeFilter === filter.value}
             role="radio"
             aria-checked={activeFilter === filter.value}
-            onclick={() => (activeFilter = filter.value)}
+            onclick={() => { hapticService?.trigger("selection"); activeFilter = filter.value; }}
           >
             {filter.label}
           </button>
         {/each}
       </div>
 
-      <label class="height-control">
-        <span class="height-label">Card size</span>
-        <input
-          type="range"
-          min="180"
-          max="600"
-          step="20"
-          bind:value={columnMin}
-          aria-label="Card size"
-        />
-        <span class="height-value">{columnMin}px</span>
-      </label>
+      <div class="size-presets" role="radiogroup" aria-label="Card size preset">
+        {#each SIZE_PRESETS as preset}
+          <button
+            class="size-pill"
+            class:active={activePreset === preset.label}
+            role="radio"
+            aria-checked={activePreset === preset.label}
+            onclick={() => setPreset(preset.value)}
+          >
+            {preset.label}
+          </button>
+        {/each}
+        <span class="size-hint" title="Ctrl+Scroll to fine-tune">
+          {columnMin}px
+        </span>
+      </div>
     </div>
   {/if}
 
   <!-- Content -->
-  {#if loading}
+  {#if isLoading}
     <div class="state-message">
       <i class="fas fa-circle-notch fa-spin"></i>
-      <span>Loading screenshots...</span>
+      <span>Loading screenshots{sourceMode === "cloud" ? " from cloud" : ""}...</span>
     </div>
-  {:else if fetchError}
+  {:else if errorMessage}
     <div class="state-message error">
       <i class="fas fa-exclamation-triangle"></i>
-      <span>Failed to load manifest: {fetchError}</span>
+      <span>
+        {#if sourceMode === "cloud"}
+          Failed to load cloud screenshots: {errorMessage}
+        {:else}
+          Failed to load manifest: {errorMessage}
+        {/if}
+      </span>
     </div>
-  {:else if captures.length === 0}
+  {:else if !hasItems}
     <div class="state-message empty">
       <i class="fas fa-camera"></i>
-      <h4>No screenshots captured yet</h4>
-      <p>Select routes and devices above, then click Capture.</p>
+      <h4>No screenshots {sourceMode === "cloud" ? "in cloud storage" : "captured yet"}</h4>
+      <p>
+        {#if sourceMode === "cloud"}
+          Run the migration script or capture new screenshots to populate cloud storage.
+        {:else}
+          Select routes and devices above, then click Capture.
+        {/if}
+      </p>
     </div>
   {:else}
     <div class="module-sections">
-      {#each [...filteredModuleGroups.entries()] as [moduleId, routeMap] (moduleId)}
+      {#each [...filteredModuleGroups.entries()] as [moduleId, routeMap], sectionIdx (moduleId)}
         {@const isCollapsed = collapsedModules[moduleId] ?? false}
         {@const routeCount = routeMap.size}
         {@const captureCount = [...routeMap.values()].reduce((sum, arr) => sum + arr.length, 0)}
 
-        <section class="module-section">
+        <section class="module-section" style="--section-i: {sectionIdx};">
           <button
             class="module-header"
             onclick={() => toggleModuleCollapse(moduleId)}
@@ -325,18 +568,18 @@
                     class="device-row"
                     style="grid-template-columns: repeat(auto-fill, minmax(min({columnMin}px, 100%), 1fr));"
                   >
-                    {#each items as capture (capture.filename)}
-                      {@const aspect = getAspectRatio(capture.deviceSlug)}
+                    {#each items as item, cardIdx (item.id)}
+                      {@const aspect = getAspectRatio(item.deviceSlug)}
                       <button
                         class="capture-card"
-                        style="--aspect: {aspect};"
-                        onclick={() => openLightbox(capture)}
-                        aria-label="View {getDeviceName(capture.deviceSlug)} screenshot of {formatRouteLabel(capture.routeLabel)}"
+                        style="--aspect: {aspect}; --card-i: {cardIdx};"
+                        onclick={() => openSpotlight(item)}
+                        aria-label="View {item.deviceName} screenshot of {formatRouteLabel(item.routeLabel)}"
                       >
                         <div class="screenshot-frame">
                           <img
-                            src="/screenshots/captures/{capture.filename}"
-                            alt="{formatRouteLabel(capture.routeLabel)} on {getDeviceName(capture.deviceSlug)}"
+                            src={item.imageUrl}
+                            alt="{formatRouteLabel(item.routeLabel)} on {item.deviceName}"
                             loading="lazy"
                             decoding="async"
                           />
@@ -344,22 +587,28 @@
                         <div class="card-footer">
                           <span
                             class="device-badge"
-                            style="--badge-color: {getCategoryColor(capture.deviceSlug)}"
+                            style="--badge-color: {getCategoryColor(item.deviceSlug)}"
                           >
-                            {getCategoryLabel(capture.deviceSlug)}
+                            {getCategoryLabel(item.deviceSlug)}
                           </span>
-                          <span class="device-name">{getDeviceName(capture.deviceSlug)}</span>
-                          <span class="device-dims">{getDeviceDims(capture.deviceSlug)}</span>
+                          <span class="device-name">{item.deviceName}</span>
+                          <span class="device-dims">{getDeviceDims(item.deviceSlug)}</span>
                         </div>
+                        {#if item.tagIds.length > 0}
+                          <div class="tag-indicator">
+                            <i class="fas fa-tags"></i>
+                            <span>{item.tagIds.length}</span>
+                          </div>
+                        {/if}
                       </button>
                     {/each}
 
-                    <!-- "Not captured" placeholders -->
+                    <!-- "Not captured" placeholders (local mode only) -->
                     {#each missing as slug (slug)}
                       {@const aspect = getAspectRatio(slug)}
                       <div class="capture-card placeholder" style="--aspect: {aspect};">
                         <div class="screenshot-frame placeholder-frame">
-                          <i class="fas fa-camera-retro"></i>
+                          <i class="fas fa-camera-retro shimmer-icon"></i>
                           <span>Not captured</span>
                         </div>
                         <div class="card-footer">
@@ -385,28 +634,14 @@
   {/if}
 </div>
 
-<!-- Lightbox -->
-{#if lightboxSrc}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    class="lightbox-overlay"
-    onclick={closeLightbox}
-    onkeydown={(e) => e.key === "Escape" && closeLightbox()}
-    role="dialog"
-    aria-modal="true"
-    aria-label="Screenshot preview"
-    tabindex="-1"
-  >
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class="lightbox-content" onclick={(e) => e.stopPropagation()}>
-      <img src={lightboxSrc} alt={lightboxCaption} />
-      <p class="lightbox-caption">{lightboxCaption}</p>
-    </div>
-    <button class="lightbox-close" onclick={closeLightbox} aria-label="Close preview">
-      <i class="fas fa-times"></i>
-    </button>
-  </div>
-{/if}
+<!-- MediaSpotlight Viewer -->
+<MediaSpotlight
+  items={spotlightItems}
+  bind:currentIndex={spotlightIndex}
+  bind:open={spotlightOpen}
+  config={spotlightConfig}
+  callbacks={{ onclose: () => { spotlightOpen = false; } }}
+/>
 
 <style>
   .gallery {
@@ -435,6 +670,13 @@
     flex-wrap: wrap;
   }
 
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
   .gallery-header h3 {
     margin: 0;
     font-size: 16px;
@@ -450,6 +692,48 @@
   .timestamp {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  /* Source toggle */
+  .source-toggle {
+    display: flex;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .source-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: none;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    font-family: inherit;
+    cursor: pointer;
+    transition:
+      background var(--duration-fast, 150ms) var(--ease-out, ease-out),
+      color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+  }
+
+  .source-btn:first-child {
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .source-btn:hover {
+    color: var(--theme-text, #fff);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .source-btn.active {
+    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 20%, transparent);
+    color: var(--theme-text, #fff);
+  }
+
+  .source-btn i {
+    font-size: 10px;
   }
 
   /* Controls */
@@ -474,7 +758,9 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+      transform var(--duration-instant, 100ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+      all var(--duration-fast, 150ms) var(--ease-out, ease-out);
     font-family: inherit;
   }
 
@@ -483,33 +769,62 @@
     color: var(--theme-text, #fff);
   }
 
+  .chip:active {
+    transform: scale(var(--active-scale, 0.98));
+  }
+
   .chip.active {
     background: var(--theme-accent, #3b82f6);
     border-color: var(--theme-accent, #3b82f6);
     color: #fff;
   }
 
-  .height-control {
+  /* Size presets */
+  .size-presets {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
+  }
+
+  .size-pill {
+    padding: 4px 10px;
+    border-radius: 16px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    min-width: 32px;
+    transition:
+      transform var(--duration-instant, 100ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+      background var(--duration-fast, 150ms) var(--ease-out, ease-out),
+      border-color var(--duration-fast, 150ms) var(--ease-out, ease-out),
+      color var(--duration-fast, 150ms) var(--ease-out, ease-out);
   }
 
-  .height-label {
-    white-space: nowrap;
+  .size-pill:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, #fff);
   }
 
-  .height-control input[type="range"] {
-    width: 100px;
-    accent-color: var(--theme-accent, #3b82f6);
+  .size-pill:active {
+    transform: scale(var(--active-scale, 0.98));
   }
 
-  .height-value {
-    min-width: 42px;
-    text-align: right;
+  .size-pill.active {
+    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #3b82f6) 50%, transparent);
+    color: var(--theme-text, #fff);
+  }
+
+  .size-hint {
+    font-size: 10px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
+    margin-left: 4px;
     font-variant-numeric: tabular-nums;
+    cursor: help;
   }
 
   /* Module sections */
@@ -523,6 +838,8 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    animation: slideUp var(--duration-normal, 200ms) var(--ease-out, ease-out) both;
+    animation-delay: calc(var(--stagger-normal, 50ms) * var(--section-i, 0));
   }
 
   .module-header {
@@ -540,17 +857,24 @@
     font-weight: 600;
     text-align: left;
     width: 100%;
-    transition: background 0.15s ease;
+    transition:
+      transform var(--duration-instant, 100ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+      background var(--duration-fast, 150ms) var(--ease-out, ease-out);
   }
 
   .module-header:hover {
+    transform: scale(var(--hover-scale-sm, 1.01));
     background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
+  }
+
+  .module-header:active {
+    transform: scale(var(--active-scale, 0.98));
   }
 
   .module-header i {
     font-size: 10px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    transition: transform 0.15s ease;
+    transition: transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
   }
 
   .module-header i.expanded {
@@ -596,39 +920,49 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
     gap: 10px;
+    transition: grid-template-columns var(--duration-normal, 200ms) var(--ease-out, ease-out);
   }
 
   /* Capture cards */
   .capture-card {
+    position: relative;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 10px;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+      transform var(--duration-instant, 100ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+      border-color var(--duration-fast, 150ms) var(--ease-out, ease-out),
+      box-shadow var(--duration-fast, 150ms) var(--ease-out, ease-out);
     padding: 0;
     font-family: inherit;
     color: inherit;
     text-align: left;
+    animation: popIn var(--duration-emphasis, 280ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
+    animation-delay: calc(var(--stagger-micro, 30ms) * var(--card-i, 0));
   }
 
   .capture-card:hover {
-    transform: scale(1.02);
+    transform: scale(var(--hover-scale-md, 1.02)) translateY(var(--hover-lift-sm, -1px));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   }
 
   .capture-card:active {
-    transform: scale(0.98);
+    transform: scale(var(--active-scale, 0.98));
   }
 
   .capture-card.placeholder {
     cursor: default;
     opacity: 0.5;
+    animation: none;
   }
 
   .capture-card.placeholder:hover {
     transform: none;
     border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    box-shadow: none;
   }
 
   .screenshot-frame {
@@ -655,8 +989,9 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-  .placeholder-frame i {
+  .shimmer-icon {
     font-size: 20px;
+    animation: pulse 2s ease-in-out infinite;
   }
 
   .card-footer {
@@ -686,6 +1021,26 @@
   .device-dims {
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     margin-left: auto;
+  }
+
+  /* Tag indicator */
+  .tag-indicator {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+    font-size: 10px;
+    pointer-events: none;
+  }
+
+  .tag-indicator i {
+    font-size: 9px;
   }
 
   /* State messages */
@@ -720,78 +1075,29 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-  /* Lightbox */
-  .lightbox-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: rgba(0, 0, 0, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-  }
-
-  .lightbox-content {
-    max-width: 90vw;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .lightbox-content img {
-    max-width: 100%;
-    max-height: calc(90vh - 40px);
-    object-fit: contain;
-    border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  }
-
-  .lightbox-caption {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: var(--font-size-min, 14px);
-    margin: 0;
-    text-align: center;
-  }
-
-  .lightbox-close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    font-size: 20px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s;
-  }
-
-  .lightbox-close:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .capture-card {
+    .capture-card,
+    .module-section {
+      animation: none;
+    }
+    .capture-card,
+    .chip,
+    .size-pill,
+    .module-header,
+    .module-header i,
+    .source-btn {
       transition: none;
     }
     .capture-card:hover,
-    .capture-card:active {
+    .capture-card:active,
+    .chip:active,
+    .size-pill:active,
+    .module-header:hover,
+    .module-header:active {
       transform: none;
     }
-    .chip {
-      transition: none;
-    }
-    .module-header,
-    .module-header i {
-      transition: none;
+    .shimmer-icon {
+      animation: none;
     }
   }
 </style>

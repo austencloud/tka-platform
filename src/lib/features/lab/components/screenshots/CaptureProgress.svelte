@@ -1,6 +1,7 @@
 <!--
-  CaptureProgress — Shows a progress bar and count during active captures.
+  CaptureProgress — Animated progress bar and count during active captures.
   Auto-polls the capture job status endpoint every 2 seconds.
+  Shimmer overlay while running, popIn on completion, shake on error.
 -->
 <script lang="ts">
   import { untrack } from "svelte";
@@ -19,6 +20,8 @@
   let { jobId, orchestrator, onPollStatus, onComplete }: Props = $props();
 
   let status = $state<CaptureJobStatus | null>(null);
+  let prevCompleted = $state(0);
+  let countBump = $state(false);
   // Not reactive — infrastructure-only, no rendering depends on this ref
   let pollTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -36,6 +39,15 @@
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}m ${secs}s`;
+  });
+
+  // Animate count changes
+  $effect(() => {
+    if (!status || status.completed === prevCompleted) return;
+    prevCompleted = status.completed;
+    countBump = true;
+    const timeout = setTimeout(() => { countBump = false; }, 300);
+    return () => clearTimeout(timeout);
   });
 
   // Poll job status when jobId is set
@@ -86,20 +98,27 @@
 </script>
 
 {#if status}
-  <div class="capture-progress" class:failed={status.status === "failed"}>
+  <div
+    class="capture-progress"
+    class:failed={status.status === "failed"}
+    class:completed={status.status === "completed"}
+  >
     <div class="progress-header">
       {#if status.status === "running"}
         <i class="fas fa-circle-notch fa-spin"></i>
         <span class="progress-text">
-          Capturing {status.completed} / {status.total}
+          Capturing
+          <span class="count" class:bump={countBump}>
+            {status.completed} / {status.total}
+          </span>
         </span>
       {:else if status.status === "completed"}
-        <i class="fas fa-check-circle"></i>
+        <i class="fas fa-check-circle complete-icon"></i>
         <span class="progress-text">
           Captured {status.completed} screenshots
         </span>
       {:else}
-        <i class="fas fa-exclamation-triangle"></i>
+        <i class="fas fa-exclamation-triangle error-icon"></i>
         <span class="progress-text">Capture failed</span>
       {/if}
       <span class="elapsed">{elapsed()}</span>
@@ -110,6 +129,7 @@
         class="progress-bar-fill"
         class:complete={status.status === "completed"}
         class:error={status.status === "failed"}
+        class:running={status.status === "running"}
         style="width: {progressPercent}%"
       ></div>
     </div>
@@ -129,10 +149,16 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
+    animation: slideUp var(--duration-normal, 200ms) var(--ease-out, ease-out);
   }
 
   .capture-progress.failed {
     border-color: var(--semantic-error, #ef4444);
+    animation: shake 0.5s ease;
+  }
+
+  .capture-progress.completed {
+    border-color: var(--semantic-success, #22c55e);
   }
 
   .progress-header {
@@ -147,16 +173,27 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-  .progress-header .fa-check-circle {
+  .complete-icon {
     color: var(--semantic-success, #22c55e);
+    animation: popIn var(--duration-emphasis, 280ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
   }
 
-  .progress-header .fa-exclamation-triangle {
+  .error-icon {
     color: var(--semantic-error, #ef4444);
   }
 
   .progress-text {
     font-weight: 500;
+  }
+
+  .count {
+    font-variant-numeric: tabular-nums;
+    display: inline-block;
+    transition: transform var(--duration-instant, 100ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+  }
+
+  .count.bump {
+    animation: scaleIn var(--duration-fast, 150ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
   }
 
   .elapsed {
@@ -171,6 +208,7 @@
     border-radius: 3px;
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     overflow: hidden;
+    position: relative;
   }
 
   .progress-bar-fill {
@@ -178,6 +216,21 @@
     border-radius: 3px;
     background: var(--theme-accent, #3b82f6);
     transition: width 0.3s ease;
+    position: relative;
+  }
+
+  .progress-bar-fill.running::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.25) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s linear infinite;
   }
 
   .progress-bar-fill.complete {
@@ -199,7 +252,25 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .capture-progress,
+    .capture-progress.failed {
+      animation: none;
+    }
+
+    .complete-icon,
+    .count.bump {
+      animation: none;
+    }
+
     .progress-bar-fill {
+      transition: none;
+    }
+
+    .progress-bar-fill.running::after {
+      animation: none;
+    }
+
+    .count {
       transition: none;
     }
   }

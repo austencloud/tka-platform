@@ -451,6 +451,22 @@ service cloud.firestore {
         allow read, create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
+
+      // -------------------------------------------------------------------------
+      // SCREENSHOTS (Lab Screenshot Capture Gallery)
+      // -------------------------------------------------------------------------
+      match /screenshots/{screenshotId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
+      // SCREENSHOT TAGS (Tagging System for Screenshots)
+      // -------------------------------------------------------------------------
+      match /screenshotTags/{tagId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
     }
 
     // ============================================================================
