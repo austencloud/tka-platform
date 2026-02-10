@@ -1,5 +1,6 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
+import { dev } from "$app/environment";
 import {
   checkRateLimit,
   rateLimitResponse,
@@ -20,6 +21,11 @@ function sanitizeLogInput(input: string): string {
 }
 
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+  // Never expose in production — returns 404 so the endpoint doesn't even appear to exist
+  if (!dev) {
+    return new Response(null, { status: 404 });
+  }
+
   // Rate limit to prevent log flooding
   const clientIp = getClientAddress();
   const rateCheck = checkRateLimit(

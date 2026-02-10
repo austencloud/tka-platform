@@ -16,19 +16,13 @@
  */
 import type { RequestHandler } from "@sveltejs/kit";
 import { json, error } from "@sveltejs/kit";
-import { requireFirebaseUser } from "$lib/server/auth/requireFirebaseUser";
-import { getAdminDb } from "$lib/server/firebaseAdmin";
+import { requireAdmin } from "$lib/server/auth/requireAdmin";
 import { POSTHOG_PERSONAL_API_KEY, POSTHOG_PROJECT_ID } from "$env/static/private";
+import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
+import { withRateLimit } from "$lib/server/security/withRateLimit";
+import { logAdminAction } from "$lib/server/security/audit-logger";
 
 const POSTHOG_API_BASE = "https://us.i.posthog.com/api";
-
-async function isAdmin(uid: string): Promise<boolean> {
-  const db = getAdminDb();
-  const userDoc = await db.collection("users").doc(uid).get();
-  if (!userDoc.exists) return false;
-  const data = userDoc.data();
-  return data?.role === "admin" || data?.isAdmin === true;
-}
 
 function getPostHogHeaders() {
   if (!POSTHOG_PERSONAL_API_KEY) {
@@ -53,11 +47,10 @@ function getProjectId(): string {
  */
 export const GET: RequestHandler = async (event) => {
   try {
-    const caller = await requireFirebaseUser(event);
-    const callerIsAdmin = await isAdmin(caller.uid);
-    if (!callerIsAdmin) {
-      throw error(403, "Admin access required");
-    }
+    const caller = await requireAdmin(event);
+
+    const blocked = withRateLimit(event, RATE_LIMITS.ADMIN, "user", caller.uid);
+    if (blocked) return blocked;
 
     const projectId = getProjectId();
     const response = await fetch(
@@ -90,11 +83,10 @@ export const GET: RequestHandler = async (event) => {
  */
 export const POST: RequestHandler = async (event) => {
   try {
-    const caller = await requireFirebaseUser(event);
-    const callerIsAdmin = await isAdmin(caller.uid);
-    if (!callerIsAdmin) {
-      throw error(403, "Admin access required");
-    }
+    const caller = await requireAdmin(event);
+
+    const blocked = withRateLimit(event, RATE_LIMITS.ADMIN, "user", caller.uid);
+    if (blocked) return blocked;
 
     const projectId = getProjectId();
 
@@ -147,6 +139,13 @@ export const POST: RequestHandler = async (event) => {
     const migrated = results.filter((r) => r.success).length;
     console.log(`[feature-flags] Migration: reactivated ${migrated}/${deactivatedFlags.length} flags with 0% rollout`);
 
+    logAdminAction({
+      uid: caller.uid,
+      action: "feature_flag_migration",
+      metadata: { migrated, total: deactivatedFlags.length },
+      ip: event.getClientAddress(),
+    });
+
     return json({ success: true, migrated, total: deactivatedFlags.length, results });
   } catch (err: unknown) {
     if (typeof err === "object" && err && "status" in err) {
@@ -164,16 +163,11 @@ export const POST: RequestHandler = async (event) => {
  * Body: { flagKey: string, enabled?: boolean, filters?: object }
  */
 export const PATCH: RequestHandler = async (event) => {
-  console.log("[feature-flags] PATCH request received");
   try {
-    console.log("[feature-flags] Verifying Firebase user...");
-    const caller = await requireFirebaseUser(event);
-    console.log("[feature-flags] User verified:", caller.uid);
-    const callerIsAdmin = await isAdmin(caller.uid);
-    console.log("[feature-flags] Is admin:", callerIsAdmin);
-    if (!callerIsAdmin) {
-      throw error(403, "Admin access required");
-    }
+    const caller = await requireAdmin(event);
+
+    const blocked = withRateLimit(event, RATE_LIMITS.ADMIN, "user", caller.uid);
+    if (blocked) return blocked;
 
     const body = await event.request.json();
     const { flagKey, enabled, filters } = body;
@@ -232,6 +226,15 @@ export const PATCH: RequestHandler = async (event) => {
       }
 
       const created = await createResponse.json();
+
+      logAdminAction({
+        uid: caller.uid,
+        action: "feature_flag_create",
+        target: flagKey,
+        metadata: { enabled: isEnabled },
+        ip: event.getClientAddress(),
+      });
+
       return json({
         success: true,
         flag: created,
@@ -276,6 +279,15 @@ export const PATCH: RequestHandler = async (event) => {
     }
 
     const updated = await updateResponse.json();
+
+    logAdminAction({
+      uid: caller.uid,
+      action: "feature_flag_update",
+      target: flagKey,
+      metadata: { enabled, hasFilters: !!filters },
+      ip: event.getClientAddress(),
+    });
+
     return json({ success: true, flag: updated, action: "updated", projectId });
   } catch (err: unknown) {
     console.error("[feature-flags] PATCH Error:", err);

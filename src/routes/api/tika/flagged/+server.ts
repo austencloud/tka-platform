@@ -8,6 +8,10 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import fs from 'fs';
 import path from 'path';
+import { requireAdmin as requireAdminAuth } from '$lib/server/auth/requireAdmin';
+import { RATE_LIMITS } from '$lib/server/security/rate-limiter';
+import { withRateLimit } from '$lib/server/security/withRateLimit';
+import { logAdminAction } from '$lib/server/security/audit-logger';
 
 interface FlaggedItem {
 	id: string;
@@ -98,8 +102,12 @@ function saveResolutions(resolutions: Record<string, FlaggedItem['resolution']>)
 /**
  * GET - Retrieve all flagged items
  */
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async (event) => {
 	try {
+		const caller = await requireAdminAuth(event);
+
+		const blocked = withRateLimit(event, RATE_LIMITS.ADMIN, 'user', caller.uid);
+		if (blocked) return blocked;
 		// Find all evaluation reports
 		if (!fs.existsSync(REPORTS_DIR)) {
 			return json({ items: [], summary: { total: 0, pending: 0, resolved: 0 } });
@@ -170,9 +178,14 @@ export const GET: RequestHandler = async () => {
 /**
  * POST - Resolve a flagged item
  */
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
 	try {
-		const body = await request.json();
+		const caller = await requireAdminAuth(event);
+
+		const blocked = withRateLimit(event, RATE_LIMITS.ADMIN, 'user', caller.uid);
+		if (blocked) return blocked;
+
+		const body = await event.request.json();
 		const { itemId, status, notes, correctedResponse, resolvedBy } = body;
 
 		if (!itemId || !status) {
@@ -189,6 +202,14 @@ export const POST: RequestHandler = async ({ request }) => {
 		};
 
 		saveResolutions(resolutions);
+
+		logAdminAction({
+			uid: caller.uid,
+			action: 'flagged_item_resolve',
+			target: itemId as string,
+			metadata: { status },
+			ip: event.getClientAddress(),
+		});
 
 		return json({ success: true, resolution: resolutions[itemId] });
 	} catch (error) {

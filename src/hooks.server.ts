@@ -78,5 +78,28 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
+  // Content Security Policy
+  response.headers.set(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://accounts.google.com",
+      "style-src 'self' 'unsafe-inline'",
+      "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.google.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://us.i.posthog.com https://*.posthog.com wss://*.firebaseio.com",
+      "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://storage.googleapis.com https://*.googleusercontent.com",
+      "font-src 'self'",
+      "frame-src https://accounts.google.com https://*.firebaseapp.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; "),
+  );
+
+  // Permissions Policy — block unused browser APIs
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(self), geolocation=(), payment=()",
+  );
+
   return response;
 };

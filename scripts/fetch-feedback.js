@@ -626,10 +626,21 @@ async function downloadFeedbackImages(feedbackId, imageUrls) {
     const filepath = `${imageDir}/${filename}`;
 
     try {
-      // Use curl with --ssl-no-revoke to handle certificate issues
-      execSync(`curl --ssl-no-revoke -s -o "${filepath}" "${url}"`, {
-        stdio: "pipe",
-      });
+      // Validate URL before downloading to prevent command injection
+      const parsedUrl = new URL(url);
+      if (!["https:", "http:"].includes(parsedUrl.protocol)) {
+        console.error(`  ⚠️  Skipping image ${i + 1}: invalid protocol ${parsedUrl.protocol}`);
+        continue;
+      }
+
+      // Use Node.js fetch instead of curl execSync to avoid command injection
+      const { writeFileSync } = await import("fs");
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const buffer = Buffer.from(await response.arrayBuffer());
+      writeFileSync(filepath, buffer);
       downloadedPaths.push(filepath);
     } catch (error) {
       console.error(

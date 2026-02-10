@@ -16,8 +16,9 @@ import { writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import { join } from "path";
 import { dev } from "$app/environment";
+import { requireFirebaseUser } from "$lib/server/auth/requireFirebaseUser";
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
   // Only allow in development mode for safety
   if (!dev) {
     return json(
@@ -26,7 +27,11 @@ export const POST: RequestHandler = async ({ request }) => {
     );
   }
 
+  // Defense-in-depth: require auth even in dev (writes to filesystem)
+  await requireFirebaseUser(event);
+
   try {
+    const { request } = event;
     const formData = await request.formData();
     const file = formData.get("image") as File;
     const word = formData.get("word") as string;

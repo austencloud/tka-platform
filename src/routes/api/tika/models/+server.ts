@@ -7,6 +7,9 @@
 
 import type { RequestHandler } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
+import { requireFirebaseUser } from '$lib/server/auth/requireFirebaseUser'
+import { RATE_LIMITS } from '$lib/server/security/rate-limiter'
+import { withRateLimit } from '$lib/server/security/withRateLimit'
 
 export interface ModelOption {
   id: string
@@ -17,7 +20,13 @@ export interface ModelOption {
   description: string
 }
 
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async (event) => {
+  // Leaks which API keys are configured — require auth
+  const caller = await requireFirebaseUser(event)
+
+  const blocked = withRateLimit(event, RATE_LIMITS.GENERAL, 'user', caller.uid)
+  if (blocked) return blocked
+
   const models: ModelOption[] = []
 
   // Sonnet 4 - always first (default)

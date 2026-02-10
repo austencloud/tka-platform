@@ -3,22 +3,14 @@ import { container } from "$lib/shared/di";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import {
-  checkRateLimit,
-  rateLimitResponse,
-  RATE_LIMITS,
-} from "$lib/server/security/rate-limiter";
+import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
+import { withRateLimit } from "$lib/server/security/withRateLimit";
 
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-  // Rate limit to prevent resource exhaustion
-  const clientIp = getClientAddress();
-  const rateCheck = checkRateLimit(
-    `test-render:${clientIp}`,
-    RATE_LIMITS.GENERAL
-  );
-  if (!rateCheck.allowed) {
-    return rateLimitResponse(rateCheck.resetAt);
-  }
+export const POST: RequestHandler = async (event) => {
+  const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, "ip");
+  if (blocked) return blocked;
+
+  const { request } = event;
   try {
     const body = (await request.json()) as { stepSize?: unknown };
     const stepSizeValue = body.stepSize;

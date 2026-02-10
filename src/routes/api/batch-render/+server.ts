@@ -13,11 +13,8 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import {
-  checkRateLimit,
-  rateLimitResponse,
-  RATE_LIMITS,
-} from "$lib/server/security/rate-limiter";
+import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
+import { withRateLimit } from "$lib/server/security/withRateLimit";
 
 /**
  * Check if a sequence requires non-radial points to be shown
@@ -120,16 +117,12 @@ export const GET: RequestHandler = async () => {
   });
 };
 
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+export const POST: RequestHandler = async (event) => {
   // Rate limit to prevent resource exhaustion (rendering is CPU-intensive)
-  const clientIp = getClientAddress();
-  const rateCheck = checkRateLimit(
-    `batch-render:${clientIp}`,
-    RATE_LIMITS.GENERAL
-  );
-  if (!rateCheck.allowed) {
-    return rateLimitResponse(rateCheck.resetAt);
-  }
+  const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, "ip");
+  if (blocked) return blocked;
+
+  const { request } = event;
 
   try {
     const body = (await request.json()) as {

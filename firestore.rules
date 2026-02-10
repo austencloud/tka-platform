@@ -243,13 +243,18 @@ service cloud.firestore {
       // 1. Owner updating their own profile
       // 2. Admins updating any user's profile (role changes, moderation)
       // 3. Authenticated users incrementing/decrementing followerCount (for follow/unfollow)
-      allow update: if isOwner(userId)
+      allow update: if (isOwner(userId)
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isAdmin', 'isModerator']))
         || isAdmin()
         || (isAuthenticated()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount'])
+            && request.resource.data.followerCount is int
+            && request.resource.data.followerCount >= 0
             && request.resource.data.followerCount == resource.data.followerCount + 1)
         || (isAuthenticated()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount'])
+            && request.resource.data.followerCount is int
+            && request.resource.data.followerCount >= 0
             && request.resource.data.followerCount == resource.data.followerCount - 1);
 
       // Users can delete their own profile, admins can delete any user (for testing)
@@ -783,10 +788,13 @@ service cloud.firestore {
       allow create: if isAuthenticated()
         && request.resource.data.creatorId == request.auth.uid;
 
-      // Creator can update, collaborators can update limited fields
+      // Creator can update any field
+      // Collaborators can only update title, description, and tags
       allow update: if isAuthenticated()
         && (resource.data.creatorId == request.auth.uid
-            || request.auth.uid in resource.data.collaboratorIds);
+            || (request.auth.uid in resource.data.collaboratorIds
+                && request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['title', 'description', 'tags', 'updatedAt'])));
 
       // Only creator can delete
       allow delete: if isAuthenticated()
@@ -807,9 +815,12 @@ service cloud.firestore {
       // Authenticated users can create short codes
       allow create: if isAuthenticated();
 
-      // Anyone can increment scan count (fire-and-forget analytics)
-      // Only allow updating the scanCount field
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['scanCount']);
+      // Authenticated users can increment scan count (fire-and-forget analytics)
+      // Only allow updating the scanCount field, must be an increment of exactly 1
+      allow update: if isAuthenticated()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['scanCount'])
+        && request.resource.data.scanCount is int
+        && request.resource.data.scanCount == resource.data.scanCount + 1;
 
       // No deletion - short codes are permanent
       allow delete: if isAdmin();

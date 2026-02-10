@@ -11,6 +11,7 @@ import { json, type RequestHandler } from "@sveltejs/kit";
 import { dev } from "$app/environment";
 import fs from "fs";
 import path from "path";
+import { requireFirebaseUser } from "$lib/server/auth/requireFirebaseUser";
 
 interface SaveRequest {
   letter: string;
@@ -20,7 +21,7 @@ interface SaveRequest {
   base64: string;
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
   // Only allow in development
   if (!dev) {
     return json(
@@ -29,7 +30,11 @@ export const POST: RequestHandler = async ({ request }) => {
     );
   }
 
+  // Defense-in-depth: require auth even in dev (writes to filesystem)
+  await requireFirebaseUser(event);
+
   try {
+    const { request } = event;
     const body: SaveRequest = await request.json();
     const { letter, variation, gridMode, propType, base64 } = body;
 

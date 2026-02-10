@@ -16,6 +16,9 @@
 import type { RequestHandler } from "@sveltejs/kit";
 import { streamText, tool, convertToModelMessages, type UIMessage, jsonSchema } from "ai";
 import { env } from "$env/dynamic/private";
+import { requireFirebaseUser } from "$lib/server/auth/requireFirebaseUser";
+import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
+import { withRateLimit } from "$lib/server/security/withRateLimit";
 import { buildSystemPrompt } from "$lib/features/tika/ai/system-prompts";
 import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
 import {
@@ -435,9 +438,15 @@ interface TIKARequest {
   model?: string;
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
   try {
-    const body: TIKARequest = await request.json();
+    // Require authenticated user - prevents unauthorized AI API usage
+    const caller = await requireFirebaseUser(event);
+
+    const blocked = withRateLimit(event, RATE_LIMITS.AI_CHAT, "user", caller.uid);
+    if (blocked) return blocked;
+
+    const body: TIKARequest = await event.request.json();
     const container = getContainer();
     const { modelProvider } = container;
 

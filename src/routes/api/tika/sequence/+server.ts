@@ -8,6 +8,8 @@
 import type { RequestHandler } from "@sveltejs/kit";
 import fs from "fs";
 import path from "path";
+import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
+import { withRateLimit } from "$lib/server/security/withRateLimit";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -364,9 +366,12 @@ interface SequenceRequest {
   maxAttempts?: number;
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
+  const blocked = withRateLimit(event, RATE_LIMITS.GENERAL, "ip");
+  if (blocked) return blocked;
+
   try {
-    const body: SequenceRequest = await request.json();
+    const body: SequenceRequest = await event.request.json();
 
     ensureDataLoaded();
 

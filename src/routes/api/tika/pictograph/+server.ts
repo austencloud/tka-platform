@@ -15,6 +15,8 @@ import { json, type RequestHandler } from '@sveltejs/kit'
 import { dev } from '$app/environment'
 import fs from 'fs'
 import path from 'path'
+import { RATE_LIMITS } from '$lib/server/security/rate-limiter'
+import { withRateLimit } from '$lib/server/security/withRateLimit'
 
 // Get absolute path to mcp-server renderer using process.cwd() (more reliable in Vite SSR)
 const MCP_RENDERER_PATH = path.join(process.cwd(), 'mcp-server', 'dist', 'src', 'core', 'standalone-renderer.js')
@@ -107,11 +109,16 @@ function getPictographsForMode(gridMode: 'diamond' | 'box'): PictographData[] {
 	return gridMode === 'box' ? boxPictographs : diamondPictographs
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
 	// This API only works in development - production uses pre-rendered static files
 	if (!dev) {
 		return json({ error: 'Pictograph API is only available in development mode' }, { status: 503 })
 	}
+
+	const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, 'ip')
+	if (blocked) return blocked
+
+	const { request } = event
 
 	try {
 		const { letter, variation = 0, gridMode = 'diamond', options = {} } = await request.json()
@@ -233,11 +240,16 @@ export const POST: RequestHandler = async ({ request }) => {
 }
 
 // GET endpoint for simple letter lookups - returns PNG directly
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async (event) => {
 	// This API only works in development - production uses pre-rendered static files
 	if (!dev) {
 		return json({ error: 'Pictograph API is only available in development mode' }, { status: 503 })
 	}
+
+	const blocked = withRateLimit(event, RATE_LIMITS.AI_RENDER, 'ip')
+	if (blocked) return blocked
+
+	const { url } = event
 
 	const letter = url.searchParams.get('letter')
 	const variation = parseInt(url.searchParams.get('variation') || '0', 10)

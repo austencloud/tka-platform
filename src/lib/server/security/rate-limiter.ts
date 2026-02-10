@@ -126,4 +126,19 @@ export const RATE_LIMITS = {
     maxRequests: 100,
     windowMs: 60 * 1000, // 1 minute
   },
+  /** AI chat endpoints (tika/ask, tika/voice-command): 30 requests per minute per user */
+  AI_CHAT: {
+    maxRequests: 30,
+    windowMs: 60 * 1000, // 1 minute
+  },
+  /** AI render endpoints (batch-render, render-pictograph, test-render): 20 requests per minute per IP */
+  AI_RENDER: {
+    maxRequests: 20,
+    windowMs: 60 * 1000, // 1 minute
+  },
+  /** Admin endpoints: 30 requests per minute per user */
+  ADMIN: {
+    maxRequests: 30,
+    windowMs: 60 * 1000, // 1 minute
+  },
 } as const;

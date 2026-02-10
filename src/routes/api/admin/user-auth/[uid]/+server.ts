@@ -4,8 +4,11 @@
  */
 import type { RequestHandler } from "@sveltejs/kit";
 import { json, error } from "@sveltejs/kit";
-import { requireFirebaseUser } from "$lib/server/auth/requireFirebaseUser";
-import { getAdminAuth, getAdminDb } from "$lib/server/firebaseAdmin";
+import { requireAdmin } from "$lib/server/auth/requireAdmin";
+import { getAdminAuth } from "$lib/server/firebaseAdmin";
+import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
+import { withRateLimit } from "$lib/server/security/withRateLimit";
+import { logAdminAction } from "$lib/server/security/audit-logger";
 
 export interface UserAuthData {
   uid: string;
@@ -38,26 +41,13 @@ export interface UserAuthData {
   } | null;
 }
 
-async function isAdmin(uid: string): Promise<boolean> {
-  const db = getAdminDb();
-  const userDoc = await db.collection("users").doc(uid).get();
-  if (!userDoc.exists) return false;
-  const data = userDoc.data();
-  return data?.role === "admin" || data?.isAdmin === true;
-}
-
 export const GET: RequestHandler = async (event) => {
   try {
-    // Verify caller is authenticated
-    const caller = await requireFirebaseUser(event);
+    const caller = await requireAdmin(event);
 
-    // Verify caller is an admin
-    const callerIsAdmin = await isAdmin(caller.uid);
-    if (!callerIsAdmin) {
-      throw error(403, "Admin access required");
-    }
+    const blocked = withRateLimit(event, RATE_LIMITS.ADMIN, "user", caller.uid);
+    if (blocked) return blocked;
 
-    // Get target user ID from params
     const targetUid = event.params.uid;
     if (!targetUid) {
       throw error(400, "User ID required");
@@ -100,6 +90,13 @@ export const GET: RequestHandler = async (event) => {
           }
         : null,
     };
+
+    logAdminAction({
+      uid: caller.uid,
+      action: "user_auth_query",
+      target: targetUid,
+      ip: event.getClientAddress(),
+    });
 
     return json(response);
   } catch (err: unknown) {
