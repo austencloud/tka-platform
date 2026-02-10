@@ -5,6 +5,7 @@
 
 import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
 import type { IViewportManager } from "../../device/services/contracts/IViewportManager";
+import { BREAKPOINTS } from "../../device/domain/constants/device-constants";
 import {
   desktopSidebarState,
   updateDesktopSidebarVisibility,
@@ -32,7 +33,7 @@ export function useDesktopSidebarVisibility(
     // Check if we're in a module that uses side-by-side layout
     // For now, we'll use viewport width as a proxy
     // In the Create module, this would be determined by CreateModuleLayoutManager
-    const isSideBySideLayout = viewportWidth >= 1024;
+    const isSideBySideLayout = viewportWidth >= BREAKPOINTS.DESKTOP;
 
     updateDesktopSidebarVisibility(
       isDesktop,

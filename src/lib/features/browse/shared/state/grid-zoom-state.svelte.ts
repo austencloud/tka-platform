@@ -10,13 +10,11 @@
  */
 
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
 
 const MIN_COLUMNS = 2;
 const MAX_COLUMNS_MOBILE = 3;
 const MAX_COLUMNS_DESKTOP = 5;
-
-/** Mobile breakpoint — matches common tablet/phone threshold */
-const MOBILE_BREAKPOINT = 768;
 
 // Preserve state across HMR
 function getInitialColumns(): number {
@@ -39,12 +37,12 @@ class GridZoomManager {
 
 	/**
 	 * Max columns allowed for the current viewport.
-	 * Mobile (< 768px): 3 columns max
-	 * Desktop (>= 768px): 5 columns max
+	 * Mobile (< BREAKPOINTS.MOBILE): 3 columns max
+	 * Desktop (>= BREAKPOINTS.MOBILE): 5 columns max
 	 */
 	get maxColumns(): number {
 		if (typeof window === "undefined") return MAX_COLUMNS_DESKTOP;
-		return window.innerWidth < MOBILE_BREAKPOINT
+		return window.innerWidth < BREAKPOINTS.MOBILE
 			? MAX_COLUMNS_MOBILE
 			: MAX_COLUMNS_DESKTOP;
 	}

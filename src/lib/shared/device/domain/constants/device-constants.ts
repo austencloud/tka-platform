@@ -4,6 +4,33 @@ export const DEBUG_MODE =
   typeof window !== "undefined" &&
   window.location.search.includes("debug=foldable");
 
+// ============================================================================
+// BREAKPOINTS - Single source of truth for all device size thresholds
+// ============================================================================
+// Every file that checks viewport width against a device category MUST
+// import from here. Grep for raw pixel values (768, 1024, etc.) to find
+// violations.
+
+export const BREAKPOINTS = {
+  /** Below this = small mobile (tiny phones, foldable cover screens) */
+  SMALL_MOBILE: 480,
+  /** Below this = mobile phone */
+  MOBILE: 768,
+  /** Below this = portrait mobile for nav purposes */
+  PORTRAIT_MOBILE: 600,
+  /** Below this = tablet; at or above = desktop */
+  DESKTOP: 1024,
+  /** Above this = large desktop */
+  LARGE_DESKTOP: 1440,
+} as const;
+
+export const LANDSCAPE_THRESHOLDS = {
+  /** Aspect ratio above this in landscape = phone-like proportions */
+  WIDE_ASPECT_RATIO: 1.7,
+  /** Height at or below this in landscape = phone/small tablet */
+  MAX_PHONE_HEIGHT: 600,
+} as const;
+
 // Device specification configuration
 // NOTE: Keep these dimensions updated as new devices are released or tested
 export const FOLDABLE_DEVICE_SPECS = {

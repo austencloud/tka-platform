@@ -17,9 +17,16 @@ export interface IDeviceDetector {
   detectDeviceType(): DeviceType;
 
   /**
-   * Check if device supports touch input
+   * Whether the device's PRIMARY input is touch.
+   * Returns false for touchscreen desktops where mouse/keyboard is primary.
    */
   isTouchDevice(): boolean;
+
+  /**
+   * Whether the device has touch hardware at all (including touchscreen laptops).
+   * Use `isTouchDevice()` for UX decisions; this is for raw capability checks.
+   */
+  hasTouchHardware(): boolean;
 
   /**
    * Check if device is mobile

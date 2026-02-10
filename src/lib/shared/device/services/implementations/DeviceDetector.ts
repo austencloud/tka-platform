@@ -4,6 +4,7 @@ import type {
   DeviceCapabilities,
   ResponsiveSettings,
 } from "../../domain/models/device-models";
+import { BREAKPOINTS, LANDSCAPE_THRESHOLDS } from "../../domain/constants/device-constants";
 import type { IDeviceDetector } from "../contracts/IDeviceDetector";
 import type { IViewportManager } from "../contracts/IViewportManager";
 /**
@@ -58,11 +59,11 @@ export class DeviceDetector implements IDeviceDetector {
     let deviceType: DeviceType;
 
     // Mobile detection (for testing, use viewport width instead of screen width)
-    if (viewportWidth < 768) {
+    if (viewportWidth < BREAKPOINTS.MOBILE) {
       deviceType = DeviceType.MOBILE;
     }
     // Tablet detection
-    else if (hasTouch && viewportWidth >= 768 && viewportWidth < 1024) {
+    else if (hasTouch && viewportWidth >= BREAKPOINTS.MOBILE && viewportWidth < BREAKPOINTS.DESKTOP) {
       deviceType = DeviceType.TABLET;
     }
     // Desktop detection
@@ -79,7 +80,35 @@ export class DeviceDetector implements IDeviceDetector {
     return deviceType;
   }
 
+  /**
+   * Whether the device's PRIMARY input is touch.
+   *
+   * Returns false for touchscreen desktops/laptops (Surface, Dell touchscreen, etc.)
+   * where the user primarily uses mouse/trackpad. Those devices have touch hardware
+   * but the UX should remain desktop (side drawers, keyboard hints, etc.).
+   *
+   * For raw hardware touch capability, use `hasTouchHardware()`.
+   */
   isTouchDevice(): boolean {
+    const hasTouch = this.hasTouchHardware();
+    if (!hasTouch) return false;
+
+    // Desktop-class viewport with touch = touchscreen laptop/monitor, not a phone
+    // These users primarily use mouse/keyboard, touch is secondary
+    if (this.detectDeviceType() === DeviceType.DESKTOP) return false;
+
+    // Simulated mobile (Chrome DevTools) should not count as touch
+    if (this.isSimulatedMobile()) return false;
+
+    return true;
+  }
+
+  /**
+   * Whether the device has touch hardware at all.
+   * True for touchscreen laptops, tablets, phones, and Chrome DevTools emulation.
+   * Use `isTouchDevice()` instead for UX decisions.
+   */
+  hasTouchHardware(): boolean {
     return "ontouchstart" in window || navigator.maxTouchPoints > 0;
   }
 
@@ -101,7 +130,7 @@ export class DeviceDetector implements IDeviceDetector {
    *   so we check for Safari-specific indicators
    */
   isSimulatedMobile(): boolean {
-    const hasTouch = this.isTouchDevice();
+    const hasTouch = this.hasTouchHardware();
     if (!hasTouch) return false;
 
     // Real Chrome Android has VirtualKeyboard API
@@ -114,7 +143,7 @@ export class DeviceDetector implements IDeviceDetector {
 
     // Large viewport + touch + no VirtualKeyboard = simulated
     // Real tablets would either have VirtualKeyboard (Chrome) or be iOS Safari
-    if (viewportWidth >= 1024 || viewportHeight >= 1024) {
+    if (viewportWidth >= BREAKPOINTS.DESKTOP || viewportHeight >= BREAKPOINTS.DESKTOP) {
       // Check if this might be iOS Safari on iPad
       const userAgent = navigator.userAgent.toLowerCase();
       const isIOSSafari =
@@ -195,8 +224,8 @@ export class DeviceDetector implements IDeviceDetector {
     const isLandscape = this.viewportService.isLandscape();
 
     // Phone landscape criteria - wider aspect ratio threshold to include iPhone 6/7/8 landscape (1.78:1)
-    const isWideAspectRatio = aspectRatio > 1.7; // Includes most phone landscape orientations
-    const isLowHeight = viewportHeight <= 600; // Phone and small tablet height (increased from 500)
+    const isWideAspectRatio = aspectRatio > LANDSCAPE_THRESHOLDS.WIDE_ASPECT_RATIO;
+    const isLowHeight = viewportHeight <= LANDSCAPE_THRESHOLDS.MAX_PHONE_HEIGHT;
 
     // Only phones and small tablets in landscape should use side navigation
     const result = isLandscape && isWideAspectRatio && isLowHeight;
@@ -237,7 +266,7 @@ export class DeviceDetector implements IDeviceDetector {
     const isPortrait = this.viewportService.isPortrait();
 
     // Check if width is narrow (typical phone portrait width)
-    const hasNarrowWidth = viewportWidth < 600;
+    const hasNarrowWidth = viewportWidth < BREAKPOINTS.PORTRAIT_MOBILE;
 
     // Combine conditions
     const result = isPortrait && hasNarrowWidth;
@@ -262,9 +291,10 @@ export class DeviceDetector implements IDeviceDetector {
   }
 
   supportsFoldable(): boolean {
-    // Basic check for foldable device features
-    // This would need to be expanded with actual foldable detection logic
-    return "screen" in window && "orientation" in window.screen;
+    // Check for actual foldable APIs (Device Posture API or Screen Fold API)
+    // screen.orientation exists on virtually all browsers, so that alone is meaningless
+    return "devicePosture" in navigator ||
+      ("screen" in window && "fold" in (window.screen as unknown as Record<string, unknown>));
   }
 
   getCapabilities(): DeviceCapabilities {
@@ -272,19 +302,25 @@ export class DeviceDetector implements IDeviceDetector {
     const deviceType = this.detectDeviceType();
     const hasTouch = this.isTouchDevice();
 
+    // Keyboard detection: desktops always have keyboards, tablets may
+    // (iPad + Magic Keyboard), mobiles rarely do. Touch-only != no keyboard.
+    const hasKeyboard = deviceType === DeviceType.DESKTOP ||
+      deviceType === DeviceType.TABLET ||
+      (!hasTouch);
+
     return {
-      primaryInput: hasTouch ? "touch" : "mouse",
+      primaryInput: hasTouch && !this.isDesktop() ? "touch" : hasTouch ? "hybrid" : "mouse",
       screenSize: this.getScreenSizeCategory(deviceType),
       hasTouch,
-      hasPrecisePointer: !hasTouch,
-      hasKeyboard: !this.isMobile(),
+      hasPrecisePointer: !hasTouch || this.isDesktop(),
+      hasKeyboard,
       viewport: {
-        width: screenInfo.width,
-        height: screenInfo.height,
+        width: this.viewportService.width,
+        height: this.viewportService.height,
       },
       pixelRatio: screenInfo.pixelRatio,
       colorDepth: window.screen.colorDepth || 24,
-      supportsHDR: false, // Basic implementation
+      supportsHDR: false,
       hardwareConcurrency: navigator.hardwareConcurrency || 4,
     };
   }
@@ -484,7 +520,7 @@ export class DeviceDetector implements IDeviceDetector {
       case DeviceType.TABLET:
         return "tablet";
       case DeviceType.DESKTOP:
-        return window.screen.width > 1440 ? "largeDesktop" : "desktop";
+        return window.screen.width > BREAKPOINTS.LARGE_DESKTOP ? "largeDesktop" : "desktop";
       default:
         return "desktop";
     }

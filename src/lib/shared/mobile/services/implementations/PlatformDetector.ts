@@ -5,6 +5,7 @@ import type {
   InAppBrowser,
   PlatformInfo,
 } from "../contracts/IPlatformDetector";
+import { BREAKPOINTS } from "../../../device/domain/constants/device-constants";
 
 interface VendorNavigator extends Navigator {
   standalone?: boolean;
@@ -38,7 +39,7 @@ export class PlatformDetector implements IPlatformDetector {
     // A desktop with DevTools emulation will have fine pointer (mouse)
     const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
     const hasHover = window.matchMedia("(hover: hover)").matches;
-    const isLargeScreen = window.innerWidth >= 1024;
+    const isLargeScreen = window.innerWidth >= BREAKPOINTS.DESKTOP;
 
     // If the device has a mouse pointer with hover AND large screen,
     // it's desktop regardless of what the user agent says

@@ -7,6 +7,7 @@
 
 import { ContainerAspect, DeviceType } from "../domain/enums/device-enums";
 import type { DeviceConfig } from "../domain/models/device-models";
+import { BREAKPOINTS } from "../domain/constants/device-constants";
 
 /**
  * Determines the device type based on container width and user agent
@@ -16,21 +17,21 @@ export function getDeviceType(
   isMobileUserAgent?: boolean
 ): DeviceType {
   // Mobile user agent detection takes precedence for small screens
-  if (isMobileUserAgent && containerWidth < 768) {
-    if (containerWidth < 480) {
+  if (isMobileUserAgent && containerWidth < BREAKPOINTS.MOBILE) {
+    if (containerWidth < BREAKPOINTS.SMALL_MOBILE) {
       return DeviceType.SMALL_MOBILE;
     }
     return DeviceType.MOBILE;
   }
 
   // Screen width-based detection
-  if (containerWidth < 480) {
+  if (containerWidth < BREAKPOINTS.SMALL_MOBILE) {
     return DeviceType.SMALL_MOBILE;
-  } else if (containerWidth < 768) {
+  } else if (containerWidth < BREAKPOINTS.MOBILE) {
     return DeviceType.MOBILE;
-  } else if (containerWidth < 1024) {
+  } else if (containerWidth < BREAKPOINTS.DESKTOP) {
     return DeviceType.TABLET;
-  } else if (containerWidth < 1440) {
+  } else if (containerWidth < BREAKPOINTS.LARGE_DESKTOP) {
     return DeviceType.DESKTOP;
   } else {
     return DeviceType.LARGE_DESKTOP;

@@ -6,6 +6,7 @@
  */
 
 import type { ReferrerCategory } from "../domain/types";
+import { BREAKPOINTS } from "../../device/domain/constants/device-constants";
 
 /**
  * Regex patterns for each referrer category
@@ -199,8 +200,8 @@ export function detectDeviceCategory(): "mobile" | "tablet" | "desktop" {
   }
 
   // Fallback to screen width
-  if (width < 768) return "mobile";
-  if (width < 1024) return "tablet";
+  if (width < BREAKPOINTS.MOBILE) return "mobile";
+  if (width < BREAKPOINTS.DESKTOP) return "tablet";
 
   return "desktop";
 }

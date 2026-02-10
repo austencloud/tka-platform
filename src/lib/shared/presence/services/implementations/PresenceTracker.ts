@@ -20,6 +20,7 @@ import {
 import { doc, getDoc } from "firebase/firestore";
 import posthog from "posthog-js";
 import { database, auth, getFirestoreInstance } from "../../../auth/firebase";
+import { BREAKPOINTS } from "../../../device/domain/constants/device-constants";
 import type { IPresenceTracker } from "../contracts/IPresenceTracker";
 import type {
   UserPresence,
@@ -73,11 +74,11 @@ export class PresenceTracker implements IPresenceTracker {
       );
     const isTabletUA = /ipad|tablet|playbook|silk/i.test(userAgent);
 
-    if (isTabletUA || (isMobileUA && screenWidth >= 768)) {
+    if (isTabletUA || (isMobileUA && screenWidth >= BREAKPOINTS.MOBILE)) {
       return "tablet";
     }
 
-    if (isMobileUA || screenWidth < 768) {
+    if (isMobileUA || screenWidth < BREAKPOINTS.MOBILE) {
       return "mobile";
     }
 

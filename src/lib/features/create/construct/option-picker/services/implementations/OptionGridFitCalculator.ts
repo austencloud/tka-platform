@@ -18,6 +18,7 @@ import type {
   GridFitResult,
   IOptionGridFitCalculator,
 } from "../contracts/IGridFitCalculator";
+import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
 
 const DEFAULT_MIN_SIZE = 40;
 
@@ -192,7 +193,7 @@ export class OptionGridFitCalculator implements IOptionGridFitCalculator {
     isMobileDevice: boolean
   ): "mobile" | "tablet" | "desktop" {
     if (isMobileDevice) return "mobile";
-    if (width < 1024) return "tablet";
+    if (width < BREAKPOINTS.DESKTOP) return "tablet";
     return "desktop";
   }
 }

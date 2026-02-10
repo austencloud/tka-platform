@@ -5,6 +5,7 @@
  * Designed to be called on page load and when URL parameters change.
  */
 
+import { BREAKPOINTS } from "../../../device/domain/constants/device-constants";
 import type { IAttributionCapture } from "../contracts/IAttributionCapture";
 import type {
   TouchData,
@@ -201,8 +202,8 @@ export class AttributionCapture implements IAttributionCapture {
     }
 
     // Fallback to screen width
-    if (width < 768) return "mobile";
-    if (width < 1024) return "tablet";
+    if (width < BREAKPOINTS.MOBILE) return "mobile";
+    if (width < BREAKPOINTS.DESKTOP) return "tablet";
 
     return "desktop";
   }
@@ -227,8 +228,8 @@ export class AttributionCapture implements IAttributionCapture {
 
     const width = window.innerWidth;
 
-    if (width < 768) return "small";
-    if (width < 1440) return "medium";
+    if (width < BREAKPOINTS.MOBILE) return "small";
+    if (width < BREAKPOINTS.LARGE_DESKTOP) return "medium";
     return "large";
   }
 }

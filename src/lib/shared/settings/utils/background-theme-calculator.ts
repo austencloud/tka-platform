@@ -31,6 +31,7 @@
 
 import { BackgroundType } from "@austencloud/backgrounds";
 import { setThemeMode } from "$lib/shared/theme/state/theme-mode-state.svelte";
+import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
 
 /**
  * Theme colors for each background type
@@ -223,7 +224,7 @@ function fallbackAccent(mode: ThemeMode, accentColor?: string): string {
  */
 function isMobile(): boolean {
   if (typeof window === "undefined") return false;
-  return window.innerWidth < 768;
+  return window.innerWidth < BREAKPOINTS.MOBILE;
 }
 
 export function generateMatteTheme(

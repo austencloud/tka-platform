@@ -1,5 +1,6 @@
 import type { INavigationViewportManager } from "./contracts/IViewportManager";
 import { ViewportMode } from "../domain/enums/ViewportMode";
+import { BREAKPOINTS } from "../../device/domain/constants/device-constants";
 import type {
   ViewportState,
   SafeAreaInsets,
@@ -36,7 +37,7 @@ export class NavigationViewportManager implements INavigationViewportManager {
 
   determineViewportMode(width: number, _height: number): ViewportMode {
     // Based on ModuleSelector logic - mobile if width < certain threshold
-    return width < 768 ? ViewportMode.Mobile : ViewportMode.Desktop;
+    return width < BREAKPOINTS.MOBILE ? ViewportMode.Mobile : ViewportMode.Desktop;
   }
 
   isMobileViewport(): boolean {

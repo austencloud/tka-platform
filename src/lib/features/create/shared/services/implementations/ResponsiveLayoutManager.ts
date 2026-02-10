@@ -9,6 +9,7 @@ import type { IViewportManager } from "$lib/shared/device/services/contracts/IVi
  */
 
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
 import type { IResponsiveLayoutManager } from "../contracts/IResponsiveLayoutManager";
 import type { LayoutConfiguration } from "../../orchestration/types";
 
@@ -88,7 +89,7 @@ export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
 
   hasWideViewport(): boolean {
     // Standard desktop breakpoint
-    return this.getViewportWidth() >= 1024;
+    return this.getViewportWidth() >= BREAKPOINTS.DESKTOP;
   }
 
   getAspectRatio(): number {
