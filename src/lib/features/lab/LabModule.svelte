@@ -37,7 +37,7 @@
     connect: () => import("$lib/features/connect/ConnectModule.svelte"),
     voice: () => import("./tabs/VoiceControlLab.svelte"),
     vtg: () => import("$lib/features/vtg-lab/VtgLabModule.svelte"),
-    "screenshot-gallery": () => import("./tabs/ScreenshotGalleryLab.svelte"),
+    "screenshot-gallery": () => import("./tabs/ScreenshotCaptureLab.svelte"),
     skel2tka: () => import("$lib/features/skel2tka/Skel2TKALab.svelte"),
   };
 
