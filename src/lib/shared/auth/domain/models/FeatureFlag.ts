@@ -57,7 +57,7 @@ export interface FeatureFlagConfig {
  * User-specific feature overrides stored in Firestore
  */
 export interface UserFeatureOverrides {
-  /** Features explicitly enabled for this user (bypasses role check) */
+  /** Features explicitly enabled for this user (bypasses enabled check, NOT role check) */
   enabledFeatures: FeatureId[];
   /** Features explicitly disabled for this user (overrides role) */
   disabledFeatures: FeatureId[];

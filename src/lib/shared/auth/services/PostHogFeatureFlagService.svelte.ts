@@ -40,6 +40,10 @@ import {
   setUserProperties,
 } from "../../analytics/services/posthog";
 import { auth } from "../firebase";
+import { GlobalFeatureFlagPersister } from "./implementations/GlobalFeatureFlagPersister";
+import { UserFeatureFlagPersister } from "./implementations/UserFeatureFlagPersister";
+import type { GlobalFlagOverrides } from "./contracts/IGlobalFeatureFlagPersister";
+import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 // ============================================================================
 // POSTHOG FLAG NAMING CONVENTIONS
@@ -99,24 +103,29 @@ function postHogKeyToFeatureId(key: string): FeatureId | undefined {
 }
 
 // ============================================================================
-// GLOBAL OVERRIDE PERSISTENCE
+// GLOBAL OVERRIDE PERSISTENCE (Firestore-backed with localStorage cache)
 // ============================================================================
 
-const GLOBAL_FLAG_OVERRIDES_KEY = "tka-global-flag-overrides";
-const GLOBAL_ROLE_OVERRIDES_KEY = "tka-global-role-overrides";
+const _globalFlagPersister = new GlobalFeatureFlagPersister();
+const _userFlagPersister = new UserFeatureFlagPersister();
 
 /**
- * Load global flag overrides from localStorage
- * These are admin-set overrides that persist across sessions
+ * Tracks whether this client initiated the most recent global override save.
+ * Used to suppress "updated by another admin" toast for our own writes.
  */
-function loadGlobalFlagOverrides(): Record<string, boolean> {
-  if (!browser) return {};
+let _selfInitiatedSaveTimestamp = 0;
 
+/**
+ * Load global flag overrides from localStorage as a synchronous initial value.
+ * Firestore data is loaded asynchronously during initialize() and will
+ * overwrite these values once available.
+ */
+function loadLocalFlagOverrides(): Record<string, boolean> {
+  if (!browser) return {};
   try {
-    const stored = localStorage.getItem(GLOBAL_FLAG_OVERRIDES_KEY);
+    const stored = localStorage.getItem("tka-global-flag-overrides");
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Validate the structure: should be Record<string, boolean>
       if (typeof parsed === "object" && parsed !== null) {
         const validated: Record<string, boolean> = {};
         for (const [key, value] of Object.entries(parsed)) {
@@ -127,38 +136,16 @@ function loadGlobalFlagOverrides(): Record<string, boolean> {
         return validated;
       }
     }
-  } catch (error) {
-    console.warn("[PostHogFeatureFlagService] Failed to load global flag overrides:", error);
-  }
-
+  } catch { /* ignore */ }
   return {};
 }
 
-/**
- * Save global flag overrides to localStorage
- */
-function saveGlobalFlagOverrides(overrides: Record<string, boolean>): void {
-  if (!browser) return;
-
-  try {
-    localStorage.setItem(GLOBAL_FLAG_OVERRIDES_KEY, JSON.stringify(overrides));
-  } catch (error) {
-    console.warn("[PostHogFeatureFlagService] Failed to save global flag overrides:", error);
-  }
-}
-
-/**
- * Load global role overrides from localStorage
- * These are admin-set minimum role requirements that persist across sessions
- */
-function loadGlobalRoleOverrides(): Record<string, UserRole> {
+function loadLocalRoleOverrides(): Record<string, UserRole> {
   if (!browser) return {};
-
   try {
-    const stored = localStorage.getItem(GLOBAL_ROLE_OVERRIDES_KEY);
+    const stored = localStorage.getItem("tka-global-role-overrides");
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Validate the structure: should be Record<string, UserRole>
       if (typeof parsed === "object" && parsed !== null) {
         const validated: Record<string, UserRole> = {};
         for (const [key, value] of Object.entries(parsed)) {
@@ -169,24 +156,8 @@ function loadGlobalRoleOverrides(): Record<string, UserRole> {
         return validated;
       }
     }
-  } catch (error) {
-    console.warn("[PostHogFeatureFlagService] Failed to load global role overrides:", error);
-  }
-
+  } catch { /* ignore */ }
   return {};
-}
-
-/**
- * Save global role overrides to localStorage
- */
-function saveGlobalRoleOverrides(overrides: Record<string, UserRole>): void {
-  if (!browser) return;
-
-  try {
-    localStorage.setItem(GLOBAL_ROLE_OVERRIDES_KEY, JSON.stringify(overrides));
-  } catch (error) {
-    console.warn("[PostHogFeatureFlagService] Failed to save global role overrides:", error);
-  }
 }
 
 // ============================================================================
@@ -226,9 +197,9 @@ const _state = $state<FeatureFlagState>({
   initialized: false,
   loading: false,
   flagsVersion: 0,
-  // Initialize from localStorage if in browser, empty otherwise
-  globalFlagOverrides: browser ? loadGlobalFlagOverrides() : {},
-  globalRoleOverrides: browser ? loadGlobalRoleOverrides() : {},
+  // Initialize from localStorage cache synchronously; Firestore loads in initialize()
+  globalFlagOverrides: browser ? loadLocalFlagOverrides() : {},
+  globalRoleOverrides: browser ? loadLocalRoleOverrides() : {},
 });
 
 // ============================================================================
@@ -356,15 +327,20 @@ function getEffectiveMinimumRole(featureId: FeatureId): UserRole {
  * Check if a feature is accessible based on role and overrides.
  *
  * Two independent questions must BOTH be true:
- * 1. Is this feature enabled? (kill switch / global toggle)
+ * 1. Is this feature enabled? (kill switch / global toggle / per-user override)
  * 2. Does the user meet the role requirement?
  *
- * Priority:
- * 1. User disabledFeatures → deny
- * 2. Kill switch false → deny (overrides everything including per-user enables)
- * 3. User enabledFeatures → allow (bypasses role, but NOT kill switch)
- * 4. If no global opinion, check config.enabled → deny if false
- * 5. Role check via getEffectiveMinimumRole()
+ * These are evaluated independently - enabledFeatures can bypass the enabled
+ * check but NEVER bypasses the role check. A non-admin user with "module:lab"
+ * in their enabledFeatures is still blocked by the role requirement.
+ *
+ * Enabled check priority:
+ * 1. User disabledFeatures → feature is OFF
+ * 2. Kill switch false → feature is OFF
+ * 3. User enabledFeatures → feature is ON (bypasses global toggle, NOT role)
+ * 4. Global/default config → feature is ON or OFF
+ *
+ * Role check always runs regardless of how the feature was enabled.
  */
 function checkFeatureAccess(featureId: FeatureId): boolean {
   // 1. User explicitly disabled - always wins
@@ -378,35 +354,46 @@ function checkFeatureAccess(featureId: FeatureId): boolean {
     return false; // Kill switch OFF - overrides even per-user enabledFeatures
   }
 
-  // 3. User explicitly enabled (only reaches here if not killed)
-  // Per-user grants bypass role check but NOT the kill switch
-  if (_state.userOverrides.enabledFeatures.includes(featureId)) {
-    return true;
+  // 3. Determine if feature is enabled (per-user override OR global/default config)
+  const userExplicitlyEnabled =
+    _state.userOverrides.enabledFeatures.includes(featureId);
+
+  if (!userExplicitlyEnabled) {
+    // No per-user override - check global/default config
+    if (globalEnabled === null) {
+      const config = getDefaultFeatureConfig(featureId);
+      if (!config) {
+        console.warn(
+          `[PostHogFeatureFlagService] Unknown feature: ${featureId}`
+        );
+        return false;
+      }
+      if (!config.enabled) {
+        return false;
+      }
+    }
   }
 
-  // 4. If no global opinion, check default config enabled state
-  if (globalEnabled === null) {
-    const config = getDefaultFeatureConfig(featureId);
-    if (!config) {
-      console.warn(`[PostHogFeatureFlagService] Unknown feature: ${featureId}`);
-      return false;
-    }
-    if (!config.enabled) {
-      return false;
-    }
+  // 4. Role check - ALWAYS runs, even for per-user enabled features
+  // localStorage enabledFeatures must never bypass role requirements
+  //
+  // SECURITY: If debugRoleOverride is set, verify the actual user is admin.
+  // This prevents console tampering (e.g. featureFlagState.debugRoleOverride = 'admin').
+  if (_state.debugRoleOverride && _state.userRole !== "admin") {
+    console.error("[SECURITY] Unauthorized debugRoleOverride detected on non-admin account - clearing");
+    _state.debugRoleOverride = null;
+    return false;
   }
-
-  // 5. Role check - ALWAYS runs when feature is enabled
-  // This is the key fix: PostHog true no longer short-circuits past this
   const effectiveRole = _state.debugRoleOverride ?? _state.userRole;
   return hasRolePrivilege(effectiveRole, getEffectiveMinimumRole(featureId));
 }
 
 /**
- * Load user overrides from localStorage
- * PostHog doesn't have a good way to store per-user overrides, so we use localStorage
+ * Load user overrides from localStorage as a synchronous initial value.
+ * Firestore data is loaded asynchronously during initialize() and will
+ * overwrite these values once available.
  */
-function loadUserOverridesFromStorage(userId: string): UserFeatureOverrides {
+function loadLocalUserOverrides(userId: string): UserFeatureOverrides {
   if (!browser) {
     return { enabledFeatures: [], disabledFeatures: [], moduleOrder: undefined };
   }
@@ -421,30 +408,11 @@ function loadUserOverridesFromStorage(userId: string): UserFeatureOverrides {
         moduleOrder: parsed.moduleOrder || undefined,
       };
     }
-  } catch (error) {
-    console.warn("[PostHogFeatureFlagService] Failed to load user overrides:", error);
+  } catch {
+    // Ignore parse errors
   }
 
   return { enabledFeatures: [], disabledFeatures: [], moduleOrder: undefined };
-}
-
-/**
- * Save user overrides to localStorage
- */
-function saveUserOverridesToStorage(
-  userId: string,
-  overrides: UserFeatureOverrides
-): void {
-  if (!browser) return;
-
-  try {
-    localStorage.setItem(
-      `tka_feature_overrides_${userId}`,
-      JSON.stringify(overrides)
-    );
-  } catch (error) {
-    console.warn("[PostHogFeatureFlagService] Failed to save user overrides:", error);
-  }
 }
 
 // ============================================================================
@@ -660,6 +628,10 @@ export const postHogFeatureFlagService = {
   ): Promise<void> {
     _state.loading = true;
 
+    // Dispose any existing subscriptions from a previous initialize() call
+    _globalFlagPersister.dispose();
+    _userFlagPersister.dispose();
+
     try {
       // Store user ID
       _state.userId = userId;
@@ -670,12 +642,11 @@ export const postHogFeatureFlagService = {
           _state.userRole = initialRole;
         }
 
-        // Load user overrides from localStorage
-        _state.userOverrides = loadUserOverridesFromStorage(userId);
+        // Load user overrides from localStorage synchronously as initial value
+        _state.userOverrides = loadLocalUserOverrides(userId);
 
-        // Update PostHog person properties with role info
-        // This enables PostHog flag targeting based on role
         if (browser) {
+          // Update PostHog person properties with role info
           setUserProperties({
             role: _state.userRole,
             is_admin: _state.userRole === "admin",
@@ -683,8 +654,53 @@ export const postHogFeatureFlagService = {
             is_premium: hasRolePrivilege(_state.userRole, "premium"),
           });
 
-          // Reload feature flags to get fresh values based on updated properties
+          // FIX #2 (Race condition): Load Firestore overrides BEFORE PostHog reload
+          // so the correct override state is in place when flags are evaluated.
+          try {
+            const firestoreOverrides = await _globalFlagPersister.load();
+            _state.globalFlagOverrides = firestoreOverrides.globalFlagOverrides;
+            _state.globalRoleOverrides = firestoreOverrides.globalRoleOverrides;
+            _state.flagsVersion++;
+          } catch (error) {
+            console.warn("[PostHogFeatureFlagService] Firestore global overrides load failed, using localStorage cache:", error);
+          }
+
+          // FIX #1 (User overrides from Firestore): Load authoritative user overrides
+          try {
+            const firestoreUserOverrides = await _userFlagPersister.load(userId);
+            _state.userOverrides = firestoreUserOverrides;
+            _state.flagsVersion++;
+          } catch (error) {
+            console.warn("[PostHogFeatureFlagService] Firestore user overrides load failed, using localStorage cache:", error);
+          }
+
+          // NOW reload PostHog with overrides already in place
           reloadFeatureFlags();
+
+          // FIX #5 (Remote change notification): Subscribe with change detection
+          _globalFlagPersister.subscribe((overrides: GlobalFlagOverrides) => {
+            const now = Date.now();
+            const isSelfInitiated = now - _selfInitiatedSaveTimestamp < 3000;
+
+            const hadChanges =
+              JSON.stringify(_state.globalFlagOverrides) !== JSON.stringify(overrides.globalFlagOverrides) ||
+              JSON.stringify(_state.globalRoleOverrides) !== JSON.stringify(overrides.globalRoleOverrides);
+
+            _state.globalFlagOverrides = overrides.globalFlagOverrides;
+            _state.globalRoleOverrides = overrides.globalRoleOverrides;
+            _state.flagsVersion++;
+
+            // Show notification for remote changes (not our own writes)
+            if (hadChanges && _state.initialized && !isSelfInitiated) {
+              toast.info("Feature flags updated by another admin");
+            }
+          });
+
+          // FIX #1 continued: Subscribe to user override changes (cross-device sync)
+          _userFlagPersister.subscribe(userId, (overrides: UserFeatureOverrides) => {
+            _state.userOverrides = overrides;
+            _state.flagsVersion++;
+          });
         }
       } else {
         // No user - reset to defaults
@@ -694,12 +710,29 @@ export const postHogFeatureFlagService = {
           disabledFeatures: [],
           moduleOrder: undefined,
         };
+
+        // Still load global overrides for unauthenticated users
+        if (browser) {
+          try {
+            const firestoreOverrides = await _globalFlagPersister.load();
+            _state.globalFlagOverrides = firestoreOverrides.globalFlagOverrides;
+            _state.globalRoleOverrides = firestoreOverrides.globalRoleOverrides;
+            _state.flagsVersion++;
+          } catch {
+            // localStorage cache already loaded
+          }
+
+          _globalFlagPersister.subscribe((overrides: GlobalFlagOverrides) => {
+            _state.globalFlagOverrides = overrides.globalFlagOverrides;
+            _state.globalRoleOverrides = overrides.globalRoleOverrides;
+            _state.flagsVersion++;
+          });
+        }
       }
 
       _state.initialized = true;
     } catch (error) {
       console.error("[PostHogFeatureFlagService] Initialization failed:", error);
-      // Fall back to defaults (or initialRole if provided)
       _state.userRole = initialRole || "user";
       _state.initialized = true;
     } finally {
@@ -710,22 +743,25 @@ export const postHogFeatureFlagService = {
   // ===== User Override Management =====
 
   /**
-   * Update user's feature overrides
-   * Note: In PostHog implementation, this only updates localStorage.
-   * For admin-level control, use PostHog dashboard directly.
+   * Update user's feature overrides.
+   * Persists to Firestore + localStorage for cross-device sync.
    */
   async setUserFeatureOverrides(
     targetUserId: string,
     overrides: UserFeatureOverrides
   ): Promise<void> {
-    // For the current user, update local state and storage
+    // For the current user, update local state immediately
     if (targetUserId === _state.userId) {
       _state.userOverrides = overrides;
-      saveUserOverridesToStorage(targetUserId, overrides);
-    } else {
-      // For other users, just save to their localStorage key
-      // (This is a fallback - in production, use PostHog dashboard for admin overrides)
-      saveUserOverridesToStorage(targetUserId, overrides);
+      _state.flagsVersion++;
+    }
+
+    // Persist to Firestore + localStorage
+    try {
+      await _userFlagPersister.save(targetUserId, overrides);
+    } catch (err) {
+      console.error("[PostHogFeatureFlagService] Failed to persist user overrides:", err);
+      toast.error("Failed to save feature overrides");
     }
   },
 
@@ -762,14 +798,12 @@ export const postHogFeatureFlagService = {
   // (Type defined inline to avoid circular imports)
 
   /**
-   * Update global feature flag configuration via PostHog API.
-   * Calls server-side endpoint which proxies to PostHog.
+   * Update global feature flag configuration.
    *
-   * Note: minimumRole changes are stored in localStorage (PostHog doesn't support
-   * role-based filters via simple API). They persist across browser sessions
-   * and provide immediate UI feedback.
+   * - enabled changes: Optimistic update + PostHog API call + Firestore persist
+   * - minimumRole changes: Firestore persist (PostHog doesn't support role filters)
    *
-   * Returns result with action type, flag info, and optional PostHog dashboard URL.
+   * Both are synced to all clients in real-time via Firestore onSnapshot.
    */
   async updateGlobalFeatureFlag(
     featureId: FeatureId,
@@ -787,17 +821,24 @@ export const postHogFeatureFlagService = {
 
     const flagKey = featureIdToPostHogKey(featureId);
 
-    // Handle minimumRole updates locally (PostHog doesn't support this)
+    // Handle minimumRole updates (persisted to Firestore for cross-device sync)
     if (updates.minimumRole) {
       _state.globalRoleOverrides = {
         ..._state.globalRoleOverrides,
         [flagKey]: updates.minimumRole,
       };
-      // Persist to localStorage
-      saveGlobalRoleOverrides(_state.globalRoleOverrides);
+      // Persist to Firestore + localStorage
+      _selfInitiatedSaveTimestamp = Date.now();
+      _globalFlagPersister.save({
+        globalFlagOverrides: _state.globalFlagOverrides,
+        globalRoleOverrides: _state.globalRoleOverrides,
+      }).catch((err) => {
+        console.error(`[PostHogFeatureFlagService] Failed to persist role override:`, err);
+        toast.error("Failed to save role change. Other users won't see this update.");
+      });
       // Trigger reactive update
       _state.flagsVersion++;
-      console.log(`[PostHogFeatureFlagService] Flag ${flagKey} minimumRole set to: ${updates.minimumRole} (persisted)`);
+      console.log(`[PostHogFeatureFlagService] Flag ${flagKey} minimumRole set to: ${updates.minimumRole} (persisted to Firestore)`);
 
       // If only role update (no enabled change), return early
       if (typeof updates.enabled !== "boolean") {
@@ -815,7 +856,15 @@ export const postHogFeatureFlagService = {
         ..._state.globalFlagOverrides,
         [flagKey]: updates.enabled,
       };
-      saveGlobalFlagOverrides(_state.globalFlagOverrides);
+      // Persist to Firestore + localStorage (don't await -- optimistic)
+      _selfInitiatedSaveTimestamp = Date.now();
+      _globalFlagPersister.save({
+        globalFlagOverrides: _state.globalFlagOverrides,
+        globalRoleOverrides: _state.globalRoleOverrides,
+      }).catch((err) => {
+        console.error(`[PostHogFeatureFlagService] Failed to persist flag override:`, err);
+        toast.error("Failed to save flag change. Other users won't see this update.");
+      });
       _state.flagsVersion++;
 
       try {
@@ -878,7 +927,11 @@ export const postHogFeatureFlagService = {
           const { [flagKey]: _, ...rest } = _state.globalFlagOverrides;
           _state.globalFlagOverrides = rest;
         }
-        saveGlobalFlagOverrides(_state.globalFlagOverrides);
+        // Rollback Firestore + localStorage
+        _globalFlagPersister.save({
+          globalFlagOverrides: _state.globalFlagOverrides,
+          globalRoleOverrides: _state.globalRoleOverrides,
+        }).catch(() => { /* rollback best-effort */ });
         _state.flagsVersion++;
 
         throw err;
@@ -945,7 +998,8 @@ export const postHogFeatureFlagService = {
    * Note: PostHog doesn't use subscriptions, so this is a no-op
    */
   cleanup(): void {
-    // No subscriptions to clean up with PostHog
+    _globalFlagPersister.dispose();
+    _userFlagPersister.dispose();
   },
 
   // ===== PostHog-Specific Methods =====
@@ -978,7 +1032,7 @@ export const postHogFeatureFlagService = {
 export const featureFlagService = postHogFeatureFlagService;
 
 /**
- * Direct access to reactive state for Svelte 5 $derived tracking.
+ * Read-only reactive proxy for Svelte 5 $derived tracking.
  * Use this when you need $derived to react to flag changes:
  *
  * ```ts
@@ -987,5 +1041,23 @@ export const featureFlagService = postHogFeatureFlagService;
  *   return MODULE_DEFINITIONS.filter(m => featureFlagService.canAccessModule(m.id));
  * });
  * ```
+ *
+ * SECURITY: This is a read-only proxy. Mutating _state directly from the
+ * console (e.g. to escalate debugRoleOverride) is blocked at the proxy
+ * level, and double-checked at runtime in checkFeatureAccess().
  */
-export const featureFlagState = _state;
+export const featureFlagState: {
+  readonly flagsVersion: number;
+  readonly globalFlagOverrides: Record<string, boolean>;
+  readonly globalRoleOverrides: Record<string, UserRole>;
+} = {
+  get flagsVersion() {
+    return _state.flagsVersion;
+  },
+  get globalFlagOverrides() {
+    return _state.globalFlagOverrides;
+  },
+  get globalRoleOverrides() {
+    return _state.globalRoleOverrides;
+  },
+};
