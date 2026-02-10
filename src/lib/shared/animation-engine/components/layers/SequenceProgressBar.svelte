@@ -41,7 +41,8 @@ Design:
   const progress = $derived.by(() => {
     if (totalSteps <= 0) return 0;
     // Convert 1-based beat number to 0-based progress before modulo
-    const zeroBasedStep = currentStep <= 0 ? 0 : currentStep - 1;
+    // currentStep 0.0-0.99 = start position hold (no progress yet)
+    const zeroBasedStep = currentStep < 1 ? 0 : currentStep - 1;
     // Use modulo to wrap progress on loop
     const normalizedStep = zeroBasedStep % totalSteps;
     return Math.max(0, Math.min(1, normalizedStep / totalSteps));
@@ -59,7 +60,7 @@ Design:
   const ariaLabel = $derived.by(() => {
     if (totalSteps <= 0) return "Sequence progress: no sequence loaded";
     // Convert to 0-based, modulo for looping, then back to 1-based for display
-    const zeroBasedStep = currentStep <= 0 ? 0 : currentStep - 1;
+    const zeroBasedStep = currentStep < 1 ? 0 : currentStep - 1;
     const step = Math.floor(zeroBasedStep % totalSteps) + 1;
     return `Sequence progress: step ${step} of ${totalSteps}`;
   });

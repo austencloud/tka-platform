@@ -109,7 +109,8 @@ Design variants supported:
     if (steps.length === 0 || totalDuration === 0) return 0;
 
     // Convert 1-based beat to 0-based
-    const zeroBasedProgress = currentStep <= 0 ? 0 : currentStep - 1;
+    // currentStep 0.0-0.99 = start position hold (no progress yet)
+    const zeroBasedProgress = currentStep < 1 ? 0 : currentStep - 1;
 
     // Determine which step we're in and how far through it
     const currentStepIndex = Math.floor(zeroBasedProgress);
