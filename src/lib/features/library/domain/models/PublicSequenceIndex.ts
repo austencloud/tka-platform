@@ -99,6 +99,9 @@ export interface PublicSequenceIndex {
   // TIMESTAMPS
   // ============================================================
 
+  /** Original creation date (backfilled from source library doc) */
+  readonly birthday?: Date;
+
   /** When published to public feed */
   readonly publishedAt: Date;
 

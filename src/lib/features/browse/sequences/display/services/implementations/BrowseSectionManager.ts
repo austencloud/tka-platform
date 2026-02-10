@@ -461,6 +461,8 @@ export class BrowseSectionManager implements IBrowseSectionManager {
 
   private formatDateForSection(dateString: string): string {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+
     const now = new Date();
     const diffTime = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));

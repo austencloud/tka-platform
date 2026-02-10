@@ -280,6 +280,7 @@
         // Only apply if still current
         if (key.hash === currentKeyHash) {
           thumbnailUrl = result.url;
+          // Thumbnail loaded successfully
         }
       })
       .catch((err) => {

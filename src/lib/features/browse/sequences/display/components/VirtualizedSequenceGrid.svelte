@@ -146,7 +146,6 @@
     sequence: SequenceData,
     variations?: SequenceData[]
   ) {
-    // Pass variations as third argument for view-detail action
     if (action === "view-detail" && variations) {
       (onAction as (action: string, sequence: SequenceData, variations?: SequenceData[]) => void)(
         action,

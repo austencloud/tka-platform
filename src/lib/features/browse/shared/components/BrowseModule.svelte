@@ -485,9 +485,10 @@
             {drawerWidth}
             {galleryState}
             {error}
-            onSequenceAction={(action, sequence) =>
-              eventHandlerService?.handleSequenceAction(action, sequence) ??
-              Promise.resolve()}
+            onSequenceAction={(action, sequence) => {
+              return eventHandlerService?.handleSequenceAction(action, sequence) ??
+                Promise.resolve();
+            }}
             onContainerScroll={handleContainerScroll}
           />
         {:else if activeTab === "collections"}

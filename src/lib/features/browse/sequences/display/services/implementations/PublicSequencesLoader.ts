@@ -148,6 +148,11 @@ export class PublicSequencesLoader implements IBrowseLoader {
       isCircular: false,
       tags: [...data.tags],
       metadata: {},
+      // Date info - prefer birthday (real creation date) over publishedAt (bulk publish date)
+      // Firestore returns Timestamp objects, convert to Date
+      dateAdded: this.toDate(data.birthday ?? data.publishedAt),
+      birthday: this.toDate(data.birthday),
+      createdAt: this.toDate(data.updatedAt),
       // Owner info
       ownerId: data.ownerId,
       ownerDisplayName: data.ownerDisplayName,
@@ -172,6 +177,19 @@ export class PublicSequencesLoader implements IBrowseLoader {
       advanced: 3,
     };
     return map[difficultyLevel.toLowerCase()];
+  }
+
+  /** Convert Firestore Timestamp or any date-like value to a JS Date */
+  private toDate(value: unknown): Date | undefined {
+    if (!value) return undefined;
+    if (value instanceof Date) return value;
+    // Firestore Timestamp has a toDate() method
+    if (typeof value === "object" && "toDate" in (value as Record<string, unknown>)) {
+      return (value as { toDate(): Date }).toDate();
+    }
+    // Fallback: try parsing as string/number
+    const parsed = new Date(value as string | number);
+    return isNaN(parsed.getTime()) ? undefined : parsed;
   }
 
   /**
