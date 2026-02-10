@@ -45,6 +45,8 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import FirstStepConfirmDialog from "./FirstStepConfirmDialog.svelte";
   import HandSelector from "./HandSelector.svelte";
+  import MobileHandSelector from "./MobileHandSelector.svelte";
+  import MobileActionToolbar from "./MobileActionToolbar.svelte";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
   import { getReturnContext } from "$lib/shared/coordinators/sequence-handoff.svelte";
@@ -87,6 +89,14 @@
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   });
+
+  // The sequence actions side panel needs ~450px to render 2-column buttons
+  // comfortably. Below 1100px total viewport, even if the global layout says
+  // side-by-side, this panel uses the mobile bottom sheet instead.
+  const SIDE_PANEL_MIN_WIDTH = 1100;
+  const isMobileLayout = $derived(
+    !isSideBySideLayout || viewportWidth < SIDE_PANEL_MIN_WIDTH
+  );
 
   // Compact mode for mobile portrait - horizontal icon+text layout
   // Applies to most mobile widths, disabled at tablet/desktop widths
@@ -608,6 +618,12 @@
     helpMode = "inactive";
     selectedTransform = null;
   }
+
+  /** Mobile long-press help: skip "selecting" mode, go directly to viewing */
+  function handleHelpRequest(actionId: ActionHelpId) {
+    selectedTransform = actionId;
+    helpMode = "viewing";
+  }
 </script>
 
 <CreatePanelDrawer
@@ -627,6 +643,14 @@
     <div class="compact-header" class:dimmed={helpMode === "selecting"}>
       <h2 class="panel-title">Sequence Actions</h2>
 
+      {#if isMobileLayout}
+        <!-- Mobile: inline segmented hand selector in header -->
+        <MobileHandSelector
+          value={panelState.targetHand}
+          onChange={(hand) => panelState.setTargetHand(hand)}
+        />
+      {/if}
+
       <div class="header-actions">
         {#if isAdmin() && hasSequence}
           <button
@@ -638,31 +662,35 @@
             <i class="fas fa-code" aria-hidden="true"></i>
           </button>
         {/if}
-        <button
-          class="icon-btn help"
-          class:active={helpMode === "selecting"}
-          onclick={enterHelpMode}
-          aria-label="Help with transform actions"
-        >
-          <i class="fas fa-circle-question" aria-hidden="true"></i>
-        </button>
+        {#if !isMobileLayout}
+          <button
+            class="icon-btn help"
+            class:active={helpMode === "selecting"}
+            onclick={enterHelpMode}
+            aria-label="Help with transform actions"
+          >
+            <i class="fas fa-circle-question" aria-hidden="true"></i>
+          </button>
+        {/if}
         <button class="icon-btn close" onclick={handleClose} aria-label="Close">
           <i class="fas fa-times" aria-hidden="true"></i>
         </button>
       </div>
     </div>
 
-    <!-- Hand selector for single-hand transforms -->
-    <div class:dimmed={helpMode === "selecting"}>
-      <HandSelector
-        value={panelState.targetHand}
-        onChange={(hand) => panelState.setTargetHand(hand)}
-      />
-    </div>
-
-    <!-- Beat grid display: shows on mobile at 50% height -->
-    {#if hasSequence && isSideBySideLayout === false && sequence}
+    <!-- Hand selector for single-hand transforms (desktop only) -->
+    {#if !isMobileLayout}
       <div class:dimmed={helpMode === "selecting"}>
+        <HandSelector
+          value={panelState.targetHand}
+          onChange={(hand) => panelState.setTargetHand(hand)}
+        />
+      </div>
+    {/if}
+
+    <!-- Beat grid display: shows on mobile, takes all available space -->
+    {#if hasSequence && isSideBySideLayout === false && sequence}
+      <div class="step-grid-wrapper" class:dimmed={helpMode === "selecting"}>
         <StepGridSection
           steps={sequence.steps}
           startPosition={sequence.startPosition ||
@@ -670,6 +698,7 @@
             null}
           {selectedStepNumber}
           isShiftMode={isShiftStartMode}
+          mobileMode={isMobileLayout}
           onStepClick={isShiftStartMode
             ? handleShiftStartBeatSelect
             : handleStepSelect}
@@ -680,8 +709,9 @@
       </div>
     {/if}
 
-    <div class="controls-content">
-      <TransformsGridMode
+    {#if isMobileLayout}
+      <!-- Mobile: compact toolbar with category tabs -->
+      <MobileActionToolbar
         {hasSequence}
         {hasSelection}
         {isTransforming}
@@ -690,10 +720,7 @@
         {canShiftStart}
         swapDisabled={isSwapDisabled}
         showEditInConstructor={!isInConstructTab}
-        isDesktopPanel={isSideBySideLayout}
-        compactMode={useCompactMode}
-        helpMode={helpMode === "selecting"}
-        onHelpSelect={selectTransformHelp}
+        onHelpRequest={handleHelpRequest}
         onTurns={handleOpenBeatEditor}
         onMirror={handleMirror}
         onFlip={handleFlip}
@@ -709,7 +736,39 @@
         onShiftStart={handleShiftStart}
         onEditInConstructor={handleEditInConstructor}
       />
-    </div>
+    {:else}
+      <!-- Desktop: full grid of all actions -->
+      <div class="controls-content">
+        <TransformsGridMode
+          {hasSequence}
+          {hasSelection}
+          {isTransforming}
+          {canExtend}
+          {isExtending}
+          {canShiftStart}
+          swapDisabled={isSwapDisabled}
+          showEditInConstructor={!isInConstructTab}
+          isDesktopPanel={isSideBySideLayout}
+          compactMode={useCompactMode}
+          helpMode={helpMode === "selecting"}
+          onHelpSelect={selectTransformHelp}
+          onTurns={handleOpenBeatEditor}
+          onMirror={handleMirror}
+          onFlip={handleFlip}
+          onInvert={handleInvert}
+          onRotateCW={handleRotateCW}
+          onRotateCCW={handleRotateCCW}
+          onSwap={handleSwap}
+          onRewind={handleRewind}
+          onTurnPattern={handleTurnPattern}
+          onRotationDirection={handleRotationDirection}
+          onDuration={handleDuration}
+          onExtend={handleExtend}
+          onShiftStart={handleShiftStart}
+          onEditInConstructor={handleEditInConstructor}
+        />
+      </div>
+    {/if}
   </div>
 </CreatePanelDrawer>
 
@@ -914,6 +973,14 @@
   /* Note: Beat grid visibility is controlled by isSideBySideLayout in the template,
      not by CSS media queries. The JavaScript logic considers device type,
      orientation, and viewport dimensions for proper responsive behavior. */
+
+  /* Wrapper lets step grid absorb all remaining vertical space */
+  .step-grid-wrapper {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
 
   .controls-content {
     flex: 1;

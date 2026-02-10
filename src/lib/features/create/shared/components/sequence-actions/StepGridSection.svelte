@@ -14,6 +14,8 @@
     startPosition: StepData | StartPositionData | null;
     selectedStepNumber: number | null;
     isShiftMode: boolean;
+    /** When true, grid takes all available space (flex: 1) instead of fixed 40% */
+    mobileMode?: boolean;
     onStepClick: (stepNumber: number) => void;
     onStartClick: () => void;
     onStepLongPress?: (stepNumber: number) => void;
@@ -25,6 +27,7 @@
     startPosition,
     selectedStepNumber,
     isShiftMode,
+    mobileMode = false,
     onStepClick,
     onStartClick,
     onStepLongPress,
@@ -32,7 +35,7 @@
   }: Props = $props();
 </script>
 
-<div class="step-grid-section" class:shift-mode={isShiftMode}>
+<div class="step-grid-section" class:shift-mode={isShiftMode} class:mobile-mode={mobileMode}>
   {#if isShiftMode}
     <div class="shift-mode-banner">
       <span>Tap the beat to play first — it becomes Beat 1</span>
@@ -59,6 +62,10 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+  }
+
+  .step-grid-section.mobile-mode {
+    flex: 1;
   }
 
   .step-grid-section.shift-mode {
