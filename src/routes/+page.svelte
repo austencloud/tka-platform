@@ -115,7 +115,7 @@
   />
   <meta
     name="twitter:image:alt"
-    content="TKA Scribe - Flow arts choreography app showing poi sequence animation"
+    content="TKA Scribe - Flow arts notation app showing staff sequence animation"
   />
 
   <!-- Canonical URL -->
@@ -219,10 +219,10 @@
 			},
 			{
 				"@type": "Question",
-				"name": "Is there a notation system for poi?",
+				"name": "Can I use TKA notation for poi?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "Yes, TKA (The Kinetic Alphabet) is a notation system that supports poi and many other props. It lets you document poi patterns like flowers, antispins, isolations, and extensions using visual pictographs. Each pictograph shows exactly where your hands are and how the poi moves."
+					"text": "TKA is built for static props like staff and fans, where you can hold any orientation freely. Poi is momentum-based, so gravity limits which TKA sequences are physically possible. Many sequences work, but not all. The Poi Lab tool identifies which sequences are poi-legal."
 				}
 			},
 			{
@@ -230,7 +230,7 @@
 				"name": "How do you write down staff spinning moves?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "TKA provides staff notation using pictographs that capture hand positions on a grid, motion types (prospin, antispin, static), direction, and number of turns. You can notate contact staff, double staff, and dragon staff sequences and share them with other spinners."
+					"text": "TKA uses pictographs that capture hand positions on a grid, motion types (prospin, antispin, static), direction, and number of turns. It's built for dual-wielded props like double staff, and the notation applies to any prop you grip directly."
 				}
 			},
 			{
@@ -254,7 +254,7 @@
 				"name": "What props does TKA Scribe support?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "TKA Scribe supports many flow props: staff, contact staff, double staff, clubs, fans, triads, hoops, mini hoops, buugeng, swords, and more. Each prop is rendered with proper rotations and hand positions."
+					"text": "TKA Scribe is built for dual-wielded static props: staff, clubs, fans, hoops, mini hoops, buugeng, triads, and swords. Each prop is rendered with proper rotations and hand positions."
 				}
 			},
 			{

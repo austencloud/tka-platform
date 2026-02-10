@@ -38,10 +38,14 @@ const dictionaryPlugin = () => ({
           try {
             const decodedUrl = decodeURIComponent(req.url);
             const relativePath = decodedUrl.substring(1);
-            const filePath = path.resolve(
-              "../../../desktop/data/dictionary",
-              relativePath
-            );
+            const baseDir = path.resolve("../../../desktop/data/dictionary");
+            const filePath = path.resolve(baseDir, relativePath);
+            // Prevent path traversal - filePath must stay within baseDir
+            if (!filePath.startsWith(baseDir + path.sep) && filePath !== baseDir) {
+              res.writeHead(403);
+              res.end("Forbidden");
+              return;
+            }
             if (fs.existsSync(filePath)) {
               res.setHeader("Content-Type", "image/png");
               res.setHeader("Cache-Control", "public, max-age=31536000"); // 2026: Better caching
