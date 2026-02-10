@@ -86,6 +86,9 @@ function createDefaultPreset(): GenerationPreset {
     propContinuity: PropContinuity.CONTINUOUS,
     sliceSize: SliceSize.HALVED,
     loopType: LOOPType.STRICT_ROTATED,
+    constraintPreset: "smooth",
+    handPathMode: "mixed",
+    motionTypeFilter: null,
   };
 
   return {

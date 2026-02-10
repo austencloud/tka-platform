@@ -16,7 +16,7 @@ import type {
   DifficultyLevel,
   GenerationOptions,
 } from "../domain/models/generate-models";
-import { DifficultyLevel as DifficultyEnum } from "../domain/models/generate-models";
+import { DifficultyLevel as DifficultyEnum, PropContinuity } from "../domain/models/generate-models";
 import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
 
 /**
@@ -63,9 +63,14 @@ export interface UIGenerationConfig {
   level: number; // 1-3
   turnIntensity: number;
   gridMode: GridMode;
-  propContinuity: string; // "continuous" | "random"
+  propContinuity: string; // "continuous" | "random" — legacy, derived from constraintPreset for backwards compat
   sliceSize: string; // "halved" | "quartered"
   loopType: string; // LOOP type for circular mode
+
+  // 3-axis constraint system (replaces binary propContinuity)
+  constraintPreset: "smooth" | "mixed" | "high-reversal"; // Prop reversal frequency
+  handPathMode: "smooth" | "mixed" | "high"; // Hand path reversal frequency
+  motionTypeFilter: "no-dash" | "prefer-dash" | null; // Dash frequency ("mixed" = null)
 }
 
 /**
@@ -103,6 +108,10 @@ export function uiConfigToGenerationOptions(
     // Override to halved for this LOOP type
   }
 
+  // Derive propContinuity from constraintPreset for backwards compat
+  const derivedPropContinuity =
+    uiConfig.constraintPreset === "smooth" ? PropContinuity.CONTINUOUS : PropContinuity.RANDOM;
+
   const options: GenerationOptions = {
     length: uiConfig.length,
     gridMode: uiConfig.gridMode,
@@ -111,9 +120,7 @@ export function uiConfigToGenerationOptions(
     mode: uiConfig.mode
       ? (uiConfig.mode as GenerationOptions["mode"])
       : undefined,
-    propContinuity: uiConfig.propContinuity
-      ? (uiConfig.propContinuity as GenerationOptions["propContinuity"])
-      : undefined,
+    propContinuity: derivedPropContinuity,
     turnIntensity:
       uiConfig.turnIntensity !== undefined ? uiConfig.turnIntensity : undefined,
     sliceSize: sliceSize
@@ -122,6 +129,11 @@ export function uiConfigToGenerationOptions(
     loopType: uiConfig.loopType
       ? (uiConfig.loopType as GenerationOptions["loopType"])
       : undefined,
+
+    // 3-axis constraint system
+    constraintPreset: uiConfig.constraintPreset ?? undefined,
+    handPathMode: uiConfig.handPathMode ?? undefined,
+    motionTypeFilter: uiConfig.motionTypeFilter ?? undefined,
 
     // Include start/end options if provided
     blockedStartPositions: startEndOptions?.blockedStartPositions ?? undefined,
@@ -142,6 +154,10 @@ export function generationOptionsToUIConfig(
   sliceSize: string = "halved",
   loopType: string = "strict_rotated"
 ): UIGenerationConfig {
+  // Derive constraintPreset from propContinuity for backwards compat
+  const constraintPreset: UIGenerationConfig["constraintPreset"] =
+    options.constraintPreset ?? (options.propContinuity === "random" ? "mixed" : "smooth");
+
   return {
     mode: options.mode || "freeform",
     length: options.length,
@@ -151,5 +167,8 @@ export function generationOptionsToUIConfig(
     propContinuity: options.propContinuity || "continuous",
     sliceSize,
     loopType,
+    constraintPreset,
+    handPathMode: options.handPathMode ?? "mixed",
+    motionTypeFilter: options.motionTypeFilter ?? null,
   };
 }

@@ -30,6 +30,10 @@ interface SerializedConfig {
   sliceSize: SliceSize;
   loopType: LOOPType;
   timestamp: number;
+  // 3-axis constraint system
+  constraintPreset?: "smooth" | "mixed" | "high-reversal";
+  handPathMode?: "smooth" | "mixed" | "high";
+  motionTypeFilter?: "no-dash" | "prefer-dash" | null;
 }
 
 /**
@@ -47,6 +51,9 @@ function saveConfig(config: UIGenerationConfig): void {
       sliceSize: config.sliceSize as SliceSize,
       loopType: config.loopType as LOOPType,
       timestamp: Date.now(),
+      constraintPreset: config.constraintPreset,
+      handPathMode: config.handPathMode,
+      motionTypeFilter: config.motionTypeFilter,
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
@@ -100,6 +107,15 @@ function loadConfig(): UIGenerationConfig | null {
     if (data.loopType !== undefined) {
       result.loopType = data.loopType as LOOPType;
     }
+    if (data.constraintPreset !== undefined) {
+      result.constraintPreset = data.constraintPreset;
+    }
+    if (data.handPathMode !== undefined) {
+      result.handPathMode = data.handPathMode;
+    }
+    if (data.motionTypeFilter !== undefined) {
+      result.motionTypeFilter = data.motionTypeFilter;
+    }
 
     return result as UIGenerationConfig;
   } catch (error) {
@@ -129,6 +145,9 @@ const DEFAULT_CONFIG: UIGenerationConfig = {
   propContinuity: PropContinuity.CONTINUOUS,
   sliceSize: SliceSize.HALVED,
   loopType: LOOPType.STRICT_ROTATED,
+  constraintPreset: "smooth",
+  handPathMode: "mixed",
+  motionTypeFilter: null,
 };
 
 // ===== Simple State Creator =====

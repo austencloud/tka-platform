@@ -299,9 +299,11 @@
      850px threshold catches iPhone SE through iPhone 14 Pro. */
   @media (max-height: 850px) {
     .layout-wrapper.workspace-visible.generator-active:not(.side-by-side) {
-      grid-template-rows: 1fr 150px;
+      grid-template-rows: 1fr 192px;
     }
+
   }
+
 
   /* Simple prompt when workspace is empty */
   .empty-prompt {

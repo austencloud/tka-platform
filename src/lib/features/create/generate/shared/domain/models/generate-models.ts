@@ -37,6 +37,11 @@ export interface GenerationOptions {
   sliceSize?: SliceSize | undefined; // For circular generation
   loopType?: LOOPType | undefined; // LOOP type for circular generation
 
+  // 3-axis constraint system
+  constraintPreset?: "smooth" | "mixed" | "high-reversal" | undefined;
+  handPathMode?: "smooth" | "mixed" | "high" | undefined;
+  motionTypeFilter?: "no-dash" | "prefer-dash" | null | undefined;
+
   // Customize options - advanced constraints for generation
   /** @deprecated Use blockedStartPositions for multi-select */
   startPosition?: PictographData | null; // Specific start position constraint

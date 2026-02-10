@@ -84,6 +84,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     const sequence: (StepData | StartPositionData)[] = [startPosition];
 
     // Step 2: Determine rotation directions
+    // constraintPreset maps to propContinuity via config-mapper for backwards compat
     const rotationDirections = this.loopParams.determineRotationDirections(
       options.propContinuity
     );
