@@ -323,7 +323,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     const gridMode = prepared?.gridMode ?? GridMode.DIAMOND;
     if (visibility.baseGridOnly) {
       // Base layer mode: draw only center + outer points (no hand points or layer 2)
-      this.drawBaseGridOnly(ctx, size, isDarkMode);
+      this.drawBaseGridOnly(ctx, size, isDarkMode, gridMode);
     } else {
       // Full mode: draw complete grid with all points
       await this.drawGrid(ctx, size, gridMode, isDarkMode, visibility.showNonRadialPoints ?? false);
@@ -478,29 +478,50 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   drawBaseGridOnly(
     ctx: CanvasRenderingContext2D,
     size: number,
-    isDarkMode: boolean
+    isDarkMode: boolean,
+    gridMode: GridMode = GridMode.DIAMOND
   ): void {
     const scale = size / VIEWBOX_SIZE;
     const pointColor = isDarkMode ? GRID_POINT_COLOR_DARK : GRID_POINT_COLOR_LIGHT;
+    const isBoxMode = gridMode === GridMode.BOX;
 
     // Set opacity for grid points
     // Dark mode: slightly transparent white (avoids harsh pure white)
     // Light mode: solid black for maximum clarity
     ctx.save();
     ctx.globalAlpha = isDarkMode ? 0.85 : 1.0;
-    ctx.fillStyle = pointColor;
 
-    // Draw center point
+    // For box mode, rotate the entire coordinate system 45° around center
+    // This matches GridSvg.svelte which rotates diamond_grid.svg for box mode
+    if (isBoxMode) {
+      const center = size / 2;
+      ctx.translate(center, center);
+      ctx.rotate(45 * Math.PI / 180);
+      ctx.translate(-center, -center);
+    }
+
+    // Draw center point (unaffected by rotation since it's at center)
+    ctx.fillStyle = pointColor;
     const center = BASE_GRID_POINTS.center;
     ctx.beginPath();
     ctx.arc(center.x * scale, center.y * scale, center.r * scale, 0, Math.PI * 2);
     ctx.fill();
 
-    // Draw outer points (corners)
+    // Draw outer points
+    // Diamond mode: filled circles. Box mode: outlined (stroked) circles.
+    // This matches GridSvg.svelte's fill-opacity/stroke-opacity toggling.
     for (const point of Object.values(BASE_GRID_POINTS.outer)) {
       ctx.beginPath();
       ctx.arc(point.x * scale, point.y * scale, point.r * scale, 0, Math.PI * 2);
-      ctx.fill();
+      if (isBoxMode) {
+        // Box mode: outlined circles (stroke only, no fill)
+        ctx.strokeStyle = pointColor;
+        ctx.lineWidth = 13 * scale;
+        ctx.stroke();
+      } else {
+        // Diamond mode: filled circles
+        ctx.fill();
+      }
     }
 
     ctx.restore();

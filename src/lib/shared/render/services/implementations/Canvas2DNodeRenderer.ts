@@ -239,7 +239,7 @@ export class Canvas2DNodeRenderer implements IDirectRenderer {
     const gridStart = performance.now();
     const gridMode = prepared?.gridMode ?? GridMode.DIAMOND;
     if (visibility.baseGridOnly) {
-      this.drawBaseGridOnly(ctx, size, isDarkMode);
+      this.drawBaseGridOnly(ctx, size, isDarkMode, gridMode);
     } else {
       await this.drawGrid(ctx, size, gridMode, isDarkMode, visibility.showNonRadialPoints ?? false);
     }
@@ -310,8 +310,43 @@ export class Canvas2DNodeRenderer implements IDirectRenderer {
   // ... (rest of the implementation would be copied from Canvas2DDirectRenderer)
   // For now, let me add stub methods to make it compile
 
-  private drawBaseGridOnly(ctx: CanvasRenderingContext2D, size: number, isDarkMode: boolean): void {
-    // TODO: Copy from Canvas2DDirectRenderer
+  private drawBaseGridOnly(ctx: CanvasRenderingContext2D, size: number, isDarkMode: boolean, gridMode: GridMode = GridMode.DIAMOND): void {
+    const scale = size / VIEWBOX_SIZE;
+    const pointColor = isDarkMode ? GRID_POINT_COLOR_DARK : GRID_POINT_COLOR_LIGHT;
+    const isBoxMode = gridMode === GridMode.BOX;
+
+    ctx.save();
+    ctx.globalAlpha = isDarkMode ? 0.85 : 1.0;
+
+    // For box mode, rotate 45° around center (matches GridSvg.svelte)
+    if (isBoxMode) {
+      const center = size / 2;
+      ctx.translate(center, center);
+      ctx.rotate(45 * Math.PI / 180);
+      ctx.translate(-center, -center);
+    }
+
+    // Draw center point
+    ctx.fillStyle = pointColor;
+    const center = BASE_GRID_POINTS.center;
+    ctx.beginPath();
+    ctx.arc(center.x * scale, center.y * scale, center.r * scale, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw outer points
+    for (const point of Object.values(BASE_GRID_POINTS.outer)) {
+      ctx.beginPath();
+      ctx.arc(point.x * scale, point.y * scale, point.r * scale, 0, Math.PI * 2);
+      if (isBoxMode) {
+        ctx.strokeStyle = pointColor;
+        ctx.lineWidth = 13 * scale;
+        ctx.stroke();
+      } else {
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
   }
 
   private async drawGrid(
