@@ -29,6 +29,7 @@
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
   import { previewCellRenderer } from "../services/implementations/PreviewCellRenderer";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   // ============================================================================
   // GLOBAL CELL URL CACHE
@@ -187,6 +188,11 @@
   let containerElement: HTMLDivElement | undefined = $state();
   let containedWidth = $state<number | null>(null);
   let containedHeight = $state<number | null>(null);
+
+  // Scroll mode for long sequences (>16 beats)
+  const SCROLL_THRESHOLD = 16;
+  const needsScroll = $derived((sequence?.steps?.length ?? 0) > SCROLL_THRESHOLD);
+  let gridScrollRef: HTMLDivElement | undefined = $state();
 
   // Visibility settings from user preferences (reactive)
   const visibilitySettings = $derived(getSettings().visibility);
@@ -392,7 +398,15 @@
       let rws: number;
 
       if (columnCount !== null && columnCount > 0) {
+        // Manual column override (e.g., export mode)
         cols = columnCount;
+        const stepsPerRow = cols - 1;
+        const firstRowSteps = Math.min(stepsPerRow, stepCount);
+        const remainingSteps = stepCount - firstRowSteps;
+        rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
+      } else if (needsScroll) {
+        // Long sequences: fixed 5 columns, scrollable grid
+        cols = 5;
         const stepsPerRow = cols - 1;
         const firstRowSteps = Math.min(stepsPerRow, stepCount);
         const remainingSteps = stepCount - firstRowSteps;
@@ -516,23 +530,31 @@
 
     const containerWidth = containerElement.clientWidth;
     const containerHeight = containerElement.clientHeight;
-    const contentRatio = previewAspectRatio;
 
     if (containerWidth === 0 || containerHeight === 0) return;
-
-    const containerRatio = containerWidth / containerHeight;
 
     let newWidth: number | null;
     let newHeight: number | null;
 
-    if (contentRatio > containerRatio) {
-      newWidth = containerWidth;
-      const h = containerWidth / contentRatio;
-      newHeight = Number.isFinite(h) ? h : null;
-    } else {
+    if (needsScroll) {
+      // Scroll mode: fill container width (minus padding), use full container height
+      // The grid-scroll-container handles overflow with scrolling
+      newWidth = containerWidth - 24; // 12px padding on each side
       newHeight = containerHeight;
-      const w = containerHeight * contentRatio;
-      newWidth = Number.isFinite(w) ? w : null;
+    } else {
+      // Contain mode: fit content while preserving aspect ratio
+      const contentRatio = previewAspectRatio;
+      const containerRatio = containerWidth / containerHeight;
+
+      if (contentRatio > containerRatio) {
+        newWidth = containerWidth;
+        const h = containerWidth / contentRatio;
+        newHeight = Number.isFinite(h) ? h : null;
+      } else {
+        newHeight = containerHeight;
+        const w = containerHeight * contentRatio;
+        newWidth = Number.isFinite(w) ? w : null;
+      }
     }
 
     // Only update state if values actually changed (prevents ResizeObserver → state → resize loop)
@@ -644,6 +666,19 @@
     };
   });
 
+  // Auto-scroll to keep highlighted step visible during playback
+  $effect(() => {
+    const stepIdx = highlightedStepIndex;
+    if (!needsScroll || !gridScrollRef || stepIdx == null) return;
+
+    const cell = gridScrollRef.querySelector('.pictograph-cell.current');
+    if (cell) {
+      // 'nearest' only scrolls when the cell is outside the viewport — no jumps
+      // when the highlighted cell is already visible
+      cell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  });
+
   onMount(() => {
     renderAllCells().then(() => {
       hasMounted = true;
@@ -700,7 +735,7 @@
               class="word-title"
               style="font-size: {Math.max(10, Math.floor(scaledHeaderHeight * 0.55))}px;"
             >
-              {sequence.word}
+              {simplifyAndTruncate(sequence.word, 12)}
             </span>
           {/if}
 
@@ -721,57 +756,113 @@
       {/if}
 
       <!-- Grid section with individual pictograph cells -->
-      <div
-        class="grid-section"
-        style="grid-template-columns: repeat({effectiveColumns}, 1fr);"
-      >
-        {#each visibleCells as cell (cell.index)}
-          {#if onStepClick && cell.index >= 0}
-            <button
-              class="pictograph-cell clickable"
-              class:current={showHighlight && highlightedStepIndex === cell.index}
-              class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-              style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-              onclick={() => onStepClick(cell.index)}
-              type="button"
-              aria-label="Go to step {cell.label}"
-            >
-              {#if cell.isLoaded}
-                <img
-                  class="cell-image"
-                  src={cell.imageUrl}
-                  alt={cell.label}
-                  draggable="false"
-                />
+      {#if needsScroll}
+        <div class="grid-scroll-container themed-scrollbar" bind:this={gridScrollRef}>
+          <div
+            class="grid-section"
+            style="grid-template-columns: repeat({effectiveColumns}, 1fr);"
+          >
+            {#each visibleCells as cell (cell.index)}
+              {#if onStepClick && cell.index >= 0}
+                <button
+                  class="pictograph-cell clickable"
+                  class:current={showHighlight && highlightedStepIndex === cell.index}
+                  class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
+                  style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
+                  onclick={() => onStepClick(cell.index)}
+                  type="button"
+                  aria-label="Go to step {cell.label}"
+                >
+                  {#if cell.isLoaded}
+                    <img
+                      class="cell-image"
+                      src={cell.imageUrl}
+                      alt={cell.label}
+                      draggable="false"
+                    />
+                  {:else}
+                    <div class="cell-spinner-container">
+                      <div class="cell-spinner"></div>
+                    </div>
+                  {/if}
+                </button>
               {:else}
-                <div class="cell-spinner-container">
-                  <div class="cell-spinner"></div>
+                <div
+                  class="pictograph-cell"
+                  class:current={showHighlight && highlightedStepIndex === cell.index}
+                  class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
+                  style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
+                >
+                  {#if cell.isLoaded}
+                    <img
+                      class="cell-image"
+                      src={cell.imageUrl}
+                      alt={cell.label}
+                      draggable="false"
+                    />
+                  {:else}
+                    <div class="cell-spinner-container">
+                      <div class="cell-spinner"></div>
+                    </div>
+                  {/if}
                 </div>
               {/if}
-            </button>
-          {:else}
-            <div
-              class="pictograph-cell"
-              class:current={showHighlight && highlightedStepIndex === cell.index}
-              class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
-              style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
-            >
-              {#if cell.isLoaded}
-                <img
-                  class="cell-image"
-                  src={cell.imageUrl}
-                  alt={cell.label}
-                  draggable="false"
-                />
-              {:else}
-                <div class="cell-spinner-container">
-                  <div class="cell-spinner"></div>
-                </div>
-              {/if}
-            </div>
-          {/if}
-        {/each}
-      </div>
+            {/each}
+          </div>
+        </div>
+      {:else}
+        <div
+          class="grid-section"
+          style="grid-template-columns: repeat({effectiveColumns}, 1fr);"
+        >
+          {#each visibleCells as cell (cell.index)}
+            {#if onStepClick && cell.index >= 0}
+              <button
+                class="pictograph-cell clickable"
+                class:current={showHighlight && highlightedStepIndex === cell.index}
+                class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
+                style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
+                onclick={() => onStepClick(cell.index)}
+                type="button"
+                aria-label="Go to step {cell.label}"
+              >
+                {#if cell.isLoaded}
+                  <img
+                    class="cell-image"
+                    src={cell.imageUrl}
+                    alt={cell.label}
+                    draggable="false"
+                  />
+                {:else}
+                  <div class="cell-spinner-container">
+                    <div class="cell-spinner"></div>
+                  </div>
+                {/if}
+              </button>
+            {:else}
+              <div
+                class="pictograph-cell"
+                class:current={showHighlight && highlightedStepIndex === cell.index}
+                class:played={showHighlight && highlightedStepIndex !== null && cell.index < highlightedStepIndex}
+                style="grid-column: {cell.gridColumn}; grid-row: {cell.gridRow};"
+              >
+                {#if cell.isLoaded}
+                  <img
+                    class="cell-image"
+                    src={cell.imageUrl}
+                    alt={cell.label}
+                    draggable="false"
+                  />
+                {:else}
+                  <div class="cell-spinner-container">
+                    <div class="cell-spinner"></div>
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          {/each}
+        </div>
+      {/if}
 
       <!-- Footer section -->
       {#if showFooter}
@@ -917,6 +1008,18 @@
 
   .dark-mode .loop-icon-badge {
     background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Scroll container for long sequences (>16 beats) */
+  .grid-scroll-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Padding must exceed the highlight's visual extent so the glow
+       paints fully inside the container without clipping.
+       Highlight: scale(1.06) ~5px + 3px ring + 12px blur = ~16px max */
+    padding: 16px;
   }
 
   /* Grid section - CSS Grid layout */
@@ -1105,6 +1208,10 @@
     .pictograph-cell.current {
       animation: none;
       transform: scale(1);
+    }
+
+    .grid-scroll-container {
+      scroll-behavior: auto;
     }
   }
 </style>

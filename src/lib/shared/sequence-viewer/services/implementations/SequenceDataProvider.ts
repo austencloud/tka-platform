@@ -13,8 +13,15 @@ import type { ISequenceDataProvider } from "../contracts/ISequenceDataProvider";
 import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { cellPreWarmer } from "./CellPreWarmer";
 
 export class SequenceDataProvider implements ISequenceDataProvider {
+  /** In-flight prefetch promises keyed by sequence identifier */
+  private prefetchCache = new Map<string, Promise<SequenceData>>();
+
+  /** Completed prefetch results keyed by sequence identifier */
+  private hydrationResults = new Map<string, SequenceData>();
+
   constructor(
     private readonly localRepository: ISequenceRepository,
     private readonly publicLoader: IBrowseLoader
@@ -56,6 +63,65 @@ export class SequenceDataProvider implements ISequenceDataProvider {
       return this.ensureWordPopulated(sequence);
     }
 
+    const key = this.deriveCacheKey(sequence);
+
+    // Check completed prefetch cache — instant return
+    if (key) {
+      const cached = this.hydrationResults.get(key);
+      if (cached) {
+        return cached;
+      }
+
+      // Check in-flight prefetch — await it instead of starting a new fetch
+      const inFlight = this.prefetchCache.get(key);
+      if (inFlight) {
+        return inFlight;
+      }
+    }
+
+    return this.hydrateSequenceInternal(sequence);
+  }
+
+  prefetch(sequence: SequenceData): void {
+    if (this.hasMotionData(sequence)) return;
+
+    const key = this.deriveCacheKey(sequence);
+    if (!key) return;
+    if (this.hydrationResults.has(key) || this.prefetchCache.has(key)) return;
+
+    const promise = this.hydrateSequenceInternal(sequence).then((hydrated) => {
+      this.hydrationResults.set(key, hydrated);
+
+      // Chain cell pre-warming now that we have real step data
+      if (this.hasMotionData(hydrated)) {
+        cellPreWarmer.preWarmSequence(hydrated, "user-visible");
+      }
+
+      return hydrated;
+    });
+
+    this.prefetchCache.set(key, promise);
+  }
+
+  getCached(sequence: SequenceData): SequenceData | null {
+    const key = this.deriveCacheKey(sequence);
+    if (!key) return null;
+    return this.hydrationResults.get(key) ?? null;
+  }
+
+  /**
+   * Derive a stable cache key from a sequence's identifier.
+   */
+  private deriveCacheKey(sequence: SequenceData): string | null {
+    return sequence.id || sequence.word || sequence.name || null;
+  }
+
+  /**
+   * Core hydration logic — tries local repo then public loader.
+   */
+  private async hydrateSequenceInternal(
+    sequence: SequenceData
+  ): Promise<SequenceData> {
     const identifier = sequence.word || sequence.name;
     if (!identifier) {
       return this.ensureWordPopulated(sequence);
@@ -63,11 +129,12 @@ export class SequenceDataProvider implements ISequenceDataProvider {
 
     // Try local repository first (user's own sequences in IndexedDB)
     try {
-      const localSequence = await this.localRepository.getSequence(identifier);
+      const localSequence =
+        await this.localRepository.getSequence(identifier);
       if (localSequence && this.hasMotionData(localSequence)) {
         return this.ensureWordPopulated(localSequence);
       }
-    } catch (error) {
+    } catch {
       // Local lookup failed, continue to next source
     }
 
@@ -78,7 +145,7 @@ export class SequenceDataProvider implements ISequenceDataProvider {
       if (publicSequence && this.hasMotionData(publicSequence)) {
         return this.ensureWordPopulated(publicSequence);
       }
-    } catch (error) {
+    } catch {
       // Public lookup failed
     }
 

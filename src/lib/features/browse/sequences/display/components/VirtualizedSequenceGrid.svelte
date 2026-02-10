@@ -14,6 +14,7 @@
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
+  import type { ISequenceDataProvider } from "$lib/shared/sequence-viewer/services/contracts/ISequenceDataProvider";
 
   /**
    * VirtualizedSequenceGrid - High-performance grid for large sequence lists
@@ -220,9 +221,14 @@
     });
   });
 
+  // Sequence data provider for hover prefetch
+  const sequenceDataProvider = container.items.sequenceDataProvider as ISequenceDataProvider;
+
   // Handle hover pre-warming — called by ChoreoCard's onHover prop
+  // Prefetches full sequence data from Firestore AND pre-warms cells
   function handleSequenceHover(seq: SequenceData) {
     cellPreWarmer.preWarmSequence(seq, "user-visible");
+    sequenceDataProvider.prefetch(seq);
   }
 
   // Reconfigure virtualizer when rowCount or estimatedRowHeight changes

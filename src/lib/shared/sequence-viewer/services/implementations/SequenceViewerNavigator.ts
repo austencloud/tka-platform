@@ -10,8 +10,10 @@
  */
 
 import type { SequenceData } from '$lib/shared/foundation/domain/models/SequenceData';
+import type { ISequenceDataProvider } from '../contracts/ISequenceDataProvider';
 import { openSequenceOverlay } from '../../state/sequence-viewer-overlay-state.svelte';
 import { cellPreWarmer } from './CellPreWarmer';
+import { container } from '$lib/shared/di';
 
 export interface OpenSequenceViewerOptions {
 	/** Path to return to when closing (e.g., "/browse/gallery") */
@@ -42,23 +44,33 @@ export function openSequenceViewer(
 ): void {
 	// Track sequence view for attribution prompt eligibility
 	try {
-		import('$lib/shared/di').then(({ container }) => {
-			const promptTrigger = container?.items?.attributionPromptTrigger as { recordInteraction?: (type: string) => void } | undefined;
-			if (promptTrigger?.recordInteraction) {
-				promptTrigger.recordInteraction('sequence_view');
-			}
-		});
+		const promptTrigger = container?.items?.attributionPromptTrigger as { recordInteraction?: (type: string) => void } | undefined;
+		if (promptTrigger?.recordInteraction) {
+			promptTrigger.recordInteraction('sequence_view');
+		}
 	} catch {
 		// Silently fail - attribution tracking is non-critical
 	}
 
+	// Use prefetched hydrated data if available (hover prefetch completed)
+	let seqToOpen = sequence;
+	try {
+		const provider = container?.items?.sequenceDataProvider as ISequenceDataProvider | undefined;
+		const cached = provider?.getCached(sequence);
+		if (cached) {
+			seqToOpen = cached;
+		}
+	} catch {
+		// DI not available — proceed with original sequence
+	}
+
 	// Pre-warm pictograph cells at highest priority while the drawer animates.
 	// By the time LayeredSequencePreview mounts, cells are already in IndexedDB.
-	cellPreWarmer.preWarmSequence(sequence, "user-blocking");
+	cellPreWarmer.preWarmSequence(seqToOpen, "user-blocking");
 
 	// Always use drawer overlay - keeps the underlying module mounted
 	// so content is immediately visible behind the drawer on dismiss
-	openSequenceOverlay(sequence, {
+	openSequenceOverlay(seqToOpen, {
 		returnLabel: options.returnLabel,
 		initialBpm: options.initialBpm,
 		initialStep: options.initialStep,

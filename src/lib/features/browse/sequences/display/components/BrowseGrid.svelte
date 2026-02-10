@@ -13,6 +13,7 @@
   import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";
+  import type { ISequenceDataProvider } from "$lib/shared/sequence-viewer/services/contracts/ISequenceDataProvider";
 
   /**
    * 🚀 PERFORMANCE: Virtualization threshold
@@ -189,6 +190,13 @@
     }
   }
 
+  // Hover prefetch for non-virtualized cards
+  const sequenceDataProvider = container.items.sequenceDataProvider as ISequenceDataProvider;
+
+  function handleSequenceHover(seq: SequenceData) {
+    sequenceDataProvider.prefetch(seq);
+  }
+
 </script>
 
 {#if useVirtualization}
@@ -219,6 +227,7 @@
                 variations={seqVariations}
                 onPrimaryAction={(seq) =>
                   handleSequenceAction("view-detail", seq, seqVariations)}
+                onHover={handleSequenceHover}
                 bluePropType={propSettings.bluePropType}
                 redPropType={propSettings.redPropType}
                 catDogModeEnabled={isCatDog}
@@ -250,6 +259,7 @@
         variations={seqVariations}
         onPrimaryAction={(seq) =>
           handleSequenceAction("view-detail", seq, seqVariations)}
+        onHover={handleSequenceHover}
         bluePropType={propSettings.bluePropType}
         redPropType={propSettings.redPropType}
         catDogModeEnabled={isCatDog}

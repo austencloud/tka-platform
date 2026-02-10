@@ -618,23 +618,12 @@
   function enterEditMode(pane: 'animation' | 'image') {
     hapticService?.trigger("selection");
     editingPane = pane;
-
-    if (!isMobile && !isFullscreen) {
-      isFullscreen = true;
-    }
-
     accessibilityHelper.announce(`${pane === 'animation' ? 'Animation' : 'Image'} expanded. Tap to collapse.`);
   }
 
   function exitEditMode() {
     hapticService?.trigger("selection");
     editingPane = null;
-
-    if (!isMobile && isFullscreen) {
-      isFullscreen = false;
-      fullscreenControlsVisible = false;
-    }
-
     accessibilityHelper.announce("Split view restored");
   }
 
