@@ -68,8 +68,8 @@
   // LOCAL STATE
   // ============================================================================
   let workspaceContainerRef: HTMLElement | null = $state(null);
+  let layoutWrapperRef: HTMLElement | null = $state(null);
   let buttonPanelHeight = $state(0);
-
 
   // ============================================================================
   // DERIVED STATE - Workspace Color Coding & Visibility
@@ -143,9 +143,11 @@
 </script>
 
 <div
+  bind:this={layoutWrapperRef}
   class="layout-wrapper"
   class:side-by-side={shouldUseSideBySideLayout}
   class:workspace-visible={shouldShowWorkspace}
+  class:generator-active={isGeneratorTab}
 >
   <!-- Workspace Panel - Visible based on tab and content -->
   <div
@@ -290,10 +292,14 @@
     container-name: tool-panel;
   }
 
-  /* Compact viewports: give workspace more room (60/40 instead of 55/45) */
-  @media (max-height: 700px) {
-    .layout-wrapper.workspace-visible {
-      grid-template-rows: 3fr 2fr;
+  /* Compact viewports on Generate tab: tool panel gets a capped height so
+     the workspace maximizes space for the step grid. The compact chip toolbar
+     needs ~130px (2 chip rows + button + gaps), so 150px provides breathing
+     room while giving workspace maximum space for grid cells.
+     850px threshold catches iPhone SE through iPhone 14 Pro. */
+  @media (max-height: 850px) {
+    .layout-wrapper.workspace-visible.generator-active:not(.side-by-side) {
+      grid-template-rows: 1fr 150px;
     }
   }
 

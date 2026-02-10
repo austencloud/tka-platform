@@ -1,20 +1,18 @@
 <!--
-CompactSettingsToolbar.svelte - Compact morph chip mode for Generate panel
+CompactSettingsToolbar.svelte - Compact chip toolbar for Generate panel
 
-Replaces the card grid on small viewports (iPhone SE, etc.) where vertical space
-is limited. Uses MorphChip primitives from the shared foundation layer.
+Plain CSS Grid layout — no MorphChip absolute positioning.
+Chips are normal flow elements that respect container height.
+Tapping a chip opens an inline expand panel below the grid.
 
-Each chip gets the same gradient color as its card-mode counterpart via
-CSS custom property inheritance (--chip-bg flows from wrapper to absolute chip).
-
-Triggered by container query @container tool-panel (max-height: 340px)
-in CardBasedSettingsContainer.
+Row 1: Level, Length, Mode, Grid (always 4)
+Row 2: Props, [Turns], [LOOP], [Slice] (2-4 conditional)
+Expand panel: slides in below chips when one is active
+Generate button: always at bottom
 -->
 <script lang="ts">
   import { container as diContainer } from "$lib/shared/di";
   import { onMount } from "svelte";
-  import MorphChipGroup from "$lib/shared/foundation/ui/morph-chip/MorphChipGroup.svelte";
-  import MorphChip from "$lib/shared/foundation/ui/morph-chip/MorphChip.svelte";
   import GenerateButtonCard from "./cards/GenerateButtonCard.svelte";
   import type { ILOOPParameterProvider } from "../shared/services/contracts/ILOOPParameterProvider";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -35,12 +33,12 @@ in CardBasedSettingsContainer.
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { getCardColors } from "../shared/domain/card-colors";
+  import { getCardColors, isBrightBackground } from "../shared/domain/card-colors";
   import { LOOP_COMPONENTS } from "../shared/domain/constants/loop-constants";
   import { loopTypeResolver } from "../shared/services/implementations/LOOPTypeResolver";
 
   // ============================================================================
-  // PROPS - Mirrors CardBasedSettingsContainer for drop-in switching
+  // PROPS
   // ============================================================================
   let {
     config,
@@ -83,6 +81,71 @@ in CardBasedSettingsContainer.
   );
 
   // ============================================================================
+  // PER-LEVEL COLORS (matching LevelCard's radial gradients)
+  // ============================================================================
+  let useDarkLevelColors = $derived(
+    isBrightBackground(settingsService.settings.backgroundType ?? BackgroundType.SNOWFALL)
+  );
+
+  const LEVEL_COLORS: Record<number, { color: string; shadowHsl: string; textColor: string }> = {
+    1: {
+      color: `radial-gradient(ellipse at top left, rgb(186,230,253) 0%, rgb(125,211,252) 30%, rgb(56,189,248) 70%, rgb(14,165,233) 100%)`,
+      shadowHsl: "200deg 80% 55%",
+      textColor: "black",
+    },
+    2: {
+      color: `radial-gradient(ellipse at top left, rgb(226,232,240) 0%, rgb(148,163,184) 30%, rgb(100,116,139) 70%, rgb(71,85,105) 100%)`,
+      shadowHsl: "215deg 20% 40%",
+      textColor: "white",
+    },
+    3: {
+      color: `radial-gradient(ellipse at top left, rgb(254,240,138) 0%, rgb(253,224,71) 20%, rgb(250,204,21) 40%, rgb(234,179,8) 60%, rgb(202,138,4) 80%, rgb(161,98,7) 100%)`,
+      shadowHsl: "45deg 80% 45%",
+      textColor: "black",
+    },
+    4: {
+      color: `radial-gradient(ellipse at top left, rgb(255,180,180) 0%, rgb(255,140,140) 20%, rgb(255,100,100) 40%, rgb(239,68,68) 60%, rgb(220,38,38) 80%, rgb(185,28,28) 100%)`,
+      shadowHsl: "0deg 75% 50%",
+      textColor: "white",
+    },
+  };
+
+  const LEVEL_COLORS_BRIGHT: Record<number, { color: string; shadowHsl: string; textColor: string }> = {
+    1: {
+      color: `radial-gradient(ellipse at top left, rgb(165,218,250) 0%, rgb(105,195,248) 30%, rgb(45,175,240) 70%, rgb(8,145,210) 100%)`,
+      shadowHsl: "200deg 80% 45%",
+      textColor: "black",
+    },
+    2: {
+      color: `radial-gradient(ellipse at top left, rgb(148,163,184) 0%, rgb(100,116,139) 30%, rgb(71,85,105) 70%, rgb(51,65,85) 100%)`,
+      shadowHsl: "215deg 20% 30%",
+      textColor: "white",
+    },
+    3: {
+      color: `radial-gradient(ellipse at top left, rgb(253,224,71) 0%, rgb(250,204,21) 20%, rgb(234,179,8) 40%, rgb(217,155,6) 60%, rgb(202,138,4) 80%, rgb(180,115,5) 100%)`,
+      shadowHsl: "45deg 80% 40%",
+      textColor: "black",
+    },
+    4: {
+      color: `radial-gradient(ellipse at top left, rgb(255,140,140) 0%, rgb(255,100,100) 20%, rgb(239,68,68) 40%, rgb(220,38,38) 60%, rgb(185,28,28) 80%, rgb(153,27,27) 100%)`,
+      shadowHsl: "0deg 75% 40%",
+      textColor: "white",
+    },
+  };
+
+  const FALLBACK_LEVEL_COLOR = {
+    color: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
+    shadowHsl: "215deg 20% 40%",
+    textColor: "white",
+  };
+
+  let currentLevelColor = $derived.by(() => {
+    const palette = useDarkLevelColors ? LEVEL_COLORS_BRIGHT : LEVEL_COLORS;
+    const entry = palette[config.level as keyof typeof palette];
+    return entry ?? FALLBACK_LEVEL_COLOR;
+  });
+
+  // ============================================================================
   // DERIVED STATE
   // ============================================================================
   let currentLevel = $derived(
@@ -94,8 +157,8 @@ in CardBasedSettingsContainer.
       : []
   );
   let isBeginnerLevel = $derived(currentLevel === DifficultyLevel.BEGINNER);
+  let showTurnIntensity = $derived(!isBeginnerLevel && allowedIntensityValues.length > 0);
 
-  // LOOP type allows slice choice when rotation is involved
   let loopTypeAllowsSliceChoice = $derived(
     config.loopType === LOOPType.STRICT_ROTATED ||
     config.loopType === LOOPType.ROTATED_INVERTED ||
@@ -106,18 +169,27 @@ in CardBasedSettingsContainer.
   );
 
   // ============================================================================
-  // CHIP VALUES & OPTIONS
+  // EXPAND PANEL STATE
   // ============================================================================
+  let activeChipId = $state<string | null>(null);
 
-  // Level chip
-  const levelOptions = [
-    { value: "1", label: "1" },
-    { value: "2", label: "2" },
-    { value: "3", label: "3" },
-    { value: "4", label: "4" },
-  ];
-  let levelChipValue = $derived(String(config.level));
-  let levelDisplayValue = $derived(String(config.level));
+  function toggleChip(chipId: string) {
+    if (helpMode && onHelpSelect) {
+      const helpId = chipIdToHelpId[chipId];
+      if (helpId) onHelpSelect(helpId);
+      return;
+    }
+    haptic?.trigger("selection");
+    activeChipId = activeChipId === chipId ? null : chipId;
+  }
+
+  function closePanel() {
+    activeChipId = null;
+  }
+
+  // ============================================================================
+  // CHIP HANDLERS
+  // ============================================================================
 
   function handleLevelChange(v: string) {
     haptic?.trigger("selection");
@@ -125,48 +197,24 @@ in CardBasedSettingsContainer.
     if (!loopParamProvider) return;
     const level = loopParamProvider.numberToDifficulty(num);
     updateConfig({ level: loopParamProvider.difficultyToNumber(level) });
+    closePanel();
   }
-
-  // Length chip - uses +/- stepper via expandedContent
-  let lengthValue = $derived(String(config.length));
-  let lengthDisplayValue = $derived(String(config.length));
 
   function handleLengthDecrement() {
     haptic?.trigger("selection");
-    const newLen = Math.max(2, config.length - 2);
-    updateConfig({ length: newLen });
+    updateConfig({ length: Math.max(2, config.length - 2) });
   }
 
   function handleLengthIncrement() {
     haptic?.trigger("selection");
-    const newLen = Math.min(32, config.length + 2);
-    updateConfig({ length: newLen });
+    updateConfig({ length: Math.min(32, config.length + 2) });
   }
-
-  // Mode chip
-  const modeOptions = [
-    { value: GenerationMode.CIRCULAR, label: "LOOP" },
-    { value: GenerationMode.FREEFORM, label: "Free" },
-  ];
-  let modeChipValue = $derived(config.mode);
-  let modeDisplayValue = $derived(
-    config.mode === GenerationMode.CIRCULAR ? "LOOP" : "Free"
-  );
 
   function handleModeChange(v: string) {
     haptic?.trigger("selection");
     updateConfig({ mode: v as GenerationMode });
+    closePanel();
   }
-
-  // Grid chip
-  const gridOptions = [
-    { value: GridMode.DIAMOND, label: "\u25C7" },
-    { value: GridMode.BOX, label: "\u25A2" },
-  ];
-  let gridChipValue = $derived(config.gridMode);
-  let gridDisplayValue = $derived(
-    config.gridMode === GridMode.DIAMOND ? "\u25C7" : "\u25A2"
-  );
 
   function handleGridChange(v: string) {
     haptic?.trigger("selection");
@@ -174,39 +222,22 @@ in CardBasedSettingsContainer.
     if (startEndState?.options?.startPosition || startEndState?.options?.endPosition) {
       setTimeout(() => startEndState?.clearPositions(), 150);
     }
+    closePanel();
   }
-
-  // Continuity chip
-  const continuityOptions = [
-    { value: PropContinuity.CONTINUOUS, label: "Smooth" },
-    { value: PropContinuity.RANDOM, label: "Random" },
-  ];
-  let continuityChipValue = $derived(config.propContinuity);
-  let continuityDisplayValue = $derived(
-    config.propContinuity === PropContinuity.CONTINUOUS ? "Smooth" : "Random"
-  );
 
   function handleContinuityChange(v: string) {
     haptic?.trigger("selection");
     updateConfig({ propContinuity: v as PropContinuity });
+    closePanel();
   }
-
-  // Turn Intensity chip
-  let turnIntensityChipValue = $derived(String(config.turnIntensity));
-  let turnIntensityDisplayValue = $derived(`\u2264${config.turnIntensity}`);
-  let turnIntensityOptions = $derived(
-    allowedIntensityValues.map((v) => ({
-      value: String(v),
-      label: `\u2264${v}`,
-    }))
-  );
 
   function handleTurnIntensityChange(v: string) {
     haptic?.trigger("selection");
     updateConfig({ turnIntensity: parseFloat(v) });
+    closePanel();
   }
 
-  // LOOP chip - uses expandedContent with toggle grid
+  // LOOP toggle state
   let localLoopSelection = $state<Set<LOOPComponent>>(new Set());
   let isValidLoopCombo = $state(true);
 
@@ -237,55 +268,30 @@ in CardBasedSettingsContainer.
       newSet.add(component);
     }
     localLoopSelection = newSet;
-
     if (newSet.size === 0) {
       isValidLoopCombo = true;
     } else {
       const valid = isRoundTripValid(newSet);
       isValidLoopCombo = valid;
       if (valid) {
-        const newType = loopTypeResolver.generateLOOPType(newSet);
-        updateConfig({ loopType: newType });
+        updateConfig({ loopType: loopTypeResolver.generateLOOPType(newSet) });
       }
     }
   }
 
   let loopDisplayValue = $derived.by(() => {
     if (!isValidLoopCombo) return `${localLoopSelection.size} sel`;
-    if (config.loopType) {
-      return LOOP_TYPE_LABELS[config.loopType as LOOPType] ?? "Custom";
-    }
+    if (config.loopType) return LOOP_TYPE_LABELS[config.loopType as LOOPType] ?? "Custom";
     return "Rotated";
   });
-
-  // Slice chip
-  const sliceOptions = [
-    { value: SliceSize.QUARTERED, label: "Quartered" },
-    { value: SliceSize.HALVED, label: "Halved" },
-  ];
-  let sliceChipValue = $derived(config.sliceSize);
-  let sliceDisplayValue = $derived(
-    config.sliceSize === SliceSize.QUARTERED ? "Quartered" : "Halved"
-  );
 
   function handleSliceChange(v: string) {
     haptic?.trigger("selection");
     updateConfig({ sliceSize: v as SliceSize });
+    closePanel();
   }
 
-  // Start/End chip
-  let startEndDisplayValue = $derived.by(() => {
-    const start = startEndState?.options?.startPosition;
-    const end = startEndState?.options?.endPosition;
-    if (start && end) return "Set";
-    if (start) return "Start";
-    if (end) return "End";
-    return "Any";
-  });
-
-  // ============================================================================
-  // HELP MODE
-  // ============================================================================
+  // Help mode mapping
   const chipIdToHelpId: Record<string, GeneratorHelpId> = {
     "level": "level",
     "length": "length",
@@ -295,11 +301,66 @@ in CardBasedSettingsContainer.
     "turn-intensity": "turn-intensity",
     "loop": "loop-type",
     "slice": "slice-size",
-    "start-end": "start-end",
   };
 
-  // Expansion state
-  let expandedId = $state<string | null>(null);
+  // ============================================================================
+  // CHIP DEFINITIONS (for clean template rendering)
+  // ============================================================================
+
+  // Build visible row 2 chips dynamically
+  let row2Chips = $derived.by(() => {
+    const chips: Array<{
+      id: string;
+      label: string;
+      value: string;
+      bg: string;
+      shadowHsl: string;
+      textColor?: string;
+    }> = [
+      {
+        id: "continuity",
+        label: "Props",
+        value: config.propContinuity === PropContinuity.CONTINUOUS ? "Smooth" : "Random",
+        bg: cardColors.continuity.color,
+        shadowHsl: cardColors.continuity.shadowColor,
+      },
+    ];
+
+    if (showTurnIntensity) {
+      chips.push({
+        id: "turn-intensity",
+        label: "Turns",
+        value: `\u2264${config.turnIntensity}`,
+        bg: cardColors.turnIntensity.color,
+        shadowHsl: cardColors.turnIntensity.shadowColor,
+      });
+    }
+
+    if (!isFreeformMode) {
+      chips.push({
+        id: "loop",
+        label: "LOOP",
+        value: loopDisplayValue,
+        bg: "linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%)",
+        shadowHsl: "25deg 80% 50%",
+      });
+
+      if (loopTypeAllowsSliceChoice) {
+        chips.push({
+          id: "slice",
+          label: "Slice",
+          value: config.sliceSize === SliceSize.QUARTERED ? "Quartered" : "Halved",
+          bg: cardColors.sliceSize.color,
+          shadowHsl: cardColors.sliceSize.shadowColor,
+        });
+      }
+    }
+
+    return chips;
+  });
+
+  // Total chip count determines grid columns: 3 for ≤6 chips, 4 for 7+
+  let chipColumns = $derived((4 + row2Chips.length) <= 6 ? 3 : 4);
 </script>
 
 <div
@@ -307,171 +368,212 @@ in CardBasedSettingsContainer.
   class:help-mode={helpMode}
   class:help-mode-exiting={helpModeExiting}
 >
-  <MorphChipGroup bind:expandedId gap={6}>
-    <!-- Row 1: Level, Length, Mode -->
-    <div class="chip-row">
-      <div class="chip-color-wrap" style:--chip-bg={cardColors.level.color}>
-        <MorphChip
-          id="level"
-          label="Level"
-          bind:value={levelChipValue}
-          options={levelOptions}
-          displayValue={levelDisplayValue}
-          onchange={handleLevelChange}
-        />
-      </div>
-      <div class="chip-color-wrap" style:--chip-bg={cardColors.length.color}>
-        <MorphChip
-          id="length"
-          label="Length"
-          value={lengthValue}
-          options={[]}
-          displayValue={lengthDisplayValue}
-        >
-          {#snippet expandedContent({ collapse, morphProgress })}
-            <div
-              class="length-stepper"
-              onclick={(e) => e.stopPropagation()}
-              onkeydown={(e) => e.stopPropagation()}
-              role="group"
-              aria-label="Sequence length"
-            >
-              <button
-                class="stepper-btn"
-                onclick={handleLengthDecrement}
-                disabled={config.length <= 2}
-                tabindex={morphProgress > 0.5 ? 0 : -1}
-                aria-label="Decrease length"
-              >
-                <i class="fas fa-minus" aria-hidden="true"></i>
-              </button>
-              <span class="stepper-value">{config.length}</span>
-              <button
-                class="stepper-btn"
-                onclick={handleLengthIncrement}
-                disabled={config.length >= 32}
-                tabindex={morphProgress > 0.5 ? 0 : -1}
-                aria-label="Increase length"
-              >
-                <i class="fas fa-plus" aria-hidden="true"></i>
-              </button>
-            </div>
-          {/snippet}
-        </MorphChip>
-      </div>
-      <div class="chip-color-wrap" style:--chip-bg={cardColors.mode.color}>
-        <MorphChip
-          id="mode"
-          label="Mode"
-          bind:value={modeChipValue}
-          options={modeOptions}
-          displayValue={modeDisplayValue}
-          onchange={handleModeChange}
-        />
-      </div>
-    </div>
+  <!-- Chip Grid: normal flow, respects container height -->
+  <div class="chip-grid" style:--chip-cols={chipColumns}>
+    <!-- Row 1: Level, Length, Mode, Grid -->
+    <button
+      class="compact-chip"
+      class:active={activeChipId === "level"}
+      style:--chip-bg={currentLevelColor.color}
+      style:--chip-shadow-hsl={currentLevelColor.shadowHsl}
+      style:--chip-text={currentLevelColor.textColor}
+      onclick={() => toggleChip("level")}
+      aria-expanded={activeChipId === "level"}
+      aria-label="Level: {config.level}"
+    >
+      <span class="chip-label">Lvl</span>
+      <span class="chip-value">{config.level}</span>
+    </button>
 
-    <!-- Row 2: Grid, Continuity, Turn Intensity (conditional) -->
-    <div class="chip-row">
-      <div class="chip-color-wrap" style:--chip-bg={cardColors.gridMode.color}>
-        <MorphChip
-          id="grid"
-          label="Grid"
-          bind:value={gridChipValue}
-          options={gridOptions}
-          displayValue={gridDisplayValue}
-          onchange={handleGridChange}
-        />
-      </div>
-      <div class="chip-color-wrap" style:--chip-bg={cardColors.continuity.color}>
-        <MorphChip
-          id="continuity"
-          label="Props"
-          expandedLabel="Prop Continuity"
-          bind:value={continuityChipValue}
-          options={continuityOptions}
-          displayValue={continuityDisplayValue}
-          onchange={handleContinuityChange}
-        />
-      </div>
-      {#if !isBeginnerLevel && turnIntensityOptions.length > 0}
-        <div class="chip-color-wrap" style:--chip-bg={cardColors.turnIntensity.color}>
-          <MorphChip
-            id="turn-intensity"
-            label="Turns"
-            expandedLabel="Turn Intensity"
-            bind:value={turnIntensityChipValue}
-            options={turnIntensityOptions}
-            displayValue={turnIntensityDisplayValue}
-            onchange={handleTurnIntensityChange}
-          />
+    <button
+      class="compact-chip"
+      class:active={activeChipId === "length"}
+      style:--chip-bg={cardColors.length.color}
+      style:--chip-shadow-hsl={cardColors.length.shadowColor}
+      onclick={() => toggleChip("length")}
+      aria-expanded={activeChipId === "length"}
+      aria-label="Length: {config.length}"
+    >
+      <span class="chip-label">Len</span>
+      <span class="chip-value">{config.length}</span>
+    </button>
+
+    <button
+      class="compact-chip"
+      class:active={activeChipId === "mode"}
+      style:--chip-bg={cardColors.mode.color}
+      style:--chip-shadow-hsl={cardColors.mode.shadowColor}
+      onclick={() => toggleChip("mode")}
+      aria-expanded={activeChipId === "mode"}
+      aria-label="Mode: {config.mode === GenerationMode.CIRCULAR ? 'LOOP' : 'Free'}"
+    >
+      <span class="chip-label">Mode</span>
+      <span class="chip-value">{config.mode === GenerationMode.CIRCULAR ? "LOOP" : "Free"}</span>
+    </button>
+
+    <button
+      class="compact-chip"
+      class:active={activeChipId === "grid"}
+      style:--chip-bg={cardColors.gridMode.color}
+      style:--chip-shadow-hsl={cardColors.gridMode.shadowColor}
+      onclick={() => toggleChip("grid")}
+      aria-expanded={activeChipId === "grid"}
+      aria-label="Grid: {config.gridMode === GridMode.DIAMOND ? 'Diamond' : 'Box'}"
+    >
+      <span class="chip-label">Grid</span>
+      <span class="chip-value">{config.gridMode === GridMode.DIAMOND ? "\u25C7" : "\u25A2"}</span>
+    </button>
+
+    <!-- Row 2: dynamic chips -->
+    {#each row2Chips as chip (chip.id)}
+      <button
+        class="compact-chip"
+        class:active={activeChipId === chip.id}
+        style:--chip-bg={chip.bg}
+        style:--chip-shadow-hsl={chip.shadowHsl}
+        style:--chip-text={chip.textColor ?? "white"}
+        onclick={() => toggleChip(chip.id)}
+        aria-expanded={activeChipId === chip.id}
+        aria-label="{chip.label}: {chip.value}"
+      >
+        <span class="chip-label">{chip.label}</span>
+        <span class="chip-value">{chip.value}</span>
+      </button>
+    {/each}
+  </div>
+
+  <!-- Expand Panel: inline below chips, slides in/out -->
+  {#if activeChipId}
+    <div class="expand-panel" role="region" aria-label="Options for {activeChipId}">
+      {#if activeChipId === "level"}
+        <div class="option-row">
+          {#each ["1", "2", "3", "4"] as v}
+            <button
+              class="option-btn"
+              class:selected={String(config.level) === v}
+              onclick={() => handleLevelChange(v)}
+            >{v}</button>
+          {/each}
+        </div>
+
+      {:else if activeChipId === "length"}
+        <div class="stepper-row">
+          <button
+            class="stepper-btn"
+            onclick={handleLengthDecrement}
+            disabled={config.length <= 2}
+            aria-label="Decrease length"
+          >
+            <i class="fas fa-minus" aria-hidden="true"></i>
+          </button>
+          <span class="stepper-value">{config.length}</span>
+          <button
+            class="stepper-btn"
+            onclick={handleLengthIncrement}
+            disabled={config.length >= 32}
+            aria-label="Increase length"
+          >
+            <i class="fas fa-plus" aria-hidden="true"></i>
+          </button>
+        </div>
+
+      {:else if activeChipId === "mode"}
+        <div class="option-row">
+          <button
+            class="option-btn"
+            class:selected={config.mode === GenerationMode.CIRCULAR}
+            onclick={() => handleModeChange(GenerationMode.CIRCULAR)}
+          >LOOP</button>
+          <button
+            class="option-btn"
+            class:selected={config.mode === GenerationMode.FREEFORM}
+            onclick={() => handleModeChange(GenerationMode.FREEFORM)}
+          >Free</button>
+        </div>
+
+      {:else if activeChipId === "grid"}
+        <div class="option-row">
+          <button
+            class="option-btn"
+            class:selected={config.gridMode === GridMode.DIAMOND}
+            onclick={() => handleGridChange(GridMode.DIAMOND)}
+          >{"\u25C7"} Diamond</button>
+          <button
+            class="option-btn"
+            class:selected={config.gridMode === GridMode.BOX}
+            onclick={() => handleGridChange(GridMode.BOX)}
+          >{"\u25A2"} Box</button>
+        </div>
+
+      {:else if activeChipId === "continuity"}
+        <div class="option-row">
+          <button
+            class="option-btn"
+            class:selected={config.propContinuity === PropContinuity.CONTINUOUS}
+            onclick={() => handleContinuityChange(PropContinuity.CONTINUOUS)}
+          >Smooth</button>
+          <button
+            class="option-btn"
+            class:selected={config.propContinuity === PropContinuity.RANDOM}
+            onclick={() => handleContinuityChange(PropContinuity.RANDOM)}
+          >Random</button>
+        </div>
+
+      {:else if activeChipId === "turn-intensity"}
+        <div class="option-row">
+          {#each allowedIntensityValues as v}
+            <button
+              class="option-btn"
+              class:selected={config.turnIntensity === v}
+              onclick={() => handleTurnIntensityChange(String(v))}
+            >{"\u2264"}{v}</button>
+          {/each}
+        </div>
+
+      {:else if activeChipId === "loop"}
+        <div class="loop-panel">
+          <div class="loop-toggle-grid">
+            {#each LOOP_COMPONENTS as info}
+              {@const isActive = localLoopSelection.has(info.component)}
+              <button
+                class="loop-toggle-chip"
+                class:active={isActive}
+                onclick={() => handleLoopToggle(info.component)}
+                style:--chip-color={info.color}
+                aria-pressed={isActive}
+                aria-label="{info.label}: {isActive ? 'on' : 'off'}"
+              >
+                <i class="fas fa-{info.icon}" aria-hidden="true"></i>
+                <span>{info.label}</span>
+              </button>
+            {/each}
+          </div>
+          {#if !isValidLoopCombo}
+            <div class="combo-hint" role="status">
+              <i class="fas fa-flask" aria-hidden="true"></i>
+              Invalid combination
+            </div>
+          {/if}
+        </div>
+
+      {:else if activeChipId === "slice"}
+        <div class="option-row">
+          <button
+            class="option-btn"
+            class:selected={config.sliceSize === SliceSize.QUARTERED}
+            onclick={() => handleSliceChange(SliceSize.QUARTERED)}
+          >Quartered</button>
+          <button
+            class="option-btn"
+            class:selected={config.sliceSize === SliceSize.HALVED}
+            onclick={() => handleSliceChange(SliceSize.HALVED)}
+          >Halved</button>
         </div>
       {/if}
     </div>
+  {/if}
 
-    <!-- Row 3 (conditional): LOOP chips when in circular mode -->
-    {#if !isFreeformMode}
-      <div class="chip-row">
-        <div class="chip-color-wrap" style:--chip-bg="linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%)">
-          <MorphChip
-            id="loop"
-            label="LOOP"
-            value={"loop"}
-            options={[]}
-            displayValue={loopDisplayValue}
-            expandedHeight={200}
-          >
-            {#snippet expandedContent({ collapse, morphProgress })}
-              <div
-                class="loop-expanded-content"
-                role="group"
-                aria-label="LOOP components"
-                onpointerdown={(e) => e.stopPropagation()}
-              >
-                <div class="loop-toggle-grid">
-                  {#each LOOP_COMPONENTS as info}
-                    {@const isActive = localLoopSelection.has(info.component)}
-                    <button
-                      class="loop-toggle-chip"
-                      class:active={isActive}
-                      onclick={() => handleLoopToggle(info.component)}
-                      style:--chip-color={info.color}
-                      aria-pressed={isActive}
-                      aria-label="{info.label}: {isActive ? 'on' : 'off'}"
-                      tabindex={morphProgress > 0.5 ? 0 : -1}
-                    >
-                      <i class="fas fa-{info.icon}" aria-hidden="true"></i>
-                      <span>{info.label}</span>
-                    </button>
-                  {/each}
-                </div>
-                {#if !isValidLoopCombo}
-                  <div class="combo-hint" role="status">
-                    <i class="fas fa-flask" aria-hidden="true"></i>
-                    This combination isn't wired up yet
-                  </div>
-                {/if}
-              </div>
-            {/snippet}
-          </MorphChip>
-        </div>
-        {#if loopTypeAllowsSliceChoice}
-          <div class="chip-color-wrap" style:--chip-bg={cardColors.sliceSize.color}>
-            <MorphChip
-              id="slice"
-              label="Slice"
-              bind:value={sliceChipValue}
-              options={sliceOptions}
-              displayValue={sliceDisplayValue}
-              onchange={handleSliceChange}
-            />
-          </div>
-        {/if}
-      </div>
-    {/if}
-  </MorphChipGroup>
-
-  <!-- Generate button always visible below chips -->
+  <!-- Generate button -->
   <div class="compact-generate-btn">
     <GenerateButtonCard
       {isGenerating}
@@ -486,103 +588,194 @@ in CardBasedSettingsContainer.
   .compact-toolbar {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    height: 100%;
-    padding: 4px;
-    overflow: hidden;
-  }
-
-  .chip-row {
-    display: flex;
-    gap: 6px;
+    gap: 4px;
     width: 100%;
-  }
-
-  /*
-   * Color wrapper: participates in flex layout (inherits placeholder sizing)
-   * and sets --chip-bg for its MorphChip descendant. display: contents would
-   * remove the box and break CSS custom property inheritance, so we use
-   * flex: 1 to make wrappers share space equally — same as placeholders would.
-   *
-   * The MorphChip's .chip is absolutely positioned relative to the MorphChipGroup,
-   * but CSS custom properties still inherit through the DOM tree (parent -> child),
-   * not the visual tree. So --chip-bg reaches .chip through DOM inheritance.
-   */
-  .chip-color-wrap {
-    flex: 1;
-    min-width: 0;
-    /* No position property — must stay transparent to the offsetParent chain
-       so MorphChip's absolute positioning still anchors to MorphChipGroup */
-  }
-
-  /* Override MorphChip's default dark background with the card gradient color */
-  .chip-color-wrap :global(.chip) {
-    background: var(--chip-bg) !important;
-    border-color: rgba(255, 255, 255, 0.25);
-  }
-
-  /* Make label text bright white against colored backgrounds */
-  .chip-color-wrap :global(.chip-label) {
-    color: rgba(255, 255, 255, 0.85) !important;
-  }
-
-  /* Value text: bold white with subtle shadow for legibility */
-  .chip-color-wrap :global(.chip-value) {
-    color: #fff !important;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  }
-
-  /* When expanded, switch to neutral background so option buttons are readable */
-  .chip-color-wrap :global(.chip.expanding) {
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98)) !important;
-    border-color: var(--theme-accent, #6366f1);
-  }
-
-  /* Expanded label uses accent color (matches MorphChip's morph progress logic) */
-  .chip-color-wrap :global(.chip.expanding .chip-label) {
-    color: var(--theme-accent, #6366f1) !important;
-  }
-
-  .compact-generate-btn {
-    flex-shrink: 0;
-    min-height: 48px;
-    max-height: 56px;
-  }
-
-  .compact-generate-btn > :global(*) {
     height: 100%;
+    min-height: 0;
+    padding: 2px 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   /* ============================================================ */
-  /* LENGTH STEPPER (expandedContent for Length chip) */
+  /* CHIP GRID - normal CSS Grid, no absolute positioning */
   /* ============================================================ */
 
-  .length-stepper {
+  .chip-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--chip-cols, 4), 1fr);
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  /* ============================================================ */
+  /* INDIVIDUAL CHIPS - normal flow buttons */
+  /* ============================================================ */
+
+  .compact-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    padding: 4px 2px;
+    min-height: 0;
+    border: 1.5px solid transparent;
+    border-radius: 14px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+
+    /* Gradient background from card colors */
+    background: var(--chip-bg);
+    color: var(--chip-text, white);
+
+    /* Layered color-matched shadows (BaseCard technique) */
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.12),
+      0 1px 2px hsl(var(--chip-shadow-hsl, 0deg 0% 0%) / 0.15),
+      0 2px 4px hsl(var(--chip-shadow-hsl, 0deg 0% 0%) / 0.12),
+      0 4px 8px hsl(var(--chip-shadow-hsl, 0deg 0% 0%) / 0.1),
+      inset 0 1px 0 var(--theme-stroke, rgba(255, 255, 255, 0.1));
+
+    transition: border-color 150ms ease, transform 100ms ease;
+  }
+
+  .compact-chip:active {
+    transform: scale(0.96);
+  }
+
+  .compact-chip.active {
+    border-color: var(--theme-accent, #6366f1);
+    box-shadow:
+      0 0 0 1px rgba(99, 102, 241, 0.3),
+      0 2px 8px rgba(99, 102, 241, 0.2),
+      inset 0 1px 0 var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  /* Glossy sheen overlay (BaseCard technique) */
+  .compact-chip::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--theme-text, white) 30%, transparent) 0%,
+      color-mix(in srgb, var(--theme-text, white) 15%, transparent) 40%,
+      color-mix(in srgb, var(--theme-text, white) 5%, transparent) 70%,
+      transparent 100%
+    );
+    border-radius: 14px 14px 0 0;
+    pointer-events: none;
+  }
+
+  .chip-label {
+    font-size: 10px;
+    font-weight: 500;
+    opacity: 0.75;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+  }
+
+  .chip-value {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.1;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* ============================================================ */
+  /* EXPAND PANEL - inline below chips */
+  /* ============================================================ */
+
+  .expand-panel {
+    flex-shrink: 0;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-accent, #6366f1);
+    border-radius: 12px;
+    padding: 4px;
+    animation: panel-slide-in 200ms cubic-bezier(0.34, 1.2, 0.64, 1);
+  }
+
+  @keyframes panel-slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scaleY(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scaleY(1);
+    }
+  }
+
+  /* ============================================================ */
+  /* OPTION ROW - horizontal button set */
+  /* ============================================================ */
+
+  .option-row {
+    display: flex;
+    gap: 4px;
+  }
+
+  .option-btn {
+    flex: 1;
+    min-height: 36px;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.6));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 4px 8px;
+    transition: all 100ms ease;
+  }
+
+  .option-btn:active {
+    transform: scale(0.96);
+  }
+
+  .option-btn.selected {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, var(--theme-card-bg, #1a1a2e));
+    border-color: var(--theme-accent, #6366f1);
+    color: var(--theme-text, #fff);
+  }
+
+  /* ============================================================ */
+  /* LENGTH STEPPER */
+  /* ============================================================ */
+
+  .stepper-row {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 16px;
-    padding: 4px 8px;
+    padding: 2px 8px;
   }
 
   .stepper-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 40px;
+    height: 36px;
+    border-radius: 10px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.6));
     color: var(--theme-text, #fff);
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 150ms ease;
-  }
-
-  .stepper-btn:hover:not(:disabled) {
-    border-color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent) 15%, var(--theme-card-bg));
+    transition: all 100ms ease;
   }
 
   .stepper-btn:active:not(:disabled) {
@@ -595,27 +788,27 @@ in CardBasedSettingsContainer.
   }
 
   .stepper-value {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
     color: var(--theme-text, #fff);
-    min-width: 40px;
+    min-width: 32px;
     text-align: center;
   }
 
   /* ============================================================ */
-  /* LOOP TOGGLE GRID (same pattern as SpellSettingsBar) */
+  /* LOOP TOGGLE GRID */
   /* ============================================================ */
 
-  .loop-expanded-content {
+  .loop-panel {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
   }
 
   .loop-toggle-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
+    gap: 3px;
   }
 
   .loop-toggle-chip {
@@ -623,23 +816,17 @@ in CardBasedSettingsContainer.
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    min-height: 48px;
-    padding: 6px;
+    gap: 1px;
+    min-height: 36px;
+    padding: 3px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.6));
-    border: 1.5px solid var(--theme-stroke);
-    border-radius: 10px;
-    color: var(--theme-text-muted);
-    font-size: var(--font-size-compact, 12px);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 150ms ease;
-  }
-
-  .loop-toggle-chip:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--chip-color, var(--theme-stroke-strong));
-    color: var(--theme-text);
+    transition: all 100ms ease;
   }
 
   .loop-toggle-chip:active {
@@ -647,63 +834,73 @@ in CardBasedSettingsContainer.
   }
 
   .loop-toggle-chip.active {
-    background: color-mix(in srgb, var(--chip-color, var(--theme-accent)) 20%, var(--theme-card-bg));
+    background: color-mix(in srgb, var(--chip-color, var(--theme-accent)) 20%, var(--theme-card-bg, #1a1a2e));
     border-color: var(--chip-color, var(--theme-accent));
-    color: var(--theme-text);
+    color: var(--theme-text, #fff);
   }
 
   .loop-toggle-chip.active i {
-    color: var(--chip-color);
+    color: var(--chip-color, var(--theme-accent));
   }
 
   .loop-toggle-chip i {
-    font-size: 16px;
+    font-size: 12px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    transition: color 150ms ease;
-  }
-
-  .loop-toggle-chip:focus-visible {
-    outline: 2px solid var(--chip-color, var(--theme-accent));
-    outline-offset: 2px;
+    transition: color 100ms ease;
   }
 
   .combo-hint {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: var(--font-size-compact, 12px);
+    font-size: 11px;
     color: var(--semantic-warning, #f59e0b);
-    padding: 4px 8px;
+    padding: 2px 6px;
     background: rgba(245, 158, 11, 0.1);
     border: 1px solid rgba(245, 158, 11, 0.25);
     border-radius: 6px;
   }
 
   .combo-hint i {
-    font-size: 12px;
+    font-size: 10px;
     flex-shrink: 0;
   }
 
   /* ============================================================ */
-  /* HELP MODE - glow on chips */
+  /* GENERATE BUTTON */
   /* ============================================================ */
 
-  .compact-toolbar.help-mode :global(.chip) {
+  .compact-generate-btn {
+    flex-shrink: 0;
+    height: 48px;
+    width: 100%;
+  }
+
+  .compact-generate-btn > :global(*) {
+    height: 100%;
+    border-radius: 14px;
+  }
+
+  /* ============================================================ */
+  /* HELP MODE */
+  /* ============================================================ */
+
+  .compact-toolbar.help-mode .compact-chip {
     cursor: pointer;
   }
 
-  .compact-toolbar.help-mode :global(.chip)::after {
+  .compact-toolbar.help-mode .compact-chip::after {
     content: "";
     position: absolute;
     inset: -2px;
-    border-radius: 20px;
+    border-radius: 16px;
     border: 2px solid rgba(59, 130, 246, 0.6);
     box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
     pointer-events: none;
     animation: help-chip-pulse 1.5s ease-in-out infinite;
   }
 
-  .compact-toolbar.help-mode-exiting :global(.chip)::after {
+  .compact-toolbar.help-mode-exiting .compact-chip::after {
     opacity: 0;
     animation: none;
   }
@@ -720,16 +917,22 @@ in CardBasedSettingsContainer.
   }
 
   /* ============================================================ */
-  /* Reduced motion */
+  /* REDUCED MOTION */
   /* ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
-    .loop-toggle-chip,
-    .stepper-btn {
+    .compact-chip,
+    .option-btn,
+    .stepper-btn,
+    .loop-toggle-chip {
       transition: none;
     }
 
-    .compact-toolbar.help-mode :global(.chip)::after {
+    .expand-panel {
+      animation: none;
+    }
+
+    .compact-toolbar.help-mode .compact-chip::after {
       animation: none;
     }
   }

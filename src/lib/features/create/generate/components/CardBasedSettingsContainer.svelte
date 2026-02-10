@@ -319,12 +319,17 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     display: contents;
   }
 
-  /* When tool panel is short (iPhone SE compact), show compact mode */
+  /* When tool panel is short, show compact chip mode instead of card grid.
+     Uses max-height: 340px as threshold — at 5fr:4fr on iPhone SE the panel
+     is ~262px which triggers this; the parent grid also switches to 1fr auto
+     via @media (max-height: 850px) so the panel shrinks to content height. */
   @container tool-panel (max-height: 340px) {
     .compact-mode {
       display: flex;
       flex-direction: column;
+      width: 100%;
       height: 100%;
+      min-height: 0;
     }
 
     .card-mode {
