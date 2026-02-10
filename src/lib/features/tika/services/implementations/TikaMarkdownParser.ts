@@ -6,6 +6,7 @@
  */
 
 import type { ITikaMarkdownParser, ParsedMarkdown } from '../contracts/ITikaMarkdownParser';
+import DOMPurify from 'dompurify';
 
 export class TikaMarkdownParser implements ITikaMarkdownParser {
 	parse(markdown: string): ParsedMarkdown {
@@ -99,6 +100,12 @@ export class TikaMarkdownParser implements ITikaMarkdownParser {
 			.replace(/<br><\/p>/g, '</p>')
 			.replace(/<p>(\s*<(?:h[1-4]|ul|table))/g, '$1')
 			.replace(/(<\/(?:h[1-4]|ul|table)>)\s*<\/p>/g, '$1');
+
+		// Defense-in-depth: sanitize final HTML with DOMPurify
+		processed = DOMPurify.sanitize(processed, {
+			ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'h2', 'h3', 'h4', 'ul', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'sup'],
+			ALLOWED_ATTR: ['class'],
+		});
 
 		return { html: processed, links: linkIndex };
 	}
