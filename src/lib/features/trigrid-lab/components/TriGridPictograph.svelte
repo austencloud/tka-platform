@@ -16,8 +16,8 @@
   import TriGridArrow from "./TriGridArrow.svelte";
   import { container } from "$lib/shared/di";
   import { TRIGRID_SVG_SIZE } from "../domain/trigrid-constants";
-  import { getTriGridLocations } from "../domain/trigrid-coordinates";
   import type { ITriGridCalculator } from "../services/contracts/ITriGridCalculator";
+  import { applyColorToSvg } from "$lib/shared/utils/svg-color-utils";
 
   interface Props {
     mode: TriGridMode;
@@ -66,7 +66,7 @@
     try {
       const [gridSvg, propSvg] = await Promise.all([
         svgPreloader.getSvgContent("grid", "trigrid_grid"),
-        svgPreloader.getSvgContent("props/pictograph", "triad"),
+        svgPreloader.getSvgContent("prop", "triad"),
       ]);
       gridSvgContent = stripSvgWrapper(gridSvg);
       triadSvgContent = stripSvgWrapper(propSvg);
@@ -83,12 +83,12 @@
   }
 
   /**
-   * Apply color to triad SVG content by replacing the fill color.
-   * The triad.svg has fill:#2e3192 (default dark blue). We replace it with the hand color.
+   * Apply color to triad SVG content using the shared svg-color-utils.
+   * Same approach as PropSvgLoader: replaces all non-preserved fill colors.
    */
   function colorizedTriad(color: string): string {
     if (!triadSvgContent) return "";
-    return triadSvgContent.replace(/#2e3192/gi, color);
+    return applyColorToSvg(triadSvgContent, color);
   }
 
   // Grid rotation: 0 for upright, 180 for inverted
