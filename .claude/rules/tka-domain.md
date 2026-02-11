@@ -2,9 +2,11 @@
 
 ## What TKA Is
 
-TKA (The Kinetic Alphabet) is a notation system for two-handed prop manipulation, **built for static props** (staff, fans, clubs, buugeng). Static props are gripped directly, so the performer controls orientation. They can be held at any orientation and moved to any point with controlled rotation, free from gravity. Every previous notation system mapped what gravity makes spinning props do. TKA maps what's possible when gravity isn't a constraint.
+TKA (The Kinetic Alphabet) is a notation system for two-handed prop manipulation, **built for static props** (staff, fans, clubs, buugeng). Static props are gripped directly, so the performer controls orientation. TKA is a **radial system** — all orientations are measured from the prop to the performer's center point, not relative to the ground. This means "up" and "down" are no more privileged than "left" and "right." This is not ignoring physics — it reflects how static prop spinners actually use their props. Gravity does not constrain a staff's orientation the way it constrains poi's trajectory. Every previous notation system mapped what gravity makes spinning props do. TKA maps what's possible when gravity isn't a constraint.
 
-**Momentum-based props (poi)** can perform many TKA sequences but not all of them. Gravity restricts which orientations and transitions are physically possible. The Poi Lab module exists to identify the poi-legal subset. **Never list poi alongside static props as if they're equals.** Poi is a restricted subset, not a first-class citizen of the system.
+The TKA parameter space is precise and finite: 9 grid locations (8 perimeter + center), 8 center-relative orientations (4 radial/nonradial + 4 interradial at L7+), and rotation increments down to 45 degrees (quarter turns at L7). This is not "any movement two hands can make" — it's a complete enumeration within its defined parameter space. What TKA does NOT enumerate: grip changes, body movement, behind-the-back passes, contact rolling, tosses, or 3D planes below Level 8.
+
+**Momentum-based props (poi)** can perform many TKA sequences but not all of them. Gravity restricts which orientations and transitions are physically possible. A Poi Lab module is **planned but not yet built** to identify the poi-legal subset. **Never list poi alongside static props as if they're equals.** Poi is the only prop type that encounters limitations with TKA — every other static prop works without restriction. The practical advantage for static props: you can freeze mid-sequence, hold a prop at an orientation, look at what you're doing next as a 2D representation, and continue. Poi spinners can't do this because momentum won't wait.
 
 ---
 
@@ -270,16 +272,20 @@ Skews support all three shift motion types (pro, anti, float). They are theoreti
 
 **All orientations in TKA are measured from the prop to the performer's center point.** This is not an arbitrary choice — it makes the entire orientation algebra work.
 
-### Cardinal Orientations (4)
+### Radial and Nonradial Orientations (4)
 
-| Orientation | Meaning |
-|-------------|---------|
-| **in** | Prop faces toward center |
-| **out** | Prop faces away from center |
-| **clock** | Prop faces clockwise (perpendicular to center axis) |
-| **counter** | Prop faces counter-clockwise (perpendicular to center axis) |
+"Radial" means along the line from prop to center. "Nonradial" means perpendicular to that line.
+
+| Orientation | Type | Meaning |
+|-------------|------|---------|
+| **in** | Radial | Prop faces toward center |
+| **out** | Radial | Prop faces away from center |
+| **clock** | Nonradial | Prop faces clockwise (perpendicular to center axis) |
+| **counter** | Nonradial | Prop faces counter-clockwise (perpendicular to center axis) |
 
 ### Interradial Orientations (4, L7+)
+
+Interradial orientations sit at 45 degrees between radial and nonradial.
 
 | Orientation | Meaning |
 |-------------|---------|
@@ -287,6 +293,10 @@ Skews support all three shift motion types (pro, anti, float). They are theoreti
 | **clockOut** | 45 degrees between clock and out |
 | **counterIn** | 45 degrees between counter and in |
 | **counterOut** | 45 degrees between counter and out |
+
+**TERMINOLOGY NOTE — Do not confuse these three coordinate systems:**
+- **Cardinal / Intercardinal** = grid point locations (N/E/S/W = cardinal = diamond mode; NE/SE/SW/NW = intercardinal = box mode)
+- **Radial / Nonradial / Interradial** = prop orientations relative to center (in/out = radial; clock/counter = nonradial; clockIn/clockOut/counterIn/counterOut = interradial)
 
 ### Center Orientations (8, L5+)
 
@@ -535,6 +545,29 @@ Compound letters are pairs that complete each other to create circular (LOOP) mo
 
 VTG is an older, widely-adopted notation framework for flow arts created by Noel Yee and spinners at the Vulcan Lofts in Oakland, CA. Many flow artists learn VTG before encountering TKA.
 
+### VTG Formed the Core That TKA Expands
+
+**Type 1 letters were intentionally designed to represent everything VTG covers.** VTG's four timing/direction categories plus the two "quarter time" modes are fully encoded in the Type 1 alphabet:
+
+- **A, B, C** (alpha to alpha) = VTG's **split-same** (SS)
+- **G, H, I** (beta to beta) = VTG's **tog-same** (TS)
+- **D, E, F / J, K, L** (alpha-beta transitions) = VTG's **split-opp** and **tog-opp** territory (varies by variation because TKA is center-referenced, not downbeat-referenced)
+- **M through V** (gamma patterns) = what the community called **"quarter time"** — a 90-degree phase offset that VTG never formally integrated into its core four-category system
+
+"Quarter time" is a misnomer — it describes a phase relationship (90-degree offset), not a timing or duration. VTG's split and tog have formal phase designations. Quarter time never received equivalent formal naming; it was strapped onto VTG's framework by later practitioners (Jonah and others) without being integrated into the original four-category system.
+
+TKA then expands beyond VTG by adding static (Type 6), dash (Types 4-5), cross-shift (Type 3), shift (Type 2), and all the motion types (hash, skew, float) as first-class letter types with the same level of formalization.
+
+### VTG Covers Three Planes
+
+VTG **does** enumerate movement across three planes: **Wall** (W), **wHeel** (H), and **Floor** (F). This was extended by Lorq Nichols' 3 Planes System, 324 Patterns framework (27 arm paths x 12 shapes x 3 planes), and the Book of P.H.A.T. **Never claim VTG doesn't distinguish vertical from horizontal plane movement — it does.**
+
+TKA currently operates in a single plane per sequence. Level 8 (Atomics) will add multi-plane / 3D support.
+
+### Lorq Nichols' Influence
+
+Lorq Nichols (Sir Lorq) created the Shape Matrix, Tech Tiles, 324 Patterns, 9 Flower Families, 144 Atomic Hybrids, the Book of P.H.A.T. (with Brian Thompson, David Cantor, and Noel Yee), and the 3 Planes System. His Shape Matrix — a multiplication table cross-referencing left-hand and right-hand flower patterns — is conceptually adjacent to TKA's per-beat encoding of both hands. Austen took Lorq's class in 2017, and the systematic, enumerative approach to mapping movement space likely planted seeds for TKA's design.
+
 ### The Downbeat Reference
 
 **VTG is ground-referenced.** The "downbeat" (south / bottom of the circle) is the anchor point for all timing and direction classifications.
@@ -598,7 +631,17 @@ This means:
 - VTG would start with G, H, I (tog-same)
 - TKA starts with A, B, C (split-same)
 
-Neither is "wrong" - they're different design philosophies (pedagogical vs systematic).
+Neither is "wrong" — they're different design philosophies (pedagogical vs systematic).
+
+### Per-Hand vs. Per-Beat Learning
+
+VTG's per-hand decomposition (define what left does, then right, then combine) matches one learning style. TKA's per-beat unit (one letter = both hands on one beat) matches another. **Neither is "early" or "late," "beginner" or "advanced."** They are different cognitive preferences. Some people learn one hand at a time. Some people learn both hands as a unit. Both paths arrive at the same destination: internalized knowledge that enables creative expression.
+
+**NEVER frame the per-hand model as "early learning" or "backwards."** That's dismissive of people whose brains work that way. The Assembler tab exists specifically as a bridge for people who think per-hand — set up each hand independently and see what letter the combination produces. Once you know the letter, you think in letters. But the path to getting there is a matter of cognitive preference, not maturity level.
+
+### Continuity Between Beats
+
+TKA tracks continuity between consecutive beats. The default assumption is continuous motion. **Reversal indicator dots** on pictographs show when a prop reverses rotation direction from the previous beat. The sequence generator also supports constraint presets that control hand path continuity (smooth vs. reversal-heavy). This is NOT a gap in the system — continuous motion is explicitly modeled.
 
 ---
 
@@ -634,6 +677,37 @@ When users use incorrect TKA terminology, **explicitly correct it** before answe
 - **Gamma** = hands form a right angle
 
 The numbered variants are intermediate/advanced knowledge for those who want to specify exact grid locations.
+
+---
+
+## LOOP Transformation Algebra
+
+LOOPs use six transformation components that operate on TKA words:
+
+| Transformation | What it does |
+|---------------|-------------|
+| **Rotated** | Positions continue rotating same direction (180° or 90° slices) |
+| **Mirrored** | Left-right swap across vertical axis |
+| **Flipped** | Top-bottom swap across horizontal axis |
+| **Swapped** | Blue↔Red hand roles swap |
+| **Inverted** | Pro↔Anti motion types swap |
+| **Rewound** | Second half plays in reverse |
+
+These transformations are **composable** (apply mirror then flip = a valid new transformation) and **invertible** (each is its own inverse — mirror twice = original). This makes them a **finite transformation group** in the mathematical sense. The structure satisfies the four group axioms: closure, associativity, identity, and inverses.
+
+This is not metaphorical. "Algebraic" is the precise mathematical term. The LOOP transformations form a group action on the space of TKA words, the same mathematical structure that describes symmetries of geometric objects. Austen didn't study group theory; the structure emerged naturally from the design. But it is formally correct to describe LOOPs as an algebraic system.
+
+### LOOPs vs. CAPs
+
+CAPs (Continuous Assembly Patterns) and LOOPs address the same need — patterns you can spin forever — but they are **parallel concepts, not parent/child.** Neither is a subset of the other.
+
+The deepest difference is the base unit:
+- **CAPs** compose per-hand trajectories (define left hand's path, define right hand's path, overlay them)
+- **LOOPs** compose per-beat snapshots (one letter = both hands simultaneously, combine letters into words)
+
+This means LOOPs are **speakable** — you can say "DJ" and another person who knows the alphabet reproduces the movement. CAPs require describing each hand's trajectory independently, which gets verbose for complex patterns. CAPs can be described using VTG vocabulary (timing, direction, pattern shape, transition type), but it gets pedantic for multi-step sequences.
+
+The six LOOP transformations have no CAP equivalent. Charlie Cushing's 8-Step CAP is a systematic positional exploration strategy ("two steps forward, one step back" through cardinal positions). The LOOP transformations are algebraic operations on words — structurally different mathematical objects. However, **Charlie's full system is not well enough understood to make detailed comparative claims.** His 10-part video series on 9-Square Theory needs to be fully transcribed and analyzed before assuming limitations of his method.
 
 ---
 
