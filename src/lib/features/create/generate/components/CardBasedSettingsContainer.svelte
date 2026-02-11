@@ -9,7 +9,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   import { flip } from "svelte/animate";
   import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import { quintOut } from "svelte/easing";
-  import { scale } from "svelte/transition";
+
   import type { CardDescriptor } from "../shared/services/contracts/ICardConfigurator";
   import type { ILOOPParameterProvider } from "../shared/services/contracts/ILOOPParameterProvider";
   import type { ICardConfigurator } from "../shared/services/contracts/ICardConfigurator";
@@ -267,8 +267,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
           class:help-clickable={helpMode && hasHelp(card.id)}
           style:grid-column="span {card.gridColumnSpan}"
           animate:flip={{ duration: 300, easing: quintOut }}
-          in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
-          out:scale={{ start: 0.95, duration: 250, easing: quintOut }}
           onclick={(e) => handleCardClick(card.id, e)}
           role={helpMode && hasHelp(card.id) ? "button" : undefined}
         >

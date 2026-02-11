@@ -41,8 +41,16 @@ Bottom row: [Start/End] [Generate]
   import {
     detectPresetFromBlocked,
     getAllPositions,
+    getBlockedPositionsForPreset,
     StartPositionPreset,
+    PRESET_LABELS,
+    PRESET_DESCRIPTIONS,
   } from "../shared/domain/start-position-presets";
+  import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+  import MultiSelectPositionPicker from "$lib/shared/components/position-picker/MultiSelectPositionPicker.svelte";
+  import PositionSection from "./modals/customize/PositionSection.svelte";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
   // ============================================================================
   // PROPS
@@ -444,16 +452,86 @@ Bottom row: [Start/End] [Generate]
     return `${enabledCount} pos`;
   });
 
-  function openStartEndPanel() {
+  // Start/End local state for inline editing
+  let pendingStartEndOptions = $state<StartEndOptions | null>(null);
+
+  // Sync pending options when start-end chip opens
+  $effect(() => {
+    if (activeChipId === "start-end" && startEndState) {
+      pendingStartEndOptions = { ...startEndState.options };
+    } else if (activeChipId !== "start-end") {
+      pendingStartEndOptions = null;
+    }
+  });
+
+  const currentStartPreset = $derived(
+    pendingStartEndOptions
+      ? detectPresetFromBlocked(pendingStartEndOptions.blockedStartPositions, config.gridMode as GridMode)
+      : StartPositionPreset.ANY
+  );
+
+  const startEnabledCount = $derived(
+    pendingStartEndOptions
+      ? getAllPositions(config.gridMode as GridMode).length - pendingStartEndOptions.blockedStartPositions.length
+      : getAllPositions(config.gridMode as GridMode).length
+  );
+
+  const startTotalPositions = $derived(getAllPositions(config.gridMode as GridMode).length);
+
+  const availablePresets = [
+    StartPositionPreset.ANY,
+    StartPositionPreset.CLASSIC,
+    StartPositionPreset.CUSTOM,
+  ];
+
+  function handleStartEndPresetSelect(preset: StartPositionPreset) {
+    if (!pendingStartEndOptions || !startEndState) return;
     haptic?.trigger("selection");
-    if (!startEndState) return;
-    panelState?.openStartEndPanel?.(
-      startEndState.options,
-      startEndState.updateOptions,
-      isFreeformMode,
-      config.gridMode as GridMode
-    );
+    const blockedPositions = getBlockedPositionsForPreset(preset, config.gridMode as GridMode);
+    pendingStartEndOptions = {
+      ...pendingStartEndOptions,
+      blockedStartPositions: blockedPositions,
+      startPosition: null,
+    };
+    startEndState.updateOptions(pendingStartEndOptions);
   }
+
+  function handleStartEndBlockedChange(blocked: GridPosition[]) {
+    if (!pendingStartEndOptions || !startEndState) return;
+    pendingStartEndOptions = {
+      ...pendingStartEndOptions,
+      blockedStartPositions: blocked,
+      startPosition: null,
+    };
+    startEndState.updateOptions(pendingStartEndOptions);
+  }
+
+  function handleStartEndEndPositionChange(position: PictographData | null) {
+    if (!pendingStartEndOptions || !startEndState) return;
+    haptic?.trigger("selection");
+    pendingStartEndOptions = { ...pendingStartEndOptions, endPosition: position };
+    startEndState.updateOptions(pendingStartEndOptions);
+  }
+
+  function handleStartEndClearAll() {
+    if (!startEndState) return;
+    haptic?.trigger("selection");
+    pendingStartEndOptions = {
+      blockedStartPositions: [],
+      startPosition: null,
+      endPosition: null,
+      mustContainLetters: [],
+      mustNotContainLetters: [],
+    };
+    startEndState.updateOptions(pendingStartEndOptions);
+  }
+
+  const hasAnyStartEndOptions = $derived(
+    pendingStartEndOptions
+      ? pendingStartEndOptions.blockedStartPositions.length > 0 ||
+        (isFreeformMode && pendingStartEndOptions.endPosition !== null)
+      : false
+  );
 
   // Help mode mapping
   const chipIdToHelpId: Record<string, GeneratorHelpId> = {
@@ -640,7 +718,9 @@ Bottom row: [Start/End] [Generate]
   <div class="compact-bottom-row">
     <button
       class="start-end-btn"
-      onclick={openStartEndPanel}
+      class:active={activeChipId === "start-end"}
+      onclick={(e) => toggleChip("start-end", e.currentTarget as HTMLElement)}
+      aria-expanded={activeChipId === "start-end"}
       aria-label="Start/End: {startEndDisplayValue}"
     >
       <span class="start-end-label">Start/End</span>
@@ -663,6 +743,7 @@ Bottom row: [Start/End] [Generate]
       activeChipId === "style" ? { bg: cardColors.continuity.color, text: "white" } :
       activeChipId === "turn-intensity" ? { bg: cardColors.turnIntensity.color, text: "white" } :
       activeChipId === "loop" ? { bg: "linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%)", text: "white" } :
+      activeChipId === "start-end" ? { bg: cardColors.startEnd.color, text: "white" } :
       { bg: "var(--theme-card-bg)", text: "white" }}
     <div
       class="expand-overlay"
@@ -683,7 +764,8 @@ Bottom row: [Start/End] [Generate]
            activeChipId === "length" ? "Length" :
            activeChipId === "style" ? "Style" :
            activeChipId === "turn-intensity" ? "Turns" :
-           activeChipId === "loop" ? "LOOP Type" : ""}
+           activeChipId === "loop" ? "LOOP Type" :
+           activeChipId === "start-end" ? "Start / End" : ""}
         </span>
       </button>
 
@@ -794,6 +876,59 @@ Bottom row: [Start/End] [Generate]
               <div class="combo-hint" role="status">
                 <i class="fas fa-flask" aria-hidden="true"></i>
                 Invalid combination
+              </div>
+            {/if}
+          </div>
+
+        {:else if activeChipId === "start-end" && pendingStartEndOptions}
+          <div class="start-end-panel">
+            <!-- Header actions -->
+            {#if hasAnyStartEndOptions}
+              <button class="se-clear-btn" onclick={handleStartEndClearAll}>
+                Clear All
+              </button>
+            {/if}
+
+            <!-- Preset buttons -->
+            <div class="se-presets-row">
+              {#each availablePresets as preset}
+                <button
+                  class="se-preset-btn"
+                  class:active={currentStartPreset === preset}
+                  onclick={() => handleStartEndPresetSelect(preset)}
+                  aria-pressed={currentStartPreset === preset}
+                >
+                  <span class="se-preset-label">{PRESET_LABELS[preset]}</span>
+                  <span class="se-preset-desc">{PRESET_DESCRIPTIONS[preset]}</span>
+                </button>
+              {/each}
+            </div>
+
+            <!-- Custom indicator -->
+            {#if currentStartPreset === StartPositionPreset.CUSTOM}
+              <div class="se-custom-indicator">
+                <span class="se-custom-badge">Custom</span>
+                <span class="se-custom-text">{startEnabledCount} of {startTotalPositions}</span>
+              </div>
+            {/if}
+
+            <!-- Position picker grid -->
+            <MultiSelectPositionPicker
+              blockedPositions={pendingStartEndOptions.blockedStartPositions}
+              onBlockedChange={handleStartEndBlockedChange}
+              gridMode={config.gridMode as GridMode}
+            />
+
+            <!-- End Position (freeform only) -->
+            {#if isFreeformMode}
+              <div class="se-end-section">
+                <PositionSection
+                  title="End Position"
+                  description="Where the sequence ends"
+                  currentPosition={pendingStartEndOptions.endPosition}
+                  onPositionChange={handleStartEndEndPositionChange}
+                  gridMode={config.gridMode as GridMode}
+                />
               </div>
             {/if}
           </div>
@@ -1060,7 +1195,7 @@ Bottom row: [Start/End] [Generate]
 
   .option-btn {
     flex: 1;
-    min-height: 36px;
+    min-height: 48px;
     background: rgba(0, 0, 0, 0.25);
     border: 1.5px solid rgba(255, 255, 255, 0.15);
     border-radius: 10px;
@@ -1092,6 +1227,8 @@ Bottom row: [Start/End] [Generate]
     flex-direction: column;
     gap: 4px;
     width: 100%;
+    flex: 1;
+    justify-content: center;
   }
 
   .style-axis {
@@ -1111,15 +1248,16 @@ Bottom row: [Start/End] [Generate]
 
   .style-axis-options {
     display: flex;
-    gap: 3px;
+    gap: 4px;
     flex: 1;
   }
 
   .style-axis-options .option-btn {
-    min-height: 28px;
-    font-size: 12px;
+    min-height: 40px;
+    font-size: 13px;
+    font-weight: 700;
     padding: 2px 6px;
-    border-radius: 8px;
+    border-radius: 10px;
   }
 
   /* ============================================================ */
@@ -1135,8 +1273,8 @@ Bottom row: [Start/End] [Generate]
   }
 
   .stepper-btn {
-    width: 40px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
     border-radius: 10px;
     border: 1.5px solid rgba(255, 255, 255, 0.15);
     background: rgba(0, 0, 0, 0.25);
@@ -1189,7 +1327,7 @@ Bottom row: [Start/End] [Generate]
     align-items: center;
     justify-content: center;
     gap: 1px;
-    min-height: 36px;
+    min-height: 48px;
     padding: 3px;
     background: rgba(0, 0, 0, 0.25);
     border: 1.5px solid rgba(255, 255, 255, 0.15);
@@ -1236,6 +1374,113 @@ Bottom row: [Start/End] [Generate]
   .combo-hint i {
     font-size: 10px;
     flex-shrink: 0;
+  }
+
+  /* ============================================================ */
+  /* START/END INLINE PANEL */
+  /* ============================================================ */
+
+  .start-end-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    max-height: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
+  }
+
+  .se-clear-btn {
+    align-self: flex-end;
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 14px;
+    color: var(--theme-text, white);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 100ms ease;
+  }
+
+  .se-clear-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .se-presets-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
+  .se-preset-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    padding: 6px 4px;
+    min-height: 40px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 100ms ease;
+  }
+
+  .se-preset-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .se-preset-btn.active {
+    background: rgba(100, 200, 255, 0.15);
+    border-color: rgba(100, 200, 255, 0.6);
+    box-shadow: 0 0 8px rgba(100, 200, 255, 0.2);
+  }
+
+  .se-preset-btn:active {
+    transform: scale(0.97);
+  }
+
+  .se-preset-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--theme-text, white);
+  }
+
+  .se-preset-desc {
+    font-size: 9px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-align: center;
+  }
+
+  .se-custom-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: rgba(255, 200, 100, 0.1);
+    border: 1px solid rgba(255, 200, 100, 0.3);
+    border-radius: 6px;
+  }
+
+  .se-custom-badge {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 200, 100, 0.9);
+    padding: 1px 6px;
+    background: rgba(255, 200, 100, 0.15);
+    border-radius: 4px;
+  }
+
+  .se-custom-text {
+    font-size: 11px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+  }
+
+  .se-end-section {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 8px;
   }
 
   /* ============================================================ */
