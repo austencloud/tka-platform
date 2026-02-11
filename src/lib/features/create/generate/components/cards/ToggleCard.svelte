@@ -139,8 +139,6 @@ Hides header when card height is below 65px for space optimization
     text-align: center;
     cursor: pointer;
 
-    /* 🎬 ANIMATION - Clean fade in on load (400ms - 2025 standard) */
-    animation: cardEnter var(--duration-dramatic) ease-out;
   }
 
   /* 🌟 GLOSSY SHEEN OVERLAY - Creates 3D glass effect */
@@ -161,16 +159,6 @@ Hides header when card height is below 65px for space optimization
     border-radius: 16px 16px 0 0;
     pointer-events: none;
     z-index: 1; /* Above background, below content */
-  }
-
-  /* 🎬 Card entrance animation - clean fade in */
-  @keyframes cardEnter {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
   }
 
   /* 🖱️ DESKTOP HOVER - Only on hover-capable devices (prevents mobile stuck hover) */

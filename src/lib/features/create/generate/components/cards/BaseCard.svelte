@@ -172,13 +172,16 @@ Provides consistent styling and interaction patterns for all generation setting 
       0 4px 8px hsl(var(--shadow-color) / 0.1),
       /* Inner highlight for 3D effect */ inset 0 1px 0 var(--theme-stroke);
 
-    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+      transform var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      filter var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible; /* Allow hover effects to overflow and pop over neighbors */
     color: white;
     text-align: center;
 
-    /* 🎬 ANIMATION - Clean fade in on load (400ms - 2025 standard) */
-    animation: cardEnter var(--duration-dramatic) ease-out;
+    /* No entrance animation - cards rebuild on resize via headerFontSize dependency,
+       which replays animations and causes visible opacity flashing */
   }
 
   /* 🌟 GLOSSY SHEEN OVERLAY - Creates 3D glass effect */
@@ -221,15 +224,6 @@ Provides consistent styling and interaction patterns for all generation setting 
     transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* 🎬 Card entrance animation - clean fade in */
-  @keyframes cardEnter {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
 
   .base-card.clickable {
     cursor: pointer;
@@ -344,10 +338,7 @@ Provides consistent styling and interaction patterns for all generation setting 
     background-size: 300% 300% !important;
 
     /* Apply mesh gradient flow animation */
-    animation:
-      cardEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards,
-      meshGradientFlow 15s ease infinite !important;
-    animation-delay: calc(var(--card-index) * 50ms), 0s !important;
+    animation: meshGradientFlow 15s ease infinite !important;
 
     /* Standard shadow matching other cards - no purple glow */
     box-shadow:
@@ -393,7 +384,7 @@ Provides consistent styling and interaction patterns for all generation setting 
   /* Respect motion preferences - disable animations but keep glow */
   @media (prefers-reduced-motion: reduce) {
     .base-card.cap-card {
-      animation: cardEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards !important;
+      animation: none !important;
       background-position: 0% 50% !important;
     }
   }

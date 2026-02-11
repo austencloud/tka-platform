@@ -124,9 +124,7 @@ Always opens selector panel when clicked
     background-size: 200% 200%;
 
     /* Subtle animated shimmer */
-    animation:
-      accentShimmer 6s ease-in-out infinite,
-      cardEnter 0.4s ease-out;
+    animation: accentShimmer 6s ease-in-out infinite;
 
     /* Accent glow shadow */
     box-shadow:
@@ -183,21 +181,10 @@ Always opens selector panel when clicked
     }
   }
 
-  /* Card entrance animation - clean fade in (matches BaseCard) */
-  @keyframes cardEnter {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
   /* Respect user motion preferences */
   @media (prefers-reduced-motion: reduce) {
     .loop-card-wrapper :global(.base-card) {
-      animation: cardEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards !important;
-      animation-delay: calc(var(--card-index) * 50ms) !important;
+      animation: none !important;
       background-position: 0% 50% !important;
     }
   }
