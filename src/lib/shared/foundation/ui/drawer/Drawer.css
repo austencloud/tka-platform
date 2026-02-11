@@ -126,6 +126,8 @@ dialog.drawer-content {
   margin: 0;
   max-width: none;
   max-height: none;
+  /* Override dialog UA color (CanvasText/black) - inherit from theme instead */
+  color: var(--theme-text, #ffffff);
   /* Hide native backdrop - we use our custom overlay */
   &::backdrop {
     display: none;

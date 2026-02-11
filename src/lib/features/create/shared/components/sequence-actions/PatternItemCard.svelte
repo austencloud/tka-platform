@@ -20,6 +20,8 @@
     glassColor?: string;
     /** Whether this is a template (affects styling) */
     isTemplate?: boolean;
+    /** Whether this card is currently selected */
+    selected?: boolean;
     /** Optional variant class name for styling (e.g., "accent", "simple") */
     variant?: string;
     onclick: () => void;
@@ -35,6 +37,7 @@
     disabledReason,
     glassColor,
     isTemplate = false,
+    selected = false,
     variant,
     onclick,
     actions,
@@ -51,6 +54,7 @@
 <div
   class="pattern-item {variant ? `variant-${variant}` : ''}"
   class:template={isTemplate}
+  class:selected
   class:disabled
   style={glassColor ? `--glass-color: ${glassColor}` : ""}
   onclick={() => !disabled && onclick()}
@@ -100,6 +104,12 @@
     outline-offset: 2px;
   }
 
+  .pattern-item.selected {
+    border-color: var(--glass-color, var(--theme-accent));
+    background: color-mix(in srgb, var(--glass-color, var(--theme-accent)) 18%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--glass-color, var(--theme-accent)) 25%, transparent);
+  }
+
   .pattern-item.disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -116,12 +126,13 @@
     font-weight: 500;
     font-size: 0.9rem;
     line-height: 1.3;
+    color: var(--theme-text, #ffffff);
   }
 
   .pattern-steps,
   .pattern-desc {
     font-size: 0.75rem;
-    color: var(--theme-text-dim);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     line-height: 1.4;
   }
 
