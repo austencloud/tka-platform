@@ -38,6 +38,7 @@ export function registerEducationalTools(server: McpServer): void {
 - Hand paths: Static=stay, Shift=arc to adjacent, Dash=straight to opposite(180°), Hash=straight to/from center (L5, "half-dash")
 - Prop rotations: Pro=with hand path (0 turns=isolation, preserves center-relative orientation), Anti=against, Float=holds absolute spatial angle
 - Types: 1=Dual-Shift(A-V), 2=Shift(W-Ω), 3=Cross-Shift(W--Ω-), 4=Dash(Φ,Ψ,Λ), 5=Dual-Dash(Φ-,Ψ-,Λ-), 6=Static(α,β,γ)
+- Skewed positions (zeta/eta): Type 1 uses M-V (gamma letters) not A-L. Type 4 uses Phi(diverge)/Psi(converge), Lambda can't be skewed
 - "[Letter] dash" = Type 3 with "-" suffix (e.g. "Σ dash" = Σ-)
 - Orientations: in, out, clock, counter + Level 7 interradial: clockIn, clockOut, counterIn, counterOut
 - VTG (Vulcan Tech Gospel): Split-Same, Tog-Same, Split-Opp, Tog-Opp
@@ -174,6 +175,18 @@ Sequences that return home through transformations:
 - **Swapped**: Blue↔Red hand roles swap
 - **Inverted**: Pro↔Anti motions swap
 - **Rewound**: Second half plays in reverse
+
+## Letters on the 8-Point Grid (Skewed Positions)
+
+Skewed positions (Zeta at 135°, Eta at 45°) are asymmetric like gamma. This affects which letters apply:
+
+**Type 1 (Dual-Shift):** All skewed transitions use M-V (gamma letters), not A-L. Zeta and Eta have a leader/follower distinction (like gamma) that A-L cannot represent. Same-direction shifts (Eta→Eta, Zeta→Zeta) map to S/T/U/V. Opposite-direction shifts (Eta↔Zeta) map to M/P, N/Q, O/R.
+
+**Type 4 (Dash):** Phi = diverging (Eta→Zeta, angle increases). Psi = converging (Zeta→Eta, angle decreases). Lambda cannot be skewed because gamma (90°) requires both hands on the same grid.
+
+**Position halves:** Gamma, Zeta, and Eta each have two internal halves based on which hand is directionally ahead. In gamma, opposite-direction shifts swap halves while staying in gamma. In Zeta/Eta, opposite-direction shifts leave the position entirely (Zeta becomes Eta and vice versa), so the halves are more isolated.
+
+**Notation:** In written sequences, curly braces delimit skewed territory: A{MP}G means A in standard, MP in skewed, G back to standard.
 
 ## Variations
 

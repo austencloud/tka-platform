@@ -503,6 +503,112 @@ Positions exist independent of props - they describe hand placement only.
 - Level 6: New position combinations from conjoined grids
 - Level 7: Existing positions gain interradial orientation options
 
+### Position Symmetry (Critical for Letter Assignment)
+
+Whether a position is **symmetric** or **asymmetric** determines which letters apply to it.
+
+**Symmetric positions:** You can swap which hand is which (via rotation or mirror) and get an equivalent configuration. Alpha (180°) and Beta (0°) are symmetric.
+
+**Asymmetric positions:** One hand is directionally "ahead" of the other. Swapping hands produces a distinct configuration. Gamma (90°), Zeta (135°), and Eta (45°) are all asymmetric.
+
+| Position | Angle | Symmetric? | Why |
+|----------|-------|------------|-----|
+| Alpha | 180° | Yes | Rotate 180° and it's identical |
+| Beta | 0° | Yes | Both hands at same point, fully interchangeable |
+| Gamma | 90° | No | One hand CW of the other; swapping changes it |
+| Zeta | 135° | No | Same asymmetry as gamma |
+| Eta | 45° | No | Same asymmetry as gamma |
+
+**Why this matters:** In asymmetric positions, when both hands shift the same direction, one hand "leads" and one "follows." This creates a leader/follower distinction that requires additional letter differentiation (see "Letter Types on the 8-Point Grid" below).
+
+**Important:** Leader/follower only applies to **same-direction** movement. When hands go **opposite directions** in an asymmetric position, they diverge/converge symmetrically relative to each other — no leader, no follower.
+
+### Gamma Cannot Be Skewed
+
+On the 8-point grid, skewed positions require one hand on a cardinal point and one on an intercardinal point. The possible angular separations are always odd multiples of 45°: either 45° (Eta) or 135° (Zeta). You **cannot** get 90° with one hand on each grid. Gamma (90°) only occurs when both hands are on the **same** grid (both cardinal or both intercardinal).
+
+This has direct consequences for which letters can have skewed variations (see below).
+
+---
+
+## Letter Types on the 8-Point Grid (L4 Skewed)
+
+> **Audit note (Feb 2026):** This section was drafted during a long exploratory conversation where the authoring agent got confused multiple times and was corrected by the designer. The core conclusions were validated by Austen, but the details and framing may contain errors. A future agent should audit this section for accuracy and run it through AI-bust before considering it authoritative.
+
+The 8-point grid introduces skewed positions (Zeta, Eta) where one hand operates on the diamond grid and the other on the box grid. This section documents how existing letter types extend to cover skewed positions.
+
+### The Two Halves of Asymmetric Positions
+
+Every asymmetric position has two halves, determined by which hand is directionally ahead of the other.
+
+**Gamma** has gamma1-8 (one half) and gamma9-16 (the other half). In one half, the red hand is CW of blue. In the other, red is CCW of blue. Same-direction shifts stay within the same half. Opposite-direction shifts cross between halves (while remaining in gamma).
+
+This is why gamma compound letters (MP, NQ, OR) are structurally analogous to the alpha/beta compounds (DJ, EK, FL). DJ oscillates between beta and alpha. MP oscillates between the two halves of gamma. Lambda (Type 4, dash across gamma) also crosses from one half to the other.
+
+**Zeta** and **Eta** each have two halves following the same logic. However, their halves are more isolated than gamma's halves. In gamma, opposite-direction shifts swap halves while staying in gamma. In skewed positions, opposite-direction shifts leave the position entirely (Eta becomes Zeta, Zeta becomes Eta). There is no standard single-step shift that swaps halves while staying in the same skewed position.
+
+### The Skewed World as Distinct Territory
+
+The skewed world is a distinct territory within the 8-point grid. You **enter** it from standard positions (via Type 2 or Type 3 letters that cross one hand from cardinal to intercardinal), **exist** within it, and **exit** back to standard positions.
+
+**Notation in written sequences:** Curly braces delimit skewed territory. Example: A{MP}G means "A in standard territory, then M and P in skewed territory, then G back in standard." Individual pictographs don't need special marking — the 8-point grid is visually apparent.
+
+### Transition Rules
+
+On both diamond and 8-point grids, when both hands shift one step, the angular separation between them either stays the same or changes by 180°:
+
+- **Same direction** → angle unchanged (stay in same position type)
+- **Opposite direction** → angle changes by 180° (swap to paired position)
+
+This produces parallel transition structures:
+
+| Diamond grid | Skewed grid |
+|-------------|-------------|
+| Alpha ↔ Alpha (same dir) | Zeta ↔ Zeta (same dir) |
+| Beta ↔ Beta (same dir) | Eta ↔ Eta (same dir) |
+| Beta ↔ Alpha (opp dir) | Eta ↔ Zeta (opp dir) |
+| Gamma ↔ Gamma (both dirs) | *(gamma can't be skewed)* |
+
+On the diamond grid, the positions that interconvert (alpha, beta) are symmetric, and the isolated position (gamma) is asymmetric. On the 8-point grid, the interconverting positions (eta, zeta) are also asymmetric. This is a mathematical property of the grid geometry — symmetric positions (0° and 180°) only exist when both hands are on the same grid.
+
+### Type 1 (Dual-Shift): M through V
+
+All skewed Type 1 transitions use the gamma letter group (M through V), not A through L.
+
+A through L were designed for symmetric positions (alpha and beta) where the leader/follower distinction does not exist. Zeta and Eta are asymmetric. When both hands shift the same direction, one hand leads and one follows. When turn values differ between hands, it matters which hand carries which value. This is true for pro/pro and anti/anti, not just hybrids — the same reason S, T, U, V exist as distinct letters rather than variations of a single gamma letter.
+
+- **Same-direction** (Eta → Eta, Zeta → Zeta): leader/follower matters. Maps to S, T, U, V.
+- **Opposite-direction** (Eta ↔ Zeta): no leader/follower (hands diverge/converge symmetrically). Maps to the M/P, N/Q, O/R group.
+
+### Type 4 (Dash + Static): Phi and Psi
+
+Lambda requires gamma (90°), which cannot exist in skewed positions. Skewed Type 4 motions use Phi and Psi instead.
+
+| Letter | Diamond grid | Skewed grid | Principle |
+|--------|-------------|-------------|-----------|
+| **Phi** | Beta → Alpha (0° → 180°) | Eta → Zeta (45° → 135°) | Angular separation increases |
+| **Psi** | Alpha → Beta (180° → 0°) | Zeta → Eta (135° → 45°) | Angular separation decreases |
+| **Lambda** | Gamma → Gamma (90° → 90°) | *impossible* | Angle preserved — requires same grid |
+
+Phi and Psi generalize as **diverging** and **converging** letters. The diamond-grid definitions are specific instances of this broader principle.
+
+Type 4 has one static hand, so the leader/follower distinction does not arise. This is why Type 4 uses Phi/Psi (the alpha/beta-style classification) while Type 1 uses M-V (the gamma-style classification) — the two types have different structural properties in asymmetric positions.
+
+### Type 5 (Dual-Dash)
+
+Phi- and Psi- extend the same way as Phi and Psi. Lambda- cannot be skewed.
+
+### Summary
+
+| Context | Zeta/Eta behave like... | Why |
+|---------|------------------------|-----|
+| Type 1 same-direction | Gamma | Asymmetric, leader/follower matters |
+| Type 1 opposite-direction | Gamma (M/P group) | Gamma letters for consistency, no leader/follower |
+| Type 4/5 diverge/converge | Alpha/Beta (Phi/Psi) | One hand static, no leader/follower |
+| Transition structure | Alpha/Beta | Interconvert via opposite-direction shifts |
+| Position symmetry | Gamma | Asymmetric — swapping hands changes the configuration |
+| Two halves | Gamma | Each has two internal halves based on which hand leads |
+
 ---
 
 ## Compound Letters

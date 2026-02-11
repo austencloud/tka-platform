@@ -7,7 +7,9 @@ export const LETTER_TYPES: Record<string, LetterTypeDefinition> = {
     characteristics: [
       "Both hands move 90 degrees on the grid",
       "Creates smooth, flowing transitions",
-      "22 letters - the largest type"
+      "22 letters - the largest type",
+      "A-L for symmetric positions (alpha/beta). M-V for asymmetric positions (gamma, and on the 8-point grid: zeta/eta)",
+      "In skewed positions (zeta/eta), ALL Type 1 transitions use M-V because the leader/follower distinction matters"
     ],
     letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"],
     motionPattern: {
@@ -51,7 +53,10 @@ export const LETTER_TYPES: Record<string, LetterTypeDefinition> = {
     characteristics: [
       "Creates dramatic position changes",
       "Uses Greek letters Phi, Psi, Lambda",
-      "Only 3 letters in this type"
+      "Only 3 letters in this type",
+      "Phi = diverging (angular separation increases): beta→alpha, or eta→zeta on 8-point grid",
+      "Psi = converging (angular separation decreases): alpha→beta, or zeta→eta on 8-point grid",
+      "Lambda = angle preserved (gamma→gamma). Cannot be skewed (gamma requires both hands on same grid)"
     ],
     letters: ["Φ", "Ψ", "Λ"],
     motionPattern: {
@@ -67,7 +72,8 @@ export const LETTER_TYPES: Record<string, LetterTypeDefinition> = {
       "Both hands move 180 degrees",
       "Creates dramatic, symmetric movements",
       "Named with '-' suffix like Type 3",
-      "Only 3 letters in this type"
+      "Only 3 letters in this type",
+      "Same diverge/converge/preserve pattern as Type 4. Lambda- cannot be skewed (same reason as Lambda)"
     ],
     letters: ["Φ-", "Ψ-", "Λ-"],
     motionPattern: {
