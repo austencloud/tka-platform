@@ -187,7 +187,7 @@
     <div class="settings-panel">
       <h3>Gallery Settings</h3>
 
-      <ChipGroup label="Physics">
+      <ChipGroup>
         <ChipToggle
           label="Raycasting"
           icon="fa-feather"
@@ -210,7 +210,7 @@
         />
       </ChipGroup>
 
-      <ChipGroup label="Renderer">
+      <ChipGroup>
         <ChipToggle
           label="WebGL"
           icon="fa-globe"
@@ -233,7 +233,7 @@
         />
       </ChipGroup>
 
-      <ChipGroup label="Field of View">
+      <ChipGroup>
         <ChipToggle
           label="60°"
           active={gallerySettings.fov === 60}
@@ -260,7 +260,7 @@
         />
       </ChipGroup>
 
-      <ChipGroup label="Mouse Sensitivity">
+      <ChipGroup>
         <ChipToggle
           label="0.5x"
           active={gallerySettings.mouseSensitivity === 0.5}

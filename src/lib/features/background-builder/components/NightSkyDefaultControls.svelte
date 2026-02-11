@@ -40,14 +40,14 @@
 </script>
 
 <!-- Quality Chips -->
-<ChipGroup label="Quality" variant="row">
+<ChipGroup>
   <ChipToggle label="High" active={quality === "high"} onclick={() => onQualityChange("high")} />
   <ChipToggle label="Medium" active={quality === "medium"} onclick={() => onQualityChange("medium")} />
   <ChipToggle label="Low" active={quality === "low"} onclick={() => onQualityChange("low")} />
 </ChipGroup>
 
 <!-- Layer Chips -->
-<ChipGroup label="Layers">
+<ChipGroup>
   <ChipToggle label="Stars" icon="fa-star" active={layers.stars} onclick={() => onLayerToggle("stars")} />
   <ChipToggle label="Nebula" icon="fa-cloud" active={layers.nebula} onclick={() => onLayerToggle("nebula")} />
   <ChipToggle label="Aurora" icon="fa-wind" active={layers.aurora} onclick={() => onLayerToggle("aurora")} />
@@ -58,13 +58,13 @@
 </ChipGroup>
 
 <!-- Trigger Buttons -->
-<ChipGroup label="Trigger Events" variant="row">
+<ChipGroup>
   <ChipToggle label="Meteor" icon="fa-meteor" color="amber" onclick={onTriggerMeteor} />
   <ChipToggle label="Comet" icon="fa-fire" color="cyan" onclick={onTriggerComet} />
 </ChipGroup>
 
 <!-- Density Chips -->
-<ChipGroup label="Star Density" variant="row">
+<ChipGroup>
   <ChipToggle label="Sparse" active={densityPreset === "sparse"} onclick={() => onDensityChange("sparse")} />
   <ChipToggle label="Normal" active={densityPreset === "normal"} onclick={() => onDensityChange("normal")} />
   <ChipToggle label="Dense" active={densityPreset === "dense"} onclick={() => onDensityChange("dense")} />

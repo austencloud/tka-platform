@@ -164,7 +164,7 @@
   <ActionButton label="Spawn UFO" icon="fa-satellite" fullWidth onclick={onSpawn} />
 
   <!-- Quick Commands -->
-  <ChipGroup columns={4}>
+  <ChipGroup>
     <ChipToggle icon="fa-random" label="Wander" layout="vertical" color="default" onclick={onWander} />
     <ChipToggle icon="fa-cloud" label="Drift" layout="vertical" color="default" onclick={onDrift} />
     <ChipToggle icon="fa-pause" label="Pause" layout="vertical" color="default" onclick={onPause} />

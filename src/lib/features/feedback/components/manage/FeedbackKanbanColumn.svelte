@@ -63,6 +63,15 @@
     onDragOver();
   }
 
+  function handleDragLeave(e: DragEvent) {
+    const column = e.currentTarget as HTMLElement;
+    const related = e.relatedTarget as Node | null;
+    // Only fire leave when cursor actually exits the column, not when moving between children
+    if (!related || !column.contains(related)) {
+      onDragLeave();
+    }
+  }
+
   function handleDrop(e: DragEvent) {
     e.preventDefault();
     onDrop();
@@ -76,7 +85,7 @@
   class:active-tab={isActiveTab}
   style="--column-color: {config.color}"
   ondragover={handleDragOver}
-  ondragleave={onDragLeave}
+  ondragleave={handleDragLeave}
   ondrop={handleDrop}
   role="region"
   id="column-{status}"

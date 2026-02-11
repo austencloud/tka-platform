@@ -608,7 +608,7 @@
     <LabStatusBar counters={statusCounters} />
 
     <!-- Quick Commands -->
-    <ChipGroup columns={4}>
+    <ChipGroup>
       <ChipToggle icon="fa-sync" label="Regen" layout="vertical" color="cyan" onclick={regenerate} />
       <ChipToggle icon="fa-plus" label="Fish" layout="vertical" color="cyan" onclick={spawnFish} />
       <ChipToggle icon="fa-plus" label="Jelly" layout="vertical" color="cyan" onclick={spawnJellyfish} />
@@ -617,7 +617,7 @@
 
     <!-- Scene Layers -->
     <CollapsibleLabSection title="Layers" icon="fa-layer-group" defaultOpen={true} accentColor="cyan">
-      <ChipGroup variant="grid">
+      <ChipGroup>
         <ChipToggle label="Gradient" icon="fa-fill-drip" active={layers.gradient} color="cyan" onclick={() => toggleLayer("gradient")} />
         <ChipToggle label="Rays" icon="fa-sun" active={layers.lightRays} color="cyan" onclick={() => toggleLayer("lightRays")} />
         <ChipToggle label="Caustics" icon="fa-water" active={layers.caustics} color="cyan" onclick={() => toggleLayer("caustics")} />
@@ -631,7 +631,7 @@
 
     <!-- Quality -->
     <CollapsibleLabSection title="Quality" icon="fa-sliders-h" defaultOpen={false} accentColor="cyan">
-      <ChipGroup variant="row">
+      <ChipGroup>
         <ChipToggle label="High" active={quality === "high"} color="cyan" onclick={() => setQuality("high")} />
         <ChipToggle label="Medium" active={quality === "medium"} color="cyan" onclick={() => setQuality("medium")} />
         <ChipToggle label="Low" active={quality === "low"} color="cyan" onclick={() => setQuality("low")} />
@@ -750,7 +750,7 @@
     <!-- Debug -->
     <CollapsibleLabSection title="Debug" icon="fa-bug" defaultOpen={false} accentColor="red">
       <div class="subsection-label">Rendering</div>
-      <ChipGroup variant="grid">
+      <ChipGroup>
         <ChipToggle
           icon="fa-bone"
           label="Spine"
@@ -782,7 +782,7 @@
       </ChipGroup>
 
       <div class="subsection-label">Social Behaviors</div>
-      <ChipGroup variant="grid">
+      <ChipGroup>
         <ChipToggle
           icon="fa-users"
           label="Flocking"
@@ -821,7 +821,7 @@
       </ChipGroup>
 
       <div class="subsection-label">Visualization</div>
-      <ChipGroup variant="grid">
+      <ChipGroup>
         <ChipToggle
           icon="fa-map-marker"
           label="Show Homes"

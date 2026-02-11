@@ -31,7 +31,13 @@
     e.preventDefault();
     onDragOver();
   }}
-  ondragleave={onDragLeave}
+  ondragleave={(e) => {
+    const zone = e.currentTarget as HTMLElement;
+    const related = e.relatedTarget as Node | null;
+    if (!related || !zone.contains(related)) {
+      onDragLeave();
+    }
+  }}
   ondrop={(e) => {
     e.preventDefault();
     onDrop();

@@ -129,7 +129,7 @@
     </div>
 
     <!-- Palette Chips -->
-    <ChipGroup label="Palette">
+    <ChipGroup>
       {#each Object.keys(PRIDE_PALETTES) as palette}
         <ChipToggle
           label={paletteNames[palette as PridePalette]}
@@ -142,14 +142,14 @@
     </ChipGroup>
 
     <!-- Quality Chips -->
-    <ChipGroup label="Quality" variant="row">
+    <ChipGroup>
       <ChipToggle label="High" active={quality === "high"} color="rose" onclick={() => setQuality("high")} />
       <ChipToggle label="Medium" active={quality === "medium"} color="rose" onclick={() => setQuality("medium")} />
       <ChipToggle label="Low" active={quality === "low"} color="rose" onclick={() => setQuality("low")} />
     </ChipGroup>
 
     <!-- Layer Chips -->
-    <ChipGroup label="Layers">
+    <ChipGroup>
       <ChipToggle label="Base" icon="fa-square" active={layers.gradient} color="rose" onclick={() => toggleLayer("gradient")} />
       <ChipToggle label="Bands" icon="fa-rainbow" active={layers.bands} color="rose" onclick={() => toggleLayer("bands")} />
       <ChipToggle label="Shimmer" icon="fa-sparkle" active={layers.shimmer} color="rose" onclick={() => toggleLayer("shimmer")} />

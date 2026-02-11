@@ -59,14 +59,14 @@
 </script>
 
 <!-- Quality Chips -->
-<ChipGroup label="Quality" variant="row">
+<ChipGroup>
   <ChipToggle label="High" active={quality === "high"} color="lime" onclick={() => onQualityChange("high")} />
   <ChipToggle label="Medium" active={quality === "medium"} color="lime" onclick={() => onQualityChange("medium")} />
   <ChipToggle label="Low" active={quality === "low"} color="lime" onclick={() => onQualityChange("low")} />
 </ChipGroup>
 
 <!-- Layer Chips -->
-<ChipGroup label="Layers">
+<ChipGroup>
   <ChipToggle label="Gradient" icon="fa-fill-drip" active={layers.gradient} color="lime" onclick={() => onLayerToggle("gradient")} />
   <ChipToggle label="Stars" icon="fa-star" active={layers.stars} color="lime" onclick={() => onLayerToggle("stars")} />
   <ChipToggle label="Moon" icon="fa-moon" active={layers.moon} color="lime" onclick={() => onLayerToggle("moon")} />
@@ -79,7 +79,7 @@
 </ChipGroup>
 
 <!-- Tree Type Chips -->
-<ChipGroup label="Tree Types">
+<ChipGroup>
   <ChipToggle label="Pine" active={treeTypes.pine} color="lime" onclick={() => onTreeTypeToggle("pine")} />
   <ChipToggle label="Fir" active={treeTypes.fir} color="lime" onclick={() => onTreeTypeToggle("fir")} />
   <ChipToggle label="Spruce" active={treeTypes.spruce} color="lime" onclick={() => onTreeTypeToggle("spruce")} />

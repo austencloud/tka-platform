@@ -179,7 +179,7 @@
     </div>
 
     <!-- Time of Day Selector -->
-    <ChipGroup label="Time of Day" variant="row">
+    <ChipGroup>
       <ChipToggle
         label="Twilight"
         icon="fa-cloud-moon"
@@ -204,27 +204,27 @@
     </ChipGroup>
 
     <!-- Quality Chips -->
-    <ChipGroup label="Quality" variant="row">
+    <ChipGroup>
       <ChipToggle label="High" active={quality === "high"} color="rose" onclick={() => setQuality("high")} />
       <ChipToggle label="Medium" active={quality === "medium"} color="rose" onclick={() => setQuality("medium")} />
       <ChipToggle label="Low" active={quality === "low"} color="rose" onclick={() => setQuality("low")} />
     </ChipGroup>
 
     <!-- Core Layer Toggles -->
-    <ChipGroup label="Core Layers">
+    <ChipGroup>
       <ChipToggle label="Gradient" icon="fa-fill-drip" active={layers.gradient} color="rose" onclick={() => toggleLayer("gradient")} />
       <ChipToggle label="Petals" icon="fa-leaf" active={layers.petals} color="rose" onclick={() => toggleLayer("petals")} />
     </ChipGroup>
 
     <!-- Parallax Depth Toggles -->
-    <ChipGroup label="Petal Depth">
+    <ChipGroup>
       <ChipToggle label="Far" active={layers.petalsFar} color="default" onclick={() => toggleLayer("petalsFar")} />
       <ChipToggle label="Mid" active={layers.petalsMid} color="default" onclick={() => toggleLayer("petalsMid")} />
       <ChipToggle label="Near" active={layers.petalsNear} color="default" onclick={() => toggleLayer("petalsNear")} />
     </ChipGroup>
 
     <!-- Environmental Layers -->
-    <ChipGroup label="Environment">
+    <ChipGroup>
       <ChipToggle label="Moon" icon="fa-moon" active={layers.moon} color="cyan" onclick={() => toggleLayer("moon")} />
       <ChipToggle label="Stars" icon="fa-star" active={layers.stars} color="cyan" onclick={() => toggleLayer("stars")} />
       <ChipToggle label="Trees" icon="fa-tree" active={layers.trees} color="emerald" onclick={() => toggleLayer("trees")} />
@@ -293,14 +293,14 @@
     {/if}
 
     <!-- Effect Layers -->
-    <ChipGroup label="Effects">
+    <ChipGroup>
       <ChipToggle label="Trails" icon="fa-wind" active={layers.trails} color="rose" onclick={() => toggleLayer("trails")} />
       <ChipToggle label="Accumulation" icon="fa-layer-group" active={layers.accumulation} color="rose" onclick={() => toggleLayer("accumulation")} />
       <ChipToggle label="Vortex" icon="fa-hurricane" active={layers.vortex} color="rose" onclick={() => toggleLayer("vortex")} />
     </ChipGroup>
 
     <!-- Density Chips -->
-    <ChipGroup label="Petal Density" variant="row">
+    <ChipGroup>
       <ChipToggle label="Sparse" active={densityPreset === "sparse"} color="rose" onclick={() => setDensity("sparse")} />
       <ChipToggle label="Normal" active={densityPreset === "normal"} color="rose" onclick={() => setDensity("normal")} />
       <ChipToggle label="Dense" active={densityPreset === "dense"} color="rose" onclick={() => setDensity("dense")} />
@@ -308,7 +308,7 @@
     </ChipGroup>
 
     <!-- Wind Chips -->
-    <ChipGroup label="Wind" variant="row">
+    <ChipGroup>
       <ChipToggle label="Calm" active={windPreset === "calm"} color="default" onclick={() => setWindPreset("calm")} />
       <ChipToggle label="Gentle" active={windPreset === "gentle"} color="default" onclick={() => setWindPreset("gentle")} />
       <ChipToggle label="Breezy" active={windPreset === "breezy"} color="default" onclick={() => setWindPreset("breezy")} />

@@ -100,21 +100,21 @@
     </div>
 
     <!-- Quality Chips -->
-    <ChipGroup label="Quality" variant="row">
+    <ChipGroup>
       <ChipToggle label="High" active={quality === "high"} color="cyan" onclick={() => setQuality("high")} />
       <ChipToggle label="Medium" active={quality === "medium"} color="cyan" onclick={() => setQuality("medium")} />
       <ChipToggle label="Low" active={quality === "low"} color="cyan" onclick={() => setQuality("low")} />
     </ChipGroup>
 
     <!-- Layer Chips -->
-    <ChipGroup label="Layers">
+    <ChipGroup>
       <ChipToggle label="Sky Gradient" icon="fa-moon" active={layers.gradient} color="cyan" onclick={() => toggleLayer("gradient")} />
       <ChipToggle label="Snowflakes" icon="fa-snowflake" active={layers.snowflakes} color="cyan" onclick={() => toggleLayer("snowflakes")} />
       <ChipToggle label="Shooting Stars" icon="fa-meteor" active={layers.shootingStars} color="cyan" onclick={() => toggleLayer("shootingStars")} />
     </ChipGroup>
 
     <!-- Density Chips -->
-    <ChipGroup label="Snow Density" variant="row">
+    <ChipGroup>
       <ChipToggle label="Light" active={densityPreset === "light"} color="cyan" onclick={() => setDensity("light")} />
       <ChipToggle label="Normal" active={densityPreset === "normal"} color="cyan" onclick={() => setDensity("normal")} />
       <ChipToggle label="Heavy" active={densityPreset === "heavy"} color="cyan" onclick={() => setDensity("heavy")} />

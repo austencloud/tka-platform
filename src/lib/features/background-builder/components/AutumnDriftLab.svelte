@@ -103,20 +103,20 @@
     </div>
 
     <!-- Quality Chips -->
-    <ChipGroup label="Quality" variant="row">
+    <ChipGroup>
       <ChipToggle label="High" active={quality === "high"} color="amber" onclick={() => setQuality("high")} />
       <ChipToggle label="Medium" active={quality === "medium"} color="amber" onclick={() => setQuality("medium")} />
       <ChipToggle label="Low" active={quality === "low"} color="amber" onclick={() => setQuality("low")} />
     </ChipGroup>
 
     <!-- Layer Chips -->
-    <ChipGroup label="Layers">
+    <ChipGroup>
       <ChipToggle label="Background" icon="fa-fill-drip" active={layers.gradient} color="amber" onclick={() => toggleLayer("gradient")} />
       <ChipToggle label="Leaves" icon="fa-leaf" active={layers.leaves} color="amber" onclick={() => toggleLayer("leaves")} />
     </ChipGroup>
 
     <!-- Density Chips -->
-    <ChipGroup label="Leaf Density" variant="row">
+    <ChipGroup>
       <ChipToggle label="Sparse" active={densityPreset === "sparse"} color="amber" onclick={() => setDensity("sparse")} />
       <ChipToggle label="Normal" active={densityPreset === "normal"} color="amber" onclick={() => setDensity("normal")} />
       <ChipToggle label="Dense" active={densityPreset === "dense"} color="amber" onclick={() => setDensity("dense")} />
@@ -124,7 +124,7 @@
     </ChipGroup>
 
     <!-- Wind Chips -->
-    <ChipGroup label="Wind" variant="row">
+    <ChipGroup>
       <ChipToggle label="Calm" active={windPreset === "calm"} color="default" onclick={() => setWindPreset("calm")} />
       <ChipToggle label="Breezy" active={windPreset === "breezy"} color="default" onclick={() => setWindPreset("breezy")} />
       <ChipToggle label="Windy" active={windPreset === "windy"} color="default" onclick={() => setWindPreset("windy")} />

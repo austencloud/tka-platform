@@ -124,14 +124,14 @@
     </div>
 
     <!-- Quality Chips -->
-    <ChipGroup label="Quality" variant="row">
+    <ChipGroup>
       <ChipToggle label="High" active={quality === "high"} color="amber" onclick={() => setQuality("high")} />
       <ChipToggle label="Medium" active={quality === "medium"} color="amber" onclick={() => setQuality("medium")} />
       <ChipToggle label="Low" active={quality === "low"} color="amber" onclick={() => setQuality("low")} />
     </ChipGroup>
 
     <!-- Layer Chips -->
-    <ChipGroup label="Layers">
+    <ChipGroup>
       <ChipToggle label="Base" icon="fa-square" active={layers.gradient} color="amber" onclick={() => toggleLayer("gradient")} />
       <ChipToggle label="Coal Bed" icon="fa-fire-burner" active={layers.coalBed} color="amber" onclick={() => toggleLayer("coalBed")} />
       <ChipToggle label="Smoke" icon="fa-cloud" active={layers.smoke} color="amber" onclick={() => toggleLayer("smoke")} />
@@ -140,7 +140,7 @@
     </ChipGroup>
 
     <!-- Enhancement Chips -->
-    <ChipGroup label="Enhancements">
+    <ChipGroup>
       <ChipToggle label="Vignette" icon="fa-circle" active={layers.vignette} color="amber" onclick={() => toggleLayer("vignette")} />
       <ChipToggle label="Bottom Glow" icon="fa-sun" active={layers.bottomGlow} color="amber" onclick={() => toggleLayer("bottomGlow")} />
       <ChipToggle label="Spark Trails" icon="fa-comet" active={layers.sparkTrails} color="amber" onclick={() => toggleLayer("sparkTrails")} />
@@ -148,7 +148,7 @@
     </ChipGroup>
 
     <!-- Density Chips -->
-    <ChipGroup label="Density" variant="row">
+    <ChipGroup>
       <ChipToggle label="Sparse" active={densityPreset === "sparse"} color="amber" onclick={() => setDensity("sparse")} />
       <ChipToggle label="Normal" active={densityPreset === "normal"} color="amber" onclick={() => setDensity("normal")} />
       <ChipToggle label="Dense" active={densityPreset === "dense"} color="amber" onclick={() => setDensity("dense")} />
@@ -156,7 +156,7 @@
     </ChipGroup>
 
     <!-- Heat Chips -->
-    <ChipGroup label="Heat Intensity" variant="row">
+    <ChipGroup>
       <ChipToggle label="Smolder" active={heatIntensity === "smolder"} color="amber" onclick={() => setHeat("smolder")} />
       <ChipToggle label="Warm" active={heatIntensity === "warm"} color="amber" onclick={() => setHeat("warm")} />
       <ChipToggle label="Hot" active={heatIntensity === "hot"} color="amber" onclick={() => setHeat("hot")} />
