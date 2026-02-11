@@ -273,6 +273,13 @@
     }
   }
 
+  /* Compact mobile (iPhone SE, etc.) - use alt touch target */
+  @container button-panel (max-width: 390px) {
+    .button-panel {
+      --min-touch-target: var(--alt-touch-target);
+    }
+  }
+
   /* Very narrow containers - minimal gaps but NEVER shrink buttons */
   @container button-panel (max-width: 360px) {
     .button-panel {
