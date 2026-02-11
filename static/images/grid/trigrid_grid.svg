@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1"
+    id="Trigrid_Layer"
+    xmlns="http://www.w3.org/2000/svg"
+    x="0"
+    y="0"
+    viewBox="0 0 950 950"
+    xml:space="preserve">
+  <style>
+    .trigrid-invisible{fill:none}
+    .normal-hand-point{fill:currentColor}
+  </style>
+
+  <!-- Triangle edges connecting vertices -->
+  <line x1="475" y1="332" x2="598.8" y2="546.5" stroke="currentColor" stroke-width="1.5" opacity="0.15"/>
+  <line x1="598.8" y1="546.5" x2="351.2" y2="546.5" stroke="currentColor" stroke-width="1.5" opacity="0.15"/>
+  <line x1="351.2" y1="546.5" x2="475" y2="332" stroke="currentColor" stroke-width="1.5" opacity="0.15"/>
+
+  <!-- Outer points -->
+  <circle id="n_trigrid_outer_point" cx="475" cy="175" r="25"/>
+  <circle id="se_trigrid_outer_point" cx="734.8" cy="625" r="25"/>
+  <circle id="sw_trigrid_outer_point" cx="215.2" cy="625" r="25"/>
+
+  <!-- Hand points -->
+  <circle id="n_trigrid_hand_point" class="normal-hand-point" cx="475" cy="332" r="4.7"/>
+  <circle id="se_trigrid_hand_point" class="normal-hand-point" cx="598.8" cy="546.5" r="4.7"/>
+  <circle id="sw_trigrid_hand_point" class="normal-hand-point" cx="351.2" cy="546.5" r="4.7"/>
+
+  <!-- Center point -->
+  <circle id="center_point" cx="475" cy="475" r="12"/>
+</svg>

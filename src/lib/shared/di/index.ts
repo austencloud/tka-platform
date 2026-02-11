@@ -80,6 +80,7 @@ import { createLanSyncContainer } from "./containers/lan-sync-container";
 import { createConnectContainer } from "./containers/connect-container";
 import { createDeviceSyncContainer } from "./containers/device-sync-container";
 import { conjoinedLabContainer } from "./containers/conjoined-lab-container";
+import { trigridLabContainer } from "./containers/trigrid-lab-container";
 import { multiGridContainer } from "./containers/multi-grid-container";
 import { createAttributionContainer } from "./containers/attribution-container";
 import { createVoiceControlContainer } from "./containers/voice-control-container";
@@ -88,6 +89,7 @@ import { createComposeArrangeContainer } from "./containers/compose-arrange-cont
 import { createVoiceSessionContainer } from "./containers/voice-session-container";
 import { createSkel2TKAContainer } from "./containers/skel2tka-container";
 import { labContainer } from "./containers/lab-container";
+import { arenaContainer } from "./containers/arena-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -402,6 +404,7 @@ function buildAppContainer(): any {
   c = c.add(deviceSyncContainer.items);
   c = c.add(connectContainer.items);
   c = c.add(conjoinedLabContainer.items);
+  c = c.add(trigridLabContainer.items);
   c = c.add(multiGridContainer.items);
   // Attribution tracking services
   c = c.add({
@@ -419,6 +422,8 @@ function buildAppContainer(): any {
   c = c.add(skel2tkaContainer.items);
   // Lab module services (screenshot capture, etc.)
   c = c.add(labContainer.items);
+  // Arena module services (pairwise ranking)
+  c = c.add(arenaContainer.items);
   // Cross-container services (depend on multiple container outputs)
   c = c.add({ deepLinkResolver: () => deepLinkResolver });
   c = c.add({ sequenceDataProvider: () => sequenceDataProvider });

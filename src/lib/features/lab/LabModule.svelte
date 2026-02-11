@@ -39,6 +39,8 @@
     vtg: () => import("$lib/features/vtg-lab/VtgLabModule.svelte"),
     "screenshot-gallery": () => import("./tabs/ScreenshotCaptureLab.svelte"),
     skel2tka: () => import("$lib/features/skel2tka/Skel2TKALab.svelte"),
+    trigrid: () => import("$lib/features/trigrid-lab/TriGridLabModule.svelte"),
+    duration: () => import("$lib/features/duration-lab/DurationLabModule.svelte"),
   };
 
   // Get current tab, default to first tab
