@@ -560,7 +560,8 @@
       "WebFetch(domain:wickup.wordpress.com)",
       "WebFetch(domain:lnk.bio)",
       "WebFetch(domain:tabjuggler.tumblr.com)",
-      "WebFetch(domain:poividoftheday.tumblr.com)"
+      "WebFetch(domain:poividoftheday.tumblr.com)",
+      "WebFetch(domain:www.youtube.com)"
     ]
   },
   "enableAllProjectMcpServers": false,

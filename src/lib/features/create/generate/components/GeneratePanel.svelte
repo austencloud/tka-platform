@@ -22,6 +22,7 @@ Card-based architecture with integrated Generate button:
   import { createGenerationConfigState } from "../state/generate-config.svelte";
   import { createStartEndOptionsState } from "../state/start-end-options-state.svelte";
   import CardBasedSettingsContainer from "./CardBasedSettingsContainer.svelte";
+  import StartEndSheet from "./modals/StartEndSheet.svelte";
   import GeneratorHelpOverlay from "./help/GeneratorHelpOverlay.svelte";
   import GeneratorHelpModal from "./help/GeneratorHelpModal.svelte";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
@@ -214,6 +215,18 @@ Card-based architecture with integrated Generate button:
     />
   </div>
 </div>
+
+<!-- Start/End position drawer (rendered outside card grid for full-screen coverage) -->
+{#if panelState}
+  <StartEndSheet
+    isOpen={panelState.isStartEndPanelOpen}
+    options={panelState.startEndOptions}
+    onChange={panelState.startEndOnChange ?? (() => {})}
+    onClose={() => panelState.closeStartEndPanel()}
+    isFreeformMode={panelState.startEndIsFreeformMode}
+    gridMode={panelState.startEndGridMode}
+  />
+{/if}
 
 <!-- Help mode overlays -->
 {#if helpMode !== "inactive" || isExiting}

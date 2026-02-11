@@ -55,8 +55,8 @@ End Position: Single select (for freeform mode only)
     mustNotContainLetters: [],
   });
 
-  // Track whether start position section is expanded
-  let isStartPositionExpanded = $state(false);
+  // Track whether start position section is expanded (default open so grid is immediately visible)
+  let isStartPositionExpanded = $state(true);
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
@@ -126,7 +126,7 @@ End Position: Single select (for freeform mode only)
   }
 
   function handleClose() {
-    isStartPositionExpanded = false;
+    isStartPositionExpanded = true;
     onClose();
   }
 
