@@ -1,14 +1,22 @@
 <!-- DurationResizeHandle - Draggable right-edge handle for duration resize -->
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import {
+    MIN_DURATION,
+    MAX_DURATION,
+    DURATION_STEP_FINE,
+  } from "../../../services/implementations/step-operations/DurationHandler";
 
   interface Props {
+    currentDuration: number;
     onDragStart: () => void;
     onDrag: (pixelDelta: number) => void;
     onDragEnd: () => void;
+    onStepAdjust: (newDuration: number) => void;
   }
 
-  let { onDragStart, onDrag, onDragEnd }: Props = $props();
+  let { currentDuration, onDragStart, onDrag, onDragEnd, onStepAdjust }: Props =
+    $props();
 
   let isDragging = $state(false);
   let startX = $state(0);
@@ -41,6 +49,32 @@
     onDragEnd();
   }
 
+  function handleKeyDown(e: KeyboardEvent) {
+    let newDuration: number | null = null;
+
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+      e.preventDefault();
+      e.stopPropagation();
+      const step = e.shiftKey ? 1.0 : DURATION_STEP_FINE;
+      newDuration = Math.min(MAX_DURATION, currentDuration + step);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+      e.preventDefault();
+      e.stopPropagation();
+      const step = e.shiftKey ? 1.0 : DURATION_STEP_FINE;
+      newDuration = Math.max(MIN_DURATION, currentDuration - step);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      newDuration = MIN_DURATION;
+    } else if (e.key === "End") {
+      e.preventDefault();
+      newDuration = MAX_DURATION;
+    }
+
+    if (newDuration !== null && newDuration !== currentDuration) {
+      onStepAdjust(newDuration);
+    }
+  }
+
   onDestroy(() => {
     isDragging = false;
   });
@@ -53,10 +87,15 @@
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
   onpointercancel={handlePointerUp}
+  onkeydown={handleKeyDown}
   role="separator"
   aria-orientation="vertical"
-  aria-label="Drag to resize duration"
-  tabindex={-1}
+  aria-roledescription="duration resize handle"
+  aria-label="Resize duration: {currentDuration} beats"
+  aria-valuenow={currentDuration}
+  aria-valuemin={MIN_DURATION}
+  aria-valuemax={MAX_DURATION}
+  tabindex={0}
 >
   <div class="handle-line"></div>
 </div>
@@ -93,17 +132,24 @@
     min-height: 12px;
     max-height: 32px;
     border-radius: 1px;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
     transition: background 0.15s ease, transform 0.15s ease;
   }
 
-  .duration-resize-handle:hover .handle-line {
-    background: rgba(255, 255, 255, 0.4);
+  .duration-resize-handle:hover .handle-line,
+  .duration-resize-handle:focus-visible .handle-line {
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.4));
   }
 
   .duration-resize-handle.dragging .handle-line {
     background: var(--theme-accent, rgba(139, 92, 246, 0.8));
     transform: scaleY(1.3);
+  }
+
+  .duration-resize-handle:focus-visible {
+    outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
+    outline-offset: 2px;
+    border-radius: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {

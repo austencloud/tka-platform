@@ -7,9 +7,17 @@
   import type { StepGridDisplayState } from "../state/step-grid-display-state.svelte";
   import type { ScrollState } from "../state/scroll-state.svelte";
   import { getTimelineWidthMultiplier } from "../utils/grid-calculations";
+  import {
+    MIN_DURATION,
+    MAX_DURATION,
+    DURATION_STEP_FINE,
+  } from "../../../services/implementations/step-operations/DurationHandler";
+  import { container } from "$lib/shared/di";
   import StepCell from "./StepCell.svelte";
   import StartTile from "./StartTile.svelte";
   import DurationResizeHandle from "./DurationResizeHandle.svelte";
+
+  const hapticService = container.items.hapticFeedback;
 
   let {
     steps,
@@ -60,9 +68,7 @@
   }>();
 
   // --- Duration resize drag state ---
-  const MIN_DURATION = 0.25;
-  const MAX_DURATION = 4.0;
-  const SNAP_INCREMENT = 0.25;
+  const SNAP_INCREMENT = DURATION_STEP_FINE;
 
   let resizingStepIndex = $state<number | null>(null);
   let resizingPreviewDuration = $state<number | null>(null);
@@ -86,6 +92,7 @@
       Math.round(resizingPreviewDuration / SNAP_INCREMENT) * SNAP_INCREMENT;
     if (currentSnapped !== lastSnappedValue) {
       lastSnappedValue = currentSnapped;
+      hapticService?.trigger("selection");
     }
   }
 
@@ -98,6 +105,12 @@
     onDurationChange?.(step.stepNumber, clampedSnapped);
     resizingStepIndex = null;
     resizingPreviewDuration = null;
+  }
+
+  function handleStepAdjust(stepIndex: number, newDuration: number) {
+    const step = steps[stepIndex];
+    hapticService?.trigger("selection");
+    onDurationChange?.(step.stepNumber, newDuration);
   }
 
   function getEffectiveMultiplier(
@@ -190,9 +203,11 @@
               />
               {#if onDurationChange}
                 <DurationResizeHandle
+                  currentDuration={duration}
                   onDragStart={() => handleResizeDragStart(stepIndex, duration)}
                   onDrag={(delta) => handleResizeDrag(delta)}
                   onDragEnd={() => handleResizeDragEnd()}
+                  onStepAdjust={(newDur) => handleStepAdjust(stepIndex, newDur)}
                 />
               {/if}
             </div>
