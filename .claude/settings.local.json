@@ -553,7 +553,14 @@
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" release create v0.10.5 --title \"v0.10.5\" --notes \"## What''s New\n\n### Fixed\n- Fixed device detection bugs on desktop\n- Browse gallery header cleaned up for mobile\n\n### Improved\n- Faster pictograph and sequence rendering\n- Sequence transform tools redesigned for mobile\n\n### Added\n- Default background changed to Night Sky\")",
       "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\")",
       "Bash(start:*)",
-      "Bash(cmd.exe:*)"
+      "Bash(cmd.exe:*)",
+      "Bash(taskkill:*)",
+      "WebFetch(domain:www.spinmorepoi.com)",
+      "WebFetch(domain:www.drexfactor.com)",
+      "WebFetch(domain:wickup.wordpress.com)",
+      "WebFetch(domain:lnk.bio)",
+      "WebFetch(domain:tabjuggler.tumblr.com)",
+      "WebFetch(domain:poividoftheday.tumblr.com)"
     ]
   },
   "enableAllProjectMcpServers": false,

@@ -17,6 +17,9 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 const WATCH_INTERVAL_MS = 5000; // Check for devices every 5 seconds
 
+// Known wireless device IP - update port if wireless debugging is restarted
+const WIRELESS_DEVICE_IP = "192.168.12.179";
+
 // Check if running in watch mode
 const WATCH_MODE = process.argv.includes("--watch");
 
@@ -72,12 +75,43 @@ async function main() {
   let devices = getConnectedDevices();
 
   if (devices.length === 0) {
-    console.log("📱 No devices connected. Checking for wireless devices...");
+    console.log("📱 No devices connected. Trying wireless reconnect...");
 
     // Try to reconnect to any previously paired wireless devices
     exec("adb reconnect offline");
     await sleep(RETRY_DELAY_MS);
     devices = getConnectedDevices();
+
+    // If still no devices, try connecting to the known wireless device
+    if (devices.length === 0 && WIRELESS_DEVICE_IP) {
+      console.log(`📡 Scanning ${WIRELESS_DEVICE_IP} for wireless debugging port...`);
+
+      // adb mdns discovery can find the device if it's advertising
+      const mdnsOutput = exec("adb mdns services");
+      if (mdnsOutput && mdnsOutput.includes(WIRELESS_DEVICE_IP)) {
+        // Extract the port from mdns output
+        const portMatch = mdnsOutput.match(
+          new RegExp(`${WIRELESS_DEVICE_IP.replace(/\./g, "\\.")}:(\\d+)`)
+        );
+        if (portMatch) {
+          const port = portMatch[1];
+          console.log(`   Found port ${port}, connecting...`);
+          exec(`adb connect ${WIRELESS_DEVICE_IP}:${port}`);
+          await sleep(RETRY_DELAY_MS);
+          devices = getConnectedDevices();
+        }
+      }
+
+      // If mdns didn't work, try the last known connection
+      if (devices.length === 0) {
+        // Check adb's known devices list for a recent port
+        const adbOutput = exec("adb devices -l") || "";
+        if (!adbOutput.includes(WIRELESS_DEVICE_IP)) {
+          console.log("   mdns discovery didn't find device.");
+          console.log("   Tip: if port changed, run: adb connect " + WIRELESS_DEVICE_IP + ":<port>");
+        }
+      }
+    }
   }
 
   if (devices.length === 0) {
