@@ -1,0 +1,5285 @@
+1
+00:00:01,199 --> 00:00:03,949
+
+what does or does not count as a POI
+
+2
+00:00:03,949 --> 00:00:03,959
+what does or does not count as a POI
+ 
+
+3
+00:00:03,959 --> 00:00:06,410
+what does or does not count as a POI
+flower petal
+
+4
+00:00:06,410 --> 00:00:06,420
+flower petal
+ 
+
+5
+00:00:06,420 --> 00:00:08,089
+flower petal
+what's the fewest number of petals you
+
+6
+00:00:08,089 --> 00:00:08,099
+what's the fewest number of petals you
+ 
+
+7
+00:00:08,099 --> 00:00:10,070
+what's the fewest number of petals you
+can have
+
+8
+00:00:10,070 --> 00:00:10,080
+can have
+ 
+
+9
+00:00:10,080 --> 00:00:12,890
+can have
+is a cat eye a flower
+
+10
+00:00:12,890 --> 00:00:12,900
+is a cat eye a flower
+ 
+
+11
+00:00:12,900 --> 00:00:14,749
+is a cat eye a flower
+these are all actually deceptively
+
+12
+00:00:14,749 --> 00:00:14,759
+these are all actually deceptively
+ 
+
+13
+00:00:14,759 --> 00:00:16,550
+these are all actually deceptively
+difficult questions to answer and cause
+
+14
+00:00:16,550 --> 00:00:16,560
+difficult questions to answer and cause
+ 
+
+15
+00:00:16,560 --> 00:00:18,410
+difficult questions to answer and cause
+a lot of debate amongst POI Spinners
+
+16
+00:00:18,410 --> 00:00:18,420
+a lot of debate amongst POI Spinners
+ 
+
+17
+00:00:18,420 --> 00:00:21,410
+a lot of debate amongst POI Spinners
+even to this day but why the controversy
+
+18
+00:00:21,410 --> 00:00:21,420
+even to this day but why the controversy
+ 
+
+19
+00:00:21,420 --> 00:00:23,269
+even to this day but why the controversy
+and is there any way to resolve it
+
+20
+00:00:23,269 --> 00:00:23,279
+and is there any way to resolve it
+ 
+
+21
+00:00:23,279 --> 00:00:25,310
+and is there any way to resolve it
+drexier from drexfactor POI sharing with
+
+22
+00:00:25,310 --> 00:00:25,320
+drexier from drexfactor POI sharing with
+ 
+
+23
+00:00:25,320 --> 00:00:26,929
+drexier from drexfactor POI sharing with
+you the love of poi spinning and flow
+
+24
+00:00:26,929 --> 00:00:26,939
+you the love of poi spinning and flow
+ 
+
+25
+00:00:26,939 --> 00:00:29,269
+you the love of poi spinning and flow
+Arts to benefit your body and brain in
+
+26
+00:00:29,269 --> 00:00:29,279
+Arts to benefit your body and brain in
+ 
+
+27
+00:00:29,279 --> 00:00:30,890
+Arts to benefit your body and brain in
+this video we're going to dive into the
+
+28
+00:00:30,890 --> 00:00:30,900
+this video we're going to dive into the
+ 
+
+29
+00:00:30,900 --> 00:00:33,590
+this video we're going to dive into the
+very messy math of flowers to see if we
+
+30
+00:00:33,590 --> 00:00:33,600
+very messy math of flowers to see if we
+ 
+
+31
+00:00:33,600 --> 00:00:35,510
+very messy math of flowers to see if we
+can't get some answers but before we
+
+32
+00:00:35,510 --> 00:00:35,520
+can't get some answers but before we
+ 
+
+33
+00:00:35,520 --> 00:00:37,010
+can't get some answers but before we
+dive in I want to give a quick shout out
+
+34
+00:00:37,010 --> 00:00:37,020
+dive in I want to give a quick shout out
+ 
+
+35
+00:00:37,020 --> 00:00:39,049
+dive in I want to give a quick shout out
+to the Friends of the channel big thanks
+
+36
+00:00:39,049 --> 00:00:39,059
+to the Friends of the channel big thanks
+ 
+
+37
+00:00:39,059 --> 00:00:42,709
+to the Friends of the channel big thanks
+to dark monk fire Mecca flow fests flow
+
+38
+00:00:42,709 --> 00:00:42,719
+to dark monk fire Mecca flow fests flow
+ 
+
+39
+00:00:42,719 --> 00:00:45,350
+to dark monk fire Mecca flow fests flow
+toys juggling calling pyro Terra light
+
+40
+00:00:45,350 --> 00:00:45,360
+toys juggling calling pyro Terra light
+ 
+
+41
+00:00:45,360 --> 00:00:47,810
+toys juggling calling pyro Terra light
+toys spin balls and Ultra POI for
+
+42
+00:00:47,810 --> 00:00:47,820
+toys spin balls and Ultra POI for
+ 
+
+43
+00:00:47,820 --> 00:00:49,069
+toys spin balls and Ultra POI for
+helping to make the videos on this
+
+44
+00:00:49,069 --> 00:00:49,079
+helping to make the videos on this
+ 
+
+45
+00:00:49,079 --> 00:00:51,049
+helping to make the videos on this
+channel possible you can learn more
+
+46
+00:00:51,049 --> 00:00:51,059
+channel possible you can learn more
+ 
+
+47
+00:00:51,059 --> 00:00:52,729
+channel possible you can learn more
+about all these amazing businesses and
+
+48
+00:00:52,729 --> 00:00:52,739
+about all these amazing businesses and
+ 
+
+49
+00:00:52,739 --> 00:00:53,930
+about all these amazing businesses and
+what they're doing to support flow
+
+50
+00:00:53,930 --> 00:00:53,940
+what they're doing to support flow
+ 
+
+51
+00:00:53,940 --> 00:00:56,090
+what they're doing to support flow
+artists like yourself by checking out
+
+52
+00:00:56,090 --> 00:00:56,100
+artists like yourself by checking out
+ 
+
+53
+00:00:56,100 --> 00:00:57,529
+artists like yourself by checking out
+the links I've got down in the
+
+54
+00:00:57,529 --> 00:00:57,539
+the links I've got down in the
+ 
+
+55
+00:00:57,539 --> 00:01:00,229
+the links I've got down in the
+description of this video and a special
+
+56
+00:01:00,229 --> 00:01:00,239
+description of this video and a special
+ 
+
+57
+00:01:00,239 --> 00:01:01,790
+description of this video and a special
+thanks to non-business friends of the
+
+58
+00:01:01,790 --> 00:01:01,800
+thanks to non-business friends of the
+ 
+
+59
+00:01:01,800 --> 00:01:04,609
+thanks to non-business friends of the
+channel Johnny Howard Lei machinsky and
+
+60
+00:01:04,609 --> 00:01:04,619
+channel Johnny Howard Lei machinsky and
+ 
+
+61
+00:01:04,619 --> 00:01:07,070
+channel Johnny Howard Lei machinsky and
+Becca beckonen thank you all so very
+
+62
+00:01:07,070 --> 00:01:07,080
+Becca beckonen thank you all so very
+ 
+
+63
+00:01:07,080 --> 00:01:09,109
+Becca beckonen thank you all so very
+much for your support from my work and
+
+64
+00:01:09,109 --> 00:01:09,119
+much for your support from my work and
+ 
+
+65
+00:01:09,119 --> 00:01:11,929
+much for your support from my work and
+my mission so first up it's probably
+
+66
+00:01:11,929 --> 00:01:11,939
+my mission so first up it's probably
+ 
+
+67
+00:01:11,939 --> 00:01:13,670
+my mission so first up it's probably
+going to help for us to talk about what
+
+68
+00:01:13,670 --> 00:01:13,680
+going to help for us to talk about what
+ 
+
+69
+00:01:13,680 --> 00:01:16,370
+going to help for us to talk about what
+exactly a POI flower is let alone a
+
+70
+00:01:16,370 --> 00:01:16,380
+exactly a POI flower is let alone a
+ 
+
+71
+00:01:16,380 --> 00:01:18,410
+exactly a POI flower is let alone a
+flower petal POI flowers were first
+
+72
+00:01:18,410 --> 00:01:18,420
+flower petal POI flowers were first
+ 
+
+73
+00:01:18,420 --> 00:01:20,929
+flower petal POI flowers were first
+popularized by Nick Woolsey his video
+
+74
+00:01:20,929 --> 00:01:20,939
+popularized by Nick Woolsey his video
+ 
+
+75
+00:01:20,939 --> 00:01:23,210
+popularized by Nick Woolsey his video
+dervishly yours introduced the flow Arts
+
+76
+00:01:23,210 --> 00:01:23,220
+dervishly yours introduced the flow Arts
+ 
+
+77
+00:01:23,220 --> 00:01:25,010
+dervishly yours introduced the flow Arts
+world to his approach to this concept
+
+78
+00:01:25,010 --> 00:01:25,020
+world to his approach to this concept
+ 
+
+79
+00:01:25,020 --> 00:01:26,929
+world to his approach to this concept
+and it became an overnight sensation
+
+80
+00:01:26,929 --> 00:01:26,939
+and it became an overnight sensation
+ 
+
+81
+00:01:26,939 --> 00:01:29,630
+and it became an overnight sensation
+Nick himself saw the concept as being an
+
+82
+00:01:29,630 --> 00:01:29,640
+Nick himself saw the concept as being an
+ 
+
+83
+00:01:29,640 --> 00:01:31,249
+Nick himself saw the concept as being an
+extension of what we do when we play
+
+84
+00:01:31,249 --> 00:01:31,259
+extension of what we do when we play
+ 
+
+85
+00:01:31,259 --> 00:01:33,010
+extension of what we do when we play
+around with a toy called a spirograph
+
+86
+00:01:33,010 --> 00:01:33,020
+around with a toy called a spirograph
+ 
+
+87
+00:01:33,020 --> 00:01:36,050
+around with a toy called a spirograph
+drawing complex patterns over time that
+
+88
+00:01:36,050 --> 00:01:36,060
+drawing complex patterns over time that
+ 
+
+89
+00:01:36,060 --> 00:01:37,550
+drawing complex patterns over time that
+would overlap in a series of round
+
+90
+00:01:37,550 --> 00:01:37,560
+would overlap in a series of round
+ 
+
+91
+00:01:37,560 --> 00:01:39,590
+would overlap in a series of round
+figures with different numbers of Loops
+
+92
+00:01:39,590 --> 00:01:39,600
+figures with different numbers of Loops
+ 
+
+93
+00:01:39,600 --> 00:01:41,929
+figures with different numbers of Loops
+in mathematics these types of curves are
+
+94
+00:01:41,929 --> 00:01:41,939
+in mathematics these types of curves are
+ 
+
+95
+00:01:41,939 --> 00:01:44,149
+in mathematics these types of curves are
+known as roulettes with two individual
+
+96
+00:01:44,149 --> 00:01:44,159
+known as roulettes with two individual
+ 
+
+97
+00:01:44,159 --> 00:01:45,830
+known as roulettes with two individual
+subcategories that should be very
+
+98
+00:01:45,830 --> 00:01:45,840
+subcategories that should be very
+ 
+
+99
+00:01:45,840 --> 00:01:47,690
+subcategories that should be very
+familiar to anyone who has ever played
+
+100
+00:01:47,690 --> 00:01:47,700
+familiar to anyone who has ever played
+ 
+
+101
+00:01:47,700 --> 00:01:49,609
+familiar to anyone who has ever played
+with POI flowers the first of these
+
+102
+00:01:49,609 --> 00:01:49,619
+with POI flowers the first of these
+ 
+
+103
+00:01:49,619 --> 00:01:51,710
+with POI flowers the first of these
+categories are epitrokoids and they
+
+104
+00:01:51,710 --> 00:01:51,720
+categories are epitrokoids and they
+ 
+
+105
+00:01:51,720 --> 00:01:53,450
+categories are epitrokoids and they
+correspond roughly to the POI flowers
+
+106
+00:01:53,450 --> 00:01:53,460
+correspond roughly to the POI flowers
+ 
+
+107
+00:01:53,460 --> 00:01:56,870
+correspond roughly to the POI flowers
+that we refer to as in-spin that is poi
+
+108
+00:01:56,870 --> 00:01:56,880
+that we refer to as in-spin that is poi
+ 
+
+109
+00:01:56,880 --> 00:01:59,090
+that we refer to as in-spin that is poi
+flowers in which the POI and hands spend
+
+110
+00:01:59,090 --> 00:01:59,100
+flowers in which the POI and hands spend
+ 
+
+111
+00:01:59,100 --> 00:02:01,130
+flowers in which the POI and hands spend
+in the same direction in the same plane
+
+112
+00:02:01,130 --> 00:02:01,140
+in the same direction in the same plane
+ 
+
+113
+00:02:01,140 --> 00:02:03,950
+in the same direction in the same plane
+the second category are hypotropoids and
+
+114
+00:02:03,950 --> 00:02:03,960
+the second category are hypotropoids and
+ 
+
+115
+00:02:03,960 --> 00:02:06,289
+the second category are hypotropoids and
+they correspond roughly to anti-spin POI
+
+116
+00:02:06,289 --> 00:02:06,299
+they correspond roughly to anti-spin POI
+ 
+
+117
+00:02:06,299 --> 00:02:09,050
+they correspond roughly to anti-spin POI
+flowers these are flowers in which the
+
+118
+00:02:09,050 --> 00:02:09,060
+flowers these are flowers in which the
+ 
+
+119
+00:02:09,060 --> 00:02:10,969
+flowers these are flowers in which the
+POI and the hands spin in opposite
+
+120
+00:02:10,969 --> 00:02:10,979
+POI and the hands spin in opposite
+ 
+
+121
+00:02:10,979 --> 00:02:13,250
+POI and the hands spin in opposite
+directions in the same plane now please
+
+122
+00:02:13,250 --> 00:02:13,260
+directions in the same plane now please
+ 
+
+123
+00:02:13,260 --> 00:02:16,190
+directions in the same plane now please
+note epitrocoids and hypotropoids are
+
+124
+00:02:16,190 --> 00:02:16,200
+note epitrocoids and hypotropoids are
+ 
+
+125
+00:02:16,200 --> 00:02:18,650
+note epitrocoids and hypotropoids are
+specific terms for types of curves that
+
+126
+00:02:18,650 --> 00:02:18,660
+specific terms for types of curves that
+ 
+
+127
+00:02:18,660 --> 00:02:21,050
+specific terms for types of curves that
+have unique mathematical identities they
+
+128
+00:02:21,050 --> 00:02:21,060
+have unique mathematical identities they
+ 
+
+129
+00:02:21,060 --> 00:02:22,970
+have unique mathematical identities they
+resemble in spin and anti-spin flowers
+
+130
+00:02:22,970 --> 00:02:22,980
+resemble in spin and anti-spin flowers
+ 
+
+131
+00:02:22,980 --> 00:02:24,830
+resemble in spin and anti-spin flowers
+closely enough that we can use them to
+
+132
+00:02:24,830 --> 00:02:24,840
+closely enough that we can use them to
+ 
+
+133
+00:02:24,840 --> 00:02:27,470
+closely enough that we can use them to
+model the behavior of poi flowers but
+
+134
+00:02:27,470 --> 00:02:27,480
+model the behavior of poi flowers but
+ 
+
+135
+00:02:27,480 --> 00:02:29,210
+model the behavior of poi flowers but
+aren't Bound by the same real world
+
+136
+00:02:29,210 --> 00:02:29,220
+aren't Bound by the same real world
+ 
+
+137
+00:02:29,220 --> 00:02:32,690
+aren't Bound by the same real world
+constraints that POI are so while useful
+
+138
+00:02:32,690 --> 00:02:32,700
+constraints that POI are so while useful
+ 
+
+139
+00:02:32,700 --> 00:02:34,850
+constraints that POI are so while useful
+they are not quite the same thing I'll
+
+140
+00:02:34,850 --> 00:02:34,860
+they are not quite the same thing I'll
+ 
+
+141
+00:02:34,860 --> 00:02:36,530
+they are not quite the same thing I'll
+confess that I don't actually know who
+
+142
+00:02:36,530 --> 00:02:36,540
+confess that I don't actually know who
+ 
+
+143
+00:02:36,540 --> 00:02:38,270
+confess that I don't actually know who
+it was that first referred to these POI
+
+144
+00:02:38,270 --> 00:02:38,280
+it was that first referred to these POI
+ 
+
+145
+00:02:38,280 --> 00:02:40,670
+it was that first referred to these POI
+patterns as flowers they certainly have
+
+146
+00:02:40,670 --> 00:02:40,680
+patterns as flowers they certainly have
+ 
+
+147
+00:02:40,680 --> 00:02:42,350
+patterns as flowers they certainly have
+plenty of antecedents in traditional
+
+148
+00:02:42,350 --> 00:02:42,360
+plenty of antecedents in traditional
+ 
+
+149
+00:02:42,360 --> 00:02:44,330
+plenty of antecedents in traditional
+Maori POI spinning as well as Club
+
+150
+00:02:44,330 --> 00:02:44,340
+Maori POI spinning as well as Club
+ 
+
+151
+00:02:44,340 --> 00:02:47,030
+Maori POI spinning as well as Club
+swinging but I can't find any reference
+
+152
+00:02:47,030 --> 00:02:47,040
+swinging but I can't find any reference
+ 
+
+153
+00:02:47,040 --> 00:02:49,250
+swinging but I can't find any reference
+in literature about either art to a
+
+154
+00:02:49,250 --> 00:02:49,260
+in literature about either art to a
+ 
+
+155
+00:02:49,260 --> 00:02:51,290
+in literature about either art to a
+trick or move referred to as a flower
+
+156
+00:02:51,290 --> 00:02:51,300
+trick or move referred to as a flower
+ 
+
+157
+00:02:51,300 --> 00:02:53,809
+trick or move referred to as a flower
+but flowers they became and with them
+
+158
+00:02:53,809 --> 00:02:53,819
+but flowers they became and with them
+ 
+
+159
+00:02:53,819 --> 00:02:55,850
+but flowers they became and with them
+the nomenclature of referring to the
+
+160
+00:02:55,850 --> 00:02:55,860
+the nomenclature of referring to the
+ 
+
+161
+00:02:55,860 --> 00:02:59,330
+the nomenclature of referring to the
+loops those shapes produce as petals and
+
+162
+00:02:59,330 --> 00:02:59,340
+loops those shapes produce as petals and
+ 
+
+163
+00:02:59,340 --> 00:03:01,790
+loops those shapes produce as petals and
+a whole lot of epistemological grief in
+
+164
+00:03:01,790 --> 00:03:01,800
+a whole lot of epistemological grief in
+ 
+
+165
+00:03:01,800 --> 00:03:03,949
+a whole lot of epistemological grief in
+the process too for many of the early
+
+166
+00:03:03,949 --> 00:03:03,959
+the process too for many of the early
+ 
+
+167
+00:03:03,959 --> 00:03:05,809
+the process too for many of the early
+flowers it was simple and kind of
+
+168
+00:03:05,809 --> 00:03:05,819
+flowers it was simple and kind of
+ 
+
+169
+00:03:05,819 --> 00:03:07,670
+flowers it was simple and kind of
+obvious to refer to the closed Loops
+
+170
+00:03:07,670 --> 00:03:07,680
+obvious to refer to the closed Loops
+ 
+
+171
+00:03:07,680 --> 00:03:09,350
+obvious to refer to the closed Loops
+produced by these patterns as being
+
+172
+00:03:09,350 --> 00:03:09,360
+produced by these patterns as being
+ 
+
+173
+00:03:09,360 --> 00:03:12,050
+produced by these patterns as being
+petals where inspin flowers would be
+
+174
+00:03:12,050 --> 00:03:12,060
+petals where inspin flowers would be
+ 
+
+175
+00:03:12,060 --> 00:03:14,570
+petals where inspin flowers would be
+characterized by broad round petals that
+
+176
+00:03:14,570 --> 00:03:14,580
+characterized by broad round petals that
+ 
+
+177
+00:03:14,580 --> 00:03:16,250
+characterized by broad round petals that
+pointed inward towards the center of the
+
+178
+00:03:16,250 --> 00:03:16,260
+pointed inward towards the center of the
+ 
+
+179
+00:03:16,260 --> 00:03:18,589
+pointed inward towards the center of the
+performer and anti-spin flowers by
+
+180
+00:03:18,589 --> 00:03:18,599
+performer and anti-spin flowers by
+ 
+
+181
+00:03:18,599 --> 00:03:20,390
+performer and anti-spin flowers by
+narrow sharper petals that pointed
+
+182
+00:03:20,390 --> 00:03:20,400
+narrow sharper petals that pointed
+ 
+
+183
+00:03:20,400 --> 00:03:22,130
+narrow sharper petals that pointed
+outward away from the center of the
+
+184
+00:03:22,130 --> 00:03:22,140
+outward away from the center of the
+ 
+
+185
+00:03:22,140 --> 00:03:24,710
+outward away from the center of the
+performer early on four petal flowers of
+
+186
+00:03:24,710 --> 00:03:24,720
+performer early on four petal flowers of
+ 
+
+187
+00:03:24,720 --> 00:03:26,750
+performer early on four petal flowers of
+both in-spin and anti-spin varieties
+
+188
+00:03:26,750 --> 00:03:26,760
+both in-spin and anti-spin varieties
+ 
+
+189
+00:03:26,760 --> 00:03:28,970
+both in-spin and anti-spin varieties
+were quite popular and eventually three
+
+190
+00:03:28,970 --> 00:03:28,980
+were quite popular and eventually three
+ 
+
+191
+00:03:28,980 --> 00:03:30,949
+were quite popular and eventually three
+petal anti-spin flowers or tricetras
+
+192
+00:03:30,949 --> 00:03:30,959
+petal anti-spin flowers or tricetras
+ 
+
+193
+00:03:30,959 --> 00:03:33,350
+petal anti-spin flowers or tricetras
+gain favor as well at one point Nick
+
+194
+00:03:33,350 --> 00:03:33,360
+gain favor as well at one point Nick
+ 
+
+195
+00:03:33,360 --> 00:03:35,449
+gain favor as well at one point Nick
+Woolsey himself referred to tri-cetras
+
+196
+00:03:35,449 --> 00:03:35,459
+Woolsey himself referred to tri-cetras
+ 
+
+197
+00:03:35,459 --> 00:03:37,250
+Woolsey himself referred to tri-cetras
+as being the anti-spin flowers with the
+
+198
+00:03:37,250 --> 00:03:37,260
+as being the anti-spin flowers with the
+ 
+
+199
+00:03:37,260 --> 00:03:39,290
+as being the anti-spin flowers with the
+fewest number of petals and he would
+
+200
+00:03:39,290 --> 00:03:39,300
+fewest number of petals and he would
+ 
+
+201
+00:03:39,300 --> 00:03:40,910
+fewest number of petals and he would
+know right
+
+202
+00:03:40,910 --> 00:03:40,920
+know right
+ 
+
+203
+00:03:40,920 --> 00:03:41,770
+know right
+right
+
+204
+00:03:41,770 --> 00:03:41,780
+right
+ 
+
+205
+00:03:41,780 --> 00:03:44,330
+right
+well I remember thinking when Nick
+
+206
+00:03:44,330 --> 00:03:44,340
+well I remember thinking when Nick
+ 
+
+207
+00:03:44,340 --> 00:03:46,190
+well I remember thinking when Nick
+woolsey's Video on tricetras came out
+
+208
+00:03:46,190 --> 00:03:46,200
+woolsey's Video on tricetras came out
+ 
+
+209
+00:03:46,200 --> 00:03:47,869
+woolsey's Video on tricetras came out
+that there was something weird about
+
+210
+00:03:47,869 --> 00:03:47,879
+that there was something weird about
+ 
+
+211
+00:03:47,879 --> 00:03:50,030
+that there was something weird about
+this but I couldn't quite put my finger
+
+212
+00:03:50,030 --> 00:03:50,040
+this but I couldn't quite put my finger
+ 
+
+213
+00:03:50,040 --> 00:03:52,430
+this but I couldn't quite put my finger
+on what and then a couple years later a
+
+214
+00:03:52,430 --> 00:03:52,440
+on what and then a couple years later a
+ 
+
+215
+00:03:52,440 --> 00:03:53,990
+on what and then a couple years later a
+couple friends uploaded videos of
+
+216
+00:03:53,990 --> 00:03:54,000
+couple friends uploaded videos of
+ 
+
+217
+00:03:54,000 --> 00:03:55,789
+couple friends uploaded videos of
+themselves performing some tricks and
+
+218
+00:03:55,789 --> 00:03:55,799
+themselves performing some tricks and
+ 
+
+219
+00:03:55,799 --> 00:03:58,009
+themselves performing some tricks and
+among them were some cat eyes they
+
+220
+00:03:58,009 --> 00:03:58,019
+among them were some cat eyes they
+ 
+
+221
+00:03:58,019 --> 00:03:59,930
+among them were some cat eyes they
+referred to their cat eyes as being one
+
+222
+00:03:59,930 --> 00:03:59,940
+referred to their cat eyes as being one
+ 
+
+223
+00:03:59,940 --> 00:04:03,050
+referred to their cat eyes as being one
+petal anti-spin flowers and goodness the
+
+224
+00:04:03,050 --> 00:04:03,060
+petal anti-spin flowers and goodness the
+ 
+
+225
+00:04:03,060 --> 00:04:05,390
+petal anti-spin flowers and goodness the
+comments section went wild why the
+
+226
+00:04:05,390 --> 00:04:05,400
+comments section went wild why the
+ 
+
+227
+00:04:05,400 --> 00:04:07,789
+comments section went wild why the
+controversy let's take a look at several
+
+228
+00:04:07,789 --> 00:04:07,799
+controversy let's take a look at several
+ 
+
+229
+00:04:07,799 --> 00:04:09,890
+controversy let's take a look at several
+flowers to get a rough idea here are a
+
+230
+00:04:09,890 --> 00:04:09,900
+flowers to get a rough idea here are a
+ 
+
+231
+00:04:09,900 --> 00:04:11,750
+flowers to get a rough idea here are a
+four petal in spin flower and a four
+
+232
+00:04:11,750 --> 00:04:11,760
+four petal in spin flower and a four
+ 
+
+233
+00:04:11,760 --> 00:04:14,449
+four petal in spin flower and a four
+petal anti-spin flower visually they
+
+234
+00:04:14,449 --> 00:04:14,459
+petal anti-spin flower visually they
+ 
+
+235
+00:04:14,459 --> 00:04:16,189
+petal anti-spin flower visually they
+definitely function as mirror images of
+
+236
+00:04:16,189 --> 00:04:16,199
+definitely function as mirror images of
+ 
+
+237
+00:04:16,199 --> 00:04:17,990
+definitely function as mirror images of
+each other if we were to work our way
+
+238
+00:04:17,990 --> 00:04:18,000
+each other if we were to work our way
+ 
+
+239
+00:04:18,000 --> 00:04:19,729
+each other if we were to work our way
+down to three petal inspin flowers and
+
+240
+00:04:19,729 --> 00:04:19,739
+down to three petal inspin flowers and
+ 
+
+241
+00:04:19,739 --> 00:04:21,710
+down to three petal inspin flowers and
+three petal anti-spin flowers there's
+
+242
+00:04:21,710 --> 00:04:21,720
+three petal anti-spin flowers there's
+ 
+
+243
+00:04:21,720 --> 00:04:23,629
+three petal anti-spin flowers there's
+likewise a good match here in terms of
+
+244
+00:04:23,629 --> 00:04:23,639
+likewise a good match here in terms of
+ 
+
+245
+00:04:23,639 --> 00:04:26,030
+likewise a good match here in terms of
+their appearance there are three very
+
+246
+00:04:26,030 --> 00:04:26,040
+their appearance there are three very
+ 
+
+247
+00:04:26,040 --> 00:04:28,550
+their appearance there are three very
+clear Loops created in each pattern now
+
+248
+00:04:28,550 --> 00:04:28,560
+clear Loops created in each pattern now
+ 
+
+249
+00:04:28,560 --> 00:04:30,770
+clear Loops created in each pattern now
+for simplicity's sake let's skip down to
+
+250
+00:04:30,770 --> 00:04:30,780
+for simplicity's sake let's skip down to
+ 
+
+251
+00:04:30,780 --> 00:04:33,409
+for simplicity's sake let's skip down to
+just a single pedal for each that's not
+
+252
+00:04:33,409 --> 00:04:33,419
+just a single pedal for each that's not
+ 
+
+253
+00:04:33,419 --> 00:04:35,210
+just a single pedal for each that's not
+hard to imagine for an inspin flower
+
+254
+00:04:35,210 --> 00:04:35,220
+hard to imagine for an inspin flower
+ 
+
+255
+00:04:35,220 --> 00:04:37,430
+hard to imagine for an inspin flower
+given the petals kind of Nest inside of
+
+256
+00:04:37,430 --> 00:04:37,440
+given the petals kind of Nest inside of
+ 
+
+257
+00:04:37,440 --> 00:04:39,950
+given the petals kind of Nest inside of
+a larger Circle but how exactly do we
+
+258
+00:04:39,950 --> 00:04:39,960
+a larger Circle but how exactly do we
+ 
+
+259
+00:04:39,960 --> 00:04:42,290
+a larger Circle but how exactly do we
+get the feel of an anti-spin flower with
+
+260
+00:04:42,290 --> 00:04:42,300
+get the feel of an anti-spin flower with
+ 
+
+261
+00:04:42,300 --> 00:04:44,870
+get the feel of an anti-spin flower with
+only a single petal looking at a cat eye
+
+262
+00:04:44,870 --> 00:04:44,880
+only a single petal looking at a cat eye
+ 
+
+263
+00:04:44,880 --> 00:04:47,270
+only a single petal looking at a cat eye
+it's not hard to make that leap and just
+
+264
+00:04:47,270 --> 00:04:47,280
+it's not hard to make that leap and just
+ 
+
+265
+00:04:47,280 --> 00:04:49,010
+it's not hard to make that leap and just
+to offer up a point of clarity because I
+
+266
+00:04:49,010 --> 00:04:49,020
+to offer up a point of clarity because I
+ 
+
+267
+00:04:49,020 --> 00:04:50,570
+to offer up a point of clarity because I
+know someone is going to make a thing
+
+268
+00:04:50,570 --> 00:04:50,580
+know someone is going to make a thing
+ 
+
+269
+00:04:50,580 --> 00:04:52,730
+know someone is going to make a thing
+about it in the comments normally when
+
+270
+00:04:52,730 --> 00:04:52,740
+about it in the comments normally when
+ 
+
+271
+00:04:52,740 --> 00:04:54,770
+about it in the comments normally when
+we perform POI flowers we're doing so
+
+272
+00:04:54,770 --> 00:04:54,780
+we perform POI flowers we're doing so
+ 
+
+273
+00:04:54,780 --> 00:04:56,330
+we perform POI flowers we're doing so
+with the hand moving around a circle
+
+274
+00:04:56,330 --> 00:04:56,340
+with the hand moving around a circle
+ 
+
+275
+00:04:56,340 --> 00:04:58,730
+with the hand moving around a circle
+that is two POI lengths in diameter
+
+276
+00:04:58,730 --> 00:04:58,740
+that is two POI lengths in diameter
+ 
+
+277
+00:04:58,740 --> 00:05:01,249
+that is two POI lengths in diameter
+whereas with cat eyes the hand is moving
+
+278
+00:05:01,249 --> 00:05:01,259
+whereas with cat eyes the hand is moving
+ 
+
+279
+00:05:01,259 --> 00:05:03,350
+whereas with cat eyes the hand is moving
+around a circle that is only one POI
+
+280
+00:05:03,350 --> 00:05:03,360
+around a circle that is only one POI
+ 
+
+281
+00:05:03,360 --> 00:05:05,990
+around a circle that is only one POI
+length in diameter why the change when
+
+282
+00:05:05,990 --> 00:05:06,000
+length in diameter why the change when
+ 
+
+283
+00:05:06,000 --> 00:05:07,790
+length in diameter why the change when
+we try to perform cations with a hand
+
+284
+00:05:07,790 --> 00:05:07,800
+we try to perform cations with a hand
+ 
+
+285
+00:05:07,800 --> 00:05:10,010
+we try to perform cations with a hand
+path that is two POI lengths in diameter
+
+286
+00:05:10,010 --> 00:05:10,020
+path that is two POI lengths in diameter
+ 
+
+287
+00:05:10,020 --> 00:05:11,870
+path that is two POI lengths in diameter
+we basically just wind up with a
+
+288
+00:05:11,870 --> 00:05:11,880
+we basically just wind up with a
+ 
+
+289
+00:05:11,880 --> 00:05:14,390
+we basically just wind up with a
+straight line or linear isolation this
+
+290
+00:05:14,390 --> 00:05:14,400
+straight line or linear isolation this
+ 
+
+291
+00:05:14,400 --> 00:05:16,010
+straight line or linear isolation this
+doesn't look particularly interesting
+
+292
+00:05:16,010 --> 00:05:16,020
+doesn't look particularly interesting
+ 
+
+293
+00:05:16,020 --> 00:05:18,050
+doesn't look particularly interesting
+and is incredibly difficult to perform
+
+294
+00:05:18,050 --> 00:05:18,060
+and is incredibly difficult to perform
+ 
+
+295
+00:05:18,060 --> 00:05:20,510
+and is incredibly difficult to perform
+so we usually shrink down the hand path
+
+296
+00:05:20,510 --> 00:05:20,520
+so we usually shrink down the hand path
+ 
+
+297
+00:05:20,520 --> 00:05:23,090
+so we usually shrink down the hand path
+both to create a pattern that has a more
+
+298
+00:05:23,090 --> 00:05:23,100
+both to create a pattern that has a more
+ 
+
+299
+00:05:23,100 --> 00:05:25,189
+both to create a pattern that has a more
+recognizable appearance and is
+
+300
+00:05:25,189 --> 00:05:25,199
+recognizable appearance and is
+ 
+
+301
+00:05:25,199 --> 00:05:27,590
+recognizable appearance and is
+significantly easier to perform so all
+
+302
+00:05:27,590 --> 00:05:27,600
+significantly easier to perform so all
+ 
+
+303
+00:05:27,600 --> 00:05:29,749
+significantly easier to perform so all
+that said we get that long narrow loop
+
+304
+00:05:29,749 --> 00:05:29,759
+that said we get that long narrow loop
+ 
+
+305
+00:05:29,759 --> 00:05:31,189
+that said we get that long narrow loop
+we're used to seeing from anti-spin
+
+306
+00:05:31,189 --> 00:05:31,199
+we're used to seeing from anti-spin
+ 
+
+307
+00:05:31,199 --> 00:05:33,230
+we're used to seeing from anti-spin
+flowers and the POI in hand are
+
+308
+00:05:33,230 --> 00:05:33,240
+flowers and the POI in hand are
+ 
+
+309
+00:05:33,240 --> 00:05:34,310
+flowers and the POI in hand are
+definitely spinning in opposite
+
+310
+00:05:34,310 --> 00:05:34,320
+definitely spinning in opposite
+ 
+
+311
+00:05:34,320 --> 00:05:35,390
+definitely spinning in opposite
+directions
+
+312
+00:05:35,390 --> 00:05:35,400
+directions
+ 
+
+313
+00:05:35,400 --> 00:05:37,510
+directions
+seems like it would make sense right
+
+314
+00:05:37,510 --> 00:05:37,520
+seems like it would make sense right
+ 
+
+315
+00:05:37,520 --> 00:05:40,070
+seems like it would make sense right
+well hang on a sec
+
+316
+00:05:40,070 --> 00:05:40,080
+well hang on a sec
+ 
+
+317
+00:05:40,080 --> 00:05:41,930
+well hang on a sec
+what about those two petal flowers that
+
+318
+00:05:41,930 --> 00:05:41,940
+what about those two petal flowers that
+ 
+
+319
+00:05:41,940 --> 00:05:44,330
+what about those two petal flowers that
+we skipped a two petal inspin flower
+
+320
+00:05:44,330 --> 00:05:44,340
+we skipped a two petal inspin flower
+ 
+
+321
+00:05:44,340 --> 00:05:46,129
+we skipped a two petal inspin flower
+isn't really that hard to conceptualize
+
+322
+00:05:46,129 --> 00:05:46,139
+isn't really that hard to conceptualize
+ 
+
+323
+00:05:46,139 --> 00:05:48,529
+isn't really that hard to conceptualize
+again the petals are nested within a
+
+324
+00:05:48,529 --> 00:05:48,539
+again the petals are nested within a
+ 
+
+325
+00:05:48,539 --> 00:05:50,210
+again the petals are nested within a
+larger shape so we can simply put two
+
+326
+00:05:50,210 --> 00:05:50,220
+larger shape so we can simply put two
+ 
+
+327
+00:05:50,220 --> 00:05:52,070
+larger shape so we can simply put two
+petals across from each other and we get
+
+328
+00:05:52,070 --> 00:05:52,080
+petals across from each other and we get
+ 
+
+329
+00:05:52,080 --> 00:05:54,230
+petals across from each other and we get
+there pretty easily but how do we get
+
+330
+00:05:54,230 --> 00:05:54,240
+there pretty easily but how do we get
+ 
+
+331
+00:05:54,240 --> 00:05:56,990
+there pretty easily but how do we get
+two anti-spin pedals how do we get those
+
+332
+00:05:56,990 --> 00:05:57,000
+two anti-spin pedals how do we get those
+ 
+
+333
+00:05:57,000 --> 00:05:58,610
+two anti-spin pedals how do we get those
+two narrow Loops that we're used to
+
+334
+00:05:58,610 --> 00:05:58,620
+two narrow Loops that we're used to
+ 
+
+335
+00:05:58,620 --> 00:06:00,770
+two narrow Loops that we're used to
+seeing something like this figure eight
+
+336
+00:06:00,770 --> 00:06:00,780
+seeing something like this figure eight
+ 
+
+337
+00:06:00,780 --> 00:06:02,870
+seeing something like this figure eight
+looks like it could be a good fit but
+
+338
+00:06:02,870 --> 00:06:02,880
+looks like it could be a good fit but
+ 
+
+339
+00:06:02,880 --> 00:06:04,790
+looks like it could be a good fit but
+there's a problem it's actually
+
+340
+00:06:04,790 --> 00:06:04,800
+there's a problem it's actually
+ 
+
+341
+00:06:04,800 --> 00:06:06,890
+there's a problem it's actually
+impossible to do this with POI because
+
+342
+00:06:06,890 --> 00:06:06,900
+impossible to do this with POI because
+ 
+
+343
+00:06:06,900 --> 00:06:09,230
+impossible to do this with POI because
+there are segments of it in which we'd
+
+344
+00:06:09,230 --> 00:06:09,240
+there are segments of it in which we'd
+ 
+
+345
+00:06:09,240 --> 00:06:11,330
+there are segments of it in which we'd
+have to be pushing the POI head to the
+
+346
+00:06:11,330 --> 00:06:11,340
+have to be pushing the POI head to the
+ 
+
+347
+00:06:11,340 --> 00:06:13,310
+have to be pushing the POI head to the
+side when it was swinging upward and
+
+348
+00:06:13,310 --> 00:06:13,320
+side when it was swinging upward and
+ 
+
+349
+00:06:13,320 --> 00:06:15,230
+side when it was swinging upward and
+gravity makes that impossible
+
+350
+00:06:15,230 --> 00:06:15,240
+gravity makes that impossible
+ 
+
+351
+00:06:15,240 --> 00:06:17,150
+gravity makes that impossible
+so it was a two petal anti-spin flower
+
+352
+00:06:17,150 --> 00:06:17,160
+so it was a two petal anti-spin flower
+ 
+
+353
+00:06:17,160 --> 00:06:20,210
+so it was a two petal anti-spin flower
+even possible maybe let's take another
+
+354
+00:06:20,210 --> 00:06:20,220
+even possible maybe let's take another
+ 
+
+355
+00:06:20,220 --> 00:06:21,950
+even possible maybe let's take another
+look at these flowers from a slightly
+
+356
+00:06:21,950 --> 00:06:21,960
+look at these flowers from a slightly
+ 
+
+357
+00:06:21,960 --> 00:06:23,689
+look at these flowers from a slightly
+different perspective I know we've been
+
+358
+00:06:23,689 --> 00:06:23,699
+different perspective I know we've been
+ 
+
+359
+00:06:23,699 --> 00:06:25,550
+different perspective I know we've been
+focusing on petals as being those
+
+360
+00:06:25,550 --> 00:06:25,560
+focusing on petals as being those
+ 
+
+361
+00:06:25,560 --> 00:06:28,309
+focusing on petals as being those
+enclosed Loops in the Poise path but
+
+362
+00:06:28,309 --> 00:06:28,319
+enclosed Loops in the Poise path but
+ 
+
+363
+00:06:28,319 --> 00:06:30,110
+enclosed Loops in the Poise path but
+what if instead we changed our framing
+
+364
+00:06:30,110 --> 00:06:30,120
+what if instead we changed our framing
+ 
+
+365
+00:06:30,120 --> 00:06:32,510
+what if instead we changed our framing
+of them so bear with me here what makes
+
+366
+00:06:32,510 --> 00:06:32,520
+of them so bear with me here what makes
+ 
+
+367
+00:06:32,520 --> 00:06:34,670
+of them so bear with me here what makes
+those Loops possible is the POI swinging
+
+368
+00:06:34,670 --> 00:06:34,680
+those Loops possible is the POI swinging
+ 
+
+369
+00:06:34,680 --> 00:06:37,189
+those Loops possible is the POI swinging
+across the path of the hand in in spin
+
+370
+00:06:37,189 --> 00:06:37,199
+across the path of the hand in in spin
+ 
+
+371
+00:06:37,199 --> 00:06:39,290
+across the path of the hand in in spin
+flowers the POI crosses from outside the
+
+372
+00:06:39,290 --> 00:06:39,300
+flowers the POI crosses from outside the
+ 
+
+373
+00:06:39,300 --> 00:06:41,270
+flowers the POI crosses from outside the
+hand path to inside the hand path and
+
+374
+00:06:41,270 --> 00:06:41,280
+hand path to inside the hand path and
+ 
+
+375
+00:06:41,280 --> 00:06:44,150
+hand path to inside the hand path and
+back out again in anti-spin flowers the
+
+376
+00:06:44,150 --> 00:06:44,160
+back out again in anti-spin flowers the
+ 
+
+377
+00:06:44,160 --> 00:06:46,430
+back out again in anti-spin flowers the
+POI crosses from inside the hand path to
+
+378
+00:06:46,430 --> 00:06:46,440
+POI crosses from inside the hand path to
+ 
+
+379
+00:06:46,440 --> 00:06:49,010
+POI crosses from inside the hand path to
+outside of it to create those Loops so
+
+380
+00:06:49,010 --> 00:06:49,020
+outside of it to create those Loops so
+ 
+
+381
+00:06:49,020 --> 00:06:51,110
+outside of it to create those Loops so
+what if we use this definition instead
+
+382
+00:06:51,110 --> 00:06:51,120
+what if we use this definition instead
+ 
+
+383
+00:06:51,120 --> 00:06:53,090
+what if we use this definition instead
+for flower petals fortunately that
+
+384
+00:06:53,090 --> 00:06:53,100
+for flower petals fortunately that
+ 
+
+385
+00:06:53,100 --> 00:06:54,469
+for flower petals fortunately that
+doesn't change anything about our four
+
+386
+00:06:54,469 --> 00:06:54,479
+doesn't change anything about our four
+ 
+
+387
+00:06:54,479 --> 00:06:56,570
+doesn't change anything about our four
+petal flowers or our three petal flowers
+
+388
+00:06:56,570 --> 00:06:56,580
+petal flowers or our three petal flowers
+ 
+
+389
+00:06:56,580 --> 00:07:00,230
+petal flowers or our three petal flowers
+but our two petal flowers well now when
+
+390
+00:07:00,230 --> 00:07:00,240
+but our two petal flowers well now when
+ 
+
+391
+00:07:00,240 --> 00:07:02,390
+but our two petal flowers well now when
+we look at that cat eye we see the POI
+
+392
+00:07:02,390 --> 00:07:02,400
+we look at that cat eye we see the POI
+ 
+
+393
+00:07:02,400 --> 00:07:05,150
+we look at that cat eye we see the POI
+cross over the path of the hand twice so
+
+394
+00:07:05,150 --> 00:07:05,160
+cross over the path of the hand twice so
+ 
+
+395
+00:07:05,160 --> 00:07:07,309
+cross over the path of the hand twice so
+looking at flowers through this lens a
+
+396
+00:07:07,309 --> 00:07:07,319
+looking at flowers through this lens a
+ 
+
+397
+00:07:07,319 --> 00:07:09,170
+looking at flowers through this lens a
+cat eye becomes a two petal anti-spin
+
+398
+00:07:09,170 --> 00:07:09,180
+cat eye becomes a two petal anti-spin
+ 
+
+399
+00:07:09,180 --> 00:07:11,029
+cat eye becomes a two petal anti-spin
+flower instead of a one petal anti-spin
+
+400
+00:07:11,029 --> 00:07:11,039
+flower instead of a one petal anti-spin
+ 
+
+401
+00:07:11,039 --> 00:07:13,249
+flower instead of a one petal anti-spin
+flower okay so which approach is the
+
+402
+00:07:13,249 --> 00:07:13,259
+flower okay so which approach is the
+ 
+
+403
+00:07:13,259 --> 00:07:14,930
+flower okay so which approach is the
+right way of looking at it well honestly
+
+404
+00:07:14,930 --> 00:07:14,940
+right way of looking at it well honestly
+ 
+
+405
+00:07:14,940 --> 00:07:17,570
+right way of looking at it well honestly
+I think neither of them because I think
+
+406
+00:07:17,570 --> 00:07:17,580
+I think neither of them because I think
+ 
+
+407
+00:07:17,580 --> 00:07:19,610
+I think neither of them because I think
+that there's a flaw inherent in the
+
+408
+00:07:19,610 --> 00:07:19,620
+that there's a flaw inherent in the
+ 
+
+409
+00:07:19,620 --> 00:07:21,290
+that there's a flaw inherent in the
+formulation of this question to
+
+410
+00:07:21,290 --> 00:07:21,300
+formulation of this question to
+ 
+
+411
+00:07:21,300 --> 00:07:22,730
+formulation of this question to
+understand why though I'm going to need
+
+412
+00:07:22,730 --> 00:07:22,740
+understand why though I'm going to need
+ 
+
+413
+00:07:22,740 --> 00:07:24,350
+understand why though I'm going to need
+to ask you to look at this through a
+
+414
+00:07:24,350 --> 00:07:24,360
+to ask you to look at this through a
+ 
+
+415
+00:07:24,360 --> 00:07:26,629
+to ask you to look at this through a
+completely different lens as I perform a
+
+416
+00:07:26,629 --> 00:07:26,639
+completely different lens as I perform a
+ 
+
+417
+00:07:26,639 --> 00:07:28,490
+completely different lens as I perform a
+four petal inspin flower I want you to
+
+418
+00:07:28,490 --> 00:07:28,500
+four petal inspin flower I want you to
+ 
+
+419
+00:07:28,500 --> 00:07:29,809
+four petal inspin flower I want you to
+take a moment to notice how many
+
+420
+00:07:29,809 --> 00:07:29,819
+take a moment to notice how many
+ 
+
+421
+00:07:29,819 --> 00:07:32,570
+take a moment to notice how many
+downbeats I perform with the POI that is
+
+422
+00:07:32,570 --> 00:07:32,580
+downbeats I perform with the POI that is
+ 
+
+423
+00:07:32,580 --> 00:07:34,309
+downbeats I perform with the POI that is
+how many times the POI head passes
+
+424
+00:07:34,309 --> 00:07:34,319
+how many times the POI head passes
+ 
+
+425
+00:07:34,319 --> 00:07:37,610
+how many times the POI head passes
+directly underneath my hand I count one
+
+426
+00:07:37,610 --> 00:07:37,620
+directly underneath my hand I count one
+ 
+
+427
+00:07:37,620 --> 00:07:41,990
+directly underneath my hand I count one
+two three four five downbeats as I go
+
+428
+00:07:41,990 --> 00:07:42,000
+two three four five downbeats as I go
+ 
+
+429
+00:07:42,000 --> 00:07:44,689
+two three four five downbeats as I go
+around one at each side and two at the
+
+430
+00:07:44,689 --> 00:07:44,699
+around one at each side and two at the
+ 
+
+431
+00:07:44,699 --> 00:07:48,469
+around one at each side and two at the
+bottom wait a sec two at the bottom why
+
+432
+00:07:48,469 --> 00:07:48,479
+bottom wait a sec two at the bottom why
+ 
+
+433
+00:07:48,479 --> 00:07:50,870
+bottom wait a sec two at the bottom why
+is that in simplest terms inspin flowers
+
+434
+00:07:50,870 --> 00:07:50,880
+is that in simplest terms inspin flowers
+ 
+
+435
+00:07:50,880 --> 00:07:53,270
+is that in simplest terms inspin flowers
+Nest small circles inside of a larger
+
+436
+00:07:53,270 --> 00:07:53,280
+Nest small circles inside of a larger
+ 
+
+437
+00:07:53,280 --> 00:07:55,850
+Nest small circles inside of a larger
+Circle so the total number of downbeats
+
+438
+00:07:55,850 --> 00:07:55,860
+Circle so the total number of downbeats
+ 
+
+439
+00:07:55,860 --> 00:07:57,770
+Circle so the total number of downbeats
+is equal to the number of beats in each
+
+440
+00:07:57,770 --> 00:07:57,780
+is equal to the number of beats in each
+ 
+
+441
+00:07:57,780 --> 00:08:00,050
+is equal to the number of beats in each
+individual Circle one for each of the
+
+442
+00:08:00,050 --> 00:08:00,060
+individual Circle one for each of the
+ 
+
+443
+00:08:00,060 --> 00:08:02,330
+individual Circle one for each of the
+smaller circles plus one for the big one
+
+444
+00:08:02,330 --> 00:08:02,340
+smaller circles plus one for the big one
+ 
+
+445
+00:08:02,340 --> 00:08:04,309
+smaller circles plus one for the big one
+that they're nested inside of now how
+
+446
+00:08:04,309 --> 00:08:04,319
+that they're nested inside of now how
+ 
+
+447
+00:08:04,319 --> 00:08:05,870
+that they're nested inside of now how
+about for the four petal anti-spin
+
+448
+00:08:05,870 --> 00:08:05,880
+about for the four petal anti-spin
+ 
+
+449
+00:08:05,880 --> 00:08:10,189
+about for the four petal anti-spin
+flower this time I count one two three
+
+450
+00:08:10,189 --> 00:08:10,199
+flower this time I count one two three
+ 
+
+451
+00:08:10,199 --> 00:08:13,730
+flower this time I count one two three
+beats all told one left one bottom and
+
+452
+00:08:13,730 --> 00:08:13,740
+beats all told one left one bottom and
+ 
+
+453
+00:08:13,740 --> 00:08:16,370
+beats all told one left one bottom and
+one right there is no downbeat under
+
+454
+00:08:16,370 --> 00:08:16,380
+one right there is no downbeat under
+ 
+
+455
+00:08:16,380 --> 00:08:19,189
+one right there is no downbeat under
+that top pedal what's up with that so
+
+456
+00:08:19,189 --> 00:08:19,199
+that top pedal what's up with that so
+ 
+
+457
+00:08:19,199 --> 00:08:20,390
+that top pedal what's up with that so
+this is definitely going to be a bit of
+
+458
+00:08:20,390 --> 00:08:20,400
+this is definitely going to be a bit of
+ 
+
+459
+00:08:20,400 --> 00:08:22,189
+this is definitely going to be a bit of
+an oversimplification but for our
+
+460
+00:08:22,189 --> 00:08:22,199
+an oversimplification but for our
+ 
+
+461
+00:08:22,199 --> 00:08:24,409
+an oversimplification but for our
+purposes it'll work when we're creating
+
+462
+00:08:24,409 --> 00:08:24,419
+purposes it'll work when we're creating
+ 
+
+463
+00:08:24,419 --> 00:08:26,570
+purposes it'll work when we're creating
+anti-spin flowers we're kind of cutting
+
+464
+00:08:26,570 --> 00:08:26,580
+anti-spin flowers we're kind of cutting
+ 
+
+465
+00:08:26,580 --> 00:08:28,430
+anti-spin flowers we're kind of cutting
+up bigger circles into smaller pieces
+
+466
+00:08:28,430 --> 00:08:28,440
+up bigger circles into smaller pieces
+ 
+
+467
+00:08:28,440 --> 00:08:30,830
+up bigger circles into smaller pieces
+that we then glue back together at the
+
+468
+00:08:30,830 --> 00:08:30,840
+that we then glue back together at the
+ 
+
+469
+00:08:30,840 --> 00:08:33,409
+that we then glue back together at the
+tip of every flower petal so if you
+
+470
+00:08:33,409 --> 00:08:33,419
+tip of every flower petal so if you
+ 
+
+471
+00:08:33,419 --> 00:08:35,089
+tip of every flower petal so if you
+imagine for a moment that we spin the
+
+472
+00:08:35,089 --> 00:08:35,099
+imagine for a moment that we spin the
+ 
+
+473
+00:08:35,099 --> 00:08:37,130
+imagine for a moment that we spin the
+POI three quarters of a circle between
+
+474
+00:08:37,130 --> 00:08:37,140
+POI three quarters of a circle between
+ 
+
+475
+00:08:37,140 --> 00:08:39,829
+POI three quarters of a circle between
+the tip of each flower petal that means
+
+476
+00:08:39,829 --> 00:08:39,839
+the tip of each flower petal that means
+ 
+
+477
+00:08:39,839 --> 00:08:42,350
+the tip of each flower petal that means
+we're adding up four different segments
+
+478
+00:08:42,350 --> 00:08:42,360
+we're adding up four different segments
+ 
+
+479
+00:08:42,360 --> 00:08:44,870
+we're adding up four different segments
+that are three quarters of a circle long
+
+480
+00:08:44,870 --> 00:08:44,880
+that are three quarters of a circle long
+ 
+
+481
+00:08:44,880 --> 00:08:48,769
+that are three quarters of a circle long
+3 times 4 is 12 and 12 divided by 4 that
+
+482
+00:08:48,769 --> 00:08:48,779
+3 times 4 is 12 and 12 divided by 4 that
+ 
+
+483
+00:08:48,779 --> 00:08:51,050
+3 times 4 is 12 and 12 divided by 4 that
+gets us to a total of three circles
+
+484
+00:08:51,050 --> 00:08:51,060
+gets us to a total of three circles
+ 
+
+485
+00:08:51,060 --> 00:08:53,690
+gets us to a total of three circles
+weird right and speaking of if we Zoom
+
+486
+00:08:53,690 --> 00:08:53,700
+weird right and speaking of if we Zoom
+ 
+
+487
+00:08:53,700 --> 00:08:55,070
+weird right and speaking of if we Zoom
+back out for a second and compare the
+
+488
+00:08:55,070 --> 00:08:55,080
+back out for a second and compare the
+ 
+
+489
+00:08:55,080 --> 00:08:56,870
+back out for a second and compare the
+inspin flower to the anti-spin flower
+
+490
+00:08:56,870 --> 00:08:56,880
+inspin flower to the anti-spin flower
+ 
+
+491
+00:08:56,880 --> 00:08:59,750
+inspin flower to the anti-spin flower
+things get even weirder why is it for
+
+492
+00:08:59,750 --> 00:08:59,760
+things get even weirder why is it for
+ 
+
+493
+00:08:59,760 --> 00:09:01,670
+things get even weirder why is it for
+inspin and anti-spin flowers with the
+
+494
+00:09:01,670 --> 00:09:01,680
+inspin and anti-spin flowers with the
+ 
+
+495
+00:09:01,680 --> 00:09:03,769
+inspin and anti-spin flowers with the
+same number of petals the inspin flower
+
+496
+00:09:03,769 --> 00:09:03,779
+same number of petals the inspin flower
+ 
+
+497
+00:09:03,779 --> 00:09:05,810
+same number of petals the inspin flower
+has one more downbeat than the total
+
+498
+00:09:05,810 --> 00:09:05,820
+has one more downbeat than the total
+ 
+
+499
+00:09:05,820 --> 00:09:07,790
+has one more downbeat than the total
+number of petals and the anti-spin
+
+500
+00:09:07,790 --> 00:09:07,800
+number of petals and the anti-spin
+ 
+
+501
+00:09:07,800 --> 00:09:10,490
+number of petals and the anti-spin
+flower has one fewer downbeat what's
+
+502
+00:09:10,490 --> 00:09:10,500
+flower has one fewer downbeat what's
+ 
+
+503
+00:09:10,500 --> 00:09:12,650
+flower has one fewer downbeat what's
+going on here the key to this mismatch
+
+504
+00:09:12,650 --> 00:09:12,660
+going on here the key to this mismatch
+ 
+
+505
+00:09:12,660 --> 00:09:14,630
+going on here the key to this mismatch
+is recognizing that we are trying to
+
+506
+00:09:14,630 --> 00:09:14,640
+is recognizing that we are trying to
+ 
+
+507
+00:09:14,640 --> 00:09:16,610
+is recognizing that we are trying to
+describe two very different approaches
+
+508
+00:09:16,610 --> 00:09:16,620
+describe two very different approaches
+ 
+
+509
+00:09:16,620 --> 00:09:18,769
+describe two very different approaches
+to graphing these shapes when we count
+
+510
+00:09:18,769 --> 00:09:18,779
+to graphing these shapes when we count
+ 
+
+511
+00:09:18,779 --> 00:09:20,690
+to graphing these shapes when we count
+petals what we're doing is keeping track
+
+512
+00:09:20,690 --> 00:09:20,700
+petals what we're doing is keeping track
+ 
+
+513
+00:09:20,700 --> 00:09:22,910
+petals what we're doing is keeping track
+of an object as it moves Inward and then
+
+514
+00:09:22,910 --> 00:09:22,920
+of an object as it moves Inward and then
+ 
+
+515
+00:09:22,920 --> 00:09:25,910
+of an object as it moves Inward and then
+back out away from a center point this
+
+516
+00:09:25,910 --> 00:09:25,920
+back out away from a center point this
+ 
+
+517
+00:09:25,920 --> 00:09:27,710
+back out away from a center point this
+type of graph uses what are known as
+
+518
+00:09:27,710 --> 00:09:27,720
+type of graph uses what are known as
+ 
+
+519
+00:09:27,720 --> 00:09:29,750
+type of graph uses what are known as
+Polar coordinates when we count down
+
+520
+00:09:29,750 --> 00:09:29,760
+Polar coordinates when we count down
+ 
+
+521
+00:09:29,760 --> 00:09:31,790
+Polar coordinates when we count down
+beats on the other hand we're keeping
+
+522
+00:09:31,790 --> 00:09:31,800
+beats on the other hand we're keeping
+ 
+
+523
+00:09:31,800 --> 00:09:33,650
+beats on the other hand we're keeping
+track of an object as it oscillates
+
+524
+00:09:33,650 --> 00:09:33,660
+track of an object as it oscillates
+ 
+
+525
+00:09:33,660 --> 00:09:36,769
+track of an object as it oscillates
+along vertical and horizontal axes this
+
+526
+00:09:36,769 --> 00:09:36,779
+along vertical and horizontal axes this
+ 
+
+527
+00:09:36,779 --> 00:09:38,449
+along vertical and horizontal axes this
+type of graph uses what are known as
+
+528
+00:09:38,449 --> 00:09:38,459
+type of graph uses what are known as
+ 
+
+529
+00:09:38,459 --> 00:09:41,150
+type of graph uses what are known as
+Cartesian coordinates now each of these
+
+530
+00:09:41,150 --> 00:09:41,160
+Cartesian coordinates now each of these
+ 
+
+531
+00:09:41,160 --> 00:09:43,009
+Cartesian coordinates now each of these
+coordinate systems work and both can
+
+532
+00:09:43,009 --> 00:09:43,019
+coordinate systems work and both can
+ 
+
+533
+00:09:43,019 --> 00:09:44,810
+coordinate systems work and both can
+definitely model what happens in POI
+
+534
+00:09:44,810 --> 00:09:44,820
+definitely model what happens in POI
+ 
+
+535
+00:09:44,820 --> 00:09:47,690
+definitely model what happens in POI
+flowers but I'll confess I am a little
+
+536
+00:09:47,690 --> 00:09:47,700
+flowers but I'll confess I am a little
+ 
+
+537
+00:09:47,700 --> 00:09:49,610
+flowers but I'll confess I am a little
+bit more partial to one than the other
+
+538
+00:09:49,610 --> 00:09:49,620
+bit more partial to one than the other
+ 
+
+539
+00:09:49,620 --> 00:09:51,410
+bit more partial to one than the other
+and I'll tell you why when we use
+
+540
+00:09:51,410 --> 00:09:51,420
+and I'll tell you why when we use
+ 
+
+541
+00:09:51,420 --> 00:09:53,509
+and I'll tell you why when we use
+Cartesian coordinates it orients our
+
+542
+00:09:53,509 --> 00:09:53,519
+Cartesian coordinates it orients our
+ 
+
+543
+00:09:53,519 --> 00:09:55,310
+Cartesian coordinates it orients our
+understanding of the graph in line with
+
+544
+00:09:55,310 --> 00:09:55,320
+understanding of the graph in line with
+ 
+
+545
+00:09:55,320 --> 00:09:57,050
+understanding of the graph in line with
+what we experience in a space where
+
+546
+00:09:57,050 --> 00:09:57,060
+what we experience in a space where
+ 
+
+547
+00:09:57,060 --> 00:10:00,110
+what we experience in a space where
+gravity is in play going up and down a
+
+548
+00:10:00,110 --> 00:10:00,120
+gravity is in play going up and down a
+ 
+
+549
+00:10:00,120 --> 00:10:02,750
+gravity is in play going up and down a
+y-axis corresponds to going up and down
+
+550
+00:10:02,750 --> 00:10:02,760
+y-axis corresponds to going up and down
+ 
+
+551
+00:10:02,760 --> 00:10:05,389
+y-axis corresponds to going up and down
+in real space too and it helps explain
+
+552
+00:10:05,389 --> 00:10:05,399
+in real space too and it helps explain
+ 
+
+553
+00:10:05,399 --> 00:10:07,430
+in real space too and it helps explain
+something pretty important about how we
+
+554
+00:10:07,430 --> 00:10:07,440
+something pretty important about how we
+ 
+
+555
+00:10:07,440 --> 00:10:09,530
+something pretty important about how we
+create hybrids if you've ever tried to
+
+556
+00:10:09,530 --> 00:10:09,540
+create hybrids if you've ever tried to
+ 
+
+557
+00:10:09,540 --> 00:10:11,389
+create hybrids if you've ever tried to
+perform a four petal in spin flower with
+
+558
+00:10:11,389 --> 00:10:11,399
+perform a four petal in spin flower with
+ 
+
+559
+00:10:11,399 --> 00:10:13,250
+perform a four petal in spin flower with
+one hand and a four petal anti-spin
+
+560
+00:10:13,250 --> 00:10:13,260
+one hand and a four petal anti-spin
+ 
+
+561
+00:10:13,260 --> 00:10:15,470
+one hand and a four petal anti-spin
+flower with the other you know that this
+
+562
+00:10:15,470 --> 00:10:15,480
+flower with the other you know that this
+ 
+
+563
+00:10:15,480 --> 00:10:17,930
+flower with the other you know that this
+has to be a poly Rhythm hybrid there's a
+
+564
+00:10:17,930 --> 00:10:17,940
+has to be a poly Rhythm hybrid there's a
+ 
+
+565
+00:10:17,940 --> 00:10:19,670
+has to be a poly Rhythm hybrid there's a
+difference of two beats between the two
+
+566
+00:10:19,670 --> 00:10:19,680
+difference of two beats between the two
+ 
+
+567
+00:10:19,680 --> 00:10:22,009
+difference of two beats between the two
+patterns and thus you cycle through
+
+568
+00:10:22,009 --> 00:10:22,019
+patterns and thus you cycle through
+ 
+
+569
+00:10:22,019 --> 00:10:23,509
+patterns and thus you cycle through
+different timing and Direction modes
+
+570
+00:10:23,509 --> 00:10:23,519
+different timing and Direction modes
+ 
+
+571
+00:10:23,519 --> 00:10:25,850
+different timing and Direction modes
+continuously if on the other hand you
+
+572
+00:10:25,850 --> 00:10:25,860
+continuously if on the other hand you
+ 
+
+573
+00:10:25,860 --> 00:10:27,650
+continuously if on the other hand you
+perform a two petal in spin flower with
+
+574
+00:10:27,650 --> 00:10:27,660
+perform a two petal in spin flower with
+ 
+
+575
+00:10:27,660 --> 00:10:30,050
+perform a two petal in spin flower with
+a four petal anti-spin flower you're now
+
+576
+00:10:30,050 --> 00:10:30,060
+a four petal anti-spin flower you're now
+ 
+
+577
+00:10:30,060 --> 00:10:32,090
+a four petal anti-spin flower you're now
+performing two flower patterns that each
+
+578
+00:10:32,090 --> 00:10:32,100
+performing two flower patterns that each
+ 
+
+579
+00:10:32,100 --> 00:10:34,250
+performing two flower patterns that each
+have three downbeats and the timing and
+
+580
+00:10:34,250 --> 00:10:34,260
+have three downbeats and the timing and
+ 
+
+581
+00:10:34,260 --> 00:10:37,190
+have three downbeats and the timing and
+Direction remains consistent this is way
+
+582
+00:10:37,190 --> 00:10:37,200
+Direction remains consistent this is way
+ 
+
+583
+00:10:37,200 --> 00:10:38,810
+Direction remains consistent this is way
+easier and more intuitive than the other
+
+584
+00:10:38,810 --> 00:10:38,820
+easier and more intuitive than the other
+ 
+
+585
+00:10:38,820 --> 00:10:41,449
+easier and more intuitive than the other
+option so counting flower petals is
+
+586
+00:10:41,449 --> 00:10:41,459
+option so counting flower petals is
+ 
+
+587
+00:10:41,459 --> 00:10:43,910
+option so counting flower petals is
+inherently tricky both because we don't
+
+588
+00:10:43,910 --> 00:10:43,920
+inherently tricky both because we don't
+ 
+
+589
+00:10:43,920 --> 00:10:45,889
+inherently tricky both because we don't
+have a clear definition for what a petal
+
+590
+00:10:45,889 --> 00:10:45,899
+have a clear definition for what a petal
+ 
+
+591
+00:10:45,899 --> 00:10:48,110
+have a clear definition for what a petal
+is nor are we describing a phenomenon
+
+592
+00:10:48,110 --> 00:10:48,120
+is nor are we describing a phenomenon
+ 
+
+593
+00:10:48,120 --> 00:10:49,790
+is nor are we describing a phenomenon
+that lines up terribly well with what
+
+594
+00:10:49,790 --> 00:10:49,800
+that lines up terribly well with what
+ 
+
+595
+00:10:49,800 --> 00:10:52,310
+that lines up terribly well with what
+our experience is in winning the POI and
+
+596
+00:10:52,310 --> 00:10:52,320
+our experience is in winning the POI and
+ 
+
+597
+00:10:52,320 --> 00:10:53,750
+our experience is in winning the POI and
+there have been a couple attempts to try
+
+598
+00:10:53,750 --> 00:10:53,760
+there have been a couple attempts to try
+ 
+
+599
+00:10:53,760 --> 00:10:55,370
+there have been a couple attempts to try
+and make all of these pieces make sense
+
+600
+00:10:55,370 --> 00:10:55,380
+and make all of these pieces make sense
+ 
+
+601
+00:10:55,380 --> 00:10:57,350
+and make all of these pieces make sense
+one of the first that I encountered was
+
+602
+00:10:57,350 --> 00:10:57,360
+one of the first that I encountered was
+ 
+
+603
+00:10:57,360 --> 00:10:58,970
+one of the first that I encountered was
+actually a system that alien John
+
+604
+00:10:58,970 --> 00:10:58,980
+actually a system that alien John
+ 
+
+605
+00:10:58,980 --> 00:11:01,190
+actually a system that alien John
+invented that shifts Focus once again to
+
+606
+00:11:01,190 --> 00:11:01,200
+invented that shifts Focus once again to
+ 
+
+607
+00:11:01,200 --> 00:11:02,930
+invented that shifts Focus once again to
+something that I'd never even thought to
+
+608
+00:11:02,930 --> 00:11:02,940
+something that I'd never even thought to
+ 
+
+609
+00:11:02,940 --> 00:11:05,630
+something that I'd never even thought to
+examine in this system we spend so much
+
+610
+00:11:05,630 --> 00:11:05,640
+examine in this system we spend so much
+ 
+
+611
+00:11:05,640 --> 00:11:07,490
+examine in this system we spend so much
+time looking at these POI tricks in
+
+612
+00:11:07,490 --> 00:11:07,500
+time looking at these POI tricks in
+ 
+
+613
+00:11:07,500 --> 00:11:09,230
+time looking at these POI tricks in
+terms of the patterns and paths that
+
+614
+00:11:09,230 --> 00:11:09,240
+terms of the patterns and paths that
+ 
+
+615
+00:11:09,240 --> 00:11:11,329
+terms of the patterns and paths that
+they create that we frequently forget
+
+616
+00:11:11,329 --> 00:11:11,339
+they create that we frequently forget
+ 
+
+617
+00:11:11,339 --> 00:11:13,610
+they create that we frequently forget
+that those patterns exist mostly in our
+
+618
+00:11:13,610 --> 00:11:13,620
+that those patterns exist mostly in our
+ 
+
+619
+00:11:13,620 --> 00:11:16,430
+that those patterns exist mostly in our
+own heads but what doesn't is the
+
+620
+00:11:16,430 --> 00:11:16,440
+own heads but what doesn't is the
+ 
+
+621
+00:11:16,440 --> 00:11:18,350
+own heads but what doesn't is the
+relationship between the hand and the
+
+622
+00:11:18,350 --> 00:11:18,360
+relationship between the hand and the
+ 
+
+623
+00:11:18,360 --> 00:11:20,210
+relationship between the hand and the
+POI let me show you something really
+
+624
+00:11:20,210 --> 00:11:20,220
+POI let me show you something really
+ 
+
+625
+00:11:20,220 --> 00:11:21,949
+POI let me show you something really
+interesting that happens if we look at
+
+626
+00:11:21,949 --> 00:11:21,959
+interesting that happens if we look at
+ 
+
+627
+00:11:21,959 --> 00:11:23,630
+interesting that happens if we look at
+individual moments in a four petal
+
+628
+00:11:23,630 --> 00:11:23,640
+individual moments in a four petal
+ 
+
+629
+00:11:23,640 --> 00:11:25,850
+individual moments in a four petal
+inspin flower rather than trying to see
+
+630
+00:11:25,850 --> 00:11:25,860
+inspin flower rather than trying to see
+ 
+
+631
+00:11:25,860 --> 00:11:28,490
+inspin flower rather than trying to see
+the overall pattern if I pause the
+
+632
+00:11:28,490 --> 00:11:28,500
+the overall pattern if I pause the
+ 
+
+633
+00:11:28,500 --> 00:11:30,829
+the overall pattern if I pause the
+movement of the hand and POI at the tip
+
+634
+00:11:30,829 --> 00:11:30,839
+movement of the hand and POI at the tip
+ 
+
+635
+00:11:30,839 --> 00:11:32,990
+movement of the hand and POI at the tip
+of a flower petal notice how the trails
+
+636
+00:11:32,990 --> 00:11:33,000
+of a flower petal notice how the trails
+ 
+
+637
+00:11:33,000 --> 00:11:34,610
+of a flower petal notice how the trails
+they leave behind point in opposite
+
+638
+00:11:34,610 --> 00:11:34,620
+they leave behind point in opposite
+ 
+
+639
+00:11:34,620 --> 00:11:35,690
+they leave behind point in opposite
+directions
+
+640
+00:11:35,690 --> 00:11:35,700
+directions
+ 
+
+641
+00:11:35,700 --> 00:11:37,610
+directions
+if on the other hand I paused the
+
+642
+00:11:37,610 --> 00:11:37,620
+if on the other hand I paused the
+ 
+
+643
+00:11:37,620 --> 00:11:39,350
+if on the other hand I paused the
+movement of the two in between two
+
+644
+00:11:39,350 --> 00:11:39,360
+movement of the two in between two
+ 
+
+645
+00:11:39,360 --> 00:11:41,329
+movement of the two in between two
+petals the trails they leave behind
+
+646
+00:11:41,329 --> 00:11:41,339
+petals the trails they leave behind
+ 
+
+647
+00:11:41,339 --> 00:11:43,370
+petals the trails they leave behind
+point in the same direction all right so
+
+648
+00:11:43,370 --> 00:11:43,380
+point in the same direction all right so
+ 
+
+649
+00:11:43,380 --> 00:11:44,690
+point in the same direction all right so
+this one might take a little bit of work
+
+650
+00:11:44,690 --> 00:11:44,700
+this one might take a little bit of work
+ 
+
+651
+00:11:44,700 --> 00:11:46,130
+this one might take a little bit of work
+to wrap your head around but think of it
+
+652
+00:11:46,130 --> 00:11:46,140
+to wrap your head around but think of it
+ 
+
+653
+00:11:46,140 --> 00:11:48,170
+to wrap your head around but think of it
+this way even though the POI and the
+
+654
+00:11:48,170 --> 00:11:48,180
+this way even though the POI and the
+ 
+
+655
+00:11:48,180 --> 00:11:49,910
+this way even though the POI and the
+hand are moving in the same direction in
+
+656
+00:11:49,910 --> 00:11:49,920
+hand are moving in the same direction in
+ 
+
+657
+00:11:49,920 --> 00:11:52,190
+hand are moving in the same direction in
+a global frame of reference because one
+
+658
+00:11:52,190 --> 00:11:52,200
+a global frame of reference because one
+ 
+
+659
+00:11:52,200 --> 00:11:54,410
+a global frame of reference because one
+is orbiting the other we can narrow our
+
+660
+00:11:54,410 --> 00:11:54,420
+is orbiting the other we can narrow our
+ 
+
+661
+00:11:54,420 --> 00:11:56,269
+is orbiting the other we can narrow our
+scope down to find moments where
+
+662
+00:11:56,269 --> 00:11:56,279
+scope down to find moments where
+ 
+
+663
+00:11:56,279 --> 00:11:58,790
+scope down to find moments where
+relative to each other they're moving in
+
+664
+00:11:58,790 --> 00:11:58,800
+relative to each other they're moving in
+ 
+
+665
+00:11:58,800 --> 00:12:00,710
+relative to each other they're moving in
+parallel and moments when they're moving
+
+666
+00:12:00,710 --> 00:12:00,720
+parallel and moments when they're moving
+ 
+
+667
+00:12:00,720 --> 00:12:03,050
+parallel and moments when they're moving
+in opposite directions this same
+
+668
+00:12:03,050 --> 00:12:03,060
+in opposite directions this same
+ 
+
+669
+00:12:03,060 --> 00:12:05,210
+in opposite directions this same
+property exists in anti-spin flowers too
+
+670
+00:12:05,210 --> 00:12:05,220
+property exists in anti-spin flowers too
+ 
+
+671
+00:12:05,220 --> 00:12:07,910
+property exists in anti-spin flowers too
+again if I pause the movement of the POI
+
+672
+00:12:07,910 --> 00:12:07,920
+again if I pause the movement of the POI
+ 
+
+673
+00:12:07,920 --> 00:12:09,470
+again if I pause the movement of the POI
+and the hand at the tip of a flower
+
+674
+00:12:09,470 --> 00:12:09,480
+and the hand at the tip of a flower
+ 
+
+675
+00:12:09,480 --> 00:12:11,569
+and the hand at the tip of a flower
+petal the trails they leave behind
+
+676
+00:12:11,569 --> 00:12:11,579
+petal the trails they leave behind
+ 
+
+677
+00:12:11,579 --> 00:12:13,130
+petal the trails they leave behind
+reveal that they are spinning in
+
+678
+00:12:13,130 --> 00:12:13,140
+reveal that they are spinning in
+ 
+
+679
+00:12:13,140 --> 00:12:15,650
+reveal that they are spinning in
+opposite directions in this moment and
+
+680
+00:12:15,650 --> 00:12:15,660
+opposite directions in this moment and
+ 
+
+681
+00:12:15,660 --> 00:12:17,449
+opposite directions in this moment and
+if I pause the movement to the POI in
+
+682
+00:12:17,449 --> 00:12:17,459
+if I pause the movement to the POI in
+ 
+
+683
+00:12:17,459 --> 00:12:19,550
+if I pause the movement to the POI in
+the hand in between two petals the
+
+684
+00:12:19,550 --> 00:12:19,560
+the hand in between two petals the
+ 
+
+685
+00:12:19,560 --> 00:12:21,470
+the hand in between two petals the
+trails reveal them moving in the same
+
+686
+00:12:21,470 --> 00:12:21,480
+trails reveal them moving in the same
+ 
+
+687
+00:12:21,480 --> 00:12:23,150
+trails reveal them moving in the same
+direction what we're doing here is
+
+688
+00:12:23,150 --> 00:12:23,160
+direction what we're doing here is
+ 
+
+689
+00:12:23,160 --> 00:12:24,350
+direction what we're doing here is
+playing around with what are called
+
+690
+00:12:24,350 --> 00:12:24,360
+playing around with what are called
+ 
+
+691
+00:12:24,360 --> 00:12:26,870
+playing around with what are called
+vectors in mathematics and physics and
+
+692
+00:12:26,870 --> 00:12:26,880
+vectors in mathematics and physics and
+ 
+
+693
+00:12:26,880 --> 00:12:29,870
+vectors in mathematics and physics and
+more specifically movement vectors John
+
+694
+00:12:29,870 --> 00:12:29,880
+more specifically movement vectors John
+ 
+
+695
+00:12:29,880 --> 00:12:31,790
+more specifically movement vectors John
+labeled the movements when the POI in
+
+696
+00:12:31,790 --> 00:12:31,800
+labeled the movements when the POI in
+ 
+
+697
+00:12:31,800 --> 00:12:34,550
+labeled the movements when the POI in
+hand have opposite vectors as loops and
+
+698
+00:12:34,550 --> 00:12:34,560
+hand have opposite vectors as loops and
+ 
+
+699
+00:12:34,560 --> 00:12:36,230
+hand have opposite vectors as loops and
+moments when the POI in hand and have
+
+700
+00:12:36,230 --> 00:12:36,240
+moments when the POI in hand and have
+ 
+
+701
+00:12:36,240 --> 00:12:38,750
+moments when the POI in hand and have
+parallel vectors as arcs now what will
+
+702
+00:12:38,750 --> 00:12:38,760
+parallel vectors as arcs now what will
+ 
+
+703
+00:12:38,760 --> 00:12:40,490
+parallel vectors as arcs now what will
+really noodle your Noggin is that we can
+
+704
+00:12:40,490 --> 00:12:40,500
+really noodle your Noggin is that we can
+ 
+
+705
+00:12:40,500 --> 00:12:42,110
+really noodle your Noggin is that we can
+get shapes wherein the POI is
+
+706
+00:12:42,110 --> 00:12:42,120
+get shapes wherein the POI is
+ 
+
+707
+00:12:42,120 --> 00:12:44,090
+get shapes wherein the POI is
+permanently locked into a loop and
+
+708
+00:12:44,090 --> 00:12:44,100
+permanently locked into a loop and
+ 
+
+709
+00:12:44,100 --> 00:12:46,250
+permanently locked into a loop and
+shapes when the POI is permanently
+
+710
+00:12:46,250 --> 00:12:46,260
+shapes when the POI is permanently
+ 
+
+711
+00:12:46,260 --> 00:12:48,829
+shapes when the POI is permanently
+locked into an arc as well these are
+
+712
+00:12:48,829 --> 00:12:48,839
+locked into an arc as well these are
+ 
+
+713
+00:12:48,839 --> 00:12:51,050
+locked into an arc as well these are
+isolations and extensions respectively
+
+714
+00:12:51,050 --> 00:12:51,060
+isolations and extensions respectively
+ 
+
+715
+00:12:51,060 --> 00:12:53,810
+isolations and extensions respectively
+and that is a story for another time but
+
+716
+00:12:53,810 --> 00:12:53,820
+and that is a story for another time but
+ 
+
+717
+00:12:53,820 --> 00:12:56,030
+and that is a story for another time but
+before your brain is fully cooked I do
+
+718
+00:12:56,030 --> 00:12:56,040
+before your brain is fully cooked I do
+ 
+
+719
+00:12:56,040 --> 00:12:58,190
+before your brain is fully cooked I do
+want to explore just one last attempt to
+
+720
+00:12:58,190 --> 00:12:58,200
+want to explore just one last attempt to
+ 
+
+721
+00:12:58,200 --> 00:13:00,290
+want to explore just one last attempt to
+model flowers because I think ultimately
+
+722
+00:13:00,290 --> 00:13:00,300
+model flowers because I think ultimately
+ 
+
+723
+00:13:00,300 --> 00:13:02,269
+model flowers because I think ultimately
+it offers up the most comprehensive
+
+724
+00:13:02,269 --> 00:13:02,279
+it offers up the most comprehensive
+ 
+
+725
+00:13:02,279 --> 00:13:04,430
+it offers up the most comprehensive
+answer for what all the flowers wind up
+
+726
+00:13:04,430 --> 00:13:04,440
+answer for what all the flowers wind up
+ 
+
+727
+00:13:04,440 --> 00:13:06,590
+answer for what all the flowers wind up
+looking like this is a method devised by
+
+728
+00:13:06,590 --> 00:13:06,600
+looking like this is a method devised by
+ 
+
+729
+00:13:06,600 --> 00:13:08,449
+looking like this is a method devised by
+Charlie Cushing of Nine Square theory of
+
+730
+00:13:08,449 --> 00:13:08,459
+Charlie Cushing of Nine Square theory of
+ 
+
+731
+00:13:08,459 --> 00:13:10,310
+Charlie Cushing of Nine Square theory of
+Fame when he noticed something kind of
+
+732
+00:13:10,310 --> 00:13:10,320
+Fame when he noticed something kind of
+ 
+
+733
+00:13:10,320 --> 00:13:11,690
+Fame when he noticed something kind of
+interesting about the relationship
+
+734
+00:13:11,690 --> 00:13:11,700
+interesting about the relationship
+ 
+
+735
+00:13:11,700 --> 00:13:15,050
+interesting about the relationship
+between petals and downbeats so the
+
+736
+00:13:15,050 --> 00:13:15,060
+between petals and downbeats so the
+ 
+
+737
+00:13:15,060 --> 00:13:16,370
+between petals and downbeats so the
+first thing to understand about this is
+
+738
+00:13:16,370 --> 00:13:16,380
+first thing to understand about this is
+ 
+
+739
+00:13:16,380 --> 00:13:18,110
+first thing to understand about this is
+that we're going to use a math equation
+
+740
+00:13:18,110 --> 00:13:18,120
+that we're going to use a math equation
+ 
+
+741
+00:13:18,120 --> 00:13:20,269
+that we're going to use a math equation
+to produce our flower patterns using
+
+742
+00:13:20,269 --> 00:13:20,279
+to produce our flower patterns using
+ 
+
+743
+00:13:20,279 --> 00:13:21,829
+to produce our flower patterns using
+Cartesian coordinates
+
+744
+00:13:21,829 --> 00:13:21,839
+Cartesian coordinates
+ 
+
+745
+00:13:21,839 --> 00:13:23,930
+Cartesian coordinates
+I know that this looks like gibberish if
+
+746
+00:13:23,930 --> 00:13:23,940
+I know that this looks like gibberish if
+ 
+
+747
+00:13:23,940 --> 00:13:24,829
+I know that this looks like gibberish if
+you haven't brushed up on your
+
+748
+00:13:24,829 --> 00:13:24,839
+you haven't brushed up on your
+ 
+
+749
+00:13:24,839 --> 00:13:26,690
+you haven't brushed up on your
+trigonometry lately so I'll give you the
+
+750
+00:13:26,690 --> 00:13:26,700
+trigonometry lately so I'll give you the
+ 
+
+751
+00:13:26,700 --> 00:13:28,910
+trigonometry lately so I'll give you the
+Cliff's Notes this set of terms right
+
+752
+00:13:28,910 --> 00:13:28,920
+Cliff's Notes this set of terms right
+ 
+
+753
+00:13:28,920 --> 00:13:30,470
+Cliff's Notes this set of terms right
+here governs the movement of the hand
+
+754
+00:13:30,470 --> 00:13:30,480
+here governs the movement of the hand
+ 
+
+755
+00:13:30,480 --> 00:13:32,629
+here governs the movement of the hand
+while this set governs the movement of
+
+756
+00:13:32,629 --> 00:13:32,639
+while this set governs the movement of
+ 
+
+757
+00:13:32,639 --> 00:13:35,750
+while this set governs the movement of
+the POI this variable B controls the
+
+758
+00:13:35,750 --> 00:13:35,760
+the POI this variable B controls the
+ 
+
+759
+00:13:35,760 --> 00:13:37,850
+the POI this variable B controls the
+number of Beats our POI are producing
+
+760
+00:13:37,850 --> 00:13:37,860
+number of Beats our POI are producing
+ 
+
+761
+00:13:37,860 --> 00:13:39,889
+number of Beats our POI are producing
+for every beat that the hand completes
+
+762
+00:13:39,889 --> 00:13:39,899
+for every beat that the hand completes
+ 
+
+763
+00:13:39,899 --> 00:13:43,430
+for every beat that the hand completes
+and if I make b a negative number the
+
+764
+00:13:43,430 --> 00:13:43,440
+and if I make b a negative number the
+ 
+
+765
+00:13:43,440 --> 00:13:45,710
+and if I make b a negative number the
+resulting pattern will be an anti-spin
+
+766
+00:13:45,710 --> 00:13:45,720
+resulting pattern will be an anti-spin
+ 
+
+767
+00:13:45,720 --> 00:13:46,970
+resulting pattern will be an anti-spin
+if you'd like a more thorough
+
+768
+00:13:46,970 --> 00:13:46,980
+if you'd like a more thorough
+ 
+
+769
+00:13:46,980 --> 00:13:49,069
+if you'd like a more thorough
+explanation as to how this math and this
+
+770
+00:13:49,069 --> 00:13:49,079
+explanation as to how this math and this
+ 
+
+771
+00:13:49,079 --> 00:13:51,050
+explanation as to how this math and this
+equation Works leave me a comment and
+
+772
+00:13:51,050 --> 00:13:51,060
+equation Works leave me a comment and
+ 
+
+773
+00:13:51,060 --> 00:13:52,970
+equation Works leave me a comment and
+I'll produce a video just on that topic
+
+774
+00:13:52,970 --> 00:13:52,980
+I'll produce a video just on that topic
+ 
+
+775
+00:13:52,980 --> 00:13:55,069
+I'll produce a video just on that topic
+alone now let's start off by revisiting
+
+776
+00:13:55,069 --> 00:13:55,079
+alone now let's start off by revisiting
+ 
+
+777
+00:13:55,079 --> 00:13:57,110
+alone now let's start off by revisiting
+our old friend the four petal inspin
+
+778
+00:13:57,110 --> 00:13:57,120
+our old friend the four petal inspin
+ 
+
+779
+00:13:57,120 --> 00:13:59,030
+our old friend the four petal inspin
+flower we already know that it has a
+
+780
+00:13:59,030 --> 00:13:59,040
+flower we already know that it has a
+ 
+
+781
+00:13:59,040 --> 00:14:01,850
+flower we already know that it has a
+total of five downbeats so B here is
+
+782
+00:14:01,850 --> 00:14:01,860
+total of five downbeats so B here is
+ 
+
+783
+00:14:01,860 --> 00:14:04,670
+total of five downbeats so B here is
+equal to five I'm going to go ahead and
+
+784
+00:14:04,670 --> 00:14:04,680
+equal to five I'm going to go ahead and
+ 
+
+785
+00:14:04,680 --> 00:14:06,470
+equal to five I'm going to go ahead and
+create a new graph and track the
+
+786
+00:14:06,470 --> 00:14:06,480
+create a new graph and track the
+ 
+
+787
+00:14:06,480 --> 00:14:08,210
+create a new graph and track the
+relationship between downbeats and
+
+788
+00:14:08,210 --> 00:14:08,220
+relationship between downbeats and
+ 
+
+789
+00:14:08,220 --> 00:14:11,210
+relationship between downbeats and
+petals I'm going to say that my x-axis
+
+790
+00:14:11,210 --> 00:14:11,220
+petals I'm going to say that my x-axis
+ 
+
+791
+00:14:11,220 --> 00:14:13,670
+petals I'm going to say that my x-axis
+is the number of downbeats and my y-axis
+
+792
+00:14:13,670 --> 00:14:13,680
+is the number of downbeats and my y-axis
+ 
+
+793
+00:14:13,680 --> 00:14:15,710
+is the number of downbeats and my y-axis
+is the number of flower petals and mark
+
+794
+00:14:15,710 --> 00:14:15,720
+is the number of flower petals and mark
+ 
+
+795
+00:14:15,720 --> 00:14:18,590
+is the number of flower petals and mark
+down my first point at five comma four
+
+796
+00:14:18,590 --> 00:14:18,600
+down my first point at five comma four
+ 
+
+797
+00:14:18,600 --> 00:14:21,110
+down my first point at five comma four
+I'm going to make b equal to 4 now and
+
+798
+00:14:21,110 --> 00:14:21,120
+I'm going to make b equal to 4 now and
+ 
+
+799
+00:14:21,120 --> 00:14:22,610
+I'm going to make b equal to 4 now and
+that's going to result in a three petal
+
+800
+00:14:22,610 --> 00:14:22,620
+that's going to result in a three petal
+ 
+
+801
+00:14:22,620 --> 00:14:25,190
+that's going to result in a three petal
+inspin flower so I'll mark down my next
+
+802
+00:14:25,190 --> 00:14:25,200
+inspin flower so I'll mark down my next
+ 
+
+803
+00:14:25,200 --> 00:14:27,650
+inspin flower so I'll mark down my next
+point at four comma three now I'll make
+
+804
+00:14:27,650 --> 00:14:27,660
+point at four comma three now I'll make
+ 
+
+805
+00:14:27,660 --> 00:14:30,290
+point at four comma three now I'll make
+be equal to 3 and the result will be a
+
+806
+00:14:30,290 --> 00:14:30,300
+be equal to 3 and the result will be a
+ 
+
+807
+00:14:30,300 --> 00:14:32,629
+be equal to 3 and the result will be a
+two petal inspin flower mark down the
+
+808
+00:14:32,629 --> 00:14:32,639
+two petal inspin flower mark down the
+ 
+
+809
+00:14:32,639 --> 00:14:34,910
+two petal inspin flower mark down the
+next point at three comma two and we're
+
+810
+00:14:34,910 --> 00:14:34,920
+next point at three comma two and we're
+ 
+
+811
+00:14:34,920 --> 00:14:37,129
+next point at three comma two and we're
+ready for our next entry here I'll make
+
+812
+00:14:37,129 --> 00:14:37,139
+ready for our next entry here I'll make
+ 
+
+813
+00:14:37,139 --> 00:14:39,470
+ready for our next entry here I'll make
+b equal to two and we wind up with a one
+
+814
+00:14:39,470 --> 00:14:39,480
+b equal to two and we wind up with a one
+ 
+
+815
+00:14:39,480 --> 00:14:42,230
+b equal to two and we wind up with a one
+petal in spin flower as I mark down two
+
+816
+00:14:42,230 --> 00:14:42,240
+petal in spin flower as I mark down two
+ 
+
+817
+00:14:42,240 --> 00:14:44,750
+petal in spin flower as I mark down two
+comma one on the graph do you notice how
+
+818
+00:14:44,750 --> 00:14:44,760
+comma one on the graph do you notice how
+ 
+
+819
+00:14:44,760 --> 00:14:46,970
+comma one on the graph do you notice how
+a pattern or slope is emerging here I'll
+
+820
+00:14:46,970 --> 00:14:46,980
+a pattern or slope is emerging here I'll
+ 
+
+821
+00:14:46,980 --> 00:14:49,430
+a pattern or slope is emerging here I'll
+go ahead and set b equal to one and now
+
+822
+00:14:49,430 --> 00:14:49,440
+go ahead and set b equal to one and now
+ 
+
+823
+00:14:49,440 --> 00:14:51,410
+go ahead and set b equal to one and now
+what comes out is simply an extension
+
+824
+00:14:51,410 --> 00:14:51,420
+what comes out is simply an extension
+ 
+
+825
+00:14:51,420 --> 00:14:53,689
+what comes out is simply an extension
+and this makes sense the slope we were
+
+826
+00:14:53,689 --> 00:14:53,699
+and this makes sense the slope we were
+ 
+
+827
+00:14:53,699 --> 00:14:55,610
+and this makes sense the slope we were
+seeing emerging would suggest that we
+
+828
+00:14:55,610 --> 00:14:55,620
+seeing emerging would suggest that we
+ 
+
+829
+00:14:55,620 --> 00:14:57,350
+seeing emerging would suggest that we
+would wind up with a pattern with zero
+
+830
+00:14:57,350 --> 00:14:57,360
+would wind up with a pattern with zero
+ 
+
+831
+00:14:57,360 --> 00:14:59,509
+would wind up with a pattern with zero
+petals and an extension surely does not
+
+832
+00:14:59,509 --> 00:14:59,519
+petals and an extension surely does not
+ 
+
+833
+00:14:59,519 --> 00:15:02,210
+petals and an extension surely does not
+have any petals to it now just for grins
+
+834
+00:15:02,210 --> 00:15:02,220
+have any petals to it now just for grins
+ 
+
+835
+00:15:02,220 --> 00:15:04,129
+have any petals to it now just for grins
+let's say we came in from the opposite
+
+836
+00:15:04,129 --> 00:15:04,139
+let's say we came in from the opposite
+ 
+
+837
+00:15:04,139 --> 00:15:06,590
+let's say we came in from the opposite
+side to see where the two ends meet I'll
+
+838
+00:15:06,590 --> 00:15:06,600
+side to see where the two ends meet I'll
+ 
+
+839
+00:15:06,600 --> 00:15:08,689
+side to see where the two ends meet I'll
+go ahead and start by setting b equal to
+
+840
+00:15:08,689 --> 00:15:08,699
+go ahead and start by setting b equal to
+ 
+
+841
+00:15:08,699 --> 00:15:11,269
+go ahead and start by setting b equal to
+negative five so five downbeats but the
+
+842
+00:15:11,269 --> 00:15:11,279
+negative five so five downbeats but the
+ 
+
+843
+00:15:11,279 --> 00:15:12,769
+negative five so five downbeats but the
+POI is spinning the opposite direction
+
+844
+00:15:12,769 --> 00:15:12,779
+POI is spinning the opposite direction
+ 
+
+845
+00:15:12,779 --> 00:15:14,389
+POI is spinning the opposite direction
+as the hand in a global frame of
+
+846
+00:15:14,389 --> 00:15:14,399
+as the hand in a global frame of
+ 
+
+847
+00:15:14,399 --> 00:15:16,850
+as the hand in a global frame of
+reference this results in a six petal
+
+848
+00:15:16,850 --> 00:15:16,860
+reference this results in a six petal
+ 
+
+849
+00:15:16,860 --> 00:15:19,550
+reference this results in a six petal
+anti-spin flower pretty cool let's mark
+
+850
+00:15:19,550 --> 00:15:19,560
+anti-spin flower pretty cool let's mark
+ 
+
+851
+00:15:19,560 --> 00:15:23,030
+anti-spin flower pretty cool let's mark
+down negative five negative six we set b
+
+852
+00:15:23,030 --> 00:15:23,040
+down negative five negative six we set b
+ 
+
+853
+00:15:23,040 --> 00:15:24,829
+down negative five negative six we set b
+equal to negative four and we get a five
+
+854
+00:15:24,829 --> 00:15:24,839
+equal to negative four and we get a five
+ 
+
+855
+00:15:24,839 --> 00:15:27,290
+equal to negative four and we get a five
+petal anti-spin and negative three we
+
+856
+00:15:27,290 --> 00:15:27,300
+petal anti-spin and negative three we
+ 
+
+857
+00:15:27,300 --> 00:15:29,930
+petal anti-spin and negative three we
+have 4 petals negative two we have three
+
+858
+00:15:29,930 --> 00:15:29,940
+have 4 petals negative two we have three
+ 
+
+859
+00:15:29,940 --> 00:15:32,750
+have 4 petals negative two we have three
+petals and sure enough that cat eye or
+
+860
+00:15:32,750 --> 00:15:32,760
+petals and sure enough that cat eye or
+ 
+
+861
+00:15:32,760 --> 00:15:35,210
+petals and sure enough that cat eye or
+linear isolation emerges at negative one
+
+862
+00:15:35,210 --> 00:15:35,220
+linear isolation emerges at negative one
+ 
+
+863
+00:15:35,220 --> 00:15:38,329
+linear isolation emerges at negative one
+as having two petals but is there a one
+
+864
+00:15:38,329 --> 00:15:38,339
+as having two petals but is there a one
+ 
+
+865
+00:15:38,339 --> 00:15:40,370
+as having two petals but is there a one
+petal anti-spin that emerges from this
+
+866
+00:15:40,370 --> 00:15:40,380
+petal anti-spin that emerges from this
+ 
+
+867
+00:15:40,380 --> 00:15:42,290
+petal anti-spin that emerges from this
+picture well
+
+868
+00:15:42,290 --> 00:15:42,300
+picture well
+ 
+
+869
+00:15:42,300 --> 00:15:44,569
+picture well
+sort of it sure looks like we just need
+
+870
+00:15:44,569 --> 00:15:44,579
+sort of it sure looks like we just need
+ 
+
+871
+00:15:44,579 --> 00:15:46,670
+sort of it sure looks like we just need
+to make b equal to zero and that should
+
+872
+00:15:46,670 --> 00:15:46,680
+to make b equal to zero and that should
+ 
+
+873
+00:15:46,680 --> 00:15:48,470
+to make b equal to zero and that should
+give us a one petal anti-spin flower
+
+874
+00:15:48,470 --> 00:15:48,480
+give us a one petal anti-spin flower
+ 
+
+875
+00:15:48,480 --> 00:15:51,710
+give us a one petal anti-spin flower
+right well here's what happens when I do
+
+876
+00:15:51,710 --> 00:15:51,720
+right well here's what happens when I do
+ 
+
+877
+00:15:51,720 --> 00:15:54,650
+right well here's what happens when I do
+that at first glance this may look like
+
+878
+00:15:54,650 --> 00:15:54,660
+that at first glance this may look like
+ 
+
+879
+00:15:54,660 --> 00:15:56,810
+that at first glance this may look like
+a pendulum but a pendulum will swing to
+
+880
+00:15:56,810 --> 00:15:56,820
+a pendulum but a pendulum will swing to
+ 
+
+881
+00:15:56,820 --> 00:15:59,150
+a pendulum but a pendulum will swing to
+either side as it goes around this
+
+882
+00:15:59,150 --> 00:15:59,160
+either side as it goes around this
+ 
+
+883
+00:15:59,160 --> 00:16:01,129
+either side as it goes around this
+pattern would only be possible with a
+
+884
+00:16:01,129 --> 00:16:01,139
+pattern would only be possible with a
+ 
+
+885
+00:16:01,139 --> 00:16:03,710
+pattern would only be possible with a
+rigid prop like a club you'll also
+
+886
+00:16:03,710 --> 00:16:03,720
+rigid prop like a club you'll also
+ 
+
+887
+00:16:03,720 --> 00:16:05,569
+rigid prop like a club you'll also
+notice there are no moments when the
+
+888
+00:16:05,569 --> 00:16:05,579
+notice there are no moments when the
+ 
+
+889
+00:16:05,579 --> 00:16:07,310
+notice there are no moments when the
+movement Vector of the POI and the hand
+
+890
+00:16:07,310 --> 00:16:07,320
+movement Vector of the POI and the hand
+ 
+
+891
+00:16:07,320 --> 00:16:10,069
+movement Vector of the POI and the hand
+are opposite each other so there are no
+
+892
+00:16:10,069 --> 00:16:10,079
+are opposite each other so there are no
+ 
+
+893
+00:16:10,079 --> 00:16:12,230
+are opposite each other so there are no
+Loops to this pattern so can we really
+
+894
+00:16:12,230 --> 00:16:12,240
+Loops to this pattern so can we really
+ 
+
+895
+00:16:12,240 --> 00:16:15,290
+Loops to this pattern so can we really
+call this a one petal anti-spin flower
+
+896
+00:16:15,290 --> 00:16:15,300
+call this a one petal anti-spin flower
+ 
+
+897
+00:16:15,300 --> 00:16:17,689
+call this a one petal anti-spin flower
+it's probably stretching things a bit
+
+898
+00:16:17,689 --> 00:16:17,699
+it's probably stretching things a bit
+ 
+
+899
+00:16:17,699 --> 00:16:20,030
+it's probably stretching things a bit
+but at the very least it's completely
+
+900
+00:16:20,030 --> 00:16:20,040
+but at the very least it's completely
+ 
+
+901
+00:16:20,040 --> 00:16:22,250
+but at the very least it's completely
+consistent with one approach to breaking
+
+902
+00:16:22,250 --> 00:16:22,260
+consistent with one approach to breaking
+ 
+
+903
+00:16:22,260 --> 00:16:24,350
+consistent with one approach to breaking
+down this problem if you don't think
+
+904
+00:16:24,350 --> 00:16:24,360
+down this problem if you don't think
+ 
+
+905
+00:16:24,360 --> 00:16:26,030
+down this problem if you don't think
+that this is a particularly satisfying
+
+906
+00:16:26,030 --> 00:16:26,040
+that this is a particularly satisfying
+ 
+
+907
+00:16:26,040 --> 00:16:28,370
+that this is a particularly satisfying
+answer though I don't blame you it's
+
+908
+00:16:28,370 --> 00:16:28,380
+answer though I don't blame you it's
+ 
+
+909
+00:16:28,380 --> 00:16:30,230
+answer though I don't blame you it's
+also worth noting here that Charlie has
+
+910
+00:16:30,230 --> 00:16:30,240
+also worth noting here that Charlie has
+ 
+
+911
+00:16:30,240 --> 00:16:32,090
+also worth noting here that Charlie has
+a completely different way of framing
+
+912
+00:16:32,090 --> 00:16:32,100
+a completely different way of framing
+ 
+
+913
+00:16:32,100 --> 00:16:34,490
+a completely different way of framing
+the idea of petals rather than even
+
+914
+00:16:34,490 --> 00:16:34,500
+the idea of petals rather than even
+ 
+
+915
+00:16:34,500 --> 00:16:36,530
+the idea of petals rather than even
+trying to count moments when the POI
+
+916
+00:16:36,530 --> 00:16:36,540
+trying to count moments when the POI
+ 
+
+917
+00:16:36,540 --> 00:16:38,210
+trying to count moments when the POI
+path loops around in different ways
+
+918
+00:16:38,210 --> 00:16:38,220
+path loops around in different ways
+ 
+
+919
+00:16:38,220 --> 00:16:40,730
+path loops around in different ways
+Charlie instead counts moments with the
+
+920
+00:16:40,730 --> 00:16:40,740
+Charlie instead counts moments with the
+ 
+
+921
+00:16:40,740 --> 00:16:43,009
+Charlie instead counts moments with the
+POI passing inside of the hand path
+
+922
+00:16:43,009 --> 00:16:43,019
+POI passing inside of the hand path
+ 
+
+923
+00:16:43,019 --> 00:16:45,410
+POI passing inside of the hand path
+labeling them lobes and moments where
+
+924
+00:16:45,410 --> 00:16:45,420
+labeling them lobes and moments where
+ 
+
+925
+00:16:45,420 --> 00:16:47,509
+labeling them lobes and moments where
+the POI passes outside the hand path
+
+926
+00:16:47,509 --> 00:16:47,519
+the POI passes outside the hand path
+ 
+
+927
+00:16:47,519 --> 00:16:50,870
+the POI passes outside the hand path
+labeling them anti-lobes so inspin
+
+928
+00:16:50,870 --> 00:16:50,880
+labeling them anti-lobes so inspin
+ 
+
+929
+00:16:50,880 --> 00:16:53,030
+labeling them anti-lobes so inspin
+petals are lobes whereas anti-spin
+
+930
+00:16:53,030 --> 00:16:53,040
+petals are lobes whereas anti-spin
+ 
+
+931
+00:16:53,040 --> 00:16:55,370
+petals are lobes whereas anti-spin
+pedals are anti-lobes you do wind up
+
+932
+00:16:55,370 --> 00:16:55,380
+pedals are anti-lobes you do wind up
+ 
+
+933
+00:16:55,380 --> 00:16:56,930
+pedals are anti-lobes you do wind up
+with equivalent numbers of pedals for
+
+934
+00:16:56,930 --> 00:16:56,940
+with equivalent numbers of pedals for
+ 
+
+935
+00:16:56,940 --> 00:16:58,370
+with equivalent numbers of pedals for
+anything that we can all agree is a
+
+936
+00:16:58,370 --> 00:16:58,380
+anything that we can all agree is a
+ 
+
+937
+00:16:58,380 --> 00:17:00,769
+anything that we can all agree is a
+flower but the kicker that one petal
+
+938
+00:17:00,769 --> 00:17:00,779
+flower but the kicker that one petal
+ 
+
+939
+00:17:00,779 --> 00:17:02,509
+flower but the kicker that one petal
+anti-spin that we can't really do with
+
+940
+00:17:02,509 --> 00:17:02,519
+anti-spin that we can't really do with
+ 
+
+941
+00:17:02,519 --> 00:17:05,270
+anti-spin that we can't really do with
+the POI it definitely has both a single
+
+942
+00:17:05,270 --> 00:17:05,280
+the POI it definitely has both a single
+ 
+
+943
+00:17:05,280 --> 00:17:08,329
+the POI it definitely has both a single
+lobe and a single anti-lobe so at least
+
+944
+00:17:08,329 --> 00:17:08,339
+lobe and a single anti-lobe so at least
+ 
+
+945
+00:17:08,339 --> 00:17:09,650
+lobe and a single anti-lobe so at least
+according to Charlie's system for
+
+946
+00:17:09,650 --> 00:17:09,660
+according to Charlie's system for
+ 
+
+947
+00:17:09,660 --> 00:17:12,289
+according to Charlie's system for
+framing the problem it absolutely fits
+
+948
+00:17:12,289 --> 00:17:12,299
+framing the problem it absolutely fits
+ 
+
+949
+00:17:12,299 --> 00:17:14,809
+framing the problem it absolutely fits
+so how do we count the Petals of poi
+
+950
+00:17:14,809 --> 00:17:14,819
+so how do we count the Petals of poi
+ 
+
+951
+00:17:14,819 --> 00:17:17,929
+so how do we count the Petals of poi
+flowers well it totally depends on what
+
+952
+00:17:17,929 --> 00:17:17,939
+flowers well it totally depends on what
+ 
+
+953
+00:17:17,939 --> 00:17:19,370
+flowers well it totally depends on what
+features you're looking for honestly
+
+954
+00:17:19,370 --> 00:17:19,380
+features you're looking for honestly
+ 
+
+955
+00:17:19,380 --> 00:17:21,770
+features you're looking for honestly
+near as I can tell no one has ever
+
+956
+00:17:21,770 --> 00:17:21,780
+near as I can tell no one has ever
+ 
+
+957
+00:17:21,780 --> 00:17:23,569
+near as I can tell no one has ever
+offered up a single falsifiable
+
+958
+00:17:23,569 --> 00:17:23,579
+offered up a single falsifiable
+ 
+
+959
+00:17:23,579 --> 00:17:26,809
+offered up a single falsifiable
+definition for a flower petal so in the
+
+960
+00:17:26,809 --> 00:17:26,819
+definition for a flower petal so in the
+ 
+
+961
+00:17:26,819 --> 00:17:29,090
+definition for a flower petal so in the
+meantime we can argue the merits of all
+
+962
+00:17:29,090 --> 00:17:29,100
+meantime we can argue the merits of all
+ 
+
+963
+00:17:29,100 --> 00:17:30,530
+meantime we can argue the merits of all
+these different approaches or just
+
+964
+00:17:30,530 --> 00:17:30,540
+these different approaches or just
+ 
+
+965
+00:17:30,540 --> 00:17:33,169
+these different approaches or just
+content ourselves with loops arcs lobes
+
+966
+00:17:33,169 --> 00:17:33,179
+content ourselves with loops arcs lobes
+ 
+
+967
+00:17:33,179 --> 00:17:36,350
+content ourselves with loops arcs lobes
+and antelopes your mileage will most
+
+968
+00:17:36,350 --> 00:17:36,360
+and antelopes your mileage will most
+ 
+
+969
+00:17:36,360 --> 00:17:38,810
+and antelopes your mileage will most
+definitely vary want more videos like
+
+970
+00:17:38,810 --> 00:17:38,820
+definitely vary want more videos like
+ 
+
+971
+00:17:38,820 --> 00:17:41,210
+definitely vary want more videos like
+this one where I go super deep into POI
+
+972
+00:17:41,210 --> 00:17:41,220
+this one where I go super deep into POI
+ 
+
+973
+00:17:41,220 --> 00:17:43,610
+this one where I go super deep into POI
+Theory math or Frameworks make sure to
+
+974
+00:17:43,610 --> 00:17:43,620
+Theory math or Frameworks make sure to
+ 
+
+975
+00:17:43,620 --> 00:17:45,590
+Theory math or Frameworks make sure to
+like comment share and subscribe to make
+
+976
+00:17:45,590 --> 00:17:45,600
+like comment share and subscribe to make
+ 
+
+977
+00:17:45,600 --> 00:17:47,690
+like comment share and subscribe to make
+sure more people watch this video and
+
+978
+00:17:47,690 --> 00:17:47,700
+sure more people watch this video and
+ 
+
+979
+00:17:47,700 --> 00:17:49,549
+sure more people watch this video and
+send me requests for other things that
+
+980
+00:17:49,549 --> 00:17:49,559
+send me requests for other things that
+ 
+
+981
+00:17:49,559 --> 00:17:59,570
+send me requests for other things that
+you'd like to learn about
+
+982
+00:17:59,570 --> 00:17:59,580
+
+ 
+
+983
+00:17:59,580 --> 00:18:05,150
+
+foreign
+
+984
+00:18:05,150 --> 00:18:05,160
+
+ 
+
+985
+00:18:05,160 --> 00:18:06,950
+
+this video would not be possible if not
+
+986
+00:18:06,950 --> 00:18:06,960
+this video would not be possible if not
+ 
+
+987
+00:18:06,960 --> 00:18:08,450
+this video would not be possible if not
+for the wonderful support of all of
+
+988
+00:18:08,450 --> 00:18:08,460
+for the wonderful support of all of
+ 
+
+989
+00:18:08,460 --> 00:18:11,570
+for the wonderful support of all of
+these amazing people right here these
+
+990
+00:18:11,570 --> 00:18:11,580
+these amazing people right here these
+ 
+
+991
+00:18:11,580 --> 00:18:14,029
+these amazing people right here these
+are my flow patrons over on patreon and
+
+992
+00:18:14,029 --> 00:18:14,039
+are my flow patrons over on patreon and
+ 
+
+993
+00:18:14,039 --> 00:18:15,770
+are my flow patrons over on patreon and
+they along with the people listed down
+
+994
+00:18:15,770 --> 00:18:15,780
+they along with the people listed down
+ 
+
+995
+00:18:15,780 --> 00:18:17,330
+they along with the people listed down
+in the description help to make this
+
+996
+00:18:17,330 --> 00:18:17,340
+in the description help to make this
+ 
+
+997
+00:18:17,340 --> 00:18:19,549
+in the description help to make this
+video and all the videos on my channel
+
+998
+00:18:19,549 --> 00:18:19,559
+video and all the videos on my channel
+ 
+
+999
+00:18:19,559 --> 00:18:22,250
+video and all the videos on my channel
+possible thank you one and all for your
+
+1000
+00:18:22,250 --> 00:18:22,260
+possible thank you one and all for your
+ 
+
+1001
+00:18:22,260 --> 00:18:24,169
+possible thank you one and all for your
+very very generous support
+
+1002
+00:18:24,169 --> 00:18:24,179
+very very generous support
+ 
+
+1003
+00:18:24,179 --> 00:18:27,049
+very very generous support
+do you like my videos do you like my
+
+1004
+00:18:27,049 --> 00:18:27,059
+do you like my videos do you like my
+ 
+
+1005
+00:18:27,059 --> 00:18:29,930
+do you like my videos do you like my
+flow sessions my Vlogs reviews Combos
+
+1006
+00:18:29,930 --> 00:18:29,940
+flow sessions my Vlogs reviews Combos
+ 
+
+1007
+00:18:29,940 --> 00:18:32,270
+flow sessions my Vlogs reviews Combos
+and more I am on a mission to try and
+
+1008
+00:18:32,270 --> 00:18:32,280
+and more I am on a mission to try and
+ 
+
+1009
+00:18:32,280 --> 00:18:34,010
+and more I am on a mission to try and
+bring POI spinning and flow Arts to The
+
+1010
+00:18:34,010 --> 00:18:34,020
+bring POI spinning and flow Arts to The
+ 
+
+1011
+00:18:34,020 --> 00:18:35,570
+bring POI spinning and flow Arts to The
+Wider world and help people connect with
+
+1012
+00:18:35,570 --> 00:18:35,580
+Wider world and help people connect with
+ 
+
+1013
+00:18:35,580 --> 00:18:37,669
+Wider world and help people connect with
+their brains and their bodies so please
+
+1014
+00:18:37,669 --> 00:18:37,679
+their brains and their bodies so please
+ 
+
+1015
+00:18:37,679 --> 00:18:40,250
+their brains and their bodies so please
+help me do it head on over to
+
+1016
+00:18:40,250 --> 00:18:40,260
+help me do it head on over to
+ 
+
+1017
+00:18:40,260 --> 00:18:41,890
+help me do it head on over to
+patreon.com
+
+1018
+00:18:41,890 --> 00:18:41,900
+patreon.com
+ 
+
+1019
+00:18:41,900 --> 00:18:44,510
+patreon.com
+drexfactorpoi and sign up you can do
+
+1020
+00:18:44,510 --> 00:18:44,520
+drexfactorpoi and sign up you can do
+ 
+
+1021
+00:18:44,520 --> 00:18:46,549
+drexfactorpoi and sign up you can do
+that at the link in the description or
+
+1022
+00:18:46,549 --> 00:18:46,559
+that at the link in the description or
+ 
+
+1023
+00:18:46,559 --> 00:18:48,529
+that at the link in the description or
+the card that just popped up if you are
+
+1024
+00:18:48,529 --> 00:18:48,539
+the card that just popped up if you are
+ 
+
+1025
+00:18:48,539 --> 00:18:50,870
+the card that just popped up if you are
+watching on YouTube there you can get
+
+1026
+00:18:50,870 --> 00:18:50,880
+watching on YouTube there you can get
+ 
+
+1027
+00:18:50,880 --> 00:18:52,490
+watching on YouTube there you can get
+access to a whole host of awesome
+
+1028
+00:18:52,490 --> 00:18:52,500
+access to a whole host of awesome
+ 
+
+1029
+00:18:52,500 --> 00:18:55,130
+access to a whole host of awesome
+rewards and help me along in my mission
+
+1030
+00:18:55,130 --> 00:18:55,140
+rewards and help me along in my mission
+ 
+
+1031
+00:18:55,140 --> 00:18:57,950
+rewards and help me along in my mission
+do check that out please and thank you
+
+1032
+00:18:57,950 --> 00:18:57,960
+do check that out please and thank you
+ 
+
+1033
+00:18:57,960 --> 00:18:59,870
+do check that out please and thank you
+and if you'd like to check out some of
+
+1034
+00:18:59,870 --> 00:18:59,880
+and if you'd like to check out some of
+ 
+
+1035
+00:18:59,880 --> 00:19:02,330
+and if you'd like to check out some of
+my other videos on POI math and Theory
+
+1036
+00:19:02,330 --> 00:19:02,340
+my other videos on POI math and Theory
+ 
+
+1037
+00:19:02,340 --> 00:19:03,950
+my other videos on POI math and Theory
+I'll go ahead and leave a link to a
+
+1038
+00:19:03,950 --> 00:19:03,960
+I'll go ahead and leave a link to a
+ 
+
+1039
+00:19:03,960 --> 00:19:05,570
+I'll go ahead and leave a link to a
+playlist of them down in the description
+
+1040
+00:19:05,570 --> 00:19:05,580
+playlist of them down in the description
+ 
+
+1041
+00:19:05,580 --> 00:19:08,150
+playlist of them down in the description
+as well as up here on screen if you are
+
+1042
+00:19:08,150 --> 00:19:08,160
+as well as up here on screen if you are
+ 
+
+1043
+00:19:08,160 --> 00:19:10,370
+as well as up here on screen if you are
+watching on YouTube also the YouTube
+
+1044
+00:19:10,370 --> 00:19:10,380
+watching on YouTube also the YouTube
+ 
+
+1045
+00:19:10,380 --> 00:19:12,110
+watching on YouTube also the YouTube
+algorithm thinks that you'll like this
+
+1046
+00:19:12,110 --> 00:19:12,120
+algorithm thinks that you'll like this
+ 
+
+1047
+00:19:12,120 --> 00:19:13,789
+algorithm thinks that you'll like this
+top video based upon your past viewing
+
+1048
+00:19:13,789 --> 00:19:13,799
+top video based upon your past viewing
+ 
+
+1049
+00:19:13,799 --> 00:19:16,250
+top video based upon your past viewing
+habits so maybe give that a look as well
+
+1050
+00:19:16,250 --> 00:19:16,260
+habits so maybe give that a look as well
+ 
+
+1051
+00:19:16,260 --> 00:19:18,470
+habits so maybe give that a look as well
+thank you so much for watching make sure
+
+1052
+00:19:18,470 --> 00:19:18,480
+thank you so much for watching make sure
+ 
+
+1053
+00:19:18,480 --> 00:19:19,970
+thank you so much for watching make sure
+to get out and flow today and I'll see
+
+1054
+00:19:19,970 --> 00:19:19,980
+to get out and flow today and I'll see
+ 
+
+1055
+00:19:19,980 --> 00:19:22,430
+to get out and flow today and I'll see
+you with a new video on Monday
+
+1056
+00:19:22,430 --> 00:19:22,440
+you with a new video on Monday
+ 
+
+1057
+00:19:22,440 --> 00:19:25,100
+you with a new video on Monday
+peace
+

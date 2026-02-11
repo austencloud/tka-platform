@@ -1,0 +1,985 @@
+1
+00:00:03,140 --> 00:00:05,269
+
+so now let's talk about making sure
+
+2
+00:00:05,269 --> 00:00:05,279
+so now let's talk about making sure
+ 
+
+3
+00:00:05,279 --> 00:00:07,309
+so now let's talk about making sure
+you're doing all the variables of the
+
+4
+00:00:07,309 --> 00:00:07,319
+you're doing all the variables of the
+ 
+
+5
+00:00:07,319 --> 00:00:10,070
+you're doing all the variables of the
+same time turns and that means we're
+
+6
+00:00:10,070 --> 00:00:10,080
+same time turns and that means we're
+ 
+
+7
+00:00:10,080 --> 00:00:12,830
+same time turns and that means we're
+doing them where the player clockwise
+
+8
+00:00:12,830 --> 00:00:12,840
+doing them where the player clockwise
+ 
+
+9
+00:00:12,840 --> 00:00:18,560
+doing them where the player clockwise
+and counter clockwise cuz if I faced it
+
+10
+00:00:18,560 --> 00:00:18,570
+and counter clockwise cuz if I faced it
+ 
+
+11
+00:00:18,570 --> 00:00:20,269
+and counter clockwise cuz if I faced it
+if my player coming down the gazebo and
+
+12
+00:00:20,269 --> 00:00:20,279
+if my player coming down the gazebo and
+ 
+
+13
+00:00:20,279 --> 00:00:23,750
+if my player coming down the gazebo and
+up the big tree if I'm facing the lake
+
+14
+00:00:23,750 --> 00:00:23,760
+up the big tree if I'm facing the lake
+ 
+
+15
+00:00:23,760 --> 00:00:24,769
+up the big tree if I'm facing the lake
+when I turn
+
+16
+00:00:24,769 --> 00:00:24,779
+when I turn
+ 
+
+17
+00:00:24,779 --> 00:00:28,939
+when I turn
+that's the ploidy going clockwise but if
+
+18
+00:00:28,939 --> 00:00:28,949
+that's the ploidy going clockwise but if
+ 
+
+19
+00:00:28,949 --> 00:00:31,999
+that's the ploidy going clockwise but if
+I do if I face you with my player going
+
+20
+00:00:31,999 --> 00:00:32,009
+I do if I face you with my player going
+ 
+
+21
+00:00:32,009 --> 00:00:34,220
+I do if I face you with my player going
+counterclockwise relative to me
+
+22
+00:00:34,220 --> 00:00:34,230
+counterclockwise relative to me
+ 
+
+23
+00:00:34,230 --> 00:00:35,810
+counterclockwise relative to me
+so you're gonna try that and you're
+
+24
+00:00:35,810 --> 00:00:35,820
+so you're gonna try that and you're
+ 
+
+25
+00:00:35,820 --> 00:00:38,780
+so you're gonna try that and you're
+gonna see what I mean so this time plant
+
+26
+00:00:38,780 --> 00:00:38,790
+gonna see what I mean so this time plant
+ 
+
+27
+00:00:38,790 --> 00:00:42,200
+gonna see what I mean so this time plant
+your feet this way so the feet are both
+
+28
+00:00:42,200 --> 00:00:42,210
+your feet this way so the feet are both
+ 
+
+29
+00:00:42,210 --> 00:00:43,490
+your feet this way so the feet are both
+facing this spring get the poi going
+
+30
+00:00:43,490 --> 00:00:43,500
+facing this spring get the poi going
+ 
+
+31
+00:00:43,500 --> 00:00:48,020
+facing this spring get the poi going
+forwards if you put your right foot out
+
+32
+00:00:48,020 --> 00:00:48,030
+forwards if you put your right foot out
+ 
+
+33
+00:00:48,030 --> 00:00:52,450
+forwards if you put your right foot out
+in front and you turn with me
+
+34
+00:00:52,450 --> 00:00:52,460
+in front and you turn with me
+ 
+
+35
+00:00:52,460 --> 00:00:56,270
+in front and you turn with me
+past the lake and back or up behind the
+
+36
+00:00:56,270 --> 00:00:56,280
+past the lake and back or up behind the
+ 
+
+37
+00:00:56,280 --> 00:00:59,990
+past the lake and back or up behind the
+hips and back I can do all my turns and
+
+38
+00:00:59,990 --> 00:01:00,000
+hips and back I can do all my turns and
+ 
+
+39
+00:01:00,000 --> 00:01:03,410
+hips and back I can do all my turns and
+it's all clockwise they're going the
+
+40
+00:01:03,410 --> 00:01:03,420
+it's all clockwise they're going the
+ 
+
+41
+00:01:03,420 --> 00:01:05,630
+it's all clockwise they're going the
+rainbow from left to right the golf ball
+
+42
+00:01:05,630 --> 00:01:05,640
+rainbow from left to right the golf ball
+ 
+
+43
+00:01:05,640 --> 00:01:09,230
+rainbow from left to right the golf ball
+from right to left you come back to here
+
+44
+00:01:09,230 --> 00:01:09,240
+from right to left you come back to here
+ 
+
+45
+00:01:09,240 --> 00:01:11,390
+from right to left you come back to here
+if you put your left foot in front your
+
+46
+00:01:11,390 --> 00:01:11,400
+if you put your left foot in front your
+ 
+
+47
+00:01:11,400 --> 00:01:13,820
+if you put your left foot in front your
+turn your back to me as you pass your
+
+48
+00:01:13,820 --> 00:01:13,830
+turn your back to me as you pass your
+ 
+
+49
+00:01:13,830 --> 00:01:16,310
+turn your back to me as you pass your
+toes that's left to right and over the
+
+50
+00:01:16,310 --> 00:01:16,320
+toes that's left to right and over the
+ 
+
+51
+00:01:16,320 --> 00:01:17,960
+toes that's left to right and over the
+rainbow it's right to left it's the
+
+52
+00:01:17,960 --> 00:01:17,970
+rainbow it's right to left it's the
+ 
+
+53
+00:01:17,970 --> 00:01:20,149
+rainbow it's right to left it's the
+other way of doing it we want to make
+
+54
+00:01:20,149 --> 00:01:20,159
+other way of doing it we want to make
+ 
+
+55
+00:01:20,159 --> 00:01:21,859
+other way of doing it we want to make
+sure you're practicing both ways or else
+
+56
+00:01:21,859 --> 00:01:21,869
+sure you're practicing both ways or else
+ 
+
+57
+00:01:21,869 --> 00:01:23,630
+sure you're practicing both ways or else
+what'll happen is you'll get really good
+
+58
+00:01:23,630 --> 00:01:23,640
+what'll happen is you'll get really good
+ 
+
+59
+00:01:23,640 --> 00:01:25,100
+what'll happen is you'll get really good
+at shoulder wheels this way you'll turn
+
+60
+00:01:25,100 --> 00:01:25,110
+at shoulder wheels this way you'll turn
+ 
+
+61
+00:01:25,110 --> 00:01:26,539
+at shoulder wheels this way you'll turn
+around and you won't know what's going
+
+62
+00:01:26,539 --> 00:01:26,549
+around and you won't know what's going
+ 
+
+63
+00:01:26,549 --> 00:01:29,210
+around and you won't know what's going
+on so from the beginning you want to
+
+64
+00:01:29,210 --> 00:01:29,220
+on so from the beginning you want to
+ 
+
+65
+00:01:29,220 --> 00:01:31,160
+on so from the beginning you want to
+practice everything clockwise and
+
+66
+00:01:31,160 --> 00:01:31,170
+practice everything clockwise and
+ 
+
+67
+00:01:31,170 --> 00:01:32,780
+practice everything clockwise and
+counterclockwise left to right and right
+
+68
+00:01:32,780 --> 00:01:32,790
+counterclockwise left to right and right
+ 
+
+69
+00:01:32,790 --> 00:01:35,810
+counterclockwise left to right and right
+the left so super easy if you just take
+
+70
+00:01:35,810 --> 00:01:35,820
+the left so super easy if you just take
+ 
+
+71
+00:01:35,820 --> 00:01:37,399
+the left so super easy if you just take
+that moment to think okay well what if I
+
+72
+00:01:37,399 --> 00:01:37,409
+that moment to think okay well what if I
+ 
+
+73
+00:01:37,409 --> 00:01:39,200
+that moment to think okay well what if I
+got the lake at the beach I've got the
+
+74
+00:01:39,200 --> 00:01:39,210
+got the lake at the beach I've got the
+ 
+
+75
+00:01:39,210 --> 00:01:41,660
+got the lake at the beach I've got the
+gazebo and the tree I'm gonna start play
+
+76
+00:01:41,660 --> 00:01:41,670
+gazebo and the tree I'm gonna start play
+ 
+
+77
+00:01:41,670 --> 00:01:45,200
+gazebo and the tree I'm gonna start play
+down the gazebo and first I'm gonna put
+
+78
+00:01:45,200 --> 00:01:45,210
+down the gazebo and first I'm gonna put
+ 
+
+79
+00:01:45,210 --> 00:01:46,819
+down the gazebo and first I'm gonna put
+the right foot in front and practice all
+
+80
+00:01:46,819 --> 00:01:46,829
+the right foot in front and practice all
+ 
+
+81
+00:01:46,829 --> 00:01:49,249
+the right foot in front and practice all
+my turns past the lake so that's down
+
+82
+00:01:49,249 --> 00:01:49,259
+my turns past the lake so that's down
+ 
+
+83
+00:01:49,259 --> 00:01:53,020
+my turns past the lake so that's down
+past the toes up over the top in front
+
+84
+00:01:53,020 --> 00:01:53,030
+past the toes up over the top in front
+ 
+
+85
+00:01:53,030 --> 00:01:56,539
+past the toes up over the top in front
+up behind the hips behind down behind
+
+86
+00:01:56,539 --> 00:01:56,549
+up behind the hips behind down behind
+ 
+
+87
+00:01:56,549 --> 00:01:59,240
+up behind the hips behind down behind
+the shoulders behind and I can mix this
+
+88
+00:01:59,240 --> 00:01:59,250
+the shoulders behind and I can mix this
+ 
+
+89
+00:01:59,250 --> 00:02:02,359
+the shoulders behind and I can mix this
+up any way we want we can go in front in
+
+90
+00:02:02,359 --> 00:02:02,369
+up any way we want we can go in front in
+ 
+
+91
+00:02:02,369 --> 00:02:09,219
+up any way we want we can go in front in
+front behind behind or in front behind
+
+92
+00:02:09,219 --> 00:02:09,229
+front behind behind or in front behind
+ 
+
+93
+00:02:09,229 --> 00:02:13,460
+front behind behind or in front behind
+behind in front you can make different
+
+94
+00:02:13,460 --> 00:02:13,470
+behind in front you can make different
+ 
+
+95
+00:02:13,470 --> 00:02:14,280
+behind in front you can make different
+combination
+
+96
+00:02:14,280 --> 00:02:14,290
+combination
+ 
+
+97
+00:02:14,290 --> 00:02:19,450
+combination
+you can repeat golf-ball shoulders golf
+
+98
+00:02:19,450 --> 00:02:19,460
+you can repeat golf-ball shoulders golf
+ 
+
+99
+00:02:19,460 --> 00:02:21,960
+you can repeat golf-ball shoulders golf
+ball shoulders we're gonna practice for
+
+100
+00:02:21,960 --> 00:02:21,970
+ball shoulders we're gonna practice for
+ 
+
+101
+00:02:21,970 --> 00:02:25,270
+ball shoulders we're gonna practice for
+up behind the hips rainbow up the hips
+
+102
+00:02:25,270 --> 00:02:25,280
+up behind the hips rainbow up the hips
+ 
+
+103
+00:02:25,280 --> 00:02:29,920
+up behind the hips rainbow up the hips
+rainbow and then shift your feet and do
+
+104
+00:02:29,920 --> 00:02:29,930
+rainbow and then shift your feet and do
+ 
+
+105
+00:02:29,930 --> 00:02:31,870
+rainbow and then shift your feet and do
+this exact same thing the other way just
+
+106
+00:02:31,870 --> 00:02:31,880
+this exact same thing the other way just
+ 
+
+107
+00:02:31,880 --> 00:02:34,450
+this exact same thing the other way just
+keep shifting back and forth but don't
+
+108
+00:02:34,450 --> 00:02:34,460
+keep shifting back and forth but don't
+ 
+
+109
+00:02:34,460 --> 00:02:36,430
+keep shifting back and forth but don't
+change the way you're spinning or else
+
+110
+00:02:36,430 --> 00:02:36,440
+change the way you're spinning or else
+ 
+
+111
+00:02:36,440 --> 00:02:38,080
+change the way you're spinning or else
+you'll be practicing the same thing you
+
+112
+00:02:38,080 --> 00:02:38,090
+you'll be practicing the same thing you
+ 
+
+113
+00:02:38,090 --> 00:02:40,440
+you'll be practicing the same thing you
+already practiced so the trick is I
+
+114
+00:02:40,440 --> 00:02:40,450
+already practiced so the trick is I
+ 
+
+115
+00:02:40,450 --> 00:02:43,360
+already practiced so the trick is I
+shift my feet so I turn past the beach
+
+116
+00:02:43,360 --> 00:02:43,370
+shift my feet so I turn past the beach
+ 
+
+117
+00:02:43,370 --> 00:02:45,280
+shift my feet so I turn past the beach
+with the poi you're still coming down
+
+118
+00:02:45,280 --> 00:02:45,290
+with the poi you're still coming down
+ 
+
+119
+00:02:45,290 --> 00:02:47,830
+with the poi you're still coming down
+the gazebo and then I can practice pass
+
+120
+00:02:47,830 --> 00:02:47,840
+the gazebo and then I can practice pass
+ 
+
+121
+00:02:47,840 --> 00:02:51,730
+the gazebo and then I can practice pass
+the toes in front over the top up behind
+
+122
+00:02:51,730 --> 00:02:51,740
+the toes in front over the top up behind
+ 
+
+123
+00:02:51,740 --> 00:02:54,130
+the toes in front over the top up behind
+the hips down behind the shoulders and
+
+124
+00:02:54,130 --> 00:02:54,140
+the hips down behind the shoulders and
+ 
+
+125
+00:02:54,140 --> 00:02:55,330
+the hips down behind the shoulders and
+I'm practicing the counterclockwise
+
+126
+00:02:55,330 --> 00:02:55,340
+I'm practicing the counterclockwise
+ 
+
+127
+00:02:55,340 --> 00:03:02,620
+I'm practicing the counterclockwise
+version of all the notes you can make
+
+128
+00:03:02,620 --> 00:03:02,630
+version of all the notes you can make
+ 
+
+129
+00:03:02,630 --> 00:03:03,880
+version of all the notes you can make
+you little combinations I mean it's
+
+130
+00:03:03,880 --> 00:03:03,890
+you little combinations I mean it's
+ 
+
+131
+00:03:03,890 --> 00:03:09,030
+you little combinations I mean it's
+front front behind behind or front
+
+132
+00:03:09,030 --> 00:03:09,040
+front front behind behind or front
+ 
+
+133
+00:03:09,040 --> 00:03:15,580
+front front behind behind or front
+behind behind front so then what you can
+
+134
+00:03:15,580 --> 00:03:15,590
+behind behind front so then what you can
+ 
+
+135
+00:03:15,590 --> 00:03:18,520
+behind behind front so then what you can
+do is you can say do you can turn to
+
+136
+00:03:18,520 --> 00:03:18,530
+do is you can say do you can turn to
+ 
+
+137
+00:03:18,530 --> 00:03:20,380
+do is you can say do you can turn to
+your left a couple times so I put my
+
+138
+00:03:20,380 --> 00:03:20,390
+your left a couple times so I put my
+ 
+
+139
+00:03:20,390 --> 00:03:23,520
+your left a couple times so I put my
+right foot in front so I can turn down
+
+140
+00:03:23,520 --> 00:03:23,530
+right foot in front so I can turn down
+ 
+
+141
+00:03:23,530 --> 00:03:25,620
+right foot in front so I can turn down
+pass my toes
+
+142
+00:03:25,620 --> 00:03:25,630
+pass my toes
+ 
+
+143
+00:03:25,630 --> 00:03:28,360
+pass my toes
+turn I turn to my left shoulder then I
+
+144
+00:03:28,360 --> 00:03:28,370
+turn I turn to my left shoulder then I
+ 
+
+145
+00:03:28,370 --> 00:03:30,340
+turn I turn to my left shoulder then I
+put my right foot in front again and I
+
+146
+00:03:30,340 --> 00:03:30,350
+put my right foot in front again and I
+ 
+
+147
+00:03:30,350 --> 00:03:32,550
+put my right foot in front again and I
+can follow the rainbow over the top
+
+148
+00:03:32,550 --> 00:03:32,560
+can follow the rainbow over the top
+ 
+
+149
+00:03:32,560 --> 00:03:35,380
+can follow the rainbow over the top
+shift pass the toes
+
+150
+00:03:35,380 --> 00:03:35,390
+shift pass the toes
+ 
+
+151
+00:03:35,390 --> 00:03:39,280
+shift pass the toes
+step over the top step or I can do a
+
+152
+00:03:39,280 --> 00:03:39,290
+step over the top step or I can do a
+ 
+
+153
+00:03:39,290 --> 00:03:43,900
+step over the top step or I can do a
+turn a hind step behind the shoulders
+
+154
+00:03:43,900 --> 00:03:43,910
+turn a hind step behind the shoulders
+ 
+
+155
+00:03:43,910 --> 00:03:48,820
+turn a hind step behind the shoulders
+step up behind the hips step down behind
+
+156
+00:03:48,820 --> 00:03:48,830
+step up behind the hips step down behind
+ 
+
+157
+00:03:48,830 --> 00:03:51,250
+step up behind the hips step down behind
+the shoulders or I can go to the right
+
+158
+00:03:51,250 --> 00:03:51,260
+the shoulders or I can go to the right
+ 
+
+159
+00:03:51,260 --> 00:03:54,759
+the shoulders or I can go to the right
+shoulder up behind the hips step down
+
+160
+00:03:54,759 --> 00:03:54,769
+shoulder up behind the hips step down
+ 
+
+161
+00:03:54,769 --> 00:03:57,460
+shoulder up behind the hips step down
+behind the shoulders step up behind the
+
+162
+00:03:57,460 --> 00:03:57,470
+behind the shoulders step up behind the
+ 
+
+163
+00:03:57,470 --> 00:04:01,540
+behind the shoulders step up behind the
+hips step down on the shoulders step or
+
+164
+00:04:01,540 --> 00:04:01,550
+hips step down on the shoulders step or
+ 
+
+165
+00:04:01,550 --> 00:04:06,990
+hips step down on the shoulders step or
+in front behind the shoulders in front
+
+166
+00:04:06,990 --> 00:04:07,000
+in front behind the shoulders in front
+ 
+
+167
+00:04:07,000 --> 00:04:10,630
+in front behind the shoulders in front
+behind the shoulders up behind the hips
+
+168
+00:04:10,630 --> 00:04:10,640
+behind the shoulders up behind the hips
+ 
+
+169
+00:04:10,640 --> 00:04:15,790
+behind the shoulders up behind the hips
+over a rainbow up behind the hips over
+
+170
+00:04:15,790 --> 00:04:15,800
+over a rainbow up behind the hips over
+ 
+
+171
+00:04:15,800 --> 00:04:17,590
+over a rainbow up behind the hips over
+the rainbow we'll keep reviewing this
+
+172
+00:04:17,590 --> 00:04:17,600
+the rainbow we'll keep reviewing this
+ 
+
+173
+00:04:17,600 --> 00:04:18,820
+the rainbow we'll keep reviewing this
+it's gonna it's going to make sense but
+
+174
+00:04:18,820 --> 00:04:18,830
+it's gonna it's going to make sense but
+ 
+
+175
+00:04:18,830 --> 00:04:22,120
+it's gonna it's going to make sense but
+for now what I want you to do you're
+
+176
+00:04:22,120 --> 00:04:22,130
+for now what I want you to do you're
+ 
+
+177
+00:04:22,130 --> 00:04:24,310
+for now what I want you to do you're
+gonna you know practice for a while
+
+178
+00:04:24,310 --> 00:04:24,320
+gonna you know practice for a while
+ 
+
+179
+00:04:24,320 --> 00:04:26,710
+gonna you know practice for a while
+plant your feet the direction
+
+180
+00:04:26,710 --> 00:04:26,720
+plant your feet the direction
+ 
+
+181
+00:04:26,720 --> 00:04:30,610
+plant your feet the direction
+and think practice all your turns past
+
+182
+00:04:30,610 --> 00:04:30,620
+and think practice all your turns past
+ 
+
+183
+00:04:30,620 --> 00:04:35,740
+and think practice all your turns past
+whatever you got on this side then shift
+
+184
+00:04:35,740 --> 00:04:35,750
+whatever you got on this side then shift
+ 
+
+185
+00:04:35,750 --> 00:04:36,970
+whatever you got on this side then shift
+your feet and practice all your turns
+
+186
+00:04:36,970 --> 00:04:36,980
+your feet and practice all your turns
+ 
+
+187
+00:04:36,980 --> 00:04:40,270
+your feet and practice all your turns
+the other way and and then try doing a
+
+188
+00:04:40,270 --> 00:04:40,280
+the other way and and then try doing a
+ 
+
+189
+00:04:40,280 --> 00:04:42,820
+the other way and and then try doing a
+few turns to your right and a future in
+
+190
+00:04:42,820 --> 00:04:42,830
+few turns to your right and a future in
+ 
+
+191
+00:04:42,830 --> 00:04:44,710
+few turns to your right and a future in
+Sealift and you'll start to see how
+
+192
+00:04:44,710 --> 00:04:44,720
+Sealift and you'll start to see how
+ 
+
+193
+00:04:44,720 --> 00:04:46,240
+Sealift and you'll start to see how
+making sure practicing all the
+
+194
+00:04:46,240 --> 00:04:46,250
+making sure practicing all the
+ 
+
+195
+00:04:46,250 --> 00:04:48,790
+making sure practicing all the
+variations opens you up to freedom of
+
+196
+00:04:48,790 --> 00:04:48,800
+variations opens you up to freedom of
+ 
+
+197
+00:04:48,800 --> 00:04:51,070
+variations opens you up to freedom of
+movement
+

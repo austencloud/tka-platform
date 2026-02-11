@@ -202,3 +202,7 @@ packages/manifest.json
 # Old functions/ dir (Firebase Cloud Functions moved to firebase-functions/)
 # Cloudflare Pages reserves "functions/" for Pages Functions - must not exist in repo
 functions/
+
+# Flow arts transcription pipeline (audio is reproducible via yt-dlp, SRTs are tracked)
+flow-arts-transcripts/audio/
+flow-arts-transcripts/*-done.txt

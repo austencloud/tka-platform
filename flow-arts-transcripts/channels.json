@@ -1,0 +1,76 @@
+[
+  {
+    "name": "DrexFactor",
+    "channel_id": "UCLdxKhzTFBH85cjiSfMVeFQ",
+    "url": "https://www.youtube.com/channel/UCLdxKhzTFBH85cjiSfMVeFQ",
+    "priority": 1,
+    "notes": "500+ tech blogs, CAP math, graph theory, VTG explainers. Primary archivist of flow arts theory.",
+    "folder": "DrexFactor"
+  },
+  {
+    "name": "Noel Yee (NOELTECH)",
+    "channel_id": "UCxNTT-bLX8l61ozRcrs41VQ",
+    "url": "https://www.youtube.com/channel/UCxNTT-bLX8l61ozRcrs41VQ",
+    "priority": 1,
+    "notes": "VTG originator. NOELTECH series covers VTG 1 and VTG 2 indices, poi flowers, transitions.",
+    "folder": "NoelYee"
+  },
+  {
+    "name": "SpinMorePoi",
+    "channel_id": "UCQhs6eDAxNCr-1ZjCzdtFOA",
+    "url": "https://www.youtube.com/channel/UCQhs6eDAxNCr-1ZjCzdtFOA",
+    "priority": 1,
+    "notes": "Charlie Cushing's 9-Square Theory series, tech tutorials. Website: spinmorepoi.com",
+    "folder": "SpinMorePoi"
+  },
+  {
+    "name": "PlayPoi (Nick Woolsey)",
+    "channel_id": "UC1JgoAfZwzwO7himGUiYPlQ",
+    "url": "https://www.youtube.com/channel/UC1JgoAfZwzwO7himGUiYPlQ",
+    "priority": 2,
+    "notes": "CAP tutorials, VTG popularization, beginner through advanced poi.",
+    "folder": "PlayPoi"
+  },
+  {
+    "name": "Charlie Cushing (charlicopter)",
+    "channel_id": "UCmFwmuAGmvswnZuIUlY721w",
+    "url": "https://www.youtube.com/channel/UCmFwmuAGmvswnZuIUlY721w",
+    "priority": 1,
+    "notes": "Personal channel. Puppyhammer, flow sessions. 9-Square Theory may be on SpinMorePoi instead.",
+    "folder": "CharlieCushing"
+  },
+  {
+    "name": "The Kinetic Alphabet (Austen Cloud)",
+    "channel_id": "UCbLHNRSASZS_gwkmRATH1-A",
+    "url": "https://www.youtube.com/channel/UCbLHNRSASZS_gwkmRATH1-A",
+    "priority": 0,
+    "notes": "Austen's own channel. TKA sequence demonstrations.",
+    "folder": "TheKineticAlphabet"
+  },
+  {
+    "name": "Skylar Garard",
+    "channel_id": null,
+    "url": null,
+    "platform": "instagram",
+    "instagram": "TODO_FIND_HANDLE",
+    "priority": 3,
+    "notes": "TKA tutorials on Instagram (~25 posts). Need instaloader for download, Whisper for transcription.",
+    "folder": "SkylarGarard"
+  },
+  {
+    "name": "Sir Lorq (Lorq Nichols)",
+    "channel_id": null,
+    "url": null,
+    "priority": 2,
+    "notes": "No dedicated YouTube channel found. Content scattered across other channels. Shape Matrix, Tech Tiles, 324 Patterns, Book of PHAT. Search: 'Lorq' on other channels for appearances.",
+    "folder": "SirLorq"
+  },
+  {
+    "name": "Alien Jon",
+    "channel_id": null,
+    "url": null,
+    "priority": 2,
+    "notes": "No dedicated YouTube channel found. Known for Encyclo-Poi-dia DVDs (2009, digitized 2021). Appearances on other channels. Search: 'Alien Jon' across other channels.",
+    "folder": "AlienJon"
+  }
+]

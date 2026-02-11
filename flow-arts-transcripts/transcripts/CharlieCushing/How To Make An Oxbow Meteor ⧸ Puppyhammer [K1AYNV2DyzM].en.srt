@@ -1,0 +1,5215 @@
+1
+00:00:01,240 --> 00:00:03,189
+
+all right welcome to my tutorial on how
+
+2
+00:00:03,189 --> 00:00:03,199
+all right welcome to my tutorial on how
+ 
+
+3
+00:00:03,199 --> 00:00:05,590
+all right welcome to my tutorial on how
+to build an Oxbow
+
+4
+00:00:05,590 --> 00:00:05,600
+to build an Oxbow
+ 
+
+5
+00:00:05,600 --> 00:00:07,510
+to build an Oxbow
+Hammer first we'll take a look at the
+
+6
+00:00:07,510 --> 00:00:07,520
+Hammer first we'll take a look at the
+ 
+
+7
+00:00:07,520 --> 00:00:10,310
+Hammer first we'll take a look at the
+anatomy of a hammer there's seven Parts
+
+8
+00:00:10,310 --> 00:00:10,320
+anatomy of a hammer there's seven Parts
+ 
+
+9
+00:00:10,320 --> 00:00:12,910
+anatomy of a hammer there's seven Parts
+first we have two
+
+10
+00:00:12,910 --> 00:00:12,920
+first we have two
+ 
+
+11
+00:00:12,920 --> 00:00:15,310
+first we have two
+heads one at either end of the hammer
+
+12
+00:00:15,310 --> 00:00:15,320
+heads one at either end of the hammer
+ 
+
+13
+00:00:15,320 --> 00:00:16,870
+heads one at either end of the hammer
+and they're connected by a rope which we
+
+14
+00:00:16,870 --> 00:00:16,880
+and they're connected by a rope which we
+ 
+
+15
+00:00:16,880 --> 00:00:17,910
+and they're connected by a rope which we
+call the
+
+16
+00:00:17,910 --> 00:00:17,920
+call the
+ 
+
+17
+00:00:17,920 --> 00:00:21,230
+call the
+tether along the tether there are four
+
+18
+00:00:21,230 --> 00:00:21,240
+tether along the tether there are four
+ 
+
+19
+00:00:21,240 --> 00:00:23,589
+tether along the tether there are four
+nodes which help us position our hands
+
+20
+00:00:23,589 --> 00:00:23,599
+nodes which help us position our hands
+ 
+
+21
+00:00:23,599 --> 00:00:26,349
+nodes which help us position our hands
+as we play the two outer nodes are
+
+22
+00:00:26,349 --> 00:00:26,359
+as we play the two outer nodes are
+ 
+
+23
+00:00:26,359 --> 00:00:28,109
+as we play the two outer nodes are
+called po nodes and the two inner nodes
+
+24
+00:00:28,109 --> 00:00:28,119
+called po nodes and the two inner nodes
+ 
+
+25
+00:00:28,119 --> 00:00:29,630
+called po nodes and the two inner nodes
+are called Bridge nodes or shoulder
+
+26
+00:00:29,630 --> 00:00:29,640
+are called Bridge nodes or shoulder
+ 
+
+27
+00:00:29,640 --> 00:00:34,069
+are called Bridge nodes or shoulder
+nodes
+
+28
+00:00:34,069 --> 00:00:34,079
+
+ 
+
+29
+00:00:34,079 --> 00:00:35,670
+
+between the PO noes and the head we have
+
+30
+00:00:35,670 --> 00:00:35,680
+between the PO noes and the head we have
+ 
+
+31
+00:00:35,680 --> 00:00:37,150
+between the PO noes and the head we have
+the distal
+
+32
+00:00:37,150 --> 00:00:37,160
+the distal
+ 
+
+33
+00:00:37,160 --> 00:00:39,790
+the distal
+tether between the bridge node and the
+
+34
+00:00:39,790 --> 00:00:39,800
+tether between the bridge node and the
+ 
+
+35
+00:00:39,800 --> 00:00:41,470
+tether between the bridge node and the
+point node we have the medial
+
+36
+00:00:41,470 --> 00:00:41,480
+point node we have the medial
+ 
+
+37
+00:00:41,480 --> 00:00:43,630
+point node we have the medial
+tether and between the
+
+38
+00:00:43,630 --> 00:00:43,640
+tether and between the
+ 
+
+39
+00:00:43,640 --> 00:00:46,270
+tether and between the
+center and the bridge node we have the
+
+40
+00:00:46,270 --> 00:00:46,280
+center and the bridge node we have the
+ 
+
+41
+00:00:46,280 --> 00:00:50,990
+center and the bridge node we have the
+proximal
+
+42
+00:00:50,990 --> 00:00:51,000
+
+ 
+
+43
+00:00:51,000 --> 00:00:54,389
+
+tether the bridge is the space between
+
+44
+00:00:54,389 --> 00:00:54,399
+tether the bridge is the space between
+ 
+
+45
+00:00:54,399 --> 00:00:56,790
+tether the bridge is the space between
+the two Bridge
+
+46
+00:00:56,790 --> 00:00:56,800
+the two Bridge
+ 
+
+47
+00:00:56,800 --> 00:01:00,709
+the two Bridge
+nodes and the yoke is the of the tether
+
+48
+00:01:00,709 --> 00:01:00,719
+nodes and the yoke is the of the tether
+ 
+
+49
+00:01:00,719 --> 00:01:03,630
+nodes and the yoke is the of the tether
+between the two po nodes we also have
+
+50
+00:01:03,630 --> 00:01:03,640
+between the two po nodes we also have
+ 
+
+51
+00:01:03,640 --> 00:01:07,149
+between the two po nodes we also have
+what we call the wing which is the span
+
+52
+00:01:07,149 --> 00:01:07,159
+what we call the wing which is the span
+ 
+
+53
+00:01:07,159 --> 00:01:10,310
+what we call the wing which is the span
+of tether between the bridge node and
+
+54
+00:01:10,310 --> 00:01:10,320
+of tether between the bridge node and
+ 
+
+55
+00:01:10,320 --> 00:01:11,270
+of tether between the bridge node and
+the
+
+56
+00:01:11,270 --> 00:01:11,280
+the
+ 
+
+57
+00:01:11,280 --> 00:01:13,950
+the
+head next let's talk about how to
+
+58
+00:01:13,950 --> 00:01:13,960
+head next let's talk about how to
+ 
+
+59
+00:01:13,960 --> 00:01:16,190
+head next let's talk about how to
+prepare tethers for our
+
+60
+00:01:16,190 --> 00:01:16,200
+prepare tethers for our
+ 
+
+61
+00:01:16,200 --> 00:01:18,350
+prepare tethers for our
+build we're going to talk about cutting
+
+62
+00:01:18,350 --> 00:01:18,360
+build we're going to talk about cutting
+ 
+
+63
+00:01:18,360 --> 00:01:21,429
+build we're going to talk about cutting
+them in particular because it can be
+
+64
+00:01:21,429 --> 00:01:21,439
+them in particular because it can be
+ 
+
+65
+00:01:21,439 --> 00:01:24,270
+them in particular because it can be
+challenging so here's our
+
+66
+00:01:24,270 --> 00:01:24,280
+challenging so here's our
+ 
+
+67
+00:01:24,280 --> 00:01:26,069
+challenging so here's our
+tether and we're not going to use
+
+68
+00:01:26,069 --> 00:01:26,079
+tether and we're not going to use
+ 
+
+69
+00:01:26,079 --> 00:01:27,710
+tether and we're not going to use
+scissors to work with them they're too
+
+70
+00:01:27,710 --> 00:01:27,720
+scissors to work with them they're too
+ 
+
+71
+00:01:27,720 --> 00:01:29,910
+scissors to work with them they're too
+messy um and let me just take a moment
+
+72
+00:01:29,910 --> 00:01:29,920
+messy um and let me just take a moment
+ 
+
+73
+00:01:29,920 --> 00:01:32,030
+messy um and let me just take a moment
+moment to point out the nodes here so we
+
+74
+00:01:32,030 --> 00:01:32,040
+moment to point out the nodes here so we
+ 
+
+75
+00:01:32,040 --> 00:01:34,910
+moment to point out the nodes here so we
+have a large node and a small node and
+
+76
+00:01:34,910 --> 00:01:34,920
+have a large node and a small node and
+ 
+
+77
+00:01:34,920 --> 00:01:36,510
+have a large node and a small node and
+their profiles are designed for
+
+78
+00:01:36,510 --> 00:01:36,520
+their profiles are designed for
+ 
+
+79
+00:01:36,520 --> 00:01:39,109
+their profiles are designed for
+different use cases the high-profile
+
+80
+00:01:39,109 --> 00:01:39,119
+different use cases the high-profile
+ 
+
+81
+00:01:39,119 --> 00:01:41,590
+different use cases the high-profile
+node is good for lots of things the low
+
+82
+00:01:41,590 --> 00:01:41,600
+node is good for lots of things the low
+ 
+
+83
+00:01:41,600 --> 00:01:44,190
+node is good for lots of things the low
+profile node is mainly good for Rope
+
+84
+00:01:44,190 --> 00:01:44,200
+profile node is mainly good for Rope
+ 
+
+85
+00:01:44,200 --> 00:01:45,670
+profile node is mainly good for Rope
+Dart where you need your hand to slide
+
+86
+00:01:45,670 --> 00:01:45,680
+Dart where you need your hand to slide
+ 
+
+87
+00:01:45,680 --> 00:01:48,990
+Dart where you need your hand to slide
+smoothly uh through the
+
+88
+00:01:48,990 --> 00:01:49,000
+smoothly uh through the
+ 
+
+89
+00:01:49,000 --> 00:01:53,630
+smoothly uh through the
+node the tether is a/4 inch thick or 6
+
+90
+00:01:53,630 --> 00:01:53,640
+node the tether is a/4 inch thick or 6
+ 
+
+91
+00:01:53,640 --> 00:01:56,029
+node the tether is a/4 inch thick or 6
+mm and I don't recommend going any
+
+92
+00:01:56,029 --> 00:01:56,039
+mm and I don't recommend going any
+ 
+
+93
+00:01:56,039 --> 00:01:57,709
+mm and I don't recommend going any
+larger than that because air resistance
+
+94
+00:01:57,709 --> 00:01:57,719
+larger than that because air resistance
+ 
+
+95
+00:01:57,719 --> 00:01:59,510
+larger than that because air resistance
+becomes a big problem and the hammer
+
+96
+00:01:59,510 --> 00:01:59,520
+becomes a big problem and the hammer
+ 
+
+97
+00:01:59,520 --> 00:02:03,029
+becomes a big problem and the hammer
+will feel mushy when you spin it in uh
+
+98
+00:02:03,029 --> 00:02:03,039
+will feel mushy when you spin it in uh
+ 
+
+99
+00:02:03,039 --> 00:02:06,190
+will feel mushy when you spin it in uh
+in meteor mode or Dart
+
+100
+00:02:06,190 --> 00:02:06,200
+in meteor mode or Dart
+ 
+
+101
+00:02:06,200 --> 00:02:08,389
+in meteor mode or Dart
+mode so we're going to cut it here get
+
+102
+00:02:08,389 --> 00:02:08,399
+mode so we're going to cut it here get
+ 
+
+103
+00:02:08,399 --> 00:02:10,990
+mode so we're going to cut it here get
+back to cutting um when we cut these
+
+104
+00:02:10,990 --> 00:02:11,000
+back to cutting um when we cut these
+ 
+
+105
+00:02:11,000 --> 00:02:14,670
+back to cutting um when we cut these
+tethers they will Fray badly and we
+
+106
+00:02:14,670 --> 00:02:14,680
+tethers they will Fray badly and we
+ 
+
+107
+00:02:14,680 --> 00:02:16,509
+tethers they will Fray badly and we
+won't be able to get the nodes back onto
+
+108
+00:02:16,509 --> 00:02:16,519
+won't be able to get the nodes back onto
+ 
+
+109
+00:02:16,519 --> 00:02:18,589
+won't be able to get the nodes back onto
+the tether so we need to treat it
+
+110
+00:02:18,589 --> 00:02:18,599
+the tether so we need to treat it
+ 
+
+111
+00:02:18,599 --> 00:02:20,309
+the tether so we need to treat it
+somehow and the best way to do this is
+
+112
+00:02:20,309 --> 00:02:20,319
+somehow and the best way to do this is
+ 
+
+113
+00:02:20,319 --> 00:02:21,589
+somehow and the best way to do this is
+with
+
+114
+00:02:21,589 --> 00:02:21,599
+with
+ 
+
+115
+00:02:21,599 --> 00:02:26,150
+with
+heat we're going to melt the area around
+
+116
+00:02:26,150 --> 00:02:26,160
+heat we're going to melt the area around
+ 
+
+117
+00:02:26,160 --> 00:02:28,350
+heat we're going to melt the area around
+where we want to make the cut and this
+
+118
+00:02:28,350 --> 00:02:28,360
+where we want to make the cut and this
+ 
+
+119
+00:02:28,360 --> 00:02:31,630
+where we want to make the cut and this
+will shrink and seal the fibers in place
+
+120
+00:02:31,630 --> 00:02:31,640
+will shrink and seal the fibers in place
+ 
+
+121
+00:02:31,640 --> 00:02:33,949
+will shrink and seal the fibers in place
+and we'll end up with a nice tapered end
+
+122
+00:02:33,949 --> 00:02:33,959
+and we'll end up with a nice tapered end
+ 
+
+123
+00:02:33,959 --> 00:02:35,630
+and we'll end up with a nice tapered end
+that we can use to mount the node uh
+
+124
+00:02:35,630 --> 00:02:35,640
+that we can use to mount the node uh
+ 
+
+125
+00:02:35,640 --> 00:02:37,670
+that we can use to mount the node uh
+without any sort of phrase getting in
+
+126
+00:02:37,670 --> 00:02:37,680
+without any sort of phrase getting in
+ 
+
+127
+00:02:37,680 --> 00:02:40,990
+without any sort of phrase getting in
+the way so go ahead and cut it here and
+
+128
+00:02:40,990 --> 00:02:41,000
+the way so go ahead and cut it here and
+ 
+
+129
+00:02:41,000 --> 00:02:44,550
+the way so go ahead and cut it here and
+you can see that the result is a nice
+
+130
+00:02:44,550 --> 00:02:44,560
+you can see that the result is a nice
+ 
+
+131
+00:02:44,560 --> 00:02:47,270
+you can see that the result is a nice
+clean tapered finish that will make
+
+132
+00:02:47,270 --> 00:02:47,280
+clean tapered finish that will make
+ 
+
+133
+00:02:47,280 --> 00:02:52,430
+clean tapered finish that will make
+mounting the node uh much
+
+134
+00:02:52,430 --> 00:02:52,440
+
+ 
+
+135
+00:02:52,440 --> 00:02:55,670
+
+easier
+
+136
+00:02:55,670 --> 00:02:55,680
+
+ 
+
+137
+00:02:55,680 --> 00:02:57,790
+
+okay so next I'm going to show you
+
+138
+00:02:57,790 --> 00:02:57,800
+okay so next I'm going to show you
+ 
+
+139
+00:02:57,800 --> 00:03:00,149
+okay so next I'm going to show you
+another type of fiber this is a high
+
+140
+00:03:00,149 --> 00:03:00,159
+another type of fiber this is a high
+ 
+
+141
+00:03:00,159 --> 00:03:01,869
+another type of fiber this is a high
+performance fiber called
+
+142
+00:03:01,869 --> 00:03:01,879
+performance fiber called
+ 
+
+143
+00:03:01,879 --> 00:03:05,149
+performance fiber called
+dyema it's very very strong and uh very
+
+144
+00:03:05,149 --> 00:03:05,159
+dyema it's very very strong and uh very
+ 
+
+145
+00:03:05,159 --> 00:03:06,949
+dyema it's very very strong and uh very
+stretch resistant and it has a wonderful
+
+146
+00:03:06,949 --> 00:03:06,959
+stretch resistant and it has a wonderful
+ 
+
+147
+00:03:06,959 --> 00:03:10,149
+stretch resistant and it has a wonderful
+feeling on the skin um the problem again
+
+148
+00:03:10,149 --> 00:03:10,159
+feeling on the skin um the problem again
+ 
+
+149
+00:03:10,159 --> 00:03:12,390
+feeling on the skin um the problem again
+though is we can't get the Noe on until
+
+150
+00:03:12,390 --> 00:03:12,400
+though is we can't get the Noe on until
+ 
+
+151
+00:03:12,400 --> 00:03:15,949
+though is we can't get the Noe on until
+we prepare the end and the problem with
+
+152
+00:03:15,949 --> 00:03:15,959
+we prepare the end and the problem with
+ 
+
+153
+00:03:15,959 --> 00:03:18,470
+we prepare the end and the problem with
+these Advanced fibers like dyema or
+
+154
+00:03:18,470 --> 00:03:18,480
+these Advanced fibers like dyema or
+ 
+
+155
+00:03:18,480 --> 00:03:20,550
+these Advanced fibers like dyema or
+technora or Kevlar is that they don't
+
+156
+00:03:20,550 --> 00:03:20,560
+technora or Kevlar is that they don't
+ 
+
+157
+00:03:20,560 --> 00:03:24,309
+technora or Kevlar is that they don't
+melt they they actually sort of burn
+
+158
+00:03:24,309 --> 00:03:24,319
+melt they they actually sort of burn
+ 
+
+159
+00:03:24,319 --> 00:03:27,670
+melt they they actually sort of burn
+um this dyema does melt a little bit but
+
+160
+00:03:27,670 --> 00:03:27,680
+um this dyema does melt a little bit but
+ 
+
+161
+00:03:27,680 --> 00:03:30,670
+um this dyema does melt a little bit but
+it mostly Burns so when I try to cut it
+
+162
+00:03:30,670 --> 00:03:30,680
+it mostly Burns so when I try to cut it
+ 
+
+163
+00:03:30,680 --> 00:03:32,309
+it mostly Burns so when I try to cut it
+here which by the way is pretty
+
+164
+00:03:32,309 --> 00:03:32,319
+here which by the way is pretty
+ 
+
+165
+00:03:32,319 --> 00:03:34,789
+here which by the way is pretty
+difficult these are very strong fibers
+
+166
+00:03:34,789 --> 00:03:34,799
+difficult these are very strong fibers
+ 
+
+167
+00:03:34,799 --> 00:03:39,350
+difficult these are very strong fibers
+um you'll see that we tried melting it
+
+168
+00:03:39,350 --> 00:03:39,360
+um you'll see that we tried melting it
+ 
+
+169
+00:03:39,360 --> 00:03:42,869
+um you'll see that we tried melting it
+but that's not going to work so the
+
+170
+00:03:42,869 --> 00:03:42,879
+but that's not going to work so the
+ 
+
+171
+00:03:42,879 --> 00:03:46,949
+but that's not going to work so the
+alternative is to use
+
+172
+00:03:46,949 --> 00:03:46,959
+
+ 
+
+173
+00:03:46,959 --> 00:03:49,710
+
+tape and when we use tape I I typically
+
+174
+00:03:49,710 --> 00:03:49,720
+tape and when we use tape I I typically
+ 
+
+175
+00:03:49,720 --> 00:03:53,030
+tape and when we use tape I I typically
+do about a uh a turn and a half to keep
+
+176
+00:03:53,030 --> 00:03:53,040
+do about a uh a turn and a half to keep
+ 
+
+177
+00:03:53,040 --> 00:03:56,030
+do about a uh a turn and a half to keep
+it from getting too thick and then I
+
+178
+00:03:56,030 --> 00:03:56,040
+it from getting too thick and then I
+ 
+
+179
+00:03:56,040 --> 00:03:58,229
+it from getting too thick and then I
+pull very hard on this is electrical
+
+180
+00:03:58,229 --> 00:03:58,239
+pull very hard on this is electrical
+ 
+
+181
+00:03:58,239 --> 00:04:00,910
+pull very hard on this is electrical
+tape by the way pull very hard on it to
+
+182
+00:04:00,910 --> 00:04:00,920
+tape by the way pull very hard on it to
+ 
+
+183
+00:04:00,920 --> 00:04:03,229
+tape by the way pull very hard on it to
+um sort of pack it all
+
+184
+00:04:03,229 --> 00:04:03,239
+um sort of pack it all
+ 
+
+185
+00:04:03,239 --> 00:04:06,789
+um sort of pack it all
+down and now when I cut it again it's
+
+186
+00:04:06,789 --> 00:04:06,799
+down and now when I cut it again it's
+ 
+
+187
+00:04:06,799 --> 00:04:10,030
+down and now when I cut it again it's
+difficult but you'll see that the end is
+
+188
+00:04:10,030 --> 00:04:10,040
+difficult but you'll see that the end is
+ 
+
+189
+00:04:10,040 --> 00:04:13,470
+difficult but you'll see that the end is
+nice and sharp and clean and it makes it
+
+190
+00:04:13,470 --> 00:04:13,480
+nice and sharp and clean and it makes it
+ 
+
+191
+00:04:13,480 --> 00:04:15,990
+nice and sharp and clean and it makes it
+so that the node will fit into the uh
+
+192
+00:04:15,990 --> 00:04:16,000
+so that the node will fit into the uh
+ 
+
+193
+00:04:16,000 --> 00:04:17,550
+so that the node will fit into the uh
+fit over the the
+
+194
+00:04:17,550 --> 00:04:17,560
+fit over the the
+ 
+
+195
+00:04:17,560 --> 00:04:19,670
+fit over the the
+tether all right now it's time to talk
+
+196
+00:04:19,670 --> 00:04:19,680
+tether all right now it's time to talk
+ 
+
+197
+00:04:19,680 --> 00:04:21,629
+tether all right now it's time to talk
+about mounting the reference head so
+
+198
+00:04:21,629 --> 00:04:21,639
+about mounting the reference head so
+ 
+
+199
+00:04:21,639 --> 00:04:24,030
+about mounting the reference head so
+we're going to mount one head to the end
+
+200
+00:04:24,030 --> 00:04:24,040
+we're going to mount one head to the end
+ 
+
+201
+00:04:24,040 --> 00:04:26,790
+we're going to mount one head to the end
+of our tether and this will be used as
+
+202
+00:04:26,790 --> 00:04:26,800
+of our tether and this will be used as
+ 
+
+203
+00:04:26,800 --> 00:04:29,230
+of our tether and this will be used as
+the uh starting point for building the
+
+204
+00:04:29,230 --> 00:04:29,240
+the uh starting point for building the
+ 
+
+205
+00:04:29,240 --> 00:04:30,590
+the uh starting point for building the
+remainder of the the hammer from that
+
+206
+00:04:30,590 --> 00:04:30,600
+remainder of the the hammer from that
+ 
+
+207
+00:04:30,600 --> 00:04:34,590
+remainder of the the hammer from that
+and um moving across the the tether so
+
+208
+00:04:34,590 --> 00:04:34,600
+and um moving across the the tether so
+ 
+
+209
+00:04:34,600 --> 00:04:37,110
+and um moving across the the tether so
+first we'll Mount
+
+210
+00:04:37,110 --> 00:04:37,120
+first we'll Mount
+ 
+
+211
+00:04:37,120 --> 00:04:39,990
+first we'll Mount
+the nodes I'm going to use blue nodes
+
+212
+00:04:39,990 --> 00:04:40,000
+the nodes I'm going to use blue nodes
+ 
+
+213
+00:04:40,000 --> 00:04:44,670
+the nodes I'm going to use blue nodes
+for the PO and yellow nodes for the
+
+214
+00:04:44,670 --> 00:04:44,680
+
+ 
+
+215
+00:04:44,680 --> 00:04:47,390
+
+bridge I treated the end of the tether
+
+216
+00:04:47,390 --> 00:04:47,400
+bridge I treated the end of the tether
+ 
+
+217
+00:04:47,400 --> 00:04:50,430
+bridge I treated the end of the tether
+using that melting technique and you can
+
+218
+00:04:50,430 --> 00:04:50,440
+using that melting technique and you can
+ 
+
+219
+00:04:50,440 --> 00:04:55,749
+using that melting technique and you can
+see that the nodes are sliding on
+
+220
+00:04:55,749 --> 00:04:55,759
+
+ 
+
+221
+00:04:55,759 --> 00:04:58,070
+
+easily remember that the tether is a/4
+
+222
+00:04:58,070 --> 00:04:58,080
+easily remember that the tether is a/4
+ 
+
+223
+00:04:58,080 --> 00:05:01,230
+easily remember that the tether is a/4
+in thick or about 6 mm for like Optimal
+
+224
+00:05:01,230 --> 00:05:01,240
+in thick or about 6 mm for like Optimal
+ 
+
+225
+00:05:01,240 --> 00:05:04,029
+in thick or about 6 mm for like Optimal
+air
+
+226
+00:05:04,029 --> 00:05:04,039
+
+ 
+
+227
+00:05:04,039 --> 00:05:07,670
+
+resistance and now we're going to start
+
+228
+00:05:07,670 --> 00:05:07,680
+resistance and now we're going to start
+ 
+
+229
+00:05:07,680 --> 00:05:10,749
+resistance and now we're going to start
+working on the head um this is
+
+230
+00:05:10,749 --> 00:05:10,759
+working on the head um this is
+ 
+
+231
+00:05:10,759 --> 00:05:16,230
+working on the head um this is
+the the outer shell it's a rubber um and
+
+232
+00:05:16,230 --> 00:05:16,240
+the the outer shell it's a rubber um and
+ 
+
+233
+00:05:16,240 --> 00:05:19,350
+the the outer shell it's a rubber um and
+we use a cartridge system to hold it all
+
+234
+00:05:19,350 --> 00:05:19,360
+we use a cartridge system to hold it all
+ 
+
+235
+00:05:19,360 --> 00:05:21,189
+we use a cartridge system to hold it all
+together and you'll see how that works
+
+236
+00:05:21,189 --> 00:05:21,199
+together and you'll see how that works
+ 
+
+237
+00:05:21,199 --> 00:05:23,029
+together and you'll see how that works
+in a moment first we'll make a mark
+
+238
+00:05:23,029 --> 00:05:23,039
+in a moment first we'll make a mark
+ 
+
+239
+00:05:23,039 --> 00:05:26,550
+in a moment first we'll make a mark
+where we want our stopper knot to go and
+
+240
+00:05:26,550 --> 00:05:26,560
+where we want our stopper knot to go and
+ 
+
+241
+00:05:26,560 --> 00:05:29,909
+where we want our stopper knot to go and
+stopper knot is used to uh to fix the T
+
+242
+00:05:29,909 --> 00:05:29,919
+stopper knot is used to uh to fix the T
+ 
+
+243
+00:05:29,919 --> 00:05:32,270
+stopper knot is used to uh to fix the T
+inside the cartridge so we made that
+
+244
+00:05:32,270 --> 00:05:32,280
+inside the cartridge so we made that
+ 
+
+245
+00:05:32,280 --> 00:05:34,350
+inside the cartridge so we made that
+Mark we're going to tie the stopper knot
+
+246
+00:05:34,350 --> 00:05:34,360
+Mark we're going to tie the stopper knot
+ 
+
+247
+00:05:34,360 --> 00:05:36,309
+Mark we're going to tie the stopper knot
+it's a simple overhand
+
+248
+00:05:36,309 --> 00:05:36,319
+it's a simple overhand
+ 
+
+249
+00:05:36,319 --> 00:05:39,070
+it's a simple overhand
+knot we're going to make it really tight
+
+250
+00:05:39,070 --> 00:05:39,080
+knot we're going to make it really tight
+ 
+
+251
+00:05:39,080 --> 00:05:41,550
+knot we're going to make it really tight
+so it doesn't creep on us after we've uh
+
+252
+00:05:41,550 --> 00:05:41,560
+so it doesn't creep on us after we've uh
+ 
+
+253
+00:05:41,560 --> 00:05:46,629
+so it doesn't creep on us after we've uh
+we've closed everything
+
+254
+00:05:46,629 --> 00:05:46,639
+
+ 
+
+255
+00:05:46,639 --> 00:05:49,029
+
+up just enough to fit in the cartridge
+
+256
+00:05:49,029 --> 00:05:49,039
+up just enough to fit in the cartridge
+ 
+
+257
+00:05:49,039 --> 00:05:51,790
+up just enough to fit in the cartridge
+plus a little
+
+258
+00:05:51,790 --> 00:05:51,800
+
+ 
+
+259
+00:05:51,800 --> 00:05:53,990
+
+bit we're going to open the
+
+260
+00:05:53,990 --> 00:05:54,000
+bit we're going to open the
+ 
+
+261
+00:05:54,000 --> 00:05:57,070
+bit we're going to open the
+cartridge and place the the tether
+
+262
+00:05:57,070 --> 00:05:57,080
+cartridge and place the the tether
+ 
+
+263
+00:05:57,080 --> 00:06:02,189
+cartridge and place the the tether
+inside with the excess facing out
+
+264
+00:06:02,189 --> 00:06:02,199
+
+ 
+
+265
+00:06:02,199 --> 00:06:04,510
+
+and then we'll add an O-ring an elastic
+
+266
+00:06:04,510 --> 00:06:04,520
+and then we'll add an O-ring an elastic
+ 
+
+267
+00:06:04,520 --> 00:06:06,390
+and then we'll add an O-ring an elastic
+o-ring and we're going to slide it all
+
+268
+00:06:06,390 --> 00:06:06,400
+o-ring and we're going to slide it all
+ 
+
+269
+00:06:06,400 --> 00:06:09,670
+o-ring and we're going to slide it all
+the way back to the inboard end of the
+
+270
+00:06:09,670 --> 00:06:09,680
+the way back to the inboard end of the
+ 
+
+271
+00:06:09,680 --> 00:06:12,510
+the way back to the inboard end of the
+cartridge like that and now it's
+
+272
+00:06:12,510 --> 00:06:12,520
+cartridge like that and now it's
+ 
+
+273
+00:06:12,520 --> 00:06:14,510
+cartridge like that and now it's
+springloaded uh so it's all held
+
+274
+00:06:14,510 --> 00:06:14,520
+springloaded uh so it's all held
+ 
+
+275
+00:06:14,520 --> 00:06:16,670
+springloaded uh so it's all held
+together while we work on it before we
+
+276
+00:06:16,670 --> 00:06:16,680
+together while we work on it before we
+ 
+
+277
+00:06:16,680 --> 00:06:20,110
+together while we work on it before we
+close it up I'm twisting the tether so
+
+278
+00:06:20,110 --> 00:06:20,120
+close it up I'm twisting the tether so
+ 
+
+279
+00:06:20,120 --> 00:06:22,150
+close it up I'm twisting the tether so
+that it sort of retracts into the uh
+
+280
+00:06:22,150 --> 00:06:22,160
+that it sort of retracts into the uh
+ 
+
+281
+00:06:22,160 --> 00:06:24,070
+that it sort of retracts into the uh
+into the cartridge and now I'm adding a
+
+282
+00:06:24,070 --> 00:06:24,080
+into the cartridge and now I'm adding a
+ 
+
+283
+00:06:24,080 --> 00:06:28,029
+into the cartridge and now I'm adding a
+weight this will be a 160 G head um I
+
+284
+00:06:28,029 --> 00:06:28,039
+weight this will be a 160 G head um I
+ 
+
+285
+00:06:28,039 --> 00:06:30,830
+weight this will be a 160 G head um I
+recommend somewhere between 50 and about
+
+286
+00:06:30,830 --> 00:06:30,840
+recommend somewhere between 50 and about
+ 
+
+287
+00:06:30,840 --> 00:06:33,150
+recommend somewhere between 50 and about
+200
+
+288
+00:06:33,150 --> 00:06:33,160
+200
+ 
+
+289
+00:06:33,160 --> 00:06:36,270
+200
+g adding this little decorative sticker
+
+290
+00:06:36,270 --> 00:06:36,280
+g adding this little decorative sticker
+ 
+
+291
+00:06:36,280 --> 00:06:40,390
+g adding this little decorative sticker
+to the end followed by the final o-ring
+
+292
+00:06:40,390 --> 00:06:40,400
+to the end followed by the final o-ring
+ 
+
+293
+00:06:40,400 --> 00:06:43,390
+to the end followed by the final o-ring
+which holds it all
+
+294
+00:06:43,390 --> 00:06:43,400
+
+ 
+
+295
+00:06:43,400 --> 00:06:46,469
+
+together and then we can just pull the
+
+296
+00:06:46,469 --> 00:06:46,479
+together and then we can just pull the
+ 
+
+297
+00:06:46,479 --> 00:06:50,469
+together and then we can just pull the
+cartridge inside the
+
+298
+00:06:50,469 --> 00:06:50,479
+
+ 
+
+299
+00:06:50,479 --> 00:06:53,469
+
+shell so that's our mounted
+
+300
+00:06:53,469 --> 00:06:53,479
+shell so that's our mounted
+ 
+
+301
+00:06:53,479 --> 00:06:56,189
+shell so that's our mounted
+head and now we're going to remove it
+
+302
+00:06:56,189 --> 00:06:56,199
+head and now we're going to remove it
+ 
+
+303
+00:06:56,199 --> 00:06:58,110
+head and now we're going to remove it
+and demonstrate adjustment so first I
+
+304
+00:06:58,110 --> 00:06:58,120
+and demonstrate adjustment so first I
+ 
+
+305
+00:06:58,120 --> 00:07:00,670
+and demonstrate adjustment so first I
+pry it with my fingers and then push it
+
+306
+00:07:00,670 --> 00:07:00,680
+pry it with my fingers and then push it
+ 
+
+307
+00:07:00,680 --> 00:07:02,749
+pry it with my fingers and then push it
+with this Sharpie a Sharpie makes a
+
+308
+00:07:02,749 --> 00:07:02,759
+with this Sharpie a Sharpie makes a
+ 
+
+309
+00:07:02,759 --> 00:07:05,150
+with this Sharpie a Sharpie makes a
+really good tool for a lot of uh the
+
+310
+00:07:05,150 --> 00:07:05,160
+really good tool for a lot of uh the
+ 
+
+311
+00:07:05,160 --> 00:07:07,790
+really good tool for a lot of uh the
+work you do while you're building the
+
+312
+00:07:07,790 --> 00:07:07,800
+work you do while you're building the
+ 
+
+313
+00:07:07,800 --> 00:07:10,749
+work you do while you're building the
+hammer first we're going to pull the uh
+
+314
+00:07:10,749 --> 00:07:10,759
+hammer first we're going to pull the uh
+ 
+
+315
+00:07:10,759 --> 00:07:13,550
+hammer first we're going to pull the uh
+the end o-ring off and dump everything
+
+316
+00:07:13,550 --> 00:07:13,560
+the end o-ring off and dump everything
+ 
+
+317
+00:07:13,560 --> 00:07:16,749
+the end o-ring off and dump everything
+out remove the tether and the stopper
+
+318
+00:07:16,749 --> 00:07:16,759
+out remove the tether and the stopper
+ 
+
+319
+00:07:16,759 --> 00:07:18,670
+out remove the tether and the stopper
+knot you'll notice I didn't remove the
+
+320
+00:07:18,670 --> 00:07:18,680
+knot you'll notice I didn't remove the
+ 
+
+321
+00:07:18,680 --> 00:07:21,230
+knot you'll notice I didn't remove the
+other o-ring just to keep things
+
+322
+00:07:21,230 --> 00:07:21,240
+other o-ring just to keep things
+ 
+
+323
+00:07:21,240 --> 00:07:23,629
+other o-ring just to keep things
+together making a mark where we want our
+
+324
+00:07:23,629 --> 00:07:23,639
+together making a mark where we want our
+ 
+
+325
+00:07:23,639 --> 00:07:25,869
+together making a mark where we want our
+new knot if we want to adjust it and
+
+326
+00:07:25,869 --> 00:07:25,879
+new knot if we want to adjust it and
+ 
+
+327
+00:07:25,879 --> 00:07:27,710
+new knot if we want to adjust it and
+you'll see we're going to slide the knot
+
+328
+00:07:27,710 --> 00:07:27,720
+you'll see we're going to slide the knot
+ 
+
+329
+00:07:27,720 --> 00:07:34,749
+you'll see we're going to slide the knot
+over after loosening it
+
+330
+00:07:34,749 --> 00:07:34,759
+
+ 
+
+331
+00:07:34,759 --> 00:07:36,390
+
+so we're taking some of that excess
+
+332
+00:07:36,390 --> 00:07:36,400
+so we're taking some of that excess
+ 
+
+333
+00:07:36,400 --> 00:07:39,510
+so we're taking some of that excess
+tether that we had um sort of stuffed
+
+334
+00:07:39,510 --> 00:07:39,520
+tether that we had um sort of stuffed
+ 
+
+335
+00:07:39,520 --> 00:07:41,309
+tether that we had um sort of stuffed
+inside the cartridge and we're we're
+
+336
+00:07:41,309 --> 00:07:41,319
+inside the cartridge and we're we're
+ 
+
+337
+00:07:41,319 --> 00:07:43,029
+inside the cartridge and we're we're
+taking advantage of it to change the
+
+338
+00:07:43,029 --> 00:07:43,039
+taking advantage of it to change the
+ 
+
+339
+00:07:43,039 --> 00:07:45,950
+taking advantage of it to change the
+length of the of the
+
+340
+00:07:45,950 --> 00:07:45,960
+length of the of the
+ 
+
+341
+00:07:45,960 --> 00:07:48,430
+length of the of the
+tether moving the knot out would make
+
+342
+00:07:48,430 --> 00:07:48,440
+tether moving the knot out would make
+ 
+
+343
+00:07:48,440 --> 00:07:50,950
+tether moving the knot out would make
+the hammer longer of course we're we're
+
+344
+00:07:50,950 --> 00:07:50,960
+the hammer longer of course we're we're
+ 
+
+345
+00:07:50,960 --> 00:07:52,790
+the hammer longer of course we're we're
+adding that weight back in adding that
+
+346
+00:07:52,790 --> 00:07:52,800
+adding that weight back in adding that
+ 
+
+347
+00:07:52,800 --> 00:07:54,950
+adding that weight back in adding that
+decorative sticker and replacing the
+
+348
+00:07:54,950 --> 00:07:54,960
+decorative sticker and replacing the
+ 
+
+349
+00:07:54,960 --> 00:07:59,149
+decorative sticker and replacing the
+O-ring again we this is 160 gam head and
+
+350
+00:07:59,149 --> 00:07:59,159
+O-ring again we this is 160 gam head and
+ 
+
+351
+00:07:59,159 --> 00:08:00,149
+O-ring again we this is 160 gam head and
+uh
+
+352
+00:08:00,149 --> 00:08:00,159
+uh
+ 
+
+353
+00:08:00,159 --> 00:08:02,430
+uh
+um you know somewhere between 150 and
+
+354
+00:08:02,430 --> 00:08:02,440
+um you know somewhere between 150 and
+ 
+
+355
+00:08:02,440 --> 00:08:05,869
+um you know somewhere between 150 and
+200 g is good 160 is a good uh starting
+
+356
+00:08:05,869 --> 00:08:05,879
+200 g is good 160 is a good uh starting
+ 
+
+357
+00:08:05,879 --> 00:08:10,390
+200 g is good 160 is a good uh starting
+place there you go that's how you mount
+
+358
+00:08:10,390 --> 00:08:10,400
+place there you go that's how you mount
+ 
+
+359
+00:08:10,400 --> 00:08:12,830
+place there you go that's how you mount
+ahead now we need to talk about setting
+
+360
+00:08:12,830 --> 00:08:12,840
+ahead now we need to talk about setting
+ 
+
+361
+00:08:12,840 --> 00:08:15,149
+ahead now we need to talk about setting
+the first po node so we're moving
+
+362
+00:08:15,149 --> 00:08:15,159
+the first po node so we're moving
+ 
+
+363
+00:08:15,159 --> 00:08:23,790
+the first po node so we're moving
+along the hammer from one end to the
+
+364
+00:08:23,790 --> 00:08:23,800
+
+ 
+
+365
+00:08:23,800 --> 00:08:26,469
+
+other so we have a sliding node and we
+
+366
+00:08:26,469 --> 00:08:26,479
+other so we have a sliding node and we
+ 
+
+367
+00:08:26,479 --> 00:08:28,510
+other so we have a sliding node and we
+have the head mounted what we're going
+
+368
+00:08:28,510 --> 00:08:28,520
+have the head mounted what we're going
+ 
+
+369
+00:08:28,520 --> 00:08:30,510
+have the head mounted what we're going
+to do is
+
+370
+00:08:30,510 --> 00:08:30,520
+to do is
+ 
+
+371
+00:08:30,520 --> 00:08:32,670
+to do is
+hold the node between our thumb and
+
+372
+00:08:32,670 --> 00:08:32,680
+hold the node between our thumb and
+ 
+
+373
+00:08:32,680 --> 00:08:36,589
+hold the node between our thumb and
+pointer finger so that the node is in
+
+374
+00:08:36,589 --> 00:08:36,599
+pointer finger so that the node is in
+ 
+
+375
+00:08:36,599 --> 00:08:41,149
+pointer finger so that the node is in
+line with the tip of our
+
+376
+00:08:41,149 --> 00:08:41,159
+
+ 
+
+377
+00:08:41,159 --> 00:08:43,070
+
+thumb like
+
+378
+00:08:43,070 --> 00:08:43,080
+thumb like
+ 
+
+379
+00:08:43,080 --> 00:08:46,310
+thumb like
+this we can then pull the tether in
+
+380
+00:08:46,310 --> 00:08:46,320
+this we can then pull the tether in
+ 
+
+381
+00:08:46,320 --> 00:08:47,710
+this we can then pull the tether in
+either direction through the node while
+
+382
+00:08:47,710 --> 00:08:47,720
+either direction through the node while
+ 
+
+383
+00:08:47,720 --> 00:08:49,590
+either direction through the node while
+we hold it we're going to place our
+
+384
+00:08:49,590 --> 00:08:49,600
+we hold it we're going to place our
+ 
+
+385
+00:08:49,600 --> 00:08:54,269
+we hold it we're going to place our
+elbow on the table with the head sitting
+
+386
+00:08:54,269 --> 00:08:54,279
+elbow on the table with the head sitting
+ 
+
+387
+00:08:54,279 --> 00:08:55,630
+elbow on the table with the head sitting
+on the surface of the table and we're
+
+388
+00:08:55,630 --> 00:08:55,640
+on the surface of the table and we're
+ 
+
+389
+00:08:55,640 --> 00:08:58,110
+on the surface of the table and we're
+going to carefully pull the tether
+
+390
+00:08:58,110 --> 00:08:58,120
+going to carefully pull the tether
+ 
+
+391
+00:08:58,120 --> 00:09:01,750
+going to carefully pull the tether
+through the node until until the distal
+
+392
+00:09:01,750 --> 00:09:01,760
+through the node until until the distal
+ 
+
+393
+00:09:01,760 --> 00:09:04,350
+through the node until until the distal
+tether or the POI section of the tether
+
+394
+00:09:04,350 --> 00:09:04,360
+tether or the POI section of the tether
+ 
+
+395
+00:09:04,360 --> 00:09:05,509
+tether or the POI section of the tether
+is
+
+396
+00:09:05,509 --> 00:09:05,519
+is
+ 
+
+397
+00:09:05,519 --> 00:09:10,190
+is
+TT like
+
+398
+00:09:10,190 --> 00:09:10,200
+
+ 
+
+399
+00:09:10,200 --> 00:09:13,110
+
+that we're then going
+
+400
+00:09:13,110 --> 00:09:13,120
+that we're then going
+ 
+
+401
+00:09:13,120 --> 00:09:17,430
+that we're then going
+to use a screw to mount the node to the
+
+402
+00:09:17,430 --> 00:09:17,440
+to use a screw to mount the node to the
+ 
+
+403
+00:09:17,440 --> 00:09:18,710
+to use a screw to mount the node to the
+tether but we're not going to drive it
+
+404
+00:09:18,710 --> 00:09:18,720
+tether but we're not going to drive it
+ 
+
+405
+00:09:18,720 --> 00:09:20,670
+tether but we're not going to drive it
+in all the way we're only going to drive
+
+406
+00:09:20,670 --> 00:09:20,680
+in all the way we're only going to drive
+ 
+
+407
+00:09:20,680 --> 00:09:22,110
+in all the way we're only going to drive
+it in about halfway and this is to
+
+408
+00:09:22,110 --> 00:09:22,120
+it in about halfway and this is to
+ 
+
+409
+00:09:22,120 --> 00:09:23,509
+it in about halfway and this is to
+prevent damaging the tether while we
+
+410
+00:09:23,509 --> 00:09:23,519
+prevent damaging the tether while we
+ 
+
+411
+00:09:23,519 --> 00:09:25,230
+prevent damaging the tether while we
+build the hammer in case we need to make
+
+412
+00:09:25,230 --> 00:09:25,240
+build the hammer in case we need to make
+ 
+
+413
+00:09:25,240 --> 00:09:34,949
+build the hammer in case we need to make
+adjustments later on
+
+414
+00:09:34,949 --> 00:09:34,959
+
+ 
+
+415
+00:09:34,959 --> 00:09:38,069
+
+so that's our first po end
+
+416
+00:09:38,069 --> 00:09:38,079
+so that's our first po end
+ 
+
+417
+00:09:38,079 --> 00:09:40,350
+so that's our first po end
+finished moving along the hammer we're
+
+418
+00:09:40,350 --> 00:09:40,360
+finished moving along the hammer we're
+ 
+
+419
+00:09:40,360 --> 00:09:42,110
+finished moving along the hammer we're
+going to skip the bridge nodes for now
+
+420
+00:09:42,110 --> 00:09:42,120
+going to skip the bridge nodes for now
+ 
+
+421
+00:09:42,120 --> 00:09:44,389
+going to skip the bridge nodes for now
+and go to the uh the second po node we
+
+422
+00:09:44,389 --> 00:09:44,399
+and go to the uh the second po node we
+ 
+
+423
+00:09:44,399 --> 00:09:46,269
+and go to the uh the second po node we
+need some space to do this so you can go
+
+424
+00:09:46,269 --> 00:09:46,279
+need some space to do this so you can go
+ 
+
+425
+00:09:46,279 --> 00:09:49,069
+need some space to do this so you can go
+outside or into a big room or something
+
+426
+00:09:49,069 --> 00:09:49,079
+outside or into a big room or something
+ 
+
+427
+00:09:49,079 --> 00:09:50,949
+outside or into a big room or something
+we're going to go into the standard Oxo
+
+428
+00:09:50,949 --> 00:09:50,959
+we're going to go into the standard Oxo
+ 
+
+429
+00:09:50,959 --> 00:09:53,870
+we're going to go into the standard Oxo
+position which is a position uh where we
+
+430
+00:09:53,870 --> 00:09:53,880
+position which is a position uh where we
+ 
+
+431
+00:09:53,880 --> 00:09:56,430
+position which is a position uh where we
+wrap the tether around our body in this
+
+432
+00:09:56,430 --> 00:09:56,440
+wrap the tether around our body in this
+ 
+
+433
+00:09:56,440 --> 00:09:58,870
+wrap the tether around our body in this
+way you see here so it's sort of a
+
+434
+00:09:58,870 --> 00:09:58,880
+way you see here so it's sort of a
+ 
+
+435
+00:09:58,880 --> 00:09:59,829
+way you see here so it's sort of a
+spiral
+
+436
+00:09:59,829 --> 00:09:59,839
+spiral
+ 
+
+437
+00:09:59,839 --> 00:10:01,350
+spiral
+around our arms and around the back of
+
+438
+00:10:01,350 --> 00:10:01,360
+around our arms and around the back of
+ 
+
+439
+00:10:01,360 --> 00:10:03,430
+around our arms and around the back of
+our
+
+440
+00:10:03,430 --> 00:10:03,440
+our
+ 
+
+441
+00:10:03,440 --> 00:10:06,829
+our
+neck we're going to hold the PO node
+
+442
+00:10:06,829 --> 00:10:06,839
+neck we're going to hold the PO node
+ 
+
+443
+00:10:06,839 --> 00:10:08,269
+neck we're going to hold the PO node
+just like we did before when we were
+
+444
+00:10:08,269 --> 00:10:08,279
+just like we did before when we were
+ 
+
+445
+00:10:08,279 --> 00:10:10,389
+just like we did before when we were
+setting it so it's in line with the top
+
+446
+00:10:10,389 --> 00:10:10,399
+setting it so it's in line with the top
+ 
+
+447
+00:10:10,399 --> 00:10:12,230
+setting it so it's in line with the top
+of our
+
+448
+00:10:12,230 --> 00:10:12,240
+of our
+ 
+
+449
+00:10:12,240 --> 00:10:15,430
+of our
+thumb again the uh the head should be
+
+450
+00:10:15,430 --> 00:10:15,440
+thumb again the uh the head should be
+ 
+
+451
+00:10:15,440 --> 00:10:17,470
+thumb again the uh the head should be
+parallel to the bottom of our
+
+452
+00:10:17,470 --> 00:10:17,480
+parallel to the bottom of our
+ 
+
+453
+00:10:17,480 --> 00:10:19,630
+parallel to the bottom of our
+elbow so now you can see that the tether
+
+454
+00:10:19,630 --> 00:10:19,640
+elbow so now you can see that the tether
+ 
+
+455
+00:10:19,640 --> 00:10:22,230
+elbow so now you can see that the tether
+is loose right now what we're going to
+
+456
+00:10:22,230 --> 00:10:22,240
+is loose right now what we're going to
+ 
+
+457
+00:10:22,240 --> 00:10:24,389
+is loose right now what we're going to
+do is tighten it we're going to tighten
+
+458
+00:10:24,389 --> 00:10:24,399
+do is tighten it we're going to tighten
+ 
+
+459
+00:10:24,399 --> 00:10:27,069
+do is tighten it we're going to tighten
+it quite a
+
+460
+00:10:27,069 --> 00:10:27,079
+
+ 
+
+461
+00:10:27,079 --> 00:10:28,910
+
+bit pretty tight right now it'll
+
+462
+00:10:28,910 --> 00:10:28,920
+bit pretty tight right now it'll
+ 
+
+463
+00:10:28,920 --> 00:10:30,310
+bit pretty tight right now it'll
+probably end up up being tighter in a in
+
+464
+00:10:30,310 --> 00:10:30,320
+probably end up up being tighter in a in
+ 
+
+465
+00:10:30,320 --> 00:10:33,509
+probably end up up being tighter in a in
+a second
+
+466
+00:10:33,509 --> 00:10:33,519
+
+ 
+
+467
+00:10:33,519 --> 00:10:36,870
+
+here so we're holding both
+
+468
+00:10:36,870 --> 00:10:36,880
+here so we're holding both
+ 
+
+469
+00:10:36,880 --> 00:10:41,389
+here so we're holding both
+ends tightening the tether as we go
+
+470
+00:10:41,389 --> 00:10:41,399
+ends tightening the tether as we go
+ 
+
+471
+00:10:41,399 --> 00:10:42,829
+ends tightening the tether as we go
+holding on to the tether we're going to
+
+472
+00:10:42,829 --> 00:10:42,839
+holding on to the tether we're going to
+ 
+
+473
+00:10:42,839 --> 00:10:45,389
+holding on to the tether we're going to
+slide the other side the other po node
+
+474
+00:10:45,389 --> 00:10:45,399
+slide the other side the other po node
+ 
+
+475
+00:10:45,399 --> 00:10:46,949
+slide the other side the other po node
+down and we're going to put it right
+
+476
+00:10:46,949 --> 00:10:46,959
+down and we're going to put it right
+ 
+
+477
+00:10:46,959 --> 00:10:49,629
+down and we're going to put it right
+where we're pinching just like
+
+478
+00:10:49,629 --> 00:10:49,639
+where we're pinching just like
+ 
+
+479
+00:10:49,639 --> 00:10:52,430
+where we're pinching just like
+that same thing Thumb in line with the
+
+480
+00:10:52,430 --> 00:10:52,440
+that same thing Thumb in line with the
+ 
+
+481
+00:10:52,440 --> 00:10:54,069
+that same thing Thumb in line with the
+node we're going
+
+482
+00:10:54,069 --> 00:10:54,079
+node we're going
+ 
+
+483
+00:10:54,079 --> 00:10:57,990
+node we're going
+to drive the set screw in about halfway
+
+484
+00:10:57,990 --> 00:10:58,000
+to drive the set screw in about halfway
+ 
+
+485
+00:10:58,000 --> 00:11:01,470
+to drive the set screw in about halfway
+just to hold it in place
+
+486
+00:11:01,470 --> 00:11:01,480
+
+ 
+
+487
+00:11:01,480 --> 00:11:02,910
+
+and now we're going to start adjusting
+
+488
+00:11:02,910 --> 00:11:02,920
+and now we're going to start adjusting
+ 
+
+489
+00:11:02,920 --> 00:11:06,629
+and now we're going to start adjusting
+it as we need to to get it just
+
+490
+00:11:06,629 --> 00:11:06,639
+it as we need to to get it just
+ 
+
+491
+00:11:06,639 --> 00:11:08,949
+it as we need to to get it just
+right we're going to check everything's
+
+492
+00:11:08,949 --> 00:11:08,959
+right we're going to check everything's
+ 
+
+493
+00:11:08,959 --> 00:11:12,870
+right we're going to check everything's
+squared up make sure the tether is
+
+494
+00:11:12,870 --> 00:11:12,880
+
+ 
+
+495
+00:11:12,880 --> 00:11:14,990
+
+tight while we're holding the nodes in
+
+496
+00:11:14,990 --> 00:11:15,000
+tight while we're holding the nodes in
+ 
+
+497
+00:11:15,000 --> 00:11:17,910
+tight while we're holding the nodes in
+that nice flush
+
+498
+00:11:17,910 --> 00:11:17,920
+that nice flush
+ 
+
+499
+00:11:17,920 --> 00:11:20,230
+that nice flush
+position I found it to be a little loose
+
+500
+00:11:20,230 --> 00:11:20,240
+position I found it to be a little loose
+ 
+
+501
+00:11:20,240 --> 00:11:22,990
+position I found it to be a little loose
+in this case so I'm going to move the PO
+
+502
+00:11:22,990 --> 00:11:23,000
+in this case so I'm going to move the PO
+ 
+
+503
+00:11:23,000 --> 00:11:24,550
+in this case so I'm going to move the PO
+node in
+
+504
+00:11:24,550 --> 00:11:24,560
+node in
+ 
+
+505
+00:11:24,560 --> 00:11:27,230
+node in
+slightly so when I hold the node now
+
+506
+00:11:27,230 --> 00:11:27,240
+slightly so when I hold the node now
+ 
+
+507
+00:11:27,240 --> 00:11:30,629
+slightly so when I hold the node now
+when I hold both nodes
+
+508
+00:11:30,629 --> 00:11:30,639
+when I hold both nodes
+ 
+
+509
+00:11:30,639 --> 00:11:33,190
+when I hold both nodes
+because they're closer together it'll be
+
+510
+00:11:33,190 --> 00:11:33,200
+because they're closer together it'll be
+ 
+
+511
+00:11:33,200 --> 00:11:35,030
+because they're closer together it'll be
+tighter around my
+
+512
+00:11:35,030 --> 00:11:35,040
+tighter around my
+ 
+
+513
+00:11:35,040 --> 00:11:42,590
+tighter around my
+body it's quite tight
+
+514
+00:11:42,590 --> 00:11:42,600
+
+ 
+
+515
+00:11:42,600 --> 00:11:46,310
+
+now still flush with my thumb now when I
+
+516
+00:11:46,310 --> 00:11:46,320
+now still flush with my thumb now when I
+ 
+
+517
+00:11:46,320 --> 00:11:47,949
+now still flush with my thumb now when I
+move my hands down you'll see that the
+
+518
+00:11:47,949 --> 00:11:47,959
+move my hands down you'll see that the
+ 
+
+519
+00:11:47,959 --> 00:11:50,790
+move my hands down you'll see that the
+node Rises up towards my wrist same on
+
+520
+00:11:50,790 --> 00:11:50,800
+node Rises up towards my wrist same on
+ 
+
+521
+00:11:50,800 --> 00:11:51,990
+node Rises up towards my wrist same on
+the other
+
+522
+00:11:51,990 --> 00:11:52,000
+the other
+ 
+
+523
+00:11:52,000 --> 00:11:54,269
+the other
+side and this is correct this is the way
+
+524
+00:11:54,269 --> 00:11:54,279
+side and this is correct this is the way
+ 
+
+525
+00:11:54,279 --> 00:11:56,470
+side and this is correct this is the way
+it should be it should be in line with
+
+526
+00:11:56,470 --> 00:11:56,480
+it should be it should be in line with
+ 
+
+527
+00:11:56,480 --> 00:11:57,949
+it should be it should be in line with
+the base of your wrist right where that
+
+528
+00:11:57,949 --> 00:11:57,959
+the base of your wrist right where that
+ 
+
+529
+00:11:57,959 --> 00:12:00,670
+the base of your wrist right where that
+crease is in your wrist
+
+530
+00:12:00,670 --> 00:12:00,680
+crease is in your wrist
+ 
+
+531
+00:12:00,680 --> 00:12:05,710
+crease is in your wrist
+wrist so up it's going to be tight flush
+
+532
+00:12:05,710 --> 00:12:05,720
+wrist so up it's going to be tight flush
+ 
+
+533
+00:12:05,720 --> 00:12:08,110
+wrist so up it's going to be tight flush
+with your elbow everything looks good
+
+534
+00:12:08,110 --> 00:12:08,120
+with your elbow everything looks good
+ 
+
+535
+00:12:08,120 --> 00:12:11,150
+with your elbow everything looks good
+down it's going to be up towards your
+
+536
+00:12:11,150 --> 00:12:11,160
+down it's going to be up towards your
+ 
+
+537
+00:12:11,160 --> 00:12:13,910
+down it's going to be up towards your
+wrist we'll now Mount the second head to
+
+538
+00:12:13,910 --> 00:12:13,920
+wrist we'll now Mount the second head to
+ 
+
+539
+00:12:13,920 --> 00:12:15,910
+wrist we'll now Mount the second head to
+its end of the
+
+540
+00:12:15,910 --> 00:12:15,920
+its end of the
+ 
+
+541
+00:12:15,920 --> 00:12:18,310
+its end of the
+hammer so we have the two blue nodes
+
+542
+00:12:18,310 --> 00:12:18,320
+hammer so we have the two blue nodes
+ 
+
+543
+00:12:18,320 --> 00:12:22,509
+hammer so we have the two blue nodes
+those are the PO nodes and we've set
+
+544
+00:12:22,509 --> 00:12:22,519
+those are the PO nodes and we've set
+ 
+
+545
+00:12:22,519 --> 00:12:24,389
+those are the PO nodes and we've set
+them into their respective positions
+
+546
+00:12:24,389 --> 00:12:24,399
+them into their respective positions
+ 
+
+547
+00:12:24,399 --> 00:12:27,430
+them into their respective positions
+feeling pretty good about it and now
+
+548
+00:12:27,430 --> 00:12:27,440
+feeling pretty good about it and now
+ 
+
+549
+00:12:27,440 --> 00:12:28,750
+feeling pretty good about it and now
+it's time to mount the second head so
+
+550
+00:12:28,750 --> 00:12:28,760
+it's time to mount the second head so
+ 
+
+551
+00:12:28,760 --> 00:12:30,430
+it's time to mount the second head so
+the first we're going to do is remove
+
+552
+00:12:30,430 --> 00:12:30,440
+the first we're going to do is remove
+ 
+
+553
+00:12:30,440 --> 00:12:32,310
+the first we're going to do is remove
+the first
+
+554
+00:12:32,310 --> 00:12:32,320
+the first
+ 
+
+555
+00:12:32,320 --> 00:12:34,710
+the first
+one again using a Sharpie to push it out
+
+556
+00:12:34,710 --> 00:12:34,720
+one again using a Sharpie to push it out
+ 
+
+557
+00:12:34,720 --> 00:12:38,110
+one again using a Sharpie to push it out
+is a great way to uh to make it simpler
+
+558
+00:12:38,110 --> 00:12:38,120
+is a great way to uh to make it simpler
+ 
+
+559
+00:12:38,120 --> 00:12:41,670
+is a great way to uh to make it simpler
+on yourself we're going to remove the
+
+560
+00:12:41,670 --> 00:12:41,680
+on yourself we're going to remove the
+ 
+
+561
+00:12:41,680 --> 00:12:45,310
+on yourself we're going to remove the
+inboard o-ring just slide it
+
+562
+00:12:45,310 --> 00:12:45,320
+inboard o-ring just slide it
+ 
+
+563
+00:12:45,320 --> 00:12:47,629
+inboard o-ring just slide it
+back break the shell
+
+564
+00:12:47,629 --> 00:12:47,639
+back break the shell
+ 
+
+565
+00:12:47,639 --> 00:12:49,910
+back break the shell
+open pull the knot
+
+566
+00:12:49,910 --> 00:12:49,920
+open pull the knot
+ 
+
+567
+00:12:49,920 --> 00:12:59,670
+open pull the knot
+out now we'll remove the head
+
+568
+00:12:59,670 --> 00:12:59,680
+
+ 
+
+569
+00:12:59,680 --> 00:13:02,829
+
+so our objective here is to make both po
+
+570
+00:13:02,829 --> 00:13:02,839
+so our objective here is to make both po
+ 
+
+571
+00:13:02,839 --> 00:13:05,590
+so our objective here is to make both po
+identical exactly the same length and to
+
+572
+00:13:05,590 --> 00:13:05,600
+identical exactly the same length and to
+ 
+
+573
+00:13:05,600 --> 00:13:07,790
+identical exactly the same length and to
+do this we're just going to use our
+
+574
+00:13:07,790 --> 00:13:07,800
+do this we're just going to use our
+ 
+
+575
+00:13:07,800 --> 00:13:10,910
+do this we're just going to use our
+Sharpie again to
+
+576
+00:13:10,910 --> 00:13:10,920
+Sharpie again to
+ 
+
+577
+00:13:10,920 --> 00:13:15,230
+Sharpie again to
+Mark right where the first knot we tied
+
+578
+00:13:15,230 --> 00:13:15,240
+Mark right where the first knot we tied
+ 
+
+579
+00:13:15,240 --> 00:13:17,910
+Mark right where the first knot we tied
+is located just going to make it right
+
+580
+00:13:17,910 --> 00:13:17,920
+is located just going to make it right
+ 
+
+581
+00:13:17,920 --> 00:13:20,550
+is located just going to make it right
+in line make sure those nodes are
+
+582
+00:13:20,550 --> 00:13:20,560
+in line make sure those nodes are
+ 
+
+583
+00:13:20,560 --> 00:13:27,389
+in line make sure those nodes are
+straight right in line right
+
+584
+00:13:27,389 --> 00:13:27,399
+
+ 
+
+585
+00:13:27,399 --> 00:13:45,710
+
+there and we'll tie another stop or
+
+586
+00:13:45,710 --> 00:13:45,720
+
+ 
+
+587
+00:13:45,720 --> 00:13:48,750
+
+not nice and
+
+588
+00:13:48,750 --> 00:13:48,760
+not nice and
+ 
+
+589
+00:13:48,760 --> 00:13:52,509
+not nice and
+tight so now in theory both knots and
+
+590
+00:13:52,509 --> 00:13:52,519
+tight so now in theory both knots and
+ 
+
+591
+00:13:52,519 --> 00:13:55,189
+tight so now in theory both knots and
+both nodes are exactly the same distance
+
+592
+00:13:55,189 --> 00:13:55,199
+both nodes are exactly the same distance
+ 
+
+593
+00:13:55,199 --> 00:13:57,749
+both nodes are exactly the same distance
+apart here I'm just going to demonstrate
+
+594
+00:13:57,749 --> 00:13:57,759
+apart here I'm just going to demonstrate
+ 
+
+595
+00:13:57,759 --> 00:14:00,829
+apart here I'm just going to demonstrate
+trimming the remainer the excess tether
+
+596
+00:14:00,829 --> 00:14:00,839
+trimming the remainer the excess tether
+ 
+
+597
+00:14:00,839 --> 00:14:05,030
+trimming the remainer the excess tether
+off generally you would have a lot more
+
+598
+00:14:05,030 --> 00:14:05,040
+off generally you would have a lot more
+ 
+
+599
+00:14:05,040 --> 00:14:07,710
+off generally you would have a lot more
+excess I just had a shorter uh a shorter
+
+600
+00:14:07,710 --> 00:14:07,720
+excess I just had a shorter uh a shorter
+ 
+
+601
+00:14:07,720 --> 00:14:10,509
+excess I just had a shorter uh a shorter
+tether than usual but you would uh you
+
+602
+00:14:10,509 --> 00:14:10,519
+tether than usual but you would uh you
+ 
+
+603
+00:14:10,519 --> 00:14:11,790
+tether than usual but you would uh you
+would
+
+604
+00:14:11,790 --> 00:14:11,800
+would
+ 
+
+605
+00:14:11,800 --> 00:14:15,310
+would
+trim the excess tether away so that it
+
+606
+00:14:15,310 --> 00:14:15,320
+trim the excess tether away so that it
+ 
+
+607
+00:14:15,320 --> 00:14:23,990
+trim the excess tether away so that it
+fits inside the
+
+608
+00:14:23,990 --> 00:14:24,000
+
+ 
+
+609
+00:14:24,000 --> 00:14:26,470
+
+cartridge now we're going to mount both
+
+610
+00:14:26,470 --> 00:14:26,480
+cartridge now we're going to mount both
+ 
+
+611
+00:14:26,480 --> 00:14:33,829
+cartridge now we're going to mount both
+heads on
+
+612
+00:14:33,829 --> 00:14:33,839
+
+ 
+
+613
+00:14:33,839 --> 00:14:52,110
+
+oops there we
+
+614
+00:14:52,110 --> 00:14:52,120
+
+ 
+
+615
+00:14:52,120 --> 00:14:54,829
+
+go now remember that these are
+
+616
+00:14:54,829 --> 00:14:54,839
+go now remember that these are
+ 
+
+617
+00:14:54,839 --> 00:14:57,670
+go now remember that these are
+adjustable so those stopper knots can be
+
+618
+00:14:57,670 --> 00:14:57,680
+adjustable so those stopper knots can be
+ 
+
+619
+00:14:57,680 --> 00:14:59,829
+adjustable so those stopper knots can be
+repositioned as necessary NE AR to
+
+620
+00:14:59,829 --> 00:14:59,839
+repositioned as necessary NE AR to
+ 
+
+621
+00:14:59,839 --> 00:15:01,749
+repositioned as necessary NE AR to
+increase or decrease the length of the
+
+622
+00:15:01,749 --> 00:15:01,759
+increase or decrease the length of the
+ 
+
+623
+00:15:01,759 --> 00:15:16,550
+increase or decrease the length of the
+uh the
+
+624
+00:15:16,550 --> 00:15:16,560
+
+ 
+
+625
+00:15:16,560 --> 00:15:19,110
+
+PO again you'll see that I use the
+
+626
+00:15:19,110 --> 00:15:19,120
+PO again you'll see that I use the
+ 
+
+627
+00:15:19,120 --> 00:15:21,790
+PO again you'll see that I use the
+O-ring I push it all the way back so
+
+628
+00:15:21,790 --> 00:15:21,800
+O-ring I push it all the way back so
+ 
+
+629
+00:15:21,800 --> 00:15:24,110
+O-ring I push it all the way back so
+that it's like spring-loaded and that
+
+630
+00:15:24,110 --> 00:15:24,120
+that it's like spring-loaded and that
+ 
+
+631
+00:15:24,120 --> 00:15:27,389
+that it's like spring-loaded and that
+way I can easily work with uh getting
+
+632
+00:15:27,389 --> 00:15:27,399
+way I can easily work with uh getting
+ 
+
+633
+00:15:27,399 --> 00:15:30,550
+way I can easily work with uh getting
+the weight in and
+
+634
+00:15:30,550 --> 00:15:30,560
+the weight in and
+ 
+
+635
+00:15:30,560 --> 00:15:33,150
+the weight in and
+keeping the excess tether out of the way
+
+636
+00:15:33,150 --> 00:15:33,160
+keeping the excess tether out of the way
+ 
+
+637
+00:15:33,160 --> 00:15:38,829
+keeping the excess tether out of the way
+we're going to add that little sticker
+
+638
+00:15:38,829 --> 00:15:38,839
+
+ 
+
+639
+00:15:38,839 --> 00:15:45,230
+
+again and the final
+
+640
+00:15:45,230 --> 00:15:45,240
+
+ 
+
+641
+00:15:45,240 --> 00:15:48,030
+
+o-ring and there we have it so both po
+
+642
+00:15:48,030 --> 00:15:48,040
+o-ring and there we have it so both po
+ 
+
+643
+00:15:48,040 --> 00:15:50,230
+o-ring and there we have it so both po
+are finished now and this establishes
+
+644
+00:15:50,230 --> 00:15:50,240
+are finished now and this establishes
+ 
+
+645
+00:15:50,240 --> 00:15:55,110
+are finished now and this establishes
+the total length of the
+
+646
+00:15:55,110 --> 00:15:55,120
+
+ 
+
+647
+00:15:55,120 --> 00:15:58,230
+
+hammer everything's lined up now we're
+
+648
+00:15:58,230 --> 00:15:58,240
+hammer everything's lined up now we're
+ 
+
+649
+00:15:58,240 --> 00:16:00,790
+hammer everything's lined up now we're
+going to set up the Bri
+
+650
+00:16:00,790 --> 00:16:00,800
+going to set up the Bri
+ 
+
+651
+00:16:00,800 --> 00:16:03,030
+going to set up the Bri
+brige so to do this we're going to start
+
+652
+00:16:03,030 --> 00:16:03,040
+brige so to do this we're going to start
+ 
+
+653
+00:16:03,040 --> 00:16:05,150
+brige so to do this we're going to start
+working with those two yellow
+
+654
+00:16:05,150 --> 00:16:05,160
+working with those two yellow
+ 
+
+655
+00:16:05,160 --> 00:16:09,829
+working with those two yellow
+nodes we'll need a
+
+656
+00:16:09,829 --> 00:16:09,839
+
+ 
+
+657
+00:16:09,839 --> 00:16:12,470
+
+marker the first thing we need to do is
+
+658
+00:16:12,470 --> 00:16:12,480
+marker the first thing we need to do is
+ 
+
+659
+00:16:12,480 --> 00:16:15,309
+marker the first thing we need to do is
+make sure the hammer is perfectly
+
+660
+00:16:15,309 --> 00:16:15,319
+make sure the hammer is perfectly
+ 
+
+661
+00:16:15,319 --> 00:16:16,910
+make sure the hammer is perfectly
+parallel and
+
+662
+00:16:16,910 --> 00:16:16,920
+parallel and
+ 
+
+663
+00:16:16,920 --> 00:16:19,829
+parallel and
+perfectly mirrored so to do this we're
+
+664
+00:16:19,829 --> 00:16:19,839
+perfectly mirrored so to do this we're
+ 
+
+665
+00:16:19,839 --> 00:16:21,629
+perfectly mirrored so to do this we're
+going to line up the heads line up the
+
+666
+00:16:21,629 --> 00:16:21,639
+going to line up the heads line up the
+ 
+
+667
+00:16:21,639 --> 00:16:25,269
+going to line up the heads line up the
+the nodes get the get the bridge nodes
+
+668
+00:16:25,269 --> 00:16:25,279
+the nodes get the get the bridge nodes
+ 
+
+669
+00:16:25,279 --> 00:16:28,150
+the nodes get the get the bridge nodes
+out of the way sort of move them apart
+
+670
+00:16:28,150 --> 00:16:28,160
+out of the way sort of move them apart
+ 
+
+671
+00:16:28,160 --> 00:16:30,550
+out of the way sort of move them apart
+from each other at decent amount line up
+
+672
+00:16:30,550 --> 00:16:30,560
+from each other at decent amount line up
+ 
+
+673
+00:16:30,560 --> 00:16:31,910
+from each other at decent amount line up
+the PO
+
+674
+00:16:31,910 --> 00:16:31,920
+the PO
+ 
+
+675
+00:16:31,920 --> 00:16:35,629
+the PO
+noes so that they're perfectly in
+
+676
+00:16:35,629 --> 00:16:35,639
+noes so that they're perfectly in
+ 
+
+677
+00:16:35,639 --> 00:16:38,389
+noes so that they're perfectly in
+line and then we're going to carefully
+
+678
+00:16:38,389 --> 00:16:38,399
+line and then we're going to carefully
+ 
+
+679
+00:16:38,399 --> 00:16:45,870
+line and then we're going to carefully
+slide both along both
+
+680
+00:16:45,870 --> 00:16:45,880
+
+ 
+
+681
+00:16:45,880 --> 00:16:48,309
+
+tethers so that it's perfectly mirrored
+
+682
+00:16:48,309 --> 00:16:48,319
+tethers so that it's perfectly mirrored
+ 
+
+683
+00:16:48,319 --> 00:16:50,350
+tethers so that it's perfectly mirrored
+so now we've arrived this is the exact
+
+684
+00:16:50,350 --> 00:16:50,360
+so now we've arrived this is the exact
+ 
+
+685
+00:16:50,360 --> 00:16:53,670
+so now we've arrived this is the exact
+center of the hammer right here we're
+
+686
+00:16:53,670 --> 00:16:53,680
+center of the hammer right here we're
+ 
+
+687
+00:16:53,680 --> 00:16:59,309
+center of the hammer right here we're
+going to mark it
+
+688
+00:16:59,309 --> 00:16:59,319
+
+ 
+
+689
+00:16:59,319 --> 00:17:00,990
+
+and now we need to Center the two Bridge
+
+690
+00:17:00,990 --> 00:17:01,000
+and now we need to Center the two Bridge
+ 
+
+691
+00:17:01,000 --> 00:17:14,029
+and now we need to Center the two Bridge
+nodes on either side of that Center
+
+692
+00:17:14,029 --> 00:17:14,039
+
+ 
+
+693
+00:17:14,039 --> 00:17:16,510
+
+Point Okay so we've got them roughly in
+
+694
+00:17:16,510 --> 00:17:16,520
+Point Okay so we've got them roughly in
+ 
+
+695
+00:17:16,520 --> 00:17:18,590
+Point Okay so we've got them roughly in
+position now we need to determine how
+
+696
+00:17:18,590 --> 00:17:18,600
+position now we need to determine how
+ 
+
+697
+00:17:18,600 --> 00:17:20,390
+position now we need to determine how
+far apart to put them and A good rule of
+
+698
+00:17:20,390 --> 00:17:20,400
+far apart to put them and A good rule of
+ 
+
+699
+00:17:20,400 --> 00:17:27,110
+far apart to put them and A good rule of
+thumb is to use the length of the PO
+
+700
+00:17:27,110 --> 00:17:27,120
+
+ 
+
+701
+00:17:27,120 --> 00:17:30,110
+
+segment so laying the down we're going
+
+702
+00:17:30,110 --> 00:17:30,120
+segment so laying the down we're going
+ 
+
+703
+00:17:30,120 --> 00:17:33,230
+segment so laying the down we're going
+to adjust the two Bridge
+
+704
+00:17:33,230 --> 00:17:33,240
+to adjust the two Bridge
+ 
+
+705
+00:17:33,240 --> 00:17:35,190
+to adjust the two Bridge
+nodes from the
+
+706
+00:17:35,190 --> 00:17:35,200
+nodes from the
+ 
+
+707
+00:17:35,200 --> 00:17:39,029
+nodes from the
+center so that the inner edge of both of
+
+708
+00:17:39,029 --> 00:17:39,039
+center so that the inner edge of both of
+ 
+
+709
+00:17:39,039 --> 00:17:44,510
+center so that the inner edge of both of
+them just meets the outer edge of the
+
+710
+00:17:44,510 --> 00:17:44,520
+them just meets the outer edge of the
+ 
+
+711
+00:17:44,520 --> 00:17:47,710
+them just meets the outer edge of the
+POI we're going to fold the hammer in
+
+712
+00:17:47,710 --> 00:17:47,720
+POI we're going to fold the hammer in
+ 
+
+713
+00:17:47,720 --> 00:17:50,789
+POI we're going to fold the hammer in
+half and then we're going to work both
+
+714
+00:17:50,789 --> 00:17:50,799
+half and then we're going to work both
+ 
+
+715
+00:17:50,799 --> 00:17:54,190
+half and then we're going to work both
+nodes so that they're lined up with each
+
+716
+00:17:54,190 --> 00:17:54,200
+nodes so that they're lined up with each
+ 
+
+717
+00:17:54,200 --> 00:17:55,590
+nodes so that they're lined up with each
+other but we're just going to split the
+
+718
+00:17:55,590 --> 00:17:55,600
+other but we're just going to split the
+ 
+
+719
+00:17:55,600 --> 00:17:57,669
+other but we're just going to split the
+difference so we're going to move one in
+
+720
+00:17:57,669 --> 00:17:57,679
+difference so we're going to move one in
+ 
+
+721
+00:17:57,679 --> 00:17:59,750
+difference so we're going to move one in
+and one out
+
+722
+00:17:59,750 --> 00:17:59,760
+and one out
+ 
+
+723
+00:17:59,760 --> 00:18:01,549
+and one out
+equally until they're perfectly in line
+
+724
+00:18:01,549 --> 00:18:01,559
+equally until they're perfectly in line
+ 
+
+725
+00:18:01,559 --> 00:18:02,710
+equally until they're perfectly in line
+with each other and then we'll double
+
+726
+00:18:02,710 --> 00:18:02,720
+with each other and then we'll double
+ 
+
+727
+00:18:02,720 --> 00:18:04,710
+with each other and then we'll double
+check and see it's
+
+728
+00:18:04,710 --> 00:18:04,720
+check and see it's
+ 
+
+729
+00:18:04,720 --> 00:18:07,230
+check and see it's
+perfect so then we're going to use the
+
+730
+00:18:07,230 --> 00:18:07,240
+perfect so then we're going to use the
+ 
+
+731
+00:18:07,240 --> 00:18:09,830
+perfect so then we're going to use the
+set screws to uh hold the nodes in place
+
+732
+00:18:09,830 --> 00:18:09,840
+set screws to uh hold the nodes in place
+ 
+
+733
+00:18:09,840 --> 00:18:11,430
+set screws to uh hold the nodes in place
+but we won't drive them in all the way
+
+734
+00:18:11,430 --> 00:18:11,440
+but we won't drive them in all the way
+ 
+
+735
+00:18:11,440 --> 00:18:13,830
+but we won't drive them in all the way
+just in case we need to make adjustments
+
+736
+00:18:13,830 --> 00:18:13,840
+just in case we need to make adjustments
+ 
+
+737
+00:18:13,840 --> 00:18:27,549
+just in case we need to make adjustments
+later
+
+738
+00:18:27,549 --> 00:18:27,559
+
+ 
+
+739
+00:18:27,559 --> 00:18:29,669
+
+on great
+
+740
+00:18:29,669 --> 00:18:29,679
+on great
+ 
+
+741
+00:18:29,679 --> 00:18:39,190
+on great
+so there's our
+
+742
+00:18:39,190 --> 00:18:39,200
+
+ 
+
+743
+00:18:39,200 --> 00:18:41,470
+
+Bridge we'll now check to see how the
+
+744
+00:18:41,470 --> 00:18:41,480
+Bridge we'll now check to see how the
+ 
+
+745
+00:18:41,480 --> 00:18:43,590
+Bridge we'll now check to see how the
+hammer plays in various
+
+746
+00:18:43,590 --> 00:18:43,600
+hammer plays in various
+ 
+
+747
+00:18:43,600 --> 00:18:46,549
+hammer plays in various
+modes so to start with let's just verify
+
+748
+00:18:46,549 --> 00:18:46,559
+modes so to start with let's just verify
+ 
+
+749
+00:18:46,559 --> 00:18:48,870
+modes so to start with let's just verify
+that the hammer is well mirrored so I'm
+
+750
+00:18:48,870 --> 00:18:48,880
+that the hammer is well mirrored so I'm
+ 
+
+751
+00:18:48,880 --> 00:18:50,750
+that the hammer is well mirrored so I'm
+going to fold the hammer in half and
+
+752
+00:18:50,750 --> 00:18:50,760
+going to fold the hammer in half and
+ 
+
+753
+00:18:50,760 --> 00:18:52,750
+going to fold the hammer in half and
+match up the heads with each other and
+
+754
+00:18:52,750 --> 00:18:52,760
+match up the heads with each other and
+ 
+
+755
+00:18:52,760 --> 00:18:54,710
+match up the heads with each other and
+then I'm going to check to verify that
+
+756
+00:18:54,710 --> 00:18:54,720
+then I'm going to check to verify that
+ 
+
+757
+00:18:54,720 --> 00:18:56,630
+then I'm going to check to verify that
+the POI and Bridge nodes all line up
+
+758
+00:18:56,630 --> 00:18:56,640
+the POI and Bridge nodes all line up
+ 
+
+759
+00:18:56,640 --> 00:18:58,870
+the POI and Bridge nodes all line up
+with each other simultaneously
+
+760
+00:18:58,870 --> 00:18:58,880
+with each other simultaneously
+ 
+
+761
+00:18:58,880 --> 00:19:01,470
+with each other simultaneously
+so that's a good mirror and now we're
+
+762
+00:19:01,470 --> 00:19:01,480
+so that's a good mirror and now we're
+ 
+
+763
+00:19:01,480 --> 00:19:02,710
+so that's a good mirror and now we're
+going to put on the hammer in the
+
+764
+00:19:02,710 --> 00:19:02,720
+going to put on the hammer in the
+ 
+
+765
+00:19:02,720 --> 00:19:05,270
+going to put on the hammer in the
+standard Oxbow position making sure to
+
+766
+00:19:05,270 --> 00:19:05,280
+standard Oxbow position making sure to
+ 
+
+767
+00:19:05,280 --> 00:19:09,350
+standard Oxbow position making sure to
+lock the tether behind our elbows like
+
+768
+00:19:09,350 --> 00:19:09,360
+lock the tether behind our elbows like
+ 
+
+769
+00:19:09,360 --> 00:19:12,470
+lock the tether behind our elbows like
+this and you can see from behind how it
+
+770
+00:19:12,470 --> 00:19:12,480
+this and you can see from behind how it
+ 
+
+771
+00:19:12,480 --> 00:19:15,630
+this and you can see from behind how it
+locks around the
+
+772
+00:19:15,630 --> 00:19:15,640
+
+ 
+
+773
+00:19:15,640 --> 00:19:18,149
+
+elbow okay now we'll lower our hands to
+
+774
+00:19:18,149 --> 00:19:18,159
+elbow okay now we'll lower our hands to
+ 
+
+775
+00:19:18,159 --> 00:19:21,590
+elbow okay now we'll lower our hands to
+our sides and uh we'll we'll check that
+
+776
+00:19:21,590 --> 00:19:21,600
+our sides and uh we'll we'll check that
+ 
+
+777
+00:19:21,600 --> 00:19:23,789
+our sides and uh we'll we'll check that
+the poin noes line up with the creases
+
+778
+00:19:23,789 --> 00:19:23,799
+the poin noes line up with the creases
+ 
+
+779
+00:19:23,799 --> 00:19:27,029
+the poin noes line up with the creases
+in our wrists as they did
+
+780
+00:19:27,029 --> 00:19:27,039
+
+ 
+
+781
+00:19:27,039 --> 00:19:30,029
+
+before we'll then pinch the the PO noes
+
+782
+00:19:30,029 --> 00:19:30,039
+before we'll then pinch the the PO noes
+ 
+
+783
+00:19:30,039 --> 00:19:33,310
+before we'll then pinch the the PO noes
+and raise our hands to our sides uh with
+
+784
+00:19:33,310 --> 00:19:33,320
+and raise our hands to our sides uh with
+ 
+
+785
+00:19:33,320 --> 00:19:36,950
+and raise our hands to our sides uh with
+that 90° elbow Bend and verify that the
+
+786
+00:19:36,950 --> 00:19:36,960
+that 90° elbow Bend and verify that the
+ 
+
+787
+00:19:36,960 --> 00:19:40,669
+that 90° elbow Bend and verify that the
+heads line up with the base of our
+
+788
+00:19:40,669 --> 00:19:40,679
+
+ 
+
+789
+00:19:40,679 --> 00:19:42,710
+
+elbows hands back down we're going to
+
+790
+00:19:42,710 --> 00:19:42,720
+elbows hands back down we're going to
+ 
+
+791
+00:19:42,720 --> 00:19:44,470
+elbows hands back down we're going to
+check the dynamic fit of the hammer now
+
+792
+00:19:44,470 --> 00:19:44,480
+check the dynamic fit of the hammer now
+ 
+
+793
+00:19:44,480 --> 00:19:46,630
+check the dynamic fit of the hammer now
+so we're going to pinch the distal
+
+794
+00:19:46,630 --> 00:19:46,640
+so we're going to pinch the distal
+ 
+
+795
+00:19:46,640 --> 00:19:49,230
+so we're going to pinch the distal
+tethers and it's very important to
+
+796
+00:19:49,230 --> 00:19:49,240
+tethers and it's very important to
+ 
+
+797
+00:19:49,240 --> 00:19:51,190
+tethers and it's very important to
+understand that you don't use the nodes
+
+798
+00:19:51,190 --> 00:19:51,200
+understand that you don't use the nodes
+ 
+
+799
+00:19:51,200 --> 00:19:53,149
+understand that you don't use the nodes
+as handles they're more like texture
+
+800
+00:19:53,149 --> 00:19:53,159
+as handles they're more like texture
+ 
+
+801
+00:19:53,159 --> 00:19:55,270
+as handles they're more like texture
+markers that help you stay oriented
+
+802
+00:19:55,270 --> 00:19:55,280
+markers that help you stay oriented
+ 
+
+803
+00:19:55,280 --> 00:19:58,110
+markers that help you stay oriented
+along the playing surface of the uh of
+
+804
+00:19:58,110 --> 00:19:58,120
+along the playing surface of the uh of
+ 
+
+805
+00:19:58,120 --> 00:20:00,630
+along the playing surface of the uh of
+the tether
+
+806
+00:20:00,630 --> 00:20:00,640
+the tether
+ 
+
+807
+00:20:00,640 --> 00:20:03,789
+the tether
+so we're holding the distal uh tethers
+
+808
+00:20:03,789 --> 00:20:03,799
+so we're holding the distal uh tethers
+ 
+
+809
+00:20:03,799 --> 00:20:05,190
+so we're holding the distal uh tethers
+not the nodes and we're going to start
+
+810
+00:20:05,190 --> 00:20:05,200
+not the nodes and we're going to start
+ 
+
+811
+00:20:05,200 --> 00:20:08,029
+not the nodes and we're going to start
+spinning in in po mode here and it's
+
+812
+00:20:08,029 --> 00:20:08,039
+spinning in in po mode here and it's
+ 
+
+813
+00:20:08,039 --> 00:20:09,310
+spinning in in po mode here and it's
+okay if you don't know how to do any of
+
+814
+00:20:09,310 --> 00:20:09,320
+okay if you don't know how to do any of
+ 
+
+815
+00:20:09,320 --> 00:20:10,990
+okay if you don't know how to do any of
+these movements that I'm going to show
+
+816
+00:20:10,990 --> 00:20:11,000
+these movements that I'm going to show
+ 
+
+817
+00:20:11,000 --> 00:20:13,230
+these movements that I'm going to show
+just know that we're checking the the
+
+818
+00:20:13,230 --> 00:20:13,240
+just know that we're checking the the
+ 
+
+819
+00:20:13,240 --> 00:20:15,630
+just know that we're checking the the
+length of the hammer and in this case
+
+820
+00:20:15,630 --> 00:20:15,640
+length of the hammer and in this case
+ 
+
+821
+00:20:15,640 --> 00:20:19,310
+length of the hammer and in this case
+we're checking the length of the POI so
+
+822
+00:20:19,310 --> 00:20:19,320
+we're checking the length of the POI so
+ 
+
+823
+00:20:19,320 --> 00:20:22,669
+we're checking the length of the POI so
+um the POI can this is a good starting
+
+824
+00:20:22,669 --> 00:20:22,679
+um the POI can this is a good starting
+ 
+
+825
+00:20:22,679 --> 00:20:24,149
+um the POI can this is a good starting
+place at this length but if you want to
+
+826
+00:20:24,149 --> 00:20:24,159
+place at this length but if you want to
+ 
+
+827
+00:20:24,159 --> 00:20:26,350
+place at this length but if you want to
+make them longer or shorter there can be
+
+828
+00:20:26,350 --> 00:20:26,360
+make them longer or shorter there can be
+ 
+
+829
+00:20:26,360 --> 00:20:28,310
+make them longer or shorter there can be
+consequences um that will go over in a
+
+830
+00:20:28,310 --> 00:20:28,320
+consequences um that will go over in a
+ 
+
+831
+00:20:28,320 --> 00:20:30,549
+consequences um that will go over in a
+little bit but hands over the head I'm
+
+832
+00:20:30,549 --> 00:20:30,559
+little bit but hands over the head I'm
+ 
+
+833
+00:20:30,559 --> 00:20:32,310
+little bit but hands over the head I'm
+doing a windmill and you can see that
+
+834
+00:20:32,310 --> 00:20:32,320
+doing a windmill and you can see that
+ 
+
+835
+00:20:32,320 --> 00:20:34,750
+doing a windmill and you can see that
+the yoke is slack around my shoulders
+
+836
+00:20:34,750 --> 00:20:34,760
+the yoke is slack around my shoulders
+ 
+
+837
+00:20:34,760 --> 00:20:36,270
+the yoke is slack around my shoulders
+from the back you can see the yolk is
+
+838
+00:20:36,270 --> 00:20:36,280
+from the back you can see the yolk is
+ 
+
+839
+00:20:36,280 --> 00:20:39,270
+from the back you can see the yolk is
+slack and that's normal um in fact the
+
+840
+00:20:39,270 --> 00:20:39,280
+slack and that's normal um in fact the
+ 
+
+841
+00:20:39,280 --> 00:20:40,830
+slack and that's normal um in fact the
+POI are longer than they are when my
+
+842
+00:20:40,830 --> 00:20:40,840
+POI are longer than they are when my
+ 
+
+843
+00:20:40,840 --> 00:20:43,110
+POI are longer than they are when my
+hands are down at my sides so if I stop
+
+844
+00:20:43,110 --> 00:20:43,120
+hands are down at my sides so if I stop
+ 
+
+845
+00:20:43,120 --> 00:20:45,070
+hands are down at my sides so if I stop
+and open my hands right we've got the PO
+
+846
+00:20:45,070 --> 00:20:45,080
+and open my hands right we've got the PO
+ 
+
+847
+00:20:45,080 --> 00:20:46,990
+and open my hands right we've got the PO
+nodes in that that standard wrist
+
+848
+00:20:46,990 --> 00:20:47,000
+nodes in that that standard wrist
+ 
+
+849
+00:20:47,000 --> 00:20:49,350
+nodes in that that standard wrist
+position but if I move my hand up the
+
+850
+00:20:49,350 --> 00:20:49,360
+position but if I move my hand up the
+ 
+
+851
+00:20:49,360 --> 00:20:52,070
+position but if I move my hand up the
+POI actually slides between my fingers
+
+852
+00:20:52,070 --> 00:20:52,080
+POI actually slides between my fingers
+ 
+
+853
+00:20:52,080 --> 00:20:54,070
+POI actually slides between my fingers
+outwards and gets longer and now you'll
+
+854
+00:20:54,070 --> 00:20:54,080
+outwards and gets longer and now you'll
+ 
+
+855
+00:20:54,080 --> 00:20:57,149
+outwards and gets longer and now you'll
+see that the node is in my hand when I
+
+856
+00:20:57,149 --> 00:20:57,159
+see that the node is in my hand when I
+ 
+
+857
+00:20:57,159 --> 00:20:59,590
+see that the node is in my hand when I
+when I move my hand down it slides back
+
+858
+00:20:59,590 --> 00:20:59,600
+when I move my hand down it slides back
+ 
+
+859
+00:20:59,600 --> 00:21:01,390
+when I move my hand down it slides back
+and now the note is at my wrist and now
+
+860
+00:21:01,390 --> 00:21:01,400
+and now the note is at my wrist and now
+ 
+
+861
+00:21:01,400 --> 00:21:03,110
+and now the note is at my wrist and now
+it's in my fingers and now it's in my
+
+862
+00:21:03,110 --> 00:21:03,120
+it's in my fingers and now it's in my
+ 
+
+863
+00:21:03,120 --> 00:21:05,390
+it's in my fingers and now it's in my
+wrist so it's important to have a nice
+
+864
+00:21:05,390 --> 00:21:05,400
+wrist so it's important to have a nice
+ 
+
+865
+00:21:05,400 --> 00:21:09,669
+wrist so it's important to have a nice
+loose sliding grip on the tether um
+
+866
+00:21:09,669 --> 00:21:09,679
+loose sliding grip on the tether um
+ 
+
+867
+00:21:09,679 --> 00:21:12,430
+loose sliding grip on the tether um
+we're going to escape now into a meteor
+
+868
+00:21:12,430 --> 00:21:12,440
+we're going to escape now into a meteor
+ 
+
+869
+00:21:12,440 --> 00:21:14,149
+we're going to escape now into a meteor
+weave and we're going to check for
+
+870
+00:21:14,149 --> 00:21:14,159
+weave and we're going to check for
+ 
+
+871
+00:21:14,159 --> 00:21:17,710
+weave and we're going to check for
+ground clearance so uh when the meteor
+
+872
+00:21:17,710 --> 00:21:17,720
+ground clearance so uh when the meteor
+ 
+
+873
+00:21:17,720 --> 00:21:19,510
+ground clearance so uh when the meteor
+is rotating there's a center of rotation
+
+874
+00:21:19,510 --> 00:21:19,520
+is rotating there's a center of rotation
+ 
+
+875
+00:21:19,520 --> 00:21:21,630
+is rotating there's a center of rotation
+and we want that to be in line roughly
+
+876
+00:21:21,630 --> 00:21:21,640
+and we want that to be in line roughly
+ 
+
+877
+00:21:21,640 --> 00:21:23,190
+and we want that to be in line roughly
+with our shoulder that's a good
+
+878
+00:21:23,190 --> 00:21:23,200
+with our shoulder that's a good
+ 
+
+879
+00:21:23,200 --> 00:21:26,390
+with our shoulder that's a good
+comfortable position to have it in and
+
+880
+00:21:26,390 --> 00:21:26,400
+comfortable position to have it in and
+ 
+
+881
+00:21:26,400 --> 00:21:28,789
+comfortable position to have it in and
+um so that's our objective now there can
+
+882
+00:21:28,789 --> 00:21:28,799
+um so that's our objective now there can
+ 
+
+883
+00:21:28,799 --> 00:21:30,710
+um so that's our objective now there can
+be problems with this if if we decided
+
+884
+00:21:30,710 --> 00:21:30,720
+be problems with this if if we decided
+ 
+
+885
+00:21:30,720 --> 00:21:34,190
+be problems with this if if we decided
+that the poy were too short and we
+
+886
+00:21:34,190 --> 00:21:34,200
+that the poy were too short and we
+ 
+
+887
+00:21:34,200 --> 00:21:36,350
+that the poy were too short and we
+wanted to make the hammer longer then we
+
+888
+00:21:36,350 --> 00:21:36,360
+wanted to make the hammer longer then we
+ 
+
+889
+00:21:36,360 --> 00:21:38,190
+wanted to make the hammer longer then we
+might run into a situation where we'd be
+
+890
+00:21:38,190 --> 00:21:38,200
+might run into a situation where we'd be
+ 
+
+891
+00:21:38,200 --> 00:21:41,630
+might run into a situation where we'd be
+hitting the ground um when in meteor
+
+892
+00:21:41,630 --> 00:21:41,640
+hitting the ground um when in meteor
+ 
+
+893
+00:21:41,640 --> 00:21:44,950
+hitting the ground um when in meteor
+mode because the Hammer's too long
+
+894
+00:21:44,950 --> 00:21:44,960
+mode because the Hammer's too long
+ 
+
+895
+00:21:44,960 --> 00:21:46,669
+mode because the Hammer's too long
+so I'm going to hit the ground
+
+896
+00:21:46,669 --> 00:21:46,679
+so I'm going to hit the ground
+ 
+
+897
+00:21:46,679 --> 00:21:49,070
+so I'm going to hit the ground
+intentionally here so if the hammer was
+
+898
+00:21:49,070 --> 00:21:49,080
+intentionally here so if the hammer was
+ 
+
+899
+00:21:49,080 --> 00:21:51,630
+intentionally here so if the hammer was
+too long we would be hitting the ground
+
+900
+00:21:51,630 --> 00:21:51,640
+too long we would be hitting the ground
+ 
+
+901
+00:21:51,640 --> 00:21:55,710
+too long we would be hitting the ground
+and uh so you kind of have you would
+
+902
+00:21:55,710 --> 00:21:55,720
+and uh so you kind of have you would
+ 
+
+903
+00:21:55,720 --> 00:21:57,909
+and uh so you kind of have you would
+have to hold your arm up to maintain
+
+904
+00:21:57,909 --> 00:21:57,919
+have to hold your arm up to maintain
+ 
+
+905
+00:21:57,919 --> 00:21:59,630
+have to hold your arm up to maintain
+ground clearance and that's pretty much
+
+906
+00:21:59,630 --> 00:21:59,640
+ground clearance and that's pretty much
+ 
+
+907
+00:21:59,640 --> 00:22:01,510
+ground clearance and that's pretty much
+unacceptable so you'd have no choice but
+
+908
+00:22:01,510 --> 00:22:01,520
+unacceptable so you'd have no choice but
+ 
+
+909
+00:22:01,520 --> 00:22:04,310
+unacceptable so you'd have no choice but
+to shorten the hammer which means that
+
+910
+00:22:04,310 --> 00:22:04,320
+to shorten the hammer which means that
+ 
+
+911
+00:22:04,320 --> 00:22:06,990
+to shorten the hammer which means that
+your POI would be shorter and this can
+
+912
+00:22:06,990 --> 00:22:07,000
+your POI would be shorter and this can
+ 
+
+913
+00:22:07,000 --> 00:22:10,590
+your POI would be shorter and this can
+be a thing uh especially if your your
+
+914
+00:22:10,590 --> 00:22:10,600
+be a thing uh especially if your your
+ 
+
+915
+00:22:10,600 --> 00:22:12,630
+be a thing uh especially if your your
+upper body is bigger like if you have a
+
+916
+00:22:12,630 --> 00:22:12,640
+upper body is bigger like if you have a
+ 
+
+917
+00:22:12,640 --> 00:22:13,909
+upper body is bigger like if you have a
+lot of muscles in your shoulders and
+
+918
+00:22:13,909 --> 00:22:13,919
+lot of muscles in your shoulders and
+ 
+
+919
+00:22:13,919 --> 00:22:16,669
+lot of muscles in your shoulders and
+arms the tether has more to wrap around
+
+920
+00:22:16,669 --> 00:22:16,679
+arms the tether has more to wrap around
+ 
+
+921
+00:22:16,679 --> 00:22:20,110
+arms the tether has more to wrap around
+so um you have to find a good balanced
+
+922
+00:22:20,110 --> 00:22:20,120
+so um you have to find a good balanced
+ 
+
+923
+00:22:20,120 --> 00:22:22,950
+so um you have to find a good balanced
+compromise between po length and meteor
+
+924
+00:22:22,950 --> 00:22:22,960
+compromise between po length and meteor
+ 
+
+925
+00:22:22,960 --> 00:22:27,230
+compromise between po length and meteor
+length so now I'm uh doing some dart
+
+926
+00:22:27,230 --> 00:22:27,240
+length so now I'm uh doing some dart
+ 
+
+927
+00:22:27,240 --> 00:22:29,070
+length so now I'm uh doing some dart
+stuff I'm holding the dart
+
+928
+00:22:29,070 --> 00:22:29,080
+stuff I'm holding the dart
+ 
+
+929
+00:22:29,080 --> 00:22:32,230
+stuff I'm holding the dart
+by the bridge node and placing the head
+
+930
+00:22:32,230 --> 00:22:32,240
+by the bridge node and placing the head
+ 
+
+931
+00:22:32,240 --> 00:22:34,029
+by the bridge node and placing the head
+by my hip and I'm checking for ground
+
+932
+00:22:34,029 --> 00:22:34,039
+by my hip and I'm checking for ground
+ 
+
+933
+00:22:34,039 --> 00:22:35,110
+by my hip and I'm checking for ground
+clearance
+
+934
+00:22:35,110 --> 00:22:35,120
+clearance
+ 
+
+935
+00:22:35,120 --> 00:22:37,870
+clearance
+here generally you want that 90° elbow
+
+936
+00:22:37,870 --> 00:22:37,880
+here generally you want that 90° elbow
+ 
+
+937
+00:22:37,880 --> 00:22:39,990
+here generally you want that 90° elbow
+Bend again I'm going to do a more
+
+938
+00:22:39,990 --> 00:22:40,000
+Bend again I'm going to do a more
+ 
+
+939
+00:22:40,000 --> 00:22:42,310
+Bend again I'm going to do a more
+advanced movement now this is very
+
+940
+00:22:42,310 --> 00:22:42,320
+advanced movement now this is very
+ 
+
+941
+00:22:42,320 --> 00:22:43,510
+advanced movement now this is very
+difficult to pull off with a hammer
+
+942
+00:22:43,510 --> 00:22:43,520
+difficult to pull off with a hammer
+ 
+
+943
+00:22:43,520 --> 00:22:45,350
+difficult to pull off with a hammer
+that's too long some moves are just
+
+944
+00:22:45,350 --> 00:22:45,360
+that's too long some moves are just
+ 
+
+945
+00:22:45,360 --> 00:22:48,549
+that's too long some moves are just
+impossible if the hammer is too long um
+
+946
+00:22:48,549 --> 00:22:48,559
+impossible if the hammer is too long um
+ 
+
+947
+00:22:48,559 --> 00:22:50,310
+impossible if the hammer is too long um
+so all this stuff is good I'll do a neck
+
+948
+00:22:50,310 --> 00:22:50,320
+so all this stuff is good I'll do a neck
+ 
+
+949
+00:22:50,320 --> 00:22:51,909
+so all this stuff is good I'll do a neck
+roll that's also one where I hit the
+
+950
+00:22:51,909 --> 00:22:51,919
+roll that's also one where I hit the
+ 
+
+951
+00:22:51,919 --> 00:22:55,350
+roll that's also one where I hit the
+ground a lot um so this is looking this
+
+952
+00:22:55,350 --> 00:22:55,360
+ground a lot um so this is looking this
+ 
+
+953
+00:22:55,360 --> 00:22:57,029
+ground a lot um so this is looking this
+is looking pretty solid I feel really
+
+954
+00:22:57,029 --> 00:22:57,039
+is looking pretty solid I feel really
+ 
+
+955
+00:22:57,039 --> 00:22:58,950
+is looking pretty solid I feel really
+good about where the hammer side in is
+
+956
+00:22:58,950 --> 00:22:58,960
+good about where the hammer side in is
+ 
+
+957
+00:22:58,960 --> 00:23:00,950
+good about where the hammer side in is
+at right now and then one last thing I'm
+
+958
+00:23:00,950 --> 00:23:00,960
+at right now and then one last thing I'm
+ 
+
+959
+00:23:00,960 --> 00:23:04,630
+at right now and then one last thing I'm
+going to do is a finger rotor in the
+
+960
+00:23:04,630 --> 00:23:04,640
+going to do is a finger rotor in the
+ 
+
+961
+00:23:04,640 --> 00:23:07,669
+going to do is a finger rotor in the
+horizontal plane and uh you can see so
+
+962
+00:23:07,669 --> 00:23:07,679
+horizontal plane and uh you can see so
+ 
+
+963
+00:23:07,679 --> 00:23:09,190
+horizontal plane and uh you can see so
+I'm checking the Bridge length right now
+
+964
+00:23:09,190 --> 00:23:09,200
+I'm checking the Bridge length right now
+ 
+
+965
+00:23:09,200 --> 00:23:11,510
+I'm checking the Bridge length right now
+you can see my finger is notched into
+
+966
+00:23:11,510 --> 00:23:11,520
+you can see my finger is notched into
+ 
+
+967
+00:23:11,520 --> 00:23:13,390
+you can see my finger is notched into
+one of the bridge nodes as I do the
+
+968
+00:23:13,390 --> 00:23:13,400
+one of the bridge nodes as I do the
+ 
+
+969
+00:23:13,400 --> 00:23:16,430
+one of the bridge nodes as I do the
+rotor and I'm checking to feel the
+
+970
+00:23:16,430 --> 00:23:16,440
+rotor and I'm checking to feel the
+ 
+
+971
+00:23:16,440 --> 00:23:18,710
+rotor and I'm checking to feel the
+sliding action and the friction of my
+
+972
+00:23:18,710 --> 00:23:18,720
+sliding action and the friction of my
+ 
+
+973
+00:23:18,720 --> 00:23:21,870
+sliding action and the friction of my
+finger as it rotates around the tether
+
+974
+00:23:21,870 --> 00:23:21,880
+finger as it rotates around the tether
+ 
+
+975
+00:23:21,880 --> 00:23:23,830
+finger as it rotates around the tether
+this is kind of a rabbit hole as far as
+
+976
+00:23:23,830 --> 00:23:23,840
+this is kind of a rabbit hole as far as
+ 
+
+977
+00:23:23,840 --> 00:23:26,269
+this is kind of a rabbit hole as far as
+like how to place your Bridge nodes um
+
+978
+00:23:26,269 --> 00:23:26,279
+like how to place your Bridge nodes um
+ 
+
+979
+00:23:26,279 --> 00:23:28,110
+like how to place your Bridge nodes um
+but basically the further apart they are
+
+980
+00:23:28,110 --> 00:23:28,120
+but basically the further apart they are
+ 
+
+981
+00:23:28,120 --> 00:23:30,830
+but basically the further apart they are
+the more leverage you have and that can
+
+982
+00:23:30,830 --> 00:23:30,840
+the more leverage you have and that can
+ 
+
+983
+00:23:30,840 --> 00:23:33,630
+the more leverage you have and that can
+be beneficial up to a limit and then you
+
+984
+00:23:33,630 --> 00:23:33,640
+be beneficial up to a limit and then you
+ 
+
+985
+00:23:33,640 --> 00:23:37,750
+be beneficial up to a limit and then you
+start losing control so um yeah I think
+
+986
+00:23:37,750 --> 00:23:37,760
+start losing control so um yeah I think
+ 
+
+987
+00:23:37,760 --> 00:23:39,110
+start losing control so um yeah I think
+that's about
+
+988
+00:23:39,110 --> 00:23:39,120
+that's about
+ 
+
+989
+00:23:39,120 --> 00:23:41,510
+that's about
+it th this Hammer definitely fits me
+
+990
+00:23:41,510 --> 00:23:41,520
+it th this Hammer definitely fits me
+ 
+
+991
+00:23:41,520 --> 00:23:43,950
+it th this Hammer definitely fits me
+well and uh you can see how I was able
+
+992
+00:23:43,950 --> 00:23:43,960
+well and uh you can see how I was able
+ 
+
+993
+00:23:43,960 --> 00:23:47,870
+well and uh you can see how I was able
+to do everything so yeah so the hammer
+
+994
+00:23:47,870 --> 00:23:47,880
+to do everything so yeah so the hammer
+ 
+
+995
+00:23:47,880 --> 00:23:49,549
+to do everything so yeah so the hammer
+is essentially done and all we need to
+
+996
+00:23:49,549 --> 00:23:49,559
+is essentially done and all we need to
+ 
+
+997
+00:23:49,559 --> 00:23:51,789
+is essentially done and all we need to
+do is commit the nodes so to do that
+
+998
+00:23:51,789 --> 00:23:51,799
+do is commit the nodes so to do that
+ 
+
+999
+00:23:51,799 --> 00:23:53,029
+do is commit the nodes so to do that
+we're just going to drive the screws in
+
+1000
+00:23:53,029 --> 00:23:53,039
+we're just going to drive the screws in
+ 
+
+1001
+00:23:53,039 --> 00:23:56,269
+we're just going to drive the screws in
+the rest of the way and uh and then
+
+1002
+00:23:56,269 --> 00:23:56,279
+the rest of the way and uh and then
+ 
+
+1003
+00:23:56,279 --> 00:23:58,470
+the rest of the way and uh and then
+it'll be finished so uh keep in mind
+
+1004
+00:23:58,470 --> 00:23:58,480
+it'll be finished so uh keep in mind
+ 
+
+1005
+00:23:58,480 --> 00:24:00,110
+it'll be finished so uh keep in mind
+that the screws do Mar the tether ever
+
+1006
+00:24:00,110 --> 00:24:00,120
+that the screws do Mar the tether ever
+ 
+
+1007
+00:24:00,120 --> 00:24:02,590
+that the screws do Mar the tether ever
+so slightly so um if you choose to move
+
+1008
+00:24:02,590 --> 00:24:02,600
+so slightly so um if you choose to move
+ 
+
+1009
+00:24:02,600 --> 00:24:04,350
+so slightly so um if you choose to move
+them there there will probably be a
+
+1010
+00:24:04,350 --> 00:24:04,360
+them there there will probably be a
+ 
+
+1011
+00:24:04,360 --> 00:24:06,070
+them there there will probably be a
+little bit of fuzz Left Behind from
+
+1012
+00:24:06,070 --> 00:24:06,080
+little bit of fuzz Left Behind from
+ 
+
+1013
+00:24:06,080 --> 00:24:08,909
+little bit of fuzz Left Behind from
+where they were
+
+1014
+00:24:08,909 --> 00:24:08,919
+
+ 
+
+1015
+00:24:08,919 --> 00:24:12,630
+
+prior and that's that's it so I say this
+
+1016
+00:24:12,630 --> 00:24:12,640
+prior and that's that's it so I say this
+ 
+
+1017
+00:24:12,640 --> 00:24:15,350
+prior and that's that's it so I say this
+tutorial is basically done uh just uh
+
+1018
+00:24:15,350 --> 00:24:15,360
+tutorial is basically done uh just uh
+ 
+
+1019
+00:24:15,360 --> 00:24:16,789
+tutorial is basically done uh just uh
+yeah you're going to form a relationship
+
+1020
+00:24:16,789 --> 00:24:16,799
+yeah you're going to form a relationship
+ 
+
+1021
+00:24:16,799 --> 00:24:18,110
+yeah you're going to form a relationship
+with the prop and it's going to sort of
+
+1022
+00:24:18,110 --> 00:24:18,120
+with the prop and it's going to sort of
+ 
+
+1023
+00:24:18,120 --> 00:24:20,909
+with the prop and it's going to sort of
+change with you over time uh you'll
+
+1024
+00:24:20,909 --> 00:24:20,919
+change with you over time uh you'll
+ 
+
+1025
+00:24:20,919 --> 00:24:22,750
+change with you over time uh you'll
+you'll potentially move the nodes a
+
+1026
+00:24:22,750 --> 00:24:22,760
+you'll potentially move the nodes a
+ 
+
+1027
+00:24:22,760 --> 00:24:24,630
+you'll potentially move the nodes a
+little bit here and there you might make
+
+1028
+00:24:24,630 --> 00:24:24,640
+little bit here and there you might make
+ 
+
+1029
+00:24:24,640 --> 00:24:27,549
+little bit here and there you might make
+the tether longer or shorter uh longer
+
+1030
+00:24:27,549 --> 00:24:27,559
+the tether longer or shorter uh longer
+ 
+
+1031
+00:24:27,559 --> 00:24:29,830
+the tether longer or shorter uh longer
+if you want to focus on po maybe and
+
+1032
+00:24:29,830 --> 00:24:29,840
+if you want to focus on po maybe and
+ 
+
+1033
+00:24:29,840 --> 00:24:31,430
+if you want to focus on po maybe and
+shorter if you want to focus on meteor
+
+1034
+00:24:31,430 --> 00:24:31,440
+shorter if you want to focus on meteor
+ 
+
+1035
+00:24:31,440 --> 00:24:34,710
+shorter if you want to focus on meteor
+and dart those sorts of things um but
+
+1036
+00:24:34,710 --> 00:24:34,720
+and dart those sorts of things um but
+ 
+
+1037
+00:24:34,720 --> 00:24:37,470
+and dart those sorts of things um but
+yeah so thanks for watching my tutorial
+
+1038
+00:24:37,470 --> 00:24:37,480
+yeah so thanks for watching my tutorial
+ 
+
+1039
+00:24:37,480 --> 00:24:40,630
+yeah so thanks for watching my tutorial
+and I sincerely hope you enjoy the prop
+
+1040
+00:24:40,630 --> 00:24:40,640
+and I sincerely hope you enjoy the prop
+ 
+
+1041
+00:24:40,640 --> 00:24:43,389
+and I sincerely hope you enjoy the prop
+thanks a lot and hope to see you out
+
+1042
+00:24:43,389 --> 00:24:43,399
+thanks a lot and hope to see you out
+ 
+
+1043
+00:24:43,399 --> 00:24:46,399
+thanks a lot and hope to see you out
+there
+

@@ -1,0 +1,975 @@
+1
+00:00:00,060 --> 00:00:03,849
+
+hi everybody it's me Noel and I'm here
+
+2
+00:00:03,849 --> 00:00:03,859
+hi everybody it's me Noel and I'm here
+ 
+
+3
+00:00:03,859 --> 00:00:06,170
+hi everybody it's me Noel and I'm here
+and I'm gonna show you a little bit
+
+4
+00:00:06,170 --> 00:00:06,180
+and I'm gonna show you a little bit
+ 
+
+5
+00:00:06,180 --> 00:00:09,350
+and I'm gonna show you a little bit
+about the Vulcan tech gospel 3 app which
+
+6
+00:00:09,350 --> 00:00:09,360
+about the Vulcan tech gospel 3 app which
+ 
+
+7
+00:00:09,360 --> 00:00:11,959
+about the Vulcan tech gospel 3 app which
+is currently in its beta testing right
+
+8
+00:00:11,959 --> 00:00:11,969
+is currently in its beta testing right
+ 
+
+9
+00:00:11,969 --> 00:00:15,320
+is currently in its beta testing right
+now so you can see right here this is
+
+10
+00:00:15,320 --> 00:00:15,330
+now so you can see right here this is
+ 
+
+11
+00:00:15,330 --> 00:00:17,420
+now so you can see right here this is
+our logo which is a skull which is one
+
+12
+00:00:17,420 --> 00:00:17,430
+our logo which is a skull which is one
+ 
+
+13
+00:00:17,430 --> 00:00:19,640
+our logo which is a skull which is one
+of my deceased cats that I lived with
+
+14
+00:00:19,640 --> 00:00:19,650
+of my deceased cats that I lived with
+ 
+
+15
+00:00:19,650 --> 00:00:22,340
+of my deceased cats that I lived with
+for 13 years and I figured since all the
+
+16
+00:00:22,340 --> 00:00:22,350
+for 13 years and I figured since all the
+ 
+
+17
+00:00:22,350 --> 00:00:26,210
+for 13 years and I figured since all the
+other Vulcan tech gospel logos or many
+
+18
+00:00:26,210 --> 00:00:26,220
+other Vulcan tech gospel logos or many
+ 
+
+19
+00:00:26,220 --> 00:00:27,890
+other Vulcan tech gospel logos or many
+of them have skulls I would keep that
+
+20
+00:00:27,890 --> 00:00:27,900
+of them have skulls I would keep that
+ 
+
+21
+00:00:27,900 --> 00:00:29,540
+of them have skulls I would keep that
+going with this so here I go clicking on
+
+22
+00:00:29,540 --> 00:00:29,550
+going with this so here I go clicking on
+ 
+
+23
+00:00:29,550 --> 00:00:31,460
+going with this so here I go clicking on
+it boom you get a little splash screen
+
+24
+00:00:31,460 --> 00:00:31,470
+it boom you get a little splash screen
+ 
+
+25
+00:00:31,470 --> 00:00:36,229
+it boom you get a little splash screen
+turn the audio on real quick and so this
+
+26
+00:00:36,229 --> 00:00:36,239
+turn the audio on real quick and so this
+ 
+
+27
+00:00:36,239 --> 00:00:37,790
+turn the audio on real quick and so this
+song that you're hearing was made by
+
+28
+00:00:37,790 --> 00:00:37,800
+song that you're hearing was made by
+ 
+
+29
+00:00:37,800 --> 00:00:41,450
+song that you're hearing was made by
+Russ and I'm really thankful for him
+
+30
+00:00:41,450 --> 00:00:41,460
+Russ and I'm really thankful for him
+ 
+
+31
+00:00:41,460 --> 00:00:45,020
+Russ and I'm really thankful for him
+he's an OG in the flow world and what
+
+32
+00:00:45,020 --> 00:00:45,030
+he's an OG in the flow world and what
+ 
+
+33
+00:00:45,030 --> 00:00:47,180
+he's an OG in the flow world and what
+I'm gonna show you right now is a very
+
+34
+00:00:47,180 --> 00:00:47,190
+I'm gonna show you right now is a very
+ 
+
+35
+00:00:47,190 --> 00:00:51,369
+I'm gonna show you right now is a very
+quick tour of how to understand this and
+
+36
+00:00:51,369 --> 00:00:51,379
+quick tour of how to understand this and
+ 
+
+37
+00:00:51,379 --> 00:00:53,750
+quick tour of how to understand this and
+this will be related to some of the
+
+38
+00:00:53,750 --> 00:00:53,760
+this will be related to some of the
+ 
+
+39
+00:00:53,760 --> 00:00:54,950
+this will be related to some of the
+accompanying documents that have been
+
+40
+00:00:54,950 --> 00:00:54,960
+accompanying documents that have been
+ 
+
+41
+00:00:54,960 --> 00:00:58,580
+accompanying documents that have been
+produced for the Vulcan Tech Gospel 3 so
+
+42
+00:00:58,580 --> 00:00:58,590
+produced for the Vulcan Tech Gospel 3 so
+ 
+
+43
+00:00:58,590 --> 00:01:00,020
+produced for the Vulcan Tech Gospel 3 so
+what I'm gonna do first is you can see
+
+44
+00:01:00,020 --> 00:01:00,030
+what I'm gonna do first is you can see
+ 
+
+45
+00:01:00,030 --> 00:01:02,270
+what I'm gonna do first is you can see
+that it's a grid of 36 total squares a
+
+46
+00:01:02,270 --> 00:01:02,280
+that it's a grid of 36 total squares a
+ 
+
+47
+00:01:02,280 --> 00:01:04,939
+that it's a grid of 36 total squares a
+6x6 grid and in the upper right hand
+
+48
+00:01:04,939 --> 00:01:04,949
+6x6 grid and in the upper right hand
+ 
+
+49
+00:01:04,949 --> 00:01:08,270
+6x6 grid and in the upper right hand
+corner these four patterns right here
+
+50
+00:01:08,270 --> 00:01:08,280
+corner these four patterns right here
+ 
+
+51
+00:01:08,280 --> 00:01:11,690
+corner these four patterns right here
+these actually have two patterns for
+
+52
+00:01:11,690 --> 00:01:11,700
+these actually have two patterns for
+ 
+
+53
+00:01:11,700 --> 00:01:13,429
+these actually have two patterns for
+each square and if you click on that you
+
+54
+00:01:13,429 --> 00:01:13,439
+each square and if you click on that you
+ 
+
+55
+00:01:13,439 --> 00:01:16,010
+each square and if you click on that you
+can xec I can alternate between the
+
+56
+00:01:16,010 --> 00:01:16,020
+can xec I can alternate between the
+ 
+
+57
+00:01:16,020 --> 00:01:23,530
+can xec I can alternate between the
+anti-spin versions of that pattern okay
+
+58
+00:01:23,530 --> 00:01:23,540
+anti-spin versions of that pattern okay
+ 
+
+59
+00:01:23,540 --> 00:01:27,679
+anti-spin versions of that pattern okay
+so so also here we have a variety of
+
+60
+00:01:27,679 --> 00:01:27,689
+so so also here we have a variety of
+ 
+
+61
+00:01:27,689 --> 00:01:30,560
+so so also here we have a variety of
+crops that you can select toys that fan
+
+62
+00:01:30,560 --> 00:01:30,570
+crops that you can select toys that fan
+ 
+
+63
+00:01:30,570 --> 00:01:35,179
+crops that you can select toys that fan
+coupe clubs triads and okay
+
+64
+00:01:35,179 --> 00:01:35,189
+coupe clubs triads and okay
+ 
+
+65
+00:01:35,189 --> 00:01:36,980
+coupe clubs triads and okay
+sorry bro start until you have the
+
+66
+00:01:36,980 --> 00:01:36,990
+sorry bro start until you have the
+ 
+
+67
+00:01:36,990 --> 00:01:40,340
+sorry bro start until you have the
+double rope dart which could happen yeah
+
+68
+00:01:40,340 --> 00:01:40,350
+double rope dart which could happen yeah
+ 
+
+69
+00:01:40,350 --> 00:01:42,859
+double rope dart which could happen yeah
+and so also I'll just go ahead and show
+
+70
+00:01:42,859 --> 00:01:42,869
+and so also I'll just go ahead and show
+ 
+
+71
+00:01:42,869 --> 00:01:44,510
+and so also I'll just go ahead and show
+you how one square works and then
+
+72
+00:01:44,510 --> 00:01:44,520
+you how one square works and then
+ 
+
+73
+00:01:44,520 --> 00:01:45,830
+you how one square works and then
+hopefully that'll be a good thing to get
+
+74
+00:01:45,830 --> 00:01:45,840
+hopefully that'll be a good thing to get
+ 
+
+75
+00:01:45,840 --> 00:01:47,539
+hopefully that'll be a good thing to get
+you all started and get you excited for
+
+76
+00:01:47,539 --> 00:01:47,549
+you all started and get you excited for
+ 
+
+77
+00:01:47,549 --> 00:01:50,060
+you all started and get you excited for
+the app that Michael has been building
+
+78
+00:01:50,060 --> 00:01:50,070
+the app that Michael has been building
+ 
+
+79
+00:01:50,070 --> 00:01:53,179
+the app that Michael has been building
+and I'm really really excited about this
+
+80
+00:01:53,179 --> 00:01:53,189
+and I'm really really excited about this
+ 
+
+81
+00:01:53,189 --> 00:01:54,530
+and I'm really really excited about this
+so here we go so let's go ahead and
+
+82
+00:01:54,530 --> 00:01:54,540
+so here we go so let's go ahead and
+ 
+
+83
+00:01:54,540 --> 00:01:56,749
+so here we go so let's go ahead and
+click a tricky pattern let's go to this
+
+84
+00:01:56,749 --> 00:01:56,759
+click a tricky pattern let's go to this
+ 
+
+85
+00:01:56,759 --> 00:01:59,209
+click a tricky pattern let's go to this
+pattern which is taug same versus split
+
+86
+00:01:59,209 --> 00:01:59,219
+pattern which is taug same versus split
+ 
+
+87
+00:01:59,219 --> 00:02:01,580
+pattern which is taug same versus split
+up so that's the timing direction of the
+
+88
+00:02:01,580 --> 00:02:01,590
+up so that's the timing direction of the
+ 
+
+89
+00:02:01,590 --> 00:02:04,010
+up so that's the timing direction of the
+hands and the crops and right here this
+
+90
+00:02:04,010 --> 00:02:04,020
+hands and the crops and right here this
+ 
+
+91
+00:02:04,020 --> 00:02:05,330
+hands and the crops and right here this
+is the pattern that will get perused
+
+92
+00:02:05,330 --> 00:02:05,340
+is the pattern that will get perused
+ 
+
+93
+00:02:05,340 --> 00:02:07,880
+is the pattern that will get perused
+okay so go ahead go ahead and click on
+
+94
+00:02:07,880 --> 00:02:07,890
+okay so go ahead go ahead and click on
+ 
+
+95
+00:02:07,890 --> 00:02:10,010
+okay so go ahead go ahead and click on
+that and boom so you can notice that the
+
+96
+00:02:10,010 --> 00:02:10,020
+that and boom so you can notice that the
+ 
+
+97
+00:02:10,020 --> 00:02:11,690
+that and boom so you can notice that the
+hands are moving around in together time
+
+98
+00:02:11,690 --> 00:02:11,700
+hands are moving around in together time
+ 
+
+99
+00:02:11,700 --> 00:02:14,059
+hands are moving around in together time
+same direction
+
+100
+00:02:14,059 --> 00:02:14,069
+same direction
+ 
+
+101
+00:02:14,069 --> 00:02:16,339
+same direction
+cursor and the props are meeting our
+
+102
+00:02:16,339 --> 00:02:16,349
+cursor and the props are meeting our
+ 
+
+103
+00:02:16,349 --> 00:02:18,110
+cursor and the props are meeting our
+doing split opposite you notice their
+
+104
+00:02:18,110 --> 00:02:18,120
+doing split opposite you notice their
+ 
+
+105
+00:02:18,120 --> 00:02:20,539
+doing split opposite you notice their
+opposite on the Y fold facing it on the
+
+106
+00:02:20,539 --> 00:02:20,549
+opposite on the Y fold facing it on the
+ 
+
+107
+00:02:20,549 --> 00:02:22,250
+opposite on the Y fold facing it on the
+edge option the live while placing it
+
+108
+00:02:22,250 --> 00:02:22,260
+edge option the live while placing it
+ 
+
+109
+00:02:22,260 --> 00:02:24,440
+edge option the live while placing it
+and you can see those snapshots on the
+
+110
+00:02:24,440 --> 00:02:24,450
+and you can see those snapshots on the
+ 
+
+111
+00:02:24,450 --> 00:02:27,619
+and you can see those snapshots on the
+side here people facing in tog in tog
+
+112
+00:02:27,619 --> 00:02:27,629
+side here people facing in tog in tog
+ 
+
+113
+00:02:27,629 --> 00:02:29,780
+side here people facing in tog in tog
+split tog split means your hands are
+
+114
+00:02:29,780 --> 00:02:29,790
+split tog split means your hands are
+ 
+
+115
+00:02:29,790 --> 00:02:31,550
+split tog split means your hands are
+together but your props are split on
+
+116
+00:02:31,550 --> 00:02:31,560
+together but your props are split on
+ 
+
+117
+00:02:31,560 --> 00:02:33,740
+together but your props are split on
+this menu page there's a bunch of some
+
+118
+00:02:33,740 --> 00:02:33,750
+this menu page there's a bunch of some
+ 
+
+119
+00:02:33,750 --> 00:02:36,259
+this menu page there's a bunch of some
+things we can change the crop place
+
+120
+00:02:36,259 --> 00:02:36,269
+things we can change the crop place
+ 
+
+121
+00:02:36,269 --> 00:02:38,839
+things we can change the crop place
+you're curious about so you try and do
+
+122
+00:02:38,839 --> 00:02:38,849
+you're curious about so you try and do
+ 
+
+123
+00:02:38,849 --> 00:02:41,149
+you're curious about so you try and do
+this there's actually in the option menu
+
+124
+00:02:41,149 --> 00:02:41,159
+this there's actually in the option menu
+ 
+
+125
+00:02:41,159 --> 00:02:45,020
+this there's actually in the option menu
+a way for you to do alternate alternate
+
+126
+00:02:45,020 --> 00:02:45,030
+a way for you to do alternate alternate
+ 
+
+127
+00:02:45,030 --> 00:02:47,599
+a way for you to do alternate alternate
+versions of the triad like orientations
+
+128
+00:02:47,599 --> 00:02:47,609
+versions of the triad like orientations
+ 
+
+129
+00:02:47,609 --> 00:02:49,309
+versions of the triad like orientations
+when they make you see some fan action
+
+130
+00:02:49,309 --> 00:02:49,319
+when they make you see some fan action
+ 
+
+131
+00:02:49,319 --> 00:02:53,240
+when they make you see some fan action
+here it's pretty sweet and kind of some
+
+132
+00:02:53,240 --> 00:02:53,250
+here it's pretty sweet and kind of some
+ 
+
+133
+00:02:53,250 --> 00:02:56,059
+here it's pretty sweet and kind of some
+little double stabs here it seems to be
+
+134
+00:02:56,059 --> 00:02:56,069
+little double stabs here it seems to be
+ 
+
+135
+00:02:56,069 --> 00:03:01,690
+little double stabs here it seems to be
+the trend anyway and boom it's fantastic
+
+136
+00:03:01,690 --> 00:03:01,700
+the trend anyway and boom it's fantastic
+ 
+
+137
+00:03:01,700 --> 00:03:03,589
+the trend anyway and boom it's fantastic
+the pattern you're doing is actually
+
+138
+00:03:03,589 --> 00:03:03,599
+the pattern you're doing is actually
+ 
+
+139
+00:03:03,599 --> 00:03:06,979
+the pattern you're doing is actually
+bite right here in the bottom left the
+
+140
+00:03:06,979 --> 00:03:06,989
+bite right here in the bottom left the
+ 
+
+141
+00:03:06,989 --> 00:03:08,539
+bite right here in the bottom left the
+hand time direction is listed right here
+
+142
+00:03:08,539 --> 00:03:08,549
+hand time direction is listed right here
+ 
+
+143
+00:03:08,549 --> 00:03:11,629
+hand time direction is listed right here
+in here and also along the top with its
+
+144
+00:03:11,629 --> 00:03:11,639
+in here and also along the top with its
+ 
+
+145
+00:03:11,639 --> 00:03:13,580
+in here and also along the top with its
+relative timing some of these other
+
+146
+00:03:13,580 --> 00:03:13,590
+relative timing some of these other
+ 
+
+147
+00:03:13,590 --> 00:03:15,770
+relative timing some of these other
+buttons do stuff too so if I click this
+
+148
+00:03:15,770 --> 00:03:15,780
+buttons do stuff too so if I click this
+ 
+
+149
+00:03:15,780 --> 00:03:21,379
+buttons do stuff too so if I click this
+this little clock here will pause or
+
+150
+00:03:21,379 --> 00:03:21,389
+this little clock here will pause or
+ 
+
+151
+00:03:21,389 --> 00:03:30,619
+this little clock here will pause or
+slow down the animation and one more
+
+152
+00:03:30,619 --> 00:03:30,629
+slow down the animation and one more
+ 
+
+153
+00:03:30,629 --> 00:03:32,390
+slow down the animation and one more
+thing before we go on this first little
+
+154
+00:03:32,390 --> 00:03:32,400
+thing before we go on this first little
+ 
+
+155
+00:03:32,400 --> 00:03:35,839
+thing before we go on this first little
+jaunt into the VP gif if I click the
+
+156
+00:03:35,839 --> 00:03:35,849
+jaunt into the VP gif if I click the
+ 
+
+157
+00:03:35,849 --> 00:03:39,619
+jaunt into the VP gif if I click the
+eyeball right here what happens is it
+
+158
+00:03:39,619 --> 00:03:39,629
+eyeball right here what happens is it
+ 
+
+159
+00:03:39,629 --> 00:03:42,949
+eyeball right here what happens is it
+actually unlocks this and now you can
+
+160
+00:03:42,949 --> 00:03:42,959
+actually unlocks this and now you can
+ 
+
+161
+00:03:42,959 --> 00:03:44,509
+actually unlocks this and now you can
+pinch zoom let's say you were curious
+
+162
+00:03:44,509 --> 00:03:44,519
+pinch zoom let's say you were curious
+ 
+
+163
+00:03:44,519 --> 00:03:47,960
+pinch zoom let's say you were curious
+about seeing this little closer you can
+
+164
+00:03:47,960 --> 00:03:47,970
+about seeing this little closer you can
+ 
+
+165
+00:03:47,970 --> 00:03:51,939
+about seeing this little closer you can
+get in there and check it out zoom it
+
+166
+00:03:51,939 --> 00:03:51,949
+get in there and check it out zoom it
+ 
+
+167
+00:03:51,949 --> 00:03:55,460
+get in there and check it out zoom it
+okay and we have lots of options for
+
+168
+00:03:55,460 --> 00:03:55,470
+okay and we have lots of options for
+ 
+
+169
+00:03:55,470 --> 00:03:57,199
+okay and we have lots of options for
+example of this trail you find kind of
+
+170
+00:03:57,199 --> 00:03:57,209
+example of this trail you find kind of
+ 
+
+171
+00:03:57,209 --> 00:03:58,369
+example of this trail you find kind of
+annoying just real quick I'll just show
+
+172
+00:03:58,369 --> 00:03:58,379
+annoying just real quick I'll just show
+ 
+
+173
+00:03:58,379 --> 00:04:01,339
+annoying just real quick I'll just show
+you here's the option menu and let's get
+
+174
+00:04:01,339 --> 00:04:01,349
+you here's the option menu and let's get
+ 
+
+175
+00:04:01,349 --> 00:04:03,770
+you here's the option menu and let's get
+rid of some crop trails and many of
+
+176
+00:04:03,770 --> 00:04:03,780
+rid of some crop trails and many of
+ 
+
+177
+00:04:03,780 --> 00:04:06,979
+rid of some crop trails and many of
+those achievements you need to unlock
+
+178
+00:04:06,979 --> 00:04:06,989
+those achievements you need to unlock
+ 
+
+179
+00:04:06,989 --> 00:04:09,469
+those achievements you need to unlock
+the ax playing the game which we'll go
+
+180
+00:04:09,469 --> 00:04:09,479
+the ax playing the game which we'll go
+ 
+
+181
+00:04:09,479 --> 00:04:11,719
+the ax playing the game which we'll go
+over a little bit more later okay and so
+
+182
+00:04:11,719 --> 00:04:11,729
+over a little bit more later okay and so
+ 
+
+183
+00:04:11,729 --> 00:04:13,939
+over a little bit more later okay and so
+there you go there's a little intro to
+
+184
+00:04:13,939 --> 00:04:13,949
+there you go there's a little intro to
+ 
+
+185
+00:04:13,949 --> 00:04:17,149
+there you go there's a little intro to
+the app and really excited and here it
+
+186
+00:04:17,149 --> 00:04:17,159
+the app and really excited and here it
+ 
+
+187
+00:04:17,159 --> 00:04:19,819
+the app and really excited and here it
+is and super stoked hope you have a
+
+188
+00:04:19,819 --> 00:04:19,829
+is and super stoked hope you have a
+ 
+
+189
+00:04:19,829 --> 00:04:21,770
+is and super stoked hope you have a
+wonderful day and you continue to follow
+
+190
+00:04:21,770 --> 00:04:21,780
+wonderful day and you continue to follow
+ 
+
+191
+00:04:21,780 --> 00:04:25,190
+wonderful day and you continue to follow
+a Facebook page or maybe join the small
+
+192
+00:04:25,190 --> 00:04:25,200
+a Facebook page or maybe join the small
+ 
+
+193
+00:04:25,200 --> 00:04:26,210
+a Facebook page or maybe join the small
+group
+
+194
+00:04:26,210 --> 00:04:26,220
+group
+ 
+
+195
+00:04:26,220 --> 00:04:29,510
+group
+and thanks much
+

@@ -561,7 +561,9 @@
       "WebFetch(domain:lnk.bio)",
       "WebFetch(domain:tabjuggler.tumblr.com)",
       "WebFetch(domain:poividoftheday.tumblr.com)",
-      "WebFetch(domain:www.youtube.com)"
+      "WebFetch(domain:www.youtube.com)",
+      "Bash(ffprobe:*)",
+      "Bash(ffmpeg:*)"
     ]
   },
   "enableAllProjectMcpServers": false,
