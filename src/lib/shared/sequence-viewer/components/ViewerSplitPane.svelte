@@ -176,6 +176,7 @@
           stepData={currentStepData}
           word={sequence?.word}
           {onCanvasReady}
+          focused={focusedPane === "animation"}
         />
       {/if}
     </div>
@@ -425,6 +426,12 @@
 
     .media-pane {
       padding: 24px;
+    }
+
+    /* Preview pane needs less padding — the LayeredSequencePreview
+       handles its own glow padding internally */
+    .preview-pane {
+      padding: 4px;
     }
   }
 

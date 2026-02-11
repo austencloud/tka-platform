@@ -528,8 +528,13 @@
   function updateContainedDimensions() {
     if (!containerElement || !previewAspectRatio || !Number.isFinite(previewAspectRatio)) return;
 
-    const containerWidth = containerElement.clientWidth;
-    const containerHeight = containerElement.clientHeight;
+    // Use content area (clientWidth minus padding), not clientWidth which includes padding.
+    // The .preview-stack child lives in the content area, so contain must fit within it.
+    const style = getComputedStyle(containerElement);
+    const containerWidth = containerElement.clientWidth
+      - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const containerHeight = containerElement.clientHeight
+      - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
 
     if (containerWidth === 0 || containerHeight === 0) return;
 
@@ -537,10 +542,9 @@
     let newHeight: number | null;
 
     if (needsScroll) {
-      // Scroll mode: fill container width (minus padding), use full container height
-      // The grid-scroll-container handles overflow with scrolling
-      newWidth = containerWidth - 24; // 12px padding on each side
-      newHeight = containerHeight;
+      // Scroll mode: CSS handles sizing (width/height: 100% on .preview-stack).
+      // No JS contain calculation needed — just skip.
+      return;
     } else {
       // Contain mode: fit content while preserving aspect ratio
       const contentRatio = previewAspectRatio;
@@ -696,7 +700,7 @@
   });
 </script>
 
-<div class="layered-preview" class:dark-mode={darkMode} bind:this={containerElement}>
+<div class="layered-preview" class:dark-mode={darkMode} class:scroll-mode={needsScroll} bind:this={containerElement}>
   {#if isLoading && cells.length === 0}
     <div class="loading-placeholder">
       <div class="spinner"></div>
@@ -704,7 +708,8 @@
   {:else if cells.length > 0}
     <div
       class="preview-stack"
-      style="width: {containedWidth ? `${containedWidth}px` : 'auto'}; height: {containedHeight ? `${containedHeight}px` : 'auto'};"
+      class:scroll-mode={needsScroll}
+      style={needsScroll ? '' : `width: ${containedWidth ? `${containedWidth}px` : 'auto'}; height: ${containedHeight ? `${containedHeight}px` : 'auto'};`}
       bind:this={previewStackElement}
     >
       <!-- Header section -->
@@ -910,6 +915,14 @@
     position: relative;
   }
 
+  /* In scroll mode, the scroll container's own padding handles glow space.
+     Fill the container edge-to-edge instead of centering with extra padding. */
+  .layered-preview.scroll-mode {
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
   .loading-placeholder {
     display: flex;
     align-items: center;
@@ -943,6 +956,14 @@
     min-height: 0;
     /* Allow highlight glow to show on edges */
     overflow: visible;
+  }
+
+  /* In scroll mode, fill the parent edge-to-edge instead of using
+     JS-calculated contain dimensions */
+  .preview-stack.scroll-mode {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
   }
 
   /* Header section */
@@ -1016,10 +1037,10 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    /* Padding must exceed the highlight's visual extent so the glow
-       paints fully inside the container without clipping.
-       Highlight: scale(1.06) ~5px + 3px ring + 12px blur = ~16px max */
-    padding: 16px;
+    /* Padding accommodates highlight scale(1.06) + 3px ring + inner blur.
+       12px covers the solid ring and visible glow; outermost blur fringe
+       (nearly transparent) gets clipped by overflow-x:hidden — acceptable. */
+    padding: 12px;
   }
 
   /* Grid section - CSS Grid layout */

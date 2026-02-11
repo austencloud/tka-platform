@@ -76,6 +76,9 @@ Last audit: 2025-12-27
     progressBarVariant = "gradient-labeled",
     // Progress bar seek callback
     onProgressBarSeek = null,
+    // When true, always show word header and progress bar regardless of aspect ratio.
+    // Used when the animation canvas is the only visible content (focused/expanded pane).
+    focused = false,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -100,6 +103,7 @@ Last audit: 2025-12-27
     isSeamlesslyLoopable?: boolean;
     progressBarVariant?: "minimal" | "raised" | "rounded" | "neon" | "gradient" | "labeled" | "gradient-labeled";
     onProgressBarSeek?: ((targetStep: number) => void) | null;
+    focused?: boolean;
   } = $props();
 
   // Container element
@@ -223,7 +227,7 @@ Last audit: 2025-12-27
 {/if}
 
 <!-- Outer container centers the content -->
-<div class="animation-container">
+<div class="animation-container" data-focused={focused || undefined}>
   <!-- Inner wrapper: adaptive layout (vertical in portrait, horizontal in landscape) -->
   <div class="content-wrapper" data-dark-mode={darkModeEnabled ? "true" : "false"}>
     <!-- Word header - position adapts to layout mode -->
@@ -302,10 +306,11 @@ Last audit: 2025-12-27
     align-items: stretch;
     /*
      * Portrait mode: Width = canvas side = min(container_width, container_height - overhead)
-     * Overhead: header (~40px) + progress (~24px) + border (3px) + margin (12px) = ~80px
+     * Overhead: header (~53px) + progress (~32px) + border (3px) + margin (12px) = ~100px
+     * Use 6.5rem (104px) for breathing room
      */
-    width: min(calc(100cqw - 12px), calc(100cqh - 5rem - 12px));
-    max-width: calc(100cqh - 5rem);
+    width: min(calc(100cqw - 12px), calc(100cqh - 6.5rem - 12px));
+    max-width: calc(100cqh - 6.5rem);
     /* Container query context for header font scaling */
     container-type: inline-size;
     /* Border styling */
@@ -389,6 +394,40 @@ Last audit: 2025-12-27
       width: 100%;
       height: 100cqw;
     }
+  }
+
+  /* ===========================================
+     FOCUSED MODE: Always show word + progress bar
+     When the animation canvas is the only visible
+     content (pane expanded), override constrained
+     mode to always show chrome.
+     =========================================== */
+
+  .animation-container[data-focused] .content-wrapper {
+    /* Size canvas side = min(container_width, container_height - chrome_overhead)
+     * Chrome: word header (~53px) + progress bar (~32px) + border (~3px) = ~88px
+     * Use 6.5rem (104px) for breathing room */
+    width: min(calc(100cqw - 12px), calc(100cqh - 6.5rem - 12px));
+    max-width: calc(100cqh - 6.5rem);
+    /* Safety net: never exceed container height */
+    max-height: calc(100cqh - 4px);
+    height: auto;
+  }
+
+  .animation-container[data-focused] .header-slot {
+    display: block !important;
+  }
+
+  .animation-container[data-focused] .progress-slot {
+    display: block !important;
+  }
+
+  .animation-container[data-focused] .canvas-wrapper {
+    width: 100%;
+    height: 100cqw;
+    /* Allow shrinking as last resort if chrome + canvas exceeds max-height */
+    flex-shrink: 1;
+    min-height: 0;
   }
 
   /* ===========================================

@@ -933,29 +933,8 @@
       return;
     }
 
-    // P / Shift+P - Cycle prop type
-    if (event.key === "p" || event.key === "P") {
-      const target = event.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
-        return;
-      }
-      event.preventDefault();
-      const cyclePropTypes = [
-        PropType.STAFF, PropType.CLUB, PropType.FAN, PropType.TRIAD,
-        PropType.MINIHOOP, PropType.BUUGENG, PropType.HAND,
-      ];
-      const currentPropType = settings.bluePropType || PropType.STAFF;
-      const currentIndex = cyclePropTypes.indexOf(currentPropType as PropType);
-      const nextIndex = event.shiftKey
-        ? (currentIndex <= 0 ? cyclePropTypes.length - 1 : currentIndex - 1)
-        : (currentIndex + 1) % cyclePropTypes.length;
-      const nextPropType = cyclePropTypes[nextIndex];
-      container.items.settingsState.updateSettings({
-        bluePropType: nextPropType,
-        redPropType: nextPropType,
-      });
-      showToast(`Prop: ${nextPropType}`, "info");
-    }
+    // P / Shift+P - Handled by global keyboard shortcut system
+    // (register-global-shortcuts.ts "global.cycle-prop-type")
   }
 
   // ============================================================================
