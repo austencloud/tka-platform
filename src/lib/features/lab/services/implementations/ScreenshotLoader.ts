@@ -46,8 +46,11 @@ export class ScreenshotLoader implements IScreenshotLoader {
     callback: (screenshots: ScreenshotMetadata[]) => void
   ): () => void {
     let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
 
-    const setup = async () => {
+    const setup = async (attempt = 0) => {
+      if (cancelled) return;
+
       const { collection, query, orderBy, onSnapshot, Timestamp } =
         await import("firebase/firestore");
       const firestore = await getFirestoreInstance();
@@ -57,17 +60,34 @@ export class ScreenshotLoader implements IScreenshotLoader {
         orderBy("capturedAt", "desc")
       );
 
-      unsubscribe = onSnapshot(q, (snapshot) => {
-        const screenshots = snapshot.docs.map((doc) =>
-          this.docToMetadata(doc.id, doc.data(), Timestamp)
-        );
-        callback(screenshots);
-      });
+      unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const screenshots = snapshot.docs.map((doc) =>
+            this.docToMetadata(doc.id, doc.data(), Timestamp)
+          );
+          callback(screenshots);
+        },
+        (error) => {
+          // Firestore credential propagation can race with onSnapshot setup.
+          // Retry after a delay to let the auth token settle.
+          if (error.code === "permission-denied" && attempt < 3) {
+            unsubscribe?.();
+            unsubscribe = null;
+            setTimeout(() => setup(attempt + 1), 1000 * (attempt + 1));
+          } else {
+            console.warn("[ScreenshotLoader] Snapshot listener error:", error.message);
+          }
+        }
+      );
     };
 
-    setup();
+    setup().catch((err) => {
+      console.warn("[ScreenshotLoader] Failed to set up subscription:", err instanceof Error ? err.message : err);
+    });
 
     return () => {
+      cancelled = true;
       if (unsubscribe) unsubscribe();
     };
   }

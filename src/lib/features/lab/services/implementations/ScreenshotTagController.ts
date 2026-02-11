@@ -77,8 +77,11 @@ export class ScreenshotTagController implements IScreenshotTagController {
 
   subscribeTags(callback: (tags: MediaTag[]) => void): () => void {
     let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
 
-    (async () => {
+    const setup = async (attempt = 0) => {
+      if (cancelled) return;
+
       const userId = this.getUserId();
       const {
         db,
@@ -93,13 +96,34 @@ export class ScreenshotTagController implements IScreenshotTagController {
         orderBy("name", "asc")
       );
 
-      unsubscribe = onSnapshot(q, (snapshot) => {
-        const tags = snapshot.docs.map((doc) => this.docToTag(doc));
-        callback(tags);
-      });
-    })();
+      unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const tags = snapshot.docs.map((doc) => this.docToTag(doc));
+          callback(tags);
+        },
+        (error) => {
+          // Firestore credential propagation can race with onSnapshot setup.
+          // Retry after a delay to let the auth token settle.
+          if (error.code === "permission-denied" && attempt < 3) {
+            unsubscribe?.();
+            unsubscribe = null;
+            setTimeout(() => {
+              setup(attempt + 1).catch(() => {});
+            }, 1000 * (attempt + 1));
+          } else {
+            console.warn("[ScreenshotTagController] Tag snapshot listener error:", error.message);
+          }
+        }
+      );
+    };
+
+    setup().catch((err) => {
+      console.warn("[ScreenshotTagController] Failed to set up tag subscription:", err instanceof Error ? err.message : err);
+    });
 
     return () => {
+      cancelled = true;
       unsubscribe?.();
     };
   }
