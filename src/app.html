@@ -749,6 +749,8 @@
       var __tkaCap = 70;
 
       function __tkaUpdateBar(percent) {
+        // Phase B owns the bar — late Phase A callbacks must not regress it
+        if (__tkaPhaseBStarted) return;
         // Monotonic within Phase A — never go backwards
         if (percent <= __tkaPhaseAPercent) return;
         __tkaPhaseAPercent = Math.min(percent, __tkaCap);
@@ -837,6 +839,7 @@
 
       var __tkaCurrentPercent = 5;
       var __tkaFinished = false;
+      var __tkaPhaseBStarted = false; // Phase B owns the bar once it starts
       var __tkaLastTextTime = 0;
       var __tkaMinTextGap = 500; // minimum ms between text changes
 
@@ -844,6 +847,9 @@
         // Monotonic: ignore out-of-order or duplicate calls
         if (percent <= __tkaCurrentPercent || __tkaFinished) return;
         __tkaCurrentPercent = percent;
+
+        // Phase B now owns the bar — prevent late Phase A callbacks from regressing it
+        __tkaPhaseBStarted = true;
 
         // First checkpoint call: disconnect observer, save calibration
         if (__tkaObserver) {
