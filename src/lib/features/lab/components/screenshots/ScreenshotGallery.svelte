@@ -14,7 +14,6 @@
   import type { IScreenshotTagController } from "../../services/contracts/IScreenshotTagController";
   import type { GalleryItem } from "../../services/contracts/IGalleryItemAdapter";
   import type { MediaTag, TagColor } from "@austencloud/media-tagging-types";
-  import { TAG_COLORS } from "@austencloud/media-tagging-types";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -24,6 +23,7 @@
   import GalleryGrid from "./GalleryGrid.svelte";
   import SelectionToolbar from "./SelectionToolbar.svelte";
   import TagSidebar from "./TagSidebar.svelte";
+  import TagContextPanel from "./TagContextPanel.svelte";
 
   let hapticService: IHapticFeedback;
   let tagController: IScreenshotTagController;
@@ -426,10 +426,6 @@
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
-  function getTagHex(color: string): string {
-    return TAG_COLORS.find((c) => c.value === color)?.hex ?? "#6b7280";
-  }
-
   function formatRouteLabel(label: string): string {
     return label.replace(/--/g, " / ").replace(/(^|\s)\w/g, (c) => c.toUpperCase());
   }
@@ -677,44 +673,14 @@
 
 <!-- Tag context panel (right-click on card) -->
 {#if tagPanelTarget}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="tag-panel-backdrop" onclick={closeTagPanel} onkeydown={(e) => e.key === 'Escape' && closeTagPanel()}>
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="tag-context-panel"
-      style="left: {tagPanelPosition.x}px; top: {tagPanelPosition.y}px;"
-      onclick={(e) => e.stopPropagation()}
-    >
-      <div class="tag-panel-header">
-        <span class="tag-panel-title">Tag screenshot</span>
-        <button class="tag-panel-close" onclick={closeTagPanel}>×</button>
-      </div>
-      <div class="tag-panel-tags">
-        {#if allTags.length === 0}
-          <p class="tag-panel-empty">No tags yet. Create one below.</p>
-        {:else}
-          {#each allTags as tag (tag.id)}
-            {@const isApplied = tagPanelTarget.tagIds.includes(tag.id)}
-            <button
-              class="tag-panel-item"
-              class:applied={isApplied}
-              onclick={() => handleToggleTagOnScreenshot(tag.id)}
-            >
-              <span class="tag-panel-chip" style="--tag-hex: {getTagHex(tag.color)}">
-                {isApplied ? `✓ ${tag.name}` : tag.name}
-              </span>
-            </button>
-          {/each}
-        {/if}
-      </div>
-      <button
-        class="tag-panel-create"
-        onclick={() => { showTagCreator = true; closeTagPanel(); }}
-      >
-        + New tag
-      </button>
-    </div>
-  </div>
+  <TagContextPanel
+    target={tagPanelTarget}
+    {allTags}
+    position={tagPanelPosition}
+    onToggleTag={handleToggleTagOnScreenshot}
+    onCreateTag={() => { showTagCreator = true; }}
+    onClose={closeTagPanel}
+  />
 {/if}
 
 <!-- Tag Picker Panel (batch tagging modal) -->
@@ -991,113 +957,6 @@
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
 
-  /* Tag context panel */
-  .tag-panel-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-  }
-
-  .tag-context-panel {
-    position: fixed;
-    width: 240px;
-    max-height: 320px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    z-index: 101;
-  }
-
-  .tag-panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-
-  .tag-panel-title {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text, #fff);
-  }
-
-  .tag-panel-close {
-    background: transparent;
-    border: none;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-size: 18px;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-  }
-
-  .tag-panel-tags {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-content: flex-start;
-  }
-
-  .tag-panel-empty {
-    margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    text-align: center;
-    width: 100%;
-    padding: 16px 0;
-  }
-
-  .tag-panel-item {
-    background: transparent;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-  }
-
-  .tag-panel-chip {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 10px;
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--tag-hex) 20%, transparent);
-    color: var(--tag-hex);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out);
-  }
-
-  .tag-panel-chip:hover {
-    background: color-mix(in srgb, var(--tag-hex) 30%, transparent);
-  }
-
-  .tag-panel-create {
-    padding: 8px 12px;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    background: transparent;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
-    color: var(--theme-accent, #3b82f6);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    cursor: pointer;
-    font-family: inherit;
-    text-align: left;
-    transition: background 150ms ease-out;
-  }
-
-  .tag-panel-create:hover {
-    background: rgba(59, 130, 246, 0.08);
-  }
-
   /* Tag Picker Modal */
   .tag-picker-backdrop {
     position: fixed;
@@ -1140,8 +999,7 @@
     .chip,
     .size-pill,
     .header-btn,
-    .clear-filters-btn,
-    .tag-panel-chip {
+    .clear-filters-btn {
       transition: none;
     }
     .chip:active,
