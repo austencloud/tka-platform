@@ -23,6 +23,7 @@ Card-based architecture with integrated Generate button:
   import { createStartEndOptionsState } from "../state/start-end-options-state.svelte";
   import CardBasedSettingsContainer from "./CardBasedSettingsContainer.svelte";
   import StartEndSheet from "./modals/StartEndSheet.svelte";
+  import DurationRhythmSheet from "./modals/DurationRhythmSheet.svelte";
   import GeneratorHelpOverlay from "./help/GeneratorHelpOverlay.svelte";
   import GeneratorHelpModal from "./help/GeneratorHelpModal.svelte";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
@@ -58,7 +59,8 @@ Card-based architecture with integrated Generate button:
   const configState = createGenerationConfigState();
   const actionsState = createGenerationActionsState(
     () => sequenceState,
-    () => isSequentialAnimation
+    () => isSequentialAnimation,
+    () => configState.config
   );
   const deviceState = createDeviceState();
   const startEndState = createStartEndOptionsState();
@@ -225,6 +227,17 @@ Card-based architecture with integrated Generate button:
     onClose={() => panelState.closeStartEndPanel()}
     isFreeformMode={panelState.startEndIsFreeformMode}
     gridMode={panelState.startEndGridMode}
+  />
+
+  <DurationRhythmSheet
+    isOpen={panelState.isDurationRhythmPanelOpen}
+    selectedTemplateId={configState.config.durationTemplateId}
+    stepCount={configState.config.length}
+    onSelect={(id) => {
+      configState.updateConfig({ durationTemplateId: id });
+      panelState.closeDurationRhythmPanel();
+    }}
+    onClose={() => panelState.closeDurationRhythmPanel()}
   />
 {/if}
 

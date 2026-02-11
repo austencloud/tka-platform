@@ -658,6 +658,15 @@ const TEMPLATE_DEFINITIONS: readonly DurationTemplateDefinition[] = [
 // =============================================================================
 
 /**
+ * Look up a single template by its ID
+ */
+export function getTemplateById(
+  id: string
+): DurationTemplateDefinition | null {
+  return TEMPLATE_DEFINITIONS.find((t) => t.id === id) ?? null;
+}
+
+/**
  * Get all templates applicable for a given beat count
  */
 export function getTemplatesForStepCount(

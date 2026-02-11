@@ -21,6 +21,7 @@ export interface CardColors {
   turnIntensity: CardColorSet;
   sliceSize: CardColorSet;
   startEnd: CardColorSet;
+  duration: CardColorSet;
 }
 
 /**
@@ -58,6 +59,10 @@ const DEFAULT_COLORS: CardColors = {
   startEnd: {
     color: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
     shadowColor: "215deg 20% 40%",
+  },
+  duration: {
+    color: "linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)",
+    shadowColor: "38deg 75% 50%",
   },
 };
 
@@ -105,6 +110,11 @@ const BRIGHT_BACKGROUND_COLORS: CardColors = {
     // Rich deep slate
     color: "linear-gradient(135deg, #334155 0%, #1e293b 100%)",
     shadowColor: "220deg 25% 20%",
+  },
+  duration: {
+    // Deep amber/gold - saturated
+    color: "linear-gradient(135deg, #d97706 0%, #b45309 50%, #92400e 100%)",
+    shadowColor: "38deg 80% 35%",
   },
 };
 

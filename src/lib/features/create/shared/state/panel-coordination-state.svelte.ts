@@ -265,6 +265,12 @@ export interface PanelCoordinationState {
   triggerGeneratorHelpMode(): void;
   clearGeneratorHelpModeTrigger(): void;
 
+  // Duration Rhythm Panel State (for generator rhythm preset picker)
+  get isDurationRhythmPanelOpen(): boolean;
+
+  openDurationRhythmPanel(): void;
+  closeDurationRhythmPanel(): void;
+
   // Duration Preview Mode State (for live preview in duration pattern drawer)
   get isDurationPreviewMode(): boolean;
   get previewSequence(): SequenceData | null;
@@ -370,6 +376,9 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let previewSequence = $state<SequenceData | null>(null);
   let originalSequence = $state<SequenceData | null>(null);
 
+  // Duration rhythm panel state (generator rhythm preset picker)
+  let isDurationRhythmPanelOpen = $state(false);
+
   // Start/End options panel state
   let isStartEndPanelOpen = $state(false);
   let startEndOptions = $state<StartEndOptions | null>(null);
@@ -414,6 +423,8 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     loopOnChange = null;
 
     isCreationMethodPanelOpen = false;
+
+    isDurationRhythmPanelOpen = false;
 
     isStartEndPanelOpen = false;
     startEndOptions = null;
@@ -747,6 +758,20 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       loopOnChange = null;
     },
 
+    // Duration Rhythm Panel Getters
+    get isDurationRhythmPanelOpen() {
+      return isDurationRhythmPanelOpen;
+    },
+
+    openDurationRhythmPanel() {
+      closeAllPanels();
+      isDurationRhythmPanelOpen = true;
+    },
+
+    closeDurationRhythmPanel() {
+      isDurationRhythmPanelOpen = false;
+    },
+
     // Creation Method Panel Getters
     get isCreationMethodPanelOpen() {
       return isCreationMethodPanelOpen;
@@ -857,6 +882,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
         isFilterPanelOpen ||
         isSequenceActionsPanelOpen ||
         isLOOPPanelOpen ||
+        isDurationRhythmPanelOpen ||
         isStartEndPanelOpen ||
         isSequenceDetailsModalOpen
       );

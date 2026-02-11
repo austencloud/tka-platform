@@ -13,6 +13,7 @@ import {
   PropContinuity,
 } from "../shared/domain/models/generate-models";
 import type { UIGenerationConfig } from "../shared/utils/config-mapper";
+import { getTemplateById } from "../../shared/domain/templates/duration-templates";
 
 // Re-export for convenience
 export type { UIGenerationConfig };
@@ -34,6 +35,8 @@ interface SerializedConfig {
   constraintPreset?: "smooth" | "mixed" | "high-reversal";
   handPathMode?: "smooth" | "mixed" | "high";
   motionTypeFilter?: "no-dash" | "prefer-dash" | null;
+  // Duration rhythm template
+  durationTemplateId?: string | null;
 }
 
 /**
@@ -54,6 +57,7 @@ function saveConfig(config: UIGenerationConfig): void {
       constraintPreset: config.constraintPreset,
       handPathMode: config.handPathMode,
       motionTypeFilter: config.motionTypeFilter,
+      durationTemplateId: config.durationTemplateId,
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
@@ -116,6 +120,9 @@ function loadConfig(): UIGenerationConfig | null {
     if (data.motionTypeFilter !== undefined) {
       result.motionTypeFilter = data.motionTypeFilter;
     }
+    if (data.durationTemplateId !== undefined) {
+      result.durationTemplateId = data.durationTemplateId;
+    }
 
     return result as UIGenerationConfig;
   } catch (error) {
@@ -148,6 +155,7 @@ const DEFAULT_CONFIG: UIGenerationConfig = {
   constraintPreset: "smooth",
   handPathMode: "mixed",
   motionTypeFilter: null,
+  durationTemplateId: null,
 };
 
 // ===== Simple State Creator =====
@@ -174,6 +182,15 @@ export function createGenerationConfigState(
   // Simple update function with persistence
   function updateConfig(updates: Partial<UIGenerationConfig>) {
     config = { ...config, ...updates };
+
+    // Auto-clear duration template if it's no longer valid for the current length
+    if (config.durationTemplateId) {
+      const template = getTemplateById(config.durationTemplateId);
+      if (template && template.minSteps > config.length) {
+        config = { ...config, durationTemplateId: null };
+      }
+    }
+
     saveConfig(config);
   }
 

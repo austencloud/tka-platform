@@ -15,6 +15,7 @@ export type GeneratorHelpId =
   | "turn-intensity"
   | "loop-type"
   | "slice-size"
+  | "duration-rhythm"
   | "start-end"
   | "generate";
 
@@ -155,6 +156,24 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
       "Quartered: Sequence splits into 4 parts - more complex, subtler transitions",
     ],
     tip: "Halved is easier to follow. Quartered creates more intricate patterns.",
+  },
+
+  // === DURATION RHYTHM ===
+  {
+    id: "duration-rhythm",
+    icon: "fa-wave-square",
+    name: "Rhythm",
+    color: "#f59e0b",
+    shortDesc: "Duration pattern for generated sequences",
+    fullDesc:
+      "Pre-selects a duration rhythm template that gets applied automatically after each generation. Changes how long each step is held relative to others.",
+    bullets: [
+      "Accent: Emphasize specific beats (downbeat, triplet, bookends)",
+      "Meter: Time signature patterns (waltz, 6/8, 5/4, march)",
+      "Feel: Rhythmic character (swing, shuffle, accelerando)",
+      "World: Global rhythm traditions (clave, bossa nova, samba)",
+    ],
+    tip: "Set to 'Off' for equal-duration steps. Pick a rhythm to add musical timing to every generated sequence.",
   },
 
   // === START/END POSITIONS ===

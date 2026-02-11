@@ -16,6 +16,8 @@ Bottom row: [Start/End] [Generate]
   import { container as diContainer } from "$lib/shared/di";
   import { onMount, getContext } from "svelte";
   import GenerateButtonCard from "./cards/GenerateButtonCard.svelte";
+  import LOOPExpandPanel from "./LOOPExpandPanel.svelte";
+  import StartEndExpandPanel from "./StartEndExpandPanel.svelte";
   import type { ILOOPParameterProvider } from "../shared/services/contracts/ILOOPParameterProvider";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { UIGenerationConfig } from "../state/generate-config.svelte";
@@ -25,7 +27,6 @@ Bottom row: [Start/End] [Generate]
   import {
     DifficultyLevel,
     GenerationMode,
-    LOOPComponent,
   } from "../shared/domain/models/generate-models";
   import {
     LOOPType,
@@ -36,21 +37,17 @@ Bottom row: [Start/End] [Generate]
   import { BackgroundType } from "@austencloud/backgrounds";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getCardColors, isBrightBackground } from "../shared/domain/card-colors";
-  import { LOOP_COMPONENTS } from "../shared/domain/constants/loop-constants";
-  import { loopTypeResolver } from "../shared/services/implementations/LOOPTypeResolver";
   import {
     detectPresetFromBlocked,
     getAllPositions,
-    getBlockedPositionsForPreset,
     StartPositionPreset,
-    PRESET_LABELS,
-    PRESET_DESCRIPTIONS,
   } from "../shared/domain/start-position-presets";
-  import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
-  import MultiSelectPositionPicker from "$lib/shared/components/position-picker/MultiSelectPositionPicker.svelte";
-  import PositionSection from "./modals/customize/PositionSection.svelte";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    LEVEL_COLORS,
+    LEVEL_COLORS_BRIGHT,
+    FALLBACK_LEVEL_COLOR,
+  } from "../shared/domain/constants/level-color-palettes";
+  import { getTemplateById } from "../../shared/domain/templates/duration-templates";
 
   // ============================================================================
   // PROPS
@@ -104,58 +101,6 @@ Bottom row: [Start/End] [Generate]
   let useDarkLevelColors = $derived(
     isBrightBackground(settingsService.settings.backgroundType ?? BackgroundType.SNOWFALL)
   );
-
-  const LEVEL_COLORS: Record<number, { color: string; shadowHsl: string; textColor: string }> = {
-    1: {
-      color: `radial-gradient(ellipse at top left, rgb(186,230,253) 0%, rgb(125,211,252) 30%, rgb(56,189,248) 70%, rgb(14,165,233) 100%)`,
-      shadowHsl: "200deg 80% 55%",
-      textColor: "black",
-    },
-    2: {
-      color: `radial-gradient(ellipse at top left, rgb(226,232,240) 0%, rgb(148,163,184) 30%, rgb(100,116,139) 70%, rgb(71,85,105) 100%)`,
-      shadowHsl: "215deg 20% 40%",
-      textColor: "white",
-    },
-    3: {
-      color: `radial-gradient(ellipse at top left, rgb(254,240,138) 0%, rgb(253,224,71) 20%, rgb(250,204,21) 40%, rgb(234,179,8) 60%, rgb(202,138,4) 80%, rgb(161,98,7) 100%)`,
-      shadowHsl: "45deg 80% 45%",
-      textColor: "black",
-    },
-    4: {
-      color: `radial-gradient(ellipse at top left, rgb(255,180,180) 0%, rgb(255,140,140) 20%, rgb(255,100,100) 40%, rgb(239,68,68) 60%, rgb(220,38,38) 80%, rgb(185,28,28) 100%)`,
-      shadowHsl: "0deg 75% 50%",
-      textColor: "white",
-    },
-  };
-
-  const LEVEL_COLORS_BRIGHT: Record<number, { color: string; shadowHsl: string; textColor: string }> = {
-    1: {
-      color: `radial-gradient(ellipse at top left, rgb(165,218,250) 0%, rgb(105,195,248) 30%, rgb(45,175,240) 70%, rgb(8,145,210) 100%)`,
-      shadowHsl: "200deg 80% 45%",
-      textColor: "black",
-    },
-    2: {
-      color: `radial-gradient(ellipse at top left, rgb(148,163,184) 0%, rgb(100,116,139) 30%, rgb(71,85,105) 70%, rgb(51,65,85) 100%)`,
-      shadowHsl: "215deg 20% 30%",
-      textColor: "white",
-    },
-    3: {
-      color: `radial-gradient(ellipse at top left, rgb(253,224,71) 0%, rgb(250,204,21) 20%, rgb(234,179,8) 40%, rgb(217,155,6) 60%, rgb(202,138,4) 80%, rgb(180,115,5) 100%)`,
-      shadowHsl: "45deg 80% 40%",
-      textColor: "black",
-    },
-    4: {
-      color: `radial-gradient(ellipse at top left, rgb(255,140,140) 0%, rgb(255,100,100) 20%, rgb(239,68,68) 40%, rgb(220,38,38) 60%, rgb(185,28,28) 80%, rgb(153,27,27) 100%)`,
-      shadowHsl: "0deg 75% 40%",
-      textColor: "white",
-    },
-  };
-
-  const FALLBACK_LEVEL_COLOR = {
-    color: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
-    shadowHsl: "215deg 20% 40%",
-    textColor: "white",
-  };
 
   let currentLevelColor = $derived.by(() => {
     const palette = useDarkLevelColors ? LEVEL_COLORS_BRIGHT : LEVEL_COLORS;
@@ -224,6 +169,12 @@ Bottom row: [Start/End] [Generate]
     if (INLINE_TOGGLE_IDS.has(chipId)) {
       handleInlineToggle(chipId);
       triggerPulse(chipId);
+      return;
+    }
+
+    // Duration chip opens a drawer instead of morph-expanding
+    if (chipId === "duration") {
+      panelState?.openDurationRhythmPanel();
       return;
     }
 
@@ -386,53 +337,15 @@ Bottom row: [Start/End] [Generate]
     return "Custom";
   });
 
-  // LOOP toggle state
-  let localLoopSelection = $state<Set<LOOPComponent>>(new Set());
-  let isValidLoopCombo = $state(true);
-
-  $effect(() => {
-    if (!isFreeformMode && config.loopType) {
-      localLoopSelection = loopTypeResolver.parseComponents(config.loopType as LOOPType);
-      isValidLoopCombo = true;
-    }
+  let durationDisplayValue = $derived.by(() => {
+    if (!config.durationTemplateId) return "Off";
+    const template = getTemplateById(config.durationTemplateId);
+    return template?.name ?? "Off";
   });
 
-  function isRoundTripValid(components: Set<LOOPComponent>): boolean {
-    if (components.size === 0) return true;
-    const type = loopTypeResolver.generateLOOPType(components);
-    const parsed = loopTypeResolver.parseComponents(type);
-    if (parsed.size !== components.size) return false;
-    for (const c of components) {
-      if (!parsed.has(c)) return false;
-    }
-    return true;
-  }
-
-  function handleLoopToggle(component: LOOPComponent) {
-    haptic?.trigger("selection");
-    const newSet = new Set(localLoopSelection);
-    if (newSet.has(component)) {
-      newSet.delete(component);
-    } else {
-      newSet.add(component);
-    }
-    localLoopSelection = newSet;
-    if (newSet.size === 0) {
-      isValidLoopCombo = true;
-    } else {
-      const valid = isRoundTripValid(newSet);
-      isValidLoopCombo = valid;
-      if (valid) {
-        updateConfig({ loopType: loopTypeResolver.generateLOOPType(newSet) });
-      }
-    }
-  }
-
-  let loopDisplayValue = $derived.by(() => {
-    if (!isValidLoopCombo) return `${localLoopSelection.size} sel`;
-    if (config.loopType) return LOOP_TYPE_LABELS[config.loopType as LOOPType] ?? "Custom";
-    return "Rotated";
-  });
+  let loopDisplayValue = $derived(
+    config.loopType ? (LOOP_TYPE_LABELS[config.loopType as LOOPType] ?? "Custom") : "Rotated"
+  );
 
   // ============================================================================
   // START/END DISPLAY VALUE
@@ -452,86 +365,6 @@ Bottom row: [Start/End] [Generate]
     return `${enabledCount} pos`;
   });
 
-  // Start/End local state for inline editing
-  let pendingStartEndOptions = $state<StartEndOptions | null>(null);
-
-  // Sync pending options when start-end chip opens
-  $effect(() => {
-    if (activeChipId === "start-end" && startEndState) {
-      pendingStartEndOptions = { ...startEndState.options };
-    } else if (activeChipId !== "start-end") {
-      pendingStartEndOptions = null;
-    }
-  });
-
-  const currentStartPreset = $derived(
-    pendingStartEndOptions
-      ? detectPresetFromBlocked(pendingStartEndOptions.blockedStartPositions, config.gridMode as GridMode)
-      : StartPositionPreset.ANY
-  );
-
-  const startEnabledCount = $derived(
-    pendingStartEndOptions
-      ? getAllPositions(config.gridMode as GridMode).length - pendingStartEndOptions.blockedStartPositions.length
-      : getAllPositions(config.gridMode as GridMode).length
-  );
-
-  const startTotalPositions = $derived(getAllPositions(config.gridMode as GridMode).length);
-
-  const availablePresets = [
-    StartPositionPreset.ANY,
-    StartPositionPreset.CLASSIC,
-    StartPositionPreset.CUSTOM,
-  ];
-
-  function handleStartEndPresetSelect(preset: StartPositionPreset) {
-    if (!pendingStartEndOptions || !startEndState) return;
-    haptic?.trigger("selection");
-    const blockedPositions = getBlockedPositionsForPreset(preset, config.gridMode as GridMode);
-    pendingStartEndOptions = {
-      ...pendingStartEndOptions,
-      blockedStartPositions: blockedPositions,
-      startPosition: null,
-    };
-    startEndState.updateOptions(pendingStartEndOptions);
-  }
-
-  function handleStartEndBlockedChange(blocked: GridPosition[]) {
-    if (!pendingStartEndOptions || !startEndState) return;
-    pendingStartEndOptions = {
-      ...pendingStartEndOptions,
-      blockedStartPositions: blocked,
-      startPosition: null,
-    };
-    startEndState.updateOptions(pendingStartEndOptions);
-  }
-
-  function handleStartEndEndPositionChange(position: PictographData | null) {
-    if (!pendingStartEndOptions || !startEndState) return;
-    haptic?.trigger("selection");
-    pendingStartEndOptions = { ...pendingStartEndOptions, endPosition: position };
-    startEndState.updateOptions(pendingStartEndOptions);
-  }
-
-  function handleStartEndClearAll() {
-    if (!startEndState) return;
-    haptic?.trigger("selection");
-    pendingStartEndOptions = {
-      blockedStartPositions: [],
-      startPosition: null,
-      endPosition: null,
-      mustContainLetters: [],
-      mustNotContainLetters: [],
-    };
-    startEndState.updateOptions(pendingStartEndOptions);
-  }
-
-  const hasAnyStartEndOptions = $derived(
-    pendingStartEndOptions
-      ? pendingStartEndOptions.blockedStartPositions.length > 0 ||
-        (isFreeformMode && pendingStartEndOptions.endPosition !== null)
-      : false
-  );
 
   // Help mode mapping
   const chipIdToHelpId: Record<string, GeneratorHelpId> = {
@@ -543,6 +376,7 @@ Bottom row: [Start/End] [Generate]
     "turn-intensity": "turn-intensity",
     "loop": "loop-type",
     "slice": "slice-size",
+    "duration": "duration-rhythm",
   };
 
   // ============================================================================
@@ -565,6 +399,13 @@ Bottom row: [Start/End] [Generate]
         value: styleDisplayValue,
         bg: cardColors.continuity.color,
         shadowHsl: cardColors.continuity.shadowColor,
+      },
+      {
+        id: "duration",
+        label: "Rhythm",
+        value: durationDisplayValue,
+        bg: cardColors.duration.color,
+        shadowHsl: cardColors.duration.shadowColor,
       },
     ];
 
@@ -855,83 +696,20 @@ Bottom row: [Start/End] [Generate]
           </div>
 
         {:else if activeChipId === "loop"}
-          <div class="loop-panel">
-            <div class="loop-toggle-grid">
-              {#each LOOP_COMPONENTS as info}
-                {@const isActive = localLoopSelection.has(info.component)}
-                <button
-                  class="loop-toggle-chip"
-                  class:active={isActive}
-                  onclick={() => handleLoopToggle(info.component)}
-                  style:--chip-color={info.color}
-                  aria-pressed={isActive}
-                  aria-label="{info.label}: {isActive ? 'on' : 'off'}"
-                >
-                  <i class="fas fa-{info.icon}" aria-hidden="true"></i>
-                  <span>{info.label}</span>
-                </button>
-              {/each}
-            </div>
-            {#if !isValidLoopCombo}
-              <div class="combo-hint" role="status">
-                <i class="fas fa-flask" aria-hidden="true"></i>
-                Invalid combination
-              </div>
-            {/if}
-          </div>
+          <LOOPExpandPanel
+            loopType={config.loopType}
+            {isFreeformMode}
+            {haptic}
+            updateLoopType={(type) => updateConfig({ loopType: type })}
+          />
 
-        {:else if activeChipId === "start-end" && pendingStartEndOptions}
-          <div class="start-end-panel">
-            <!-- Header actions -->
-            {#if hasAnyStartEndOptions}
-              <button class="se-clear-btn" onclick={handleStartEndClearAll}>
-                Clear All
-              </button>
-            {/if}
-
-            <!-- Preset buttons -->
-            <div class="se-presets-row">
-              {#each availablePresets as preset}
-                <button
-                  class="se-preset-btn"
-                  class:active={currentStartPreset === preset}
-                  onclick={() => handleStartEndPresetSelect(preset)}
-                  aria-pressed={currentStartPreset === preset}
-                >
-                  <span class="se-preset-label">{PRESET_LABELS[preset]}</span>
-                  <span class="se-preset-desc">{PRESET_DESCRIPTIONS[preset]}</span>
-                </button>
-              {/each}
-            </div>
-
-            <!-- Custom indicator -->
-            {#if currentStartPreset === StartPositionPreset.CUSTOM}
-              <div class="se-custom-indicator">
-                <span class="se-custom-badge">Custom</span>
-                <span class="se-custom-text">{startEnabledCount} of {startTotalPositions}</span>
-              </div>
-            {/if}
-
-            <!-- Position picker grid -->
-            <MultiSelectPositionPicker
-              blockedPositions={pendingStartEndOptions.blockedStartPositions}
-              onBlockedChange={handleStartEndBlockedChange}
-              gridMode={config.gridMode as GridMode}
-            />
-
-            <!-- End Position (freeform only) -->
-            {#if isFreeformMode}
-              <div class="se-end-section">
-                <PositionSection
-                  title="End Position"
-                  description="Where the sequence ends"
-                  currentPosition={pendingStartEndOptions.endPosition}
-                  onPositionChange={handleStartEndEndPositionChange}
-                  gridMode={config.gridMode as GridMode}
-                />
-              </div>
-            {/if}
-          </div>
+        {:else if activeChipId === "start-end" && startEndState}
+          <StartEndExpandPanel
+            {startEndState}
+            gridMode={config.gridMode as GridMode}
+            {isFreeformMode}
+            {haptic}
+          />
         {/if}
       </div>
     </div>
@@ -1305,183 +1083,7 @@ Bottom row: [Start/End] [Generate]
     text-align: center;
   }
 
-  /* ============================================================ */
-  /* LOOP TOGGLE GRID */
-  /* ============================================================ */
 
-  .loop-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .loop-toggle-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 3px;
-  }
-
-  .loop-toggle-chip {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-    min-height: 48px;
-    padding: 3px;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 100ms ease;
-  }
-
-  .loop-toggle-chip:active {
-    transform: scale(0.96);
-  }
-
-  .loop-toggle-chip.active {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: var(--chip-color, rgba(255, 255, 255, 0.5));
-    color: #fff;
-  }
-
-  .loop-toggle-chip.active i {
-    color: var(--chip-color, var(--theme-accent));
-  }
-
-  .loop-toggle-chip i {
-    font-size: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    transition: color 100ms ease;
-  }
-
-  .combo-hint {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: var(--semantic-warning, #f59e0b);
-    padding: 2px 6px;
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.25);
-    border-radius: 6px;
-  }
-
-  .combo-hint i {
-    font-size: 10px;
-    flex-shrink: 0;
-  }
-
-  /* ============================================================ */
-  /* START/END INLINE PANEL */
-  /* ============================================================ */
-
-  .start-end-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    overflow-y: auto;
-    max-height: 100%;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
-  }
-
-  .se-clear-btn {
-    align-self: flex-end;
-    padding: 4px 12px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 14px;
-    color: var(--theme-text, white);
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 100ms ease;
-  }
-
-  .se-clear-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-  }
-
-  .se-presets-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-  }
-
-  .se-preset-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-    padding: 6px 4px;
-    min-height: 40px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 2px solid transparent;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 100ms ease;
-  }
-
-  .se-preset-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-  }
-
-  .se-preset-btn.active {
-    background: rgba(100, 200, 255, 0.15);
-    border-color: rgba(100, 200, 255, 0.6);
-    box-shadow: 0 0 8px rgba(100, 200, 255, 0.2);
-  }
-
-  .se-preset-btn:active {
-    transform: scale(0.97);
-  }
-
-  .se-preset-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--theme-text, white);
-  }
-
-  .se-preset-desc {
-    font-size: 9px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    text-align: center;
-  }
-
-  .se-custom-indicator {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    background: rgba(255, 200, 100, 0.1);
-    border: 1px solid rgba(255, 200, 100, 0.3);
-    border-radius: 6px;
-  }
-
-  .se-custom-badge {
-    font-size: 10px;
-    font-weight: 600;
-    color: rgba(255, 200, 100, 0.9);
-    padding: 1px 6px;
-    background: rgba(255, 200, 100, 0.15);
-    border-radius: 4px;
-  }
-
-  .se-custom-text {
-    font-size: 11px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-  }
-
-  .se-end-section {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 8px;
-  }
 
   /* ============================================================ */
   /* BOTTOM ROW: Start/End + Generate */
@@ -1613,8 +1215,7 @@ Bottom row: [Start/End] [Generate]
   @media (prefers-reduced-motion: reduce) {
     .compact-chip,
     .option-btn,
-    .stepper-btn,
-    .loop-toggle-chip {
+    .stepper-btn {
       transition: none;
     }
 

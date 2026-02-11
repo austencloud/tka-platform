@@ -71,6 +71,9 @@ export interface UIGenerationConfig {
   constraintPreset: "smooth" | "mixed" | "high-reversal"; // Prop reversal frequency
   handPathMode: "smooth" | "mixed" | "high"; // Hand path reversal frequency
   motionTypeFilter: "no-dash" | "prefer-dash" | null; // Dash frequency ("mixed" = null)
+
+  // Duration rhythm template (applied automatically after generation)
+  durationTemplateId: string | null;
 }
 
 /**
@@ -170,5 +173,6 @@ export function generationOptionsToUIConfig(
     constraintPreset,
     handPathMode: options.handPathMode ?? "mixed",
     motionTypeFilter: options.motionTypeFilter ?? null,
+    durationTemplateId: null,
   };
 }

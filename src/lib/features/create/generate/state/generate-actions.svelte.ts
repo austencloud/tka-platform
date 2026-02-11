@@ -13,10 +13,16 @@ import type { GenerationOptions } from "../shared/domain/models/generate-models"
 import type { IGenerationOrchestrator } from "../shared/services/contracts/IGenerationOrchestrator";
 import { generationOrchestrator } from "../shared/services/implementations/GenerationOrchestrator";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
+import type { UIGenerationConfig } from "../shared/utils/config-mapper";
+import {
+  getTemplateById,
+  templateToPattern,
+} from "$lib/features/create/shared/domain/templates/duration-templates";
 
 export function createGenerationActionsState(
   getSequenceState?: () => SequenceState | undefined,
-  getIsSequential?: () => boolean
+  getIsSequential?: () => boolean,
+  getConfig?: () => UIGenerationConfig | undefined
 ) {
   let isGenerating = $state(false);
   let lastGeneratedSequence = $state<SequenceData | null>(null);
@@ -34,8 +40,33 @@ export function createGenerationActionsState(
         orchestrationService = generationOrchestrator;
       }
 
-      const generatedSequence =
+      let generatedSequence =
         await orchestrationService.generateSequence(options);
+
+      // Apply duration rhythm template if configured
+      const config = getConfig?.();
+      if (config?.durationTemplateId) {
+        const template = getTemplateById(config.durationTemplateId);
+        if (template) {
+          try {
+            const pattern = templateToPattern(
+              template,
+              "system",
+              generatedSequence.steps.length
+            );
+            const durationManager = container.items.durationPatternManager;
+            const result = durationManager.applyPattern(pattern, generatedSequence);
+            if (result.success && result.sequence) {
+              generatedSequence = result.sequence;
+            } else {
+              console.warn("Duration template application failed:", result.error);
+            }
+          } catch (err) {
+            console.warn("Duration template application error:", err);
+          }
+        }
+      }
+
       lastGeneratedSequence = generatedSequence;
       await updateWorkbenchWithSequence(generatedSequence);
     } catch (error) {
