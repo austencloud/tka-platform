@@ -87,6 +87,8 @@
     compose: () => import("../../features/compose/ComposeModule.svelte"),
     // watch module - video browsing hub
     watch: () => import("../../features/watch/WatchModule.svelte"),
+    // arena module - community pairwise ranking
+    arena: () => import("../../features/arena/ArenaModule.svelte"),
     // connect module consolidated into Lab (Feb 2026)
     connect: () => import("../../features/lab/LabModule.svelte"),
     // settings module - accessed via gear icon in sidebar footer

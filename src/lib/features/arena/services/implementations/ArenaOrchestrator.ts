@@ -1,0 +1,225 @@
+/**
+ * ArenaOrchestrator
+ *
+ * Coordinates the full arena flow. Manages pool, matchmaking, voting,
+ * rating updates, and matchup prefetching.
+ */
+
+import type { IArenaOrchestrator } from "../contracts/IArenaOrchestrator";
+import type { IArenaRepository } from "../contracts/IArenaRepository";
+import type { IRatingCalculator } from "../contracts/IRatingCalculator";
+import type { IMatchupSelector, MatchupCandidate } from "../contracts/IMatchupSelector";
+import type {
+  ArenaMatchup,
+  ArenaLeaderboardEntry,
+  ArenaUserStats,
+  ArenaRating,
+} from "../../domain/models/arena-models";
+import {
+  MIN_VOTE_INTERVAL_MS,
+  RECENT_MATCHUP_BUFFER_SIZE,
+} from "../../domain/constants/arena-constants";
+
+export class ArenaOrchestrator implements IArenaOrchestrator {
+  private userId = "";
+  private pool: MatchupCandidate[] = [];
+  private currentMatchup: ArenaMatchup | null = null;
+  private nextMatchup: ArenaMatchup | null = null;
+  private recentPairs = new Set<string>();
+  private loading = false;
+  private sessionStreak = 0;
+  private matchupsCompleted = 0;
+  private lastVoteTime = 0;
+
+  constructor(
+    private readonly repository: IArenaRepository,
+    private readonly ratingCalculator: IRatingCalculator,
+    private readonly matchupSelector: IMatchupSelector
+  ) {}
+
+  async initialize(userId: string): Promise<void> {
+    this.userId = userId;
+    this.loading = true;
+
+    try {
+      // Load pool and recent pairs in parallel
+      const [pool, recentPairs] = await Promise.all([
+        this.repository.loadPool(),
+        this.repository.loadRecentVotePairs(userId, RECENT_MATCHUP_BUFFER_SIZE),
+      ]);
+
+      this.pool = pool;
+      this.recentPairs = recentPairs;
+
+      // Select first and prefetch second matchup
+      await this.selectNextMatchup();
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  getCurrentMatchup(): ArenaMatchup | null {
+    return this.currentMatchup;
+  }
+
+  async vote(winnerId: string): Promise<void> {
+    if (!this.currentMatchup) return;
+
+    // Spam prevention
+    const now = Date.now();
+    if (now - this.lastVoteTime < MIN_VOTE_INTERVAL_MS) return;
+    this.lastVoteTime = now;
+
+    const { entryA, entryB, ratingA, ratingB, reason } = this.currentMatchup;
+    const isWinnerA = winnerId === entryA.id;
+    const winner = isWinnerA ? ratingA : ratingB;
+    const loser = isWinnerA ? ratingB : ratingA;
+
+    // Compute new ratings
+    const update = this.ratingCalculator.computeUpdate(
+      winner.mu,
+      winner.phi,
+      winner.sigma,
+      loser.mu,
+      loser.phi,
+      loser.sigma
+    );
+
+    // Build updated rating objects
+    const now2 = new Date();
+    const updatedWinner: ArenaRating = {
+      ...winner,
+      mu: update.winnerMu,
+      phi: update.winnerPhi,
+      sigma: update.winnerSigma,
+      displayRating: this.ratingCalculator.displayRating(update.winnerMu, update.winnerPhi),
+      totalMatchups: winner.totalMatchups + 1,
+      wins: winner.wins + 1,
+      lastMatchAt: now2,
+      peakRating: Math.max(
+        winner.peakRating,
+        this.ratingCalculator.displayRating(update.winnerMu, update.winnerPhi)
+      ),
+      peakRatingDate:
+        this.ratingCalculator.displayRating(update.winnerMu, update.winnerPhi) > winner.peakRating
+          ? now2
+          : winner.peakRatingDate,
+    };
+
+    const updatedLoser: ArenaRating = {
+      ...loser,
+      mu: update.loserMu,
+      phi: update.loserPhi,
+      sigma: update.loserSigma,
+      displayRating: this.ratingCalculator.displayRating(update.loserMu, update.loserPhi),
+      totalMatchups: loser.totalMatchups + 1,
+      losses: loser.losses + 1,
+      lastMatchAt: now2,
+    };
+
+    // Persist vote and updated ratings in parallel
+    await Promise.all([
+      this.repository.saveRatings(updatedWinner, updatedLoser),
+      this.repository.saveVote({
+        voterId: this.userId,
+        winnerEntryId: winnerId,
+        loserEntryId: isWinnerA ? entryB.id : entryA.id,
+        timestamp: now2,
+        matchupReason: reason,
+      }),
+    ]);
+
+    // Track the pair as seen
+    const pairKey =
+      entryA.id < entryB.id
+        ? `${entryA.id}|${entryB.id}`
+        : `${entryB.id}|${entryA.id}`;
+    this.recentPairs.add(pairKey);
+
+    // Update pool cache with new ratings
+    this.updatePoolRating(updatedWinner);
+    this.updatePoolRating(updatedLoser);
+
+    // Advance state
+    this.sessionStreak++;
+    this.matchupsCompleted++;
+
+    // Promote prefetched matchup, start prefetching the next one
+    await this.selectNextMatchup();
+  }
+
+  async skip(): Promise<void> {
+    this.sessionStreak = 0;
+    await this.selectNextMatchup();
+  }
+
+  async loadLeaderboard(limit = 50): Promise<ArenaLeaderboardEntry[]> {
+    return this.repository.loadLeaderboard(limit);
+  }
+
+  async loadUserStats(): Promise<ArenaUserStats> {
+    return this.repository.loadUserStats(this.userId);
+  }
+
+  isLoading(): boolean {
+    return this.loading;
+  }
+
+  getSessionStreak(): number {
+    return this.sessionStreak;
+  }
+
+  getMatchupsCompleted(): number {
+    return this.matchupsCompleted;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private
+  // ---------------------------------------------------------------------------
+
+  private async selectNextMatchup(): Promise<void> {
+    if (this.nextMatchup) {
+      this.currentMatchup = this.nextMatchup;
+      this.nextMatchup = null;
+      // Prefetch in background
+      this.prefetchNextMatchup();
+    } else {
+      this.currentMatchup = this.buildMatchup();
+      this.prefetchNextMatchup();
+    }
+  }
+
+  private prefetchNextMatchup(): void {
+    // Run async without blocking
+    Promise.resolve().then(() => {
+      this.nextMatchup = this.buildMatchup();
+    });
+  }
+
+  private buildMatchup(): ArenaMatchup | null {
+    const result = this.matchupSelector.selectMatchup(
+      this.pool,
+      this.userId,
+      this.recentPairs
+    );
+    if (!result) return null;
+
+    return {
+      entryA: result.a.entry,
+      entryB: result.b.entry,
+      ratingA: result.a.rating,
+      ratingB: result.b.rating,
+      dataA: result.a.data,
+      dataB: result.b.data,
+      reason: result.reason,
+    };
+  }
+
+  private updatePoolRating(updated: ArenaRating): void {
+    const idx = this.pool.findIndex((c) => c.entry.id === updated.entryId);
+    const existing = this.pool[idx];
+    if (idx !== -1 && existing) {
+      this.pool[idx] = { entry: existing.entry, data: existing.data, rating: updated };
+    }
+  }
+}

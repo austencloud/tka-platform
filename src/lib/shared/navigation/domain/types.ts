@@ -47,6 +47,7 @@ export type ModuleId =
   | "settings"
   | "watch" // Watch videos and performances
   | "moderation" // Content moderation (admin)
+  | "arena" // Community pairwise ranking
   | "lab"; // Experimental features lab (all experiments consolidated here)
   // Consolidated into Lab (Feb 2026): community, ml-training, connect
 

@@ -17,6 +17,7 @@ import {
   SETTINGS_TABS,
   WATCH_TABS,
   LAB_TABS,
+  ARENA_TABS,
 } from "./tab-definitions";
 
 /**
@@ -130,6 +131,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true,
     sections: WATCH_TABS,
     // Feed tab now has TikTok-style scroll experience
+  },
+  {
+    id: "arena",
+    label: "Arena",
+    icon: '<i class="fas fa-trophy" style="color: #e11d48;" aria-hidden="true"></i>',
+    color: "#e11d48", // Rose - competition
+    description: "Vote on head-to-head sequence matchups",
+    isMain: true,
+    sections: ARENA_TABS,
   },
   // connect module consolidated into Lab (Feb 2026)
   {

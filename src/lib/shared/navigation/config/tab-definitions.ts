@@ -497,6 +497,34 @@ export const WATCH_TABS: Section[] = [
   },
 ];
 
+// Arena tabs configuration (community pairwise ranking)
+export const ARENA_TABS: Section[] = [
+  {
+    id: "battle",
+    label: "Battle",
+    icon: '<i class="fas fa-crosshairs" aria-hidden="true"></i>',
+    description: "Vote on head-to-head matchups",
+    color: "#e11d48",
+    gradient: "linear-gradient(135deg, #fb7185 0%, #e11d48 100%)",
+  },
+  {
+    id: "leaderboard",
+    label: "Leaderboard",
+    icon: '<i class="fas fa-ranking-star" aria-hidden="true"></i>',
+    description: "Top-rated sequences ranked by the community",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+  },
+  {
+    id: "stats",
+    label: "Stats",
+    icon: '<i class="fas fa-chart-bar" aria-hidden="true"></i>',
+    description: "Your voting history and arena statistics",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
+  },
+];
+
 // Lab tabs configuration (admin-only, temporary experiments)
 // All experimental modules consolidated here instead of cluttering the sidebar
 export const LAB_TABS: Section[] = [
@@ -675,6 +703,22 @@ export const LAB_TABS: Section[] = [
     description: "Video-to-TKA notation pipeline",
     color: "#f43f5e",
     gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
+  },
+  {
+    id: "trigrid",
+    label: "Trigrid",
+    icon: '<i class="fas fa-draw-polygon" aria-hidden="true"></i>',
+    description: "3-point equilateral triangle grid (triad's native grid)",
+    color: "#d946ef",
+    gradient: "linear-gradient(135deg, #e879f9 0%, #d946ef 100%)",
+  },
+  {
+    id: "duration",
+    label: "Duration",
+    icon: '<i class="fas fa-wave-square" aria-hidden="true"></i>',
+    description: "Visual duration template experimenter",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
 ];
 

@@ -160,5 +160,6 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   write: false, // Write module (unreleased)
   watch: false, // Watch videos/performances (unreleased)
   moderation: false, // Content moderation (admin-only)
+  arena: false, // Arena pairwise ranking (unreleased)
   lab: false, // Experimental features lab (admin-only) - consolidates realm, mandala, skewlab, poi-lab, background-builder, landing-preview, terrain-research, ml-training, community, connect
 };
