@@ -1,0 +1,31 @@
+{
+  "name": "@tka/sequence-engine",
+  "version": "0.1.0",
+  "description": "Platform-agnostic sequence engine for TKA letter transitions, bridge finding, and orientation propagation.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "dependencies": {
+    "@tka/render-core": "file:../render-core"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.0"
+  },
+  "author": "Austen Cloud <austencloud@gmail.com>",
+  "license": "MIT"
+}
