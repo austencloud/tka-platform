@@ -11,8 +11,8 @@ import { fileURLToPath } from "url";
 import type {
   ISequenceDataProvider,
   LetterVariationData,
-} from "../../../src/lib/shared/sequence-engine/data/contracts/ISequenceDataProvider.js";
-import type { LetterMappingsJson } from "../../../src/lib/shared/sequence-engine/domain/models/SequenceEngineTypes.js";
+} from "@tka/sequence-engine";
+import type { LetterMappingsJson } from "@tka/sequence-engine";
 import { calculateOrientations } from "../core/orientation-calculator.js";
 
 const __filename = fileURLToPath(import.meta.url);

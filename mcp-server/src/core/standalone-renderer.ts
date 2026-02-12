@@ -13,12 +13,14 @@ import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
-import type { PropColor } from "@tka/render-core";
 import {
+  GridMode,
+  Orientation,
   type GridLocation,
-  type GridMode,
   type MotionType,
-  type Orientation,
+  type PropColor,
+} from "./enums.js";
+import {
   getLayer2PointCoordinates,
   calculatePropPlacement,
   calculateBetaOffset,

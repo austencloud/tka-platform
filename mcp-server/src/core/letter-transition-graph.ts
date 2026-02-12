@@ -5,9 +5,9 @@
  * Provides the same API for backward compatibility with existing MCP code.
  */
 
-import { TransitionGraph } from "../../../src/lib/shared/sequence-engine/services/implementations/TransitionGraph.js";
+import { TransitionGraph } from "@tka/sequence-engine";
 import { getNodeDataProvider } from "../adapters/NodeDataProvider.js";
-import type { PositionGroup, LetterPositionInfo } from "../../../src/lib/shared/sequence-engine/domain/models/SequenceEngineTypes.js";
+import type { PositionGroup, LetterPositionInfo } from "@tka/sequence-engine";
 
 /**
  * Legacy wrapper class that delegates to the shared TransitionGraph.

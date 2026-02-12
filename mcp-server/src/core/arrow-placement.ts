@@ -24,7 +24,7 @@ export const proClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 90,
   [GridLocation.SOUTHWEST]: 180,
   [GridLocation.NORTHWEST]: 270,
-};
+} as Record<GridLocation, number>;
 
 export const proCounterClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.NORTH]: 45,
@@ -35,7 +35,7 @@ export const proCounterClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 180,
   [GridLocation.SOUTHWEST]: 270,
   [GridLocation.NORTHWEST]: 0,
-};
+} as Record<GridLocation, number>;
 
 /**
  * ANTI rotation maps
@@ -51,7 +51,7 @@ export const antiClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 180,
   [GridLocation.SOUTHWEST]: 270,
   [GridLocation.NORTHWEST]: 0,
-};
+} as Record<GridLocation, number>;
 
 export const antiCounterClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.NORTH]: 315,
@@ -62,7 +62,7 @@ export const antiCounterClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 90,
   [GridLocation.SOUTHWEST]: 180,
   [GridLocation.NORTHWEST]: 270,
-};
+} as Record<GridLocation, number>;
 
 /**
  * STATIC rotation maps - radial (IN/OUT) orientations
@@ -76,7 +76,7 @@ export const staticRadialClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 135,
   [GridLocation.SOUTHWEST]: 225,
   [GridLocation.NORTHWEST]: 315,
-};
+} as Record<GridLocation, number>;
 
 export const staticRadialCounterClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.NORTH]: 180,
@@ -87,7 +87,7 @@ export const staticRadialCounterClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 315,
   [GridLocation.SOUTHWEST]: 45,
   [GridLocation.NORTHWEST]: 135,
-};
+} as Record<GridLocation, number>;
 
 /**
  * STATIC rotation maps - non-radial (CLOCK/COUNTER) orientations
@@ -101,7 +101,7 @@ export const staticNonRadialClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 90,
   [GridLocation.SOUTHWEST]: 180,
   [GridLocation.NORTHWEST]: 270,
-};
+} as Record<GridLocation, number>;
 
 export const staticNonRadialCounterClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.NORTH]: 135,
@@ -112,7 +112,7 @@ export const staticNonRadialCounterClockwiseMap: Record<GridLocation, number> = 
   [GridLocation.SOUTHEAST]: 270,
   [GridLocation.SOUTHWEST]: 0,
   [GridLocation.NORTHWEST]: 90,
-};
+} as Record<GridLocation, number>;
 
 /**
  * DASH rotation maps
@@ -130,7 +130,7 @@ export const dashClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 135,
   [GridLocation.SOUTHWEST]: 225,
   [GridLocation.NORTHWEST]: 315,
-};
+} as Record<GridLocation, number>;
 
 // CCW map is identical to CW - rotation angle is location-based, not direction-based
 export const dashCounterClockwiseMap: Record<GridLocation, number> = {
@@ -142,7 +142,7 @@ export const dashCounterClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.SOUTHEAST]: 135,
   [GridLocation.SOUTHWEST]: 225,
   [GridLocation.NORTHWEST]: 315,
-};
+} as Record<GridLocation, number>;
 
 /**
  * DASH no-rotation map (special case for straight dashes)
