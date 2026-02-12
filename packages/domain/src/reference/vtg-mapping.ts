@@ -31,6 +31,37 @@ export const VTG_MAPPINGS: Record<string, VTGMapping> = {
     tkaLetters: ["M", "N", "O", "P", "Q", "R"],
     explanation: "Hands at right angle (gamma), both shift opposite directions, end at right angle (gamma).",
   },
+  // Elemental model mappings (aliases for the VTG categories)
+  "earth": {
+    vtgTerm: "Earth (Tog-Same)",
+    tkaLetters: ["G", "H", "I"],
+    explanation: "Together time, same direction. Both hands at same point, arcing the same way. The element of solidity. Grid-mode invariant.",
+  },
+  "water": {
+    vtgTerm: "Water (Split-Same)",
+    tkaLetters: ["A", "B", "C"],
+    explanation: "Split time, same direction. Hands at opposite points, arcing the same way. The flowing element. Grid-mode invariant.",
+  },
+  "air": {
+    vtgTerm: "Air (Tog-Opp)",
+    tkaLetters: ["D", "E", "F"],
+    explanation: "Together time, opposite direction. Hands at same point, arcing opposite ways. Light and open. Grid-mode dependent: becomes Moon in box mode.",
+  },
+  "fire": {
+    vtgTerm: "Fire (Split-Opp)",
+    tkaLetters: ["J", "K", "L"],
+    explanation: "Split time, opposite direction. Hands at opposite points, arcing opposite ways. Chaotic. Grid-mode dependent: becomes Moon in box mode.",
+  },
+  "sun": {
+    vtgTerm: "Sun (Quarter-Same)",
+    tkaLetters: ["S", "T", "U", "V"],
+    explanation: "Quarter time, same direction. Hands at 90-degree offset, arcing the same way. Constant rotation, always shining. Grid-mode invariant. Added by Austen Cloud.",
+  },
+  "moon": {
+    vtgTerm: "Moon (Quarter-Opp)",
+    tkaLetters: ["M", "N", "O", "P", "Q", "R"],
+    explanation: "Quarter time, opposite direction. Hands at 90-degree offset, arcing opposite ways. Opens and closes like lunar phases. Grid-mode dependent: becomes Air/Fire in box mode. Added by Austen Cloud.",
+  },
 };
 
 export function getVTGMapping(vtgTerm: string): string {
