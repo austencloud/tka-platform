@@ -58,6 +58,8 @@ export interface SequenceResult {
   error?: string;
   /** Information about bridge letters used in the sequence */
   bridges?: BridgeInfo[];
+  /** Indices of steps that are bridge letters (from constrained builder) */
+  bridgeStepIndices?: number[];
 }
 
 /**

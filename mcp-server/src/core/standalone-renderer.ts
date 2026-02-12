@@ -667,7 +667,7 @@ ${svgParts.join("\n")}
     const [adjustX, adjustY] = calculateArrowAdjustment(
       adjustmentInput,
       motionAdjustmentInput,
-      placement.location
+      placement.location as unknown as GridLocation
     );
 
     // Apply adjustment to placement

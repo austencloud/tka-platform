@@ -43,7 +43,7 @@ export interface ArrowPlacement {
     location: GridLocation;
 }
 /** Hand path directions (movement between locations) */
-export type HandPath = "cw" | "ccw" | "dash" | "static";
+export type HandPath = "cw" | "ccw" | "dash" | "static" | "hashIn" | "hashOut";
 /**
  * The plane in which spinning occurs.
  * - wall: Default TKA grid. Spinning in front of body, viewed head-on.
@@ -51,6 +51,7 @@ export type HandPath = "cw" | "ccw" | "dash" | "static";
  * - overhead: Spinning above/below, viewed from above. Grid horizontal.
  *
  * All existing sequences default to "wall" when plane is omitted.
+ * Note: Level 7 is interradial orientations. Planes are a separate future concept (Level 8).
  */
 export type SpinningPlane = "wall" | "wheel" | "overhead";
 /** Vector directions for offset calculations */

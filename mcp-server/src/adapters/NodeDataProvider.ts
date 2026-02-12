@@ -59,7 +59,7 @@ export class NodeDataProvider implements ISequenceDataProvider {
       const content = fs.readFileSync(LETTER_MAPPINGS_PATH, "utf-8");
       this.letterMappings = JSON.parse(content);
       this.initialized = true;
-      return this.letterMappings;
+      return this.letterMappings!;
     } catch (error) {
       console.error("[MCP] Failed to load letter mappings:", error);
       throw error;
