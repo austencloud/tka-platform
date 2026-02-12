@@ -205,4 +205,5 @@ functions/
 
 # Flow arts transcription pipeline (audio is reproducible via yt-dlp, SRTs are tracked)
 flow-arts-transcripts/audio/
+flow-arts-transcripts/instagram/
 flow-arts-transcripts/*-done.txt

@@ -563,7 +563,10 @@
       "WebFetch(domain:poividoftheday.tumblr.com)",
       "WebFetch(domain:www.youtube.com)",
       "Bash(ffprobe:*)",
-      "Bash(ffmpeg:*)"
+      "Bash(ffmpeg:*)",
+      "Bash(box)",
+      "Bash(skewed \")",
+      "WebFetch(domain:www.tkaflowarts.com)"
     ]
   },
   "enableAllProjectMcpServers": false,
