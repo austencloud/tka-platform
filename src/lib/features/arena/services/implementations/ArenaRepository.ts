@@ -50,25 +50,79 @@ export class ArenaRepository implements IArenaRepository {
     const publicSnap = await getDocs(collection(firestore, PUBLIC_SEQUENCES_COLLECTION));
     const candidates: MatchupCandidate[] = [];
 
+    // publicSequences is a lightweight index — steps live in the source doc.
+    // Build entries from the index, then batch-fetch full data via sourceRef.
+    const pendingEntries: Array<{
+      entry: ArenaEntry;
+      sourceRef: string;
+      indexData: Record<string, unknown>;
+    }> = [];
+
     for (const seqDoc of publicSnap.docs) {
-      const seqData = seqDoc.data() as SequenceData & { ownerId?: string; ownerDisplayName?: string };
-      if (!seqData.word || !seqData.steps || seqData.steps.length === 0) continue;
+      const indexData = seqDoc.data();
+      const word = indexData.word as string | undefined;
+      const sourceRef = indexData.sourceRef as string | undefined;
+      if (!word || !sourceRef) continue;
 
-      const entry: ArenaEntry = {
-        id: seqDoc.id,
-        kind: "sequence",
-        word: seqData.word,
-        ownerId: seqData.ownerId ?? "",
-        ownerDisplayName: seqData.ownerDisplayName,
-      };
-
-      const rating = await this.getOrCreateRating(entry);
-
-      candidates.push({
-        entry,
-        rating,
-        data: { ...seqData, id: seqDoc.id } as SequenceData,
+      pendingEntries.push({
+        entry: {
+          id: seqDoc.id,
+          kind: "sequence",
+          word,
+          ownerId: (indexData.ownerId as string) ?? "",
+          ownerDisplayName: indexData.ownerDisplayName as string | undefined,
+        },
+        sourceRef,
+        indexData,
       });
+    }
+
+    // Fetch full sequence data in parallel batches (avoid overwhelming Firestore)
+    const BATCH_SIZE = 20;
+    for (let i = 0; i < pendingEntries.length; i += BATCH_SIZE) {
+      const batch = pendingEntries.slice(i, i + BATCH_SIZE);
+      const results = await Promise.all(
+        batch.map(async ({ entry, sourceRef, indexData }) => {
+          try {
+            const fullDoc = await getDoc(doc(firestore, sourceRef));
+            if (!fullDoc.exists()) return null;
+
+            const fullData = fullDoc.data();
+            const steps = (fullData.steps ?? fullData.beats ?? []) as unknown[];
+            if (steps.length === 0) return null;
+
+            const rating = await this.getOrCreateRating(entry);
+
+            const seqData: SequenceData = {
+              id: entry.id,
+              name: (fullData.name as string) ?? "",
+              word: entry.word,
+              steps: steps as SequenceData["steps"],
+              thumbnails: (indexData.thumbnails as readonly string[]) ?? [],
+              sequenceLength: (indexData.sequenceLength as number) ?? steps.length,
+              level: fullData.level as number | undefined,
+              isFavorite: false,
+              isCircular: (fullData.isCircular as boolean) ?? false,
+              tags: (indexData.tags as readonly string[]) ?? [],
+              metadata: {},
+              ownerId: entry.ownerId,
+              ownerDisplayName: entry.ownerDisplayName,
+              startPosition: fullData.startPosition as SequenceData["startPosition"],
+              startingPosition: fullData.startingPosition as SequenceData["startingPosition"],
+              gridMode: fullData.gridMode as SequenceData["gridMode"],
+            };
+
+            return { entry, rating, data: seqData } as MatchupCandidate;
+          } catch {
+            // Skip sequences whose source doc is inaccessible
+            return null;
+          }
+        })
+      );
+
+      for (const result of results) {
+        if (result) candidates.push(result);
+      }
     }
 
     return candidates;

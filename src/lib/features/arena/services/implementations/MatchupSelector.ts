@@ -26,6 +26,26 @@ export class MatchupSelector implements IMatchupSelector {
     const pool = candidates.filter((c) => c.entry.ownerId !== voterId);
     if (pool.length < 2) return null;
 
+    // Group by beat count — only pit same-length sequences against each other
+    const groups = this.groupByBeatCount(pool);
+
+    // Try each group from largest to smallest (more variety = better matchmaking)
+    for (const group of groups) {
+      if (group.length < 2) continue;
+      const result = this.selectFromPool(group, recentPairs);
+      if (result) return result;
+    }
+
+    return null;
+  }
+
+  /**
+   * Run the three-tier matchmaking within a same-length pool.
+   */
+  private selectFromPool(
+    pool: MatchupCandidate[],
+    recentPairs: Set<string>
+  ): { a: MatchupCandidate; b: MatchupCandidate; reason: MatchupReason } | null {
     // 10% chance of fully random matchup
     if (Math.random() < RANDOM_MATCHUP_RATE) {
       const pair = this.pickRandomPair(pool, recentPairs);
@@ -51,6 +71,24 @@ export class MatchupSelector implements IMatchupSelector {
     if (fallback) return { ...fallback, reason: "random" };
 
     return null;
+  }
+
+  /**
+   * Group candidates by beat count, sorted largest group first.
+   */
+  private groupByBeatCount(pool: MatchupCandidate[]): MatchupCandidate[][] {
+    const map = new Map<number, MatchupCandidate[]>();
+    for (const c of pool) {
+      const beatCount = c.data.steps?.length ?? 0;
+      if (beatCount === 0) continue;
+      const group = map.get(beatCount);
+      if (group) {
+        group.push(c);
+      } else {
+        map.set(beatCount, [c]);
+      }
+    }
+    return [...map.values()].sort((a, b) => b.length - a.length);
   }
 
   /**
