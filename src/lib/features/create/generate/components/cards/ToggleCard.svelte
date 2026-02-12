@@ -67,7 +67,7 @@ Hides header when card height is below 65px for space optimization
   bind:this={state.cardElement}
   class="toggle-card"
   class:landscape-mobile={state.isLandscapeMobile}
-  style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex}; --header-font-size: {headerFontSize}; grid-column: span {gridColumnSpan};"
+  style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex}; grid-column: span {gridColumnSpan};"
   onclick={state.handleClick}
   onkeydown={state.handleKeydown}
   ontouchstart={state.handleTouchStart}

@@ -21,7 +21,6 @@ export class CardConfigurator implements ICardConfigurator {
     currentLevel: DifficultyLevel,
     isFreeformMode: boolean,
     handlers: CardHandlers,
-    headerFontSize: string,
     allowedIntensityValues: number[],
     isGenerating: boolean = false
   ): CardDescriptor[] {
@@ -40,7 +39,7 @@ export class CardConfigurator implements ICardConfigurator {
         currentLevel,
         onLevelChange: handlers.handleLevelChange,
         cardIndex: cardIndex++,
-        headerFontSize,
+
       },
       gridColumnSpan: 2, // Always 2 cols - stable
     });
@@ -53,7 +52,7 @@ export class CardConfigurator implements ICardConfigurator {
         onLengthChange: handlers.handleLengthChange,
         // Color now handled via CSS variables in component
         cardIndex: cardIndex++,
-        headerFontSize,
+
       },
       gridColumnSpan: 2, // Always 2 cols - stable
     });
@@ -65,7 +64,7 @@ export class CardConfigurator implements ICardConfigurator {
         onModeChange: handlers.handleGenerationModeChange,
         // Color now handled via CSS variables in component
         cardIndex: cardIndex++,
-        headerFontSize,
+
       },
       gridColumnSpan: 2, // Always 2 cols - LOCKED TOP-RIGHT
     });
@@ -79,7 +78,7 @@ export class CardConfigurator implements ICardConfigurator {
         onModeChange: handlers.handleGridModeChange,
         // Color now handled via CSS variables in component
         cardIndex: cardIndex++,
-        headerFontSize,
+
       },
       gridColumnSpan: isBeginnerLevel ? 3 : 2, // Expands in any Beginner mode
     });
@@ -91,7 +90,7 @@ export class CardConfigurator implements ICardConfigurator {
         onContinuityChange: handlers.handlePropContinuityChange,
         // Color now handled via CSS variables in component
         cardIndex: cardIndex++,
-        headerFontSize,
+
       },
       gridColumnSpan: isBeginnerLevel ? 3 : 2, // Expands in any Beginner mode
     });
@@ -106,7 +105,7 @@ export class CardConfigurator implements ICardConfigurator {
           allowedValues: allowedIntensityValues,
           onIntensityChange: handlers.handleTurnIntensityChange,
           cardIndex: cardIndex++,
-          headerFontSize,
+  
         },
         gridColumnSpan: 2, // Always 2 columns (1/3 of row)
       });
@@ -133,7 +132,7 @@ export class CardConfigurator implements ICardConfigurator {
           onSliceSizeChange: handlers.handleSliceSizeChange,
           // Color now handled via CSS variables in component
           cardIndex: cardIndex++,
-          headerFontSize,
+  
         },
         gridColumnSpan: 2,
       });
@@ -171,7 +170,7 @@ export class CardConfigurator implements ICardConfigurator {
           onLOOPTypeChange: handlers.handleLOOPTypeChange,
           shadowColor: "30deg 75% 55%", // Orange shadow
           cardIndex: cardIndex++,
-          headerFontSize,
+  
         },
         gridColumnSpan: loopColumnSpan,
       });
@@ -185,7 +184,7 @@ export class CardConfigurator implements ICardConfigurator {
             onOptionsChange: handlers.handleStartEndChange,
             isFreeformMode: false, // Circular mode - hide end position selector
             cardIndex: cardIndex++,
-            headerFontSize,
+    
             positionsResetTrigger: handlers.positionsResetTrigger,
             gridMode: handlers.currentGridMode,
           },
@@ -203,7 +202,7 @@ export class CardConfigurator implements ICardConfigurator {
           onOptionsChange: handlers.handleStartEndChange,
           isFreeformMode: true, // Freeform mode - show end position selector
           cardIndex: cardIndex++,
-          headerFontSize,
+  
           positionsResetTrigger: handlers.positionsResetTrigger,
           gridMode: handlers.currentGridMode,
         },

@@ -122,7 +122,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
 <div
   bind:this={cardElement}
   class="stepper-card"
-  style="--card-color: {color}; --prev-color: {previousColor}; --shadow-color: {shadowColor}; --text-color: {textColor}; --card-index: {cardIndex}; --header-font-size: {headerFontSize}; grid-column: span {gridColumnSpan};"
+  style="--card-color: {color}; --prev-color: {previousColor}; --shadow-color: {shadowColor}; --text-color: {textColor}; --card-index: {cardIndex}; grid-column: span {gridColumnSpan};"
   role="group"
   aria-label={title}
 >
@@ -198,8 +198,8 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     color: white;
     text-align: center;
 
-    /* Clean fade in on load (400ms - 2025 standard) */
-    animation: cardEnter var(--duration-dramatic) ease-out;
+    /* No entrance animation - cards rebuild on resize via headerFontSize dependency,
+       which replays animations and causes visible opacity flashing */
   }
 
   /* Gradient crossfade: ::before shows OLD gradient, background shows NEW gradient */
@@ -263,16 +263,6 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Card entrance animation - clean fade in */
-  @keyframes cardEnter {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
   .stepper-card:focus-within {
     outline-offset: 3px;
   }
@@ -322,7 +312,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
     .stepper-card {
-      animation: none;
+      transition: none;
     }
   }
 </style>

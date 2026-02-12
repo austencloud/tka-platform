@@ -1,8 +1,8 @@
 <!--
   ShareHubButton.svelte
 
-  Share Hub button that opens the unified sharing drawer with multiple export formats.
-  4th button in Create module button panel (alongside Play, Image, Record).
+  Play/View button that opens the sequence viewer for animation and export.
+  Choreographed entrance: hatches from nothing, overshoots, settles, then breathes.
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
@@ -25,11 +25,11 @@
   class="share-hub-button glass-button"
   class:active={isActive}
   onclick={handleClick}
-  aria-label="Open Share Hub"
+  aria-label="View sequence"
   aria-pressed={isActive}
-  title="Export"
+  title="View"
 >
-  <i class="fas fa-photo-film" aria-hidden="true"></i>
+  <i class="fas fa-play" aria-hidden="true"></i>
 </button>
 
 <style>
@@ -43,15 +43,49 @@
       135deg,
       var(--semantic-success) 0%,
       color-mix(in srgb, var(--semantic-success) 85%, #059669) 100%
-    ); /* Green gradient (matches composite format) */
+    );
     border: 1px solid
       color-mix(in srgb, var(--semantic-success) 30%, transparent);
     border-radius: 50%;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
     box-shadow: 0 4px 12px
       color-mix(in srgb, var(--semantic-success) 40%, transparent);
+
+    /*
+      Choreographed entrance:
+      1. arrive (400ms) — fade in, gentle scale up
+      2. breathe (2.4s) — scale + glow pulse, loops forever
+    */
+    animation:
+      arrive 400ms ease-out both,
+      breathe 2.4s ease-in-out 0.5s infinite;
+  }
+
+  @keyframes arrive {
+    from {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Gentle breathing — scale + glow expand together */
+  @keyframes breathe {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow:
+        0 4px 12px color-mix(in srgb, var(--semantic-success) 40%, transparent);
+    }
+    50% {
+      transform: scale(1.06);
+      box-shadow:
+        0 4px 16px color-mix(in srgb, var(--semantic-success) 50%, transparent),
+        0 0 24px color-mix(in srgb, var(--semantic-success) 35%, transparent);
+    }
   }
 
   .share-hub-button:hover {
@@ -60,14 +94,16 @@
       color-mix(in srgb, var(--semantic-success) 85%, #059669) 0%,
       color-mix(in srgb, var(--semantic-success) 70%, #059669) 100%
     );
-    transform: scale(1.05);
-    box-shadow: 0 6px 16px
-      color-mix(in srgb, var(--semantic-success) 60%, transparent);
+    transform: scale(1.1);
+    box-shadow:
+      0 6px 20px color-mix(in srgb, var(--semantic-success) 60%, transparent),
+      0 0 28px color-mix(in srgb, var(--semantic-success) 40%, transparent);
+    animation: none;
   }
 
   .share-hub-button:active {
-    transform: scale(0.95);
-    transition: all var(--duration-instant) ease;
+    transform: scale(0.92);
+    transition: transform 80ms ease;
   }
 
   .share-hub-button:focus-visible {
@@ -143,6 +179,7 @@
   @media (prefers-reduced-motion: reduce) {
     .share-hub-button {
       transition: none;
+      animation: none;
     }
 
     .share-hub-button:hover {

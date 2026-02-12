@@ -61,7 +61,6 @@ export interface ICardConfigurator {
    * @param currentLevel - Current difficulty level
    * @param isFreeformMode - Whether in freeform mode (vs circular mode)
    * @param handlers - Event handlers for card interactions
-   * @param headerFontSize - Calculated header font size to pass to cards
    * @param allowedIntensityValues - Allowed turn intensity values for current level
    * @param isGenerating - Whether generation is currently in progress
    * @returns Array of card descriptors ready for rendering
@@ -71,7 +70,6 @@ export interface ICardConfigurator {
     currentLevel: DifficultyLevel,
     isFreeformMode: boolean,
     handlers: CardHandlers,
-    headerFontSize: string,
     allowedIntensityValues: number[],
     isGenerating?: boolean
   ): CardDescriptor[];

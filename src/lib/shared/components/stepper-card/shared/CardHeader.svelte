@@ -13,7 +13,7 @@ Reusable header for all card types with consistent styling
   <div class="card-header">
     <div
       class="card-title"
-      style={headerFontSize ? `font-size: ${headerFontSize}` : ""}
+      style={headerFontSize ? `font-size: ${headerFontSize}` : "font-size: var(--header-font-size, clamp(8px, 2.5cqi, 11px))"}
     >
       {title}
     </div>
