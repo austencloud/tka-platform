@@ -518,28 +518,10 @@
             {:else}
               <ViewerSplitPane
                 sequence={ctx.effectiveSequence}
-                animationState={ctx.modalAnimationState}
-                animationLoading={ctx.animationLoading}
-                currentStep={ctx.currentStepLocal}
-                isPlaying={ctx.isPlayingLocal}
-                currentLetter={ctx.currentLetter}
-                currentStepData={ctx.currentStepData}
-                highlightedStepIndex={ctx.highlightedStepIndex}
-                imgShowWord={ctx.imgShowWord}
-                imgShowDifficulty={ctx.imgShowDifficulty}
-                imgShowStartPos={ctx.imgShowStartPos}
-                imgShowCreatorName={ctx.imgShowCreatorName}
-                imgShowNotes={ctx.imgShowNotes}
-                imgDarkMode={ctx.imgDarkMode}
-                imgColumnCount={ctx.imgColumnCount}
-                userName={ctx.userName}
-                bluePropType={ctx.bluePropType}
-                redPropType={ctx.redPropType}
-                catDogModeEnabled={ctx.catDogModeEnabled}
-                isFullscreen={ctx.isFullscreen}
-                fullscreenStackVertical={ctx.fullscreenStackVertical}
-                {isMobile}
-                focusedPane={ctx.editingPane}
+                playback={ctx.splitPanePlayback}
+                imageComposition={ctx.splitPaneImageComposition}
+                propRendering={ctx.splitPanePropRendering}
+                layout={{ isFullscreen: ctx.isFullscreen, fullscreenStackVertical: ctx.fullscreenStackVertical, isMobile, isLandscapeMobile: false, focusedPane: ctx.editingPane }}
                 onFocusPane={ctx.enterEditMode}
                 onUnfocusPane={ctx.exitEditMode}
                 onStepClick={ctx.handleStepClick}

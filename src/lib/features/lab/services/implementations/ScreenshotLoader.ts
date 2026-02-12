@@ -43,7 +43,8 @@ export class ScreenshotLoader implements IScreenshotLoader {
   }
 
   subscribeToScreenshots(
-    callback: (screenshots: ScreenshotMetadata[]) => void
+    callback: (screenshots: ScreenshotMetadata[]) => void,
+    onError?: (error: Error) => void
   ): () => void {
     let unsubscribe: (() => void) | null = null;
     let cancelled = false;
@@ -77,13 +78,16 @@ export class ScreenshotLoader implements IScreenshotLoader {
             setTimeout(() => setup(attempt + 1), 1000 * (attempt + 1));
           } else {
             console.warn("[ScreenshotLoader] Snapshot listener error:", error.message);
+            onError?.(new Error(error.message));
           }
         }
       );
     };
 
     setup().catch((err) => {
-      console.warn("[ScreenshotLoader] Failed to set up subscription:", err instanceof Error ? err.message : err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[ScreenshotLoader] Failed to set up subscription:", msg);
+      onError?.(err instanceof Error ? err : new Error(msg));
     });
 
     return () => {

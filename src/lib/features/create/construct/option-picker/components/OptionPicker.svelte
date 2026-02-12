@@ -13,7 +13,6 @@ Delegates all rendering to child components.
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
   import { optionGridFitCalculator } from "../services/implementations/OptionGridFitCalculator";
 
-  import { createFadeState } from "../state/fade-state.svelte";
   import { createOptionPickerState } from "../state/option-picker-state.svelte";
   import type { IOptionLoader } from "../services/contracts/IOptionLoader";
   import type { IOptionFilter } from "../services/contracts/IOptionFilter";
@@ -48,12 +47,12 @@ Delegates all rendering to child components.
   }: Props = $props();
 
   // State
-  const fadeState = createFadeState();
   let pickerState = $state<ReturnType<typeof createOptionPickerState> | null>(
     null
   );
   let preparedOptions = $state<PreparedPictographData[]>([]);
   let isReady = $state(false);
+  let isSelecting = $state(false);
 
   // Internal continuous filter state - initialize with default
   let internalContinuousOnly = $state(false);
@@ -73,8 +72,8 @@ Delegates all rendering to child components.
   let darkMode = $state(false);
   let darkModeProvider: IDarkModeProvider | null = null;
 
-  // Track if we're waiting for new options after a selection
-  let pendingFadeIn = $state(false);
+  // Brief debounce to prevent double-tap during option loading
+  const SELECTION_DEBOUNCE_MS = 300;
 
   // Handle continuous toggle - updates internal state and notifies parent
   function handleToggleContinuous(value: boolean) {
@@ -122,17 +121,14 @@ Delegates all rendering to child components.
     }
 
     if (filtered.length === 0) {
-      preparedOptions = [];
+      // Don't clear preparedOptions — keep old ones visible so grid
+      // slots stay mounted and can transition when new data arrives
       return;
     }
 
     preparer.prepareBatch(filtered).then((prepared) => {
       preparedOptions = prepared;
-      // Fade in after new options are ready
-      if (pendingFadeIn) {
-        pendingFadeIn = false;
-        fadeState.fadeIn();
-      }
+      isSelecting = false;
     });
   });
 
@@ -146,19 +142,21 @@ Delegates all rendering to child components.
     }
   });
 
-  // Handle option selection with fade
-  async function handleSelect(option: PreparedPictographData) {
-    if (!pickerState || fadeState.isFading) return;
+  // Handle option selection — update immediately, let pictographs transition in place
+  function handleSelect(option: PreparedPictographData) {
+    if (!pickerState || isSelecting) return;
 
     hapticService?.trigger("selection");
+    isSelecting = true;
 
-    // Mark that we need to fade in after new options load
-    pendingFadeIn = true;
-
-    // Fade out, wait, then notify parent
-    await fadeState.fadeOut();
+    // Notify parent and load next options immediately — no fade
     onOptionSelected(option);
     pickerState.selectOption(option);
+
+    // Safety release if preparation takes too long
+    setTimeout(() => {
+      isSelecting = false;
+    }, SELECTION_DEBOUNCE_MS);
   }
 
   // Initialize services
@@ -223,7 +221,6 @@ Delegates all rendering to child components.
     options={preparedOptions}
     {organizerService}
     {sizerService}
-    isFading={fadeState.isFading}
     onSelect={handleSelect}
     isContinuousOnly={internalContinuousOnly}
     onToggleContinuous={handleToggleContinuous}

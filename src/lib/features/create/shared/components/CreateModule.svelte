@@ -479,6 +479,13 @@
         panelState,
       });
 
+      // Notify guided build that sequence was cleared
+      window.dispatchEvent(
+        new CustomEvent("guided-build-advance", {
+          detail: { key: "sequence-cleared" },
+        })
+      );
+
       // Force assembly tab to remount with fresh state
       assemblyTabKey++;
     } catch (err) {

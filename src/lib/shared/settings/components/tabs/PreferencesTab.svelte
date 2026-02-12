@@ -24,6 +24,9 @@
   } from "$lib/shared/application/state/app-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
+  import { sidebarTourState } from "$lib/shared/onboarding/state/sidebar-tour-state.svelte";
+  import { resetSidebarTour } from "$lib/shared/onboarding/config/storage-keys";
 
   let { currentSettings, onSettingUpdate } = $props<{
     currentSettings: AppSettings;
@@ -103,6 +106,17 @@
       key: "defaultTimeSignature",
       value,
     });
+  }
+
+  function handleReplayGuidedBuild() {
+    hapticService?.trigger("selection");
+    appEntryState.replay();
+  }
+
+  function handleReplaySidebarTour() {
+    hapticService?.trigger("selection");
+    resetSidebarTour();
+    sidebarTourState.showPrompt();
   }
 </script>
 
@@ -250,6 +264,34 @@
     </div>
   </section>
 
+  <!-- Guides Section -->
+  <section class="section">
+    <h2 class="section-title">
+      <i class="fas fa-compass" aria-hidden="true"></i>
+      Guides
+    </h2>
+
+    <div class="guide-buttons">
+      <button
+        type="button"
+        class="guide-button"
+        onclick={handleReplayGuidedBuild}
+      >
+        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+        <span>Replay first build guide</span>
+      </button>
+
+      <button
+        type="button"
+        class="guide-button"
+        onclick={handleReplaySidebarTour}
+      >
+        <i class="fas fa-map-signs" aria-hidden="true"></i>
+        <span>Replay sidebar tour</span>
+      </button>
+    </div>
+  </section>
+
   <!-- Helpful tip -->
   <div class="tip-card">
     <i class="fas fa-lightbulb" aria-hidden="true"></i>
@@ -347,6 +389,10 @@
 
   .section-title i.fa-flask {
     color: #22c55e;
+  }
+
+  .section-title i.fa-compass {
+    color: #3b82f6;
   }
 
   /* Toggle List */
@@ -522,6 +568,51 @@
   .dark-mode-row:has(.dark-mode-switch.active) .toggle-label {
     color: #00ffff;
     text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  }
+
+  /* Guide Buttons */
+  .guide-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .guide-button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all var(--duration-fast) ease;
+    text-align: left;
+    width: 100%;
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-base);
+    font-weight: 500;
+  }
+
+  .guide-button:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  }
+
+  .guide-button:active {
+    transform: scale(0.995);
+  }
+
+  .guide-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #f97316);
+    outline-offset: 2px;
+  }
+
+  .guide-button i {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-sm);
+    width: 20px;
+    text-align: center;
   }
 
   /* Tip Card */

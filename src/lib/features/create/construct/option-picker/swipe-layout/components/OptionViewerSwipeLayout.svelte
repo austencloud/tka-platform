@@ -7,7 +7,7 @@ Each section becomes a full-width panel that users can swipe through.
 Features:
 - Horizontal panel swiping
 - Panel position persistence in sessionStorage
-- Smooth fade transitions between content
+- In-place pictograph transitions on option change
 - Content area bounds for optimal sizing
 -->
 
@@ -25,7 +25,6 @@ Features:
     onSectionChange = () => {},
     layoutConfig,
     currentSequence = [],
-    isFadingOut = false,
   } = $props<{
     organizedPictographs?: OrganizedSection[];
     onPictographSelected?: (pictograph: PictographData) => void;
@@ -40,7 +39,6 @@ Features:
       gridGap: string;
     };
     currentSequence?: PictographData[];
-    isFadingOut?: boolean;
   }>();
 
   // ===== Panel Position Persistence =====
@@ -108,7 +106,7 @@ Features:
     {initialPanelIndex}
     onPanelChange={handlePanelChange}
     onContentAreaChange={handleContentAreaChange}
-    freezeNavigation={isFadingOut}
+    freezeNavigation={false}
     loop={true}
     height="100%"
     width="100%"
@@ -136,7 +134,6 @@ Features:
                 pictographSize={layoutConfig?.pictographSize || 144}
                 gridGap={layoutConfig?.gridGap || "8px"}
                 {currentSequence}
-                {isFadingOut}
                 {contentAreaBounds}
               />
             {:else}
@@ -147,7 +144,6 @@ Features:
                 {onPictographSelected}
                 {layoutConfig}
                 {currentSequence}
-                {isFadingOut}
                 {contentAreaBounds}
                 showHeader={true}
               />

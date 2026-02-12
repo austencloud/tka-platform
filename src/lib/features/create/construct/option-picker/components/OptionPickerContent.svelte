@@ -21,7 +21,6 @@ Uses organizer and sizer services for section grouping and sizing.
     options: PreparedPictographData[];
     organizerService: IOptionOrganizer | null;
     sizerService: IOptionGridFitCalculator | null;
-    isFading?: boolean;
     onSelect: (option: PreparedPictographData) => void;
     // Filter props
     isContinuousOnly?: boolean;
@@ -35,7 +34,6 @@ Uses organizer and sizer services for section grouping and sizing.
     options,
     organizerService,
     sizerService,
-    isFading = false,
     onSelect,
     isContinuousOnly = false,
     onToggleContinuous,
@@ -235,15 +233,10 @@ Uses organizer and sizer services for section grouping and sizing.
   });
 </script>
 
-<div class="option-picker-content" bind:this={containerElement}>
-  {#if sizingStable && options.length > 0}
-    <!-- Animate in after sizing is stable -->
-    <!-- Use CSS animation class based on layout to avoid scale affecting carousel dimensions -->
-    <div
-      class="animated-content"
-      class:swipe-entrance={shouldUseSwipeLayout()}
-      class:scale-entrance={!shouldUseSwipeLayout()}
-    >
+<div class="option-picker-content" data-testid="option-picker" bind:this={containerElement}>
+  {#if sizingStable}
+    <!-- Content stays mounted so pictographs transition in place instead of remounting -->
+    <div class="animated-content">
       <!-- Filter toggle chip - only show when we have rotation context -->
       {#if shouldShowFilterToggle()}
         <div class="filter-header" class:mobile={shouldUseSwipeLayout()}>
@@ -279,7 +272,6 @@ Uses organizer and sizer services for section grouping and sizing.
             layoutConfig={mobileLayoutConfig()}
             fitToViewport={true}
             showHeader={false}
-            isFadingOut={isFading}
             {currentSequence}
           />
         </div>
@@ -290,7 +282,6 @@ Uses organizer and sizer services for section grouping and sizing.
             organizedPictographs={swipeSections()}
             onPictographSelected={(p) => onSelect(p as PreparedPictographData)}
             layoutConfig={mobileLayoutConfig()}
-            isFadingOut={isFading}
             {currentSequence}
           />
         </div>
@@ -306,7 +297,6 @@ Uses organizer and sizer services for section grouping and sizing.
               columns={desktopSizing().columns}
               gap={desktopSizing().gap}
               showHeader={organizedSections().length > 1}
-              {isFading}
               {onSelect}
               {currentSequence}
               enableFlip={true}
@@ -320,7 +310,6 @@ Uses organizer and sizer services for section grouping and sizing.
               cardSize={desktopSizing().cardSize}
               columns={desktopSizing().columns}
               gap={desktopSizing().gap}
-              {isFading}
               {onSelect}
               {currentSequence}
               enableFlip={true}
@@ -336,15 +325,10 @@ Uses organizer and sizer services for section grouping and sizing.
             layoutConfig={mobileLayoutConfig()}
             fitToViewport={true}
             showHeader={false}
-            isFadingOut={isFading}
             {currentSequence}
           />
         </div>
       {/if}
-    </div>
-  {:else if options.length === 0 && sizingStable}
-    <div class="empty-state">
-      <p>No options available</p>
     </div>
   {/if}
 </div>
@@ -381,50 +365,6 @@ Uses organizer and sizer services for section grouping and sizing.
     display: flex;
     flex-direction: column;
     align-items: center;
-  }
-
-  /* Entrance animation for swipe layout - fade only (no scale to avoid carousel dimension issues) */
-  .animated-content.swipe-entrance {
-    animation: fade-in var(--duration-normal) cubic-bezier(0.33, 1, 0.68, 1) both;
-  }
-
-  /* Entrance animation for desktop layout - scale + fade */
-  .animated-content.scale-entrance {
-    animation: scale-in var(--duration-emphasis) cubic-bezier(0.33, 1, 0.68, 1) both;
-  }
-
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes scale-in {
-    from {
-      opacity: 0;
-      transform: scale(0.94);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  /* Respect reduced motion preference */
-  @media (prefers-reduced-motion: reduce) {
-    .animated-content.swipe-entrance,
-    .animated-content.scale-entrance {
-      animation: none;
-    }
-  }
-
-  /* Disable prop/arrow transitions during initial entrance animation */
-  .animated-content :global(.prop-svg),
-  .animated-content :global(.arrow-svg) {
-    transition: none !important;
   }
 
   /* Filter header - inline, minimal */
@@ -539,12 +479,4 @@ Uses organizer and sizer services for section grouping and sizing.
     min-height: 0;
   }
 
-  .empty-state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--text-muted, #888);
-    font-size: var(--font-size-min);
-  }
 </style>

@@ -22,6 +22,7 @@
 
 <button
   class="play-button glass-button"
+  data-testid="play-button"
   onclick={handleClick}
   aria-label="Play sequence animation"
   title="Animate"

@@ -30,6 +30,11 @@
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type {
+    ViewerPlaybackState,
+    ImageCompositionProps,
+    PropRenderingProps,
+  } from "../domain/viewer-prop-groups";
 
   export type ViewMode = "animation" | "image" | "split";
   export type ExportType = "animation" | "image" | "both";
@@ -128,6 +133,11 @@
     stepFullBeatForward: () => void;
     handleCancelExport: () => void;
     handleRetryExport: () => void;
+
+    // Pre-assembled prop groups for ViewerSplitPane
+    splitPanePlayback: ViewerPlaybackState;
+    splitPaneImageComposition: ImageCompositionProps;
+    splitPanePropRendering: PropRenderingProps;
   }
 </script>
 
@@ -1065,6 +1075,32 @@
     stepFullBeatForward,
     handleCancelExport,
     handleRetryExport,
+
+    // Pre-assembled prop groups for ViewerSplitPane
+    splitPanePlayback: {
+      animationState: modalAnimationState,
+      animationLoading,
+      currentStep: currentStepLocal,
+      isPlaying: isPlayingLocal,
+      currentLetter,
+      currentStepData,
+      highlightedStepIndex,
+    },
+    splitPaneImageComposition: {
+      showWord: imgShowWord,
+      showDifficulty: imgShowDifficulty,
+      showStartPos: imgShowStartPos,
+      showCreatorName: imgShowCreatorName,
+      showNotes: imgShowNotes,
+      darkMode: imgDarkMode,
+      columnCount: imgColumnCount,
+      userName: authState.user?.displayName || "",
+    },
+    splitPanePropRendering: {
+      bluePropType,
+      redPropType,
+      catDogModeEnabled,
+    },
   });
 </script>
 

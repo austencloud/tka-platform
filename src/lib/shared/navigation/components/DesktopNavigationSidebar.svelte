@@ -33,6 +33,7 @@
     onModuleChange,
     onSectionChange,
     onHeightChange,
+    isEntryAnimating = false,
   } = $props<{
     currentModule: string;
     currentSection: string;
@@ -43,6 +44,7 @@
     ) => void | Promise<void>;
     onSectionChange?: (sectionId: string) => void;
     onHeightChange?: (height: number) => void;
+    isEntryAnimating?: boolean;
   }>();
 
   // Services
@@ -252,6 +254,7 @@
 <nav
   class="desktop-navigation-sidebar"
   class:collapsed={isCollapsed}
+  class:entry-animating={isEntryAnimating}
   bind:this={sidebarElement}
   style="view-transition-name: sidebar"
   aria-label="Main navigation"
@@ -707,12 +710,34 @@
   }
 
   /* ============================================================================
+     ENTRY ANIMATION - Choreographed slide-in after first-run wizard
+     ============================================================================ */
+  .desktop-navigation-sidebar.entry-animating {
+    animation: sidebar-slide-in 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes sidebar-slide-in {
+    from {
+      opacity: 0;
+      transform: translateX(-220px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* ============================================================================
      ANIMATIONS & TRANSITIONS
      ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
     .desktop-navigation-sidebar * {
       transition: none !important;
       animation: none !important;
+    }
+
+    .desktop-navigation-sidebar.entry-animating {
+      animation: none;
     }
   }
 

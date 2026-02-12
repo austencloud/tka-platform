@@ -74,6 +74,14 @@ export class ScreenshotOrchestrator implements IScreenshotOrchestrator {
     return DEVICES;
   }
 
+  getRoutes(): RouteNode[] {
+    return ROUTES;
+  }
+
+  getDeviceBySlug(slug: string): DeviceInfo | null {
+    return DEVICES.find((d) => d.slug === slug) ?? null;
+  }
+
   getModuleGroups(): ModuleGroup[] {
     const groupMap = new Map<string, RouteNode[]>();
 

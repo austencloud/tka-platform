@@ -6,7 +6,7 @@ Matches the desktop version exactly:
 - Fixed size policy to prevent stretching
 - Minimal spacing to prevent overflow
 - Centered alignment
-- Beautiful fade animations for option changes
+- In-place pictograph transitions on option changes
 -->
 <script lang="ts">
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -57,7 +57,6 @@ Matches the desktop version exactly:
     gridGap = "8px",
     typeFilter,
     currentSequence = [],
-    isFadingOut = false,
     contentAreaBounds = null,
     forcedPictographSize,
     fitToViewport = false,
@@ -70,7 +69,6 @@ Matches the desktop version exactly:
     gridGap?: string;
     typeFilter?: TypeFilter;
     currentSequence?: PictographData[];
-    isFadingOut?: boolean;
     contentAreaBounds?: { left: number; right: number; width: number } | null;
     forcedPictographSize?: number;
     fitToViewport?: boolean;
@@ -467,7 +465,6 @@ Matches the desktop version exactly:
               {onPictographSelected}
               layoutConfig={sectionLayoutConfig}
               {currentSequence}
-              {isFadingOut}
               {contentAreaBounds}
               forcedPictographSize={uniformPictographSize()}
               showHeader={shouldShowHeaders()}

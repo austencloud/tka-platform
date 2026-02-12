@@ -33,7 +33,6 @@
     onToggleSearch: () => void;
     onResetTabIntro: () => void;
     onPreviewFirstRun: () => void;
-    onPreviewSidebarTour: () => void;
     onResetHelpDiscovery: () => void;
     onClearCloudThumbnails: () => void;
     isClearingThumbnails: boolean;
@@ -60,7 +59,6 @@
     onToggleSearch,
     onResetTabIntro,
     onPreviewFirstRun,
-    onPreviewSidebarTour,
     onResetHelpDiscovery,
     onClearCloudThumbnails,
     isClearingThumbnails,
@@ -194,11 +192,6 @@
       >
         <i class="fas fa-door-open" aria-hidden="true"></i>
         <span>Reset Tab Intro</span>
-      </button>
-
-      <button type="button" class="action-card" onclick={onPreviewSidebarTour}>
-        <i class="fas fa-route" aria-hidden="true"></i>
-        <span>Sidebar Tour</span>
       </button>
 
       <button type="button" class="action-card" onclick={onResetHelpDiscovery}>
