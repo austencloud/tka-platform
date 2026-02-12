@@ -229,7 +229,7 @@ export function getBilateralEndLabels(propType: string): [string, string] {
  */
 export function getBetaOffsetSize(
   propType: string,
-  gridMode?: "diamond" | "box" | "skewed" | "centric"
+  gridMode?: "diamond" | "box" | "skewed" | "centric" | "trigrid"
 ): number {
   const normalizedType = propType.toLowerCase();
 

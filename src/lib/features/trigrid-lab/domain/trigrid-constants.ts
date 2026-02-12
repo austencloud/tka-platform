@@ -49,3 +49,9 @@ export const TRIGRID_AVAILABLE_LETTER_TYPES = [1, 2, 6] as const;
  * Each step in the 6-point orientation cycle = 60 degrees.
  */
 export const TRIGRID_ORIENTATION_STEP = 60;
+
+/**
+ * Perpendicular offset distance (in SVG pixels) for props sharing a beta vertex.
+ * Matches the existing 4-point grid's default: 950 / 45 ≈ 21px.
+ */
+export const TRIGRID_BETA_OFFSET_DISTANCE = 21;

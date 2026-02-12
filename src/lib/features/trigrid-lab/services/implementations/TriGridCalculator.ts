@@ -19,6 +19,7 @@ import {
 import {
   TRIGRID_HAND_POINT_RADIUS,
   TRIGRID_ARROWHEAD_SIZE,
+  TRIGRID_BETA_OFFSET_DISTANCE,
 } from "../../domain/trigrid-constants";
 
 export class TriGridCalculator implements ITriGridCalculator {
@@ -85,10 +86,36 @@ export class TriGridCalculator implements ITriGridCalculator {
     const locationAngle = getLocationAngle(location, mode);
     const orientationOffset = TriGridCalculator.ORIENTATION_OFFSETS[orientation] ?? 0;
 
-    // The location angle points outward from center.
-    // "IN" means pointing toward center = locationAngle + 180 degrees.
-    // Add the orientation offset on top of that.
-    return locationAngle + 180 + orientationOffset;
+    // Location angles are measured from north (0° = top, CW positive).
+    // SVG rotation operates in standard screen space (0° = right, CW positive).
+    // The prop SVG defaults to pointing right (0° in SVG rotation space).
+    //
+    // To convert location angle to SVG outward-from-center angle: subtract 90°.
+    // "IN" = inward toward center = outward angle + 180°.
+    // Combined: (locationAngle - 90) + 180 = locationAngle + 90.
+    // Then add the orientation offset (IN=0, CLOCK_IN=60, etc.).
+    return locationAngle + 90 + orientationOffset;
+  }
+
+  computeBetaOffset(
+    location: GridLocation,
+    color: "blue" | "red",
+    mode: TriGridMode,
+  ): Point {
+    const locationAngle = getLocationAngle(location, mode);
+
+    // Blue offsets +90° (clockwise perpendicular), red offsets -90° (counter-clockwise)
+    const perpendicularAngle = color === "blue"
+      ? locationAngle + 90
+      : locationAngle - 90;
+
+    // Convert from north-CW convention to SVG radians (same -90 correction as pointAtAngle)
+    const angleRad = ((perpendicularAngle - 90) * Math.PI) / 180;
+
+    return {
+      x: Math.round(TRIGRID_BETA_OFFSET_DISTANCE * Math.cos(angleRad) * 10) / 10,
+      y: Math.round(TRIGRID_BETA_OFFSET_DISTANCE * Math.sin(angleRad) * 10) / 10,
+    };
   }
 
   /**

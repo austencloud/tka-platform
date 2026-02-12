@@ -166,6 +166,7 @@ The hand overlay shows the current position and animates between positions.
     ],
     [GridMode.SKEWED]: [], // Not used in hand path assembly
     [GridMode.CENTRIC]: [],
+    [GridMode.TRIGRID]: [],
   };
 
   /**

@@ -9,8 +9,8 @@
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-/** Triangle orientation: vertex at top or bottom */
-export type TriGridMode = "upright" | "inverted";
+/** Triangle orientation: which direction the apex points */
+export type TriGridMode = "upright" | "inverted" | "left" | "right";
 
 /**
  * The 6 valid trigrid orientations at 60-degree intervals.

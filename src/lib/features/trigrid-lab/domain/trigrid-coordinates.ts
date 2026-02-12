@@ -4,8 +4,14 @@
  * All vertex positions computed trigonometrically for the equilateral triangle grid.
  * 950x950 SVG space, center at (475, 475).
  *
- * Upright triangle: apex at top (N), base at bottom (SE, SW)
- * Inverted triangle: apex at bottom (S), base at top (NE, NW)
+ * Four modes — one for each direction the apex can point:
+ *   Upright:  apex N,  base SE + SW
+ *   Inverted: apex S,  base NE + NW
+ *   Right:    apex E,  base SW + NW
+ *   Left:     apex W,  base NE + SE
+ *
+ * The 6-point "skewed" trigrid overlays two opposing modes
+ * (upright+inverted or left+right) to produce 6 vertices at 60° intervals.
  */
 
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -31,31 +37,52 @@ function pointAtAngle(angleDeg: number, radius: number): Point {
 
 /**
  * Angular positions for the 3 vertices in each mode.
- * Measured from north (top), clockwise.
+ * Measured from north (top = 0°), increasing clockwise.
+ *
+ * Each mode is a 120° rotation of the triangle:
+ *   Upright:  0°, 120°, 240°
+ *   Right:   90°, 210°, 330°  (rotated 90° CW from upright)
+ *   Inverted: 180°, 300°, 60° (rotated 180° from upright)
+ *   Left:    270°, 30°, 150°  (rotated 270° CW from upright)
  */
-const UPRIGHT_ANGLES: Record<string, number> = {
-  [GridLocation.NORTH]: 0,
-  [GridLocation.SOUTHEAST]: 120,
-  [GridLocation.SOUTHWEST]: 240,
-};
-
-const INVERTED_ANGLES: Record<string, number> = {
-  [GridLocation.SOUTH]: 180,
-  [GridLocation.NORTHEAST]: 60,
-  [GridLocation.NORTHWEST]: 300,
+const MODE_ANGLES: Record<string, Record<string, number>> = {
+  upright: {
+    [GridLocation.NORTH]: 0,
+    [GridLocation.SOUTHEAST]: 120,
+    [GridLocation.SOUTHWEST]: 240,
+  },
+  inverted: {
+    [GridLocation.SOUTH]: 180,
+    [GridLocation.NORTHEAST]: 60,
+    [GridLocation.NORTHWEST]: 300,
+  },
+  right: {
+    [GridLocation.EAST]: 90,
+    [GridLocation.SOUTHWEST]: 210,
+    [GridLocation.NORTHWEST]: 330,
+  },
+  left: {
+    [GridLocation.WEST]: 270,
+    [GridLocation.NORTHEAST]: 30,
+    [GridLocation.SOUTHEAST]: 150,
+  },
 };
 
 /** Get the 3 grid locations used in a given mode */
 export function getTriGridLocations(mode: TriGridMode): GridLocation[] {
-  if (mode === "upright") {
-    return [GridLocation.NORTH, GridLocation.SOUTHEAST, GridLocation.SOUTHWEST];
+  const angles = MODE_ANGLES[mode];
+  if (!angles) {
+    throw new Error(`Unknown trigrid mode: "${mode}"`);
   }
-  return [GridLocation.SOUTH, GridLocation.NORTHEAST, GridLocation.NORTHWEST];
+  return Object.keys(angles) as GridLocation[];
 }
 
 /** Get the angular position (degrees from north, CW) for a grid location in the given mode */
 export function getLocationAngle(location: GridLocation, mode: TriGridMode): number {
-  const angles = mode === "upright" ? UPRIGHT_ANGLES : INVERTED_ANGLES;
+  const angles = MODE_ANGLES[mode];
+  if (!angles) {
+    throw new Error(`Unknown trigrid mode: "${mode}"`);
+  }
   const angle = angles[location];
   if (angle === undefined) {
     throw new Error(`Location ${location} is not valid for trigrid mode "${mode}"`);

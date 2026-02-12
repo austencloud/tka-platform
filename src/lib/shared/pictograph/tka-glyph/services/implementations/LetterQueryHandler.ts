@@ -141,6 +141,7 @@ export class LetterQueryHandler implements ILetterQueryHandler {
         [GridMode.BOX]: boxParseResult.rows,
         [GridMode.SKEWED]: skewedParseResult.rows,
         [GridMode.CENTRIC]: [],
+        [GridMode.TRIGRID]: [],
       };
 
       this.isInitialized = true;
