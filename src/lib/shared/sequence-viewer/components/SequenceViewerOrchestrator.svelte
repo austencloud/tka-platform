@@ -138,6 +138,7 @@
   import { container } from "$lib/shared/di";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { ILanSyncCoordinator } from "$lib/shared/lan-sync/services/contracts/ILanSyncCoordinator";
   import type { ISequenceDataProvider } from "$lib/shared/sequence-viewer/services/contracts/ISequenceDataProvider";
   import { createAnimationPanelState, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -825,13 +826,24 @@
   // ACTION HANDLERS
   // ============================================================================
 
-  function handleSave() {
+  async function handleSave() {
     hapticService?.trigger("selection");
     if (!authState.isAuthenticated) {
       showToast("Sign in to save sequences", "info");
       return;
     }
-    showToast("Save feature coming soon", "info");
+    if (!sequence) {
+      showToast("No sequence to save", "info");
+      return;
+    }
+    try {
+      const libraryRepo = container.items.libraryRepository as ILibraryRepository;
+      await libraryRepo.saveSequence(sequence);
+      showToast("Saved to library", "success");
+    } catch (error) {
+      console.error("Failed to save sequence:", error);
+      showToast("Failed to save sequence", "error");
+    }
   }
 
   function handleShare() {

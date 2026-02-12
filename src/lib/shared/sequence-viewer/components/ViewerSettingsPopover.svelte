@@ -2,11 +2,9 @@
   ViewerSettingsPopover.svelte
 
   Settings popover for the sequence viewer.
-  Provides visibility toggles for animation canvas elements.
+  Dark mode toggle and prop type selection as consistent action rows.
 -->
 <script lang="ts">
-  import { ChipToggle } from '@austencloud/chip-toggle';
-  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -38,53 +36,16 @@
   const blueDisplayInfo = $derived(getPropTypeDisplayInfo(bluePropType));
   const redDisplayInfo = $derived(getPropTypeDisplayInfo(redPropType));
 
-  // Animation visibility manager
-  const animVisibility = getAnimationVisibilityManager();
-
-  // Local reactive state for animation settings
-  let animGridVisible = $state(animVisibility.isGridVisible());
-  let animTrailsOn = $state(animVisibility.isTrailsVisible());
-  let animTkaGlyph = $state(animVisibility.getVisibility("tkaGlyph"));
-  let animWordHeader = $state(animVisibility.getVisibility("wordHeader"));
-  let animStepNumbers = $state(animVisibility.getVisibility("stepNumbers"));
+  const propLabel = $derived(
+    catDogMode && redPropType !== bluePropType
+      ? `${blueDisplayInfo.label} / ${redDisplayInfo.label}`
+      : blueDisplayInfo.label
+  );
 
   // Haptic feedback
   const hapticService = container.items.hapticFeedback as IHapticFeedback | undefined;
   function haptic() {
     hapticService?.trigger("selection");
-  }
-
-  // Toggle handlers
-  function toggleAnimGrid() {
-    haptic();
-    const newMode = animGridVisible ? "none" : "diamond";
-    animVisibility.setGridMode(newMode);
-    animGridVisible = newMode !== "none";
-  }
-
-  function toggleAnimTrails() {
-    haptic();
-    const newStyle = animTrailsOn ? "off" : "on";
-    animVisibility.setTrailStyle(newStyle);
-    animTrailsOn = newStyle === "on";
-  }
-
-  function toggleAnimTkaGlyph() {
-    haptic();
-    animTkaGlyph = !animTkaGlyph;
-    animVisibility.setVisibility("tkaGlyph", animTkaGlyph);
-  }
-
-  function toggleAnimWordHeader() {
-    haptic();
-    animWordHeader = !animWordHeader;
-    animVisibility.setVisibility("wordHeader", animWordHeader);
-  }
-
-  function toggleAnimStepNumbers() {
-    haptic();
-    animStepNumbers = !animStepNumbers;
-    animVisibility.setVisibility("stepNumbers", animStepNumbers);
   }
 
   function handleDarkModeToggle() {
@@ -94,11 +55,10 @@
 
   function handlePropSelectorOpen() {
     haptic();
-    onClose(); // Close popover first
+    onClose();
     onOpenPropSelector?.();
   }
 
-  // Close on Escape
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
       onClose();
@@ -109,12 +69,10 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if open}
-  <!-- Backdrop -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="backdrop" onclick={onClose}></div>
 
-  <!-- Popover -->
   <div class="settings-popover" role="dialog" aria-label="Viewer settings">
     <div class="settings-header">
       <span class="settings-title">Settings</span>
@@ -123,57 +81,32 @@
       </button>
     </div>
 
-    <div class="chip-grid">
-      <ChipToggle
-        label={darkMode ? "Dark" : "Light"}
-        icon={darkMode ? "fa-moon" : "fa-sun"}
-        active={darkMode}
-        color="amber"
+    <div class="settings-rows">
+      <!-- Dark mode row -->
+      <button
+        type="button"
+        class="settings-row"
         onclick={handleDarkModeToggle}
-      />
-      <ChipToggle
-        label="Grid"
-        icon="fa-th"
-        active={animGridVisible}
-        onclick={toggleAnimGrid}
-      />
-      <ChipToggle
-        label="Trails"
-        icon="fa-wind"
-        active={animTrailsOn}
-        onclick={toggleAnimTrails}
-      />
-      <ChipToggle
-        label="TKA"
-        icon="fa-font"
-        active={animTkaGlyph}
-        onclick={toggleAnimTkaGlyph}
-      />
-      <ChipToggle
-        label="Word"
-        icon="fa-heading"
-        active={animWordHeader}
-        onclick={toggleAnimWordHeader}
-      />
-      <ChipToggle
-        label="Beats"
-        icon="fa-hashtag"
-        active={animStepNumbers}
-        onclick={toggleAnimStepNumbers}
-      />
-    </div>
+        aria-label="Toggle {darkMode ? 'light' : 'dark'} mode"
+      >
+        <div class="row-icon">
+          <i class="fas {darkMode ? 'fa-moon' : 'fa-sun'}" aria-hidden="true"></i>
+        </div>
+        <span class="row-label">{darkMode ? "Dark mode" : "Light mode"}</span>
+        <div class="row-toggle" class:active={darkMode}>
+          <div class="toggle-thumb"></div>
+        </div>
+      </button>
 
-    <!-- Prop selector row -->
-    {#if onOpenPropSelector}
-      <div class="prop-section">
-        <span class="section-label">Props</span>
+      <!-- Prop selector row -->
+      {#if onOpenPropSelector}
         <button
           type="button"
-          class="prop-indicator-btn"
+          class="settings-row"
           onclick={handlePropSelectorOpen}
-          aria-label="Change prop type"
+          aria-label="Change prop type, currently {propLabel}"
         >
-          <div class="prop-icons">
+          <div class="row-icon prop-icons">
             <img
               src={blueDisplayInfo.image}
               alt={blueDisplayInfo.label}
@@ -187,17 +120,11 @@
               />
             {/if}
           </div>
-          <span class="prop-label">
-            {#if catDogMode && redPropType !== bluePropType}
-              {blueDisplayInfo.label} / {redDisplayInfo.label}
-            {:else}
-              {blueDisplayInfo.label}
-            {/if}
-          </span>
-          <i class="fas fa-chevron-right arrow-icon" aria-hidden="true"></i>
+          <span class="row-label">{propLabel}</span>
+          <i class="fas fa-chevron-right row-chevron" aria-hidden="true"></i>
         </button>
-      </div>
-    {/if}
+      {/if}
+    </div>
   </div>
 {/if}
 
@@ -213,7 +140,7 @@
     position: absolute;
     top: 56px;
     right: 8px;
-    width: 280px;
+    width: 260px;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
@@ -260,94 +187,113 @@
     outline-offset: 2px;
   }
 
-  .chip-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    padding: 12px;
+  /* Unified row list */
+  .settings-rows {
+    padding: 4px 0;
   }
 
-  /* Prop selector section */
-  .prop-section {
+  .settings-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
     padding: 12px 16px;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .section-label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .prop-indicator-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 150ms ease;
     min-height: 48px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background 150ms ease;
+    text-align: left;
   }
 
-  .prop-indicator-btn:hover {
-    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  .settings-row:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
-  .prop-indicator-btn:focus-visible {
+  .settings-row:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
+    outline-offset: -2px;
   }
 
-  .prop-icons {
+  .row-icon {
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    width: 24px;
+    flex-shrink: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-base, 16px);
+  }
+
+  .row-label {
+    flex: 1;
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text, white);
+  }
+
+  /* Toggle switch for dark mode */
+  .row-toggle {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 11px;
+    flex-shrink: 0;
+    transition: background 200ms ease, border-color 200ms ease;
+  }
+
+  .row-toggle.active {
+    background: var(--theme-accent, #6366f1);
+    border-color: transparent;
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 200ms ease;
+  }
+
+  .row-toggle.active .toggle-thumb {
+    transform: translateX(18px);
+  }
+
+  /* Chevron for prop row */
+  .row-chevron {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    flex-shrink: 0;
+  }
+
+  /* Prop icons in row */
+  .prop-icons {
+    gap: 2px;
   }
 
   .prop-icon {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     object-fit: contain;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
   }
 
   .prop-icon.blue {
-    /* Blue tint effect */
     filter: drop-shadow(0 1px 2px rgba(59, 130, 246, 0.4));
   }
 
   .prop-icon.red {
-    /* Red tint effect */
     filter: drop-shadow(0 1px 2px rgba(239, 68, 68, 0.4));
   }
 
-  .prop-label {
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text, white);
-    flex: 1;
-    text-align: left;
-  }
-
-  .arrow-icon {
-    font-size: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .settings-popover {
-      transition: none;
-    }
-
-    .prop-indicator-btn {
+    .settings-row,
+    .close-btn,
+    .row-toggle,
+    .toggle-thumb {
       transition: none;
     }
   }
