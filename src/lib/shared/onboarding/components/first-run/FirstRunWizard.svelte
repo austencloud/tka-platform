@@ -27,6 +27,7 @@
   import PictographModeStep from "./steps/PictographModeStep.svelte";
   import AuthStep from "./steps/AuthStep.svelte";
   import BetaDiscoveryStep from "./steps/BetaDiscoveryStep.svelte";
+  import DesktopConfigPanel from "./DesktopConfigPanel.svelte";
 
   interface Props {
     onComplete: () => void;
@@ -37,6 +38,11 @@
 
   // Auth state - if authenticated, skip auth step (user signed up via LandingPage)
   const isAuthenticated = $derived(authState.isAuthenticated);
+
+  // Desktop detection
+  const DESKTOP_BREAKPOINT = 1024;
+  let windowWidth = $state(typeof window !== "undefined" ? window.innerWidth : 0);
+  const isDesktop = $derived(windowWidth >= DESKTOP_BREAKPOINT);
 
   // Wizard state
   let currentStep = $state<FirstRunStep>("betaDiscovery");
@@ -63,21 +69,30 @@
     "auth",
   ];
 
-  // Filter out auth step if already authenticated (user came from LandingPage signup)
-  const STEPS = $derived(
-    isAuthenticated ? ALL_STEPS.filter((step) => step !== "auth") : ALL_STEPS
-  );
+  // Desktop collapses 4 config steps into one "displayName" step
+  const DESKTOP_STEPS: FirstRunStep[] = [
+    "betaDiscovery",
+    "welcome",
+    "displayName",
+    "auth",
+  ];
 
-  // Icons for each step
-  const STEP_ICONS: Record<FirstRunStep, string> = {
+  // Filter steps based on screen size and auth state
+  const STEPS = $derived.by(() => {
+    const base = isDesktop ? DESKTOP_STEPS : ALL_STEPS;
+    return isAuthenticated ? base.filter((step) => step !== "auth") : base;
+  });
+
+  // Icons for each step (desktop uses gear for the combined config step)
+  const STEP_ICONS = $derived<Record<FirstRunStep, string>>({
     betaDiscovery: "fa-gem",
     welcome: "fa-infinity",
-    displayName: "fa-user",
+    displayName: isDesktop ? "fa-sliders-h" : "fa-user",
     theme: "fa-moon",
     favoriteProp: "fa-fire",
     pictographMode: "fa-lightbulb",
     auth: "fa-user-plus",
-  };
+  });
 
   const currentStepIndex = $derived(STEPS.indexOf(currentStep));
   const progress = $derived(((currentStepIndex + 1) / STEPS.length) * 100);
@@ -89,10 +104,28 @@
       // Haptics optional
     }
 
+    // Track window width for desktop detection
+    function handleResize() {
+      windowWidth = window.innerWidth;
+    }
+    window.addEventListener("resize", handleResize);
+
     // Trigger entrance animation
     requestAnimationFrame(() => {
       animateIn = true;
     });
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  });
+
+  // When resizing to desktop while on a mobile-only config step, snap to "displayName"
+  $effect(() => {
+    const MOBILE_CONFIG_STEPS: FirstRunStep[] = ["theme", "favoriteProp", "pictographMode"];
+    if (isDesktop && MOBILE_CONFIG_STEPS.includes(currentStep)) {
+      currentStep = "displayName";
+    }
   });
 
   function transitionTo(step: FirstRunStep) {
@@ -260,6 +293,40 @@
     }
   }
 
+  async function handleDesktopConfigComplete(data: {
+    displayName: string;
+    pronouns: string;
+    theme: BackgroundType;
+    prop: PropType;
+    mode: "light" | "dark";
+  }) {
+    displayName = data.displayName;
+    pronouns = data.pronouns;
+    selectedTheme = data.theme;
+    favoriteProp = data.prop;
+    pictographMode = data.mode;
+
+    // Apply prop type immediately
+    try {
+      await settingsService.updateSettings({
+        bluePropType: data.prop,
+        redPropType: data.prop,
+      });
+    } catch (error) {
+      console.error("Failed to apply prop type:", error);
+    }
+
+    // Apply pictograph mode
+    const visibilityManager = getAnimationVisibilityManager();
+    visibilityManager.setDarkMode(data.mode === "dark");
+
+    if (isAuthenticated) {
+      await applyPreferencesAndComplete();
+    } else {
+      handleNext("auth");
+    }
+  }
+
   async function handleQuickStart() {
     // Apply sensible defaults
     hapticService?.trigger("selection");
@@ -294,19 +361,31 @@
     <div class="progress-fill" style="width: {progress}%"></div>
   </div>
 
-  <!-- Skip button (hidden on beta discovery step - acknowledgment is required) -->
-  {#if currentStep !== "betaDiscovery"}
+  <!-- Skip button (hidden on beta discovery step and desktop config panel which has its own) -->
+  {#if currentStep !== "betaDiscovery" && !(currentStep === "displayName" && isDesktop)}
     <button class="skip-button" onclick={handleSkipAll}>Skip all</button>
   {/if}
 
   <!-- Step content -->
-  <div class="step-container">
+  <div class="step-container" class:desktop-config={currentStep === "displayName" && isDesktop}>
     {#if currentStep === "betaDiscovery"}
       <BetaDiscoveryStep onNext={() => handleNext("welcome")} />
     {:else if currentStep === "welcome"}
       <WelcomeStep
         onNext={() => handleNext("displayName")}
         onQuickStart={handleQuickStart}
+      />
+    {:else if currentStep === "displayName" && isDesktop}
+      <DesktopConfigPanel
+        initialDisplayName={displayName}
+        initialPronouns={pronouns}
+        initialTheme={selectedTheme}
+        initialProp={favoriteProp}
+        initialMode={pictographMode}
+        onComplete={handleDesktopConfigComplete}
+        onBack={handleBack}
+        onSkip={handleSkipAll}
+        onThemePreview={handleThemePreview}
       />
     {:else if currentStep === "displayName"}
       <DisplayNameStep
@@ -425,6 +504,10 @@
     padding: 0 16px;
   }
 
+  .step-container.desktop-config {
+    max-width: 980px;
+  }
+
   /* Animation */
   .first-run-wizard :global(.beta-discovery-step),
   .first-run-wizard :global(.welcome-step),
@@ -432,7 +515,8 @@
   .first-run-wizard :global(.theme-picker-step),
   .first-run-wizard :global(.prop-picker-step),
   .first-run-wizard :global(.pictograph-mode-step),
-  .first-run-wizard :global(.auth-step) {
+  .first-run-wizard :global(.auth-step),
+  .first-run-wizard :global(.desktop-config-panel) {
     opacity: 0;
     transform: translateY(20px);
     transition:
@@ -446,7 +530,8 @@
   .first-run-wizard.animate-in :global(.theme-picker-step),
   .first-run-wizard.animate-in :global(.prop-picker-step),
   .first-run-wizard.animate-in :global(.pictograph-mode-step),
-  .first-run-wizard.animate-in :global(.auth-step) {
+  .first-run-wizard.animate-in :global(.auth-step),
+  .first-run-wizard.animate-in :global(.desktop-config-panel) {
     opacity: 1;
     transform: translateY(0);
   }
@@ -535,7 +620,8 @@
     .first-run-wizard :global(.theme-picker-step),
     .first-run-wizard :global(.prop-picker-step),
     .first-run-wizard :global(.pictograph-mode-step),
-    .first-run-wizard :global(.auth-step) {
+    .first-run-wizard :global(.auth-step),
+    .first-run-wizard :global(.desktop-config-panel) {
       transition: none;
       opacity: 1;
       transform: none;
