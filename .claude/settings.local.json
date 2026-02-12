@@ -578,7 +578,8 @@
       "Bash(\"/c/Program Files/nodejs/node.exe\" ./node_modules/.bin/svelte-check --threshold error)",
       "Bash(\"/c/Program Files/nodejs/node.exe\" node_modules/svelte-check/bin/svelte-check --threshold error)",
       "Bash(SERPAPI_KEY=e8b9ad14b0d9a824f36abb56dcbfeda69176188192410acbfb217c39c39e27d8 node:*)",
-      "Bash(/c/Program Files/nodejs/npx.cmd svelte-check --output human)"
+      "Bash(/c/Program Files/nodejs/npx.cmd svelte-check --output human)",
+      "Bash(for id in hpxbrMNX iflfIkl3 PvsbFInD D6yY8TWO sXSZxmBV giyCUwaR 1rAgAoDm ddzULrkz wgRX1JHa tliHlz1j ZqeqtVbt wcilD68i 6QfMdRhS iuZQsWYe PDe4bTQ9 HNPo29Dr EEeoGQ0L ol3uvzd6 JU3sNPHU bIQqy466 pLNWKHrv a5qT14Kh 4pV0jzv3 ud88n9YX zgQNISLw 3P3s5Y9v a0NSrn0n m1X9xcJY 7ebvYj2P D9IjMi9a pBKGjVDp)"
     ]
   },
   "enableAllProjectMcpServers": false,
