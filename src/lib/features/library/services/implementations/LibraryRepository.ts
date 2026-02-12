@@ -263,7 +263,7 @@ export class LibraryRepository implements ILibraryRepository {
 
     // Write sequence document using setDoc — works offline, queues in Firestore cache
     // IMPORTANT: birthday is set once on creation and NEVER changes
-    const writeData = {
+    const rawWriteData = {
       ...libSeq,
       birthday: existingDoc.exists()
         ? libSeq.birthday
@@ -274,6 +274,11 @@ export class LibraryRepository implements ILibraryRepository {
       updatedAt: serverTimestamp(),
       _version: ((existingDoc.data()?._version as number) || 0) + 1,
     };
+
+    // Strip undefined values — Firestore rejects them in setDoc
+    const writeData = Object.fromEntries(
+      Object.entries(rawWriteData).filter(([, v]) => v !== undefined)
+    );
 
     // Fire-and-forget: setDoc queues locally, syncs when online
     // trackWrite monitors the sync status but we don't block on it
@@ -338,7 +343,7 @@ export class LibraryRepository implements ILibraryRepository {
     }
 
     // Post-write: Sync to public index (async, non-blocking)
-    if (finalSequence.visibility === "public") {
+    if (finalSequence.visibility === "public" && this.publicIndexSyncer) {
       this.publicIndexSyncer
         .syncToPublicIndex(finalSequence, userId)
         .catch((error) =>
