@@ -20,7 +20,6 @@ with individual headers for each type.
     cardSize: number;
     columns: number;
     gap?: string;
-    isFading?: boolean;
     onSelect: (option: PreparedPictographData) => void;
     // Sequence context for reversal detection
     currentSequence?: PictographData[];
@@ -33,7 +32,6 @@ with individual headers for each type.
     cardSize,
     columns,
     gap = "8px",
-    isFading = false,
     onSelect,
     currentSequence = [],
     enableFlip = false,
@@ -51,7 +49,6 @@ with individual headers for each type.
           {cardSize}
           columns={sectionColumns}
           {gap}
-          {isFading}
           {onSelect}
           {currentSequence}
           {enableFlip}

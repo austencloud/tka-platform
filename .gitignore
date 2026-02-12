@@ -207,3 +207,6 @@ functions/
 flow-arts-transcripts/audio/
 flow-arts-transcripts/instagram/
 flow-arts-transcripts/*-done.txt
+
+# Search interest tracking data
+/data/

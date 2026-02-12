@@ -8,11 +8,12 @@
   - Context menu / long-press tagging on individual cards
 -->
 <script lang="ts">
-  import type { DeviceCategory } from "../../services/contracts/IScreenshotOrchestrator";
+  import type { DeviceCategory, DeviceInfo, RouteNode, CaptureJobStatus, CaptureStartResult, IScreenshotOrchestrator } from "../../services/contracts/IScreenshotOrchestrator";
   import type { ScreenshotMetadata } from "../../services/contracts/IScreenshotUploader";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IScreenshotTagController } from "../../services/contracts/IScreenshotTagController";
   import type { GalleryItem } from "../../services/contracts/IGalleryItemAdapter";
+  import type { UploadProgress, IScreenshotUploadOrchestrator } from "../../services/contracts/IScreenshotUploadOrchestrator";
   import type { MediaTag, TagColor } from "@austencloud/media-tagging-types";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
@@ -21,6 +22,8 @@
   import { TagCreatorModal, TagPickerPanel } from "@austencloud/media-tagging-ui";
   import { GalleryItemAdapter } from "../../services/implementations/GalleryItemAdapter";
   import GalleryGrid from "./GalleryGrid.svelte";
+  import CaptureProgress from "./CaptureProgress.svelte";
+  import UploadProgressCard from "./UploadProgress.svelte";
   import SelectionToolbar from "./SelectionToolbar.svelte";
   import TagSidebar from "./TagSidebar.svelte";
   import TagContextPanel from "./TagContextPanel.svelte";
@@ -492,14 +495,98 @@
 
     try {
       const loader = container.items.screenshotLoader;
-      screenshotUnsubscribe = loader.subscribeToScreenshots((data: ScreenshotMetadata[]) => {
-        screenshots = data;
-        isLoading = false;
-      });
+      screenshotUnsubscribe = loader.subscribeToScreenshots(
+        (data: ScreenshotMetadata[]) => {
+          screenshots = data;
+          isLoading = false;
+        },
+        (err: Error) => {
+          errorMessage = err.message;
+          isLoading = false;
+        }
+      );
     } catch (err) {
       errorMessage = err instanceof Error ? err.message : String(err);
       isLoading = false;
     }
+  }
+
+  // ─── Capture + Upload pipeline ────────────────────────────────────────────
+
+  let captureJobId = $state<string | null>(null);
+  let capturePhase = $state<"idle" | "capturing" | "uploading">("idle");
+  let uploadProgress = $state<UploadProgress | null>(null);
+  let lastCapturedFiles = $state<string[]>([]);
+
+  function startCapture() {
+    // Use the full route/device selection from the orchestrator for now
+    const orch = container.items.screenshotOrchestrator as IScreenshotOrchestrator;
+    const allRoutes = orch.getRoutes().map((r: RouteNode) => r.label);
+    const allDevices = orch.getDevices().map((d: DeviceInfo) => d.slug);
+
+    capturePhase = "capturing";
+    orch
+      .startCapture({ routes: allRoutes, devices: allDevices })
+      .then((result: CaptureStartResult) => {
+        captureJobId = result.jobId;
+      })
+      .catch((err: unknown) => {
+        console.error("[ScreenshotGallery] Capture failed to start:", err);
+        capturePhase = "idle";
+      });
+  }
+
+  function handleCaptureStatusUpdate(status: CaptureJobStatus) {
+    if (status.status === "completed" && status.capturedFiles) {
+      lastCapturedFiles = status.capturedFiles;
+    }
+  }
+
+  function handleCaptureComplete() {
+    captureJobId = null;
+
+    if (lastCapturedFiles.length > 0) {
+      capturePhase = "uploading";
+      runUpload(lastCapturedFiles);
+    } else {
+      capturePhase = "idle";
+    }
+  }
+
+  function runUpload(filenames: string[]) {
+    const uploadOrch = container.items.screenshotUploadOrchestrator as IScreenshotUploadOrchestrator;
+
+    uploadOrch
+      .uploadCaptures(filenames, (p: UploadProgress) => {
+        uploadProgress = p;
+      })
+      .then(() => {
+        // Leave upload progress visible for a few seconds, then clear
+        setTimeout(() => {
+          if (capturePhase === "uploading") {
+            capturePhase = "idle";
+            uploadProgress = null;
+          }
+        }, 3000);
+      })
+      .catch((err: unknown) => {
+        console.error("[ScreenshotGallery] Upload failed:", err);
+      });
+  }
+
+  function retryUpload() {
+    if (lastCapturedFiles.length > 0) {
+      capturePhase = "uploading";
+      uploadProgress = null;
+      runUpload(lastCapturedFiles);
+    }
+  }
+
+  function dismissProgress() {
+    capturePhase = "idle";
+    captureJobId = null;
+    uploadProgress = null;
+    lastCapturedFiles = [];
   }
 
   // ─── Lifecycle cleanup ──────────────────────────────────────────────────────
@@ -534,6 +621,17 @@
       </div>
 
       <div class="header-right">
+        <!-- Capture button -->
+        <button
+          class="header-btn capture-btn"
+          onclick={startCapture}
+          disabled={capturePhase !== "idle"}
+          title="Capture screenshots and upload to cloud"
+        >
+          <i class="fas fa-camera"></i>
+          Capture
+        </button>
+
         <!-- Selection mode toggle -->
         {#if hasItems && !isLoading}
           <button
@@ -568,6 +666,21 @@
         onSelectAll={selectAll}
         onClearSelection={clearSelection}
         onExitSelection={exitSelectionMode}
+      />
+    {/if}
+
+    <!-- Capture / Upload Progress -->
+    {#if capturePhase === "capturing"}
+      <CaptureProgress
+        jobId={captureJobId}
+        orchestrator={container.items.screenshotOrchestrator}
+        onPollStatus={handleCaptureStatusUpdate}
+        onComplete={handleCaptureComplete}
+      />
+    {:else if capturePhase === "uploading" && uploadProgress}
+      <UploadProgressCard
+        progress={uploadProgress}
+        onRetry={uploadProgress.phase === "failed" ? retryUpload : undefined}
       />
     {/if}
 
@@ -815,6 +928,11 @@
   .header-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #3b82f6);
     outline-offset: 2px;
+  }
+
+  .capture-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   /* Controls */

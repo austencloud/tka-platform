@@ -566,7 +566,19 @@
       "Bash(ffmpeg:*)",
       "Bash(box)",
       "Bash(skewed \")",
-      "WebFetch(domain:www.tkaflowarts.com)"
+      "WebFetch(domain:www.tkaflowarts.com)",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" -e \"const https = require\\(''https''\\); https.get\\(''https://registry.npmjs.org/@austencloud/media-tagging-firebase'', r => { let d=''''; r.on\\(''data'',c=>d+=c\\); r.on\\(''end'',\\(\\)=>console.log\\(r.statusCode, d.slice\\(0,100\\)\\)\\); }\\);\")",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" -e \"const https = require\\(''https''\\); https.get\\(''https://registry.npmjs.org/@austencloud/media-tagging-types'', r => { let d=''''; r.on\\(''data'',c=>d+=c\\); r.on\\(''end'',\\(\\)=>console.log\\(r.statusCode, d.slice\\(0,100\\)\\)\\); }\\);\")",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" scripts/fetch-feedback.js mine)",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" scripts/fetch-feedback.js list)",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" -e \"const https = require\\(''https''\\); https.get\\(''https://registry.npmjs.org/@austencloud/media-tagging-types'', r => { let d=''''; r.on\\(''data'',c=>d+=c\\); r.on\\(''end'',\\(\\)=>{ const j=JSON.parse\\(d\\); console.log\\(''media-tagging-types:'', r.statusCode, j.name||j.error, ''versions:'', Object.keys\\(j.versions||{}\\).join\\('', ''\\)\\); }\\); }\\);\")",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" -e \"const https = require\\(''https''\\); https.get\\(''https://registry.npmjs.org/@austencloud/media-tagging-firebase'', r => { let d=''''; r.on\\(''data'',c=>d+=c\\); r.on\\(''end'',\\(\\)=>{ const j=JSON.parse\\(d\\); console.log\\(''media-tagging-firebase:'', r.statusCode, j.name||j.error, ''versions:'', Object.keys\\(j.versions||{}\\).join\\('', ''\\)\\); }\\); }\\);\")",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" scripts/fetch-feedback.js claim HNPo29Dr)",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" scripts/fetch-feedback.js HNPo29Dr7IjmoTmCPyCR in-review \"Investigated and planned. Most landscape pieces already exist \\(ViewerFooter vertical sidebar, SideNavigation rail, DeviceDetector\\). Gap is in SequenceViewerDrawerHost which never passes landscape prop or changes layout. Plan at .claude/plans/landscape-sequence-viewer.md. ~3 files to touch, medium complexity.\")",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" ./node_modules/.bin/svelte-check --threshold error)",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" node_modules/svelte-check/bin/svelte-check --threshold error)",
+      "Bash(SERPAPI_KEY=e8b9ad14b0d9a824f36abb56dcbfeda69176188192410acbfb217c39c39e27d8 node:*)",
+      "Bash(/c/Program Files/nodejs/npx.cmd svelte-check --output human)"
     ]
   },
   "enableAllProjectMcpServers": false,

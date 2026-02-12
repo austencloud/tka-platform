@@ -13,7 +13,8 @@ export interface IScreenshotLoader {
 
   /** Subscribe to real-time screenshot updates */
   subscribeToScreenshots(
-    callback: (screenshots: ScreenshotMetadata[]) => void
+    callback: (screenshots: ScreenshotMetadata[]) => void,
+    onError?: (error: Error) => void
   ): () => void;
 
   /** Load screenshots for a specific module */

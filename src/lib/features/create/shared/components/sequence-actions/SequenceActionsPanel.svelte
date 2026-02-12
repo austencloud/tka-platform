@@ -269,6 +269,13 @@
     handleClose();
     const { returnPath, returnLabel } = getReturnContext();
     openSequenceViewer(sequence, { returnPath, returnLabel });
+
+    // Notify guided build that sequence was played
+    window.dispatchEvent(
+      new CustomEvent("guided-build-advance", {
+        detail: { key: "sequence-played" },
+      })
+    );
   }
 
   function handleSpotlightClose() {

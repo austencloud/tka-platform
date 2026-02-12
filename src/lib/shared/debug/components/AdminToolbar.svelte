@@ -23,8 +23,6 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { getTabIntroContent } from "$lib/shared/onboarding/config/tab-intro-content";
   import { firstRunState } from "$lib/shared/onboarding/state/first-run-state.svelte.ts";
-  import { sidebarTourState } from "$lib/shared/onboarding/state/sidebar-tour-state.svelte";
-  import { resetSidebarTour } from "$lib/shared/onboarding/config/storage-keys";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
   import { container } from "$lib/shared/di";
   import type {
@@ -168,15 +166,6 @@
   function previewFirstRunWizard() {
     firstRunState.forceShow();
     introResetMessage = "First-run wizard opened";
-    setTimeout(() => {
-      introResetMessage = null;
-    }, 2000);
-  }
-
-  function previewSidebarTour() {
-    resetSidebarTour();
-    sidebarTourState.showPrompt();
-    introResetMessage = "Sidebar tour opened";
     setTimeout(() => {
       introResetMessage = null;
     }, 2000);
@@ -366,7 +355,6 @@
     onToggleSearch={handleToggleSearch}
     onResetTabIntro={resetTabIntro}
     onPreviewFirstRun={previewFirstRunWizard}
-    onPreviewSidebarTour={previewSidebarTour}
     onResetHelpDiscovery={resetHelpButtonDiscovery}
     onClearCloudThumbnails={clearCloudThumbnails}
     {isClearingThumbnails}
@@ -396,7 +384,6 @@
     onToggleSearch={handleToggleSearch}
     onResetTabIntro={resetTabIntro}
     onPreviewFirstRun={previewFirstRunWizard}
-    onPreviewSidebarTour={previewSidebarTour}
     onResetHelpDiscovery={resetHelpButtonDiscovery}
     onClearCloudThumbnails={clearCloudThumbnails}
     {isClearingThumbnails}

@@ -34,6 +34,8 @@ export interface CaptureJobStatus {
   startedAt: number;
   finishedAt: number | null;
   error: string | null;
+  /** Filenames of captured PNGs (populated when status is "completed") */
+  capturedFiles?: string[];
 }
 
 export interface CaptureRequest {
@@ -52,6 +54,12 @@ export interface IScreenshotOrchestrator {
 
   /** All available routes, grouped by module */
   getModuleGroups(): ModuleGroup[];
+
+  /** All available routes (flat list) */
+  getRoutes(): RouteNode[];
+
+  /** Look up a device by its slug. Returns null if not found. */
+  getDeviceBySlug(slug: string): DeviceInfo | null;
 
   /** Start a capture job. Returns job ID and total expected captures. */
   startCapture(request: CaptureRequest): Promise<CaptureStartResult>;

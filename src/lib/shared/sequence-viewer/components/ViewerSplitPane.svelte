@@ -9,46 +9,22 @@
   import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { AnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type {
+    ViewerPlaybackState,
+    ImageCompositionProps,
+    PropRenderingProps,
+    ViewerLayoutState,
+  } from "../domain/viewer-prop-groups";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
 
-  type FocusedPane = "animation" | "image" | null;
-
   interface Props {
     sequence: SequenceData;
-    animationState: AnimationPanelState;
-    animationLoading: boolean;
-    currentStep: number;
-    isPlaying: boolean;
-    currentLetter: Letter | null;
-    currentStepData: StartPositionData | StepData | null;
-    highlightedStepIndex: number | null;
-    // Image settings
-    imgShowWord: boolean;
-    imgShowDifficulty: boolean;
-    imgShowStartPos: boolean;
-    imgShowCreatorName: boolean;
-    imgShowNotes: boolean;
-    imgDarkMode: boolean;
-    imgColumnCount: number | null;
-    userName: string;
-    bluePropType?: PropType;
-    redPropType?: PropType;
-    catDogModeEnabled?: boolean;
-    // Layout
-    isFullscreen: boolean;
-    fullscreenStackVertical: boolean;
-    isMobile: boolean;
-    isLandscapeMobile?: boolean;
-    focusedPane: FocusedPane;
-    // Render progress
+    playback: ViewerPlaybackState;
+    imageComposition: ImageCompositionProps;
+    propRendering: PropRenderingProps;
+    layout: ViewerLayoutState;
     onRenderProgress?: (loaded: number, total: number) => void;
-    // Callbacks
     onFocusPane: (pane: "animation" | "image") => void;
     onUnfocusPane: () => void;
     onStepClick: (stepIndex: number) => void;
@@ -57,30 +33,11 @@
 
   let {
     sequence,
-    animationState,
-    animationLoading,
-    currentStep,
-    isPlaying,
-    currentLetter,
-    currentStepData,
-    highlightedStepIndex,
-    imgShowWord,
-    imgShowDifficulty,
-    imgShowStartPos,
-    imgShowCreatorName,
-    imgShowNotes,
-    imgDarkMode,
-    imgColumnCount,
-    userName,
-    bluePropType,
-    redPropType,
-    catDogModeEnabled,
-    isFullscreen,
-    fullscreenStackVertical,
-    isMobile,
-    isLandscapeMobile = false,
+    playback,
+    imageComposition,
+    propRendering,
+    layout,
     onRenderProgress,
-    focusedPane,
     onFocusPane,
     onUnfocusPane,
     onStepClick,
@@ -88,7 +45,7 @@
   }: Props = $props();
 
   function handleAnimationClick() {
-    if (focusedPane === "animation") {
+    if (layout.focusedPane === "animation") {
       onUnfocusPane();
     } else {
       onFocusPane("animation");
@@ -96,7 +53,7 @@
   }
 
   function handlePreviewClick() {
-    if (focusedPane === "image") {
+    if (layout.focusedPane === "image") {
       onUnfocusPane();
     } else {
       onFocusPane("image");
@@ -106,7 +63,7 @@
   function handleKeydown(e: KeyboardEvent, pane: "animation" | "image") {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      if (focusedPane === pane) {
+      if (layout.focusedPane === pane) {
         onUnfocusPane();
       } else {
         onFocusPane(pane);
@@ -122,27 +79,27 @@
 
 <div
   class="split-view view-container"
-  data-fullscreen-stack={isFullscreen ? (fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
-  data-landscape={isLandscapeMobile || undefined}
-  data-focused={focusedPane}
+  data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
+  data-landscape={layout.isLandscapeMobile || undefined}
+  data-focused={layout.focusedPane}
   in:fade={{ duration: 250, delay: 50, easing: cubicOut }}
   out:fade={{ duration: 150, easing: cubicOut }}
 >
   <!-- Animation pane -->
   <div
     class="split-column animation-column"
-    class:focused={focusedPane === "animation"}
-    data-hidden={focusedPane === "image"}
+    class:focused={layout.focusedPane === "animation"}
+    data-hidden={layout.focusedPane === "image"}
     role="button"
     tabindex="0"
     onclick={handleAnimationClick}
     onkeydown={(e) => handleKeydown(e, "animation")}
-    aria-label={focusedPane === "animation" ? "Exit focus mode" : "Focus on animation"}
-    aria-expanded={focusedPane === "animation"}
+    aria-label={layout.focusedPane === "animation" ? "Exit focus mode" : "Focus on animation"}
+    aria-expanded={layout.focusedPane === "animation"}
   >
     <div class="media-pane animation-pane">
       <!-- Close button - shown when focused (desktop only) -->
-      {#if focusedPane === "animation" && !isMobile}
+      {#if layout.focusedPane === "animation" && !layout.isMobile}
         <div
           class="pane-close-btn"
           role="button"
@@ -155,28 +112,28 @@
         </div>
       {/if}
 
-      {#if animationLoading}
+      {#if playback.animationLoading}
         <div class="loading-state">
           <div class="spinner"></div>
         </div>
-      {:else if animationState.error}
+      {:else if playback.animationState.error}
         <div class="error-state">
           <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-          <span>{animationState.error}</span>
+          <span>{playback.animationState.error}</span>
         </div>
       {:else}
         <AnimatorCanvas
-          sequenceData={animationState.sequenceData}
-          {currentStep}
-          {isPlaying}
-          blueProp={animationState.bluePropState}
-          redProp={animationState.redPropState}
+          sequenceData={playback.animationState.sequenceData}
+          currentStep={playback.currentStep}
+          isPlaying={playback.isPlaying}
+          blueProp={playback.animationState.bluePropState}
+          redProp={playback.animationState.redPropState}
           gridMode={sequence?.gridMode}
-          letter={currentLetter}
-          stepData={currentStepData}
+          letter={playback.currentLetter}
+          stepData={playback.currentStepData}
           word={sequence?.word}
           {onCanvasReady}
-          focused={focusedPane === "animation"}
+          focused={layout.focusedPane === "animation"}
         />
       {/if}
     </div>
@@ -185,19 +142,19 @@
   <!-- Image/Preview pane -->
   <div
     class="split-column preview-column"
-    class:focused={focusedPane === "image"}
-    data-hidden={focusedPane === "animation"}
+    class:focused={layout.focusedPane === "image"}
+    data-hidden={layout.focusedPane === "animation"}
     role="button"
     tabindex="0"
     onclick={handlePreviewClick}
     onkeydown={(e) => handleKeydown(e, "image")}
-    aria-label={focusedPane === "image" ? "Exit focus mode" : "Focus on image"}
-    aria-expanded={focusedPane === "image"}
+    aria-label={layout.focusedPane === "image" ? "Exit focus mode" : "Focus on image"}
+    aria-expanded={layout.focusedPane === "image"}
   >
-    <div class="preview-column-inner" class:focused={focusedPane === "image"}>
+    <div class="preview-column-inner" class:focused={layout.focusedPane === "image"}>
       <div class="media-pane preview-pane">
         <!-- Close button - shown when focused (desktop only) -->
-        {#if focusedPane === "image" && !isMobile}
+        {#if layout.focusedPane === "image" && !layout.isMobile}
           <div
             class="pane-close-btn"
             role="button"
@@ -212,23 +169,23 @@
 
         <LayeredSequencePreview
           {sequence}
-          {highlightedStepIndex}
-          showHighlight={isPlaying || highlightedStepIndex !== null}
+          highlightedStepIndex={playback.highlightedStepIndex}
+          showHighlight={playback.isPlaying || playback.highlightedStepIndex !== null}
           {onStepClick}
           {onRenderProgress}
           showStepNumbers={true}
-          showDifficultyLevel={imgShowDifficulty}
-          includeStartPosition={imgShowStartPos}
-          showCreatorName={imgShowCreatorName}
-          showNotes={imgShowNotes}
+          showDifficultyLevel={imageComposition.showDifficulty}
+          includeStartPosition={imageComposition.showStartPos}
+          showCreatorName={imageComposition.showCreatorName}
+          showNotes={imageComposition.showNotes}
           showBirthday={true}
           showLoopGlyph={true}
-          darkMode={imgDarkMode}
-          columnCount={imgColumnCount}
-          {userName}
-          {bluePropType}
-          {redPropType}
-          {catDogModeEnabled}
+          darkMode={imageComposition.darkMode}
+          columnCount={imageComposition.columnCount}
+          userName={imageComposition.userName}
+          bluePropType={propRendering.bluePropType}
+          redPropType={propRendering.redPropType}
+          catDogModeEnabled={propRendering.catDogModeEnabled}
         />
       </div>
     </div>

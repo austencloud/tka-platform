@@ -9,10 +9,20 @@ import { ScreenshotOrchestrator } from "$lib/features/lab/services/implementatio
 import { ScreenshotUploader } from "$lib/features/lab/services/implementations/ScreenshotUploader";
 import { ScreenshotLoader } from "$lib/features/lab/services/implementations/ScreenshotLoader";
 import { ScreenshotTagController } from "$lib/features/lab/services/implementations/ScreenshotTagController";
+import { ScreenshotUploadOrchestrator } from "$lib/features/lab/services/implementations/ScreenshotUploadOrchestrator";
 
-export const labContainer = createContainer().add({
-  screenshotOrchestrator: () => new ScreenshotOrchestrator(),
-  screenshotUploader: () => new ScreenshotUploader(),
-  screenshotLoader: () => new ScreenshotLoader(),
-  screenshotTagController: () => new ScreenshotTagController(),
-});
+export const labContainer = createContainer()
+  .add({
+    screenshotOrchestrator: () => new ScreenshotOrchestrator(),
+    screenshotUploader: () => new ScreenshotUploader(),
+    screenshotLoader: () => new ScreenshotLoader(),
+    screenshotTagController: () => new ScreenshotTagController(),
+  })
+  .add((ctx) => ({
+    screenshotUploadOrchestrator: () =>
+      new ScreenshotUploadOrchestrator(
+        ctx.screenshotUploader,
+        ctx.screenshotOrchestrator,
+        ctx.screenshotLoader
+      ),
+  }));

@@ -20,6 +20,7 @@
     isUIVisible = true,
     onRevealNav = () => {},
     isDashboard = false,
+    isEntryAnimating = false,
   } = $props<{
     sections: Section[];
     currentSection: string;
@@ -31,6 +32,7 @@
     isUIVisible?: boolean;
     onRevealNav?: () => void;
     isDashboard?: boolean;
+    isEntryAnimating?: boolean;
   }>();
 
   // Services
@@ -95,5 +97,6 @@
     {isUIVisible}
     {onRevealNav}
     {isDashboard}
+    {isEntryAnimating}
   />
 {/if}

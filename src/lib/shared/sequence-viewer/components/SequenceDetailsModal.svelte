@@ -58,6 +58,11 @@
   // Extracted child components
   import ViewerHeader from "./ViewerHeader.svelte";
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
+  import type {
+    ViewerPlaybackState,
+    ImageCompositionProps,
+    PropRenderingProps,
+  } from "../domain/viewer-prop-groups";
   import ExportModeContent from "./ExportModeContent.svelte";
   import ExportFooter from "./ExportFooter.svelte";
   // Animation and playback
@@ -1137,6 +1142,36 @@
     sequenceModalExporter.dispose();
   });
 
+  // ========== PRE-ASSEMBLED PROP GROUPS ==========
+
+  // ViewerSplitPane groups
+  const modalPlayback = $derived({
+    animationState: modalAnimationState,
+    animationLoading,
+    currentStep: currentStepLocal,
+    isPlaying: isPlayingLocal,
+    currentLetter,
+    currentStepData,
+    highlightedStepIndex,
+  });
+
+  const modalImageComposition = $derived({
+    showWord: imgShowWord,
+    showDifficulty: imgShowDifficulty,
+    showStartPos: imgShowStartPos,
+    showCreatorName: imgShowCreatorName,
+    showNotes: imgShowNotes,
+    darkMode: imgDarkMode,
+    columnCount: imgColumnCount,
+    userName: authState.user?.displayName || "",
+  });
+
+  const modalPropRendering = $derived({
+    bluePropType,
+    redPropType,
+    catDogModeEnabled,
+  });
+
   // Calculate preview aspect ratio to determine optimal fullscreen split layout
   let previewAspectRatio = $derived.by(() => {
     if (!sequence?.steps?.length) return 1;
@@ -1245,29 +1280,10 @@
       <!-- Split view: Animation and Image side by side, tap to focus -->
       <ViewerSplitPane
         sequence={effectiveSequence}
-        animationState={modalAnimationState}
-        {animationLoading}
-        currentStep={currentStepLocal}
-        isPlaying={isPlayingLocal}
-        {currentLetter}
-        {currentStepData}
-        {highlightedStepIndex}
-        {imgShowWord}
-        {imgShowDifficulty}
-        {imgShowStartPos}
-        {imgShowCreatorName}
-        {imgShowNotes}
-        {imgDarkMode}
-        {imgColumnCount}
-        userName={authState.user?.displayName || ""}
-        {bluePropType}
-        {redPropType}
-        {catDogModeEnabled}
-        {isFullscreen}
-        {fullscreenStackVertical}
-        {isMobile}
-        {isLandscapeMobile}
-        focusedPane={editingPane}
+        playback={modalPlayback}
+        imageComposition={modalImageComposition}
+        propRendering={modalPropRendering}
+        layout={{ isFullscreen, fullscreenStackVertical, isMobile, isLandscapeMobile, focusedPane: editingPane }}
         onFocusPane={enterEditMode}
         onUnfocusPane={exitEditMode}
         onStepClick={handleStepClick}

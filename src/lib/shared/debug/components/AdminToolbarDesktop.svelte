@@ -38,7 +38,6 @@
     onToggleSearch: () => void;
     onResetTabIntro: () => void;
     onPreviewFirstRun: () => void;
-    onPreviewSidebarTour: () => void;
     onResetHelpDiscovery: () => void;
     onClearCloudThumbnails: () => void;
     isClearingThumbnails: boolean;
@@ -66,7 +65,6 @@
     onToggleSearch,
     onResetTabIntro,
     onPreviewFirstRun,
-    onPreviewSidebarTour,
     onResetHelpDiscovery,
     onClearCloudThumbnails,
     isClearingThumbnails,
@@ -91,11 +89,6 @@
 
   function handleResetIntro() {
     onResetTabIntro();
-    isActionsOpen = false;
-  }
-
-  function handleSidebarTour() {
-    onPreviewSidebarTour();
     isActionsOpen = false;
   }
 
@@ -260,15 +253,6 @@
                   <span class="intro-hint">({currentIntroTitle})</span>
                 {/if}
               </span>
-            </button>
-
-            <button
-              type="button"
-              class="dropdown-item"
-              onclick={handleSidebarTour}
-            >
-              <i class="fas fa-route" aria-hidden="true"></i>
-              <span>Preview Sidebar Tour</span>
             </button>
 
             <button

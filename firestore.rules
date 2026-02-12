@@ -1081,6 +1081,38 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // ARENA COLLECTIONS (Sequence Battle / Elo Rating)
+    // ============================================================================
+
+    // Arena ratings - Elo-style ratings per sequence entry
+    // Readable by all authenticated users (leaderboard, matchup display)
+    // Writable by authenticated users (ratings created/updated after matchups)
+    match /arenaRatings/{entryId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // Arena votes - append-only vote records
+    // Users can read votes (to check recent vote pairs and prevent repeats)
+    // Users can create votes (record matchup decisions)
+    // Votes are immutable once created
+    match /arenaVotes/{voteId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    // Arena snapshots - daily rank snapshots for tracking position changes
+    // Readable by all authenticated users (rank change calculation)
+    // Writable by authenticated users (daily snapshot creation)
+    match /arenaSnapshots/{snapshotId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================================
     // EXPLICIT DENY FOR UNMATCHED PATHS
     // Any collection not explicitly defined above is denied by default
     // ============================================================================

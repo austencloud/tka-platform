@@ -196,6 +196,7 @@ interface CaptureJob {
   finishedAt: number | null;
   error: string | null;
   process: ChildProcess | null;
+  capturedFiles: string[];
 }
 
 const captureJobs = new Map<string, CaptureJob>();
@@ -360,6 +361,7 @@ const screenshotsPlugin = () => ({
               startedAt: job.startedAt,
               finishedAt: job.finishedAt,
               error: job.error,
+              ...(job.status === "completed" && { capturedFiles: job.capturedFiles }),
             })
           );
           return;
@@ -461,6 +463,7 @@ const screenshotsPlugin = () => ({
               finishedAt: null,
               error: null,
               process: child,
+              capturedFiles: [],
             };
             captureJobs.set(jobId, job);
 
@@ -473,7 +476,7 @@ const screenshotsPlugin = () => ({
               job.process = null;
               job.finishedAt = Date.now();
 
-              // Count files modified after job start for final count
+              // Collect filenames modified after job start for final count
               if (fs.existsSync(capturesDir)) {
                 const finalFiles = fs
                   .readdirSync(capturesDir)
@@ -483,6 +486,7 @@ const screenshotsPlugin = () => ({
                     return stat.mtimeMs >= job.startedAt;
                   });
                 job.completed = finalFiles.length;
+                job.capturedFiles = finalFiles;
               }
 
               if (code === 0 || job.completed > 0) {
@@ -841,6 +845,11 @@ export default defineConfig({
       "@threlte/core",
       "@threlte/extras",
       "@threlte/rapier",
+      // ESM packages with extensionless imports — Node can't resolve them natively
+      "@austencloud/media-tagging-core",
+      "@austencloud/media-tagging-firebase",
+      "@austencloud/media-tagging-types",
+      "@austencloud/media-tagging-ui",
     ],
     external: [
       "pdfjs-dist",

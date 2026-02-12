@@ -13,6 +13,7 @@
   import { myFeedbackDetailState } from "$lib/features/feedback/state/my-feedback-detail-state.svelte";
   import FirstRunWizard from "../../onboarding/components/first-run/FirstRunWizard.svelte";
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
+  import { appEntryState } from "../../onboarding/state/app-entry-state.svelte.ts";
   import AttributionPrompt from "../../attribution/components/AttributionPrompt.svelte";
   import { getAttributionPromptState } from "../../attribution/state/attribution-prompt-state.svelte";
   import SequenceViewerDrawerHost from "../../sequence-viewer/components/SequenceViewerDrawerHost.svelte";
@@ -413,14 +414,31 @@
       <p>Loading preferences...</p>
     </div>
   {:else if !firstRunState.isDone() || firstRunState.shouldShow}
-    <!-- Authenticated but hasn't completed preferences wizard yet (or force-showing for preview) -->
-    <FirstRunWizard
-      onComplete={() => firstRunState.markCompleted()}
-      onSkip={() => firstRunState.markSkipped()}
-    />
+    <!-- First-run wizard with entry animation support -->
+    {#if appEntryState.phase === "wizard-exiting"}
+      <!-- Wizard fading out while interface fades in behind -->
+      <div class="wizard-exit-wrapper">
+        <FirstRunWizard
+          onComplete={() => firstRunState.markCompleted()}
+          onSkip={() => firstRunState.markSkipped()}
+        />
+      </div>
+      <MainInterface isEntryAnimating={true} />
+    {:else}
+      <FirstRunWizard
+        onComplete={() => {
+          firstRunState.markCompleted();
+          appEntryState.startEntrySequence();
+        }}
+        onSkip={() => {
+          firstRunState.markSkipped();
+          appEntryState.startEntrySequence();
+        }}
+      />
+    {/if}
   {:else}
     <!-- Main Interface - Full app for authenticated users who completed onboarding -->
-    <MainInterface />
+    <MainInterface isEntryAnimating={appEntryState.isEntryAnimating()} />
 
     <!-- Auth sheet (route-based) -->
     <AuthSheet
@@ -527,6 +545,26 @@
     }
   }
 
+  /* Wizard exit animation - fades out + slight scale down */
+  .wizard-exit-wrapper {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    animation: wizard-exit 400ms ease-in forwards;
+    pointer-events: none;
+  }
+
+  @keyframes wizard-exit {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .tka-app {
@@ -539,6 +577,11 @@
   @media (prefers-reduced-motion: reduce) {
     .tka-app {
       transition: none;
+    }
+
+    .wizard-exit-wrapper {
+      animation: none;
+      opacity: 0;
     }
   }
 

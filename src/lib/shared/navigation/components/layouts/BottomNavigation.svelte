@@ -31,6 +31,7 @@
     isUIVisible = true,
     onRevealNav = () => {},
     isDashboard = false,
+    isEntryAnimating = false,
   } = $props<{
     sections: Section[];
     currentSection: string;
@@ -41,6 +42,7 @@
     isUIVisible?: boolean;
     onRevealNav?: () => void;
     isDashboard?: boolean;
+    isEntryAnimating?: boolean;
   }>();
 
   let navElement = $state<HTMLElement | null>(null);
@@ -168,6 +170,7 @@
   class="bottom-navigation"
   class:hidden={!isUIVisible}
   class:floating={isDashboard}
+  class:entry-animating={isEntryAnimating}
   bind:this={navElement}
 >
   <!-- Left side: Module Switcher -->
@@ -658,6 +661,24 @@
     }
   }
 
+  /* ============================================================================
+     ENTRY ANIMATION - Slide up from bottom after first-run wizard
+     ============================================================================ */
+  .bottom-navigation.entry-animating {
+    animation: nav-slide-up 350ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
+  }
+
+  @keyframes nav-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .bottom-navigation,
@@ -670,6 +691,10 @@
       animation: none;
       opacity: 1;
       transform: translateY(0);
+    }
+
+    .bottom-navigation.entry-animating {
+      animation: none;
     }
   }
 </style>

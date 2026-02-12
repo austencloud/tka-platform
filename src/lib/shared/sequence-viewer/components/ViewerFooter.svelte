@@ -26,55 +26,30 @@
   type ExportFormat = "image" | "animation" | "side-by-side";
 
   interface Props {
-    /** Current BPM value */
     bpm: number;
-    /** Whether animation is currently playing */
     isPlaying: boolean;
-    /** Whether user is logged in (affects Save button) */
     isLoggedIn: boolean;
-    /** Whether controls should be visible (for auto-hide) */
     controlsVisible?: boolean;
-    /** Whether to render as a landscape vertical column */
     landscape?: boolean;
-    /** Whether tempo ramp is currently active */
     rampActive?: boolean;
-    /** Shareable URL for the sequence */
     sequenceUrl?: string;
-    /** Whether sync is currently connecting/disconnecting */
     isSyncToggling?: boolean;
-    /** Whether sync is active (searching or connected) */
     isSyncActive?: boolean;
-    /** Whether sync is connected to another device */
     isSyncConnected?: boolean;
-    /** Callback when BPM changes */
     onBpmChange: (bpm: number) => void;
-    /** Callback to toggle play/pause */
     onPlayPause: () => void;
-    /** Callback for step backward (full beat) */
     onStepBack: () => void;
-    /** Callback for step forward (full beat) */
     onStepForward: () => void;
-    /** Callback for half-step backward */
     onStepHalfBack?: () => void;
-    /** Callback for half-step forward */
     onStepHalfForward?: () => void;
-    /** Callback when Save is clicked */
     onSave: () => void;
-    /** Callback when Compose is clicked */
     onCompose: () => void;
-    /** Callback when Share is clicked */
     onShare: () => void;
-    /** Callback when Export is clicked (with format) */
     onExport: (format?: ExportFormat) => void;
-    /** Callback when "Get TKA Scribe" is clicked (unauthenticated users) */
     onGetApp?: () => void;
-    /** Callback when ramp training starts */
     onRampStart?: () => void;
-    /** Callback when ramp training stops */
     onRampStop?: () => void;
-    /** Callback when preview mode changes (mid layout export chip) */
     onPreviewModeChange?: (mode: ExportFormat | null) => void;
-    /** Callback when Connect is clicked (toggle LAN sync) */
     onConnect?: () => void;
   }
 
@@ -368,17 +343,17 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 8px 6px;
-    padding-right: calc(6px + env(safe-area-inset-right, 0px));
-    width: 72px;
+    gap: 4px;
+    padding: 6px 4px;
+    padding-right: calc(4px + env(safe-area-inset-right, 0px));
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    width: 60px;
     height: 100%;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: none;
-    justify-content: center;
   }
 
   .landscape-controls::-webkit-scrollbar {
@@ -389,15 +364,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 40px;
+    min-height: 32px;
+    height: 40px;
+    border-radius: 10px;
     background: transparent;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
-    flex-shrink: 0;
+    flex-shrink: 1;
     -webkit-tap-highlight-color: transparent;
     transition: all var(--duration-fast, 150ms) ease;
   }
@@ -413,13 +389,15 @@
   }
 
   .landscape-btn.play-pause {
-    width: 52px;
-    height: 52px;
+    width: 44px;
+    min-height: 36px;
+    height: 44px;
     border-radius: 50%;
     background: var(--theme-accent, #6366f1);
     border-color: transparent;
     color: white;
-    font-size: 18px;
+    font-size: 16px;
+    flex-shrink: 0;
   }
 
   .landscape-btn.play-pause:active {
@@ -432,19 +410,20 @@
   .landscape-btn.download { color: #818cf8; border-color: rgba(99, 102, 241, 0.35); }
 
   .landscape-divider {
-    width: 32px;
+    width: 28px;
     height: 1px;
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    flex-shrink: 0;
-    margin: 2px 0;
+    flex-shrink: 1;
+    margin: 1px 0;
   }
 
   /* BPM trigger in landscape */
   .landscape-btn.bpm-trigger {
     flex-direction: column;
     gap: 0;
-    height: 48px;
-    width: 48px;
+    min-height: 32px;
+    height: 40px;
+    width: 40px;
     border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 

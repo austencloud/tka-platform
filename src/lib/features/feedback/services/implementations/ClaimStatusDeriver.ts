@@ -70,15 +70,14 @@ export class ClaimStatusDeriver implements IClaimStatusDeriver {
     if (claimHealth === "active") {
       // Active claim → always show as in-progress
       displayStatus = "in-progress";
-    } else if (claimHealth === "stale" || claimHealth === "orphaned") {
-      // Stale or orphaned → treat as "new" (available for claiming)
-      // Exception: if stored status is beyond in-progress (in-review, completed, archived),
-      // keep that status - only revert to "new" if stored was "new" or "in-progress"
+    } else if (claimHealth === "stale") {
+      // Stale claim → revert to "new" so another agent can pick it up
+      // Only revert if stored status was new or in-progress
       if (storedStatus === "new" || storedStatus === "in-progress") {
         displayStatus = "new";
       }
-      // Otherwise keep stored status (in-review, completed, archived)
     }
+    // Orphaned (in-progress with no claim) → respect stored status as-is
     // For "none" claim health with non-in-progress status, just pass through
 
     return {

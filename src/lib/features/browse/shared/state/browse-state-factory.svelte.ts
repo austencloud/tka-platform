@@ -35,6 +35,15 @@ interface PersistedControlsState {
   filter: { type: SequenceFilterType; value: BrowseFilterValue };
 }
 
+function deduplicateById(sequences: SequenceData[]): SequenceData[] {
+  const seen = new Set<string>();
+  return sequences.filter((seq) => {
+    if (seen.has(seq.id)) return false;
+    seen.add(seq.id);
+    return true;
+  });
+}
+
 export function createBrowseState() {
   // Services - Use specialized services directly instead of orchestration layer
   const loaderService = container.items.browseLoader;
@@ -159,8 +168,9 @@ export function createBrowseState() {
       sequenceSections = []; // Clear immediately to prevent showing stale sections
       error = null;
       const sequences = await loaderService.loadSequenceMetadata();
-      allSequences = sequences;
-      displayedSequences = sequences;
+      const dedupedSequences = deduplicateById(sequences);
+      allSequences = dedupedSequences;
+      displayedSequences = dedupedSequences;
       const sections = Navigator.generateNavigationSections(sequences, []);
       navigationSections = sections;
       applyFilterAndSort();
@@ -194,8 +204,9 @@ export function createBrowseState() {
       error = null;
       const librarySequences = await libService.getSequences();
       // LibrarySequence extends SequenceData, so this is compatible
-      allSequences = librarySequences;
-      displayedSequences = librarySequences;
+      const dedupedLibrary = deduplicateById(librarySequences);
+      allSequences = dedupedLibrary;
+      displayedSequences = dedupedLibrary;
       const sections = Navigator.generateNavigationSections(
         librarySequences,
         []

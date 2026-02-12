@@ -4,7 +4,7 @@ OptionViewerSection.svelte - Section component for option picker
 Renders a section with:
 - Section header with letter type
 - Grid of pictographs for that letter type
-- Beautiful fade animations when options change
+- Index-keyed slots so props/arrows transition in place on data change
 -->
 <script lang="ts">
   import type {
@@ -29,7 +29,6 @@ Renders a section with:
     onPictographSelected = () => {},
     layoutConfig,
     currentSequence = [],
-    isFadingOut = false,
     contentAreaBounds = null,
     forcedPictographSize,
     showHeader = true,
@@ -48,7 +47,6 @@ Renders a section with:
       gridGap: string;
     };
     currentSequence?: PictographData[];
-    isFadingOut?: boolean;
     contentAreaBounds?: { left: number; right: number; width: number } | null;
     forcedPictographSize?: number;
     showHeader?: boolean;
@@ -324,20 +322,17 @@ Renders a section with:
     <SectionHeader {letterType} />
   {/if}
 
-  <!-- Section Content - Simple keyed each for component reuse -->
+  <!-- Section Content - Index-keyed slots for in-place pictograph transitions -->
   <div
     class="pictographs-grid"
     style:grid-template-columns={optimalLayout().gridColumns}
     style:gap={layoutConfig?.gridGap || "16px"}
-    style:opacity={isFadingOut ? 0 : 1}
-    style:transition="opacity 250ms ease-out"
   >
-    {#each pictographsWithReversals() as pictograph (pictograph.id || `${pictograph.letter}-${pictograph.startPosition}-${pictograph.endPosition}`)}
+    {#each pictographsWithReversals() as pictograph, index (index)}
       {@const borderColors = getLetterBorderColors(pictograph.letter)}
       <button
         class="pictograph-option"
         onclick={() => handlePictographClick(pictograph)}
-        disabled={isFadingOut}
         style:width="{optimalLayout().pictographSize}px"
         style:height="{optimalLayout().pictographSize}px"
         style:--border-primary={borderColors.primary}

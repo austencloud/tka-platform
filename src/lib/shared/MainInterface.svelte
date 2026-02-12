@@ -45,6 +45,8 @@
     setDesktopSidebarCollapsed,
   } from "./layout/desktop-sidebar-state.svelte";
   import SidebarTourOverlay from "./onboarding/components/sidebar-tour/SidebarTourOverlay.svelte";
+  import GuidedBuildOverlay from "./onboarding/components/guided-build/GuidedBuildOverlay.svelte";
+  import { appEntryState } from "./onboarding/state/app-entry-state.svelte.ts";
   // Keyboard shortcuts
 
   import { deepLinker } from "./navigation/services/implementations/DeepLinker";
@@ -87,6 +89,13 @@
 
   // Connect module - Invite overlay for app-wide invite notifications
   import InviteOverlay from "../features/connect/components/InviteOverlay.svelte";
+
+  // Props
+  let {
+    isEntryAnimating = false,
+  } = $props<{
+    isEntryAnimating?: boolean;
+  }>();
 
   // Initialize user preview context for app-wide access
   initUserPreviewContext();
@@ -275,14 +284,17 @@
       modules={moduleDefinitions}
       onModuleChange={handleModuleChange}
       onSectionChange={handleSectionChange}
+      {isEntryAnimating}
     />
-    <!-- Sidebar Tour (desktop only, first-time users) -->
-    <SidebarTourOverlay
-      sidebarCollapsed={desktopSidebarState.isCollapsed}
-      onExpandSidebar={() => setDesktopSidebarCollapsed(false)}
-      onRestoreSidebar={(wasCollapsed) =>
-        setDesktopSidebarCollapsed(wasCollapsed)}
-    />
+    <!-- Sidebar Tour (desktop only, existing users who never did the guided build) -->
+    {#if appEntryState.isComplete()}
+      <SidebarTourOverlay
+        sidebarCollapsed={desktopSidebarState.isCollapsed}
+        onExpandSidebar={() => setDesktopSidebarCollapsed(false)}
+        onRestoreSidebar={(wasCollapsed) =>
+          setDesktopSidebarCollapsed(wasCollapsed)}
+      />
+    {/if}
   {/if}
 
   <!-- Content + Navigation Wrapper (flex layout) -->
@@ -301,6 +313,7 @@
       class="content-area"
       class:nav-hidden={!isPrimaryNavVisible()}
       class:nav-landscape={layoutState.isPrimaryNavLandscape}
+      class:entry-animating={isEntryAnimating}
     >
       <ModuleRenderer
         {activeModule}
@@ -326,10 +339,16 @@
         isUIVisible={isPrimaryNavVisible()}
         onRevealNav={handleRevealNav}
         isDashboard={false}
+        {isEntryAnimating}
       />
     {/if}
 
   </div>
+
+  <!-- Guided Build Overlay (first-time users, after entry animation) -->
+  {#if appEntryState.isGuidedBuild()}
+    <GuidedBuildOverlay />
+  {/if}
 
   <!-- Domain Managers -->
   <PWAInstallationManager />
@@ -456,10 +475,34 @@
     padding-left: 0 !important;
   }
 
+  /* ============================================================================
+     ENTRY ANIMATION - Choreographed app entry after first-run wizard
+     ============================================================================ */
+
+  /* Content area slides up + fades in */
+  .content-area.entry-animating {
+    animation: entry-content-in 350ms cubic-bezier(0.16, 1, 0.3, 1) 400ms both;
+  }
+
+  @keyframes entry-content-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .main-interface {
       transition: none !important;
       animation: none !important;
+    }
+
+    .content-area.entry-animating {
+      animation: none;
     }
   }
 

@@ -16,7 +16,6 @@ Single responsibility: Combine header and grid for a letter type section.
     columns: number;
     gap?: string;
     showHeader?: boolean;
-    isFading?: boolean;
     onSelect: (option: PreparedPictographData) => void;
     // Sequence context for reversal detection
     currentSequence?: PictographData[];
@@ -31,7 +30,6 @@ Single responsibility: Combine header and grid for a letter type section.
     columns,
     gap = "8px",
     showHeader = true,
-    isFading = false,
     onSelect,
     currentSequence = [],
     enableFlip = false,
@@ -48,7 +46,6 @@ Single responsibility: Combine header and grid for a letter type section.
     {cardSize}
     {columns}
     {gap}
-    {isFading}
     {onSelect}
     {currentSequence}
     {enableFlip}

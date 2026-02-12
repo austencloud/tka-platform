@@ -14,8 +14,6 @@
   import OptionPicker from "$lib/features/create/construct/option-picker/components/OptionPicker.svelte";
   import StartPositionPicker from "$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte";
   import type { SimplifiedStartPositionState } from "../../construct/start-position-picker/state/start-position-state.svelte";
-  import TabIntro from "$lib/shared/onboarding/components/TabIntro.svelte";
-
   // Props
   let {
     shouldShowStartPositionPicker,
@@ -83,9 +81,6 @@
     </div>
   </div>
 </div>
-
-<!-- Tab intro - shows on first visit only (content fetched internally by TabIntro) -->
-<TabIntro moduleId="create" tabId="construct" />
 
 <style>
   .construct-tab-content {
