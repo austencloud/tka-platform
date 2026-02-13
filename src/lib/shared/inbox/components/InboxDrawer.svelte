@@ -672,12 +672,9 @@
     :global(.drawer-content.inbox-drawer) {
       --sheet-width: 100%;
       width: 100% !important;
-    }
-
-    /* When expanded (thread/compose view), fill the viewport */
-    :global(.drawer-content.inbox-drawer.inbox-expanded) {
+      /* Always fill viewport on mobile — list, thread, and compose views */
       height: 100vh !important;
-      height: 100dvh !important; /* Dynamic viewport height for mobile browsers */
+      height: 100dvh !important;
       max-height: none !important;
       border-radius: 0 !important;
     }
