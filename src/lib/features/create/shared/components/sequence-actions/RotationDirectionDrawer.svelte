@@ -382,4 +382,14 @@
   .hand-dot.red {
     background: var(--prop-red);
   }
+
+  /* Fullscreen on mobile — browsing interface needs space */
+  @media (max-width: 768px) {
+    :global(.drawer-content:has(.rotation-direction-drawer)) {
+      height: 100vh !important;
+      height: 100dvh !important;
+      max-height: none !important;
+      border-radius: 0 !important;
+    }
+  }
 </style>

@@ -190,6 +190,11 @@ dialog.drawer-content {
   max-width: 100%;
   max-height: 100vh;
   max-height: 100dvh; /* Modern: accounts for iPhone browser chrome */
+  /* Prevent bottom sheets from appearing as tiny slivers on mobile.
+     Components can override with their own height/max-height if they
+     intentionally want a shorter sheet (e.g. animation settings). */
+  min-height: 50vh;
+  min-height: 50dvh;
 
   margin: 0;
   border-top-left-radius: var(
