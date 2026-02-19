@@ -12,6 +12,7 @@
 	import { container } from "$lib/shared/di";
 	import type { ICompositionThumbnailResolver } from "../services/contracts/ICompositionThumbnailResolver";
 	import CompositionMiniPreview from "./CompositionMiniPreview.svelte";
+	import CompositionAnimatedPreview from "./CompositionAnimatedPreview.svelte";
 
 	const {
 		composition,
@@ -28,6 +29,8 @@
 	} = $props();
 
 	let cardEl: HTMLDivElement | undefined = $state();
+	let isHovering = $state(false);
+	let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	const modeConfig = $derived(COMPOSE_MODE_CONFIG[composition.mode]);
 	const thumbnailResolver = container?.items?.compositionThumbnailResolver as ICompositionThumbnailResolver | undefined;
@@ -81,6 +84,22 @@
 			handleClick();
 		}
 	}
+
+	function handleMouseEnter() {
+		if (!hasRenderableCells) return;
+		// Small delay to avoid mounting animations on accidental hovers
+		hoverTimeout = setTimeout(() => {
+			isHovering = true;
+		}, 300);
+	}
+
+	function handleMouseLeave() {
+		if (hoverTimeout) {
+			clearTimeout(hoverTimeout);
+			hoverTimeout = null;
+		}
+		isHovering = false;
+	}
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -96,10 +115,14 @@
 	"
 	onclick={handleClick}
 	onkeydown={handleKeyDown}
+	onmouseenter={handleMouseEnter}
+	onmouseleave={handleMouseLeave}
 >
-	<!-- Thumbnail / Mini Preview / Placeholder -->
+	<!-- Thumbnail / Mini Preview / Animated Hover Preview / Placeholder -->
 	<div class="card-media">
-		{#if hasRenderableCells}
+		{#if hasRenderableCells && isHovering}
+			<CompositionAnimatedPreview cells={composition.cells} layout={composition.layout} />
+		{:else if hasRenderableCells}
 			<CompositionMiniPreview cells={composition.cells} layout={composition.layout} />
 		{:else if thumbnailUrl}
 			<img src={thumbnailUrl} alt={composition.name} class="thumbnail" />
@@ -136,6 +159,10 @@
 		<h3 class="name">{composition.name || "Untitled"}</h3>
 		<div class="meta">
 			<span class="layout-badge">{layoutLabel}</span>
+			<span class="seq-count">
+				<i class="fas fa-layer-group" aria-hidden="true"></i>
+				{composition.sequenceCount}
+			</span>
 			<span class="time">{relativeTime}</span>
 		</div>
 	</div>
@@ -301,6 +328,17 @@
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
 		font-weight: 500;
 		font-size: 11px;
+	}
+
+	.seq-count {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.seq-count i {
+		font-size: 10px;
+		opacity: 0.7;
 	}
 
 	/* Compact hides some metadata */

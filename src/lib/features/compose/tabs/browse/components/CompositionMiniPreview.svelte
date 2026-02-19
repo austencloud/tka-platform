@@ -1,13 +1,13 @@
 <!--
 	CompositionMiniPreview.svelte
 
-	Renders a CSS grid of mini pictograph thumbnails for a composition card.
-	Each cell shows its first beat rendered via PreviewCellRenderer.
+	Static grid preview for a composition card.
+	Shows the layout structure: filled cells get a subtle accent,
+	empty cells are nearly invisible. No pictograph rendering —
+	the hover animation provides the real preview.
 -->
 <script lang="ts">
-	import { onDestroy } from "svelte";
 	import type { CellConfig, GridLayout } from "../../../compose/domain/types";
-	import { previewCellRenderer } from "$lib/shared/sequence-viewer/services/implementations/PreviewCellRenderer";
 
 	const {
 		cells,
@@ -17,148 +17,124 @@
 		layout: GridLayout;
 	} = $props();
 
-	let cellImages = $state<Map<string, string>>(new Map());
-	let isRendering = $state(true);
-	let destroyed = false;
-
-	onDestroy(() => {
-		destroyed = true;
-		// Revoke blob URLs to free memory
-		for (const url of cellImages.values()) {
-			if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+	// Build a lookup of cell-id → CellConfig for fast access
+	const cellLookup = $derived.by(() => {
+		const map = new Map<string, CellConfig>();
+		for (const cell of cells) {
+			map.set(cell.id, cell);
 		}
+		return map;
 	});
 
-	// Render all cell previews when cells change
-	$effect(() => {
-		renderPreviews(cells, layout);
-	});
-
-	async function renderPreviews(currentCells: CellConfig[], _layout: GridLayout): Promise<void> {
-		isRendering = true;
-		// Revoke old blob URLs before replacing
-		for (const url of cellImages.values()) {
-			if (url.startsWith("blob:")) URL.revokeObjectURL(url);
-		}
-		const newImages = new Map<string, string>();
-
-		const renderPromises = currentCells.map(async (cell) => {
-			const firstStep = cell.sequences[0]?.steps[0];
-			if (!firstStep) return;
-
-			try {
-				const dataUrl = await previewCellRenderer.renderCell(
-					firstStep,
-					undefined,
-					true,
-					{
-						size: 120,
-						showStepNumbers: false,
-						showTKA: true,
-						showReversals: false,
-						showNonRadialPoints: false,
-						handPointVisibility: "active",
-					}
-				);
-				if (!destroyed) {
-					newImages.set(cell.id, dataUrl);
-				}
-			} catch (err) {
-				console.warn(`Failed to render cell ${cell.id} preview:`, err);
+	// Generate all grid positions (rows x cols)
+	const allPositions = $derived.by(() => {
+		const positions: { row: number; col: number; cellId: string; hasContent: boolean }[] = [];
+		for (let row = 0; row < layout.rows; row++) {
+			for (let col = 0; col < layout.cols; col++) {
+				const cellId = `cell-${row}-${col}`;
+				const cell = cellLookup.get(cellId);
+				const hasContent = !!cell && cell.sequences.length > 0;
+				positions.push({ row, col, cellId, hasContent });
 			}
-		});
-
-		await Promise.allSettled(renderPromises);
-
-		if (!destroyed) {
-			cellImages = newImages;
-			isRendering = false;
 		}
-	}
+		return positions;
+	});
+
+	const filledCount = $derived(allPositions.filter((p) => p.hasContent).length);
 </script>
 
 <div
 	class="mini-grid"
 	style="--cols: {layout.cols}; --rows: {layout.rows};"
 >
-	{#each cells as cell (cell.id)}
-		<div class="mini-cell">
-			{#if cellImages.has(cell.id)}
-				<img
-					src={cellImages.get(cell.id)}
-					alt=""
-					class="cell-img"
-					aria-hidden="true"
-				/>
-			{:else if isRendering}
-				<div class="cell-skeleton"></div>
-			{:else}
-				<div class="cell-empty"></div>
+	{#each allPositions as pos (pos.cellId)}
+		<div
+			class="mini-cell"
+			class:filled={pos.hasContent}
+			class:empty={!pos.hasContent}
+		>
+			{#if pos.hasContent}
+				<div class="cell-filled">
+					<i class="fas fa-play fill-icon" aria-hidden="true"></i>
+				</div>
 			{/if}
 		</div>
 	{/each}
+
+	<!-- Central play overlay -->
+	{#if filledCount > 0}
+		<div class="hover-hint">
+			<i class="fas fa-play" aria-hidden="true"></i>
+		</div>
+	{/if}
 </div>
 
 <style>
 	.mini-grid {
 		display: grid;
 		grid-template-columns: repeat(var(--cols), 1fr);
-		grid-template-rows: repeat(var(--rows), 1fr);
-		gap: 2px;
+		gap: 3px;
 		width: 100%;
 		height: 100%;
-		padding: 4px;
+		padding: 6px;
 		box-sizing: border-box;
+		place-content: center;
+		position: relative;
 	}
 
 	.mini-cell {
 		position: relative;
 		overflow: hidden;
 		border-radius: 3px;
-		background: rgba(255, 255, 255, 0.03);
+		aspect-ratio: 1;
 	}
 
-	.cell-img {
-		width: 100%;
-		height: 100%;
-		object-fit: contain;
-		display: block;
+	.mini-cell.filled {
+		background: rgba(255, 255, 255, 0.06);
+		border: 1px solid rgba(255, 255, 255, 0.08);
 	}
 
-	.cell-skeleton {
+	.mini-cell.empty {
+		background: rgba(255, 255, 255, 0.015);
+	}
+
+	.cell-filled {
 		width: 100%;
 		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		background: linear-gradient(
-			110deg,
-			rgba(255, 255, 255, 0.04) 30%,
-			rgba(255, 255, 255, 0.08) 50%,
-			rgba(255, 255, 255, 0.04) 70%
+			135deg,
+			rgba(99, 102, 241, 0.08) 0%,
+			rgba(99, 102, 241, 0.03) 100%
 		);
-		background-size: 200% 100%;
-		animation: shimmer 1.5s ease-in-out infinite;
 	}
 
-	.cell-empty {
-		width: 100%;
-		height: 100%;
-		border: 1px dashed rgba(255, 255, 255, 0.12);
-		border-radius: 3px;
-		box-sizing: border-box;
+	.fill-icon {
+		font-size: 10px;
+		color: rgba(255, 255, 255, 0.12);
 	}
 
-	@keyframes shimmer {
-		0% {
-			background-position: 200% 0;
-		}
-		100% {
-			background-position: -200% 0;
-		}
+	/* Central hover hint overlay */
+	.hover-hint {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 150ms ease;
 	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.cell-skeleton {
-			animation: none;
-			background: rgba(255, 255, 255, 0.06);
-		}
+	.hover-hint i {
+		font-size: 24px;
+		color: rgba(255, 255, 255, 0.5);
+		filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+	}
+
+	.mini-grid:hover .hover-hint {
+		opacity: 1;
 	}
 </style>
