@@ -14,7 +14,12 @@
 
 <div class="video-ready-notification">
   <span>Video ready!</span>
-  <button class="switch-btn" onclick={onSwitchToVideo}>
+  <button
+    class="switch-btn"
+    onclick={onSwitchToVideo}
+    type="button"
+    aria-label="Switch to video playback mode"
+  >
     Switch to Video
   </button>
 </div>

@@ -142,29 +142,29 @@
     align-items: baseline;
     gap: 4px;
     padding: clamp(2px, 0.4vw, 4px) clamp(6px, 1.2vw, 8px);
-    background: rgba(59, 130, 246, 0.15);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
     border-radius: clamp(4px, 0.8vw, 6px);
     transition: all var(--duration-normal) ease;
   }
 
   .modern-slider.dragging .slider-value {
-    background: rgba(59, 130, 246, 0.25);
-    border-color: rgba(59, 130, 246, 0.5);
-    box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 
   .value-number {
     font-size: clamp(11px, 2.2vw, 13px);
     font-weight: 700;
-    color: rgba(191, 219, 254, 1);
+    color: var(--theme-text);
     font-variant-numeric: tabular-nums;
   }
 
   .value-unit {
     font-size: clamp(9px, 1.8vw, 10px);
     font-weight: 600;
-    color: rgba(147, 197, 253, 0.8);
+    color: var(--theme-text-dim);
     text-transform: lowercase;
   }
 
@@ -201,12 +201,7 @@
     top: 0;
     left: 0;
     height: 100%;
-    background: linear-gradient(
-      90deg,
-      rgba(59, 130, 246, 0.9) 0%,
-      rgba(96, 165, 250, 0.9) 50%,
-      rgba(59, 130, 246, 0.9) 100%
-    );
+    background: var(--theme-accent);
     transition: width var(--duration-instant) ease;
     border-radius: clamp(3px, 0.6vw, 4px);
   }
@@ -216,12 +211,7 @@
     top: -2px;
     left: 0;
     height: calc(100% + 4px);
-    background: linear-gradient(
-      90deg,
-      rgba(59, 130, 246, 0.4) 0%,
-      rgba(96, 165, 250, 0.4) 50%,
-      rgba(59, 130, 246, 0.4) 100%
-    );
+    background: color-mix(in srgb, var(--theme-accent) 40%, transparent);
     filter: blur(4px);
     transition: width var(--duration-instant) ease;
     opacity: 0.6;
@@ -284,7 +274,7 @@
 
   .modern-slider.dragging .thumb-inner {
     box-shadow:
-      0 4px 12px rgba(59, 130, 246, 0.5),
+      0 4px 12px color-mix(in srgb, var(--theme-accent) 50%, transparent),
       0 2px 4px var(--theme-shadow),
       inset 0 1px 0 var(--theme-text);
   }
@@ -312,7 +302,7 @@
     .slider-input:hover ~ .slider-thumb-visual .thumb-inner {
       transform: scale(1.08);
       box-shadow:
-        0 3px 10px rgba(59, 130, 246, 0.4),
+        0 3px 10px color-mix(in srgb, var(--theme-accent) 40%, transparent),
         0 1px 3px var(--theme-shadow),
         inset 0 1px 0 var(--theme-text);
     }
@@ -393,7 +383,7 @@
     }
 
     .slider-fill {
-      background: rgba(59, 130, 246, 1);
+      background: var(--theme-accent);
     }
 
     .slider-label,
@@ -404,7 +394,7 @@
 
   /* Focus visible for keyboard navigation */
   .slider-input:focus-visible ~ .slider-thumb-visual .thumb-inner {
-    outline: 2px solid rgba(59, 130, 246, 0.8);
+    outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
 </style>

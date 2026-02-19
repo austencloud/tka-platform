@@ -164,7 +164,7 @@
   }
 
   .settings-section.compact .settings-section-title {
-    font-size: 0.65rem;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .settings-section-title {

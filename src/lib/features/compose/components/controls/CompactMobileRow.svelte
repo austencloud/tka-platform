@@ -76,63 +76,47 @@
     width: var(--min-touch-target);
     height: var(--min-touch-target);
     flex-shrink: 0;
-    background: linear-gradient(
-      135deg,
-      rgba(34, 197, 94, 0.25) 0%,
-      rgba(22, 163, 74, 0.2) 100%
-    );
-    border: 1.5px solid rgba(34, 197, 94, 0.4);
+    background: color-mix(in srgb, var(--semantic-success) 25%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--semantic-success) 40%, transparent);
     border-radius: 50%;
-    color: rgba(134, 239, 172, 1);
+    color: var(--semantic-success);
     cursor: pointer;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow:
-      0 2px 8px rgba(34, 197, 94, 0.15),
-      0 0 16px rgba(34, 197, 94, 0.1),
+      0 2px 8px color-mix(in srgb, var(--semantic-success) 15%, transparent),
+      0 0 16px color-mix(in srgb, var(--semantic-success) 10%, transparent),
       inset 0 1px 0 var(--theme-stroke);
     -webkit-tap-highlight-color: transparent;
     font-size: var(--font-size-base);
   }
 
   .play-pause-btn.playing {
-    background: linear-gradient(
-      135deg,
-      rgba(239, 68, 68, 0.25) 0%,
-      rgba(220, 38, 38, 0.2) 100%
-    );
-    border-color: rgba(239, 68, 68, 0.4);
-    color: rgba(254, 202, 202, 1);
+    background: color-mix(in srgb, var(--semantic-error) 25%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 40%, transparent);
+    color: var(--semantic-error);
     box-shadow:
-      0 2px 8px rgba(239, 68, 68, 0.15),
-      0 0 16px rgba(239, 68, 68, 0.1),
+      0 2px 8px color-mix(in srgb, var(--semantic-error) 15%, transparent),
+      0 0 16px color-mix(in srgb, var(--semantic-error) 10%, transparent),
       inset 0 1px 0 var(--theme-stroke);
   }
 
   @media (hover: hover) and (pointer: fine) {
     .play-pause-btn:hover {
       transform: translateX(-50%) scale(1.05);
-      background: linear-gradient(
-        135deg,
-        rgba(34, 197, 94, 0.35) 0%,
-        rgba(22, 163, 74, 0.3) 100%
-      );
-      border-color: rgba(34, 197, 94, 0.6);
+      background: color-mix(in srgb, var(--semantic-success) 35%, transparent);
+      border-color: color-mix(in srgb, var(--semantic-success) 60%, transparent);
       box-shadow:
-        0 4px 14px rgba(34, 197, 94, 0.25),
-        0 0 20px rgba(34, 197, 94, 0.15),
+        0 4px 14px color-mix(in srgb, var(--semantic-success) 25%, transparent),
+        0 0 20px color-mix(in srgb, var(--semantic-success) 15%, transparent),
         inset 0 1px 0 var(--theme-card-hover-bg);
     }
 
     .play-pause-btn.playing:hover {
-      background: linear-gradient(
-        135deg,
-        rgba(239, 68, 68, 0.35) 0%,
-        rgba(220, 38, 38, 0.3) 100%
-      );
-      border-color: rgba(239, 68, 68, 0.6);
+      background: color-mix(in srgb, var(--semantic-error) 35%, transparent);
+      border-color: color-mix(in srgb, var(--semantic-error) 60%, transparent);
       box-shadow:
-        0 4px 14px rgba(239, 68, 68, 0.25),
-        0 0 20px rgba(239, 68, 68, 0.15),
+        0 4px 14px color-mix(in srgb, var(--semantic-error) 25%, transparent),
+        0 0 20px color-mix(in srgb, var(--semantic-error) 15%, transparent),
         inset 0 1px 0 var(--theme-card-hover-bg);
     }
   }

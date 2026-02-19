@@ -7,6 +7,7 @@
   - BPM control with tap tempo and presets
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import type {
     PlaybackMode,
     StepPlaybackStepSize,
@@ -33,13 +34,25 @@
     onPlaybackToggle?: () => void;
   } = $props();
 
+  let nextTickTimer: ReturnType<typeof setTimeout> | null = null;
+
   function handleModeChange(mode: PlaybackMode) {
     if (mode === playbackMode) return;
     const wasPlaying = isPlaying;
     if (wasPlaying) onPlaybackToggle();
     onPlaybackModeChange(mode);
-    if (wasPlaying) setTimeout(() => onPlaybackToggle(), 0);
+    if (wasPlaying) {
+      if (nextTickTimer !== null) clearTimeout(nextTickTimer);
+      nextTickTimer = setTimeout(() => {
+        onPlaybackToggle();
+        nextTickTimer = null;
+      }, 0);
+    }
   }
+
+  onDestroy(() => {
+    if (nextTickTimer !== null) clearTimeout(nextTickTimer);
+  });
 </script>
 
 <div class="playback-pane">
