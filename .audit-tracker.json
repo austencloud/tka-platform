@@ -593,6 +593,149 @@
       "overallGrade": "A+",
       "notes": "Re-evaluation after fixes. All hardcoded colors replaced with semantic tokens, any-types eliminated,  cleanup added, vote error now surfaces to user.",
       "issues": []
+    },
+    "features/arena/components": {
+      "lastAuditedAt": "2026-02-19T02:49:22.430Z",
+      "name": "Arena Components",
+      "type": "components",
+      "grades": {
+        "architecture": "A+",
+        "codeQuality": "A+",
+        "svelte5": "A+",
+        "accessibility": "A+",
+        "uxStates": "A+",
+        "uiConsistency": "A+",
+        "performance": "A+",
+        "security": "A+"
+      },
+      "overallGrade": "A+",
+      "notes": null,
+      "issues": [
+        {
+          "severity": "moderate",
+          "dimension": "uxStates",
+          "file": "src/lib/features/arena/components/leaderboard/ArenaLeaderboardView.svelte",
+          "line": 51,
+          "description": "handleSelect is a stub that only console.logs; navigation is future work."
+        }
+      ]
+    },
+    "features/compose/components": {
+      "lastAuditedAt": "2026-02-19T03:16:00.448Z",
+      "name": "Compose Components",
+      "type": "components",
+      "grades": {
+        "architecture": "A+",
+        "codeQuality": "A+",
+        "svelte5": "A+",
+        "accessibility": "F",
+        "uxStates": "C",
+        "uiConsistency": "F",
+        "performance": "B",
+        "security": "A+"
+      },
+      "overallGrade": "B",
+      "notes": null,
+      "issues": [
+        {
+          "severity": "critical",
+          "dimension": "accessibility",
+          "file": "src/lib/features/compose/components/controls/BpmChips.svelte",
+          "line": 151,
+          "description": "8 BPM preset chip buttons missing aria-label"
+        },
+        {
+          "severity": "critical",
+          "dimension": "accessibility",
+          "file": "src/lib/features/compose/components/controls/settings-panel/VisualPane.svelte",
+          "line": 224,
+          "description": "12 visual toggle buttons missing aria-label"
+        },
+        {
+          "severity": "critical",
+          "dimension": "accessibility",
+          "file": "src/lib/features/compose/components/trail/SimpleTrailControls.svelte",
+          "line": 128,
+          "description": "5 trail control buttons missing aria-label"
+        },
+        {
+          "severity": "critical",
+          "dimension": "accessibility",
+          "file": "src/lib/features/compose/components/controls/TransportControls.svelte",
+          "line": 73,
+          "description": "Play/pause and step buttons missing aria-label (5 total)"
+        },
+        {
+          "severity": "critical",
+          "dimension": "accessibility",
+          "file": "src/lib/features/compose/components/canvas/ExportActionsPanel.svelte",
+          "line": 74,
+          "description": "3 export action buttons missing aria-label"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "src/lib/features/compose/components/controls/BpmChips.svelte",
+          "line": 342,
+          "description": "20+ hardcoded rgba() color values remaining"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "src/lib/features/compose/components/inputs/ModernSlider.svelte",
+          "line": 134,
+          "description": "10 hardcoded rgba() colors remaining"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "src/lib/features/compose/components/controls/AnimationSettingsContent.svelte",
+          "line": 206,
+          "description": "8 hardcoded rgba() colors for blue/red active states"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "src/lib/features/compose/components/controls/VisibilityButton.svelte",
+          "line": 78,
+          "description": "8 hardcoded rgba() colors for active/inactive states"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "src/lib/features/compose/components/controls/ExportButton.svelte",
+          "line": 36,
+          "description": "5 hardcoded rgba() green gradient colors"
+        },
+        {
+          "severity": "serious",
+          "dimension": "accessibility",
+          "file": "src/lib/features/compose/components/controls/AnimationSettingsContent.svelte",
+          "line": 171,
+          "description": "font-size: 0.7rem (11.2px) below 12px minimum"
+        },
+        {
+          "severity": "serious",
+          "dimension": "accessibility",
+          "file": "src/lib/features/compose/components/controls/BpmChips.svelte",
+          "line": 529,
+          "description": "font-size: 0.7rem (11.2px) below 12px minimum"
+        },
+        {
+          "severity": "serious",
+          "dimension": "uxStates",
+          "file": "src/lib/features/compose/components/canvas/AnimationVideoPlayer.svelte",
+          "line": 229,
+          "description": "Video playback error logged to console only"
+        },
+        {
+          "severity": "serious",
+          "dimension": "performance",
+          "file": "src/lib/features/compose/components/controls/BpmChips.svelte",
+          "line": 137,
+          "description": "Anonymous setTimeout inside $effect not stored for cleanup"
+        }
+      ]
     }
   },
   "targets": [],
