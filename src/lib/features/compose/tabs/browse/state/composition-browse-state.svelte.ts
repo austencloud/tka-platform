@@ -9,6 +9,7 @@
 import type { AnimationMode } from "../../../shared/domain/AnimationMode";
 import type { CellConfig, Composition, GridLayout } from "../../../compose/domain/types";
 import { dexieCompositionRepository } from "../../../services/implementations/DexieCompositionRepository";
+import { compositionSyncer } from "../../../services/implementations/CompositionSyncer";
 
 // ============================================================================
 // Types
@@ -161,10 +162,8 @@ export function createCompositionBrowseState() {
 			isLoading = true;
 			error = null;
 
-			const raw = await dexieCompositionRepository.getCompositions({
-				sortBy: "updatedAt",
-				sortDirection: "desc",
-			});
+			// Uses syncer: merges cloud data on first load if authenticated
+			const raw = await compositionSyncer.getCompositions();
 
 			compositions = raw.map(compositionToBrowseItem);
 		} catch (err) {
@@ -190,7 +189,7 @@ export function createCompositionBrowseState() {
 
 	async function toggleFavorite(compositionId: string): Promise<void> {
 		try {
-			const newStatus = await dexieCompositionRepository.toggleFavorite(compositionId);
+			const newStatus = await compositionSyncer.toggleFavorite(compositionId);
 			const item = compositions.find((c) => c.id === compositionId);
 			if (item) {
 				item.isFavorite = newStatus;
@@ -224,7 +223,7 @@ export function createCompositionBrowseState() {
 
 	async function deleteComposition(compositionId: string): Promise<void> {
 		try {
-			await dexieCompositionRepository.deleteComposition(compositionId);
+			await compositionSyncer.deleteComposition(compositionId);
 			compositions = compositions.filter((c) => c.id !== compositionId);
 			if (expandedComposition?.id === compositionId) {
 				collapseDetail();
@@ -250,7 +249,7 @@ export function createCompositionBrowseState() {
 				isFavorite: false,
 			};
 
-			await dexieCompositionRepository.saveComposition(copy);
+			await compositionSyncer.saveComposition(copy);
 			const browseItem = compositionToBrowseItem(copy);
 			compositions = [browseItem, ...compositions];
 			return copy.id;

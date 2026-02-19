@@ -23,6 +23,7 @@ import {
 } from "../domain/types";
 import { createCellsFromTemplate, getTemplateById } from "../domain/templates";
 import { dexieCompositionRepository } from "../../services/implementations/DexieCompositionRepository";
+import { compositionSyncer } from "../../services/implementations/CompositionSyncer";
 import { loadCustomPresets } from "$lib/features/constraint-layout-lab/services/LayoutPersistence";
 import type { CellMediaType } from "../domain/types";
 
@@ -472,7 +473,7 @@ export function createCompositionState() {
     lastSaveError = null;
 
     try {
-      const saved = await dexieCompositionRepository.saveComposition(
+      const saved = await compositionSyncer.saveComposition(
         composition
       );
       composition = saved;
@@ -517,7 +518,7 @@ export function createCompositionState() {
    */
   async function deleteCurrentComposition(): Promise<void> {
     try {
-      await dexieCompositionRepository.deleteComposition(composition.id);
+      await compositionSyncer.deleteComposition(composition.id);
       reset();
     } catch (error) {
       console.error("Failed to delete composition:", error);
@@ -530,10 +531,7 @@ export function createCompositionState() {
    */
   async function getAllCompositions(): Promise<Composition[]> {
     try {
-      return await dexieCompositionRepository.getCompositions({
-        sortBy: "updatedAt",
-        sortDirection: "desc",
-      });
+      return await compositionSyncer.getCompositions();
     } catch (error) {
       console.error("Failed to get all compositions:", error);
       return [];
