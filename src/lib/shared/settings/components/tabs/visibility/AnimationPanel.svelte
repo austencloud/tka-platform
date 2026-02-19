@@ -228,7 +228,7 @@
     overflow: hidden;
     width: 100%;
     aspect-ratio: 1;
-    max-width: 280px;
+    max-width: var(--preview-max-size, 280px);
     box-shadow: inset 0 2px 8px var(--theme-shadow);
   }
 

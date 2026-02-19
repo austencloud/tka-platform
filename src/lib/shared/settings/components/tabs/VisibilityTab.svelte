@@ -372,6 +372,9 @@
     opacity: 0;
     transition: opacity var(--duration-normal) ease;
     box-sizing: border-box;
+
+    /* Preview size scales with viewport height so controls stay visible */
+    --preview-max-size: 280px;
   }
 
   .visibility-tab.visible {

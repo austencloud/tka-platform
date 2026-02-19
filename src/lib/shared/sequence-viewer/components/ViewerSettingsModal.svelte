@@ -130,6 +130,19 @@
     max-height: 92vh;
   }
 
+  /* Fill-height layout: modal structure uses :global() (reliable
+     because these target BaseModal internals with unique selectors).
+     Child components use CSS custom properties (cascade through DOM
+     regardless of Svelte scoping). */
+  :global(dialog.viewer-settings-modal .modal-content-wrapper) {
+    height: 100%;
+  }
+
+  :global(dialog.viewer-settings-modal .modal-body) {
+    flex: 1;
+    overflow: hidden;
+  }
+
   /* Ensure prop selector drawer sits above the modal */
   :global(.prop-selector-drawer) {
     z-index: 1100 !important;
@@ -186,17 +199,20 @@
     outline-offset: 2px;
   }
 
-  /* Body */
+  /* Body - flex column that fills the modal, no scrolling */
   .settings-modal-body {
     display: flex;
     flex-direction: column;
+    height: 100%;
+    min-height: 0;
     gap: 0;
   }
 
-  /* Prop selector section */
+  /* Prop selector section - fixed height, never shrinks */
   .prop-section {
     padding: 16px 20px;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    flex-shrink: 0;
   }
 
   .section-label-row {
@@ -269,8 +285,11 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
-  /* Visibility section */
+  /* Visibility section - fills remaining height */
   .visibility-section {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
     padding: 4px 0;
   }
 
