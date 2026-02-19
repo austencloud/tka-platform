@@ -2,19 +2,17 @@
   ScreenshotGallery — Orchestrator for the module-organized gallery.
 
   Subscribes to Firestore via ScreenshotLoader for real-time updates.
-  Features:
-  - Tag sidebar (right) with TagTreeView for filtering
-  - Batch selection mode with bulk tagging via TagPickerPanel
-  - Context menu / long-press tagging on individual cards
+  Delegates state management to:
+  - gallery-tag-filter-state (tag filtering, sidebar, long-press)
+  - gallery-selection-state (batch selection, bulk tagging)
+  - gallery-capture-state (capture + upload pipeline)
 -->
 <script lang="ts">
-  import type { DeviceCategory, DeviceInfo, RouteNode, CaptureJobStatus, CaptureStartResult, IScreenshotOrchestrator } from "../../services/contracts/IScreenshotOrchestrator";
+  import type { DeviceCategory } from "../../services/contracts/IScreenshotOrchestrator";
   import type { ScreenshotMetadata } from "../../services/contracts/IScreenshotUploader";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IScreenshotTagController } from "../../services/contracts/IScreenshotTagController";
   import type { GalleryItem } from "../../services/contracts/IGalleryItemAdapter";
-  import type { UploadProgress, IScreenshotUploadOrchestrator } from "../../services/contracts/IScreenshotUploadOrchestrator";
-  import type { MediaTag, TagColor } from "@austencloud/media-tagging-types";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -27,239 +25,88 @@
   import SelectionToolbar from "./SelectionToolbar.svelte";
   import TagSidebar from "./TagSidebar.svelte";
   import TagContextPanel from "./TagContextPanel.svelte";
+  import { createGalleryTagFilterState } from "./state/gallery-tag-filter-state.svelte";
+  import { createGallerySelectionState } from "./state/gallery-selection-state.svelte";
+  import { createGalleryCaptureState } from "./state/gallery-capture-state.svelte";
 
-  let hapticService: IHapticFeedback;
-  let tagController: IScreenshotTagController;
+  let hapticService: IHapticFeedback | null = $state(null);
+  let tagController: IScreenshotTagController | null = $state(null);
   const adapter = new GalleryItemAdapter();
+
+  // ─── State domains ──────────────────────────────────────────────────────────
+
+  const tagFilter = createGalleryTagFilterState({
+    getHapticService: () => hapticService,
+    getTagController: () => tagController,
+  });
+
+  const selection = createGallerySelectionState({
+    getHapticService: () => hapticService,
+    getTagController: () => tagController,
+    getFlatItems: () => flatItems,
+  });
+
+  const capture = createGalleryCaptureState({
+    getOrchestrator: () => container.items.screenshotOrchestrator,
+    getUploadOrchestrator: () => container.items.screenshotUploadOrchestrator,
+  });
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
     tagController = container.items.screenshotTagController;
   });
 
-  // Subscribe to Firestore only when the user is authenticated.
-  // This prevents permission-denied errors from firing before auth completes.
-  $effect(() => {
-    const user = authState.user;
-    const initialized = authState.initialized;
-
-    if (!initialized || !user) {
-      // Auth not ready or user signed out — clear data and unsubscribe
-      screenshotUnsubscribe?.();
-      screenshotUnsubscribe = null;
-      tagUnsubscribe?.();
-      tagUnsubscribe = null;
-      screenshots = [];
-      allTags = [];
-      isLoading = !initialized; // show loading until auth resolves
-      return;
-    }
-
-    // User is authenticated — subscribe to Firestore
-    loadScreenshots();
-    loadTags();
-  });
-
-  // ─── Tag state ──────────────────────────────────────────────────────────────
-
-  let allTags = $state<MediaTag[]>([]);
-  let tagUnsubscribe: (() => void) | null = null;
-  let activeTagIds = $state<Set<string>>(new Set());
-  let excludeTagIds = $state<Set<string>>(new Set());
-  let tagMode = $state<"and" | "or">("or");
-  let untaggedOnly = $state(false);
-  let tagPanelTarget = $state<GalleryItem | null>(null);
-  let tagPanelPosition = $state<{ x: number; y: number }>({ x: 0, y: 0 });
-  let showTagCreator = $state(false);
-  let sidebarOpen = $state(false);
-  let showTagPicker = $state(false);
-
-  // Long-press for mobile tagging
-  let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-  const LONG_PRESS_MS = 500;
-
-  function loadTags() {
-    tagUnsubscribe?.();
-    tagUnsubscribe = tagController?.subscribeTags((tags) => {
-      allTags = tags;
-    }) ?? null;
-  }
-
-  function getTagById(tagId: string): MediaTag | undefined {
-    return allTags.find((t) => t.id === tagId);
-  }
-
-  async function handleToggleTagOnScreenshot(tagId: string) {
-    if (!tagPanelTarget) return;
-    await tagController.toggleTagOnScreenshot(tagId, tagPanelTarget.id);
-  }
-
-  async function handleCreateTag(name: string, color: TagColor, category: string) {
-    await tagController.createTag(name, color, category);
-  }
-
-  function openTagPanel(item: GalleryItem, e: MouseEvent | TouchEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if ("clientX" in e) {
-      tagPanelTarget = item;
-      tagPanelPosition = { x: e.clientX, y: e.clientY };
-    } else {
-      const touch = (e as TouchEvent).touches?.[0];
-      if (touch) {
-        tagPanelTarget = item;
-        tagPanelPosition = { x: touch.clientX, y: touch.clientY };
-      }
-    }
-  }
-
-  function closeTagPanel() {
-    tagPanelTarget = null;
-  }
-
-  function startLongPress(item: GalleryItem, e: TouchEvent) {
-    longPressTimer = setTimeout(() => {
-      openTagPanel(item, e);
-      longPressTimer = null;
-    }, LONG_PRESS_MS);
-  }
-
-  function cancelLongPress() {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-    }
-  }
-
-  // ─── Tag filtering callbacks ────────────────────────────────────────────────
-
-  function handleToggleTag(tagId: string) {
-    const next = new Set(activeTagIds);
-    if (next.has(tagId)) {
-      next.delete(tagId);
-    } else {
-      next.add(tagId);
-    }
-    activeTagIds = next;
-    untaggedOnly = false;
-    hapticService?.trigger("selection");
-  }
-
-  function handleExcludeTag(tagId: string) {
-    const next = new Set(excludeTagIds);
-    if (next.has(tagId)) {
-      next.delete(tagId);
-    } else {
-      next.add(tagId);
-    }
-    excludeTagIds = next;
-    hapticService?.trigger("selection");
-  }
-
-  function handleSetTagMode(mode: "and" | "or") {
-    tagMode = mode;
-    hapticService?.trigger("selection");
-  }
-
-  function handleSetUntaggedOnly(value: boolean) {
-    untaggedOnly = value;
-    if (value) {
-      activeTagIds = new Set();
-      excludeTagIds = new Set();
-    }
-    hapticService?.trigger("selection");
-  }
-
-  function handleClearTags() {
-    activeTagIds = new Set();
-    excludeTagIds = new Set();
-    untaggedOnly = false;
-    hapticService?.trigger("selection");
-  }
-
-  function toggleSidebar() {
-    sidebarOpen = !sidebarOpen;
-    hapticService?.trigger("selection");
-  }
-
-  // ─── Selection mode ─────────────────────────────────────────────────────────
-
-  let selectionMode = $state(false);
-  let selectedIds = $state<Set<string>>(new Set());
-
-  function enterSelectionMode() {
-    selectionMode = true;
-    hapticService?.trigger("selection");
-  }
-
-  function exitSelectionMode() {
-    selectionMode = false;
-    selectedIds = new Set();
-    hapticService?.trigger("selection");
-  }
-
-  function toggleSelection(itemId: string) {
-    const next = new Set(selectedIds);
-    if (next.has(itemId)) {
-      next.delete(itemId);
-    } else {
-      next.add(itemId);
-    }
-    selectedIds = next;
-  }
-
-  function selectAll() {
-    selectedIds = new Set(flatItems.map((item) => item.id));
-  }
-
-  function clearSelection() {
-    selectedIds = new Set();
-  }
-
-  function openTagPicker() {
-    showTagPicker = true;
-  }
-
-  function closeTagPicker() {
-    showTagPicker = false;
-  }
-
-  async function handleBulkApplyTag(tag: MediaTag) {
-    const ids = [...selectedIds];
-    await tagController.addTagToScreenshots(tag.id, ids);
-  }
-
-  async function handleBulkRemoveTag(tag: MediaTag) {
-    const ids = [...selectedIds];
-    await tagController.removeTagFromScreenshots(tag.id, ids);
-  }
-
-  // ─── Cloud state ────────────────────────────────────────────────────────────
+  // ─── Auth-gated Firestore subscription ──────────────────────────────────────
 
   let screenshots = $state<ScreenshotMetadata[]>([]);
   let isLoading = $state(true);
   let errorMessage = $state<string | null>(null);
   let screenshotUnsubscribe: (() => void) | null = null;
 
-  // ─── Shared state ─────────────────────────────────────────────────────────
+  $effect(() => {
+    const user = authState.user;
+    const initialized = authState.initialized;
+
+    if (!initialized || !user) {
+      screenshotUnsubscribe?.();
+      screenshotUnsubscribe = null;
+      tagFilter.unsubscribeTags();
+      screenshots = [];
+      isLoading = !initialized;
+      return;
+    }
+
+    loadScreenshots();
+    tagFilter.loadTags();
+  });
+
+  function loadScreenshots() {
+    screenshotUnsubscribe?.();
+    screenshotUnsubscribe = null;
+    isLoading = true;
+    errorMessage = null;
+
+    try {
+      const loader = container.items.screenshotLoader;
+      screenshotUnsubscribe = loader.subscribeToScreenshots(
+        (data: ScreenshotMetadata[]) => {
+          screenshots = data;
+          isLoading = false;
+        },
+        (err: Error) => {
+          errorMessage = err.message;
+          isLoading = false;
+        }
+      );
+    } catch (err) {
+      errorMessage = err instanceof Error ? err.message : String(err);
+      isLoading = false;
+    }
+  }
+
+  // ─── Data model & filtering ────────────────────────────────────────────────
 
   type FilterCategory = "all" | DeviceCategory;
-
-  const DEVICE_MAP: Record<
-    string,
-    { name: string; w: number; h: number; category: DeviceCategory }
-  > = {
-    "iphone-se": { name: "iPhone SE", w: 375, h: 667, category: "phone" },
-    "iphone-16-pro": { name: "iPhone 16 Pro", w: 393, h: 852, category: "phone" },
-    "iphone-16-pro-max": { name: "iPhone 16 Pro Max", w: 430, h: 932, category: "phone" },
-    "galaxy-s24": { name: "Galaxy S24", w: 360, h: 780, category: "phone" },
-    "galaxy-s24-ultra": { name: "Galaxy S24 Ultra", w: 412, h: 915, category: "phone" },
-    "ipad-mini": { name: "iPad Mini", w: 768, h: 1024, category: "tablet" },
-    "ipad-air": { name: "iPad Air", w: 820, h: 1180, category: "tablet" },
-    "desktop-hd": { name: "Desktop HD", w: 1366, h: 768, category: "desktop" },
-    "desktop-fhd": { name: "Desktop FHD", w: 1920, h: 1080, category: "desktop" },
-  };
 
   const SIZE_PRESETS = [
     { label: "S", value: 200 },
@@ -281,9 +128,6 @@
     return null;
   });
 
-  // ─── Unified data model ───────────────────────────────────────────────────
-
-  /** Convert cloud ScreenshotMetadata to GalleryItem */
   function toGalleryItem(s: ScreenshotMetadata): GalleryItem {
     return {
       id: s.id,
@@ -301,11 +145,8 @@
     };
   }
 
-  /** All gallery items */
   const galleryItems = $derived(screenshots.map(toGalleryItem));
   const hasItems = $derived(galleryItems.length > 0);
-
-  // ─── Grouping & filtering ─────────────────────────────────────────────────
 
   const moduleGroups = $derived.by(() => {
     const groups = new Map<string, Map<string, GalleryItem[]>>();
@@ -333,38 +174,12 @@
     return filtered;
   });
 
-  /** Apply tag filtering on top of device filter */
   const tagFilteredModuleGroups = $derived.by(() => {
-    const hasTagFilters = activeTagIds.size > 0 || excludeTagIds.size > 0 || untaggedOnly;
-    if (!hasTagFilters) return filteredModuleGroups;
-
     const filtered = new Map<string, Map<string, GalleryItem[]>>();
     for (const [moduleId, routeMap] of filteredModuleGroups) {
       const filteredRoutes = new Map<string, GalleryItem[]>();
       for (const [route, items] of routeMap) {
-        const matching = items.filter((item) => {
-          if (untaggedOnly) return item.tagIds.length === 0;
-
-          if (excludeTagIds.size > 0) {
-            for (const exId of excludeTagIds) {
-              if (item.tagIds.includes(exId)) return false;
-            }
-          }
-
-          if (activeTagIds.size === 0) return true;
-
-          if (tagMode === "and") {
-            for (const tagId of activeTagIds) {
-              if (!item.tagIds.includes(tagId)) return false;
-            }
-            return true;
-          } else {
-            for (const tagId of activeTagIds) {
-              if (item.tagIds.includes(tagId)) return true;
-            }
-            return false;
-          }
-        });
+        const matching = tagFilter.applyTagFilter(items);
         if (matching.length > 0) filteredRoutes.set(route, matching);
       }
       if (filteredRoutes.size > 0) filtered.set(moduleId, filteredRoutes);
@@ -382,13 +197,11 @@
     return result;
   });
 
-  /** MediaItems for the shared TagTreeView and TagPickerPanel */
   const mediaItems = $derived(adapter.toMediaItems(galleryItems));
   const filteredMediaItems = $derived(adapter.toMediaItems(flatItems));
 
-  /** MediaItems for batch tag picker (selected items only) */
   const selectedMediaItems = $derived(
-    adapter.toMediaItems(flatItems.filter((item) => selectedIds.has(item.id)))
+    adapter.toMediaItems(flatItems.filter((item) => selection.selectedIds.has(item.id)))
   );
 
   const spotlightItems: SpotlightMediaItem[] = $derived(
@@ -427,7 +240,7 @@
     { value: "desktop", label: "Desktop" },
   ];
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
+  // ─── Helpers ────────────────────────────────────────────────────────────────
 
   function formatRouteLabel(label: string): string {
     return label.replace(/--/g, " / ").replace(/(^|\s)\w/g, (c) => c.toUpperCase());
@@ -458,142 +271,35 @@
     };
   }
 
-  // ─── Keyboard shortcuts ─────────────────────────────────────────────────────
+  // ─── Keyboard shortcuts ───────────────────────────────────────────────────
 
   function handleGlobalKeydown(e: KeyboardEvent) {
-    // Ctrl+T: toggle sidebar
     if ((e.ctrlKey || e.metaKey) && e.key === "t") {
       e.preventDefault();
-      toggleSidebar();
+      tagFilter.toggleSidebar();
       return;
     }
 
-    // Ctrl+A: select all (selection mode only)
-    if ((e.ctrlKey || e.metaKey) && e.key === "a" && selectionMode) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "a" && selection.selectionMode) {
       e.preventDefault();
-      selectAll();
+      selection.selectAll();
       return;
     }
 
-    // Escape: exit selection / close tag picker
     if (e.key === "Escape") {
-      if (showTagPicker) {
-        closeTagPicker();
-      } else if (selectionMode) {
-        exitSelectionMode();
+      if (tagFilter.showTagPicker) {
+        tagFilter.closeTagPicker();
+      } else if (selection.selectionMode) {
+        selection.exitSelectionMode();
       }
     }
-  }
-
-  // ─── Cloud Firestore loading ──────────────────────────────────────────────
-
-  function loadScreenshots() {
-    screenshotUnsubscribe?.();
-    screenshotUnsubscribe = null;
-    isLoading = true;
-    errorMessage = null;
-
-    try {
-      const loader = container.items.screenshotLoader;
-      screenshotUnsubscribe = loader.subscribeToScreenshots(
-        (data: ScreenshotMetadata[]) => {
-          screenshots = data;
-          isLoading = false;
-        },
-        (err: Error) => {
-          errorMessage = err.message;
-          isLoading = false;
-        }
-      );
-    } catch (err) {
-      errorMessage = err instanceof Error ? err.message : String(err);
-      isLoading = false;
-    }
-  }
-
-  // ─── Capture + Upload pipeline ────────────────────────────────────────────
-
-  let captureJobId = $state<string | null>(null);
-  let capturePhase = $state<"idle" | "capturing" | "uploading">("idle");
-  let uploadProgress = $state<UploadProgress | null>(null);
-  let lastCapturedFiles = $state<string[]>([]);
-
-  function startCapture() {
-    // Use the full route/device selection from the orchestrator for now
-    const orch = container.items.screenshotOrchestrator as IScreenshotOrchestrator;
-    const allRoutes = orch.getRoutes().map((r: RouteNode) => r.label);
-    const allDevices = orch.getDevices().map((d: DeviceInfo) => d.slug);
-
-    capturePhase = "capturing";
-    orch
-      .startCapture({ routes: allRoutes, devices: allDevices })
-      .then((result: CaptureStartResult) => {
-        captureJobId = result.jobId;
-      })
-      .catch((err: unknown) => {
-        console.error("[ScreenshotGallery] Capture failed to start:", err);
-        capturePhase = "idle";
-      });
-  }
-
-  function handleCaptureStatusUpdate(status: CaptureJobStatus) {
-    if (status.status === "completed" && status.capturedFiles) {
-      lastCapturedFiles = status.capturedFiles;
-    }
-  }
-
-  function handleCaptureComplete() {
-    captureJobId = null;
-
-    if (lastCapturedFiles.length > 0) {
-      capturePhase = "uploading";
-      runUpload(lastCapturedFiles);
-    } else {
-      capturePhase = "idle";
-    }
-  }
-
-  function runUpload(filenames: string[]) {
-    const uploadOrch = container.items.screenshotUploadOrchestrator as IScreenshotUploadOrchestrator;
-
-    uploadOrch
-      .uploadCaptures(filenames, (p: UploadProgress) => {
-        uploadProgress = p;
-      })
-      .then(() => {
-        // Leave upload progress visible for a few seconds, then clear
-        setTimeout(() => {
-          if (capturePhase === "uploading") {
-            capturePhase = "idle";
-            uploadProgress = null;
-          }
-        }, 3000);
-      })
-      .catch((err: unknown) => {
-        console.error("[ScreenshotGallery] Upload failed:", err);
-      });
-  }
-
-  function retryUpload() {
-    if (lastCapturedFiles.length > 0) {
-      capturePhase = "uploading";
-      uploadProgress = null;
-      runUpload(lastCapturedFiles);
-    }
-  }
-
-  function dismissProgress() {
-    capturePhase = "idle";
-    captureJobId = null;
-    uploadProgress = null;
-    lastCapturedFiles = [];
   }
 
   // ─── Lifecycle cleanup ──────────────────────────────────────────────────────
 
   $effect(() => {
     return () => {
-      cancelLongPress();
+      tagFilter.cancelLongPress();
     };
   });
 </script>
@@ -603,7 +309,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="gallery-layout"
-  class:sidebar-open={sidebarOpen}
+  class:sidebar-open={tagFilter.sidebarOpen}
   bind:this={galleryElement}
   onwheel={handleWheel}
 >
@@ -624,8 +330,8 @@
         <!-- Capture button -->
         <button
           class="header-btn capture-btn"
-          onclick={startCapture}
-          disabled={capturePhase !== "idle"}
+          onclick={capture.startCapture}
+          disabled={capture.capturePhase !== "idle"}
           title="Capture screenshots and upload to cloud"
         >
           <i class="fas fa-camera"></i>
@@ -636,19 +342,19 @@
         {#if hasItems && !isLoading}
           <button
             class="header-btn"
-            class:active={selectionMode}
-            onclick={selectionMode ? exitSelectionMode : enterSelectionMode}
+            class:active={selection.selectionMode}
+            onclick={selection.selectionMode ? selection.exitSelectionMode : selection.enterSelectionMode}
           >
             <i class="fas fa-check-square"></i>
-            {selectionMode ? "Exit Select" : "Select"}
+            {selection.selectionMode ? "Exit Select" : "Select"}
           </button>
         {/if}
 
         <!-- Sidebar toggle -->
         <button
           class="header-btn"
-          class:active={sidebarOpen}
-          onclick={toggleSidebar}
+          class:active={tagFilter.sidebarOpen}
+          onclick={tagFilter.toggleSidebar}
           title="Toggle tag sidebar (Ctrl+T)"
         >
           <i class="fas fa-tags"></i>
@@ -658,29 +364,29 @@
     </header>
 
     <!-- Selection Toolbar -->
-    {#if selectionMode}
+    {#if selection.selectionMode}
       <SelectionToolbar
-        selectedCount={selectedIds.size}
+        selectedCount={selection.selectedIds.size}
         totalCount={flatItems.length}
-        onTag={openTagPicker}
-        onSelectAll={selectAll}
-        onClearSelection={clearSelection}
-        onExitSelection={exitSelectionMode}
+        onTag={tagFilter.openTagPicker}
+        onSelectAll={selection.selectAll}
+        onClearSelection={selection.clearSelection}
+        onExitSelection={selection.exitSelectionMode}
       />
     {/if}
 
     <!-- Capture / Upload Progress -->
-    {#if capturePhase === "capturing"}
+    {#if capture.capturePhase === "capturing"}
       <CaptureProgress
-        jobId={captureJobId}
+        jobId={capture.captureJobId}
         orchestrator={container.items.screenshotOrchestrator}
-        onPollStatus={handleCaptureStatusUpdate}
-        onComplete={handleCaptureComplete}
+        onPollStatus={capture.handleCaptureStatusUpdate}
+        onComplete={capture.handleCaptureComplete}
       />
-    {:else if capturePhase === "uploading" && uploadProgress}
+    {:else if capture.capturePhase === "uploading" && capture.uploadProgress}
       <UploadProgressCard
-        progress={uploadProgress}
-        onRetry={uploadProgress.phase === "failed" ? retryUpload : undefined}
+        progress={capture.uploadProgress}
+        onRetry={capture.uploadProgress.phase === "failed" ? capture.retryUpload : undefined}
       />
     {/if}
 
@@ -742,7 +448,7 @@
         <i class="fas fa-filter"></i>
         <h4>No matches</h4>
         <p>No screenshots match the current tag filters.</p>
-        <button class="clear-filters-btn" onclick={handleClearTags}>
+        <button class="clear-filters-btn" onclick={tagFilter.clearTags}>
           Clear filters
         </button>
       </div>
@@ -751,75 +457,75 @@
         moduleGroups={tagFilteredModuleGroups}
         {collapsedModules}
         {columnMin}
-        {allTags}
-        {selectionMode}
-        {selectedIds}
+        allTags={tagFilter.allTags}
+        selectionMode={selection.selectionMode}
+        selectedIds={selection.selectedIds}
         onOpenSpotlight={openSpotlight}
-        onOpenTagPanel={openTagPanel}
+        onOpenTagPanel={tagFilter.openTagPanel}
         onToggleModuleCollapse={toggleModuleCollapse}
-        onToggleSelection={toggleSelection}
-        onStartLongPress={startLongPress}
-        onCancelLongPress={cancelLongPress}
+        onToggleSelection={selection.toggleSelection}
+        onStartLongPress={tagFilter.startLongPress}
+        onCancelLongPress={tagFilter.cancelLongPress}
       />
     {/if}
   </div>
 
   <!-- Tag Sidebar -->
   <TagSidebar
-    open={sidebarOpen}
-    tags={allTags}
+    open={tagFilter.sidebarOpen}
+    tags={tagFilter.allTags}
     {mediaItems}
     filteredMediaItems={filteredMediaItems}
-    {activeTagIds}
-    {excludeTagIds}
-    {tagMode}
-    {untaggedOnly}
-    onToggle={toggleSidebar}
-    onToggleTag={handleToggleTag}
-    onExcludeTag={handleExcludeTag}
-    onSetTagMode={handleSetTagMode}
-    onSetUntaggedOnly={handleSetUntaggedOnly}
-    onClearTags={handleClearTags}
-    onCreateTag={() => { showTagCreator = true; }}
+    activeTagIds={tagFilter.activeTagIds}
+    excludeTagIds={tagFilter.excludeTagIds}
+    tagMode={tagFilter.tagMode}
+    untaggedOnly={tagFilter.untaggedOnly}
+    onToggle={tagFilter.toggleSidebar}
+    onToggleTag={tagFilter.toggleTag}
+    onExcludeTag={tagFilter.excludeTag}
+    onSetTagMode={tagFilter.setTagMode}
+    onSetUntaggedOnly={tagFilter.setUntaggedOnly}
+    onClearTags={tagFilter.clearTags}
+    onCreateTag={() => { tagFilter.showTagCreator = true; }}
   />
 </div>
 
 <!-- Tag context panel (right-click on card) -->
-{#if tagPanelTarget}
+{#if tagFilter.tagPanelTarget}
   <TagContextPanel
-    target={tagPanelTarget}
-    {allTags}
-    position={tagPanelPosition}
-    onToggleTag={handleToggleTagOnScreenshot}
-    onCreateTag={() => { showTagCreator = true; }}
-    onClose={closeTagPanel}
+    target={tagFilter.tagPanelTarget}
+    allTags={tagFilter.allTags}
+    position={tagFilter.tagPanelPosition}
+    onToggleTag={tagFilter.toggleTagOnScreenshot}
+    onCreateTag={() => { tagFilter.showTagCreator = true; }}
+    onClose={tagFilter.closeTagPanel}
   />
 {/if}
 
 <!-- Tag Picker Panel (batch tagging modal) -->
-{#if showTagPicker}
+{#if tagFilter.showTagPicker}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="tag-picker-backdrop" onclick={closeTagPicker}>
+  <div class="tag-picker-backdrop" onclick={tagFilter.closeTagPicker}>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="tag-picker-container" onclick={(e) => e.stopPropagation()}>
       <TagPickerPanel
-        {allTags}
+        allTags={tagFilter.allTags}
         selectedItems={selectedMediaItems}
-        onApplyTag={handleBulkApplyTag}
-        onRemoveTag={handleBulkRemoveTag}
-        onClose={closeTagPicker}
+        onApplyTag={selection.bulkApplyTag}
+        onRemoveTag={selection.bulkRemoveTag}
+        onClose={tagFilter.closeTagPicker}
       />
     </div>
   </div>
 {/if}
 
 <!-- Tag creator modal -->
-{#if showTagCreator}
+{#if tagFilter.showTagCreator}
   <TagCreatorModal
-    tags={allTags}
+    tags={tagFilter.allTags}
     categoryLabels={{}}
-    onCreate={handleCreateTag}
-    onClose={() => { showTagCreator = false; }}
+    onCreate={tagFilter.createTag}
+    onClose={() => { tagFilter.showTagCreator = false; }}
   />
 {/if}
 
