@@ -335,6 +335,14 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // COMPOSITIONS (Compose Module - Sequence Arrangements)
+      // -------------------------------------------------------------------------
+      match /compositions/{compositionId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
       // ONBOARDING STATUS
       // -------------------------------------------------------------------------
       match /onboarding/{docId} {
@@ -741,9 +749,8 @@ service cloud.firestore {
 
     // Feedback items - users can submit and read their own, testers/admins can manage all
     match /feedback/{feedbackId} {
-      // Users can read their own feedback, testers/admins can read all
-      allow read: if isAuthenticated()
-        && (resource.data.userId == request.auth.uid || isTester());
+      // Any authenticated user can read feedback (powers the public Tracker tab)
+      allow read: if isAuthenticated();
 
       // Any authenticated user can submit feedback (must set their own userId)
       allow create: if isAuthenticated()
