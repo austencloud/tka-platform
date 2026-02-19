@@ -3,7 +3,7 @@
  *
  * Each Playwright project (device) runs this spec independently.
  * Auth happens once per context via a shared login flow.
- * SPA navigation uses localStorage keys, not URL routing.
+ * SPA navigation uses URL routing (/{module}/{tab}), not localStorage.
  */
 
 import { test, type Page } from "@playwright/test";
@@ -14,6 +14,8 @@ import {
   PUBLIC_ROUTES,
   ALL_ROUTES,
   matchRoutes,
+  STORAGE_KEYS,
+  validateStorageKeys,
   type RouteConfig,
 } from "./devices";
 
@@ -22,26 +24,28 @@ const __dirname = dirname(__filename);
 
 // Timeout constants — values determined by observing average load times + buffer
 const TIMEOUTS = {
+  // Landing page bypass
   LANDING_VISIBLE: 2000,
   LANDING_CONTINUE: 1000,
   POST_CLICK_SETTLE: 2000,
-  AUTH_UI_VISIBLE: 3000,
-  INPUT_VISIBLE: 1000,
-  EMAIL_INPUT_VISIBLE: 2000,
-  PRE_SUBMIT_DELAY: 500,
-  POST_LOGIN_SETTLE: 4000,
-  LOGIN_VERIFY: 2000,
+  // Login flow
+  LOGIN_POLL_INTERVAL: 500,
+  LOGIN_STEP_SETTLE: 800,
+  PRE_SUBMIT_DELAY: 300,
+  // Modals
   MODAL_APPEAR: 1500,
   MODAL_DISMISS: 1000,
   MODAL_SETTLE: 500,
+  // Navigation
   ROUTE_LOAD: 15000,
   INITIAL_LOAD: 30000,
+  SPA_RELOAD_SETTLE: 1500,
+  PUBLIC_ROUTE_SETTLE: 3000,
+  // Stabilization
   SELECTOR_WAIT: 8000,
   NETWORK_IDLE: 5000,
   LOADING_DISAPPEAR: 8000,
   FINAL_SETTLE: 500,
-  SPA_RELOAD_SETTLE: 1500,
-  PUBLIC_ROUTE_SETTLE: 3000,
 } as const;
 
 // ─── Resolve which routes to capture ──────────────────────────────────────────
@@ -86,18 +90,16 @@ function resolveCredentials(): Credentials | null {
   }
 
   // Fall back to local config file
-  const localConfigPath = join(
-    process.cwd(),
-    "scripts",
-    "screenshot-capture",
-    "screenshot-config.local.json"
-  );
+  const localConfigPath = join(__dirname, "credentials.local.json");
 
   if (existsSync(localConfigPath)) {
     try {
       const config = JSON.parse(readFileSync(localConfigPath, "utf-8"));
-      if (config.auth?.email && config.auth?.password) {
-        return { email: config.auth.email, password: config.auth.password };
+      // Support both { email, password } and { auth: { email, password } } shapes
+      const email = config.email ?? config.auth?.email;
+      const password = config.password ?? config.auth?.password;
+      if (email && password) {
+        return { email, password };
       }
     } catch (err) {
       console.warn(
@@ -172,7 +174,7 @@ async function loginWithCredentials(
       loginVisible = true;
       break;
     }
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(TIMEOUTS.LOGIN_POLL_INTERVAL);
   }
 
   if (!loginVisible) return true; // Already logged in — no login screen appeared within 10s
@@ -185,7 +187,7 @@ async function loginWithCredentials(
     const emailBtn = buttons.find((b) => b.textContent?.includes("Continue with email"));
     if (emailBtn) (emailBtn as HTMLElement).click();
   });
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(TIMEOUTS.LOGIN_STEP_SETTLE);
 
   // Step 2: Switch from "Magic Link" (default) to "Password" tab
   await page.evaluate(() => {
@@ -193,7 +195,7 @@ async function loginWithCredentials(
     const pwTab = tabs.find((t) => t.textContent?.includes("Password"));
     if (pwTab) (pwTab as HTMLElement).click();
   });
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(TIMEOUTS.LOGIN_STEP_SETTLE);
 
   // Step 3: Fill email — use evaluate to set value directly
   await page.evaluate((email) => {
@@ -214,7 +216,7 @@ async function loginWithCredentials(
   }, credentials.password);
 
   // Step 5: Submit
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(TIMEOUTS.PRE_SUBMIT_DELAY);
   await page.evaluate(() => {
     const btn = document.querySelector('button[type="submit"]') as HTMLElement;
     if (btn) btn.click();
@@ -222,7 +224,7 @@ async function loginWithCredentials(
 
   // Step 6: Wait for login to complete — poll until login text disappears
   for (let i = 0; i < 30; i++) {
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(TIMEOUTS.LOGIN_POLL_INTERVAL);
     const stillOnLogin = await page.evaluate(() => {
       const text = document.body.innerText;
       return text.includes("Sign in to continue") || text.includes("Welcome back");
@@ -252,21 +254,20 @@ async function suppressOnboarding(page: Page): Promise<void> {
     .map((r) => `tabIntroSeen:${r.moduleId}:${r.tabId}`);
 
   await page.evaluate(
-    (keys) => {
-      localStorage.setItem("tka-last-seen-version", "99.99.99");
-      localStorage.setItem("tka-landing-dismissed", "true");
-      localStorage.setItem("tka-sidebar-tour-completed", "true");
+    ([keys, storageKeys]) => {
+      localStorage.setItem(storageKeys.LAST_SEEN_VERSION, "99.99.99");
+      localStorage.setItem(storageKeys.LANDING_DISMISSED, "true");
+      localStorage.setItem(storageKeys.SIDEBAR_TOUR_COMPLETED, "true");
       keys.forEach((key) => localStorage.setItem(key, "true"));
     },
-    tabIntroKeys
+    [tabIntroKeys, STORAGE_KEYS] as const
   );
 }
 
 async function setTheme(page: Page, dark: boolean): Promise<void> {
   const backgroundColor = dark ? "#121212" : "#e0e0da";
   await page.evaluate(
-    ([bg]) => {
-      const settingsKey = "tka-modern-web-settings";
+    ([bg, settingsKey]) => {
       let settings: Record<string, unknown> = {};
       try {
         const raw = localStorage.getItem(settingsKey);
@@ -278,7 +279,7 @@ async function setTheme(page: Page, dark: boolean): Promise<void> {
       settings.backgroundColor = bg;
       localStorage.setItem(settingsKey, JSON.stringify(settings));
     },
-    [backgroundColor]
+    [backgroundColor, STORAGE_KEYS.MODERN_SETTINGS] as const
   );
 }
 
@@ -466,6 +467,18 @@ const isDark = process.env.SCREENSHOT_DARK !== "false";
 const hasAuth = credentials !== null;
 const captureDir = join(__dirname, "captures");
 
+// Validate that STORAGE_KEYS haven't drifted from canonical app sources
+test.describe("Storage key sync", () => {
+  test("keys match canonical app sources", () => {
+    const drift = validateStorageKeys();
+    if (drift.length > 0) {
+      throw new Error(
+        `STORAGE_KEYS out of sync with app source:\n${drift.join("\n")}`
+      );
+    }
+  });
+});
+
 // Separate routes by auth requirement
 const publicRoutes = routes.filter((r) => !r.requiresAuth);
 const authRoutes = routes.filter((r) => r.requiresAuth);
@@ -509,7 +522,7 @@ if (authRoutes.length > 0 && hasAuth) {
       if (!loggedIn) {
         await sharedContext.close();
         throw new Error(
-          "Login failed. Check credentials in screenshot-config.local.json.\n" +
+          "Login failed. Check credentials in tests/screenshots/credentials.local.json.\n" +
             "Possible causes: wrong credentials, UI changed, network timeout."
         );
       }
@@ -551,7 +564,7 @@ if (authRoutes.length > 0 && hasAuth) {
     test("credentials not provided", () => {
       console.log(
         "Skipping auth routes. Set SCREENSHOT_TEST_EMAIL and SCREENSHOT_TEST_PASSWORD, " +
-          "or add credentials to scripts/screenshot-capture/screenshot-config.local.json"
+          "or add credentials to tests/screenshots/credentials.local.json"
       );
     });
   });

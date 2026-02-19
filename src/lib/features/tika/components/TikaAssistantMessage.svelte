@@ -18,10 +18,12 @@
     message,
     isStreaming = false,
     showToolDetails = false,
+    onQuizComplete,
   }: {
     message: UIMessage;
     isStreaming?: boolean;
     showToolDetails?: boolean;
+    onQuizComplete?: (quizId: string, topic: string, correct: boolean) => void;
   } = $props();
 
   // Get parsed content for a message (text or tool output) with link extraction
@@ -103,7 +105,7 @@
               <InlineStepGrid stepGrid={content.stepGrid} />
             {/if}
             {#if content.quiz}
-              <InlineQuiz quiz={content.quiz} />
+              <InlineQuiz quiz={content.quiz} {onQuizComplete} />
             {/if}
           {/each}
         </div>

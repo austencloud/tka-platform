@@ -184,15 +184,17 @@ export class ArenaOrchestrator implements IArenaOrchestrator {
       // Prefetch in background
       this.prefetchNextMatchup();
     } else {
-      this.currentMatchup = this.buildMatchup();
+      const raw = this.buildMatchup();
+      this.currentMatchup = raw ? await this.enrichMatchup(raw) : null;
       this.prefetchNextMatchup();
     }
   }
 
   private prefetchNextMatchup(): void {
-    // Run async without blocking
-    Promise.resolve().then(() => {
-      this.nextMatchup = this.buildMatchup();
+    // Run async without blocking — enrich with full data so it's ready
+    Promise.resolve().then(async () => {
+      const raw = this.buildMatchup();
+      this.nextMatchup = raw ? await this.enrichMatchup(raw) : null;
     });
   }
 
@@ -212,6 +214,27 @@ export class ArenaOrchestrator implements IArenaOrchestrator {
       dataA: result.a.data,
       dataB: result.b.data,
       reason: result.reason,
+    };
+  }
+
+  /**
+   * Enrich a matchup with full sequence data fetched from sourceRef.
+   * The pool stores lightweight index metadata (no steps); this fetches
+   * the complete step data needed for animation playback.
+   */
+  private async enrichMatchup(matchup: ArenaMatchup): Promise<ArenaMatchup> {
+    const refA = this.pool.find((c) => c.entry.id === matchup.entryA.id)?.sourceRef;
+    const refB = this.pool.find((c) => c.entry.id === matchup.entryB.id)?.sourceRef;
+
+    const [fullA, fullB] = await Promise.all([
+      refA ? this.repository.loadFullSequenceData(refA) : null,
+      refB ? this.repository.loadFullSequenceData(refB) : null,
+    ]);
+
+    return {
+      ...matchup,
+      dataA: fullA ?? matchup.dataA,
+      dataB: fullB ?? matchup.dataB,
     };
   }
 

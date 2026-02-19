@@ -11,14 +11,15 @@
  *
  * Usage:
  *   node scripts/audit-tracker.cjs                    # Show audit queue (what needs attention)
+ *   node scripts/audit-tracker.cjs --json             # Machine-readable queue output
+ *   node scripts/audit-tracker.cjs --auto-claim       # Find and claim top priority target
  *   node scripts/audit-tracker.cjs list               # List all audited targets with grades
  *   node scripts/audit-tracker.cjs targets            # List all auditable targets
  *   node scripts/audit-tracker.cjs status <target>    # Show detailed status for a target
- *   node scripts/audit-tracker.cjs record <target>    # Record audit results interactively
- *   node scripts/audit-tracker.cjs record <target> --grades "A,A+,A,B,A,A,A,A+" --notes "..."
+ *   node scripts/audit-tracker.cjs record <target> --grades "A,A+,A,B,A,A,A,A+" [--notes "..."] [--issues-json '[...]']
  *   node scripts/audit-tracker.cjs claim <target>     # Claim a target for auditing
  *   node scripts/audit-tracker.cjs release <target>   # Release a claim
- *   node scripts/audit-tracker.cjs add-target <path> <type> <name>  # Add auditable target
+ *   node scripts/audit-tracker.cjs resolve-issue <target> <index>  # Resolve a specific issue
  *   node scripts/audit-tracker.cjs stats              # Show overall audit coverage stats
  */
 
@@ -639,6 +640,22 @@ function recordAudit(targetPath, gradesStr, notes) {
   // Calculate overall grade
   const overallGrade = calculateOverallGrade(grades);
 
+  // Parse issues JSON if provided
+  const issuesIdx = args.indexOf("--issues-json");
+  let parsedIssues = null;
+  if (issuesIdx !== -1 && args[issuesIdx + 1]) {
+    try {
+      parsedIssues = JSON.parse(args[issuesIdx + 1]);
+      if (!Array.isArray(parsedIssues)) {
+        console.log("\n  --issues-json must be a JSON array\n");
+        return;
+      }
+    } catch (err) {
+      console.log(`\n  Invalid JSON for --issues-json: ${err.message}\n`);
+      return;
+    }
+  }
+
   // Create audit record
   const audit = {
     lastAuditedAt: new Date().toISOString(),
@@ -647,11 +664,11 @@ function recordAudit(targetPath, gradesStr, notes) {
     grades,
     overallGrade,
     notes: notes || null,
-    issues: [],
+    issues: parsedIssues || [],
   };
 
-  // Preserve existing issues if updating
-  if (data.audits[targetPath]?.issues) {
+  // Preserve existing issues only if no new issues provided
+  if (!parsedIssues && data.audits[targetPath]?.issues) {
     audit.issues = data.audits[targetPath].issues;
   }
 
@@ -885,6 +902,100 @@ function showStats() {
 }
 
 /**
+ * Auto-claim: find the top priority unclaimed target and claim it atomically
+ */
+function autoClaim() {
+  const data = readAuditData();
+  const allTargets = discoverTargets();
+
+  const prioritized = allTargets
+    .map((target) => ({
+      target,
+      audit: data.audits[target.path],
+      claim: data.claims[target.path],
+      priority: calculatePriority(
+        target,
+        data.audits[target.path],
+        data.claims[target.path]
+      ),
+    }))
+    .filter((p) => p.priority > 0 && !p.target.tooLarge)
+    .sort((a, b) => b.priority - a.priority);
+
+  if (prioritized.length === 0) {
+    console.log("\n  No targets available for claiming.\n");
+    return;
+  }
+
+  const top = prioritized[0];
+  console.log(`AUTO_CLAIM_TARGET: ${top.target.path}`);
+  claimTarget(top.target.path);
+}
+
+/**
+ * Resolve a specific issue on a target
+ */
+function resolveIssue(targetPath, issueIndex) {
+  const data = readAuditData();
+  const audit = data.audits[targetPath];
+
+  if (!audit) {
+    console.log(`\n  No audit found for: ${targetPath}\n`);
+    return;
+  }
+
+  if (!audit.issues || audit.issues.length === 0) {
+    console.log(`\n  No issues recorded for: ${targetPath}\n`);
+    return;
+  }
+
+  const idx = parseInt(issueIndex, 10);
+  if (isNaN(idx) || idx < 0 || idx >= audit.issues.length) {
+    console.log(`\n  Invalid issue index: ${issueIndex} (0-${audit.issues.length - 1} valid)\n`);
+    return;
+  }
+
+  audit.issues[idx].resolved = true;
+  audit.issues[idx].resolvedAt = new Date().toISOString();
+
+  if (writeAuditData(data)) {
+    console.log(`\n  Resolved issue ${idx}: ${audit.issues[idx].description || audit.issues[idx].file}\n`);
+  }
+}
+
+/**
+ * Show audit queue as JSON (machine-readable)
+ */
+function showQueueJson() {
+  const data = readAuditData();
+  const allTargets = discoverTargets();
+
+  const prioritized = allTargets
+    .map((target) => ({
+      path: target.path,
+      name: target.name,
+      type: target.type,
+      fileCount: target.fileCount || 0,
+      tooLarge: !!target.tooLarge,
+      audit: data.audits[target.path] || null,
+      claimed: !!(data.claims[target.path] && !isClaimExpired(data.claims[target.path])),
+      priority: calculatePriority(
+        target,
+        data.audits[target.path],
+        data.claims[target.path]
+      ),
+    }))
+    .filter((p) => p.priority >= 0)
+    .sort((a, b) => b.priority - a.priority);
+
+  console.log(JSON.stringify({
+    total: allTargets.length,
+    available: prioritized.filter((p) => p.priority > 0 && !p.tooLarge).length,
+    items: prioritized.slice(0, 20),
+  }, null, 2));
+}
+
+/**
  * Show help
  */
 function showHelp() {
@@ -896,6 +1007,7 @@ function showHelp() {
 QUEUE & STATUS
 ──────────────────────────────────────────────────────────────────────────────
   (no args)              Show audit queue (what needs attention next)
+  --json                 Machine-readable queue output
   list                   List all recorded audits with grades
   targets                List all auditable targets
   status <target>        Show detailed audit status for a target
@@ -903,10 +1015,13 @@ QUEUE & STATUS
 
 AUDITING
 ──────────────────────────────────────────────────────────────────────────────
-  claim <target>         Claim a target before auditing
+  --auto-claim           Find and claim the top priority target atomically
+  claim <target>         Claim a specific target before auditing
   release <target>       Release a claim
-  record <target> --grades "A+,A,A,B,A,A,A+,A" [--notes "..."]
-                         Record audit results
+  record <target> --grades "A+,A,A,B,A,A,A+,A" [--notes "..."] [--issues-json '[...]']
+                         Record audit results with optional structured issues
+  resolve-issue <target> <index>
+                         Mark a specific issue as resolved
 
 GRADE ORDER (for --grades flag):
   1. Architecture
@@ -918,12 +1033,18 @@ GRADE ORDER (for --grades flag):
   7. Performance
   8. Security
 
+ISSUES JSON FORMAT (for --issues-json flag):
+  [{"severity":"critical","dimension":"codeQuality","file":"path/File.ts","line":42,"description":"..."}]
+
 EXAMPLES
 ──────────────────────────────────────────────────────────────────────────────
   node scripts/audit-tracker.cjs                          # See what needs auditing
-  node scripts/audit-tracker.cjs claim features/compose   # Claim before auditing
+  node scripts/audit-tracker.cjs --json                   # Queue as JSON
+  node scripts/audit-tracker.cjs --auto-claim             # Claim top priority target
+  node scripts/audit-tracker.cjs claim features/compose   # Claim specific target
   node scripts/audit-tracker.cjs status features/compose  # Check status
   node scripts/audit-tracker.cjs record features/compose --grades "A+,A,A,B,A,A,A+,A"
+  node scripts/audit-tracker.cjs resolve-issue features/compose 0  # Resolve issue #0
 `);
 }
 
@@ -933,6 +1054,10 @@ const args = process.argv.slice(2);
 function main() {
   if (args.length === 0) {
     showQueue();
+  } else if (args[0] === "--json") {
+    showQueueJson();
+  } else if (args[0] === "--auto-claim") {
+    autoClaim();
   } else if (args[0] === "help" || args[0] === "--help" || args[0] === "-h") {
     showHelp();
   } else if (args[0] === "list") {
@@ -973,6 +1098,12 @@ function main() {
     const grades = gradesIdx !== -1 ? args[gradesIdx + 1] : null;
     const notes = notesIdx !== -1 ? args[notesIdx + 1] : null;
     recordAudit(target, grades, notes);
+  } else if (args[0] === "resolve-issue") {
+    if (!args[1] || !args[2]) {
+      console.log("\n  Usage: node scripts/audit-tracker.cjs resolve-issue <target> <index>\n");
+      return;
+    }
+    resolveIssue(args[1], args[2]);
   } else {
     // Assume it's a target path for status
     showStatus(args[0]);

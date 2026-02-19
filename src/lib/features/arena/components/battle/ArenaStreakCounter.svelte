@@ -14,15 +14,21 @@
   const MILESTONES = new Set([5, 10, 25, 50, 100]);
 
   $effect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
     if (streak > prevStreak && streak > 0) {
       bouncing = true;
       milestone = MILESTONES.has(streak);
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         bouncing = false;
         milestone = false;
       }, 600);
     }
     prevStreak = streak;
+
+    return () => {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    };
   });
 </script>
 
@@ -69,7 +75,7 @@
     gap: 4px;
     padding: 4px 10px;
     border-radius: 20px;
-    background: rgba(245, 158, 11, 0.12);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 12%, transparent);
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
@@ -78,14 +84,14 @@
   }
 
   .streak-counter.milestone {
-    background: rgba(245, 158, 11, 0.25);
-    box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 25%, transparent);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--semantic-warning, #f59e0b) 30%, transparent);
   }
 
   .streak-count {
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
-    color: #f59e0b;
+    color: var(--semantic-warning, #f59e0b);
     font-variant-numeric: tabular-nums;
   }
 

@@ -51,23 +51,45 @@ export class ArenaRepository implements IArenaRepository {
     const candidates: MatchupCandidate[] = [];
 
     for (const seqDoc of publicSnap.docs) {
-      const seqData = seqDoc.data() as SequenceData & { ownerId?: string; ownerDisplayName?: string };
-      if (!seqData.word || !seqData.steps || seqData.steps.length === 0) continue;
+      const raw = seqDoc.data() as Record<string, unknown>;
+      const word = raw.word as string | undefined;
+      if (!word) continue;
 
       const entry: ArenaEntry = {
         id: seqDoc.id,
         kind: "sequence",
-        word: seqData.word,
-        ownerId: seqData.ownerId ?? "",
-        ownerDisplayName: seqData.ownerDisplayName,
+        word,
+        ownerId: (raw.ownerId as string) ?? "",
+        ownerDisplayName: raw.ownerDisplayName as string | undefined,
       };
 
       const rating = await this.getOrCreateRating(entry);
 
+      // Build lightweight SequenceData from the index document.
+      // Steps are NOT stored in publicSequences — full data is fetched
+      // on demand via sourceRef when a matchup is presented.
+      const data: SequenceData = {
+        id: seqDoc.id,
+        name: (raw.name as string) ?? "",
+        word,
+        steps: [],
+        thumbnails: (raw.thumbnails as readonly string[]) ?? [],
+        sequenceLength: raw.sequenceLength as number | undefined,
+        level: raw.level as number | undefined,
+        difficultyLevel: raw.difficultyLevel as string | undefined,
+        isFavorite: false,
+        isCircular: false,
+        tags: (raw.tags as readonly string[]) ?? [],
+        metadata: {},
+        ownerId: (raw.ownerId as string) ?? "",
+        ownerDisplayName: raw.ownerDisplayName as string | undefined,
+      };
+
       candidates.push({
         entry,
         rating,
-        data: { ...seqData, id: seqDoc.id } as SequenceData,
+        data,
+        sourceRef: raw.sourceRef as string | undefined,
       });
     }
 
@@ -212,6 +234,41 @@ export class ArenaRepository implements IArenaRepository {
       }
     }
     return map;
+  }
+
+  async loadFullSequenceData(sourceRef: string): Promise<SequenceData | null> {
+    const firestore = await getFirestoreInstance();
+    try {
+      const fullDoc = await getDoc(doc(firestore, sourceRef));
+      if (!fullDoc.exists()) return null;
+
+      const raw = fullDoc.data();
+      return {
+        id: fullDoc.id,
+        name: (raw.name as string) ?? "",
+        displayName: raw.displayName as string | undefined,
+        word: (raw.word as string) ?? "",
+        steps: (raw.steps as SequenceData["steps"]) ?? (raw.beats as SequenceData["steps"]) ?? [],
+        startPosition: raw.startPosition as SequenceData["startPosition"],
+        startingPosition: raw.startingPosition as SequenceData["startingPosition"],
+        startingPositionGroup: raw.startingPositionGroup as SequenceData["startingPositionGroup"],
+        thumbnails: (raw.thumbnails as readonly string[]) ?? [],
+        sequenceLength: raw.sequenceLength as number | undefined,
+        level: raw.level as number | undefined,
+        gridMode: raw.gridMode as SequenceData["gridMode"],
+        isFavorite: false,
+        isCircular: (raw.isCircular as boolean) ?? false,
+        loopType: raw.loopType as SequenceData["loopType"],
+        difficultyLevel: raw.difficultyLevel as string | undefined,
+        tags: (raw.tags as readonly string[]) ?? [],
+        metadata: (raw.metadata as Record<string, unknown>) ?? {},
+        ownerId: raw.ownerId as string | undefined,
+        ownerDisplayName: raw.ownerDisplayName as string | undefined,
+      };
+    } catch (err) {
+      console.error(`[Arena] Failed to load full sequence from ${sourceRef}:`, err);
+      return null;
+    }
   }
 
   // ---------------------------------------------------------------------------

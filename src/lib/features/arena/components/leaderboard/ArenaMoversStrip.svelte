@@ -75,13 +75,13 @@
   }
 
   .mover-chip.up {
-    background: rgba(34, 197, 94, 0.12);
-    color: #22c55e;
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 12%, transparent);
+    color: var(--semantic-success, #22c55e);
   }
 
   .mover-chip.down {
-    background: rgba(239, 68, 68, 0.12);
-    color: #ef4444;
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 12%, transparent);
+    color: var(--semantic-error, #ef4444);
   }
 
   .change-amount {

@@ -55,9 +55,9 @@ export class TikaToolExecutor implements ITikaToolExecutor {
     }
 
     const typeInfo = LETTER_TO_TYPE[letter];
-    const typeNum = typeInfo?.type || "unknown";
+    const typeNum = typeInfo?.typeNumber ?? 0;
     const letterTypes = this.pictographLoader.getLetterTypes();
-    const fullTypeInfo = letterTypes[typeNum];
+    const fullTypeInfo = letterTypes[typeInfo?.type ?? ""];
     const varData = variations[Math.min(variation, variations.length - 1)];
 
     if (!varData) {
@@ -89,7 +89,7 @@ export class TikaToolExecutor implements ITikaToolExecutor {
       contextData: {
         type: "letter",
         letter,
-        letterType: parseInt(typeNum) || 1,
+        letterType: typeNum || 1,
         typeName: fullTypeInfo?.name || typeInfo?.name || "Unknown",
         startPosition: varData.startPosition,
         endPosition: varData.endPosition,
@@ -177,8 +177,8 @@ ${entry.examples.map((e) => `- ${e}`).join("\n")}
 
     const type1 = LETTER_TO_TYPE[letter1];
     const type2 = LETTER_TO_TYPE[letter2];
-    const typeNum1 = parseInt(type1?.type || "0");
-    const typeNum2 = parseInt(type2?.type || "0");
+    const typeNum1 = type1?.typeNumber ?? 0;
+    const typeNum2 = type2?.typeNumber ?? 0;
     const rep1 = var1[0];
     const rep2 = var2[0];
 

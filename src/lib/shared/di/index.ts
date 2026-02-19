@@ -89,6 +89,7 @@ import { createComposeArrangeContainer } from "./containers/compose-arrange-cont
 import { createVoiceSessionContainer } from "./containers/voice-session-container";
 import { createSkel2TKAContainer } from "./containers/skel2tka-container";
 import { labContainer } from "./containers/lab-container";
+import { visualBuilderContainer } from "./containers/visual-builder-container";
 import { arenaContainer } from "./containers/arena-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
@@ -422,6 +423,8 @@ function buildAppContainer(): any {
   c = c.add(skel2tkaContainer.items);
   // Lab module services (screenshot capture, etc.)
   c = c.add(labContainer.items);
+  // Visual builder lab services (grid hit targets, beat motion derivation)
+  c = c.add(visualBuilderContainer.items);
   // Arena module services (pairwise ranking)
   c = c.add(arenaContainer.items);
   // Cross-container services (depend on multiple container outputs)

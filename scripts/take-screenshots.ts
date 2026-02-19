@@ -1,16 +1,9 @@
 /**
  * CLI Entry Point for Multi-Device Screenshot Testing
  *
- * Parses CLI args, sets env vars, runs Playwright, generates gallery.
+ * Parses CLI args, validates environment, runs Playwright, generates gallery.
  *
- * Usage:
- *   npm run screenshots                           # All routes, all devices, dark mode
- *   npm run screenshots -- /browse /create         # Specific modules
- *   npm run screenshots -- --public                # Public routes only (no auth)
- *   npm run screenshots -- --light                 # Light mode
- *   npm run screenshots -- --compare               # Compare against baselines
- *   npm run screenshots -- --update-baselines      # Save current as baselines
- *   npm run screenshots -- --devices phone         # Phone devices only
+ * Run `npm run screenshots -- --help` for full usage.
  */
 
 import { execSync } from "child_process";
@@ -27,15 +20,64 @@ const CAPTURES_DIR = join(ROOT, "tests", "screenshots", "captures");
 const GALLERY_SCRIPT = join(ROOT, "tests", "screenshots", "generate-gallery.ts");
 const PW_CONFIG = join(ROOT, "tests", "screenshots", "screenshot.config.ts");
 
-// ─── Parse CLI Args ───────────────────────────────────────────────────────────
+// ─── Help Text ───────────────────────────────────────────────────────────────
+
+const HELP_TEXT = `
+  Multi-Device Screenshot Testing
+  ================================
+
+  Captures screenshots across 9 device viewports and generates
+  an interactive HTML gallery for visual QA.
+
+  Usage:
+    npm run screenshots                              All routes, all devices
+    npm run screenshots -- --public                  Public routes only (no auth)
+    npm run screenshots -- --devices phone           Phone devices only
+    npm run screenshots -- --devices tablet,desktop   Multiple device categories
+    npm run screenshots -- --devices iphone-se        Specific device by slug
+    npm run screenshots -- /browse /create            Specific modules
+    npm run screenshots -- --light                   Light mode (default: dark)
+    npm run screenshots -- --compare                 Compare against baselines
+    npm run screenshots -- --update-baselines        Save current as baselines
+    npm run screenshots -- --landscape               Include landscape captures
+    npm run screenshots -- --portable                Embed images as base64
+
+  Device Categories:
+    phone     iPhone SE, iPhone 16 Pro, iPhone 16 Pro Max, Galaxy S24, Galaxy S24 Ultra
+    tablet    iPad Mini, iPad Air
+    desktop   Desktop HD (1366x768), Desktop FHD (1920x1080)
+
+  Credentials (for auth-required routes):
+    Option 1: Environment variables
+      SCREENSHOT_TEST_EMAIL=you@example.com
+      SCREENSHOT_TEST_PASSWORD=yourpassword
+
+    Option 2: Local config file
+      Create tests/screenshots/credentials.local.json:
+      { "email": "you@example.com", "password": "yourpassword" }
+
+  Output:
+    tests/screenshots/captures/    PNG files ({route}--{device}.png)
+    tests/screenshots/gallery.html Interactive gallery (auto-opens in browser)
+    tests/screenshots/baselines/   Reference screenshots for regression
+`;
+
+// ─── Parse CLI Args ──────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
+
+if (args.includes("--help") || args.includes("-h")) {
+  console.log(HELP_TEXT);
+  process.exit(0);
+}
 
 const publicOnly = args.includes("--public");
 const lightMode = args.includes("--light");
 const darkMode = args.includes("--dark") || !lightMode;
 const compareMode = args.includes("--compare");
 const updateBaselines = args.includes("--update-baselines");
+const landscape = args.includes("--landscape");
+const portable = args.includes("--portable");
 
 let deviceFilter = "";
 const devicesIdx = args.indexOf("--devices");
@@ -62,7 +104,7 @@ const routePatterns = args
   )
   .map(stripGitBashExpansion);
 
-// ─── Env Vars ─────────────────────────────────────────────────────────────────
+// ─── Env Vars ────────────────────────────────────────────────────────────────
 
 const env: Record<string, string> = { ...process.env } as Record<string, string>;
 
@@ -70,8 +112,10 @@ if (publicOnly) env.SCREENSHOT_PUBLIC = "true";
 if (!darkMode) env.SCREENSHOT_DARK = "false";
 if (deviceFilter) env.SCREENSHOT_DEVICE_FILTER = deviceFilter;
 if (routePatterns.length > 0) env.SCREENSHOT_ROUTES = routePatterns.join(",");
+if (landscape) env.SCREENSHOT_LANDSCAPE = "true";
+if (portable) env.SCREENSHOT_PORTABLE = "true";
 
-// ─── Preflight Checks ─────────────────────────────────────────────────────────
+// ─── Preflight Checks ───────────────────────────────────────────────────────
 
 function checkDevServer(): Promise<boolean> {
   // Use 127.0.0.1 explicitly — Node 18+ resolves "localhost" to IPv6 (::1) first,
@@ -89,10 +133,53 @@ function checkDevServer(): Promise<boolean> {
   });
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+function checkPlaywrightBrowsers(): boolean {
+  // Playwright stores browsers in a platform-specific cache directory.
+  // Rather than guessing the path, try running a quick Playwright command.
+  try {
+    execSync("npx playwright --version", {
+      cwd: ROOT,
+      stdio: "pipe",
+      timeout: 10_000,
+    });
+  } catch {
+    return false;
+  }
+
+  // Check that chromium is actually installed by looking for the executable
+  // in the standard Playwright cache location.
+  const cacheDir =
+    process.env.PLAYWRIGHT_BROWSERS_PATH ??
+    (process.platform === "win32"
+      ? join(process.env.LOCALAPPDATA ?? "", "ms-playwright")
+      : join(process.env.HOME ?? "", ".cache", "ms-playwright"));
+
+  if (!existsSync(cacheDir)) return false;
+
+  // Look for any chromium directory
+  try {
+    const entries = readdirSync(cacheDir);
+    return entries.some((e) => e.startsWith("chromium"));
+  } catch {
+    return false;
+  }
+}
+
+// ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
   console.log("\n  Screenshot Capture\n");
+
+  // Check Playwright browsers
+  if (!checkPlaywrightBrowsers()) {
+    console.error(
+      "  Playwright browsers not installed.\n" +
+        "  Run: npx playwright install chromium\n" +
+        "  (Only needed once, downloads ~150MB)\n"
+    );
+    process.exit(1);
+  }
+  console.log("  Playwright: OK");
 
   // Check dev server
   if (!(await checkDevServer())) {
@@ -108,20 +195,23 @@ async function main() {
   console.log(`  Mode: ${darkMode ? "dark" : "light"}`);
   console.log(`  Devices: ${deviceFilter || "all"}`);
   console.log(`  Routes: ${routePatterns.length > 0 ? routePatterns.join(", ") : "all"}`);
-  if (publicOnly) console.log("  Public only (no auth)");
-  if (compareMode) console.log("  Compare mode: ON");
+  if (publicOnly) console.log("  Scope: public only (no auth)");
+  if (landscape) console.log("  Orientation: portrait + landscape");
+  if (compareMode) console.log("  Compare: ON (diff against baselines)");
+  if (portable) console.log("  Gallery: portable (base64 embedded)");
   console.log();
 
   // Check for credentials
   if (!publicOnly && !env.SCREENSHOT_TEST_EMAIL) {
-    const localConfig = join(ROOT, "scripts", "screenshot-capture", "screenshot-config.local.json");
+    const localConfig = join(ROOT, "tests", "screenshots", "credentials.local.json");
     if (!existsSync(localConfig)) {
       console.log(
         "  No auth credentials found. Auth routes will be skipped.\n" +
           "  To capture app modules, set env vars:\n" +
           "    SCREENSHOT_TEST_EMAIL=your@email.com\n" +
           "    SCREENSHOT_TEST_PASSWORD=yourpassword\n" +
-          "  Or create scripts/screenshot-capture/screenshot-config.local.json\n"
+          "  Or create tests/screenshots/credentials.local.json:\n" +
+          '    { "email": "you@example.com", "password": "yourpass" }\n'
       );
     }
   }
@@ -154,9 +244,9 @@ async function main() {
       cwd: ROOT,
       stdio: "inherit",
       env,
-      timeout: 900_000, // 15 minutes max (1 worker × 9 devices × ~15s/test)
+      timeout: 900_000, // 15 minutes max
     });
-  } catch (error) {
+  } catch {
     // Playwright may exit non-zero if some tests fail. Continue to gallery.
     console.log("\n  Some captures may have failed. Generating gallery anyway.\n");
   }
@@ -173,8 +263,13 @@ async function main() {
 
   // Generate gallery
   console.log(`\n  Generating gallery from ${capturedFiles.length} screenshots...`);
-  const galleryArgs = compareMode ? "--compare" : "";
-  execSync(`npx tsx "${GALLERY_SCRIPT}" ${galleryArgs}`, {
+  const galleryFlags = [
+    compareMode ? "--compare" : "",
+    portable ? "--portable" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  execSync(`npx tsx "${GALLERY_SCRIPT}" ${galleryFlags}`, {
     cwd: ROOT,
     stdio: "inherit",
     env,

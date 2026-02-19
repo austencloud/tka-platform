@@ -15,6 +15,7 @@
   import { tikaMessageExtractor } from "../services/implementations/TikaMessageExtractor";
   import type { ModelOption } from "../types";
   import type { ReviewStatus, ReviewMetadata } from "../domain/models/tika-conversation-models";
+  import type { WelcomeContext } from "../services/contracts/ITikaWelcomeBuilder";
 
   // Props
   let {
@@ -34,6 +35,8 @@
     onFlagForReview,
     reviewStatus,
     reviewMetadata,
+    onQuizComplete,
+    welcomeContext,
   }: {
     messages: UIMessage[];
     status: "submitted" | "streaming" | "ready" | "error";
@@ -51,6 +54,8 @@
     onFlagForReview?: (flagged: boolean) => void;
     reviewStatus?: ReviewStatus;
     reviewMetadata?: ReviewMetadata;
+    onQuizComplete?: (quizId: string, topic: string, correct: boolean) => void;
+    welcomeContext?: WelcomeContext;
   } = $props();
 
   // Local state
@@ -112,7 +117,7 @@
   <!-- Chat Messages -->
   <div class="chat-container themed-scrollbar" bind:this={chatContainer}>
     {#if messages.length === 0}
-      <TikaWelcome {onSubmit} isLoading={status === "submitted" || status === "streaming"} />
+      <TikaWelcome {onSubmit} isLoading={status === "submitted" || status === "streaming"} {welcomeContext} />
     {:else}
       <!-- Conversation History -->
       {#each messages as message, index (message.id)}
@@ -128,6 +133,7 @@
             {message}
             isStreaming={isMessageStreaming(message, index)}
             {showToolDetails}
+            {onQuizComplete}
           />
         {/if}
       {/each}

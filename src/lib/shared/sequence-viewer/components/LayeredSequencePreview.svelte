@@ -56,7 +56,15 @@
   ): string {
     const stepLetters = seq.steps?.map(s => s.letter ?? "?").join("") ?? "";
     const durationFingerprint = seq.steps?.map(s => s.duration ?? 1).join(",") ?? "";
-    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.bluePropType ?? ""}-${opts.redPropType ?? ""}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-d:${durationFingerprint}`;
+    // Motion fingerprint captures orientation + rotation data that affects rendering.
+    // Without this, two sequences with identical letters but different orientations
+    // would collide in the cache.
+    const motionFingerprint = seq.steps?.map(s => {
+      const b = s.motions?.blue;
+      const r = s.motions?.red;
+      return `${b?.startOrientation ?? ""}${b?.endOrientation ?? ""}${b?.rotationDirection ?? ""}${r?.startOrientation ?? ""}${r?.endOrientation ?? ""}${r?.rotationDirection ?? ""}`;
+    }).join("") ?? "";
+    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.bluePropType ?? ""}-${opts.redPropType ?? ""}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-d:${durationFingerprint}-m:${motionFingerprint}`;
   }
 
   function storePreviewInCache(key: string, data: CachedPreview): void {

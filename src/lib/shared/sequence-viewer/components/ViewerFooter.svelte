@@ -44,6 +44,7 @@
     onStepHalfForward?: () => void;
     onSave: () => void;
     onCompose: () => void;
+    onEdit: () => void;
     onShare: () => void;
     onExport: (format?: ExportFormat) => void;
     onGetApp?: () => void;
@@ -72,6 +73,7 @@
     onStepHalfForward,
     onSave,
     onCompose,
+    onEdit,
     onShare,
     onExport,
     onGetApp,
@@ -101,7 +103,7 @@
     if (!footerEl) return;
 
     const selectLayout = () => {
-      const actionCount = isLoggedIn ? 5 : 4; // Added Connect button
+      const actionCount = isLoggedIn ? 6 : 4; // Save, Edit, Compose, Connect, Share, Download
       const actionsWidth = actionCount * 100 + (actionCount - 1) * 10;
       const minDesktopWidth = 272 + 16 + 400 + 16 + actionsWidth + 32;
 
@@ -192,6 +194,14 @@
       >
         <i class="fas fa-bookmark" aria-hidden="true"></i>
       </button>
+      <button
+        type="button"
+        class="landscape-btn edit"
+        onclick={onEdit}
+        aria-label="Edit in Constructor"
+      >
+        <i class="fas fa-hammer" aria-hidden="true"></i>
+      </button>
     {/if}
     <button
       type="button"
@@ -234,6 +244,7 @@
       {onStepHalfBack}
       {onStepHalfForward}
       {onSave}
+      {onEdit}
       {onExport}
       {onCompose}
       {onPreviewModeChange}
@@ -275,6 +286,15 @@
           >
             <i class="fas fa-bookmark" aria-hidden="true"></i>
             <span>Save</span>
+          </button>
+          <button
+            type="button"
+            class="action-btn edit"
+            onclick={onEdit}
+            aria-label="Edit in Constructor"
+          >
+            <i class="fas fa-hammer" aria-hidden="true"></i>
+            <span>Edit</span>
           </button>
           <button
             type="button"
@@ -406,6 +426,7 @@
 
   /* Color-coded landscape buttons */
   .landscape-btn.save { color: #22c55e; border-color: rgba(34, 197, 94, 0.25); }
+  .landscape-btn.edit { color: #f59e0b; border-color: rgba(245, 158, 11, 0.25); }
   .landscape-btn.share { color: #a855f7; border-color: rgba(168, 85, 247, 0.25); }
   .landscape-btn.download { color: #818cf8; border-color: rgba(99, 102, 241, 0.35); }
 
@@ -569,6 +590,17 @@
   .action-btn.save:hover {
     background: rgba(34, 197, 94, 0.2);
     border-color: rgba(34, 197, 94, 0.4);
+  }
+
+  .action-btn.edit {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.25);
+    color: #f59e0b;
+  }
+
+  .action-btn.edit:hover {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.4);
   }
 
   .action-btn.compose {

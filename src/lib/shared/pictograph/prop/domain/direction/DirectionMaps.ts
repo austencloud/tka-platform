@@ -202,20 +202,20 @@ export const BOX_NON_RADIAL_MAP: Record<
   Record<MotionColor, VectorDirection>
 > = {
   [GridLocation.NORTHEAST]: {
-    [MotionColor.RED]: VectorDirection.UPLEFT,
-    [MotionColor.BLUE]: VectorDirection.DOWNRIGHT,
-  },
-  [GridLocation.SOUTHEAST]: {
     [MotionColor.RED]: VectorDirection.UPRIGHT,
     [MotionColor.BLUE]: VectorDirection.DOWNLEFT,
   },
-  [GridLocation.SOUTHWEST]: {
-    [MotionColor.RED]: VectorDirection.UPLEFT,
-    [MotionColor.BLUE]: VectorDirection.DOWNRIGHT,
+  [GridLocation.SOUTHEAST]: {
+    [MotionColor.RED]: VectorDirection.DOWNRIGHT,
+    [MotionColor.BLUE]: VectorDirection.UPLEFT,
   },
-  [GridLocation.NORTHWEST]: {
+  [GridLocation.SOUTHWEST]: {
     [MotionColor.RED]: VectorDirection.DOWNLEFT,
     [MotionColor.BLUE]: VectorDirection.UPRIGHT,
+  },
+  [GridLocation.NORTHWEST]: {
+    [MotionColor.RED]: VectorDirection.UPLEFT,
+    [MotionColor.BLUE]: VectorDirection.DOWNRIGHT,
   },
 };
 

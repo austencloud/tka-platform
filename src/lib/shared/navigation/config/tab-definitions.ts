@@ -720,6 +720,14 @@ export const LAB_TABS: Section[] = [
     color: "#f59e0b",
     gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
+  {
+    id: "visual-builder",
+    label: "Visual Builder",
+    icon: '<i class="fas fa-hand-pointer" aria-hidden="true"></i>',
+    description: "Click grid points to build sequences",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs

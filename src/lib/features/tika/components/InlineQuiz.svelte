@@ -16,8 +16,10 @@
   // Props
   let {
     quiz,
+    onQuizComplete,
   }: {
     quiz: InlineQuiz;
+    onQuizComplete?: (quizId: string, topic: string, correct: boolean) => void;
   } = $props();
 
   // State
@@ -69,6 +71,9 @@
       } else {
         quizState = "incorrect";
       }
+
+      // Notify parent of quiz completion for tracking
+      onQuizComplete?.(quiz.id, quiz.topic || quiz.id, option.correct);
     }, 100);
   }
 

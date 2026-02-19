@@ -67,6 +67,9 @@ const args = process.argv.slice(2);
 const verbose = args.includes("--verbose");
 const fixCountOnly = args.includes("--fix-count");
 const jsonOutput = args.includes("--json");
+const scopeIdx = args.indexOf("--scope");
+const scopePath = scopeIdx !== -1 ? args[scopeIdx + 1] : null;
+const searchDir = scopePath ? `src/lib/${scopePath}` : "src/";
 
 function shouldExclude(filePath) {
   return EXCLUDE_PATTERNS.some((pattern) => filePath.includes(pattern));
@@ -81,7 +84,7 @@ function findFilesWithKeyframes() {
   for (const ext of extensions) {
     try {
       const grepResult = execSync(
-        `grep -r -l "@keyframes" --include="*.${ext}" src/`,
+        `grep -r -l "@keyframes" --include="*.${ext}" ${searchDir}`,
         { encoding: "utf-8", cwd: process.cwd() }
       );
 

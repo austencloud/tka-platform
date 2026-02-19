@@ -31,7 +31,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 12px rgba(225, 29, 72, 0.4);
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--arena-accent, #e11d48) 40%, transparent);
   }
 
   .vs-text {

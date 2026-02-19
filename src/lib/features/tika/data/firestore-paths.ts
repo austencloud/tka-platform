@@ -28,6 +28,29 @@ export function getUserTikaConversationPath(
 }
 
 // ============================================================================
+// USER TIKA INTERACTION PATHS
+// ============================================================================
+
+/**
+ * Path to a user's Tika topic interactions collection
+ * @example "users/abc123/tikaInteractions"
+ */
+export function getUserTikaInteractionsPath(userId: string): string {
+  return `users/${userId}/tikaInteractions`;
+}
+
+/**
+ * Path to a specific Tika topic interaction document
+ * @example "users/abc123/tikaInteractions/letter-a"
+ */
+export function getUserTikaInteractionPath(
+  userId: string,
+  topicId: string
+): string {
+  return `users/${userId}/tikaInteractions/${topicId}`;
+}
+
+// ============================================================================
 // CONSTANTS
 // ============================================================================
 
@@ -37,6 +60,8 @@ export function getUserTikaConversationPath(
 export const TIKA_COLLECTIONS = {
   /** User's Tika conversations */
   CONVERSATIONS: "tikaConversations",
+  /** User's Tika topic interaction tracking */
+  INTERACTIONS: "tikaInteractions",
 } as const;
 
 /**

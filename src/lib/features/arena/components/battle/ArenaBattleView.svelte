@@ -19,6 +19,8 @@
   import type { IArenaOrchestrator } from "../../services/contracts/IArenaOrchestrator";
   import { getAuthSync } from "$lib/shared/auth/firebase";
 
+  let mounted = true;
+
   // Auth context
   let userId = $state<string | null>(null);
 
@@ -94,10 +96,26 @@
       await orchestrator.vote(winnerId);
     } catch (err) {
       console.error("[Arena] Vote failed:", err);
+      arenaState.error = "Vote failed. Please try again.";
+      if (mounted) {
+        voteResult = null;
+        winnerWord = "";
+        transitioning = false;
+        arenaState.isVoting = false;
+      }
+      return;
     }
 
     // Hold vote feedback animation
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise<void>((resolve) => {
+      const id = setTimeout(resolve, 600);
+      if (!mounted) {
+        clearTimeout(id);
+        resolve();
+      }
+    });
+
+    if (!mounted) return;
 
     // Transition to next matchup
     voteResult = null;
@@ -128,6 +146,7 @@
     document.addEventListener("keydown", keydownHandler);
   });
   onDestroy(() => {
+    mounted = false;
     if (keydownHandler) {
       document.removeEventListener("keydown", keydownHandler);
     }

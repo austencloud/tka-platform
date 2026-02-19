@@ -27,7 +27,8 @@ export function createSimplifiedStartPositionState() {
   let allVariations = $state<PictographData[]>([]);
   let selectedPosition = $state<PictographData | null>(null);
   let currentGridMode = $state<GridMode>(GridMode.DIAMOND); // Default, loaded async
-  let currentOrientation = $state<Orientation>(Orientation.IN);
+  let blueOri = $state<Orientation>(Orientation.IN);
+  let redOri = $state<Orientation>(Orientation.IN);
   const selectionListeners = new Set<
     (position: PictographData | null, source: "user" | "sync") => void
   >();
@@ -46,10 +47,9 @@ export function createSimplifiedStartPositionState() {
   }
 
   // Load positions on initialization - always succeeds with hardcoded positions
-  async function loadPositions(gridMode: GridMode = currentGridMode, orientation: Orientation = currentOrientation) {
+  async function loadPositions(gridMode: GridMode = currentGridMode) {
     currentGridMode = gridMode;
-    currentOrientation = orientation;
-    positions = await startPositionManager.getStartPositions(gridMode, orientation);
+    positions = await startPositionManager.getStartPositions(gridMode, blueOri, redOri);
 
     // Persist grid mode to settings when it changes
     try {
@@ -69,10 +69,9 @@ export function createSimplifiedStartPositionState() {
   }
 
   // Load all 16 start position variations for the current grid mode
-  async function loadAllVariations(gridMode: GridMode = currentGridMode, orientation: Orientation = currentOrientation) {
+  async function loadAllVariations(gridMode: GridMode = currentGridMode) {
     currentGridMode = gridMode;
-    currentOrientation = orientation;
-    allVariations = startPositionManager.getAllStartPositionVariations(gridMode, orientation);
+    allVariations = startPositionManager.getAllStartPositionVariations(gridMode, blueOri, redOri);
 
     // Persist grid mode to settings when it changes
     try {
@@ -83,11 +82,29 @@ export function createSimplifiedStartPositionState() {
     }
   }
 
-  // Change orientation and reload all position sets
+  // Regenerate all position sets with current orientations
+  async function regeneratePositions() {
+    positions = await startPositionManager.getStartPositions(currentGridMode, blueOri, redOri);
+    allVariations = startPositionManager.getAllStartPositionVariations(currentGridMode, blueOri, redOri);
+  }
+
+  // Change blue orientation and reload positions
+  async function setBlueOrientation(orientation: Orientation) {
+    blueOri = orientation;
+    await regeneratePositions();
+  }
+
+  // Change red orientation and reload positions
+  async function setRedOrientation(orientation: Orientation) {
+    redOri = orientation;
+    await regeneratePositions();
+  }
+
+  // Convenience: set both orientations at once
   async function setOrientation(orientation: Orientation) {
-    currentOrientation = orientation;
-    positions = await startPositionManager.getStartPositions(currentGridMode, orientation);
-    allVariations = startPositionManager.getAllStartPositionVariations(currentGridMode, orientation);
+    blueOri = orientation;
+    redOri = orientation;
+    await regeneratePositions();
   }
 
   // Select a position
@@ -132,12 +149,17 @@ export function createSimplifiedStartPositionState() {
     get currentGridMode() {
       return currentGridMode;
     },
-    get currentOrientation() {
-      return currentOrientation;
+    get blueOrientation() {
+      return blueOri;
+    },
+    get redOrientation() {
+      return redOri;
     },
 
     // Actions
     selectPosition,
+    setBlueOrientation,
+    setRedOrientation,
     setOrientation,
     setSelectedPosition,
     clearSelectedPosition,

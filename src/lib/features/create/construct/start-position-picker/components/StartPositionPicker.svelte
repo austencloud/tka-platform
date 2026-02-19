@@ -64,7 +64,9 @@ Controls moved below the grid for better UX
       const prefs = JSON.parse(stored) as {
         showAdvanced?: boolean;
         gridMode?: string;
-        orientation?: string;
+        orientation?: string; // legacy single orientation
+        blueOrientation?: string;
+        redOrientation?: string;
       };
 
       // Restore advanced/simple view preference
@@ -75,10 +77,21 @@ Controls moved below the grid for better UX
         }
       }
 
-      // Restore orientation preference (validate against enum)
+      // Restore per-hand orientation preferences (with legacy fallback)
       const validOrientations = [Orientation.IN, Orientation.CLOCK, Orientation.OUT, Orientation.COUNTER] as string[];
-      if (prefs.orientation && validOrientations.includes(prefs.orientation)) {
-        void pickerState.setOrientation(prefs.orientation as Orientation);
+
+      if (prefs.blueOrientation && validOrientations.includes(prefs.blueOrientation)) {
+        void pickerState.setBlueOrientation(prefs.blueOrientation as Orientation);
+      } else if (prefs.orientation && validOrientations.includes(prefs.orientation)) {
+        // Legacy: single orientation applied to blue
+        void pickerState.setBlueOrientation(prefs.orientation as Orientation);
+      }
+
+      if (prefs.redOrientation && validOrientations.includes(prefs.redOrientation)) {
+        void pickerState.setRedOrientation(prefs.redOrientation as Orientation);
+      } else if (prefs.orientation && validOrientations.includes(prefs.orientation)) {
+        // Legacy: single orientation applied to red
+        void pickerState.setRedOrientation(prefs.orientation as Orientation);
       }
 
       // Restore grid mode preference (Diamond/Box)
@@ -105,7 +118,8 @@ Controls moved below the grid for better UX
         showAdvanced: showAdvancedPicker,
         gridMode:
           pickerState.currentGridMode === GridMode.DIAMOND ? "DIAMOND" : "BOX",
-        orientation: pickerState.currentOrientation,
+        blueOrientation: pickerState.blueOrientation,
+        redOrientation: pickerState.redOrientation,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
     } catch (error) {
@@ -174,10 +188,16 @@ Controls moved below the grid for better UX
     persistPreferences();
   }
 
-  // Handle orientation change from cycler
-  async function handleOrientationChange(orientation: Orientation) {
+  // Handle per-hand orientation changes from cyclers
+  async function handleBlueOrientationChange(orientation: Orientation) {
     hapticService?.trigger("selection");
-    await pickerState.setOrientation(orientation);
+    await pickerState.setBlueOrientation(orientation);
+    persistPreferences();
+  }
+
+  async function handleRedOrientationChange(orientation: Orientation) {
+    hapticService?.trigger("selection");
+    await pickerState.setRedOrientation(orientation);
     persistPreferences();
   }
 </script>
@@ -258,8 +278,15 @@ Controls moved below the grid for better UX
     </button>
 
     <OrientationCycler
-      orientation={pickerState.currentOrientation}
-      onOrientationChange={handleOrientationChange}
+      orientation={pickerState.blueOrientation}
+      onOrientationChange={handleBlueOrientationChange}
+      color="blue"
+    />
+
+    <OrientationCycler
+      orientation={pickerState.redOrientation}
+      onOrientationChange={handleRedOrientationChange}
+      color="red"
     />
 
     <button
@@ -389,7 +416,7 @@ Controls moved below the grid for better UX
     gap: 8px;
 
     /* Fixed width so buttons don't shift when label text changes */
-    width: 150px;
+    width: 130px;
 
     /* Touch target */
     min-height: var(--min-touch-target, 48px);

@@ -29,17 +29,13 @@
   import ExportModeContent from "./ExportModeContent.svelte";
   import ExportFooter from "./ExportFooter.svelte";
   import RampProgressIndicator from "./RampProgressIndicator.svelte";
-  import ViewerSettingsPopover from "./ViewerSettingsPopover.svelte";
-  import PropSelectorDrawer from "./PropSelectorDrawer.svelte";
+  import ViewerSettingsModal from "./ViewerSettingsModal.svelte";
   // Services
   import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
 
   const overlay = getSequenceOverlayState();
-
-  // TODO: Add full settings panel with visibility toggles
-  // For now, the gear toggles dark mode (same as before)
 
   // Width detection for responsive layout in split pane
   let isMobileWidth = $state(true);
@@ -61,15 +57,8 @@
   // Track drawer open state for binding
   let drawerOpen = $state(false);
 
-  // Settings popover state
-  let settingsOpen = $state(false);
-
-  // Prop selector drawer state
-  let propDrawerOpen = $state(false);
-
-  function handleOpenPropSelector() {
-    propDrawerOpen = true;
-  }
+  // Settings modal state
+  let settingsModalOpen = $state(false);
 
   // Sync overlay state to drawer state
   $effect(() => {
@@ -174,7 +163,7 @@
                   <button
                     type="button"
                     class="header-action-btn"
-                    onclick={() => (settingsOpen = true)}
+                    onclick={() => (settingsModalOpen = true)}
                     aria-label="Settings"
                     title="Viewer settings"
                   >
@@ -182,14 +171,6 @@
                   </button>
                 {/if}
               </div>
-
-              <ViewerSettingsPopover
-                open={settingsOpen}
-                darkMode={ctx.imgDarkMode}
-                onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
-                onClose={() => (settingsOpen = false)}
-                onOpenPropSelector={handleOpenPropSelector}
-              />
             </header>
 
           <!-- Main area: body + footer side-by-side in landscape, stacked in portrait -->
@@ -259,6 +240,7 @@
                 onStepHalfBack={ctx.stepHalfBeatBackward}
                 onStepHalfForward={ctx.stepHalfBeatForward}
                 onSave={ctx.handleSave}
+                onEdit={ctx.handleEditInConstructor}
                 onCompose={() => ctx.handleOpenInCompose()}
                 onShare={ctx.handleShare}
                 onExport={ctx.enterExportMode}
@@ -283,10 +265,10 @@
   {/if}
 </Drawer>
 
-<!-- Prop selector drawer - rendered outside the viewer drawer so position:fixed works -->
-<PropSelectorDrawer
-  bind:isOpen={propDrawerOpen}
-  onClose={() => (propDrawerOpen = false)}
+<!-- Settings modal - rendered outside the viewer drawer so position:fixed works -->
+<ViewerSettingsModal
+  bind:open={settingsModalOpen}
+  onClose={() => (settingsModalOpen = false)}
 />
 
 <style>

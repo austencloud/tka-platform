@@ -22,8 +22,10 @@ export class MatchupSelector implements IMatchupSelector {
     voterId: string,
     recentPairs: Set<string>
   ): { a: MatchupCandidate; b: MatchupCandidate; reason: MatchupReason } | null {
-    // Filter out voter's own entries
-    const pool = candidates.filter((c) => c.entry.ownerId !== voterId);
+    // Prefer non-owned entries to reduce self-voting bias, but fall back
+    // to the full pool when the voter is the primary publisher.
+    const nonOwned = candidates.filter((c) => c.entry.ownerId !== voterId);
+    const pool = nonOwned.length >= 2 ? nonOwned : candidates;
     if (pool.length < 2) return null;
 
     // 10% chance of fully random matchup

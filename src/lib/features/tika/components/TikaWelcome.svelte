@@ -2,38 +2,64 @@
   TIKA Welcome State
 
   Initial welcome screen with suggested questions.
+  Accepts optional WelcomeContext for personalized suggestions
+  based on mastery data, topic history, and conversation history.
 -->
 <script lang="ts">
+  import type { WelcomeContext, WelcomeSuggestion } from "../services/contracts/ITikaWelcomeBuilder";
+
   let {
     onSubmit,
     isLoading = false,
+    welcomeContext,
   }: {
     onSubmit: (question: string) => void;
     isLoading?: boolean;
+    welcomeContext?: WelcomeContext;
   } = $props();
 
-  const suggestions = [
-    { icon: "fa-crosshairs", text: "What is alpha?", question: "What does alpha mean?" },
-    { icon: "fa-crosshairs", text: "What is beta?", question: "What does beta mean?" },
-    { icon: "fa-crosshairs", text: "What is gamma?", question: "What does gamma mean?" },
-    { icon: "fa-font", text: "What is letter A?", question: "What is letter A?" },
-    { icon: "fa-arrows-alt", text: "What is shift?", question: "What is shift?" },
-    { icon: "fa-layer-group", text: "Type 1 letters", question: "What are Type 1 letters?" },
+  const defaultSuggestions: WelcomeSuggestion[] = [
+    { icon: "fa-crosshairs", text: "What is alpha?", question: "What does alpha mean?", reason: "explore" },
+    { icon: "fa-crosshairs", text: "What is beta?", question: "What does beta mean?", reason: "explore" },
+    { icon: "fa-crosshairs", text: "What is gamma?", question: "What does gamma mean?", reason: "explore" },
+    { icon: "fa-font", text: "What is letter A?", question: "What is letter A?", reason: "explore" },
+    { icon: "fa-arrows-alt", text: "What is shift?", question: "What is shift?", reason: "explore" },
+    { icon: "fa-layer-group", text: "Type 1 letters", question: "What are Type 1 letters?", reason: "explore" },
   ];
+
+  const greeting = $derived(
+    welcomeContext?.greeting ?? "I'm your AI tutor for The Kinetic Alphabet. Ask me anything about:"
+  );
+
+  const suggestions = $derived(
+    welcomeContext?.suggestions ?? defaultSuggestions
+  );
+
+  /** Map suggestion reason to accent CSS class */
+  function getReasonClass(reason: WelcomeSuggestion["reason"]): string {
+    switch (reason) {
+      case "review": return "reason-review";
+      case "continue": return "reason-continue";
+      case "next": return "reason-next";
+      case "explore": return "reason-explore";
+    }
+  }
 </script>
 
 <div class="welcome-state">
   <div class="welcome-icon">
     <i class="fas fa-graduation-cap" aria-hidden="true"></i>
   </div>
-  <h2>Welcome to Tika</h2>
-  <p>
-    I'm your AI tutor for The Kinetic Alphabet. Ask me anything about:
-  </p>
+  <h2>{welcomeContext?.hasHistory ? "Welcome back" : "Welcome to Tika"}</h2>
+  <p>{greeting}</p>
   <ul class="suggestion-list">
     {#each suggestions as suggestion}
       <li>
-        <button onclick={() => onSubmit(suggestion.question)} disabled={isLoading}>
+        <button
+          class={getReasonClass(suggestion.reason)}
+          onclick={() => onSubmit(suggestion.question)}
+          disabled={isLoading}
+        >
           <i class="fas {suggestion.icon}" aria-hidden="true"></i> {suggestion.text}
         </button>
       </li>
@@ -126,6 +152,39 @@
   .suggestion-list button i {
     color: var(--theme-accent, #6366f1);
     width: 16px;
+  }
+
+  /* Reason-based accent colors */
+  .suggestion-list button.reason-review i {
+    color: #f59e0b;
+  }
+
+  .suggestion-list button.reason-review:hover {
+    border-color: #f59e0b;
+  }
+
+  .suggestion-list button.reason-continue i {
+    color: #3b82f6;
+  }
+
+  .suggestion-list button.reason-continue:hover {
+    border-color: #3b82f6;
+  }
+
+  .suggestion-list button.reason-next i {
+    color: #10b981;
+  }
+
+  .suggestion-list button.reason-next:hover {
+    border-color: #10b981;
+  }
+
+  .suggestion-list button.reason-explore i {
+    color: #8b5cf6;
+  }
+
+  .suggestion-list button.reason-explore:hover {
+    border-color: #8b5cf6;
   }
 
   /* Reduced Motion */

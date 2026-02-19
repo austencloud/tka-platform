@@ -1,201 +1,100 @@
 # Module Audit Protocol
 
-When asked to "audit" a module or tab, follow this standardized protocol to evaluate across 8 dimensions and produce a graded scorecard.
+## How Audits Work
+
+Audits use a **three-phase pipeline** with structural separation:
+
+1. **Evidence collection** (`scripts/collect-evidence.cjs`) - Deterministic. No LLM. Scans files with regex and produces structured JSON.
+2. **Evaluation** (`.claude/agents/audit-evaluator.md`) - Read-only Sonnet agent. Grades from evidence using mechanical thresholds.
+3. **Fixing** (`.claude/agents/audit-fixer.md`) - Separate agent. Fixes only cited issues. Cannot grade.
+
+Run audits via `/audit` which orchestrates the full pipeline.
 
 ---
 
-## Phase 1: discovery
+## Grade Rubric (8 Dimensions)
 
-Before grading, understand what you're auditing:
+Each dimension is graded A+ through F. Thresholds are mechanical based on evidence counts.
 
-1. **Read the entry component** and immediate children
-2. **Map dependencies** - services, stores, external integrations
-3. **Identify the component tree** - what renders what
-4. **Note scope** - is this a single component, a tab, or an entire module?
-
----
-
-## Phase 2: Grade Across 8 Dimensions
-
-Each dimension is graded A+ through F. The goal is A+ across all dimensions.
-
-### 1. Architecture (A+ = clean separation)
+### 1. Architecture
 
 | Grade | Criteria |
 |-------|----------|
-| A+ | Single responsibility, clean service composition, proper DI |
-| A | Minor coupling, but responsibilities clear |
-| B | Some mixed concerns, could use extraction |
-| C | Multiple responsibilities crammed together |
-| F | God component, untestable, spaghetti |
+| A+ | 0 barrel imports, 0 Service suffixes, 0 utils/hooks dirs |
+| A | 1-2 naming violations only |
+| B | 3-5 violations or utils file present |
+| C | Barrel imports or 6+ violations |
+| F | God component, pervasive structural issues |
 
-**What to check:**
-- Does each file do one thing? (see `code-style.md`)
-- Are services properly extracted? (see `/monolith` command)
-- Are services registered in ITI containers? (see `src/lib/shared/di/`)
-- No barrel exports?
-
-### 2. Code Quality (A+ = passes all project rules)
+### 2. Code Quality
 
 | Grade | Criteria |
 |-------|----------|
-| A+ | Strict types, correct naming, clean imports |
-| A | Minor type looseness, but solid |
-| B | Some `any` types, naming inconsistencies |
-| C | Frequent type issues, poor naming |
-| F | No types, "Service" suffixes, barrel imports |
+| A+ | 0 any-type findings |
+| A | 1-3 any-type findings |
+| B | 4-10 any-type findings |
+| C | 11+ any-type findings |
+| F | Pervasive type unsafety |
 
-**What to check:**
-- TypeScript strictness (run `/check` if needed)
-- Service naming conventions (see `service-naming.md`)
-- Import hygiene - direct imports only (see `code-style.md`)
-
-### 3. Svelte 5 Compliance (A+ = 100% modern patterns)
+### 3. Svelte 5 Compliance
 
 | Grade | Criteria |
 |-------|----------|
-| A+ | All runes, $props(), no legacy syntax |
-| A | Runes used, minor legacy remnants |
-| B | Mix of runes and legacy |
-| C | Mostly legacy patterns |
-| F | No runes, old reactive syntax |
+| A+ | 0 legacy patterns |
+| A | 1-2 legacy remnants |
+| B | 3-5 legacy patterns |
+| C | Store imports present |
+| F | $: statements widespread |
 
-**What to check:**
-- Uses `$state`, `$derived`, `$effect` (not `let x = writable()`)
-- Uses `$props()` with TypeScript interfaces
-- Prefers `$derived` over `$effect` for computed values
-- No `$:` reactive statements
-
-### 4. Accessibility (A+ = exceeds AAA)
+### 4. Accessibility
 
 | Grade | Criteria |
 |-------|----------|
-| A+ | Exceeds AAA, 48px touch targets, 7:1 contrast |
-| A | Meets AAA fully |
-| B | Minor AAA gaps |
-| C | Meets AA only |
-| F | Accessibility violations |
+| A+ | 0 violations |
+| A | 1-2 borderline findings |
+| B | 1-2 files missing reduced-motion |
+| C | 3+ files missing reduced-motion |
+| F | Widespread violations |
 
-**Delegate to:** `accessibility-auditor` agent for detailed analysis
-
-**Key thresholds (our standards exceed AAA):**
-- Touch targets: 48×48px minimum
-- Color contrast: 7:1 normal text, 4.5:1 large text
-- Motion: respects `prefers-reduced-motion`
-- Focus: visible 2px+ indicators
-
-### 5. UX States (A+ = all states handled gracefully)
+### 5. UX States
 
 | Grade | Criteria |
 |-------|----------|
-| A+ | Loading, error, empty, success states all polished |
-| A | All states present, minor polish needed |
-| B | Missing one state type |
-| C | Only happy path handled |
-| F | No state handling, raw errors exposed |
+| A+ | All 3 states (loading, error, empty) + 0 bare catches |
+| A | 2/3 states present |
+| B | 1/3 states present |
+| C | No state handling |
+| F | No states + bare catches |
 
-**What to check:**
-- Loading state (skeleton, spinner, or progress)
-- Error state (user-friendly message, recovery action)
-- Empty state (helpful guidance, not just blank)
-- Success feedback (confirmation of actions)
-- Optimistic updates where appropriate
-
-### 6. UI Consistency (A+ = follows styling.md exactly)
+### 6. UI Consistency
 
 | Grade | Criteria |
 |-------|----------|
-| A+ | Theme variables, typography tokens, panel system |
-| A | Minor deviations, but consistent |
-| B | Some hardcoded values |
-| C | Inconsistent with design system |
-| F | Ignores design system entirely |
+| A+ | 0 hardcoded colors/durations/legacy vars |
+| A | 1-3 duration-only findings |
+| B | 1-5 hardcoded colors |
+| C | 6+ hardcoded colors |
+| F | Design system ignored |
 
-**What to check (see `styling.md`):**
-- Uses `--theme-*` variables for colors
-- Typography: minimum 12px (`--font-size-compact`), body 14px (`--font-size-min`)
-- Panel backgrounds: `--theme-panel-bg`, `--theme-card-bg`
-- No blur effects on content panels
-- Container queries for responsive sizing
-
-### 7. Performance (A+ = lean and fast)
+### 7. Performance
 
 | Grade | Criteria |
 |-------|----------|
-| A+ | No barrel imports, efficient renders, no leaks |
-| A | Minor inefficiencies |
-| B | Some unnecessary re-renders |
-| C | Performance issues noticeable |
-| F | Barrel imports, memory leaks, blocking operations |
+| A+ | 0 barrel imports, 0 unclean effects, 0 direct transitions |
+| A | 1-2 direct transition imports |
+| B | 1 barrel or 3-5 effects without cleanup |
+| C | Multiple barrel imports |
+| F | Barrel pattern throughout |
 
-**What to check:**
-- No barrel/index.ts imports
-- `$effect` cleanup functions where needed
-- No blocking operations in render path
-- Lazy loading for heavy components
-- Event listener cleanup
-
-### 8. Security (A+ = no vulnerabilities)
+### 8. Security
 
 | Grade | Criteria |
 |-------|----------|
-| A+ | Input validated, XSS prevented, auth checked |
-| A | Solid security, minor hardening possible |
-| B | Some validation gaps |
-| C | Security concerns present |
-| F | XSS vulnerable, no input validation |
-
-**What to check:**
-- User input sanitized before display
-- No `{@html}` with untrusted content
-- Firebase security rules respected
-- Auth checks where needed
-- No secrets in client code
-
----
-
-## Phase 3: Deliverable
-
-After auditing, produce:
-
-### 1. Scorecard
-
-```
-## Audit Scorecard: [Module/Tab Name]
-
-| Dimension | Grade | Notes |
-|-----------|-------|-------|
-| Architecture | | |
-| Code Quality | | |
-| Svelte 5 | | |
-| Accessibility | | |
-| UX States | | |
-| UI Consistency | | |
-| Performance | | |
-| Security | | |
-
-**Overall: [Average Grade]**
-```
-
-### 2. Issues List (prioritized)
-
-```
-### Critical (blocks A grade)
-- [issue]: [file:line] - [description]
-
-### Serious (blocks A+ grade)
-- [issue]: [file:line] - [description]
-
-### Moderate (nice to fix)
-- [issue]: [file:line] - [description]
-```
-
-### 3. Fix Plan
-
-For each issue, provide:
-- Specific file and location
-- What to change
-- Code snippet if helpful
+| A+ | 0 {@html}, 0 eval, 0 secrets |
+| A | {@html} with static content only |
+| B | {@html} with unclear trust |
+| C | {@html} with user content |
+| F | eval() or hardcoded secrets |
 
 ---
 
@@ -206,15 +105,16 @@ For each issue, provide:
 | "Audit the Settings module" | All tabs, services, components in that module |
 | "Audit the Props tab" | Just that tab component and its direct children |
 | "Audit this component" | Single component focus |
-| "Full audit" | Entire application (use subagents) |
+| "Full audit" | Entire application (use subagents per target) |
 
 ---
 
 ## Integration with Existing Tools
 
-- **Accessibility details**: Invoke `accessibility-auditor` agent
-- **TypeScript errors**: Run `/check` command
-- **Architecture issues**: Run `/monolith` command
-- **Styling compliance**: Reference `styling.md` rules
-
-This protocol ensures audits are consistent, thorough, and actionable.
+- **Evidence collection**: `node scripts/collect-evidence.cjs "<scope>" --out .audit-evidence.json`
+- **CSS audits**: `audit-reduced-motion.cjs`, `audit-transitions.cjs`, `audit-durations.cjs` (called by evidence collector with `--scope`)
+- **Accessibility details**: `accessibility-auditor` agent
+- **TypeScript errors**: `/check` command
+- **Architecture issues**: `/monolith` command
+- **Styling compliance**: `styling.md` rules
+- **Tracking**: `audit-tracker.cjs` (claim, record, resolve-issue, stats)

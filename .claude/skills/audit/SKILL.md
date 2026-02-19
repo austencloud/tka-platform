@@ -4,106 +4,154 @@ description: Audit a module, tab, or feature for quality
 
 # Audit Command
 
-**Args:** `$ARGUMENTS` (optional: target path, or "list", "targets", "stats")
+**Args:** `$ARGUMENTS` (optional: target path, or "list", "targets", "stats", "--auto-claim")
 
-## Run
+## Quick Commands (pass-through)
+
+If the user passes a tracker command directly, just run it:
 
 ```bash
 node scripts/audit-tracker.cjs $ARGUMENTS
 ```
 
-## Workflow
+This handles: `list`, `targets`, `stats`, `status <target>`, `resolve-issue <target> <index>`
 
-Read `.claude/rules/auditing.md` for the complete 8-dimension audit protocol.
+## Pipeline Workflow
 
-### Default Behavior (no args)
+For actual audits (no args, or a target path), run the **three-phase pipeline**:
 
-1. Run `node scripts/audit-tracker.cjs` to get the queue
-2. **Immediately propose the top recommendation** with a brief rationale
-3. Ask ONE question: "Audit [target]?" with options: Yes / Pick different target
-4. On confirmation, claim and begin the audit
-
-**Minimize interaction.** User runs `/audit`, you propose a target, they say go, you audit.
-
-### With Target Specified
-
-If user provides a target (e.g., `/audit features/compose`), skip proposal and begin immediately after claiming.
-
-### Large Module Protection
-
-**Modules with >30 files or >3 sub-features cannot be audited as a single unit.** The script will refuse and show sub-features to audit instead.
-
-Example: `features/create` (521 files, 6 sub-features) -> audit `features/create/assemble`, `features/create/generate`, etc. instead.
-
-If the claim command shows "MODULE TOO LARGE FOR SINGLE AUDIT":
-1. Pick one of the listed sub-features
-2. Claim and audit that sub-feature
-3. Repeat for other sub-features as needed
-
-This ensures audits are thorough and meaningful - you can't claim to have audited 500+ files in one pass.
-
-### The Audit Process
-
-1. **Claim the target**: `node scripts/audit-tracker.cjs claim "<target>"`
-2. **Read the entry component** and map the component tree
-3. **Grade across 8 dimensions** (see auditing.md):
-   - Architecture, Code Quality, Svelte 5 Compliance, Accessibility
-   - UX States, UI Consistency, Performance, Security
-4. **Present the scorecard** with grades and prioritized issues
-5. **Immediately record grades** (no confirmation needed):
-   `node scripts/audit-tracker.cjs record "<target>" --grades "A+,A,A,B,A,A,A+,A" --notes "..."`
-6. **If fixes needed**: Present the fix plan and ask "Ready to bring this to A+?" with options to proceed or defer
-7. **If no fixes needed (A+ across the board)**: Ask "Shall I audit the next feature?"
-
-### Useful Commands
-
-```bash
-# See what needs auditing
-node scripts/audit-tracker.cjs
-
-# List all recorded audits
-node scripts/audit-tracker.cjs list
-
-# List all auditable targets
-node scripts/audit-tracker.cjs targets
-
-# Check status of a specific target
-node scripts/audit-tracker.cjs status features/compose
-
-# Show coverage stats
-node scripts/audit-tracker.cjs stats
-
-# Claim a target (prevents parallel agent conflicts)
-node scripts/audit-tracker.cjs claim features/compose
-
-# Force claim a large module (not recommended - prefer sub-features)
-node scripts/audit-tracker.cjs claim features/create --force
-
-# Record audit results (order: Arch, Code, Svelte5, A11y, UX, UI, Perf, Security)
-node scripts/audit-tracker.cjs record features/compose --grades "A+,A,A,B,A,A,A+,A"
-
-# Release a claim without recording (if audit abandoned)
-node scripts/audit-tracker.cjs release features/compose
+```
+audit-tracker --auto-claim → collect-evidence.cjs → audit-evaluator agent → record → present
 ```
 
-## Post-Audit Workflow
+### Role Separation (CRITICAL)
 
-After recording an audit:
+| Role | Can read source? | Can grade? | Can fix? |
+|------|-----------------|------------|----------|
+| Evidence collector (script) | Yes | No | No |
+| Evaluator agent | Evidence JSON + source | Yes | No |
+| Fixer agent | Cited files only | No | Yes |
+| This orchestrator (you) | Coordinates all | No | No |
 
-1. **Recording auto-releases the claim** - no manual release needed
-2. **If you made code changes**, offer to commit them:
-   - Use `/commit` or ask user if they want changes committed
-   - Group audit fixes into a single commit with descriptive message
-3. **Summary**: Provide a brief summary of grades and key changes made
+**You do NOT grade code.** The evaluator agent does. You orchestrate the pipeline.
+
+---
+
+### Phase 1: Claim Target
+
+**No args (auto-select):**
+
+```bash
+node scripts/audit-tracker.cjs --auto-claim
+```
+
+Parse `CLAIMED_TARGET:` from output. If `AUTO_CLAIM_TARGET:` appears, the claim succeeded.
+
+**With target specified** (e.g., `/audit features/compose`):
+
+```bash
+node scripts/audit-tracker.cjs claim "$ARGUMENTS"
+```
+
+**Large module protection:** If the claim command shows "MODULE TOO LARGE", pick a sub-feature from the list and claim that instead.
+
+---
+
+### Phase 2: Collect Evidence
+
+Run the deterministic evidence collector:
+
+```bash
+node scripts/collect-evidence.cjs "<target>" --out .audit-evidence.json
+```
+
+This produces structured JSON with per-dimension findings. No LLM involved. Takes ~10 seconds.
+
+---
+
+### Phase 3: Evaluate
+
+Spawn the **audit-evaluator** agent (read-only, Sonnet):
+
+```
+Task(
+  subagent_type: "audit-evaluator",
+  prompt: "Read the evidence file at F:\tka-platform\.audit-evidence.json and grade the target '<target>' (scope: src/lib/<target>). Apply mechanical thresholds from your protocol. Output the scorecard, issues, GRADES_JSON, and ISSUES_JSON blocks."
+)
+```
+
+The evaluator returns:
+- A formatted scorecard with per-dimension grades + evidence counts
+- A `GRADES_JSON` block with machine-readable grades
+- An `ISSUES_JSON` block with machine-readable issues (file:line citations)
+
+---
+
+### Phase 4: Record
+
+Parse the evaluator's `GRADES_JSON` and `ISSUES_JSON` from its response. Record to tracker:
+
+```bash
+node scripts/audit-tracker.cjs record "<target>" --grades "<A+,A,A,B,A,A,A+,A>" --issues-json '<json>'
+```
+
+Grade order: Architecture, Code Quality, Svelte 5, Accessibility, UX States, UI Consistency, Performance, Security.
+
+---
+
+### Phase 5: Present to User
+
+Show the evaluator's scorecard and issues to the user. Then ask:
+
+1. **Fix now** - Spawn fixer agent for all issues
+2. **Fix critical only** - Spawn fixer for critical/serious issues
+3. **Defer to feedback** - Auto-create feedback items
+4. **Skip** - Leave issues for later
+
+---
+
+### Phase 6 (Optional): Fix
+
+If user chooses to fix, spawn the **audit-fixer** agent:
+
+```
+Task(
+  subagent_type: "audit-fixer",
+  prompt: "Fix these audit issues in TKA Scribe (working dir: F:\tka-platform). Issues: <ISSUES_JSON>. Fix only cited issues. Run typecheck after."
+)
+```
+
+After the fixer completes:
+1. **Re-collect evidence**: `node scripts/collect-evidence.cjs "<target>" --out .audit-evidence.json`
+2. **Re-evaluate**: Spawn evaluator again with fresh evidence
+3. **Re-record**: Update grades in tracker with new results
+4. Present the before/after comparison
+
+---
+
+### Phase 7 (Optional): Defer to Feedback
+
+If user chooses to defer, create feedback items:
+
+```bash
+node scripts/fetch-feedback.js create --type enhancement --module "<module>" --title "Audit: <issue summary>" --description "<full issue with file:line>"
+```
+
+---
+
+## Post-Audit
+
+1. **Recording auto-releases the claim**
+2. **If fixes were made**, offer to commit: group audit fixes into a single commit
+3. **Summary**: Show grades, issues fixed/deferred, and next recommendation
 
 ## Important Notes
 
-- **Always claim before auditing** to prevent conflicts with parallel agents
-- **Claims use file locking** to prevent race conditions between parallel agents
-- **Large modules (>30 files or >3 sub-features) must be audited as sub-features** - the script will refuse to claim them
-- Grade order for `--grades` flag: Architecture, Code Quality, Svelte 5, Accessibility, UX States, UI Consistency, Performance, Security
-- Targets are auto-browseed from `src/lib/features/` and `src/lib/shared/`
-- Sub-features are auto-browseed within large modules (e.g., `create/assemble`, `create/generate`)
-- Audits older than 30 days are flagged as stale
-- Claims expire after 4 hours if not released
-- The goal is **A+ across all dimensions**
+- **Evidence is deterministic** - grep finds violations or it doesn't
+- **Thresholds are mechanical** - 0 violations = A+, period
+- **Evaluator cannot fix code** - no incentive to rationalize
+- **Issues have file:line citations** - accountability
+- **Re-evaluation uses fresh evidence** - not the fixer's word
+- Claims expire after 4 hours
+- Large modules (>30 files) must be audited as sub-features
+- The goal is A+ across all 8 dimensions

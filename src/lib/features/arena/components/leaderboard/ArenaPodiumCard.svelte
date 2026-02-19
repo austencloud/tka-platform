@@ -85,7 +85,7 @@
   }
 
   .podium-card.first {
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--medal-color, #fbbf24) 15%, transparent);
   }
 
   .medal-row {
