@@ -112,13 +112,13 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   "pro": {
     definition: "A prop rotation type where the prop rotates in the same direction as the hand's arc. Also called 'prospin'. At 0 turns, center-relative orientation is preserved (e.g. in stays in) — this specific case is called an 'isolation', where the prop rotates with the arc creating the visual effect of a fixed point (distinct from float, which holds absolute spatial angle). At higher turn counts, the parity rules apply: even turns (0, 2) preserve orientation, odd turns (1, 3) reverse it.",
     examples: ["Hand shifts W to N clockwise, prop rotates clockwise with the arc", "0-turn pro: center-relative orientation preserved (isolation)", "1-turn pro: orientation reverses", "2-turn pro: orientation preserved again"],
-    relatedTerms: ["anti", "float", "isolation", "rotation"],
+    relatedTerms: ["anti", "float", "half-float", "isolation", "rotation"],
     category: "rotation"
   },
   "anti": {
     definition: "A prop rotation type where the prop rotates opposite to the hand's arc. Also called 'antispin'. Creates petal-like patterns in continuous motion. At 0 turns, orientation reverses (e.g. in becomes out). At higher turn counts, the parity rules apply: even turns (0, 2) reverse orientation, odd turns (1, 3) preserve it — the opposite of pro.",
     examples: ["Hand shifts W to N clockwise, prop rotates counter-clockwise against the arc", "0-turn anti: orientation reverses (in becomes out)", "1-turn anti: orientation preserved", "2-turn anti: orientation reverses again"],
-    relatedTerms: ["pro", "float", "rotation"],
+    relatedTerms: ["pro", "float", "half-float", "rotation"],
     category: "rotation"
   },
   "isolation": {
@@ -140,9 +140,15 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "rotation"
   },
   "float": {
-    definition: "A prop rotation type where the prop does not rotate at all during a shift — it holds its absolute spatial angle. Float only applies to shifts because it requires a curved hand path; without a curve, there is no distinction between float and 0-turn static. Because the hand traces an arc while the prop holds still, the center-relative orientation changes even though there is no prop rotation. Float has no turn count — it is a single binary state.",
+    definition: "A prop rotation type where the prop does not rotate at all during a shift — it holds its absolute spatial angle. Float only applies to shifts because it requires a curved hand path; without a curve, there is no distinction between float and 0-turn static. Because the hand traces an arc while the prop holds still, the center-relative orientation changes even though there is no prop rotation. Mathematically equivalent to -0.5 turns from base rotation, which also makes float the symmetry boundary between pro and anti — going past float means you've crossed into the opposite motion type.",
     examples: ["Hand moves from W to N, prop maintains its exact facing in space", "Center-relative orientation changes as the hand arcs (e.g., 'in' may become 'clock')", "Only meaningful during shifts — a non-moving or straight-line hand path has no float distinction"],
-    relatedTerms: ["pro", "anti", "shift", "rotation", "orientation"],
+    relatedTerms: ["half-float", "pro", "anti", "shift", "rotation", "orientation"],
+    category: "rotation"
+  },
+  "half-float": {
+    definition: "A prop rotation state at -0.25 turns from the base rotation — halfway between float (no rotation, -0.5 turns) and the base form (0 turns). The prop rotates in the motion's direction (pro or anti) but less than the base amount, producing an interradial orientation change (45 degrees) instead of the full cardinal change (90 degrees). Only meaningful at Level 7, where quarter-turn subdivision and interradial orientations exist. The name is mathematically literal: half the turn offset of a float. Like float, half-float applies only to shifts (curved hand paths).",
+    examples: ["Pro shift E to N with half-float: orientation ends at counterIn instead of in (0 turns) or counter (float)", "Half-float is -0.25 turns; float is -0.5 turns; the name reflects the halved offset", "Completing the L7 turn continuum: ... float (-0.5) → half-float (-0.25) → base (0) → +0.25 → +0.5 ..."],
+    relatedTerms: ["float", "pro", "anti", "shift", "interradial", "turns"],
     category: "rotation"
   },
   "static": {
@@ -154,7 +160,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   "shift": {
     definition: "A hand motion type where the hand arcs along the perimeter to an adjacent grid point. The curved arc is what distinguishes shifts from dashes and hashes (straight lines). The prop behavior during a shift depends on the rotation type: pro rotates with the arc, anti rotates against it, float holds absolute spatial angle. On a 4-point grid, adjacent points are 90° apart; on an 8-point grid, 45° apart.",
     examples: ["N to E is a shift (4-point grid, 90° arc)", "NE to SE is a shift (8-point grid, 45° arc)", "Type 1 and Type 2 letters use shifts"],
-    relatedTerms: ["static", "dash", "pro", "anti", "float"],
+    relatedTerms: ["static", "dash", "pro", "anti", "float", "half-float"],
     category: "motion"
   },
   "dash": {
@@ -170,9 +176,9 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "motion"
   },
   "turns": {
-    definition: "Additional prop rotation beyond the base rotation inherent to the motion type. 1 turn = 180 degrees of additional rotation. This unit is a deliberate pedagogical choice: at 180°, whole turns 0-3 stay as clean small integers (Level 2), half turns (90°) produce cardinal orientation shifts (Level 3), and quarter turns (45°) produce interradial orientations (Level 7). If 1 turn were 360°, interradials would require 1/8 turns; if 90°, Level 2 would need 6 turn values. At 0 turns, pro and anti still produce base rotation from the hand path. The turn count measures rotation on top of that base behavior.",
-    examples: ["0 turns with pro shift: prop rotates 90 degrees (base only, no additional)", "1 turn with pro shift: prop rotates 90 degrees base + 180 degrees additional", "0 turns with dash: no rotation (pure translation)"],
-    relatedTerms: ["rotation", "pro", "anti", "float", "level"],
+    definition: "Additional prop rotation beyond the base rotation inherent to the motion type. 1 turn = 180 degrees of additional rotation. This unit is a deliberate pedagogical choice: at 180°, whole turns 0-3 stay as clean small integers (Level 2), half turns (90°) produce cardinal orientation shifts (Level 3), and quarter turns (45°) produce interradial orientations (Level 7). If 1 turn were 360°, interradials would require 1/8 turns; if 90°, Level 2 would need 6 turn values. At 0 turns, pro and anti still produce base rotation from the hand path. The turn count measures rotation on top of that base behavior. The turn axis extends into negative values for shifts: -0.25 (half-float) and -0.5 (float). Values beyond -0.5 are equivalent to the opposite motion type (e.g., pro at -0.75 = anti at -0.25), making float the symmetry boundary.",
+    examples: ["0 turns with pro shift: prop rotates 90 degrees (base only, no additional)", "1 turn with pro shift: prop rotates 90 degrees base + 180 degrees additional", "0 turns with dash: no rotation (pure translation)", "Full L7 continuum for shifts: float (-0.5) → half-float (-0.25) → 0 → 0.25 → 0.5 → 0.75 → 1.0 → ..."],
+    relatedTerms: ["rotation", "pro", "anti", "float", "half-float", "level"],
     category: "rotation"
   },
   "orientation": {
@@ -188,9 +194,9 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "dual-shift": {
-    definition: "A letter type (Type 1) where both hands shift simultaneously to adjacent points. The largest type with 22 letters (A through V).",
-    examples: ["Letters A through V", "A: both hands shift, both pro", "C: both hands shift, hybrid (one pro, one anti)"],
-    relatedTerms: ["shift", "letter"],
+    definition: "A letter type (Type 1) where both hands shift simultaneously to adjacent points. The largest type with 22 letters (A through V). Organized into 6 groups by timing and direction: split-same (A,B,C), split-opposite (D,E,F), together-same (G,H,I), together-opposite (J,K,L), quarter-opposite (M,N,O), and quarter-same (S,T,U,V). Five groups have 3 letters; quarter-same has 4 because leader/follower in gamma breaks color-swap invariance for hybrids. See domain topic 'stuv-anomaly' for the full explanation.",
+    examples: ["Letters A through V", "A: both hands shift, both pro", "C: both hands shift, hybrid (one pro, one anti)", "S,T,U,V: quarter-same group has 4 letters due to leader/follower"],
+    relatedTerms: ["shift", "letter", "leader-follower"],
     category: "letterType"
   },
   "cross-shift": {
@@ -509,9 +515,9 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "hash": {
-    definition: "A hand motion type where the hand moves in a straight line to or from the center grid point. A 'half-dash' — the same straight-line traverse as a dash, but covering half the distance (center to perimeter or perimeter to center instead of perimeter to opposite perimeter). Introduced in Level 5 with centric grid mode. Like dashes, hashes follow straight lines, so pro/anti/float distinctions do not apply. At 0 turns, the prop does not rotate. At 1+ turns, the prop rotates CW or CCW during the traverse.",
-    examples: ["N to center is a hash", "Center to E is a hash", "The name 'hash' is a play on 'half-dash'"],
-    relatedTerms: ["dash", "shift", "static", "centric", "tau", "motion"],
+    definition: "A hand motion type where the hand moves in a straight line to or from the center grid point. Hash is **dash-** (dash with a minus modifier) — the same straight-line traverse as a dash, but covering half the distance (center to perimeter or perimeter to center). 'Hash' is the official name for dash-, just as 'skew' is the official name for shift+/-. Introduced in Level 5 with centric grid mode. Same rotation physics as dash: at 0 turns, no rotation (1 state); at 1+ turns, CW or CCW (2 states per turn count). Pro/anti/float distinctions do not apply (straight line, not curved arc).",
+    examples: ["N to center is a hash (dash-)", "Center to E is a hash", "Hash = dash- = half-dash, same physics as dash"],
+    relatedTerms: ["dash", "shift", "static", "centric", "tau", "motion", "hand-path-modifier"],
     category: "motion"
   },
   "interradial": {
@@ -525,5 +531,65 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     examples: ["0-turn pro shift: prop rotates with the arc (base rotation preserves orientation)", "0-turn anti shift: prop rotates against the arc (base rotation reverses orientation)", "0-turn dash: no rotation, no direction (just one state)"],
     relatedTerms: ["turns", "pro", "anti", "shift", "dash", "orientation"],
     category: "rotation"
+  },
+  "hand-path-modifier": {
+    definition: "The +/- system that extends or shortens standard hand paths. Applies to both shifts and dashes. For shifts: skew+ (longer arc), skew- (shorter arc). For dashes: dash- (to/from center, called 'hash'), dash+ (cross-grid, L6), dash++ (cross-grid to opposite perimeter, L6). The modifier is displayed per-hand in the turns column of the TKA glyph. Modifiers do NOT change the letter type classification — dash and dash- are both in the 'dash' family.",
+    examples: ["Skew+ (shift+): S to NE, extended arc spanning 3 segments", "Dash- (hash): N to center, shortened straight line", "Dash+ (L6): perimeter to center of other grid"],
+    relatedTerms: ["shift", "dash", "hash", "skew", "hand-path"],
+    category: "motion"
+  },
+  "skew": {
+    definition: "A shift with a +/- path length modifier (Level 4+, 8-point grid). Skew+ extends the arc beyond a single segment (e.g., S to NE spanning 3 segments). Skew- shortens the arc to less than one segment. Skews support all three shift motion types (pro, anti, float) and are theoretically unbounded in arc length. For enumeration, the standard single-segment shift is counted; skews are extensions.",
+    examples: ["Skew+ (shift+): extended arc, e.g. S to NE", "Skew- (shift-): shortened arc", "Skew++ (shift++): double-extended arc"],
+    relatedTerms: ["shift", "hand-path-modifier", "hand-path"],
+    category: "motion"
+  },
+  "leader-follower": {
+    definition: "A distinction that arises in asymmetric positions (gamma, zeta, eta) when both hands shift the same direction. One hand is directionally 'ahead' of the other, creating a leader and a follower. This matters for letter assignment because the leader and follower can have different turn values. In the TKA glyph, the leader's turn number appears on top, the follower's on bottom. Leader/follower does NOT apply to opposite-direction movement (hands diverge/converge symmetrically) or to symmetric positions (alpha, beta). Leader/follower is combinatorially equivalent to mixed motion types: it doubles the variation space the same way that having one pro and one anti does.",
+    examples: ["In gamma, same-direction shifts create leader/follower — requires S, T, U, V letters", "In alpha (symmetric), no leader/follower — uses A through L", "Opposite-direction shifts in any position have no leader/follower", "S,T,U,V each have the same variation count as hybrids (C, F, I, L, O) because leader/follower doubles the space"],
+    relatedTerms: ["gamma", "zeta", "eta", "position", "symmetry-invariance"],
+    category: "position"
+  },
+  "symmetry-invariance": {
+    definition: "The founding design principle that a pictograph represents the same letter under rotation, reflection, and color swap. This minimizes the alphabet by treating spatially equivalent arrangements as identical. The principle holds for symmetric positions (alpha, beta) and opposite-direction movement. It breaks for same-direction movement in asymmetric positions (gamma), which is why the quarter-same group has 4 letters (S,T,U,V) instead of the usual 3.",
+    examples: ["Rotate a pictograph card — same letter", "Mirror a pictograph — same letter", "Swap red/blue — same letter (except STUV hybrids)", "U and V exist because color-swapping a quarter-same hybrid changes which motion type leads"],
+    relatedTerms: ["leader-follower", "dual-shift", "gamma"],
+    category: "general"
+  },
+  "caps": {
+    definition: "Continuous Assembly Patterns (CAPs) — a concept from the poi community coined by Damien (Zaltymbunk) on the Home of Poi forums. Originally intended as ANY composite cyclic pattern, but the community narrowed 'cap' to mean the C-CAP (extension + antispin petal alternation, kidney-bean shape). Key figures: Damien (coined), Alien Jon (promoted), Nick Woolsey/PlayPoi (popularized as 'Capped Antispin Patterns'), DrexFactor (documented), Charlie Cushing (8-step CAP, 9-Square Theory). CAPs and LOOPs are parallel concepts, not parent/child. Neither is a subset of the other.",
+    examples: ["C-CAP: the kidney-bean pattern most spinners call 'a cap'", "CAPs compose per-hand trajectories (overlay left path + right path)", "LOOPs compose per-beat snapshots (one letter = both hands)"],
+    relatedTerms: ["loop", "compound", "vtg"],
+    category: "sequence"
+  },
+  "lorq-nichols": {
+    definition: "Lorq Nichols (Sir Lorq) — influential flow arts educator who created the Shape Matrix, Tech Tiles, 324 Patterns (27 arm paths x 12 shapes x 3 planes), 9 Flower Families, 144 Atomic Hybrids, the Book of P.H.A.T. (with Brian Thompson, David Cantor, and Noel Yee), and the 3 Planes System. His Shape Matrix — a multiplication table cross-referencing left-hand and right-hand flower patterns — is conceptually adjacent to TKA's per-beat both-hands encoding. Austen took Lorq's class in 2017, likely planting seeds for TKA's enumerative approach.",
+    examples: ["Shape Matrix: cross-reference L/R hand patterns", "324 Patterns: 27 arm paths x 12 shapes x 3 planes", "3 Planes System: wall, wheel, floor"],
+    relatedTerms: ["vtg", "caps"],
+    category: "general"
+  },
+  "quarter-time": {
+    definition: "A misnomer for gamma patterns (M through V) in VTG vocabulary. It describes a 90-degree phase offset between hands, NOT a timing or duration change. VTG's split and tog have formal phase designations, but quarter time never received equivalent formal naming. It was strapped onto VTG's framework by later practitioners (Jonah and others) without integration into the original four-category system. In TKA, these patterns are simply the gamma letters — no special 'quarter time' designation needed.",
+    examples: ["'Quarter time' = 90-degree phase offset, not a timing change", "In TKA, these are just gamma letters (M through V)", "VTG never formally integrated QT into its core four categories"],
+    relatedTerms: ["vtg", "gamma"],
+    category: "notation"
+  },
+  "tau-dash": {
+    definition: "The Type 4 letter τ- (tau-dash). One hand dashes while the other is static, with the static hand at center. Distinct from other Type 4 letters (Φ, Ψ, Λ) because the static hand position is center, not perimeter. τ- has NO Type 5 (dual-dash) variant because a hand at center cannot perform a standard dash — there is no 'opposite' of center on the grid.",
+    examples: ["τ-: one hand dashes, static hand at center", "No τ-- exists (can't dual-dash from center)", "Type 4 = one dashes, one static"],
+    relatedTerms: ["dash", "tau", "centric"],
+    category: "letterType"
+  },
+  "elemental-model": {
+    definition: "A mnemonic framework mapping VTG's timing/direction categories to classical elements plus two additions. The original four elements (Earth, Water, Air, Fire) were popularized by Leonardo Icaza and taught by Ronan McLoughlin. Austen Cloud expanded it with Sun and Moon to cover gamma patterns. Same-direction elements (Earth, Water, Sun) are grid-mode invariant. Opposite-direction elements (Air, Fire, Moon) permute when switching between diamond and box mode.",
+    examples: ["Earth = tog-same (G,H,I), Water = split-same (A,B,C), Air = tog-opp, Fire = split-opp", "Sun = quarter-same (S,T,U,V), Moon = quarter-opp (MP,NQ,OR compounds)", "Diamond DJ = Air/Fire, but Box DJ = Moon"],
+    relatedTerms: ["vtg", "quarter-time", "gamma", "compound-letters"],
+    category: "notation"
+  },
+  "leonardo-icaza": {
+    definition: "Leonardo Icaza (@poidanceflow on Instagram), Vancouver BC-based poi spinner who coined 'body tracer' and defined horizontal stacking for poi. Popularized the elemental model that maps VTG timing/direction categories to classical elements (Earth, Water, Air, Fire). Featured in 'The Art of Flow' (2012 documentary). Teaching primarily via Instagram and in-person workshops. DrexFactor called him 'The Most Influential Poi Spinner You've Never Heard Of.'",
+    examples: ["Coined 'body tracer'", "Defined horizontal stacking", "Popularized the 4-element VTG mapping"],
+    relatedTerms: ["elemental-model", "vtg", "lorq-nichols"],
+    category: "general"
   }
 } as const satisfies Record<string, GlossaryEntry>;

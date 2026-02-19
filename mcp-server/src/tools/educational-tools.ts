@@ -17,6 +17,8 @@ import {
   TERM_ALIASES,
   resolveTermAlias,
   POSITION_DEFINITIONS,
+  listDomainTopics,
+  findDomainTopic,
 } from "@tka/domain";
 
 export function registerEducationalTools(server: McpServer): void {
@@ -629,6 +631,67 @@ ${posInfo.examples.map(e => `- ${e}`).join("\n")}
 
       return {
         content: [{ type: "text" as const, text: output }],
+      };
+    }
+  );
+
+  // Tool: get_domain_topic
+  server.tool(
+    "get_domain_topic",
+    "Get deep-dive content on a TKA domain topic. Returns extended reference material on topics like base rotation, orientation algebra, combinatorial space, hand path modifiers, the level system, VTG, compound letters, LOOPs vs CAPs, and more. Use 'list: true' to see all available topics.",
+    {
+      topic: z.string().optional().describe("Topic key or natural language query (e.g., 'base-rotation', 'how does orientation algebra work', 'caps vs loops')"),
+      list: z.boolean().optional().default(false).describe("If true, returns list of all available topics instead of content"),
+    },
+    async ({ topic, list = false }) => {
+      if (list) {
+        const topics = listDomainTopics();
+        const listing = topics
+          .map((t) => `- **${t.key}**: ${t.title}`)
+          .join("\n");
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `# Available Domain Topics (${topics.length})\n\n${listing}\n\nUse \`get_domain_topic\` with any topic key or natural language query to get the full content.`,
+            },
+          ],
+        };
+      }
+
+      if (!topic) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: 'Please provide a topic key or query. Use `list: true` to see available topics.',
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const result = findDomainTopic(topic);
+
+      if (!result) {
+        const topics = listDomainTopics();
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Topic "${topic}" not found.\n\nAvailable topics:\n${topics.map((t) => `- ${t.key}: ${t.title}`).join("\n")}`,
+            },
+          ],
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `# ${result.title}\n\n${result.content}`,
+          },
+        ],
       };
     }
   );

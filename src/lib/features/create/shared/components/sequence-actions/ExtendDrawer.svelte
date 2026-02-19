@@ -236,4 +236,14 @@
     font-weight: 500;
     color: var(--theme-accent);
   }
+
+  /* Fullscreen on mobile — browsing interface needs space */
+  @media (max-width: 768px) {
+    :global(.drawer-content:has(.extend-drawer)) {
+      height: 100vh !important;
+      height: 100dvh !important;
+      max-height: none !important;
+      border-radius: 0 !important;
+    }
+  }
 </style>

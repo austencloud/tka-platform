@@ -40,4 +40,15 @@ export interface ITriGridCalculator {
     orientation: Orientation,
     mode: TriGridMode,
   ): number;
+
+  /**
+   * Compute the perpendicular offset for a prop in beta position (both hands at same vertex).
+   * Blue offsets +90° from the radial line, red offsets -90°.
+   * Returns pixel offsets in SVG coordinate space.
+   */
+  computeBetaOffset(
+    location: GridLocation,
+    color: "blue" | "red",
+    mode: TriGridMode,
+  ): Point;
 }

@@ -42,6 +42,12 @@ export class CsvLoader implements ICSVLoader {
           data: csvData.skewedData || "",
           source: this.isWindowDataAvailable() ? "window" : "fetch",
         };
+      } else if (filename.includes("Trigrid") || filename.includes("trigrid")) {
+        return {
+          success: true,
+          data: csvData.trigridData || "",
+          source: this.isWindowDataAvailable() ? "window" : "fetch",
+        };
       } else {
         return {
           success: false,
@@ -105,6 +111,8 @@ export class CsvLoader implements ICSVLoader {
       } else if (gridMode === GridMode.SKEWED) {
         // Use skewed data if available, fall back to diamond for compatibility
         data = csvData.skewedData || csvData.diamondData;
+      } else if (gridMode === GridMode.TRIGRID) {
+        data = csvData.trigridData || "";
       } else {
         return {
           success: false,
@@ -138,6 +146,7 @@ export class CsvLoader implements ICSVLoader {
     DIAMOND: "/data/pictographs/DiamondPictographDataframe.csv",
     BOX: "/data/pictographs/BoxPictographDataframe.csv",
     SKEWED: "/data/pictographs/SkewedPictographDataframe.csv",
+    TRIGRID: "/data/pictographs/TrigridPictographDataframe.csv",
   } as const;
 
   private csvData: CsvDataSet | null = null;
@@ -209,11 +218,13 @@ export class CsvLoader implements ICSVLoader {
   }
 
   private async loadFromStaticFiles(): Promise<CsvDataSet> {
-    const [diamondResponse, boxResponse, skewedResponse] = await Promise.all([
-      fetch(CsvLoader.CSV_FILES.DIAMOND),
-      fetch(CsvLoader.CSV_FILES.BOX),
-      fetch(CsvLoader.CSV_FILES.SKEWED).catch(() => null), // Optional - may not exist yet
-    ]);
+    const [diamondResponse, boxResponse, skewedResponse, trigridResponse] =
+      await Promise.all([
+        fetch(CsvLoader.CSV_FILES.DIAMOND),
+        fetch(CsvLoader.CSV_FILES.BOX),
+        fetch(CsvLoader.CSV_FILES.SKEWED).catch(() => null), // Optional - may not exist yet
+        fetch(CsvLoader.CSV_FILES.TRIGRID).catch(() => null), // Optional - may not exist yet
+      ]);
 
     this.validateResponses(diamondResponse, boxResponse);
 
@@ -228,10 +239,17 @@ export class CsvLoader implements ICSVLoader {
       skewedData = await skewedResponse.text();
     }
 
+    // Load trigrid data if available
+    let trigridData: string | undefined;
+    if (trigridResponse?.ok) {
+      trigridData = await trigridResponse.text();
+    }
+
     return {
       diamondData,
       boxData,
       skewedData,
+      trigridData,
     };
   }
 

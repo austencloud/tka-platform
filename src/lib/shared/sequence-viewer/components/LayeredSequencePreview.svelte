@@ -196,6 +196,7 @@
   let rows = $state(0);
   let isLoading = $state(true);
   let isRendering = false;
+  let renderQueued = false;
   let cellWidth = $state(0);
   let hasMixedDurations = $state(false);
   let durationRows = $state<TimelineRow[]>([]);
@@ -415,7 +416,10 @@
       return;
     }
 
-    if (isRendering) return;
+    if (isRendering) {
+      renderQueued = true;
+      return;
+    }
     isRendering = true;
 
     try {
@@ -483,8 +487,23 @@
         return;
       }
 
-      // Clear old URLs before render
-      clearCellUrls();
+      // Collect old blob URLs to revoke AFTER new render completes.
+      // Revoking before render causes ERR_FILE_NOT_FOUND flashes
+      // because the component still displays old URLs during the async gap.
+      const oldBlobUrls = cells
+        .filter(c => c.imageUrl.startsWith("blob:"))
+        .map(c => c.imageUrl);
+
+      // Find and remove any global cache entries that reference these URLs.
+      // Without this, toggling dark→light→dark serves revoked URLs from cache.
+      if (oldBlobUrls.length > 0) {
+        const urlSet = new Set(oldBlobUrls);
+        for (const [key, entry] of globalPreviewCache) {
+          if (entry.cells.some(c => urlSet.has(c.imageUrl))) {
+            globalPreviewCache.delete(key);
+          }
+        }
+      }
 
       // Pre-populate ALL cells with placeholders immediately.
       // This gives the grid its full dimensions from frame one — no layout shift
@@ -558,10 +577,20 @@
         durationRows: computedDurationRows,
         hasMixedDurations: mixed,
       });
+
+      // Now safe to revoke old blob URLs — new ones are in the DOM
+      for (const url of oldBlobUrls) {
+        URL.revokeObjectURL(url);
+      }
     } catch (error) {
       console.error("Failed to render cells:", error);
     } finally {
       isRendering = false;
+      // If a render was requested while we were busy, run it now
+      if (renderQueued) {
+        renderQueued = false;
+        renderAllCells();
+      }
     }
   }
 

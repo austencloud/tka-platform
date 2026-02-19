@@ -82,7 +82,7 @@ Provides consistent styling and interaction patterns for all generation setting 
     onclick={handleClick}
     onkeydown={handleKeydown}
     aria-label={`${title}: ${currentValue}. Click to change.`}
-    style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex}; --header-font-size: {headerFontSize}; grid-column: span {gridColumnSpan};"
+    style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex}; grid-column: span {gridColumnSpan};"
   >
     <CardHeader {title} {headerFontSize} />
 
@@ -116,7 +116,7 @@ Provides consistent styling and interaction patterns for all generation setting 
   <div
     class="base-card"
     aria-label={`${title}: ${currentValue}`}
-    style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex}; --header-font-size: {headerFontSize}; grid-column: span {gridColumnSpan};"
+    style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex}; grid-column: span {gridColumnSpan};"
   >
     <CardHeader {title} {headerFontSize} />
 

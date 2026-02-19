@@ -19,16 +19,12 @@
     redOrientation: Orientation;
     motionType: TriGridMotionType;
     showGrid: boolean;
-    showArrows: boolean;
-    showOrientations: boolean;
     onModeChange: (mode: TriGridMode) => void;
     onPositionChange: (blue: GridLocation, red: GridLocation) => void;
     onBlueOrientationChange: (o: Orientation) => void;
     onRedOrientationChange: (o: Orientation) => void;
     onMotionTypeChange: (t: TriGridMotionType) => void;
     onToggleGrid: () => void;
-    onToggleArrows: () => void;
-    onToggleOrientations: () => void;
   }
 
   const {
@@ -39,16 +35,12 @@
     redOrientation,
     motionType,
     showGrid,
-    showArrows,
-    showOrientations,
     onModeChange,
     onPositionChange,
     onBlueOrientationChange,
     onRedOrientationChange,
     onMotionTypeChange,
     onToggleGrid,
-    onToggleArrows,
-    onToggleOrientations,
   }: Props = $props();
 
   const positions = $derived(getTriGridPositions(mode));
@@ -68,7 +60,7 @@
   <!-- Mode toggle -->
   <section class="control-section">
     <h3>Mode</h3>
-    <div class="toggle-group">
+    <div class="toggle-group mode-grid">
       <button
         class="toggle-btn"
         class:active={mode === "upright"}
@@ -76,7 +68,7 @@
         aria-pressed={mode === "upright"}
       >
         <i class="fas fa-caret-up" aria-hidden="true"></i>
-        Upright
+        Up
       </button>
       <button
         class="toggle-btn"
@@ -85,7 +77,25 @@
         aria-pressed={mode === "inverted"}
       >
         <i class="fas fa-caret-down" aria-hidden="true"></i>
-        Inverted
+        Down
+      </button>
+      <button
+        class="toggle-btn"
+        class:active={mode === "left"}
+        onclick={() => onModeChange("left")}
+        aria-pressed={mode === "left"}
+      >
+        <i class="fas fa-caret-left" aria-hidden="true"></i>
+        Left
+      </button>
+      <button
+        class="toggle-btn"
+        class:active={mode === "right"}
+        onclick={() => onModeChange("right")}
+        aria-pressed={mode === "right"}
+      >
+        <i class="fas fa-caret-right" aria-hidden="true"></i>
+        Right
       </button>
     </div>
   </section>
@@ -167,14 +177,6 @@
         <input type="checkbox" checked={showGrid} onchange={onToggleGrid} />
         Grid
       </label>
-      <label class="toggle-label">
-        <input type="checkbox" checked={showArrows} onchange={onToggleArrows} />
-        Arrows
-      </label>
-      <label class="toggle-label">
-        <input type="checkbox" checked={showOrientations} onchange={onToggleOrientations} />
-        Orientations
-      </label>
     </div>
   </section>
 </div>
@@ -206,6 +208,12 @@
     display: flex;
     gap: 4px;
     flex-wrap: wrap;
+  }
+
+  .toggle-group.mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
   }
 
   .toggle-btn {

@@ -116,7 +116,7 @@ const NON_ZERO_TURNS_DASH_LOCATION_MAP: Record<string, Record<GridLocation, Grid
     [GridLocation.SOUTHEAST]: GridLocation.SOUTHWEST,
     [GridLocation.SOUTHWEST]: GridLocation.NORTHWEST,
     [GridLocation.NORTHWEST]: GridLocation.NORTHEAST,
-  },
+  } as Record<GridLocation, GridLocation>,
   counter_clockwise: {
     [GridLocation.NORTH]: GridLocation.WEST,
     [GridLocation.EAST]: GridLocation.NORTH,
@@ -126,7 +126,7 @@ const NON_ZERO_TURNS_DASH_LOCATION_MAP: Record<string, Record<GridLocation, Grid
     [GridLocation.SOUTHEAST]: GridLocation.NORTHEAST,
     [GridLocation.SOUTHWEST]: GridLocation.SOUTHEAST,
     [GridLocation.NORTHWEST]: GridLocation.SOUTHWEST,
-  },
+  } as Record<GridLocation, GridLocation>,
 };
 
 // Diamond mode Type3 dash location map
@@ -305,6 +305,6 @@ function getOppositeLocation(location: GridLocation): GridLocation {
     [GridLocation.SOUTHWEST]: GridLocation.NORTHEAST,
     [GridLocation.SOUTHEAST]: GridLocation.NORTHWEST,
     [GridLocation.NORTHWEST]: GridLocation.SOUTHEAST,
-  };
+  } as Record<GridLocation, GridLocation>;
   return oppositeMap[location] || location;
 }

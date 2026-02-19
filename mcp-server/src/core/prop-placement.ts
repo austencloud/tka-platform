@@ -103,7 +103,7 @@ const DIAMOND_ANGLE_MAP: Record<Orientation, Record<GridLocation, number>> = {
     [GridLocation.SOUTHWEST]: 0,
     [GridLocation.NORTHWEST]: 0,
   },
-};
+} as Record<Orientation, Record<GridLocation, number>>;
 
 /**
  * Box grid rotation angles by orientation and location
@@ -190,7 +190,7 @@ const BOX_ANGLE_MAP: Record<Orientation, Record<GridLocation, number>> = {
     [GridLocation.EAST]: 0,
     [GridLocation.WEST]: 0,
   },
-};
+} as Record<Orientation, Record<GridLocation, number>>;
 
 // ============================================================================
 // PROP PLACEMENT INTERFACE

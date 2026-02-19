@@ -83,7 +83,12 @@ export function createGridPointData(mode: GridMode): GridPointData {
     };
   }
 
-  const modeData = gridCoordinates[mode];
+  if (!(mode in gridCoordinates)) {
+    throw new Error(`Grid coordinates not available for mode: ${mode}`);
+  }
+
+  const modeData =
+    gridCoordinates[mode as Exclude<GridMode, GridMode.SKEWED | GridMode.TRIGRID>];
 
   return {
     allHandPointsStrict: parsePoints(modeData.hand_points.strict),

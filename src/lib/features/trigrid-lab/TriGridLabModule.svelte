@@ -29,8 +29,6 @@
   let redOrientation = $state<Orientation>(Orientation.IN);
   let motionType = $state<TriGridMotionType>("pro");
   let showGrid = $state(true);
-  let showArrows = $state(true);
-  let showOrientations = $state(true);
 
   // When mode changes, reset locations to valid values for the new mode
   function handleModeChange(newMode: TriGridMode) {
@@ -60,10 +58,7 @@
         {redLocation}
         {blueOrientation}
         {redOrientation}
-        {motionType}
         {showGrid}
-        {showArrows}
-        {showOrientations}
       />
     </div>
 
@@ -76,16 +71,12 @@
         {redOrientation}
         {motionType}
         {showGrid}
-        {showArrows}
-        {showOrientations}
         onModeChange={handleModeChange}
         onPositionChange={handlePositionChange}
         onBlueOrientationChange={(o) => { blueOrientation = o; }}
         onRedOrientationChange={(o) => { redOrientation = o; }}
         onMotionTypeChange={(t) => { motionType = t; }}
         onToggleGrid={() => { showGrid = !showGrid; }}
-        onToggleArrows={() => { showArrows = !showArrows; }}
-        onToggleOrientations={() => { showOrientations = !showOrientations; }}
       />
 
       <TriGridPositionInfo

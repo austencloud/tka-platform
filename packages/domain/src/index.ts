@@ -131,6 +131,11 @@ export {
   COMMON_QUESTIONS,
   getCommonAnswer,
 } from "./reference/common-questions.js";
+export {
+  DOMAIN_TOPICS,
+  listDomainTopics,
+  findDomainTopic,
+} from "./reference/domain-topics.js";
 
 // =============================================================================
 // Curriculum (Phase 3)

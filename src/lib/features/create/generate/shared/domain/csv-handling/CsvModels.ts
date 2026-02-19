@@ -50,4 +50,5 @@ export interface CsvDataSet {
   diamondData: string;
   boxData: string;
   skewedData?: string;
+  trigridData?: string;
 }

@@ -5,18 +5,8 @@
  * Maintains backward compatibility with existing MCP code.
  */
 
-import {
-  OrientationCalculator,
-  OrientationPropagator,
-  calculateEndOrientation as sharedCalculateEndOrientation,
-} from "../../../src/lib/shared/sequence-engine/services/implementations/OrientationPropagator.js";
-import type { Orientation } from "../../../src/lib/shared/sequence-engine/domain/models/SequenceEngineTypes.js";
 import { calculateEndOrientation as mcpCalculateEndOrientation, Orientation as McpOrientation } from "./orientation-calculator.js";
 import type { SequenceStep, SequenceResult } from "./sequence-builder.js";
-
-// Create shared instances
-const calculator = new OrientationCalculator();
-const propagator = new OrientationPropagator(calculator);
 
 /**
  * Propagate orientations for a single color through all steps.

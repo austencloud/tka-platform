@@ -18,6 +18,13 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
+  // Per-instance playback stack imports (avoid shared singleton)
+  import { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
+  import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
+  import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
+  import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
+  import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
+
   // BPM/Speed conversion constant
   const DEFAULT_BPM = 60;
 
@@ -74,14 +81,14 @@
     showControls?: boolean;
   } = $props();
 
-  // Services
+  // Services — per-instance to allow multiple simultaneous players (e.g., Arena)
   let sequenceService: ISequenceRepository | null = null;
   let playbackController: IAnimationPlaybackController | null = null;
   let servicesReady = $state(false);
   let loading = $state(true);
   let error = $state<string | null>(null);
 
-  // Animation state
+  // Animation state — each player gets its own
   const animationState = createAnimationPanelState();
 
   // Track last loaded sequence to prevent re-loading same sequence
@@ -154,12 +161,31 @@
     sequence?.gridMode ?? animationState.sequenceData?.gridMode
   );
 
-  // Load services on mount
+  // Load services on mount — create per-instance playback stack so multiple
+  // InlineAnimationPlayers can run simultaneously (e.g., Arena side-by-side)
   onMount(async () => {
     try {
-      // Load animator module
       sequenceService = container.items.sequenceRepository;
-      playbackController = container.items.animationPlaybackController;
+
+      // Stateless services shared from container
+      const propInterpolator = container.items.propInterpolationService;
+      const loopabilityChecker = container.items.sequenceLoopabilityChecker;
+
+      // Stateful services — fresh instance per player
+      const stateManager = new AnimationStateManager();
+      const stepCalculator = new StepCalculator();
+      const loop = new AnimationLoop();
+      const orchestrator = new SequenceAnimationOrchestrator(
+        stateManager,
+        stepCalculator,
+        propInterpolator
+      );
+      playbackController = new AnimationPlaybackController(
+        orchestrator,
+        loop,
+        loopabilityChecker
+      );
+
       servicesReady = true;
     } catch (err) {
       console.error("Failed to initialize animation player:", err);

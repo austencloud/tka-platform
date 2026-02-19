@@ -14,37 +14,28 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
 import {
-  GridLocation,
   GridMode,
-  MotionType,
   Orientation,
+  type GridLocation,
+  type MotionType,
   type PropColor,
 } from "./enums.js";
-// Import shared core calculations - the SINGLE SOURCE OF TRUTH for rendering logic
 import {
-  // Grid position calculations
   getLayer2PointCoordinates,
-  // Prop placement calculations
   calculatePropPlacement,
-  // Arrow calculations (still using local files for arrow-specific logic)
-  // Beta offset
   calculateBetaOffset,
   type BetaOffsetInput,
   type BetaMotionInput,
-  // Orientation
   calculateOrientations,
   type OrientationInput,
-  // Dash location
   calculateDashLocation,
   type DashLocationInput,
-  // Reversal indicators
   calculateReversalPositions,
-  // Colors
   BLUE_COLOR_DARK,
   BLUE_COLOR_LIGHT,
   RED_COLOR_DARK,
   RED_COLOR_LIGHT,
-} from "$lib/shared/render/core/index.js";
+} from "@tka/render-core";
 // Arrow calculations still use local files (they have MCP-specific logic)
 import { calculateArrowPlacement, calculateArrowRotation } from "./arrow-placement.js";
 import { calculateArrowAdjustment, type PictographAdjustmentInput, type MotionAdjustmentInput } from "./arrow-adjustment.js";
@@ -667,7 +658,7 @@ ${svgParts.join("\n")}
     const [adjustX, adjustY] = calculateArrowAdjustment(
       adjustmentInput,
       motionAdjustmentInput,
-      placement.location
+      placement.location as unknown as GridLocation
     );
 
     // Apply adjustment to placement

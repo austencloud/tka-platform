@@ -7,16 +7,16 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "$lib/*": ["../src/lib/*"]
-    },
     "outDir": "./dist",
     "declaration": true,
     "declarationDir": "./dist",
     "noEmit": false,
     "rootDir": "."
   },
-  "include": ["index.ts", "src/**/*.ts", "test-loop.ts"],
+  "include": [
+    "index.ts",
+    "src/**/*.ts",
+    "test-loop.ts"
+  ],
   "exclude": ["node_modules"]
 }

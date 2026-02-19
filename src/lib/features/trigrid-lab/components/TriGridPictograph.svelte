@@ -10,10 +10,9 @@
 -->
 <script lang="ts">
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import type { TriGridMode, TriGridArcData, TriGridMotionType } from "../domain/trigrid-types";
+  import type { TriGridMode } from "../domain/trigrid-types";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { svgPreloader } from "$lib/shared/pictograph/shared/services/implementations/SvgPreloader";
-  import TriGridArrow from "./TriGridArrow.svelte";
   import { container } from "$lib/shared/di";
   import { TRIGRID_SVG_SIZE } from "../domain/trigrid-constants";
   import type { ITriGridCalculator } from "../services/contracts/ITriGridCalculator";
@@ -25,10 +24,7 @@
     redLocation: GridLocation;
     blueOrientation: Orientation;
     redOrientation: Orientation;
-    motionType: TriGridMotionType;
     showGrid: boolean;
-    showArrows: boolean;
-    showOrientations: boolean;
   }
 
   const {
@@ -37,10 +33,7 @@
     redLocation,
     blueOrientation,
     redOrientation,
-    motionType,
     showGrid,
-    showArrows,
-    showOrientations,
   }: Props = $props();
 
   const calculator: ITriGridCalculator = container.items.triGridCalculator;
@@ -91,52 +84,49 @@
     return applyColorToSvg(triadSvgContent, color);
   }
 
-  // Grid rotation: 0 for upright, 180 for inverted
-  const gridRotation = $derived(mode === "inverted" ? 180 : 0);
+  // Grid rotation: rotate the base grid SVG to match the triangle orientation.
+  // The grid SVG is drawn in upright position (apex north).
+  const gridRotation = $derived(
+    mode === "upright" ? 0 :
+    mode === "right" ? 90 :
+    mode === "inverted" ? 180 :
+    270 // left
+  );
 
   // Hand points for prop positioning
   const handPoints = $derived(calculator.getHandPoints(mode));
 
+  // Beta detection: both props at the same vertex
+  const isBeta = $derived(blueLocation === redLocation);
+
   // Prop transform chains (matching PropSvg.svelte pattern)
   const blueTransform = $derived.by(() => {
-    const pt = handPoints.get(blueLocation);
+    let pt = handPoints.get(blueLocation);
     if (!pt) return "";
+    if (isBeta) {
+      const offset = calculator.computeBetaOffset(blueLocation, "blue", mode);
+      pt = { x: pt.x + offset.x, y: pt.y + offset.y };
+    }
     const angle = calculator.computePropRotation(blueLocation, blueOrientation, mode);
     return `translate(${pt.x}, ${pt.y}) rotate(${angle}) translate(${-TRIAD_CENTER_X}, ${-TRIAD_CENTER_Y})`;
   });
 
   const redTransform = $derived.by(() => {
-    const pt = handPoints.get(redLocation);
+    let pt = handPoints.get(redLocation);
     if (!pt) return "";
+    if (isBeta) {
+      const offset = calculator.computeBetaOffset(redLocation, "red", mode);
+      pt = { x: pt.x + offset.x, y: pt.y + offset.y };
+    }
     const angle = calculator.computePropRotation(redLocation, redOrientation, mode);
-    // Red prop is mirrored (scaleX(-1)) like in the existing pipeline
-    return `translate(${pt.x}, ${pt.y}) rotate(${angle}) scale(-1, 1) translate(${-TRIAD_CENTER_X}, ${-TRIAD_CENTER_Y})`;
+    // Red prop is mirrored (scaleX(-1)) like in the existing pipeline.
+    // SVG transforms apply right-to-left: center → mirror → rotate → position.
+    // The mirror flips the prop from pointing-right to pointing-left (adds 180°).
+    // To compensate, subtract 180° from the rotation so the visual direction is correct.
+    const mirrorCompensatedAngle = angle - 180;
+    return `translate(${pt.x}, ${pt.y}) rotate(${mirrorCompensatedAngle}) scale(-1, 1) translate(${-TRIAD_CENTER_X}, ${-TRIAD_CENTER_Y})`;
   });
 
-  // Arc data for shift arrows
-  const blueArc = $derived.by((): TriGridArcData | null => {
-    if (!showArrows || motionType === "static") return null;
-    if (blueLocation === redLocation) return null;
-
-    const adj = calculator.getAdjacentPoints(blueLocation, mode);
-    const clockwise = motionType === "pro" || motionType === "float";
-    const target = clockwise ? adj.cw : adj.ccw;
-
-    if (target !== redLocation && target !== blueLocation) return null;
-    return calculator.computeArcPath(blueLocation, target, clockwise, mode);
-  });
-
-  const redArc = $derived.by((): TriGridArcData | null => {
-    if (!showArrows || motionType === "static") return null;
-    if (blueLocation === redLocation) return null;
-
-    const adj = calculator.getAdjacentPoints(redLocation, mode);
-    const clockwise = motionType === "pro" || motionType === "float";
-    const target = clockwise ? adj.cw : adj.ccw;
-
-    if (target !== blueLocation && target !== redLocation) return null;
-    return calculator.computeArcPath(redLocation, target, clockwise, mode);
-  });
 </script>
 
 <svg
@@ -150,21 +140,11 @@
 
   <!-- Grid layer: loaded via SvgPreloader, rotated for inverted mode -->
   {#if showGrid && gridSvgContent}
-    <g class="grid-container" transform="rotate({gridRotation}, 475, 475)">
+    <g class="grid-container" class:inverted-mode={mode === "inverted"} transform="rotate({gridRotation}, 475, 475)">
       <g class="grid-layer">
         {@html gridSvgContent}
       </g>
     </g>
-  {/if}
-
-  <!-- Arc arrows -->
-  {#if showArrows}
-    {#if blueArc}
-      <TriGridArrow arcData={blueArc} color={BLUE_COLOR} />
-    {/if}
-    {#if redArc}
-      <TriGridArrow arcData={redArc} color={RED_COLOR} />
-    {/if}
   {/if}
 
   <!-- Blue prop -->

@@ -50,6 +50,14 @@ export class ArenaRepository implements IArenaRepository {
     const publicSnap = await getDocs(collection(firestore, PUBLIC_SEQUENCES_COLLECTION));
     const candidates: MatchupCandidate[] = [];
 
+    // publicSequences is a lightweight index — steps live in the source doc.
+    // Build entries from the index, then batch-fetch full data via sourceRef.
+    const pendingEntries: Array<{
+      entry: ArenaEntry;
+      sourceRef: string;
+      indexData: Record<string, unknown>;
+    }> = [];
+
     for (const seqDoc of publicSnap.docs) {
       const raw = seqDoc.data() as Record<string, unknown>;
       const word = raw.word as string | undefined;

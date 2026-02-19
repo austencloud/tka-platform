@@ -39,6 +39,7 @@
   import { sequenceModalExporter } from "../services/implementations/SequenceModalExporter";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { container } from "$lib/shared/di";
+  import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { createAnimationPanelState, type PlaybackMode, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
   import ViewerFooter from "./ViewerFooter.svelte";
@@ -431,15 +432,24 @@
 
 
   // Footer action handlers
-  function handleSave() {
+  async function handleSave() {
     hapticService?.trigger("selection");
-    // TODO: Implement save to library
-    // For now, show a toast indicating the feature
     if (!authState.isAuthenticated) {
       showToast("Sign in to save sequences", "info");
       return;
     }
-    showToast("Save feature coming soon", "info");
+    if (!sequence) {
+      showToast("No sequence to save", "info");
+      return;
+    }
+    try {
+      const libraryRepo = container.items.libraryRepository as ILibraryRepository;
+      await libraryRepo.saveSequence(sequence);
+      showToast("Saved to library", "success");
+    } catch (error) {
+      console.error("Failed to save sequence:", error);
+      showToast("Failed to save sequence", "error");
+    }
   }
 
   function handleCompose() {

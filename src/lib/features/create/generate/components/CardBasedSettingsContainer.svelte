@@ -224,7 +224,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
         currentGridMode: config.gridMode,
         handleGenerateClick: onGenerateClicked,
       },
-      headerFontSize,
       allowedIntensityValues,
       isGenerating
     );
@@ -249,7 +248,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 
   <!-- Card mode: full card grid for normal/large viewports -->
   <div class="card-mode">
-    <div class="card-settings-container" class:help-mode={helpMode} class:help-mode-exiting={helpModeExiting}>
+    <div class="card-settings-container" class:help-mode={helpMode} class:help-mode-exiting={helpModeExiting} style="--header-font-size: {headerFontSize}">
       <!-- LOOP Expanded Overlay - covers cards when open -->
       {#if panelState?.isLOOPPanelOpen && panelState.loopSelectedComponents && panelState.loopOnChange}
         <LOOPExpandedOverlay

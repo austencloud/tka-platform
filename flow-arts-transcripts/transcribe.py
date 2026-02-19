@@ -49,6 +49,7 @@ def transcribe_file(model, audio_path: str, output_path: str | None = None):
 
     out = open(output_path, "w", encoding="utf-8") if output_path else sys.stdout
 
+    i = 0
     try:
         for i, segment in enumerate(segments, 1):
             start_ts = format_timestamp(segment.start)
@@ -68,22 +69,25 @@ def transcribe_file(model, audio_path: str, output_path: str | None = None):
 
 
 def batch_transcribe(model, directory: str, output_dir: str | None = None):
-    """Transcribe all MP3 files in a directory."""
+    """Transcribe all audio files in a directory."""
     audio_dir = Path(directory)
-    mp3_files = sorted(audio_dir.glob("**/*.mp3"))
+    audio_files = sorted(
+        f for ext in ("*.mp3", "*.wav", "*.m4a", "*.ogg", "*.flac")
+        for f in audio_dir.glob(f"**/{ext}")
+    )
 
-    if not mp3_files:
-        print(f"No MP3 files found in {directory}", file=sys.stderr)
+    if not audio_files:
+        print(f"No audio files found in {directory}", file=sys.stderr)
         return
 
-    print(f"Found {len(mp3_files)} MP3 files to transcribe.", file=sys.stderr)
+    print(f"Found {len(audio_files)} audio files to transcribe.", file=sys.stderr)
 
-    for mp3 in mp3_files:
-        relative = mp3.relative_to(audio_dir)
+    for audio in audio_files:
+        relative = audio.relative_to(audio_dir)
         if output_dir:
             out_path = Path(output_dir) / relative.with_suffix(".srt")
         else:
-            out_path = mp3.with_suffix(".srt")
+            out_path = audio.with_suffix(".srt")
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -91,7 +95,7 @@ def batch_transcribe(model, directory: str, output_dir: str | None = None):
             print(f"Skipping (already exists): {out_path}", file=sys.stderr)
             continue
 
-        transcribe_file(model, str(mp3), str(out_path))
+        transcribe_file(model, str(audio), str(out_path))
 
 
 def main():
