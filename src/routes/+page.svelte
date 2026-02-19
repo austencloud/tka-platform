@@ -9,7 +9,7 @@
   import WhatIsTKASection from "./landing/components/WhatIsTKASection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
   import LandingBackgroundPicker from "./landing/components/LandingBackgroundPicker.svelte";
-  import MainApplication from "$lib/shared/application/components/MainApplication.svelte";
+  import type { Component } from "svelte";
 
   const STORAGE_KEY = "tka-landing-theme";
   const DEFAULT_BACKGROUND = BackgroundType.NIGHT_SKY;
@@ -22,10 +22,21 @@
   let currentBackground = $state<BackgroundType>(DEFAULT_BACKGROUND);
   let mounted = $state(false);
 
+  // Dynamic import: MainApplication is only loaded for app mode
+  // This keeps the entire app bundle out of the landing page's initial load
+  let MainApp = $state<Component | null>(null);
+
   onMount(() => {
     siteMode = detectSiteMode(window.location.origin);
+
     if (siteMode === "app") {
       (window as any).__tkaLoadProgress?.(84, "Resolving services...");
+      // Dynamic import — only pulls in the app bundle when actually needed
+      import("$lib/shared/application/components/MainApplication.svelte").then(
+        (mod) => {
+          MainApp = mod.default;
+        }
+      );
     }
 
     // For landing mode, load saved background preference
@@ -342,8 +353,10 @@
     <div class="loading-spinner"></div>
   </div>
 {:else if siteMode === "app"}
-  <!-- App domain: render the application directly -->
-  <MainApplication />
+  <!-- App domain: render the application (dynamically loaded) -->
+  {#if MainApp}
+    <MainApp />
+  {/if}
 {:else if siteMode === "landing"}
   <!-- Landing domain: render the marketing page -->
   <div class="landing-page">
@@ -376,7 +389,9 @@
   </div>
 {:else}
   <!-- Future: other site modes (embed, kiosk, edu, etc.) -->
-  <MainApplication />
+  {#if MainApp}
+    <MainApp />
+  {/if}
 {/if}
 
 <style>

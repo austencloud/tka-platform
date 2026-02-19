@@ -5,31 +5,48 @@
     <meta name="google-site-verification" content="Ca99zW5S1oiH2TnmppHuCpswOYHizHUEN4Jd6rJLXEs" />
     <link rel="icon" href="%sveltekit.assets%/pwa/favicon.png" />
 
-    <!-- 🚀 GOLD STANDARD: Preconnect to external origins for faster requests -->
-    <link rel="preconnect" href="https://firebaseapp.com" crossorigin />
-    <link
-      rel="preconnect"
-      href="https://firestore.googleapis.com"
-      crossorigin
-    />
-    <link rel="preconnect" href="https://www.googleapis.com" crossorigin />
-    <link rel="preconnect" href="https://accounts.google.com" crossorigin />
-    <link rel="preconnect" href="https://apis.google.com" crossorigin />
-
-    <!-- DNS prefetch for additional Google services -->
-    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-    <link
-      rel="dns-prefetch"
-      href="https://firebaseinstallations.googleapis.com"
-    />
-    <!-- 🚀 A+ PERF: Preconnect to Firebase Storage for thumbnails -->
-    <link
-      rel="preconnect"
-      href="https://firebasestorage.googleapis.com"
-      crossorigin
-    />
-    <link rel="preconnect" href="https://storage.googleapis.com" crossorigin />
+    <!-- 🚀 Preconnect to external origins for faster requests (app mode only) -->
+    <!-- Landing visitors don't need Firebase/Google APIs — skip these to save ~500ms -->
+    <script>
+      (function() {
+        var h = window.location.hostname;
+        var isLanding = (h === 'tkaflowarts.com' || h === 'www.tkaflowarts.com');
+        if (isLanding) {
+          // Mark landing mode early for loading bar skip below
+          window.__tkaIsLanding = true;
+        } else {
+          // App mode: inject preconnect hints dynamically
+          var origins = [
+            'https://firebaseapp.com',
+            'https://firestore.googleapis.com',
+            'https://www.googleapis.com',
+            'https://accounts.google.com',
+            'https://apis.google.com',
+            'https://firebasestorage.googleapis.com',
+            'https://storage.googleapis.com'
+          ];
+          var dnsPrefetch = [
+            'https://www.google-analytics.com',
+            'https://www.googletagmanager.com',
+            'https://firebaseinstallations.googleapis.com'
+          ];
+          var head = document.head;
+          origins.forEach(function(url) {
+            var link = document.createElement('link');
+            link.rel = 'preconnect';
+            link.href = url;
+            link.crossOrigin = '';
+            head.appendChild(link);
+          });
+          dnsPrefetch.forEach(function(url) {
+            var link = document.createElement('link');
+            link.rel = 'dns-prefetch';
+            link.href = url;
+            head.appendChild(link);
+          });
+        }
+      })();
+    </script>
 
     <!-- Viewport Configuration -->
     <meta
@@ -555,8 +572,16 @@
     <!-- crossorigin="anonymous" is REQUIRED for PostHog session replay to capture styles -->
     <link rel="stylesheet" href="/fonts/css/all.min.css" crossorigin="anonymous" />
 
-    <!-- Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Google Identity Services (app mode only — landing doesn't need auth) -->
+    <script>
+      if (!window.__tkaIsLanding) {
+        var gsiScript = document.createElement('script');
+        gsiScript.src = 'https://accounts.google.com/gsi/client';
+        gsiScript.async = true;
+        gsiScript.defer = true;
+        document.head.appendChild(gsiScript);
+      }
+    </script>
 
     <!-- Preload critical fonts if needed -->
     <!-- <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin> -->
@@ -663,6 +688,14 @@
       </div>
       <p id="loading-text"></p>
     </div>
+    <script>
+      // Landing visitors: hide loading bar immediately and skip all loading bar logic
+      if (window.__tkaIsLanding) {
+        document.getElementById('app-loading').style.display = 'none';
+        // Define a no-op so layout/page code doesn't error
+        window.__tkaLoadProgress = function() {};
+      }
+    </script>
     <script>
       // Sims-style flavor text — shuffled each load for variety
       var __tkaFlavorMessages = [

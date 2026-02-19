@@ -14,6 +14,8 @@
   } from "@austencloud/backgrounds/card";
   import type { BackgroundCardSelectDetail } from "@austencloud/backgrounds/card";
   import { applyThemeFromColors } from "../../../utils/background-theme-calculator";
+  import { container } from "$lib/shared/di";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -24,12 +26,14 @@
     onUpdate?: (event: { key: string; value: unknown }) => void;
   }>();
 
+  let hapticService: IHapticFeedback | null = null;
   let isVisible = $state(false);
   let gridEl: HTMLDivElement;
 
   const currentBg = $derived(settings?.backgroundType || BackgroundType.NIGHT_SKY);
 
   onMount(() => {
+    hapticService = container.items.hapticFeedback;
     setTimeout(() => (isVisible = true), 30);
 
     // Record that user has visited the background tab (for theme discovery nudge)
@@ -40,6 +44,7 @@
     }
 
     function handleSelect(e: Event) {
+      hapticService?.trigger("selection");
       const detail = (e as CustomEvent<BackgroundCardSelectDetail>).detail;
       const type = detail.type as BackgroundType;
       const meta = getCardMetadata(type);

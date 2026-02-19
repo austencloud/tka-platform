@@ -1,19 +1,8 @@
 <script lang="ts">
-  import FullscreenPrompt from "$lib/shared/components/FullscreenPrompt.svelte";
-  import InAppBrowserPrompt from "$lib/shared/auth/components/InAppBrowserPrompt.svelte";
-  import ReportUserModal from "$lib/features/moderation/components/ReportUserModal.svelte";
-  import WarningBanner from "$lib/features/moderation/components/WarningBanner.svelte";
-  import EmailVerificationBanner from "$lib/shared/auth/components/EmailVerificationBanner.svelte";
-  import ModalUrlRestorer from "$lib/shared/application/components/ModalUrlRestorer.svelte";
-  import { container } from "$lib/shared/di";
-  import type { Snippet } from "svelte";
+  import type { Snippet, Component } from "svelte";
   import { onMount, setContext } from "svelte";
   import { onNavigate } from "$app/navigation";
-  import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { registerCacheClearShortcut } from "$lib/shared/utils/cache-buster";
-  import { initI18n } from "$lib/shared/i18n/i18n.svelte.js";
-  import { initModalUrlState, cleanupModalUrlState } from "$lib/shared/application/state/ui/modal-url-state.svelte";
-  import { initPostHog } from "$lib/shared/analytics/services/posthog";
+  import { detectSiteMode, type SiteMode } from "../config/domains";
   import { consumeSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
   import "../app.css";
   // Chip toggle tokens — maps --chip-* to TKA design values
@@ -69,20 +58,36 @@
     children: Snippet;
   }>();
 
-  // Application bootstrap - ITI container is created synchronously on import
-  // No async setup needed - container.items is immediately available
-  let containerReady = $state(true);
+  // Site mode detection — determines whether we load the heavy app stack
+  let siteMode = $state<SiteMode>("loading");
+
+  // App-mode state
+  let containerReady = $state(false);
   let containerError = $state<string | null>(null);
 
-  // Set context for legacy code that expects di-container
-  setContext("di-container", () => container);
+  // Dynamically loaded app-only components (null until loaded)
+  let WarningBannerComp = $state<Component | null>(null);
+  let EmailVerificationBannerComp = $state<Component | null>(null);
+  let FullscreenPromptComp = $state<Component | null>(null);
+  let InAppBrowserPromptComp = $state<Component | null>(null);
+  let ReportUserModalComp = $state<Component | null>(null);
+  let ModalUrlRestorerComp = $state<Component | null>(null);
+
+  // Track cleanup functions for app-mode resources
+  let appCleanup: (() => void) | null = null;
+
+  // Deferred DI container reference — set once the dynamic import resolves
+  let containerRef: any = null;
+
+  // Set context synchronously during component init — the getter defers to the
+  // dynamically loaded container once available. Legacy code calls getContext()
+  // in onMount or later, by which point the container will be loaded.
+  setContext("di-container", () => containerRef);
 
   // Update viewport height on window resize and visualViewport changes
   function updateViewportHeight() {
     if (typeof window !== "undefined") {
-      // Use visualViewport for accurate height that accounts for browser chrome
       const height = window.visualViewport?.height ?? window.innerHeight;
-      // Update CSS custom property for use throughout the app
       document.documentElement.style.setProperty(
         "--viewport-height",
         `${height}px`
@@ -90,10 +95,39 @@
     }
   }
 
-  onMount(() => {
+  /**
+   * Landing mode init: minimal work, no Firebase, no DI, no auth.
+   * Just CSS + viewport height + i18n.
+   */
+  async function initLandingMode() {
+    updateViewportHeight();
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", updateViewportHeight);
+    }
+    window.addEventListener("resize", updateViewportHeight);
+
+    // i18n is lightweight — safe for landing
+    const { initI18n } = await import("$lib/shared/i18n/i18n.svelte.js");
+    initI18n();
+
+    // Landing doesn't need DI container or auth — mark ready immediately
+    containerReady = true;
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", updateViewportHeight);
+      }
+      window.removeEventListener("resize", updateViewportHeight);
+    };
+  }
+
+  /**
+   * App mode init: full bootstrap — DI container, Firebase, auth, analytics.
+   * Same logic as the original layout, but loaded dynamically.
+   */
+  async function initAppMode() {
     // Progress: SvelteKit has hydrated and onMount is running
-    // If __tkaLoadProgress exists (new app.html), use deterministic progress.
-    // If not (cached old app.html), dismiss the loading screen immediately.
     if (typeof (window as any).__tkaLoadProgress === "function") {
       (window as any).__tkaLoadProgress(72, "Starting up...");
     } else {
@@ -104,133 +138,143 @@
       }
     }
 
-    // 📊 ANALYTICS: Initialize PostHog first for early event capture
+    // Load DI container — this triggers all service registration
+    const { container } = await import("$lib/shared/di");
+
+    // Populate the deferred container reference (context was set synchronously above)
+    containerRef = container;
+
+    // Mark container ready so children can render
+    containerReady = true;
+
+    // Analytics: PostHog
+    const { initPostHog } = await import("$lib/shared/analytics/services/posthog");
     initPostHog();
 
-    // 📊 ATTRIBUTION: Capture how users found us (UTM params, referrer, etc.)
-    // Must run before any navigation that might change URL params
-    (async () => {
-      try {
-        const { container } = await import("$lib/shared/di");
-        const persister = container?.items?.attributionPersister;
-        if (persister) {
-          // Get or create session and record current touch
-          persister.getOrCreateSession();
-        }
-      } catch (error) {
-        console.warn("Attribution capture failed:", error);
-        // Non-fatal - app works without attribution
+    // Attribution tracking
+    try {
+      const persister = container?.items?.attributionPersister;
+      if (persister) {
+        (persister as any).getOrCreateSession();
       }
-    })();
+    } catch (error) {
+      console.warn("Attribution capture failed:", error);
+    }
 
-    // ⚡ CRITICAL: Initialize i18n and set HTML dir attribute
+    // i18n
+    const { initI18n } = await import("$lib/shared/i18n/i18n.svelte.js");
     initI18n();
 
-    // ⚡ Initialize modal URL state tracking for HMR persistence
+    // Modal URL state
+    const { initModalUrlState, cleanupModalUrlState } = await import("$lib/shared/application/state/ui/modal-url-state.svelte");
     initModalUrlState();
 
-    // ⚡ CRITICAL: Set up viewport height IMMEDIATELY for fast render
+    // Viewport height
     updateViewportHeight();
-
-    // Listen to visualViewport resize (more reliable than window resize for mobile)
     if (window.visualViewport) {
       window.visualViewport.addEventListener("resize", updateViewportHeight);
       window.visualViewport.addEventListener("scroll", updateViewportHeight);
     }
-
-    // Fallback to window resize for browsers that don't support visualViewport
     window.addEventListener("resize", updateViewportHeight);
 
-    // Register cache clear shortcut (Ctrl+Shift+Delete)
+    // Cache clear shortcut
+    const { registerCacheClearShortcut } = await import("$lib/shared/utils/cache-buster");
     registerCacheClearShortcut();
 
-    // Browser navigation is handled in navigation-coordinator; allow native back/forward.
+    // Cookie cleanup
+    try {
+      const { cleanupOldCookies } = await import("$lib/shared/auth/utils/cookieCleanup");
+      await cleanupOldCookies();
+    } catch (error) {
+      console.error("[App Init] Cookie cleanup failed:", error);
+    }
 
-    // 🍪 Clean up old deployment cookies BEFORE auth initializes
-    // This prevents stale cookies from breaking the login flow
-    (async () => {
-      try {
-        const { cleanupOldCookies } =
-          await import("$lib/shared/auth/utils/cookieCleanup");
-        await cleanupOldCookies();
-      } catch (error) {
-        console.error("❌ [App Init] Cookie cleanup failed:", error);
-        // Non-fatal error - continue with auth init anyway
-      }
-    })();
+    // Firestore + Auth
+    try {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      (window as any).__tkaLoadProgress?.(76, "Connecting to cloud...");
+    } catch (error) {
+      console.error("[App Init] Firestore initialization failed:", error);
+    }
 
-    // ⚡ CRITICAL: Initialize Firestore BEFORE auth listener
-    // This prevents race conditions when services try to use Firestore
-    (async () => {
-      try {
-        const { getFirestoreInstance } =
-          await import("$lib/shared/auth/firebase");
-        await getFirestoreInstance();
-        (window as any).__tkaLoadProgress?.(76, "Connecting to cloud...");
-      } catch (error) {
-        console.error("❌ [App Init] Firestore initialization failed:", error);
-      }
+    const { authState } = await import("$lib/shared/auth/state/authState.svelte");
+    await authState.initialize();
+    (window as any).__tkaLoadProgress?.(80, "Checking session...");
 
-      // ⚡ CRITICAL: Initialize Firebase Auth listener AFTER Firestore is ready
-      // This is required to catch auth state changes from social sign-in
-      // Must await to process pending OAuth redirect results (e.g., account linking)
-      await authState.initialize();
-      (window as any).__tkaLoadProgress?.(80, "Checking session...");
-    })();
+    // Web Vitals
+    try {
+      const { initWebVitals } = await import("$lib/shared/analytics/web-vitals");
+      await initWebVitals();
+    } catch (error) {
+      console.warn("Web Vitals tracking failed to initialize:", error);
+    }
 
-    // Note: Sequence restoration tester removed (now integrated into services)
+    // Cloud thumbnail manifest
+    try {
+      const { CloudThumbnailCache } = await import(
+        "$lib/features/browse/sequences/display/services/implementations/CloudThumbnailCache"
+      );
+      const cache = new CloudThumbnailCache();
+      await cache.loadManifest();
+    } catch (error) {
+      console.warn("Cloud thumbnail manifest failed to load:", error);
+    }
 
-    // 📊 PERFORMANCE: Initialize Web Vitals tracking
-    (async () => {
-      try {
-        const { initWebVitals } =
-          await import("$lib/shared/analytics/web-vitals");
-        await initWebVitals();
-      } catch (error) {
-        console.warn("Web Vitals tracking failed to initialize:", error);
-      }
-    })();
+    // Load app-only UI components in parallel
+    const [
+      warningBannerMod,
+      emailBannerMod,
+      fullscreenMod,
+      inAppMod,
+      reportMod,
+      modalRestorerMod,
+    ] = await Promise.all([
+      import("$lib/features/moderation/components/WarningBanner.svelte"),
+      import("$lib/shared/auth/components/EmailVerificationBanner.svelte"),
+      import("$lib/shared/components/FullscreenPrompt.svelte"),
+      import("$lib/shared/auth/components/InAppBrowserPrompt.svelte"),
+      import("$lib/features/moderation/components/ReportUserModal.svelte"),
+      import("$lib/shared/application/components/ModalUrlRestorer.svelte"),
+    ]);
 
-    // ⚡ PERFORMANCE: Load cloud thumbnail manifest for instant cache hits
-    // This pre-populates the "known exists" list so all users can get cloud-cached
-    // thumbnails instantly instead of re-rendering locally
-    (async () => {
-      try {
-        const { CloudThumbnailCache } = await import(
-          "$lib/features/browse/sequences/display/services/implementations/CloudThumbnailCache"
-        );
-        const cache = new CloudThumbnailCache();
-        await cache.loadManifest();
-      } catch (error) {
-        console.warn("Cloud thumbnail manifest failed to load:", error);
-        // Non-fatal - thumbnails will render locally on cache miss
-      }
-    })();
+    WarningBannerComp = warningBannerMod.default;
+    EmailVerificationBannerComp = emailBannerMod.default;
+    FullscreenPromptComp = fullscreenMod.default;
+    InAppBrowserPromptComp = inAppMod.default;
+    ReportUserModalComp = reportMod.default;
+    ModalUrlRestorerComp = modalRestorerMod.default;
 
-    // ⚡ PERFORMANCE: ITI container is created synchronously on import
-    // No async setup needed - container.items is immediately available
-    // Glyph cache uses lazy loading - SVGs are fetched on-demand when first needed
-    // This eliminates 70+ network requests at startup
-
-    // Return synchronous cleanup function
+    // Return cleanup
     return () => {
-      // Clean up auth listener
       authState.cleanup();
-
-      // Clean up modal URL state tracking
       cleanupModalUrlState();
 
       if (window.visualViewport) {
-        window.visualViewport.removeEventListener(
-          "resize",
-          updateViewportHeight
-        );
-        window.visualViewport.removeEventListener(
-          "scroll",
-          updateViewportHeight
-        );
+        window.visualViewport.removeEventListener("resize", updateViewportHeight);
+        window.visualViewport.removeEventListener("scroll", updateViewportHeight);
       }
       window.removeEventListener("resize", updateViewportHeight);
+    };
+  }
+
+  onMount(() => {
+    siteMode = detectSiteMode(window.location.origin);
+    const isLanding = siteMode === "landing";
+
+    const initPromise = isLanding ? initLandingMode() : initAppMode();
+
+    initPromise
+      .then((cleanup) => {
+        appCleanup = cleanup;
+      })
+      .catch((error) => {
+        console.error("[Layout] Initialization failed:", error);
+        containerError = String(error);
+      });
+
+    return () => {
+      appCleanup?.();
     };
   });
 </script>
@@ -247,26 +291,33 @@
     <button onclick={() => window.location.reload()}>Retry</button>
   </div>
 {:else if containerReady}
-  <!-- Warning banner for users who have received a moderation warning -->
-  <WarningBanner />
+  <!-- App-only shell components (null/skipped for landing mode) -->
+  {#if WarningBannerComp}
+    <WarningBannerComp />
+  {/if}
 
-  <!-- Email verification banner for unverified email/password users -->
-  <EmailVerificationBanner />
+  {#if EmailVerificationBannerComp}
+    <EmailVerificationBannerComp />
+  {/if}
 
-  <!-- ITI container is ready synchronously - render children immediately -->
+  <!-- Render children (either landing page or app) -->
   {@render children()}
 
-  <!-- Fullscreen prompt for extreme constraints -->
-  <FullscreenPrompt />
+  {#if FullscreenPromptComp}
+    <FullscreenPromptComp />
+  {/if}
 
-  <!-- Warn users in restricted in-app browsers (Messenger, Instagram, etc.) -->
-  <InAppBrowserPrompt />
+  {#if InAppBrowserPromptComp}
+    <InAppBrowserPromptComp />
+  {/if}
 
-  <!-- Global report user modal -->
-  <ReportUserModal />
+  {#if ReportUserModalComp}
+    <ReportUserModalComp />
+  {/if}
 
-  <!-- Restore modal state from URL (for page refresh and HMR) -->
-  <ModalUrlRestorer />
+  {#if ModalUrlRestorerComp}
+    <ModalUrlRestorerComp />
+  {/if}
 {:else}
   <!-- Brief loading while container sets up -->
   <div class="error-screen">

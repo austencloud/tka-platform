@@ -6,6 +6,7 @@
  * 2. Analyzing actual positions if flag is missing (legacy sequences)
  */
 
+import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceLoopabilityChecker } from "../contracts/ISequenceLoopabilityChecker";
 
@@ -13,42 +14,36 @@ export class SequenceLoopabilityChecker implements ISequenceLoopabilityChecker {
   /**
    * Check if a sequence returns to its starting position (LOOP pattern).
    *
-   * Priority:
-   * 1. If isCircular flag is explicitly set, use it
-   * 2. Otherwise, analyze the actual positions to determine circularity
+   * If isCircular is explicitly true, trust it immediately.
+   * Otherwise, always run position analysis — isCircular defaults to false
+   * in createSequenceData(), so a false value doesn't mean "verified non-circular".
    */
   isSeamlesslyLoopable(sequence: SequenceData): boolean {
-    // Use explicit flag if available
-    if (sequence.isCircular !== undefined) {
-      return sequence.isCircular === true;
+    if (sequence.isCircular === true) {
+      return true;
     }
 
-    // Analyze positions for legacy sequences without the flag
     return this.analyzePositionCircularity(sequence);
   }
 
   /**
    * Analyze the actual positions to determine if sequence is circular.
-   * Compares the end position of the last step with the start position.
+   * Extracts GridPosition strings from the StartPositionData object and
+   * compares against the last step's endPosition.
    */
   private analyzePositionCircularity(sequence: SequenceData): boolean {
     const steps = sequence.steps;
     if (!steps || steps.length < 1) return false;
 
-    // Get start position (from startPosition field or first step's startPosition)
-    const startPos = sequence.startPosition || steps[0]?.startPosition;
-    if (!startPos) return false;
+    const startPosData = sequence.startPosition ?? sequence.startingPosition;
+    const startGridPos: GridPosition | null | undefined =
+      startPosData?.startPosition ?? startPosData?.gridPosition ?? steps[0]?.startPosition;
+    if (!startGridPos) return false;
 
-    // Get the last step's end position
     const lastStep = steps[steps.length - 1];
-    if (!lastStep) return false;
+    if (!lastStep?.endPosition) return false;
 
-    // For circularity, the end position should match the start position
-    const endPos = lastStep.endPosition;
-    if (!endPos) return false;
-
-    // Position names should match exactly
-    return startPos === endPos;
+    return startGridPos === lastStep.endPosition;
   }
 }
 

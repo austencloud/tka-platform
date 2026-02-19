@@ -5,7 +5,7 @@
    * Shows the infinite spinner animation with pictograph notation.
    * Demonstrates that the movements have a written form.
    */
-  import LandingAnimationDemo from "./LandingAnimationDemo.svelte";
+  import LazyLandingDemo from "./LazyLandingDemo.svelte";
 </script>
 
 <section class="notation-showcase" id="notation">
@@ -13,7 +13,7 @@
     <h2>Notation in motion</h2>
 
     <div class="demo-wrapper">
-      <LandingAnimationDemo />
+      <LazyLandingDemo />
     </div>
   </div>
 </section>
