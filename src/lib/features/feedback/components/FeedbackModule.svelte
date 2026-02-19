@@ -1,6 +1,7 @@
 <!-- FeedbackModule - Main container for feedback functionality -->
 <script lang="ts">
   import { navigationState } from "../../../shared/navigation/state/navigation-state.svelte";
+  import TrackerTab from "./tracker/TrackerTab.svelte";
   import FeedbackSubmitTab from "./submit/FeedbackSubmitTab.svelte";
   import FeedbackManageTab from "./manage/FeedbackManageTab.svelte";
   import MyFeedbackTab from "./my-feedback/MyFeedbackTab.svelte";
@@ -16,7 +17,9 @@
 <div class="feedback-module">
   {#key activeTab}
     <div class="tab-panel">
-      {#if activeTab === "submit"}
+      {#if activeTab === "tracker"}
+        <TrackerTab />
+      {:else if activeTab === "submit"}
         <FeedbackSubmitTab />
       {:else if activeTab === "my-feedback"}
         <MyFeedbackTab />
