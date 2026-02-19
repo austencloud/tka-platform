@@ -45,7 +45,7 @@
   import ExportFooter from "$lib/shared/sequence-viewer/components/ExportFooter.svelte";
   import RampProgressIndicator from "$lib/shared/sequence-viewer/components/RampProgressIndicator.svelte";
   import RouteViewerHeader from "./RouteViewerHeader.svelte";
-  import PropSelectorDrawer from "$lib/shared/sequence-viewer/components/PropSelectorDrawer.svelte";
+  import ViewerSettingsModal from "$lib/shared/sequence-viewer/components/ViewerSettingsModal.svelte";
   import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
@@ -95,8 +95,8 @@
   // Page container ref for swipe visual feedback
   let pageContainer: HTMLElement | null = $state(null);
 
-  // Prop selector drawer state
-  let propDrawerOpen = $state(false);
+  // Settings modal state
+  let settingsModalOpen = $state(false);
 
   // DrawerStack registration - blocks pull-to-refresh on mobile
   const drawerId = generateDrawerId();
@@ -467,7 +467,7 @@
           onExitExportMode={ctx.exitExportMode}
           onBackToExportTypeSelection={ctx.backToExportTypeSelection}
           onDarkModeToggle={ctx.handleUnifiedDarkModeToggle}
-          onOpenPropSelector={() => (propDrawerOpen = true)}
+          onSettingsOpen={() => (settingsModalOpen = true)}
         />
 
         <!-- Main content -->
@@ -560,6 +560,7 @@
               onStepHalfBack={ctx.stepHalfBeatBackward}
               onStepHalfForward={ctx.stepHalfBeatForward}
               onSave={ctx.handleSave}
+              onEdit={ctx.handleEditInConstructor}
               onCompose={() => ctx.handleOpenInCompose()}
               onShare={ctx.handleShare}
               onExport={ctx.enterExportMode}
@@ -582,10 +583,10 @@
   </SequenceViewerOrchestrator>
 {/if}
 
-<!-- Prop selector drawer - rendered outside constrained containers so position:fixed works -->
-<PropSelectorDrawer
-  bind:isOpen={propDrawerOpen}
-  onClose={() => (propDrawerOpen = false)}
+<!-- Settings modal - rendered outside constrained containers so position:fixed works -->
+<ViewerSettingsModal
+  bind:open={settingsModalOpen}
+  onClose={() => (settingsModalOpen = false)}
 />
 
 <style>

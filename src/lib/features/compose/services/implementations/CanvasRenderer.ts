@@ -5,7 +5,7 @@
 
 import type { PropState } from "../../shared/domain/types/PropState";
 import type { ICanvasRenderer } from "../contracts/ICanvasRenderer";
-import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 // Constants from standalone_animator.html
 // Using "strict" hand point offset (actual hand position, further from center)
@@ -107,14 +107,48 @@ export class CanvasRenderer implements ICanvasRenderer {
   /**
    * Render a word/sequence header onto the canvas at the top center
    * Matches WordHeader.svelte styling: semi-transparent background, centered Georgia Bold text
+   * Supports letter highlighting during animation playback
    */
   renderWordHeaderToCanvas(
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
     word: string | null,
-    darkMode: boolean = false
+    darkMode: boolean = false,
+    activeStepNumber: number | null = null
   ): void {
-    this.drawWordHeader(ctx, canvasSize, word, darkMode);
+    this.drawWordHeader(ctx, canvasSize, word, darkMode, activeStepNumber);
+  }
+
+  /**
+   * Render a segmented progress bar
+   * Ports the minimal variant from SegmentedSequenceProgressBar.svelte
+   */
+  renderProgressBarToCanvas(
+    ctx: CanvasRenderingContext2D,
+    canvasSize: number,
+    y: number,
+    totalSteps: number,
+    currentBeat: number,
+    stepDurations: number[],
+    darkMode: boolean
+  ): void {
+    this.drawProgressBar(
+      ctx,
+      canvasSize,
+      y,
+      totalSteps,
+      currentBeat,
+      stepDurations,
+      darkMode
+    );
+  }
+
+  /**
+   * Get the progress bar height for a given canvas size
+   */
+  getProgressBarHeight(canvasSize: number): number {
+    // Padding (top + bottom) + track height, proportional to canvas
+    return canvasSize * 0.03;
   }
 
   /**
@@ -270,28 +304,24 @@ export class CanvasRenderer implements ICanvasRenderer {
   /**
    * Draw word header as a full-width bar at the top of the canvas
    * Style matches WordHeader.svelte: full-width gradient background, centered Georgia Bold text
-   * Light mode: dark text on light gradient background
-   * Dark mode: white text on dark gradient background
+   * Supports letter highlighting during animation playback.
    *
-   * Uses simplifyRepeatedWord to handle repeated words (e.g., "ABAB" → "AB")
-   * Does NOT truncate - allows full word length when needed for uniqueness.
-   *
-   * @param headerHeight - Height of the header bar (typically ~5% of canvas width)
+   * Uses simplifyAndTruncate(word, 12) to match WordHeader.svelte display.
    */
   private drawWordHeader(
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
     word: string | null,
-    darkMode: boolean
+    darkMode: boolean,
+    activeStepNumber: number | null
   ): void {
     if (!word || word.trim() === "") return;
 
-    // Simplify repeated patterns (no truncation), then uppercase
-    const displayText = simplifyRepeatedWord(word).toUpperCase();
+    // Match WordHeader.svelte: simplify + truncate to 12 letter units
+    const displayText = simplifyAndTruncate(word, 12).toUpperCase();
 
-    // Header height matches WordHeader.svelte padding + font size (~5% of width)
     const headerHeight = canvasSize * 0.05;
-    const fontSize = headerHeight * 0.55; // Font takes ~55% of header height
+    const fontSize = headerHeight * 0.55;
 
     ctx.save();
 
@@ -317,13 +347,179 @@ export class CanvasRenderer implements ICanvasRenderer {
     ctx.lineTo(canvasSize, headerHeight);
     ctx.stroke();
 
-    // Draw centered text
+    // Set font for all text drawing
     ctx.font = `bold ${fontSize}px Georgia, serif`;
-    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.letterSpacing = `${fontSize * 0.08}px`; // 0.08em letter-spacing
-    ctx.fillStyle = darkMode ? "#ffffff" : "#1f2937";
-    ctx.fillText(displayText, canvasSize / 2, headerHeight / 2);
+
+    // Parse display text into TKA letter units (handles dash-letters like "Λ-")
+    const letterUnits = this.parseLetterUnits(displayText);
+
+    // Determine if highlighting is active
+    const hasHighlighting =
+      activeStepNumber !== null && activeStepNumber >= 1 && letterUnits.length > 0;
+    const activeIndex = hasHighlighting
+      ? (activeStepNumber! - 1) % letterUnits.length
+      : -1;
+
+    if (hasHighlighting) {
+      // Draw each letter individually with highlighting
+      // First measure total width to center the text block
+      const letterSpacing = fontSize * 0.08;
+      let totalWidth = 0;
+      const letterWidths: number[] = [];
+      for (const letter of letterUnits) {
+        const w = ctx.measureText(letter).width + letterSpacing;
+        letterWidths.push(w);
+        totalWidth += w;
+      }
+
+      let x = (canvasSize - totalWidth) / 2;
+      const y = headerHeight / 2;
+
+      ctx.textAlign = "left";
+      for (let i = 0; i < letterUnits.length; i++) {
+        const isActive = i === activeIndex;
+        if (isActive) {
+          ctx.fillStyle = darkMode ? "#ffffff" : "#1f2937";
+          // Subtle glow via shadow
+          ctx.shadowColor = darkMode
+            ? "rgba(255, 255, 255, 0.5)"
+            : "rgba(31, 41, 55, 0.3)";
+          ctx.shadowBlur = fontSize * 0.4;
+        } else {
+          ctx.fillStyle = darkMode
+            ? "rgba(255, 255, 255, 0.25)"
+            : "rgba(31, 41, 55, 0.3)";
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+        }
+        ctx.fillText(letterUnits[i]!, x, y);
+        x += letterWidths[i]!;
+      }
+    } else {
+      // No highlighting - draw all text at full opacity
+      ctx.textAlign = "center";
+      ctx.letterSpacing = `${fontSize * 0.08}px`;
+      ctx.fillStyle = darkMode ? "#ffffff" : "#1f2937";
+      ctx.fillText(displayText, canvasSize / 2, headerHeight / 2);
+    }
+
+    ctx.restore();
+  }
+
+  /**
+   * Parse a display string into TKA letter units.
+   * Dash-letters (e.g., "W-", "Φ-") count as one unit.
+   * Matches WordHeader.svelte parsedLetters logic.
+   */
+  private parseLetterUnits(text: string): string[] {
+    const units: string[] = [];
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i]!;
+      const next = text[i + 1];
+      if (next === "-") {
+        units.push(char + "-");
+        i++;
+      } else {
+        units.push(char);
+      }
+    }
+    return units;
+  }
+
+  /**
+   * Draw a segmented progress bar.
+   * Ports the "minimal" variant from SegmentedSequenceProgressBar.svelte.
+   */
+  private drawProgressBar(
+    ctx: CanvasRenderingContext2D,
+    canvasSize: number,
+    y: number,
+    totalSteps: number,
+    currentBeat: number,
+    stepDurations: number[],
+    darkMode: boolean
+  ): void {
+    if (totalSteps <= 0) return;
+
+    const barHeight = this.getProgressBarHeight(canvasSize);
+    const trackHeight = barHeight * 0.2; // 20% of bar area for the actual track
+    const trackY = y + (barHeight - trackHeight) / 2; // vertically centered
+
+    ctx.save();
+
+    // Background gradient (matches word header / progress bar container)
+    const bgGradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
+    if (darkMode) {
+      bgGradient.addColorStop(0, "rgba(15, 15, 20, 0.98)");
+      bgGradient.addColorStop(1, "rgba(10, 10, 15, 0.98)");
+    } else {
+      bgGradient.addColorStop(0, "rgba(248, 248, 248, 0.98)");
+      bgGradient.addColorStop(1, "rgba(240, 240, 240, 0.98)");
+    }
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, y, canvasSize, barHeight);
+
+    // Track background
+    ctx.fillStyle = darkMode
+      ? "rgba(255, 255, 255, 0.08)"
+      : "rgba(0, 0, 0, 0.08)";
+    ctx.fillRect(0, trackY, canvasSize, trackHeight);
+
+    // Calculate duration-aware progress
+    const totalDuration = stepDurations.reduce((sum, d) => sum + d, 0);
+    if (totalDuration <= 0) {
+      ctx.restore();
+      return;
+    }
+
+    // currentBeat is 0-based float: 0.0 = beat 0 start, 1.5 = beat 1 halfway
+    const stepIndex = Math.floor(currentBeat);
+    const progressWithinStep = currentBeat - stepIndex;
+
+    let completedDuration = 0;
+    for (let i = 0; i < Math.min(stepIndex, totalSteps); i++) {
+      completedDuration += stepDurations[i] ?? 1;
+    }
+    if (stepIndex < totalSteps) {
+      completedDuration +=
+        (stepDurations[stepIndex] ?? 1) * progressWithinStep;
+    }
+
+    const progressPercent = Math.max(
+      0,
+      Math.min(1, completedDuration / totalDuration)
+    );
+
+    // Progress fill gradient
+    const fillWidth = canvasSize * progressPercent;
+    if (fillWidth > 0) {
+      const fillGradient = ctx.createLinearGradient(0, trackY, fillWidth, trackY);
+      if (darkMode) {
+        fillGradient.addColorStop(0, "#00b8b8");
+        fillGradient.addColorStop(0.5, "#00e5e5");
+        fillGradient.addColorStop(1, "#00b8b8");
+      } else {
+        fillGradient.addColorStop(0, "#3b82f6");
+        fillGradient.addColorStop(0.5, "#60a5fa");
+        fillGradient.addColorStop(1, "#3b82f6");
+      }
+      ctx.fillStyle = fillGradient;
+      ctx.fillRect(0, trackY, fillWidth, trackHeight);
+    }
+
+    // Segment dividers (white lines between beats)
+    let cumulativeDuration = 0;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < totalSteps - 1; i++) {
+      cumulativeDuration += stepDurations[i] ?? 1;
+      const dividerX = (cumulativeDuration / totalDuration) * canvasSize;
+      ctx.beginPath();
+      ctx.moveTo(dividerX, trackY);
+      ctx.lineTo(dividerX, trackY + trackHeight);
+      ctx.stroke();
+    }
 
     ctx.restore();
   }

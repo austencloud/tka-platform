@@ -17,12 +17,17 @@
   import TikaReviewPanel from "./components/TikaReviewPanel.svelte";
   import TikaHistoryDrawer from "./components/TikaHistoryDrawer.svelte";
   import { getEffectiveUserId, authState } from "$lib/shared/auth/state/authState.svelte";
+  import { auth } from "$lib/shared/auth/firebase";
   import { container } from "$lib/shared/di";
   import type { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
   import type { IQuizHistoryRecorder } from "$lib/features/learn/services/contracts/IQuizHistoryRecorder";
   import type { IConceptRecommender } from "$lib/features/learn/services/contracts/IConceptRecommender";
   import type { MasteryContext } from "$lib/features/learn/domain/quiz-history-types";
   import { TikaSessionRepository } from "./services/implementations/TikaSessionRepository";
+  import { ConversationMemoryRetriever } from "./services/implementations/ConversationMemoryRetriever";
+  import { TikaInteractionTracker } from "./services/implementations/TikaInteractionTracker";
+  import { TikaWelcomeBuilder } from "./services/implementations/TikaWelcomeBuilder";
+  import type { WelcomeContext } from "./services/contracts/ITikaWelcomeBuilder";
   import { TIKA_LIMITS } from "./data/firestore-paths";
   import type { ModelOption } from "./types";
 
@@ -72,6 +77,11 @@
   // Repository instance (initialized lazily when user is authenticated)
   const sessionRepository = browser ? new TikaSessionRepository() : null;
 
+  // Memory retriever for past conversation context
+  const memoryRetriever = sessionRepository
+    ? new ConversationMemoryRetriever(sessionRepository)
+    : null;
+
   // Check if user is authenticated
   const isAuthenticated = $derived(authState.isAuthenticated);
 
@@ -89,6 +99,15 @@
     ? container?.items?.conceptRecommender ?? null
     : null;
 
+  // Interaction tracker for quiz persistence and topic tracking (depends on quizHistoryRecorder)
+  const interactionTracker =
+    browser && quizHistoryRecorder
+      ? new TikaInteractionTracker(quizHistoryRecorder)
+      : null;
+
+  // Welcome builder for adaptive suggestions
+  const welcomeBuilder = new TikaWelcomeBuilder();
+
   const completedConcepts = $derived.by(() => {
     if (!progressTracker) return [];
     const progress = progressTracker.getProgress();
@@ -97,6 +116,13 @@
 
   // Mastery context for adaptive TIKA responses
   let masteryContext = $state<MasteryContext | undefined>(undefined);
+
+  // Conversation memory context (loaded once on first message)
+  let conversationMemory = $state<string | undefined>(undefined);
+  let memoryLoaded = $state(false);
+
+  // Adaptive welcome context (loaded on mount for authenticated users)
+  let welcomeContext = $state<WelcomeContext | undefined>(undefined);
 
   // Load mastery context when user is authenticated
   $effect(() => {
@@ -143,16 +169,58 @@
       });
   });
 
+  // Build adaptive welcome context when mastery data and user data are available
+  $effect(() => {
+    if (!isAuthenticated || userId === "anonymous") {
+      // Anonymous users get static defaults
+      welcomeContext = welcomeBuilder.buildWelcome();
+      return;
+    }
+
+    // Load topic history and history summary in parallel, then build welcome
+    const topicHistoryPromise = interactionTracker
+      ? interactionTracker.getTopicHistory(userId, 5)
+      : Promise.resolve(undefined);
+
+    const historySummaryPromise = memoryRetriever
+      ? memoryRetriever.getHistorySummary()
+      : Promise.resolve(undefined);
+
+    Promise.all([topicHistoryPromise, historySummaryPromise])
+      .then(([topicHistory, historySummary]) => {
+        welcomeContext = welcomeBuilder.buildWelcome(
+          masteryContext,
+          topicHistory ?? undefined,
+          historySummary ?? undefined,
+        );
+      })
+      .catch((error) => {
+        console.warn("[TIKA] Failed to build welcome context:", error);
+        // Fall back to static defaults
+        welcomeContext = welcomeBuilder.buildWelcome();
+      });
+  });
+
+  // Get Firebase auth headers for API requests
+  async function getAuthHeaders(): Promise<Record<string, string>> {
+    const user = auth.currentUser;
+    if (!user) return {};
+    const token = await user.getIdToken();
+    return { Authorization: `Bearer ${token}` };
+  }
+
   // Initialize Chat class from AI SDK with persistence
   const chat = browser
     ? new Chat({
         id: "tika-main",
         transport: new DefaultChatTransport({
           api: "/api/tika/ask",
+          headers: () => getAuthHeaders(),
           body: () => ({
             userId,
             completedConcepts,
             masteryContext,
+            conversationMemory,
             language: "en",
             model: selectedModel,
           }),
@@ -223,7 +291,12 @@
   // Fetch available models on mount
   onMount(async () => {
     try {
-      const res = await fetch("/api/tika/models");
+      const headers = await getAuthHeaders();
+      const res = await fetch("/api/tika/models", { headers });
+      if (!res.ok) {
+        console.warn("[TIKA] Models endpoint returned", res.status);
+        return;
+      }
       const data = await res.json();
       availableModels = data.models || [];
 
@@ -259,13 +332,33 @@
   }
 
   // Handle new message submission from conversation component
-  function handleSubmit(question: string) {
+  async function handleSubmit(question: string) {
+    // Load conversation memory on first message (lazy)
+    if (!memoryLoaded && memoryRetriever && isAuthenticated) {
+      memoryLoaded = true;
+      try {
+        conversationMemory = await memoryRetriever.buildMemoryContext(question);
+      } catch (error) {
+        console.warn("[TIKA] Failed to load conversation memory:", error);
+      }
+    }
     chat?.sendMessage({ text: question });
   }
 
   // Handle stop/abort streaming
   function handleStop() {
     chat?.stop();
+  }
+
+  // Handle inline quiz completion (persist results)
+  function handleQuizComplete(quizId: string, topic: string, correct: boolean) {
+    if (!interactionTracker || !isAuthenticated || userId === "anonymous") return;
+
+    interactionTracker
+      .recordQuizResult(userId, topic, correct, quizId)
+      .catch((error) => {
+        console.warn("[TIKA] Failed to record quiz result:", error);
+      });
   }
 
   // Start a new conversation
@@ -286,6 +379,9 @@
     if (chat) chat.messages = [];
     currentSessionId = null;
     isFlagged = false;
+    conversationMemory = undefined;
+    memoryLoaded = false;
+    welcomeContext = undefined;
 
     // Clear sessionStorage
     if (browser) {
@@ -479,6 +575,8 @@
         sessionId={currentSessionId}
         {isFlagged}
         onFlagForReview={isAuthenticated ? handleFlagForReview : undefined}
+        onQuizComplete={isAuthenticated ? handleQuizComplete : undefined}
+        {welcomeContext}
       />
     </div>
   {:else}

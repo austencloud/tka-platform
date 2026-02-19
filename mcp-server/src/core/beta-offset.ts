@@ -93,10 +93,10 @@ const BOX_RADIAL_MAP: Record<string, ColorMap> = {
  * Box grid (NE/SE/SW/NW) - non-radial orientation
  */
 const BOX_NON_RADIAL_MAP: Record<string, ColorMap> = {
-  [GridLocation.NORTHEAST]: { red: VectorDirection.UPLEFT, blue: VectorDirection.DOWNRIGHT },
-  [GridLocation.SOUTHEAST]: { red: VectorDirection.UPRIGHT, blue: VectorDirection.DOWNLEFT },
-  [GridLocation.SOUTHWEST]: { red: VectorDirection.UPLEFT, blue: VectorDirection.DOWNRIGHT },
-  [GridLocation.NORTHWEST]: { red: VectorDirection.DOWNLEFT, blue: VectorDirection.UPRIGHT },
+  [GridLocation.NORTHEAST]: { red: VectorDirection.UPRIGHT, blue: VectorDirection.DOWNLEFT },
+  [GridLocation.SOUTHEAST]: { red: VectorDirection.DOWNRIGHT, blue: VectorDirection.UPLEFT },
+  [GridLocation.SOUTHWEST]: { red: VectorDirection.DOWNLEFT, blue: VectorDirection.UPRIGHT },
+  [GridLocation.NORTHWEST]: { red: VectorDirection.UPLEFT, blue: VectorDirection.DOWNRIGHT },
 };
 
 /**

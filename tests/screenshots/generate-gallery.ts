@@ -1,7 +1,7 @@
 /**
  * HTML Gallery Generator for Multi-Device Screenshot Testing
  *
- * Generates a self-contained HTML file grouping screenshots by screen
+ * Generates an interactive HTML file grouping screenshots by screen
  * with all device captures shown side-by-side. Supports visual regression
  * diffs via pixelmatch when --compare flag is passed.
  *
@@ -9,10 +9,18 @@
  *   tsx tests/screenshots/generate-gallery.ts
  *   tsx tests/screenshots/generate-gallery.ts --compare
  *   tsx tests/screenshots/generate-gallery.ts --update-baselines
+ *   tsx tests/screenshots/generate-gallery.ts --portable  (base64 embed for sharing)
  */
 
-import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, copyFileSync } from "fs";
-import { join, basename, dirname } from "path";
+import {
+  readFileSync,
+  writeFileSync,
+  readdirSync,
+  existsSync,
+  mkdirSync,
+  copyFileSync,
+} from "fs";
+import { join, basename, dirname, relative } from "path";
 import { fileURLToPath } from "url";
 import { DEVICES } from "./devices";
 
@@ -26,8 +34,10 @@ const GALLERY_PATH = join(__dirname, "gallery.html");
 const args = process.argv.slice(2);
 const compareMode = args.includes("--compare");
 const updateBaselines = args.includes("--update-baselines");
+const portableMode =
+  args.includes("--portable") || process.env.SCREENSHOT_PORTABLE === "true";
 
-// ─── Update Baselines ─────────────────────────────────────────────────────────
+// ─── Update Baselines ────────────────────────────────────────────────────────
 
 if (updateBaselines) {
   if (!existsSync(CAPTURES_DIR)) {
@@ -47,7 +57,7 @@ if (updateBaselines) {
   process.exit(0);
 }
 
-// ─── Parse Captures ───────────────────────────────────────────────────────────
+// ─── Parse Captures ──────────────────────────────────────────────────────────
 
 interface CaptureInfo {
   filename: string;
@@ -89,13 +99,30 @@ function groupByRoute(
   return groups;
 }
 
-// ─── Visual Regression (pixelmatch) ───────────────────────────────────────────
+// ─── Image URL Resolution ────────────────────────────────────────────────────
+
+/**
+ * Returns the URL for an image in the gallery HTML.
+ * In portable mode: base64 data URL (self-contained but large).
+ * In default mode: relative file path (small HTML, requires captures/ dir).
+ */
+function resolveImageUrl(filePath: string): string {
+  if (portableMode) {
+    const buffer = readFileSync(filePath);
+    return `data:image/png;base64,${buffer.toString("base64")}`;
+  }
+  // Relative path from gallery.html to the image file
+  return relative(dirname(GALLERY_PATH), filePath).replace(/\\/g, "/");
+}
+
+// ─── Visual Regression (pixelmatch) ──────────────────────────────────────────
 
 interface DiffResult {
   filename: string;
   diffPixels: number;
   totalPixels: number;
   diffPercent: number;
+  /** Diff overlay image — always base64 (generated programmatically) */
   diffDataUrl: string | null;
 }
 
@@ -125,20 +152,19 @@ async function computeDiffs(
     if (!existsSync(baselinePath)) continue;
 
     if ((i + 1) % 10 === 0 || i === captures.length - 1) {
-      console.log(`Comparing ${i + 1}/${captures.length} screenshots...`);
+      console.log(`  Comparing ${i + 1}/${captures.length}...`);
     }
 
     try {
       const baseImg = PNG.sync.read(readFileSync(baselinePath));
       const currImg = PNG.sync.read(readFileSync(cap.path));
 
-      // Images must be same dimensions for pixelmatch
       if (
         baseImg.width !== currImg.width ||
         baseImg.height !== currImg.height
       ) {
         console.warn(
-          `Dimension mismatch: ${cap.filename} (baseline: ${baseImg.width}x${baseImg.height}, current: ${currImg.width}x${currImg.height})`
+          `  Dimension mismatch: ${cap.filename} (baseline: ${baseImg.width}x${baseImg.height}, current: ${currImg.width}x${currImg.height})`
         );
         results.set(cap.filename, {
           filename: cap.filename,
@@ -167,7 +193,7 @@ async function computeDiffs(
           ? Math.round((diffPixels / totalPixels) * 10000) / 100
           : 0;
 
-      // Encode diff image as base64 data URL
+      // Diff overlay is always base64 (it's generated, not a file on disk)
       const diffBuffer = PNG.sync.write(diff);
       const diffDataUrl = `data:image/png;base64,${diffBuffer.toString("base64")}`;
 
@@ -180,7 +206,7 @@ async function computeDiffs(
       });
     } catch (err) {
       console.warn(
-        `Skipped diff for ${cap.filename}:`,
+        `  Skipped diff for ${cap.filename}:`,
         err instanceof Error ? err.message : String(err)
       );
     }
@@ -189,28 +215,31 @@ async function computeDiffs(
   return results;
 }
 
-// ─── HTML Generation ──────────────────────────────────────────────────────────
+// ─── Device Lookup ───────────────────────────────────────────────────────────
 
-const MAX_INLINE_SIZE_KB = 2048;
+const DEVICE_CATEGORIES = new Map(
+  DEVICES.map((d) => [d.slug, d.category])
+);
 
-function imageToDataUrl(filePath: string): string {
-  const buffer = readFileSync(filePath);
-  const sizeKB = buffer.length / 1024;
-
-  if (sizeKB > MAX_INLINE_SIZE_KB) {
-    console.warn(
-      `Large screenshot: ${basename(filePath)} is ${Math.round(sizeKB)}KB (base64 will be ~${Math.round(sizeKB * 1.37)}KB)`
-    );
-  }
-
-  return `data:image/png;base64,${buffer.toString("base64")}`;
+function getCategory(slug: string): "phone" | "tablet" | "desktop" {
+  // Handle landscape variants (e.g. "iphone-16-pro-landscape" -> phone)
+  const baseSlug = slug.replace(/-landscape$/, "");
+  return DEVICE_CATEGORIES.get(baseSlug) ?? DEVICE_CATEGORIES.get(slug) ?? "phone";
 }
 
 function getDeviceDimensions(slug: string): { w: number; h: number } | null {
   const device = DEVICES.find((d) => d.slug === slug);
-  if (!device) return null;
+  if (!device) {
+    // Try landscape variant
+    const baseSlug = slug.replace(/-landscape$/, "");
+    const base = DEVICES.find((d) => d.slug === baseSlug);
+    if (base) return { w: base.height, h: base.width }; // Swapped for landscape
+    return null;
+  }
   return { w: device.width, h: device.height };
 }
+
+// ─── HTML Generation ─────────────────────────────────────────────────────────
 
 function generateHTML(
   groups: Map<string, CaptureInfo[]>,
@@ -223,7 +252,7 @@ function generateHTML(
   );
 
   let sectionsHTML = "";
-  let diffModalData: Array<{
+  const diffModalData: Array<{
     id: string;
     label: string;
     device: string;
@@ -233,8 +262,11 @@ function generateHTML(
     percent: number;
   }> = [];
 
+  // Collect all image sources for lightbox navigation
+  const allImages: Array<{ src: string; caption: string }> = [];
+
   for (const [routeLabel, captures] of groups) {
-    // Sort by device category then by width (smallest first for natural phone comparison)
+    // Sort by device category then by width
     const order = { phone: 0, tablet: 1, desktop: 2 };
     captures.sort((a, b) => {
       const catA = getCategory(a.deviceSlug);
@@ -248,11 +280,16 @@ function generateHTML(
 
     let cardsHTML = "";
     for (const cap of captures) {
-      const dataUrl = imageToDataUrl(cap.path);
+      const imageUrl = resolveImageUrl(cap.path);
       const category = getCategory(cap.deviceSlug);
       const dims = getDeviceDimensions(cap.deviceSlug);
       const dimsLabel = dims ? `${dims.w}x${dims.h}` : "";
       const diff = diffs.get(cap.filename);
+      const caption = `${routeLabel} - ${cap.deviceSlug} (${dimsLabel})`;
+
+      // Track for lightbox navigation
+      const imageIndex = allImages.length;
+      allImages.push({ src: imageUrl, caption });
 
       let diffBadge = "";
       if (diff) {
@@ -266,19 +303,19 @@ function generateHTML(
         diffBadge = `<button class="diff-badge" style="background:${color}" onclick="event.stopPropagation(); openDiffModal('${diffId}')">${diff.diffPercent}% diff</button>`;
 
         if (diff.diffDataUrl) {
+          const baselinePath = join(BASELINES_DIR, cap.filename);
           diffModalData.push({
             id: diffId,
             label: routeLabel,
             device: cap.deviceSlug,
-            currentUrl: dataUrl,
-            baselineUrl: imageToDataUrl(join(BASELINES_DIR, cap.filename)),
+            currentUrl: imageUrl,
+            baselineUrl: resolveImageUrl(baselinePath),
             diffUrl: diff.diffDataUrl,
             percent: diff.diffPercent,
           });
         }
       }
 
-      // Calculate proportional width based on aspect ratio at fixed row height
       const aspectRatio = dims ? dims.w / dims.h : 0.5;
 
       cardsHTML += `
@@ -291,8 +328,9 @@ function generateHTML(
             ${diffBadge}
           </div>
           <div class="screenshot-frame">
-            <img src="${dataUrl}" class="screenshot" alt="${routeLabel} on ${cap.deviceSlug}"
-                 onclick="openLightbox(this.src, '${routeLabel} — ${cap.deviceSlug} (${dimsLabel})')" />
+            <img src="${imageUrl}" class="screenshot" alt="${routeLabel} on ${cap.deviceSlug}"
+                 loading="lazy"
+                 onclick="openLightbox(${imageIndex})" />
           </div>
         </div>
       `;
@@ -315,18 +353,18 @@ function generateHTML(
       <div class="diff-modal" id="${dm.id}" onclick="if(event.target===this)closeDiffModal()">
         <div class="diff-modal-content">
           <div class="diff-modal-header">
-            <span>${dm.label} — ${dm.device}</span>
+            <span>${dm.label} - ${dm.device}</span>
             <span class="diff-badge-inline" style="background:${color}">${dm.percent}% diff</span>
             <button class="diff-close" onclick="closeDiffModal()">&times;</button>
           </div>
           <div class="diff-three-up">
             <div class="diff-column">
               <div class="diff-col-label">Baseline</div>
-              <img src="${dm.baselineUrl}" alt="baseline" />
+              <img src="${dm.baselineUrl}" alt="baseline" loading="lazy" />
             </div>
             <div class="diff-column">
               <div class="diff-col-label">Current</div>
-              <img src="${dm.currentUrl}" alt="current" />
+              <img src="${dm.currentUrl}" alt="current" loading="lazy" />
             </div>
             <div class="diff-column">
               <div class="diff-col-label">Diff</div>
@@ -338,12 +376,15 @@ function generateHTML(
     `;
   }
 
+  // Serialize image data for lightbox navigation
+  const imageDataJSON = JSON.stringify(allImages);
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Screenshot Gallery — ${timestamp}</title>
+  <title>Screenshot Gallery - ${timestamp}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -353,7 +394,7 @@ function generateHTML(
       padding: 24px;
     }
 
-    /* ── Header ── */
+    /* -- Header -- */
     header {
       display: flex;
       justify-content: space-between;
@@ -372,10 +413,7 @@ function generateHTML(
       align-items: center;
       flex-wrap: wrap;
     }
-    .filters {
-      display: flex;
-      gap: 6px;
-    }
+    .filters { display: flex; gap: 6px; }
     .filter-btn {
       padding: 6px 14px;
       border: 1px solid #444;
@@ -401,7 +439,7 @@ function generateHTML(
       accent-color: #2a6ccf;
     }
 
-    /* ── Route sections ── */
+    /* -- Route sections -- */
     .route-section { margin-bottom: 40px; }
     .route-section h2 {
       font-size: 15px;
@@ -413,7 +451,7 @@ function generateHTML(
       display: inline-block;
     }
 
-    /* ── Device row: horizontal flex, scroll when needed ── */
+    /* -- Device row -- */
     .device-row {
       display: flex;
       gap: 12px;
@@ -430,7 +468,7 @@ function generateHTML(
       border-radius: 3px;
     }
 
-    /* ── Card: width proportional to device aspect ratio ── */
+    /* -- Card -- */
     .card {
       flex: 0 0 auto;
       width: calc(var(--row-height, 600px) * var(--aspect, 0.5));
@@ -477,7 +515,7 @@ function generateHTML(
     }
     .diff-badge:hover { filter: brightness(1.2); }
 
-    /* ── Screenshot frame: fixed height, contains image ── */
+    /* -- Screenshot frame -- */
     .screenshot-frame {
       height: var(--row-height, 600px);
       overflow: hidden;
@@ -495,7 +533,7 @@ function generateHTML(
       cursor: pointer;
     }
 
-    /* ── Lightbox ── */
+    /* -- Lightbox -- */
     .lightbox {
       display: none;
       position: fixed;
@@ -505,12 +543,11 @@ function generateHTML(
       justify-content: center;
       align-items: center;
       flex-direction: column;
-      cursor: pointer;
     }
     .lightbox.open { display: flex; }
     .lightbox img {
       max-width: 95vw;
-      max-height: 85vh;
+      max-height: 80vh;
       object-fit: contain;
       border-radius: 4px;
     }
@@ -519,8 +556,48 @@ function generateHTML(
       font-size: 14px;
       color: #aaa;
     }
+    .lightbox .counter {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #666;
+      font-variant-numeric: tabular-nums;
+    }
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #fff;
+      font-size: 32px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      user-select: none;
+    }
+    .lightbox-nav:hover { background: rgba(255,255,255,0.2); }
+    .lightbox-nav.prev { left: 16px; }
+    .lightbox-nav.next { right: 16px; }
+    .lightbox-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 28px;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+    }
+    .lightbox-close:hover { color: #fff; }
 
-    /* ── Diff modal: three-up comparison ── */
+    /* -- Diff modal -- */
     .diff-modal {
       display: none;
       position: fixed;
@@ -571,10 +648,7 @@ function generateHTML(
       gap: 2px;
       padding: 12px;
     }
-    .diff-column {
-      flex: 1;
-      min-width: 0;
-    }
+    .diff-column { flex: 1; min-width: 0; }
     .diff-col-label {
       text-align: center;
       font-size: 12px;
@@ -595,7 +669,7 @@ function generateHTML(
   <header>
     <div>
       <h1>Screenshot Gallery</h1>
-      <div class="meta">${totalScreenshots} screenshots across ${groups.size} screens — ${timestamp}${compareMode ? " — COMPARE MODE" : ""}</div>
+      <div class="meta">${totalScreenshots} screenshots across ${groups.size} screens - ${timestamp}${compareMode ? " - COMPARE MODE" : ""}${portableMode ? " - PORTABLE" : ""}</div>
     </div>
     <div class="controls">
       <div class="filters">
@@ -616,16 +690,23 @@ function generateHTML(
 
   ${diffModalsHTML}
 
-  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-    <img id="lightbox-img" src="" alt="" />
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close lightbox">&times;</button>
+    <button class="lightbox-nav prev" onclick="event.stopPropagation(); navigateLightbox(-1)" aria-label="Previous image">&lsaquo;</button>
+    <button class="lightbox-nav next" onclick="event.stopPropagation(); navigateLightbox(1)" aria-label="Next image">&rsaquo;</button>
+    <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()" />
     <div class="caption" id="lightbox-caption"></div>
+    <div class="counter" id="lightbox-counter"></div>
   </div>
 
   <script>
+    var images = ${imageDataJSON};
+    var currentIndex = -1;
+
     function filterDevices(category, btn) {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
-      document.querySelectorAll('.card').forEach(card => {
+      document.querySelectorAll('.card').forEach(function(card) {
         card.classList.toggle('hidden', category !== 'all' && card.dataset.category !== category);
       });
     }
@@ -635,14 +716,28 @@ function generateHTML(
       document.getElementById('row-height-label').textContent = px + 'px';
     }
 
-    function openLightbox(src, caption) {
-      document.getElementById('lightbox-img').src = src;
-      document.getElementById('lightbox-caption').textContent = caption;
+    function openLightbox(index) {
+      currentIndex = index;
+      showLightboxImage();
       document.getElementById('lightbox').classList.add('open');
+    }
+
+    function showLightboxImage() {
+      if (currentIndex < 0 || currentIndex >= images.length) return;
+      var img = images[currentIndex];
+      document.getElementById('lightbox-img').src = img.src;
+      document.getElementById('lightbox-caption').textContent = img.caption;
+      document.getElementById('lightbox-counter').textContent = (currentIndex + 1) + ' / ' + images.length;
+    }
+
+    function navigateLightbox(delta) {
+      currentIndex = (currentIndex + delta + images.length) % images.length;
+      showLightboxImage();
     }
 
     function closeLightbox() {
       document.getElementById('lightbox').classList.remove('open');
+      currentIndex = -1;
     }
 
     function openDiffModal(id) {
@@ -650,29 +745,32 @@ function generateHTML(
     }
 
     function closeDiffModal() {
-      document.querySelectorAll('.diff-modal.open').forEach(m => m.classList.remove('open'));
+      document.querySelectorAll('.diff-modal.open').forEach(function(m) { m.classList.remove('open'); });
     }
 
-    document.addEventListener('keydown', e => {
+    document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         closeDiffModal();
         closeLightbox();
       }
+      // Lightbox keyboard navigation
+      var lb = document.getElementById('lightbox');
+      if (lb && lb.classList.contains('open')) {
+        if (e.key === 'ArrowLeft') navigateLightbox(-1);
+        if (e.key === 'ArrowRight') navigateLightbox(1);
+      }
+    });
+
+    // Click outside image to close lightbox
+    document.getElementById('lightbox').addEventListener('click', function(e) {
+      if (e.target === this) closeLightbox();
     });
   </script>
 </body>
 </html>`;
 }
 
-const DEVICE_CATEGORIES = new Map(
-  DEVICES.map((d) => [d.slug, d.category])
-);
-
-function getCategory(slug: string): "phone" | "tablet" | "desktop" {
-  return DEVICE_CATEGORIES.get(slug) ?? "phone";
-}
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
   const captures = parseCaptures();
@@ -684,11 +782,15 @@ async function main() {
   const groups = groupByRoute(captures);
   const diffs = await computeDiffs(captures);
 
+  const mode = portableMode ? "portable (base64)" : "file-reference";
+  console.log(`  Gallery mode: ${mode}`);
+
   const html = generateHTML(groups, diffs);
   writeFileSync(GALLERY_PATH, html, "utf-8");
 
+  const sizeKB = Math.round(Buffer.byteLength(html, "utf-8") / 1024);
   console.log(
-    `Gallery generated: ${GALLERY_PATH} (${captures.length} screenshots, ${groups.size} screens)`
+    `  Gallery: ${GALLERY_PATH} (${sizeKB}KB, ${captures.length} screenshots, ${groups.size} screens)`
   );
 
   if (diffs.size > 0) {
@@ -698,9 +800,7 @@ async function main() {
       if (diff.diffPercent > 0) changed++;
       else unchanged++;
     }
-    console.log(
-      `Visual regression: ${unchanged} unchanged, ${changed} changed`
-    );
+    console.log(`  Visual regression: ${unchanged} unchanged, ${changed} changed`);
   }
 }
 

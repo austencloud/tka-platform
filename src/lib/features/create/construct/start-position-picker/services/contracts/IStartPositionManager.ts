@@ -11,9 +11,9 @@ import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pic
 
 export interface IStartPositionManager {
   // Core functionality - load and select positions
-  getStartPositions(gridMode: GridMode, orientation?: Orientation): Promise<PictographData[]>;
-  getDefaultStartPositions(gridMode: GridMode, orientation?: Orientation): PictographData[];
-  getAllStartPositionVariations(gridMode: GridMode, orientation?: Orientation): PictographData[];
+  getStartPositions(gridMode: GridMode, blueOrientation?: Orientation, redOrientation?: Orientation): Promise<PictographData[]>;
+  getDefaultStartPositions(gridMode: GridMode, blueOrientation?: Orientation, redOrientation?: Orientation): PictographData[];
+  getAllStartPositionVariations(gridMode: GridMode, blueOrientation?: Orientation, redOrientation?: Orientation): PictographData[];
   selectStartPosition(position: PictographData): void;
 
   // System method for setting start position in sequence

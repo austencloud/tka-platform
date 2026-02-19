@@ -24,16 +24,24 @@ export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
     // Build a deterministic key from ALL rendering parameters.
     // Every setting that affects the final pixel output MUST be in this key,
     // otherwise the IndexedDB blob cache returns stale images.
+    const blue = pictographData.motions?.blue;
+    const red = pictographData.motions?.red;
     const keyParts = [
       pictographData.letter || "start",
-      pictographData.motions?.blue?.motionType || "none",
-      pictographData.motions?.blue?.startLocation || "",
-      pictographData.motions?.blue?.endLocation || "",
-      pictographData.motions?.blue?.turns ?? 0,
-      pictographData.motions?.red?.motionType || "none",
-      pictographData.motions?.red?.startLocation || "",
-      pictographData.motions?.red?.endLocation || "",
-      pictographData.motions?.red?.turns ?? 0,
+      blue?.motionType || "none",
+      blue?.startLocation || "",
+      blue?.endLocation || "",
+      blue?.turns ?? 0,
+      blue?.startOrientation ?? "",
+      blue?.endOrientation ?? "",
+      blue?.rotationDirection ?? "",
+      red?.motionType || "none",
+      red?.startLocation || "",
+      red?.endLocation || "",
+      red?.turns ?? 0,
+      red?.startOrientation ?? "",
+      red?.endOrientation ?? "",
+      red?.rotationDirection ?? "",
       options.bluePropType || "staff",
       options.catDogModeEnabled
         ? (options.redPropType || "staff")

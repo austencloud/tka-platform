@@ -120,6 +120,7 @@
     handleCanvasReady: (canvas: HTMLCanvasElement | null) => void;
     handleSyncToggle: () => Promise<void>;
     handleOpenInCompose: (preset?: 'stagger' | 'mirror' | 'combo-export') => Promise<void>;
+    handleEditInConstructor: () => void;
     handleSave: () => void;
     handleShare: () => void;
     handleGetApp: () => void;
@@ -159,6 +160,7 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { sequenceModalPersistence } from "$lib/shared/sequence-viewer/services/implementations/SequenceModalPersistence";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/implementations/CellPreWarmer";
@@ -833,6 +835,31 @@
   }
 
   // ============================================================================
+  // CONSTRUCTOR NAVIGATION
+  // ============================================================================
+
+  function handleEditInConstructor() {
+    if (!sequence) return;
+    hapticService?.trigger("selection");
+
+    // Stop playback before leaving
+    if (isPlayingLocal && playbackController) {
+      playbackController.togglePlayback();
+    }
+
+    // Disconnect LAN sync if active
+    if (lanSyncState.isActive) {
+      lanSyncState.disconnect();
+    }
+
+    // Store the sequence for the Constructor to pick up
+    localStorage.setItem("tka-pending-edit-sequence", JSON.stringify(sequence));
+
+    showToast({ message: "Opening in Constructor...", type: "info", duration: 2000 });
+    void handleModuleChange("create", "construct");
+  }
+
+  // ============================================================================
   // ACTION HANDLERS
   // ============================================================================
 
@@ -1074,6 +1101,7 @@
     handleCanvasReady,
     handleSyncToggle,
     handleOpenInCompose,
+    handleEditInConstructor,
     handleSave,
     handleShare,
     handleGetApp,

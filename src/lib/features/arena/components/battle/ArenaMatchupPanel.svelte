@@ -67,7 +67,7 @@
     {#if entry.ownerDisplayName}
       <span class="author-label">by {entry.ownerDisplayName}</span>
     {/if}
-    <span class="beat-count">{data.steps?.length ?? 0} beats</span>
+    <span class="beat-count">{data.steps?.length || data.sequenceLength || 0} beats</span>
   </div>
 </div>
 

@@ -8,9 +8,10 @@ Cycles through IN -> CLOCK -> OUT -> COUNTER (clockwise order)
   interface Props {
     orientation: Orientation;
     onOrientationChange: (orientation: Orientation) => void;
+    color?: "blue" | "red";
   }
 
-  const { orientation, onOrientationChange }: Props = $props();
+  const { orientation, onOrientationChange, color }: Props = $props();
 
   // Clockwise cycle order for the 4 cardinal orientations
   const CYCLE: Orientation[] = [
@@ -45,7 +46,7 @@ Cycles through IN -> CLOCK -> OUT -> COUNTER (clockwise order)
   }
 </script>
 
-<div class="orientation-cycler" role="group" aria-label="Orientation selector">
+<div class="orientation-cycler" class:color-blue={color === "blue"} class:color-red={color === "red"} role="group" aria-label="{color ? `${color} prop orientation` : 'Orientation selector'}">
   <button
     class="cycle-arrow"
     onclick={cyclePrev}
@@ -134,6 +135,17 @@ Cycles through IN -> CLOCK -> OUT -> COUNTER (clockwise order)
       opacity: 1;
       background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
     }
+  }
+
+  /* Color-tinted variants */
+  .orientation-cycler.color-blue {
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.08);
+  }
+
+  .orientation-cycler.color-red {
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.08);
   }
 
   .orientation-display {

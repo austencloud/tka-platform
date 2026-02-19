@@ -9,10 +9,7 @@ import {
   VIDEO_INITIAL_CAPTURE_DELAY_MS,
 } from "../../shared/domain/constants/timing";
 import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
-import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { ISvgImageConverter } from "$lib/shared/foundation/services/contracts/ISvgImageConverter";
 import type { IFileDownloader } from "$lib/shared/foundation/services/contracts/IFileDownloader";
-import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
 import type { IAnimationPlaybackController } from "../contracts/IAnimationPlaybackController";
 import type { ICanvasRenderer } from "../contracts/ICanvasRenderer";
 import type {
@@ -23,26 +20,22 @@ import type {
 } from "../contracts/IVideoExportOrchestrator";
 import type { IVideoExporter } from "../contracts/IVideoExporter";
 import type { ICompositeVideoRenderer } from "../contracts/ICompositeVideoRenderer";
+import type {
+  GlyphAsset,
+  IExportGlyphPrerenderer,
+} from "../contracts/IExportGlyphPrerenderer";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-
-interface LetterOverlayAssets {
-  image: HTMLImageElement | null;
-  dimensions: { width: number; height: number };
-}
 
 export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   private _isExporting = false;
   private shouldCancel = false;
 
-  // Cache for loaded letter glyphs to avoid re-fetching the same letter multiple times
-  private letterGlyphCache = new Map<Letter, LetterOverlayAssets>();
-
   constructor(
     private readonly VideoExporter: IVideoExporter,
     private readonly canvasRenderer: ICanvasRenderer,
-    private readonly svgImageService: ISvgImageConverter,
     private readonly fileDownloadService: IFileDownloader,
-    private readonly compositeRenderer: ICompositeVideoRenderer
+    private readonly compositeRenderer: ICompositeVideoRenderer,
+    private readonly glyphPrerenderer: IExportGlyphPrerenderer
   ) {}
 
   async executeExport(
@@ -59,9 +52,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     this._isExporting = true;
     this.shouldCancel = false;
 
-    // Clear glyph cache for fresh export
-    this.letterGlyphCache.clear();
-
     // MP4 is the default format
     const exportFormat: VideoExportFormat = options.format ?? "mp4";
     const filename = this.resolveFilename(
@@ -73,14 +63,20 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     // Check visibility settings early to calculate output dimensions
     const visibilityManager = getAnimationVisibilityManager();
     const showWordHeader = visibilityManager.getVisibility("wordHeader");
+    const showProgressBar = visibilityManager.getVisibility("progressBar");
     const headerHeight = showWordHeader
       ? this.canvasRenderer.getHeaderHeight(canvas.width)
       : 0;
+    const progressBarHeight = showProgressBar
+      ? this.canvasRenderer.getProgressBarHeight(canvas.width)
+      : 0;
 
-    // Calculate output dimensions (include header height if enabled)
-    // Round to integers - headerHeight can be decimal from CSS calculations
+    // Calculate output dimensions (include header + progress bar if enabled)
+    // Round to integers - heights can be decimal from CSS calculations
     const outputWidth = Math.round(canvas.width);
-    const outputHeight = Math.round(canvas.height + headerHeight);
+    const outputHeight = Math.round(
+      canvas.height + headerHeight + progressBarHeight
+    );
 
     // Create video exporter with correct output dimensions
     const exporter = await this.VideoExporter.createManualExporter(
@@ -156,6 +152,15 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const showStepNumbers = visibilityManager.getVisibility("stepNumbers");
       const isDarkMode = visibilityManager.isDarkMode();
 
+      // Pre-render complete glyphs (letter + dash + turns column) before the frame loop
+      const steps = panelState.sequenceData?.steps ?? [];
+      if (showTkaGlyph && steps.length > 0) {
+        await this.glyphPrerenderer.prerenderGlyphs(steps, isDarkMode);
+      }
+
+      // Build step durations array for progress bar
+      const stepDurations = steps.map((s) => s.duration ?? 1);
+
       // Create offscreen canvas for compositing (so we don't touch the visible canvas)
       const offscreenCanvas = document.createElement("canvas");
 
@@ -176,13 +181,13 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         throw new Error("Failed to create offscreen canvas context");
       }
 
-      // Track the current letter to avoid reloading the same glyph for consecutive frames
-      let currentLetter: Letter | null = null;
-      let currentGlyph: LetterOverlayAssets | null = null;
+      // Track the current glyph cache key for crossfade detection
+      let currentCacheKey = "";
+      let currentGlyph: GlyphAsset | null = null;
       let currentStepNumber: number | null = null;
 
       // Track previous frame's glyph and beat number for crossfade
-      let previousGlyph: LetterOverlayAssets | null = null;
+      let previousGlyph: GlyphAsset | null = null;
       let previousStepNumber: number | null = null;
 
       // Crossfade configuration (matches GlyphOverlay.svelte)
@@ -225,26 +230,29 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             offscreenCanvas.height
           );
 
-          // If word header is enabled, fill the header area with appropriate background
-          if (showWordHeader && headerHeight > 0) {
-            // Draw header background first (will be drawn over with text later)
-            // The animation content goes below the header
-            offscreenCtx.drawImage(canvas, 0, headerHeight);
-          } else {
-            offscreenCtx.drawImage(canvas, 0, 0);
-          }
+          // Animation content goes below header (and above progress bar)
+          const canvasY = headerHeight > 0 ? headerHeight : 0;
+          offscreenCtx.drawImage(canvas, 0, canvasY);
         }
 
-        // Get the letter for the current beat
-        const beatLetter = this.getLetterForBeat(beat, panelState);
+        // Get step index and cache key for the current beat
+        const stepIndex = Math.floor(beat);
+        const clampedStepIndex = Math.max(
+          0,
+          Math.min(stepIndex, steps.length - 1)
+        );
 
-        // Calculate beat number for display (matches AnimatorCanvas logic)
+        // Calculate beat number for display (1-indexed)
         const stepNumber = this.getStepNumberForFrame(beat, panelState);
 
-        // Detect transitions (letter or beat number changed)
-        const letterChanged = beatLetter !== currentLetter;
+        // Use cache key for glyph transition detection (includes letter + turns + colors)
+        const cacheKey =
+          this.glyphPrerenderer.getCacheKeyForStep(clampedStepIndex);
+
+        // Detect transitions (cache key or beat number changed)
+        const glyphChanged = cacheKey !== currentCacheKey;
         const beatNumberChanged = stepNumber !== currentStepNumber;
-        const transitionDetected = letterChanged || beatNumberChanged;
+        const transitionDetected = glyphChanged || beatNumberChanged;
 
         if (transitionDetected) {
           // Store previous state for crossfade
@@ -252,13 +260,12 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           previousStepNumber = currentStepNumber;
 
           // Update current state
-          currentLetter = beatLetter;
+          currentCacheKey = cacheKey;
           currentStepNumber = stepNumber;
 
-          // Load new glyph if letter changed
-          if (letterChanged) {
-            currentGlyph = beatLetter
-              ? await this.loadLetterGlyph(beatLetter)
+          if (glyphChanged) {
+            currentGlyph = cacheKey
+              ? this.glyphPrerenderer.getGlyph(cacheKey)
               : null;
           }
 
@@ -281,20 +288,15 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           offscreenCtx.translate(0, headerHeight);
         }
 
-        // Render TKA glyph if enabled
+        // Render TKA glyph if enabled (pre-rendered includes letter + dash + turns)
+        // Dark mode is already baked into the pre-rendered image — no ctx.filter needed
         if (showTkaGlyph) {
-          // Apply dark mode inversion filter for glyphs
-          if (isDarkMode) {
-            offscreenCtx.filter = "invert(0.9)";
-          }
-
           // Render fading-out glyph (if in crossfade and previous exists)
           if (inCrossfade && previousGlyph?.image && fadeOutOpacity > 0) {
-            this.canvasRenderer.renderLetterToCanvas(
+            this.drawPrerenderedGlyph(
               offscreenCtx,
               actualCanvasSize,
-              previousGlyph.image,
-              previousGlyph.dimensions,
+              previousGlyph,
               fadeOutOpacity
             );
           }
@@ -302,23 +304,23 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
           // Render fading-in glyph (current glyph)
           if (currentGlyph?.image) {
             const opacity = inCrossfade ? fadeInOpacity : 1;
-            this.canvasRenderer.renderLetterToCanvas(
+            this.drawPrerenderedGlyph(
               offscreenCtx,
               actualCanvasSize,
-              currentGlyph.image,
-              currentGlyph.dimensions,
+              currentGlyph,
               opacity
             );
           }
-
-          // Reset filter after glyph rendering
-          offscreenCtx.filter = "none";
         }
 
         // Render beat numbers if enabled
         if (showStepNumbers) {
           // Render fading-out beat number (if in crossfade and previous exists)
-          if (inCrossfade && previousStepNumber !== null && fadeOutOpacity > 0) {
+          if (
+            inCrossfade &&
+            previousStepNumber !== null &&
+            fadeOutOpacity > 0
+          ) {
             this.canvasRenderer.renderStepNumberToCanvas(
               offscreenCtx,
               actualCanvasSize,
@@ -347,11 +349,28 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         }
 
         // Render word header if enabled (at top of canvas, no offset)
+        // Pass activeStepNumber for letter highlighting
         if (showWordHeader) {
+          const activeStepNumber = stepNumber;
           this.canvasRenderer.renderWordHeaderToCanvas(
             offscreenCtx,
             actualCanvasSize,
             panelState.sequenceWord,
+            isDarkMode,
+            activeStepNumber
+          );
+        }
+
+        // Render progress bar if enabled (below canvas area)
+        if (showProgressBar && !isCompositeMode) {
+          const progressBarY = headerHeight + canvas.height;
+          this.canvasRenderer.renderProgressBarToCanvas(
+            offscreenCtx,
+            actualCanvasSize,
+            progressBarY,
+            steps.length,
+            beat,
+            stepDurations,
             isDarkMode
           );
         }
@@ -395,6 +414,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       this.restorePlaybackState(playbackController, captureState);
       this._isExporting = false;
       this.shouldCancel = false;
+      this.glyphPrerenderer.clear();
 
       // Clean up composite renderer if it was used
       if (options.compositeMode && options.compositeMode !== "none") {
@@ -446,39 +466,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   }
 
   /**
-   * Get the letter for a specific beat from the sequence data
-   * Matches the logic in AnimationSheetCoordinator.svelte's currentLetter derived
-   */
-  private getLetterForBeat(
-    beat: number,
-    panelState: AnimationPanelState
-  ): Letter | null {
-    if (!panelState.sequenceData) {
-      return null;
-    }
-
-    // During animation: show beat letters using floor(beat) as index
-    // This matches the live canvas behavior where:
-    // - beat 0.0-0.99 shows steps[0] (first beat)
-    // - beat 1.0-1.99 shows steps[1] (second beat)
-    // - etc.
-    if (
-      panelState.sequenceData.steps &&
-      panelState.sequenceData.steps.length > 0
-    ) {
-      const stepIndex = Math.floor(beat);
-      const clampedIndex = Math.max(
-        0,
-        Math.min(stepIndex, panelState.sequenceData.steps.length - 1)
-      );
-      const stepData = panelState.sequenceData.steps[clampedIndex];
-      return stepData?.letter ? (stepData.letter as Letter) : null;
-    }
-
-    return null;
-  }
-
-  /**
    * Get the beat number for a specific frame
    * Matches the logic in AnimatorCanvas.svelte's stepNumber derived
    * Beat numbers are 1-indexed (steps[0] = beat 1, steps[1] = beat 2, etc.)
@@ -503,44 +490,29 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   }
 
   /**
-   * Load a letter glyph with caching
+   * Draw a pre-rendered composite glyph (letter + dash + turns column) onto the canvas.
+   * Position matches the standard glyph origin: x=50, y=800 in 950px viewBox,
+   * adjusted upward by yOffset to accommodate top turn numbers.
    */
-  private async loadLetterGlyph(letter: Letter): Promise<LetterOverlayAssets> {
-    // Check cache first
-    if (this.letterGlyphCache.has(letter)) {
-      return this.letterGlyphCache.get(letter)!;
-    }
+  private drawPrerenderedGlyph(
+    ctx: CanvasRenderingContext2D,
+    canvasSize: number,
+    glyph: GlyphAsset,
+    opacity: number
+  ): void {
+    const gridScaleFactor = canvasSize / 950;
 
-    try {
-      const imagePath = getLetterImagePath(letter);
-      const response = await fetch(imagePath);
+    // Position at standard glyph origin, shifted up by yOffset for turn numbers
+    const x = 50 * gridScaleFactor;
+    const y = (800 - glyph.yOffset) * gridScaleFactor;
 
-      if (!response.ok) {
-        const result = { image: null, dimensions: { width: 0, height: 0 } };
-        this.letterGlyphCache.set(letter, result);
-        return result;
-      }
+    const scaledWidth = glyph.dimensions.width * gridScaleFactor;
+    const scaledHeight = glyph.dimensions.height * gridScaleFactor;
 
-      const svgText = await response.text();
-      const viewBoxMatch = svgText.match(
-        /viewBox\s*=\s*"[\d.-]+\s+[\d.-]+\s+([\d.-]+)\s+([\d.-]+)"/i
-      );
-      const width = viewBoxMatch?.[1] ? parseFloat(viewBoxMatch[1]) : 100;
-      const height = viewBoxMatch?.[2] ? parseFloat(viewBoxMatch[2]) : 100;
-      const image = await this.svgImageService.convertSvgStringToImage(
-        svgText,
-        width,
-        height
-      );
-
-      const result = { image, dimensions: { width, height } };
-      this.letterGlyphCache.set(letter, result);
-      return result;
-    } catch {
-      const result = { image: null, dimensions: { width: 0, height: 0 } };
-      this.letterGlyphCache.set(letter, result);
-      return result;
-    }
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(glyph.image, x, y, scaledWidth, scaledHeight);
+    ctx.restore();
   }
 
   private waitForAnimationFrame(): Promise<void> {

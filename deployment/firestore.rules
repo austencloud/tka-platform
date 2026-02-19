@@ -429,6 +429,27 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // TIKA INTERACTION TRACKING (Topic discussion & quiz stats)
+      // -------------------------------------------------------------------------
+      match /tikaInteractions/{topicId} {
+        allow read, create, update: if isOwner(userId);
+      }
+
+      // -------------------------------------------------------------------------
+      // LEARNING PROGRESS (Concept mastery & progress tracking)
+      // -------------------------------------------------------------------------
+      match /learningProgress/{docId} {
+        allow read, create, update: if isOwner(userId);
+      }
+
+      // -------------------------------------------------------------------------
+      // QUIZ HISTORY (Learn module quiz attempts)
+      // -------------------------------------------------------------------------
+      match /quizHistory/{attemptId} {
+        allow read, create: if isOwner(userId);
+      }
+
+      // -------------------------------------------------------------------------
       // VOICE SESSIONS (Voice Command Recording & Analysis)
       // -------------------------------------------------------------------------
       match /voiceSessions/{sessionId} {
@@ -513,7 +534,7 @@ service cloud.firestore {
     match /conversations/{conversationId} {
       // Participants can read their conversations, admins can read any (for preview mode)
       allow read: if isAuthenticated()
-        && (request.auth.uid in resource.data.participants || isAdmin());
+        && (resource == null || request.auth.uid in resource.data.participants || isAdmin());
 
       // Creating a conversation - user must be in participants list OR be admin (for impersonation)
       // Direct (1:1): exactly 2 participants, type must be "direct" or missing

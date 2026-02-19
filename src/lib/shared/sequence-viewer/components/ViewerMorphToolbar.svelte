@@ -40,6 +40,7 @@
     onStepHalfBack?: () => void;
     onStepHalfForward?: () => void;
     onSave: () => void;
+    onEdit: () => void;
     onExport: (format: ExportFormat) => void;
     onCompose: () => void;
     onPreviewModeChange?: (mode: ExportFormat | null) => void;
@@ -66,6 +67,7 @@
     onStepHalfBack,
     onStepHalfForward,
     onSave,
+    onEdit,
     onExport,
     onCompose,
     onPreviewModeChange,
@@ -134,6 +136,15 @@
         >
           <i class="fas fa-bookmark" aria-hidden="true"></i>
           <span>Save</span>
+        </button>
+        <button
+          type="button"
+          class="action-btn edit"
+          onclick={onEdit}
+          aria-label="Edit in Constructor"
+        >
+          <i class="fas fa-hammer" aria-hidden="true"></i>
+          <span>Edit</span>
         </button>
       {:else}
         <button
@@ -429,6 +440,17 @@
   .action-btn.save:hover {
     background: rgba(34, 197, 94, 0.2);
     border-color: rgba(34, 197, 94, 0.4);
+  }
+
+  .action-btn.edit {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.25);
+    color: #f59e0b;
+  }
+
+  .action-btn.edit:hover {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.4);
   }
 
   .action-btn.get-app {

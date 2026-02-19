@@ -44,4 +44,11 @@ export interface IArenaRepository {
 
   /** Load yesterday's snapshot for rank-change computation. */
   loadPreviousSnapshot(): Promise<Map<string, number>>;
+
+  /**
+   * Load full sequence data from a source reference path.
+   * The publicSequences index stores lightweight metadata; this follows
+   * the sourceRef to fetch complete step data for animation playback.
+   */
+  loadFullSequenceData(sourceRef: string): Promise<SequenceData | null>;
 }

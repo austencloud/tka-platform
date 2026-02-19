@@ -63,6 +63,9 @@ const args = process.argv.slice(2);
 const verbose = args.includes("--verbose");
 const jsonOutput = args.includes("--json");
 const summaryOnly = args.includes("--summary");
+const scopeIdx = args.indexOf("--scope");
+const scopePath = scopeIdx !== -1 ? args[scopeIdx + 1] : null;
+const searchDir = scopePath ? `src/lib/${scopePath}` : "src/";
 
 function shouldExclude(filePath) {
   return EXCLUDE_PATTERNS.some((pattern) => filePath.includes(pattern));
@@ -75,7 +78,7 @@ function findFilesWithDurations() {
     // Find files with duration patterns in animation/transition contexts
     // Looking for patterns like: duration: 200ms, transition: 0.3s, animation: 300ms
     const grepResult = execSync(
-      `grep -r -l -E "(duration|transition|animation)[^;]*[0-9]+(ms|s)[^a-z]" --include="*.svelte" --include="*.css" --include="*.ts" src/`,
+      `grep -r -l -E "(duration|transition|animation)[^;]*[0-9]+(ms|s)[^a-z]" --include="*.svelte" --include="*.css" --include="*.ts" ${searchDir}`,
       { encoding: "utf-8", cwd: process.cwd() }
     );
 

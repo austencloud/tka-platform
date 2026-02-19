@@ -41,6 +41,7 @@ import { SequenceLoopabilityChecker } from "$lib/features/compose/services/imple
 
 // === TIER 2: External dependencies (require other containers) ===
 import { CompositeVideoRenderer } from "$lib/features/compose/services/implementations/CompositeVideoRenderer";
+import { ExportGlyphPrerenderer } from "$lib/features/compose/services/implementations/ExportGlyphPrerenderer";
 import { VideoExportOrchestrator } from "$lib/features/compose/services/implementations/VideoExportOrchestrator";
 import { TunnelModeSequenceManager } from "$lib/features/compose/services/implementations/TunnelModeSequenceManager";
 import { SequenceMotionLoader } from "$lib/shared/sequence-viewer/services/implementations/SequenceMotionLoader";
@@ -140,14 +141,18 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
           externalDeps.layoutCalculator
         ),
     }))
+    .add(() => ({
+      exportGlyphPrerenderer: () =>
+        new ExportGlyphPrerenderer(externalDeps.svgImageConverter),
+    }))
     .add((ctx) => ({
       videoExportOrchestrator: () =>
         new VideoExportOrchestrator(
           ctx.videoExporter,
           ctx.canvasRenderer,
-          externalDeps.svgImageConverter,
           externalDeps.fileDownloader,
-          ctx.compositeVideoRenderer
+          ctx.compositeVideoRenderer,
+          ctx.exportGlyphPrerenderer
         ),
     }))
     .add(() => ({

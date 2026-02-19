@@ -137,8 +137,8 @@ keystore.properties
 android-twa/local.properties
 android-twa/keystore.properties
 
-# Screenshot capture credentials
-scripts/screenshot-capture/screenshot-config.local.json
+# Screenshot testing credentials
+tests/screenshots/credentials.local.json
 
 # Multi-device screenshot testing (captures are ephemeral, baselines are committed)
 tests/screenshots/captures/
@@ -165,6 +165,9 @@ stderr.txt
 
 # Release workflow artifacts
 .release-changelog.json
+
+# Audit pipeline artifacts
+.audit-evidence.json
 
 # Large asset directories (tutorials, guides, Unity project)
 _ARCHIVE/

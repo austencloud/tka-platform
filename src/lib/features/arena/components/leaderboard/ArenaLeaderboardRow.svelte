@@ -106,11 +106,11 @@
   }
 
   .mover-up {
-    color: #22c55e;
+    color: var(--semantic-success, #22c55e);
   }
 
   .mover-down {
-    color: #ef4444;
+    color: var(--semantic-error, #ef4444);
   }
 
   .mover-flat {

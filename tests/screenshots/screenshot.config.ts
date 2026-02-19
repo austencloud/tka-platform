@@ -1,31 +1,34 @@
 /**
  * Playwright Configuration for Multi-Device Screenshot Testing
  *
- * One project per device (9 total). No webServer — never start/kill port 5173.
+ * One project per device (9 portrait + optional 9 landscape). No webServer — never start/kill port 5173.
  * Auth happens per-context in the spec, not via storageState.
  */
 
 import { defineConfig } from "@playwright/test";
-import { DEVICES, type DevicePreset } from "./devices";
+import { filterDevices, toLandscape, type DevicePreset } from "./devices";
 
-function resolveDeviceFilter(): DevicePreset[] {
+function resolveDevices(): DevicePreset[] {
   const filter = process.env.SCREENSHOT_DEVICE_FILTER;
-  if (!filter) return DEVICES;
+  const filtered = filterDevices(filter || undefined);
 
-  const validCategories = ["phone", "tablet", "desktop"] as const;
-  if (validCategories.includes(filter as (typeof validCategories)[number])) {
-    return DEVICES.filter(
-      (d) => d.category === (filter as DevicePreset["category"])
-    );
+  if (filtered.length === 0) {
+    console.warn(`No devices matched filter "${filter}". Using all devices.`);
+    return filterDevices();
   }
 
-  // Filter by specific device slug
-  const slugs = filter.split(",").map((s) => s.trim().toLowerCase());
-  const filtered = DEVICES.filter((d) => slugs.includes(d.slug));
-  return filtered.length > 0 ? filtered : DEVICES;
+  // Add landscape variants if requested
+  if (process.env.SCREENSHOT_LANDSCAPE === "true") {
+    const landscapeVariants = filtered
+      .filter((d) => d.category !== "desktop") // Desktop is already landscape-ish
+      .map(toLandscape);
+    return [...filtered, ...landscapeVariants];
+  }
+
+  return filtered;
 }
 
-const activeDevices = resolveDeviceFilter();
+const activeDevices = resolveDevices();
 
 export default defineConfig({
   testDir: ".",

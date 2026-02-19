@@ -19,6 +19,8 @@ export interface MatchupCandidate {
   entry: ArenaEntry;
   rating: ArenaRating;
   data: SequenceData;
+  /** Firestore path to the full sequence document (e.g., users/{uid}/sequences/{id}) */
+  sourceRef?: string;
 }
 
 export interface IMatchupSelector {

@@ -55,8 +55,10 @@
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { goto } from "$app/navigation";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   // Extracted child components
   import ViewerHeader from "./ViewerHeader.svelte";
+  import ViewerSettingsModal from "./ViewerSettingsModal.svelte";
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
   import type {
     ViewerPlaybackState,
@@ -237,6 +239,9 @@
       document.removeEventListener("touchmove", handleTouchMove, { capture: true });
     };
   });
+
+  // Settings modal state
+  let settingsModalOpen = $state(false);
 
   // Which pane is in edit mode: null, 'animation', or 'image'
   let editingPane = $state<'animation' | 'image' | null>(null);
@@ -449,6 +454,32 @@
 
   function handleCompose() {
     handleOpenInCompose();
+  }
+
+  function handleEditInConstructor() {
+    hapticService?.trigger("selection");
+
+    // Stop playback before leaving
+    if (isPlayingLocal && playbackController) {
+      playbackController.togglePlayback();
+    }
+
+    // Disconnect LAN sync if active
+    if (lanSyncState.isActive) {
+      lanSyncState.disconnect();
+    }
+
+    // Store the sequence for the Constructor to pick up
+    localStorage.setItem("tka-pending-edit-sequence", JSON.stringify(sequence));
+
+    // Close modal
+    internalOpen = false;
+    clearModalUrlState();
+    accessibilityHelper.restoreFocus();
+
+    // Navigate to Create module's Construct tab
+    showToast({ message: "Opening in Constructor...", type: "info", duration: 2000 });
+    void handleModuleChange("create", "construct");
   }
 
   function handleShare() {
@@ -1223,6 +1254,7 @@
       onExitExportMode={exitExportMode}
       onBackToExportTypeSelection={backToExportTypeSelection}
       onDarkModeToggle={() => toggleImgSetting("darkMode")}
+      onSettingsOpen={() => (settingsModalOpen = true)}
     />
   {/snippet}
 
@@ -1309,6 +1341,7 @@
         onStepHalfBack={handleStepHalfBack}
         onStepHalfForward={handleStepHalfFwd}
         onSave={handleSave}
+        onEdit={handleEditInConstructor}
         onCompose={handleCompose}
         onShare={handleShare}
         onExport={enterExportMode}
@@ -1350,6 +1383,7 @@
           onStepHalfBack={handleStepHalfBack}
           onStepHalfForward={handleStepHalfFwd}
           onSave={handleSave}
+          onEdit={handleEditInConstructor}
           onCompose={handleCompose}
           onShare={handleShare}
           onExport={enterExportMode}
@@ -1370,6 +1404,12 @@
 </BaseModal>
 
 <!-- NOTE: Stagger mode now handled by Compose module via sequence handoff -->
+
+<!-- Settings modal - rendered outside BaseModal so position:fixed works correctly -->
+<ViewerSettingsModal
+  bind:open={settingsModalOpen}
+  onClose={() => (settingsModalOpen = false)}
+/>
 
 <style>
   /* ===== ACCESSIBILITY: Screen reader only ===== */

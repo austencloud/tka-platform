@@ -72,6 +72,9 @@ const TRANSITION_MAPPING = {
 const args = process.argv.slice(2);
 const verbose = args.includes("--verbose");
 const jsonOutput = args.includes("--json");
+const scopeIdx = args.indexOf("--scope");
+const scopePath = scopeIdx !== -1 ? args[scopeIdx + 1] : null;
+const searchDir = scopePath ? `src/lib/${scopePath}` : "src/";
 
 function shouldExclude(filePath) {
   return EXCLUDE_PATTERNS.some((pattern) => filePath.includes(pattern));
@@ -83,7 +86,7 @@ function findFilesWithSvelteTransitions() {
   try {
     // Find files importing from svelte/transition
     const grepResult = execSync(
-      `grep -r -l "from.*svelte/transition" --include="*.svelte" --include="*.ts" src/`,
+      `grep -r -l "from.*svelte/transition" --include="*.svelte" --include="*.ts" ${searchDir}`,
       { encoding: "utf-8", cwd: process.cwd() }
     );
 

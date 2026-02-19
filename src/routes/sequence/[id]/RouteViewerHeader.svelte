@@ -5,8 +5,6 @@
   Similar to ViewerHeader but with route-aware back navigation instead of modal close.
 -->
 <script lang="ts">
-  import ViewerSettingsPopover from "$lib/shared/sequence-viewer/components/ViewerSettingsPopover.svelte";
-
   type ExportType = "animation" | "image" | "both";
 
   interface Props {
@@ -21,8 +19,8 @@
     onExitExportMode: () => void;
     onBackToExportTypeSelection: () => void;
     onDarkModeToggle: () => void;
-    /** Callback to open prop selector (handled by parent) */
-    onOpenPropSelector?: () => void;
+    /** Callback to open the settings modal */
+    onSettingsOpen?: () => void;
   }
 
   let {
@@ -36,11 +34,8 @@
     onExitExportMode,
     onBackToExportTypeSelection,
     onDarkModeToggle,
-    onOpenPropSelector,
+    onSettingsOpen,
   }: Props = $props();
-
-  // Settings popover state
-  let settingsOpen = $state(false);
 </script>
 
 {#if isExportMode}
@@ -107,21 +102,13 @@
       <button
         type="button"
         class="header-action-btn"
-        onclick={() => (settingsOpen = true)}
+        onclick={() => onSettingsOpen?.()}
         aria-label="Settings"
         title="Viewer settings"
       >
         <i class="fas fa-cog" aria-hidden="true"></i>
       </button>
     </div>
-
-    <ViewerSettingsPopover
-      open={settingsOpen}
-      {darkMode}
-      onDarkModeToggle={onDarkModeToggle}
-      onClose={() => (settingsOpen = false)}
-      {onOpenPropSelector}
-    />
   </header>
 {/if}
 

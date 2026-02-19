@@ -57,13 +57,39 @@ export interface ICanvasRenderer {
    * Render a word/sequence header onto the canvas at the top center
    * @param word - The word/sequence name to render (null/empty = no render)
    * @param darkMode - When true, uses dark background with light text
+   * @param activeStepNumber - 1-indexed beat number for letter highlighting (null = no highlighting)
    */
   renderWordHeaderToCanvas(
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
     word: string | null,
-    darkMode?: boolean
+    darkMode?: boolean,
+    activeStepNumber?: number | null
   ): void;
+
+  /**
+   * Render a segmented progress bar onto the canvas
+   * @param y - Y position to draw the progress bar
+   * @param totalSteps - Total number of steps in the sequence
+   * @param currentBeat - Current beat position (float, 0-based)
+   * @param stepDurations - Duration of each step (defaults to 1 per step)
+   * @param darkMode - When true, uses dark mode colors
+   */
+  renderProgressBarToCanvas(
+    ctx: CanvasRenderingContext2D,
+    canvasSize: number,
+    y: number,
+    totalSteps: number,
+    currentBeat: number,
+    stepDurations: number[],
+    darkMode: boolean
+  ): void;
+
+  /**
+   * Get the progress bar height for a given canvas size
+   * Used to calculate total canvas dimensions for video export
+   */
+  getProgressBarHeight(canvasSize: number): number;
 
   /**
    * Get the header height for a given canvas size

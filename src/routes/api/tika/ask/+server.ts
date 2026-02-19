@@ -14,7 +14,7 @@
  */
 
 import type { RequestHandler } from "@sveltejs/kit";
-import { streamText, tool, convertToModelMessages, type UIMessage, jsonSchema } from "ai";
+import { streamText, tool, convertToModelMessages, type UIMessage, jsonSchema, stepCountIs } from "ai";
 import { env } from "$env/dynamic/private";
 import { requireFirebaseUser } from "$lib/server/auth/requireFirebaseUser";
 import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
@@ -45,6 +45,7 @@ import {
   filterQuiz,
 } from "$lib/features/tika/validation/output-filter";
 import { getTikaServerContainer } from "$lib/features/tika/services/server/tika-server-container";
+import { TikaCapabilityLookup } from "$lib/features/tika/services/implementations/TikaCapabilityLookup";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Container & Services
@@ -421,6 +422,44 @@ function createTikaTools() {
         return filterQuiz(result);
       },
     }),
+
+    find_app_feature: tool({
+      description:
+        'Find how to do something in TKA Scribe. Use for "How do I...?", "Where do I...?", "How to..." questions about app features. Returns step-by-step instructions for the matching capability. Do NOT use for TKA domain questions (letters, positions, motions) - those use other tools.',
+      inputSchema: jsonSchema<{ query: string }>({
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: 'What the user wants to do (e.g., "export a video", "change background", "save a sequence")',
+          },
+        },
+        required: ["query"],
+      }),
+      execute: async ({ query }) => {
+        const lookup = new TikaCapabilityLookup();
+        const matches = lookup.findCapabilities(query, 3);
+
+        if (matches.length === 0) {
+          return {
+            found: false,
+            message: `I couldn't find a specific feature for "${query}". Try rephrasing, or ask me what the app can do.`,
+          };
+        }
+
+        return {
+          found: true,
+          results: matches.map((m) => ({
+            action: m.capability.action,
+            location: m.capability.tab
+              ? `${m.capability.module} > ${m.capability.tab}`
+              : m.capability.module,
+            instructions: m.capability.instructions,
+            relevance: m.relevance,
+          })),
+        };
+      },
+    }),
   };
 }
 
@@ -434,6 +473,7 @@ interface TIKARequest {
   userId?: string;
   completedConcepts?: string[];
   masteryContext?: MasteryContext;
+  conversationMemory?: string;
   language?: string;
   model?: string;
 }
@@ -474,7 +514,12 @@ export const POST: RequestHandler = async (event) => {
     const completedConcepts = body.completedConcepts || [];
     const language = body.language || "en";
     const userOverlay = deriveUserOverlay(completedConcepts);
-    const systemPrompt = buildSystemPrompt(userOverlay, language, body.masteryContext);
+    const systemPrompt = buildSystemPrompt(
+      userOverlay,
+      language,
+      body.masteryContext,
+      body.conversationMemory
+    );
 
     // Handle both new streaming format (messages array) and legacy format (question string)
     let messages: UIMessage[];
@@ -496,11 +541,15 @@ export const POST: RequestHandler = async (event) => {
     }
 
     // Stream the response using the selected model
+    // stopWhen controls multi-step tool use. Default is stepCountIs(1) which stops
+    // after a single tool call — the model never gets to generate text from tool results.
+    // Setting to 4 allows: tool call → result → optional 2nd tool → text response.
     const result = streamText({
       model: modelProvider.getModel(selectedModel),
       system: systemPrompt,
       messages: modelMessages,
       tools: createTikaTools(),
+      stopWhen: stepCountIs(4),
       experimental_telemetry: {
         isEnabled: false,
       },

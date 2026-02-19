@@ -59,70 +59,46 @@ export class ArenaRepository implements IArenaRepository {
     }> = [];
 
     for (const seqDoc of publicSnap.docs) {
-      const indexData = seqDoc.data();
-      const word = indexData.word as string | undefined;
-      const sourceRef = indexData.sourceRef as string | undefined;
-      if (!word || !sourceRef) continue;
+      const raw = seqDoc.data() as Record<string, unknown>;
+      const word = raw.word as string | undefined;
+      if (!word) continue;
 
-      pendingEntries.push({
-        entry: {
-          id: seqDoc.id,
-          kind: "sequence",
-          word,
-          ownerId: (indexData.ownerId as string) ?? "",
-          ownerDisplayName: indexData.ownerDisplayName as string | undefined,
-        },
-        sourceRef,
-        indexData,
+      const entry: ArenaEntry = {
+        id: seqDoc.id,
+        kind: "sequence",
+        word,
+        ownerId: (raw.ownerId as string) ?? "",
+        ownerDisplayName: raw.ownerDisplayName as string | undefined,
+      };
+
+      const rating = await this.getOrCreateRating(entry);
+
+      // Build lightweight SequenceData from the index document.
+      // Steps are NOT stored in publicSequences — full data is fetched
+      // on demand via sourceRef when a matchup is presented.
+      const data: SequenceData = {
+        id: seqDoc.id,
+        name: (raw.name as string) ?? "",
+        word,
+        steps: [],
+        thumbnails: (raw.thumbnails as readonly string[]) ?? [],
+        sequenceLength: raw.sequenceLength as number | undefined,
+        level: raw.level as number | undefined,
+        difficultyLevel: raw.difficultyLevel as string | undefined,
+        isFavorite: false,
+        isCircular: false,
+        tags: (raw.tags as readonly string[]) ?? [],
+        metadata: {},
+        ownerId: (raw.ownerId as string) ?? "",
+        ownerDisplayName: raw.ownerDisplayName as string | undefined,
+      };
+
+      candidates.push({
+        entry,
+        rating,
+        data,
+        sourceRef: raw.sourceRef as string | undefined,
       });
-    }
-
-    // Fetch full sequence data in parallel batches (avoid overwhelming Firestore)
-    const BATCH_SIZE = 20;
-    for (let i = 0; i < pendingEntries.length; i += BATCH_SIZE) {
-      const batch = pendingEntries.slice(i, i + BATCH_SIZE);
-      const results = await Promise.all(
-        batch.map(async ({ entry, sourceRef, indexData }) => {
-          try {
-            const fullDoc = await getDoc(doc(firestore, sourceRef));
-            if (!fullDoc.exists()) return null;
-
-            const fullData = fullDoc.data();
-            const steps = (fullData.steps ?? fullData.beats ?? []) as unknown[];
-            if (steps.length === 0) return null;
-
-            const rating = await this.getOrCreateRating(entry);
-
-            const seqData: SequenceData = {
-              id: entry.id,
-              name: (fullData.name as string) ?? "",
-              word: entry.word,
-              steps: steps as SequenceData["steps"],
-              thumbnails: (indexData.thumbnails as readonly string[]) ?? [],
-              sequenceLength: (indexData.sequenceLength as number) ?? steps.length,
-              level: fullData.level as number | undefined,
-              isFavorite: false,
-              isCircular: (fullData.isCircular as boolean) ?? false,
-              tags: (indexData.tags as readonly string[]) ?? [],
-              metadata: {},
-              ownerId: entry.ownerId,
-              ownerDisplayName: entry.ownerDisplayName,
-              startPosition: fullData.startPosition as SequenceData["startPosition"],
-              startingPosition: fullData.startingPosition as SequenceData["startingPosition"],
-              gridMode: fullData.gridMode as SequenceData["gridMode"],
-            };
-
-            return { entry, rating, data: seqData } as MatchupCandidate;
-          } catch {
-            // Skip sequences whose source doc is inaccessible
-            return null;
-          }
-        })
-      );
-
-      for (const result of results) {
-        if (result) candidates.push(result);
-      }
     }
 
     return candidates;
@@ -266,6 +242,41 @@ export class ArenaRepository implements IArenaRepository {
       }
     }
     return map;
+  }
+
+  async loadFullSequenceData(sourceRef: string): Promise<SequenceData | null> {
+    const firestore = await getFirestoreInstance();
+    try {
+      const fullDoc = await getDoc(doc(firestore, sourceRef));
+      if (!fullDoc.exists()) return null;
+
+      const raw = fullDoc.data();
+      return {
+        id: fullDoc.id,
+        name: (raw.name as string) ?? "",
+        displayName: raw.displayName as string | undefined,
+        word: (raw.word as string) ?? "",
+        steps: (raw.steps as SequenceData["steps"]) ?? (raw.beats as SequenceData["steps"]) ?? [],
+        startPosition: raw.startPosition as SequenceData["startPosition"],
+        startingPosition: raw.startingPosition as SequenceData["startingPosition"],
+        startingPositionGroup: raw.startingPositionGroup as SequenceData["startingPositionGroup"],
+        thumbnails: (raw.thumbnails as readonly string[]) ?? [],
+        sequenceLength: raw.sequenceLength as number | undefined,
+        level: raw.level as number | undefined,
+        gridMode: raw.gridMode as SequenceData["gridMode"],
+        isFavorite: false,
+        isCircular: (raw.isCircular as boolean) ?? false,
+        loopType: raw.loopType as SequenceData["loopType"],
+        difficultyLevel: raw.difficultyLevel as string | undefined,
+        tags: (raw.tags as readonly string[]) ?? [],
+        metadata: (raw.metadata as Record<string, unknown>) ?? {},
+        ownerId: raw.ownerId as string | undefined,
+        ownerDisplayName: raw.ownerDisplayName as string | undefined,
+      };
+    } catch (err) {
+      console.error(`[Arena] Failed to load full sequence from ${sourceRef}:`, err);
+      return null;
+    }
   }
 
   // ---------------------------------------------------------------------------
