@@ -811,10 +811,6 @@
     if (!sequence) return;
     hapticService?.trigger("selection");
 
-    if (lanSyncState.isActive) {
-      lanSyncState.disconnect();
-    }
-
     saveSequenceHandoff({
       sequence,
       playbackState: {
@@ -825,6 +821,9 @@
       preferredPreset: preset,
       returnPath: browser ? window.location.pathname : "/browse/gallery",
     });
+
+    // Close the viewer (stops playback, disconnects LAN, restores focus)
+    handleBackInternal();
 
     const message = preset === 'combo-export'
       ? "Opening in Compose for combined export..."
@@ -842,18 +841,11 @@
     if (!sequence) return;
     hapticService?.trigger("selection");
 
-    // Stop playback before leaving
-    if (isPlayingLocal && playbackController) {
-      playbackController.togglePlayback();
-    }
-
-    // Disconnect LAN sync if active
-    if (lanSyncState.isActive) {
-      lanSyncState.disconnect();
-    }
-
     // Store the sequence for the Constructor to pick up
     localStorage.setItem("tka-pending-edit-sequence", JSON.stringify(sequence));
+
+    // Close the viewer (stops playback, disconnects LAN, restores focus)
+    handleBackInternal();
 
     showToast({ message: "Opening in Constructor...", type: "info", duration: 2000 });
     void handleModuleChange("create", "construct");
