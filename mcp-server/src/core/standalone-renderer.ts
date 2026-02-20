@@ -579,13 +579,6 @@ ${svgParts.join("\n")}
 
       const dashLocation = calculateDashLocation(dashLocationInput);
 
-      // DEBUG: Log W- blue dash location calculation
-      if (pictograph.letter === "W-" && motion.color === "blue") {
-        console.error(`[DEBUG W- BLUE DASH] dashLocation=${dashLocation}`);
-        console.error(`[DEBUG W- BLUE DASH] input: startLoc=${motion.startLocation}, endLoc=${motion.endLocation}, turns=${motion.turns}`);
-        console.error(`[DEBUG W- BLUE DASH] other: type=${otherMotion?.motionType}, start=${otherMotion?.startLocation}, end=${otherMotion?.endLocation}`);
-      }
-
       // Get coordinates for the calculated dash location
       const position = getLayer2PointCoordinates(dashLocation, gridMode);
 
@@ -664,13 +657,6 @@ ${svgParts.join("\n")}
     // Apply adjustment to placement
     const finalX = placement.x + adjustX;
     const finalY = placement.y + adjustY;
-
-    // DEBUG: Log final placement for W- blue dash
-    if (pictograph.letter === "W-" && motion.color === "blue") {
-      console.error(`[DEBUG W- BLUE FINAL] placement.x=${placement.x}, placement.y=${placement.y}, rotation=${placement.rotation}`);
-      console.error(`[DEBUG W- BLUE FINAL] adjustX=${adjustX}, adjustY=${adjustY}`);
-      console.error(`[DEBUG W- BLUE FINAL] finalX=${finalX}, finalY=${finalY}`);
-    }
 
     // Determine arrow file path based on motion type and start orientation
     const arrowPath = this.getArrowPath(motionType, startOrientation, motion.turns);
