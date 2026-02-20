@@ -1,7 +1,7 @@
 <!--
-  BeatStrip.svelte - Horizontal strip of mini pictographs
+  BeatStrip.svelte - Horizontal strip of real pictographs
 
-  Shows one pictograph per beat index. Blue beats fill in first,
+  Shows one PictographContainer per beat index. Blue beats fill in first,
   red beats overlay onto existing pictographs when the second hand
   is built. Always reserves vertical space to prevent grid resizing.
 
@@ -12,56 +12,88 @@
   import { flip } from "svelte/animate";
   import {
     MotionColor,
+    MotionType,
+    RotationDirection,
+    HandMotionType,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { propSvgLoader } from "$lib/shared/pictograph/prop/services/implementations/PropSvgLoader";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { VisualBuilderState } from "../state/visual-builder-state.svelte";
-  import StripBeatCell from "./StripBeatCell.svelte";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import { HandPathMotionCalculator } from "$lib/features/create/assemble/services/HandPathMotionCalculator";
+  import type { VisualBuilderState, BuilderBeat } from "../state/visual-builder-state.svelte";
 
   let { builderState }: { builderState: VisualBuilderState } = $props();
 
-  // Prop SVG data (loaded once, shared across all cells)
-  let bluePropSvg = $state<{ svgContent: string; center: { x: number; y: number } } | null>(null);
-  let redPropSvg = $state<{ svgContent: string; center: { x: number; y: number } } | null>(null);
+  const pathCalculator = new HandPathMotionCalculator();
 
-  // Load prop SVGs reactively when prop type changes
-  $effect(() => {
-    const settings = getSettings();
-    const bluePropType = settings.bluePropType ?? PropType.STAFF;
-    const redPropType = settings.redPropType ?? PropType.STAFF;
-
-    const blueMotion = createMotionData({ propType: bluePropType, color: MotionColor.BLUE });
-    propSvgLoader.loadPropSvg(
-      { positionX: 0, positionY: 0, rotationAngle: 0 },
-      blueMotion, false,
-    ).then(data => {
-      if (data?.svgData) {
-        bluePropSvg = { svgContent: data.svgData.svgContent, center: data.svgData.center };
+  /** Derive MotionType (PRO/ANTI/DASH/STATIC) from beat data */
+  function resolveMotionType(beat: BuilderBeat): MotionType {
+    const handMotionType = pathCalculator.calculateMotionType(
+      beat.startPosition, beat.endPosition, builderState.gridMode,
+    );
+    switch (handMotionType) {
+      case HandMotionType.STATIC:
+        return MotionType.STATIC;
+      case HandMotionType.DASH:
+        return MotionType.DASH;
+      case HandMotionType.SHIFT: {
+        const handPathDir = pathCalculator.calculateRotationDirection(
+          beat.startPosition, beat.endPosition, builderState.gridMode,
+        );
+        return handPathDir === beat.rotationDirection ? MotionType.PRO : MotionType.ANTI;
       }
-    });
+      default:
+        return MotionType.STATIC;
+    }
+  }
 
-    const redMotion = createMotionData({ propType: redPropType, color: MotionColor.RED });
-    propSvgLoader.loadPropSvg(
-      { positionX: 0, positionY: 0, rotationAngle: 0 },
-      redMotion, false,
-    ).then(data => {
-      if (data?.svgData) {
-        redPropSvg = { svgContent: data.svgData.svgContent, center: data.svgData.center };
-      }
+  /** Convert a BuilderBeat into a MotionData for the pictograph pipeline */
+  function beatToMotion(beat: BuilderBeat, color: MotionColor) {
+    const motionType = resolveMotionType(beat);
+    const resolvedRotation = (beat.startPosition === beat.endPosition)
+      ? RotationDirection.NO_ROTATION
+      : beat.rotationDirection;
+
+    return createMotionData({
+      color,
+      startLocation: beat.startPosition,
+      endLocation: beat.endPosition,
+      motionType,
+      rotationDirection: resolvedRotation,
+      turns: beat.turnCount,
+      startOrientation: beat.startOrientation,
+      endOrientation: beat.endOrientation,
+      gridMode: builderState.gridMode,
+      arrowLocation: beat.startPosition,
+      isVisible: true,
     });
-  });
+  }
 
   // Total beat count = max of both hands
   const totalBeats = $derived(
     Math.max(builderState.blueBeats.length, builderState.redBeats.length)
   );
 
-  // Generate beat index array for keyed iteration
-  const beatIndices = $derived(
-    Array.from({ length: totalBeats }, (_, i) => i)
-  );
+  // Build PictographData for each beat index
+  const beatPictographs = $derived.by((): PictographData[] => {
+    const result: PictographData[] = [];
+    for (let i = 0; i < totalBeats; i++) {
+      const blueBeat = builderState.blueBeats[i];
+      const redBeat = builderState.redBeats[i];
+
+      const motions: PictographData["motions"] = {};
+      if (blueBeat) motions[MotionColor.BLUE] = beatToMotion(blueBeat, MotionColor.BLUE);
+      if (redBeat) motions[MotionColor.RED] = beatToMotion(redBeat, MotionColor.RED);
+
+      result.push({
+        id: `builder-beat-${i}`,
+        motions,
+        gridMode: builderState.gridMode,
+      });
+    }
+    return result;
+  });
 
   const hasBeats = $derived(totalBeats > 0);
 </script>
@@ -70,20 +102,23 @@
   {#if hasBeats}
     <div class="beat-strip-scroll">
       <div class="beat-strip-row">
-        {#each beatIndices as idx (idx)}
+        {#each beatPictographs as pictograph, idx (pictograph.id)}
           <div
-            class="beat-cell-wrapper"
+            class="beat-cell"
             animate:flip={{ duration: 250 }}
             in:scale={{ duration: 250, start: 0.5, opacity: 0 }}
           >
-            <StripBeatCell
-              blueBeat={builderState.blueBeats[idx] ?? null}
-              redBeat={builderState.redBeats[idx] ?? null}
-              {bluePropSvg}
-              {redPropSvg}
+            <PictographContainer
+              pictographData={pictograph}
               gridMode={builderState.gridMode}
-              beatIndex={idx}
+              disableTransitions={true}
+              showTKA={false}
+              showReversals={false}
+              showPositions={false}
+              showVTG={false}
+              showElemental={false}
             />
+            <span class="beat-label">{idx + 1}</span>
           </div>
         {/each}
       </div>
@@ -95,7 +130,7 @@
   .beat-strip-container {
     flex-shrink: 0;
     width: 100%;
-    min-height: 50px; /* Reserve space even when empty to prevent grid resizing */
+    min-height: 50px;
     display: flex;
     justify-content: center;
     transition: min-height 0.25s ease;
@@ -115,13 +150,31 @@
 
   .beat-strip-row {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
-    --cell-size: 90px;
   }
 
-  .beat-cell-wrapper {
+  .beat-cell {
+    position: relative;
     flex-shrink: 0;
+    width: 90px;
+    height: 90px;
+  }
+
+  .beat-cell :global(svg) {
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+  }
+
+  .beat-label {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    pointer-events: none;
   }
 
   @media (prefers-reduced-motion: reduce) {

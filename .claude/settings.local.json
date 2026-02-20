@@ -581,7 +581,9 @@
       "Bash(/c/Program Files/nodejs/npx.cmd svelte-check --output human)",
       "Bash(for id in hpxbrMNX iflfIkl3 PvsbFInD D6yY8TWO sXSZxmBV giyCUwaR 1rAgAoDm ddzULrkz wgRX1JHa tliHlz1j ZqeqtVbt wcilD68i 6QfMdRhS iuZQsWYe PDe4bTQ9 HNPo29Dr EEeoGQ0L ol3uvzd6 JU3sNPHU bIQqy466 pLNWKHrv a5qT14Kh 4pV0jzv3 ud88n9YX zgQNISLw 3P3s5Y9v a0NSrn0n m1X9xcJY 7ebvYj2P D9IjMi9a pBKGjVDp)",
       "WebFetch(domain:community.cloudflare.com)",
-      "Bash(if exist \"C:\\\\tka-platform\\\\build\\\\_redirects\" del \"C:\\\\tka-platform\\\\build\\\\_redirects\")"
+      "Bash(if exist \"C:\\\\tka-platform\\\\build\\\\_redirects\" del \"C:\\\\tka-platform\\\\build\\\\_redirects\")",
+      "Bash(npx.cmd:*)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" --version)"
     ]
   },
   "enableAllProjectMcpServers": false,
