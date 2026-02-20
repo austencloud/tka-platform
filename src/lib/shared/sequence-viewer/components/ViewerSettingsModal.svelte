@@ -285,12 +285,24 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
-  /* Visibility section - fills remaining height */
+  /* Visibility section - fills remaining height.
+     CSS custom properties cascade to VisibilityTab and panels
+     through the DOM, bypassing Svelte scoping. */
   .visibility-section {
     flex: 1;
     min-height: 0;
     overflow: hidden;
     padding: 4px 0;
+
+    /* Signal to VisibilityTab: fill parent height */
+    --vt-height: 100%;
+    --vt-container-flex-grow: 1;
+    --vt-container-min-h: 0px;
+    /* Signal to panels: previews shrink, controls don't */
+    --vt-panel-min-h: 0px;
+    --vt-preview-min-h: 60px;
+    --vt-header-shrink: 0;
+    --vt-controls-shrink: 0;
   }
 
   @media (prefers-reduced-motion: reduce) {
