@@ -42,6 +42,7 @@
     trigrid: () => import("$lib/features/trigrid-lab/TriGridLabModule.svelte"),
     duration: () => import("$lib/features/duration-lab/DurationLabModule.svelte"),
     "visual-builder": () => import("$lib/features/visual-builder-lab/VisualBuilderLabModule.svelte"),
+    flame: () => import("$lib/features/flame-lab/FlameLabModule.svelte"),
   };
 
   // Get current tab, default to first tab

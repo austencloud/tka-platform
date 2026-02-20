@@ -728,6 +728,14 @@ export const LAB_TABS: Section[] = [
     color: "#06b6d4",
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
+  {
+    id: "flame",
+    label: "Flame",
+    icon: '<i class="fas fa-fire" aria-hidden="true"></i>',
+    description: "Fire shader overlay for prop animations",
+    color: "#f97316",
+    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs
