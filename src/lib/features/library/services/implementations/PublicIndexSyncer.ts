@@ -3,6 +3,8 @@
  *
  * Handles syncing sequences to/from the publicSequences collection.
  * Includes content moderation - flagged content cannot be synced to public.
+ * Auto-detects circularity and LOOP type at publish time using the
+ * existing detection singletons (loopDetector, sequenceLoopabilityChecker).
  * Extracted from LibraryRepository for single responsibility.
  */
 
@@ -23,6 +25,8 @@ import type { IContentAppealManager } from "$lib/features/moderation/services/co
 import { ContentModerationError } from "$lib/features/moderation/errors/ContentModerationError";
 import { LOOP_LABELS_COLLECTION } from "$lib/features/loop-labeler/domain/constants/firebase-collections";
 import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
+import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 
 export class PublicIndexSyncer implements IPublicIndexSyncer {
   private readonly difficultyCalculator = new SequenceDifficultyCalculator();
@@ -68,8 +72,8 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
       const userDoc = await getDoc(doc(firestore, `users/${userId}`));
       const userData = userDoc.data() ?? {};
 
-      // Fetch LOOP label if exists (keyed by word)
-      const loopType = await this.fetchLoopType(firestore, sequence.word);
+      // Detect circularity and LOOP type from step/motion data
+      const { isCircular, loopType } = await this.detectLoopInfo(firestore, sequence);
 
       // Calculate numeric level from steps if available
       const level = sequence.steps?.length > 0
@@ -89,6 +93,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         sequenceLength: sequence.steps.length ?? 0,
         difficultyLevel: sequence.difficultyLevel,
         level,
+        isCircular,
         loopType,
         forkCount: sequence.forkCount ?? 0,
         viewCount: sequence.viewCount ?? 0,
@@ -128,6 +133,49 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         error
       );
       throw error; // Re-throw so callers know the removal failed
+    }
+  }
+
+  /**
+   * Detect circularity and LOOP type using a layered strategy:
+   * 1. Trust sequence.loopType if already set (generator-created LOOPs)
+   * 2. Check loop-labels collection for human-curated override
+   * 3. Run live algorithmic detection from step/motion data
+   */
+  private async detectLoopInfo(
+    firestore: Firestore,
+    sequence: LibrarySequence
+  ): Promise<{ isCircular: boolean; loopType: string | null }> {
+    // Layer 1: Trust existing loopType on the sequence (set by LOOP generator)
+    if (sequence.loopType) {
+      return { isCircular: true, loopType: sequence.loopType };
+    }
+
+    // Layer 2: Check loop-labels collection for human-curated override
+    const curatedLoopType = await this.fetchLoopType(firestore, sequence.word);
+    if (curatedLoopType) {
+      return { isCircular: true, loopType: curatedLoopType };
+    }
+
+    // Layer 3: Run live algorithmic detection
+    const isCircular = sequenceLoopabilityChecker.isSeamlesslyLoopable(sequence);
+    if (!isCircular) {
+      return { isCircular: false, loopType: null };
+    }
+
+    // Sequence is circular — run full LOOP type detection
+    try {
+      const detection = loopDetector.detectLOOPType(sequence);
+      return {
+        isCircular: true,
+        loopType: detection.loopType,
+      };
+    } catch (error) {
+      console.warn(
+        `[PublicIndexSyncer] LOOP detection failed for "${sequence.word}", marking as circular with no type:`,
+        error
+      );
+      return { isCircular: true, loopType: null };
     }
   }
 
