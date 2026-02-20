@@ -38,6 +38,9 @@ interface AnimationVisibilitySettings {
   // Dark Mode: dark background, inverted grid, white text/outlines
   darkMode: boolean;
 
+  // Effects
+  fireEffect: boolean; // WebGL fire shader at prop tips
+
   // Shared with pictograph visibility (can sync)
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
   reversalIndicators: boolean;
@@ -96,6 +99,9 @@ export class AnimationVisibilityStateManager {
 
       // Global effects
       darkMode: false, // Dark Mode disabled by default
+
+      // Effects
+      fireEffect: false, // Fire shader disabled by default
 
       // Shared elements - defaults optimized for animation viewing
       tkaGlyph: true, // TKA Glyph includes turn numbers
@@ -432,6 +438,33 @@ export class AnimationVisibilityStateManager {
    */
   toggleDarkMode(): void {
     this.setDarkMode(!this.settings.darkMode);
+  }
+
+  // ============================================================================
+  // FIRE EFFECT
+  // ============================================================================
+
+  /**
+   * Check if fire effect is enabled
+   */
+  isFireEffectEnabled(): boolean {
+    return this.settings.fireEffect;
+  }
+
+  /**
+   * Set fire effect
+   */
+  setFireEffect(enabled: boolean): void {
+    this.settings.fireEffect = enabled;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Toggle fire effect
+   */
+  toggleFireEffect(): void {
+    this.setFireEffect(!this.settings.fireEffect);
   }
 
   /**

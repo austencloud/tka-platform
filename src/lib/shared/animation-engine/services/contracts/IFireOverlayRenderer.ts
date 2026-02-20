@@ -1,0 +1,45 @@
+/**
+ * IFireOverlayRenderer
+ *
+ * Interface for the WebGL fire shader overlay that composites
+ * procedural flames on top of the Canvas2D animation.
+ */
+
+import type { FireFrameInput, FireOverlayConfig } from "../../domain/types/FireTypes";
+
+export interface IFireOverlayRenderer {
+  /**
+   * Create the WebGL canvas and compile shaders.
+   * @param container - Parent element to append the overlay canvas into
+   * @param width - Initial canvas width in CSS pixels
+   * @param height - Initial canvas height in CSS pixels
+   */
+  initialize(container: HTMLElement, width: number, height: number): boolean;
+
+  /**
+   * Resize the overlay canvas (e.g., when container resizes).
+   */
+  resize(width: number, height: number): void;
+
+  /**
+   * Render one frame of fire.
+   * Called after Canvas2D renderScene() in the same RAF tick.
+   */
+  renderFire(input: FireFrameInput, config: FireOverlayConfig): void;
+
+  /**
+   * Update quality level (FBM octave count) for frame budget adaptation.
+   * @param octaves - Number of FBM octaves (2 = low, 4 = high)
+   */
+  setQuality(octaves: number): void;
+
+  /**
+   * Clean up WebGL resources and remove canvas from DOM.
+   */
+  dispose(): void;
+
+  /**
+   * Whether the renderer has been successfully initialized.
+   */
+  isInitialized(): boolean;
+}

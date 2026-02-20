@@ -15,6 +15,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import TKAGlyph from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
   import StepNumber from "$lib/shared/pictograph/shared/components/StepNumber.svelte";
@@ -27,6 +28,8 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     displayedTurnsTuple = "(s, 0, 0)",
     displayedStepNumber = null,
     displayedMusicalPosition = undefined,
+    // Step data for turn color interpretation (determines blue/red assignment)
+    stepData = null,
     // Visibility
     tkaGlyphVisible = true,
     stepNumbersVisible = true,
@@ -41,6 +44,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     displayedTurnsTuple?: string;
     displayedStepNumber?: number | null;
     displayedMusicalPosition?: string | null;
+    stepData?: PictographData | null;
     tkaGlyphVisible?: boolean;
     stepNumbersVisible?: boolean;
     beatPositionVisible?: boolean;
@@ -128,7 +132,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
             turnsTuple={displayedTurnsTuple}
             {letter}
             {letterDimensions}
-            pictographData={null}
+            pictographData={stepData}
             x={50}
             y={800}
             scale={1}

@@ -41,6 +41,7 @@ Last audit: 2025-12-27
   import SegmentedSequenceProgressBar from "./layers/SegmentedSequenceProgressBar.svelte";
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
   import { getAnimationVisibilityManager } from "../state/animation-visibility-state.svelte";
+  import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import { onMount, onDestroy, untrack } from "svelte";
 
   // Props
@@ -79,6 +80,8 @@ Last audit: 2025-12-27
     // When true, always show word header and progress bar regardless of aspect ratio.
     // Used when the animation canvas is the only visible content (focused/expanded pane).
     focused = false,
+    // Fire overlay configuration — when provided, overrides the engine's defaults
+    fireConfig = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -104,6 +107,7 @@ Last audit: 2025-12-27
     progressBarVariant?: "minimal" | "raised" | "rounded" | "neon" | "gradient" | "labeled" | "gradient-labeled";
     onProgressBarSeek?: ((targetStep: number) => void) | null;
     focused?: boolean;
+    fireConfig?: Partial<FireOverlayConfig>;
   } = $props();
 
   // Container element
@@ -203,6 +207,15 @@ Last audit: 2025-12-27
     });
   });
 
+  // Sync fire config to engine when provided
+  $effect(() => {
+    if (fireConfig) {
+      untrack(() => {
+        engine.setFireConfig(fireConfig);
+      });
+    }
+  });
+
   // Process pending glyphs when initialized
   $effect(() => {
     if (isInitialized) {
@@ -253,6 +266,7 @@ Last audit: 2025-12-27
         {displayedTurnsTuple}
         {displayedStepNumber}
         {displayedMusicalPosition}
+        {stepData}
         tkaGlyphVisible={effectiveTkaGlyphVisible}
         stepNumbersVisible={effectiveBeatNumbersVisible}
         beatPositionVisible={effectiveBeatPositionVisible}

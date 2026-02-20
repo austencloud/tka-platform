@@ -63,6 +63,11 @@ import { SequenceCache } from "./SequenceCache.svelte";
 import { TrailSettingsSynchronizer } from "./TrailSettingsSynchronizer.svelte";
 import { PropTypeChanger } from "./PropTypeChanger.svelte";
 import { AnimatorCanvasInitializer } from "./AnimatorCanvasInitializer";
+import { FireTipTracker } from "./FireTipTracker";
+import { WebGLFireRenderer } from "./fire/WebGLFireRenderer";
+import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
+import type { IFireTipTracker } from "../contracts/IFireTipTracker";
+import { DEFAULT_FIRE_CONFIG, type FireOverlayConfig } from "../../domain/types/FireTypes";
 
 /**
  * Props passed to engine.update()
@@ -209,6 +214,9 @@ export class AnimationEngine {
   private canvasInitializer = new AnimatorCanvasInitializer();
   private frameBudgetMonitor: IFrameBudgetMonitor =
     new FrameBudgetMonitor(new DeviceTierDetector().detect());
+  private fireRenderer: IFireOverlayRenderer | null = null;
+  private fireTipTracker: IFireTipTracker | null = null;
+  private fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
 
   // ============================================================================
   // PRIVATE STATE
@@ -243,6 +251,7 @@ export class AnimationEngine {
   private prevPropsVisible: boolean = true;
   private prevBlueMotionVisible: boolean = true;
   private prevRedMotionVisible: boolean = true;
+  private prevFireEffect: boolean = false;
 
   // Additional layer texture loading for tunnel mode (indexed by layer)
   private additionalLayerTexturesLoaded: boolean[] = [];
@@ -278,6 +287,8 @@ export class AnimationEngine {
     redPropFlipped: false,
     bluePropType: undefined,
     redPropType: undefined,
+    fireConfig: null,
+    darkMode: false,
   };
 
   // ============================================================================
@@ -301,6 +312,8 @@ export class AnimationEngine {
     this.prevPropsVisible = visibilityManager.getVisibility("props");
     this.prevBlueMotionVisible = visibilityManager.getVisibility("blueMotion");
     this.prevRedMotionVisible = visibilityManager.getVisibility("redMotion");
+    this.prevFireEffect = visibilityManager.isFireEffectEnabled();
+    this.fireConfig.enabled = this.prevFireEffect;
     this.state.visibilityState = {
       grid: visibilityManager.getGridMode() !== "none",
       stepNumbers: visibilityManager.getVisibility("stepNumbers"),
@@ -388,6 +401,13 @@ export class AnimationEngine {
               this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
             );
           }
+        }
+
+        // Sync fire effect toggle from visibility manager
+        const fireEnabled = getAnimationVisibilityManager().isFireEffectEnabled();
+        if (fireEnabled !== this.prevFireEffect) {
+          this.prevFireEffect = fireEnabled;
+          this.setFireConfig({ enabled: fireEnabled });
         }
       }
     );
@@ -808,6 +828,11 @@ export class AnimationEngine {
     // Dispose precomputation
     this.precomputationService?.dispose?.();
 
+    // Dispose fire overlay
+    this.fireRenderer?.dispose();
+    this.fireRenderer = null;
+    this.fireTipTracker = null;
+
     // Clear trails
     this.trailCapturer?.clearTrails();
 
@@ -1007,6 +1032,9 @@ export class AnimationEngine {
   private initializeRenderLoopService(): void {
     if (!this.animationRenderer) return;
 
+    // Initialize fire overlay (lazy: only creates WebGL when first enabled)
+    this.fireTipTracker = new FireTipTracker();
+
     this.renderLoopService = new AnimationRenderLoop();
     this.renderLoopService.initialize({
       renderer: this.animationRenderer,
@@ -1014,7 +1042,61 @@ export class AnimationEngine {
       pathCache: this.precomputationService?.getPathCache() ?? null,
       canvasSize: this.canvasSize,
       frameBudgetMonitor: this.frameBudgetMonitor,
+      fireTipTracker: this.fireTipTracker,
     });
+  }
+
+  /**
+   * Initialize or destroy the fire overlay based on config.enabled.
+   * Creates the WebGL canvas lazily on first enable, removes on disable.
+   */
+  private syncFireOverlay(): void {
+    if (this.fireConfig.enabled && !this.fireRenderer?.isInitialized()) {
+      // Create fire overlay
+      if (!this.containerElement) return;
+      this.fireRenderer = new WebGLFireRenderer();
+      const success = this.fireRenderer.initialize(
+        this.containerElement,
+        this.canvasSize,
+        this.canvasSize
+      );
+      if (success) {
+        this.renderLoopService?.updateConfig({ fireRenderer: this.fireRenderer });
+      } else {
+        this.fireRenderer = null;
+      }
+    } else if (!this.fireConfig.enabled && this.fireRenderer) {
+      // Tear down fire overlay
+      this.fireRenderer.dispose();
+      this.fireRenderer = null;
+      this.renderLoopService?.updateConfig({ fireRenderer: null });
+      this.fireTipTracker?.reset();
+    }
+  }
+
+  /**
+   * Set fire overlay configuration. Called by visibility state changes.
+   */
+  setFireConfig(config: Partial<FireOverlayConfig>): void {
+    Object.assign(this.fireConfig, config);
+    // Forward quality setting to renderer if present
+    if (config.quality !== undefined && this.fireRenderer) {
+      this.fireRenderer.setQuality(config.quality);
+    }
+    this.syncFireOverlay();
+    // Trigger a render to start/stop fire loop
+    if (this.renderLoopService && this.lastPropsRef) {
+      this.renderLoopService.triggerRender(() =>
+        this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+      );
+    }
+  }
+
+  /**
+   * Get current fire overlay configuration.
+   */
+  getFireConfig(): FireOverlayConfig {
+    return { ...this.fireConfig };
   }
 
   private initializeTrailCapturer(props: AnimationEngineProps): void {
@@ -1106,6 +1188,7 @@ export class AnimationEngine {
         this.canvasSize = newSize;
         this.trailCapturer?.updateConfig({ canvasSize: newSize });
         this.renderLoopService?.updateConfig({ canvasSize: newSize });
+        this.fireRenderer?.resize(newSize, newSize);
       }
     }
   }
@@ -1275,6 +1358,10 @@ export class AnimationEngine {
     // Pass prop types for prop-specific rendering rules (e.g., hands never rotate)
     fp.bluePropType = bluePropType;
     fp.redPropType = redPropType;
+
+    // Fire overlay config
+    fp.fireConfig = this.fireConfig.enabled ? this.fireConfig : null;
+    fp.darkMode = this.prevDarkMode;
 
     return fp;
   }

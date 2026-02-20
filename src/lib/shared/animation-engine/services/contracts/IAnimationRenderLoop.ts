@@ -11,6 +11,9 @@ import type { TrailSettings } from "../../domain/types/TrailTypes";
 import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
 import type { IFrameBudgetMonitor } from "./IFrameBudgetMonitor";
+import type { IFireOverlayRenderer } from "./IFireOverlayRenderer";
+import type { IFireTipTracker } from "./IFireTipTracker";
+import type { FireOverlayConfig } from "../../domain/types/FireTypes";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -25,6 +28,10 @@ export interface RenderLoopConfig {
   pathCache: AnimationPathCache | null;
   canvasSize: number;
   frameBudgetMonitor?: IFrameBudgetMonitor | null;
+  /** Optional fire overlay renderer (WebGL layer on top of Canvas2D) */
+  fireRenderer?: IFireOverlayRenderer | null;
+  /** Optional fire tip position/velocity tracker */
+  fireTipTracker?: IFireTipTracker | null;
 }
 
 /**
@@ -78,6 +85,10 @@ export interface RenderFrameParams {
   /** Prop types - used for prop-specific rendering rules (e.g., hands never rotate) */
   bluePropType?: string;
   redPropType?: string;
+  /** Fire overlay configuration (null or undefined = disabled) */
+  fireConfig?: FireOverlayConfig | null;
+  /** Whether dark mode is active (used by fire renderer for intensity boost) */
+  darkMode?: boolean;
 }
 
 /**

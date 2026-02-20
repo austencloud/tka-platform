@@ -11,6 +11,8 @@ import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
 import { TrailMode } from "../../domain/types/TrailTypes";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
 import type { IFrameBudgetMonitor } from "../contracts/IFrameBudgetMonitor";
+import type { IFireOverlayRenderer } from "../contracts/IFireOverlayRenderer";
+import type { IFireTipTracker, FireTipTrackerConfig } from "../contracts/IFireTipTracker";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -22,6 +24,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private TrailCapturer: ITrailCapturer | null = null;
   private pathCache: AnimationPathCache | null = null;
   private frameBudgetMonitor: IFrameBudgetMonitor | null = null;
+  private fireRenderer: IFireOverlayRenderer | null = null;
+  private fireTipTracker: IFireTipTracker | null = null;
   private canvasSize: number = 950;
   private rafId: number | null = null;
   private needsRender: boolean = false;
@@ -49,6 +53,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.pathCache = config.pathCache;
     this.canvasSize = config.canvasSize;
     this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
+    this.fireRenderer = config.fireRenderer ?? null;
+    this.fireTipTracker = config.fireTipTracker ?? null;
   }
 
   updateConfig(config: Partial<RenderLoopConfig>): void {
@@ -59,6 +65,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     if (config.canvasSize !== undefined) this.canvasSize = config.canvasSize;
     if (config.frameBudgetMonitor !== undefined)
       this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
+    if (config.fireRenderer !== undefined)
+      this.fireRenderer = config.fireRenderer ?? null;
+    if (config.fireTipTracker !== undefined)
+      this.fireTipTracker = config.fireTipTracker ?? null;
   }
 
   start(getFrameParams: () => RenderFrameParams): void {
@@ -105,6 +115,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.pathCache = null;
     this.frameBudgetMonitor = null;
     this.getFrameParamsCallback = null;
+    // Clean up fire overlay
+    this.fireRenderer?.dispose();
+    this.fireRenderer = null;
+    this.fireTipTracker = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -158,11 +172,15 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       trailSettings.enabled && trailSettings.mode !== TrailMode.OFF;
     const backgroundTransitioning =
       this.renderer?.isBackgroundTransitioning() ?? false;
+    const fireActive =
+      params.fireConfig?.enabled === true &&
+      this.fireRenderer?.isInitialized() === true;
     const shouldContinueLoop =
       this.needsRender ||
       trailsNeedContinuousRender ||
       isPlaying ||
-      backgroundTransitioning;
+      backgroundTransitioning ||
+      fireActive;
 
     if (shouldContinueLoop) {
       this.render(params, currentTime);
@@ -281,6 +299,39 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       redPropType: params.redPropType,
       qualityHints: this.frameBudgetMonitor?.getQualityHints(),
     });
+
+    // Fire overlay: render after Canvas2D so it composites on top
+    if (
+      this.fireRenderer?.isInitialized() &&
+      this.fireTipTracker &&
+      params.fireConfig?.enabled
+    ) {
+      const tipTrackerConfig: FireTipTrackerConfig = {
+        canvasSize: this.canvasSize,
+        bluePropDimensions: props.bluePropDimensions,
+        redPropDimensions: props.redPropDimensions,
+        bluePropType: params.bluePropType,
+        redPropType: params.redPropType,
+      };
+
+      const tips = this.fireTipTracker.update(
+        props.blueProp,
+        props.redProp,
+        tipTrackerConfig,
+        currentTime
+      );
+
+      this.fireRenderer.renderFire(
+        {
+          tips,
+          currentTime,
+          canvasWidth: this.canvasSize,
+          canvasHeight: this.canvasSize,
+          darkMode: params.darkMode ?? false,
+        },
+        params.fireConfig
+      );
+    }
 
     // End frame budget measurement (updates rolling averages, may trigger tier change)
     if (this.frameBudgetMonitor) {
