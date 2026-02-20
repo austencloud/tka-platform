@@ -4,6 +4,10 @@
  * Determines which color (blue or red) to apply to top and bottom turn numbers
  * based on the letter type and motion arrangement.
  *
+ * Color is determined by which key ("blue"/"red") a motion lives under in
+ * pictographData.motions — NOT by the motion.color property, which is often
+ * undefined when data is deserialized from storage.
+ *
  * Ported from legacy TurnsTupleInterpreter logic.
  */
 
@@ -33,11 +37,15 @@ const RED_HEX: TurnNumberColor = getMotionColor(MotionColor.RED, "dark");
 
 export class TurnColorInterpreter {
   /**
-   * Determine the colors for top and bottom turn numbers
+   * Determine the colors for top and bottom turn numbers.
+   *
+   * Color assignment is based on which motions object key ("blue"/"red")
+   * the motion was extracted from — NOT motion.color, which is unreliable
+   * for data loaded from storage.
    */
   interpretTurnColors(
     letter: string | null | undefined,
-    pictographData?: PictographData
+    pictographData?: PictographData | null
   ): TurnColors {
     if (!letter || !pictographData) {
       // Default: top = blue, bottom = red
@@ -52,9 +60,10 @@ export class TurnColorInterpreter {
       return { top: BLUE_HEX, bottom: RED_HEX };
     }
 
-    // Get actual motion colors (in case they differ from default)
-    const blueColor = this.getMotionColor(blueMotion.color);
-    const redColor = this.getMotionColor(redMotion.color);
+    // Helper: returns the correct hex color based on whether the motion
+    // is the blue-hand or red-hand motion (identity comparison).
+    const colorOf = (motion: MotionData): TurnNumberColor =>
+      motion === blueMotion ? BLUE_HEX : RED_HEX;
 
     switch (letterType) {
       case "TYPE2": {
@@ -66,8 +75,8 @@ export class TurnColorInterpreter {
           ? redMotion
           : blueMotion;
         return {
-          top: this.getMotionColor(shiftMotion.color),
-          bottom: this.getMotionColor(staticMotion.color),
+          top: colorOf(shiftMotion),
+          bottom: colorOf(staticMotion),
         };
       }
 
@@ -79,8 +88,8 @@ export class TurnColorInterpreter {
         const antiMotion = blueActualType === "anti" ? blueMotion : redMotion;
 
         return {
-          top: this.getMotionColor(proMotion.color),
-          bottom: this.getMotionColor(antiMotion.color),
+          top: colorOf(proMotion),
+          bottom: colorOf(antiMotion),
         };
       }
 
@@ -90,8 +99,8 @@ export class TurnColorInterpreter {
         const shiftMotion = isDashBlue ? redMotion : blueMotion;
         const dashMotion = isDashBlue ? blueMotion : redMotion;
         return {
-          top: this.getMotionColor(shiftMotion.color),
-          bottom: this.getMotionColor(dashMotion.color),
+          top: colorOf(shiftMotion),
+          bottom: colorOf(dashMotion),
         };
       }
 
@@ -101,8 +110,8 @@ export class TurnColorInterpreter {
         const dashMotion = isDashBlue ? blueMotion : redMotion;
         const staticMotion = isDashBlue ? redMotion : blueMotion;
         return {
-          top: this.getMotionColor(dashMotion.color),
-          bottom: this.getMotionColor(staticMotion.color),
+          top: colorOf(dashMotion),
+          bottom: colorOf(staticMotion),
         };
       }
 
@@ -111,8 +120,8 @@ export class TurnColorInterpreter {
       default: {
         // Top = Blue motion, Bottom = Red motion
         return {
-          top: blueColor,
-          bottom: redColor,
+          top: BLUE_HEX,
+          bottom: RED_HEX,
         };
       }
     }
@@ -185,22 +194,5 @@ export class TurnColorInterpreter {
     const motionTypeStr =
       typeof motionType === "string" ? motionType.toLowerCase() : "";
     return ["pro", "anti", "float"].includes(motionTypeStr);
-  }
-
-  /**
-   * Get color hex from motion color string
-   */
-  private getMotionColor(color: string | undefined): TurnNumberColor {
-    if (!color) return BLUE_HEX;
-
-    const normalized = color.toLowerCase();
-    if (normalized === "blue" || normalized.includes("blue")) {
-      return BLUE_HEX;
-    }
-    if (normalized === "red" || normalized.includes("red")) {
-      return RED_HEX;
-    }
-
-    return BLUE_HEX; // Default fallback
   }
 }
