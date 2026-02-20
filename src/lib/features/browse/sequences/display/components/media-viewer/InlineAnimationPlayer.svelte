@@ -75,10 +75,17 @@
     sequence,
     autoPlay = true,
     showControls = true,
+    bluePropType = null,
+    redPropType = null,
+    externalBpm = null,
   }: {
     sequence: SequenceData;
     autoPlay?: boolean;
     showControls?: boolean;
+    bluePropType?: string | null;
+    redPropType?: string | null;
+    /** When provided, overrides internal BPM and controls playback speed externally */
+    externalBpm?: number | null;
   } = $props();
 
   // Services — per-instance to allow multiple simultaneous players (e.g., Arena)
@@ -197,6 +204,15 @@
   onDestroy(() => {
     playbackController?.dispose();
     animationState.dispose();
+  });
+
+  // Sync external BPM to playback speed when provided
+  $effect(() => {
+    if (externalBpm !== null && playbackController) {
+      const speed = externalBpm / DEFAULT_BPM;
+      playbackController.setSpeed(speed);
+      bpm = externalBpm;
+    }
   });
 
   // Watch for sequence changes and reload animation
@@ -322,6 +338,8 @@
         {isPlaying}
         onPlaybackToggle={togglePlayback}
         trailSettings={animationSettings.trail}
+        {bluePropType}
+        {redPropType}
       />
     </div>
 

@@ -22,11 +22,8 @@ export class MatchupSelector implements IMatchupSelector {
     voterId: string,
     recentPairs: Set<string>
   ): { a: MatchupCandidate; b: MatchupCandidate; reason: MatchupReason } | null {
-    // Prefer non-owned entries to reduce self-voting bias, but fall back
-    // to the full pool when the voter is the primary publisher.
-    const nonOwned = candidates.filter((c) => c.entry.ownerId !== voterId);
-    const pool = nonOwned.length >= 2 ? nonOwned : candidates;
-    if (pool.length < 2) return null;
+    if (candidates.length < 2) return null;
+    const pool = candidates;
 
     // Group by beat count — only pit same-length sequences against each other
     const groups = this.groupByBeatCount(pool);
@@ -81,7 +78,8 @@ export class MatchupSelector implements IMatchupSelector {
   private groupByBeatCount(pool: MatchupCandidate[]): MatchupCandidate[][] {
     const map = new Map<number, MatchupCandidate[]>();
     for (const c of pool) {
-      const beatCount = c.data.steps?.length ?? 0;
+      // Use sequenceLength from index metadata — steps are empty at pool-load time
+      const beatCount = c.data.sequenceLength ?? c.data.steps?.length ?? 0;
       if (beatCount === 0) continue;
       const group = map.get(beatCount);
       if (group) {

@@ -490,10 +490,7 @@
     text-transform: uppercase;
     letter-spacing: 0.2px;
     padding: 10px 6px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 60px;
   }
 
   /* ===========================

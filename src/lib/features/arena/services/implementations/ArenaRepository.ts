@@ -63,6 +63,10 @@ export class ArenaRepository implements IArenaRepository {
       const word = raw.word as string | undefined;
       if (!word) continue;
 
+      // Arena is loop-only — skip sequences without a labeled loop type
+      const loopType = raw.loopType as string | null | undefined;
+      if (!loopType) continue;
+
       const entry: ArenaEntry = {
         id: seqDoc.id,
         kind: "sequence",
@@ -86,7 +90,8 @@ export class ArenaRepository implements IArenaRepository {
         level: raw.level as number | undefined,
         difficultyLevel: raw.difficultyLevel as string | undefined,
         isFavorite: false,
-        isCircular: false,
+        isCircular: true, // Arena only loads loops
+        loopType: loopType as SequenceData["loopType"],
         tags: (raw.tags as readonly string[]) ?? [],
         metadata: {},
         ownerId: (raw.ownerId as string) ?? "",

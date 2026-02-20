@@ -14,10 +14,24 @@
   import ArenaDivider from "./ArenaDivider.svelte";
   import ArenaStreakCounter from "./ArenaStreakCounter.svelte";
   import ArenaVoteConfirmation from "./ArenaVoteConfirmation.svelte";
+  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+  import ArenaPropDrawer from "./ArenaPropDrawer.svelte";
   import { arenaState } from "../../state/arena-state.svelte";
   import { container } from "$lib/shared/di";
   import type { IArenaOrchestrator } from "../../services/contracts/IArenaOrchestrator";
   import { getAuthSync } from "$lib/shared/auth/firebase";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import {
+    PROP_TYPE_DISPLAY_REGISTRY,
+    getAllPropTypes,
+  } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+
+  // All prop types for the random pool (excludes POI which is momentum-based)
+  const ALL_ARENA_PROPS = getAllPropTypes().filter(pt => pt !== PropType.POI);
+
+  function pickRandomPropType(): PropType {
+    return ALL_ARENA_PROPS[Math.floor(Math.random() * ALL_ARENA_PROPS.length)]!;
+  }
 
   let mounted = true;
 
@@ -33,6 +47,34 @@
   let transitioning = $state(false);
   let showKeyboardHints = $state(true);
 
+  // Prop type per matchup — both sides show the same prop
+  let randomPropMode = $state(true);
+  let matchupPropType = $state<PropType>(pickRandomPropType());
+  let propDrawerOpen = $state(false);
+
+  function handlePropSelect(pt: PropType) {
+    randomPropMode = false;
+    matchupPropType = pt;
+  }
+
+  function toggleRandomProp() {
+    if (randomPropMode) {
+      // Already random — open drawer to pick a specific one
+      propDrawerOpen = true;
+    } else {
+      // Switch back to random
+      randomPropMode = true;
+      matchupPropType = pickRandomPropType();
+    }
+  }
+
+  // Current prop's display info for the button
+  const currentPropImage = $derived(PROP_TYPE_DISPLAY_REGISTRY[matchupPropType]?.image);
+  const currentPropLabel = $derived(PROP_TYPE_DISPLAY_REGISTRY[matchupPropType]?.label ?? "Staff");
+
+  // Shared BPM for both animation players
+  let arenaBpm = $state(60);
+
   onMount(async () => {
     // Get auth state
     try {
@@ -47,6 +89,7 @@
 
       await orchestrator.initialize(userId);
       arenaState.currentMatchup = orchestrator.getCurrentMatchup();
+      if (randomPropMode) matchupPropType = pickRandomPropType();
       arenaState.isLoading = false;
     } catch (err) {
       console.error("[Arena] Failed to initialize:", err);
@@ -121,6 +164,7 @@
     voteResult = null;
     winnerWord = "";
     arenaState.currentMatchup = orchestrator.getCurrentMatchup();
+    if (randomPropMode) matchupPropType = pickRandomPropType();
     arenaState.sessionStreak = orchestrator.getSessionStreak();
     arenaState.matchupsCompleted = orchestrator.getMatchupsCompleted();
 
@@ -135,6 +179,7 @@
 
     await orchestrator.skip();
     arenaState.currentMatchup = orchestrator.getCurrentMatchup();
+    if (randomPropMode) matchupPropType = pickRandomPropType();
 
     transitioning = false;
   }
@@ -176,6 +221,8 @@
         {voteResult}
         disabled={transitioning}
         onvote={() => vote("left")}
+        propType={matchupPropType}
+        bpm={arenaBpm}
       />
 
       <ArenaDivider />
@@ -188,33 +235,71 @@
         {voteResult}
         disabled={transitioning}
         onvote={() => vote("right")}
+        propType={matchupPropType}
+        bpm={arenaBpm}
       />
     </div>
 
     <div class="controls-bar">
-      <ArenaStreakCounter streak={arenaState.sessionStreak} />
+      <div class="controls-row">
+        <ArenaStreakCounter streak={arenaState.sessionStreak} />
 
-      <button
-        class="skip-button"
-        onclick={skip}
-        disabled={transitioning}
-        aria-label="Skip this matchup"
-        type="button"
-      >
-        <i class="fas fa-forward" aria-hidden="true"></i>
-        Skip
-      </button>
+        <button
+          class="skip-button"
+          onclick={skip}
+          disabled={transitioning}
+          aria-label="Skip this matchup"
+          type="button"
+        >
+          <i class="fas fa-forward" aria-hidden="true"></i>
+          Skip
+        </button>
 
-      {#if showKeyboardHints}
-        <div class="keyboard-hints" aria-hidden="true">
-          <kbd>&larr;</kbd> Left
-          <kbd>&rarr;</kbd> Right
-          <kbd>Space</kbd> Skip
+        {#if showKeyboardHints}
+          <div class="keyboard-hints" aria-hidden="true">
+            <kbd>&larr;</kbd> Left
+            <kbd>&rarr;</kbd> Right
+            <kbd>Space</kbd> Skip
+          </div>
+        {/if}
+      </div>
+
+      <div class="settings-row">
+        <button
+          class="prop-button"
+          onclick={() => propDrawerOpen = true}
+          type="button"
+          aria-label="Change prop type: {currentPropLabel}"
+          title={currentPropLabel}
+        >
+          <img src={currentPropImage} alt={currentPropLabel} class="prop-button-icon" />
+        </button>
+
+        <button
+          class="shuffle-button"
+          class:active={randomPropMode}
+          onclick={toggleRandomProp}
+          type="button"
+          aria-label={randomPropMode ? "Random mode active" : "Enable random prop mode"}
+          title={randomPropMode ? "Random (click to choose)" : "Shuffle"}
+        >
+          <i class="fas fa-shuffle" aria-hidden="true"></i>
+        </button>
+
+        <div class="bpm-section">
+          <BpmChips bpm={arenaBpm} variant="compact" onBpmChange={(v) => arenaBpm = v} />
         </div>
-      {/if}
+      </div>
     </div>
 
     <ArenaVoteConfirmation winner={winnerWord} />
+
+    <ArenaPropDrawer
+      bind:isOpen={propDrawerOpen}
+      selectedPropType={matchupPropType}
+      onSelect={handlePropSelect}
+      onClose={() => propDrawerOpen = false}
+    />
   {:else}
     <div class="battle-empty" role="status">
       <i class="fas fa-inbox" aria-hidden="true"></i>
@@ -259,11 +344,95 @@
 
   .controls-bar {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 0;
+    flex-shrink: 0;
+  }
+
+  .controls-row {
+    display: flex;
     align-items: center;
     justify-content: center;
     gap: 16px;
-    padding: 8px 0;
+  }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    max-width: 640px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .prop-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    padding: 6px;
     flex-shrink: 0;
+  }
+
+  .prop-button:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+  }
+
+  .prop-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .prop-button-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .shuffle-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    flex-shrink: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: 16px;
+  }
+
+  .shuffle-button:hover:not(.active) {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+  }
+
+  .shuffle-button.active {
+    background: rgba(139, 92, 246, 0.25);
+    border-color: rgba(139, 92, 246, 0.5);
+    color: #fff;
+  }
+
+  .shuffle-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .bpm-section {
+    flex: 1;
+    min-width: 0;
   }
 
   .skip-button {
@@ -349,7 +518,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .skip-button {
+    .skip-button,
+    .prop-button,
+    .shuffle-button {
       transition: none;
     }
   }

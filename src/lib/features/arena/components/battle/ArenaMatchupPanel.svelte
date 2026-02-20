@@ -18,6 +18,8 @@
     voteResult,
     disabled = false,
     onvote,
+    propType = null,
+    bpm = null,
   }: {
     entry: ArenaEntry;
     rating: ArenaRating;
@@ -26,6 +28,8 @@
     voteResult: "left" | "right" | null;
     disabled: boolean;
     onvote: () => void;
+    propType?: string | null;
+    bpm?: number | null;
   } = $props();
 
   const isWinner = $derived(voteResult === side);
@@ -58,7 +62,7 @@
 >
   <div class="animation-container">
     {#if entry.kind === "sequence"}
-      <InlineAnimationPlayer sequence={data} autoPlay={true} showControls={false} />
+      <InlineAnimationPlayer sequence={data} autoPlay={true} showControls={false} bluePropType={propType} redPropType={propType} externalBpm={bpm} />
     {/if}
   </div>
 
