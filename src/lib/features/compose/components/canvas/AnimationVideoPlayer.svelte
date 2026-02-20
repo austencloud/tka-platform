@@ -226,11 +226,20 @@
   function handleVideoError(event: Event) {
     const video = event.target as HTMLVideoElement;
     const error = video.error;
-    console.error("Video playback error:", {
-      code: error?.code,
-      message: error?.message,
-      blobUrl: videoResult?.blobUrl,
-      videoSize: videoResult?.videoBlob?.size,
+    errorHandler.showUserError({
+      message: "Video playback failed. Try switching to live preview.",
+      technicalDetails: `code: ${error?.code}, message: ${error?.message}, blobUrl: ${videoResult?.blobUrl}, size: ${videoResult?.videoBlob?.size}`,
+      error: error ? new Error(error.message) : new Error("Unknown video playback error"),
+      severity: "error",
+      context: {
+        module: "compose",
+        action: "videoPlayback",
+        additionalData: {
+          code: error?.code,
+          blobUrl: videoResult?.blobUrl,
+          videoSize: videoResult?.videoBlob?.size,
+        },
+      },
     });
   }
 
