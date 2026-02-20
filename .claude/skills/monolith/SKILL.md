@@ -7,7 +7,7 @@ description: Detect monolithic files and propose decomposition
 ## Run
 
 ```bash
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --auto-claim
+npx -p @austencloud/code-quality ac-monolith --auto-claim
 ```
 
 ## Workflow
@@ -77,7 +77,7 @@ Extract following mandatory service pattern (interface + implementation + DI reg
 ### Option B: Mark as Audited
 
 ```bash
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --mark-audited "lib/path/to/File.svelte" "Reason: [what it does]. [Why size is inherent]."
+npx -p @austencloud/code-quality ac-monolith --mark-audited "lib/path/to/File.svelte" "Reason: [what it does]. [Why size is inherent]."
 ```
 
 **Always offer this when concluding "leave it alone."**

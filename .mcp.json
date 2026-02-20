@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "tka-domain": {
-      "command": "npx.cmd",
-      "args": ["-y", "@austencloud/tka-domain-mcp@latest"]
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": ["C:\\Users\\Austen\\AppData\\Roaming\\npm\\node_modules\\@austencloud\\tka-domain-mcp\\dist\\index.js"]
     },
     "chrome-devtools": {
       "command": "npx.cmd",

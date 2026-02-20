@@ -3,7 +3,7 @@
 ## Auto-Claim (Race-Safe)
 
 ```bash
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --auto-claim
+npx -p @austencloud/code-quality ac-monolith --auto-claim
 ```
 
 This atomically finds and claims the top available file. Parse `CLAIMED_FILE:` from output.
@@ -161,7 +161,7 @@ After analyzing a file, you must reach one of two conclusions:
 If decomposition is warranted:
 1. Get user confirmation
 2. Extract following the mandatory patterns
-3. Release claim when done: `set +o onecmd; npx -p @austencloud/code-quality ac-monolith --release "lib/path/to/File.svelte"`
+3. Release claim when done: `npx -p @austencloud/code-quality ac-monolith --release "lib/path/to/File.svelte"`
 
 ### Option B: Mark as Audited (Leave It Alone)
 
@@ -171,7 +171,7 @@ If the Four Perspectives Test says leave it alone:
 3. If user agrees, run:
 
 ```bash
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --mark-audited "lib/path/to/File.svelte" "Reason: Single responsibility - [what it does]. Complexity is inherent to [why]."
+npx -p @austencloud/code-quality ac-monolith --mark-audited "lib/path/to/File.svelte" "Reason: Single responsibility - [what it does]. Complexity is inherent to [why]."
 ```
 
 **Always offer this option when concluding "leave it alone".**
@@ -182,18 +182,18 @@ set +o onecmd; npx -p @austencloud/code-quality ac-monolith --mark-audited "lib/
 
 ```bash
 # Scanning
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith              # Show top 20 monoliths
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --all        # Show all files over threshold
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --include-audited  # Include audited files
+npx -p @austencloud/code-quality ac-monolith              # Show top 20 monoliths
+npx -p @austencloud/code-quality ac-monolith --all        # Show all files over threshold
+npx -p @austencloud/code-quality ac-monolith --include-audited  # Include audited files
 
 # Claiming (multi-agent coordination)
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --auto-claim     # Find and claim top available (RECOMMENDED)
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --claim <path>   # Claim specific file
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --release <path> # Release a claim
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --claims         # Show active claims
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --clear-expired  # Remove stale claims (>2 hours)
+npx -p @austencloud/code-quality ac-monolith --auto-claim     # Find and claim top available (RECOMMENDED)
+npx -p @austencloud/code-quality ac-monolith --claim <path>   # Claim specific file
+npx -p @austencloud/code-quality ac-monolith --release <path> # Release a claim
+npx -p @austencloud/code-quality ac-monolith --claims         # Show active claims
+npx -p @austencloud/code-quality ac-monolith --clear-expired  # Remove stale claims (>2 hours)
 
 # Auditing
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --mark-audited <path> "<reason>"  # Mark as reviewed
-set +o onecmd; npx -p @austencloud/code-quality ac-monolith --unmark-audited <path>           # Remove from audited list
+npx -p @austencloud/code-quality ac-monolith --mark-audited <path> "<reason>"  # Mark as reviewed
+npx -p @austencloud/code-quality ac-monolith --unmark-audited <path>           # Remove from audited list
 ```

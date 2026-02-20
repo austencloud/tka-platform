@@ -9,7 +9,7 @@ Find and remove unused exports, unreferenced files, and abandoned code systemati
 ## Auto-Claim (Race-Safe)
 
 ```bash
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --auto-claim
+npx -p @austencloud/code-quality ac-deadcode --auto-claim
 ```
 
 This atomically finds and claims the next available scope. Parse `CLAIMED_SCOPE:` from output.
@@ -81,7 +81,7 @@ rm "src/lib/path/to/file.ts"
 ### For FALSE POSITIVE:
 
 ```bash
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --false-positive "lib/path/to/file.ts"
+npx -p @austencloud/code-quality ac-deadcode --false-positive "lib/path/to/file.ts"
 ```
 
 ### For DEFER:
@@ -96,7 +96,7 @@ After processing all items in a scope:
 
 1. **Release the claim:**
    ```bash
-   set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --release features/compose
+   npx -p @austencloud/code-quality ac-deadcode --release features/compose
    ```
 
 2. **Report summary:**
@@ -111,18 +111,18 @@ After processing all items in a scope:
 
 ```bash
 # Start working
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --auto-claim     # Claim next scope and scan
+npx -p @austencloud/code-quality ac-deadcode --auto-claim     # Claim next scope and scan
 
 # View status
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --list           # List all scopes
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --claims         # Show active claims
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --stats          # Show statistics
+npx -p @austencloud/code-quality ac-deadcode --list           # List all scopes
+npx -p @austencloud/code-quality ac-deadcode --claims         # Show active claims
+npx -p @austencloud/code-quality ac-deadcode --stats          # Show statistics
 
 # Manual operations
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --claim <scope>  # Claim specific scope
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --release <scope> # Release a claim
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --false-positive <path> # Mark false positive
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --clear-expired  # Remove stale claims
+npx -p @austencloud/code-quality ac-deadcode --claim <scope>  # Claim specific scope
+npx -p @austencloud/code-quality ac-deadcode --release <scope> # Release a claim
+npx -p @austencloud/code-quality ac-deadcode --false-positive <path> # Mark false positive
+npx -p @austencloud/code-quality ac-deadcode --clear-expired  # Remove stale claims
 ```
 
 ---

@@ -94,6 +94,6 @@ At the end, summarize:
 
 1. Read the file BEFORE editing to understand context
 2. Prefer minimal changes - fix the cited issue, nothing more
-3. Run typecheck after all fixes: `set +o onecmd; npx svelte-check --threshold error 2>&1 | head -50`
+3. Run typecheck after all fixes: `npx svelte-check --threshold error 2>&1 | head -50`
 4. If a fix introduces new type errors, address those too (but only the ones your fix caused)
 5. Follow all project conventions in CLAUDE.md and code-style.md

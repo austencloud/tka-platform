@@ -583,7 +583,14 @@
       "WebFetch(domain:community.cloudflare.com)",
       "Bash(if exist \"C:\\\\tka-platform\\\\build\\\\_redirects\" del \"C:\\\\tka-platform\\\\build\\\\_redirects\")",
       "Bash(npx.cmd:*)",
-      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" --version)"
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" --version)",
+      "Bash(/c/Users/Austen/yt-dlp.exe:*)",
+      "Bash(cygpath:*)",
+      "Bash(set:*)",
+      "Bash(shopt:*)",
+      "Bash(trap 'echo \"\"DEBUG: onecmd=$\\(set -o | grep onecmd\\)\"\"' DEBUG)",
+      "Bash(do sed -i 's/^set -o onecmd$/set +o onecmd/' \"$f\")",
+      "Bash(do echo \"=== $tag ===\")"
     ]
   },
   "enableAllProjectMcpServers": false,

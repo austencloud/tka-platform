@@ -1,28 +1,10 @@
 # TKA Scribe - Claude Code Guidelines
 
-## ⛔️ CRITICAL: Windows Git Bash Bug - NPX Output Lost ⛔️
+## Windows Git Bash: onecmd Fix Applied
 
-**There is a known Claude Code bug on Windows where `npx` commands return empty output.**
+The `onecmd` shell option bug (https://github.com/anthropics/claude-code/issues/19217) has been fixed by patching `~/.bashrc` and all shell snapshots. npm/npx commands work normally without any prefix.
 
-This is caused by the `onecmd` shell option. See: https://github.com/anthropics/claude-code/issues/19217
-
-### The Rule
-
-**ALWAYS prefix npm/npx commands with `set +o onecmd;`**
-
-```bash
-# WRONG - will return empty output
-npx svelte-check
-npm run check
-npm run build
-
-# CORRECT - will return actual output
-set +o onecmd; npx svelte-check
-set +o onecmd; npm run check
-set +o onecmd; npm run build
-```
-
-This applies to ALL npm and npx commands. If you see "(No content)" or empty output from any npm/npx command, you forgot the prefix.
+If output is empty, run: `sed -i 's/^set -o onecmd$/set +o onecmd/' ~/.claude/shell-snapshots/snapshot-*.sh`
 
 ---
 

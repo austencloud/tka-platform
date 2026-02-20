@@ -8,7 +8,7 @@ argument-hint: "[scope | --list | --claims | --stats]"
 ## Run
 
 ```bash
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --auto-claim
+npx -p @austencloud/code-quality ac-deadcode --auto-claim
 ```
 
 ## Workflow
@@ -25,23 +25,23 @@ Read `.claude/rules/deadcode-workflow.md` for complete workflow, then:
 
 ```bash
 # Auto-claim next scope and start reviewing
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --auto-claim
+npx -p @austencloud/code-quality ac-deadcode --auto-claim
 
 # Claim specific scope
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --claim features/compose
+npx -p @austencloud/code-quality ac-deadcode --claim features/compose
 
 # List all scopes with status
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --list
+npx -p @austencloud/code-quality ac-deadcode --list
 
 # Show active claims
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --claims
+npx -p @austencloud/code-quality ac-deadcode --claims
 
 # Show summary stats
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --stats
+npx -p @austencloud/code-quality ac-deadcode --stats
 
 # Release a scope
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --release features/compose
+npx -p @austencloud/code-quality ac-deadcode --release features/compose
 
 # Mark item as false positive (won't appear again)
-set +o onecmd; npx -p @austencloud/code-quality ac-deadcode --false-positive "path/to/file.ts"
+npx -p @austencloud/code-quality ac-deadcode --false-positive "path/to/file.ts"
 ```

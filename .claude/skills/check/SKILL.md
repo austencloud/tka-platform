@@ -7,7 +7,7 @@ description: Analyze TypeScript errors and fix them
 ## Run
 
 ```bash
-set +o onecmd; npx tsc --noEmit
+npx tsc --noEmit
 ```
 
 ## Strategy
