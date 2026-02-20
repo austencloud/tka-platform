@@ -134,10 +134,16 @@
 
   $effect(() => {
     if (showCustomPopover) {
-      setTimeout(() => {
+      let addListenerTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
         document.addEventListener("click", handleDocumentClick);
+        addListenerTimer = null;
       }, 0);
-      return () => document.removeEventListener("click", handleDocumentClick);
+      return () => {
+        if (addListenerTimer !== null) {
+          clearTimeout(addListenerTimer);
+        }
+        document.removeEventListener("click", handleDocumentClick);
+      };
     }
     return undefined;
   });
@@ -339,7 +345,7 @@
       transform: scale(1.02);
       box-shadow:
         0 0 24px color-mix(in srgb, var(--theme-accent) 30%, transparent),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        inset 0 1px 0 var(--theme-stroke);
     }
   }
 
@@ -386,8 +392,8 @@
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 1px 3px var(--theme-shadow),
+      inset 0 1px 0 var(--theme-stroke);
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -397,8 +403,8 @@
       color: var(--theme-text);
       transform: scale(1.05);
       box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.15),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 2px 8px var(--theme-shadow),
+        inset 0 1px 0 var(--theme-stroke);
     }
   }
 
@@ -437,8 +443,8 @@
     -webkit-tap-highlight-color: transparent;
     font-variant-numeric: tabular-nums;
     box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 1px 3px var(--theme-shadow),
+      inset 0 1px 0 var(--theme-stroke);
   }
 
   .preset-chip:active:not(:disabled) {
@@ -449,7 +455,7 @@
   .preset-chip.active {
     background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
-    color: rgba(255, 255, 255, 1);
+    color: white;
     box-shadow:
       0 0 20px color-mix(in srgb, var(--theme-accent) 25%, transparent),
       0 2px 8px color-mix(in srgb, var(--theme-accent) 20%, transparent),
@@ -464,15 +470,15 @@
       color: var(--theme-text);
       transform: translateY(-1px);
       box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.15),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 2px 8px var(--theme-shadow),
+        inset 0 1px 0 var(--theme-stroke);
     }
 
     /* Hover for active chips - maintains accent with enhancement */
     .preset-chip.active:hover {
       background: color-mix(in srgb, var(--theme-accent) 35%, transparent);
       border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
-      color: rgba(255, 255, 255, 1);
+      color: white;
       transform: translateY(-1px);
       box-shadow:
         0 0 24px color-mix(in srgb, var(--theme-accent) 30%, transparent),
@@ -483,7 +489,7 @@
 
   /* Custom chip (compact variant) */
   .custom-chip {
-    font-size: clamp(0.65rem, 2vw, 0.7rem);
+    font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     letter-spacing: 0.2px;
     padding: 10px 6px;
@@ -507,7 +513,7 @@
     padding: 12px;
     min-width: 200px;
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.5),
+      0 8px 32px color-mix(in srgb, black 50%, transparent),
       0 0 0 1px var(--theme-stroke),
       0 0 24px color-mix(in srgb, var(--theme-accent) 50%, transparent);
     animation: popoverSlide var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
@@ -526,7 +532,7 @@
   }
 
   .popover-header {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim, var(--theme-text-dim));
     text-transform: uppercase;
@@ -556,8 +562,8 @@
     transition: all var(--duration-fast) ease;
     font-size: 0.75rem;
     box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 1px 3px var(--theme-shadow),
+      inset 0 1px 0 var(--theme-stroke);
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -567,7 +573,7 @@
       color: white;
       box-shadow:
         0 2px 8px color-mix(in srgb, var(--theme-accent) 20%, transparent),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        inset 0 1px 0 var(--theme-stroke);
     }
   }
 

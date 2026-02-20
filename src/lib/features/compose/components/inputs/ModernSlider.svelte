@@ -131,7 +131,7 @@
   .slider-label {
     font-size: clamp(10px, 2vw, 11px);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     flex: 1;
@@ -257,14 +257,14 @@
     height: clamp(20px, 4vw, 24px);
     background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.98) 0%,
-      rgba(245, 248, 252, 0.98) 100%
+      color-mix(in srgb, white 98%, transparent) 0%,
+      color-mix(in srgb, white 95%, var(--theme-accent)) 100%
     );
     border-radius: 50%;
     box-shadow:
-      0 2px 6px rgba(0, 0, 0, 0.25),
-      0 1px 2px rgba(0, 0, 0, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      0 2px 6px var(--theme-shadow),
+      0 1px 2px var(--theme-shadow),
+      inset 0 1px 0 var(--theme-text);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -288,7 +288,7 @@
     height: 60%;
     background: radial-gradient(
       circle at 30% 30%,
-      rgba(255, 255, 255, 0.7) 0%,
+      color-mix(in srgb, white 70%, transparent) 0%,
       transparent 70%
     );
     border-radius: 50%;
@@ -378,8 +378,8 @@
   /* High contrast */
   @media (prefers-contrast: high) {
     .slider-track {
-      background: rgba(255, 255, 255, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: var(--theme-stroke);
+      border: 1px solid var(--theme-stroke-strong);
     }
 
     .slider-fill {

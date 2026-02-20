@@ -226,6 +226,8 @@
         class:active={getBlueMotion()}
         onclick={toggleBlueMotion}
         type="button"
+        aria-label={getBlueMotion() ? "Hide blue motion" : "Show blue motion"}
+        aria-pressed={getBlueMotion()}
       >
         <i class="fas fa-eye{getBlueMotion() ? '' : '-slash'}" aria-hidden="true"
         ></i>
@@ -236,6 +238,8 @@
         class:active={getRedMotion()}
         onclick={toggleRedMotion}
         type="button"
+        aria-label={getRedMotion() ? "Hide red motion" : "Show red motion"}
+        aria-pressed={getRedMotion()}
       >
         <i class="fas fa-eye{getRedMotion() ? '' : '-slash'}" aria-hidden="true"
         ></i>
@@ -251,6 +255,8 @@
       class:active={getGridEnabled()}
       onclick={toggleGrid}
       type="button"
+      aria-label={getGridEnabled() ? "Hide grid" : "Show grid"}
+      aria-pressed={getGridEnabled()}
     >
       <span>Grid</span>
     </button>
@@ -259,6 +265,8 @@
       class:active={getProps()}
       onclick={toggleProps}
       type="button"
+      aria-label={getProps() ? "Hide props" : "Show props"}
+      aria-pressed={getProps()}
     >
       <span>Props</span>
     </button>
@@ -267,6 +275,8 @@
       class:active={getStepNumbers()}
       onclick={toggleStepNumbers}
       type="button"
+      aria-label={getStepNumbers() ? "Hide beat numbers" : "Show beat numbers"}
+      aria-pressed={getStepNumbers()}
     >
       <span>Beat #</span>
     </button>
@@ -276,6 +286,8 @@
       onclick={toggleTkaGlyph}
       type="button"
       title="TKA Glyph includes turn numbers"
+      aria-label={getTkaGlyph() ? "Hide TKA glyph" : "Show TKA glyph"}
+      aria-pressed={getTkaGlyph()}
     >
       <span>Glyph</span>
     </button>
@@ -285,6 +297,8 @@
       onclick={toggleWordHeader}
       type="button"
       title="Word header above animation"
+      aria-label={getWordHeader() ? "Hide word header" : "Show word header"}
+      aria-pressed={getWordHeader()}
     >
       <span>Word</span>
     </button>
@@ -294,6 +308,8 @@
       onclick={toggleProgressBar}
       type="button"
       title="Progress bar in word header"
+      aria-label={getProgressBar() ? "Hide progress bar" : "Show progress bar"}
+      aria-pressed={getProgressBar()}
     >
       <span>Progress</span>
     </button>
@@ -306,6 +322,8 @@
       class:active={currentTrailStyle === "off"}
       onclick={() => setTrailStyle("off")}
       type="button"
+      aria-label="Turn trails off"
+      aria-pressed={currentTrailStyle === "off"}
     >
       Off
     </button>
@@ -314,6 +332,8 @@
       class:active={currentTrailStyle === "on"}
       onclick={() => setTrailStyle("on")}
       type="button"
+      aria-label="Turn trails on"
+      aria-pressed={currentTrailStyle === "on"}
     >
       On
     </button>
@@ -328,6 +348,8 @@
         onclick={() => setTrackingMode(TrackingMode.LEFT_END)}
         type="button"
         title="Track {endLabels[0]} end only"
+        aria-label="Track {endLabels[0]} end only"
+        aria-pressed={isLeftEnd}
       >
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
         <span>{endLabels[0]}</span>
@@ -338,6 +360,8 @@
         onclick={() => setTrackingMode(TrackingMode.BOTH_ENDS)}
         type="button"
         title="Track both ends"
+        aria-label="Track both ends"
+        aria-pressed={isBothEnds}
       >
         <i class="fas fa-arrows-alt-h" aria-hidden="true"></i>
         <span>Both</span>
@@ -348,6 +372,8 @@
         onclick={() => setTrackingMode(TrackingMode.RIGHT_END)}
         type="button"
         title="Track {endLabels[1]} end only"
+        aria-label="Track {endLabels[1]} end only"
+        aria-pressed={isRightEnd}
       >
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
         <span>{endLabels[1]}</span>

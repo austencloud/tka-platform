@@ -31,11 +31,7 @@
     align-items: center;
     gap: 8px;
     padding: 10px 16px;
-    background: linear-gradient(
-      135deg,
-      rgba(16, 185, 129, 0.9) 0%,
-      rgba(5, 150, 105, 0.9) 100%
-    );
+    background: color-mix(in srgb, var(--semantic-success) 90%, transparent);
     border: none;
     border-radius: 10px;
     color: white;
@@ -43,7 +39,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--semantic-success) 25%, transparent);
     -webkit-tap-highlight-color: transparent;
     min-height: var(--min-touch-target);
     min-width: var(--min-touch-target);
@@ -53,12 +49,8 @@
   @media (hover: hover) and (pointer: fine) {
     .export-btn:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-      background: linear-gradient(
-        135deg,
-        rgba(16, 185, 129, 1) 0%,
-        rgba(5, 150, 105, 1) 100%
-      );
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--semantic-success) 40%, transparent);
+      background: var(--semantic-success);
     }
   }
 

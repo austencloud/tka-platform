@@ -168,7 +168,7 @@
   }
 
   .settings-section-title {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     color: var(--theme-text-dim, var(--theme-text-dim));
     text-transform: uppercase;
@@ -203,21 +203,21 @@
   .visibility-toggle.blue.active {
     background: linear-gradient(
       135deg,
-      rgba(59, 130, 246, 0.2) 0%,
-      rgba(37, 99, 235, 0.15) 100%
+      color-mix(in srgb, var(--prop-blue) 20%, transparent) 0%,
+      color-mix(in srgb, var(--prop-blue) 15%, transparent) 100%
     );
-    border-color: rgba(59, 130, 246, 0.4);
-    color: rgba(191, 219, 254, 1);
+    border-color: color-mix(in srgb, var(--prop-blue) 40%, transparent);
+    color: color-mix(in srgb, var(--prop-blue) 60%, white);
   }
 
   .visibility-toggle.red.active {
     background: linear-gradient(
       135deg,
-      rgba(239, 68, 68, 0.2) 0%,
-      rgba(220, 38, 38, 0.15) 100%
+      color-mix(in srgb, var(--prop-red) 20%, transparent) 0%,
+      color-mix(in srgb, var(--prop-red) 15%, transparent) 100%
     );
-    border-color: rgba(239, 68, 68, 0.4);
-    color: rgba(254, 202, 202, 1);
+    border-color: color-mix(in srgb, var(--prop-red) 40%, transparent);
+    color: color-mix(in srgb, var(--prop-red) 60%, white);
   }
 
   .visibility-toggle:active {
