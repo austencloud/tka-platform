@@ -32,6 +32,7 @@
   import type { ICloudThumbnailCache } from "$lib/features/browse/sequences/display/services/contracts/ICloudThumbnailCache";
   import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
   import type { IThumbnailLocalCache } from "$lib/features/browse/sequences/display/services/contracts/IThumbnailLocalCache";
+  import { tikaPictographCache } from "$lib/features/tika/services/implementations/TikaPictographCache";
   import AdminToolbarDesktop from "./AdminToolbarDesktop.svelte";
   import AdminToolbarMobile from "./AdminToolbarMobile.svelte";
 
@@ -267,6 +268,39 @@
     }
   }
 
+  let isClearingTikaCache = $state(false);
+
+  async function clearTikaPictographCache() {
+    if (isClearingTikaCache) return;
+
+    console.log("🗑️ Starting TIKA pictograph cache clear...");
+    isClearingTikaCache = true;
+    introResetMessage = "Clearing TIKA pictograph cache...";
+
+    try {
+      const stats = await tikaPictographCache.getStats();
+      await tikaPictographCache.clear();
+
+      introResetMessage = `Cleared ${stats.memoryCount + stats.persistedCount} TIKA pictographs`;
+
+      console.log(`✅ Cleared TIKA pictograph cache:
+      - Memory: ${stats.memoryCount} entries
+      - Persisted: ${stats.persistedCount} entries`);
+
+      setTimeout(() => {
+        introResetMessage = null;
+      }, 5000);
+    } catch (error) {
+      console.error("❌ Failed to clear TIKA cache:", error);
+      introResetMessage = `Error: ${error instanceof Error ? error.message : "Unknown"}`;
+      setTimeout(() => {
+        introResetMessage = null;
+      }, 5000);
+    } finally {
+      isClearingTikaCache = false;
+    }
+  }
+
   let isClearingThumbnailCache = $state(false);
 
   async function clearThumbnailLocalCache() {
@@ -360,6 +394,8 @@
     {isClearingThumbnails}
     onClearLocalCache={clearLocalPictographCache}
     {isClearingLocalCache}
+    onClearTikaCache={clearTikaPictographCache}
+    {isClearingTikaCache}
     onClearThumbnailCache={clearThumbnailLocalCache}
     {isClearingThumbnailCache}
     onClose={handleClose}
@@ -389,6 +425,8 @@
     {isClearingThumbnails}
     onClearLocalCache={clearLocalPictographCache}
     {isClearingLocalCache}
+    onClearTikaCache={clearTikaPictographCache}
+    {isClearingTikaCache}
     onClearThumbnailCache={clearThumbnailLocalCache}
     {isClearingThumbnailCache}
     onClose={handleClose}

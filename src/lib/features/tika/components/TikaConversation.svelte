@@ -11,7 +11,6 @@
   import TikaWelcome from "./TikaWelcome.svelte";
   import TikaAssistantMessage from "./TikaAssistantMessage.svelte";
   import TikaInputArea from "./TikaInputArea.svelte";
-  import { tikaPictographCache } from "../services/implementations/TikaPictographCache";
   import { tikaMessageExtractor } from "../services/implementations/TikaMessageExtractor";
   import type { ModelOption } from "../types";
   import type { ReviewStatus, ReviewMetadata } from "../domain/models/tika-conversation-models";
@@ -86,11 +85,6 @@
     );
   }
 
-  // Clear pictograph cache and refresh
-  async function clearPictographCache(): Promise<void> {
-    await tikaPictographCache.clear();
-    window.location.reload();
-  }
 </script>
 
 <div class="conversation-panel">
@@ -111,7 +105,6 @@
     {showToolDetails}
     onToggleToolDetails={() => (showToolDetails = !showToolDetails)}
     {generateCopyForAI}
-    onClearCache={clearPictographCache}
   />
 
   <!-- Chat Messages -->

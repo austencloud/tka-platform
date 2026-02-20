@@ -43,6 +43,8 @@
     isClearingThumbnails: boolean;
     onClearLocalCache: () => void;
     isClearingLocalCache: boolean;
+    onClearTikaCache: () => void;
+    isClearingTikaCache: boolean;
     onClearThumbnailCache: () => void;
     isClearingThumbnailCache: boolean;
     onClose: () => void;
@@ -70,6 +72,8 @@
     isClearingThumbnails,
     onClearLocalCache,
     isClearingLocalCache,
+    onClearTikaCache,
+    isClearingTikaCache,
     onClearThumbnailCache,
     isClearingThumbnailCache,
     onClose,
@@ -104,6 +108,11 @@
 
   function handleClearLocalCache() {
     onClearLocalCache();
+    isActionsOpen = false;
+  }
+
+  function handleClearTikaCache() {
+    onClearTikaCache();
     isActionsOpen = false;
   }
 
@@ -293,6 +302,21 @@
               {:else}
                 <i class="fas fa-database" aria-hidden="true"></i>
                 <span>Clear Pictograph Cache</span>
+              {/if}
+            </button>
+
+            <button
+              type="button"
+              class="dropdown-item danger"
+              onclick={handleClearTikaCache}
+              disabled={isClearingTikaCache}
+            >
+              {#if isClearingTikaCache}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                <span>Clearing...</span>
+              {:else}
+                <i class="fas fa-robot" aria-hidden="true"></i>
+                <span>Clear TIKA Pictograph Cache</span>
               {/if}
             </button>
 

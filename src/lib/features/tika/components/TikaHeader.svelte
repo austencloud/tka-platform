@@ -27,7 +27,6 @@
     showToolDetails = false,
     onToggleToolDetails,
     generateCopyForAI,
-    onClearCache,
   }: {
     reviewStatus?: ReviewStatus;
     reviewMetadata?: ReviewMetadata;
@@ -45,7 +44,6 @@
     showToolDetails?: boolean;
     onToggleToolDetails?: () => void;
     generateCopyForAI?: () => string;
-    onClearCache?: () => void;
   } = $props();
 
   // Derived: review badge display
@@ -170,16 +168,6 @@
     <!-- Secondary Actions: In overflow menu -->
     <TikaActionMenu
       actions={[
-        ...(onClearCache
-          ? [
-              {
-                id: "refresh",
-                label: "Clear cache & refresh",
-                icon: "fa-sync-alt",
-                onClick: onClearCache,
-              },
-            ]
-          : []),
         ...(hasMessages && onToggleToolDetails
           ? [
               {
