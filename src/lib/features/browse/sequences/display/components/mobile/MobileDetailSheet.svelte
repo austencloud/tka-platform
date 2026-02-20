@@ -13,6 +13,7 @@
   import { onMount } from "svelte";
   import AvatarImage from "../../../../creators/components/profile/AvatarImage.svelte";
   import SequenceVideosSection from "$lib/shared/video-collaboration/components/SequenceVideosSection.svelte";
+  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   const {
     sequence,
@@ -175,7 +176,7 @@
 
   <!-- Peek content: Word label -->
   <div class="peek-content">
-    <h2 class="word-label">{sequence.name || sequence.word}</h2>
+    <h2 class="word-label">{simplifyRepeatedWord(sequence.word || sequence.name || "")}</h2>
     <div class="peek-meta">
       <span class="meta-item">{sequence.sequenceLength} steps</span>
       <span class="meta-separator">•</span>

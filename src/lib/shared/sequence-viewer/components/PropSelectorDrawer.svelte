@@ -78,7 +78,7 @@
     if (!open) handleDrawerClose();
   }}
 >
-  <div class="drawer-content">
+  <div class="prop-drawer-body">
     <!-- Header -->
     <div class="drawer-header">
       <h3 class="drawer-title">Select Props</h3>
@@ -150,7 +150,10 @@
 <style>
   /* Drawer sizing - must be a definite height so .drawer-inner (flex:1) resolves correctly */
   :global(.prop-selector-drawer[data-placement="bottom"]) {
-    height: 85vh;
+    height: fit-content;
+    max-height: 85vh;
+    min-height: 0 !important; /* Override base 50vh min */
+    width: 100%;
     /* Center on desktop with a max width that suits the bento grid */
     max-width: 480px;
     left: 50% !important;
@@ -167,7 +170,7 @@
     transform: translate(-50%, 100%);
   }
 
-  .drawer-content {
+  .prop-drawer-body {
     display: flex;
     flex-direction: column;
     height: 100%;

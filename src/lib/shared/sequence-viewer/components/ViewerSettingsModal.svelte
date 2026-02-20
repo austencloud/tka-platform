@@ -126,8 +126,35 @@
 <style>
   /* Modal sizing - xl is good for desktop, full-screen on mobile via modal-tokens.css */
   :global(dialog.viewer-settings-modal.base-modal) {
-    /* Override xl max-height for more vertical space */
     max-height: 92vh;
+  }
+
+  /* Fix: xl modals in BaseModal don't get height:100% on wrapper or flex:1 on body.
+     This makes the modal body fill available space so descendants can flex-fill too. */
+  :global(dialog.viewer-settings-modal .modal-content-wrapper) {
+    height: 100%;
+  }
+
+  :global(dialog.viewer-settings-modal .modal-body) {
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Desktop: constrain preview frames to fit without scrolling.
+     The three visibility panels sit side-by-side, each with a square preview + controls.
+     Without this, preview frames demand 280×280px via aspect-ratio:1, which overflows
+     on viewports shorter than ~935px (common on laptops).
+
+     Formula: 92vh (modal) minus ~580px of non-preview content:
+       header (~80px) + prop section (~110px) + panel overhead (~140px) + controls (~250px)
+
+     The preview stays square because both max-height and max-width use the same value.
+     On mobile (< 768px), panels show one at a time — no constraint needed. */
+  @media (min-width: 768px) {
+    :global(dialog.viewer-settings-modal .preview-frame) {
+      max-height: clamp(100px, calc(92vh - 580px), 280px);
+      max-width: clamp(100px, calc(92vh - 580px), 280px);
+    }
   }
 
   /* Ensure prop selector drawer sits above the modal */
@@ -186,15 +213,17 @@
     outline-offset: 2px;
   }
 
-  /* Body */
+  /* Body - fills modal body via flex, distributes space to visibility section */
   .settings-modal-body {
     display: flex;
     flex-direction: column;
-    gap: 0;
+    height: 100%;
+    min-height: 0;
   }
 
-  /* Prop selector section */
+  /* Prop selector section - fixed height, never shrinks */
   .prop-section {
+    flex-shrink: 0;
     padding: 16px 20px;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
@@ -269,8 +298,10 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
-  /* Visibility section */
+  /* Visibility section - takes remaining vertical space after prop section */
   .visibility-section {
+    flex: 1;
+    min-height: 0;
     padding: 4px 0;
   }
 

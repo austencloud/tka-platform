@@ -596,7 +596,6 @@
     aria-label={ariaLabel}
     aria-describedby={describedBy}
     oncancel={handleDialogCancel}
-    oncontextmenu={(e) => { e.preventDefault(); return false; }}
     style:z-index={stackZIndex}
     style:transform={computedTransform || undefined}
     style:transition={isDragging ? "none" : ""}
