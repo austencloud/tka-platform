@@ -31,6 +31,7 @@ import type {
 
 import { ArrangeGridSerializer } from "../services/implementations/ArrangeGridSerializer";
 import { ArrangeCompositionConverter } from "../services/implementations/ArrangeCompositionConverter";
+import { compositionSyncer } from "../../../services/implementations/CompositionSyncer";
 import { dexieCompositionRepository } from "../../../services/implementations/DexieCompositionRepository";
 
 // Maximum backing array dimensions (8x8 = 64 cells)
@@ -736,19 +737,26 @@ function createArrangeGridState() {
 
     suggestCompositionName(): string {
       const visible = cells.filter((c) => c.row < gridRows && c.col < gridCols);
-      const cellCount = gridRows * gridCols;
+      const populatedCount = visible.filter((c) => c.layers.length > 0).length;
       const words = new Set<string>();
       for (const cell of visible) {
         for (const layer of cell.layers) {
           const word = layer.sequence.intendedWord || layer.sequence.word;
-          if (word) words.add(word);
+          if (word) words.add(word.length > 12 ? word.slice(0, 12) : word);
         }
       }
-      if (words.size === 0) return `${cellCount}-cell composition`;
-      if (words.size === 1) return `${[...words][0]!} (${cellCount} cells)`;
-      const wordList = [...words].slice(0, 3).join(" + ");
-      const suffix = words.size > 3 ? " + ..." : "";
-      return `${wordList}${suffix} (${cellCount} cells)`;
+
+      const layoutDesc = `${gridCols}x${gridRows}`;
+
+      if (words.size === 0) return `${layoutDesc} Composition`;
+      if (words.size === 1) {
+        const word = [...words][0]!;
+        if (populatedCount === 1) return word;
+        return `${word} ${layoutDesc}`;
+      }
+      const wordList = [...words].slice(0, 3).join(", ");
+      const suffix = words.size > 3 ? " +" : "";
+      return `${wordList}${suffix} (${layoutDesc})`;
     },
 
     serializeState(): string {
@@ -763,7 +771,7 @@ function createArrangeGridState() {
       const converter = new ArrangeCompositionConverter();
       const snapshot = $state.snapshot(cells) as GridCell[];
       const composition = converter.gridCellsToComposition(id, name, { cells: snapshot, gridRows, gridCols, bpm: playbackBpm, skipStartPosition });
-      await dexieCompositionRepository.saveComposition(composition);
+      await compositionSyncer.saveComposition(composition);
       return id;
     },
 
@@ -787,11 +795,11 @@ function createArrangeGridState() {
     },
 
     async getSavedCompositions(): Promise<Composition[]> {
-      return dexieCompositionRepository.getCompositions({ sortBy: "updatedAt", sortDirection: "desc" });
+      return compositionSyncer.getCompositions();
     },
 
     async deleteSavedComposition(id: string): Promise<void> {
-      await dexieCompositionRepository.deleteComposition(id);
+      await compositionSyncer.deleteComposition(id);
     },
 
     reset() {

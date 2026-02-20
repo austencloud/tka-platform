@@ -226,6 +226,7 @@
     flex-shrink: 0;
     padding: 16px 20px;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    flex-shrink: 0;
   }
 
   .section-label-row {
@@ -303,6 +304,16 @@
     flex: 1;
     min-height: 0;
     padding: 4px 0;
+
+    /* Signal to VisibilityTab: fill parent height */
+    --vt-height: 100%;
+    --vt-container-flex-grow: 1;
+    --vt-container-min-h: 0px;
+    /* Signal to panels: previews shrink, controls don't */
+    --vt-panel-min-h: 0px;
+    --vt-preview-min-h: 60px;
+    --vt-header-shrink: 0;
+    --vt-controls-shrink: 0;
   }
 
   @media (prefers-reduced-motion: reduce) {

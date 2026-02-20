@@ -162,6 +162,7 @@
     /* Take equal width but don't stretch height */
     flex: 1 1 0;
     min-width: 0;
+    min-height: var(--vt-panel-min-h, auto);
     transition:
       background 0.2s ease,
       border-color 0.2s ease,
@@ -183,6 +184,7 @@
     align-items: center;
     gap: clamp(6px, 1.5cqi, 10px);
     width: 100%;
+    flex-shrink: var(--vt-header-shrink, 1);
   }
 
   .panel-icon {
@@ -228,11 +230,11 @@
     border-radius: clamp(10px, 2cqi, 14px);
     border: 1px solid var(--theme-stroke);
     overflow: hidden;
-    /* Fixed size preview - don't grow */
     width: 100%;
     aspect-ratio: 1;
     max-width: 280px;
     box-shadow: inset 0 2px 8px var(--theme-shadow);
+    min-height: var(--vt-preview-min-h, auto);
   }
 
   /* Make pictograph fill the preview frame */
@@ -256,6 +258,7 @@
     width: 100%;
     /* Push controls to bottom when panel is stretched */
     margin-top: auto;
+    flex-shrink: var(--vt-controls-shrink, 1);
   }
 
   .control-group {

@@ -106,7 +106,6 @@
     background: rgba(0, 0, 0, 0.2);
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(8px);
     overflow: hidden;
   }
 

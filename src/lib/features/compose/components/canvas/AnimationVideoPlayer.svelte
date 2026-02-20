@@ -21,6 +21,8 @@
   } from "../../services/contracts/IVideoPreRenderer";
   import { getVideoPlayer } from "../../services/implementations/VideoPlayer";
   import { getVideoGenerationCoordinator } from "../../services/implementations/VideoGenerationCoordinator";
+  import { container } from "$lib/shared/di";
+  import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
   import VideoGenerationStatus from "../video-player/VideoGenerationStatus.svelte";
   import VideoReadyNotification from "../video-player/VideoReadyNotification.svelte";
   import GenerateVideoButton from "../video-player/GenerateVideoButton.svelte";
@@ -55,6 +57,10 @@
   // Services
   const playbackService = getVideoPlayer();
   const generationCoordinator = getVideoGenerationCoordinator();
+  const errorHandler = container.items.errorHandler as IErrorHandler;
+
+  // Timer refs for cleanup
+  let switchToVideoTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Check for cached video on mount
   onMount(async () => {
@@ -74,6 +80,9 @@
     playbackService.dispose();
     if (videoResult?.blobUrl) {
       URL.revokeObjectURL(videoResult.blobUrl);
+    }
+    if (switchToVideoTimer !== null) {
+      clearTimeout(switchToVideoTimer);
     }
   });
 
@@ -154,7 +163,16 @@
       videoResult = result;
       onVideoReady(result);
     } catch (error) {
-      console.error("Video generation error:", error);
+      errorHandler.showUserError({
+        message: "Video generation failed. Try again or use live preview.",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "compose",
+          action: "generateVideo",
+        },
+      });
     } finally {
       isGeneratingVideo = false;
       videoProgress = null;
@@ -172,11 +190,13 @@
       playbackMode = "video";
       onModeChange("video");
       // Auto-play video when switching to video mode
-      setTimeout(() => {
+      if (switchToVideoTimer !== null) clearTimeout(switchToVideoTimer);
+      switchToVideoTimer = setTimeout(() => {
         if (videoElement) {
           playbackService.seek(0);
           playbackService.play();
         }
+        switchToVideoTimer = null;
       }, 50);
     }
   }
@@ -206,11 +226,20 @@
   function handleVideoError(event: Event) {
     const video = event.target as HTMLVideoElement;
     const error = video.error;
-    console.error("Video playback error:", {
-      code: error?.code,
-      message: error?.message,
-      blobUrl: videoResult?.blobUrl,
-      videoSize: videoResult?.videoBlob?.size,
+    errorHandler.showUserError({
+      message: "Video playback failed. Try switching to live preview.",
+      technicalDetails: `code: ${error?.code}, message: ${error?.message}, blobUrl: ${videoResult?.blobUrl}, size: ${videoResult?.videoBlob?.size}`,
+      error: error ? new Error(error.message) : new Error("Unknown video playback error"),
+      severity: "error",
+      context: {
+        module: "compose",
+        action: "videoPlayback",
+        additionalData: {
+          code: error?.code,
+          blobUrl: videoResult?.blobUrl,
+          videoSize: videoResult?.videoBlob?.size,
+        },
+      },
     });
   }
 

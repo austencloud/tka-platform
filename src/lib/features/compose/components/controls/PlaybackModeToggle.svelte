@@ -5,6 +5,7 @@
   Used in settings sheets and panels.
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import type { PlaybackMode } from "../../state/animation-panel-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -20,6 +21,8 @@
     onPlaybackToggle?: () => void;
   } = $props();
 
+  let nextTickTimer: ReturnType<typeof setTimeout> | null = null;
+
   function handleModeChange(mode: PlaybackMode) {
     if (mode === playbackMode) return;
 
@@ -29,9 +32,17 @@
     }
     onPlaybackModeChange(mode);
     if (wasPlaying) {
-      setTimeout(() => onPlaybackToggle(), 0);
+      if (nextTickTimer !== null) clearTimeout(nextTickTimer);
+      nextTickTimer = setTimeout(() => {
+        onPlaybackToggle();
+        nextTickTimer = null;
+      }, 0);
     }
   }
+
+  onDestroy(() => {
+    if (nextTickTimer !== null) clearTimeout(nextTickTimer);
+  });
 </script>
 
 <div class="mode-toggle">

@@ -593,6 +593,135 @@
       "overallGrade": "A+",
       "notes": "Re-evaluation after fixes. All hardcoded colors replaced with semantic tokens, any-types eliminated,  cleanup added, vote error now surfaces to user.",
       "issues": []
+    },
+    "features/arena/components": {
+      "lastAuditedAt": "2026-02-19T02:49:22.430Z",
+      "name": "Arena Components",
+      "type": "components",
+      "grades": {
+        "architecture": "A+",
+        "codeQuality": "A+",
+        "svelte5": "A+",
+        "accessibility": "A+",
+        "uxStates": "A+",
+        "uiConsistency": "A+",
+        "performance": "A+",
+        "security": "A+"
+      },
+      "overallGrade": "A+",
+      "notes": null,
+      "issues": [
+        {
+          "severity": "moderate",
+          "dimension": "uxStates",
+          "file": "src/lib/features/arena/components/leaderboard/ArenaLeaderboardView.svelte",
+          "line": 51,
+          "description": "handleSelect is a stub that only console.logs; navigation is future work."
+        }
+      ]
+    },
+    "features/compose/components": {
+      "lastAuditedAt": "2026-02-19T03:34:22.435Z",
+      "name": "Compose Components",
+      "type": "components",
+      "grades": {
+        "architecture": "A+",
+        "codeQuality": "A+",
+        "svelte5": "A+",
+        "accessibility": "C",
+        "uxStates": "C",
+        "uiConsistency": "F",
+        "performance": "A+",
+        "security": "A+"
+      },
+      "overallGrade": "B",
+      "notes": null,
+      "issues": [
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "src/lib/features/compose/components/controls/PlaybackModeToggle.svelte",
+          "line": 109,
+          "description": "6 hardcoded rgba yellow-accent values"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "src/lib/features/compose/components/controls/QuickBpmPresets.svelte",
+          "line": 81,
+          "description": "8 hardcoded rgba purple-accent values"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "src/lib/features/compose/components/inputs/MobileToolViewToggle.svelte",
+          "line": 61,
+          "description": "7 hardcoded rgba purple-accent values"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "src/lib/features/compose/components/inputs/ExpandToggleButton.svelte",
+          "line": 57,
+          "description": "4 hardcoded rgba purple-accent values"
+        },
+        {
+          "severity": "critical",
+          "dimension": "uiConsistency",
+          "file": "src/lib/features/compose/components/controls/StepModeSettings.svelte",
+          "line": 57,
+          "description": "4 hardcoded rgba yellow-accent values"
+        },
+        {
+          "severity": "critical",
+          "dimension": "accessibility",
+          "file": "src/lib/features/compose/components/video-player/PlaybackModeToggle.svelte",
+          "line": 28,
+          "description": "Live and Video buttons missing aria-label and type=button"
+        },
+        {
+          "severity": "serious",
+          "dimension": "accessibility",
+          "file": "src/lib/features/compose/components/controls/settings-panel/PlaybackPane.svelte",
+          "line": 61,
+          "description": "4 mode buttons missing aria-label"
+        },
+        {
+          "severity": "serious",
+          "dimension": "accessibility",
+          "file": "src/lib/features/compose/components/controls/settings-panel/ModeTabBar.svelte",
+          "line": 28,
+          "description": "Tab buttons have aria-pressed but no aria-label"
+        },
+        {
+          "severity": "serious",
+          "dimension": "accessibility",
+          "file": "src/lib/features/compose/components/canvas/ExportActionsPanel.svelte",
+          "line": 193,
+          "description": "font-size 0.7rem below 12px minimum"
+        },
+        {
+          "severity": "serious",
+          "dimension": "accessibility",
+          "file": "src/lib/features/compose/components/controls/BpmChips.svelte",
+          "line": 627,
+          "description": "font-size 0.7rem below 12px minimum"
+        },
+        {
+          "severity": "serious",
+          "dimension": "uiConsistency",
+          "file": "src/lib/features/compose/components/video-player/VideoGenerationStatus.svelte",
+          "line": 52,
+          "description": "5 hardcoded overlay rgba values"
+        },
+        {
+          "severity": "serious",
+          "dimension": "uiConsistency",
+          "file": "src/lib/features/compose/components/canvas/AnimationCanvas.svelte",
+          "line": 106,
+          "description": "2 hardcoded overlay colors"
+        }
+      ]
     }
   },
   "targets": [],

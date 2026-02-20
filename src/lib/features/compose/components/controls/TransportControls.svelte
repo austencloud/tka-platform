@@ -9,6 +9,8 @@
   - Full beat forward (>>)
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
+
   let {
     isPlaying = false,
     stepGlowMs = 500,
@@ -36,8 +38,12 @@
     if (!stepGlowMs) return;
     if (glowTimer) clearTimeout(glowTimer);
     glowingBtn = btn;
-    glowTimer = setTimeout(() => { glowingBtn = null; }, stepGlowMs);
+    glowTimer = setTimeout(() => { glowingBtn = null; glowTimer = null; }, stepGlowMs);
   }
+
+  onDestroy(() => {
+    if (glowTimer !== null) clearTimeout(glowTimer);
+  });
 </script>
 
 <div class="transport-controls">

@@ -372,6 +372,10 @@
     opacity: 0;
     transition: opacity var(--duration-normal) ease;
     box-sizing: border-box;
+
+    /* In modal context, --vt-height is set to 100% so the tab fills its parent.
+       In settings page context, defaults to auto (content-driven). */
+    height: var(--vt-height, auto);
   }
 
   .visibility-tab.visible {
@@ -397,6 +401,11 @@
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
+
+    /* In modal context, grow to fill available height.
+       In settings page context, defaults to content-driven. */
+    flex-grow: var(--vt-container-flex-grow, 0);
+    min-height: var(--vt-container-min-h, auto);
   }
 
   /* Desktop: Side by side - all panels match tallest panel's height */

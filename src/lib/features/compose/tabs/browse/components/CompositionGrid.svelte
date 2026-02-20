@@ -34,8 +34,13 @@
 
 	const layoutCalculator = container?.items?.compositionLayoutCalculator as ICompositionLayoutCalculator | undefined;
 
+	// Don't use more columns than compositions (avoids tiny cards when only 1-2 exist)
+	const effectiveColumns = $derived(
+		Math.min(columnCount, Math.max(1, compositions.length))
+	);
+
 	const cardSizes = $derived(
-		layoutCalculator?.calculateCardSizes(compositions, columnCount) ??
+		layoutCalculator?.calculateCardSizes(compositions, effectiveColumns) ??
 			new Map<string, CardSize>()
 	);
 
@@ -67,7 +72,7 @@
 <div
 	bind:this={gridEl}
 	class="composition-grid"
-	style="--col-count: {columnCount}"
+	style="--col-count: {effectiveColumns}"
 >
 	{#if isLoading}
 		<!-- Skeleton loading -->
@@ -111,10 +116,11 @@
 <style>
 	.composition-grid {
 		display: grid;
-		grid-template-columns: repeat(var(--col-count, 3), 1fr);
-		gap: 12px;
+		grid-template-columns: repeat(var(--col-count, 3), minmax(0, 400px));
+		gap: 16px;
 		padding: 4px;
 		container-type: inline-size;
+		justify-content: center;
 	}
 
 	/* Skeleton cards */

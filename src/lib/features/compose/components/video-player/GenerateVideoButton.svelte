@@ -12,7 +12,12 @@
   } = $props();
 </script>
 
-<button class="generate-video-btn" onclick={onGenerate}>
+<button
+  class="generate-video-btn"
+  onclick={onGenerate}
+  type="button"
+  aria-label="Generate video for this sequence"
+>
   Generate Video
 </button>
 
@@ -21,10 +26,9 @@
     position: absolute;
     bottom: 12px;
     right: 12px;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1px solid var(--theme-stroke);
+    color: var(--theme-text);
     padding: 14px 20px;
     min-height: var(--min-touch-target);
     border-radius: 10px;
@@ -36,8 +40,8 @@
   }
 
   .generate-video-btn:hover {
-    background: rgba(0, 0, 0, 0.85);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
   }
 
   .generate-video-btn:focus-visible {

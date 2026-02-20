@@ -54,7 +54,7 @@
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.1),
+      0 1px 3px var(--theme-shadow),
       inset 0 1px 0 var(--theme-card-bg);
     flex-shrink: 0;
   }
@@ -75,28 +75,28 @@
   .vis-btn.active.blue-vis-btn {
     background: linear-gradient(
       135deg,
-      rgba(59, 130, 246, 0.25) 0%,
-      rgba(37, 99, 235, 0.2) 100%
+      color-mix(in srgb, var(--prop-blue) 25%, transparent) 0%,
+      color-mix(in srgb, var(--prop-blue) 20%, transparent) 100%
     );
-    border-color: rgba(59, 130, 246, 0.5);
-    color: rgba(191, 219, 254, 1);
+    border-color: color-mix(in srgb, var(--prop-blue) 50%, transparent);
+    color: color-mix(in srgb, var(--prop-blue) 60%, white);
     box-shadow:
-      0 2px 12px rgba(59, 130, 246, 0.2),
-      0 0 16px rgba(59, 130, 246, 0.15),
+      0 2px 12px color-mix(in srgb, var(--prop-blue) 20%, transparent),
+      0 0 16px color-mix(in srgb, var(--prop-blue) 15%, transparent),
       inset 0 1px 0 var(--theme-stroke);
   }
 
   .vis-btn.active.red-vis-btn {
     background: linear-gradient(
       135deg,
-      rgba(239, 68, 68, 0.25) 0%,
-      rgba(220, 38, 38, 0.2) 100%
+      color-mix(in srgb, var(--prop-red) 25%, transparent) 0%,
+      color-mix(in srgb, var(--prop-red) 20%, transparent) 100%
     );
-    border-color: rgba(239, 68, 68, 0.5);
-    color: rgba(254, 202, 202, 1);
+    border-color: color-mix(in srgb, var(--prop-red) 50%, transparent);
+    color: color-mix(in srgb, var(--prop-red) 60%, white);
     box-shadow:
-      0 2px 12px rgba(239, 68, 68, 0.2),
-      0 0 16px rgba(239, 68, 68, 0.15),
+      0 2px 12px color-mix(in srgb, var(--prop-red) 20%, transparent),
+      0 0 16px color-mix(in srgb, var(--prop-red) 15%, transparent),
       inset 0 1px 0 var(--theme-stroke);
   }
 

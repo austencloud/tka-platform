@@ -8,6 +8,7 @@
   - "compact": Shows only preset chips with a "Custom" popover for fine adjustment
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Constants
@@ -32,7 +33,7 @@
 
   // Tap tempo state (full variant only)
   let tapTimes: number[] = $state([]);
-  let tapTimeout: number | null = null;
+  let tapTimeout: ReturnType<typeof setTimeout> | null = null;
   const TAP_TIMEOUT_MS = 2000;
   const MAX_TAP_HISTORY = 8;
 
@@ -94,8 +95,12 @@
 
     tapTimeout = setTimeout(() => {
       tapTimes = [];
-    }, TAP_TIMEOUT_MS) as unknown as number;
+    }, TAP_TIMEOUT_MS);
   }
+
+  onDestroy(() => {
+    if (tapTimeout !== null) clearTimeout(tapTimeout);
+  });
 
   // Custom popover toggle (compact variant)
   function toggleCustomPopover() {
@@ -129,10 +134,16 @@
 
   $effect(() => {
     if (showCustomPopover) {
-      setTimeout(() => {
+      let addListenerTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
         document.addEventListener("click", handleDocumentClick);
+        addListenerTimer = null;
       }, 0);
-      return () => document.removeEventListener("click", handleDocumentClick);
+      return () => {
+        if (addListenerTimer !== null) {
+          clearTimeout(addListenerTimer);
+        }
+        document.removeEventListener("click", handleDocumentClick);
+      };
     }
     return undefined;
   });
@@ -316,32 +327,32 @@
     justify-content: center;
     padding: 8px 20px;
     min-width: 80px;
-    background: rgba(139, 92, 246, 0.15);
-    border: 1.5px solid rgba(139, 92, 246, 0.3);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
     border-radius: 12px;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
     box-shadow:
-      0 0 20px rgba(139, 92, 246, 0.2),
+      0 0 20px color-mix(in srgb, var(--theme-accent) 20%, transparent),
       inset 0 1px 0 var(--theme-stroke);
     -webkit-tap-highlight-color: transparent;
   }
 
   @media (hover: hover) and (pointer: fine) {
     .current-bpm:hover {
-      background: rgba(139, 92, 246, 0.2);
-      border-color: rgba(139, 92, 246, 0.4);
+      background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+      border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
       transform: scale(1.02);
       box-shadow:
-        0 0 24px rgba(139, 92, 246, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        0 0 24px color-mix(in srgb, var(--theme-accent) 30%, transparent),
+        inset 0 1px 0 var(--theme-stroke);
     }
   }
 
   .current-bpm:active {
     transform: scale(0.98);
-    background: rgba(139, 92, 246, 0.25);
-    border-color: rgba(139, 92, 246, 0.5);
+    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
   }
 
   .bpm-value {
@@ -353,7 +364,7 @@
   }
 
   .bpm-label {
-    font-size: 0.6rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim, var(--theme-text-dim));
     text-transform: uppercase;
@@ -381,8 +392,8 @@
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 1px 3px var(--theme-shadow),
+      inset 0 1px 0 var(--theme-stroke);
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -392,8 +403,8 @@
       color: var(--theme-text);
       transform: scale(1.05);
       box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.15),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 2px 8px var(--theme-shadow),
+        inset 0 1px 0 var(--theme-stroke);
     }
   }
 
@@ -432,8 +443,8 @@
     -webkit-tap-highlight-color: transparent;
     font-variant-numeric: tabular-nums;
     box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 1px 3px var(--theme-shadow),
+      inset 0 1px 0 var(--theme-stroke);
   }
 
   .preset-chip:active:not(:disabled) {
@@ -442,16 +453,12 @@
 
   /* Active (selected) state */
   .preset-chip.active {
-    background: linear-gradient(
-      135deg,
-      rgba(139, 92, 246, 0.3) 0%,
-      rgba(124, 58, 237, 0.25) 100%
-    );
-    border-color: rgba(139, 92, 246, 0.5);
-    color: rgba(255, 255, 255, 1);
+    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    color: white;
     box-shadow:
-      0 0 20px rgba(139, 92, 246, 0.25),
-      0 2px 8px rgba(139, 92, 246, 0.2),
+      0 0 20px color-mix(in srgb, var(--theme-accent) 25%, transparent),
+      0 2px 8px color-mix(in srgb, var(--theme-accent) 20%, transparent),
       inset 0 1px 0 var(--theme-stroke);
   }
 
@@ -463,30 +470,26 @@
       color: var(--theme-text);
       transform: translateY(-1px);
       box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.15),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 2px 8px var(--theme-shadow),
+        inset 0 1px 0 var(--theme-stroke);
     }
 
-    /* Hover for active chips - maintains purple with enhancement */
+    /* Hover for active chips - maintains accent with enhancement */
     .preset-chip.active:hover {
-      background: linear-gradient(
-        135deg,
-        rgba(139, 92, 246, 0.35) 0%,
-        rgba(124, 58, 237, 0.3) 100%
-      );
-      border-color: rgba(139, 92, 246, 0.6);
-      color: rgba(255, 255, 255, 1);
+      background: color-mix(in srgb, var(--theme-accent) 35%, transparent);
+      border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
+      color: white;
       transform: translateY(-1px);
       box-shadow:
-        0 0 24px rgba(139, 92, 246, 0.3),
-        0 4px 12px rgba(139, 92, 246, 0.25),
+        0 0 24px color-mix(in srgb, var(--theme-accent) 30%, transparent),
+        0 4px 12px color-mix(in srgb, var(--theme-accent) 25%, transparent),
         inset 0 1px 0 var(--theme-card-hover-bg);
     }
   }
 
   /* Custom chip (compact variant) */
   .custom-chip {
-    font-size: clamp(0.65rem, 2vw, 0.7rem);
+    font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     letter-spacing: 0.2px;
     padding: 10px 6px;
@@ -501,16 +504,15 @@
     position: fixed;
     transform: translate(-50%, -100%);
     z-index: 9999;
-    background: rgba(139, 92, 246, 0.95);
-    border: 2px solid rgba(139, 92, 246, 0.8);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 2px solid color-mix(in srgb, var(--theme-accent) 80%, transparent);
     border-radius: 16px;
     padding: 12px;
     min-width: 200px;
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.5),
+      0 8px 32px color-mix(in srgb, black 50%, transparent),
       0 0 0 1px var(--theme-stroke),
-      0 0 24px rgba(139, 92, 246, 0.5);
-    backdrop-filter: blur(20px);
+      0 0 24px color-mix(in srgb, var(--theme-accent) 50%, transparent);
     animation: popoverSlide var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: auto;
   }
@@ -527,7 +529,7 @@
   }
 
   .popover-header {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim, var(--theme-text-dim));
     text-transform: uppercase;
@@ -557,24 +559,24 @@
     transition: all var(--duration-fast) ease;
     font-size: 0.75rem;
     box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 1px 3px var(--theme-shadow),
+      inset 0 1px 0 var(--theme-stroke);
   }
 
   @media (hover: hover) and (pointer: fine) {
     .popover-btn:hover:not(:disabled) {
-      background: rgba(139, 92, 246, 0.2);
-      border-color: rgba(139, 92, 246, 0.4);
+      background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+      border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
       color: white;
       box-shadow:
-        0 2px 8px rgba(139, 92, 246, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 2px 8px color-mix(in srgb, var(--theme-accent) 20%, transparent),
+        inset 0 1px 0 var(--theme-stroke);
     }
   }
 
   .popover-btn:active:not(:disabled) {
     transform: scale(0.93);
-    background: rgba(139, 92, 246, 0.25);
+    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
   }
 
   .popover-btn:disabled {
@@ -589,8 +591,8 @@
     align-items: center;
     justify-content: center;
     padding: 8px 12px;
-    background: rgba(139, 92, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.2);
+    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 20%, transparent);
     border-radius: 10px;
   }
 
@@ -603,7 +605,7 @@
   }
 
   .bpm-unit {
-    font-size: 0.55rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim, var(--theme-text-dim));
     text-transform: uppercase;
