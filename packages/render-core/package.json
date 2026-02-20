@@ -4,10 +4,10 @@
   "description": "Pure TypeScript calculation module for TKA pictograph rendering. Shared between browser and Node.js.",
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "default": "./dist/index.js"
     }
   },

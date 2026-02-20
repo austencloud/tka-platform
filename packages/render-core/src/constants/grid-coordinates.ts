@@ -2,7 +2,10 @@
  * Grid coordinate data for pictograph rendering
  *
  * Coordinates are in the 950x950 scene coordinate system with center at (475, 475).
- * This is the single source of truth for all grid positioning.
+ * All values use "strict" coordinates that match the browser renderer's
+ * ArrowGridCoordinator. The browser uses strict points (snapped to cleaner values
+ * like ±150 from center) rather than normal points (±143.1 from center).
+ * Arrow adjustment JSON values were calibrated against these strict coordinates.
  */
 
 import type { Coordinates, GridLocation, GridMode } from "../types.js";
@@ -12,14 +15,15 @@ import type { Coordinates, GridLocation, GridMode } from "../types.js";
 // ============================================================================
 
 /**
- * Diamond grid coordinates (cardinal hand points)
- * Hand points are where props are placed for N/E/S/W positions
+ * Diamond grid coordinates (cardinal hand points) - STRICT values
+ * Hand points are where props are placed for N/E/S/W positions.
+ * Uses strict coordinates (±150 from center) matching the browser renderer.
  */
 export const DIAMOND_HAND_POINTS: Record<GridLocation, Coordinates | null> = {
-  n: { x: 475.0, y: 331.9 },
-  e: { x: 618.1, y: 475.0 },
-  s: { x: 475.0, y: 618.1 },
-  w: { x: 331.9, y: 475.0 },
+  n: { x: 475.0, y: 325.0 },
+  e: { x: 625.0, y: 475.0 },
+  s: { x: 475.0, y: 625.0 },
+  w: { x: 325.0, y: 475.0 },
   // Intercardinal not used in diamond mode for hand points
   ne: null,
   se: null,
@@ -29,46 +33,49 @@ export const DIAMOND_HAND_POINTS: Record<GridLocation, Coordinates | null> = {
 };
 
 /**
- * Diamond grid layer2 points (intercardinal positions)
- * Layer2 points are where arrows are placed
+ * Diamond grid layer2 points (intercardinal positions) - STRICT values
+ * Layer2 points are where arrows are placed.
+ * Uses strict coordinates (±150 from center) matching the browser renderer.
  */
 export const DIAMOND_LAYER2_POINTS: Record<GridLocation, Coordinates | null> = {
   n: null,
   e: null,
   s: null,
   w: null,
-  ne: { x: 618.1, y: 331.9 },
-  se: { x: 618.1, y: 618.1 },
-  sw: { x: 331.9, y: 618.1 },
-  nw: { x: 331.9, y: 331.9 },
+  ne: { x: 625.0, y: 325.0 },
+  se: { x: 625.0, y: 625.0 },
+  sw: { x: 325.0, y: 625.0 },
+  nw: { x: 325.0, y: 325.0 },
   c: { x: 475.0, y: 475.0 },
 };
 
 /**
- * Box grid coordinates (intercardinal hand points)
- * Hand points for NE/SE/SW/NW positions
+ * Box grid coordinates (intercardinal hand points) - STRICT values
+ * Hand points for NE/SE/SW/NW positions.
+ * Uses strict coordinates matching the browser renderer.
  */
 export const BOX_HAND_POINTS: Record<GridLocation, Coordinates | null> = {
   n: null,
   e: null,
   s: null,
   w: null,
-  ne: { x: 576.2, y: 373.8 },
-  se: { x: 576.2, y: 576.2 },
-  sw: { x: 373.8, y: 576.2 },
-  nw: { x: 373.8, y: 373.8 },
+  ne: { x: 581.1, y: 368.9 },
+  se: { x: 581.1, y: 581.1 },
+  sw: { x: 368.9, y: 581.1 },
+  nw: { x: 368.9, y: 368.9 },
   c: { x: 475.0, y: 475.0 },
 };
 
 /**
- * Box grid layer2 points (cardinal positions)
- * Layer2 points for N/E/S/W arrow placement
+ * Box grid layer2 points (cardinal positions) - STRICT values
+ * Layer2 points for N/E/S/W arrow placement.
+ * Uses strict coordinates matching the browser renderer.
  */
 export const BOX_LAYER2_POINTS: Record<GridLocation, Coordinates | null> = {
-  n: { x: 475, y: 272.6 },
-  e: { x: 677.4, y: 475 },
-  s: { x: 475, y: 677.4 },
-  w: { x: 272.6, y: 475 },
+  n: { x: 475, y: 262.9 },
+  e: { x: 687.1, y: 475 },
+  s: { x: 475, y: 687.1 },
+  w: { x: 262.9, y: 475 },
   ne: null,
   se: null,
   sw: null,
@@ -101,31 +108,31 @@ export const CENTER_POINT: Coordinates = { x: 475.0, y: 475.0 };
 // ============================================================================
 
 /**
- * Fallback hand point coordinates when mode-specific lookup fails
+ * Fallback hand point coordinates when mode-specific lookup fails - STRICT values
  */
 export const FALLBACK_HAND_POINTS: Readonly<Record<GridLocation, Coordinates>> = {
-  n: { x: 475, y: 331.9 },
-  e: { x: 618.1, y: 475 },
-  s: { x: 475, y: 618.1 },
-  w: { x: 331.9, y: 475 },
-  ne: { x: 576.2, y: 373.8 },
-  se: { x: 576.2, y: 576.2 },
-  sw: { x: 373.8, y: 576.2 },
-  nw: { x: 373.8, y: 373.8 },
+  n: { x: 475, y: 325.0 },
+  e: { x: 625.0, y: 475 },
+  s: { x: 475, y: 625.0 },
+  w: { x: 325.0, y: 475 },
+  ne: { x: 581.1, y: 368.9 },
+  se: { x: 581.1, y: 581.1 },
+  sw: { x: 368.9, y: 581.1 },
+  nw: { x: 368.9, y: 368.9 },
   c: { x: 475.0, y: 475.0 },
 };
 
 /**
- * Fallback layer2 point coordinates
+ * Fallback layer2 point coordinates - STRICT values
  */
 export const FALLBACK_LAYER2_POINTS: Readonly<Record<GridLocation, Coordinates>> = {
-  n: { x: 475, y: 272.6 },
-  e: { x: 677.4, y: 475 },
-  s: { x: 475, y: 677.4 },
-  w: { x: 272.6, y: 475 },
-  ne: { x: 618.1, y: 331.9 },
-  se: { x: 618.1, y: 618.1 },
-  sw: { x: 331.9, y: 618.1 },
-  nw: { x: 331.9, y: 331.9 },
+  n: { x: 475, y: 262.9 },
+  e: { x: 687.1, y: 475 },
+  s: { x: 475, y: 687.1 },
+  w: { x: 262.9, y: 475 },
+  ne: { x: 625.0, y: 325.0 },
+  se: { x: 625.0, y: 625.0 },
+  sw: { x: 325.0, y: 625.0 },
+  nw: { x: 325.0, y: 325.0 },
   c: { x: 475.0, y: 475.0 },
 };

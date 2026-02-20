@@ -835,6 +835,8 @@ export default defineConfig({
     noExternal: [
       "svelte",
       "@tka/domain",
+      "@tka/render-core",
+      "@tka/sequence-engine",
       "reflect-metadata", // Often has CJS issues
       "gif.js", // May contain CJS code
       "file-saver", // Often has CJS exports
