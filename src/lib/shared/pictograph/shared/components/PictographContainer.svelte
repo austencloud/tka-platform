@@ -27,7 +27,7 @@ with pre-prepared data for better performance.
 -->
 
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
@@ -313,6 +313,9 @@ with pre-prepared data for better performance.
   });
 
   // Prepare data when pictographData or settings change
+  // IMPORTANT: We do NOT cancel in-flight preparations when only the adjustment version changes.
+  // This allows rapid WASD keypresses to each produce a visible result instead of only the last one.
+  // We only discard stale results when the pictograph IDENTITY changes (different step selected).
   $effect(() => {
     const key = prepareKey;
     const data = pictographData;
@@ -322,41 +325,46 @@ with pre-prepared data for better performance.
       return;
     }
 
-    // Use untrack for state mutations to avoid re-triggering
-    let cancelled = false;
+    // Capture identity of the pictograph we're preparing for.
+    // Results are only discarded if the pictograph itself changed (different step selected),
+    // NOT if the adjustment version changed (WASD movement on the same step).
+    const prepareForId = data.id;
 
     (async () => {
-      isLoading = true;
+      // Only show loading opacity for initial loads (no existing data),
+      // not for adjustment re-prepares where we already have data to show.
+      // CRITICAL: untrack() prevents preparedData from becoming a dependency of this $effect.
+      // Without it, the effect writes preparedData → triggers re-run → reads preparedData → infinite loop.
+      if (!untrack(() => preparedData)) {
+        isLoading = true;
+      }
       try {
-        // Always pass themeMode based on effectiveDarkMode for correct color selection
-        // This ensures colors are correct whether dark mode is from prop (export) or global toggle (live)
         const currentDarkMode = effectiveDarkMode;
-        // Pass explicit prop types to preparer for consistency during async rendering.
-        // When provided, these are used directly; otherwise preparer falls back to global settings.
         const prepareOptions = {
           themeMode: currentDarkMode ? "dark" as const : "light" as const,
           bluePropType: bluePropTypeOverride,
           redPropType: redPropTypeOverride,
         };
         const result = await pictographPreparer.prepareSingle(data as PictographData, prepareOptions);
-        if (!cancelled) {
+        // Only apply if we're still viewing the same pictograph
+        // (different step selected = different identity = discard this stale result)
+        const currentData = pictographData;
+        if (currentData && currentData.id === prepareForId) {
           preparedData = result;
         }
       } catch (error) {
         console.error("Failed to prepare pictograph:", error);
-        if (!cancelled) {
+        const currentData = pictographData;
+        if (currentData && currentData.id === prepareForId) {
           preparedData = data as PreparedPictographData;
         }
       } finally {
-        if (!cancelled) {
+        const currentData = pictographData;
+        if (currentData && currentData.id === prepareForId) {
           isLoading = false;
         }
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
   });
 
   // Content key for fade transitions (when loading different pictographs)
