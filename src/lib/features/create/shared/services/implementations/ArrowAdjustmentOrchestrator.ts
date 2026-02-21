@@ -47,21 +47,27 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
     this.keyGenerator = new GlobalAdjustmentKeyGenerator(gridModeDeriver, turnsTupleGenerator);
   }
 
-  getDefaultSaveLayer(_thisPropType: string, _otherPropType: string): 1 | 2 | 3 {
-    // Always save at Layer 2 (prop-specific). Even staff+staff adjustments are stored
-    // under the key `...|staff` so they don't bleed into other prop types via Layer 1 fallback.
-    // Without this, changing props after WASD adjustment shows the old prop's position.
+  getDefaultSaveLayer(thisPropType: string, otherPropType: string): 1 | 2 | 3 {
+    // Catdogged (different props per hand) → Layer 3 (combo-specific: fan+club)
+    // Same prop both hands → Layer 2 (prop-specific: staff, fan, etc.)
+    // Adjustments never save at Layer 1 to prevent cross-prop bleed.
+    if (thisPropType.toLowerCase() !== otherPropType.toLowerCase()) {
+      return 3;
+    }
     return 2;
   }
 
   generateTargetKey(
     selectedArrow: SelectedArrowContext,
     layer: 1 | 2 | 3,
-    thisPropType: string
+    thisPropType: string,
+    otherPropType?: string
   ): AdjustmentTargetKey | null {
     const keyOptions = layer === 1
       ? undefined // Layer 1: no prop types
-      : { propType: thisPropType }; // Layer 2/3: include this prop's type
+      : layer === 3 && otherPropType
+        ? { propType: thisPropType, otherPropType } // Layer 3: both prop types
+        : { propType: thisPropType }; // Layer 2: just this prop
 
     return this.keyGenerator.generateKey(
       selectedArrow.motionData,
@@ -123,7 +129,7 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
 
     // Determine save layer and build target key
     const defaultLayer = this.getDefaultSaveLayer(thisPropType, otherPropType);
-    const targetKey = this.generateTargetKey(selectedArrow, defaultLayer, thisPropType);
+    const targetKey = this.generateTargetKey(selectedArrow, defaultLayer, thisPropType, otherPropType);
 
     if (!targetKey) {
       return { targetKey: {} as AdjustmentTargetKey, newX: 0, newY: 0, success: false };
@@ -177,12 +183,13 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
   resetToDefault(
     selectedArrow: SelectedArrowContext,
     thisPropType: string,
-    currentLayer: 1 | 2 | 3
+    currentLayer: 1 | 2 | 3,
+    otherPropType?: string
   ): AdjustmentTargetKey | null {
     const repo = getGlobalAdjustmentRepository();
     if (!repo) return null;
 
-    const targetKey = this.generateTargetKey(selectedArrow, currentLayer, thisPropType);
+    const targetKey = this.generateTargetKey(selectedArrow, currentLayer, thisPropType, otherPropType);
     if (!targetKey) return null;
 
     try {

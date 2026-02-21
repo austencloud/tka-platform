@@ -239,7 +239,8 @@
     const deletedKey = adjustmentOrchestrator.resetToDefault(
       selectedArrow,
       thisPropType,
-      layerToDelete
+      layerToDelete,
+      otherPropType
     );
 
     // Fire-and-forget Firestore delete
@@ -343,9 +344,12 @@
   <span
     class="layer-badge"
     class:layer-2={defaultSaveLayer === 2}
-    title={`Prop-specific adjustment for ${thisPropType}`}
+    class:layer-3={defaultSaveLayer === 3}
+    title={defaultSaveLayer === 3
+      ? `Combo-specific adjustment for ${thisPropType}+${otherPropType}`
+      : `Prop-specific adjustment for ${thisPropType}`}
   >
-    L{defaultSaveLayer}·{thisPropType}
+    L{defaultSaveLayer}·{thisPropType}{#if defaultSaveLayer === 3}+{otherPropType}{/if}
   </span>
 
   <!-- Increment indicator -->
@@ -480,6 +484,11 @@
   .layer-badge.layer-2 {
     color: #22d3d8;
     background: rgba(34, 211, 216, 0.2);
+  }
+
+  .layer-badge.layer-3 {
+    color: #c084fc;
+    background: rgba(192, 132, 252, 0.2);
   }
 
   .increment-badge {

@@ -121,6 +121,17 @@ export interface IArrowAdjustmentOrchestrator {
   generateTargetKey(
     selectedArrow: SelectedArrowContext,
     layer: 1 | 2 | 3,
-    thisPropType: string
+    thisPropType: string,
+    otherPropType?: string
+  ): AdjustmentTargetKey | null;
+
+  /**
+   * Reset adjustment to default for a given layer.
+   */
+  resetToDefault(
+    selectedArrow: SelectedArrowContext,
+    thisPropType: string,
+    currentLayer: 1 | 2 | 3,
+    otherPropType?: string
   ): AdjustmentTargetKey | null;
 }

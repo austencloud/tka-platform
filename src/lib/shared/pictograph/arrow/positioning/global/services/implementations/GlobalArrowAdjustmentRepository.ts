@@ -143,8 +143,11 @@ export class GlobalArrowAdjustmentRepository
    *
    * Searches for the most specific adjustment available:
    * 1. First checks Layer 3 (combination-specific: this prop + other prop)
-   * 2. Then checks Layer 2 (prop-specific: just this prop)
-   * 3. Finally checks Layer 1 (base: no prop types, typically staff defaults)
+   * 2. Then checks Layer 2 (prop-specific: just this prop type)
+   * 3. Finally checks Layer 1 (base: no prop types) — ONLY for staff props
+   *
+   * Non-staff props never fall back to Layer 1. This prevents staff adjustments
+   * from bleeding into other prop types when switching props.
    */
   getAdjustmentCascading(
     baseKey: GlobalAdjustmentKey,
@@ -156,7 +159,6 @@ export class GlobalArrowAdjustmentRepository
     const normalizedOtherProp = otherPropType.toLowerCase();
 
     // Layer 3: Combination-specific (this prop + other prop)
-    // Only check if not both staff (staff has no layer 3 entries)
     if (normalizedThisProp !== "staff" || normalizedOtherProp !== "staff") {
       const layer3Key: GlobalAdjustmentKey = {
         ...baseKey,
@@ -169,23 +171,24 @@ export class GlobalArrowAdjustmentRepository
       }
     }
 
-    // Layer 2: Prop-specific (just this prop)
-    // Only check if not staff (staff uses layer 1)
-    if (normalizedThisProp !== "staff") {
-      const layer2Key: GlobalAdjustmentKey = {
-        ...baseKey,
-        propType: normalizedThisProp,
-      };
-      const layer2 = this.getAdjustment(layer2Key);
-      if (layer2) {
-        return { adjustment: layer2, layer: 2 };
-      }
+    // Layer 2: Prop-specific (just this prop type)
+    // Check for ALL prop types including staff (staff adjustments now save at Layer 2)
+    const layer2Key: GlobalAdjustmentKey = {
+      ...baseKey,
+      propType: normalizedThisProp,
+    };
+    const layer2 = this.getAdjustment(layer2Key);
+    if (layer2) {
+      return { adjustment: layer2, layer: 2 };
     }
 
-    // Layer 1: Base (no prop types, typically staff defaults)
-    const layer1 = this.getAdjustment(baseKey);
-    if (layer1) {
-      return { adjustment: layer1, layer: 1 };
+    // Layer 1: Base (no prop types) — legacy fallback for staff ONLY.
+    // Non-staff props must not inherit staff adjustments.
+    if (normalizedThisProp === "staff" && normalizedOtherProp === "staff") {
+      const layer1 = this.getAdjustment(baseKey);
+      if (layer1) {
+        return { adjustment: layer1, layer: 1 };
+      }
     }
 
     return null;
